@@ -53,13 +53,13 @@ def preproc(inputstring):
             lines[x] = openstr+lines[x]
         elif check in levels:
             point = levels.index(check)+1
-            lines[x] = closestr*(len(levels[point:])+1)+lines[x]
+            new[-1] += closestr*(len(levels[point:])+1)
             levels = levels[:point]
             current = levels.pop()
         elif current != check:
             raise ParseException("Illegal dedent to unused indentation level in line "+lines[x]+" (#"+str(x)+")")
         new.append(lines[x])
-    new.append(closestr*(len(levels)-1))
+    new[-1] += closestr*(len(levels)-1)
     return start + "\n".join(new) + end
 
 ParserElement.setDefaultWhitespaceChars(" \t")
