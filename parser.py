@@ -8,16 +8,6 @@
 # Date Created: 2014
 # Description: The CoconutScript parser.
 
-# Differences from Python:
-#   Disallow backslash line continuations
-#   ! instead of ~ for unary negation
-#   Add the ~ (loop), -> (lambda), .. (compose), $ (curry), and |> (pipeline) operators
-#   Remove the lambda keyword
-#   Always use Python 3 idioms instead of Python 2 idioms
-#   Make everything lazy that can be lazy
-#   Allow the definition of new operators
-#   Add built-in zip, zipwith, and fold functions
-
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # DATA:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -27,128 +17,281 @@ from __future__ import with_statement, print_function, absolute_import, unicode_
 from rabbit.carrot.root import *
 from pyparsing import *
 
+start = "\u2402"
+openstr = "\u204b"
+closestr = "\u00b6"
+end = "\u2403"
+
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # GRAMMAR:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-grammar = """
-# Modified Python 3 Grammar
+def leading(inputstring):
+    """Counts Leading Whitespace."""
+    count = 0
+    for c in str(inputstring):
+        if c == " ":
+            count += 1
+        elif c == "\t":
+            count += 4
+        else:
+            break
+    return count
 
-# Start symbols for the grammar:
-#       single_input is a single interactive statement;
-#       file_input is a module or sequence of commands read from an input file;
-#       eval_input is the input for the eval() functions.
-# NB: compound_stmt in single_input is followed by extra NEWLINE!
-single_input: NEWLINE | simple_stmt | compound_stmt NEWLINE
-file_input: (NEWLINE | stmt)* ENDMARKER
-eval_input: testlist NEWLINE* ENDMARKER
+def preproc(inputstring):
+    """Performs Pre-Processing."""
+    lines = str(inputstring).splitlines()
+    new = []
+    levels = []
+    for x in xrange(0, len(lines)):
+        check = leading(lines[x])
+        if not x:
+            current = check
+        elif check > current:
+            levels.append(current)
+            current = check
+            lines[x] = openstr+lines[x]
+        elif check in levels:
+            point = levels.index(check)+1
+            lines[x] = closestr*(len(levels[point:])+1)+lines[x]
+            levels = levels[:point]
+            current = levels.pop()
+        elif current != check:
+            raise ParseException("Illegal dedent to unused indentation level in line "+lines[x]+" (#"+str(x)+")")
+        new.append(lines[x])
+    new.append(closestr*(len(levels)-1))
+    return start + "\n".join(new) + end
 
-decorator: '@' dotted_name [ '(' [arglist] ')' ] NEWLINE
-decorators: decorator+
-decorated: decorators (classdef | funcdef)
-funcdef: 'def' NAME parameters ['->' test] ':' suite
-parameters: '(' [typedargslist] ')'
-typedargslist: (tfpdef ['=' test] (',' tfpdef ['=' test])* [','
-       ['*' [tfpdef] (',' tfpdef ['=' test])* [',' '**' tfpdef] | '**' tfpdef]]
-     |  '*' [tfpdef] (',' tfpdef ['=' test])* [',' '**' tfpdef] | '**' tfpdef)
-tfpdef: NAME [':' test]
-varargslist: (vfpdef ['=' test] (',' vfpdef ['=' test])* [','
-       ['*' [vfpdef] (',' vfpdef ['=' test])* [',' '**' vfpdef] | '**' vfpdef]]
-     |  '*' [vfpdef] (',' vfpdef ['=' test])* [',' '**' vfpdef] | '**' vfpdef)
-vfpdef: NAME
+ParserElement.setDefaultWhitespaceChars(" \t")
 
-stmt: simple_stmt | compound_stmt
-simple_stmt: small_stmt (';' small_stmt)* [';'] NEWLINE
-small_stmt: (expr_stmt | del_stmt | pass_stmt | flow_stmt |
-             import_stmt | global_stmt | nonlocal_stmt | assert_stmt)
-expr_stmt: testlist_star_expr (augassign (yield_expr|testlist) |
-                     ('=' (yield_expr|testlist_star_expr))*)
-testlist_star_expr: (test|star_expr) (',' (test|star_expr))* [',']
-augassign: ('+=' | '-=' | '*=' | '/=' | '%=' | '&=' | '|=' | '^=' |
-            '<<=' | '>>=' | '**=' | '//=' | '~=' | '..=' | '$=' | '|>=') #CHANGE: Added augmented assignment for the new operators
-# For normal assignments, additional restrictions enforced by the interpreter
-del_stmt: 'del' exprlist
-pass_stmt: 'pass'
-flow_stmt: break_stmt | continue_stmt | return_stmt | raise_stmt | yield_stmt
-break_stmt: 'break'
-continue_stmt: 'continue'
-return_stmt: 'return' [testlist]
-yield_stmt: yield_expr
-raise_stmt: 'raise' [test ['from' test]]
-import_stmt: import_name | import_from
-import_name: 'import' dotted_as_names
-# note below: the ('.' | '...') is necessary because '...' is tokenized as ELLIPSIS
-import_from: ('from' (('.' | '...')* dotted_name | ('.' | '...')+)
-              'import' ('*' | '(' import_as_names ')' | import_as_names))
-import_as_name: NAME ['as' NAME]
-dotted_as_name: dotted_name ['as' NAME]
-import_as_names: import_as_name (',' import_as_name)* [',']
-dotted_as_names: dotted_as_name (',' dotted_as_name)*
-dotted_name: NAME ('.' NAME)*
-global_stmt: 'global' NAME (',' NAME)*
-nonlocal_stmt: 'nonlocal' NAME (',' NAME)*
-assert_stmt: 'assert' test [',' test]
+comma = Literal(",")
+dot = Literal(".")
+star = Literal("*")
+dubstar = Literal("**")
+lparen = Literal("(")
+rparen = Literal(")")
+at = Literal("@")
+arrow = Literal("->")
+colon = Literal(":")
+semicolon = Literal(";")
+equals = Literal("=")
+lbrack = Literal("[")
+rbrack = Literal("]")
+lbrace = Literal("{")
+rbrace = Literal("}")
+plus = Literal("+")
+minus = Literal("-")
+bang = Literal("!")
+slash = Literal("/")
+dubslash = Literal("//")
+pipeline = Literal("|>")
+amp = Literal("&")
+caret = Literal("^")
+bar = Literal("|")
+percent = Literal("%")
+dotdot = Literal("..")
+dollar = Literal("$")
 
-compound_stmt: if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated
-if_stmt: 'if' test ':' suite ('elif' test ':' suite)* ['else' ':' suite]
-while_stmt: 'while' test ':' suite ['else' ':' suite]
-for_stmt: 'for' exprlist 'in' testlist ':' suite ['else' ':' suite]
-try_stmt: ('try' ':' suite
-           ((except_clause ':' suite)+
-            ['else' ':' suite]
-            ['finally' ':' suite] |
-           'finally' ':' suite))
-with_stmt: 'with' with_item (',' with_item)*  ':' suite
-with_item: test ['as' expr]
-# NB: compile.c makes sure that the default except clause is last
-except_clause: 'except' [test ['as' NAME]]
-suite: simple_stmt | NEWLINE INDENT stmt+ DEDENT
+NAME = Word(alphas, alphanums+"_")
+dotted_name = NAME + ZeroOrMore(dot + NAME)
 
-test: or_test ['if' or_test 'else' test] | lambdef
-test_nocond: or_test | lambdef_nocond
-lambdef: [varargslist] '->' test #CHANGE: Modified to use new lambda syntax
-lambdef_nocond: [varargslist] '->' test_nocond #CHANGE: As above
-or_test: and_test ('or' and_test)*
-and_test: not_test ('and' not_test)*
-not_test: 'not' not_test | comparison
-comparison: expr (comp_op expr)*
-comp_op: '<'|'>'|'=='|'>='|'<='|'!='|'in'|'not' 'in'|'is'|'is' 'not' #CHANGE: Removed <>
-star_expr: '*' expr
-expr: xor_expr ('|' xor_expr)*
-xor_expr: and_expr ('^' and_expr)*
-and_expr: shift_expr ('&' shift_expr)*
-shift_expr: arith_expr (('<<'|'>>') arith_expr)*
-arith_expr: term (('+'|'-') term)*
-term: factor (('*'|'/'|'%'|'//') factor)*
-factor: ('+'|'-'|'!') factor | power #CHANGE: Changed '~' to '!'
-power: item ['**' factor] #CHANGE: Linked to item
-item: atom trailer* #CHANGE: Added item
-atom: ('(' [yield_expr|testlist_comp] ')' |
-       '[' [testlist_comp] ']' |
-       '{' [dictorsetmaker] '}' |
-       NAME | NUMBER | STRING+ | '...' | 'None' | 'True' | 'False')
-testlist_comp: (test|star_expr) ( comp_for | (',' (test|star_expr))* [','] )
-trailer: '(' [arglist] ')' | '[' subscriptlist ']' | '.' NAME
-subscriptlist: subscript (',' subscript)* [',']
-subscript: test | [test] ':' [test] [sliceop]
-sliceop: ':' [test]
-exprlist: (expr|star_expr) (',' (expr|star_expr))* [',']
-testlist: test (',' test)* [',']
-dictorsetmaker: ( (test ':' test (comp_for | (',' test ':' test)* [','])) |
-                  (test (comp_for | (',' test)* [','])) )
+integer = Word(nums)
+hexint = Word(hexnums)
 
-classdef: 'class' NAME ['(' [arglist] ')'] ':' suite
+basenum = integer | Combine(integer, dot, Optional(integer))
 
-arglist: (argument ',')* (argument [',']
-                         |'*' test (',' argument)* [',' '**' test] 
-                         |'**' test)
-# The reason that keywords are test nodes instead of NAME is that using NAME
-# results in an ambiguity. ast.c makes sure it's a NAME.
-argument: test [comp_for] | test '=' test  # Really [keyword '='] test
-comp_iter: comp_for | comp_if
-comp_for: 'for' exprlist 'in' or_test [comp_iter]
-comp_if: 'if' test_nocond [comp_iter]
+sci_e = Literal("e") | Literal("E")
+numitem = basenum | Combine(basenum, sci_e, integer)
+hexitem = hexint | Combine(hexint, sci_e, hexint)
 
-yield_expr: 'yield' [yield_arg]
-yield_arg: 'from' test | testlist
-"""
+NUMBER = numitem | Combine(Literal("0"), (Literal("b") | Literal("o") | Literal("x")), hexitem)
+
+STRING = quotedString
+NEWLINE = OneOrMore(Literal("\n"))
+STARTMARKER = Literal(start).suppress()
+ENDMARKER = Literal(end).suppress()
+INDENT = Literal(openstr)
+DEDENT = Literal(closestr)
+
+augassign = (Literal("+=")
+             | Literal("-=")
+             | Literal("*=")
+             | Literal("**=")
+             | Literal("/=")
+             | Literal("%=")
+             | Literal("&=")
+             | Literal("|=")
+             | Literal("^=")
+             | Literal("<<=")
+             | Literal(">>=")
+             | Literal("//=")
+             | Combine(OneOrMore(Literal("~")), Literal("="))
+             | Literal("..=")
+             | Literal("=>") # In-place pipeline
+             )
+
+comp_op = (Literal("<")
+           | Literal(">")
+           | Literal("==")
+           | Literal(">=")
+           | Literal("<=")
+           | Literal("!=")
+           | Keyword("in")
+           | Keyword("not") + Keyword("in")
+           | Keyword("is")
+           | Keyword("is") + Keyword("not")
+           )
+
+test = Forward()
+expr = Forward()
+comp_for = Forward()
+
+tfpdef = NAME + Optional(colon + test)
+default = Optional(equals + test)
+argslist = (
+    tfpdef + default + ZeroOrMore(comma + tfpdef + default)
+    + Optional(comma + Optional(star + Optional(tfpdef)
+    + ZeroOrMore(comma + tfpdef + default) + Optional(comma
+    + dubstar + tfpdef) | dubstar + tfpdef))
+    | star + Optional(tfpdef) + ZeroOrMore(comma + tfpdef + default)
+    + Optional(comma + dubstar + tfpdef) | dubstar + tfpdef
+    )
+parameters = lparen + argslist + rparen
+
+testlist = test + ZeroOrMore(comma + test) + Optional(comma).suppress()
+yield_arg = Keyword("from") + test | testlist
+yield_expr = Keyword("yield") + Optional(yield_arg)
+star_expr = star + expr
+testlist_comp = (test | star_expr) + (comp_for | ZeroOrMore(comma + (test | star_expr)) + Optional(comma).suppress())
+dictorsetmaker = ((test + colon + test + (comp_for | ZeroOrMore(comma + test + colon + test) + Optional(comma).suppress()))
+                  | (test + (comp_for | ZeroOrMore(comma + test) + Optional(comma).suppress())))
+atom = (lparen + Optional(yield_expr | testlist_comp) + rparen
+        | lbrack + Optional(testlist_comp) + rbrack
+        | lbrace + Optional(dictorsetmaker) + rbrace
+        | NAME
+        | NUMBER
+        | OneOrMore(STRING)
+        | Literal("...")
+        | Keyword("None")
+        | Keyword("True")
+        | Keyword("False")
+        )
+sliceop = colon + Optional(test)
+subscript = test | Optional(test) + colon + Optional(test) + Optional(sliceop)
+subscriptlist = subscript + ZeroOrMore(comma + subscript) + Optional(comma).suppress()
+trailer = Optional(dollar) + lparen + Optional(argslist) + rparen | lbrack + subscriptlist + rbrack | dot + NAME | dotdot + atom
+item = atom + ZeroOrMore(trailer)
+factor = Forward()
+power = item + Optional(dubstar + factor)
+unary = plus | minus | bang
+factor <<= unary + factor | power
+mulop = star | slash | percent | dubslash
+term = factor + ZeroOrMore(mulop + factor)
+arith = plus | minus
+arith_expr = term + ZeroOrMore(arith + term)
+shift = Literal("<<") | Literal(">>")
+shift_expr = arith_expr + ZeroOrMore(shift + arith_expr)
+and_expr = shift_expr + ZeroOrMore(amp + shift_expr)
+xor_expr = and_expr + ZeroOrMore(caret + and_expr)
+or_expr = xor_expr + ZeroOrMore(bar + xor_expr)
+loop_expr = or_expr + ZeroOrMore(OneOrMore(Literal("~")) + or_expr)
+pipe_expr = loop_expr + ZeroOrMore(pipeline + loop_expr)
+expr <<= pipe_expr
+comparison = expr + ZeroOrMore(comp_op + expr)
+not_test = Forward()
+not_test <<= Keyword("not") + not_test | comparison
+and_test = not_test + ZeroOrMore(Keyword("and") + not_test)
+or_test = and_test + ZeroOrMore(Keyword("or") + and_test)
+test_nocond = Forward()
+lambdef = parameters + arrow + test
+lambdef_nocond = parameters + arrow + test_nocond
+test <<= or_test + Optional(Keyword("if") + or_test + Keyword("else") + test) | lambdef
+test_nocond <<= or_test | lambdef_nocond
+exprlist = (expr | star_expr) + ZeroOrMore(comma + (expr | star_expr)) + Optional(comma).suppress()
+
+suite = Forward()
+
+argument = NAME + Optional(comp_for) | NAME + equals + test
+arglist = ZeroOrMore(argument + comma) + (argument + Optional(comma)
+                                          | star + test + ZeroOrMore(comma + argument) + Optional(comma + dubstar + test)
+                                          | dubstar + test)
+classdef = Keyword("class") + NAME + Optional(lparen + Optional(arglist) + rparen) + colon + suite
+comp_iter = Forward()
+comp_for <<= Keyword("for") + exprlist + Keyword("in") + or_test + Optional(comp_iter)
+comp_if = Keyword("if") + test_nocond + Optional(comp_iter)
+comp_iter <<= comp_for | comp_if
+
+del_stmt = Keyword("del") + exprlist
+pass_stmt = Keyword("pass")
+break_stmt = Keyword("break")
+continue_stmt = Keyword("continue")
+return_stmt = Keyword("return") + Optional(testlist)
+yield_stmt = yield_expr
+raise_stmt = Keyword("raise") + Optional(test + Optional(Keyword("from") + test))
+flow_stmt = break_stmt | continue_stmt | return_stmt | raise_stmt | yield_stmt
+
+dotted_as_name = dotted_name + Optional(Keyword("as") + NAME)
+import_as_name = NAME + Optional(Keyword("as") + NAME)
+import_as_names = import_as_name + ZeroOrMore(comma + import_as_name) + Optional(comma).suppress()
+dotted_as_names = dotted_as_name + ZeroOrMore(comma + dotted_as_name) + Optional(comma).suppress()
+import_name = Keyword("import") + dotted_as_names
+import_from = (Keyword("from") + (ZeroOrMore(dot) + dotted_name | OneOrMore(dot))
+               + Keyword("import") + (star | lparen + import_as_names + rparen | import_as_names))
+import_stmt = import_name | import_from
+
+global_stmt = Keyword("global") + NAME + ZeroOrMore(comma + NAME) + Optional(comma).suppress()
+nonlocal_stmt = Keyword("nonlocal") + NAME + ZeroOrMore(comma + NAME) + Optional(comma).suppress()
+assert_stmt = Keyword("assert") + test + Optional(comma + test)
+if_stmt = Keyword("if") + test + colon + suite + ZeroOrMore(Keyword("elif") + test + colon + suite) + Optional(Keyword("else") + colon + suite)
+while_stmt = Keyword("while") + test + colon + suite + Optional(Keyword("else") + colon + suite)
+for_stmt = Keyword("for") + exprlist + Keyword("in") + testlist + colon + suite + Optional(Keyword("else") + colon + suite)
+except_clause = Keyword("except") + test + Optional(Keyword("as") + NAME)
+try_stmt = Keyword("try") + colon + suite + (((OneOrMore(except_clause + colon + suite)
+                                             + Optional(Keyword("except") + colon + suite))
+                                             | Keyword("except") + colon + suite)
+                                             + Optional(Keyword("else") + colon + suite)
+                                             + Optional(Keyword("finally") + colon + suite)
+                                             | Keyword("finally") + colon + suite)
+with_item = test + Optional(Keyword("as") + expr)
+with_stmt = Keyword("with") + with_item + ZeroOrMore(comma + with_item) + colon + suite
+
+decorator = at + test + NEWLINE
+decorators = OneOrMore(decorator)
+funcdef = Keyword("def") + NAME + parameters + Optional(arrow + test) + colon + suite
+decorated = decorators + (classdef | funcdef)
+
+compound_stmt = if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated
+testlist_star_expr = (test|star_expr) + ZeroOrMore(comma + (test | star_expr)) + Optional(comma).suppress()
+expr_stmt = testlist_star_expr + (augassign + (yield_expr | testlist) | ZeroOrMore(equals + (yield_expr | testlist_star_expr)))
+small_stmt = expr_stmt | del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt | assert_stmt
+simple_stmt = small_stmt + ZeroOrMore(semicolon + small_stmt) + Optional(semicolon).suppress() + NEWLINE
+stmt = simple_stmt | compound_stmt
+suite <<= simple_stmt | NEWLINE + INDENT + OneOrMore(stmt) + DEDENT
+
+single_input = NEWLINE | simple_stmt | compound_stmt + NEWLINE
+file_input = ZeroOrMore(NEWLINE | stmt)
+eval_input = testlist + ZeroOrMore(NEWLINE)
+
+single_parser = STARTMARKER + single_input + ENDMARKER
+file_parser = STARTMARKER + file_input + ENDMARKER
+eval_parser = STARTMARKER + eval_input + ENDMARKER
+
+single_parser.ignore(pythonStyleComment)
+file_parser.ignore(pythonStyleComment)
+eval_parser.ignore(pythonStyleComment)
+
+def parse_single(inputstring):
+    """Processes Console Input."""
+    return single_parser.parseString(preproc(inputstring))
+
+def parse_file(inputstring):
+    """Processes File Input."""
+    return file_parser.parseString(preproc(inputstring))
+
+def parse_eval(inputstring):
+    """Processes Eval Input."""
+    return eval_parser.parseString(preproc(inputstring))
+
+if __name__ == "__main__":
+    selfstr = open("parser.py", "rb").read()
+    print(parse_file(selfstr))
