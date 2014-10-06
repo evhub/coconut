@@ -91,6 +91,10 @@ bar = Literal("|")
 percent = Literal("%")
 dotdot = Literal("..")
 dollar = Literal("$")
+dotdotdot = Literal("...")
+lshift = Literal("<<")
+rshift = Literal(">>")
+tilde = Literal("~")
 
 NAME = Word(alphas, alphanums+"_")
 dotted_name = NAME + ZeroOrMore(dot + NAME)
@@ -125,7 +129,7 @@ augassign = (Literal("+=")
              | Literal("<<=")
              | Literal(">>=")
              | Literal("//=")
-             | Combine(OneOrMore(Literal("~")), Literal("="))
+             | Combine(OneOrMore(tilde), equals)
              | Literal("..=")
              | Literal("=>") # In-place pipeline
              )
@@ -171,7 +175,7 @@ atom = (lparen + Optional(yield_expr | testlist_comp) + rparen
         | NAME
         | NUMBER
         | OneOrMore(STRING)
-        | Literal("...")
+        | dotdotdot
         | Keyword("None")
         | Keyword("True")
         | Keyword("False")
@@ -189,12 +193,12 @@ mulop = star | slash | percent | dubslash
 term = factor + ZeroOrMore(mulop + factor)
 arith = plus | minus
 arith_expr = term + ZeroOrMore(arith + term)
-shift = Literal("<<") | Literal(">>")
+shift = lshift | rshift
 shift_expr = arith_expr + ZeroOrMore(shift + arith_expr)
 and_expr = shift_expr + ZeroOrMore(amp + shift_expr)
 xor_expr = and_expr + ZeroOrMore(caret + and_expr)
 or_expr = xor_expr + ZeroOrMore(bar + xor_expr)
-loop_expr = or_expr + ZeroOrMore(OneOrMore(Literal("~")) + or_expr)
+loop_expr = or_expr + ZeroOrMore(OneOrMore(tilde) + or_expr)
 pipe_expr = loop_expr + ZeroOrMore(pipeline + loop_expr)
 expr <<= pipe_expr
 comparison = expr + ZeroOrMore(comp_op + expr)
