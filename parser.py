@@ -57,7 +57,7 @@ def change(inputstring, downs="([{", ups=")]}", holds="'"+'"'):
 def preproc(inputstring):
     """Performs Pre-Processing."""
     lines = str(inputstring).splitlines()
-    new = []
+    new = [start]
     levels = []
     count = 0
     for x in xrange(0, len(lines)):
@@ -81,7 +81,8 @@ def preproc(inputstring):
             new.append(lines[x])
         count += change(lines[x])
     new[-1] += closestr*(len(levels)-1)
-    return start + "\n".join(new) + end
+    new.append(end)
+    return "\n".join(new)
 
 ParserElement.setDefaultWhitespaceChars(" \t")
 
@@ -142,7 +143,7 @@ NEWLINE = OneOrMore(Literal("\n"))
 STARTMARKER = Literal(start).suppress()
 ENDMARKER = Literal(end).suppress()
 INDENT = Literal(openstr)
-DEDENT = Literal(closestr)
+DEDENT = Literal(closestr) + NEWLINE
 
 augassign = (Literal("+=")
              | Literal("-=")
@@ -179,7 +180,7 @@ comp_for = Forward()
 
 tfpdef = NAME + Optional(colon + test)
 default = Optional(equals + test)
-argslist = Group(
+argslist = (
     tfpdef + default + ZeroOrMore(comma + tfpdef + default)
     + Optional(comma + Optional(star + Optional(tfpdef)
     + ZeroOrMore(comma + tfpdef + default) + Optional(comma
@@ -196,9 +197,9 @@ star_expr = star + expr
 testlist_comp = (test | star_expr) + (comp_for | ZeroOrMore(comma + (test | star_expr)) + Optional(comma).suppress())
 dictorsetmaker = ((test + colon + test + (comp_for | ZeroOrMore(comma + test + colon + test) + Optional(comma).suppress()))
                   | (test + (comp_for | ZeroOrMore(comma + test) + Optional(comma).suppress())))
-atom = (lparen + Group(Optional(yield_expr | testlist_comp)) + rparen
-        | lbrack + Group(Optional(testlist_comp)) + rbrack
-        | lbrace + Group(Optional(dictorsetmaker)) + rbrace
+atom = (lparen + Optional(yield_expr | testlist_comp) + rparen
+        | lbrack + Optional(testlist_comp) + rbrack
+        | lbrace + Optional(dictorsetmaker) + rbrace
         | NAME
         | NUMBER
         | OneOrMore(STRING)
@@ -209,30 +210,30 @@ atom = (lparen + Group(Optional(yield_expr | testlist_comp)) + rparen
         )
 sliceop = colon + Optional(test)
 subscript = test | Optional(test) + colon + Optional(test) + Optional(sliceop)
-subscriptlist = Group(subscript + ZeroOrMore(comma + subscript) + Optional(comma).suppress())
+subscriptlist = subscript + ZeroOrMore(comma + subscript) + Optional(comma).suppress()
 trailer = Optional(dollar) + lparen + Optional(argslist) + rparen | lbrack + subscriptlist + rbrack | dot + NAME | dotdot + atom
-item = Group(atom + ZeroOrMore(trailer))
+item = atom + ZeroOrMore(trailer)
 factor = Forward()
-power = Group(item + Optional(dubstar + factor))
+power = item + Optional(dubstar + factor)
 unary = plus | minus | bang
-factor <<= Group(unary + factor | power)
+factor <<= unary + factor | power
 mulop = star | slash | percent | dubslash
-term = Group(factor + ZeroOrMore(mulop + factor))
+term = factor + ZeroOrMore(mulop + factor)
 arith = plus | minus
-arith_expr = Group(term + ZeroOrMore(arith + term))
+arith_expr = term + ZeroOrMore(arith + term)
 shift = lshift | rshift
-shift_expr = Group(arith_expr + ZeroOrMore(shift + arith_expr))
-and_expr = Group(shift_expr + ZeroOrMore(amp + shift_expr))
-xor_expr = Gorup(and_expr + ZeroOrMore(caret + and_expr))
-or_expr = Group(xor_expr + ZeroOrMore(bar + xor_expr))
-loop_expr = Group(or_expr + ZeroOrMore(OneOrMore(tilde) + or_expr))
-pipe_expr = Group(loop_expr + ZeroOrMore(pipeline + loop_expr))
+shift_expr = arith_expr + ZeroOrMore(shift + arith_expr)
+and_expr = shift_expr + ZeroOrMore(amp + shift_expr)
+xor_expr = and_expr + ZeroOrMore(caret + and_expr)
+or_expr = xor_expr + ZeroOrMore(bar + xor_expr)
+loop_expr = or_expr + ZeroOrMore(OneOrMore(tilde) + or_expr)
+pipe_expr = loop_expr + ZeroOrMore(pipeline + loop_expr)
 expr <<= pipe_expr
-comparison = Group(expr + ZeroOrMore(comp_op + expr))
+comparison = expr + ZeroOrMore(comp_op + expr)
 not_test = Forward()
-not_test <<= Group(Keyword("not") + not_test | comparison)
-and_test = Group(not_test + ZeroOrMore(Keyword("and") + not_test))
-or_test = Group(and_test + ZeroOrMore(Keyword("or") + and_test))
+not_test <<= Keyword("not") + not_test | comparison
+and_test = not_test + ZeroOrMore(Keyword("and") + not_test)
+or_test = and_test + ZeroOrMore(Keyword("or") + and_test)
 test_nocond = Forward()
 lambdef = parameters + arrow + test
 lambdef_nocond = parameters + arrow + test_nocond
@@ -260,9 +261,9 @@ yield_stmt = yield_expr
 raise_stmt = Keyword("raise") + Optional(test + Optional(Keyword("from") + test))
 flow_stmt = break_stmt | continue_stmt | return_stmt | raise_stmt | yield_stmt
 
-def paren_wrap(item):
+def parenwrap(item):
     """Wraps An Item In Optional Parentheses."""
-    return Group(item | lparen.suppress() + item + rparen.suppress())
+    return item | lparen.suppress() + item + rparen.suppress()
 
 dotted_as_name = dotted_name + Optional(Keyword("as") + NAME)
 import_as_name = NAME + Optional(Keyword("as") + NAME)
@@ -270,7 +271,7 @@ import_as_names = import_as_name + ZeroOrMore(comma + import_as_name) + Optional
 dotted_as_names = dotted_as_name + ZeroOrMore(comma + dotted_as_name) + Optional(comma).suppress()
 import_name = Keyword("import") + dotted_as_names
 import_from = (Keyword("from") + (ZeroOrMore(dot) + dotted_name | OneOrMore(dot))
-               + Keyword("import") + (star | paren_wrap(import_as_names)))
+               + Keyword("import") + (star | parenwrap(import_as_names)))
 import_stmt = import_name | import_from
 
 global_stmt = Keyword("global") + parenwrap(NAME + ZeroOrMore(comma + NAME) + Optional(comma).suppress())
