@@ -54,19 +54,27 @@ def change(inputstring, downs="([{", ups=")]}", holds="'"+'"'):
             count += 1
     return count
 
-def preproc(inputstring):
+def preproc(inputstring, strip=False):
     """Performs Pre-Processing."""
-    lines = str(inputstring).splitlines()
-    new = [start]
+    inputstring = str(inputstring)
+    if strip:
+        inputstring = inputstring.strip()
+    lines = inputstring.splitlines()
+    new = []
     levels = []
     count = 0
     for x in xrange(0, len(lines)):
-        if count < 0:
+        if lines[x] and lines[x][-1] in " \t":
+            raise ParseException("Illegal trailing whitespace in line "+lines[x]+" (#"+str(x)+")")
+        elif count < 0:
             new[-1] += lines[x]
         else:
             check = leading(lines[x])
             if not x:
-                current = check
+                if check:
+                    raise ParseException("Illegal initial indent in line "+lines[x]+" (#"+str(x)+")")
+                else:
+                    current = 0
             elif check > current:
                 levels.append(current)
                 current = check
@@ -80,9 +88,9 @@ def preproc(inputstring):
                 raise ParseException("Illegal dedent to unused indentation level in line "+lines[x]+" (#"+str(x)+")")
             new.append(lines[x])
         count += change(lines[x])
-    new[-1] += closestr*(len(levels)-1)
-    new.append(end)
-    return "\n".join(new)
+    if new:
+        new[-1] += closestr*(len(levels)-1)
+    return start + "\n".join(new) + end
 
 ParserElement.setDefaultWhitespaceChars(" \t")
 
@@ -143,7 +151,7 @@ NEWLINE = OneOrMore(Literal("\n"))
 STARTMARKER = Literal(start).suppress()
 ENDMARKER = Literal(end).suppress()
 INDENT = Literal(openstr)
-DEDENT = Literal(closestr) + NEWLINE
+DEDENT = Literal(closestr) + Optional(NEWLINE)
 
 augassign = (Literal("+=")
              | Literal("-=")
@@ -216,7 +224,7 @@ item = atom + ZeroOrMore(trailer)
 factor = Forward()
 power = item + Optional(dubstar + factor)
 unary = plus | minus | bang
-factor <<= unary + factor | power
+factor <<= power | unary + factor
 mulop = star | slash | percent | dubslash
 term = factor + ZeroOrMore(mulop + factor)
 arith = plus | minus
@@ -231,7 +239,7 @@ pipe_expr = loop_expr + ZeroOrMore(pipeline + loop_expr)
 expr <<= pipe_expr
 comparison = expr + ZeroOrMore(comp_op + expr)
 not_test = Forward()
-not_test <<= Keyword("not") + not_test | comparison
+not_test <<= comparison | Keyword("not") + not_test
 and_test = not_test + ZeroOrMore(Keyword("and") + not_test)
 or_test = and_test + ZeroOrMore(Keyword("or") + and_test)
 test_nocond = Forward()
@@ -306,7 +314,7 @@ suite <<= simple_stmt | NEWLINE + INDENT + OneOrMore(stmt) + DEDENT
 
 single_input = NEWLINE | simple_stmt | compound_stmt + NEWLINE
 file_input = ZeroOrMore(NEWLINE | stmt)
-eval_input = testlist + ZeroOrMore(NEWLINE)
+eval_input = testlist
 
 single_parser = STARTMARKER + single_input + ENDMARKER
 file_parser = STARTMARKER + file_input + ENDMARKER
@@ -326,7 +334,7 @@ def parse_file(inputstring):
 
 def parse_eval(inputstring):
     """Processes Eval Input."""
-    return eval_parser.parseString(preproc(inputstring))
+    return eval_parser.parseString(preproc(inputstring, True))
 
 if __name__ == "__main__":
     selfstr = open("parser.py", "rb").read()

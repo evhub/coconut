@@ -16,11 +16,12 @@ CoconutScript is based on Python 3 syntax, but will compile to either Python 3 o
 * Changed syntax:
 	* lambda keyword: removed
 	* backslash continuations: removed
+	* trailing whitespace: disallowed
 	* decorators: support all types of expressions
 	* variable lists: can be wrapped in parentheses
 	* strings: only `b` prefix is allowed, raw strings use `` ` ``
 * New Constructs:
-	* operator redefinition
+	* operator [re]definition
 	* lazy evaluation
 * Improved Built-Ins:
 	* right fold: `fold` (instead of `reduce`)
