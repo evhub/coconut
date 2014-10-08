@@ -8,25 +8,25 @@ CoconutScript is based on Python 3 syntax, but will compile to either Python 3 o
 * Changed operators:
 	* unary negation: `!` (instead of `~`)
 * New operators:
-	* compose: `..`
+	* compose: `..` (in-place: `..=`)
 	* curry: `$`
-	* loop: `~`
-	* pipeline: `|>`
+	* loop: `~` (in-place: `~=`)
+	* pipeline: `|>` (in-place: `=>`)
 	* lambda: `->`
 * Changed syntax:
+	* strings: only `b` prefix is allowed, raw strings use `` ` ``
+	* functions: support alternative `f(x) = x` syntax
 	* lambda keyword: removed
 	* backslash continuations: removed
 	* trailing whitespace: disallowed
 	* decorators: support all types of expressions
 	* variable lists: can be wrapped in parentheses
-	* strings: only `b` prefix is allowed, raw strings use `` ` ``
-* New Constructs:
-	* operator [re]definition
-	* lazy evaluation
 * Improved Built-Ins:
-	* right fold: `fold` (instead of `reduce`)
-	* zip: `zip`
+	* right fold: `fold`
 	* zip with: `zipwith`
 	* tail recursion elimination: `recursive`
+* New Constructs (Planned):
+	* operator [re]definition
+	* lazy evaluation
 
 CoconutScript is still in the early stages of development, and no stable release is currently available. If CoconutScript sounds interesting to you, however, we recommend you check back later when a stable release is available, or check out CoconutScript's spiritual predecessor, [Rabbit](https://github.com/evhub/rabbit).

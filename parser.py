@@ -44,7 +44,7 @@ def leading(inputstring):
             break
     return count
 
-def change(inputstring, downs="([{", ups=")]}", holds="'"+'"'):
+def change(inputstring, downs="([{", ups=")]}", holds="'\"`"):
     """Determines The Parenthetical Change Of Level."""
     count = 0
     hold = None
