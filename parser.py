@@ -131,20 +131,23 @@ dotdotdot = Literal("...")
 lshift = Literal("<<")
 rshift = Literal(">>")
 tilde = Literal("~")
+underscore = Literal("_")
 
 NAME = Word(alphas, alphanums+"_")
 dotted_name = NAME + ZeroOrMore(dot + NAME)
 
 integer = Word(nums)
+binint = Word("01")
+octint = Word("01234567")
 hexint = Word(hexnums)
+anyint = Word(nums, alphanums)
 
 basenum = integer | Combine(integer, dot, Optional(integer))
 
 sci_e = Literal("e") | Literal("E")
 numitem = basenum | Combine(basenum, sci_e, integer)
-hexitem = hexint | Combine(hexint, sci_e, hexint)
 
-NUMBER = numitem | Combine(Literal("0"), (Literal("b") | Literal("o") | Literal("x")), hexitem)
+NUMBER = numitem | Combine(Literal("0b"), binint) | Combine(Literal("0o"), octint) | Combine(Literal("0x", hexint)
 
 STRING = Optional(Literal("b")) + (QuotedString('"', "\\", unquoteResults=False)
                                    | QuotedString("'", "\\", unquoteResults=False)
