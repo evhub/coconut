@@ -28,5 +28,6 @@ CoconutScript is based on Python 3 syntax, but will compile to either Python 3 o
 * New Constructs (Planned):
 	* operator [re]definition
 	* lazy evaluation
+	* pattern matching
 
 CoconutScript is still in the early stages of development, and no stable release is currently available. If CoconutScript sounds interesting to you, however, we recommend you check back later when a stable release is available, or check out CoconutScript's spiritual predecessor, [Rabbit](https://github.com/evhub/rabbit).

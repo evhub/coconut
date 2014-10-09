@@ -140,6 +140,7 @@ integer = Word(nums)
 binint = Word("01")
 octint = Word("01234567")
 hexint = Word(hexnums)
+dozint = Word(nums+"XxEe")
 anyint = Word(nums, alphanums)
 
 basenum = integer | Combine(integer, dot, Optional(integer))
@@ -147,7 +148,13 @@ basenum = integer | Combine(integer, dot, Optional(integer))
 sci_e = Literal("e") | Literal("E")
 numitem = basenum | Combine(basenum, sci_e, integer)
 
-NUMBER = numitem | Combine(Literal("0b"), binint) | Combine(Literal("0o"), octint) | Combine(Literal("0x", hexint)
+NUMBER = (numitem
+          | Combine(Literal("0b"), binint)
+          | Combine(Literal("0o"), octint)
+          | Combine(Literal("0x"), hexint)
+          #| Combine(Literal("0d"), dozint)
+          #| Combine(anyint, underscore, integer)
+          )
 
 STRING = Optional(Literal("b")) + (QuotedString('"', "\\", unquoteResults=False)
                                    | QuotedString("'", "\\", unquoteResults=False)
