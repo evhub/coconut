@@ -27,24 +27,106 @@ start = "\u2402"
 openstr = "\u204b"
 closestr = "\u00b6"
 end = "\u2403"
+linebreak = "\n"
+tablen = 4
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # GRAMMAR:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+refs = []
+
+def wrapstr(text, raw, multiline):
+    """Wraps A String."""
+    refs.append((text, raw, multiline))
+    return '"'+str(len(refs)-1)+'"'
+
+def wrapcomment(text):
+    """Wraps A String."""
+    refs.append(text)
+    return "#"+str(len(refs)-1)
+
+def strproc(inputstring, strs="'\"`", raw="`", comment="#", endline="\n\r", escape="\\"):
+    """Processes Strings."""
+    out = []
+    start = None
+    hold = None
+    x = 0
+    while x <= len(inputstring):
+        if x == len(inputstring):
+            c = linebreak
+        else:
+            c = inputstring[x]
+        if hold is not None:
+            if len(hold) == 1:
+                if c in endline:
+                    out.append(wrapcomment(hold[0])+c)
+                    hold = None
+                else:
+                    hold[0] += c
+            elif hold[2] is not None:
+                if c == escape:
+                    hold[0] += hold[2]+c
+                    hold[2] = None
+                elif c == hold[1][0]:
+                    hold[2] += c
+                elif len(hold[2]) > len(hold[1]):
+                    raise ParseException("Invalid number of string closes in char #"+x)
+                elif hold[2] == hold[1]:
+                    out.append(wrapstr(hold[0], hold[1][0] in raw, True))
+                    hold = None
+                    x -= 1
+                else:
+                    hold[0] += hold[2]+c
+                    hold[2] = None
+            elif hold[0].endswith(escape):
+                hold[0] += c
+            elif c == hold[1]:
+                out.append(wrapstr(hold[0], hold[1] in raw, False))
+                hold = None
+            elif c == hold[1][0]:
+                hold[2] = c
+            else:
+                hold[0] += c
+        elif start is not None:
+            if c == start[0]:
+                start += c
+            elif len(start) == 1:
+                hold = [c, start, None]
+                start = None
+            elif len(start) == 2:
+                out.append(wrapstr("", False, False))
+                start = None
+                x -= 1
+            elif len(start) == 3:
+                hold = [c, start, None]
+                start = None
+            else:
+                raise ParseException("Invalid number of string starts in char #"+x)
+        elif c in comment:
+            hold = [""]
+        elif c in strs:
+            start = c
+        else:
+            out.append(c)
+        x += 1
+    if hold is not None or start is not None:
+        raise ParseException("Unclosed string in char #"+x)
+    return "".join(out)
+
 def leading(inputstring):
     """Counts Leading Whitespace."""
     count = 0
-    for c in str(inputstring):
+    for c in inputstring:
         if c == " ":
             count += 1
         elif c == "\t":
-            count += 4
+            count += tablen
         else:
             break
     return count
 
-def change(inputstring, downs="([{", ups=")]}", holds="'\"`"):
+def change(inputstring, downs="([{", ups=")]}", holds="'\"`", comment="#"):
     """Determines The Parenthetical Change Of Level."""
     count = 0
     hold = None
@@ -52,6 +134,8 @@ def change(inputstring, downs="([{", ups=")]}", holds="'\"`"):
         if hold:
             if c == hold:
                 hold = None
+        elif c in comment:
+            break
         elif c in holds:
             hold = c
         elif c in downs:
@@ -60,11 +144,8 @@ def change(inputstring, downs="([{", ups=")]}", holds="'\"`"):
             count += 1
     return count
 
-def preproc(inputstring, strip=False):
-    """Performs Pre-Processing."""
-    inputstring = str(inputstring)
-    if strip:
-        inputstring = inputstring.strip()
+def indproc(inputstring):
+    """Processes Indentation."""
     lines = inputstring.splitlines()
     new = []
     levels = []
@@ -96,7 +177,13 @@ def preproc(inputstring, strip=False):
         count += change(lines[x])
     if new:
         new[-1] += closestr*(len(levels)-1)
-    return start + "\n".join(new) + end
+    return linebreak.join(new)
+
+def preproc(inputstring):
+    """Performs Pre-Processing."""
+    global refs
+    refs = []
+    return start + indproc(strproc(inputstring)) + end
 
 ParserElement.setDefaultWhitespaceChars(" \t")
 
@@ -127,11 +214,12 @@ bar = Literal("|")
 percent = Literal("%")
 dotdot = Literal("..")
 dollar = Literal("$")
-dotdotdot = Literal("...")
+ellipses = Literal("...")
 lshift = Literal("<<")
 rshift = Literal(">>")
 tilde = Literal("~")
 underscore = Literal("_")
+pound = Literal("#")
 
 NAME = Word(alphas, alphanums+"_")
 dotted_name = NAME + ZeroOrMore(dot + NAME)
@@ -140,11 +228,9 @@ integer = Word(nums)
 binint = Word("01")
 octint = Word("01234567")
 hexint = Word(hexnums)
-dozint = Word(nums+"XxEe")
 anyint = Word(nums, alphanums)
 
 basenum = integer | Combine(integer, dot, Optional(integer))
-
 sci_e = Literal("e") | Literal("E")
 numitem = basenum | Combine(basenum, sci_e, integer)
 
@@ -152,18 +238,12 @@ NUMBER = (numitem
           | Combine(Literal("0b"), binint)
           | Combine(Literal("0o"), octint)
           | Combine(Literal("0x"), hexint)
-          #| Combine(Literal("0d"), dozint)
-          #| Combine(anyint, underscore, integer)
+          | Combine(anyint, underscore, integer)
           )
 
-STRING = Optional(Literal("b")) + (QuotedString('"', "\\", unquoteResults=False)
-                                   | QuotedString("'", "\\", unquoteResults=False)
-                                   | QuotedString("`", "\\", unquoteResults=False)
-                                   | QuotedString('"""', "\\", multiline=True, unquoteResults=False)
-                                   | QuotedString("'''", "\\", multiline=True, unquoteResults=False)
-                                   | QuotedString("```", "\\", multiline=True, unquoteResults=False)
-                                   )
-NEWLINE = OneOrMore(Literal("\n"))
+STRING = Combine(Optional(Literal("b")), Literal('"'), integer, Literal('"'))
+comment = Combine(Literal(pound), integer)
+NEWLINE = Optional(comment) + OneOrMore(Literal(linebreak))
 STARTMARKER = Literal(start).suppress()
 ENDMARKER = Literal(end).suppress()
 INDENT = Literal(openstr)
@@ -227,7 +307,7 @@ atom = (lparen + Optional(yield_expr | testlist_comp) + rparen
         | NAME
         | NUMBER
         | OneOrMore(STRING)
-        | dotdotdot
+        | ellipses
         | Keyword("None")
         | Keyword("True")
         | Keyword("False")
@@ -254,15 +334,15 @@ loop_expr = or_expr + ZeroOrMore(OneOrMore(tilde) + or_expr)
 pipe_expr = loop_expr + ZeroOrMore(pipeline + loop_expr)
 expr <<= pipe_expr
 comparison = expr + ZeroOrMore(comp_op + expr)
-not_test = Forward()
-not_test <<= comparison | Keyword("not") + not_test
+not_test = ZeroOrMore(Keyword("not")) + comparison
 and_test = not_test + ZeroOrMore(Keyword("and") + not_test)
 or_test = and_test + ZeroOrMore(Keyword("or") + and_test)
+test_item = ZeroOrMore(NAME + Literal(":=")) + or_test
 test_nocond = Forward()
 lambdef = parameters + arrow + test
 lambdef_nocond = parameters + arrow + test_nocond
-test <<= or_test + Optional(Keyword("if") + or_test + Keyword("else") + test) | lambdef
-test_nocond <<= or_test | lambdef_nocond
+test <<= test_item + Optional(Keyword("if") + test_item + Keyword("else") + test) | lambdef
+test_nocond <<= test_item | lambdef_nocond
 exprlist = (expr | star_expr) + ZeroOrMore(comma + (expr | star_expr)) + Optional(comma).suppress()
 
 suite = Forward()
@@ -273,7 +353,7 @@ arglist = ZeroOrMore(argument + comma) + (argument + Optional(comma)
                                           | dubstar + test)
 classdef = Keyword("class") + NAME + Optional(lparen + Optional(arglist) + rparen) + colon + suite
 comp_iter = Forward()
-comp_for <<= Keyword("for") + exprlist + Keyword("in") + or_test + Optional(comp_iter)
+comp_for <<= Keyword("for") + exprlist + Keyword("in") + test_item + Optional(comp_iter)
 comp_if = Keyword("if") + test_nocond + Optional(comp_iter)
 comp_iter <<= comp_for | comp_if
 
@@ -336,10 +416,6 @@ single_parser = STARTMARKER + single_input + ENDMARKER
 file_parser = STARTMARKER + file_input + ENDMARKER
 eval_parser = STARTMARKER + eval_input + ENDMARKER
 
-single_parser.ignore(pythonStyleComment)
-file_parser.ignore(pythonStyleComment)
-eval_parser.ignore(pythonStyleComment)
-
 def parse_single(inputstring):
     """Processes Console Input."""
     return single_parser.parseString(preproc(inputstring))
@@ -350,7 +426,7 @@ def parse_file(inputstring):
 
 def parse_eval(inputstring):
     """Processes Eval Input."""
-    return eval_parser.parseString(preproc(inputstring, True))
+    return eval_parser.parseString(preproc(inputstring.strip()))
 
 if __name__ == "__main__":
     selfstr = open("parser.py", "rb").read()

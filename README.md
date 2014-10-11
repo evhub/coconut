@@ -13,6 +13,7 @@ CoconutScript is based on Python 3 syntax, but will compile to either Python 3 o
 	* loop: `~` (in-place: `~=`)
 	* pipeline: `|>` (in-place: `=>`)
 	* lambda: `->`
+	* set equal: `:=` (operator version of `=`)
 * Changed syntax:
 	* strings: only `b` prefix is allowed, raw strings use `` ` ``
 	* functions: support alternative `f(x) = x` syntax
@@ -21,6 +22,7 @@ CoconutScript is based on Python 3 syntax, but will compile to either Python 3 o
 	* trailing whitespace: disallowed
 	* decorators: support all types of expressions
 	* variable lists: can be wrapped in parentheses
+	* non-decimal integers: can be entered as integer`_`base
 * Improved Built-Ins:
 	* right fold: `fold`
 	* zip with: `zipwith`
