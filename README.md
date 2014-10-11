@@ -22,8 +22,8 @@ CoconutScript is based on Python 3 syntax, but will compile to either Python 3 o
 	* trailing whitespace: disallowed
 	* decorators: support all types of expressions
 	* variable lists: can be wrapped in parentheses
-	* non-decimal integers: can be entered as integer`_`base
-* Improved Built-Ins:
+	* non-decimal integers: entered as integer`_`base
+* New Built-Ins:
 	* right fold: `fold`
 	* zip with: `zipwith`
 	* tail recursion elimination: `recursive`

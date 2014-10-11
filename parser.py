@@ -225,21 +225,13 @@ NAME = Word(alphas, alphanums+"_")
 dotted_name = NAME + ZeroOrMore(dot + NAME)
 
 integer = Word(nums)
-binint = Word("01")
-octint = Word("01234567")
-hexint = Word(hexnums)
 anyint = Word(nums, alphanums)
 
 basenum = integer | Combine(integer, dot, Optional(integer))
 sci_e = Literal("e") | Literal("E")
 numitem = basenum | Combine(basenum, sci_e, integer)
 
-NUMBER = (numitem
-          | Combine(Literal("0b"), binint)
-          | Combine(Literal("0o"), octint)
-          | Combine(Literal("0x"), hexint)
-          | Combine(anyint, underscore, integer)
-          )
+NUMBER = numitem | Combine(anyint, underscore, integer)
 
 STRING = Combine(Optional(Literal("b")), Literal('"'), integer, Literal('"'))
 comment = Combine(Literal(pound), integer)
