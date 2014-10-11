@@ -227,15 +227,15 @@ dotted_name = NAME + ZeroOrMore(dot + NAME)
 integer = Word(nums)
 anyint = Word(nums, alphanums)
 
-basenum = integer | Combine(integer, dot, Optional(integer))
+basenum = integer | Combine(integer + dot + Optional(integer))
 sci_e = Literal("e") | Literal("E")
-numitem = basenum | Combine(basenum, sci_e, integer)
+numitem = basenum | Combine(basenum + sci_e + integer)
 
-NUMBER = numitem | Combine(anyint, underscore, integer)
+NUMBER = numitem | Combine(anyint + underscore + integer)
 
-STRING = Combine(Optional(Literal("b")), Literal('"'), integer, Literal('"'))
-comment = Combine(Literal(pound), integer)
-NEWLINE = Optional(comment) + OneOrMore(Literal(linebreak))
+STRING = Combine(Optional(Literal("b")) + Literal('"') + integer + Literal('"'))
+comment = Combine(pound + integer)
+NEWLINE = Optional(comment) + Literal(linebreak)
 STARTMARKER = Literal(start).suppress()
 ENDMARKER = Literal(end).suppress()
 INDENT = Literal(openstr)
@@ -253,7 +253,7 @@ augassign = (Literal("+=")
              | Literal("<<=")
              | Literal(">>=")
              | Literal("//=")
-             | Combine(OneOrMore(tilde), equals)
+             | Combine(OneOrMore(tilde) + equals)
              | Literal("..=")
              | Literal("=>") # In-place pipeline
              )
@@ -290,6 +290,7 @@ testlist = test + ZeroOrMore(comma + test) + Optional(comma).suppress()
 yield_arg = Keyword("from") + test | testlist
 yield_expr = Keyword("yield") + Optional(yield_arg)
 star_expr = star + expr
+testlist_star_expr = (test | star_expr) + ZeroOrMore(comma + (test | star_expr)) + Optional(comma).suppress()
 testlist_comp = (test | star_expr) + (comp_for | ZeroOrMore(comma + (test | star_expr)) + Optional(comma).suppress())
 dictorsetmaker = ((test + colon + test + (comp_for | ZeroOrMore(comma + test + colon + test) + Optional(comma).suppress()))
                   | (test + (comp_for | ZeroOrMore(comma + test) + Optional(comma).suppress())))
@@ -329,7 +330,7 @@ comparison = expr + ZeroOrMore(comp_op + expr)
 not_test = ZeroOrMore(Keyword("not")) + comparison
 and_test = not_test + ZeroOrMore(Keyword("and") + not_test)
 or_test = and_test + ZeroOrMore(Keyword("or") + and_test)
-test_item = ZeroOrMore(testlist_star_expr + Literal(":=")) + or_test
+test_item = or_test
 test_nocond = Forward()
 lambdef = parameters + arrow + test
 lambdef_nocond = parameters + arrow + test_nocond
@@ -393,7 +394,6 @@ funcdef = Keyword("def") + NAME + parameters + Optional(arrow + test) + colon + 
 decorated = decorators + (classdef | funcdef)
 
 compound_stmt = if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated
-testlist_star_expr = (test|star_expr) + ZeroOrMore(comma + (test | star_expr)) + Optional(comma).suppress()
 expr_stmt = testlist_star_expr + (augassign + (yield_expr | testlist) | ZeroOrMore(equals + (yield_expr | testlist_star_expr)))
 small_stmt = expr_stmt | del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt | assert_stmt
 simple_stmt = small_stmt + ZeroOrMore(semicolon + small_stmt) + Optional(semicolon).suppress() + NEWLINE
@@ -402,7 +402,7 @@ suite <<= simple_stmt | NEWLINE + INDENT + OneOrMore(stmt) + DEDENT
 
 single_input = NEWLINE | simple_stmt | compound_stmt + NEWLINE
 file_input = ZeroOrMore(NEWLINE | stmt)
-eval_input = testlist
+eval_input = testlist + Optional(comment)
 
 single_parser = STARTMARKER + single_input + ENDMARKER
 file_parser = STARTMARKER + file_input + ENDMARKER
@@ -410,15 +410,15 @@ eval_parser = STARTMARKER + eval_input + ENDMARKER
 
 def parse_single(inputstring):
     """Processes Console Input."""
-    return header + single_parser.parseString(preproc(inputstring))
+    return single_parser.parseString(preproc(inputstring))
 
 def parse_file(inputstring):
     """Processes File Input."""
-    return header + file_parser.parseString(preproc(inputstring))
+    return file_parser.parseString(preproc(inputstring))
 
 def parse_eval(inputstring):
     """Processes Eval Input."""
-    return header + eval_parser.parseString(preproc(inputstring.strip()))
+    return eval_parser.parseString(preproc(inputstring.strip()))
 
 if __name__ == "__main__":
     selfstr = open("parser.py", "rb").read()
