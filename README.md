@@ -18,11 +18,11 @@ CoconutScript is based on Python 3 syntax, but will compile to either Python 3 o
 	* strings: only `b` prefix is allowed, raw strings use `` ` ``
 	* functions: support alternative `f(x) = x` syntax
 	* lambda keyword: removed
+	* non-decimal integers: entered as integer`_`base
+	* decorators: support all types of expressions
+	* variable lists (for `global`, `nonlocal`, `del`): can be wrapped in parentheses
 	* backslash continuations: removed
 	* trailing whitespace: disallowed
-	* decorators: support all types of expressions
-	* variable lists: can be wrapped in parentheses
-	* non-decimal integers: entered as integer`_`base
 * New Built-Ins:
 	* right fold: `fold`
 	* zip with: `zipwith`
