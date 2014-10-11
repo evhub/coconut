@@ -329,7 +329,7 @@ comparison = expr + ZeroOrMore(comp_op + expr)
 not_test = ZeroOrMore(Keyword("not")) + comparison
 and_test = not_test + ZeroOrMore(Keyword("and") + not_test)
 or_test = and_test + ZeroOrMore(Keyword("or") + and_test)
-test_item = ZeroOrMore(NAME + Literal(":=")) + or_test
+test_item = ZeroOrMore(testlist_star_expr + Literal(":=")) + or_test
 test_nocond = Forward()
 lambdef = parameters + arrow + test
 lambdef_nocond = parameters + arrow + test_nocond
@@ -410,15 +410,15 @@ eval_parser = STARTMARKER + eval_input + ENDMARKER
 
 def parse_single(inputstring):
     """Processes Console Input."""
-    return single_parser.parseString(preproc(inputstring))
+    return header + single_parser.parseString(preproc(inputstring))
 
 def parse_file(inputstring):
     """Processes File Input."""
-    return file_parser.parseString(preproc(inputstring))
+    return header + file_parser.parseString(preproc(inputstring))
 
 def parse_eval(inputstring):
     """Processes Eval Input."""
-    return eval_parser.parseString(preproc(inputstring.strip()))
+    return header + eval_parser.parseString(preproc(inputstring.strip()))
 
 if __name__ == "__main__":
     selfstr = open("parser.py", "rb").read()
