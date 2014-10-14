@@ -28,164 +28,176 @@ openstr = "\u204b"
 closestr = "\u00b6"
 end = "\u2403"
 linebreak = "\n"
-tablen = 4
+white = " \t\f"
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # GRAMMAR:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-refs = []
+class pre(object):
+    """The CoconutScript Pre-Processor."""
+    downs="([{"
+    ups=")]}"
+    holds="'\"`"
+    raw="`"
+    comment="#"
+    endline="\n\r"
+    escape="\\"
+    indchar = None
 
-def wrapstr(text, raw, multiline):
-    """Wraps A String."""
-    refs.append((text, raw, multiline))
-    return '"'+str(len(refs)-1)+'"'
+    def __init__(self):
+        """Creates A New Pre-Processor."""
+        self.refs = []
 
-def wrapcomment(text):
-    """Wraps A String."""
-    refs.append(text)
-    return "#"+str(len(refs)-1)
+    def proc(inputstring):
+        """Performs Pre-Processing."""
+        return start + indproc(strproc(inputstring)) + end
 
-def strproc(inputstring, strs="'\"`", raw="`", comment="#", endline="\n\r", escape="\\"):
-    """Processes Strings."""
-    out = []
-    start = None
-    hold = None
-    x = 0
-    while x <= len(inputstring):
-        if x == len(inputstring):
-            c = linebreak
-        else:
-            c = inputstring[x]
-        if hold is not None:
-            if len(hold) == 1:
-                if c in endline:
-                    out.append(wrapcomment(hold[0])+c)
+    def wrapstr(self, text, raw, multiline):
+        """Wraps A String."""
+        self.refs.append((text, raw, multiline))
+        return '"'+str(len(refs)-1)+'"'
+
+    def wrapcomment(self, text):
+        """Wraps A String."""
+        self.refs.append(text)
+        return "#"+str(len(refs)-1)
+
+    def strproc(self, inputstring):
+        """Processes Strings."""
+        out = []
+        start = None
+        hold = None
+        x = 0
+        while x <= len(inputstring):
+            if x == len(inputstring):
+                c = linebreak
+            else:
+                c = inputstring[x]
+            if hold is not None:
+                if len(hold) == 1:
+                    if c in self.endline:
+                        out.append(self.wrapcomment(hold[0])+c)
+                        hold = None
+                    else:
+                        hold[0] += c
+                elif hold[2] is not None:
+                    if c == self.escape:
+                        hold[0] += hold[2]+c
+                        hold[2] = None
+                    elif c == hold[1][0]:
+                        hold[2] += c
+                    elif len(hold[2]) > len(hold[1]):
+                        raise ParseException("Invalid number of string closes in char #"+x)
+                    elif hold[2] == hold[1]:
+                        out.append(self.wrapstr(hold[0], hold[1][0] in self.raw, True))
+                        hold = None
+                        x -= 1
+                    else:
+                        hold[0] += hold[2]+c
+                        hold[2] = None
+                elif hold[0].endswith(self.escape):
+                    hold[0] += c
+                elif c == hold[1]:
+                    out.append(self.wrapstr(hold[0], hold[1] in self.raw, False))
                     hold = None
+                elif c == hold[1][0]:
+                    hold[2] = c
                 else:
                     hold[0] += c
-            elif hold[2] is not None:
-                if c == escape:
-                    hold[0] += hold[2]+c
-                    hold[2] = None
-                elif c == hold[1][0]:
-                    hold[2] += c
-                elif len(hold[2]) > len(hold[1]):
-                    raise ParseException("Invalid number of string closes in char #"+x)
-                elif hold[2] == hold[1]:
-                    out.append(wrapstr(hold[0], hold[1][0] in raw, True))
-                    hold = None
+            elif start is not None:
+                if c == start[0]:
+                    start += c
+                elif len(start) == 1:
+                    hold = [c, start, None]
+                    start = None
+                elif len(start) == 2:
+                    out.append(self.wrapstr("", False, False))
+                    start = None
                     x -= 1
+                elif len(start) == 3:
+                    hold = [c, start, None]
+                    start = None
                 else:
-                    hold[0] += hold[2]+c
-                    hold[2] = None
-            elif hold[0].endswith(escape):
-                hold[0] += c
-            elif c == hold[1]:
-                out.append(wrapstr(hold[0], hold[1] in raw, False))
-                hold = None
-            elif c == hold[1][0]:
-                hold[2] = c
+                    raise ParseException("Invalid number of string starts in char #"+x)
+            elif c in self.comment:
+                hold = [""]
+            elif c in self.holds:
+                start = c
             else:
-                hold[0] += c
-        elif start is not None:
-            if c == start[0]:
-                start += c
-            elif len(start) == 1:
-                hold = [c, start, None]
-                start = None
-            elif len(start) == 2:
-                out.append(wrapstr("", False, False))
-                start = None
-                x -= 1
-            elif len(start) == 3:
-                hold = [c, start, None]
-                start = None
+                out.append(c)
+            x += 1
+        if hold is not None or start is not None:
+            raise ParseException("Unclosed string in char #"+x)
+        return "".join(out)
+
+    def leading(self, inputstring):
+        """Counts Leading Whitespace."""
+        count = 0
+        for c in inputstring:
+            if c not in white:
+                break
+            elif self.indchar is None:
+                self.indchar = c
+            elif self.indchar != c:
+                raise ParseException("Illegal mixing of tabs and spaces in line "+inputstring)
+            count += 1
+        return count
+
+    def change(self, inputstring):
+        """Determines The Parenthetical Change Of Level."""
+        count = 0
+        hold = None
+        for c in inputstring:
+            if hold:
+                if c == hold:
+                    hold = None
+            elif c in self.comment:
+                break
+            elif c in self.holds:
+                hold = c
+            elif c in self.downs:
+                count -= 1
+            elif c in self.ups:
+                count += 1
+        return count
+
+    def indproc(self, inputstring):
+        """Processes Indentation."""
+        lines = inputstring.splitlines()
+        new = []
+        levels = []
+        count = 0
+        for x in xrange(0, len(lines)):
+            if lines[x] and lines[x][-1] in white:
+                raise ParseException("Illegal trailing whitespace in line "+lines[x]+" (#"+str(x)+")")
+            elif count < 0:
+                new[-1] += lines[x]
             else:
-                raise ParseException("Invalid number of string starts in char #"+x)
-        elif c in comment:
-            hold = [""]
-        elif c in strs:
-            start = c
-        else:
-            out.append(c)
-        x += 1
-    if hold is not None or start is not None:
-        raise ParseException("Unclosed string in char #"+x)
-    return "".join(out)
+                check = self.leading(lines[x])
+                if not x:
+                    if check:
+                        raise ParseException("Illegal initial indent in line "+lines[x]+" (#"+str(x)+")")
+                    else:
+                        current = 0
+                elif check > current:
+                    levels.append(current)
+                    current = check
+                    lines[x] = openstr+lines[x]
+                elif check in levels:
+                    point = levels.index(check)+1
+                    new[-1] += closestr*(len(levels[point:])+1)
+                    levels = levels[:point]
+                    current = levels.pop()
+                elif current != check:
+                    raise ParseException("Illegal dedent to unused indentation level in line "+lines[x]+" (#"+str(x)+")")
+                new.append(lines[x])
+            count += self.change(lines[x])
+        if new:
+            new[-1] += closestr*(len(levels)-1)
+        return linebreak.join(new)
 
-def leading(inputstring):
-    """Counts Leading Whitespace."""
-    count = 0
-    for c in inputstring:
-        if c == " ":
-            count += 1
-        elif c == "\t":
-            count += tablen
-        else:
-            break
-    return count
-
-def change(inputstring, downs="([{", ups=")]}", holds="'\"`", comment="#"):
-    """Determines The Parenthetical Change Of Level."""
-    count = 0
-    hold = None
-    for c in inputstring:
-        if hold:
-            if c == hold:
-                hold = None
-        elif c in comment:
-            break
-        elif c in holds:
-            hold = c
-        elif c in downs:
-            count -= 1
-        elif c in ups:
-            count += 1
-    return count
-
-def indproc(inputstring):
-    """Processes Indentation."""
-    lines = inputstring.splitlines()
-    new = []
-    levels = []
-    count = 0
-    for x in xrange(0, len(lines)):
-        if lines[x] and lines[x][-1] in " \t":
-            raise ParseException("Illegal trailing whitespace in line "+lines[x]+" (#"+str(x)+")")
-        elif count < 0:
-            new[-1] += lines[x]
-        else:
-            check = leading(lines[x])
-            if not x:
-                if check:
-                    raise ParseException("Illegal initial indent in line "+lines[x]+" (#"+str(x)+")")
-                else:
-                    current = 0
-            elif check > current:
-                levels.append(current)
-                current = check
-                lines[x] = openstr+lines[x]
-            elif check in levels:
-                point = levels.index(check)+1
-                new[-1] += closestr*(len(levels[point:])+1)
-                levels = levels[:point]
-                current = levels.pop()
-            elif current != check:
-                raise ParseException("Illegal dedent to unused indentation level in line "+lines[x]+" (#"+str(x)+")")
-            new.append(lines[x])
-        count += change(lines[x])
-    if new:
-        new[-1] += closestr*(len(levels)-1)
-    return linebreak.join(new)
-
-def preproc(inputstring):
-    """Performs Pre-Processing."""
-    global refs
-    refs = []
-    return start + indproc(strproc(inputstring)) + end
-
-ParserElement.setDefaultWhitespaceChars(" \t")
+ParserElement.setDefaultWhitespaceChars(white)
 
 comma = Literal(",")
 dot = Literal(".")
@@ -233,7 +245,8 @@ numitem = basenum | Combine(basenum + sci_e + integer)
 
 NUMBER = numitem | Combine(anyint + underscore + integer)
 
-STRING = Combine(Optional(Literal("b")) + Literal('"') + integer + Literal('"'))
+bit_b = Literal("b") | Literal("B")
+STRING = Combine(Optional(bit_b) + Literal('"') + integer + Literal('"'))
 comment = Combine(pound + integer)
 NEWLINE = Optional(comment) + Literal(linebreak)
 STARTMARKER = Literal(start).suppress()
@@ -366,7 +379,7 @@ dotted_as_name = dotted_name + Optional(Keyword("as") + NAME)
 import_as_name = NAME + Optional(Keyword("as") + NAME)
 import_as_names = import_as_name + ZeroOrMore(comma + import_as_name) + Optional(comma).suppress()
 dotted_as_names = dotted_as_name + ZeroOrMore(comma + dotted_as_name) + Optional(comma).suppress()
-import_name = Keyword("import") + dotted_as_names
+import_name = Keyword("import") + parenwrap(dotted_as_names)
 import_from = (Keyword("from") + (ZeroOrMore(dot) + dotted_name | OneOrMore(dot))
                + Keyword("import") + (star | parenwrap(import_as_names)))
 import_stmt = import_name | import_from
@@ -375,7 +388,7 @@ global_stmt = Keyword("global") + parenwrap(NAME + ZeroOrMore(comma + NAME) + Op
 nonlocal_stmt = Keyword("nonlocal") + parenwrap(NAME + ZeroOrMore(comma + NAME) + Optional(comma).suppress())
 del_stmt = Keyword("del") + parenwrap(NAME + ZeroOrMore(comma + NAME) + Optional(comma).suppress())
 with_item = test + Optional(Keyword("as") + NAME)
-assert_stmt = Keyword("assert") + test + Optional(comma + test)
+assert_stmt = Keyword("assert") + parenwrap(test + Optional(comma + test))
 if_stmt = Keyword("if") + test + colon + suite + ZeroOrMore(Keyword("elif") + test + colon + suite) + Optional(Keyword("else") + colon + suite)
 while_stmt = Keyword("while") + test + colon + suite + Optional(Keyword("else") + colon + suite)
 for_stmt = Keyword("for") + exprlist + Keyword("in") + testlist + colon + suite + Optional(Keyword("else") + colon + suite)
@@ -386,7 +399,7 @@ try_stmt = Keyword("try") + colon + suite + (((OneOrMore(except_clause + colon +
                                              + Optional(Keyword("else") + colon + suite)
                                              + Optional(Keyword("finally") + colon + suite)
                                              | Keyword("finally") + colon + suite)
-with_stmt = Keyword("with") + with_item + ZeroOrMore(comma + with_item) + colon + suite
+with_stmt = Keyword("with") + parenwrap(with_item + ZeroOrMore(comma + with_item)) + colon + suite
 
 decorator = at + test + NEWLINE
 decorators = OneOrMore(decorator)
@@ -410,16 +423,15 @@ eval_parser = STARTMARKER + eval_input + ENDMARKER
 
 def parse_single(inputstring):
     """Processes Console Input."""
-    return single_parser.parseString(preproc(inputstring))
+    return single_parser.parseString(pre().proc(inputstring))
 
 def parse_file(inputstring):
     """Processes File Input."""
-    return file_parser.parseString(preproc(inputstring))
+    return file_parser.parseString(pre().proc(inputstring))
 
 def parse_eval(inputstring):
     """Processes Eval Input."""
-    return eval_parser.parseString(preproc(inputstring.strip()))
+    return eval_parser.parseString(pre().proc(inputstring.strip()))
 
 if __name__ == "__main__":
-    selfstr = open("parser.py", "rb").read()
-    print(parse_file(selfstr))
+    print(parse_file(open(__file__, "rb").read()))

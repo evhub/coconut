@@ -19,7 +19,7 @@ CoconutScript is based on Python 3 syntax, but will compile to either Python 3 o
 	* lambda keyword: removed
 	* non-decimal integers: entered as integer`_`base
 	* decorators: support all types of expressions
-	* variable lists (for `global`, `nonlocal`, `del`): can be wrapped in parentheses
+	* all statement arguments: can be wrapped in parentheses
 	* backslash continuations: removed
 	* trailing whitespace: disallowed
 * New Built-Ins:
