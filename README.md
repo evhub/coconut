@@ -15,18 +15,19 @@ CoconutScript is based on Python 3 syntax, but will compile to either Python 3 o
 	* lambda: `->`
 * Changed syntax:
 	* strings: only `b` prefix is allowed, raw strings use `` `string` `` syntax
-	* functions: support alternative `f(x) = x` syntax
 	* lambda keyword: removed (use the operator instead)
 	* non-decimal integers: entered as integer`_`base
 	* decorators: support all types of expressions
 	* all statement arguments: can be wrapped in parentheses
 	* backslash continuations: removed
 	* trailing whitespace: disallowed
-* New Built-Ins:
+* New syntax:
+	* functions: support alternative `f(x) = x` syntax
+* New built-ins:
 	* right fold: `fold`
 	* zip with: `zipwith`
 	* tail recursion elimination: `recursive`
-* New Constructs (Planned):
+* New constructs (planned):
 	* operator [re]definition
 	* lazy evaluation
 	* pattern matching
