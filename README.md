@@ -5,24 +5,25 @@ CoconutScript is a modern, developer-friendly scripting language that compiles t
 
 CoconutScript is based on Python 3 syntax, but will compile to either Python 3 or Python 2. CoconutScript does make significant changes from Python 3 syntax, however. The major differences from Python 3 are:
 
-* Changed operators:
-	* unary negation: `!` (instead of `~`)
 * New operators:
 	* compose: `..` (in-place: `..=`)
 	* curry: `$`
 	* loop: `~` (in-place: `~=`)
 	* pipeline: `|>` (in-place: `=>`)
 	* lambda: `->`
+* Changed operators:
+	* unary negation: `!` (replaces `~`, only difference is it negates `bool`)
+* New syntax:
+	* infix function calling: uses `6 \mod\ 3` syntax
+	* function definition: alternative `f(x) = x` syntax
+	* non-decimal integers: alternative `10110_2` syntax
 * Changed syntax:
 	* strings: only `b` prefix is allowed, raw strings use `` `string` `` syntax
 	* lambda keyword: removed (use the operator instead)
-	* non-decimal integers: entered as integer`_`base
 	* decorators: support all types of expressions
 	* all statement arguments: can be wrapped in parentheses
 	* backslash continuations: removed
 	* trailing whitespace: disallowed
-* New syntax:
-	* functions: support alternative `f(x) = x` syntax
 * New built-ins:
 	* right fold: `fold`
 	* zip with: `zipwith`

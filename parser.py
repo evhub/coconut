@@ -237,13 +237,21 @@ NAME = Word(alphas, alphanums+"_")
 dotted_name = NAME + ZeroOrMore(dot + NAME)
 
 integer = Word(nums)
+binint = Word("01")
+octint = Word("01234567")
+hexint = Word(hexnums)
 anyint = Word(nums, alphanums)
 
 basenum = integer | Combine(integer + dot + Optional(integer))
 sci_e = Literal("e") | Literal("E")
 numitem = basenum | Combine(basenum + sci_e + integer)
 
-NUMBER = numitem | Combine(anyint + underscore + integer)
+NUMBER = (numitem
+          | Combine(Literal("0b"), binint)
+          | Combine(Literal("0o"), octint)
+          | Combine(Literal("0x"), hexint)
+          | Combine(anyint + underscore + integer)
+          )
 
 bit_b = Literal("b") | Literal("B")
 STRING = Combine(Optional(bit_b) + Literal('"') + integer + Literal('"'))
@@ -323,8 +331,9 @@ subscript = test | Optional(test) + colon + Optional(test) + Optional(sliceop)
 subscriptlist = subscript + ZeroOrMore(comma + subscript) + Optional(comma).suppress()
 trailer = Optional(dollar) + lparen + Optional(argslist) + rparen | lbrack + subscriptlist + rbrack | dot + NAME | dotdot + atom
 item = atom + ZeroOrMore(trailer)
+infix = item + ZeroOrMore(backslash + test + backslash + item) # Infix
 factor = Forward()
-power = item + Optional(dubstar + factor)
+power = infix + Optional(dubstar + factor)
 unary = plus | minus | bang
 factor <<= power | unary + factor
 mulop = star | slash | percent | dubslash
@@ -336,8 +345,8 @@ shift_expr = arith_expr + ZeroOrMore(shift + arith_expr)
 and_expr = shift_expr + ZeroOrMore(amp + shift_expr)
 xor_expr = and_expr + ZeroOrMore(caret + and_expr)
 or_expr = xor_expr + ZeroOrMore(bar + xor_expr)
-loop_expr = or_expr + ZeroOrMore(OneOrMore(tilde) + or_expr)
-pipe_expr = loop_expr + ZeroOrMore(pipeline + loop_expr)
+loop_expr = or_expr + ZeroOrMore(OneOrMore(tilde) + or_expr) # Loop
+pipe_expr = loop_expr + ZeroOrMore(pipeline + loop_expr) # Pipe
 expr <<= pipe_expr
 comparison = expr + ZeroOrMore(comp_op + expr)
 not_test = ZeroOrMore(Keyword("not")) + comparison
