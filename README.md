@@ -14,7 +14,7 @@ CoconutScript is based on Python 3 syntax, but will compile to either Python 3 o
 	* pipeline: `|>` (in-place: `=>`)
 	* lambda: `->`
 * Changed syntax:
-	* strings: only `b` prefix is allowed, raw strings use `` ` ``
+	* strings: only `b` prefix is allowed, raw strings use `` `string` `` syntax
 	* functions: support alternative `f(x) = x` syntax
 	* lambda keyword: removed (use the operator instead)
 	* non-decimal integers: entered as integer`_`base
