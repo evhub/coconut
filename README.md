@@ -14,8 +14,9 @@ CoconutScript is based on Python 3 syntax, but will compile to either Python 3 o
 * Changed operators:
 	* unary negation: `!` (replaces `~`, only difference is it negates `bool`)
 * New syntax:
-	* infix function calling: uses `6 \mod\ 3` syntax
+	* infix function calling: new `6 \mod\ 3` syntax
 	* function definition: alternative `f(x) = x` syntax
+	* unicode symbols: supports unicode alternatives for most symbols
 	* non-decimal integers: alternative `10110_2` syntax
 * Changed syntax:
 	* strings: only `b` prefix is allowed, raw strings use `` `string` `` syntax
