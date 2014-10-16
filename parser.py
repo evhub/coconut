@@ -245,7 +245,7 @@ div_slash = slash | Literal("\xf7")
 div_dubslash = dubslash | Combine(Literal("\xf7"), slash)
 mod_percent = percent
 
-NAME = Word(alphas+"_", alphanums+"_")
+NAME = Regex(r"(?![0-9])\w")
 dotted_name = NAME + ZeroOrMore(dot + NAME)
 
 integer = Word(nums)
@@ -255,17 +255,17 @@ hexint = Word(hexnums)
 anyint = Word(nums, alphanums)
 
 basenum = integer | Combine(integer + dot + Optional(integer))
-sci_e = Literal("e") | Literal("E") | Literal("\u23e8")
+sci_e = CaselessLiteral("e") | Literal("\u23e8")
 numitem = basenum | Combine(basenum + sci_e + integer)
 
 NUMBER = (numitem
-          | Combine(Literal("0b"), binint)
-          | Combine(Literal("0o"), octint)
-          | Combine(Literal("0x"), hexint)
+          | Combine(CaselessLiteral("0b"), binint)
+          | Combine(CaselessLiteral("0o"), octint)
+          | Combine(CaselessLiteral("0x"), hexint)
           | Combine(anyint + underscore + integer)
           )
 
-bit_b = Literal("b") | Literal("B")
+bit_b = CaselessLiteral("b")
 STRING = Combine(Optional(bit_b) + Literal('"') + integer + Literal('"'))
 comment = Combine(pound + integer)
 NEWLINE = Optional(comment) + Literal(linebreak)
