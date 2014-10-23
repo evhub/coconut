@@ -22,6 +22,9 @@ header = """#!/usr/bin/env python
 
 # CoconutScript Header:
 
+class __coconut__(object):
+    pass
+
 # Compiled CoconutScript:
 
 """
@@ -40,13 +43,14 @@ refs = None
 
 class pre(object):
     """The CoconutScript Pre-Processor."""
-    downs="([{"
-    ups=")]}"
-    holds="'\"`"
-    raw="`"
-    comment="#"
-    endline="\n\r"
-    escape="\\"
+    verbosity = 10
+    downs = "([{"
+    ups = ")]}"
+    holds = "'\"`"
+    raw = "`"
+    comment = "#"
+    endline = "\n\r"
+    escape = "\\"
     indchar = None
 
     def __init__(self):
@@ -68,6 +72,16 @@ class pre(object):
         """Wraps A String."""
         self.refs.append(text)
         return "#"+str(len(refs)-1)
+
+    def getpart(self, iterstring, point):
+        """Gets A Part Of A String For An Error Message."""
+        out = ""
+        i = point-self.verbosity
+        while i < point+self.verbosity:
+            if i and i < len(iterstring):
+                out += iterstring[i]
+            i += 1
+        return "..."+repr(out)+"..."
 
     def strproc(self, inputstring):
         """Processes Strings."""
@@ -94,7 +108,7 @@ class pre(object):
                     elif c == hold[1][0]:
                         hold[2] += c
                     elif len(hold[2]) > len(hold[1]):
-                        raise ParseFatalException("Invalid number of string closes in char #"+x)
+                        raise ParseFatalException("Invalid number of string closes in "+self.getpart(inputstring, x))
                     elif hold[2] == hold[1]:
                         out.append(self.wrapstr(hold[0], hold[1][0] in self.raw, True))
                         hold = None
@@ -125,7 +139,7 @@ class pre(object):
                     hold = [c, found, None]
                     found = None
                 else:
-                    raise ParseFatalException("Invalid number of string starts in char #"+x)
+                    raise ParseFatalException("Invalid number of string starts in "+self.getpart(inputstring, x))
             elif c in self.comment:
                 hold = [""]
             elif c in self.holds:
@@ -134,7 +148,7 @@ class pre(object):
                 out.append(c)
             x += 1
         if hold is not None or found is not None:
-            raise ParseFatalException("Unclosed string in char #"+x)
+            raise ParseFatalException("Unclosed string in "+self.getpart(inputstring, x))
         return "".join(out)
 
     def leading(self, inputstring):
@@ -146,7 +160,7 @@ class pre(object):
             elif self.indchar is None:
                 self.indchar = c
             elif self.indchar != c:
-                raise ParseFatalException("Illegal mixing of tabs and spaces in line "+inputstring)
+                raise ParseFatalException("Illegal mixing of tabs and spaces in "+repr(inputstring))
             count += 1
         return count
 
@@ -176,14 +190,14 @@ class pre(object):
         count = 0
         for x in xrange(0, len(lines)):
             if lines[x] and lines[x][-1] in white:
-                raise ParseFatalException("Illegal trailing whitespace in line "+lines[x]+" (#"+str(x)+")")
+                raise ParseFatalException("Illegal trailing whitespace in "+repr(lines[x]))
             elif count < 0:
                 new[-1] += lines[x]
             else:
                 check = self.leading(lines[x])
                 if not x:
                     if check:
-                        raise ParseFatalException("Illegal initial indent in line "+lines[x]+" (#"+str(x)+")")
+                        raise ParseFatalException("Illegal initial indent in "+repr(lines[x]))
                     else:
                         current = 0
                 elif check > current:
@@ -196,7 +210,7 @@ class pre(object):
                     levels = levels[:point]
                     current = levels.pop()
                 elif current != check:
-                    raise ParseFatalException("Illegal dedent to unused indentation level in line "+lines[x]+" (#"+str(x)+")")
+                    raise ParseFatalException("Illegal dedent to unused indentation level in "+repr(lines[x]))
                 new.append(lines[x])
             count += self.change(lines[x])
         new.append(closestr*(len(levels)-1))
@@ -258,6 +272,7 @@ neg_minus = fixto(minus | Literal("\xaf"), "-")
 sub_minus = fixto(minus | Literal("\u2212"), "-")
 div_slash = fixto(slash | Literal("\xf7"), "/")
 div_dubslash = fixto(dubslash | Combine(Literal("\xf7"), slash), "//")
+inv_bang = fixto(bang, "~")
 mod_percent = percent
 
 NAME = Regex(r"(?![0-9])\w")
@@ -376,7 +391,12 @@ expr = Forward()
 comp_for = Forward()
 
 def itemlist(item, sep=comma):
+    """Creates A List Containing An Item."""
     return addspace(ZeroOrMore(condense(item + sep)) + item + Optional(sep).suppress())
+
+def parenwrap(item):
+    """Wraps An Item In Optional Parentheses."""
+    return condense(lparen.suppress() + item + rparen.suppress() | item)
 
 tfpdef = condense(NAME + Optional(colon + test))
 default = Optional(condense(equals + test))
@@ -424,20 +444,54 @@ trailer = condense(Optional(dollar) + lparen + Optional(argslist) + rparen | lbr
 item = condense(atom + ZeroOrMore(trailer))
 factor = Forward()
 power = condense(item + Optional(exp_dubstar + factor))
-unary = plus | neg_minus | bang
-factor <<= condense(unary + factor) | power
+unary = plus | neg_minus
+
+def inv_proc(tokens):
+    """Processes Inversions."""
+    if len(tokens) == 1:
+        return "__coconut__.inv("+tokens[0]+")"
+    else:
+        raise ParseFatalException("Invalid inversion tokens: "+repr(tokens))
+factor <<= condense(unary + factor) | (inv_bang.suppress() + factor).setParseAction(inv_proc) | power
+
 mulop = mul_star | div_slash | div_dubslash | mod_percent
 term = addspace(factor + ZeroOrMore(mulop + factor))
 arith = plus | sub_minus
 arith_expr = addspace(term + ZeroOrMore(arith + term))
-infix_expr = addspace(arith_expr + ZeroOrMore(condense(backslash + test + backslash) + arith_expr)) # Infix
-loop_expr = addspace(ZeroOrMore(infix_expr + OneOrMore(tilde)) + infix_expr) # Loop
+
+def infix_proc(tokens):
+    """Processes Infix Calls."""
+    if len(tokens) == 1:
+        return tokens[0]
+    else:
+        return "__coconut__.infix("+infix_proc(tokens[:-2])+", "+tokens[-2]+", "+tokens[-1]+")"
+infix_expr = (arith_expr + ZeroOrMore(backslash.suppress() + test + backslash.suppress() + arith_expr)).setParseAction(infix_proc)
+
+def loop_proc(tokens):
+    """Processes Loop Calls."""
+    if len(tokens) == 1:
+        return tokens[0]
+    else:
+        out = "__coconut__.loop("+tokens[-1]
+        for loop_list, loop_step in tokens[:-1]:
+            out += ", ("+loop_list+", "+loop_step+")"
+        return out+")"
+loop_expr = (ZeroOrMore(Group(infix_expr + OneOrMore(tilde))) + infix_expr).setParseAction(loop_proc)
+
 shift = lshift | rshift
 shift_expr = addspace(loop_expr + ZeroOrMore(shift + loop_expr))
 and_expr = addspace(shift_expr + ZeroOrMore(amp + shift_expr))
 xor_expr = addspace(and_expr + ZeroOrMore(caret + and_expr))
 or_expr = addspace(xor_expr + ZeroOrMore(bar + xor_expr))
-pipe_expr = addspace(or_expr + ZeroOrMore(pipeline + or_expr)) # Pipe
+
+def pipe_proc(tokens):
+    """Processes Pipe Calls."""
+    if len(tokens) == 1:
+        return tokens[0]
+    else:
+        return "__coconut__.pipe("+", ".join(tokens)+")"
+pipe_expr = (or_expr + ZeroOrMore(pipeline.suppress() + or_expr)).setParseAction(pipe_proc)
+
 expr <<= pipe_expr
 comparison = addspace(expr + ZeroOrMore(comp_op + expr))
 not_test = addspace(ZeroOrMore(Keyword("not")) + comparison)
@@ -445,10 +499,18 @@ and_test = addspace(not_test + ZeroOrMore(Keyword("and") + not_test))
 or_test = addspace(and_test + ZeroOrMore(Keyword("or") + and_test))
 test_item = or_test
 test_nocond = Forward()
-lambdef = addspace(parameters + arrow + test) # Lambda
+
+def lambda_proc(tokens):
+    """Processes Lambda Calls."""
+    if len(tokens) == 2:
+        return "lambda "+tokens[0]+": "+tokens[1]
+    else:
+        raise ParseFatalException("Invalid lambda tokens: "+repr(tokens))
+lambdef = (lparen.suppress() + argslist + rparen.suppress() + arrow.suppress() + test).setParseAction(lambda_proc)
+
 lambdef_nocond = addspace(parameters + arrow + test_nocond)
-test <<= addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test)) | lambdef
-test_nocond <<= test_item | lambdef_nocond
+test <<= lambdef | addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test))
+test_nocond <<= lambdef_nocond | test_item
 exprlist = itemlist(star_expr | expr)
 
 suite = Forward()
@@ -481,10 +543,6 @@ return_stmt = addspace(Keyword("return") + Optional(testlist))
 yield_stmt = yield_expr
 raise_stmt = addspace(Keyword("raise") + Optional(test + Optional(Keyword("from") + test)))
 flow_stmt = break_stmt | continue_stmt | return_stmt | raise_stmt | yield_stmt
-
-def parenwrap(item):
-    """Wraps An Item In Optional Parentheses."""
-    return condense(lparen.suppress() + item + rparen.suppress() | item)
 
 dotted_as_name = addspace(dotted_name + Optional(Keyword("as") + NAME))
 import_as_name = addspace(NAME + Optional(Keyword("as") + NAME))
@@ -545,7 +603,7 @@ def parsewith(parser, item):
 def postproc(tokens):
     """Performs Post-Processing."""
     if len(tokens) == 1:
-        return tokens[0].strip()+"\n"
+        return header+tokens[0].strip()+"\n"
     else:
         raise ParseFatalException("Multiple tokens leftover: "+repr(tokens))
 
