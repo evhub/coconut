@@ -208,6 +208,14 @@ def fixto(item, output):
     """Forces An Item To Result In A Specific Output."""
     return item.setParseAction(replaceWith(output))
 
+def addspace(item):
+    """Condenses And Adds Space To The Tokenized Output."""
+    return item.setParseAction(lambda tokens: " ".join(tokens))
+
+def condense(item):
+    """Condenses The Tokenized Output."""
+    return item.setParseAction(lambda tokens: "".join(tokens))
+
 comma = Literal(",")
 dot = Literal(".")
 star = Literal("*")
@@ -253,7 +261,7 @@ div_dubslash = fixto(dubslash | Combine(Literal("\xf7"), slash), "//")
 mod_percent = percent
 
 NAME = Regex(r"(?![0-9])\w")
-dotted_name = NAME + ZeroOrMore(dot + NAME)
+dotted_name = condense(NAME + ZeroOrMore(dot + NAME))
 
 integer = Word(nums)
 binint = Word("01")
@@ -319,7 +327,7 @@ string_ref = Combine(Literal('"').suppress() + integer + Literal('"').suppress()
 comment = Combine(pound.suppress() + integer).setParseAction(comment_repl)
 bit_b = CaselessLiteral("b")
 STRING = Combine(Optional(bit_b) + string_ref)
-NEWLINE = Optional(comment) + Literal(linebreak)
+NEWLINE = Combine(Optional(comment) + Literal(linebreak))
 STARTMARKER = Literal(start).suppress()
 ENDMARKER = Literal(end).suppress()
 INDENT = Literal(openstr)
@@ -357,9 +365,9 @@ comp_op = (Literal("<")
                Combine(bang, equals)
                | Literal("\u2260"), "!="
                )
-           | Keyword("not") + Keyword("in")
+           | addspace(Keyword("not") + Keyword("in"))
            | Keyword("in")
-           | Keyword("is") + Keyword("not")
+           | addspace(Keyword("is") + Keyword("not"))
            | Keyword("is")
            )
 
@@ -367,30 +375,41 @@ test = Forward()
 expr = Forward()
 comp_for = Forward()
 
-tfpdef = NAME + Optional(colon + test)
-default = Optional(equals + test)
-argslist = (
-    tfpdef + default + ZeroOrMore(comma + tfpdef + default)
-    + Optional(comma + Optional(star + Optional(tfpdef)
-    + ZeroOrMore(comma + tfpdef + default) + Optional(comma
-    + dubstar + tfpdef) | dubstar + tfpdef))
-    | star + Optional(tfpdef) + ZeroOrMore(comma + tfpdef + default)
-    + Optional(comma + dubstar + tfpdef) | dubstar + tfpdef
-    )
-parameters = lparen + argslist + rparen
+def itemlist(item, sep=comma):
+    return addspace(ZeroOrMore(condense(item + sep)) + item + Optional(sep).suppress())
 
-testlist = test + ZeroOrMore(comma + test) + Optional(comma).suppress()
-yield_arg = Keyword("from") + test | testlist
-yield_expr = Keyword("yield") + Optional(yield_arg)
-star_expr = star + expr
-testlist_star_expr = (test | star_expr) + ZeroOrMore(comma + (test | star_expr)) + Optional(comma).suppress()
-testlist_comp = (test | star_expr) + (comp_for | ZeroOrMore(comma + (test | star_expr)) + Optional(comma).suppress())
-dictorsetmaker = ((test + colon + test + (comp_for | ZeroOrMore(comma + test + colon + test) + Optional(comma).suppress()))
-                  | (test + (comp_for | ZeroOrMore(comma + test) + Optional(comma).suppress())))
-func_atom = NAME | lparen + Optional(yield_expr | testlist_comp) + rparen
+tfpdef = condense(NAME + Optional(colon + test))
+default = Optional(condense(equals + test))
+argslist = addspace((
+    ZeroOrMore(condense(tfpdef + default + comma)) + condense(tfpdef + default)
+     | OneOrMore(condense(tfpdef + default + comma)) + (
+         condense(star + tfpdef)
+         | condense(star + Optional(tfpdef) + comma) + (
+             ZeroOrMore(condense(tfpdef + default + comma)) + (
+                 condense(tfpdef + default)
+                 | condense(dubstar + tfpdef)
+                 )
+             )
+         )
+    ) + Optional(comma).suppress())
+parameters = condense(lparen + argslist + rparen)
+
+testlist = itemlist(test)
+yield_arg = addspace(Keyword("from") + test) | testlist
+yield_expr = addspace(Keyword("yield") + Optional(yield_arg))
+star_expr = condense(star + expr)
+test_star_expr = test | star_expr
+testlist_star_expr = itemlist(test_star_expr)
+testlist_comp = addspace(test_star_expr + comp_for) | testlist_star_expr
+dictorsetmaker = addspace(condense(test + colon) + test + comp_for
+                  | itemlist(condense(test + colon) + test)
+                  | test + comp_for
+                  | testlist
+                  )
+func_atom = NAME | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
 atom = (func_atom
-        | lbrack + Optional(testlist_comp) + rbrack
-        | lbrace + Optional(dictorsetmaker) + rbrace
+        | condense(lbrack + Optional(testlist_comp) + rbrack)
+        | condense(lbrace + Optional(dictorsetmaker) + rbrace)
         | ellipses
         | Keyword("None")
         | Keyword("True")
@@ -398,125 +417,149 @@ atom = (func_atom
         | NUMBER
         | OneOrMore(STRING)
         )
-sliceop = colon + Optional(test)
-subscript = test | Optional(test) + colon + Optional(test) + Optional(sliceop)
-subscriptlist = subscript + ZeroOrMore(comma + subscript) + Optional(comma).suppress()
-trailer = Optional(dollar) + lparen + Optional(argslist) + rparen | lbrack + subscriptlist + rbrack | dotdot + func_atom | dot + NAME
-item = atom + ZeroOrMore(trailer)
+sliceop = condense(colon + Optional(test))
+subscript = test | condense(Optional(test) + sliceop + Optional(sliceop))
+subscriptlist = itemlist(subscript)
+trailer = condense(Optional(dollar) + lparen + Optional(argslist) + rparen | lbrack + subscriptlist + rbrack | dotdot + func_atom | dot + NAME)
+item = condense(atom + ZeroOrMore(trailer))
 factor = Forward()
-power = item + Optional(exp_dubstar + factor)
+power = condense(item + Optional(exp_dubstar + factor))
 unary = plus | neg_minus | bang
-factor <<= unary + factor | power
+factor <<= condense(unary + factor) | power
 mulop = mul_star | div_slash | div_dubslash | mod_percent
-term = factor + ZeroOrMore(mulop + factor)
+term = addspace(factor + ZeroOrMore(mulop + factor))
 arith = plus | sub_minus
-arith_expr = term + ZeroOrMore(arith + term)
-infix_expr = arith_expr + ZeroOrMore(backslash + test + backslash + arith_expr) # Infix
-loop_expr = ZeroOrMore(infix_expr + OneOrMore(tilde)) + infix_expr # Loop
+arith_expr = addspace(term + ZeroOrMore(arith + term))
+infix_expr = addspace(arith_expr + ZeroOrMore(condense(backslash + test + backslash) + arith_expr)) # Infix
+loop_expr = addspace(ZeroOrMore(infix_expr + OneOrMore(tilde)) + infix_expr) # Loop
 shift = lshift | rshift
-shift_expr = loop_expr + ZeroOrMore(shift + loop_expr)
-and_expr = shift_expr + ZeroOrMore(amp + shift_expr)
-xor_expr = and_expr + ZeroOrMore(caret + and_expr)
-or_expr = xor_expr + ZeroOrMore(bar + xor_expr)
-pipe_expr = or_expr + ZeroOrMore(pipeline + or_expr) # Pipe
+shift_expr = addspace(loop_expr + ZeroOrMore(shift + loop_expr))
+and_expr = addspace(shift_expr + ZeroOrMore(amp + shift_expr))
+xor_expr = addspace(and_expr + ZeroOrMore(caret + and_expr))
+or_expr = addspace(xor_expr + ZeroOrMore(bar + xor_expr))
+pipe_expr = addspace(or_expr + ZeroOrMore(pipeline + or_expr)) # Pipe
 expr <<= pipe_expr
-comparison = expr + ZeroOrMore(comp_op + expr)
-not_test = ZeroOrMore(Keyword("not")) + comparison
-and_test = not_test + ZeroOrMore(Keyword("and") + not_test)
-or_test = and_test + ZeroOrMore(Keyword("or") + and_test)
+comparison = addspace(expr + ZeroOrMore(comp_op + expr))
+not_test = addspace(ZeroOrMore(Keyword("not")) + comparison)
+and_test = addspace(not_test + ZeroOrMore(Keyword("and") + not_test))
+or_test = addspace(and_test + ZeroOrMore(Keyword("or") + and_test))
 test_item = or_test
 test_nocond = Forward()
-lambdef = parameters + arrow + test
-lambdef_nocond = parameters + arrow + test_nocond
-test <<= test_item + Optional(Keyword("if") + test_item + Keyword("else") + test) | lambdef
+lambdef = addspace(parameters + arrow + test) # Lambda
+lambdef_nocond = addspace(parameters + arrow + test_nocond)
+test <<= addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test)) | lambdef
 test_nocond <<= test_item | lambdef_nocond
-exprlist = (star_expr | expr) + ZeroOrMore(comma + (star_expr | expr)) + Optional(comma).suppress()
+exprlist = itemlist(star_expr | expr)
 
 suite = Forward()
 
-argument = NAME + equals + test | NAME + Optional(comp_for)
-arglist = ZeroOrMore(argument + comma) + ( dubstar + test
-                                          | star + test + ZeroOrMore(comma + argument) + Optional(comma + dubstar + test)
-                                          | argument + Optional(comma))
-classdef = Keyword("class") + NAME + Optional(lparen + Optional(arglist) + rparen) + colon + suite
+argument = condense(NAME + equals + test) | addspace(NAME + Optional(comp_for))
+arglist = addspace(
+    ZeroOrMore(condense(argument + comma))
+    + (
+        condense(dubstar + test)
+        | star + condense(test + comma) + (
+            OneOrMore(condense(argument + comma)) + (
+                argument + Optional(comma).suppress()
+                | condense(dubstar + test)
+                )
+            )
+        | star + test + Optional(comma).suppress()
+        | argument + Optional(comma).suppress()
+        )
+    )
+classdef = condense(addspace(Keyword("class") + condense(NAME + Optional(lparen + Optional(arglist) + rparen) + colon)) + suite)
 comp_iter = Forward()
-comp_for <<= Keyword("for") + exprlist + Keyword("in") + test_item + Optional(comp_iter)
-comp_if = Keyword("if") + test_nocond + Optional(comp_iter)
+comp_for <<= addspace(Keyword("for") + exprlist + Keyword("in") + test_item + Optional(comp_iter))
+comp_if = addspace(Keyword("if") + test_nocond + Optional(comp_iter))
 comp_iter <<= comp_for | comp_if
 
 pass_stmt = Keyword("pass")
 break_stmt = Keyword("break")
 continue_stmt = Keyword("continue")
-return_stmt = Keyword("return") + Optional(testlist)
+return_stmt = addspace(Keyword("return") + Optional(testlist))
 yield_stmt = yield_expr
-raise_stmt = Keyword("raise") + Optional(test + Optional(Keyword("from") + test))
+raise_stmt = addspace(Keyword("raise") + Optional(test + Optional(Keyword("from") + test)))
 flow_stmt = break_stmt | continue_stmt | return_stmt | raise_stmt | yield_stmt
 
 def parenwrap(item):
     """Wraps An Item In Optional Parentheses."""
-    return lparen.suppress() + item + rparen.suppress() | item
+    return condense(lparen.suppress() + item + rparen.suppress() | item)
 
-dotted_as_name = dotted_name + Optional(Keyword("as") + NAME)
-import_as_name = NAME + Optional(Keyword("as") + NAME)
-import_as_names = import_as_name + ZeroOrMore(comma + import_as_name) + Optional(comma).suppress()
-dotted_as_names = dotted_as_name + ZeroOrMore(comma + dotted_as_name) + Optional(comma).suppress()
-import_name = Keyword("import") + parenwrap(dotted_as_names)
-import_from = (Keyword("from") + (ZeroOrMore(dot) + dotted_name | OneOrMore(dot))
+dotted_as_name = addspace(dotted_name + Optional(Keyword("as") + NAME))
+import_as_name = addspace(NAME + Optional(Keyword("as") + NAME))
+import_as_names = itemlist(import_as_name)
+dotted_as_names = itemlist(dotted_as_name)
+import_name = addspace(Keyword("import") + parenwrap(dotted_as_names))
+import_from = addspace(Keyword("from") + condense(ZeroOrMore(dot) + dotted_name | OneOrMore(dot))
                + Keyword("import") + (star | parenwrap(import_as_names)))
 import_stmt = import_name | import_from
 
-global_stmt = Keyword("global") + parenwrap(NAME + ZeroOrMore(comma + NAME) + Optional(comma).suppress())
-nonlocal_stmt = Keyword("nonlocal") + parenwrap(NAME + ZeroOrMore(comma + NAME) + Optional(comma).suppress())
-del_stmt = Keyword("del") + parenwrap(NAME + ZeroOrMore(comma + NAME) + Optional(comma).suppress())
-with_item = test + Optional(Keyword("as") + NAME)
-assert_stmt = Keyword("assert") + parenwrap(test + Optional(comma + test))
-if_stmt = Keyword("if") + test + colon + suite + ZeroOrMore(Keyword("elif") + test + colon + suite) + Optional(Keyword("else") + colon + suite)
-while_stmt = Keyword("while") + test + colon + suite + Optional(Keyword("else") + colon + suite)
-for_stmt = Keyword("for") + exprlist + Keyword("in") + testlist + colon + suite + Optional(Keyword("else") + colon + suite)
-except_clause = Keyword("except") + test + Optional(Keyword("as") + NAME)
-try_stmt = Keyword("try") + colon + suite + (((OneOrMore(except_clause + colon + suite)
-                                             + Optional(Keyword("except") + colon + suite))
-                                             | Keyword("except") + colon + suite)
-                                             + Optional(Keyword("else") + colon + suite)
-                                             + Optional(Keyword("finally") + colon + suite)
-                                             | Keyword("finally") + colon + suite)
-with_stmt = Keyword("with") + parenwrap(with_item + ZeroOrMore(comma + with_item)) + colon + suite
+namelist = parenwrap(itemlist(NAME))
+global_stmt = addspace(Keyword("global") + namelist)
+nonlocal_stmt = addspace(Keyword("nonlocal") + namelist)
+del_stmt = addspace(Keyword("del") + namelist)
+with_item = addspace(test + Optional(Keyword("as") + NAME))
+assert_stmt = addspace(Keyword("assert") + parenwrap(testlist))
+else_stmt = condense(Keyword("else") + colon + suite)
+if_stmt = condense(addspace(Keyword("if") + condense(test + colon + suite))
+                   + ZeroOrMore(addspace(Keyword("elif") + condense(test + colon + suite)))
+                   + Optional(else_stmt)
+                   )
+while_stmt = addspace(Keyword("while") + condense(test + colon + suite + Optional(else_stmt)))
+for_stmt = addspace(Keyword("for") + exprlist + Keyword("in") + condense(testlist + colon + suite + Optional(else_stmt)))
+except_clause = addspace(Keyword("except") + test + Optional(Keyword("as") + NAME))
+try_stmt = condense(Keyword("try") + colon + suite + (
+    Keyword("finally") + colon + suite
+    | (
+        OneOrMore(except_clause + colon + suite) + Optional(Keyword("except") + colon + suite)
+        | Keyword("except") + colon + suite
+        ) + Optional(else_stmt) + Optional(Keyword("finally") + colon + suite)
+    ))
+with_stmt = addspace(Keyword("with") + condense(parenwrap(itemlist(with_item)) + colon + suite))
 
-decorator = at + test + NEWLINE
+decorator = condense(at + test + NEWLINE)
 decorators = OneOrMore(decorator)
-funcdef = Keyword("def") + NAME + parameters + Optional(arrow + test) + colon + suite
-decorated = decorators + (classdef | funcdef)
+funcdef = addspace(Keyword("def") + condense(NAME + parameters + Optional(arrow + test) + colon + suite))
+decorated = condense(decorators + (classdef | funcdef))
 
 compound_stmt = if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated
-expr_stmt = testlist_star_expr + (augassign + (yield_expr | testlist) | ZeroOrMore(equals + (yield_expr | testlist_star_expr)))
+expr_stmt = addspace(testlist_star_expr + (augassign + (yield_expr | testlist) | ZeroOrMore(equals + (yield_expr | testlist_star_expr))))
 small_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt | assert_stmt | expr_stmt
-simple_stmt = small_stmt + ZeroOrMore(semicolon + small_stmt) + Optional(semicolon).suppress() + NEWLINE
+simple_stmt = itemlist(small_stmt, semicolon) + NEWLINE
 stmt = compound_stmt | simple_stmt
-suite <<= NEWLINE + INDENT + OneOrMore(stmt) + DEDENT | simple_stmt
+suite <<= condense(NEWLINE + INDENT + OneOrMore(stmt) + DEDENT) | simple_stmt
 
-single_input = NEWLINE | compound_stmt + NEWLINE | simple_stmt
-file_input = ZeroOrMore(NEWLINE | stmt)
-eval_input = testlist + Optional(comment)
+single_input = NEWLINE | condense(compound_stmt + NEWLINE) | simple_stmt
+file_input = condense(ZeroOrMore(NEWLINE | stmt))
+eval_input = condense(testlist + NEWLINE)
 
-single_parser = OneOrMore(STARTMARKER + single_input + ENDMARKER)
-file_parser = OneOrMore(STARTMARKER + file_input + ENDMARKER)
-eval_parser = OneOrMore(STARTMARKER + eval_input + ENDMARKER)
+single_parser = condense(OneOrMore(STARTMARKER + single_input + ENDMARKER))
+file_parser = condense(OneOrMore(STARTMARKER + file_input + ENDMARKER))
+eval_parser = condense(OneOrMore(STARTMARKER + eval_input + ENDMARKER))
 
 def parsewith(parser, item):
     """Tests Parsing With A Parser."""
     return (StringStart() + parser + StringEnd()).parseString(item)
 
+def postproc(tokens):
+    """Performs Post-Processing."""
+    if len(tokens) == 1:
+        return tokens[0].strip()+"\n"
+    else:
+        raise ParseFatalException("Multiple tokens leftover: "+repr(tokens))
+
 def parse_single(inputstring):
     """Processes Console Input."""
-    return single_parser.parseString(pre().proc(inputstring))
+    return postproc(single_parser.parseString(pre().proc(inputstring)))
 
 def parse_file(inputstring):
     """Processes File Input."""
-    return file_parser.parseString(pre().proc(inputstring))
+    return postproc(file_parser.parseString(pre().proc(inputstring)))
 
 def parse_eval(inputstring):
     """Processes Eval Input."""
-    return eval_parser.parseString(pre().proc(inputstring.strip()))
+    return postproc(eval_parser.parseString(pre().proc(inputstring.strip())))
 
 if __name__ == "__main__":
     print(parse_file(open(__file__, "rb").read()))
