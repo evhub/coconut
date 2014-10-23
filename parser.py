@@ -41,7 +41,7 @@ white = " \t\f"
 
 refs = None
 
-class pre(object):
+class processor(object):
     """The CoconutScript Pre-Processor."""
     verbosity = 10
     downs = "([{"
@@ -51,6 +51,7 @@ class pre(object):
     comment = "#"
     endline = "\n\r"
     escape = "\\"
+    tablen = 4
     indchar = None
 
     def __init__(self):
@@ -59,7 +60,7 @@ class pre(object):
         global refs
         refs = self.refs
 
-    def proc(self, inputstring):
+    def pre(self, inputstring):
         """Performs Pre-Processing."""
         return start + self.indproc(self.strproc(inputstring)) + end
 
@@ -215,6 +216,38 @@ class pre(object):
             count += self.change(lines[x])
         new.append(closestr*(len(levels)-1))
         return linebreak.join(new)
+
+    def reindent(self, inputstring):
+        """Reconverts Indent Tokens Into Indentation."""
+        out = []
+        level = 0
+        hold = None
+        for line in inputstring.splitlines():
+            if hold is None:
+                while line.startswith(openstr) or line.startswith(closestr):
+                    if line[0] == openstr:
+                        level += 1
+                    elif line[0] == closestr:
+                        level -= 1
+                    line = line[1:]
+                line = " "*self.tablen*level + line
+            for c in line:
+                if hold:
+                    if hold == c:
+                        hold = None
+                elif c in self.holds:
+                    hold = c
+            if hold is None:
+                line = line.rstrip()
+            out.append(line)
+        return linebreak.join(out)
+
+    def post(self, tokens):
+        """Performs Post-Processing."""
+        if len(tokens) == 1:
+            return header+self.reindent(tokens[0].strip()).strip()+linebreak
+        else:
+            raise ParseFatalException("Multiple tokens leftover: "+repr(tokens))
 
 ParserElement.setDefaultWhitespaceChars(white)
 
@@ -600,24 +633,20 @@ def parsewith(parser, item):
     """Tests Parsing With A Parser."""
     return (StringStart() + parser + StringEnd()).parseString(item)
 
-def postproc(tokens):
-    """Performs Post-Processing."""
-    if len(tokens) == 1:
-        return header+tokens[0].strip()+"\n"
-    else:
-        raise ParseFatalException("Multiple tokens leftover: "+repr(tokens))
-
 def parse_single(inputstring):
     """Processes Console Input."""
-    return postproc(single_parser.parseString(pre().proc(inputstring)))
+    proc = processor()
+    return proc.post(single_parser.parseString(proc.pre(inputstring)))
 
 def parse_file(inputstring):
     """Processes File Input."""
-    return postproc(file_parser.parseString(pre().proc(inputstring)))
+    proc = processor()
+    return proc.post(file_parser.parseString(proc.pre(inputstring)))
 
 def parse_eval(inputstring):
     """Processes Eval Input."""
-    return postproc(eval_parser.parseString(pre().proc(inputstring.strip())))
+    proc = processor()
+    return proc.post(eval_parser.parseString(proc.pre(inputstring.strip())))
 
 if __name__ == "__main__":
     print(parse_file(open(__file__, "rb").read()))
