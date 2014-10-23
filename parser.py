@@ -17,17 +17,32 @@ from __future__ import with_statement, print_function, absolute_import, unicode_
 from rabbit.carrot.root import *
 from pyparsing import *
 
-header = """#!/usr/bin/env python
+header = '''#!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 
 # CoconutScript Header:
 
 class __coconut__(object):
-    pass
+    """Built-In Coconut Functions."""
+    def inv(item):
+        """Inversion."""
+        if isinstance(item, bool):
+            return not item
+        else:
+            return ~item
+    def infix(a, func, b):
+        """Infix Calling."""
+        return func(a, b)
+    def pipe(*args):
+        """Pipelining."""
+        out = args[0]
+        for func in args[1:]:
+            out = func(out)
+        return out
 
 # Compiled CoconutScript:
 
-"""
+'''
 start = "\u2402"
 openstr = "\u204b"
 closestr = "\xb6"
