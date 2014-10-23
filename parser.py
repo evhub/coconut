@@ -39,6 +39,23 @@ class __coconut__(object):
         for func in args[1:]:
             out = func(out)
         return out
+    def loop(*args):
+        """Looping."""
+        func = args.pop()
+        lists = args
+        while lists:
+            new_lists = []
+            items = []
+            for series, step in lists:
+                items += series[:step]
+                series = series[step:]
+                if series:
+                    new_lists.append((series, step))
+            if params:
+                yield func(*params)
+            else:
+                break
+            lists = new_lists
 
 # Compiled CoconutScript:
 
