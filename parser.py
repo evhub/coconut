@@ -17,98 +17,6 @@ from __future__ import with_statement, print_function, absolute_import, unicode_
 from rabbit.carrot.root import *
 from pyparsing import *
 
-header = '''#!/usr/bin/env python
-# -*- encoding: utf-8 -*-
-
-# CoconutScript Header: --------------------------------------------------------
-
-class __coconut__(object):
-    """Built-In Coconut Functions."""
-    import functools
-    curry = functools.partial
-    fold = functools.reduce
-    def inv(item):
-        """Inversion."""
-        if isinstance(item, bool):
-            return not item
-        else:
-            return ~item
-    def infix(a, func, b):
-        """Infix Calling."""
-        return func(a, b)
-    def pipe(*args):
-        """Pipelining."""
-        out = args[0]
-        for func in args[1:]:
-            out = func(out)
-        return out
-    def loop(*args):
-        """Looping."""
-        func = args.pop()
-        lists = args
-        while lists:
-            new_lists = []
-            items = []
-            for series, step in lists:
-                items += series[:step]
-                series = series[step:]
-                if series:
-                    new_lists.append((series, step))
-            if items:
-                yield func(*items)
-            else:
-                break
-            lists = new_lists
-    def compose(f, g):
-        """Composing."""
-        return lambda x: f(g(x))
-    def zipwith(func, *args):
-        """Functional Zipping."""
-        lists = args
-        while lists:
-            new_lists = []
-            items = []
-            for series in lists:
-                items += series[0]
-                series = series[1:]
-                if series:
-                    new_lists.append(series)
-            if items:
-                yield func(*items)
-            else:
-                break
-            lists = new_lists
-    def recursive(func):
-        """Tail Recursion Elimination."""
-        state = [True, None]
-        recurse = object()
-        @functools.wraps(func)
-        def _optimized(*args, **kwargs):
-            """Tail Recursion Wrapper."""
-            if state[0]:
-                state[0] = False
-                try:
-                    while True:
-                        result = func(*args, **kwargs)
-                    if result is recurse:
-                        args, kwargs = state[1]
-                        state[1] = None
-                    else:
-                        return result
-                finally:
-                    state[0] = True
-            else:
-                state[1] = args, kwargs
-                return recurse
-        return _recursive
-
-fold = __coconut__.fold
-zipwith = __coconut__.zipwith
-recursive = __coconut__.recursive
-
-# Compiled CoconutScript: ------------------------------------------------------
-
-'''
 start = "\u2402"
 openstr = "\u204b"
 closestr = "\xb6"
@@ -135,14 +43,25 @@ class processor(object):
     tablen = 4
     indchar = None
 
-    def __init__(self):
+    def __init__(self, header=None):
         """Creates A New Pre-Processor."""
         self.refs = []
         global refs
         refs = self.refs
+        if header is None:
+            self.header = self.getheader()
+        else:
+            self.header = str(header)
 
-    def pre(self, inputstring):
+    def getheader(self, headerfile="__coconut__.py"):
+        """Retrieves The Header."""
+        return str(open(headerfile, "r").read())
+
+    def pre(self, inputstring, strip=False):
         """Performs Pre-Processing."""
+        inputstring = str(inputstring)
+        if strip:
+            inputstring = inputstring.strip()
         return start + self.indproc(self.strproc(inputstring)) + end
 
     def wrapstr(self, text, raw, multiline):
@@ -326,7 +245,7 @@ class processor(object):
     def post(self, tokens):
         """Performs Post-Processing."""
         if len(tokens) == 1:
-            return header+self.reindent(tokens[0].strip()).strip()+linebreak
+            return self.header+self.reindent(tokens[0].strip()).strip()+linebreak
         else:
             raise ParseFatalException("Multiple tokens leftover: "+repr(tokens))
 
@@ -576,6 +495,7 @@ def item_proc(tokens):
                 raise ParseFatalException("Invalid special trailer: "+repr(trailer[0]))
         else:
             raise ParseFatalException("Invalid trailer tokens: "+repr(trailer))
+    return out
 item = (atom + ZeroOrMore(trailer)).setParseAction(item_proc)
 
 factor = Forward()
@@ -749,7 +669,7 @@ def parse_file(inputstring):
 def parse_eval(inputstring):
     """Processes Eval Input."""
     proc = processor()
-    return proc.post(eval_parser.parseString(proc.pre(inputstring.strip())))
+    return proc.post(eval_parser.parseString(proc.pre(inputstring, True)))
 
 if __name__ == "__main__":
-    print(parse_file(open(__file__, "rb").read()))
+    print(parse_file(open(__file__, "r").read()))

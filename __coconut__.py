@@ -1,0 +1,91 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
+
+# CoconutScript Header: --------------------------------------------------------
+
+class __coconut__(object):
+    """Built-In Coconut Functions."""
+    import functools
+    curry = functools.partial
+    fold = functools.reduce
+    def inv(item):
+        """Inversion."""
+        if isinstance(item, bool):
+            return not item
+        else:
+            return ~item
+    def infix(a, func, b):
+        """Infix Calling."""
+        return func(a, b)
+    def pipe(*args):
+        """Pipelining."""
+        out = args[0]
+        for func in args[1:]:
+            out = func(out)
+        return out
+    def loop(*args):
+        """Looping."""
+        func = args.pop()
+        lists = args
+        while lists:
+            new_lists = []
+            items = []
+            for series, step in lists:
+                items += series[:step]
+                series = series[step:]
+                if series:
+                    new_lists.append((series, step))
+            if items:
+                yield func(*items)
+            else:
+                break
+            lists = new_lists
+    def compose(f, g):
+        """Composing."""
+        return lambda x: f(g(x))
+    def zipwith(func, *args):
+        """Functional Zipping."""
+        lists = args
+        while lists:
+            new_lists = []
+            items = []
+            for series in lists:
+                items += series[0]
+                series = series[1:]
+                if series:
+                    new_lists.append(series)
+            if items:
+                yield func(*items)
+            else:
+                break
+            lists = new_lists
+    def recursive(func):
+        """Tail Recursion Elimination."""
+        state = [True, None]
+        recurse = object()
+        @functools.wraps(func)
+        def _optimized(*args, **kwargs):
+            """Tail Recursion Wrapper."""
+            if state[0]:
+                state[0] = False
+                try:
+                    while True:
+                        result = func(*args, **kwargs)
+                    if result is recurse:
+                        args, kwargs = state[1]
+                        state[1] = None
+                    else:
+                        return result
+                finally:
+                    state[0] = True
+            else:
+                state[1] = args, kwargs
+                return recurse
+        return _recursive
+
+fold = __coconut__.fold
+zipwith = __coconut__.zipwith
+recursive = __coconut__.recursive
+
+# Compiled CoconutScript: ------------------------------------------------------
+
