@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # INFO:
@@ -20,10 +20,12 @@ from pyparsing import *
 header = '''#!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 
-# CoconutScript Header:
+# CoconutScript Header: --------------------------------------------------------
 
 class __coconut__(object):
     """Built-In Coconut Functions."""
+    import functools
+    fold = functools.reduce
     def inv(item):
         """Inversion."""
         if isinstance(item, bool):
@@ -51,13 +53,62 @@ class __coconut__(object):
                 series = series[step:]
                 if series:
                     new_lists.append((series, step))
-            if params:
-                yield func(*params)
+            if items:
+                yield func(*items)
             else:
                 break
             lists = new_lists
+    def curry(func, *args):
+        """Currying."""
+        return functools.partial(func, *args)
+    def compose(f, g):
+        """Composing."""
+        return lambda x: f(g(x))
+    def zipwith(func, *args):
+        """Functional Zipping."""
+        lists = args
+        while lists:
+            new_lists = []
+            items = []
+            for series in lists:
+                items += series[0]
+                series = series[1:]
+                if series:
+                    new_lists.append(series)
+            if items:
+                yield func(*items)
+            else:
+                break
+            lists = new_lists
+    def recursive(func):
+        """Tail Recursion Elimination."""
+        state = [True, None]
+        recurse = object()
+        @functools.wraps(func)
+        def _optimized(*args, **kwargs):
+            """Tail Recursion Wrapper."""
+            if state[0]:
+                state[0] = False
+                try:
+                    while True:
+                        result = func(*args, **kwargs)
+                    if result is recurse:
+                        args, kwargs = state[1]
+                        state[1] = None
+                    else:
+                        return result
+                finally:
+                    state[0] = True
+            else:
+                state[1] = args, kwargs
+                return recurse
+        return _recursive
 
-# Compiled CoconutScript:
+fold = __coconut__.fold
+zipwith = __coconut__.zipwith
+recursive = __coconut__.recursive
+
+# Compiled CoconutScript: ------------------------------------------------------
 
 '''
 start = "\u2402"
@@ -505,8 +556,30 @@ atom = (func_atom
 sliceop = condense(colon + Optional(test))
 subscript = test | condense(Optional(test) + sliceop + Optional(sliceop))
 subscriptlist = itemlist(subscript)
-trailer = condense(Optional(dollar) + lparen + Optional(argslist) + rparen | lbrack + subscriptlist + rbrack | dotdot + func_atom | dot + NAME)
-item = condense(atom + ZeroOrMore(trailer))
+trailer = (Group(dollar + lparen.suppress() + Optional(argslist) + rparen.suppress())
+           | condense(lparen + Optional(argslist) + rparen)
+           | condense(lbrack + subscriptlist + rbrack)
+           | Group(dotdot + func_atom)
+           | condense(dot + NAME)
+           )
+
+def item_proc(tokens):
+    """Processes Items."""
+    out = tokens.pop(0)
+    for trailer in tokens:
+        if isinstance(trailer, str):
+            out += trailer
+        elif len(trailer) == 2:
+            if trailer[0] == "$":
+                out = "__coconut__.curry("+out+", "+trailer[1]+")"
+            elif trailer[0] == "..":
+                out = "__coconut__.compose("+out+", "+trailer[1]+")"
+            else:
+                raise ParseFatalException("Invalid special trailer: "+repr(trailer[0]))
+        else:
+            raise ParseFatalException("Invalid trailer tokens: "+repr(trailer))
+item = (atom + ZeroOrMore(trailer)).setParseAction(item_proc)
+
 factor = Forward()
 power = condense(item + Optional(exp_dubstar + factor))
 unary = plus | neg_minus

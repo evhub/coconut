@@ -30,6 +30,7 @@ CoconutScript is based on Python 3 syntax, but will compile to either Python 3 o
 	* zip with: `zipwith`
 	* tail recursion elimination: `recursive`
 * New constructs (planned):
+	* operator functions
 	* operator [re]definition
 	* lazy evaluation
 	* pattern matching
