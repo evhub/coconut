@@ -3,11 +3,11 @@
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # INFO:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-# Author: Evan Hubinger
-# Date Created: 2014
-# Description: The CoconutScript parser.
-
+"""
+Author: Evan Hubinger
+Date Created: 2014
+Description: The CoconutScript Parser.
+"""
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # DATA:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -305,8 +305,6 @@ neg_minus = fixto(minus | Literal("\xaf"), "-")
 sub_minus = fixto(minus | Literal("\u2212"), "-")
 div_slash = fixto(slash | Literal("\xf7"), "/")
 div_dubslash = fixto(dubslash | Combine(Literal("\xf7"), slash), "//")
-inv_bang = fixto(bang, "~")
-mod_percent = percent
 
 NAME = Regex(r"(?![0-9])\w")
 dotted_name = condense(NAME + ZeroOrMore(dot + NAME))
@@ -387,7 +385,7 @@ augassign = (heavy_arrow # In-place pipeline
              | Combine(mul_star + equals)
              | Combine(exp_dubstar + equals)
              | Combine(div_slash + equals)
-             | Combine(mod_percent + equals)
+             | Combine(percent + equals)
              | Combine(amp + equals)
              | Combine(bar + equals)
              | Combine(caret + equals)
@@ -398,21 +396,14 @@ augassign = (heavy_arrow # In-place pipeline
              | Combine(dotdot + equals)
              )
 
-comp_op = (Literal("<")
-           | Literal(">")
-           | Literal("==")
-           | fixto(
-               Literal(">=")
-               | Literal("\u2265"), ">="
-               )
-           | fixto(
-               Literal("<=")
-               | Literal("\u2264"), "<="
-               )
-           | fixto(
-               Combine(bang, equals)
-               | Literal("\u2260"), "!="
-               )
+lt = Literal("<")
+gt = Literal(">")
+eq = Combine(equals + equals)
+le = fixto(Combine(lt + equals) | Literal("\u2264"), "<=")
+ge = fixto(Combine(gt + equals) | Literal("\u2265"), ">=")
+ne = fixto(Combine(bang + equals) | Literal("\u2260"), "!=")
+
+comp_op = (lt | gt | eq | le | ge | ne
            | addspace(Keyword("not") + Keyword("in"))
            | Keyword("in")
            | addspace(Keyword("is") + Keyword("not"))
@@ -459,7 +450,41 @@ dictorsetmaker = addspace(condense(test + colon) + test + comp_for
                   | test + comp_for
                   | testlist
                   )
-func_atom = NAME | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
+
+def tilde_proc(tokens):
+    """Processes Tildes For Loop Functions."""
+    if len(tokens) == 1:
+        step = len(tokens[0])
+        return "lambda func, series: __coconut__.loop((series, "+repr(step)+"), func)"
+    else:
+        raise ParseFatalException("Invalid tilde tokens: "+repr(tokens))
+op_atom = (lparen + (
+    fixto(exp_dubstar, "__coconut__.operator.__pow__"),
+    fixto(mul_star, "__coconut__.operator.__mul__"),
+    fixto(div_slash, "__coconut__.operator.__truediv__"),
+    fixto(div_dubslash, "__coconut__.operator.__floordiv__"),
+    fixto(percent, "__coconut__.operator.__mod__"),
+    fixto(plus, "__coconut__.operator.__add__"),
+    fixto(sub_minus, "__coconut__.operator.__sub__"),
+    fixto(neg_minus, "__coconut__.operator.__neg__"),
+    fixto(amp, "__coconut__.operator.__and__"),
+    fixto(caret, "__coconut__.operator.__xor__"),
+    fixto(bar, "__coconut__.operator.__or__"),
+    fixto(lshift, "__coconut__.operator.__lshift__"),
+    fixto(rshift, "__coconut__.operator.__rshift__")
+    fixto(lt, "__coconut__.operator.__lt__"),
+    fixto(gt, "__coconut__.operator.__gt__"),
+    fixto(eq, "__coconut__.operator.__eq__"),
+    fixto(le, "__coconut__.operator.__le__"),
+    fixto(ge, "__coconut__.operator.__ge__"),
+    fixto(ne, "__coconut__.operator.__ne__"),
+    fixto(bang, "__coconut__.inv"),
+    fixto(pipeline, "__coconut__.pipe"),
+    fixto(dotdot, "__coconut__.compose"),
+    OneOrMore(tilde).setParseAction(tilde_proc)
+    ) + rparen)
+
+func_atom = NAME | op_atom | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
 atom = (func_atom
         | condense(lbrack + Optional(testlist_comp) + rbrack)
         | condense(lbrace + Optional(dictorsetmaker) + rbrace)
@@ -508,9 +533,9 @@ def inv_proc(tokens):
         return "__coconut__.inv("+tokens[0]+")"
     else:
         raise ParseFatalException("Invalid inversion tokens: "+repr(tokens))
-factor <<= condense(unary + factor) | (inv_bang.suppress() + factor).setParseAction(inv_proc) | power
+factor <<= condense(unary + factor) | (bang.suppress() + factor).setParseAction(inv_proc) | power
 
-mulop = mul_star | div_slash | div_dubslash | mod_percent
+mulop = mul_star | div_slash | div_dubslash | percent
 term = addspace(factor + ZeroOrMore(mulop + factor))
 arith = plus | sub_minus
 arith_expr = addspace(term + ZeroOrMore(arith + term))
@@ -528,10 +553,10 @@ def loop_proc(tokens):
     if len(tokens) == 1:
         return tokens[0]
     else:
-        out = "__coconut__.loop("+tokens[-1]
+        out = "__coconut__.loop("
         for loop_list, loop_step in tokens[:-1]:
-            out += ", ("+loop_list+", "+loop_step+")"
-        return out+")"
+            out += "("+loop_list+", "+repr(len(loop_step))+"), "
+        return out+tokens[-1]+")"
 loop_expr = (ZeroOrMore(Group(infix_expr + OneOrMore(tilde))) + infix_expr).setParseAction(loop_proc)
 
 shift = lshift | rshift
@@ -638,7 +663,29 @@ funcdef = addspace(Keyword("def") + condense(NAME + parameters + Optional(arrow 
 decorated = condense(decorators + (classdef | funcdef))
 
 compound_stmt = if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated
-expr_stmt = addspace(testlist_star_expr + (augassign + (yield_expr | testlist) | ZeroOrMore(equals + (yield_expr | testlist_star_expr))))
+
+def assign_proc(tokens):
+    """Processes Assignments."""
+    if len(tokens) == 1:
+        return tokens[0]
+    elif len(tokens) == 2:
+        return " ".join(tokens)
+    elif len(tokens) == 3:
+        if tokens[1] == "=>":
+            return tokens[0]+" = __coconut__.pipe("+tokens[0]+", "+tokens[2]+")"
+        elif tokens[1] == "..=":
+            return tokens[0]+" = __coconut__.compose("+tokens[0]+", "+tokens[2]+")"
+        elif tokens[1].startswith("~"):
+            return tokens[0]+" = __coconut__.loop(("+tokens[2]+", "+repr(len(tokens[1])-1)+"), "+tokens[0]+")"
+        else:
+            return " ".join(tokens)
+    else:
+        raise ParseFatalException("Invalid assignment tokens: "+repr(tokens))
+expr_stmt = (testlist_star_expr + (
+    augassign + (yield_expr | testlist)
+    | addspace(ZeroOrMore(equals + (yield_expr | testlist_star_expr)))
+    )).setParseAction(assign_proc)
+
 small_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt | assert_stmt | expr_stmt
 simple_stmt = itemlist(small_stmt, semicolon) + NEWLINE
 stmt = compound_stmt | simple_stmt

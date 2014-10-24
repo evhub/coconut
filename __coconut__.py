@@ -5,6 +5,7 @@
 
 class __coconut__(object):
     """Built-In Coconut Functions."""
+    import operator
     import functools
     curry = functools.partial
     fold = functools.reduce
