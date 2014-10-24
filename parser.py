@@ -458,7 +458,7 @@ def tilde_proc(tokens):
         return "lambda func, series: __coconut__.loop((series, "+repr(step)+"), func)"
     else:
         raise ParseFatalException("Invalid tilde tokens: "+repr(tokens))
-op_atom = (lparen + (
+op_atom = lparen + (
     fixto(exp_dubstar, "__coconut__.operator.__pow__"),
     fixto(mul_star, "__coconut__.operator.__mul__"),
     fixto(div_slash, "__coconut__.operator.__truediv__"),
@@ -471,7 +471,7 @@ op_atom = (lparen + (
     fixto(caret, "__coconut__.operator.__xor__"),
     fixto(bar, "__coconut__.operator.__or__"),
     fixto(lshift, "__coconut__.operator.__lshift__"),
-    fixto(rshift, "__coconut__.operator.__rshift__")
+    fixto(rshift, "__coconut__.operator.__rshift__"),
     fixto(lt, "__coconut__.operator.__lt__"),
     fixto(gt, "__coconut__.operator.__gt__"),
     fixto(eq, "__coconut__.operator.__eq__"),
@@ -482,7 +482,7 @@ op_atom = (lparen + (
     fixto(pipeline, "__coconut__.pipe"),
     fixto(dotdot, "__coconut__.compose"),
     OneOrMore(tilde).setParseAction(tilde_proc)
-    ) + rparen)
+    ) + rparen
 
 func_atom = NAME | op_atom | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
 atom = (func_atom
