@@ -25,6 +25,7 @@ header = '''#!/usr/bin/env python
 class __coconut__(object):
     """Built-In Coconut Functions."""
     import functools
+    curry = functools.partial
     fold = functools.reduce
     def inv(item):
         """Inversion."""
@@ -58,9 +59,6 @@ class __coconut__(object):
             else:
                 break
             lists = new_lists
-    def curry(func, *args):
-        """Currying."""
-        return functools.partial(func, *args)
     def compose(f, g):
         """Composing."""
         return lambda x: f(g(x))
