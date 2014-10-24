@@ -672,11 +672,11 @@ def assign_proc(tokens):
         return " ".join(tokens)
     elif len(tokens) == 3:
         if tokens[1] == "=>":
-            return tokens[0]+" = __coconut__.pipe("+tokens[0]+", "+tokens[2]+")"
+            return tokens[0]+" = __coconut__.pipe("+tokens[0]+", ("+tokens[2]+"))"
         elif tokens[1] == "..=":
-            return tokens[0]+" = __coconut__.compose("+tokens[0]+", "+tokens[2]+")"
+            return tokens[0]+" = __coconut__.compose("+tokens[0]+", ("+tokens[2]+"))"
         elif tokens[1].startswith("~"):
-            return tokens[0]+" = __coconut__.loop(("+tokens[2]+", "+repr(len(tokens[1])-1)+"), "+tokens[0]+")"
+            return tokens[0]+" = __coconut__.loop((("+tokens[2]+"), "+repr(len(tokens[1])-1)+"), "+tokens[0]+")"
         else:
             return " ".join(tokens)
     else:
