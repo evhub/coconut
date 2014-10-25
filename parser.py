@@ -418,9 +418,15 @@ test = Forward()
 expr = Forward()
 comp_for = Forward()
 
+def list_proc(tokens):
+    """Removes The Last Character From A List."""
+    if len(tokens) == 1:
+        return tokens[0][:-1]
+    else:
+        raise ParseFatalException("Invalid list tokens: "+repr(tokens))
 def itemlist(item, sep=comma):
     """Creates A List Containing An Item."""
-    return addspace(ZeroOrMore(condense(item + sep)) + item + Optional(sep).suppress())
+    return addspace(ZeroOrMore(condense(item + sep)) + item) | attach(addspace(OneOrMore(condense(item + sep))), list_proc)
 
 def parenwrap(item):
     """Wraps An Item In Optional Parentheses."""
