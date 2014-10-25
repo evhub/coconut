@@ -253,7 +253,7 @@ ParserElement.setDefaultWhitespaceChars(white)
 
 def attach(item, action):
     """Attaches A Parse Action To An Item."""
-    return item.setParseAction(action)
+    return item.copy().setParseAction(action)
 
 def fixto(item, output):
     """Forces An Item To Result In A Specific Output."""
