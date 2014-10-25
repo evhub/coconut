@@ -10,22 +10,22 @@ class __coconut__(object):
     curry = functools.partial
     fold = functools.reduce
     def inv(item):
-        """Inversion."""
+        """Inversion (!True)."""
         if isinstance(item, bool):
             return not item
         else:
             return ~item
     def infix(a, func, b):
-        """Infix Calling."""
+        """Infix Calling (5 \\mod\\ 6)."""
         return func(a, b)
     def pipe(*args):
-        """Pipelining."""
+        """Pipelining (x |> func)."""
         out = args[0]
         for func in args[1:]:
             out = func(out)
         return out
     def loop(*args):
-        """Looping."""
+        """Looping (a~ func)."""
         func = args.pop()
         lists = args
         while lists:
@@ -42,7 +42,7 @@ class __coconut__(object):
                 break
             lists = new_lists
     def compose(f, g):
-        """Composing."""
+        """Composing (f..g)."""
         return lambda x: f(g(x))
     def zipwith(func, *args):
         """Functional Zipping."""

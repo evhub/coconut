@@ -251,17 +251,21 @@ class processor(object):
 
 ParserElement.setDefaultWhitespaceChars(white)
 
+def attach(item, action):
+    """Attaches A Parse Action To An Item."""
+    return item.setParseAction(action)
+
 def fixto(item, output):
     """Forces An Item To Result In A Specific Output."""
-    return item.setParseAction(replaceWith(output))
+    return attach(item, replaceWith(output))
 
 def addspace(item):
     """Condenses And Adds Space To The Tokenized Output."""
-    return item.setParseAction(lambda tokens: " ".join(tokens))
+    return attach(item, lambda tokens: " ".join(tokens))
 
 def condense(item):
     """Condenses The Tokenized Output."""
-    return item.setParseAction(lambda tokens: "".join(tokens))
+    return attach(item, lambda tokens: "".join(tokens))
 
 comma = Literal(",")
 dot = Literal(".")
@@ -328,7 +332,7 @@ def anyint_proc(tokens):
     else:
         raise ParseFatalException("Invalid anyint token")
 
-NUMBER = (Combine(anyint + underscore + integer).setParseAction(anyint_proc)
+NUMBER = (attach(Combine(anyint + underscore + integer), anyint_proc)
           | Combine(CaselessLiteral("0b"), binint)
           | Combine(CaselessLiteral("0o"), octint)
           | Combine(CaselessLiteral("0x"), hexint)
@@ -357,6 +361,7 @@ def string_repl(tokens):
             raise ParseFatalException("String marker points to comment")
     else:
         raise ParseFatalException("Invalid string marker")
+string_ref = attach(Combine(Literal('"').suppress() + integer + Literal('"').suppress()), string_repl)
 
 def comment_repl(tokens):
     """Replaces Comment References."""
@@ -368,9 +373,8 @@ def comment_repl(tokens):
             return tokens
     else:
         raise ParseFatalException("Invalid comment marker")
+comment = attach(Combine(pound.suppress() + integer), comment_repl)
 
-string_ref = Combine(Literal('"').suppress() + integer + Literal('"').suppress()).setParseAction(string_repl)
-comment = Combine(pound.suppress() + integer).setParseAction(comment_repl)
 bit_b = CaselessLiteral("b")
 STRING = Combine(Optional(bit_b) + string_ref)
 NEWLINE = Combine(Optional(comment) + Literal(linebreak))
@@ -459,41 +463,40 @@ def tilde_proc(tokens):
     else:
         raise ParseFatalException("Invalid tilde tokens: "+repr(tokens))
 op_atom = lparen + (
-    fixto(exp_dubstar, "__coconut__.operator.__pow__"),
-    fixto(mul_star, "__coconut__.operator.__mul__"),
-    fixto(div_slash, "__coconut__.operator.__truediv__"),
-    fixto(div_dubslash, "__coconut__.operator.__floordiv__"),
-    fixto(percent, "__coconut__.operator.__mod__"),
-    fixto(plus, "__coconut__.operator.__add__"),
-    fixto(sub_minus, "__coconut__.operator.__sub__"),
-    fixto(neg_minus, "__coconut__.operator.__neg__"),
-    fixto(amp, "__coconut__.operator.__and__"),
-    fixto(caret, "__coconut__.operator.__xor__"),
-    fixto(bar, "__coconut__.operator.__or__"),
-    fixto(lshift, "__coconut__.operator.__lshift__"),
-    fixto(rshift, "__coconut__.operator.__rshift__"),
-    fixto(lt, "__coconut__.operator.__lt__"),
-    fixto(gt, "__coconut__.operator.__gt__"),
-    fixto(eq, "__coconut__.operator.__eq__"),
-    fixto(le, "__coconut__.operator.__le__"),
-    fixto(ge, "__coconut__.operator.__ge__"),
-    fixto(ne, "__coconut__.operator.__ne__"),
-    fixto(bang, "__coconut__.inv"),
-    fixto(pipeline, "__coconut__.pipe"),
-    fixto(dotdot, "__coconut__.compose"),
-    OneOrMore(tilde).setParseAction(tilde_proc)
+    fixto(exp_dubstar, "__coconut__.operator.__pow__")
+    | fixto(mul_star, "__coconut__.operator.__mul__")
+    | fixto(div_slash, "__coconut__.operator.__truediv__")
+    | fixto(div_dubslash, "__coconut__.operator.__floordiv__")
+    | fixto(percent, "__coconut__.operator.__mod__")
+    | fixto(plus, "__coconut__.operator.__add__")
+    | fixto(sub_minus, "__coconut__.operator.__sub__")
+    | fixto(neg_minus, "__coconut__.operator.__neg__")
+    | fixto(amp, "__coconut__.operator.__and__")
+    | fixto(caret, "__coconut__.operator.__xor__")
+    | fixto(bar, "__coconut__.operator.__or__")
+    | fixto(lshift, "__coconut__.operator.__lshift__")
+    | fixto(rshift, "__coconut__.operator.__rshift__")
+    | fixto(lt, "__coconut__.operator.__lt__")
+    | fixto(gt, "__coconut__.operator.__gt__")
+    | fixto(eq, "__coconut__.operator.__eq__")
+    | fixto(le, "__coconut__.operator.__le__")
+    | fixto(ge, "__coconut__.operator.__ge__")
+    | fixto(ne, "__coconut__.operator.__ne__")
+    | fixto(bang, "__coconut__.inv")
+    | fixto(pipeline, "__coconut__.pipe")
+    | fixto(dotdot, "__coconut__.compose")
+    | attach(OneOrMore(tilde), tilde_proc)
     ) + rparen
 
 func_atom = NAME | op_atom | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
-atom = (func_atom
+keyword_atom = Keyword("None") | Keyword("True") | Keyword("False")
+atom = (keyword_atom
+        | ellipses
         | condense(lbrack + Optional(testlist_comp) + rbrack)
         | condense(lbrace + Optional(dictorsetmaker) + rbrace)
-        | ellipses
-        | Keyword("None")
-        | Keyword("True")
-        | Keyword("False")
         | NUMBER
         | OneOrMore(STRING)
+        | func_atom
         )
 sliceop = condense(colon + Optional(test))
 subscript = test | condense(Optional(test) + sliceop + Optional(sliceop))
@@ -521,7 +524,7 @@ def item_proc(tokens):
         else:
             raise ParseFatalException("Invalid trailer tokens: "+repr(trailer))
     return out
-item = (atom + ZeroOrMore(trailer)).setParseAction(item_proc)
+item = attach(atom + ZeroOrMore(trailer), item_proc)
 
 factor = Forward()
 power = condense(item + Optional(exp_dubstar + factor))
@@ -533,7 +536,7 @@ def inv_proc(tokens):
         return "__coconut__.inv("+tokens[0]+")"
     else:
         raise ParseFatalException("Invalid inversion tokens: "+repr(tokens))
-factor <<= condense(unary + factor) | (bang.suppress() + factor).setParseAction(inv_proc) | power
+factor <<= attach(condense(unary + factor) | (bang.suppress() + factor), inv_proc) | power
 
 mulop = mul_star | div_slash | div_dubslash | percent
 term = addspace(factor + ZeroOrMore(mulop + factor))
@@ -546,7 +549,7 @@ def infix_proc(tokens):
         return tokens[0]
     else:
         return "__coconut__.infix("+infix_proc(tokens[:-2])+", "+tokens[-2]+", "+tokens[-1]+")"
-infix_expr = (arith_expr + ZeroOrMore(backslash.suppress() + test + backslash.suppress() + arith_expr)).setParseAction(infix_proc)
+infix_expr = attach(arith_expr + ZeroOrMore(backslash.suppress() + test + backslash.suppress() + arith_expr), infix_proc)
 
 def loop_proc(tokens):
     """Processes Loop Calls."""
@@ -557,7 +560,7 @@ def loop_proc(tokens):
         for loop_list, loop_step in tokens[:-1]:
             out += "("+loop_list+", "+repr(len(loop_step))+"), "
         return out+tokens[-1]+")"
-loop_expr = (ZeroOrMore(Group(infix_expr + OneOrMore(tilde))) + infix_expr).setParseAction(loop_proc)
+loop_expr = attach(ZeroOrMore(Group(infix_expr + OneOrMore(tilde))) + infix_expr, loop_proc)
 
 shift = lshift | rshift
 shift_expr = addspace(loop_expr + ZeroOrMore(shift + loop_expr))
@@ -571,7 +574,7 @@ def pipe_proc(tokens):
         return tokens[0]
     else:
         return "__coconut__.pipe("+", ".join(tokens)+")"
-pipe_expr = (or_expr + ZeroOrMore(pipeline.suppress() + or_expr)).setParseAction(pipe_proc)
+pipe_expr = attach(or_expr + ZeroOrMore(pipeline.suppress() + or_expr), pipe_proc)
 
 expr <<= pipe_expr
 comparison = addspace(expr + ZeroOrMore(comp_op + expr))
@@ -587,7 +590,7 @@ def lambda_proc(tokens):
         return "lambda "+tokens[0]+": "+tokens[1]
     else:
         raise ParseFatalException("Invalid lambda tokens: "+repr(tokens))
-lambdef = (lparen.suppress() + argslist + rparen.suppress() + arrow.suppress() + test).setParseAction(lambda_proc)
+lambdef = attach(lparen.suppress() + argslist + rparen.suppress() + arrow.suppress() + test, lambda_proc)
 
 lambdef_nocond = addspace(parameters + arrow + test_nocond)
 test <<= lambdef | addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test))
@@ -681,10 +684,10 @@ def assign_proc(tokens):
             return " ".join(tokens)
     else:
         raise ParseFatalException("Invalid assignment tokens: "+repr(tokens))
-expr_stmt = (testlist_star_expr + (
+expr_stmt = attach(testlist_star_expr + (
     augassign + (yield_expr | testlist)
     | addspace(ZeroOrMore(equals + (yield_expr | testlist_star_expr)))
-    )).setParseAction(assign_proc)
+    ), assign_proc)
 
 small_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt | assert_stmt | expr_stmt
 simple_stmt = itemlist(small_stmt, semicolon) + NEWLINE
