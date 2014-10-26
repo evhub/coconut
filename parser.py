@@ -607,17 +607,18 @@ suite = Forward()
 
 argument = condense(NAME + equals + test) | addspace(NAME + Optional(comp_for))
 arglist = addspace(
-    ZeroOrMore(condense(argument + comma))
+    attach(addspace(OneOrMore(condense(argument + comma))), list_proc)
+    | ZeroOrMore(condense(argument + comma))
     + (
         condense(dubstar + test)
         | star + condense(test + comma) + (
-            OneOrMore(condense(argument + comma)) + (
-                argument + Optional(comma).suppress()
+            ZeroOrMore(condense(argument + comma)) + (
+                argument
                 | condense(dubstar + test)
                 )
+            | attach(addspace(OneOrMore(condense(argument + comma))), list_proc)
             )
         | star + test + Optional(comma).suppress()
-        | argument + Optional(comma).suppress()
         )
     )
 classdef = condense(addspace(Keyword("class") + condense(NAME + Optional(lparen + Optional(arglist) + rparen) + colon)) + suite)
