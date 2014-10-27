@@ -8,14 +8,14 @@ CoconutScript is based on Python 3 syntax, but will compile to either Python 3 o
 * New operators:
 	* compose: `..` (in-place: `..=`)
 	* curry: `$`
-	* loop: `~` (in-place: `~=`)
+	* loop: one or more `~` (in-place: one or more `~` + `=`)
 	* pipeline: `|>` (in-place: `=>`)
 	* lambda: `->`
 * Changed operators:
 	* unary negation: `!` (replaces `~`, only difference is it negates `bool`)
 * New syntax:
 	* infix function calling: new `6 \mod\ 3` syntax
-	* operator functions: alternative `(+)` syntax
+	* operator functions: new `(+)` syntax
 	* function definition: alternative `f(x) = x` syntax
 	* unicode symbols: supports unicode alternatives for most symbols
 	* non-decimal integers: alternative `10110_2` syntax
