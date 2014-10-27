@@ -669,7 +669,8 @@ with_stmt = addspace(Keyword("with") + condense(parenwrap(itemlist(with_item)) +
 
 decorator = condense(at + test + NEWLINE)
 decorators = OneOrMore(decorator)
-funcdef = addspace(Keyword("def") + condense(NAME + parameters + Optional(arrow + test) + colon + suite))
+base_funcdef = addspace(condense(NAME + parameters) + Optional(arrow + test))
+funcdef = addspace(Keyword("def") + condense(base_funcdef + colon + suite))
 decorated = condense(decorators + (classdef | funcdef))
 
 compound_stmt = if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated
@@ -679,7 +680,7 @@ def assign_proc(tokens):
     if len(tokens) == 1:
         return tokens[0]
     elif len(tokens) == 2:
-        return " ".join(tokens)
+        return tokens
     elif len(tokens) == 3:
         if tokens[1] == "=>":
             return tokens[0]+" = __coconut__.pipe("+tokens[0]+", ("+tokens[2]+"))"
@@ -688,13 +689,19 @@ def assign_proc(tokens):
         elif tokens[1].startswith("~"):
             return tokens[0]+" = __coconut__.loop((("+tokens[2]+"), "+repr(len(tokens[1])-1)+"), "+tokens[0]+")"
         else:
-            return " ".join(tokens)
+            return tokens
     else:
         raise ParseFatalException("Invalid assignment tokens: "+repr(tokens))
-expr_stmt = attach(testlist_star_expr + (
-    augassign + (yield_expr | testlist)
-    | addspace(ZeroOrMore(equals + (yield_expr | testlist_star_expr)))
-    ), assign_proc)
+def func_proc(tokens):
+    """Processes Mathematical Function Definitons."""
+    if len(tokens) == 2:
+        return "def "+tokens[0]+": return "+tokens[1]
+    else:
+        raise ParseFatalException("Invalid mathematical function definition tokens: "+repr(tokens))
+expr_stmt = addspace(attach(testlist_star_expr + augassign + (yield_expr | testlist), assign_proc)
+                     | attach(base_funcdef + equals.suppress() + (yield_expr | testlist_star_expr), func_proc)
+                     | testlist_star_expr + ZeroOrMore(equals + (yield_expr | testlist_star_expr))
+                     )
 
 small_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt | assert_stmt | expr_stmt
 simple_stmt = itemlist(small_stmt, semicolon) + NEWLINE
