@@ -72,11 +72,11 @@ class __coconut__(object):
                 try:
                     while True:
                         result = func(*args, **kwargs)
-                    if result is recurse:
-                        args, kwargs = state[1]
-                        state[1] = None
-                    else:
-                        return result
+                        if result is recurse:
+                            args, kwargs = state[1]
+                            state[1] = None
+                        else:
+                            return result
                 finally:
                     state[0] = True
             else:
