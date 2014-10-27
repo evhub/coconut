@@ -43,7 +43,10 @@ class __coconut__(object):
             lists = new_lists
     def compose(f, g):
         """Composing (f..g)."""
-        return lambda x: f(g(x))
+        def _composed(*args, **kwargs):
+            """Function Composition Wrapper."""
+            return f(g(*args, **kwargs))
+        return _composed
     def zipwith(func, *args):
         """Functional Zipping."""
         lists = list(args)
@@ -64,7 +67,7 @@ class __coconut__(object):
         """Tail Recursion Elimination."""
         state = [True, None]
         recurse = object()
-        def _optimized(*args, **kwargs):
+        def _tailed(*args, **kwargs):
             """Tail Recursion Wrapper."""
             if state[0]:
                 state[0] = False
@@ -81,7 +84,7 @@ class __coconut__(object):
             else:
                 state[1] = args, kwargs
                 return recurse
-        return _optimized
+        return _tailed
 
 fold = __coconut__.fold
 zipwith = __coconut__.zipwith
