@@ -26,8 +26,8 @@ class __coconut__(object):
         return out
     def loop(*args):
         """Looping (a~ func)."""
-        func = args.pop()
-        lists = args
+        lists = list(args)
+        func = lists.pop()
         while lists:
             new_lists = []
             items = []
@@ -46,12 +46,12 @@ class __coconut__(object):
         return lambda x: f(g(x))
     def zipwith(func, *args):
         """Functional Zipping."""
-        lists = args
+        lists = list(args)
         while lists:
             new_lists = []
             items = []
             for series in lists:
-                items += series[0]
+                items.append(series[0])
                 series = series[1:]
                 if series:
                     new_lists.append(series)
@@ -64,7 +64,6 @@ class __coconut__(object):
         """Tail Recursion Elimination."""
         state = [True, None]
         recurse = object()
-        @functools.wraps(func)
         def _optimized(*args, **kwargs):
             """Tail Recursion Wrapper."""
             if state[0]:
@@ -82,7 +81,7 @@ class __coconut__(object):
             else:
                 state[1] = args, kwargs
                 return recurse
-        return _recursive
+        return _optimized
 
 fold = __coconut__.fold
 zipwith = __coconut__.zipwith
