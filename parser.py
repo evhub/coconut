@@ -432,20 +432,27 @@ def parenwrap(item):
     """Wraps An Item In Optional Parentheses."""
     return condense(lparen.suppress() + item + rparen.suppress() | item)
 
-tfpdef = condense(NAME + Optional(colon + test))
+vardef = NAME
+tfpdef = condense(vardef + Optional(colon + test))
 default = Optional(condense(equals + test))
-argslist = addspace((
-    ZeroOrMore(condense(tfpdef + default + comma)) + condense(tfpdef + default)
-     | OneOrMore(condense(tfpdef + default + comma)) + (
-         condense(star + tfpdef)
-         | condense(star + Optional(tfpdef) + comma) + (
-             ZeroOrMore(condense(tfpdef + default + comma)) + (
-                 condense(tfpdef + default)
-                 | condense(dubstar + tfpdef)
+
+def genargslist(item):
+    """Creates An Argument List."""
+    return addspace((
+        ZeroOrMore(condense(item + default + comma)) + condense(item + default)
+         | OneOrMore(condense(item + default + comma)) + (
+             condense(star + item)
+             | condense(star + Optional(item) + comma) + (
+                 ZeroOrMore(condense(item + default + comma)) + (
+                     condense(item + default)
+                     | condense(dubstar + item)
+                     )
                  )
              )
-         )
-    ) + Optional(comma).suppress())
+        ) + Optional(comma).suppress())
+argslist = genargslist(tfpdef)
+varargslist = genargslist(vardef)
+
 parameters = condense(lparen + argslist + rparen)
 
 testlist = itemlist(test)
@@ -530,10 +537,10 @@ def item_proc(tokens):
         else:
             raise ParseFatalException("Invalid trailer tokens: "+repr(trailer))
     return out
-item = attach(atom + ZeroOrMore(trailer), item_proc)
+atom_item = attach(atom + ZeroOrMore(trailer), item_proc)
 
 factor = Forward()
-power = condense(item + Optional(exp_dubstar + factor))
+power = condense(atom_item + Optional(exp_dubstar + factor))
 unary = plus | neg_minus
 
 def inv_proc(tokens):
@@ -589,6 +596,7 @@ and_test = addspace(not_test + ZeroOrMore(Keyword("and") + not_test))
 or_test = addspace(and_test + ZeroOrMore(Keyword("or") + and_test))
 test_item = or_test
 test_nocond = Forward()
+lambdef_params = lparen.suppress() + varargslist + rparen.suppress()
 
 def lambda_proc(tokens):
     """Processes Lambda Calls."""
@@ -596,9 +604,9 @@ def lambda_proc(tokens):
         return "lambda "+tokens[0]+": "+tokens[1]
     else:
         raise ParseFatalException("Invalid lambda tokens: "+repr(tokens))
-lambdef = attach(lparen.suppress() + argslist + rparen.suppress() + arrow.suppress() + test, lambda_proc)
+lambdef = attach(lambdef_params + arrow.suppress() + test, lambda_proc)
+lambdef_nocond = attach(lambdef_params + arrow.suppress() + test_nocond, lambda_proc)
 
-lambdef_nocond = addspace(parameters + arrow + test_nocond)
 test <<= lambdef | addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test))
 test_nocond <<= lambdef_nocond | test_item
 exprlist = itemlist(star_expr | expr)
