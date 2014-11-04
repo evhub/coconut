@@ -647,13 +647,14 @@ arglist = addspace(
     + (
         condense(dubstar + test)
         | star + condense(test + comma) + (
-            ZeroOrMore(condense(argument + comma)) + (
-                argument
-                | condense(dubstar + test)
+            attach(addspace(OneOrMore(condense(argument + comma))), list_proc)
+            | ZeroOrMore(condense(argument + comma)) + (
+                condense(dubstar + test)
+                | argument
                 )
-            | attach(addspace(OneOrMore(condense(argument + comma))), list_proc)
             )
         | star + test + Optional(comma).suppress()
+        | argument
         )
     )
 classdef = condense(addspace(Keyword("class") + NAME) + Optional(lparen + Optional(arglist) + rparen) + suite)
