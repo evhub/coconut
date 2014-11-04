@@ -28,6 +28,18 @@ white = " \t\f"
 # GRAMMAR:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+class CoconutException(ParseFatalException):
+    """Base Coconut Exception."""
+    def __init__(self, value):
+        """Creates The Coconut Exception."""
+        self.value = value
+    def __repr__(self):
+        """Displays The Coconut Exception."""
+        return self.value
+    def __str__(self):
+        """Wraps repr."""
+        return repr(self)
+
 refs = None
 
 class processor(object):
@@ -109,7 +121,7 @@ class processor(object):
                     elif c == hold[1][0]:
                         hold[2] += c
                     elif len(hold[2]) > len(hold[1]):
-                        raise ParseFatalException("Invalid number of string closes in "+self.getpart(inputstring, x))
+                        raise CoconutException("Invalid number of string closes in "+self.getpart(inputstring, x))
                     elif hold[2] == hold[1]:
                         out.append(self.wrapstr(hold[0], hold[1][0] in self.raw, True))
                         hold = None
@@ -140,7 +152,7 @@ class processor(object):
                     hold = [c, found, None]
                     found = None
                 else:
-                    raise ParseFatalException("Invalid number of string starts in "+self.getpart(inputstring, x))
+                    raise CoconutException("Invalid number of string starts in "+self.getpart(inputstring, x))
             elif c in self.comment:
                 hold = [""]
             elif c in self.holds:
@@ -149,7 +161,7 @@ class processor(object):
                 out.append(c)
             x += 1
         if hold is not None or found is not None:
-            raise ParseFatalException("Unclosed string in "+self.getpart(inputstring, x))
+            raise CoconutException("Unclosed string in "+self.getpart(inputstring, x))
         return "".join(out)
 
     def leading(self, inputstring):
@@ -161,7 +173,7 @@ class processor(object):
             elif self.indchar is None:
                 self.indchar = c
             elif self.indchar != c:
-                raise ParseFatalException("Illegal mixing of tabs and spaces in "+repr(inputstring))
+                raise CoconutException("Illegal mixing of tabs and spaces in "+repr(inputstring))
             count += 1
         return count
 
@@ -190,30 +202,31 @@ class processor(object):
         levels = []
         count = 0
         for x in xrange(0, len(lines)):
-            if lines[x] and lines[x][-1] in white:
-                raise ParseFatalException("Illegal trailing whitespace in "+repr(lines[x]))
-            elif count < 0:
-                new[-1] += lines[x]
-            else:
-                check = self.leading(lines[x])
-                if not x:
-                    if check:
-                        raise ParseFatalException("Illegal initial indent in "+repr(lines[x]))
-                    else:
-                        current = 0
-                elif check > current:
-                    levels.append(current)
-                    current = check
-                    lines[x] = openstr+lines[x]
-                elif check in levels:
-                    point = levels.index(check)+1
-                    lines[x] = closestr*(len(levels[point:])+1)+lines[x]
-                    levels = levels[:point]
-                    current = levels.pop()
-                elif current != check:
-                    raise ParseFatalException("Illegal dedent to unused indentation level in "+repr(lines[x]))
-                new.append(lines[x])
-            count += self.change(lines[x])
+            if lines[x]:
+                if lines[x][-1] in white:
+                    raise CoconutException("Illegal trailing whitespace in "+repr(lines[x]))
+                elif count < 0:
+                    new[-1] += lines[x]
+                else:
+                    check = self.leading(lines[x])
+                    if not x:
+                        if check:
+                            raise CoconutException("Illegal initial indent in "+repr(lines[x]))
+                        else:
+                            current = 0
+                    elif check > current:
+                        levels.append(current)
+                        current = check
+                        lines[x] = openstr+lines[x]
+                    elif check in levels:
+                        point = levels.index(check)+1
+                        lines[x] = closestr*(len(levels[point:])+1)+lines[x]
+                        levels = levels[:point]
+                        current = levels.pop()
+                    elif current != check:
+                        raise CoconutException("Illegal dedent to unused indentation level in "+repr(lines[x]))
+                    new.append(lines[x])
+                count += self.change(lines[x])
         new.append(closestr*(len(levels)-1))
         return linebreak.join(new)
 
@@ -247,7 +260,7 @@ class processor(object):
         if len(tokens) == 1:
             return self.header+self.reindent(tokens[0].strip()).strip()+linebreak
         else:
-            raise ParseFatalException("Multiple tokens leftover: "+repr(tokens))
+            raise CoconutException("Multiple tokens leftover: "+repr(tokens))
 
 ParserElement.setDefaultWhitespaceChars(white)
 
@@ -330,7 +343,7 @@ def anyint_proc(tokens):
         tokens[0] = 'int("'+item+'", '+base+")"
         return tokens
     else:
-        raise ParseFatalException("Invalid anyint token")
+        raise CoconutException("Invalid anyint token")
 
 NUMBER = (attach(Combine(anyint + underscore + integer), anyint_proc)
           | Combine(CaselessLiteral("0b"), binint)
@@ -358,9 +371,9 @@ def string_repl(tokens):
                 tokens[0] = "r"+tokens[0]
             return tokens
         else:
-            raise ParseFatalException("String marker points to comment")
+            raise CoconutException("String marker points to comment")
     else:
-        raise ParseFatalException("Invalid string marker")
+        raise CoconutException("Invalid string marker")
 string_ref = attach(Combine(Literal('"').suppress() + integer + Literal('"').suppress()), string_repl)
 
 def comment_repl(tokens):
@@ -368,11 +381,11 @@ def comment_repl(tokens):
     if len(tokens) == 1:
         tokens[0] = refs[int(tokens[0])]
         if isinstance(tokens[0], tuple):
-            raise ParseFatalException("Comment marker points to string")
+            raise CoconutException("Comment marker points to string")
         else:
             return tokens
     else:
-        raise ParseFatalException("Invalid comment marker")
+        raise CoconutException("Invalid comment marker")
 comment = attach(Combine(pound.suppress() + integer), comment_repl)
 
 bit_b = CaselessLiteral("b")
@@ -382,9 +395,6 @@ STARTMARKER = Literal(start).suppress()
 ENDMARKER = Literal(end).suppress()
 INDENT = Literal(openstr)
 DEDENT = Literal(closestr) + Optional(NEWLINE)
-
-blankline = Forward()
-blankline <<= NEWLINE | Literal(closestr) + blankline + Literal(openstr)
 
 augassign = (heavy_arrow # In-place pipeline
              | Combine(plus + equals)
@@ -426,7 +436,7 @@ def list_proc(tokens):
     if len(tokens) == 1:
         return tokens[0][:-1]
     else:
-        raise ParseFatalException("Invalid list tokens: "+repr(tokens))
+        raise CoconutException("Invalid list tokens: "+repr(tokens))
 def itemlist(item, sep=comma):
     """Creates A List Containing An Item."""
     return addspace(ZeroOrMore(condense(item + sep)) + item) | attach(addspace(OneOrMore(condense(item + sep))), list_proc)
@@ -477,7 +487,7 @@ def tilde_proc(tokens):
         step = len(tokens[0])
         return "lambda func, series: __coconut__.loop((series, "+repr(step)+"), func)"
     else:
-        raise ParseFatalException("Invalid tilde tokens: "+repr(tokens))
+        raise CoconutException("Invalid tilde tokens: "+repr(tokens))
 op_atom = lparen + (
     fixto(exp_dubstar, "__coconut__.operator.__pow__")
     | fixto(mul_star, "__coconut__.operator.__mul__")
@@ -536,9 +546,9 @@ def item_proc(tokens):
             elif trailer[0] == "..":
                 out = "__coconut__.compose("+out+", "+trailer[1]+")"
             else:
-                raise ParseFatalException("Invalid special trailer: "+repr(trailer[0]))
+                raise CoconutException("Invalid special trailer: "+repr(trailer[0]))
         else:
-            raise ParseFatalException("Invalid trailer tokens: "+repr(trailer))
+            raise CoconutException("Invalid trailer tokens: "+repr(trailer))
     return out
 atom_item = attach(atom + ZeroOrMore(trailer), item_proc)
 
@@ -551,7 +561,7 @@ def inv_proc(tokens):
     if len(tokens) == 1:
         return "__coconut__.inv("+tokens[0]+")"
     else:
-        raise ParseFatalException("Invalid inversion tokens: "+repr(tokens))
+        raise CoconutException("Invalid inversion tokens: "+repr(tokens))
 factor <<= attach(condense(unary + factor) | (bang.suppress() + factor), inv_proc) | power
 
 mulop = mul_star | div_slash | div_dubslash | percent
@@ -606,7 +616,7 @@ def lambda_proc(tokens):
     if len(tokens) == 2:
         return "lambda "+tokens[0]+": "+tokens[1]
     else:
-        raise ParseFatalException("Invalid lambda tokens: "+repr(tokens))
+        raise CoconutException("Invalid lambda tokens: "+repr(tokens))
 lambdef = attach(lambdef_params + arrow.suppress() + test, lambda_proc)
 lambdef_nocond = attach(lambdef_params + arrow.suppress() + test_nocond, lambda_proc)
 
@@ -702,13 +712,13 @@ def assign_proc(tokens):
         else:
             return tokens
     else:
-        raise ParseFatalException("Invalid assignment tokens: "+repr(tokens))
+        raise CoconutException("Invalid assignment tokens: "+repr(tokens))
 def func_proc(tokens):
     """Processes Mathematical Function Definitons."""
     if len(tokens) == 2:
         return "def "+tokens[0]+": return "+tokens[1]
     else:
-        raise ParseFatalException("Invalid mathematical function definition tokens: "+repr(tokens))
+        raise CoconutException("Invalid mathematical function definition tokens: "+repr(tokens))
 expr_stmt = addspace(attach(testlist_star_expr + augassign + (yield_expr | testlist), assign_proc)
                      | attach(base_funcdef + equals.suppress() + (yield_expr | testlist_star_expr), func_proc)
                      | testlist_star_expr + ZeroOrMore(equals + (yield_expr | testlist_star_expr))
@@ -720,7 +730,7 @@ stmt = compound_stmt | simple_stmt
 suite <<= condense(NEWLINE + INDENT + OneOrMore(stmt) + DEDENT) | simple_stmt
 
 single_input = NEWLINE | condense(compound_stmt + NEWLINE) | simple_stmt
-file_input = condense(ZeroOrMore(blankline | stmt))
+file_input = condense(ZeroOrMore(NEWLINE | stmt))
 eval_input = condense(testlist + NEWLINE)
 
 single_parser = condense(OneOrMore(STARTMARKER + single_input + ENDMARKER))
