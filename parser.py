@@ -383,6 +383,9 @@ ENDMARKER = Literal(end).suppress()
 INDENT = Literal(openstr)
 DEDENT = Literal(closestr) + Optional(NEWLINE)
 
+blankline = Forward()
+blankline <<= NEWLINE | INDENT + blankline + DEDENT
+
 augassign = (heavy_arrow # In-place pipeline
              | Combine(plus + equals)
              | Combine(sub_minus + equals)
@@ -717,7 +720,7 @@ stmt = compound_stmt | simple_stmt
 suite <<= condense(NEWLINE + INDENT + OneOrMore(stmt) + DEDENT) | simple_stmt
 
 single_input = NEWLINE | condense(compound_stmt + NEWLINE) | simple_stmt
-file_input = condense(ZeroOrMore(NEWLINE | stmt))
+file_input = condense(ZeroOrMore(blankline | stmt))
 eval_input = condense(testlist + NEWLINE)
 
 single_parser = condense(OneOrMore(STARTMARKER + single_input + ENDMARKER))
