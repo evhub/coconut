@@ -384,7 +384,7 @@ INDENT = Literal(openstr)
 DEDENT = Literal(closestr) + Optional(NEWLINE)
 
 blankline = Forward()
-blankline <<= NEWLINE | INDENT + blankline + DEDENT
+blankline <<= NEWLINE | DEDENT + INDENT
 
 augassign = (heavy_arrow # In-place pipeline
              | Combine(plus + equals)
