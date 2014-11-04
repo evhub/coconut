@@ -129,7 +129,7 @@ class processor(object):
                     else:
                         hold[0] += hold[2]+c
                         hold[2] = None
-                elif hold[0].endswith(self.escape):
+                elif hold[0].endswith(self.escape) and not hold[0].endswith(self.escape*2):
                     hold[0] += c
                 elif c == hold[1]:
                     out.append(self.wrapstr(hold[0], hold[1] in self.raw, False))
@@ -183,12 +183,16 @@ class processor(object):
         hold = None
         for c in inputstring:
             if hold:
-                if c == hold:
+                if c == self.escape:
+                    hold[1] = not hold[1]
+                elif hold[1]:
+                    hold[1] = False
+                if not hold[1] and c == hold[0]:
                     hold = None
             elif c in self.comment:
                 break
             elif c in self.holds:
-                hold = c
+                hold = [c, False]
             elif c in self.downs:
                 count -= 1
             elif c in self.ups:
@@ -201,33 +205,39 @@ class processor(object):
         new = []
         levels = []
         count = 0
-        for x in xrange(0, len(lines)):
-            if lines[x]:
-                if lines[x][-1] in white:
-                    raise CoconutException("Illegal trailing whitespace in "+repr(lines[x]))
-                elif count < 0:
-                    new[-1] += lines[x]
-                else:
-                    check = self.leading(lines[x])
-                    if not x:
-                        if check:
-                            raise CoconutException("Illegal initial indent in "+repr(lines[x]))
-                        else:
-                            current = 0
-                    elif check > current:
-                        levels.append(current)
-                        current = check
-                        lines[x] = openstr+lines[x]
-                    elif check in levels:
-                        point = levels.index(check)+1
-                        lines[x] = closestr*(len(levels[point:])+1)+lines[x]
-                        levels = levels[:point]
-                        current = levels.pop()
-                    elif current != check:
-                        raise CoconutException("Illegal dedent to unused indentation level in "+repr(lines[x]))
-                    new.append(lines[x])
-                count += self.change(lines[x])
-        new.append(closestr*(len(levels)-1))
+        current = None
+        for x in xrange(0, len(lines)+1):
+            if x == len(lines):
+                line = ""
+            else:
+                line = lines[x]
+            if line and line[-1] in white:
+                raise CoconutException("Illegal trailing whitespace in "+repr(line))
+            elif count < 0:
+                new[-1] += line
+            else:
+                check = self.leading(line)
+                if current is None:
+                    if check:
+                        raise CoconutException("Illegal initial indent in "+repr(line))
+                    else:
+                        current = 0
+                elif check > current:
+                    levels.append(current)
+                    current = check
+                    line = openstr+line
+                elif check in levels:
+                    point = levels.index(check)+1
+                    line = closestr*(len(levels[point:])+1)+line
+                    levels = levels[:point]
+                    current = levels.pop()
+                elif current != check:
+                    raise CoconutException("Illegal dedent to unused indentation level in "+repr(line))
+                new.append(line)
+            count += self.change(line)
+        if count != 0:
+            raise CoconutException("Unclosed parenthetical in "+repr(new[-1]))
+        new[-1] += closestr*(len(levels)-1)
         return linebreak.join(new)
 
     def reindent(self, inputstring):
@@ -255,10 +265,15 @@ class processor(object):
             out.append(line)
         return linebreak.join(out)
 
-    def post(self, tokens):
+    def post(self, tokens, header=True):
         """Performs Post-Processing."""
         if len(tokens) == 1:
-            return self.header+self.reindent(tokens[0].strip()).strip()+linebreak
+            if header:
+                out = self.header
+            else:
+                out = ""
+            out += self.reindent(tokens[0].strip()).strip()+linebreak
+            return out
         else:
             raise CoconutException("Multiple tokens leftover: "+repr(tokens))
 
@@ -323,7 +338,7 @@ sub_minus = fixto(minus | Literal("\u2212"), "-")
 div_slash = fixto(slash | Literal("\xf7"), "/")
 div_dubslash = fixto(dubslash | Combine(Literal("\xf7"), slash), "//")
 
-NAME = Regex(r"(?![0-9])\w")
+NAME = Regex(r"(?![0-9])\w+")
 dotted_name = condense(NAME + ZeroOrMore(dot + NAME))
 
 integer = Word(nums)
@@ -340,8 +355,7 @@ def anyint_proc(tokens):
     """Replaces Underscored Integers."""
     if len(tokens) == 1:
         item, base = tokens[0].split("_")
-        tokens[0] = 'int("'+item+'", '+base+")"
-        return tokens
+        return 'int("'+item+'", '+base+")"
     else:
         raise CoconutException("Invalid anyint token")
 
@@ -369,7 +383,7 @@ def string_repl(tokens):
                 tokens[0] = '"'+tokens[0]+'"'
             if raw:
                 tokens[0] = "r"+tokens[0]
-            return tokens
+            return tokens[0]
         else:
             raise CoconutException("String marker points to comment")
     else:
@@ -383,14 +397,14 @@ def comment_repl(tokens):
         if isinstance(tokens[0], tuple):
             raise CoconutException("Comment marker points to string")
         else:
-            return tokens
+            return "#"+tokens[0]
     else:
         raise CoconutException("Invalid comment marker")
 comment = attach(Combine(pound.suppress() + integer), comment_repl)
 
 bit_b = CaselessLiteral("b")
 STRING = Combine(Optional(bit_b) + string_ref)
-NEWLINE = Combine(Optional(comment) + Literal(linebreak))
+NEWLINE = condense(OneOrMore(Combine(Optional(comment) + Literal(linebreak))))
 STARTMARKER = Literal(start).suppress()
 ENDMARKER = Literal(end).suppress()
 INDENT = Literal(openstr)
@@ -642,7 +656,7 @@ arglist = addspace(
         | star + test + Optional(comma).suppress()
         )
     )
-classdef = condense(addspace(Keyword("class") + condense(NAME + Optional(lparen + Optional(arglist) + rparen) + colon)) + suite)
+classdef = condense(addspace(Keyword("class") + NAME) + Optional(lparen + Optional(arglist) + rparen) + suite)
 comp_iter = Forward()
 comp_for <<= addspace(Keyword("for") + exprlist + Keyword("in") + test_item + Optional(comp_iter))
 comp_if = addspace(Keyword("if") + test_nocond + Optional(comp_iter))
@@ -671,38 +685,34 @@ nonlocal_stmt = addspace(Keyword("nonlocal") + namelist)
 del_stmt = addspace(Keyword("del") + namelist)
 with_item = addspace(test + Optional(Keyword("as") + NAME))
 assert_stmt = addspace(Keyword("assert") + parenwrap(testlist))
-else_stmt = condense(Keyword("else") + colon + suite)
-if_stmt = condense(addspace(Keyword("if") + condense(test + colon + suite))
-                   + ZeroOrMore(addspace(Keyword("elif") + condense(test + colon + suite)))
+else_stmt = condense(Keyword("else") + suite)
+if_stmt = condense(addspace(Keyword("if") + condense(test + suite))
+                   + ZeroOrMore(addspace(Keyword("elif") + condense(test + suite)))
                    + Optional(else_stmt)
                    )
-while_stmt = addspace(Keyword("while") + condense(test + colon + suite + Optional(else_stmt)))
-for_stmt = addspace(Keyword("for") + exprlist + Keyword("in") + condense(testlist + colon + suite + Optional(else_stmt)))
+while_stmt = addspace(Keyword("while") + condense(test + suite + Optional(else_stmt)))
+for_stmt = addspace(Keyword("for") + exprlist + Keyword("in") + condense(testlist + suite + Optional(else_stmt)))
 except_clause = addspace(Keyword("except") + test + Optional(Keyword("as") + NAME))
-try_stmt = condense(Keyword("try") + colon + suite + (
-    Keyword("finally") + colon + suite
+try_stmt = condense(Keyword("try") + suite + (
+    Keyword("finally") + suite
     | (
-        OneOrMore(except_clause + colon + suite) + Optional(Keyword("except") + colon + suite)
-        | Keyword("except") + colon + suite
-        ) + Optional(else_stmt) + Optional(Keyword("finally") + colon + suite)
+        OneOrMore(except_clause + suite) + Optional(Keyword("except") + suite)
+        | Keyword("except") + suite
+        ) + Optional(else_stmt) + Optional(Keyword("finally") + suite)
     ))
-with_stmt = addspace(Keyword("with") + condense(parenwrap(itemlist(with_item)) + colon + suite))
+with_stmt = addspace(Keyword("with") + condense(parenwrap(itemlist(with_item)) + suite))
 
 decorator = condense(at + test + NEWLINE)
 decorators = OneOrMore(decorator)
 base_funcdef = addspace(condense(NAME + parameters) + Optional(arrow + test))
-funcdef = addspace(Keyword("def") + condense(base_funcdef + colon + suite))
+funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
 decorated = condense(decorators + (classdef | funcdef))
 
 compound_stmt = if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated
 
 def assign_proc(tokens):
     """Processes Assignments."""
-    if len(tokens) == 1:
-        return tokens[0]
-    elif len(tokens) == 2:
-        return tokens
-    elif len(tokens) == 3:
+    if len(tokens) == 3:
         if tokens[1] == "=>":
             return tokens[0]+" = __coconut__.pipe("+tokens[0]+", ("+tokens[2]+"))"
         elif tokens[1] == "..=":
@@ -727,10 +737,10 @@ expr_stmt = addspace(attach(testlist_star_expr + augassign + (yield_expr | testl
 small_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt | assert_stmt | expr_stmt
 simple_stmt = itemlist(small_stmt, semicolon) + NEWLINE
 stmt = compound_stmt | simple_stmt
-suite <<= condense(NEWLINE + INDENT + OneOrMore(stmt) + DEDENT) | simple_stmt
+suite <<= condense(colon + NEWLINE + INDENT + OneOrMore(stmt) + DEDENT) | addspace(colon + simple_stmt)
 
-single_input = NEWLINE | condense(compound_stmt + NEWLINE) | simple_stmt
-file_input = condense(ZeroOrMore(NEWLINE | stmt))
+single_input = NEWLINE | stmt
+file_input = condense(ZeroOrMore(single_input))
 eval_input = condense(testlist + NEWLINE)
 
 single_parser = condense(OneOrMore(STARTMARKER + single_input + ENDMARKER))
@@ -755,6 +765,15 @@ def parse_eval(inputstring):
     """Processes Eval Input."""
     proc = processor()
     return proc.post(eval_parser.parseString(proc.pre(inputstring, True)))
+
+def parse_debug(inputstring):
+    """Processes Debug Input."""
+    proc = processor()
+    return proc.post(file_parser.parseString(proc.pre(inputstring, True)), False)
+
+def pparse(inputstring, parser=parse_debug):
+    """Prints The Results Of A Parse."""
+    print(parser(inputstring))
 
 if __name__ == "__main__":
     print(parse_file(open(__file__, "r").read()))
