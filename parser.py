@@ -17,10 +17,8 @@ from __future__ import with_statement, print_function, absolute_import, unicode_
 from rabbit.carrot.root import *
 from pyparsing import *
 
-start = "\u2402"
 openstr = "\u204b"
 closestr = "\xb6"
-end = "\u2403"
 linebreak = "\n"
 white = " \t\f"
 
@@ -55,26 +53,19 @@ class processor(object):
     tablen = 4
     indchar = None
 
-    def __init__(self, header=None):
+    def __init__(self, headerfile="__coconut__.py"):
         """Creates A New Pre-Processor."""
         self.refs = []
         global refs
         refs = self.refs
-        if header is None:
-            self.header = self.getheader()
-        else:
-            self.header = str(header)
-
-    def getheader(self, headerfile="__coconut__.py"):
-        """Retrieves The Header."""
-        return str(open(headerfile, "r").read())
+        self.header = str(open(headerfile, "r").read())
 
     def pre(self, inputstring, strip=False):
         """Performs Pre-Processing."""
         inputstring = str(inputstring)
         if strip:
             inputstring = inputstring.strip()
-        return start + self.indproc(self.strproc(inputstring)) + end
+        return self.indproc(self.strproc(inputstring))
 
     def wrapstr(self, text, raw, multiline):
         """Wraps A String."""
@@ -409,10 +400,9 @@ comment = attach(Combine(pound.suppress() + integer), comment_repl)
 bit_b = CaselessLiteral("b")
 STRING = Combine(Optional(bit_b) + string_ref)
 lineitem = Combine(Optional(comment) + Literal(linebreak))
-NEWLINE = Forward()
-NEWLINE <<= condense(Literal(closestr) + NEWLINE + Literal(openstr) ^ OneOrMore(lineitem))
-STARTMARKER = Literal(start).suppress()
-ENDMARKER = Literal(end).suppress()
+NEWLINE = condense(OneOrMore(Literal(closestr) + OneOrMore(lineitem) + Literal(openstr) | lineitem))
+STARTMARKER = StringStart()
+ENDMARKER = StringEnd()
 INDENT = Literal(openstr) + Optional(NEWLINE)
 DEDENT = Literal(closestr) + Optional(NEWLINE)
 
@@ -750,13 +740,16 @@ single_input = NEWLINE | stmt
 file_input = condense(ZeroOrMore(single_input))
 eval_input = condense(testlist + NEWLINE)
 
-single_parser = condense(OneOrMore(STARTMARKER + single_input + ENDMARKER))
-file_parser = condense(OneOrMore(STARTMARKER + file_input + ENDMARKER))
-eval_parser = condense(OneOrMore(STARTMARKER + eval_input + ENDMARKER))
+def makeparser(item):
+    """Makes An Item Into A Parser."""
+    return condense(STARTMARKER + item + ENDMARKER)
+single_parser = makeparser(single_input)
+file_parser = makeparser(file_input)
+eval_parser = makeparser(eval_input)
 
 def parsewith(parser, item):
     """Tests Parsing With A Parser."""
-    return (StringStart() + parser + StringEnd()).parseString(item)
+    return makeparser(parser).parseString(item)
 
 def parse_single(inputstring):
     """Processes Console Input."""
