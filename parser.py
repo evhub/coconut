@@ -187,7 +187,7 @@ class processor(object):
                     hold[1] = not hold[1]
                 elif hold[1]:
                     hold[1] = False
-                if not hold[1] and c == hold[0]:
+                elif c == hold[0]:
                     hold = None
             elif c in self.comment:
                 break
@@ -256,10 +256,14 @@ class processor(object):
                 line = " "*self.tablen*level + line
             for c in line:
                 if hold:
-                    if hold == c:
+                    if c == self.escape:
+                        hold[1] = not hold[1]
+                    elif hold[1]:
+                        hold[1] = False
+                    elif c == hold[0]:
                         hold = None
                 elif c in self.holds:
-                    hold = c
+                    hold = [c, False]
             if hold is None:
                 line = line.rstrip()
             out.append(line)
@@ -404,10 +408,12 @@ comment = attach(Combine(pound.suppress() + integer), comment_repl)
 
 bit_b = CaselessLiteral("b")
 STRING = Combine(Optional(bit_b) + string_ref)
-NEWLINE = condense(OneOrMore(Combine(Optional(comment) + Literal(linebreak))))
+lineitem = Combine(Optional(comment) + Literal(linebreak))
+NEWLINE = Forward()
+NEWLINE <<= condense(Literal(closestr) + NEWLINE + Literal(openstr) ^ OneOrMore(lineitem))
 STARTMARKER = Literal(start).suppress()
 ENDMARKER = Literal(end).suppress()
-INDENT = Literal(openstr)
+INDENT = Literal(openstr) + Optional(NEWLINE)
 DEDENT = Literal(closestr) + Optional(NEWLINE)
 
 augassign = (heavy_arrow # In-place pipeline
@@ -467,12 +473,12 @@ def genargslist(item):
     """Creates An Argument List."""
     return addspace((
         ZeroOrMore(condense(item + default + comma)) + condense(item + default)
-         | OneOrMore(condense(item + default + comma)) + (
+         ^ OneOrMore(condense(item + default + comma)) + (
              condense(star + item)
-             | condense(star + Optional(item) + comma) + (
+             ^ condense(star + Optional(item) + comma) + (
                  ZeroOrMore(condense(item + default + comma)) + (
                      condense(item + default)
-                     | condense(dubstar + item)
+                     ^ condense(dubstar + item)
                      )
                  )
              )
@@ -490,9 +496,9 @@ test_star_expr = test | star_expr
 testlist_star_expr = itemlist(test_star_expr)
 testlist_comp = addspace(test_star_expr + comp_for) | testlist_star_expr
 dictorsetmaker = addspace(condense(test + colon) + test + comp_for
-                  | itemlist(condense(test + colon) + test)
-                  | test + comp_for
-                  | testlist
+                  ^ itemlist(condense(test + colon) + test)
+                  ^ test + comp_for
+                  ^ testlist
                   )
 
 def tilde_proc(tokens):
@@ -643,18 +649,18 @@ suite = Forward()
 argument = condense(NAME + equals + test) | addspace(NAME + Optional(comp_for))
 arglist = addspace(
     attach(addspace(OneOrMore(condense(argument + comma))), list_proc)
-    | ZeroOrMore(condense(argument + comma))
+    ^ ZeroOrMore(condense(argument + comma))
     + (
         condense(dubstar + test)
-        | star + condense(test + comma) + (
+        ^ star + condense(test + comma) + (
             attach(addspace(OneOrMore(condense(argument + comma))), list_proc)
-            | ZeroOrMore(condense(argument + comma)) + (
+            ^ ZeroOrMore(condense(argument + comma)) + (
                 condense(dubstar + test)
-                | argument
+                ^ argument
                 )
             )
-        | star + test + Optional(comma).suppress()
-        | argument
+        ^ star + test + Optional(comma).suppress()
+        ^ argument
         )
     )
 classdef = condense(addspace(Keyword("class") + NAME) + Optional(lparen + Optional(arglist) + rparen) + suite)
@@ -696,9 +702,9 @@ for_stmt = addspace(Keyword("for") + exprlist + Keyword("in") + condense(testlis
 except_clause = addspace(Keyword("except") + test + Optional(Keyword("as") + NAME))
 try_stmt = condense(Keyword("try") + suite + (
     Keyword("finally") + suite
-    | (
+    ^ (
         OneOrMore(except_clause + suite) + Optional(Keyword("except") + suite)
-        | Keyword("except") + suite
+        ^ Keyword("except") + suite
         ) + Optional(else_stmt) + Optional(Keyword("finally") + suite)
     ))
 with_stmt = addspace(Keyword("with") + condense(parenwrap(itemlist(with_item)) + suite))
