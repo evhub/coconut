@@ -11,13 +11,15 @@ Description: The CoconutScript Parser.
 """
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# IMPORTS:
+# SETUP:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
 from rabbit.carrot.root import *
 from pyparsing import *
+
+DEBUG = True
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -37,7 +39,7 @@ class CoconutException(ParseFatalException):
 
 def attach(item, action):
     """Attaches A Parse Action To An Item."""
-    return item.copy().setParseAction(action)
+    return item.copy().addParseAction(action)
 
 def fixto(item, output):
     """Forces An Item To Result In A Specific Output."""
@@ -54,6 +56,21 @@ def condense(item):
 def parenwrap(lparen, item, rparen):
     """Wraps An Item In Optional Parentheses."""
     return condense(lparen.suppress() + item + rparen.suppress() | item)
+
+def tracer(location, tokens):
+    """Tracer Parse Action."""
+    if DEBUG:
+        out = str(location)+": "
+        if len(tokens) == 1:
+            out += repr(tokens[0])
+        else:
+            out += str(tokens)
+        print(out)
+    return tokens
+
+def trace(item):
+    """Traces A Parse Element."""
+    return attach(item, tracer)
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # PROCESSORS:
@@ -75,7 +92,7 @@ def list_proc(tokens):
         raise CoconutException("Invalid list tokens: "+repr(tokens))
 def itemlist(item, sep):
     """Creates A List Containing An Item."""
-    return addspace(ZeroOrMore(condense(item + sep)) + condense(item)) | attach(addspace(OneOrMore(condense(item + sep))), list_proc)
+    return trace(addspace(ZeroOrMore(condense(item + sep)) + condense(item)) | attach(addspace(OneOrMore(condense(item + sep))), list_proc))
 
 def tilde_proc(tokens):
     """Processes Tildes For Loop Functions."""
@@ -437,8 +454,8 @@ class processor(object):
 
     def init(self):
         """Initializes The Strings And Comments."""
-        self.string_ref <<= attach(self.string_marker, self.string_repl)
-        self.comment <<= attach(self.comment_marker, self.comment_repl)
+        self.string_ref <<= trace(attach(self.string_marker, self.string_repl))
+        self.comment <<= trace(attach(self.comment_marker, self.comment_repl))
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # GRAMMAR:
@@ -502,7 +519,7 @@ class processor(object):
     sci_e = CaselessLiteral("e") | fixto(Literal("\u23e8"), "E")
     numitem = Combine(basenum + sci_e + integer) | basenum
 
-    NUMBER = (attach(Combine(anyint + underscore + integer), anyint_proc)
+    NUMBER = trace(attach(Combine(anyint + underscore + integer), anyint_proc)
               | Combine(CaselessLiteral("0b") + binint)
               | Combine(CaselessLiteral("0o") + octint)
               | Combine(CaselessLiteral("0x") + hexint)
@@ -582,7 +599,7 @@ class processor(object):
                       ^ testlist
                       )
 
-    op_atom = lparen + (
+    op_atom = trace(lparen + (
         fixto(exp_dubstar, "__coconut__.operator.__pow__")
         | fixto(mul_star, "__coconut__.operator.__mul__")
         | fixto(div_slash, "__coconut__.operator.__truediv__")
@@ -606,7 +623,7 @@ class processor(object):
         | fixto(pipeline, "__coconut__.pipe")
         | fixto(dotdot, "__coconut__.compose")
         | attach(OneOrMore(tilde), tilde_proc)
-        ) + rparen
+        ) + rparen)
 
     func_atom = NAME | op_atom | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
     keyword_atom = Keyword("None") | Keyword("True") | Keyword("False")
@@ -628,22 +645,22 @@ class processor(object):
                | condense(dot + NAME)
                )
 
-    atom_item = attach(atom + ZeroOrMore(trailer), item_proc)
+    atom_item = trace(attach(atom + ZeroOrMore(trailer), item_proc))
 
     factor = Forward()
-    power = condense(atom_item + Optional(exp_dubstar + factor))
+    power = trace(condense(atom_item + Optional(exp_dubstar + factor)))
     unary = plus | neg_minus
 
-    factor <<= condense(unary + factor) | attach(bang.suppress() + factor, inv_proc) | power
+    factor <<= trace(condense(unary + factor) | attach(bang.suppress() + factor, inv_proc) | power)
 
     mulop = mul_star | div_slash | div_dubslash | percent
     term = addspace(factor + ZeroOrMore(mulop + factor))
     arith = plus | sub_minus
     arith_expr = addspace(term + ZeroOrMore(arith + term))
 
-    infix_expr = attach(arith_expr + ZeroOrMore(backslash.suppress() + test + backslash.suppress() + arith_expr), infix_proc)
+    infix_expr = trace(attach(arith_expr + ZeroOrMore(backslash.suppress() + test + backslash.suppress() + arith_expr), infix_proc))
 
-    loop_expr = attach(ZeroOrMore(Group(infix_expr + condense(OneOrMore(tilde)))) + infix_expr, loop_proc)
+    loop_expr = trace(attach(ZeroOrMore(Group(infix_expr + condense(OneOrMore(tilde)))) + infix_expr, loop_proc))
 
     shift = lshift | rshift
     shift_expr = addspace(loop_expr + ZeroOrMore(shift + loop_expr))
@@ -651,7 +668,7 @@ class processor(object):
     xor_expr = addspace(and_expr + ZeroOrMore(caret + and_expr))
     or_expr = addspace(xor_expr + ZeroOrMore(bar + xor_expr))
 
-    pipe_expr = attach(or_expr + ZeroOrMore(pipeline.suppress() + or_expr), pipe_proc)
+    pipe_expr = trace(attach(or_expr + ZeroOrMore(pipeline.suppress() + or_expr), pipe_proc))
 
     expr <<= pipe_expr
     comparison = addspace(expr + ZeroOrMore(comp_op + expr))
@@ -662,11 +679,11 @@ class processor(object):
     test_nocond = Forward()
     lambdef_params = lparen.suppress() + varargslist + rparen.suppress()
 
-    lambdef = attach(lambdef_params + arrow.suppress() + test, lambda_proc)
-    lambdef_nocond = attach(lambdef_params + arrow.suppress() + test_nocond, lambda_proc)
+    lambdef = trace(attach(lambdef_params + arrow.suppress() + test, lambda_proc))
+    lambdef_nocond = trace(attach(lambdef_params + arrow.suppress() + test_nocond, lambda_proc))
 
-    test <<= lambdef | addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test))
-    test_nocond <<= lambdef_nocond | test_item
+    test <<= lambdef | trace(addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test)))
+    test_nocond <<= lambdef_nocond | trace(test_item)
     exprlist = itemlist(star_expr | expr, comma)
 
     suite = Forward()
@@ -726,19 +743,19 @@ class processor(object):
 
     compound_stmt = if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated
 
-    expr_stmt = addspace(attach(testlist_star_expr + augassign + (yield_expr | testlist), assign_proc)
+    expr_stmt = trace(addspace(attach(testlist_star_expr + augassign + (yield_expr | testlist), assign_proc)
                          | attach(base_funcdef + equals.suppress() + (yield_expr | testlist_star_expr), func_proc)
                          | testlist_star_expr + ZeroOrMore(equals + (yield_expr | testlist_star_expr))
-                         )
+                         ))
 
     small_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt | assert_stmt | expr_stmt
     simple_stmt = itemlist(small_stmt, semicolon) + NEWLINE
-    stmt = compound_stmt | simple_stmt
-    suite <<= condense(colon + NEWLINE + INDENT + OneOrMore(stmt) + DEDENT) | addspace(colon + simple_stmt)
+    stmt = trace(compound_stmt | simple_stmt)
+    suite <<= trace(condense(colon + NEWLINE + INDENT + OneOrMore(stmt) + DEDENT) | addspace(colon + simple_stmt))
 
-    single_input = NEWLINE | stmt
-    file_input = condense(ZeroOrMore(single_input))
-    eval_input = condense(testlist + NEWLINE)
+    single_input = trace(NEWLINE | stmt)
+    file_input = trace(condense(ZeroOrMore(single_input)))
+    eval_input = trace(condense(testlist + NEWLINE))
 
     single_parser = condense(STARTMARKER + single_input + ENDMARKER)
     file_parser = condense(STARTMARKER + file_input + ENDMARKER)
