@@ -11,15 +11,13 @@ Description: The CoconutScript Parser.
 """
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# SETUP:
+# IMPORTS:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
-from rabbit.carrot.root import *
+from root import *
 from pyparsing import *
-
-DEBUG = True
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -57,20 +55,29 @@ def parenwrap(lparen, item, rparen):
     """Wraps An Item In Optional Parentheses."""
     return condense(lparen.suppress() + item + rparen.suppress() | item)
 
-def tracer(location, tokens):
-    """Tracer Parse Action."""
-    if DEBUG:
-        out = str(location)+": "
-        if len(tokens) == 1:
-            out += repr(tokens[0])
-        else:
-            out += str(tokens)
-        print(out)
-    return tokens
+class tracer(object):
+    """Debug Tracer."""
+    on = True
+    last = None
 
-def trace(item):
-    """Traces A Parse Element."""
-    return attach(item, tracer)
+    def trace(self, location, tokens):
+        """Tracer Parse Action."""
+        if self.on :
+            out = str(location)+": "
+            if len(tokens) == 1:
+                out += repr(tokens[0])
+            else:
+                out += str(tokens)
+            if out != self.last:
+                print(out)
+            self.last = out
+        return tokens
+
+    def bind(self, item):
+        """Traces A Parse Element."""
+        return attach(item, self.trace)
+
+trace = tracer().bind
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # PROCESSORS:
