@@ -57,12 +57,17 @@ def parenwrap(lparen, item, rparen):
 
 class tracer(object):
     """Debug Tracer."""
-    on = True
+    ON = True
     last = None
+
+    def __init__(self, on=None):
+        """Creates The Tracer."""
+        if on is not None:
+            self.ON = on
 
     def trace(self, location, tokens):
         """Tracer Parse Action."""
-        if self.on :
+        if self.ON :
             out = str(location)+": "
             if len(tokens) == 1:
                 out += repr(tokens[0])
@@ -225,7 +230,7 @@ class processor(object):
         return '"'+str(len(self.refs)-1)+'"'
 
     def wrapcomment(self, text):
-        """Wraps A String."""
+        """Wraps A Comment."""
         self.refs.append(text)
         return "#"+str(len(self.refs)-1)
 
@@ -768,25 +773,25 @@ class processor(object):
     file_parser = condense(STARTMARKER + file_input + ENDMARKER)
     eval_parser = condense(STARTMARKER + eval_input + ENDMARKER)
 
-    def parsewith(proc, parser, item):
+    def parsewith(self, parser, item):
         """Tests Parsing With A Parser."""
-        return condense(proc.STARTMARKER + parser + proc.ENDMARKER).parseString(item)[0]
+        return condense(self.STARTMARKER + parser + self.ENDMARKER).parseString(item)[0]
 
-    def parse_single(proc, inputstring):
+    def parse_single(self, inputstring):
         """Processes Console Input."""
-        return proc.post(proc.single_parser.parseString(proc.pre(inputstring)))
+        return self.post(self.single_parser.parseString(self.pre(inputstring)))
 
-    def parse_file(proc, inputstring):
+    def parse_file(self, inputstring):
         """Processes File Input."""
-        return proc.post(proc.file_parser.parseString(proc.pre(inputstring)))
+        return self.post(self.file_parser.parseString(self.pre(inputstring)))
 
-    def parse_eval(proc, inputstring):
+    def parse_eval(self, inputstring):
         """Processes Eval Input."""
-        return proc.post(proc.eval_parser.parseString(proc.pre(inputstring, True)))
+        return self.post(self.eval_parser.parseString(self.pre(inputstring, True)))
 
-    def parse_debug(proc, inputstring):
+    def parse_debug(self, inputstring):
         """Processes Debug Input."""
-        return proc.post(proc.file_parser.parseString(proc.pre(inputstring, True)), False)
+        return self.post(proc.file_parser.parseString(self.pre(inputstring, True)), False)
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # MAIN:
