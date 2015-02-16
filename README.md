@@ -3,7 +3,7 @@ CoconutScript
 
 CoconutScript is a modern, developer-friendly scripting language that compiles to Python, built for functional programming.
 
-CoconutScript is based on Python 3 syntax, but will compile to either Python 3 or Python 2. CoconutScript does make significant changes from Python 3 syntax, however. The major differences from Python 3 are:
+CoconutScript is based on Python 3 syntax and compiles to Python 3 code. CoconutScript does make significant changes from Python 3 syntax, however. The major differences from Python 3 are:
 
 * New operators:
 	* compose: `..` (in-place: `..=`)
