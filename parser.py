@@ -593,8 +593,8 @@ class processor(object):
     tfpdef = condense(vardef + Optional(colon + test))
     default = Optional(condense(equals + test))
 
-    argslist = itemlist(condense(dubstar + tfpdef | star + tfpdef | tfpdef + default), comma)
-    varargslist = itemlist(condense(dubstar + vardef | star + vardef | vardef + default), comma)
+    argslist = Optional(itemlist(condense(dubstar + tfpdef | star + tfpdef | tfpdef + default), comma))
+    varargslist = Optional(itemlist(condense(dubstar + vardef | star + vardef | vardef + default), comma))
 
     parameters = condense(lparen + argslist + rparen)
 
@@ -651,7 +651,7 @@ class processor(object):
     subscript = test | condense(Optional(test) + sliceop + Optional(sliceop))
     subscriptlist = itemlist(subscript, comma)
     trailer = (Group(dollar + lparen.suppress() + argslist + rparen.suppress())
-               | condense(lparen + argslist + rparen)
+               | parameters
                | condense(lbrack + subscriptlist + rbrack)
                | Group(dotdot + func_atom)
                | condense(dot + NAME)
@@ -791,7 +791,7 @@ class processor(object):
 
     def parse_debug(self, inputstring):
         """Processes Debug Input."""
-        return self.post(proc.file_parser.parseString(self.pre(inputstring, True)), False)
+        return self.post(self.file_parser.parseString(self.pre(inputstring, True)), False)
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # MAIN:
