@@ -61,3 +61,22 @@ else:
     str = unicode
     def print(*args):
         return old_print(*(str(x).encode(encoding) for x in args))
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# UTILITIES:
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+def openfile(filename, opentype="r+b"):
+    """Returns An Open File Object."""
+    return codecs.open(str(filename), str(opentype), encoding=encoding)
+
+def writefile(openedfile, writer):
+    """Sets The Contents Of A File."""
+    openedfile.seek(0)
+    openedfile.truncate()
+    openedfile.write(writer)
+
+def readfile(openedfile):
+    """Reads The Contents Of A File."""
+    openedfile.seek(0)
+    return openedfile.read()

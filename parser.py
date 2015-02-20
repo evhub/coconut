@@ -63,16 +63,16 @@ def parenwrap(lparen, item, rparen):
 
 class tracer(object):
     """Debug Tracer."""
-    ON = False
     last = None
 
-    def __init__(self, verbose=False):
+    def __init__(self, on=True, verbose=False):
         """Creates The Tracer."""
+        self.on = on
         self.verbose = verbose
 
     def trace(self, original, location, tokens, message=None):
         """Tracer Parse Action."""
-        if self.ON:
+        if self.on:
             if len(tokens) == 1:
                 token = repr(tokens[0])
             else:
@@ -99,7 +99,7 @@ class tracer(object):
                 return self.trace(original, location, tokens, message)
         return attach(item, callback)
 
-TRACER = tracer()
+TRACER = tracer(False)
 trace = TRACER.bind
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -235,9 +235,13 @@ class processor(object):
 
     def __init__(self, headerfile="__coconut__.py"):
         """Creates A New Pre-Processor."""
-        self.refs = []
         self.header = str(open(headerfile, "r").read())
         self.init()
+        self.clean()
+
+    def clean(self):
+        """Resets References."""
+        self.refs = []
 
     def pre(self, inputstring, strip=False):
         """Performs Pre-Processing."""
@@ -800,57 +804,51 @@ class processor(object):
     file_parser = condense(STARTMARKER + file_input + ENDMARKER)
     eval_parser = condense(STARTMARKER + eval_input + ENDMARKER)
 
-    def parsewith(self, parser, item):
-        """Tests Parsing With A Parser."""
-        return condense(self.STARTMARKER + parser + self.ENDMARKER).parseString(item)[0]
-
     def parse_single(self, inputstring):
         """Processes Console Input."""
-        return self.post(self.single_parser.parseString(self.pre(inputstring)))
+        out = self.post(self.single_parser.parseString(self.pre(inputstring)))
+        self.clean()
+        return out
 
     def parse_file(self, inputstring):
         """Processes File Input."""
-        return self.post(self.file_parser.parseString(self.pre(inputstring)))
+        out = self.post(self.file_parser.parseString(self.pre(inputstring)))
+        self.clean()
+        return out
 
     def parse_eval(self, inputstring):
         """Processes Eval Input."""
-        return self.post(self.eval_parser.parseString(self.pre(inputstring, True)))
+        out = self.post(self.eval_parser.parseString(self.pre(inputstring, True)))
+        self.clean()
+        return out
 
     def parse_debug(self, inputstring):
         """Processes Debug Input."""
-        return self.post(self.file_parser.parseString(self.pre(inputstring, True)), False)
+        out = self.post(self.file_parser.parseString(self.pre(inputstring, True)), False)
+        self.clean()
+        return out
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # MAIN:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-def parsewith(parser, item):
-    """Tests Parsing With A Parser."""
-    return processor().parsewith(parser, item)
+PROCESSOR = processor()
 
 def parse_single(inputstring):
     """Processes Console Input."""
-    return processor().parse_single(inputstring)
+    return PROCESSOR.parse_single(inputstring)
 
 def parse_file(inputstring):
     """Processes File Input."""
-    return processor().parse_file(inputstring)
+    return PROCESSOR.parse_file(inputstring)
 
 def parse_eval(inputstring):
     """Processes Eval Input."""
-    return processor().parse_eval(inputstring)
+    return PROCESSOR.parse_eval(inputstring)
 
 def parse_debug(inputstring):
     """Processes Debug Input."""
-    return processor().parse_debug(inputstring)
-
-def pparse(inputstring, parser=parse_debug):
-    """Prints The Results Of A Parse."""
-    print(parser(inputstring))
-
-def preparse(inputstring):
-    """Gets The Pre-Processed String."""
-    return processor().pre(inputstring, True)
+    return PROCESSOR.parse_debug(inputstring)
 
 if __name__ == "__main__":
     pparse(open(__file__, "r").read(), parse_file)
