@@ -63,7 +63,7 @@ def parenwrap(lparen, item, rparen):
 
 class tracer(object):
     """Debug Tracer."""
-    ON = True
+    ON = False
     last = None
 
     def __init__(self, verbose=False):
@@ -378,7 +378,7 @@ class processor(object):
         count = 0
         current = None
         for line in lines:
-            if not line:
+            if not line or line.startswith(self.startcomment):
                 new.append(line)
             elif line[-1] in self.white:
                 raise CoconutException("Illegal trailing whitespace in "+repr(line))
@@ -539,7 +539,7 @@ class processor(object):
     div_slash = fixto(slash | Literal("\xf7"), "/")
     div_dubslash = fixto(dubslash | Combine(Literal("\xf7"), slash), "//")
 
-    NAME = Regex(r"(?![0-9])\w+")
+    NAME = Regex("(?![0-9])\\w+")
     dotted_name = condense(NAME + ZeroOrMore(dot + NAME))
 
     integer = Word(nums)
@@ -598,7 +598,7 @@ class processor(object):
     ge = fixto(Combine(gt + equals) | Literal("\u2265"), ">=")
     ne = fixto(Combine(bang + equals) | Literal("\u2260"), "!=")
 
-    comp_op = (lt | gt | eq | le | ge | ne
+    comp_op = (le | ge | ne | lt | gt | eq
                | addspace(Keyword("not") + Keyword("in"))
                | Keyword("in")
                | addspace(Keyword("is") + Keyword("not"))
@@ -670,7 +670,7 @@ class processor(object):
             | func_atom
             )
     sliceop = condense(colon + Optional(test))
-    subscript = test | condense(Optional(test) + sliceop + Optional(sliceop))
+    subscript = test ^ condense(Optional(test) + sliceop + Optional(sliceop))
     subscriptlist = itemlist(subscript, comma)
     simple_trailer = condense(lbrack + subscriptlist + rbrack) | condense(dot + NAME)
     trailer = trace(Group(dollar + lparen.suppress() + callargslist + rparen.suppress())
