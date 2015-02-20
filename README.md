@@ -3,9 +3,13 @@ Coconut
 
 Coconut is a modern, developer-friendly scripting language that compiles to Python, built for functional programming.
 
-Usage: `python coconut.py <filename>`
+### Usage
 
-Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut does make significant changes from Python 3 syntax, however. The major differences from Python 3 are:
+`python coconut.py <filename>`
+
+### Syntax
+
+Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes significant changes from Python 3 syntax, however. The major differences from Python 3 are:
 
 * New operators:
 	* compose: `..` (in-place: `..=`)
