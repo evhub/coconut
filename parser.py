@@ -45,11 +45,17 @@ def fixto(item, output):
 
 def addspace(item):
     """Condenses And Adds Space To The Tokenized Output."""
-    return attach(item, lambda tokens: " ".join(tokens))
+    def callback(tokens):
+        """Callback Function Constructed By addspace."""
+        return " ".join(tokens)
+    return attach(item, callback)
 
 def condense(item):
     """Condenses The Tokenized Output."""
-    return attach(item, lambda tokens: "".join(tokens))
+    def callback(tokens):
+        """Callback Function Constructed By condense."""
+        return "".join(tokens)
+    return attach(item, callback)
 
 def parenwrap(lparen, item, rparen):
     """Wraps An Item In Optional Parentheses."""
@@ -89,7 +95,7 @@ class tracer(object):
             callback = self.trace
         else:
             def callback(original, location, tokens):
-                """Constructed Callback Function."""
+                """Callback Function Constructed By tracer."""
                 return self.trace(original, location, tokens, message)
         return attach(item, callback)
 
@@ -452,7 +458,7 @@ class processor(object):
                 tokens[0], raw, multiline = tokens[0]
                 if tokens[0]:
                     if tokens[0][-1] == '"':
-                        tokens[0] = tokens[:-1]+'\\"'
+                        tokens[0] = tokens[0][:-1]+'\\"'
                     if tokens[0][0] == '"':
                         tokens[0] = "\\"+tokens[0]
                 if multiline:
