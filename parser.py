@@ -750,9 +750,9 @@ class processor(object):
     except_clause = addspace(Keyword("except") + test + Optional(Keyword("as") + NAME))
     try_stmt = condense(Keyword("try") + suite + (
         Keyword("finally") + suite
-        ^ (
+        | (
             OneOrMore(except_clause + suite) + Optional(Keyword("except") + suite)
-            ^ Keyword("except") + suite
+            | Keyword("except") + suite
             ) + Optional(else_stmt) + Optional(Keyword("finally") + suite)
         ))
     with_stmt = addspace(Keyword("with") + condense(parenwrap(lparen, itemlist(with_item, comma), rparen) + suite))
