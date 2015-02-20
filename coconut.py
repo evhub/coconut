@@ -16,8 +16,8 @@ Description: The Coconut Compiler.
 
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
-from milk.root import *
-import milk
+from milk.util import *
+from milk import parser
 import argparse
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -26,7 +26,7 @@ import argparse
 
 def compile_file(codefilename, destfilename):
     """Compiles A Source Coconut File To A Destination Python File."""
-    writefile(openfile(destfilename, "w"), milk.parser.parse_file(readfile(openfile(codefilename, "r"))))
+    writefile(openfile(destfilename, "w"), parser.parse_file(readfile(openfile(codefilename, "r"))))
 
 def compile_cmd(filename):
     """Compiles A Coconut File Using The Command Line Argument."""

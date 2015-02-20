@@ -191,7 +191,7 @@ def func_proc(tokens):
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 DIRECTORY = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
-HEADER = readfile(openfile(os.path.join(_directory, "__coconut__.py"), "r"))
+HEADER = readfile(openfile(os.path.join(DIRECTORY, "__coconut__.py"), "r"))
 
 class processor(object):
     """The CoconutScript Pre-Processor."""
@@ -675,7 +675,7 @@ class processor(object):
     infix_expr = attach(arith_expr + ZeroOrMore(backslash.suppress() + test + backslash.suppress() + arith_expr), infix_proc)
 
     shift = lshift | rshift
-    shift_expr = addspace(loop_expr + ZeroOrMore(shift + infix_expr))
+    shift_expr = addspace(infix_expr + ZeroOrMore(shift + infix_expr))
     and_expr = addspace(shift_expr + ZeroOrMore(amp + shift_expr))
     xor_expr = addspace(and_expr + ZeroOrMore(caret + and_expr))
     or_expr = addspace(xor_expr + ZeroOrMore(bar + xor_expr))
