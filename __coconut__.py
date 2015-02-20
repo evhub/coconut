@@ -4,28 +4,28 @@
 # CoconutScript Header: --------------------------------------------------------
 
 class __coconut__(object):
-    """Built-In Coconut Functions."""
+    u"""Built-In Coconut Functions."""
     import operator
     import functools
     curry = functools.partial
     fold = functools.reduce
     def inv(item):
-        """Inversion (!True)."""
+        u"""Inversion (!True)."""
         if isinstance(item, bool):
             return not item
         else:
             return ~item
     def infix(a, func, b):
-        """Infix Calling (5 \\mod\\ 6)."""
+        u"""Infix Calling (5 \\mod\\ 6)."""
         return func(a, b)
     def pipe(*args):
-        """Pipelining (x |> func)."""
+        u"""Pipelining (x |> func)."""
         out = args[0]
         for func in args[1:]:
             out = func(out)
         return out
     def loop(*args):
-        """Looping (a~ func)."""
+        u"""Looping (a~ func)."""
         lists = list(args)
         func = lists.pop()
         while lists:
@@ -42,13 +42,13 @@ class __coconut__(object):
                 break
             lists = new_lists
     def compose(f, g):
-        """Composing (f..g)."""
+        u"""Composing (f..g)."""
         def _composed(*args, **kwargs):
-            """Function Composition Wrapper."""
+            u"""Function Composition Wrapper."""
             return f(g(*args, **kwargs))
         return _composed
     def zipwith(func, *args):
-        """Functional Zipping."""
+        u"""Functional Zipping."""
         lists = list(args)
         while lists:
             new_lists = []
@@ -64,11 +64,11 @@ class __coconut__(object):
                 break
             lists = new_lists
     def recursive(func):
-        """Tail Recursion Elimination."""
+        u"""Tail Recursion Elimination."""
         state = [True, None]
         recurse = object()
         def _tailed(*args, **kwargs):
-            """Tail Recursion Wrapper."""
+            u"""Tail Recursion Wrapper."""
             if state[0]:
                 state[0] = False
                 try:

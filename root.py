@@ -59,4 +59,5 @@ except NameError:
 else:
     old_str = str
     str = unicode
-    print = lambda *args: old_print(*(map(lambda x: str(x).encode(encoding), args)))
+    def print(*args):
+        return old_print(*(str(x).encode(encoding) for x in args))

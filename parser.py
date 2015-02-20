@@ -466,8 +466,9 @@ class processor(object):
                 else:
                     tokens[0] = '"'+tokens[0]+'"'
                 if raw:
-                    tokens[0] = "r"+tokens[0]
-                return tokens[0]
+                    return "r"+tokens[0]
+                else:
+                    return "u"+tokens[0]
             else:
                 raise CoconutException("String marker points to comment")
         else:
