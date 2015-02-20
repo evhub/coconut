@@ -5,6 +5,11 @@
 
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
+try:
+    from future_builtins import map, filter
+except ImportError:
+    pass
+
 class __coconut__(object):
     u"""Built-In Coconut Functions."""
     import operator

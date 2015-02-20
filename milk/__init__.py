@@ -3,7 +3,7 @@
 """
 Author: Evan Hubinger
 Date Created: 2014
-Description: The Coconut Language.
+Description: Coconut Language Utilities.
 """
 
 __all__ = ["parser"]

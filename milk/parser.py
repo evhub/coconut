@@ -16,7 +16,7 @@ Description: The CoconutScript Parser.
 
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
-from .root import *
+from .util import *
 from pyparsing import *
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
