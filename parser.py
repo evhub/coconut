@@ -110,14 +110,17 @@ def anyint_proc(tokens):
 
 def list_proc(tokens):
     """Removes The Last Character From A List."""
-    if len(tokens) == 1:
-        return tokens[0][:-1]
-    else:
-        raise CoconutException("Invalid list tokens: "+repr(tokens))
+    out = []
+    for x in xrange(0, len(tokens)):
+        if x%2 == 0:
+            out.append(tokens[x])
+        else:
+            out[-1] += tokens[x]
+    return " ".join(out)
 
 def itemlist(item, sep):
     """Creates A List Containing An Item."""
-    return trace(attach(addspace(OneOrMore(condense(item + sep))), list_proc) ^ addspace(ZeroOrMore(condense(item + sep)) + condense(item)), "itemlist")
+    return attach(item + ZeroOrMore(sep + item) + Optional(sep).suppress(), list_proc)
 
 def tilde_proc(tokens):
     """Processes Tildes For Loop Functions."""
