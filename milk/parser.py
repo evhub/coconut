@@ -421,7 +421,7 @@ class processor(object):
         level = 0
         hold = None
         for line in inputstring.splitlines():
-            if hold is None:
+            if hold is None and not line.startswith(self.startcomment):
                 while line.startswith(self.openstr) or line.startswith(self.closestr):
                     if line[0] == self.openstr:
                         level += 1
