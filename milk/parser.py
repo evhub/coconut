@@ -128,14 +128,6 @@ def itemlist(item, sep):
     """Creates A List Containing An Item."""
     return attach(item + ZeroOrMore(sep + item) + Optional(sep).suppress(), list_proc)
 
-def tilde_proc(tokens):
-    """Processes Tildes For Loop Functions."""
-    if len(tokens) == 1:
-        step = len(tokens[0])
-        return "lambda func, series: __coconut__.loop((series, "+repr(step)+"), func)"
-    else:
-        raise CoconutException("Invalid tilde tokens: "+repr(tokens))
-
 def item_proc(tokens):
     """Processes Items."""
     out = tokens.pop(0)
@@ -153,29 +145,12 @@ def item_proc(tokens):
             raise CoconutException("Invalid trailer tokens: "+repr(trailer))
     return out
 
-def inv_proc(tokens):
-    """Processes Inversions."""
-    if len(tokens) == 1:
-        return "__coconut__.inv("+tokens[0]+")"
-    else:
-        raise CoconutException("Invalid inversion tokens: "+repr(tokens))
-
 def infix_proc(tokens):
     """Processes Infix Calls."""
     if len(tokens) == 1:
         return tokens[0]
     else:
         return "__coconut__.infix("+infix_proc(tokens[:-2])+", "+tokens[-2]+", "+tokens[-1]+")"
-
-def loop_proc(tokens):
-    """Processes Loop Calls."""
-    if len(tokens) == 1:
-        return tokens[0]
-    else:
-        out = "__coconut__.loop("
-        for loop_list, loop_step in tokens[:-1]:
-            out += "("+loop_list+", "+repr(len(loop_step))+"), "
-        return out+tokens[-1]+")"
 
 def pipe_proc(tokens):
     """Processes Pipe Calls."""
@@ -199,8 +174,6 @@ def assign_proc(tokens):
             return tokens[0]+" = __coconut__.pipe("+tokens[0]+", ("+tokens[2]+"))"
         elif tokens[1] == "..=":
             return tokens[0]+" = __coconut__.compose("+tokens[0]+", ("+tokens[2]+"))"
-        elif tokens[1].startswith("~"):
-            return tokens[0]+" = __coconut__.loop((("+tokens[2]+"), "+repr(len(tokens[1])-1)+"), "+tokens[0]+")"
         else:
             return tokens
     else:
@@ -532,7 +505,7 @@ class processor(object):
     ellipses = fixto(Literal("...") | Literal("\u2026"), "...")
     lshift = fixto(Literal("<<") | Literal("\xab"), "<<")
     rshift = fixto(Literal(">>") | Literal("\xbb"), ">>")
-    tilde = Literal("~")
+    tilde = fixto(Literal("~") | Literal("\xac"), "~")
     underscore = Literal("_")
     pound = Literal("#")
     backslash = Literal("\\")
@@ -592,7 +565,6 @@ class processor(object):
                  | Combine(lshift + equals)
                  | Combine(rshift + equals)
                  | Combine(div_dubslash + equals)
-                 | Combine(OneOrMore(tilde) + equals)
                  | Combine(dotdot + equals)
                  )
 
@@ -658,10 +630,9 @@ class processor(object):
         | fixto(le, "__coconut__.operator.__le__")
         | fixto(ge, "__coconut__.operator.__ge__")
         | fixto(ne, "__coconut__.operator.__ne__")
-        | fixto(bang, "__coconut__.inv")
+        | fixto(tilde, "__coconut__.operator.__inv__")
         | fixto(pipeline, "__coconut__.pipe")
         | fixto(dotdot, "__coconut__.compose")
-        | attach(OneOrMore(tilde), tilde_proc)
         ) + rparen, "op_atom")
 
     func_atom = NAME | op_atom | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
@@ -692,9 +663,9 @@ class processor(object):
 
     factor = Forward()
     power = trace(condense(atom_item + Optional(exp_dubstar + factor)), "power")
-    unary = plus | neg_minus
+    unary = plus | neg_minus | tilde
 
-    factor <<= trace(condense(unary + factor) | attach(bang.suppress() + factor, inv_proc) | power, "factor")
+    factor <<= trace(condense(unary + factor) | power, "factor")
 
     mulop = mul_star | div_slash | div_dubslash | percent
     term = addspace(factor + ZeroOrMore(mulop + factor))
@@ -703,10 +674,8 @@ class processor(object):
 
     infix_expr = attach(arith_expr + ZeroOrMore(backslash.suppress() + test + backslash.suppress() + arith_expr), infix_proc)
 
-    loop_expr = attach(ZeroOrMore(Group(infix_expr + condense(OneOrMore(tilde)))) + infix_expr, loop_proc)
-
     shift = lshift | rshift
-    shift_expr = addspace(loop_expr + ZeroOrMore(shift + loop_expr))
+    shift_expr = addspace(loop_expr + ZeroOrMore(shift + infix_expr))
     and_expr = addspace(shift_expr + ZeroOrMore(amp + shift_expr))
     xor_expr = addspace(and_expr + ZeroOrMore(caret + and_expr))
     or_expr = addspace(xor_expr + ZeroOrMore(bar + xor_expr))

@@ -11,12 +11,6 @@ class __coconut__(object):
     import functools
     curry = functools.partial
     fold = functools.reduce
-    def inv(item):
-        u"""Inversion (!True)."""
-        if isinstance(item, bool):
-            return not item
-        else:
-            return ~item
     def infix(a, func, b):
         u"""Infix Calling (5 \\mod\\ 6)."""
         return func(a, b)
@@ -26,23 +20,6 @@ class __coconut__(object):
         for func in args[1:]:
             out = func(out)
         return out
-    def loop(*args):
-        u"""Looping (a~ func)."""
-        lists = list(args)
-        func = lists.pop()
-        while lists:
-            new_lists = []
-            items = []
-            for series, step in lists:
-                items += series[:step]
-                series = series[step:]
-                if series:
-                    new_lists.append((series, step))
-            if items:
-                yield func(*items)
-            else:
-                break
-            lists = new_lists
     def compose(f, g):
         u"""Composing (f..g)."""
         def _composed(*args, **kwargs):

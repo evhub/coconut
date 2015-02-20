@@ -14,11 +14,8 @@ Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes
 * New operators:
 	* compose: `..` (in-place: `..=`)
 	* curry: `$`
-	* loop: one or more `~` (in-place: one or more `~` + `=`)
 	* pipeline: `|>` (in-place: `=>`)
 	* lambda: `->`
-* Changed operators:
-	* unary negation: `!` (replaces `~`, only difference is it negates `bool`)
 * New syntax:
 	* infix function calling: new `6 \mod\ 3` syntax
 	* operator functions: new `(+)` syntax
