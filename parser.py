@@ -604,10 +604,12 @@ class processor(object):
 
     vardef = NAME
     tfpdef = condense(vardef + Optional(colon + test))
+    callarg = test
     default = Optional(condense(equals + test))
 
     argslist = Optional(itemlist(condense(dubstar + tfpdef | star + tfpdef | tfpdef + default), comma))
     varargslist = Optional(itemlist(condense(dubstar + vardef | star + vardef | vardef + default), comma))
+    callargslist = Optional(itemlist(condense(dubstar + callarg | star + callarg | callarg + default), comma))
 
     parameters = condense(lparen + argslist + rparen)
 
@@ -663,8 +665,8 @@ class processor(object):
     sliceop = condense(colon + Optional(test))
     subscript = test | condense(Optional(test) + sliceop + Optional(sliceop))
     subscriptlist = itemlist(subscript, comma)
-    trailer = trace(Group(dollar + lparen.suppress() + argslist + rparen.suppress())
-               | parameters
+    trailer = trace(Group(dollar + lparen.suppress() + callargslist + rparen.suppress())
+               | condense(lparen + callargslist + rparen)
                | condense(lbrack + subscriptlist + rbrack)
                | Group(dotdot + func_atom)
                | condense(dot + NAME)
@@ -775,7 +777,7 @@ class processor(object):
 
     keyword_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt | assert_stmt
     small_stmt = trace(keyword_stmt ^ expr_stmt, "small_stmt")
-    simple_stmt = trace(itemlist(small_stmt, semicolon) + NEWLINE, "simple_stmt")
+    simple_stmt = trace(condense(itemlist(small_stmt, semicolon) + NEWLINE), "simple_stmt")
     stmt = trace(compound_stmt | simple_stmt, "stmt")
     suite <<= trace(condense(colon + NEWLINE + INDENT + OneOrMore(stmt) + DEDENT) | addspace(colon + simple_stmt), "suite")
 
