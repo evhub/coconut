@@ -574,7 +574,7 @@ class processor(object):
     INDENT = Literal(openstr) + Optional(NEWLINE)
     DEDENT = Literal(closestr) + Optional(NEWLINE)
 
-    augassign = (heavy_arrow # In-place pipeline
+    augassign = (heavy_arrow
                  | Combine(plus + equals)
                  | Combine(sub_minus + equals)
                  | Combine(mul_star + equals)
@@ -672,12 +672,16 @@ class processor(object):
     sliceop = condense(colon + Optional(test))
     subscript = test | condense(Optional(test) + sliceop + Optional(sliceop))
     subscriptlist = itemlist(subscript, comma)
+    simple_trailer = condense(lbrack + subscriptlist + rbrack) | condense(dot + NAME)
     trailer = trace(Group(dollar + lparen.suppress() + callargslist + rparen.suppress())
                | condense(lparen + callargslist + rparen)
-               | condense(lbrack + subscriptlist + rbrack)
                | Group(dotdot + func_atom)
-               | condense(dot + NAME)
+               | simple_trailer
                , "trailer")
+
+    assignlist = Forward()
+    assign_item = NAME + ZeroOrMore(simple_trailer) | lparen + assignlist + rparen | lbrack + assignlist + rbrack
+    assignlist <<= itemlist(Optional(star) + assign_item, comma)
 
     atom_item = trace(attach(atom + ZeroOrMore(trailer), item_proc), "atom_item")
 
@@ -777,9 +781,9 @@ class processor(object):
 
     compound_stmt = trace(if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated, "compound_stmt")
 
-    expr_stmt = trace(addspace(attach(testlist_star_expr + augassign + (yield_expr | testlist), assign_proc)
+    expr_stmt = trace(addspace(attach(assignlist + augassign + (yield_expr | testlist), assign_proc)
                          | attach(base_funcdef + equals.suppress() + (yield_expr | testlist_star_expr), func_proc)
-                         | testlist_star_expr + ZeroOrMore(equals + (yield_expr | testlist_star_expr))
+                         | ZeroOrMore(assignlist + equals) + (yield_expr | testlist_star_expr)
                          ), "expr_stmt")
 
     keyword_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt | assert_stmt
