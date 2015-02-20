@@ -1,9 +1,11 @@
-CoconutScript
-=============
+Coconut
+=======
 
-CoconutScript is a modern, developer-friendly scripting language that compiles to Python, built for functional programming.
+Coconut is a modern, developer-friendly scripting language that compiles to Python, built for functional programming.
 
-CoconutScript is based on Python 3 syntax and compiles to Python 3 code. CoconutScript does make significant changes from Python 3 syntax, however. The major differences from Python 3 are:
+Usage: `python coconut.py <filename>`
+
+Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut does make significant changes from Python 3 syntax, however. The major differences from Python 3 are:
 
 * New operators:
 	* compose: `..` (in-place: `..=`)
@@ -33,5 +35,3 @@ CoconutScript is based on Python 3 syntax and compiles to Python 3 code. Coconut
 	* operator [re]definition
 	* lazy evaluation
 	* pattern matching
-
-CoconutScript is still in the early stages of development, and no stable release is currently available. If CoconutScript sounds interesting to you, however, I recommend you check back later when a stable release is available, or check out CoconutScript's spiritual predecessor, [Rabbit](https://github.com/evhub/rabbit).

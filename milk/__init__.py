@@ -3,5 +3,7 @@
 """
 Author: Evan Hubinger
 Date Created: 2014
-Description: The Coconut Repository.
+Description: The Coconut Language.
 """
+
+__all__ = ["parser"]

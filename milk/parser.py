@@ -16,7 +16,7 @@ Description: The CoconutScript Parser.
 
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
-from root import *
+from .root import *
 from pyparsing import *
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -217,6 +217,14 @@ def func_proc(tokens):
 # PARSER:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+try:
+    __file__
+except:
+    _directory = ""
+else:
+    _directory = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
+HEADER = readfile(openfile(os.path.join(_directory, "__coconut__.py"), "r"))
+
 class processor(object):
     """The CoconutScript Pre-Processor."""
     openstr = "\u204b"
@@ -233,9 +241,8 @@ class processor(object):
     tablen = 4
     verbosity = 10
 
-    def __init__(self, headerfile="__coconut__.py"):
+    def __init__(self):
         """Creates A New Pre-Processor."""
-        self.header = str(open(headerfile, "r").read())
         self.init()
         self.clean()
 
@@ -445,10 +452,9 @@ class processor(object):
     def post(self, tokens, header=True):
         """Performs Post-Processing."""
         if len(tokens) == 1:
+            out = ""
             if header:
-                out = self.header
-            else:
-                out = ""
+                out += HEADER
             out += self.reindent(tokens[0].strip()).strip()+self.linebreak
             return out
         else:
@@ -851,4 +857,4 @@ def parse_debug(inputstring):
     return PROCESSOR.parse_debug(inputstring)
 
 if __name__ == "__main__":
-    pparse(open(__file__, "r").read(), parse_file)
+    print(parse_debug(open(__file__, "r").read(), parse_file))

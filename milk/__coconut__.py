@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 
-# CoconutScript Header: --------------------------------------------------------
+# Coconut Header: --------------------------------------------------------------
 
 class __coconut__(object):
     u"""Built-In Coconut Functions."""
@@ -90,5 +90,5 @@ fold = __coconut__.fold
 zipwith = __coconut__.zipwith
 recursive = __coconut__.recursive
 
-# Compiled CoconutScript: ------------------------------------------------------
+# Compiled Coconut: ------------------------------------------------------------
 
