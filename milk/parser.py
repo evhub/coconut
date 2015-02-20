@@ -217,12 +217,7 @@ def func_proc(tokens):
 # PARSER:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-try:
-    __file__
-except:
-    _directory = ""
-else:
-    _directory = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
+DIRECTORY = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 HEADER = readfile(openfile(os.path.join(_directory, "__coconut__.py"), "r"))
 
 class processor(object):
@@ -857,4 +852,4 @@ def parse_debug(inputstring):
     return PROCESSOR.parse_debug(inputstring)
 
 if __name__ == "__main__":
-    print(parse_debug(open(__file__, "r").read(), parse_file))
+    print(parse_file(readfile(openfile(DIRECTORY, "r"))))
