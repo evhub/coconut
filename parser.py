@@ -60,10 +60,9 @@ class tracer(object):
     ON = True
     last = None
 
-    def __init__(self, on=None):
+    def __init__(self, verbose=False):
         """Creates The Tracer."""
-        if on is not None:
-            self.ON = on
+        self.verbose = verbose
 
     def trace(self, original, location, tokens, message=None):
         """Tracer Parse Action."""
@@ -72,7 +71,7 @@ class tracer(object):
                 token = repr(tokens[0])
             else:
                 token = str(tokens)
-            if token != self.last:
+            if self.verbose or token != self.last:
                 self.last = token
                 out = ""
                 if message is not None:
@@ -94,7 +93,8 @@ class tracer(object):
                 return self.trace(original, location, tokens, message)
         return attach(item, callback)
 
-trace = tracer().bind
+TRACER = tracer()
+trace = TRACER.bind
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # PROCESSORS:
@@ -400,7 +400,7 @@ class processor(object):
             count += self.change(line)
         if count != 0:
             raise CoconutException("Unclosed parenthetical in "+repr(new[-1]))
-        new[-1] += self.closestr*len(levels)
+        new.append(self.closestr*len(levels))
         return self.linebreak.join(new)
 
     def reindent(self, inputstring):
@@ -695,7 +695,7 @@ class processor(object):
 
     pipe_expr = attach(or_expr + ZeroOrMore(pipeline.suppress() + or_expr), pipe_proc)
 
-    expr <<= pipe_expr
+    expr <<= trace(pipe_expr, "expr")
     comparison = addspace(expr + ZeroOrMore(comp_op + expr))
     not_test = addspace(ZeroOrMore(Keyword("not")) + comparison)
     and_test = addspace(not_test + ZeroOrMore(Keyword("and") + not_test))
@@ -766,7 +766,7 @@ class processor(object):
     funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
     decorated = condense(decorators + (classdef | funcdef))
 
-    compound_stmt = if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated
+    compound_stmt = trace(if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated, "compound_stmt")
 
     expr_stmt = trace(addspace(attach(testlist_star_expr + augassign + (yield_expr | testlist), assign_proc)
                          | attach(base_funcdef + equals.suppress() + (yield_expr | testlist_star_expr), func_proc)
@@ -774,8 +774,8 @@ class processor(object):
                          ), "expr_stmt")
 
     keyword_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt | assert_stmt
-    small_stmt = keyword_stmt ^ expr_stmt
-    simple_stmt = itemlist(small_stmt, semicolon) + NEWLINE
+    small_stmt = trace(keyword_stmt ^ expr_stmt, "small_stmt")
+    simple_stmt = trace(itemlist(small_stmt, semicolon) + NEWLINE, "simple_stmt")
     stmt = trace(compound_stmt | simple_stmt, "stmt")
     suite <<= trace(condense(colon + NEWLINE + INDENT + OneOrMore(stmt) + DEDENT) | addspace(colon + simple_stmt), "suite")
 
