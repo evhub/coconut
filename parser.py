@@ -117,7 +117,7 @@ def list_proc(tokens):
 
 def itemlist(item, sep):
     """Creates A List Containing An Item."""
-    return trace(addspace(ZeroOrMore(condense(item + sep)) + condense(item)) | attach(addspace(OneOrMore(condense(item + sep))), list_proc), "itemlist")
+    return trace(attach(addspace(OneOrMore(condense(item + sep))), list_proc) ^ addspace(ZeroOrMore(condense(item + sep)) + condense(item)), "itemlist")
 
 def tilde_proc(tokens):
     """Processes Tildes For Loop Functions."""
@@ -612,7 +612,7 @@ class processor(object):
     yield_arg = addspace(Keyword("from") + test) | testlist
     yield_expr = addspace(Keyword("yield") + Optional(yield_arg))
     star_expr = condense(star + expr)
-    test_star_expr = test | star_expr
+    test_star_expr = star_expr | test
     testlist_star_expr = itemlist(test_star_expr, comma)
     testlist_comp = addspace(test_star_expr + comp_for) | testlist_star_expr
     dictorsetmaker = addspace(condense(test + colon) + test + comp_for
@@ -660,12 +660,12 @@ class processor(object):
     sliceop = condense(colon + Optional(test))
     subscript = test | condense(Optional(test) + sliceop + Optional(sliceop))
     subscriptlist = itemlist(subscript, comma)
-    trailer = (Group(dollar + lparen.suppress() + argslist + rparen.suppress())
+    trailer = trace(Group(dollar + lparen.suppress() + argslist + rparen.suppress())
                | parameters
                | condense(lbrack + subscriptlist + rbrack)
                | Group(dotdot + func_atom)
                | condense(dot + NAME)
-               )
+               , "trailer")
 
     atom_item = trace(attach(atom + ZeroOrMore(trailer), item_proc), "atom_item")
 
@@ -732,7 +732,7 @@ class processor(object):
     import_name = addspace(Keyword("import") + parenwrap(lparen, dotted_as_names, rparen))
     import_from = addspace(Keyword("from") + condense(ZeroOrMore(dot) + dotted_name | OneOrMore(dot))
                    + Keyword("import") + (star | parenwrap(lparen, import_as_names, rparen)))
-    import_stmt = import_name | import_from
+    import_stmt = import_from | import_name
 
     namelist = parenwrap(lparen, itemlist(NAME, comma), rparen)
     global_stmt = addspace(Keyword("global") + namelist)
@@ -770,7 +770,8 @@ class processor(object):
                          | testlist_star_expr + ZeroOrMore(equals + (yield_expr | testlist_star_expr))
                          ), "expr_stmt")
 
-    small_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt | assert_stmt | expr_stmt
+    keyword_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt | assert_stmt
+    small_stmt = keyword_stmt ^ expr_stmt
     simple_stmt = itemlist(small_stmt, semicolon) + NEWLINE
     stmt = trace(compound_stmt | simple_stmt, "stmt")
     suite <<= trace(condense(colon + NEWLINE + INDENT + OneOrMore(stmt) + DEDENT) | addspace(colon + simple_stmt), "suite")
