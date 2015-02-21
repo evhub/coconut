@@ -16,6 +16,7 @@ Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes
 	* curry: `$`
 	* pipeline: `|>` (in-place: `=>`)
 	* lambda: `->`
+	* chain: `::` (in-place: `::=`)
 * New syntax:
 	* infix function calling: new `6 \mod\ 3` syntax
 	* operator functions: new `(+)` syntax
@@ -25,9 +26,7 @@ Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes
 * Changed syntax:
 	* strings: only `b` prefix is allowed, raw strings use `` `string` `` syntax
 	* lambda keyword: removed (use the operator instead)
-	* all statement arguments: can be wrapped in parentheses
-	* backslash continuations: removed
-	* trailing whitespace: disallowed
+	* backslash continuations: removed (use expanded parenthetical continuations instead)
 * New built-ins:
 	* right fold: `fold`
 	* zip with: `zipwith`

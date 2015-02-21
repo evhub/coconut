@@ -13,8 +13,16 @@ class __coconut__(object):
     u"""Built-In Coconut Functions."""
     import operator
     import functools
+    import itertools
     curry = functools.partial
     fold = functools.reduce
+    @staticmethod
+    def compose(f, g):
+        u"""Composing (f..g)."""
+        def _composed(*args, **kwargs):
+            u"""Function Composition Wrapper."""
+            return f(g(*args, **kwargs))
+        return _composed
     @staticmethod
     def infix(a, func, b):
         u"""Infix Calling (5 \\mod\\ 6)."""
@@ -26,13 +34,6 @@ class __coconut__(object):
         for func in args[1:]:
             out = func(out)
         return out
-    @staticmethod
-    def compose(f, g):
-        u"""Composing (f..g)."""
-        def _composed(*args, **kwargs):
-            u"""Function Composition Wrapper."""
-            return f(g(*args, **kwargs))
-        return _composed
     @staticmethod
     def zipwith(func, *args):
         u"""Functional Zipping."""

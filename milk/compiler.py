@@ -18,6 +18,7 @@ from __future__ import with_statement, print_function, absolute_import, unicode_
 
 from .util import *
 from . import parser
+import itertools
 import argparse
 import sys
 import traceback
@@ -52,18 +53,24 @@ class executor(object):
                 self.variables[k] = v
     def run(__self, __code, __error=print_error):
         """Executes Python Code."""
+        __locals = locals().copy()
+        __globals = globals().copy()
         for __k, __v in __self.variables.items():
-            locals()[__k] = __v
-        __snapshot = locals().copy()
+            globals()[__k] = __v
         try:
             exec(__code)
         except Exception as err:
             __error()
-        for __k, __v in locals().items():
-            if __k not in __snapshot:
+        for __k, __v in itertools.chain(locals().items(), globals().items()):
+            if __k in __self.variables:
                 __self.variables[__k] = __v
-            elif __k in __self.variables:
+            elif __k not in __locals and __k not in __globals:
                 __self.variables[__k] = __v
+        for __k, __v in globals().copy().items():
+            if __k not in __globals:
+                del globals()[__k]
+        for __k, __v in __globals.items():
+            globals()[__k] = __v
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # MAIN:

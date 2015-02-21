@@ -145,6 +145,13 @@ def item_proc(tokens):
             raise CoconutException("Invalid trailer tokens: "+repr(trailer))
     return out
 
+def chain_proc(tokens):
+    """Processes Chain Calls."""
+    if len(tokens) == 1:
+        return tokens[0]
+    else:
+        return "__coconut__.itertools.chain("+", ".join(tokens)+")"
+
 def infix_proc(tokens):
     """Processes Infix Calls."""
     if len(tokens) == 1:
@@ -158,7 +165,6 @@ def pipe_proc(tokens):
         return tokens[0]
     else:
         return "__coconut__.pipe("+", ".join(tokens)+")"
-
 
 def lambda_proc(tokens):
     """Processes Lambda Calls."""
@@ -174,6 +180,8 @@ def assign_proc(tokens):
             return tokens[0]+" = __coconut__.pipe("+tokens[0]+", ("+tokens[2]+"))"
         elif tokens[1] == "..=":
             return tokens[0]+" = __coconut__.compose("+tokens[0]+", ("+tokens[2]+"))"
+        elif tokens[1] == "::=":
+            return tokens[0]+" = __coconut__.itertools.chain("+tokens[0]+", ("+tokens[2]+"))"
         else:
             return tokens
     else:
@@ -484,6 +492,7 @@ class processor(object):
     arrow = fixto(Literal("->") | Literal("\u2192"), "->")
     heavy_arrow = fixto(Literal("=>") | Literal("\u21d2"), "=>")
     colon = Literal(":")
+    dubcolon = Literal("::")
     semicolon = Literal(";")
     equals = Literal("=")
     lbrack = Literal("[")
@@ -553,19 +562,20 @@ class processor(object):
     DEDENT = Literal(closestr) + Optional(NEWLINE)
 
     augassign = (heavy_arrow
+                 | Combine(dotdot + equals)
+                 | Combine(dubcolon + equals)
+                 | Combine(div_dubslash + equals)
+                 | Combine(div_slash + equals)
+                 | Combine(exp_dubstar + equals)
+                 | Combine(mul_star + equals)
                  | Combine(plus + equals)
                  | Combine(sub_minus + equals)
-                 | Combine(mul_star + equals)
-                 | Combine(exp_dubstar + equals)
-                 | Combine(div_slash + equals)
                  | Combine(percent + equals)
                  | Combine(amp + equals)
                  | Combine(bar + equals)
                  | Combine(caret + equals)
                  | Combine(lshift + equals)
                  | Combine(rshift + equals)
-                 | Combine(div_dubslash + equals)
-                 | Combine(dotdot + equals)
                  )
 
     lt = Literal("<")
@@ -611,10 +621,13 @@ class processor(object):
                       )
 
     op_atom = trace(lparen + (
-        fixto(exp_dubstar, "__coconut__.operator.__pow__")
+        fixto(fixto(pipeline, "__coconut__.pipe")
+        | fixto(dotdot, "__coconut__.compose")
+        | fixto(dubcolon, "__coconut__.itertools.chain")
+        | exp_dubstar, "__coconut__.operator.__pow__")
         | fixto(mul_star, "__coconut__.operator.__mul__")
-        | fixto(div_slash, "__coconut__.operator.__truediv__")
         | fixto(div_dubslash, "__coconut__.operator.__floordiv__")
+        | fixto(div_slash, "__coconut__.operator.__truediv__")
         | fixto(percent, "__coconut__.operator.__mod__")
         | fixto(plus, "__coconut__.operator.__add__")
         | fixto(sub_minus, "__coconut__.operator.__sub__")
@@ -631,8 +644,6 @@ class processor(object):
         | fixto(ge, "__coconut__.operator.__ge__")
         | fixto(ne, "__coconut__.operator.__ne__")
         | fixto(tilde, "__coconut__.operator.__inv__")
-        | fixto(pipeline, "__coconut__.pipe")
-        | fixto(dotdot, "__coconut__.compose")
         ) + rparen, "op_atom")
 
     func_atom = NAME | op_atom | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
@@ -672,15 +683,17 @@ class processor(object):
     arith = plus | sub_minus
     arith_expr = addspace(term + ZeroOrMore(arith + term))
 
-    infix_expr = attach(arith_expr + ZeroOrMore(backslash.suppress() + test + backslash.suppress() + arith_expr), infix_proc)
-
     shift = lshift | rshift
-    shift_expr = addspace(infix_expr + ZeroOrMore(shift + infix_expr))
+    shift_expr = addspace(arith_expr + ZeroOrMore(shift + arith_expr))
     and_expr = addspace(shift_expr + ZeroOrMore(amp + shift_expr))
     xor_expr = addspace(and_expr + ZeroOrMore(caret + and_expr))
     or_expr = addspace(xor_expr + ZeroOrMore(bar + xor_expr))
 
-    pipe_expr = attach(or_expr + ZeroOrMore(pipeline.suppress() + or_expr), pipe_proc)
+    chain_expr = attach(or_expr + ZeroOrMore(dubcolon.suppress() + or_expr), chain_proc)
+
+    infix_expr = attach(chain_expr + ZeroOrMore(backslash.suppress() + test + backslash.suppress() + chain_expr), infix_proc)
+
+    pipe_expr = attach(infix_expr + ZeroOrMore(pipeline.suppress() + infix_expr), pipe_proc)
 
     expr <<= trace(pipe_expr, "expr")
     comparison = addspace(expr + ZeroOrMore(comp_op + expr))
