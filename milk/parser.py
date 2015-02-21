@@ -202,7 +202,7 @@ DIRECTORY = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 HEADER = readfile(openfile(os.path.join(DIRECTORY, "__coconut__.py"), "r"))
 
 class processor(object):
-    """The CoconutScript Pre-Processor."""
+    """The Coconut Processor."""
     openstr = "\u204b"
     closestr = "\xb6"
     linebreak = "\n"
@@ -218,7 +218,7 @@ class processor(object):
     verbosity = 20
 
     def __init__(self):
-        """Creates A New Pre-Processor."""
+        """Creates A New Processor."""
         self.init()
         self.clean()
 
@@ -787,25 +787,25 @@ class processor(object):
     eval_parser = condense(STARTMARKER + eval_input + ENDMARKER)
 
     def parse_single(self, inputstring):
-        """Processes Console Input."""
+        """Parses Console Input."""
         out = self.post(self.single_parser.parseString(self.pre(inputstring)), False)
         self.clean()
         return out
 
     def parse_file(self, inputstring):
-        """Processes File Input."""
+        """Parses File Input."""
         out = self.post(self.file_parser.parseString(self.pre(inputstring)))
         self.clean()
         return out
 
     def parse_eval(self, inputstring):
-        """Processes Eval Input."""
+        """Parses Eval Input."""
         out = self.post(self.eval_parser.parseString(self.pre(inputstring, True)), False)
         self.clean()
         return out
 
     def parse_debug(self, inputstring):
-        """Processes Debug Input."""
+        """Parses Debug Input."""
         out = self.post(self.file_parser.parseString(self.pre(inputstring, True)), False)
         self.clean()
         return out
