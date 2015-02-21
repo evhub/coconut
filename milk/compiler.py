@@ -77,7 +77,7 @@ class executor(object):
 
 class cli(object):
     """The Coconut Command-Line Interface."""
-    EXTENSION = ".coc.py"
+    extension = ".coc.py"
     arguments = argparse.ArgumentParser(description="The Coconut Programming Language.")
     arguments.add_argument("filenames", metavar="path", type=str, nargs="*", help="the names of the files to compile; if no file names are passed, the interpreter is started instead")
     running = False
@@ -102,7 +102,7 @@ class cli(object):
         """Compiles A Coconut File Using The Command Line Argument."""
         base, ext = os.path.splitext(filename)
         codefilename = base + ext
-        destfilename = base + self.EXTENSION
+        destfilename = base + self.extension
         self.gui.print("[Coconut] Compiling '"+codefilename+"'...")
         compile_file(codefilename, destfilename)
         self.gui.print("[Coconut] Compiled '"+destfilename+"'.")
