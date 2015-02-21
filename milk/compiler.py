@@ -86,7 +86,7 @@ class cli(object):
     def start(self):
         """Starts The CLI."""
         args = self.arguments.parse_args()
-        if args.filenames is None:
+        if args.filenames is None or len(args.filenames) == 0:
             self.repl()
         else:
             for filename in args.filenames:

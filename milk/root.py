@@ -69,3 +69,13 @@ else:
     str = unicode
     def print(*args):
         return old_print(*(str(x).encode(encoding) for x in args))
+
+try:
+    raw_input
+except NameError:
+    raw_input = input
+    old_input = lambda *args, **kwargs: eval(raw_input(*args, **kwargs))
+else:
+    old_input = raw_input
+    raw_input = lambda *args, **kwargs: old_input(*args, **kwargs).decode(encoding)
+    input = raw_input
