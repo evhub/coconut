@@ -58,5 +58,5 @@ docs/_build/
 # Windows thumbs database file
 Thumbs.db
 
-# Compiled Rabbit files
-*.rabbit
+# Compiled Coconut files
+*.coc.py

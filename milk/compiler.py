@@ -99,10 +99,10 @@ class cli(object):
                 self.compile_cmd(filename)
 
     def compile_cmd(self, filename):
-    """Compiles A Coconut File Using The Command Line Argument."""
+        """Compiles A Coconut File Using The Command Line Argument."""
         base, ext = os.path.splitext(filename)
         codefilename = base + ext
-        destfilename = base + EXTENSION
+        destfilename = base + self.EXTENSION
         self.gui.print("[Coconut] Compiling '"+codefilename+"'...")
         compile_file(codefilename, destfilename)
         self.gui.print("[Coconut] Compiled '"+destfilename+"'.")
