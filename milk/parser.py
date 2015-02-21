@@ -510,11 +510,11 @@ class processor(object):
     pound = Literal("#")
     backslash = Literal("\\")
 
-    mul_star = fixto(star | Literal("\xd7"), "*")
-    exp_dubstar = fixto(star | Literal("\xd7\xd7") | Literal("\u2191"), "**")
+    mul_star = fixto(star+~star | Literal("\xd7")+~Literal("\xd7"), "*")
+    exp_dubstar = fixto(dubstar | Literal("\xd7\xd7") | Literal("\u2191"), "**")
     neg_minus = fixto(minus | Literal("\u207b"), "-")
     sub_minus = fixto(minus | Literal("\u2212"), "-")
-    div_slash = fixto(slash | Literal("\xf7"), "/")
+    div_slash = fixto((slash | Literal("\xf7"))+~slash, "/")
     div_dubslash = fixto(dubslash | Combine(Literal("\xf7"), slash), "//")
 
     NAME = Regex("(?![0-9])\\w+")
