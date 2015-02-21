@@ -71,8 +71,8 @@ class executor(object):
 
 class cli(object):
     """The Coconut Command-Line Interface."""
-    arguments = argparse.ArgumentParser(description="The Coconut Compiler.")
-    arguments.add_argument("filenames", metavar="file", type=str, nargs="?", help="The name of the file to compile.")
+    arguments = argparse.ArgumentParser(description="The Coconut Programming Language.")
+    arguments.add_argument("filenames", metavar="files", type=str, nargs="*", help="the names of the files to compile; if no file names are passed, the REPL is started instead")
     running = False
 
     def __init__(self, color=None, prompt=">>>", moreprompt="...", prompt_color=None, error_color=None, debug=False):

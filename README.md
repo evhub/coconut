@@ -5,7 +5,7 @@ Coconut is a modern, developer-friendly scripting language that compiles to Pyth
 
 ### Usage
 
-`python coconut.py <filename>`
+`python coconut.py -h`
 
 ### Syntax
 
