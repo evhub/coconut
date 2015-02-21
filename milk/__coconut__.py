@@ -10,7 +10,7 @@ except ImportError:
     pass
 
 class __coconut__(object):
-    u"""Built-In Coconut Functions."""
+    """Built-In Coconut Functions."""
     import operator
     import functools
     import itertools
@@ -18,25 +18,25 @@ class __coconut__(object):
     fold = functools.reduce
     @staticmethod
     def compose(f, g):
-        u"""Composing (f..g)."""
+        """Composing (f..g)."""
         def _composed(*args, **kwargs):
-            u"""Function Composition Wrapper."""
+            """Function Composition Wrapper."""
             return f(g(*args, **kwargs))
         return _composed
     @staticmethod
     def infix(a, func, b):
-        u"""Infix Calling (5 \\mod\\ 6)."""
+        """Infix Calling (5 \\mod\\ 6)."""
         return func(a, b)
     @staticmethod
     def pipe(*args):
-        u"""Pipelining (x |> func)."""
+        """Pipelining (x |> func)."""
         out = args[0]
         for func in args[1:]:
             out = func(out)
         return out
     @staticmethod
     def zipwith(func, *args):
-        u"""Functional Zipping."""
+        """Functional Zipping."""
         lists = list(args)
         while lists:
             new_lists = []
@@ -53,11 +53,11 @@ class __coconut__(object):
             lists = new_lists
     @staticmethod
     def recursive(func):
-        u"""Tail Recursion Elimination."""
+        """Tail Recursion Elimination."""
         state = [True, None]
         recurse = object()
         def _tailed(*args, **kwargs):
-            u"""Tail Recursion Wrapper."""
+            """Tail Recursion Wrapper."""
             if state[0]:
                 state[0] = False
                 try:

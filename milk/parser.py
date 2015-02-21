@@ -215,7 +215,7 @@ class processor(object):
     endline = "\n\r"
     escape = "\\"
     tablen = 4
-    verbosity = 10
+    verbosity = 20
 
     def __init__(self):
         """Creates A New Pre-Processor."""
@@ -248,7 +248,7 @@ class processor(object):
         out = ""
         i = point-self.verbosity
         while i < point+self.verbosity:
-            if i and i < len(iterstring):
+            if i >= 0 and i < len(iterstring):
                 out += iterstring[i]
             i += 1
         return "..."+repr(out)+"..."
@@ -452,9 +452,8 @@ class processor(object):
                 else:
                     tokens[0] = '"'+tokens[0]+'"'
                 if raw:
-                    return "r"+tokens[0]
-                else:
-                    return "u"+tokens[0]
+                    tokens[0] = "r"+tokens[0]
+                return tokens[0]
             else:
                 raise CoconutException("String marker points to comment")
         else:

@@ -20,7 +20,7 @@ optional arguments:
 
 ### Syntax
 
-Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes significant changes from Python 3 syntax, however. The major differences from Python 3 are:
+Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes significant changes from Python 3 syntax, however:
 
 * New operators:
 	* compose: `..` (in-place: `..=`)
@@ -37,12 +37,12 @@ Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes
 * Changed syntax:
 	* strings: only `b` prefix is allowed, raw strings use `` `string` `` syntax
 	* lambda keyword: removed (use the operator instead)
-	* backslash continuations: removed (use expanded parenthetical continuations instead)
+	* backslash continuations: removed (use improved parenthetical continuations instead)
 * New built-ins:
 	* right fold: `fold`
 	* zip with: `zipwith`
 	* tail recursion elimination: `recursive`
-* New constructs (planned):
+* New constructs: (planned)
 	* operator [re]definition
 	* lazy evaluation
 	* pattern matching

@@ -128,6 +128,9 @@ class cli(object):
         """Executes Coconut REPL Input."""
         try:
             compiled = parser.parse_single(code)
+        except parser.ParseFatalException:
+            print_error()
+            return
         except parser.ParseException:
             while True:
                 line = raw_input(self.moreprompt)
@@ -137,7 +140,7 @@ class cli(object):
                     break
             try:
                 compiled = parser.parse_single(code)
-            except parser.ParseException:
+            except parser.ParseException, parser.ParseFatalException:
                 print_error()
                 return
         if self.debug:
