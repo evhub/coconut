@@ -621,10 +621,10 @@ class processor(object):
                       )
 
     op_atom = trace(lparen + (
-        fixto(fixto(pipeline, "__coconut__.pipe")
+        fixto(pipeline, "__coconut__.pipe")
         | fixto(dotdot, "__coconut__.compose")
         | fixto(dubcolon, "__coconut__.itertools.chain")
-        | exp_dubstar, "__coconut__.operator.__pow__")
+        | fixto(exp_dubstar, "__coconut__.operator.__pow__")
         | fixto(mul_star, "__coconut__.operator.__mul__")
         | fixto(div_dubslash, "__coconut__.operator.__floordiv__")
         | fixto(div_slash, "__coconut__.operator.__truediv__")

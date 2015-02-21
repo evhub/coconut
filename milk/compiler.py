@@ -18,7 +18,6 @@ from __future__ import with_statement, print_function, absolute_import, unicode_
 
 from .util import *
 from . import parser
-import itertools
 import argparse
 import sys
 import traceback
@@ -53,22 +52,29 @@ class executor(object):
                 self.variables[k] = v
     def run(__self, __code, __error=print_error):
         """Executes Python Code."""
-        __locals = locals().copy()
         __globals = globals().copy()
+        __locals = locals().copy()
         for __k, __v in __self.variables.items():
             globals()[__k] = __v
         try:
             exec(__code)
-        except Exception as err:
+        except Exception:
             __error()
-        for __k, __v in itertools.chain(locals().items(), globals().items()):
+        __overrides = {}
+        for __k, __v in globals().items():
             if __k in __self.variables:
                 __self.variables[__k] = __v
-            elif __k not in __locals and __k not in __globals:
-                __self.variables[__k] = __v
-        for __k, __v in globals().copy().items():
-            if __k not in __globals:
                 del globals()[__k]
+            elif __k not in __globals:
+                __overrides[__k] = __v
+                del globals()[__k]
+        for __k, __v in locals().items():
+            if __k in __self.variables:
+                __self.variables[__k] = __v
+            elif __k not in __locals:
+                __self.variables[__k] = __v
+        for __k, __v in __overrides.items():
+            __self.variables[__k] = __v
         for __k, __v in __globals.items():
             globals()[__k] = __v
 
@@ -129,9 +135,13 @@ class cli(object):
                     code += "\n"+line
                 else:
                     break
-            compiled = parser.parse_single(code)
+            try:
+                compiled = parser.parse_single(code)
+            except parser.ParseException:
+                print_error()
+                return
         if self.debug:
-            self.gui.print("[Coconut] Executing "+repr(py)+"...")
+            self.gui.print("[Coconut] Executing "+repr(compiled)+"...")
         self.runner.run(compiled)
 
 if __name__ == "__main__":
