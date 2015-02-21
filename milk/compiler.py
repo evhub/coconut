@@ -16,7 +16,7 @@ Description: The Coconut Compiler.
 
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
-from .util import *
+from .util import openfile, readfile, writefile, terminal
 from . import parser
 import argparse
 
@@ -89,10 +89,15 @@ class cli(object):
     def repl(self):
         """Starts The REPL."""
         self.gui.print("[Coconut] REPL:")
-        self.runner = executor({"print" : self.gui.print})
+        self.runner = executor({"print" : self.gui.print, "exit" : self.exit})
         self.runner.run(parser.HEADER)
-        while True:
+        self.running = True
+        while self.running:
             self.process(raw_input(self.prompt))
+
+    def exit(self):
+        """Exits The REPL."""
+        self.running = False
 
     def process(self, code):
         """Executes Coconut REPL Input."""
