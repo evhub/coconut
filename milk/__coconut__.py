@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- encoding: utf-8 -*-
 
 # Coconut Header: --------------------------------------------------------------
 
@@ -16,21 +15,25 @@ class __coconut__(object):
     import functools
     curry = functools.partial
     fold = functools.reduce
+    @staticmethod
     def infix(a, func, b):
         u"""Infix Calling (5 \\mod\\ 6)."""
         return func(a, b)
+    @staticmethod
     def pipe(*args):
         u"""Pipelining (x |> func)."""
         out = args[0]
         for func in args[1:]:
             out = func(out)
         return out
+    @staticmethod
     def compose(f, g):
         u"""Composing (f..g)."""
         def _composed(*args, **kwargs):
             u"""Function Composition Wrapper."""
             return f(g(*args, **kwargs))
         return _composed
+    @staticmethod
     def zipwith(func, *args):
         u"""Functional Zipping."""
         lists = list(args)
@@ -47,6 +50,7 @@ class __coconut__(object):
             else:
                 break
             lists = new_lists
+    @staticmethod
     def recursive(func):
         u"""Tail Recursion Elimination."""
         state = [True, None]

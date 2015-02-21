@@ -65,24 +65,21 @@ class terminal(object):
         "lightyellow" : "\033[93m",
         "lightred" : "\033[91m"
         }
+    on = True
 
-    def __init__(self, on=True, color=None):
+    def __init__(self, color=None):
         """Base Constructure For The Terminal Wrapper."""
         self.clear()
-        self.on = on
         self.color = color
     def clear(self):
         """Clears The History."""
         self.history = []
     def addcolor(self, inputstring, color):
         """Adds The Specified Colors To The String."""
-        if islist(color):
-            out = ""
-            for item in color:
-                out += self.colors[str(item)]
+        if color is not None:
+            return self.colors[str(color)] + inputstring + self.colors["end"]
         else:
-            out = self.colors[str(color)]
-        return out+str(inputstring)+self.colors["end"]
+            return inputstring
     def delcolor(self, inputstring):
         """Removes Recognized Colors From A String."""
         inputstring = str(inputstring)
@@ -95,10 +92,10 @@ class terminal(object):
         if self.color in self.colors:
             message = self.addcolor(message, self.color)
         return message
-    def display(self, *messages):
+    def print(self, *messages):
         """Prints A Message."""
-        if self.doshow:
-            message = " ".join(messages)
+        if self.on:
+            message = " ".join(str(msg) for msg in messages)
             for line in message.splitlines():
                 print(self.colorwrap(line))
                 self.history.append(line)

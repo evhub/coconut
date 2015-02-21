@@ -6,4 +6,4 @@ Date Created: 2014
 Description: Coconut Language Utilities.
 """
 
-__all__ = ["parser"]
+__all__ = ["compiler"]

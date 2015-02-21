@@ -776,7 +776,7 @@ class processor(object):
 
     def parse_single(self, inputstring):
         """Processes Console Input."""
-        out = self.post(self.single_parser.parseString(self.pre(inputstring)))
+        out = self.post(self.single_parser.parseString(self.pre(inputstring)), False)
         self.clean()
         return out
 
@@ -788,7 +788,7 @@ class processor(object):
 
     def parse_eval(self, inputstring):
         """Processes Eval Input."""
-        out = self.post(self.eval_parser.parseString(self.pre(inputstring, True)))
+        out = self.post(self.eval_parser.parseString(self.pre(inputstring, True)), False)
         self.clean()
         return out
 
