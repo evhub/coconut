@@ -89,10 +89,9 @@ class cli(object):
     def repl(self):
         """Starts The REPL."""
         self.gui.print("[Coconut] REPL:")
-        self.running = True
         self.runner = executor({"print" : self.gui.print})
         self.runner.run(parser.HEADER)
-        while self.running:
+        while True:
             self.process(raw_input(self.prompt))
 
     def process(self, code):
