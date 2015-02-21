@@ -16,9 +16,11 @@ Description: The Coconut Compiler.
 
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
-from .util import openfile, readfile, writefile, terminal
+from .util import *
 from . import parser
 import argparse
+import sys
+import traceback
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -35,6 +37,11 @@ def compile_cmd(filename):
     destfilename = basename + ".py"
     compile_file(codefilename, destfilename)
 
+def print_error():
+    """Processes An Error."""
+    err_type, err_value, err_trace = sys.exc_info()
+    traceback.print_exception(err_type, err_value, err_trace)
+
 class executor(object):
     """Compiled Python Executor."""
     def __init__(self, extras=None):
@@ -43,12 +50,15 @@ class executor(object):
         if extras is not None:
             for k,v in extras.items():
                 self.variables[k] = v
-    def run(__self, __code):
+    def run(__self, __code, __error=print_error):
         """Executes Python Code."""
         for __k, __v in __self.variables.items():
             locals()[__k] = __v
         __snapshot = locals().copy()
-        exec(__code)
+        try:
+            exec(__code)
+        except Exception as err:
+            __error()
         for __k, __v in locals().items():
             if __k not in __snapshot:
                 __self.variables[__k] = __v
@@ -65,11 +75,13 @@ class cli(object):
     arguments.add_argument("filenames", metavar="file", type=str, nargs="?", help="The name of the file to compile.")
     running = False
 
-    def __init__(self, color=None, prompt=">>>", prompt_color=None, debug=False):
+    def __init__(self, color=None, prompt=">>>", moreprompt="...", prompt_color=None, error_color=None, debug=False):
         """Creates The CLI."""
         self.debug = debug
         self.gui = terminal(color)
         self.prompt = self.gui.addcolor(prompt, prompt_color)+" "
+        self.moreprompt = self.gui.addcolor(moreprompt, prompt_color)+" "
+        self.error_color = error_color
 
     def start(self):
         """Starts The CLI."""
@@ -101,10 +113,19 @@ class cli(object):
 
     def process(self, code):
         """Executes Coconut REPL Input."""
-        py = parser.parse_single(code)
+        try:
+            compiled = parser.parse_single(code)
+        except parser.ParseException:
+            while True:
+                line = raw_input(self.moreprompt)
+                if line:
+                    code += "\n"+line
+                else:
+                    break
+            compiled = parser.parse_single(code)
         if self.debug:
             self.gui.print("[Coconut] Executing "+repr(py)+"...")
-        self.runner.run(py)
+        self.runner.run(compiled)
 
 if __name__ == "__main__":
     cli(debug=True).start()
