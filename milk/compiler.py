@@ -88,12 +88,12 @@ class cli(object):
     arguments.add_argument("filenames", metavar="files", type=str, nargs="*", help="the names of the files to compile; if no file names are passed, the REPL is started instead")
     running = False
 
-    def __init__(self, color=None, prompt=">>>", moreprompt="...", prompt_color=None, error_color=None, debug=False):
+    def __init__(self, color=None, prompt=">>> ", moreprompt="    ", prompt_color=None, error_color=None, debug=False):
         """Creates The CLI."""
         self.debug = debug
         self.gui = terminal(color)
-        self.prompt = self.gui.addcolor(prompt, prompt_color)+" "
-        self.moreprompt = self.gui.addcolor(moreprompt, prompt_color)+" "
+        self.prompt = self.gui.addcolor(prompt, prompt_color)
+        self.moreprompt = self.gui.addcolor(moreprompt, prompt_color)
         self.error_color = error_color
 
     def start(self):
