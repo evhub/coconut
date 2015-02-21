@@ -3,7 +3,7 @@ Coconut
 
 Coconut is a modern, developer-friendly scripting language that compiles to Python, built for functional programming.
 
-### Help
+### Usage
 
 ```
 usage: coconut.py [-h] [path [path ...]]
@@ -12,7 +12,7 @@ The Coconut Programming Language.
 
 positional arguments:
   path        the names of the files to compile; if no file names are passed,
-              the REPL is started instead
+              the interpreter is started instead
 
 optional arguments:
   -h, --help  show this help message and exit
