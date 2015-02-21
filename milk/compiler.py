@@ -30,14 +30,6 @@ def compile_file(codefilename, destfilename):
     """Compiles A Source Coconut File To A Destination Python File."""
     writefile(openfile(destfilename, "w"), parser.parse_file(readfile(openfile(codefilename, "r"))))
 
-EXTENSION = ".coc.py"
-def compile_cmd(filename):
-    """Compiles A Coconut File Using The Command Line Argument."""
-    base, ext = os.path.splitext(filename)
-    codefilename = base + ext
-    destfilename = base + EXTENSION
-    compile_file(codefilename, destfilename)
-
 def print_error():
     """Processes An Error."""
     err_type, err_value, err_trace = sys.exc_info()
@@ -85,6 +77,7 @@ class executor(object):
 
 class cli(object):
     """The Coconut Command-Line Interface."""
+    EXTENSION = ".coc.py"
     arguments = argparse.ArgumentParser(description="The Coconut Programming Language.")
     arguments.add_argument("filenames", metavar="path", type=str, nargs="*", help="the names of the files to compile; if no file names are passed, the interpreter is started instead")
     running = False
@@ -103,12 +96,15 @@ class cli(object):
             self.repl()
         else:
             for filename in args.filenames:
-                self.compile(filename)
+                self.compile_cmd(filename)
 
-    def compile(self, filename):
-        """Compiles A File With Printing."""
+    def compile_cmd(self, filename):
+    """Compiles A Coconut File Using The Command Line Argument."""
+        base, ext = os.path.splitext(filename)
+        codefilename = base + ext
+        destfilename = base + EXTENSION
         self.gui.print("[Coconut] Compiling '"+codefilename+"'...")
-        compile_cmd(filename)
+        compile_file(codefilename, destfilename)
         self.gui.print("[Coconut] Compiled '"+destfilename+"'.")
 
     def repl(self):
