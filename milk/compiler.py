@@ -30,11 +30,12 @@ def compile_file(codefilename, destfilename):
     """Compiles A Source Coconut File To A Destination Python File."""
     writefile(openfile(destfilename, "w"), parser.parse_file(readfile(openfile(codefilename, "r"))))
 
+EXTENSION = ".coc.py"
 def compile_cmd(filename):
     """Compiles A Coconut File Using The Command Line Argument."""
-    basename, extension = os.path.splitext(filename)
-    codefilename = basename + extension
-    destfilename = basename + ".py"
+    base, ext = os.path.splitext(filename)
+    codefilename = base + ext
+    destfilename = base + EXTENSION
     compile_file(codefilename, destfilename)
 
 def print_error():
