@@ -74,8 +74,10 @@ try:
     raw_input
 except NameError:
     raw_input = input
-    old_input = lambda *args, **kwargs: eval(raw_input(*args, **kwargs))
+    def old_input(*args, **kwargs):
+        return eval(raw_input(*args, **kwargs))
 else:
     old_input = raw_input
-    raw_input = lambda *args, **kwargs: old_input(*args, **kwargs).decode(encoding)
+    def raw_input(*args, **kwargs):
+        return old_input(*args, **kwargs).decode(encoding)
     input = raw_input

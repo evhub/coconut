@@ -129,8 +129,7 @@ class cli(object):
         try:
             compiled = parser.parse_single(code)
         except parser.ParseFatalException:
-            print_error()
-            return
+            return print_error()
         except parser.ParseException:
             while True:
                 line = raw_input(self.moreprompt)
@@ -141,8 +140,7 @@ class cli(object):
             try:
                 compiled = parser.parse_single(code)
             except parser.ParseException, parser.ParseFatalException:
-                print_error()
-                return
+                return print_error()
         if self.debug:
             self.gui.print("[Coconut] Executing "+repr(compiled)+"...")
         self.runner.run(compiled)
