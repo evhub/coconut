@@ -23,10 +23,10 @@ from milk import compiler
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 if __name__ == "__main__":
-	try:
-		compiler.readline
-	except AttributeError:
-	    cmd = compiler.cli()
-	else:
-		cmd = compiler.cli(color="cyan")
-	cmd.start()
+    try:
+        compiler.readline
+    except AttributeError:
+        cmd = compiler.cli()
+    else:
+        cmd = compiler.cli(color="cyan")
+    cmd.start()

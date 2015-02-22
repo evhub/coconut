@@ -26,10 +26,6 @@ import traceback
 # UTILITIES:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-def compile_file(codefilename, destfilename):
-    """Compiles A Source Coconut File To A Destination Python File."""
-    writefile(openfile(destfilename, "w"), parser.parse_file(readfile(openfile(codefilename, "r"))))
-
 def print_error():
     """Processes An Error."""
     err_type, err_value, err_trace = sys.exc_info()
@@ -79,12 +75,17 @@ class cli(object):
     """The Coconut Command-Line Interface."""
     extension = ".coc.py"
     arguments = argparse.ArgumentParser(description="The Coconut Programming Language.")
-    arguments.add_argument("filenames", metavar="path", type=str, nargs="*", help="the names of the files to compile; if no file names are passed, the interpreter is started instead")
+    arguments.add_argument("filenames", metavar="path", type=str, nargs="*", help="names of files to compile")
+    arguments.add_argument("--code", "-c", type=str, nargs=1, help="run code passed in as string")
+    arguments.add_argument("--run", "-r", action="store_const", const=True, default=False, help="run files after compiling them")
+    arguments.add_argument("--nowrite", "-n", action="store_const", const=True, default=False, help="disable writing of compiled code")
+    arguments.add_argument("--interact", "-i", action="store_const", const=True, default=False, help="start the interpreter after compiling files")
+    arguments.add_argument("--debug", "-d", action="store_const", const=True, default=False, help="shows compiled python being executed")
     running = False
+    runner = None
 
-    def __init__(self, color=None, prompt=">>> ", moreprompt="    ", debug=False):
+    def __init__(self, color=None, prompt=">>> ", moreprompt="    "):
         """Creates The CLI."""
-        self.debug = debug
         self.gui = terminal(color)
         self.prompt = self.gui.addcolor(prompt, color)
         self.moreprompt = self.gui.addcolor(moreprompt, color)
@@ -92,42 +93,49 @@ class cli(object):
     def start(self):
         """Starts The CLI."""
         args = self.arguments.parse_args()
-        if args.filenames is None or len(args.filenames) == 0:
-            self.repl()
-        else:
-            for filename in args.filenames:
-                self.compile_cmd(filename)
+        self.debug = args.debug
+        if args.code:
+            self.execute(parser.parse_single(args.code[0]))
+        for filename in args.filenames:
+            if args.nowrite:
+                codefilename = filename
+                destfilename = None
+            else:
+                codefilename, destfilename = self.resolve(filename)
+            self.compile(codefilename, destfilename, args.run)
+        if args.interact or not (args.filenames or args.code):
+            self.start_prompt()
 
-    def compile_cmd(self, filename):
-        """Compiles A Coconut File Using The Command Line Argument."""
+    def compile(self, codefilename, destfilename, run=False):
+        """Compiles A Source Coconut File To A Destination Python File."""
+        self.gui.print("[Coconut] Compiling "+repr(codefilename)+"...")
+        compiled = parser.parse_file(readfile(openfile(codefilename, "r")))
+        if destfilename is not None:
+            writefile(openfile(destfilename, "w"), compiled)
+            self.gui.print("[Coconut] Compiled "+repr(destfilename)+".")
+        if run:
+            self.execute(compiled)
+
+    def resolve(self, filename):
+        """Resolves A Filename Into Source And Destination Files."""
         base, ext = os.path.splitext(filename)
         codefilename = base + ext
         destfilename = base + self.extension
-        self.gui.print("[Coconut] Compiling '"+codefilename+"'...")
-        compile_file(codefilename, destfilename)
-        self.gui.print("[Coconut] Compiled '"+destfilename+"'.")
+        return codefilename, destfilename
 
-    def repl(self):
-        """Starts The REPL."""
+    def start_prompt(self):
+        """Starts The Interpreter."""
         self.gui.print("[Coconut] Interpreter:")
-        self.runner = executor({"exit" : self.exit, "debug" : self.set_debug})
-        self.runner.run(parser.HEADER)
         self.running = True
         while self.running:
-            self.process(raw_input(self.prompt))
+            self.execute(self.process(raw_input(self.prompt)))
 
     def exit(self):
-        """Exits The REPL."""
+        """Exits The Interpreter."""
         self.running = False
 
-    def set_debug(self, state=None):
-        """Toggles debug."""
-        if state is None:
-            state = not self.debug
-        self.debug = state
-
     def process(self, code):
-        """Executes Coconut REPL Input."""
+        """Compiles Coconut Interpreter Input."""
         try:
             compiled = parser.parse_single(code)
         except (parser.ParseFatalException, parser.ParseException):
@@ -141,9 +149,22 @@ class cli(object):
                 compiled = parser.parse_single(code)
             except (parser.ParseFatalException, parser.ParseException):
                 return print_error()
+        return compiled
+
+    def execute(self, compiled):
+        """Executes Compiled Code."""
+        if self.runner is None:
+            self.start_runner()
         if self.debug:
             self.gui.print("[Coconut] Executing "+repr(compiled)+"...")
         self.runner.run(compiled)
 
+    def start_runner(self):
+        """Starts The Runner."""
+        self.runner = executor({
+            "exit" : self.exit
+            })
+        self.runner.run(parser.HEADER)
+
 if __name__ == "__main__":
-    cli(debug=True).start()
+    cli().start()
