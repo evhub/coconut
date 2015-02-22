@@ -16,11 +16,17 @@ Description: The Coconut Interface.
 
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
-from milk.compiler import cli
+from milk import compiler
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # MAIN:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    cli().start()
+	try:
+		compiler.readline
+	except AttributeError:
+	    cmd = compiler.cli()
+	else:
+		cmd = compiler.cli(color="cyan")
+	cmd.start()

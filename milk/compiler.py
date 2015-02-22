@@ -82,12 +82,12 @@ class cli(object):
     arguments.add_argument("filenames", metavar="path", type=str, nargs="*", help="the names of the files to compile; if no file names are passed, the interpreter is started instead")
     running = False
 
-    def __init__(self, color=None, prompt=">>> ", moreprompt="    ", prompt_color=None, debug=False):
+    def __init__(self, color=None, prompt=">>> ", moreprompt="    ", debug=False):
         """Creates The CLI."""
         self.debug = debug
         self.gui = terminal(color)
-        self.prompt = self.gui.addcolor(prompt, prompt_color)
-        self.moreprompt = self.gui.addcolor(moreprompt, prompt_color)
+        self.prompt = self.gui.addcolor(prompt, color)
+        self.moreprompt = self.gui.addcolor(moreprompt, color)
 
     def start(self):
         """Starts The CLI."""
@@ -110,7 +110,7 @@ class cli(object):
     def repl(self):
         """Starts The REPL."""
         self.gui.print("[Coconut] Interpreter:")
-        self.runner = executor({"print" : self.gui.print, "exit" : self.exit})
+        self.runner = executor({"exit" : self.exit})
         self.runner.run(parser.HEADER)
         self.running = True
         while self.running:
