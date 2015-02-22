@@ -17,10 +17,18 @@ Description: Coconut Utilities.
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
 from .root import *
+import os.path
+import sys
+import traceback
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+def print_error():
+    """Processes An Error."""
+    err_type, err_value, err_trace = sys.exc_info()
+    traceback.print_exception(err_type, err_value, err_trace)
 
 def openfile(filename, opentype="r+b"):
     """Returns An Open File Object."""

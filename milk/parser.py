@@ -7,7 +7,7 @@
 """
 Author: Evan Hubinger
 Date Created: 2014
-Description: The CoconutScript Parser.
+Description: The Coconut Parser.
 """
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -98,9 +98,6 @@ class tracer(object):
                 """Callback Function Constructed By tracer."""
                 return self.trace(original, location, tokens, message)
         return attach(item, callback)
-
-TRACER = tracer(False)
-trace = TRACER.bind
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # PROCESSORS:
@@ -203,6 +200,8 @@ HEADER = readfile(openfile(os.path.join(DIRECTORY, "__coconut__.py"), "r"))
 
 class processor(object):
     """The Coconut Processor."""
+    TRACER = tracer(False)
+    trace = TRACER.bind
     openstr = "\u204b"
     closestr = "\xb6"
     linebreak = "\n"
@@ -219,19 +218,20 @@ class processor(object):
 
     def __init__(self):
         """Creates A New Processor."""
-        self.init()
+        self.string_ref <<= self.trace(attach(self.string_marker, self.string_repl), "string_ref")
+        self.comment <<= self.trace(attach(self.comment_marker, self.comment_repl), "comment")
+        self.setup()
         self.clean()
+
+    def setup(self):
+        """Initializes The Processor."""
+        self.preprocs = [self.strproc, self.indproc]
+        self.postprocs = [self.reindproc]
 
     def clean(self):
         """Resets References."""
+        self.indchar = None
         self.refs = []
-
-    def pre(self, inputstring, strip=False):
-        """Performs Pre-Processing."""
-        inputstring = str(inputstring)
-        if strip:
-            inputstring = inputstring.strip()
-        return self.indproc(self.strproc(inputstring))
 
     def wrapstr(self, text, raw, multiline):
         """Wraps A String."""
@@ -321,7 +321,6 @@ class processor(object):
             raise CoconutException("Unclosed string in "+self.getpart(inputstring, x))
         return "".join(out)
 
-    indchar = None
     def leading(self, inputstring):
         """Counts Leading Whitespace."""
         count = 0
@@ -425,35 +424,59 @@ class processor(object):
             out.append(line)
         return self.linebreak.join(out)
 
+    def reindproc(self, inputstring):
+        """Reformats Indentation."""
+        return self.reindent(inputstring.strip()).strip()+self.linebreak
+
+    def pre(self, inputstring, strip=False):
+        """Performs Pre-Processing."""
+        out = str(inputstring)
+        for proc in self.preprocs:
+            out = proc(out)
+        return out
+
     def post(self, tokens, header=True):
         """Performs Post-Processing."""
         if len(tokens) == 1:
-            out = ""
+            out = tokens[0]
+            for proc in self.postprocs:
+                out = proc(out)
             if header:
-                out += HEADER
-            out += self.reindent(tokens[0].strip()).strip()+self.linebreak
-            return out
+                return HEADER+out
+            else:
+                return out
         else:
             raise CoconutException("Multiple tokens leftover: "+repr(tokens))
+
+    def autopep8(self, arglist=None):
+        """Enables autopep8."""
+        import autopep8
+        if arglist is None:
+            fix_code = autopep8.fix_code
+        else:
+            def fix_code(code):
+                """Automatic PEP8 Fixer."""
+                autopep8.fix_code(code, options=autopep8.parse_args(arglist))
+        postprocs.append(fix_code)
 
     def string_repl(self, tokens):
         """Replaces String References."""
         if len(tokens) == 1:
-            tokens[0] = self.refs[int(tokens[0])]
-            if isinstance(tokens[0], tuple):
-                tokens[0], raw, multiline = tokens[0]
-                if tokens[0]:
-                    if tokens[0][-1] == '"':
-                        tokens[0] = tokens[0][:-1]+'\\"'
-                    if tokens[0][0] == '"':
-                        tokens[0] = "\\"+tokens[0]
+            ref = self.refs[int(tokens[0])]
+            if isinstance(ref, tuple):
+                string, raw, multiline = ref
+                if string:
+                    if string[-1] == '"':
+                        string = string[:-1]+'\\"'
+                    if string[0] == '"':
+                        string = "\\"+string
                 if multiline:
-                    tokens[0] = '"""'+tokens[0]+'"""'
+                    string = '"""'+string+'"""'
                 else:
-                    tokens[0] = '"'+tokens[0]+'"'
+                    string = '"'+string+'"'
                 if raw:
-                    tokens[0] = "r"+tokens[0]
-                return tokens[0]
+                    string = "r"+string
+                return string
             else:
                 raise CoconutException("String marker points to comment")
         else:
@@ -462,18 +485,13 @@ class processor(object):
     def comment_repl(self, tokens):
         """Replaces Comment References."""
         if len(tokens) == 1:
-            tokens[0] = self.refs[int(tokens[0])]
-            if isinstance(tokens[0], tuple):
+            ref = self.refs[int(tokens[0])]
+            if isinstance(ref, tuple):
                 raise CoconutException("Comment marker points to string")
             else:
-                return "#"+tokens[0]
+                return "#"+ref
         else:
             raise CoconutException("Invalid comment marker")
-
-    def init(self):
-        """Initializes The Strings And Comments."""
-        self.string_ref <<= trace(attach(self.string_marker, self.string_repl), "string_ref")
-        self.comment <<= trace(attach(self.comment_marker, self.comment_repl), "comment")
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # GRAMMAR:
@@ -815,23 +833,5 @@ class processor(object):
 # MAIN:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-PROCESSOR = processor()
-
-def parse_single(inputstring):
-    """Processes Console Input."""
-    return PROCESSOR.parse_single(inputstring)
-
-def parse_file(inputstring):
-    """Processes File Input."""
-    return PROCESSOR.parse_file(inputstring)
-
-def parse_eval(inputstring):
-    """Processes Eval Input."""
-    return PROCESSOR.parse_eval(inputstring)
-
-def parse_debug(inputstring):
-    """Processes Debug Input."""
-    return PROCESSOR.parse_debug(inputstring)
-
 if __name__ == "__main__":
-    print(parse_file(readfile(openfile(DIRECTORY, "r"))))
+    print(processor().parse_file(readfile(openfile(DIRECTORY, "r"))))

@@ -6,16 +6,25 @@ Coconut is a modern, developer-friendly scripting language that compiles to Pyth
 ### Usage
 
 ```
-usage: coconut.py [-h] [path [path ...]]
+usage: coconut.py [-h] [-c line [line ...]] [-r] [-n] [-i] [-d]
+                  [--autopep8 [arg [arg ...]]]
+                  [path [path ...]]
 
 The Coconut Programming Language.
 
 positional arguments:
-  path        the names of the files to compile; if no file names are passed,
-              the interpreter is started instead
+  path                  names of files to compile
 
 optional arguments:
-  -h, --help  show this help message and exit
+  -h, --help            show this help message and exit
+  -c line [line ...], --code line [line ...]
+                        run code passed in as string
+  -r, --run             run files after compiling them
+  -n, --nowrite         disable writing of compiled code
+  -i, --interact        start the interpreter after compiling files
+  -d, --debug           shows compiled python being executed
+  --autopep8 [arg [arg ...]]
+                        use autopep8 to format compiled code
 ```
 
 ### Syntax
