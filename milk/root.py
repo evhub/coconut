@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # INFO:
@@ -17,7 +17,7 @@ Description: The Coconut Root.
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
 try:
-    from future_builtins import map, filter
+    from future_builtins import *
 except ImportError:
     pass
 
@@ -26,8 +26,6 @@ try:
 except ImportError:
     pass
 
-import codecs
-
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # SETUP:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -35,14 +33,11 @@ import codecs
 try:
     xrange
 except NameError:
-    xrange = range
+    pass
 else:
     range = xrange
-
-try:
-    long
-except NameError:
-    long = int
+    def xrange(*args, **kwargs):
+        raise NameError("name 'xrange' is not defined")
 
 try:
     ascii
@@ -54,29 +49,26 @@ try:
 except NameError:
     unichr = chr
 
-encoding = "UTF"
+ENCODING = "UTF"
 
-old_print = print
-def_str = str
 try:
     unicode
 except NameError:
-    old_str = bytes
-    unicode = str
+    pass
 else:
-    old_str = str
+    bytes = str
     str = unicode
-    def print(*args):
-        return old_print(*(str(x).encode(encoding) for x in args))
+    def unicode(*args, **kwargs):
+        raise NameError("name 'unicode' is not defined")
+    __print = print
+    def print(*args, **kwargs):
+        return __print(*(str(x).encode(ENCODING) for x in args), **kwargs)
 
 try:
     raw_input
 except NameError:
-    raw_input = input
-    def old_input(*args, **kwargs):
-        return eval(raw_input(*args, **kwargs))
+    pass
 else:
-    old_input = raw_input
-    def raw_input(*args, **kwargs):
-        return old_input(*args, **kwargs).decode(encoding)
-    input = raw_input
+    __input = raw_input
+    def input(*args, **kwargs):
+        return __input(*args, **kwargs).decode(ENCODING)

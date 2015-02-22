@@ -67,14 +67,14 @@ class executor(object):
 class cli(object):
     """The Coconut Command-Line Interface."""
     extension = ".coc.py"
-    arguments = argparse.ArgumentParser(description="The Coconut Programming Language.")
-    arguments.add_argument("filenames", metavar="path", type=str, nargs="*", default=[], help="names of files to compile")
-    arguments.add_argument("-c", "--code", metavar="line", type=str, nargs="+", default=[], help="run code passed in as string")
-    arguments.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run files after compiling them")
-    arguments.add_argument("-n", "--nowrite", action="store_const", const=True, default=False, help="disable writing of compiled code")
-    arguments.add_argument("-i", "--interact", action="store_const", const=True, default=False, help="start the interpreter after compiling files")
-    arguments.add_argument("-d", "--debug", action="store_const", const=True, default=False, help="shows compiled python being executed")
-    arguments.add_argument("--autopep8", metavar="arg", type=str, nargs="*", default=[], help="use autopep8 to format compiled code")
+    commandline = argparse.ArgumentParser(description="The Coconut Programming Language.")
+    commandline.add_argument("filenames", metavar="path", type=str, nargs="*", default=[], help="names of files to compile")
+    commandline.add_argument("-c", "--code", metavar="line", type=str, nargs="+", default=[], help="run code passed in as string")
+    commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run files after compiling them")
+    commandline.add_argument("-n", "--nowrite", action="store_const", const=True, default=False, help="disable writing of compiled code")
+    commandline.add_argument("-i", "--interact", action="store_const", const=True, default=False, help="start the interpreter after compiling files")
+    commandline.add_argument("-d", "--debug", action="store_const", const=True, default=False, help="shows compiled python being executed")
+    commandline.add_argument("--autopep8", metavar="arg", type=str, nargs="*", default=[], help="use autopep8 to format compiled code")
     running = False
     runner = None
 
@@ -86,8 +86,12 @@ class cli(object):
         self.moreprompt = self.gui.addcolor(moreprompt, color)
 
     def start(self):
-        """Starts The CLI."""
-        args = self.arguments.parse_args()
+        """Gets Command-Line Arguments."""
+        args = self.commandline.parse_args()
+        self.parse(args)
+
+    def parse(self, args):
+        """Parses Command-Line Arguments."""
         self.debug = args.debug
         if args.autopep8:
             self.processor.autopep8(args.autopep8)
@@ -125,7 +129,7 @@ class cli(object):
         self.gui.print("[Coconut] Interpreter:")
         self.running = True
         while self.running:
-            self.execute(self.handle(raw_input(self.prompt)))
+            self.execute(self.handle(input(self.prompt)))
 
     def exit(self):
         """Exits The Interpreter."""
@@ -137,7 +141,7 @@ class cli(object):
             compiled = self.processor.parse_single(code)
         except (parser.ParseFatalException, parser.ParseException):
             while True:
-                line = raw_input(self.moreprompt)
+                line = input(self.moreprompt)
                 if line:
                     code += "\n"+line
                 else:

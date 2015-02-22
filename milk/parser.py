@@ -114,7 +114,7 @@ def anyint_proc(tokens):
 def list_proc(tokens):
     """Removes The Last Character From A List."""
     out = []
-    for x in xrange(0, len(tokens)):
+    for x in range(0, len(tokens)):
         if x%2 == 0:
             out.append(tokens[x])
         else:
@@ -195,7 +195,7 @@ def func_proc(tokens):
 # PARSER:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-DIRECTORY = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
+DIRECTORY = dirname(__file__)
 HEADER = readfile(openfile(os.path.join(DIRECTORY, "__coconut__.py"), "r"))
 
 class processor(object):

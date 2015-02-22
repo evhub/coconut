@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # INFO:
@@ -17,6 +17,7 @@ Description: Coconut Utilities.
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
 from .root import *
+import codecs
 import os.path
 import sys
 import traceback
@@ -25,6 +26,10 @@ import traceback
 # UTILITIES:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+def dirname(filename):
+    """Gets The Directory Name For A File Name."""
+    return os.path.abspath(os.path.dirname(os.path.realpath(filename)))
+
 def print_error():
     """Processes An Error."""
     err_type, err_value, err_trace = sys.exc_info()
@@ -32,7 +37,7 @@ def print_error():
 
 def openfile(filename, opentype="r+b"):
     """Returns An Open File Object."""
-    return codecs.open(str(filename), str(opentype), encoding=encoding)
+    return codecs.open(str(filename), str(opentype), encoding=ENCODING)
 
 def writefile(openedfile, writer):
     """Sets The Contents Of A File."""
