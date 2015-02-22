@@ -54,7 +54,7 @@ class executor(object):
         except Exception:
             __error()
         __overrides = {}
-        for __k, __v in globals().items():
+        for __k, __v in list(globals().items()):
             if __k in __self.variables:
                 __self.variables[__k] = __v
                 del globals()[__k]
@@ -124,9 +124,7 @@ class cli(object):
         """Executes Coconut REPL Input."""
         try:
             compiled = parser.parse_single(code)
-        except parser.ParseFatalException:
-            return print_error()
-        except parser.ParseException:
+        except (parser.ParseFatalException, parser.ParseException):
             while True:
                 line = raw_input(self.moreprompt)
                 if line:
@@ -135,7 +133,7 @@ class cli(object):
                     break
             try:
                 compiled = parser.parse_single(code)
-            except parser.ParseException, parser.ParseFatalException:
+            except (parser.ParseFatalException, parser.ParseException):
                 return print_error()
         if self.debug:
             self.gui.print("[Coconut] Executing "+repr(compiled)+"...")
