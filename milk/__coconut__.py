@@ -16,6 +16,7 @@ class __coconut__(object):
     import itertools
     curry = functools.partial
     fold = functools.reduce
+    join = itertools.chain
     @staticmethod
     def compose(f, g):
         """Composing (f..g)."""
@@ -53,7 +54,7 @@ class __coconut__(object):
             lists = new_lists
     @staticmethod
     def recursive(func):
-        """Tail Recursion Elimination."""
+        """Tail Call Optimizer."""
         state = [True, None]
         recurse = object()
         def _tailed(*args, **kwargs):

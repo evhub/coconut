@@ -36,7 +36,7 @@ Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes
 	* curry: `$`
 	* pipeline: `|>` (in-place: `=>`)
 	* lambda: `->`
-	* chain: `::` (in-place: `::=`)
+	* join: `::` (in-place: `::=`)
 * New syntax:
 	* infix function calling: new `6 \mod\ 3` syntax
 	* operator functions: new `(+)` syntax

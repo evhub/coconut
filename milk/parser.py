@@ -142,12 +142,12 @@ def item_proc(tokens):
             raise CoconutException("Invalid trailer tokens: "+repr(trailer))
     return out
 
-def chain_proc(tokens):
-    """Processes Chain Calls."""
+def join_proc(tokens):
+    """Processes Join Calls."""
     if len(tokens) == 1:
         return tokens[0]
     else:
-        return "__coconut__.itertools.chain("+", ".join(tokens)+")"
+        return "__coconut__.join("+", ".join(tokens)+")"
 
 def infix_proc(tokens):
     """Processes Infix Calls."""
@@ -178,7 +178,7 @@ def assign_proc(tokens):
         elif tokens[1] == "..=":
             return tokens[0]+" = __coconut__.compose("+tokens[0]+", ("+tokens[2]+"))"
         elif tokens[1] == "::=":
-            return tokens[0]+" = __coconut__.itertools.chain("+tokens[0]+", ("+tokens[2]+"))"
+            return tokens[0]+" = __coconut__.join("+tokens[0]+", ("+tokens[2]+"))"
         else:
             return tokens
     else:
@@ -640,7 +640,7 @@ class processor(object):
     op_atom = trace(lparen + (
         fixto(pipeline, "__coconut__.pipe")
         | fixto(dotdot, "__coconut__.compose")
-        | fixto(dubcolon, "__coconut__.itertools.chain")
+        | fixto(dubcolon, "__coconut__.join")
         | fixto(exp_dubstar, "__coconut__.operator.__pow__")
         | fixto(mul_star, "__coconut__.operator.__mul__")
         | fixto(div_dubslash, "__coconut__.operator.__floordiv__")
@@ -707,9 +707,9 @@ class processor(object):
     xor_expr = addspace(and_expr + ZeroOrMore(caret + and_expr))
     or_expr = addspace(xor_expr + ZeroOrMore(bar + xor_expr))
 
-    chain_expr = attach(or_expr + ZeroOrMore(dubcolon.suppress() + or_expr), chain_proc)
+    join_expr = attach(or_expr + ZeroOrMore(dubcolon.suppress() + or_expr), join_proc)
 
-    infix_expr = attach(chain_expr + ZeroOrMore(backslash.suppress() + test + backslash.suppress() + chain_expr), infix_proc)
+    infix_expr = attach(join_expr + ZeroOrMore(backslash.suppress() + test + backslash.suppress() + join_expr), infix_proc)
 
     pipe_expr = attach(infix_expr + ZeroOrMore(pipeline.suppress() + infix_expr), pipe_proc)
 
