@@ -110,7 +110,7 @@ class cli(object):
     def repl(self):
         """Starts The REPL."""
         self.gui.print("[Coconut] Interpreter:")
-        self.runner = executor({"exit" : self.exit})
+        self.runner = executor({"exit" : self.exit, "debug" : self.set_debug})
         self.runner.run(parser.HEADER)
         self.running = True
         while self.running:
@@ -119,6 +119,12 @@ class cli(object):
     def exit(self):
         """Exits The REPL."""
         self.running = False
+
+    def set_debug(self, state=None):
+        """Toggles debug."""
+        if state is None:
+            state = not self.debug
+        self.debug = state
 
     def process(self, code):
         """Executes Coconut REPL Input."""
