@@ -44,5 +44,4 @@ Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes
 	* tail recursion elimination: `recursive`
 * New constructs: (planned)
 	* operator [re]definition
-	* lazy evaluation
 	* pattern matching
