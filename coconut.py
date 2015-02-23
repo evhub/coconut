@@ -16,13 +16,15 @@ Description: The Coconut Interface.
 
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
+from milk.util import *
 from milk import parser, compiler
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # MAIN:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-if __name__ == "__main__":
+def main():
+    """The Main Coconut Entry Point."""
     try:
         compiler.readline
     except AttributeError:
@@ -30,3 +32,6 @@ if __name__ == "__main__":
     else:
         cmd = compiler.cli(color="cyan")
     cmd.start()
+
+if __name__ == "__main__":
+    main()
