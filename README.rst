@@ -16,11 +16,17 @@ positional arguments:
 
 optional arguments:
   -h, --help          show this help message and exit
+  
   -c ..., --code ...  run code passed in as string
+  
   -r, --run           run files after compiling them
+  
   -n, --nowrite       disable writing of compiled code
+  
   -i, --interact      start the interpreter after compiling files
+  
   -d, --debug         shows compiled python being executed
+  
   --autopep8 ...      use autopep8 to format compiled code
 
 Syntax
@@ -33,7 +39,7 @@ Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes
 	* curry: ``$``
 	* pipeline: ``|>`` (in-place: ``=>``)
 	* lambda: ``->``
-	* join: `` :: `` (in-place: `` ::= ``)
+	* join: ``::`` (in-place: ``::=``)
 * New syntax:
 	* infix function calling: new ``6 \mod\ 3`` syntax
 	* operator functions: new ``(+)`` syntax
@@ -41,7 +47,7 @@ Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes
 	* unicode symbols: supports unicode alternatives for most symbols
 	* non-decimal integers: alternative ``10110_2`` syntax
 * Changed syntax:
-	* strings: only ``b`` prefix is allowed, raw strings use `` `string` `` syntax
+	* strings: only ``b`` prefix is allowed, raw strings use ```string``` syntax
 	* lambda keyword: removed (use the operator instead)
 	* backslash continuations: removed (use improved parenthetical continuations instead)
 * New built-ins:
