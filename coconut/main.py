@@ -16,8 +16,8 @@ Description: The Coconut Interface.
 
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
-from milk.util import *
-from milk import parser, compiler
+from .util import *
+from . import compiler
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # MAIN:

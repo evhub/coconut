@@ -27,7 +27,7 @@ setuptools.setup(
     name="coconut",
     version="0.0.1",
     description="Coconut is a modern, developer-friendly scripting language that compiles to Python, built for functional programming.",
-    long_description=readfile(openfile("README.md", "r")),
+    long_description=readfile(openfile("README.rst", "r")),
     url="https://github.com/evhub/coconut",
     author="Evan Hubinger",
     author_email="evanjhub@gmail.com",
@@ -55,6 +55,6 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=["pyparsing"],
     entry_points={"console_scripts":[
-        "coconut = coconut:main"
+        "coconut = coconut.main:main"
         ]}
     )
