@@ -68,7 +68,8 @@ class executor(object):
 
 class cli(object):
     """The Coconut Command-Line Interface."""
-    extension = ".coc.py"
+    code_ext = ".coc"
+    comp_ext = ".py"
     commandline = argparse.ArgumentParser(description="The Coconut Programming Language.")
     commandline.add_argument("paths", metavar="path", type=str, nargs="*", default=[], help="names of files/directories to compile")
     commandline.add_argument("-v", "--version", action="store_const", const=True, default=False, help="print version information")
@@ -118,7 +119,8 @@ class cli(object):
         for dirpath, dirnames, filenames in os.walk(dirname):
             self.setup_module(dirpath)
             for filename in filenames:
-                self.compile_file(filename, write, run, True)
+                if os.path.splitext(filename)[1] == self.code_ext:
+                    self.compile_file(filename, write, run, True)
 
     def compile_file(self, filename, write=True, run=False, module=False):
         """Compiles A File."""
@@ -147,12 +149,12 @@ class cli(object):
         """Resolves A Filename Into Source And Destination Files."""
         base, ext = os.path.splitext(filename)
         codefilename = base + ext
-        destfilename = base + self.extension
+        destfilename = base + self.comp_ext
         return codefilename, destfilename
 
     def setup_module(self, dirpath):
         """Sets Up A Module Directory."""
-        writefile(openfile(os.path.join(dirpath, "__coconut__"), "w"), parser.headers["code"])
+        writefile(openfile(os.path.join(dirpath, "__coconut__.py"), "w"), parser.headers["code"])
 
     def start_prompt(self):
         """Starts The Interpreter."""
