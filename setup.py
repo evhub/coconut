@@ -54,7 +54,6 @@ setuptools.setup(
     keywords=["functional programming language"],
     packages=setuptools.find_packages(),
     install_requires=["pyparsing"],
-    extras_requires=["autopep8"],
     entry_points={"console_scripts":[
         "coconut = coconut:main"
         ]}
