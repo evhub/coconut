@@ -6,11 +6,11 @@ Coconut is a simple, modern, developer-friendly scripting language that compiles
 Usage
 -----
 
-usage: coconut [-h] [-c ...] [-r] [-n] [-i] [-d] [--autopep8 ...]
-               [path [path ...]]
+usage:
+  coconut [-h] [-c ...] [-r] [-n] [-i] [-d] [--autopep8 ...] [path [path ...]]
 
 positional arguments:
-  path:               names of files to compile
+  :path:              names of files to compile
 
 optional arguments:
   -h, --help          show this help message and exit
