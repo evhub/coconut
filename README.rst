@@ -1,7 +1,7 @@
 Coconut
 =======
 
-Coconut is a modern, developer-friendly scripting language that compiles to Python, built for functional programming.
+Coconut is a simple, modern, developer-friendly scripting language that compiles to Python, built for functional programming.
 
 Usage
 -----
@@ -9,10 +9,8 @@ Usage
 usage: coconut [-h] [-c ...] [-r] [-n] [-i] [-d] [--autopep8 ...]
                [path [path ...]]
 
-The Coconut Programming Language.
-
 positional arguments:
-  path                names of files to compile
+  path:               names of files to compile
 
 optional arguments:
   -h, --help          show this help message and exit

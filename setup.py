@@ -26,7 +26,7 @@ import setuptools
 setuptools.setup(
     name="coconut",
     version="0.0.1",
-    description="Coconut is a modern, developer-friendly scripting language that compiles to Python, built for functional programming.",
+    description="The Coconut Programming Language.",
     long_description=readfile(openfile("README.rst", "r")),
     url="https://github.com/evhub/coconut",
     author="Evan Hubinger",
