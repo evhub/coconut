@@ -6,7 +6,9 @@ Coconut is a simple, modern, developer-friendly scripting language that compiles
 Installation
 ------------
 
-::pip install coconut
+Enter in console::
+
+    pip install coconut
 
 Usage
 -----
