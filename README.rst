@@ -22,7 +22,7 @@ positional arguments:
 optional arguments:
   -h, --help          show this help message and exit
 
-  -v, --version       print the coconut version
+  -v, --version       print version information
 
   -s, --strict        enforce code cleanliness standards
 
