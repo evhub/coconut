@@ -71,11 +71,12 @@ class cli(object):
     extension = ".coc.py"
     commandline = argparse.ArgumentParser(description="The Coconut Programming Language.")
     commandline.add_argument("paths", metavar="path", type=str, nargs="*", default=[], help="names of files/directories to compile")
-    commandline.add_argument("-c", "--code", type=str, nargs=argparse.REMAINDER, default=[], help="run code passed in as string")
+    commandline.add_argument("-v", "--version", action="store_const", const=True, default=False, help="print the coconut version")
     commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run files after compiling them")
     commandline.add_argument("-n", "--nowrite", action="store_const", const=True, default=False, help="disable writing of compiled code")
     commandline.add_argument("-i", "--interact", action="store_const", const=True, default=False, help="start the interpreter after compiling files")
     commandline.add_argument("-d", "--debug", action="store_const", const=True, default=False, help="shows compiled python being executed")
+    commandline.add_argument("-c", "--code", type=str, nargs=argparse.REMAINDER, default=[], help="run code passed in as string")
     commandline.add_argument("--autopep8", type=str, nargs=argparse.REMAINDER, default=None, help="use autopep8 to format compiled code")
     running = False
     runner = None
@@ -95,6 +96,8 @@ class cli(object):
     def parse(self, args):
         """Parses Command-Line Arguments."""
         self.debug = args.debug
+        if args.version:
+            self.gui.print("[Coconut] Version: "+VERSION)
         if args.autopep8 is not None:
             self.processor.autopep8(args.autopep8)
         for code in args.code:
@@ -106,7 +109,7 @@ class cli(object):
                 self.compile_module(path, not args.nowrite, args.run)
             else:
                 self.gui.print("[Coconut] Error: Could not find path "+repr(path))
-        if args.interact or not (args.filenames or args.code):
+        if args.interact or not (args.filenames or args.code or args.version):
             self.start_prompt()
 
     def compile_module(self, dirname, write=True, run=False):

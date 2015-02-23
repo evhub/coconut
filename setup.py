@@ -29,7 +29,7 @@ import setuptools
 
 setuptools.setup(
     name="coconut",
-    version="0.0.1",
+    version=VERSION,
     description="The Coconut Programming Language.",
     long_description=readfile(openfile("README.rst", "r")),
     url="https://github.com/evhub/coconut",
