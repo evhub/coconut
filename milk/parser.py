@@ -225,8 +225,8 @@ class processor(object):
 
     def setup(self):
         """Initializes The Processor."""
-        self.preprocs = [self.strproc, self.indproc]
-        self.postprocs = [self.reindproc]
+        self.preprocs = [self.prepare, self.strproc, self.indproc]
+        self.postprocs = [self.reindproc, self.headerproc]
 
     def clean(self):
         """Resets References."""
@@ -253,7 +253,14 @@ class processor(object):
             i += 1
         return "..."+repr(out)+"..."
 
-    def strproc(self, inputstring):
+    def prepare(self, inputstring, strip=False, **kwargs):
+        """Prepares A String For Processing."""
+        if strip:
+            return inputstring.strip()
+        else:
+            return inputstring
+
+    def strproc(self, inputstring, **kwargs):
         """Processes Strings."""
         out = []
         found = None
@@ -356,7 +363,7 @@ class processor(object):
                 count += 1
         return count
 
-    def indproc(self, inputstring):
+    def indproc(self, inputstring, **kwargs):
         """Processes Indentation."""
         lines = inputstring.splitlines()
         new = []
@@ -424,40 +431,49 @@ class processor(object):
             out.append(line)
         return self.linebreak.join(out)
 
-    def reindproc(self, inputstring):
-        """Reformats Indentation."""
-        return self.reindent(inputstring.strip()).strip()+self.linebreak
-
-    def pre(self, inputstring, strip=False):
+    def pre(self, inputstring, **kwargs):
         """Performs Pre-Processing."""
         out = str(inputstring)
         for proc in self.preprocs:
-            out = proc(out)
+            out = proc(out, **kwargs)
         return out
 
-    def post(self, tokens, header=True):
+    def reindproc(self, inputstring, strip=True, **kwargs):
+        """Reformats Indentation."""
+        out = inputstring
+        if strip:
+            out = out.strip()
+        out = self.reindent(out)
+        if strip:
+            out = out.strip()
+        out += self.linebreak
+        return out
+
+    def headerproc(self, inputstring, header=True, **kwargs):
+        """Adds The Header."""
+        if header:
+            return HEADER+inputstring
+        else:
+            return inputstring
+
+    def post(self, tokens, **kwargs):
         """Performs Post-Processing."""
         if len(tokens) == 1:
             out = tokens[0]
             for proc in self.postprocs:
-                out = proc(out)
-            if header:
-                return HEADER+out
-            else:
-                return out
+                out = proc(out, **kwargs)
+            return out
         else:
             raise CoconutException("Multiple tokens leftover: "+repr(tokens))
 
-    def autopep8(self, arglist=None):
-        """Enables autopep8."""
+    def autopep8(self, arglist=[]):
+        """Enables autopep8 Integration."""
         import autopep8
-        if arglist is None:
-            fix_code = autopep8.fix_code
-        else:
-            def fix_code(code):
-                """Automatic PEP8 Fixer."""
-                autopep8.fix_code(code, options=autopep8.parse_args(arglist))
-        postprocs.append(fix_code)
+        args = autopep8.parse_args([""]+arglist)
+        def pep8_fixer(code):
+            """Automatic PEP8 Fixer."""
+            return autopep8.fix_code(code, options=args)
+        self.postprocs.append(pep8_fixer)
 
     def string_repl(self, tokens):
         """Replaces String References."""
@@ -807,7 +823,7 @@ class processor(object):
 
     def parse_single(self, inputstring):
         """Parses Console Input."""
-        out = self.post(self.single_parser.parseString(self.pre(inputstring)), False)
+        out = self.post(self.single_parser.parseString(self.pre(inputstring)), header=False)
         self.clean()
         return out
 
@@ -819,13 +835,13 @@ class processor(object):
 
     def parse_eval(self, inputstring):
         """Parses Eval Input."""
-        out = self.post(self.eval_parser.parseString(self.pre(inputstring, True)), False)
+        out = self.post(self.eval_parser.parseString(self.pre(inputstring, strip=True)), header=False)
         self.clean()
         return out
 
     def parse_debug(self, inputstring):
         """Parses Debug Input."""
-        out = self.post(self.file_parser.parseString(self.pre(inputstring, True)), False)
+        out = self.post(self.file_parser.parseString(self.pre(inputstring, strip=True)), header=False)
         self.clean()
         return out
 

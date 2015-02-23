@@ -69,12 +69,12 @@ class cli(object):
     extension = ".coc.py"
     commandline = argparse.ArgumentParser(description="The Coconut Programming Language.")
     commandline.add_argument("filenames", metavar="path", type=str, nargs="*", default=[], help="names of files to compile")
-    commandline.add_argument("-c", "--code", metavar="line", type=str, nargs="+", default=[], help="run code passed in as string")
+    commandline.add_argument("-c", "--code", type=str, nargs=argparse.REMAINDER, default=[], help="run code passed in as string")
     commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run files after compiling them")
     commandline.add_argument("-n", "--nowrite", action="store_const", const=True, default=False, help="disable writing of compiled code")
     commandline.add_argument("-i", "--interact", action="store_const", const=True, default=False, help="start the interpreter after compiling files")
     commandline.add_argument("-d", "--debug", action="store_const", const=True, default=False, help="shows compiled python being executed")
-    commandline.add_argument("--autopep8", metavar="arg", type=str, nargs="*", default=[], help="use autopep8 to format compiled code")
+    commandline.add_argument("--autopep8", type=str, nargs=argparse.REMAINDER, default=None, help="use autopep8 to format compiled code")
     running = False
     runner = None
 
@@ -93,7 +93,7 @@ class cli(object):
     def parse(self, args):
         """Parses Command-Line Arguments."""
         self.debug = args.debug
-        if args.autopep8:
+        if args.autopep8 is not None:
             self.processor.autopep8(args.autopep8)
         for code in args.code:
             self.execute(self.processor.parse_single(code))
