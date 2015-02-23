@@ -39,14 +39,13 @@ Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes
 	* lambda: ``->``
 	* chain: ``::`` (in-place: ``::=``)
 * New syntax:
-	* infix function calling: new ``6 \mod\ 3`` syntax
+	* infix function calling: new ``6 `mod` 3`` syntax
 	* operator functions: new ``(+)`` syntax
 	* function definition: alternative ``f(x) = x`` syntax
-	* unicode symbols: supports unicode alternatives for most symbols
 	* non-decimal integers: alternative ``10110_2`` syntax
 * Changed syntax:
-	* strings: only ``b`` prefix is allowed, raw strings use ```string``` syntax
-	* lambda keyword: removed (use the operator instead)
+    * unicode symbols: supports unicode alternatives for most symbols
+	* lambda keyword: removed (use the lambda operator instead)
 	* backslash continuations: removed (use improved parenthetical continuations instead)
 * New built-ins:
 	* right reduce: ``reduce``

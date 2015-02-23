@@ -16,7 +16,11 @@ Description: Coconut Language Installer.
 
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
-from milk.util import *
+import sys
+import os.path
+sys.path.append(os.path.dirname(__file__))
+
+from coconut.util import *
 import setuptools
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

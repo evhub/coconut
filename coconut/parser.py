@@ -320,8 +320,7 @@ class processor(object):
     white = " \t\f"
     downs = "([{"
     ups = ")]}"
-    holds = "'\"`"
-    raw = "`"
+    holds = "'\""
     startcomment = "#"
     endline = "\n\r"
     escape = "\\"
@@ -345,9 +344,9 @@ class processor(object):
         self.indchar = None
         self.refs = []
 
-    def wrapstr(self, text, raw, multiline):
+    def wrapstr(self, text, multiline):
         """Wraps A String."""
-        self.refs.append((text, raw, multiline))
+        self.refs.append((text, multiline))
         return '"'+str(len(self.refs)-1)+'"'
 
     def wrapcomment(self, text):
@@ -399,7 +398,7 @@ class processor(object):
                     elif len(hold[2]) > len(hold[1]):
                         raise CoconutException("Invalid number of string closes in "+self.getpart(inputstring, x))
                     elif hold[2] == hold[1]:
-                        out.append(self.wrapstr(hold[0], hold[1][0] in self.raw, True))
+                        out.append(self.wrapstr(hold[0], True))
                         hold = None
                         x -= 1
                     else:
@@ -408,7 +407,7 @@ class processor(object):
                 elif hold[0].endswith(self.escape) and not hold[0].endswith(self.escape*2):
                     hold[0] += c
                 elif c == hold[1]:
-                    out.append(self.wrapstr(hold[0], hold[1] in self.raw, False))
+                    out.append(self.wrapstr(hold[0], False))
                     hold = None
                 elif c == hold[1][0]:
                     hold[2] = c
@@ -421,7 +420,7 @@ class processor(object):
                     hold = [c, found, None]
                     found = None
                 elif len(found) == 2:
-                    out.append(self.wrapstr("", False, False))
+                    out.append(self.wrapstr("", False))
                     found = None
                     x -= 1
                 elif len(found) == 3:
@@ -589,7 +588,7 @@ class processor(object):
         if len(tokens) == 1:
             ref = self.refs[int(tokens[0])]
             if isinstance(ref, tuple):
-                string, raw, multiline = ref
+                string, multiline = ref
                 if string:
                     if string[-1] == '"':
                         string = string[:-1]+'\\"'
@@ -599,8 +598,6 @@ class processor(object):
                     string = '"""'+string+'"""'
                 else:
                     string = '"'+string+'"'
-                if raw:
-                    string = "r"+string
                 return string
             else:
                 raise CoconutException("String marker points to comment")
@@ -659,7 +656,7 @@ class processor(object):
     tilde = fixto(Literal("~") | Literal("\xac"), "~")
     underscore = Literal("_")
     pound = Literal("#")
-    backslash = Literal("\\")
+    backtick = Literal("`")
 
     mul_star = fixto(star | ~Literal("\xd7\xd7")+Literal("\xd7"), "*")
     exp_dubstar = fixto(dubstar | Literal("\xd7\xd7") | Literal("\u2191"), "**")
@@ -694,8 +691,9 @@ class processor(object):
     string_marker = Combine(Literal('"').suppress() + integer + Literal('"').suppress())
     comment_marker = Combine(pound.suppress() + integer)
 
-    bit_b = CaselessLiteral("b")
-    STRING = Combine(Optional(bit_b) + string_ref)
+    bit_b = Optional(CaselessLiteral("b"))
+    raw_r = Optional(CaselessLiteral("r"))
+    STRING = Combine((bit_b + raw_r | raw_r + bit_b) + string_ref)
     lineitem = Combine(Optional(comment) + Literal(linebreak))
     NEWLINE = condense(OneOrMore(lineitem))
     STARTMARKER = StringStart()
@@ -834,7 +832,7 @@ class processor(object):
 
     chain_expr = attach(or_expr + ZeroOrMore(dubcolon.suppress() + or_expr), chain_proc)
 
-    infix_expr = attach(chain_expr + ZeroOrMore(backslash.suppress() + test + backslash.suppress() + chain_expr), infix_proc)
+    infix_expr = attach(chain_expr + ZeroOrMore(backtick.suppress() + test + backtick.suppress() + chain_expr), infix_proc)
 
     pipe_expr = attach(infix_expr + ZeroOrMore(pipeline.suppress() + infix_expr), pipe_proc)
 
