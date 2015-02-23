@@ -34,25 +34,25 @@ Syntax
 
 Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes significant changes from Python 3 syntax, however:
 
-* New operators:
-	* compose: ``..`` (in-place: ``..=``)
-	* partial: ``$``
-	* pipeline: ``|>`` (in-place: ``=>``)
-	* lambda: ``->``
-	* chain: ``::`` (in-place: ``::=``)
-* New syntax:
-	* infix function calling: new ``6 `mod` 3`` syntax
-	* operator functions: new ``(+)`` syntax
-	* function definition: alternative ``f(x) = x`` syntax
-	* non-decimal integers: alternative ``10110_2`` syntax
-* Changed syntax:
-    * unicode symbols: supports unicode alternatives for most symbols
-	* lambda keyword: removed (use the lambda operator instead)
-	* backslash continuations: removed (use improved parenthetical continuations instead)
-* New built-ins:
-	* right reduce: ``reduce``
-	* zip with function: ``zipwith``
-	* tail recursion elimination: ``recursive``
-* New constructs: (planned)
-	* operator [re]definition
-	* pattern matching
+- New operators:
+    - compose: ``..`` (in-place: ``..=``)
+    - partial: ``$``
+    - pipeline: ``|>`` (in-place: ``=>``)
+    - lambda: ``->``
+    - chain: ``::`` (in-place: ``::=``)
+- New syntax:
+    - infix function calling: new ``6 `mod` 3`` syntax
+    - operator functions: new ``(+)`` syntax
+    - function definition: alternative ``f(x) = x`` syntax
+    - non-decimal integers: alternative ``10110_2`` syntax
+- Changed syntax:
+    - unicode symbols: supports unicode alternatives for most symbols
+    - lambda keyword: removed (use the lambda operator instead)
+    - backslash continuations: removed (use improved parenthetical continuations instead)
+- New built-ins:
+    - right reduce: ``reduce``
+    - zip with function: ``zipwith``
+    - tail recursion elimination: ``recursive``
+- New constructs: (planned)
+    - operator [re]definition
+    - pattern matching
