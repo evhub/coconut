@@ -14,9 +14,9 @@ class __coconut__(object):
     import operator
     import functools
     import itertools
-    curry = functools.partial
-    fold = functools.reduce
-    join = itertools.chain
+    partial = functools.partial
+    reduce = functools.reduce
+    chain = itertools.chain
     @staticmethod
     def compose(f, g):
         """Composing (f..g)."""
@@ -76,7 +76,7 @@ class __coconut__(object):
                 return recurse
         return _tailed
 
-fold = __coconut__.fold
+reduce = __coconut__.fold
 zipwith = __coconut__.zipwith
 recursive = __coconut__.recursive
 

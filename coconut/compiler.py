@@ -166,6 +166,3 @@ class cli(object):
             "exit" : self.exit
             })
         self.runner.run(parser.HEADER)
-
-if __name__ == "__main__":
-    cli().start()

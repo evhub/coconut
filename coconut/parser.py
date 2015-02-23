@@ -133,7 +133,7 @@ def item_proc(tokens):
             out += trailer
         elif len(trailer) == 2:
             if trailer[0] == "$":
-                out = "__coconut__.curry("+out+", "+trailer[1]+")"
+                out = "__coconut__.partial("+out+", "+trailer[1]+")"
             elif trailer[0] == "..":
                 out = "__coconut__.compose("+out+", "+trailer[1]+")"
             else:
@@ -142,12 +142,12 @@ def item_proc(tokens):
             raise CoconutException("Invalid trailer tokens: "+repr(trailer))
     return out
 
-def join_proc(tokens):
-    """Processes Join Calls."""
+def chain_proc(tokens):
+    """Processes Chain Calls."""
     if len(tokens) == 1:
         return tokens[0]
     else:
-        return "__coconut__.join("+", ".join(tokens)+")"
+        return "__coconut__.chain("+", ".join(tokens)+")"
 
 def infix_proc(tokens):
     """Processes Infix Calls."""
@@ -178,7 +178,7 @@ def assign_proc(tokens):
         elif tokens[1] == "..=":
             return tokens[0]+" = __coconut__.compose("+tokens[0]+", ("+tokens[2]+"))"
         elif tokens[1] == "::=":
-            return tokens[0]+" = __coconut__.join("+tokens[0]+", ("+tokens[2]+"))"
+            return tokens[0]+" = __coconut__.chain("+tokens[0]+", ("+tokens[2]+"))"
         else:
             return tokens
     else:
@@ -656,7 +656,7 @@ class processor(object):
     op_atom = trace(lparen + (
         fixto(pipeline, "__coconut__.pipe")
         | fixto(dotdot, "__coconut__.compose")
-        | fixto(dubcolon, "__coconut__.join")
+        | fixto(dubcolon, "__coconut__.chain")
         | fixto(exp_dubstar, "__coconut__.operator.__pow__")
         | fixto(mul_star, "__coconut__.operator.__mul__")
         | fixto(div_dubslash, "__coconut__.operator.__floordiv__")
@@ -723,9 +723,9 @@ class processor(object):
     xor_expr = addspace(and_expr + ZeroOrMore(caret + and_expr))
     or_expr = addspace(xor_expr + ZeroOrMore(bar + xor_expr))
 
-    join_expr = attach(or_expr + ZeroOrMore(dubcolon.suppress() + or_expr), join_proc)
+    chain_expr = attach(or_expr + ZeroOrMore(dubcolon.suppress() + or_expr), chain_proc)
 
-    infix_expr = attach(join_expr + ZeroOrMore(backslash.suppress() + test + backslash.suppress() + join_expr), infix_proc)
+    infix_expr = attach(chain_expr + ZeroOrMore(backslash.suppress() + test + backslash.suppress() + chain_expr), infix_proc)
 
     pipe_expr = attach(infix_expr + ZeroOrMore(pipeline.suppress() + infix_expr), pipe_proc)
 
@@ -844,10 +844,3 @@ class processor(object):
         out = self.post(self.file_parser.parseString(self.pre(inputstring, strip=True)), header=False)
         self.clean()
         return out
-
-#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# MAIN:
-#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-if __name__ == "__main__":
-    print(processor().parse_file(readfile(openfile(DIRECTORY, "r"))))

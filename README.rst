@@ -34,10 +34,10 @@ Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes
 
 * New operators:
 	* compose: ``..`` (in-place: ``..=``)
-	* curry: ``$``
+	* partial: ``$``
 	* pipeline: ``|>`` (in-place: ``=>``)
 	* lambda: ``->``
-	* join: ``::`` (in-place: ``::=``)
+	* chain: ``::`` (in-place: ``::=``)
 * New syntax:
 	* infix function calling: new ``6 \mod\ 3`` syntax
 	* operator functions: new ``(+)`` syntax
@@ -49,8 +49,8 @@ Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes
 	* lambda keyword: removed (use the operator instead)
 	* backslash continuations: removed (use improved parenthetical continuations instead)
 * New built-ins:
-	* right fold: ``fold``
-	* zip with: ``zipwith``
+	* right reduce: ``reduce``
+	* zip with function: ``zipwith``
 	* tail recursion elimination: ``recursive``
 * New constructs: (planned)
 	* operator [re]definition
