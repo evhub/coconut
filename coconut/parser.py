@@ -485,14 +485,14 @@ class processor(object):
         for line in lines:
             if line[-1] in self.white:
                 if self.strict:
-                    raise CoconutException("[Strict] Illegal trailing whitespace in "+repr(line))
+                    raise CoconutException("[Strict] Found trailing whitespace in "+repr(line))
                 else:
                     line = line.rstrip()
             if not line or line.startswith(self.startcomment):
                 new.append(line)
             elif line.endswith("\\"):
                 if self.strict:
-                    raise CoconutException("[Strict] Illegal backslash continuation in "+repr(line))
+                    raise CoconutException("[Strict] Found backslash continuation in "+repr(line))
                 else:
                     new[-1] += " "+line[:-1]
             elif count < 0:
