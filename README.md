@@ -6,8 +6,8 @@ Coconut is a modern, developer-friendly scripting language that compiles to Pyth
 ### Usage
 
 ```
-usage: coconut.py [-h] [-c ...] [-r] [-n] [-i] [-d] [--autopep8 ...]
-                  [path [path ...]]
+usage: coconut [-h] [-c ...] [-r] [-n] [-i] [-d] [--autopep8 ...]
+               [path [path ...]]
 
 The Coconut Programming Language.
 
