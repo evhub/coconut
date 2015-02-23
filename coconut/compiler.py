@@ -75,7 +75,7 @@ class cli(object):
     commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run files after compiling them")
     commandline.add_argument("-n", "--nowrite", action="store_const", const=True, default=False, help="disable writing of compiled code")
     commandline.add_argument("-i", "--interact", action="store_const", const=True, default=False, help="start the interpreter after compiling files")
-    commandline.add_argument("-d", "--debug", action="store_const", const=True, default=False, help="shows compiled python being executed")
+    commandline.add_argument("-d", "--debug", action="store_const", const=True, default=False, help="show compiled python being executed")
     commandline.add_argument("-c", "--code", type=str, nargs=argparse.REMAINDER, default=[], help="run code passed in as string")
     commandline.add_argument("--autopep8", type=str, nargs=argparse.REMAINDER, default=None, help="use autopep8 to format compiled code")
     running = False

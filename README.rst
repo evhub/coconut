@@ -7,24 +7,26 @@ Usage
 -----
 
 usage:
-  coconut [-h] [-c ...] [-r] [-n] [-i] [-d] [--autopep8 ...] [path [path ...]]
+  coconut [-h] [-v] [-r] [-n] [-i] [-d] [-c ...] [--autopep8 ...] [path [path ...]]
 
 positional arguments:
-  :path:              names of files to compile
+  :path:              names of files/directories to compile
 
 optional arguments:
   -h, --help          show this help message and exit
-  
-  -c, --code          run code passed in as string
-  
+
+  -v, --version       print the coconut version
+
   -r, --run           run files after compiling them
-  
+
   -n, --nowrite       disable writing of compiled code
-  
+
   -i, --interact      start the interpreter after compiling files
-  
-  -d, --debug         shows compiled python being executed
-  
+
+  -d, --debug         show compiled python being executed
+
+  -c, --code          run code passed in as string
+
   --autopep8          use autopep8 to format compiled code
 
 Syntax

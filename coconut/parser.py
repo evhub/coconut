@@ -25,7 +25,7 @@ from pyparsing import *
 
 headers = {
 
-"none": ''
+"none": '',
 
 "top":
 
@@ -45,7 +45,7 @@ except ImportError:
 
 r'''
 from __coconut__ import *
-'''
+''',
 
 "class":
 
