@@ -19,6 +19,8 @@ from __future__ import with_statement, print_function, absolute_import, unicode_
 from .util import *
 from . import parser
 import argparse
+import os
+import os.path
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -68,7 +70,7 @@ class cli(object):
     """The Coconut Command-Line Interface."""
     extension = ".coc.py"
     commandline = argparse.ArgumentParser(description="The Coconut Programming Language.")
-    commandline.add_argument("filenames", metavar="path", type=str, nargs="*", default=[], help="names of files to compile")
+    commandline.add_argument("paths", metavar="path", type=str, nargs="*", default=[], help="names of files/directories to compile")
     commandline.add_argument("-c", "--code", type=str, nargs=argparse.REMAINDER, default=[], help="run code passed in as string")
     commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run files after compiling them")
     commandline.add_argument("-n", "--nowrite", action="store_const", const=True, default=False, help="disable writing of compiled code")
@@ -97,20 +99,40 @@ class cli(object):
             self.processor.autopep8(args.autopep8)
         for code in args.code:
             self.execute(self.processor.parse_single(code))
-        for filename in args.filenames:
-            if args.nowrite:
-                codefilename = filename
-                destfilename = None
+        for path in args.paths:
+            if os.path.isfile(path):
+                self.compile_file(path, not args.nowrite, args.run)
+            elif os.path.isdir(path):
+                self.compile_module(path, not args.nowrite, args.run)
             else:
-                codefilename, destfilename = self.resolve(filename)
-            self.compile(codefilename, destfilename, args.run)
+                self.gui.print("[Coconut] Error: Could not find path "+repr(path))
         if args.interact or not (args.filenames or args.code):
             self.start_prompt()
 
-    def compile(self, codefilename, destfilename, run=False):
+    def compile_module(self, dirname, write=True, run=False):
+        """Compiles A Module."""
+        for dirpath, dirnames, filenames in os.walk(dirname):
+            self.setup_module(dirpath)
+            for filename in filenames:
+                self.compile_file(filename, write, run, True)
+
+    def compile_file(self, filename, write=True, run=False, module=False):
+        """Compiles A File."""
+        if write:
+            codefilename, destfilename = self.resolve(filename)
+        else:
+            codefilename = filename
+            destfilename = None
+        self.compile(codefilename, destfilename, run, module)
+
+    def compile(self, codefilename, destfilename=None, run=False, module=False):
         """Compiles A Source Coconut File To A Destination Python File."""
         self.gui.print("[Coconut] Compiling "+repr(codefilename)+"...")
-        compiled = self.processor.parse_file(readfile(openfile(codefilename, "r")))
+        code = readfile(openfile(codefilename, "r"))
+        if module:
+            compiled = self.processor.parse_module(code)
+        else:
+            compiled = self.processor.parse_file(code)
         if destfilename is not None:
             writefile(openfile(destfilename, "w"), compiled)
             self.gui.print("[Coconut] Compiled "+repr(destfilename)+".")
@@ -123,6 +145,10 @@ class cli(object):
         codefilename = base + ext
         destfilename = base + self.extension
         return codefilename, destfilename
+
+    def setup_module(self, dirpath):
+        """Sets Up A Module Directory."""
+        writefile(openfile(os.path.join(dirpath, "__coconut__"), "w"), parser.headers["code"])
 
     def start_prompt(self):
         """Starts The Interpreter."""
@@ -165,4 +191,4 @@ class cli(object):
         self.runner = executor({
             "exit" : self.exit
             })
-        self.runner.run(parser.HEADER)
+        self.runner.run(parser.headers["code"])

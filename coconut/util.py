@@ -18,17 +18,12 @@ from __future__ import with_statement, print_function, absolute_import, unicode_
 
 from .root import *
 import codecs
-import os.path
 import sys
 import traceback
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-def dirname(filename):
-    """Gets The Directory Name For A File Name."""
-    return os.path.abspath(os.path.dirname(os.path.realpath(filename)))
 
 def print_error():
     """Processes An Error."""
