@@ -17,7 +17,7 @@ positional arguments:
 optional arguments:
   -h, --help          show this help message and exit
   
-  -c ..., --code ...  run code passed in as string
+  -c, --code          run code passed in as string
   
   -r, --run           run files after compiling them
   
@@ -27,7 +27,7 @@ optional arguments:
   
   -d, --debug         shows compiled python being executed
   
-  --autopep8 ...      use autopep8 to format compiled code
+  --autopep8          use autopep8 to format compiled code
 
 Syntax
 ------
