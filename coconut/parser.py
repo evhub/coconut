@@ -327,8 +327,9 @@ class processor(object):
     tablen = 4
     verbosity = 20
 
-    def __init__(self):
+    def __init__(self, strict=False):
         """Creates A New Processor."""
+        self.strict = strict
         self.string_ref <<= self.trace(attach(self.string_marker, self.string_repl), "string_ref")
         self.comment <<= self.trace(attach(self.comment_marker, self.comment_repl), "comment")
         self.setup()
@@ -482,12 +483,20 @@ class processor(object):
         count = 0
         current = None
         for line in lines:
+            if line[-1] in self.white:
+                if self.strict:
+                    raise CoconutException("[Strict] Illegal trailing whitespace in "+repr(line))
+                else:
+                    line = line.rstrip()
             if not line or line.startswith(self.startcomment):
                 new.append(line)
-            elif line[-1] in self.white:
-                raise CoconutException("Illegal trailing whitespace in "+repr(line))
+            elif line.endswith("\\"):
+                if self.strict:
+                    raise CoconutException("[Strict] Illegal backslash continuation in "+repr(line))
+                else:
+                    new[-1] += " "+line[:-1]
             elif count < 0:
-                new[-1] += line
+                new[-1] += " "+line
             else:
                 check = self.leading(line)
                 if current is None:

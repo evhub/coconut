@@ -3,11 +3,16 @@ Coconut
 
 Coconut is a simple, modern, developer-friendly scripting language that compiles to Python, built for functional programming.
 
+Installation
+------------
+
+::pip install coconut
+
 Usage
 -----
 
 usage:
-  coconut [-h] [-v] [-r] [-n] [-i] [-d] [-c ...] [--autopep8 ...] [path [path ...]]
+  coconut [-h] [-v] [-s] [-r] [-n] [-i] [-d] [-c ...] [--autopep8 ...] [path [path ...]]
 
 positional arguments:
   :path:              names of files/directories to compile
@@ -16,6 +21,8 @@ optional arguments:
   -h, --help          show this help message and exit
 
   -v, --version       print the coconut version
+
+  -s, --strict        enforce code cleanliness standards
 
   -r, --run           run files after compiling them
 
@@ -48,7 +55,6 @@ Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes
 - Changed syntax:
     - unicode symbols: supports unicode alternatives for most symbols
     - lambda keyword: removed (use the lambda operator instead)
-    - backslash continuations: removed (use improved parenthetical continuations instead)
 - New built-ins:
     - right reduce: ``reduce``
     - zip with function: ``zipwith``

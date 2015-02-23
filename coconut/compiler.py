@@ -72,6 +72,7 @@ class cli(object):
     commandline = argparse.ArgumentParser(description="The Coconut Programming Language.")
     commandline.add_argument("paths", metavar="path", type=str, nargs="*", default=[], help="names of files/directories to compile")
     commandline.add_argument("-v", "--version", action="store_const", const=True, default=False, help="print the coconut version")
+    commandline.add_argument("-s", "--strict", action="store_const", const=True, default=False, help="enforce code cleanliness standards")
     commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run files after compiling them")
     commandline.add_argument("-n", "--nowrite", action="store_const", const=True, default=False, help="disable writing of compiled code")
     commandline.add_argument("-i", "--interact", action="store_const", const=True, default=False, help="start the interpreter after compiling files")
@@ -83,7 +84,6 @@ class cli(object):
 
     def __init__(self, color=None, prompt=">>> ", moreprompt="    "):
         """Creates The CLI."""
-        self.processor = parser.processor()
         self.gui = terminal(color)
         self.prompt = self.gui.addcolor(prompt, color)
         self.moreprompt = self.gui.addcolor(moreprompt, color)
@@ -95,6 +95,7 @@ class cli(object):
 
     def parse(self, args):
         """Parses Command-Line Arguments."""
+        self.processor = parser.processor(args.strict)
         self.debug = args.debug
         if args.version:
             self.gui.print("[Coconut] Version "+repr(VERSION)+" running on Python "+sys.version)
