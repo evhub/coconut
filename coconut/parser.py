@@ -117,7 +117,7 @@ class __coconut__(object):
                 return recurse
         return _tailed
 
-reduce = __coconut__.fold
+reduce = __coconut__.reduce
 zipwith = __coconut__.zipwith
 recursive = __coconut__.recursive
 ''',

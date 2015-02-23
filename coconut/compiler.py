@@ -97,7 +97,7 @@ class cli(object):
         """Parses Command-Line Arguments."""
         self.debug = args.debug
         if args.version:
-            self.gui.print("[Coconut] Version: "+VERSION)
+            self.gui.print("[Coconut] Version "+repr(VERSION)+" running on Python "+sys.version)
         if args.autopep8 is not None:
             self.processor.autopep8(args.autopep8)
         for code in args.code:
@@ -109,7 +109,7 @@ class cli(object):
                 self.compile_module(path, not args.nowrite, args.run)
             else:
                 self.gui.print("[Coconut] Error: Could not find path "+repr(path))
-        if args.interact or not (args.filenames or args.code or args.version):
+        if args.interact or not (args.paths or args.code or args.version):
             self.start_prompt()
 
     def compile_module(self, dirname, write=True, run=False):
