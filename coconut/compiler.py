@@ -75,7 +75,7 @@ class cli(object):
     commandline.add_argument("dest", metavar="dest", type=str, nargs="?", default=None, help="directory that compiled files should be put in")
     commandline.add_argument("-v", "--version", action="store_const", const=True, default=False, help="print version information")
     commandline.add_argument("-s", "--strict", action="store_const", const=True, default=False, help="enforce code cleanliness standards")
-    commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run files instead of compiling them")
+    commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run files after compiling them")
     commandline.add_argument("-e", "--examine", action="store_const", const=True, default=False, help="disable writing of compiled code")
     commandline.add_argument("-i", "--interact", action="store_const", const=True, default=False, help="force the interpreter to start")
     commandline.add_argument("-d", "--debug", action="store_const", const=True, default=False, help="show compiled python being executed")

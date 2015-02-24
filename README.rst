@@ -27,7 +27,7 @@ optional arguments:
 
   -s, --strict        enforce code cleanliness standards
 
-  -r, --run           run files instead of compiling them
+  -r, --run           run files after compiling them
 
   -e, --examine       disable writing of compiled code
 
