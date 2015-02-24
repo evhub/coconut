@@ -14,10 +14,11 @@ Usage
 -----
 
 usage:
-  coconut [-h] [-v] [-s] [-r] [-n] [-i] [-d] [-c ...] [--autopep8 ...] [path [path ...]]
+  coconut [-h] [-v] [-s] [-r] [-e] [-i] [-d] [-c ...] [--autopep8 ...] [source] [dest]
 
 positional arguments:
-  :path:              names of files/directories to compile
+  :source:            path to the coconut file/module to compile
+  :dest:              directory that compiled files should be put in
 
 optional arguments:
   -h, --help          show this help message and exit
@@ -26,11 +27,11 @@ optional arguments:
 
   -s, --strict        enforce code cleanliness standards
 
-  -r, --run           run files after compiling them
+  -r, --run           run files instead of compiling them
 
-  -n, --nowrite       disable writing of compiled code
+  -e, --examine       disable writing of compiled code
 
-  -i, --interact      start the interpreter after compiling files
+  -i, --interact      force the interpreter to start
 
   -d, --debug         show compiled python being executed
 

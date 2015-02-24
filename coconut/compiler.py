@@ -76,7 +76,7 @@ class cli(object):
     commandline.add_argument("-v", "--version", action="store_const", const=True, default=False, help="print version information")
     commandline.add_argument("-s", "--strict", action="store_const", const=True, default=False, help="enforce code cleanliness standards")
     commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run files instead of compiling them")
-    commandline.add_argument("-n", "--nowrite", action="store_const", const=True, default=False, help="disable writing of compiled code")
+    commandline.add_argument("-e", "--examine", action="store_const", const=True, default=False, help="disable writing of compiled code")
     commandline.add_argument("-i", "--interact", action="store_const", const=True, default=False, help="force the interpreter to start")
     commandline.add_argument("-d", "--debug", action="store_const", const=True, default=False, help="show compiled python being executed")
     commandline.add_argument("-c", "--code", type=str, nargs=argparse.REMAINDER, default=[], help="run code passed in as string")
@@ -107,9 +107,9 @@ class cli(object):
             self.execute(self.processor.parse_single(code))
         if args.source is not None:
             if args.dest is None:
-                write = not args.nowrite
-            elif args.nowrite:
-                raise parser.CoconutException("a destination cannot be given when --nowrite is enabled")
+                write = not args.examine
+            elif args.examine:
+                raise parser.CoconutException("a destination cannot be given when --examine is enabled")
             elif not os.isdir(args.dest):
                 raise parser.CoconutException("could not find destination path "+repr(path))
             else:
