@@ -56,7 +56,7 @@ setuptools.setup(
         "Topic :: Utilities"
         ],
     keywords=["functional programming language"],
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages("coconut"),
     install_requires=["pyparsing"],
     entry_points={"console_scripts":[
         "coconut = coconut.main:main"
