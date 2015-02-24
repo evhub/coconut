@@ -71,12 +71,13 @@ class cli(object):
     code_ext = ".coc"
     comp_ext = ".py"
     commandline = argparse.ArgumentParser(description="The Coconut Programming Language.")
-    commandline.add_argument("paths", metavar="path", type=str, nargs="*", default=[], help="names of files/directories to compile")
+    commandline.add_argument("source", metavar="source", type=str, nargs="?", default=None, help="path to the coconut file/module to compile")
+    commandline.add_argument("dest", metavar="dest", type=str, nargs="?", default=None, help="directory that compiled files should be put in")
     commandline.add_argument("-v", "--version", action="store_const", const=True, default=False, help="print version information")
     commandline.add_argument("-s", "--strict", action="store_const", const=True, default=False, help="enforce code cleanliness standards")
-    commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run files after compiling them")
+    commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run files instead of compiling them")
     commandline.add_argument("-n", "--nowrite", action="store_const", const=True, default=False, help="disable writing of compiled code")
-    commandline.add_argument("-i", "--interact", action="store_const", const=True, default=False, help="start the interpreter after compiling files")
+    commandline.add_argument("-i", "--interact", action="store_const", const=True, default=False, help="force the interpreter to start")
     commandline.add_argument("-d", "--debug", action="store_const", const=True, default=False, help="show compiled python being executed")
     commandline.add_argument("-c", "--code", type=str, nargs=argparse.REMAINDER, default=[], help="run code passed in as string")
     commandline.add_argument("--autopep8", type=str, nargs=argparse.REMAINDER, default=None, help="use autopep8 to format compiled code")
@@ -104,32 +105,49 @@ class cli(object):
             self.processor.autopep8(args.autopep8)
         for code in args.code:
             self.execute(self.processor.parse_single(code))
-        for path in args.paths:
-            if os.path.isfile(path):
-                self.compile_file(path, not args.nowrite, args.run)
-            elif os.path.isdir(path):
-                self.compile_module(path, not args.nowrite, args.run)
+        if args.source is not None:
+            if args.dest is None:
+                write = not args.nowrite
+            elif args.nowrite:
+                raise parser.CoconutException("a destination cannot be given when --nowrite is enabled")
+            elif not os.isdir(args.dest):
+                raise parser.CoconutException("could not find destination path "+repr(path))
             else:
-                self.gui.print("[Coconut] Error: Could not find path "+repr(path))
-        if args.interact or not (args.paths or args.code or args.version):
+                write = args.dest
+            self.compile_path(args.source, write, args.run)
+        if args.interact or not (args.source or args.code or args.version):
             self.start_prompt()
+
+    def compile_path(self, path, write=True, run=False):
+        """Compiles A Path."""
+        if os.path.isfile(path):
+            self.compile_file(path, write, run)
+        elif os.path.isdir(path):
+            self.compile_module(path, write, run)
+        else:
+            raise parser.CoconutException("could not find source path "+repr(path))
 
     def compile_module(self, dirname, write=True, run=False):
         """Compiles A Module."""
         for dirpath, dirnames, filenames in os.walk(dirname):
-            self.setup_module(dirpath)
+            writedir = write
+            if write is True:
+                self.setup_module(dirpath)
+            elif write:
+                writedir = os.path.join(write, os.path.relpath(dirpath, dirname))
             for filename in filenames:
                 if os.path.splitext(filename)[1] == self.code_ext:
-                    self.compile_file(filename, write, run, True)
+                    self.compile_file(filename, writedir, run, True)
 
     def compile_file(self, filename, write=True, run=False, module=False):
         """Compiles A File."""
-        if write:
-            codefilename, destfilename = self.resolve(filename)
+        if write is True:
+            destfilename = os.path.splitext(filename)[0]+self.comp_ext
+        elif write:
+            destfilename = os.path.join(write, os.path.splitext(os.path.basename(filename))[0]+self.comp_ext)
         else:
-            codefilename = filename
             destfilename = None
-        self.compile(codefilename, destfilename, run, module)
+        self.compile(filename, destfilename, run, module)
 
     def compile(self, codefilename, destfilename=None, run=False, module=False):
         """Compiles A Source Coconut File To A Destination Python File."""
@@ -144,13 +162,6 @@ class cli(object):
             self.gui.print("[Coconut] Compiled "+repr(destfilename)+".")
         if run:
             self.execute(compiled)
-
-    def resolve(self, filename):
-        """Resolves A Filename Into Source And Destination Files."""
-        base, ext = os.path.splitext(filename)
-        codefilename = base + ext
-        destfilename = base + self.comp_ext
-        return codefilename, destfilename
 
     def setup_module(self, dirpath):
         """Sets Up A Module Directory."""
