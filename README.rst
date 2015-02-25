@@ -13,9 +13,8 @@ Enter in console::
 Command Line
 ------------
 
-usage::
-
-  coconut [-h] [-v] [-s] [-r] [-e] [-i] [-d] [-c ...] [--autopep8 ...] [source] [dest]
+usage:
+  ``coconut [-h] [-v] [-s] [-r] [-e] [-i] [-d] [-c ...] [--autopep8 ...] [source] [dest]``
 
 positional arguments:
   :source:            path to the coconut file/module to compile
