@@ -198,13 +198,14 @@ class cli(object):
                 return print_error()
         return compiled
 
-    def execute(self, compiled):
+    def execute(self, compiled=None):
         """Executes Compiled Code."""
         if self.runner is None:
             self.start_runner()
-        if self.debug:
-            self.gui.print("[Coconut] Executing "+repr(compiled)+"...")
-        self.runner.run(compiled)
+        if compiled is not None:
+            if self.debug:
+                self.gui.print("[Coconut] Executing "+repr(compiled)+"...")
+            self.runner.run(compiled)
 
     def start_runner(self):
         """Starts The Runner."""
