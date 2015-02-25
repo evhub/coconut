@@ -14,6 +14,7 @@ Command Line
 ------------
 
 usage::
+
   coconut [-h] [-v] [-s] [-r] [-e] [-i] [-d] [-c ...] [--autopep8 ...] [source] [dest]
 
 positional arguments:
