@@ -10,10 +10,10 @@ Enter in console::
 
     pip install coconut
 
-Usage
------
+Command Line
+------------
 
-usage:
+usage::
   coconut [-h] [-v] [-s] [-r] [-e] [-i] [-d] [-c ...] [--autopep8 ...] [source] [dest]
 
 positional arguments:
