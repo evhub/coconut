@@ -955,6 +955,12 @@ class processor(object):
         self.clean()
         return out
 
+    def parse_block(self, inputstring):
+        """Parses Block Text."""
+        out = self.post(self.file_parser.parseString(self.pre(inputstring)), header="none")
+        self.clean()
+        return out
+
     def parse_eval(self, inputstring):
         """Parses Eval Input."""
         out = self.post(self.eval_parser.parseString(self.pre(inputstring, strip=True)), header="none")

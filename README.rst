@@ -14,7 +14,9 @@ Command Line
 ------------
 
 usage:
-  ``coconut [-h] [-v] [-s] [-r] [-e] [-i] [-d] [-c ...] [--autopep8 ...] [source] [dest]``
+  ``coconut [-h] [-v] [-s] [-r] [-i] [-d] [-c ...] [--autopep8 ...] [source] [dest]``
+
+The Coconut Programming Language.
 
 positional arguments:
   :source:            path to the coconut file/module to compile
@@ -27,16 +29,14 @@ optional arguments:
 
   -s, --strict        enforce code cleanliness standards
 
-  -r, --run           run files after compiling them
-
-  -e, --examine       disable writing of compiled code
+  -r, --run           run a file instead of compiling it
 
   -i, --interact      force the interpreter to start
 
   -d, --debug         show compiled python being executed
 
   -c, --code          run code passed in as string
-
+  
   --autopep8          use autopep8 to format compiled code
 
 Syntax
