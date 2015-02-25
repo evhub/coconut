@@ -16,8 +16,6 @@ Command Line
 usage:
   ``coconut [-h] [-v] [-s] [-r] [-i] [-d] [-c ...] [--autopep8 ...] [source] [dest]``
 
-The Coconut Programming Language.
-
 positional arguments:
   :source:            path to the coconut file/module to compile
   :dest:              destination directory for compiled files
@@ -36,7 +34,7 @@ optional arguments:
   -d, --debug         show compiled python being executed
 
   -c, --code          run code passed in as string
-  
+ 
   --autopep8          use autopep8 to format compiled code
 
 Syntax
