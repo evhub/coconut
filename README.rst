@@ -18,7 +18,7 @@ usage:
 
 positional arguments:
   :source:            path to the coconut file/module to compile
-  :dest:              directory that compiled files should be put in
+  :dest:              destination directory for compiled files
 
 optional arguments:
   -h, --help          show this help message and exit
