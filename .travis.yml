@@ -8,7 +8,6 @@ python:
   - "3.4"
 
 install:
-  - pip install pyparsing
   - pip install autopep8
   - pip install .
 
