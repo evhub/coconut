@@ -18,24 +18,24 @@ usage:
 
 positional arguments:
   :source:            path to the coconut file/module to compile
-  :dest:              destination directory for compiled files
+  :dest:              destination directory for compiled files (defaults to the source directory)
 
 optional arguments:
   -h, --help          show this help message and exit
 
-  -v, --version       print version information
+  -v, --version       print coconut and python version information
 
   -s, --strict        enforce code cleanliness standards
 
-  -r, --run           run a file instead of compiling it
+  -r, --run           run the compiled source instead of writing it
 
-  -i, --interact      force the interpreter to start
+  -i, --interact      force the interpreter to start (otherwise starts if no other command is given)
 
   -d, --debug         show compiled python being executed
 
-  -c, --code          run code passed in as string
- 
-  --autopep8          use autopep8 to format compiled code
+  -c, --code          run code passed in as string (terminates arg list)
+
+  --autopep8          use autopep8 to format compiled code (terminates arg list)
 
 Syntax
 ------

@@ -72,14 +72,14 @@ class cli(object):
     comp_ext = ".py"
     commandline = argparse.ArgumentParser(description="The Coconut Programming Language.")
     commandline.add_argument("source", metavar="source", type=str, nargs="?", default=None, help="path to the coconut file/module to compile")
-    commandline.add_argument("dest", metavar="dest", type=str, nargs="?", default=None, help="destination directory for compiled files")
-    commandline.add_argument("-v", "--version", action="store_const", const=True, default=False, help="print version information")
+    commandline.add_argument("dest", metavar="dest", type=str, nargs="?", default=None, help="destination directory for compiled files (defaults to the source directory)")
+    commandline.add_argument("-v", "--version", action="store_const", const=True, default=False, help="print coconut and python version information")
     commandline.add_argument("-s", "--strict", action="store_const", const=True, default=False, help="enforce code cleanliness standards")
-    commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run a file instead of compiling it")
-    commandline.add_argument("-i", "--interact", action="store_const", const=True, default=False, help="force the interpreter to start")
+    commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run the compiled source instead of writing it")
+    commandline.add_argument("-i", "--interact", action="store_const", const=True, default=False, help="force the interpreter to start (otherwise starts if no other command is given)")
     commandline.add_argument("-d", "--debug", action="store_const", const=True, default=False, help="show compiled python being executed")
-    commandline.add_argument("-c", "--code", type=str, nargs=argparse.REMAINDER, default=[], help="run code passed in as string")
-    commandline.add_argument("--autopep8", type=str, nargs=argparse.REMAINDER, default=None, help="use autopep8 to format compiled code")
+    commandline.add_argument("-c", "--code", type=str, nargs=argparse.REMAINDER, default=[], help="run code passed in as string (terminates arg list)")
+    commandline.add_argument("--autopep8", type=str, nargs=argparse.REMAINDER, default=None, help="use autopep8 to format compiled code (terminates arg list)")
     running = False
     runner = None
 
