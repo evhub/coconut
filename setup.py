@@ -16,12 +16,8 @@ Description: Coconut Language Installer.
 
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
-import sys
-import os.path
-sys.path.append(os.path.dirname(__file__))
-
-from coconut.util import *
 import setuptools
+from codecs import open
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # MAIN:
@@ -31,7 +27,7 @@ setuptools.setup(
     name="coconut",
     version=VERSION,
     description="The Coconut Programming Language.",
-    long_description=readfile(openfile("README.rst", "r")),
+    long_description=readfile(open("README.rst", "r", "UTF").read()),
     url="https://github.com/evhub/coconut",
     author="Evan Hubinger",
     author_email="evanjhub@gmail.com",

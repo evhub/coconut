@@ -8,8 +8,8 @@ python:
   - "3.4"
 
 install:
-  - pip install autopep8
   - pip install .
+  - pip install autopep8
 
 script:
   - git clone https://github.com/evhub/cocotest.git
