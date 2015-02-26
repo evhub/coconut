@@ -345,9 +345,9 @@ class processor(object):
         self.indchar = None
         self.refs = []
 
-    def wrapstr(self, text, multiline):
+    def wrapstr(self, text, strchar, multiline):
         """Wraps A String."""
-        self.refs.append((text, multiline))
+        self.refs.append((text, strchar, multiline))
         return '"'+str(len(self.refs)-1)+'"'
 
     def wrapcomment(self, text):
@@ -399,7 +399,7 @@ class processor(object):
                     elif len(hold[2]) > len(hold[1]):
                         raise CoconutException("Invalid number of string closes in "+self.getpart(inputstring, x))
                     elif hold[2] == hold[1]:
-                        out.append(self.wrapstr(hold[0], True))
+                        out.append(self.wrapstr(hold[0], hold[1][0], True))
                         hold = None
                         x -= 1
                     else:
@@ -408,7 +408,7 @@ class processor(object):
                 elif hold[0].endswith(self.escape) and not hold[0].endswith(self.escape*2):
                     hold[0] += c
                 elif c == hold[1]:
-                    out.append(self.wrapstr(hold[0], False))
+                    out.append(self.wrapstr(hold[0], hold[1], False))
                     hold = None
                 elif c == hold[1][0]:
                     hold[2] = c
@@ -421,7 +421,7 @@ class processor(object):
                     hold = [c, found, None]
                     found = None
                 elif len(found) == 2:
-                    out.append(self.wrapstr("", False))
+                    out.append(self.wrapstr("", found[0], False))
                     found = None
                     x -= 1
                 elif len(found) == 3:
@@ -597,16 +597,11 @@ class processor(object):
         if len(tokens) == 1:
             ref = self.refs[int(tokens[0])]
             if isinstance(ref, tuple):
-                string, multiline = ref
-                if string:
-                    if string[-1] == '"':
-                        string = string[:-1]+'\\"'
-                    if string[0] == '"':
-                        string = "\\"+string
+                string, strchar, multiline = ref
                 if multiline:
-                    string = '"""'+string+'"""'
+                    string = strchar*3+string+strchar*3
                 else:
-                    string = '"'+string+'"'
+                    string = strchar+string+strchar
                 return string
             else:
                 raise CoconutException("String marker points to comment")
