@@ -15,7 +15,7 @@ install:
 script:
   - git clone https://github.com/evhub/cocotest.git
   - cd cocotest
-  - ./runtests.sh
+  - ./cocotest.sh
 
 notifications:
   email: false
