@@ -483,14 +483,15 @@ class processor(object):
         count = 0
         current = None
         for line in lines:
+            if not line or line.startswith(self.startcomment):
+                new.append(line)
+                continue
             if line[-1] in self.white:
                 if self.strict:
                     raise CoconutException("[strict] found trailing whitespace in "+repr(line))
                 else:
                     line = line.rstrip()
-            if not line or line.startswith(self.startcomment):
-                new.append(line)
-            elif line.endswith("\\"):
+            if line.endswith("\\"):
                 if self.strict:
                     raise CoconutException("[strict] found backslash continuation in "+repr(line))
                 else:
