@@ -132,17 +132,17 @@ class cli(object):
         else:
             raise parser.CoconutException("could not find source path "+repr(path))
 
-    def compile_module(self, dirname, write=True):
+    def compile_module(self, directory, write=True):
         """Compiles A Module."""
-        for dirpath, dirnames, filenames in os.walk(dirname):
+        for dirpath, dirnames, filenames in os.walk(directory):
             writedir = write
-            if write is True:
+            if writedir is True:
                 self.setup_module(dirpath)
-            elif write:
-                writedir = os.path.join(write, os.path.relpath(dirpath, dirname))
+            elif writedir:
+                writedir = os.path.join(writedir, os.path.relpath(dirpath, directory))
             for filename in filenames:
                 if os.path.splitext(filename)[1] == self.code_ext:
-                    self.compile_file(filename, writedir, True)
+                    self.compile_file(os.path.join(dirpath, filename), writedir, True)
 
     def compile_file(self, filename, write=True, module=False):
         """Compiles A File."""
