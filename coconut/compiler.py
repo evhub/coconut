@@ -112,7 +112,7 @@ class cli(object):
                     raise parser.CoconutException("the source path must point to a file when --run is enabled")
                 else:
                     self.compile_file(args.source, None, None)
-            elif not os.isdir(args.dest):
+            elif not os.path.isdir(args.dest):
                 raise parser.CoconutException("could not find destination path "+repr(path))
             else:
                 self.compile_path(args.source, args.dest)
