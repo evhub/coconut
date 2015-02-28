@@ -113,7 +113,7 @@ class cli(object):
                 else:
                     self.compile_file(args.source, None, None)
             elif not os.path.isdir(args.dest):
-                raise parser.CoconutException("could not find destination path "+repr(path))
+                raise parser.CoconutException("could not find destination path "+repr(args.dest))
             else:
                 self.compile_path(args.source, args.dest)
         if args.interact or not (args.source or args.code or args.version):
