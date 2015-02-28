@@ -224,7 +224,7 @@ def anyint_proc(tokens):
         item, base = tokens[0].split("_")
         return 'int("'+item+'", '+base+")"
     else:
-        raise CoconutException("Invalid anyint token")
+        raise CoconutException("invalid anyint token")
 
 def list_proc(tokens):
     """Removes The Last Character From A List."""
@@ -252,9 +252,9 @@ def item_proc(tokens):
             elif trailer[0] == "..":
                 out = "__coconut__.compose("+out+", "+trailer[1]+")"
             else:
-                raise CoconutException("Invalid special trailer: "+repr(trailer[0]))
+                raise CoconutException("invalid special trailer: "+repr(trailer[0]))
         else:
-            raise CoconutException("Invalid trailer tokens: "+repr(trailer))
+            raise CoconutException("invalid trailer tokens: "+repr(trailer))
     return out
 
 def chain_proc(tokens):
@@ -283,7 +283,7 @@ def lambda_proc(tokens):
     if len(tokens) == 2:
         return "lambda "+tokens[0]+": "+tokens[1]
     else:
-        raise CoconutException("Invalid lambda tokens: "+repr(tokens))
+        raise CoconutException("invalid lambda tokens: "+repr(tokens))
 
 def assign_proc(tokens):
     """Processes Assignments."""
@@ -297,14 +297,14 @@ def assign_proc(tokens):
         else:
             return tokens
     else:
-        raise CoconutException("Invalid assignment tokens: "+repr(tokens))
+        raise CoconutException("invalid assignment tokens: "+repr(tokens))
 
 def func_proc(tokens):
     """Processes Mathematical Function Definitons."""
     if len(tokens) == 2:
         return "def "+tokens[0]+": return "+tokens[1]
     else:
-        raise CoconutException("Invalid mathematical function definition tokens: "+repr(tokens))
+        raise CoconutException("invalid mathematical function definition tokens: "+repr(tokens))
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # PARSER:
@@ -397,7 +397,7 @@ class processor(object):
                     elif c == hold[1][0]:
                         hold[2] += c
                     elif len(hold[2]) > len(hold[1]):
-                        raise CoconutException("Invalid number of string closes in "+self.getpart(inputstring, x))
+                        raise CoconutException("invalid number of string closes in "+self.getpart(inputstring, x))
                     elif hold[2] == hold[1]:
                         out.append(self.wrapstr(hold[0], hold[1][0], True))
                         hold = None
@@ -428,7 +428,7 @@ class processor(object):
                     hold = [c, found, None]
                     found = None
                 else:
-                    raise CoconutException("Invalid number of string starts in "+self.getpart(inputstring, x))
+                    raise CoconutException("invalid number of string starts in "+self.getpart(inputstring, x))
             elif c in self.startcomment:
                 hold = [""]
             elif c in self.holds:
@@ -437,7 +437,7 @@ class processor(object):
                 out.append(c)
             x += 1
         if hold is not None or found is not None:
-            raise CoconutException("Unclosed string in "+self.getpart(inputstring, x))
+            raise CoconutException("unclosed string in "+self.getpart(inputstring, x))
         return "".join(out)
 
     def leading(self, inputstring):
@@ -449,7 +449,7 @@ class processor(object):
             elif self.indchar is None:
                 self.indchar = c
             elif self.indchar != c:
-                raise CoconutException("Illegal mixing of tabs and spaces in "+repr(inputstring))
+                raise CoconutException("illegal mixing of tabs and spaces in "+repr(inputstring))
             count += 1
         return count
 
@@ -485,14 +485,14 @@ class processor(object):
         for line in lines:
             if line[-1] in self.white:
                 if self.strict:
-                    raise CoconutException("[Strict] Found trailing whitespace in "+repr(line))
+                    raise CoconutException("[strict] found trailing whitespace in "+repr(line))
                 else:
                     line = line.rstrip()
             if not line or line.startswith(self.startcomment):
                 new.append(line)
             elif line.endswith("\\"):
                 if self.strict:
-                    raise CoconutException("[Strict] Found backslash continuation in "+repr(line))
+                    raise CoconutException("[strict] found backslash continuation in "+repr(line))
                 else:
                     new[-1] += " "+line[:-1]
             elif count < 0:
@@ -501,7 +501,7 @@ class processor(object):
                 check = self.leading(line)
                 if current is None:
                     if check:
-                        raise CoconutException("Illegal initial indent in "+repr(line))
+                        raise CoconutException("illegal initial indent in "+repr(line))
                     else:
                         current = 0
                 elif check > current:
@@ -514,11 +514,11 @@ class processor(object):
                     levels = levels[:point]
                     current = levels.pop()
                 elif current != check:
-                    raise CoconutException("Illegal dedent to unused indentation level in "+repr(line))
+                    raise CoconutException("illegal dedent to unused indentation level in "+repr(line))
                 new.append(line)
             count += self.change(line)
         if count != 0:
-            raise CoconutException("Unclosed parenthetical in "+repr(new[-1]))
+            raise CoconutException("unclosed parenthetical in "+repr(new[-1]))
         new.append(self.closestr*len(levels))
         return self.linebreak.join(new)
 
@@ -581,7 +581,7 @@ class processor(object):
                 out = proc(out, **kwargs)
             return out
         else:
-            raise CoconutException("Multiple tokens leftover: "+repr(tokens))
+            raise CoconutException("multiple tokens leftover: "+repr(tokens))
 
     def autopep8(self, arglist=[]):
         """Enables autopep8 Integration."""
@@ -604,20 +604,20 @@ class processor(object):
                     string = strchar+string+strchar
                 return string
             else:
-                raise CoconutException("String marker points to comment")
+                raise CoconutException("string marker points to comment")
         else:
-            raise CoconutException("Invalid string marker")
+            raise CoconutException("invalid string marker")
 
     def comment_repl(self, tokens):
         """Replaces Comment References."""
         if len(tokens) == 1:
             ref = self.refs[int(tokens[0])]
             if isinstance(ref, tuple):
-                raise CoconutException("Comment marker points to string")
+                raise CoconutException("comment marker points to string")
             else:
                 return "#"+ref
         else:
-            raise CoconutException("Invalid comment marker")
+            raise CoconutException("invalid comment marker")
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # GRAMMAR:

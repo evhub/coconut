@@ -112,9 +112,13 @@ class cli(object):
                     raise parser.CoconutException("the source path must point to a file when --run is enabled")
                 else:
                     self.compile_file(args.source, None, None)
-            elif not os.path.isdir(args.dest):
-                raise parser.CoconutException("could not find destination path "+repr(args.dest))
+            elif args.dest is None:
+                self.compile_path(args.source)
+            elif os.path.isfile(args.dest):
+                raise parser.CoconutException("destination path points to file "+repr(args.dest))
             else:
+                if not os.path.exists(args.dest):
+                    os.makedirs(args.dest)
                 self.compile_path(args.source, args.dest)
         if args.interact or not (args.source or args.code or args.version):
             self.start_prompt()
@@ -142,24 +146,26 @@ class cli(object):
 
     def compile_file(self, filename, write=True, module=False):
         """Compiles A File."""
-        if write is True:
-            destfilename = os.path.splitext(filename)[0]+self.comp_ext
-        elif write:
-            destfilename = os.path.join(write, os.path.splitext(os.path.basename(filename))[0]+self.comp_ext)
-        else:
+        if write is None:
             destfilename = None
+        elif write is True:
+            destfilename = os.path.splitext(filename)[0]+self.comp_ext
+        else:
+            destfilename = os.path.join(write, os.path.splitext(os.path.basename(filename))[0]+self.comp_ext)
         self.compile(filename, destfilename, module)
 
     def compile(self, codefilename, destfilename=None, module=False):
         """Compiles A Source Coconut File To A Destination Python File."""
         self.gui.print("[Coconut] Compiling "+repr(codefilename)+"...")
         code = readfile(openfile(codefilename, "r"))
-        if module:
+        if module is True:
             compiled = self.processor.parse_module(code)
         elif module is None:
             compiled = self.processor.parse_block(code)
-        else:
+        elif module is False:
             compiled = self.processor.parse_file(code)
+        else:
+            raise parser.CoconutException("invalid value for module boolean of "+repr(module))
         if destfilename is None:
             self.execute(compiled)
         else:
