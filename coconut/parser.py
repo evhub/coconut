@@ -483,7 +483,7 @@ class processor(object):
         count = 0
         current = None
         for line in lines:
-            if not line or line.startswith(self.startcomment):
+            if not line or line.lstrip().startswith(self.startcomment):
                 new.append(line)
                 continue
             if line[-1] in self.white:
