@@ -689,12 +689,11 @@ class processor(object):
     sci_e = CaselessLiteral("e") | fixto(Literal("\u23e8"), "E")
     numitem = Combine(basenum + sci_e + integer) | basenum
 
-    NUMBER = trace(attach(Combine(anyint + underscore + integer), anyint_proc)
+    NUMBER = attach(Combine(anyint + underscore + integer), anyint_proc)
               | Combine(CaselessLiteral("0b") + binint)
               | Combine(CaselessLiteral("0o") + octint)
               | Combine(CaselessLiteral("0x") + hexint)
               | numitem
-              , "NUMBER")
 
     string_ref = Forward()
     comment = Forward()
@@ -771,7 +770,7 @@ class processor(object):
                       ^ testlist
                       )
 
-    op_atom = trace(lparen + (
+    op_atom = lparen + (
         fixto(pipeline, "__coconut__.pipe")
         | fixto(dotdot, "__coconut__.compose")
         | fixto(dubcolon, "__coconut__.chain")
@@ -795,7 +794,7 @@ class processor(object):
         | fixto(ge, "__coconut__.operator.__ge__")
         | fixto(ne, "__coconut__.operator.__ne__")
         | fixto(tilde, "__coconut__.operator.__inv__")
-        ) + rparen, "op_atom")
+        ) + rparen
 
     func_atom = NAME | op_atom | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
     keyword_atom = Keyword("None") | Keyword("True") | Keyword("False")
@@ -812,11 +811,10 @@ class processor(object):
     subscript = condense(slicetest + sliceop + Optional(sliceop)) | test
     subscriptlist = itemlist(subscript, comma)
     simple_trailer = condense(lbrack + subscriptlist + rbrack) | condense(dot + NAME)
-    trailer = trace(Group(dollar + lparen.suppress() + callargslist + rparen.suppress())
+    trailer = Group(dollar + lparen.suppress() + callargslist + rparen.suppress())
                | condense(lparen + callargslist + rparen)
                | Group(dotdot + func_atom)
                | simple_trailer
-               , "trailer")
 
     assignlist = Forward()
     assign_item = NAME + ZeroOrMore(simple_trailer) | lparen + assignlist + rparen | lbrack + assignlist + rbrack
