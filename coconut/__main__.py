@@ -16,8 +16,12 @@ Description: The Coconut Interface.
 
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
-from .util import *
-from . import compiler
+import sys
+import os.path
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+from coconut.util import *
+from coconut import compiler
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # MAIN:

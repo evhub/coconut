@@ -14,28 +14,28 @@ Command Line
 ------------
 
 usage:
-  ``coconut [-h] [-v] [-s] [-r] [-i] [-d] [-c ...] [--autopep8 ...] [source] [dest]``
+  ``coconut [-h] [-v] [-s] [-r] [-i] [-d [level]] [-c code] [--autopep8 ...] [source] [dest]``
 
 positional arguments:
-  :source:            path to the coconut file/module to compile
-  :dest:              destination directory for compiled files (defaults to the source directory)
+  :source:              path to the coconut file/module to compile
+  :dest:                destination directory for compiled files (defaults to the source directory)
 
 optional arguments:
-  -h, --help          show this help message and exit
+  -h, --help            show this help message and exit
 
-  -v, --version       print coconut and python version information
+  -v, --version         print coconut and python version information
 
-  -s, --strict        enforce code cleanliness standards
+  -s, --strict          enforce code cleanliness standards
 
-  -r, --run           run the compiled source instead of writing it
+  -r, --run             run the compiled source instead of writing it
 
-  -i, --interact      force the interpreter to start (otherwise starts if no other command is given)
+  -i, --interact        force the interpreter to start (otherwise starts if no other command is given)
 
-  -d, --debug         show compiled python being executed
+  -d, --debug           enable debug output (level: 0 is off, no arg defaults to 1, max is 2)
 
-  -c, --code          run code passed in as string (terminates arg list)
+  -c, --code            run a line of coconut passed in as a string
 
-  --autopep8          use autopep8 to format compiled code (terminates arg list)
+  --autopep8            use autopep8 to format compiled code (remaining args passed to autopep8)
 
 Syntax
 ------
