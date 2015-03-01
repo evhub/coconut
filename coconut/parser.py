@@ -202,7 +202,7 @@ class tracer(object):
                 out += repr(tokens[0])
             else:
                 out += str(tokens)
-            #out += " (line "+lineno(location, original)+", col "+col(location, original)+")"
+            out += " (line "+lineno(location, original)+", col "+col(location, original)+")"
             self.show(out)
         return tokens
 
