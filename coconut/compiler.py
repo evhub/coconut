@@ -70,7 +70,7 @@ class cli(object):
     """The Coconut Command-Line Interface."""
     code_ext = ".coc"
     comp_ext = ".py"
-    max_debug = 3
+    max_debug = 2
     commandline = argparse.ArgumentParser(description="The Coconut Programming Language.")
     commandline.add_argument("source", metavar="source", type=str, nargs="?", default=None, help="path to the coconut file/module to compile")
     commandline.add_argument("dest", metavar="dest", type=str, nargs="?", default=None, help="destination directory for compiled files (defaults to the source directory)")
@@ -105,7 +105,7 @@ class cli(object):
     def debug_set(self, level=0):
         """Sets The Debug Level."""
         self.debug = level >= 1
-        self.processor.debug(level >= 2, level >= 3)
+        self.processor.debug(level >= 2)
 
     def debug_level(self, level=0):
         """Processes A Debug Level."""

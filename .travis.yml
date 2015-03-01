@@ -12,6 +12,7 @@ install:
   - pip install autopep8
 
 script:
+  - coconut --version
   - git clone https://github.com/evhub/cocotest.git
   - cd cocotest
   - coconut src build --strict --debug 2 --autopep8

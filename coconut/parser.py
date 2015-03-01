@@ -179,16 +179,14 @@ def parenwrap(lparen, item, rparen):
 class tracer(object):
     """Debug Tracer."""
     show = print
-    last = None
 
-    def __init__(self, on=False, verbose=False):
+    def __init__(self, on=False):
         """Creates The Tracer."""
-        self.debug(on, verbose)
+        self.debug(on)
 
-    def debug(self, on=True, verbose=False):
+    def debug(self, on=True):
         """Changes The Tracer's State."""
         self.on = on
-        self.verbose = verbose
 
     def trace(self, original, location, tokens, message=None):
         """Tracer Parse Action."""
@@ -197,16 +195,15 @@ class tracer(object):
                 token = repr(tokens[0])
             else:
                 token = str(tokens)
-            if self.verbose or token != self.last:
-                self.last = token
-                out = ""
-                if message is not None:
-                    out += "["+message+"] "
-                if len(tokens) == 1:
-                    out += repr(tokens[0])
-                else:
-                    out += str(tokens)
-                self.show(out)
+            out = ""
+            if message is not None:
+                out += "["+message+"] "
+            if len(tokens) == 1:
+                out += repr(tokens[0])
+            else:
+                out += str(tokens)
+            out += " (line "+lineno(location, original)+", col "+col(location, original)+")"
+            self.show(out)
         return tokens
 
     def bind(self, item, message=None):
@@ -709,8 +706,8 @@ class processor(object):
     NEWLINE = condense(OneOrMore(lineitem))
     STARTMARKER = StringStart()
     ENDMARKER = StringEnd()
-    INDENT = Literal(openstr) + Optional(NEWLINE)
-    DEDENT = Literal(closestr) + Optional(NEWLINE)
+    INDENT = Literal(openstr)
+    DEDENT = Literal(closestr)
 
     augassign = (heavy_arrow
                  | Combine(dotdot + equals)
