@@ -178,6 +178,7 @@ def parenwrap(lparen, item, rparen):
 
 class tracer(object):
     """Debug Tracer."""
+    show = print
     last = None
 
     def __init__(self, on=False, verbose=False):
@@ -205,7 +206,7 @@ class tracer(object):
                     out += repr(tokens[0])
                 else:
                     out += str(tokens)
-                print(out)
+                self.show(out)
         return tokens
 
     def bind(self, item, message=None):

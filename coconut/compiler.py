@@ -97,6 +97,11 @@ class cli(object):
         args = self.commandline.parse_args()
         self.cmd(args)
 
+    def setup(self, strict):
+        """Creates The Processor."""
+        self.processor = parser.processor(args.strict)
+        self.processor.TRACER.show = self.gui.print
+
     def debug_set(self, level=0):
         """Sets The Debug Level."""
         self.debug = level >= 1
@@ -111,7 +116,7 @@ class cli(object):
 
     def cmd(self, args):
         """Parses Command-Line Arguments."""
-        self.processor = parser.processor(args.strict)
+        self.setup(args.strict)
         self.debug_level(args.debug)
         if args.version:
             self.gui.print("[Coconut] Version "+repr(VERSION)+" running on Python "+sys.version)
@@ -152,7 +157,7 @@ class cli(object):
         for dirpath, dirnames, filenames in os.walk(directory):
             writedir = write
             if writedir is True:
-                self.setup_module(dirpath)
+                self.create_module(dirpath)
             elif writedir:
                 writedir = os.path.join(writedir, os.path.relpath(dirpath, directory))
             for filename in filenames:
@@ -187,7 +192,7 @@ class cli(object):
             writefile(openfile(destfilename, "w"), compiled)
             self.gui.print("[Coconut] Compiled "+repr(destfilename)+".")
 
-    def setup_module(self, dirpath):
+    def create_module(self, dirpath):
         """Sets Up A Module Directory."""
         writefile(openfile(os.path.join(dirpath, "__coconut__.py"), "w"), parser.headers["code"])
 
