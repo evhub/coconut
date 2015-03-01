@@ -86,11 +86,11 @@ class cli(object):
     running = False
     runner = None
 
-    def __init__(self, color=None, prompt=">>> ", moreprompt="    "):
+    def __init__(self, main_color=None, debug_color=None, prompt=">>> ", moreprompt="    ", main_sig="Coconut: ", debug_sig=None):
         """Creates The CLI."""
-        self.gui = terminal(color)
-        self.prompt = self.gui.addcolor(prompt, color)
-        self.moreprompt = self.gui.addcolor(moreprompt, color)
+        self.console = terminal(main_color, debug_color, main_sig, debug_sig)
+        self.prompt = self.console.addcolor(prompt, color)
+        self.moreprompt = self.console.addcolor(moreprompt, color)
 
     def start(self):
         """Gets Command-Line Arguments."""
@@ -100,7 +100,7 @@ class cli(object):
     def setup(self, strict=False):
         """Creates The Processor."""
         self.processor = parser.processor(strict)
-        self.processor.TRACER.show = self.gui.print
+        self.processor.TRACER.show = self.console.debug
 
     def debug_set(self, level=0):
         """Sets The Debug Level."""
@@ -119,7 +119,7 @@ class cli(object):
         self.setup(args.strict)
         self.debug_level(args.debug)
         if args.version:
-            self.gui.print("[Coconut] Version "+repr(VERSION)+" running on Python "+sys.version)
+            self.console.print("Version "+repr(VERSION)+" running on Python "+sys.version)
         if args.autopep8 is not None:
             self.processor.autopep8(args.autopep8)
         if args.code is not None:
@@ -176,7 +176,7 @@ class cli(object):
 
     def compile(self, codefilename, destfilename=None, module=False):
         """Compiles A Source Coconut File To A Destination Python File."""
-        self.gui.print("[Coconut] Compiling "+repr(codefilename)+"...")
+        self.console.print("Compiling "+repr(codefilename)+"...")
         code = readfile(openfile(codefilename, "r"))
         if module is True:
             compiled = self.processor.parse_module(code)
@@ -190,7 +190,7 @@ class cli(object):
             self.execute(compiled)
         else:
             writefile(openfile(destfilename, "w"), compiled)
-            self.gui.print("[Coconut] Compiled "+repr(destfilename)+".")
+            self.console.print("Compiled "+repr(destfilename)+".")
 
     def create_module(self, dirpath):
         """Sets Up A Module Directory."""
@@ -198,7 +198,7 @@ class cli(object):
 
     def start_prompt(self):
         """Starts The Interpreter."""
-        self.gui.print("[Coconut] Interpreter:")
+        self.console.print("Interpreter:")
         self.running = True
         while self.running:
             self.execute(self.handle(input(self.prompt)))
@@ -230,7 +230,7 @@ class cli(object):
             self.start_runner()
         if compiled is not None:
             if self.debug:
-                self.gui.print("[Coconut] Executing "+repr(compiled)+"...")
+                self.console.debug("Executing "+repr(compiled)+"...")
             self.runner.run(compiled)
 
     def start_runner(self):

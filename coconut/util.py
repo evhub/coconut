@@ -75,9 +75,15 @@ class terminal(object):
         }
     on = True
 
-    def __init__(self, color=None):
-        """Base Constructure For The Terminal Wrapper."""
-        self.color = color
+    def __init__(self, main_color=None, debug_color=None, main_sig="", debug_sig=None):
+        """Creates The Terminal Wrapper."""
+        self.main_color = main_color
+        self.debug_color = debug_color
+        self.main_sig = main_sig
+        if debug_sig is None:
+            self.debug_sig = self.main_sig
+        else:
+            self.debug_sig = debug_sig
     def addcolor(self, inputstring, color):
         """Adds The Specified Colors To The String."""
         if color is not None:
@@ -90,9 +96,15 @@ class terminal(object):
         for x in self.colors:
             inputstring = inputstring.replace(x, "")
         return inputstring
-    def print(self, *messages):
-        """Prints A Message."""
+    def display(self, *messages, color=None, sig=""):
+        """Prints Messages."""
         if self.on:
             message = " ".join(str(msg) for msg in messages)
             for line in message.splitlines():
-                print(self.addcolor(line, self.color))
+                print(self.addcolor(sig+line, color))
+    def print(self, *messages):
+        """Prints Messages With Main Color."""
+        self.display(*messages, color=self.main_color, sig=self.main_sig)
+    def debug(self, *messages):
+        """Prints Messages With Debug Color."""
+        self.display(*messages, color=self.debug_color, sig=self.debug_sig)

@@ -30,7 +30,7 @@ def main():
     except AttributeError:
         cmd = compiler.cli()
     else:
-        cmd = compiler.cli(color="cyan")
+        cmd = compiler.cli(main_color="cyan", debug_color="lightred")
     cmd.start()
 
 if __name__ == "__main__":
