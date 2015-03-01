@@ -110,7 +110,7 @@ class cli(object):
     def debug_level(self, level=0):
         """Processes A Debug Level."""
         if level < 0 or self.max_debug < level:
-            raise parser.CoconutException("debug level must be within range(-1, "+str(self.max_debug+1)+")")
+            raise parser.CoconutException("debug level must be in range(0, "+str(self.max_debug+1)+")")
         else:
             self.debug_set(level)
 
@@ -198,7 +198,7 @@ class cli(object):
 
     def start_prompt(self):
         """Starts The Interpreter."""
-        self.console.print("Interpreter:")
+        self.console.print("[Interpreter:]")
         self.running = True
         while self.running:
             self.execute(self.handle(input(self.prompt)))
