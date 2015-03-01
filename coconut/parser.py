@@ -812,10 +812,11 @@ class processor(object):
     subscript = condense(slicetest + sliceop + Optional(sliceop)) | test
     subscriptlist = itemlist(subscript, comma)
     simple_trailer = condense(lbrack + subscriptlist + rbrack) | condense(dot + NAME)
-    trailer = Group(dollar + lparen.suppress() + callargslist + rparen.suppress())
+    trailer = (Group(dollar + lparen.suppress() + callargslist + rparen.suppress())
                | condense(lparen + callargslist + rparen)
                | Group(dotdot + func_atom)
                | simple_trailer
+               )
 
     assignlist = Forward()
     assign_item = NAME + ZeroOrMore(simple_trailer) | lparen + assignlist + rparen | lbrack + assignlist + rbrack
