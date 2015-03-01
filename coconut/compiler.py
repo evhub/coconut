@@ -97,9 +97,9 @@ class cli(object):
         args = self.commandline.parse_args()
         self.cmd(args)
 
-    def setup(self, strict):
+    def setup(self, strict=False):
         """Creates The Processor."""
-        self.processor = parser.processor(args.strict)
+        self.processor = parser.processor(strict)
         self.processor.TRACER.show = self.gui.print
 
     def debug_set(self, level=0):
