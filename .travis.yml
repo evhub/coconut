@@ -14,7 +14,7 @@ install:
 script:
   - git clone https://github.com/evhub/cocotest.git
   - cd cocotest
-  - coconut src build --strict --autopep8
+  - coconut src build --strict --debug 2 --autopep8
   - python build/main.py -tt
 
 notifications:

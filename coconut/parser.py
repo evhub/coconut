@@ -180,8 +180,12 @@ class tracer(object):
     """Debug Tracer."""
     last = None
 
-    def __init__(self, on=True, verbose=False):
+    def __init__(self, on=False, verbose=False):
         """Creates The Tracer."""
+        self.debug(on, verbose)
+
+    def debug(self, on=True, verbose=False):
+        """Changes The Tracer's State."""
         self.on = on
         self.verbose = verbose
 
@@ -312,8 +316,9 @@ def func_proc(tokens):
 
 class processor(object):
     """The Coconut Processor."""
-    TRACER = tracer(False)
+    TRACER = tracer()
     trace = TRACER.bind
+    debug = TRACER.debug
     openstr = "\u204b"
     closestr = "\xb6"
     linebreak = "\n"

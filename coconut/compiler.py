@@ -70,6 +70,7 @@ class cli(object):
     """The Coconut Command-Line Interface."""
     code_ext = ".coc"
     comp_ext = ".py"
+    max_debug = 3
     commandline = argparse.ArgumentParser(description="The Coconut Programming Language.")
     commandline.add_argument("source", metavar="source", type=str, nargs="?", default=None, help="path to the coconut file/module to compile")
     commandline.add_argument("dest", metavar="dest", type=str, nargs="?", default=None, help="destination directory for compiled files (defaults to the source directory)")
@@ -77,9 +78,11 @@ class cli(object):
     commandline.add_argument("-s", "--strict", action="store_const", const=True, default=False, help="enforce code cleanliness standards")
     commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run the compiled source instead of writing it")
     commandline.add_argument("-i", "--interact", action="store_const", const=True, default=False, help="force the interpreter to start (otherwise starts if no other command is given)")
-    commandline.add_argument("-d", "--debug", action="store_const", const=True, default=False, help="show compiled python being executed")
-    commandline.add_argument("-c", "--code", type=str, nargs=argparse.REMAINDER, default=[], help="run code passed in as string (terminates arg list)")
-    commandline.add_argument("--autopep8", type=str, nargs=argparse.REMAINDER, default=None, help="use autopep8 to format compiled code (terminates arg list)")
+    commandline.add_argument("-d", "--debug", metavar="level", type=int, nargs="?", default=0, const=1, help="enable debug output (level defaults to 1, max is "+str(self.max_debug)+")")
+    commandline.add_argument("-c", "--code", metavar="code", type=str, nargs=1, help="run a line of coconut passed in as a string")
+    commandline.add_argument("--autopep8", type=str, nargs=argparse.REMAINDER, default=None, help="use autopep8 to format compiled code (remaining args passed to autopep8)")
+    processor = None
+    debug = False
     running = False
     runner = None
 
@@ -92,18 +95,30 @@ class cli(object):
     def start(self):
         """Gets Command-Line Arguments."""
         args = self.commandline.parse_args()
-        self.parse(args)
+        self.cmd(args)
 
-    def parse(self, args):
+    def debug_set(self, level=0):
+        """Sets The Debug Level."""
+        self.debug = level >= 1
+        self.processor.debug(level >= 2, level >= 3)
+
+    def debug_level(self, level=0):
+        """Processes A Debug Level."""
+        if level < 0 or self.max_debug < level:
+            raise parser.CoconutException("debug level must be within range(-1, "+str(self.max_debug+1)+")")
+        else:
+            self.debug_set(level)
+
+    def cmd(self, args):
         """Parses Command-Line Arguments."""
         self.processor = parser.processor(args.strict)
-        self.debug = args.debug
+        self.debug_level(args.debug)
         if args.version:
             self.gui.print("[Coconut] Version "+repr(VERSION)+" running on Python "+sys.version)
         if args.autopep8 is not None:
             self.processor.autopep8(args.autopep8)
-        for code in args.code:
-            self.execute(self.processor.parse_single(code))
+        if args.code is not None:
+            self.execute(self.processor.parse_single(args.code))
         if args.source is not None:
             if args.run:
                 if args.dest is not None:
