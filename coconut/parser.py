@@ -689,11 +689,12 @@ class processor(object):
     sci_e = CaselessLiteral("e") | fixto(Literal("\u23e8"), "E")
     numitem = Combine(basenum + sci_e + integer) | basenum
 
-    NUMBER = attach(Combine(anyint + underscore + integer), anyint_proc)
+    NUMBER = (attach(Combine(anyint + underscore + integer), anyint_proc)
               | Combine(CaselessLiteral("0b") + binint)
               | Combine(CaselessLiteral("0o") + octint)
               | Combine(CaselessLiteral("0x") + hexint)
               | numitem
+              )
 
     string_ref = Forward()
     comment = Forward()
