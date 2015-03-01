@@ -89,8 +89,8 @@ class cli(object):
     def __init__(self, main_color=None, debug_color=None, prompt=">>> ", moreprompt="    ", main_sig="Coconut: ", debug_sig=None):
         """Creates The CLI."""
         self.console = terminal(main_color, debug_color, main_sig, debug_sig)
-        self.prompt = self.console.addcolor(prompt, color)
-        self.moreprompt = self.console.addcolor(moreprompt, color)
+        self.prompt = self.console.addcolor(prompt, main_color)
+        self.moreprompt = self.console.addcolor(moreprompt, main_color)
 
     def start(self):
         """Gets Command-Line Arguments."""

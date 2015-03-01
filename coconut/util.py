@@ -96,7 +96,7 @@ class terminal(object):
         for x in self.colors:
             inputstring = inputstring.replace(x, "")
         return inputstring
-    def display(self, *messages, color=None, sig=""):
+    def display(self, messages, color=None, sig=""):
         """Prints Messages."""
         if self.on:
             message = " ".join(str(msg) for msg in messages)
@@ -104,7 +104,7 @@ class terminal(object):
                 print(self.addcolor(sig+line, color))
     def print(self, *messages):
         """Prints Messages With Main Color."""
-        self.display(*messages, color=self.main_color, sig=self.main_sig)
+        self.display(messages, color=self.main_color, sig=self.main_sig)
     def debug(self, *messages):
         """Prints Messages With Debug Color."""
-        self.display(*messages, color=self.debug_color, sig=self.debug_sig)
+        self.display(messages, color=self.debug_color, sig=self.debug_sig)
