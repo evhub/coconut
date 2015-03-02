@@ -47,7 +47,7 @@ r'''
 if __package__ is None:
     import sys as _coconut_sys
     import os.path as _coconut_os_path
-    _coconut_sys.path.append(_coconut_os_path.dirname(_coconut_os_path.abspath(__file__)))
+    _coconut_sys.path.append(_coconut_os_path.abspath(__file__))
     from __coconut__ import *
 else:
     from .__coconut__ import *
