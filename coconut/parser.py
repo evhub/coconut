@@ -67,7 +67,7 @@ class __coconut__(object):
         return _composed
     @staticmethod
     def infix(a, func, b):
-        """Infix Calling (5 \\mod\\ 6)."""
+        """Infix Calling (5 `mod` 6)."""
         return func(a, b)
     @staticmethod
     def pipe(*args):
@@ -587,7 +587,7 @@ class processor(object):
         """Enables autopep8 Integration."""
         import autopep8
         args = autopep8.parse_args([""]+arglist)
-        def pep8_fixer(code):
+        def pep8_fixer(code, **kwargs):
             """Automatic PEP8 Fixer."""
             return autopep8.fix_code(code, options=args)
         self.postprocs.append(pep8_fixer)
