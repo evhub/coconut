@@ -145,6 +145,7 @@ class cli(object):
 
     def compile_path(self, path, write=True):
         """Compiles A Path."""
+        path = os.path.abspath(path)
         if os.path.isfile(path):
             self.compile_file(path, write)
         elif os.path.isdir(path):
@@ -154,26 +155,29 @@ class cli(object):
 
     def compile_module(self, directory, write=True):
         """Compiles A Module."""
+        directory = os.path.abspath(directory)
         for dirpath, dirnames, filenames in os.walk(directory):
+            dirpath = os.path.abspath(dirpath)
             writedir = write
             if writedir is True:
                 self.create_module(dirpath)
             elif writedir:
-                writedir = os.path.join(writedir, os.path.relpath(dirpath, directory))
+                writedir = os.path.join(os.path.abspath(writedir), os.path.relpath(dirpath, directory))
                 self.create_module(writedir)
             for filename in filenames:
                 if os.path.splitext(filename)[1] == self.code_ext:
                     self.compile_file(os.path.join(dirpath, filename), writedir, True)
 
-    def compile_file(self, filename, write=True, module=False):
+    def compile_file(self, filepath, write=True, module=False):
         """Compiles A File."""
+        filepath = os.path.abspath(filepath)
         if write is None:
             destfilename = None
         elif write is True:
-            destfilename = os.path.splitext(filename)[0]+self.comp_ext
+            destfilename = os.path.splitext(filepath)[0]+self.comp_ext
         else:
-            destfilename = os.path.join(write, os.path.splitext(os.path.basename(filename))[0]+self.comp_ext)
-        self.compile(filename, destfilename, module)
+            destfilename = os.path.join(write, os.path.splitext(os.path.basename(filepath))[0]+self.comp_ext)
+        self.compile(filepath, destfilename, module)
 
     def compile(self, codefilename, destfilename=None, module=False):
         """Compiles A Source Coconut File To A Destination Python File."""
