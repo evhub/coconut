@@ -160,6 +160,7 @@ class cli(object):
                 self.create_module(dirpath)
             elif writedir:
                 writedir = os.path.join(writedir, os.path.relpath(dirpath, directory))
+                self.create_module(writedir)
             for filename in filenames:
                 if os.path.splitext(filename)[1] == self.code_ext:
                     self.compile_file(os.path.join(dirpath, filename), writedir, True)
