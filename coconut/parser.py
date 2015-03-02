@@ -191,6 +191,8 @@ class tracer(object):
     def trace(self, original, location, tokens, message=None):
         """Tracer Parse Action."""
         if self.on:
+            original = str(original)
+            location = int(location)
             out = ""
             if message is not None:
                 out += "["+message+"] "
@@ -198,7 +200,7 @@ class tracer(object):
                 out += repr(tokens[0])
             else:
                 out += str(tokens)
-            # out += " (line "+lineno(location, original)+", col "+col(location, original)+")"
+            out += " (line "+str(lineno(location, original))+", col "+str(col(location, original))+")"
             self.show(out)
         return tokens
 
