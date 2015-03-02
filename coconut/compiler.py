@@ -185,6 +185,7 @@ class cli(object):
 
     def compile(self, codefilename, destfilename=None, module=False):
         """Compiles A Source Coconut File To A Destination Python File."""
+        codefilename = os.path.abspath(codefilename)
         self.console.print("Compiling "+repr(codefilename)+"...")
         with openfile(codefilename, "r") as opened:
             code = readfile(opened)
@@ -199,8 +200,10 @@ class cli(object):
         if destfilename is None:
             self.execute(compiled)
         else:
-            if not os.path.exists(args.dest):
-                os.makedirs(args.dest)
+            destfilename = os.path.abspath(destfilename)
+            destdir = os.path.dirname(destfilename)
+            if not os.path.exists(destdir):
+                os.makedirs(destdir)
             with openfile(destfilename, "w") as opened:
                 writefile(opened, compiled)
             self.console.print("Compiled "+repr(destfilename)+".")
