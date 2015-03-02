@@ -20,127 +20,6 @@ from .util import *
 from pyparsing import *
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# HEADERS:
-#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-headers = {
-
-"none": '',
-
-"top":
-
-r'''#!/usr/bin/env python
-
-# Coconut Header: --------------------------------------------------------------
-
-from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
-
-try:
-    from future_builtins import *
-except ImportError:
-    pass
-''',
-
-"import":
-
-r'''
-if __package__ is None or __name__ == "__main__":
-    import sys as _coconut_sys
-    import os.path as _coconut_os_path
-    _coconut_sys.path.append(_coconut_os_path.dirname(_coconut_os_path.abspath(__file__)))
-    from __coconut__ import *
-else:
-    from .__coconut__ import *
-''',
-
-"class":
-
-r'''
-class __coconut__(object):
-    """Built-In Coconut Functions."""
-    import operator
-    import functools
-    import itertools
-    partial = functools.partial
-    reduce = functools.reduce
-    chain = itertools.chain
-    @staticmethod
-    def compose(f, g):
-        """Composing (f..g)."""
-        def _composed(*args, **kwargs):
-            """Function Composition Wrapper."""
-            return f(g(*args, **kwargs))
-        return _composed
-    @staticmethod
-    def infix(a, func, b):
-        """Infix Calling (5 `mod` 6)."""
-        return func(a, b)
-    @staticmethod
-    def pipe(*args):
-        """Pipelining (x |> func)."""
-        out = args[0]
-        for func in args[1:]:
-            out = func(out)
-        return out
-    @staticmethod
-    def zipwith(func, *args):
-        """Functional Zipping."""
-        lists = list(args)
-        while lists:
-            new_lists = []
-            items = []
-            for series in lists:
-                items.append(series[0])
-                series = series[1:]
-                if series:
-                    new_lists.append(series)
-            if items:
-                yield func(*items)
-            else:
-                break
-            lists = new_lists
-    @staticmethod
-    def recursive(func):
-        """Tail Call Optimizer."""
-        state = [True, None]
-        recurse = object()
-        def _tailed(*args, **kwargs):
-            """Tail Recursion Wrapper."""
-            if state[0]:
-                state[0] = False
-                try:
-                    while True:
-                        result = func(*args, **kwargs)
-                        if result is recurse:
-                            args, kwargs = state[1]
-                            state[1] = None
-                        else:
-                            return result
-                finally:
-                    state[0] = True
-            else:
-                state[1] = args, kwargs
-                return recurse
-        return _tailed
-
-reduce = __coconut__.reduce
-zipwith = __coconut__.zipwith
-recursive = __coconut__.recursive
-''',
-
-"bottom":
-
-r'''
-# Compiled Coconut: ------------------------------------------------------------
-
-'''
-}
-
-headers["code"] = headers["top"] + headers["class"]
-headers["file"] = headers["top"] + headers["class"] + headers["bottom"]
-headers["module"] = headers["top"] + headers["import"] + headers["bottom"]
-
-#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -219,6 +98,142 @@ class tracer(object):
                 """Callback Function Constructed By tracer."""
                 return self.trace(original, location, tokens, message)
         return attach(item, callback)
+
+def indent(text, indent="    "):
+    """Indents A Block Of Text."""
+    out = []
+    for line in text.splitlines():
+        if line:
+            line = indent+line
+        out.append(line)
+    return "\n".join(out)
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# HEADERS:
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+headers = {
+
+"none": '',
+
+"top":
+
+r'''#!/usr/bin/env python
+
+# Coconut Header: --------------------------------------------------------------
+
+from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
+
+try:
+    from future_builtins import *
+except ImportError:
+    pass
+''',
+
+"import":
+
+r'''
+if __package__ is None or __name__ == "__main__":
+    import sys as _coconut_sys
+    import os.path as _coconut_os_path
+    _coconut_sys.path.append(_coconut_os_path.dirname(_coconut_os_path.abspath(__file__)))
+    from __coconut__ import *
+else:
+    from .__coconut__ import *
+''',
+
+"body":
+
+r'''
+"""Built-In Coconut Functions."""
+
+import operator
+import functools
+import itertools
+partial = functools.partial
+reduce = functools.reduce
+chain = itertools.chain
+@staticmethod
+def compose(f, g):
+    """Composing (f..g)."""
+    def _composed(*args, **kwargs):
+        """Function Composition Wrapper."""
+        return f(g(*args, **kwargs))
+    return _composed
+@staticmethod
+def infix(a, func, b):
+    """Infix Calling (5 `mod` 6)."""
+    return func(a, b)
+@staticmethod
+def pipe(*args):
+    """Pipelining (x |> func)."""
+    out = args[0]
+    for func in args[1:]:
+        out = func(out)
+    return out
+@staticmethod
+def zipwith(func, *args):
+    """Functional Zipping."""
+    lists = list(args)
+    while lists:
+        new_lists = []
+        items = []
+        for series in lists:
+            items.append(series[0])
+            series = series[1:]
+            if series:
+                new_lists.append(series)
+        if items:
+            yield func(*items)
+        else:
+            break
+        lists = new_lists
+@staticmethod
+def recursive(func):
+    """Tail Call Optimizer."""
+    state = [True, None]
+    recurse = object()
+    def _tailed(*args, **kwargs):
+        """Tail Recursion Wrapper."""
+        if state[0]:
+            state[0] = False
+            try:
+                while True:
+                    result = func(*args, **kwargs)
+                    if result is recurse:
+                        args, kwargs = state[1]
+                        state[1] = None
+                    else:
+                        return result
+            finally:
+                state[0] = True
+        else:
+            state[1] = args, kwargs
+            return recurse
+    return _tailed
+'''
+
+"funcs""
+
+r'''
+reduce = __coconut__.reduce
+zipwith = __coconut__.zipwith
+recursive = __coconut__.recursive
+''',
+
+"bottom":
+
+r'''
+# Compiled Coconut: ------------------------------------------------------------
+
+'''
+}
+
+headers["class"] = "\nclass __coconut__(object):" + indent(headers["body"])
+
+headers["code"] = headers["top"] + headers["body"] + headers["funcs"]
+headers["file"] = headers["top"] + headers["class"] + headers["funcs"] + headers["bottom"]
+headers["module"] = headers["top"] + headers["import"] + headers["bottom"]
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # PROCESSORS:
