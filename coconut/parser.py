@@ -211,9 +211,9 @@ def recursive(func):
             state[1] = args, kwargs
             return recurse
     return _tailed
-'''
+''',
 
-"funcs""
+"funcs":
 
 r'''
 reduce = __coconut__.reduce
