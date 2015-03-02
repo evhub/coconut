@@ -44,7 +44,7 @@ except ImportError:
 "import":
 
 r'''
-if __package__ is None:
+if __package__ is None or __name__ == "__main__":
     import sys as _coconut_sys
     import os.path as _coconut_os_path
     _coconut_sys.path.append(_coconut_os_path.dirname(_coconut_os_path.abspath(__file__)))
