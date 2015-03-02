@@ -18,7 +18,7 @@ from __future__ import with_statement, print_function, absolute_import, unicode_
 
 import sys
 import os.path
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from coconut.util import *
 from coconut import compiler
