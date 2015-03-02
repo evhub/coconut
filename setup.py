@@ -38,10 +38,12 @@ setuptools.setup(
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
+        "Intended Audience :: Information Technology",
         "Topic :: Software Development :: Code Generators",
         "Topic :: Software Development :: Compilers",
         "Topic :: Software Development :: Interpreters",
         "Topic :: Software Development :: Libraries",
+        "Topic :: Utilities",
         "Environment :: Console",
         "Programming Language :: Python",
         "Programming Language :: Python :: 2",
@@ -53,7 +55,7 @@ setuptools.setup(
         "Programming Language :: Python :: 3.2",
         "Programming Language :: Python :: 3.3",
         "Programming Language :: Python :: 3.4",
-        "Topic :: Utilities"
+        "Operating System :: OS Independent"
         ],
     keywords=["functional programming language"],
     packages=setuptools.find_packages(),
