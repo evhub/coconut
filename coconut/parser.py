@@ -191,10 +191,6 @@ class tracer(object):
     def trace(self, original, location, tokens, message=None):
         """Tracer Parse Action."""
         if self.on:
-            if len(tokens) == 1:
-                token = repr(tokens[0])
-            else:
-                token = str(tokens)
             out = ""
             if message is not None:
                 out += "["+message+"] "
@@ -229,7 +225,7 @@ def anyint_proc(tokens):
         raise CoconutException("invalid anyint token")
 
 def list_proc(tokens):
-    """Removes The Last Character From A List."""
+    """Properly Formats Lists."""
     out = []
     for x in range(0, len(tokens)):
         if x%2 == 0:
