@@ -137,8 +137,6 @@ class cli(object):
             elif os.path.isfile(args.dest):
                 raise parser.CoconutException("destination path points to file "+repr(args.dest))
             else:
-                if not os.path.exists(args.dest):
-                    os.makedirs(args.dest)
                 self.compile_path(args.source, args.dest)
         if args.interact or not (args.source or args.code or args.version):
             self.start_prompt()
@@ -160,13 +158,19 @@ class cli(object):
             dirpath = os.path.abspath(dirpath)
             writedir = write
             if writedir is True:
-                self.create_module(dirpath)
+                tocreate = dirpath
             elif writedir:
                 writedir = os.path.join(os.path.abspath(writedir), os.path.relpath(dirpath, directory))
-                self.create_module(writedir)
+                tocreate = writedir
+            else:
+                tocreate = None
+            wrote = False
             for filename in filenames:
                 if os.path.splitext(filename)[1] == self.code_ext:
                     self.compile_file(os.path.join(dirpath, filename), writedir, True)
+                    wrote = True
+            if wrote and tocreate is not None:
+                self.create_module(tocreate)
 
     def compile_file(self, filepath, write=True, module=False):
         """Compiles A File."""
@@ -174,9 +178,9 @@ class cli(object):
         if write is None:
             destfilename = None
         elif write is True:
-            destfilename = os.path.splitext(filepath)[0]+self.comp_ext
+            destfilename = os.path.abspath(os.path.splitext(filepath)[0]+self.comp_ext)
         else:
-            destfilename = os.path.join(write, os.path.splitext(os.path.basename(filepath))[0]+self.comp_ext)
+            destfilename = os.path.join(os.path.abspath(write), os.path.splitext(os.path.basename(filepath))[0]+self.comp_ext)
         self.compile(filepath, destfilename, module)
 
     def compile(self, codefilename, destfilename=None, module=False):
@@ -195,6 +199,8 @@ class cli(object):
         if destfilename is None:
             self.execute(compiled)
         else:
+            if not os.path.exists(args.dest):
+                os.makedirs(args.dest)
             with openfile(destfilename, "w") as opened:
                 writefile(opened, compiled)
             self.console.print("Compiled "+repr(destfilename)+".")
