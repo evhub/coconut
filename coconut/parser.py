@@ -44,7 +44,7 @@ except ImportError:
 "import":
 
 r'''
-from __coconut__ import *
+__coconut__ = __import__("__coconut__", globals(), locals(), [], 1)
 ''',
 
 "class":

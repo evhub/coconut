@@ -177,7 +177,8 @@ class cli(object):
     def compile(self, codefilename, destfilename=None, module=False):
         """Compiles A Source Coconut File To A Destination Python File."""
         self.console.print("Compiling "+repr(codefilename)+"...")
-        code = readfile(openfile(codefilename, "r"))
+        with openfile(codefilename, "r") as opened:
+            code = readfile(opened)
         if module is True:
             compiled = self.processor.parse_module(code)
         elif module is None:
@@ -189,12 +190,14 @@ class cli(object):
         if destfilename is None:
             self.execute(compiled)
         else:
-            writefile(openfile(destfilename, "w"), compiled)
+            with openfile(destfilename, "w") as opened:
+                writefile(opened, compiled)
             self.console.print("Compiled "+repr(destfilename)+".")
 
     def create_module(self, dirpath):
         """Sets Up A Module Directory."""
-        writefile(openfile(os.path.join(dirpath, "__coconut__.py"), "w"), parser.headers["code"])
+        with openfile(os.path.join(dirpath, "__coconut__.py"), "w") as opened:
+            writefile(opened, parser.headers["code"])
 
     def start_prompt(self):
         """Starts The Interpreter."""

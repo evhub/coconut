@@ -27,11 +27,14 @@ import setuptools
 # MAIN:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+with openfile("README.rst", "r") as opened:
+    readme = readfile(opened)
+
 setuptools.setup(
     name="coconut",
     version=VERSION,
     description="The Coconut Programming Language.",
-    long_description=readfile(openfile("README.rst", "r")),
+    long_description=readme,
     url="https://github.com/evhub/coconut",
     author="Evan Hubinger",
     author_email="evanjhub@gmail.com",
