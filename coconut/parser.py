@@ -60,8 +60,10 @@ import functools
 import itertools
 partial = functools.partial
 reduce = functools.reduce
+memoize = functools.lru_cache
 chain = itertools.chain
 slice = itertools.islice
+takewhile = itertools.takewhile
 @staticmethod
 def compose(f, g):
     """Composing (f..g)."""
@@ -132,6 +134,8 @@ r'''
 reduce = __coconut__.reduce
 zipwith = __coconut__.zipwith
 recursive = __coconut__.recursive
+takewhile = __coconut__.takewhile
+memoize = __coconut__.memoize
 ''',
 
 "bottom":

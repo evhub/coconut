@@ -58,7 +58,9 @@ Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes
     - lambda keyword: removed (use the lambda operator instead)
 - New built-ins:
     - right reduce: ``reduce``
-    - zip with function: ``zipwith``
+    - function zip: ``zipwith``
+    - iterator take while: ``takewhile``
+    - memoization: ``memoize``
     - tail recursion elimination: ``recursive``
 - New constructs: (planned)
     - operator [re]definition
