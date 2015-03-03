@@ -61,6 +61,7 @@ import itertools
 partial = functools.partial
 reduce = functools.reduce
 chain = itertools.chain
+slice = itertools.islice
 @staticmethod
 def compose(f, g):
     """Composing (f..g)."""
@@ -275,8 +276,30 @@ def item_proc(tokens):
         if isinstance(trailer, str):
             out += trailer
         elif len(trailer) == 2:
-            if trailer[0] == "$":
+            if trailer[0] == "$(":
                 out = "__coconut__.partial("+out+", "+trailer[1]+")"
+            elif trailer[0] == "$[":
+                if 0 < len(trailer[1]) <= 3:
+                    args = []
+                    for x in range(0, len(trailer[1])):
+                        arg = trailer[1][x]
+                        if not arg:
+                            if x == 0:
+                                arg = "0"
+                            elif x == 1:
+                                arg = "len("+out+")"
+                            elif x == 3:
+                                arg = "1"
+                        args.append(arg)
+                    if len(args) == 1:
+                        out = "__coconut__.slice("+out+", ("+out+")+1)[0]"
+                    else:
+                        out = "__coconut__.slice("+out
+                        for arg in args:
+                            out += ", "+arg
+                        out += ")"
+                else:
+                    raise CoconutException("invalid isplit args: "+repr(trailer[1]))
             elif trailer[0] == "..":
                 out = "__coconut__.compose("+out+", "+trailer[1]+")"
             else:
@@ -834,10 +857,14 @@ class processor(object):
     sliceop = condense(colon + slicetest)
     subscript = condense(slicetest + sliceop + Optional(sliceop)) | test
     subscriptlist = itemlist(subscript, comma)
+    slicetestgroup = Optional(test, default="")
+    sliceopgroup = colon.suppress() + slicetestgroup
+    subscriptgroup = Group(slicetestgroup + sliceopgroup + Optional(sliceopgroup) | test)
     simple_trailer = condense(lbrack + subscriptlist + rbrack) | condense(dot + NAME)
-    trailer = (Group(dollar + lparen.suppress() + callargslist + rparen.suppress())
+    trailer = (Group(condense(dollar + lparen) + callargslist + rparen.suppress())
                | condense(lparen + callargslist + rparen)
                | Group(dotdot + func_atom)
+               | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())
                | simple_trailer
                )
 
