@@ -53,7 +53,6 @@ import __coconut__
 "base":
 
 r'''
-class __coconut__(object):
 """Built-In Coconut Functions."""
 
 import operator
@@ -140,7 +139,7 @@ r'''
 
 def class_header(base):
     """Converts The Base Header To The Class Header"""
-    out = []
+    out = ["\nclass __coconut__(object):"]
     for line in base.splitlines():
         if line:
             line = "    "+line
@@ -153,7 +152,7 @@ def body_header(base):
     out = []
     for line in base.splitlines():
         fline = line.strip()
-        if fline != "@staticmethod" and not fline.startswith("class __coconut__"):
+        if fline != "@staticmethod":
             out.append(line)
     return "\n".join(out)
 headers["body"] = body_header(headers["base"])
