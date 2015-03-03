@@ -15,16 +15,16 @@ Enter in console::
 Command Line
 ------------
 
-usage::
+Usage::
 
   coconut [-h] [-v] [-s] [-r] [-i] [-d [level]] [-c code] [--autopep8 ...] [source] [dest]
 
-positional arguments::
+Positional Arguments::
 
   source                path to the coconut file/module to compile
   dest                  destination directory for compiled files (defaults to the source directory)
 
-optional arguments::
+Optional Arguments::
 
   -h, --help            show this help message and exit
   -v, --version         print coconut and python version information
