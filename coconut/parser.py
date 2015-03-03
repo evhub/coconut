@@ -228,7 +228,7 @@ r'''
 
 headers["class"] = "\nclass __coconut__(object):" + indent(headers["body"])
 
-headers["module"] = headers["top"] + headers["body"]
+headers["package"] = headers["top"] + headers["body"]
 headers["code"] = headers["top"] + headers["class"] + headers["funcs"]
 headers["file"] = headers["code"] + headers["bottom"]
 headers["module"] = headers["top"] + headers["import"] + headers["funcs"] + headers["bottom"]
