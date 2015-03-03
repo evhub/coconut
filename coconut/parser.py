@@ -50,9 +50,10 @@ _coconut_sys.path.append(_coconut_os_path.dirname(_coconut_os_path.abspath(__fil
 import __coconut__
 ''',
 
-"body":
+"base":
 
 r'''
+class __coconut__(object):
 """Built-In Coconut Functions."""
 
 import operator
@@ -137,19 +138,29 @@ r'''
 '''
 }
 
-def class_header(body):
-    """Converts The Body Header To The Class Header"""
-    out = ["\nclass __coconut__(object):"]
-    for line in body.splitlines():
-        if line.strip() != "@staticmethod":
-            if line:
-                line = "    "+line
+def class_header(base):
+    """Converts The Base Header To The Class Header"""
+    out = []
+    for line in base.splitlines():
+        if line:
+            line = "    "+line
+        out.append(line)
+    return "\n".join(out)
+headers["class"] = class_header(headers["base"])
+
+def body_header(base):
+    """Converts The Base Header To The Body Header"""
+    out = []
+    for line in base.splitlines()[]:
+        fline = line.strip()
+        if fline != "@staticmethod" and not fline.startswith("class __coconut__"):
             out.append(line)
     return "\n".join(out)
-headers["class"] = class_header(headers["body"])
+headers["body"] = body_header(headers["base"])
 
 headers["package"] = headers["top"] + headers["body"]
 headers["code"] = headers["top"] + headers["class"] + headers["funcs"]
+print(headers["code"])
 headers["file"] = headers["code"] + headers["bottom"]
 headers["module"] = headers["top"] + headers["import"] + headers["funcs"] + headers["bottom"]
 
