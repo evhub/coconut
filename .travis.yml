@@ -10,11 +10,12 @@ python:
 install:
   - pip install .
   - pip install autopep8
+  - git clone https://github.com/evhub/cocotest.git
+  - cd cocotest
 
 script:
   - coconut --version
-  - git clone https://github.com/evhub/cocotest.git
-  - cd cocotest
+  - coconut -c "print(__coconut__)"
   - coconut src build --strict --debug 2 --autopep8
   - python build/cocotest -tt
 
