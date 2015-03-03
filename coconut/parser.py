@@ -83,20 +83,24 @@ def pipe(*args):
 @staticmethod
 def zipwith(func, *args):
     """Functional Zipping."""
-    lists = list(args)
-    while lists:
-        new_lists = []
+    iters = []
+    for arg in args:
+        iters.append(iter(arg))
+    while iters:
+        new_iters = []
         items = []
-        for series in lists:
-            items.append(series[0])
-            series = series[1:]
-            if series:
-                new_lists.append(series)
+        for series in iters:
+            try:
+                items.append(next(series))
+            except StopIteration:
+                pass
+            else:
+                new_iters.append(series)
         if items:
             yield func(*items)
         else:
             break
-        lists = new_lists
+        iters = new_iters
 @staticmethod
 def recursive(func):
     """Tail Call Optimizer."""
