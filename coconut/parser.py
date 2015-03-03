@@ -316,7 +316,7 @@ def lambda_proc(tokens):
 def assign_proc(tokens):
     """Processes Assignments."""
     if len(tokens) == 3:
-        if tokens[1] == "|=>":
+        if tokens[1] == "|>=":
             return tokens[0]+" = __coconut__.pipe("+tokens[0]+", ("+tokens[2]+"))"
         elif tokens[1] == "..=":
             return tokens[0]+" = __coconut__.compose("+tokens[0]+", ("+tokens[2]+"))"
@@ -663,7 +663,7 @@ class processor(object):
     rparen = Literal(")")
     at = Literal("@")
     arrow = fixto(Literal("->") | Literal("\u2192"), "->")
-    heavy_arrow = fixto(Literal("|=>") | Literal("\u21d2"), "|=>")
+    heavy_arrow = fixto(Literal("|>=") | Literal("\u21d2"), "|>=")
     dubcolon = Literal("::")
     colon = fixto(~dubcolon+Literal(":"), ":")
     semicolon = Literal(";")
