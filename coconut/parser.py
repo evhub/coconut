@@ -293,7 +293,8 @@ def item_proc(tokens):
                         args.append(arg)
                     out = "__coconut__.slice("+out
                     if len(args) == 1:
-                        out += ", "+args[0]+", ("+args[0]+")+1)[0]"
+                        out += ", "+args[0]+", ("+args[0]+")+1)"
+                        out = "next("+out+")"
                     else:
                         for arg in args:
                             out += ", "+arg
