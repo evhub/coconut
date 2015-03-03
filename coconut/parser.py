@@ -151,7 +151,7 @@ headers["class"] = class_header(headers["base"])
 def body_header(base):
     """Converts The Base Header To The Body Header"""
     out = []
-    for line in base.splitlines()[]:
+    for line in base.splitlines():
         fline = line.strip()
         if fline != "@staticmethod" and not fline.startswith("class __coconut__"):
             out.append(line)
@@ -160,7 +160,6 @@ headers["body"] = body_header(headers["base"])
 
 headers["package"] = headers["top"] + headers["body"]
 headers["code"] = headers["top"] + headers["class"] + headers["funcs"]
-print(headers["code"])
 headers["file"] = headers["code"] + headers["bottom"]
 headers["module"] = headers["top"] + headers["import"] + headers["funcs"] + headers["bottom"]
 
