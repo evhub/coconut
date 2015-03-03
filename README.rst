@@ -3,6 +3,8 @@ Coconut
 
 Coconut is a simple, modern, developer-friendly scripting language that compiles to Python, built for functional programming.
 
+.. image:: https://travis-ci.org/evhub/coconut.svg?branch=master
+
 Installation
 ------------
 
