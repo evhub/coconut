@@ -205,7 +205,7 @@ def recursive(func):
     return _tailed
 ''',
 
-"class:"
+"class":
 
 r'''
 class __coconut__(object):
