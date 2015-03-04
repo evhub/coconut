@@ -34,7 +34,7 @@ class executor(object):
         if extras is not None:
             for k,v in extras.items():
                 self.variables[k] = v
-    def run(__self, __code, __error=print_error):
+    def run(__self, __code, __error=False):
         """Executes Python Code."""
         __globals = globals().copy()
         __locals = locals().copy()
@@ -43,7 +43,10 @@ class executor(object):
         try:
             exec(__code)
         except Exception:
-            __error()
+            if __error:
+                raise
+            else:
+                print_error()
         __overrides = {}
         for __k, __v in list(globals().items()):
             if __k in __self.variables:
@@ -123,7 +126,7 @@ class cli(object):
         if args.autopep8 is not None:
             self.processor.autopep8(args.autopep8)
         if args.code is not None:
-            self.execute(self.processor.parse_single(args.code[0]))
+            self.execute(self.processor.parse_single(args.code[0]), True)
         if args.source is not None:
             if args.run:
                 if args.dest is not None:
@@ -198,7 +201,7 @@ class cli(object):
         else:
             raise parser.CoconutException("invalid value for module boolean of "+repr(module))
         if destfilename is None:
-            self.execute(compiled)
+            self.execute(compiled, True)
         else:
             destfilename = os.path.abspath(destfilename)
             destdir = os.path.dirname(destfilename)
@@ -241,14 +244,14 @@ class cli(object):
                 return print_error()
         return compiled
 
-    def execute(self, compiled=None):
+    def execute(self, compiled=None, error=False):
         """Executes Compiled Code."""
         if self.runner is None:
             self.start_runner()
         if compiled is not None:
             if self.debug:
                 self.console.debug("Executing "+repr(compiled)+"...")
-            self.runner.run(compiled)
+            self.runner.run(compiled, error)
 
     def start_runner(self):
         """Starts The Runner."""

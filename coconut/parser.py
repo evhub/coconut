@@ -54,7 +54,7 @@ import __coconut__
 
 r'''
 class __coconut__(object):
-"""Built-In Coconut Functions."""
+    """Built-In Coconut Functions."""
     import operator
     import functools
     partial = functools.partial
