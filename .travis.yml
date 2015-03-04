@@ -19,8 +19,6 @@ script:
   - coconut src/cocotest build/cocotest --strict --debug 2 --autopep8
   - coconut src/runner.coc build --strict --debug 2 --autopep8
   - python build/runner.py -tt -vv
-  - cp src/runner.coc build
-  - coconut src/runner.coc --run --strict --debug 2 --autopep8
 
 notifications:
   email: false
