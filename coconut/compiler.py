@@ -131,7 +131,7 @@ class cli(object):
             if args.run:
                 if args.dest is not None:
                     raise parser.CoconutException("a destination cannot be given when --run is enabled")
-                elif not os.isfile(args.source):
+                elif not os.path.isfile(args.source):
                     raise parser.CoconutException("the source path must point to a file when --run is enabled")
                 else:
                     self.compile_file(args.source, None, None)
