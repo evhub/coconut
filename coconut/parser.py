@@ -987,7 +987,7 @@ class processor(object):
     suite = Forward()
 
     argument = condense(NAME + equals + test) | addspace(NAME + Optional(comp_for))
-    classdef = condense(addspace(Keyword("class") + NAME) + Optional(condense(lparen + testlist + rparen)) + suite)
+    classdef = condense(addspace(Keyword("class") + NAME) + Optional(condense(lparen + Optional(testlist) + rparen)) + suite)
     comp_iter = Forward()
     comp_for <<= addspace(Keyword("for") + exprlist + Keyword("in") + test_item + Optional(comp_iter))
     comp_if = addspace(Keyword("if") + test_nocond + Optional(comp_iter))
