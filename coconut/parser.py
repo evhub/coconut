@@ -50,38 +50,116 @@ _coconut_sys.path.append(_coconut_os_path.dirname(_coconut_os_path.abspath(__fil
 import __coconut__
 ''',
 
-"base":
+"class":
+
+r'''
+class __coconut__(object):
+"""Built-In Coconut Functions."""
+    import operator
+    import functools
+    partial = functools.partial
+    reduce = functools.reduce
+    import itertools
+    chain = itertools.chain
+    slice = itertools.islice
+    takewhile = itertools.takewhile
+    import collections
+    data = staticmethod(collections.namedtuple)
+    @staticmethod
+    def compose(f, g):
+        """Composing (f..g)."""
+        def _composed(*args, **kwargs):
+            """Function Composition Wrapper."""
+            return f(g(*args, **kwargs))
+        return _composed
+    @staticmethod
+    def infix(a, func, b):
+        """Infix Calling (5 `mod` 6)."""
+        return func(a, b)
+    @staticmethod
+    def pipe(*args):
+        """Pipelining (x |> func)."""
+        out = args[0]
+        for func in args[1:]:
+            out = func(out)
+        return out
+    @staticmethod
+    def zipwith(func, *args):
+        """Functional Zipping."""
+        iters = []
+        for arg in args:
+            iters.append(iter(arg))
+        while iters:
+            new_iters = []
+            items = []
+            for series in iters:
+                try:
+                    items.append(next(series))
+                except StopIteration:
+                    pass
+                else:
+                    new_iters.append(series)
+            if items:
+                yield func(*items)
+            else:
+                break
+            iters = new_iters
+    @staticmethod
+    def recursive(func):
+        """Tail Call Optimizer."""
+        state = [True, None]
+        recurse = object()
+        def _tailed(*args, **kwargs):
+            """Tail Recursion Wrapper."""
+            if state[0]:
+                state[0] = False
+                try:
+                    while True:
+                        result = func(*args, **kwargs)
+                        if result is recurse:
+                            args, kwargs = state[1]
+                            state[1] = None
+                        else:
+                            return result
+                finally:
+                    state[0] = True
+            else:
+                state[1] = args, kwargs
+                return recurse
+        return _tailed
+''',
+
+"body":
 
 r'''
 """Built-In Coconut Functions."""
 
 import operator
 import functools
-import itertools
 partial = functools.partial
 reduce = functools.reduce
+import itertools
 chain = itertools.chain
 slice = itertools.islice
 takewhile = itertools.takewhile
-@staticmethod
+import collections
+data = collections.namedtuple
+
 def compose(f, g):
     """Composing (f..g)."""
     def _composed(*args, **kwargs):
         """Function Composition Wrapper."""
         return f(g(*args, **kwargs))
     return _composed
-@staticmethod
 def infix(a, func, b):
     """Infix Calling (5 `mod` 6)."""
     return func(a, b)
-@staticmethod
 def pipe(*args):
     """Pipelining (x |> func)."""
     out = args[0]
     for func in args[1:]:
         out = func(out)
     return out
-@staticmethod
 def zipwith(func, *args):
     """Functional Zipping."""
     iters = []
@@ -102,7 +180,6 @@ def zipwith(func, *args):
         else:
             break
         iters = new_iters
-@staticmethod
 def recursive(func):
     """Tail Call Optimizer."""
     state = [True, None]
@@ -132,8 +209,8 @@ def recursive(func):
 r'''
 reduce = __coconut__.reduce
 zipwith = __coconut__.zipwith
-recursive = __coconut__.recursive
 takewhile = __coconut__.takewhile
+recursive = __coconut__.recursive
 ''',
 
 "bottom":
@@ -143,26 +220,6 @@ r'''
 
 '''
 }
-
-def class_header(base):
-    """Converts The Base Header To The Class Header"""
-    out = ["\nclass __coconut__(object):"]
-    for line in base.splitlines():
-        if line:
-            line = "    "+line
-        out.append(line)
-    return "\n".join(out)
-headers["class"] = class_header(headers["base"])
-
-def body_header(base):
-    """Converts The Base Header To The Body Header"""
-    out = []
-    for line in base.splitlines():
-        fline = line.strip()
-        if fline != "@staticmethod":
-            out.append(line)
-    return "\n".join(out)
-headers["body"] = body_header(headers["base"])
 
 headers["package"] = headers["top"] + headers["body"]
 headers["code"] = headers["top"] + headers["class"] + headers["funcs"]
@@ -363,6 +420,13 @@ def func_proc(tokens):
         return "def "+tokens[0]+": return "+tokens[1]
     else:
         raise CoconutException("invalid mathematical function definition tokens: "+repr(tokens))
+
+def data_proc(tokens):
+    """Processes Data Blocks."""
+    if len(tokens) == 2:
+        return "class "+tokens[0]+"(__coconut__.data('"+tokens[0]+"', '"+tokens[1]+"'))"
+    else:
+        raise CoconutException("invalid data tokens: "+repr(tokens))
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # PARSER:
@@ -923,7 +987,7 @@ class processor(object):
     suite = Forward()
 
     argument = condense(NAME + equals + test) | addspace(NAME + Optional(comp_for))
-    classdef = condense(addspace(Keyword("class") + NAME) + Optional(parameters) + suite)
+    classdef = condense(addspace(Keyword("class") + NAME) + Optional(condense(lparen + testlist + rparen)) + suite)
     comp_iter = Forward()
     comp_for <<= addspace(Keyword("for") + exprlist + Keyword("in") + test_item + Optional(comp_iter))
     comp_if = addspace(Keyword("if") + test_nocond + Optional(comp_iter))
@@ -969,13 +1033,16 @@ class processor(object):
         ))
     with_stmt = addspace(Keyword("with") + condense(parenwrap(lparen, itemlist(with_item, comma), rparen) + suite))
 
-    decorator = condense(at + test + NEWLINE)
-    decorators = OneOrMore(decorator)
     base_funcdef = addspace(condense(NAME + parameters) + Optional(arrow + test))
     funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
-    decorated = condense(decorators + (classdef | funcdef))
 
-    compound_stmt = trace(if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated, "compound_stmt")
+    datadef = condense(attach(Keyword("data").suppress() + NAME + lparen.suppress() + itemlist(NAME, comma) + rparen.suppress(), data_proc) + suite)
+
+    decorator = condense(at + test + NEWLINE)
+    decorators = OneOrMore(decorator)
+    decorated = condense(decorators + (classdef | funcdef | datadef))
+
+    compound_stmt = trace(if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | datadef | decorated, "compound_stmt")
 
     expr_stmt = trace(addspace(attach(assignlist + augassign + (yield_expr | testlist), assign_proc)
                          | attach(base_funcdef + equals.suppress() + (yield_expr | testlist_star_expr), func_proc)
