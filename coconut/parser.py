@@ -34,7 +34,6 @@ r'''#!/usr/bin/env python
 # Coconut Header: --------------------------------------------------------------
 
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
-
 try:
     from future_builtins import *
 except ImportError:
