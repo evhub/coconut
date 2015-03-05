@@ -83,27 +83,6 @@ class __coconut__(object):
             out = func(out)
         return out
     @staticmethod
-    def zipwith(func, *args):
-        """Functional Zipping."""
-        iters = []
-        for arg in args:
-            iters.append(iter(arg))
-        while iters:
-            new_iters = []
-            items = []
-            for series in iters:
-                try:
-                    items.append(next(series))
-                except StopIteration:
-                    pass
-                else:
-                    new_iters.append(series)
-            if items:
-                yield func(*items)
-            else:
-                break
-            iters = new_iters
-    @staticmethod
     def recursive(func):
         """Tail Call Optimizer."""
         state = [True, None]
@@ -134,13 +113,16 @@ r'''
 """Built-In Coconut Functions."""
 
 import operator
+
 import functools
 partial = functools.partial
 reduce = functools.reduce
+
 import itertools
 chain = itertools.chain
 slice = itertools.islice
 takewhile = itertools.takewhile
+
 import collections
 data = collections.namedtuple
 
@@ -150,35 +132,18 @@ def compose(f, g):
         """Function Composition Wrapper."""
         return f(g(*args, **kwargs))
     return _composed
+
 def infix(a, func, b):
     """Infix Calling (5 `mod` 6)."""
     return func(a, b)
+
 def pipe(*args):
     """Pipelining (x |> func)."""
     out = args[0]
     for func in args[1:]:
         out = func(out)
     return out
-def zipwith(func, *args):
-    """Functional Zipping."""
-    iters = []
-    for arg in args:
-        iters.append(iter(arg))
-    while iters:
-        new_iters = []
-        items = []
-        for series in iters:
-            try:
-                items.append(next(series))
-            except StopIteration:
-                pass
-            else:
-                new_iters.append(series)
-        if items:
-            yield func(*items)
-        else:
-            break
-        iters = new_iters
+
 def recursive(func):
     """Tail Call Optimizer."""
     state = [True, None]
@@ -207,7 +172,6 @@ def recursive(func):
 
 r'''
 reduce = __coconut__.reduce
-zipwith = __coconut__.zipwith
 takewhile = __coconut__.takewhile
 recursive = __coconut__.recursive
 ''',
