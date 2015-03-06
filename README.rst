@@ -46,7 +46,7 @@ Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes
 - New operators:
     - lambda: ``->``
     - compose: ``..`` (in-place: ``..=``)
-    - pipeline: ``|>`` (in-place: ``|>=``)
+    - pipe forward: ``|>`` (in-place: ``|>=``)
     - chain: ``::`` (in-place: ``::=``)
     - partial and islice: ``$``
 - New syntax:
