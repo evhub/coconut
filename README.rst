@@ -47,14 +47,14 @@ Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes
     - compose: ``..`` (in-place: ``..=``)
     - pipeline: ``|>`` (in-place: ``|>=``)
     - chain: ``::`` (in-place: ``::=``)
-    - partial/islice: ``$``
+    - partial and islice: ``$``
 - New syntax:
     - infix function calling: new ``6 `mod` 3`` syntax
     - operator functions: new ``(+)`` syntax
     - function definition: alternative ``f(x) = x`` syntax
     - non-decimal integers: alternative ``10110_2`` syntax
 - New blocks:
-    - immutable named tuples: ``data``
+    - immutable named-tuple-derived classes: ``data``
 - Changed syntax:
     - unicode symbols: supports unicode alternatives for most symbols
     - lambda keyword: removed (use the lambda operator instead)
