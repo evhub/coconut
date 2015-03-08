@@ -374,7 +374,9 @@ def pipe_proc(tokens):
 
 def lambda_proc(tokens):
     """Processes Lambda Calls."""
-    if len(tokens) == 2:
+    if len(tokens) == 1:
+        return "lambda: "+tokens[0]
+    elif len(tokens) == 2:
         return "lambda "+tokens[0]+": "+tokens[1]
     else:
         raise CoconutException("invalid lambda tokens: "+repr(tokens))
@@ -772,7 +774,41 @@ class processor(object):
     div_slash = fixto((slash | Literal("\xf7"))+~slash, "/")
     div_dubslash = fixto(dubslash | Combine(Literal("\xf7")+slash), "//")
 
-    NAME = Regex("(?![0-9])\\w+")
+    NAME = (~Keyword("False")
+            + ~Keyword("None")
+            + ~Keyword("True")
+            + ~Keyword("and")
+            + ~Keyword("as")
+            + ~Keyword("assert")
+            + ~Keyword("break")
+            + ~Keyword("class")
+            + ~Keyword("continue")
+            + ~Keyword("def")
+            + ~Keyword("del")
+            + ~Keyword("elif")
+            + ~Keyword("else")
+            + ~Keyword("except")
+            + ~Keyword("finally")
+            + ~Keyword("for")
+            + ~Keyword("from")
+            + ~Keyword("global")
+            + ~Keyword("if")
+            + ~Keyword("import")
+            + ~Keyword("in")
+            + ~Keyword("is")
+            + ~Keyword("lambda")
+            + ~Keyword("nonlocal")
+            + ~Keyword("not")
+            + ~Keyword("or")
+            + ~Keyword("pass")
+            + ~Keyword("raise")
+            + ~Keyword("return")
+            + ~Keyword("try")
+            + ~Keyword("while")
+            + ~Keyword("with")
+            + ~Keyword("yield")
+            + Regex("(?![0-9])\\w+")
+            )
     dotted_name = condense(NAME + ZeroOrMore(dot + NAME))
 
     integer = Word(nums)
@@ -781,7 +817,7 @@ class processor(object):
     hexint = Word(hexnums)
     anyint = Word(nums, alphanums)
 
-    basenum = Combine(integer + dot + Optional(integer)) | integer
+    basenum = Combine(integer + dot + Optional(integer) | Optional(integer) + dot + integer) | integer
     sci_e = CaselessLiteral("e") | fixto(Literal("\u23e8"), "E")
     numitem = Combine(basenum + sci_e + integer) | basenum
 
