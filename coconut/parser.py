@@ -65,6 +65,14 @@ class __coconut__(object):
     import collections
     data = staticmethod(collections.namedtuple)
     @staticmethod
+    def bool_and(a, b):
+        """Boolean And Operator Function."""
+        return a and b
+    @staticmethod
+    def bool_or(a, b):
+        """Boolean Or Operator Function."""
+        return a or b
+    @staticmethod
     def compose(f, g):
         """Composing (f..g)."""
         def _composed(*args, **kwargs):
@@ -125,6 +133,14 @@ takewhile = itertools.takewhile
 
 import collections
 data = collections.namedtuple
+
+def bool_and(a, b):
+    """Boolean And Operator Function."""
+    return a and b
+
+def bool_or(a, b):
+    """Boolean Or Operator Function."""
+    return a or b
 
 def compose(f, g):
     """Composing (f..g)."""
@@ -875,6 +891,10 @@ class processor(object):
         | fixto(ge, "__coconut__.operator.__ge__")
         | fixto(ne, "__coconut__.operator.__ne__")
         | fixto(tilde, "__coconut__.operator.__inv__")
+        | fixto(Keyword("not"), "__coconut__.operator.__not__")
+        | fixto(Keyword("is"), "__coconut__.operator.is_")
+        | fixto(Keyword("and"), "__coconut__.bool_and")
+        | fixto(Keyword("or"), "__coconut__.bool_or")
         ) + rparen
 
     func_atom = NAME | op_atom | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
