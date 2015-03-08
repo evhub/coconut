@@ -309,7 +309,7 @@ def list_proc(tokens):
 
 def itemlist(item, sep):
     """Creates A List Containing An Item."""
-    return attach(item + ZeroOrMore(sep + item) + Optional(sep).suppress(), list_proc)
+    return attach(item + ZeroOrMore(sep + item) + Optional(sep), list_proc)
 
 def item_proc(tokens):
     """Processes Items."""
