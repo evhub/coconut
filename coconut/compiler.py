@@ -81,7 +81,7 @@ class cli(object):
     commandline.add_argument("-s", "--strict", action="store_const", const=True, default=False, help="enforce code cleanliness standards")
     commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run the compiled source instead of writing it")
     commandline.add_argument("-i", "--interact", action="store_const", const=True, default=False, help="force the interpreter to start (otherwise starts if no other command is given)")
-    commandline.add_argument("-d", "--debug", metavar="level", type=int, nargs="?", default=0, const=1, help="enable debug output (level: 0 is off, no arg defaults to 1, max is "+str(max_debug)+")")
+    commandline.add_argument("-d", "--debug", metavar="level", type=int, nargs="?", default=0, const=1, help="enable debug output (0 is off, no arg defaults to 1, max is "+str(max_debug)+")")
     commandline.add_argument("-c", "--code", metavar="code", type=str, nargs=1, default=None, help="run a line of coconut passed in as a string")
     commandline.add_argument("--autopep8", type=str, nargs=argparse.REMAINDER, default=None, help="use autopep8 to format compiled code (remaining args passed to autopep8)")
     processor = None
