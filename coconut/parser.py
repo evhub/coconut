@@ -592,20 +592,20 @@ class processor(object):
                     raise CoconutException("[strict] found trailing whitespace in "+repr(line))
                 else:
                     line = line.rstrip()
+            if new:
+                last = new[-1].split(self.startcomment, 1)[0].rstrip()
+            else:
+                last = None
             if not line or line.lstrip().startswith(self.startcomment):
                 if count >= 0:
                     new.append(line)
-            elif new and new[-1].endswith("\\"):
+            elif last is not None and last.endswith("\\"):
                 if self.strict:
                     raise CoconutException("[strict] found backslash continuation in "+repr(line))
-                elif self.startcomment in new[-1]:
-                    raise CoconutException("comment ends with backslash in "+repr(line))
                 else:
-                    new[-1] = new[-1][:-1]+" "+line
+                    new[-1] = last[:-1]+" "+line
             elif count < 0:
-                if self.startcomment in new[-1]:
-                    new[-1] = new[-1].split(self.startcomment, 1)[0]
-                new[-1] += " "+line
+                new[-1] = last+" "+line
             else:
                 check = self.leading(line)
                 if current is None:
