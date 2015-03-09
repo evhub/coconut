@@ -587,44 +587,45 @@ class processor(object):
         count = 0
         current = None
         for line in lines:
+            if line and line[-1] in self.white:
+                if self.strict:
+                    raise CoconutException("[strict] found trailing whitespace in "+repr(line))
+                else:
+                    line = line.rstrip()
             if not line or line.lstrip().startswith(self.startcomment):
                 if count >= 0:
                     new.append(line)
-            else:
-                if line[-1] in self.white:
-                    if self.strict:
-                        raise CoconutException("[strict] found trailing whitespace in "+repr(line))
-                    else:
-                        line = line.rstrip()
-                if new[-1].endswith("\\"):
-                    if self.strict:
-                        raise CoconutException("[strict] found backslash continuation in "+repr(line))
-                    else:
-                        new[-1] = new[-1][:-1]+" "+line
-                elif count < 0:
-                    if self.startcomment in new[-1]:
-                        new[-1] = new[-1].split(self.startcomment, 1)[0]
-                    new[-1] += " "+line
+            elif new and new[-1].endswith("\\"):
+                if self.strict:
+                    raise CoconutException("[strict] found backslash continuation in "+repr(line))
+                elif self.startcomment in new[-1]:
+                    raise CoconutException("comment ends with backslash in "+repr(line))
                 else:
-                    check = self.leading(line)
-                    if current is None:
-                        if check:
-                            raise CoconutException("illegal initial indent in "+repr(line))
-                        else:
-                            current = 0
-                    elif check > current:
-                        levels.append(current)
-                        current = check
-                        line = self.openstr+line
-                    elif check in levels:
-                        point = levels.index(check)+1
-                        line = self.closestr*(len(levels[point:])+1)+line
-                        levels = levels[:point]
-                        current = levels.pop()
-                    elif current != check:
-                        raise CoconutException("illegal dedent to unused indentation level in "+repr(line))
-                    new.append(line)
-                count += self.change(line)
+                    new[-1] = new[-1][:-1]+" "+line
+            elif count < 0:
+                if self.startcomment in new[-1]:
+                    new[-1] = new[-1].split(self.startcomment, 1)[0]
+                new[-1] += " "+line
+            else:
+                check = self.leading(line)
+                if current is None:
+                    if check:
+                        raise CoconutException("illegal initial indent in "+repr(line))
+                    else:
+                        current = 0
+                elif check > current:
+                    levels.append(current)
+                    current = check
+                    line = self.openstr+line
+                elif check in levels:
+                    point = levels.index(check)+1
+                    line = self.closestr*(len(levels[point:])+1)+line
+                    levels = levels[:point]
+                    current = levels.pop()
+                elif current != check:
+                    raise CoconutException("illegal dedent to unused indentation level in "+repr(line))
+                new.append(line)
+            count += self.change(line)
         if count != 0:
             raise CoconutException("unclosed parenthetical in "+repr(new[-1]))
         new.append(self.closestr*len(levels))
