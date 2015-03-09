@@ -1033,7 +1033,7 @@ class processor(object):
     namelist = parenwrap(lparen, itemlist(NAME, comma), rparen)
     global_stmt = addspace(Keyword("global") + namelist)
     nonlocal_stmt = addspace(Keyword("nonlocal") + namelist)
-    del_stmt = addspace(Keyword("del") + namelist)
+    del_stmt = addspace(Keyword("del") + assignlist)
     with_item = addspace(test + Optional(Keyword("as") + NAME))
     assert_stmt = addspace(Keyword("assert") + parenwrap(lparen, testlist, rparen))
     else_stmt = condense(Keyword("else") + suite)
