@@ -31,7 +31,7 @@ Optional Arguments::
   -s, --strict          enforce code cleanliness standards
   -r, --run             run the compiled source instead of writing it
   -i, --interact        force the interpreter to start (otherwise starts if no other command is given)
-  -d, --debug           enable debug output (level: 0 is off, no arg defaults to 1, max is 2)
+  -d, --debug           enable debug output (0 is off, no arg defaults to 1, max is 2)
   -c, --code            run a line of coconut passed in as a string
   --autopep8            use autopep8 to format compiled code (remaining args passed to autopep8)
 
