@@ -596,12 +596,14 @@ class processor(object):
                         raise CoconutException("[strict] found trailing whitespace in "+repr(line))
                     else:
                         line = line.rstrip()
-                if line.endswith("\\"):
+                if new[-1].endswith("\\"):
                     if self.strict:
                         raise CoconutException("[strict] found backslash continuation in "+repr(line))
                     else:
-                        new[-1] += " "+line[:-1]
+                        new[-1] = new[-1][:-1]+" "+line
                 elif count < 0:
+                    if self.startcomment in new[-1]:
+                        new[-1] = new[-1].split(self.startcomment, 1)[0]
                     new[-1] += " "+line
                 else:
                     check = self.leading(line)
