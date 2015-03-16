@@ -1,9 +1,10 @@
 Coconut
 =======
 
-Coconut_ is a simple, modern, developer-friendly scripting language that compiles to Python, built for functional programming.
+Coconut is a simple, modern, developer-friendly scripting language that compiles to Python, built for functional programming. Coconut can be found on: GitHub_, PyPI_.
 
-.. _Coconut: https://github.com/evhub/coconut
+.. _GitHub: https://github.com/evhub/coconut
+.. _PyPI: https://pypi.python.org/pypi/coconut
 
 Installation
 ------------
@@ -35,8 +36,8 @@ Optional Arguments::
   -c, --code            run a line of coconut passed in as a string
   --autopep8            use autopep8 to format compiled code (remaining args passed to autopep8)
 
-Syntax
-------
+Overview
+--------
 
 Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes significant changes from Python 3 syntax, however:
 
@@ -63,3 +64,8 @@ Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes
 - New constructs: (planned)
     - operator [re]definition
     - pattern matching
+
+Tutorial
+--------
+
+A full introduction and tutorial of the Coconut progamming language can be found [here](https://github.com/evhub/coconut/blob/master/TUTORIAL.md).
