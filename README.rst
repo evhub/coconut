@@ -1,7 +1,7 @@
 Coconut
 =======
 
-*Coconut is a simple, modern, developer-friendly scripting language that compiles to Python, built for functional programming.*
+*Coconut is a simple, elegant variant of Python built for functional programming.*
 
 Coconut can be found on GitHub_ and PyPI_.
 
