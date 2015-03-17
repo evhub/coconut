@@ -57,13 +57,13 @@ Open `tutorial.py` and look inside. You should see two sections, `Coconut Header
 
 ### 5. Understanding Compiled Folders
 
-You might notice that the `Coconut Header` section in `tutorial.py` is rather large. This is because that section contains all the code necessary to set up the Coconut environment. Because Coconut needs to set up that environment in every file, it puts a header at the top.
+You might have noticed that the `Coconut Header` section in `tutorial.py` is rather large. This is because that section contains all the code necessary to set up the Coconut environment. Because Coconut needs to set up that environment in every file, it puts a header at the top.
 
 It would be terribly innefficient, however, if Coconut put that entire header in every file of a module (or other folder of files that are intended to stay together). Instead, Coconut puts all of that code in a `__coconut__.py` file in each folder directory.
 
 ### 6. Compile a Folder!
 
-To compile a module (or folder) this way, simply call the `coconut` command with the module (or folder) directory as the first argument. Go ahead and try it, like so:
+To compile a module (or folder) this way, simply call the `coconut` command with the module (or folder) directory as the first argument. Go ahead and try it on the `tutorial.coc` directory:
 ```
 coconut <tutorial.coc directory>
 cd <tutorial.coc directory>

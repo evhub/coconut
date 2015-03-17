@@ -68,6 +68,6 @@ Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes
 Tutorial
 --------
 
-A full introduction and tutorial of the Coconut progamming language can be found in TUTORIAL_.
+A full introduction and tutorial of the Coconut progamming language can be found in the HELP_ file.
 
-.. _TUTORIAL: https://github.com/evhub/coconut/blob/master/TUTORIAL.md
+.. _HELP: https://github.com/evhub/coconut/blob/master/HELP.md
