@@ -1,5 +1,8 @@
-Command Line
-------------
+# Coconut Documentation
+
+This documentation will cover all the technical details of the [Coconut](https://github.com/evhub/coconut) programming language. This documentation is not intended as a tutorialized introduction, only a technical specification. For a full introduction and tutorial of the Coconut programming language see the [HELP](https://github.com/evhub/coconut/blob/master/HELP.md) file.
+
+## I. Command Line
 
 Usage:
 ```
@@ -24,8 +27,7 @@ Optional Arguments:
 --autopep8            use autopep8 to format compiled code (remaining args passed to autopep8)
 ```
 
-Syntax
-------
+## II. Syntax Overview
 
 Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes significant changes from Python 3 syntax, however:
 
@@ -36,7 +38,7 @@ Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes
     - chain: `::` (in-place: `::=`)
     - partial and islice: `$`
 - New syntax:
-    - infix function calling: new `6 `mod` 3` syntax
+    - infix function calling: new ``6 `mod` 3`` syntax
     - operator functions: new `(+)` syntax
     - function definition: alternative `f(x) = x` syntax
     - non-decimal integers: alternative `10110_2` syntax
