@@ -1,7 +1,13 @@
 Coconut
 =======
 
-Coconut is a simple, modern, developer-friendly scripting language that compiles to Python, built for functional programming. Coconut can be found on GitHub_ and PyPI_. A full introduction and tutorial of the Coconut programming language can be found in the HELP_ file. The full Coconut documentation can be found in the DOCS_ file.
+Coconut is a simple, modern, developer-friendly scripting language that compiles to Python, built for functional programming.
+
+Coconut can be found on GitHub_ and PyPI_.
+
+A full introduction and tutorial of the Coconut programming language can be found in the HELP_ file.
+
+he full Coconut documentation can be found in the DOCS_ file.
 
 .. _GitHub: https://github.com/evhub/coconut
 .. _PyPI: https://pypi.python.org/pypi/coconut
