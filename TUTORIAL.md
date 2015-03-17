@@ -16,7 +16,7 @@ To test that `coconut` is working, make sure the Coconut help appears when you e
 coconut -h
 ```
 
-_If the `pip` or `coconut` commands aren't working for you, try prefixing them with `python -m`, like so:_
+_Note: If the `pip` or `coconut` commands aren't working for you, try prefixing them with `python -m`, like so:_
 ```
 python -m pip install coconut
 python -m coconut -h
@@ -73,6 +73,11 @@ python tutorial.py
 If everything is working properly, you should see exactly the same output as before.
 
 If you now go into the `tutorial.coc` directory, however, you should see a new file, `__coconut__.py`, which contains the header from earlier in non-class form, and if you now open the `tutorial.py` file, you should see a significantly shortened header that imports the larger header file.
+
+_Note: When compiling modules, one will often want to compile to a different location than the source. To accomplish this, simply pass the destination directory as the second argument to `coconut`, like so:_
+```
+coconut <source directory> <destination directory>
+```
 
 ## II. Functions
 
