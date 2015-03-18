@@ -81,6 +81,14 @@ coconut <source directory> <destination directory>
 
 ## II. Functions
 
+### 1. Lambdas
+
+Now that you've gotten your feet wet with a simple `hello, world!` program, but before we delve into the special things Coconut can do that Python can't, we should cover the one exception to the rule of Coconut being a strict superset of Python: lambdas.
+
 ## III. Iterators
 
 ## IV. Values
+
+## V. Further Reading
+
+This tutorial was too short to be able to fully cover all the features provided by the Coconut programming language. For the full documentation, see the [DOCS](https://github.com/evhub/coconut/blob/master/DOCS.md) file.
