@@ -114,13 +114,13 @@ Coconut uses Haskell-style operator function short-hand, where the operator plac
 
 Coconut:
 ```
-map((/), divlist)
+divprod = reduce((/), divlist)
 ```
 
 Python:
 ```
 import operator
-map(operator.__div__, divlist)
+divprod = reduce(operator.__div__, divlist)
 ```
 
 ### Non-Decimal Integers
@@ -166,22 +166,163 @@ Python supports unicode alternatives to many different symbols. The full list of
 
 ### Compose
 
+Coconut uses the `..` operator for function composition.
+
+#### Example
+
+Coconut:
+```
+fog = f..g
+```
+
+Python:
+```
+fog = lambda *args, **kwargs: f(g(*args, **kwargs))
+```
+
 ### Pipe Forward
+
+Coconut uses the FSharp-style pipe forward operator `|>` for reverse function application.
+
+#### Example
+
+Coconut:
+```
+ans = 5 |> f |> g
+```
+
+Python:
+```
+ans = g(f(5))
+```
 
 ### Chain
 
+Coconut uses the FSharp-style concatenation operator `::` for iterator chaining.
+
+#### Example
+
+Coconut:
+```
+combined = range(0,5) :: range(10,15)
+```
+
+Python:
+```
+import itertools
+combined = itertools.chain(range(0,5), range(10,15))
+```
+
 ### Partial
 
+Coconut uses a `$` sign right after a function before a function call to perform partial application.
+
+#### Example
+
+Coconut:
+```
+root2 = sqrt$(2)
+```
+
+Python:
+```
+import functools
+root2 = functools.partial(sqrt, 2)
+```
+
 ### iSlice
+
+Coconut uses a `$` sign right after an iterator before a slice to perform iterator slicing.
+
+#### Example
+
+Coconut:
+```
+selection = map(f, iteritem)$[5:10]
+```
+
+Python:
+```
+import itertools
+selection = itertools.islice(map(f, iteritem), 5, 10)
+```
 
 ## IV. Built-Ins
 
 ### `reduce`
 
+Coconut re-introduces Python 2's `reduce` built-in, using the `functools.reduce` version.
+
+#### Example
+
+Coconut:
+```
+expfold = reduce((**), explist)
+```
+
+Python:
+```
+import functools
+expfold = functools.reduce(operator.__pow__, explist)
+```
+
 ### `takewhile`
 
+Coconut provides `functools.takewhile` as a built-in under the name `takewhile`.
+
+#### Example
+
+Coconut:
+```
+positives = takewhile(numiter, (x) -> x>0)
+```
+
+Python:
+```
+import functools
+positives = functools.takewhile(numiter, lambda x: x>0)
+```
+
 ### `recursive`
+
+Coconut provides a `recursive` decorator to perform tail recursion optimization on a function written in a tail-recursive style.
+
+#### Example
+
+Coconut:
+```
+@recursive
+def collatz(n):
+    if n == 1:
+        return True
+    elif n%2 == 0:
+        return collatz(n/2)
+    else:
+        return collatz(3*n+1)
+```
+
+Python:
+_Can't be done without a long decorator definition. The full definition of the decorator in Python can be found in the Coconut header._
 
 ## V. Keywords
 
 ### `data`
+
+Coconut provides `data` blocks for the creation on immutable classes derived from `collections.namedtuple`.
+
+#### Example
+
+Coconut:
+```
+data vector(x, y):
+    def __abs__(self):
+        return (self.x**2 + self.y**2)**.5
+```
+
+Python:
+```
+import collections
+class vector(collections.namedtuple("vector", "x, y")):
+    def __abs__(self):
+        return (self.x**2 + self.y**2)**.5
+```
