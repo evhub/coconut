@@ -75,10 +75,7 @@ class __coconut__(object):
     @staticmethod
     def compose(f, g):
         """Composing (f..g)."""
-        def _composed(*args, **kwargs):
-            """Function Composition Wrapper."""
-            return f(g(*args, **kwargs))
-        return _composed
+        return lambda *args, **kwargs: f(g(*args, **kwargs))
     @staticmethod
     def infix(a, func, b):
         """Infix Calling (5 `mod` 6)."""
@@ -144,10 +141,7 @@ def bool_or(a, b):
 
 def compose(f, g):
     """Composing (f..g)."""
-    def _composed(*args, **kwargs):
-        """Function Composition Wrapper."""
-        return f(g(*args, **kwargs))
-    return _composed
+    return lambda *args, **kwargs: f(g(*args, **kwargs))
 
 def infix(a, func, b):
     """Infix Calling (5 `mod` 6)."""
@@ -755,7 +749,7 @@ class processor(object):
     minus = Literal("-")
     bang = fixto(Literal("!") | Literal("\xac"), "!")
     slash = Literal("/")
-    dubslash = fixto(Literal("//") | Literal("\u20eb"), "//")
+    dubslash = Literal("//")
     pipeline = fixto(Literal("|>") | Literal("\u21a6"), "|>")
     amp = fixto(Literal("&") | Literal("\u2227") | Literal("\u2229"), "&")
     caret = fixto(Literal("^") | Literal("\u22bb") | Literal("\u2295"), "^")
@@ -911,6 +905,7 @@ class processor(object):
         fixto(pipeline, "__coconut__.pipe")
         | fixto(dotdot, "__coconut__.compose")
         | fixto(dubcolon, "__coconut__.chain")
+        | fixto(backtick, "__coconut__.infix")
         | fixto(exp_dubstar, "__coconut__.operator.__pow__")
         | fixto(mul_star, "__coconut__.operator.__mul__")
         | fixto(div_dubslash, "__coconut__.operator.__floordiv__")

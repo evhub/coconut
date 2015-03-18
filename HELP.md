@@ -84,5 +84,3 @@ coconut <source directory> <destination directory>
 ## III. Iterators
 
 ## IV. Values
-
-## V. Alternate Syntax
