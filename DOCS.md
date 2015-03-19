@@ -60,7 +60,7 @@ Optional Arguments:
 
 ### Lambdas
 
-Python's `lambda` statements are removed in Coconut in favor of a simple `->` operator.
+Python's `lambda` statements are removed in Coconut in favor of a simple, Coffee-style `->` operator.
 
 #### Example
 

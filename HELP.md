@@ -85,9 +85,35 @@ coconut <source directory> <destination directory>
 
 Now that you've gotten your feet wet with a simple `hello, world!` program, but before we delve into the special things Coconut can do that Python can't, we should cover the one exception to the rule of Coconut being a strict superset of Python: lambdas.
 
+In Python, lambdas are ugly and bulky, requiring the entire word `lambda` to be written out every time one is constructed. This is fine if in-line functions are very rarely needed, but in functional programming in-line functions are an essential tool, and so Coconut substitues in a much simpler lambda syntax: the `->` operator.
+
+### 2. Partial Application
+
+### 3. Function Composition
+
+### 4. Pipe Forward
+
+### 5. Infix Calling
+
+### 6. Function Definition
+
+### 7. Operator Functions
+
+### 8. `reduce`
+
+### 9. `recursive`
+
 ## III. Iterators
 
+### 1. Slicing
+
+### 2. Chaining
+
+### 3. `takewhile`
+
 ## IV. Values
+
+### 1. `data`
 
 ## V. Further Reading
 
