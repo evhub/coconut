@@ -204,7 +204,9 @@ Python supports unicode alternatives to many different symbols. The full list of
 − (\u2212)                  => "-" (only subtraction)
 ⁻ (\u207b)                  => "-" (only negation)
 ¬ (\xac)                    => "~"
-¬= (\xac=)                  => "!="
+≠ (\u2260) or ¬= (\xac=)    => "!="
+≤ (\u2264)                  => "<="
+≥ (\u2265)                  => ">="
 ∧ (\u2227) or ∩ (\u2229)    => "&"
 ∨ (\u2228) or ∪ (\u222a)    => "|"
 ⊻ (\u22bb) or ⊕ (\u2295)    => "^"

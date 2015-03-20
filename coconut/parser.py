@@ -814,7 +814,7 @@ class processor(object):
     anyint = Word(nums, alphanums)
 
     basenum = Combine(integer + dot + Optional(integer) | Optional(integer) + dot + integer) | integer
-    sci_e = CaselessLiteral("e") | fixto(Literal("\u23e8"), "E")
+    sci_e = CaselessLiteral("e")
     numitem = Combine(basenum + sci_e + integer) | basenum
 
     NUMBER = (attach(Combine(anyint + underscore + integer), anyint_proc)
