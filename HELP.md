@@ -242,11 +242,11 @@ The final mainstay of functional programming that Coconut improves in Python is 
 
 Here's an example:
 ```
-data Vector(x, y):
+data vector(x, y):
     def __abs__(self):
-        return (self.x + self.y)**.5
+        return (self.x**2 + self.y**2)**.5
 
-Vector(1, 1) |> abs |> print
+vector(1, 1) |> abs |> print
 ```
 
 ## V. Further Reading

@@ -322,10 +322,8 @@ def item_proc(tokens):
                         if not arg:
                             if x == 0:
                                 arg = "0"
-                            elif x == 1:
-                                arg = "len("+out+")"
-                            elif x == 3:
-                                arg = "1"
+                            else:
+                                arg = "None"
                         args.append(arg)
                     out = "__coconut__.slice("+out
                     if len(args) == 1:
