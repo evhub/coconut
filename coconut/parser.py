@@ -906,6 +906,7 @@ class processor(object):
         | fixto(dotdot, "__coconut__.compose")
         | fixto(dubcolon, "__coconut__.chain")
         | fixto(backtick, "__coconut__.infix")
+        | fixto(dollar, "__coconut__.partial")
         | fixto(exp_dubstar, "__coconut__.operator.__pow__")
         | fixto(mul_star, "__coconut__.operator.__mul__")
         | fixto(div_dubslash, "__coconut__.operator.__floordiv__")
@@ -930,7 +931,9 @@ class processor(object):
         | fixto(Keyword("is"), "__coconut__.operator.is_")
         | fixto(Keyword("and"), "__coconut__.bool_and")
         | fixto(Keyword("or"), "__coconut__.bool_or")
-        ) + rparen
+        ) + rparen | (
+        fixto(lbrack + dollar + lbrack, "(__coconut__.slice)")
+        )
 
     func_atom = NAME | op_atom | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
     keyword_atom = Keyword("None") | Keyword("True") | Keyword("False")
