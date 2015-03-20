@@ -283,13 +283,13 @@ The `partial` object is used for partial function application which â€œfreezesâ€
 
 Coconut:
 ```
-root2 = sqrt$(2)
+pow2 = pow$(2)
 ```
 
 Python:
 ```
 import functools
-root2 = functools.partial(sqrt, 2)
+pow2 = functools.partial(pow, 2)
 ```
 
 ### Iterator Slice
@@ -425,7 +425,7 @@ Named tuple instances do not have per-instance dictionaries, so they are lightwe
 Coconut:
 ```
 data triangle(a, b, c):
-    def isRight(self):
+    def is_right(self):
         return self.a**2 + self.b**2 == self.c**2
 ```
 
@@ -433,6 +433,6 @@ Python:
 ```
 import collections
 class triangle(collections.namedtuple("triangle", "a, b, c")):
-    def isRight(self):
+    def is_right(self):
         return self.a**2 + self.b**2 == self.c**2
 ```
