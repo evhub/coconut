@@ -169,7 +169,7 @@ Python supports unicode alternatives to many different symbols. The full list of
 
 ### Compose
 
-Coconut uses the `..` operator for function composition.
+Coconut uses the `..` operator for function composition. The in-place operator is `..=`.
 
 #### Example
 
@@ -185,7 +185,7 @@ fog = lambda *args, **kwargs: f(g(*args, **kwargs))
 
 ### Pipe Forward
 
-Coconut uses the FSharp-style pipe forward operator `|>` for reverse function application.
+Coconut uses the FSharp-style pipe forward operator `|>` for reverse function application. The in-place operator is `|>=`.
 
 #### Example
 
@@ -201,7 +201,7 @@ ans = g(f(5))
 
 ### Chain
 
-Coconut uses the FSharp-style concatenation operator `::` for iterator chaining.
+Coconut uses the FSharp-style concatenation operator `::` for iterator chaining. The in-place operator is `::=`.
 
 #### Example
 

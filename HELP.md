@@ -103,7 +103,27 @@ hello, lambdas!
 
 ### 2. Partial Application
 
+Partial application, or currying, is a mainstay of functional programming, and for good reason: it allows the dynamic customization of functions to fit the needs of where they are being used. Partial application allows a new function to be created out of an old function with some of its arguments pre-specified. In Coconut, partial application is done by putting a `$` in-between a function and its arguments when calling it.
+
+Here's an example of the power of partial application in Coconut:
+```
+nums = range(0, 10)
+expnums = map(pow$(2), nums)
+print(list(expnums))
+```
+Try to predict what you think will be printed, then put this code in `tutorial.coc` and compile and run it to check if you were right.
+
 ### 3. Function Composition
+
+Another mainstay of functional programming, one very common in mathematics, is function composition, the ability to combine multiple funcitons into one. In Coconut, function composition is done by the `..` operator.
+
+Here's an example of function composition:
+```
+sq = (x) -> x**2
+plus1 = (x) -> x+1
+print(sq..plus1(3))
+```
+Try again to predict what you think will be printed, then test by compiling and running the code.
 
 ### 4. Pipe Forward
 
