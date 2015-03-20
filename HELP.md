@@ -79,6 +79,10 @@ _Note: When compiling modules, one will often want to compile to a different loc
 coconut <source directory> <destination directory>
 ```
 
+### 7. Play Around!
+
+As this tutorial starts introducing new concepts, it'll be useful to be able to enter Coconut code and have it compiled and run on the fly. To do this, you can start the Coconut interpreter by entering `coconut` into the console with no arguments.
+
 ## II. Functions
 
 ### 1. Lambdas
@@ -111,43 +115,139 @@ nums = range(0, 10)
 expnums = map(pow$(2), nums)
 print(list(expnums))
 ```
-Try to predict what you think will be printed, then put this code in `tutorial.coc` and compile and run it to check if you were right.
+Try to predict what you think will be printed, then either use the interpreter or put this code in `tutorial.coc` and compile and run it to check if you were right.
 
 ### 3. Function Composition
 
-Another mainstay of functional programming, one very common in mathematics, is function composition, the ability to combine multiple funcitons into one. In Coconut, function composition is done by the `..` operator.
+Another mainstay of functional programming, one very common in mathematics, is function composition, the ability to combine multiple functions into one. In Coconut, function composition is done by the `..` operator.
 
 Here's an example of function composition:
 ```
-sq = (x) -> x**2
-plus1 = (x) -> x+1
-print(sq..plus1(3))
+zipsum = map$(sum)..zip
+print(list(zipsum([1,2,3], [10,20,30])))
 ```
-Try again to predict what you think will be printed, then test by compiling and running the code.
+Try again to predict what you think will be printed, then test it to see if you were right.
 
 ### 4. Pipe Forward
 
-### 5. Infix Calling
+Another useful functional programming operator is pipe forward, which makes pipeline-style programming, where a value is fed from function to function, transformed at each step, much easier and more elegant. In Coconut, pipe forward is done by the `|>` operator.
+
+Here's an example:
+```
+sq = (x) -> x**2
+plus1 = (x) -> x+1
+3 |> plus1 |> sq |> print
+```
+For all of these examples you should try predicting and then test to check.
+
+### 5. Operator Functions
+
+A very common thing to do in functional programming is to make use of function versions of built-in operators, currying them, composing them, and piping them. To make this easy, Coconut provides a short-hand syntax to access operator functions, where the operator is simply surrounded by parentheses to retrieve the function.
+
+Here's an example:
+```
+5 |> (-)$(2) |> (**)$(2) |> print
+```
 
 ### 6. Function Definition
 
-### 7. Operator Functions
+Up until now, we've been using assignment to a lambda for function one-liners. While this works fine, it has some disadvantages, namely that the function will appear unnamed in any tracebacks, and both the `=` and `->` operators have to be typed out each time. To fix both of these problems, Coconut allows for mathematical function definition.
+
+Here's an example:
+```
+f(x) = x**2 + x
+5 |> f |> print
+```
+
+### 7. Infix Calling
+
+Another common idiom in functional programming is to write functions that are intended to behave somewhat like operators. To assist with this, Coconut provies infix calling, where a two-argument function can be called by surrounding it with backticks and placing it in-between its two arguments.
+
+Here's an example:
+```
+mod = (%)
+print(5 `mod` 3)
+```
 
 ### 8. `reduce`
 
+A Python 2 built-in that was removed in Python 3, Coconut re-introduces `reduce`, as it can be very useful for functional programming.
+
+Here's an example:
+```
+prod = reduce$((*))
+range(1, 5) |> prod |> print
+```
+
 ### 9. `recursive`
+
+Tail-recursion is a common functional programming construct that, while automatically optimized in many programming languages, is not in Python. Coconut provides a way around this with the `recursive` decorator.
+
+Here's an example:
+```
+@recursive
+def next_mul_of(n, x):
+    if x % n == 0:
+        return x
+    else:
+        return next_mul_of(n, x+1)
+
+12 |> next_mul_of $(5) |> print
+```
+_Note: only use this decorator if your function is written in a tail-recursive style, where it directly returns any calls to itself. If `recursive` is used on a function that is not written in a tail-recursive style, you will get strange errors._
 
 ## III. Iterators
 
 ### 1. Slicing
 
+Another mainstay of functional programming is lazy evaluation, where sequences are only evaluated when their contents are requested, allowing for things like infinite sequences. In Python, this can be done via iterators. Unfortunately, many of the tools necessary for working with iterators just like one would work with sequences are absent.
+
+Coconut aims to fix this, and the first part of that is Coconut's iterator slicing. Coconut's iterator slicing works much the same as Python's sequence slicing, and looks much the same as Coconut's partial application, but with brackets instead of parentheses.
+
+Here's an example:
+```
+def infinity():
+    x = 0
+    while True:
+        yield x # the yield statement is Python's way of constructing iterators
+        x += 1
+
+infinity()$[10:20] |> list |> print
+```
+_Note: unlike Python's sequence slicing, Coconut's iterator slicing makes no guarantee that the original iterator be preserved._
+
 ### 2. Chaining
+
+Another useful tool to make working with iterators as easy as working with sequences is the ability to combine multiple iterators together. This operation is called chain, and is equivalent to addition with sequences. In Coconut, chaining is done by the `::` operator.
+
+Here's an example:
+```
+(range(-10, 0) :: infinity)$[5:10] |> list |> print
+```
 
 ### 3. `takewhile`
 
+A useful built-in for working with iterators, `takewhile` will slice the iterator up to the point where the condition fails.
+
+Here's an example:
+```
+infinity() |> takewhile$((>)$(5)) |> list |> print
+```
+
 ## IV. Values
 
-### 1. `data`
+### `data`
+
+The final mainstay of functional programming that Coconut improves in Python is the use of values, or immutable data. Immutable data can be very useful for the same reason that tuples can, but in Python creating custom immutable data types is difficult. Coconut makes it very easy by providing `data` blocks.
+
+Here's an example:
+```
+data Vector(x, y):
+    def __abs__(self):
+        return (self.x + self.y)**.5
+
+Vector(1, 1) |> abs |> print
+```
 
 ## V. Further Reading
 
