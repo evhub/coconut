@@ -12,17 +12,17 @@ Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes
     - pipe forward: `|>` (in-place: `|>=`)
     - chain: `::` (in-place: `::=`)
     - partial and islice: `$`
--x New syntax:
+- New syntax:
     - infix function calling: new ``6 `mod` 3`` syntax
     - operator functions: new `(+)` syntax
     - function definition: alternative `f(x) = x` syntax
     - non-decimal integers: alternative `10110_2` syntax
 - New blocks:
     - immutable named-tuple-derived classes: `data`
--x Changed syntax:
+- Changed syntax:
     - unicode symbols: supports unicode alternatives for most symbols
     - lambda keyword: removed (use the lambda operator instead)
--x New built-ins:
+- New built-ins:
     - right reduce: `reduce`
     - iterator take while: `takewhile`
     - tail recursion elimination: `recursive`
