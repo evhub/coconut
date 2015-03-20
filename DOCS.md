@@ -35,7 +35,7 @@ Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes
 
 Usage:
 ```
-coconut [-h] [-v] [-s] [-r] [-p] [-i] [-q] [-d [level]] [-c code] --autopep8 ...] [source] [dest]
+coconut [-h] [source] [dest] [-v] [-s] [-p] [-r] [-i] [-q] [-d [level]] [-c code] --autopep8 ...]
 ```
 
 Positional Arguments:
@@ -49,8 +49,8 @@ Optional Arguments:
 -h, --help            show this help message and exit
 -v, --version         print coconut and python version information
 -s, --strict          enforce code cleanliness standards
--r, --run             run the compiled source (disables writing if no dest is given)
 -p, --print           print the compiled source (disables writing if no dest is given)
+-r, --run             run the compiled source (disables writing if no dest is given)
 -i, --interact        force the interpreter to start (otherwise starts if no other command is given)
 -q, --quiet           suppress all info and debug output
 -d, --debug           enable debug output (0 is off, no arg defaults to 1, max is 2)
