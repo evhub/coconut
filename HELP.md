@@ -87,6 +87,20 @@ Now that you've gotten your feet wet with a simple `hello, world!` program, but 
 
 In Python, lambdas are ugly and bulky, requiring the entire word `lambda` to be written out every time one is constructed. This is fine if in-line functions are very rarely needed, but in functional programming in-line functions are an essential tool, and so Coconut substitues in a much simpler lambda syntax: the `->` operator.
 
+Just to demonstrate the lambda syntax, try modifying your `hello, world!` program by adding a function defined with a lambda that prints `"hello, "+arg+"!"`, and call it with `"lambdas"` as the `arg`:
+```
+hello = (arg="hello") -> print("hello, "+arg+"!")
+hello("lambdas")
+```
+
+Then run it and test that it works:
+```
+$ coconut tutorial.coc
+...
+$ python tutorial.py
+hello, lambdas!
+```
+
 ### 2. Partial Application
 
 ### 3. Function Composition
