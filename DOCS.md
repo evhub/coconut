@@ -192,7 +192,7 @@ int("10A", 12) == 154
 
 ### Unicode Alternatives
 
-Python supports unicode alternatives to many different symbols. The full list of symbols is as follows:
+Coconut supports unicode alternatives to many different symbols. The full list of symbols is as follows:
 ```
 → (\u2192)                  => "->"
 ↦ (\u21a6)                  => "|>"
