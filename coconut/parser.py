@@ -239,7 +239,7 @@ def condense(item):
 
 def parenwrap(lparen, item, rparen):
     """Wraps An Item In Optional Parentheses."""
-    return condense(lparen.suppress() + item + rparen.suppress() | item)
+    return condense(lparen.suppress() + item + rparen.suppress() ^ item)
 
 class tracer(object):
     """Debug Tracer."""
