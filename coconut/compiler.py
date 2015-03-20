@@ -75,7 +75,7 @@ class cli(object):
     comp_ext = ".py"
     max_debug = 2
     commandline = argparse.ArgumentParser(description="The Coconut Programming Language.")
-    commandline.add_argument("source", metavar="source", type=str, nargs="?", default=None, help="path to the coconut file/module to compile")
+    commandline.add_argument("source", metavar="source", type=str, nargs="?", default=None, help="path to the coconut file/folder to compile")
     commandline.add_argument("dest", metavar="dest", type=str, nargs="?", default=None, help="destination directory for compiled files (defaults to the source directory)")
     commandline.add_argument("-v", "--version", action="store_const", const=True, default=False, help="print coconut and python version information")
     commandline.add_argument("-s", "--strict", action="store_const", const=True, default=False, help="enforce code cleanliness standards")

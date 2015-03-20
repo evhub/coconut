@@ -40,7 +40,7 @@ coconut [-h] [source] [dest] [-v] [-s] [-p] [-r] [-i] [-q] [-d [level]] [-c code
 
 Positional Arguments:
 ```
-source                path to the coconut file/module to compile
+source                path to the coconut file/folder to compile
 dest                  destination directory for compiled files (defaults to the source directory)
 ```
 

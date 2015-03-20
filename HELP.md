@@ -11,7 +11,7 @@ The first thing you're going to need to do is install Coconut. Since Coconut is 
 pip install coconut
 ```
 
-To test that `coconut` is working, make sure the Coconut help appears when you enter into the command line:
+To test that `coconut` is working, make sure the Coconut command-line help appears when you enter into the command line:
 ```
 coconut -h
 ```
@@ -89,8 +89,8 @@ In Python, lambdas are ugly and bulky, requiring the entire word `lambda` to be 
 
 Just to demonstrate the lambda syntax, try modifying your `hello, world!` program by adding a function defined with a lambda that prints `"hello, "+arg+"!"`, and call it with `"lambdas"` as the `arg`:
 ```
-hello = (arg="hello") -> print("hello, "+arg+"!")
-hello("lambdas")
+hello = (arg="world") -> print("hello, "+arg+"!")   # Coconut still supports Python's "def" blocks,
+hello("lambdas")                                    #  but we're trying to demonstrate lambdas here
 ```
 
 Then run it and test that it works:
