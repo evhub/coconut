@@ -930,7 +930,7 @@ class processor(object):
         | fixto(Keyword("and"), "__coconut__.bool_and")
         | fixto(Keyword("or"), "__coconut__.bool_or")
         ) + rparen | (
-        fixto(lbrack + dollar + lbrack, "(__coconut__.slice)")
+        fixto(lbrack + dollar + rbrack, "(__coconut__.slice)")
         )
 
     func_atom = NAME | op_atom | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
