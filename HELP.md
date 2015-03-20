@@ -8,18 +8,12 @@ This tutorial will teach you how to write clean, functional, Pythonic code using
 
 The first thing you're going to need to do is install Coconut. Since Coconut is hosted on the [Python Package Index](https://pypi.python.org/pypi/coconut), it can be installed easily using `pip`. Simply install [Python](https://www.python.org/downloads/), open up a command line prompt, and enter the following:
 ```
-pip install coconut
+python -m pip install coconut
 ```
 
 To test that `coconut` is working, make sure the Coconut command-line help appears when you enter into the command line:
 ```
 coconut -h
-```
-
-_Note: If the `pip` or `coconut` commands aren't working for you, try prefixing them with `python -m`, like so:_
-```
-python -m pip install coconut
-python -m coconut -h
 ```
 
 ### 2. Set Up a Workspace
@@ -206,13 +200,13 @@ Coconut aims to fix this, and the first part of that is Coconut's iterator slici
 
 Here's an example:
 ```
-def infinity():
+def N():
     x = 0
     while True:
         yield x # the yield statement is Python's way of constructing iterators
         x += 1
 
-infinity()$[10:20] |> list |> print
+N()$[10:15] |> list |> print
 ```
 _Note: unlike Python's sequence slicing, Coconut's iterator slicing makes no guarantee that the original iterator be preserved._
 
@@ -222,7 +216,7 @@ Another useful tool to make working with iterators as easy as working with seque
 
 Here's an example:
 ```
-(range(-10, 0) :: infinity)$[5:10] |> list |> print
+(range(-10, 0) :: N())$[5:15] |> list |> print
 ```
 
 ### 3. `takewhile`
@@ -231,7 +225,7 @@ A useful built-in for working with iterators, `takewhile` will slice the iterato
 
 Here's an example:
 ```
-infinity() |> takewhile$((>)$(5)) |> list |> print
+N() |> takewhile$((>)$(5)) |> list |> print
 ```
 
 ## IV. Values
@@ -246,7 +240,7 @@ data vector(x, y):
     def __abs__(self):
         return (self.x**2 + self.y**2)**.5
 
-vector(1, 1) |> abs |> print
+vector(3, 4) |> abs |> print
 ```
 
 ## V. Further Reading
