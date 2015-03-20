@@ -157,6 +157,19 @@ Coconut uses Haskell-style operator function short-hand, where the operator plac
 (or)        => (__coconut__.bool_or)
 ```
 
+##### Example
+
+Coconut:
+```
+prod = reduce((*), items)
+```
+
+Python:
+```
+import operator
+prod = reduce(operator.__mul__, items)
+```
+
 ### Non-Decimal Integers
 
 In addition to Python's normal binary, octal, and hexadecimal integer syntax, Coconut also supports its own universal non-decimal integer syntax, where the base is put after an underscore at the end.
