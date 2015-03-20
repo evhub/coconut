@@ -105,7 +105,7 @@ Partial application, or currying, is a mainstay of functional programming, and f
 
 Here's an example of the power of partial application in Coconut:
 ```
-nums = range(0, 10)
+nums = range(0, 5)
 expnums = map(pow$(2), nums)
 print(list(expnums))
 ```
