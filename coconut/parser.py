@@ -595,7 +595,7 @@ class processor(object):
                     new.append(line)
             elif last is not None and last.endswith("\\"):
                 if self.strict:
-                    raise CoconutException("[strict] found backslash continuation in "+repr(line))
+                    raise CoconutException("[strict] found backslash continuation in "+repr(last))
                 else:
                     new[-1] = last[:-1]+" "+line
             elif count < 0:

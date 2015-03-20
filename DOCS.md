@@ -52,7 +52,7 @@ Optional Arguments:
 -r, --run             run the compiled source (disables writing if no dest is given)
 -p, --print           print the compiled source (disables writing if no dest is given)
 -i, --interact        force the interpreter to start (otherwise starts if no other command is given)
--q, --quiet           suppress all printed output
+-q, --quiet           suppress all info and debug output
 -d, --debug           enable debug output (0 is off, no arg defaults to 1, max is 2)
 -c, --code            run a line of coconut passed in as a string
 --autopep8            use autopep8 to format compiled code (remaining args passed to autopep8)
