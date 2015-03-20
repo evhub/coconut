@@ -79,8 +79,9 @@ class cli(object):
     commandline.add_argument("dest", metavar="dest", type=str, nargs="?", default=None, help="destination directory for compiled files (defaults to the source directory)")
     commandline.add_argument("-v", "--version", action="store_const", const=True, default=False, help="print coconut and python version information")
     commandline.add_argument("-s", "--strict", action="store_const", const=True, default=False, help="enforce code cleanliness standards")
-    commandline.add_argument("-p", "--print", action="store_const", const=True, default=False, help="print the compiled source (disables writing if no dest is given)")
-    commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run the compiled source (disables writing if no dest is given)")
+    commandline.add_argument("-p", "--print", action="store_const", const=True, default=False, help="print the compiled source")
+    commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run the compiled source")
+    commandline.add_argument("-n", "--nowrite", action="store_const", const=True, default=False, help="disable writing the compiled source")
     commandline.add_argument("-i", "--interact", action="store_const", const=True, default=False, help="force the interpreter to start (otherwise starts if no other command is given)")
     commandline.add_argument("-q", "--quiet", action="store_const", const=True, default=False, help="suppress all info and debug output")
     commandline.add_argument("-d", "--debug", metavar="level", type=int, nargs="?", default=0, const=1, help="enable debug output (0 is off, no arg defaults to 1, max is "+str(max_debug)+")")
@@ -143,14 +144,16 @@ class cli(object):
             self.execute(self.processor.parse_single(args.code[0]), True)
         if args.source is not None:
             if args.run and os.path.isdir(args.source):
-                raise parser.CoconutException("the source path must point to a file when --run is enabled")
+                raise parser.CoconutException("source path can't point to file when --run is enabled")
             if args.dest is None:
-                if args.run or args.print:
+                if args.nowrite:
                     self.compile_path(args.source, None, show=args.print, run=args.run)
                 else:
                     self.compile_path(args.source, show=args.print, run=args.run)
+            elif args.nowrite:
+                raise parser.CoconutException("destination path can't be given when --nowrite is enabled")
             elif os.path.isfile(args.dest):
-                raise parser.CoconutException("destination path points to file "+repr(args.dest))
+                raise parser.CoconutException("destination path can't point to file")
             else:
                 self.compile_path(args.source, args.dest, show=args.print, run=args.run)
         elif args.run or args.print:
