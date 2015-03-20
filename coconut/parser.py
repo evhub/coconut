@@ -937,11 +937,11 @@ class processor(object):
     keyword_atom = Keyword("None") | Keyword("True") | Keyword("False")
     atom = (keyword_atom
             | ellipses
-            | condense(lbrack + Optional(testlist_comp) + rbrack)
-            | condense(lbrace + Optional(dictorsetmaker) + rbrace)
             | NUMBER
             | OneOrMore(STRING)
             | func_atom
+            | condense(lbrack + Optional(testlist_comp) + rbrack)
+            | condense(lbrace + Optional(dictorsetmaker) + rbrace)
             )
     slicetest = Optional(test)
     sliceop = condense(colon + slicetest)
