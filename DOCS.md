@@ -422,6 +422,7 @@ def collatz(n):
 ```
 
 Python:
+
 _Can't be done without a long decorator definition. The full definition of the decorator in Python can be found in the Coconut header._
 
 ## V. Keywords

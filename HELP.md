@@ -18,11 +18,11 @@ coconut -h
 
 ### 2. Set Up a Workspace
 
-Now that you've installed Coconut, it's time to create your first Coconut program. Open up your favorite text editor and save a new file named `tutorial.coc`. It is recommended that you tell your text editor to treat all `.coc` files as Python source files for the purpose of syntax highlighting. All Coconut files should use the extension `.coc` so they can be recognized as such when compiling folders of many different files.
+Now that you've installed Coconut, it's time to create your first Coconut program. Open up your favorite text editor and save a new file named `tutorial.coc`. It is recommended that you tell your text editor to treat all `.coc` files as Python source files for the purpose of syntax highlighting (Coconut and Python are close enough that this will work). All Coconut files should use the extension `.coc` so they can be recognized as such when compiling folders of many different files.
 
 ### 3. Start Coding!
 
-If you're familiar with Python, then you're already familiar with most of Coconut. Coconut is nearly a strict superset of Python 3 syntax, with the sole exception of `lambda` statements, which will be later in this tutorial. For now, let's start with a simple `hello, world!` program:
+If you're familiar with Python, then you're already familiar with most of Coconut. Coconut is nearly a strict superset of Python 3 syntax, with the sole exception of `lambda` statements, which will be later in this tutorial. For now, let's start with a simple `hello, world!` program. Put this code inside your `tutorial.coc`:
 ```
 print("hello, world!")
 ```
@@ -45,25 +45,24 @@ hello, world!
 
 ### 4. Understanding Compiled Code
 
-You should now notice that a new file, `tutorial.py` was created in the `tutorial.coc` directory when you ran the compiler. That file contains the compiled Python code, which was why you had to enter `python tutorial.py` instead of `python tutorial.coc`.
+If you look in your `tutorial.coc` directory, you should notice that a new file, `tutorial.py` was created when you ran the compiler. That file contains the compiled Python code, which was why you had to enter `python tutorial.py` instead of `python tutorial.coc` to run it.
 
 Open `tutorial.py` and look inside. You should see two sections, `Coconut Header` and `Compiled Coconut`. The `Coconut Header` section contains code inserted into all compiled coconut files, whereas the `Compiled Coconut` section contains the specific code the compiler produced from your source file.
 
 ### 5. Understanding Compiled Folders
 
-You might have noticed that the `Coconut Header` section in `tutorial.py` is rather large. This is because that section contains all the code necessary to set up the Coconut environment. Because Coconut needs to set up that environment in every file, it puts a header at the top.
+You might have noticed that the `Coconut Header` section in `tutorial.py` is somewhat large (while Coconut tries to keep the size small, there's only so much it can do). This is because that section contains all the code necessary to set up the Coconut environment. Because Coconut needs to set up that environment in every file, it puts a header at the top.
 
-It would be terribly innefficient, however, if Coconut put that entire header in every file of a module (or other folder of files that are intended to stay together). Instead, Coconut puts all of that code in a `__coconut__.py` file in each folder directory.
+It would be rather innefficient, however, if Coconut put that entire header in every file of a module (or other folder of files that are intended to stay together). Instead, when compiling a folder, Coconut puts all of that code in a `__coconut__.py` file in the folder directory.
 
 ### 6. Compile a Folder!
 
-To compile a module (or folder) this way, simply call the `coconut` command with the module (or folder) directory as the first argument. Go ahead and try it on the `tutorial.coc` directory:
+To compile a folder this way, simply call the `coconut` command with the folder directory as the first argument. Go ahead and try it on the `tutorial.coc` directory:
 ```
 coconut <tutorial.coc directory>
 cd <tutorial.coc directory>
 python tutorial.py
 ```
-
 If everything is working properly, you should see exactly the same output as before.
 
 If you now go into the `tutorial.coc` directory, however, you should see a new file, `__coconut__.py`, which contains the header from earlier in non-class form, and if you now open the `tutorial.py` file, you should see a significantly shortened header that imports the larger header file.
@@ -132,7 +131,7 @@ sq = (x) -> x**2
 plus1 = (x) -> x+1
 3 |> plus1 |> sq |> print
 ```
-For all of these examples you should try predicting and then test to check.
+For all of the examples in this tutorial you should try predicting and then testing to check.
 
 ### 5. Operator Functions
 
@@ -140,8 +139,9 @@ A very common thing to do in functional programming is to make use of function v
 
 Here's an example:
 ```
-5 |> (-)$(2) |> (**)$(2) |> print
+5 |> (-)$(2) |> (*)$(2) |> print
 ```
+_Note: If you've been dutifully guessing and checking, you probablly guessed `6` for this and were surprised to find that the actual answer was `-6`. This happens because partial application always starts with the first argument, and the first argument to `(-)` is the thing you're subtracting from, not the thing you're subtracting!_
 
 ### 6. Function Definition
 
@@ -188,7 +188,7 @@ def next_mul_of(n, x):
 
 12 |> next_mul_of $(5) |> print
 ```
-_Note: only use this decorator if your function is written in a tail-recursive style, where it directly returns any calls to itself. If `recursive` is used on a function that is not written in a tail-recursive style, you will get strange errors._
+_Note: Only use this decorator if your function is written in a tail-recursive style, where it directly returns any calls to itself. If `recursive` is used on a function that is not written in a tail-recursive style, you will get strange errors._
 
 ## III. Iterators
 
@@ -208,7 +208,7 @@ def N():
 
 N()$[10:15] |> list |> print
 ```
-_Note: unlike Python's sequence slicing, Coconut's iterator slicing makes no guarantee that the original iterator be preserved._
+_Note: Unlike Python's sequence slicing, Coconut's iterator slicing makes no guarantee that the original iterator be preserved._
 
 ### 2. Chaining
 
