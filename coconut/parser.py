@@ -93,7 +93,8 @@ class __coconut__(object):
         """Tail Call Optimizer."""
         state = [True, None]
         recurse = object()
-        def _tailed(*args, **kwargs):
+        @functools.wraps(func)
+        def tailed_func(*args, **kwargs):
             """Tail Recursion Wrapper."""
             if state[0]:
                 state[0] = False
@@ -110,7 +111,7 @@ class __coconut__(object):
             else:
                 state[1] = args, kwargs
                 return recurse
-        return _tailed
+        return tailed_func
 ''',
 
 "body":
@@ -160,7 +161,8 @@ def recursive(func):
     """Tail Call Optimizer."""
     state = [True, None]
     recurse = object()
-    def _tailed(*args, **kwargs):
+    @functools.wraps(func)
+    def tailed_func(*args, **kwargs):
         """Tail Recursion Wrapper."""
         if state[0]:
             state[0] = False
@@ -177,7 +179,7 @@ def recursive(func):
         else:
             state[1] = args, kwargs
             return recurse
-    return _tailed
+    return tailed_func
 ''',
 
 "funcs":
