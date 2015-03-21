@@ -1,6 +1,6 @@
 # Coconut Documentation
 
-This documentation will cover all the technical details of the [Coconut](https://github.com/evhub/coconut) programming language. This documentation is not intended as a tutorialized introduction, only a technical specification. For a full introduction and tutorial of the Coconut programming language see the [HELP](https://github.com/evhub/coconut/blob/master/HELP.md) file.
+This documentation will cover all the technical details of the [Coconut](https://github.com/evhub/coconut) programming language. This documentation is not intended as a tutorialized introduction, only a technical specification. For a full introduction and tutorial of the Coconut programming language, see the [HELP](https://github.com/evhub/coconut/blob/master/HELP.md) file.
 
 - [I. Command Line](#i-command-line)
     - [Usage](#usage)
