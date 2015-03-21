@@ -201,7 +201,7 @@ range(1, 5) |> prod |> print
 
 ### `recursive`
 
-Tail-recursion is a common functional programming construct that, while automatically optimized in many programming languages, is not in Python. Coconut provides a way around this with the `recursive` decorator.
+Tail-recursion, where a function returns a call to itself, is a common functional programming construct that, while automatically optimized in many programming languages, is not in Python. Coconut provides a way around this with the `recursive` decorator.
 
 Here's an example:
 ```
