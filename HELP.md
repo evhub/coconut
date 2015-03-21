@@ -1,6 +1,6 @@
 # Coconut Tutorial
 
-This tutorial will teach you how to write clean, functional, Pythonic code using the [Coconut](https://github.com/evhub/coconut) programming language. It is assumed that the reader knows some basic Python, but no other prior knowledge or experience is required.
+This tutorial will teach you how to write elegant, Pythonic code in a functional style using the [Coconut](https://github.com/evhub/coconut) programming language. It is assumed that the reader knows some basic Python, but no other prior knowledge or experience is required.
 
 - [I. Getting Started](#i-getting-started)
     - [Install Coconut](#install-coconut)
