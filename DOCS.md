@@ -72,7 +72,7 @@ Lambda forms (lambda expressions) have the same syntactic position as expression
 def <lambda>(arguments):
     return expression
 ```
-See section _Function definitions_ for the syntax of parameter lists. Note that functions created with lambda forms cannot contain statements or annotations.
+Note that functions created with lambda forms cannot contain statements or annotations.
 
 ##### Example
 
@@ -173,7 +173,7 @@ In addition to Python's normal binary, octal, and hexadecimal integer syntax, Co
 
 ##### Python Docs
 
-A base-n literal consists of the digits 0 to n-1, with `a` to `z` (or `A` to `Z`) having values 10 to 35. The default base is 10. The allowed values are 0 and 2-36. Base 0 means to interpret exactly as a code literal, so that the actual base is 2, 8, 10, or 16, and so that `int('010', 0)` is not legal, while `int('010')` is, as well as `int('010', 8)`.
+A base-n literal consists of the digits 0 to n-1, with `a` to `z` (or `A` to `Z`) having values 10 to 35. The default base is 10. The allowed values are 0 and 2-36. Base 0 means to interpret exactly as a code literal, so that the actual base is 2, 8, 10, or 16, and so that `010`, `010_0`, and `010_8` are 8, while `10` and `010_10` are 10.
 
 ##### Example
 
@@ -313,7 +313,7 @@ Coconut uses a `$` sign right after an iterator before a slice to perform iterat
 
 ##### Python Docs
 
-Make an iterator that returns selected elements from the iterable. If _start_ is non-zero, then elements from the iterable are skipped until _start_ is reached. Afterward, elements are returned consecutively unless _step_ is set higher than one which results in items being skipped. If _stop_ is `None`, then iteration continues until the iterator is exhausted, if at all; otherwise, it stops at the specified position. Unlike regular slicing, iterator slicing does not support negative values for _start_, _stop_, or _step_. Can be used to extract related fields from data where the internal structure has been flattened (for example, a multi-line report may list a name field on every third line). Equivalent to:
+Make an iterator that returns selected elements from the _iterable_. If _start_ is non-zero, then elements from the _iterable_ are skipped until _start_ is reached. Afterward, elements are returned consecutively unless _step_ is set higher than one which results in items being skipped. If _stop_ is `None`, then iteration continues until the iterator is exhausted, if at all; otherwise, it stops at the specified position. Unlike regular slicing, iterator slicing does not support negative values for _start_, _stop_, or _step_. Can be used to extract related fields from data where the internal structure has been flattened (for example, a multi-line report may list a name field on every third line). Equivalent to:
 ```
 def islice(iterable, *args):
     # islice('ABCDEFG', 2) --> A B
