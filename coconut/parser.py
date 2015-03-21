@@ -62,6 +62,7 @@ class __coconut__(object):
     chain = itertools.chain
     slice = itertools.islice
     takewhile = itertools.takewhile
+    dropwhile = itertools.dropwhile
     import collections
     data = staticmethod(collections.namedtuple)
     @staticmethod
@@ -127,6 +128,7 @@ import itertools
 chain = itertools.chain
 slice = itertools.islice
 takewhile = itertools.takewhile
+dropwhile = itertools.dropwhile
 
 import collections
 data = collections.namedtuple
@@ -183,6 +185,7 @@ def recursive(func):
 r'''
 reduce = __coconut__.reduce
 takewhile = __coconut__.takewhile
+dropwhile = __coconut__.dropwhile
 recursive = __coconut__.recursive
 ''',
 

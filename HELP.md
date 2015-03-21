@@ -19,11 +19,9 @@ This tutorial will teach you how to write elegant, Pythonic code in a functional
     - [Function Definition](#function-definition)
     - [Infix Calling](#infix-calling)
     - [reduce](#reduce)
-    - [recursive](#recursive)
 - [III. Iterators](#iii-iterators)
     - [Slicing](#slicing)
     - [Chaining](#chaining)
-    - [takewhile](#takewhile)
 - [IV. Values](#iv-values)
     - [data](#data)
 - [V. Further Reading](#v-further-reading)
@@ -199,23 +197,6 @@ prod = reduce$((*))
 range(1, 5) |> prod |> print
 ```
 
-### `recursive`
-
-Tail-recursion, where a function returns a call to itself, is a common functional programming construct that, while automatically optimized in many programming languages, is not in Python. Coconut provides a way around this with the `recursive` decorator.
-
-Here's an example:
-```
-@recursive
-def next_mul_of(n, x):
-    if x % n == 0:
-        return x
-    else:
-        return next_mul_of(n, x+1)
-
-12 |> next_mul_of $(5) |> print
-```
-_Note: Only use this decorator if your function is written in a tail-recursive style, where it directly returns any calls to itself. If `recursive` is used on a function that is not written in a tail-recursive style, you will get strange errors._
-
 ## III. Iterators
 
 ### Slicing
@@ -243,15 +224,6 @@ Another useful tool to make working with iterators as easy as working with seque
 Here's an example:
 ```
 (range(-10, 0) :: N())$[5:15] |> list |> print
-```
-
-### `takewhile`
-
-A useful built-in for working with iterators, `takewhile` will slice the iterator up to the point where the condition fails.
-
-Here's an example:
-```
-N() |> takewhile$((>)$(5)) |> list |> print
 ```
 
 ## IV. Values

@@ -22,6 +22,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
 - [IV. Built-Ins](#iv-built-ins)
     - [reduce](#reduce)
     - [takewhile](#takewhile)
+    - [dropwhile](#dropwhile)
     - [recursive](#recursive)
 - [V. Keywords](#v-keywords)
     - [data](#data)
@@ -391,18 +392,52 @@ def takewhile(predicate, iterable):
 
 Coconut:
 ```
-positives = takewhile(numiter, (x) -> x>0)
+negatives = takewhile(numiter, (x) -> x<0)
 ```
 
 Python:
 ```
 import functools
-positives = functools.takewhile(numiter, lambda x: x>0)
+negatives = functools.takewhile(numiter, lambda x: x<0)
+```
+
+### `dropwhile`
+
+Coconut provides `functools.dropwhile` as a built-in under the name `dropwhile`.
+
+##### Python Docs
+
+**dropwhile**(_predicate, iterable_)
+
+Make an iterator that drops elements from the _iterable_ as long as the _predicate_ is true; afterwards, returns every element. Note: the iterator does not produce any output until the predicate first becomes false, so it may have a lengthy start-up time. Equivalent to:
+```
+def dropwhile(predicate, iterable):
+    # dropwhile(lambda x: x<5, [1,4,6,4,1]) --> 6 4 1
+    iterable = iter(iterable)
+    for x in iterable:
+        if not predicate(x):
+            yield x
+            break
+    for x in iterable:
+        yield x
+```
+
+##### Example
+
+Coconut:
+```
+positives = dropwhile(numiter, (x) -> x<0)
+```
+
+Python:
+```
+import functools
+positives = functools.dropwhile(numiter, lambda x: x<0)
 ```
 
 ### `recursive`
 
-Coconut provides a `recursive` decorator to perform tail recursion optimization on a function written in a tail-recursive style.
+Coconut provides a `recursive` decorator to perform tail recursion optimization on a function written in a tail-recursive style, where it directly returns all calls to itself. Do not use this decorator on a function not written in a tail-recursive style or you will get strange errors.
 
 ##### Example
 
