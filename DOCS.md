@@ -351,7 +351,7 @@ Coconut re-introduces Python 2's `reduce` built-in, using the `functools.reduce`
 
 ##### Python Docs
 
-*reduce*(_function, iterable_*[*_, initializer_*]*)
+**reduce**(_function, iterable_**[**_, initializer_**]**)
 
 Apply _function_ of two arguments cumulatively to the items of _sequence_, from left to right, so as to reduce the sequence to a single value. For example, `reduce((x, y) -> x+y, [1, 2, 3, 4, 5])` calculates `((((1+2)+3)+4)+5)`. The left argument, _x_, is the accumulated value and the right argument, _y_, is the update value from the _sequence_. If the optional _initializer_ is present, it is placed before the items of the sequence in the calculation, and serves as a default when the sequence is empty. If _initializer_ is not given and _sequence_ contains only one item, the first item is returned.
 
@@ -374,7 +374,7 @@ Coconut provides `functools.takewhile` as a built-in under the name `takewhile`.
 
 ##### Python Docs
 
-*takewhile*(_predicate, iterable_)
+**takewhile**(_predicate, iterable_)
 
 Make an iterator that returns elements from the _iterable_ as long as the _predicate_ is true. Equivalent to:
 ```
@@ -461,7 +461,7 @@ The recommended way to use Coconut as a module is to use `from coconut.convenien
 
 #### `coconut.convenience.parse`
 
-*parse*(_code, *[*_mode_*]*)
+**parse**(_code, _**[**_mode_**]**)
 
 Likely the most useful of the convenience functions, `parse` takes Coconut code as input and outputs the equivalent compiled Python code. The second argument, _mode_, is used to indicate the context for the parsing. Possible values of mode are:
 
@@ -473,13 +473,13 @@ Likely the most useful of the convenience functions, `parse` takes Coconut code 
 
 #### `coconut.convenience.autopep8`
 
-*autopep8*(*[*_args_*]*)
+**autopep8**(**[**_args_**]**)
 
 Enables `autopep8` with the given command-line _args_ for all future calls to `parse`.
 
 #### `coconut.convenience.cmd`
 
-*cmd*(_args_)
+**cmd**(_args_)
 
 Executes the given _args_ as if they were fed to `coconut` on the command-line.
 
