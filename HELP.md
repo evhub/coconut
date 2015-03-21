@@ -2,6 +2,32 @@
 
 This tutorial will teach you how to write clean, functional, Pythonic code using the [Coconut](https://github.com/evhub/coconut) programming language. It is assumed that the reader knows some basic Python, but no other prior knowledge or experience is required.
 
+- [I. Getting Started](#)
+    - [1. Install Coconut](#)
+    - [2. Set Up a Workspace](#)
+    - [3. Start Coding!](#)
+    - [4. Understanding Compiled Code](#)
+    - [5. Understanding Compiled Folders](#)
+    - [6. Compile a Folder!](#)
+    - [7. Play Around!](#)
+- [II. Functions](#)
+    - [1. Lambdas](#)
+    - [2. Partial Application](#)
+    - [3. Function Composition](#)
+    - [4. Pipe Forward](#)
+    - [5. Operator Functions](#)
+    - [6. Function Definition](#)
+    - [7. Infix Calling](#)
+    - [8. reduce](#)
+    - [9. recursive](#)
+- [III. Iterators](#)
+    - [1. Slicing](#)
+    - [2. Chaining](#)
+    - [3. takewhile](#)
+- [IV. Values](#)
+    - [data](#)
+- [V. Further Reading](#)
+
 ## I. Getting Started
 
 ### 1. Install Coconut

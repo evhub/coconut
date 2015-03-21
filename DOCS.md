@@ -2,34 +2,51 @@
 
 This documentation will cover all the technical details of the [Coconut](https://github.com/evhub/coconut) programming language. This documentation is not intended as a tutorialized introduction, only a technical specification. For a full introduction and tutorial of the Coconut programming language see the [HELP](https://github.com/evhub/coconut/blob/master/HELP.md) file.
 
-### Overview
-
-Coconut is based on Python 3 syntax and compiles to Python 3 code. Coconut makes significant changes from Python 3 syntax, however:
-
-- New operators:
-    x- lambda: `->`
-    - compose: `..` (in-place: `..=`)
-    - pipe forward: `|>` (in-place: `|>=`)
-    - chain: `::` (in-place: `::=`)
-    - partial and islice: `$`
-- New syntax:
-    - infix function calling: new ``6 `mod` 3`` syntax
-    - operator functions: new `(+)` syntax
-    - function definition: alternative `f(x) = x` syntax
-    - non-decimal integers: alternative `10110_2` syntax
-- New blocks:
-    - immutable named-tuple-derived classes: `data`
-- Changed syntax:
-    - unicode symbols: supports unicode alternatives for most symbols
-    - lambda keyword: removed (use the lambda operator instead)
-- New built-ins:
-    - right reduce: `reduce`
-    - iterator take while: `takewhile`
-    - tail recursion elimination: `recursive`
-- New constructs: (planned)
-    - operator [re]definition
-    - pattern matching
-
+- [I. Command Line](#)
+    - [1. Usage](#)
+    - [2. Positional Arguments](#)
+    - [3. Optional Arguments](#)
+- [II. Syntax](#)
+    - [Lambdas](#)
+            - [Python Docs](#)
+            - [Example](#)
+    - [Infix Calling](#)
+            - [Example](#)
+    - [Function Definition](#)
+            - [Example](#)
+    - [Operator Functions](#)
+            - [Example](#)
+    - [Non-Decimal Integers](#)
+            - [Python Docs](#)
+            - [Example](#)
+    - [Unicode Alternatives](#)
+- [III. Operators](#)
+    - [Compose](#)
+            - [Example](#)
+    - [Pipe Forward](#)
+            - [Example](#)
+    - [Chain](#)
+            - [Python Docs](#)
+            - [Example](#)
+    - [Partial](#)
+            - [Python Docs](#)
+            - [Example](#)
+    - [Iterator Slice](#)
+            - [Python Docs](#)
+            - [Example](#)
+- [IV. Built-Ins](#)
+    - [reduce](#)
+            - [Python Docs](#)
+            - [Example](#)
+    - [takewhile](#)
+            - [Python Docs](#)
+            - [Example](#)
+    - [recursive](#)
+            - [Example](#)
+- [V. Keywords](#)
+    - [data](#)
+            - [Python Docs](#)
+            - [Example](#)
 
 ## I. Command Line
 
