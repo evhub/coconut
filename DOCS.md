@@ -26,7 +26,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
 - [V. Keywords](#v-keywords)
     - [data](#data)
 - [VI. Coconut Module](#vi-coconut-module)
-    - [coconut.convenience](#coconut-convenience)
+    - [coconut.convenience](#coconutconvenience)
 
 ## I. Command Line
 
