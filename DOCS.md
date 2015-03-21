@@ -3,9 +3,9 @@
 This documentation will cover all the technical details of the [Coconut](https://github.com/evhub/coconut) programming language. This documentation is not intended as a tutorialized introduction, only a technical specification. For a full introduction and tutorial of the Coconut programming language see the [HELP](https://github.com/evhub/coconut/blob/master/HELP.md) file.
 
 - [I. Command Line](#)
-    - [1. Usage](#)
-    - [2. Positional Arguments](#)
-    - [3. Optional Arguments](#)
+    - [Usage](#)
+    - [Positional Arguments](#)
+    - [Optional Arguments](#)
 - [II. Syntax](#)
     - [Lambdas](#)
             - [Python Docs](#)
@@ -50,20 +50,20 @@ This documentation will cover all the technical details of the [Coconut](https:/
 
 ## I. Command Line
 
-### 1. Usage
+### Usage
 
 ```
 coconut [-h] [source] [dest] [-v] [-s] [-p] [-r] [-n] [-i] [-q] [-d [level]] [-c code] --autopep8 ...]
 ```
 
-### 2. Positional Arguments
+### Positional Arguments
 
 ```
 source                path to the coconut file/folder to compile
 dest                  destination directory for compiled files (defaults to the source directory)
 ```
 
-### 3. Optional Arguments
+### Optional Arguments
 
 ```
 -h, --help            show this help message and exit
