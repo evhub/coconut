@@ -10,9 +10,9 @@ Getting Started
 
 Coconut can be found on GitHub_ and PyPI_.
 
-A full **introduction and tutorial** of the Coconut programming language can be found in the HELP_ file.
+A full **introduction and tutorial** of the Coconut programming language can be found in the HELP_ file. If you don't know what you're doing, you should start there.
 
-The full Coconut **documentation** can be found in the DOCS_ file.
+The full Coconut **documentation** can be found in the DOCS_ file. If you're looking for info about a specific feature, you should go there.
 
 .. _GitHub: https://github.com/evhub/coconut
 .. _PyPI: https://pypi.python.org/pypi/coconut
