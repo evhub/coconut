@@ -5,9 +5,6 @@ Coconut
 
 Python is a beautiful, powerful language. Unfortunately, much of that beauty goes away when programming in a functional style. While functional programming in Python technically works, it's cumbersome and difficult. The Coconut Programming Language is the solution to that problem, with a syntax derived from Python but with new features that allow for truly Pythonic functional programming, and a compiler that produces stand-alone Python code for easy interoperability with existing libraries and modules.
 
-Getting Started
----------------
-
 Coconut can be found on GitHub_ and PyPI_.
 
 A full **introduction and tutorial** of the Coconut programming language can be found in the HELP_ file. If you don't know what you're doing, you should start there.
