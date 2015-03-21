@@ -461,7 +461,7 @@ The recommended way to use Coconut as a module is to use `from coconut.convenien
 
 #### `coconut.convenience.parse`
 
-**parse**(_code, _**[**_mode_**]**)
+**parse**(_code,_ **[**_mode_**]**)
 
 Likely the most useful of the convenience functions, `parse` takes Coconut code as input and outputs the equivalent compiled Python code. The second argument, _mode_, is used to indicate the context for the parsing. Possible values of mode are:
 
