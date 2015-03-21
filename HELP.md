@@ -5,7 +5,7 @@ This tutorial will teach you how to write clean, functional, Pythonic code using
 - [I. Getting Started](#i-getting-started)
     - [1. Install Coconut](#1-install-coconut)
     - [2. Set Up a Workspace](#2-set-up-a-workspace)
-    - [3. Start Coding!](#3-start-coding!)
+    - [3. Start Coding!](#3-start-coding)
     - [4. Understanding Compiled Code](#4-understanding-compiled-code)
     - [5. Understanding Compiled Folders](#5-understanding-compiled-folders)
     - [6. Compile a Folder!](#6-compile-a-folder)
