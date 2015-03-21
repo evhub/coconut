@@ -31,7 +31,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
 ### Usage
 
 ```
-coconut [-h] [source] [dest] [-v] [-s] [-p] [-r] [-n] [-i] [-q] [-d [level]] [-c code] --autopep8 ...]
+coconut [-h] [source] [dest] [-v] [-s] [-p] [-r] [-n] [-i] [-q] [-d [level]] [-c code] [--autopep8 ...]
 ```
 
 ### Positional Arguments
