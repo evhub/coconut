@@ -25,6 +25,8 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [recursive](#recursive)
 - [V. Keywords](#v-keywords)
     - [data](#data)
+- [VI. Coconut Module](#vi-coconut-module)
+    - [coconut.convenience](#coconut-convenience)
 
 ## I. Command Line
 
@@ -450,3 +452,37 @@ class triangle(collections.namedtuple("triangle", "a, b, c")):
     def is_right(self):
         return self.a**2 + self.b**2 == self.c**2
 ```
+
+## VI. Coconut Module
+
+### `coconut.convenience`
+
+The recommended way to use Coconut as a module is to use `from coconut.convenience import` and import whatever convenience functions you'll be using. Specifications of the different convenience functions are as follows.
+
+#### `coconut.convenience.parse`
+
+*parse*(_code, *[*_mode_*]*)
+
+Likely the most useful of the convenience functions, `parse` takes Coconut code as input and outputs the equivalent compiled Python code. The second argument, _mode_, is used to indicate the context for the parsing. Possible values of mode are:
+
+- `"single"`: a single line of code
+- `"file"`: a stand-alone file (the default mode)
+- `"module"`: a file in a folder or module
+- `"block"`: many lines of code
+- `"eval"`: a single expression
+
+#### `coconut.convenience.autopep8`
+
+*autopep8*(*[*_args_*]*)
+
+Enables `autopep8` with the given command-line _args_ for all future calls to `parse`.
+
+#### `coconut.convenience.cmd`
+
+*cmd*(_args_)
+
+Executes the given _args_ as if they were fed to `coconut` on the command-line.
+
+#### `coconut.convenience.version`
+
+A constant containing the string printed by `coconut -v`. To get only the Coconut version instead of the entire version string, use `coconut.convenience.VERSION`.

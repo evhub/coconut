@@ -26,6 +26,10 @@ import os.path
 # UTILITIES:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+def fixpath(path):
+    """Properly Formats A Weapon."""
+    return os.path.normpath(os.path.realpath(path))
+
 class executor(object):
     """Compiled Python Executor."""
     def __init__(self, extras=None):
@@ -205,13 +209,9 @@ class cli(object):
             destpath = os.path.join(write, os.path.splitext(os.path.basename(filepath))[0]+self.comp_ext)
         self.compile(filepath, destpath, module, show, run)
 
-    def fixpath(self, path):
-        """Properly Formats A Weapon."""
-        return os.path.normpath(os.path.realpath(path))
-
     def compile(self, codepath, destpath=None, module=False, show=False, run=False):
         """Compiles A Source Coconut File To A Destination Python File."""
-        codepath = self.fixpath(codepath)
+        codepath = fixpath(codepath)
         self.console.print("Compiling "+repr(codepath)+"...")
         with openfile(codepath, "r") as opened:
             code = readfile(opened)
@@ -228,7 +228,7 @@ class cli(object):
         if run:
             self.execute(compiled, True)
         if destpath is not None:
-            destpath = self.fixpath(destpath)
+            destpath = fixpath(destpath)
             destdir = os.path.dirname(destpath)
             if not os.path.exists(destdir):
                 os.makedirs(destdir)
