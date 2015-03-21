@@ -3,34 +3,34 @@
 This tutorial will teach you how to write clean, functional, Pythonic code using the [Coconut](https://github.com/evhub/coconut) programming language. It is assumed that the reader knows some basic Python, but no other prior knowledge or experience is required.
 
 - [I. Getting Started](#i-getting-started)
-    - [1. Install Coconut](#1-install-coconut)
-    - [2. Set Up a Workspace](#2-set-up-a-workspace)
-    - [3. Start Coding!](#3-start-coding)
-    - [4. Understanding Compiled Code](#4-understanding-compiled-code)
-    - [5. Understanding Compiled Folders](#5-understanding-compiled-folders)
-    - [6. Compile a Folder!](#6-compile-a-folder)
-    - [7. Play Around!](#7-play-around)
+    - [Install Coconut](#install-coconut)
+    - [Set Up a Workspace](#set-up-a-workspace)
+    - [Start Coding!](#start-coding)
+    - [Understanding Compiled Code](#understanding-compiled-code)
+    - [Understanding Compiled Folders](#understanding-compiled-folders)
+    - [Compile a Folder!](#compile-a-folder)
+    - [Play Around!](#play-around)
 - [II. Functions](#ii-functions)
-    - [1. Lambdas](#1-lambdas)
-    - [2. Partial Application](#2-partial-application)
-    - [3. Function Composition](#3-function-composition)
-    - [4. Pipe Forward](#4-pipe-forward)
-    - [5. Operator Functions](#5-operator-functions)
-    - [6. Function Definition](#6-function-definition)
-    - [7. Infix Calling](#7-infix-calling)
-    - [8. reduce](#8-reduce)
-    - [9. recursive](#9-recursive)
+    - [Lambdas](#lambdas)
+    - [Partial Application](#partial-application)
+    - [Function Composition](#function-composition)
+    - [Pipe Forward](#pipe-forward)
+    - [Operator Functions](#operator-functions)
+    - [Function Definition](#function-definition)
+    - [Infix Calling](#infix-calling)
+    - [reduce](#reduce)
+    - [recursive](#recursive)
 - [III. Iterators](#iii-iterators)
-    - [1. Slicing](#1-slicing)
-    - [2. Chaining](#2-chaining)
-    - [3. takewhile](#3-takewhile)
+    - [Slicing](#slicing)
+    - [Chaining](#chaining)
+    - [takewhile](#takewhile)
 - [IV. Values](#iv-values)
     - [data](#data)
 - [V. Further Reading](#v-further-reading)
 
 ## I. Getting Started
 
-### 1. Install Coconut
+### Install Coconut
 
 The first thing you're going to need to do is install Coconut. Since Coconut is hosted on the [Python Package Index](https://pypi.python.org/pypi/coconut), it can be installed easily using `pip`. Simply install [Python](https://www.python.org/downloads/), open up a command line prompt, and enter the following:
 ```
@@ -42,11 +42,11 @@ To test that `coconut` is working, make sure the Coconut command-line help appea
 coconut -h
 ```
 
-### 2. Set Up a Workspace
+### Set Up a Workspace
 
 Now that you've installed Coconut, it's time to create your first Coconut program. Open up your favorite text editor and save a new file named `tutorial.coc`. It is recommended that you tell your text editor to treat all `.coc` files as Python source files for the purpose of syntax highlighting (Coconut and Python are close enough that this will work). All Coconut files should use the extension `.coc` so they can be recognized as such when compiling folders of many different files.
 
-### 3. Start Coding!
+### Start Coding!
 
 If you're familiar with Python, then you're already familiar with most of Coconut. Coconut is nearly a strict superset of Python 3 syntax, with the sole exception of `lambda` statements, which will be later in this tutorial. For now, let's start with a simple `hello, world!` program. Put this code inside your `tutorial.coc`:
 ```
@@ -69,19 +69,19 @@ $ python tutorial.py
 hello, world!
 ```
 
-### 4. Understanding Compiled Code
+### Understanding Compiled Code
 
 If you look in your `tutorial.coc` directory, you should notice that a new file, `tutorial.py` was created when you ran the compiler. That file contains the compiled Python code, which was why you had to enter `python tutorial.py` instead of `python tutorial.coc` to run it.
 
 Open `tutorial.py` and look inside. You should see two sections, `Coconut Header` and `Compiled Coconut`. The `Coconut Header` section contains code inserted into all compiled coconut files, whereas the `Compiled Coconut` section contains the specific code the compiler produced from your source file.
 
-### 5. Understanding Compiled Folders
+### Understanding Compiled Folders
 
 You might have noticed that the `Coconut Header` section in `tutorial.py` is somewhat large (while Coconut tries to keep the size small, there's only so much it can do). This is because that section contains all the code necessary to set up the Coconut environment. Because Coconut needs to set up that environment in every file, it puts a header at the top.
 
 It would be rather innefficient, however, if Coconut put that entire header in every file of a module (or other folder of files that are intended to stay together). Instead, when compiling a folder, Coconut puts all of that code in a `__coconut__.py` file in the folder directory.
 
-### 6. Compile a Folder!
+### Compile a Folder!
 
 To compile a folder this way, simply call the `coconut` command with the folder directory as the first argument. Go ahead and try it on the `tutorial.coc` directory:
 ```
@@ -98,13 +98,13 @@ _Note: When compiling modules, one will often want to compile to a different loc
 coconut <source directory> <destination directory>
 ```
 
-### 7. Play Around!
+### Play Around!
 
 As this tutorial starts introducing new concepts, it'll be useful to be able to enter Coconut code and have it compiled and run on the fly. To do this, you can start the Coconut interpreter by entering `coconut` into the console with no arguments.
 
 ## II. Functions
 
-### 1. Lambdas
+### Lambdas
 
 Now that you've gotten your feet wet with a simple `hello, world!` program, but before we delve into the special things Coconut can do that Python can't, we should cover the one exception to the rule of Coconut being a strict superset of Python: lambdas.
 
@@ -124,7 +124,7 @@ $ python tutorial.py
 hello, lambdas!
 ```
 
-### 2. Partial Application
+### Partial Application
 
 Partial application, or currying, is a mainstay of functional programming, and for good reason: it allows the dynamic customization of functions to fit the needs of where they are being used. Partial application allows a new function to be created out of an old function with some of its arguments pre-specified. In Coconut, partial application is done by putting a `$` in-between a function and its arguments when calling it.
 
@@ -136,7 +136,7 @@ print(list(expnums))
 ```
 Try to predict what you think will be printed, then either use the interpreter or put this code in `tutorial.coc` and compile and run it to check if you were right.
 
-### 3. Function Composition
+### Function Composition
 
 Another mainstay of functional programming, one very common in mathematics, is function composition, the ability to combine multiple functions into one. In Coconut, function composition is done by the `..` operator.
 
@@ -147,7 +147,7 @@ print(list(zipsum([1,2,3], [10,20,30])))
 ```
 Try again to predict what you think will be printed, then test it to see if you were right.
 
-### 4. Pipe Forward
+### Pipe Forward
 
 Another useful functional programming operator is pipe forward, which makes pipeline-style programming, where a value is fed from function to function, transformed at each step, much easier and more elegant. In Coconut, pipe forward is done by the `|>` operator.
 
@@ -159,7 +159,7 @@ plus1 = (x) -> x+1
 ```
 For all of the examples in this tutorial you should try predicting and then testing to check.
 
-### 5. Operator Functions
+### Operator Functions
 
 A very common thing to do in functional programming is to make use of function versions of built-in operators, currying them, composing them, and piping them. To make this easy, Coconut provides a short-hand syntax to access operator functions, where the operator is simply surrounded by parentheses to retrieve the function.
 
@@ -169,7 +169,7 @@ Here's an example:
 ```
 _Note: If you've been dutifully guessing and checking, you probablly guessed `6` for this and were surprised to find that the actual answer was `-6`. This happens because partial application always starts with the first argument, and the first argument to `(-)` is the thing you're subtracting from, not the thing you're subtracting!_
 
-### 6. Function Definition
+### Function Definition
 
 Up until now, we've been using assignment to a lambda for function one-liners. While this works fine, it has some disadvantages, namely that the function will appear unnamed in any tracebacks, and both the `=` and `->` operators have to be typed out each time. To fix both of these problems, Coconut allows for mathematical function definition.
 
@@ -179,7 +179,7 @@ f(x) = x**2 + x
 5 |> f |> print
 ```
 
-### 7. Infix Calling
+### Infix Calling
 
 Another common idiom in functional programming is to write functions that are intended to behave somewhat like operators. To assist with this, Coconut provies infix calling, where a two-argument function can be called by surrounding it with backticks and placing it in-between its two arguments.
 
@@ -189,7 +189,7 @@ mod = (%)
 print(5 `mod` 3)
 ```
 
-### 8. `reduce`
+### `reduce`
 
 A Python 2 built-in that was removed in Python 3, Coconut re-introduces `reduce`, as it can be very useful for functional programming.
 
@@ -199,7 +199,7 @@ prod = reduce$((*))
 range(1, 5) |> prod |> print
 ```
 
-### 9. `recursive`
+### `recursive`
 
 Tail-recursion is a common functional programming construct that, while automatically optimized in many programming languages, is not in Python. Coconut provides a way around this with the `recursive` decorator.
 
@@ -218,7 +218,7 @@ _Note: Only use this decorator if your function is written in a tail-recursive s
 
 ## III. Iterators
 
-### 1. Slicing
+### Slicing
 
 Another mainstay of functional programming is lazy evaluation, where sequences are only evaluated when their contents are requested, allowing for things like infinite sequences. In Python, this can be done via iterators. Unfortunately, many of the tools necessary for working with iterators just like one would work with sequences are absent.
 
@@ -236,7 +236,7 @@ N()$[10:15] |> list |> print
 ```
 _Note: Unlike Python's sequence slicing, Coconut's iterator slicing makes no guarantee that the original iterator be preserved._
 
-### 2. Chaining
+### Chaining
 
 Another useful tool to make working with iterators as easy as working with sequences is the ability to combine multiple iterators together. This operation is called chain, and is equivalent to addition with sequences. In Coconut, chaining is done by the `::` operator.
 
@@ -245,7 +245,7 @@ Here's an example:
 (range(-10, 0) :: N())$[5:15] |> list |> print
 ```
 
-### 3. `takewhile`
+### `takewhile`
 
 A useful built-in for working with iterators, `takewhile` will slice the iterator up to the point where the condition fails.
 
