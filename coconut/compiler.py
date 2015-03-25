@@ -27,7 +27,7 @@ import os.path
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 def fixpath(path):
-    """Properly Formats A Weapon."""
+    """Properly Formats A Path."""
     return os.path.normpath(os.path.realpath(path))
 
 class executor(object):
