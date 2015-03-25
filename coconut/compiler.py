@@ -204,9 +204,14 @@ class cli(object):
         if write is None:
             destpath = None
         elif write is True:
-            destpath = os.path.splitext(filepath)[0]+self.comp_ext
+            destpath = filepath
         else:
-            destpath = os.path.join(write, os.path.splitext(os.path.basename(filepath))[0]+self.comp_ext)
+            destpath = os.path.join(write, os.path.basename(filepath))
+        if destpath is not None:
+            base, ext = os.path.splitext(os.path.splitext(destpath)[0])
+            if not ext:
+                ext = self.comp_ext
+            destpath = base + ext
         self.compile(filepath, destpath, module, show, run)
 
     def compile(self, codepath, destpath=None, module=False, show=False, run=False):
