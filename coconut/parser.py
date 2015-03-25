@@ -1060,7 +1060,7 @@ class processor(object):
     base_funcdef = addspace(condense(NAME + parameters) + Optional(arrow + test))
     funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
 
-    datadef = condense(attach(Keyword("data").suppress() + NAME + lparen.suppress() + itemlist(NAME, comma) + rparen.suppress(), data_proc) + suite)
+    datadef = condense(attach(Keyword("data").suppress() + NAME + lparen.suppress() + itemlist(~underscore + NAME, comma) + rparen.suppress(), data_proc) + suite)
 
     decorator = condense(at + test + NEWLINE)
     decorators = OneOrMore(decorator)
