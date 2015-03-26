@@ -1024,6 +1024,7 @@ class processor(object):
     test_nocond <<= lambdef_nocond | trace(test_item, "test_item")
     exprlist = itemlist(star_expr | expr, comma)
 
+    stmt = Forward()
     suite = Forward()
 
     argument = condense(NAME + equals + test) | addspace(NAME + Optional(comp_for))
@@ -1108,7 +1109,7 @@ class processor(object):
     keyword_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt | assert_stmt
     small_stmt = trace(keyword_stmt ^ expr_stmt, "small_stmt")
     simple_stmt = trace(condense(itemlist(small_stmt, semicolon) + NEWLINE), "simple_stmt")
-    stmt = trace(compound_stmt | simple_stmt, "stmt")
+    stmt <<= trace(compound_stmt | simple_stmt, "stmt")
     suite <<= trace(condense(colon + NEWLINE + INDENT + OneOrMore(stmt) + DEDENT) | addspace(colon + simple_stmt), "suite")
 
     single_input = trace(NEWLINE | stmt, "single_input")
