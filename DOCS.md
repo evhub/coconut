@@ -202,7 +202,7 @@ Unlike Python, which only supports a single variable or function call in a decor
 
 Coconut:
 ```
-@ wrapper1 .. (wrapper2 $(arg))
+@ wrapper1 .. wrapper2 $(arg)
 func(x) = x**2
 ```
 
