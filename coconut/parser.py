@@ -440,7 +440,7 @@ def decorator_proc(tokens):
         varname = decorator_var + str(x)
         defs.append(varname+" = "+tokens[x])
         decorates.append("@"+varname)
-    return linebreak.join(defs) + linebreak.join(decorates)
+    return linebreak.join(defs + decorates)
 
 def match_proc(tokens):
     """Processes Match Blocks."""
