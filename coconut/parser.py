@@ -955,10 +955,11 @@ class processor(object):
 
     func_atom = NAME | op_atom | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
     keyword_atom = Keyword("None") | Keyword("True") | Keyword("False")
+    string_atom = addspace(OneOrMore(STRING))
     atom = (keyword_atom
             | ellipses
             | NUMBER
-            | OneOrMore(STRING)
+            | string_atom
             | func_atom
             | condense(lbrack + Optional(testlist_comp) + rbrack)
             | condense(lbrace + Optional(dictorsetmaker) + rbrace)
@@ -1054,7 +1055,23 @@ class processor(object):
     nonlocal_stmt = addspace(Keyword("nonlocal") + namelist)
     del_stmt = addspace(Keyword("del") + assignlist)
     with_item = addspace(test + Optional(Keyword("as") + NAME))
-    assert_stmt = addspace(Keyword("assert") + parenwrap(lparen, testlist, rparen))
+    match = Forward()
+    matchlist = Group(match + ZeroOrMore(comma.suppress() + match) + Optional(comma.suppress()))
+    match <<= Group(Optional(NAME + equals.suppress()) + Group(
+        keyword_atom
+        | NAME
+        | NUMBER
+        | string_atom
+        | lparen + matchlist + rparen.suppress()
+        | lbrack + matchlist + rbrack.suppress()
+        | lbrace + matchlist + rbrace.suppress()
+        ))
+
+    match_stmt = attach(
+        Keyword("match").suppress() + matchlist + Keyword("in").suppress() + test + colon.suppress()
+        + Group((NEWLINE.suppress() + INDENT.suppress() + OneOrMore(stmt) + DEDENT.suppress()) | simple_stmt)
+        , match_proc) + Optional(else_stmt)
+    assert_stmt = addspace(Keyword("assert") + testlist)
     else_stmt = condense(Keyword("else") + suite)
     if_stmt = condense(addspace(Keyword("if") + condense(test + suite))
                        + ZeroOrMore(addspace(Keyword("elif") + condense(test + suite)))
@@ -1070,7 +1087,7 @@ class processor(object):
             | Keyword("except") + suite
             ) + Optional(else_stmt) + Optional(Keyword("finally") + suite)
         ))
-    with_stmt = addspace(Keyword("with") + condense(parenwrap(lparen, itemlist(with_item, comma), rparen) + suite))
+    with_stmt = addspace(Keyword("with") + condense(itemlist(with_item, comma) + suite))
 
     base_funcdef = addspace(condense(NAME + parameters) + Optional(arrow + test))
     funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
