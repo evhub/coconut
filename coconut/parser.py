@@ -54,10 +54,13 @@ import __coconut__
 r'''
 class __coconut__(object):
     """Built-In Coconut Functions."""
-    import operator
     import functools
     partial = functools.partial
     reduce = functools.reduce
+    import operator
+    itemgetter = operator.itemgetter
+    attrgetter = operator.attrgetter
+    methodcaller = operator.methodcaller
     import itertools
     chain = itertools.chain
     slice = itertools.islice
@@ -119,11 +122,14 @@ class __coconut__(object):
 r'''
 """Built-In Coconut Functions."""
 
-import operator
-
 import functools
 partial = functools.partial
 reduce = functools.reduce
+
+import operator
+itemgetter = operator.itemgetter
+attrgetter = operator.attrgetter
+methodcaller = operator.methodcaller
 
 import itertools
 chain = itertools.chain
@@ -186,6 +192,9 @@ def recursive(func):
 
 r'''
 reduce = __coconut__.reduce
+itemgetter = __coconut__.itemgetter
+attrgetter = __coconut__.attrgetter
+methodcaller = __coconut__.methodcaller
 takewhile = __coconut__.takewhile
 dropwhile = __coconut__.dropwhile
 recursive = __coconut__.recursive
@@ -940,7 +949,7 @@ class processor(object):
             ) + rparen
             | fixto(lbrack, "(") + (
                 fixto(dollar, "__coconut__.slice")
-                | fixto(dot, "__coconut__.operator.itemgetter")
+                | fixto(plus, "__coconut__.operator.__concat__")
             ) + fixto(rbrack, ")")
         )
 
