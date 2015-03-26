@@ -1059,7 +1059,7 @@ class processor(object):
     matchlist = Group(match + ZeroOrMore(comma.suppress() + match) + Optional(comma.suppress()))
     match <<= Group(Optional(NAME + equals.suppress()) + Group(
         keyword_atom
-        | NAME
+        | Group(NAME)
         | NUMBER
         | string_atom
         | lparen + matchlist + rparen.suppress()
