@@ -1106,7 +1106,7 @@ class processor(object):
     decorators = OneOrMore(decorator)
     decorated = condense(decorators + (classdef | funcdef | datadef))
 
-    compound_stmt = trace(if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | datadef | decorated, "compound_stmt")
+    compound_stmt = trace(match_stmt | if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | datadef | decorated, "compound_stmt")
 
     expr_stmt = trace(addspace(attach(assignlist + augassign + (yield_expr | testlist), assign_proc)
                          | attach(base_funcdef + equals.suppress() + (yield_expr | testlist_star_expr), func_proc)
