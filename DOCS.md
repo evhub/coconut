@@ -129,6 +129,8 @@ Coconut uses Haskell-style operator function short-hand, where the operator plac
 (`)         => (__coconut__.infix)
 ($)         => (__coconut__.partial)
 [$]         => (__coconut__.slice)
+(.)         => (__coconut__.operator.attrgetter)
+[.]         => (__coconut__.operator.itemgetter)
 (+)         => (__coconut__.operator.__add__)
 (-)         => (__coconut__.operator.__sub__)
 (\u207b)    => (__coconut__.operator.__neg__)
@@ -150,9 +152,10 @@ Coconut uses Haskell-style operator function short-hand, where the operator plac
 (!=)        => (__coconut__.operator.__ne__)
 (~)         => (__coconut__.operator.__inv__)
 (not)       => (__coconut__.operator.__not__)
-(is)        => (__coconut__.operator.is_)
 (and)       => (__coconut__.bool_and)
 (or)        => (__coconut__.bool_or)
+(is)        => (__coconut__.operator.is_)
+(in)        => (__coconut__.operator.__contains__)
 ```
 
 ##### Example
