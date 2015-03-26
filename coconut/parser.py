@@ -214,6 +214,23 @@ headers["file"] = headers["code"] + headers["bottom"]
 headers["module"] = headers["top"] + headers["import"] + headers["funcs"] + headers["bottom"]
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# CONSTANTS:
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+openstr = "\u204b"
+closestr = "\xb6"
+linebreak = "\n"
+white = " \t\f"
+downs = "([{"
+ups = ")]}"
+holds = "'\""
+startcomment = "#"
+endline = "\n\r"
+escape = "\\"
+tablen = 4
+decorator_var = "_coconut_decorator_"
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -415,6 +432,16 @@ def data_proc(tokens):
     else:
         raise CoconutException("invalid data tokens: "+repr(tokens))
 
+def decorator_proc(tokens):
+    """Processes Decorators."""
+    defs = []
+    decorates = []
+    for x in range(0, len(tokens)):
+        varname = decorator_var + str(x)
+        defs.append(varname+" = "+tokens[x])
+        decorates.append("@"+varname)
+    return linebreak.join(defs) + linebreak.join(decorates)
+
 def match_proc(tokens):
     """Processes Match Blocks."""
     #TODO - Temporary Testing Code:
@@ -430,17 +457,6 @@ class processor(object):
     TRACER = tracer()
     trace = TRACER.bind
     debug = TRACER.debug
-    openstr = "\u204b"
-    closestr = "\xb6"
-    linebreak = "\n"
-    white = " \t\f"
-    downs = "([{"
-    ups = ")]}"
-    holds = "'\""
-    startcomment = "#"
-    endline = "\n\r"
-    escape = "\\"
-    tablen = 4
     verbosity = 20
 
     def __init__(self, strict=False):
@@ -496,18 +512,18 @@ class processor(object):
         x = 0
         while x <= len(inputstring):
             if x == len(inputstring):
-                c = self.linebreak
+                c = linebreak
             else:
                 c = inputstring[x]
             if hold is not None:
                 if len(hold) == 1:
-                    if c in self.endline:
+                    if c in endline:
                         out.append(self.wrapcomment(hold[0])+c)
                         hold = None
                     else:
                         hold[0] += c
                 elif hold[2] is not None:
-                    if c == self.escape:
+                    if c == escape:
                         hold[0] += hold[2]+c
                         hold[2] = None
                     elif c == hold[1][0]:
@@ -521,7 +537,7 @@ class processor(object):
                     else:
                         hold[0] += hold[2]+c
                         hold[2] = None
-                elif hold[0].endswith(self.escape) and not hold[0].endswith(self.escape*2):
+                elif hold[0].endswith(escape) and not hold[0].endswith(escape*2):
                     hold[0] += c
                 elif c == hold[1]:
                     out.append(self.wrapstr(hold[0], hold[1], False))
@@ -545,9 +561,9 @@ class processor(object):
                     found = None
                 else:
                     raise CoconutException("invalid number of string starts in "+self.getpart(inputstring, x))
-            elif c in self.startcomment:
+            elif c in startcomment:
                 hold = [""]
-            elif c in self.holds:
+            elif c in holds:
                 found = c
             else:
                 out.append(c)
@@ -560,7 +576,7 @@ class processor(object):
         """Counts Leading Whitespace."""
         count = 0
         for c in inputstring:
-            if c not in self.white:
+            if c not in white:
                 break
             elif self.indchar is None:
                 self.indchar = c
@@ -575,19 +591,19 @@ class processor(object):
         hold = None
         for c in inputstring:
             if hold:
-                if c == self.escape:
+                if c == escape:
                     hold[1] = not hold[1]
                 elif hold[1]:
                     hold[1] = False
                 elif c == hold[0]:
                     hold = None
-            elif c in self.startcomment:
+            elif c in startcomment:
                 break
-            elif c in self.holds:
+            elif c in holds:
                 hold = [c, False]
-            elif c in self.downs:
+            elif c in downs:
                 count -= 1
-            elif c in self.ups:
+            elif c in ups:
                 count += 1
         return count
 
@@ -599,16 +615,16 @@ class processor(object):
         count = 0
         current = None
         for line in lines:
-            if line and line[-1] in self.white:
+            if line and line[-1] in white:
                 if self.strict:
                     raise CoconutException("[strict] found trailing whitespace in "+repr(line))
                 else:
                     line = line.rstrip()
             if new:
-                last = new[-1].split(self.startcomment, 1)[0].rstrip()
+                last = new[-1].split(startcomment, 1)[0].rstrip()
             else:
                 last = None
-            if not line or line.lstrip().startswith(self.startcomment):
+            if not line or line.lstrip().startswith(startcomment):
                 if count >= 0:
                     new.append(line)
             elif last is not None and last.endswith("\\"):
@@ -628,10 +644,10 @@ class processor(object):
                 elif check > current:
                     levels.append(current)
                     current = check
-                    line = self.openstr+line
+                    line = openstr+line
                 elif check in levels:
                     point = levels.index(check)+1
-                    line = self.closestr*(len(levels[point:])+1)+line
+                    line = closestr*(len(levels[point:])+1)+line
                     levels = levels[:point]
                     current = levels.pop()
                 elif current != check:
@@ -640,8 +656,8 @@ class processor(object):
             count += self.change(line)
         if count != 0:
             raise CoconutException("unclosed parenthetical in "+repr(new[-1]))
-        new.append(self.closestr*len(levels))
-        return self.linebreak.join(new)
+        new.append(closestr*len(levels))
+        return linebreak.join(new)
 
     def reindent(self, inputstring):
         """Reconverts Indent Tokens Into Indentation."""
@@ -649,28 +665,28 @@ class processor(object):
         level = 0
         hold = None
         for line in inputstring.splitlines():
-            if hold is None and not line.startswith(self.startcomment):
-                while line.startswith(self.openstr) or line.startswith(self.closestr):
-                    if line[0] == self.openstr:
+            if hold is None and not line.startswith(startcomment):
+                while line.startswith(openstr) or line.startswith(closestr):
+                    if line[0] == openstr:
                         level += 1
-                    elif line[0] == self.closestr:
+                    elif line[0] == closestr:
                         level -= 1
                     line = line[1:]
-                line = " "*self.tablen*level + line
+                line = " "*tablen*level + line
             for c in line:
                 if hold:
-                    if c == self.escape:
+                    if c == escape:
                         hold[1] = not hold[1]
                     elif hold[1]:
                         hold[1] = False
                     elif c == hold[0]:
                         hold = None
-                elif c in self.holds:
+                elif c in holds:
                     hold = [c, False]
             if hold is None:
                 line = line.rstrip()
             out.append(line)
-        return self.linebreak.join(out)
+        return linebreak.join(out)
 
     def pre(self, inputstring, **kwargs):
         """Performs Pre-Processing."""
@@ -687,7 +703,7 @@ class processor(object):
         out = self.reindent(out)
         if strip:
             out = out.strip()
-        out += self.linebreak
+        out += linebreak
         return out
 
     def headerproc(self, inputstring, header="file", **kwargs):
@@ -1067,7 +1083,7 @@ class processor(object):
     matchlist = Group(match + ZeroOrMore(comma.suppress() + match) + Optional(comma.suppress()))
     match <<= Group(Optional(NAME + equals.suppress()) + Group(
         keyword_atom
-        | Group(NAME)
+        | Group(NAME + Optional(Keyword("is").suppress() + NAME)
         | NUMBER
         | string_atom
         | lparen + matchlist + rparen.suppress()
@@ -1102,8 +1118,7 @@ class processor(object):
 
     datadef = condense(attach(Keyword("data").suppress() + NAME + lparen.suppress() + itemlist(~underscore + NAME, comma) + rparen.suppress(), data_proc) + suite)
 
-    decorator = condense(at + test + NEWLINE)
-    decorators = OneOrMore(decorator)
+    decorators = attach(OneOrMore(at.suppress() + test + NEWLINE.suppress()), decorator_proc)
     decorated = condense(decorators + (classdef | funcdef | datadef))
 
     compound_stmt = trace(match_stmt | if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | datadef | decorated, "compound_stmt")
