@@ -12,6 +12,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [Function Definition](#function-definition)
     - [Operator Functions](#operator-functions)
     - [Non-Decimal Integers](#non-decimal-integers)
+    - [Enhanced Decorators](#enhanced-decorators)
     - [Unicode Alternatives](#unicode-alternatives)
 - [III. Operators](#iii-operators)
     - [Compose](#compose)
@@ -191,6 +192,27 @@ Coconut:
 Python:
 ```
 int("10A", 12) == 154
+```
+
+### Enhanced Decorators
+
+Unlike Python, which only supports a single variable or function call in a decorator, Coconut supports any expression.
+
+##### Example
+
+Coconut:
+```
+@ wrapper1 .. (wrapper2 $(arg))
+func(x) = x**2
+```
+
+Python:
+```
+def wrapper(func):
+    return wrapper1(wrapper2(arg, func))
+@wrapper
+def func(x):
+    return x**2
 ```
 
 ### Unicode Alternatives
