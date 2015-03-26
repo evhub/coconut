@@ -1075,12 +1075,12 @@ class processor(object):
         | lbrace + matchlist + rbrace.suppress()
         ))
 
+    else_stmt = condense(Keyword("else") + suite)
     match_stmt = attach(
         Keyword("match").suppress() + matchlist + Keyword("in").suppress() + test + colon.suppress()
         + Group((NEWLINE.suppress() + INDENT.suppress() + OneOrMore(stmt) + DEDENT.suppress()) | simple_stmt)
         , match_proc) + Optional(else_stmt)
     assert_stmt = addspace(Keyword("assert") + testlist)
-    else_stmt = condense(Keyword("else") + suite)
     if_stmt = condense(addspace(Keyword("if") + condense(test + suite))
                        + ZeroOrMore(addspace(Keyword("elif") + condense(test + suite)))
                        + Optional(else_stmt)
