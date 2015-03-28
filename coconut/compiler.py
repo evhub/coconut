@@ -145,7 +145,7 @@ class cli(object):
         if args.autopep8 is not None:
             self.processor.autopep8(args.autopep8)
         if args.code is not None:
-            self.execute(self.processor.parse_single(args.code[0]), True)
+            self.execute(self.processor.parse_single(args.code[0]))
         if args.source is not None:
             if args.run and os.path.isdir(args.source):
                 raise parser.CoconutException("source path can't point to file when --run is enabled")
@@ -162,7 +162,10 @@ class cli(object):
                 self.compile_path(args.source, args.dest, show=args.print, run=args.run)
         elif args.run or args.print:
             raise parser.CoconutException("a source file must be specified when --run or --print is enabled")
-        if args.interact or not (args.source or args.code or args.version):
+        stdin = not sys.stdin.isatty()
+        if stdin:
+            self.execute(self.processor.parse_block(sys.stdin.read().decode(ENCODING)))
+        if args.interact or not (stdin or args.source or args.code or args.version):
             self.start_prompt()
 
     def compile_path(self, path, write=True, show=False, run=False):
@@ -231,7 +234,7 @@ class cli(object):
         if show:
             print(compiled)
         if run:
-            self.execute(compiled, True)
+            self.execute(compiled)
         if destpath is not None:
             destpath = fixpath(destpath)
             destdir = os.path.dirname(destpath)
@@ -251,7 +254,7 @@ class cli(object):
         self.console.print("[Interpreter:]")
         self.running = True
         while self.running:
-            self.execute(self.handle(input(self.prompt)))
+            self.execute(self.handle(input(self.prompt)), False)
 
     def exit(self):
         """Exits The Interpreter."""
@@ -274,7 +277,7 @@ class cli(object):
                 return print_error()
         return compiled
 
-    def execute(self, compiled=None, error=False):
+    def execute(self, compiled=None, error=True):
         """Executes Compiled Code."""
         if self.runner is None:
             self.start_runner()
