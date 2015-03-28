@@ -442,10 +442,59 @@ def decorator_proc(tokens):
         decorates.append("@"+varname)
     return linebreak.join(defs + decorates) + linebreak
 
+def get_matches(matches, item):
+    """Performs Pattern-Matching Compilation."""
+    checks = []
+    defs = []
+    for match_top in matches:
+        if len(match_top) == 1:
+            match = match_top[0]
+        else:
+            group_def, match = match_top
+            defs.append(group_def+" = "+item)
+        print(match)
+        if len(match) == 1:
+            match = match[0]
+            if isinstance(match, list):
+                if 0 < len(match) <= 2:
+                    defs.append(match[0]+" = "+item)
+                    if len(match) > 1:
+                        checks.append("isinstance("+item+", "+match[1]+")")
+                else:
+                    raise CoconutException("invalid inner match tokens: "+repr(match))
+            else:
+                checks.append(item+" == "+match)
+        elif len(match) == 2:
+            list_type, match = match
+            if list_type == "(":
+                checks.append("isinstance("+item+", tuple)")
+            elif list_type == "[":
+                checks.append("isinstance("+item+", list)")
+            else:
+                raise CoconutException("invalid match list type: "+repr(list_type))
+            checks.append("len("+item+") == "+str(len(match)))
+            for x in range(0, len(match)):
+                inner_checks, inner_defs = get_matches(match[x], item+"["+str(x)+"]")
+                checks += inner_checks
+                defs += inner_defs
+        else:
+            raise CoconutException("invalid match tokens: "+repr(match))
+    return checks, defs
+
 def match_proc(tokens):
     """Processes Match Blocks."""
-    matches, args, stmts = tokens
-    return "print(str("+repr(matches)+")+'\\n'+str("+repr(args)+")+'\\n'+str("+repr(stmts)+"))"
+    matches, item, stmts = tokens
+    checks = ["len("+item+") == "+str(len(matches))]
+    defs = []
+    for x in range(0, len(matches)):
+        inner_checks, inner_defs = get_matches(matches[x], item+"["+str(x)+"]")
+        checks += inner_checks
+        defs += inner_defs
+    out = "if " + " and ".join(checks) + ":\n" + openstr
+    for match_def in defs:
+        out += match_def + "\n"
+    out += "".join(stmts) + closestr
+    return out
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # PARSER:
@@ -1080,15 +1129,14 @@ class processor(object):
     with_item = addspace(test + Optional(Keyword("as") + NAME))
     match = Forward()
     matchlist = Group(match + ZeroOrMore(comma.suppress() + match) + Optional(comma.suppress()))
-    match <<= Group(Optional(NAME + equals.suppress()) + Group(
+    match <<= parenwrap(lparen, Group(Optional(NAME + equals.suppress()) + parenwrap(lparen, Group(
         keyword_atom
         | Group(NAME + Optional(Keyword("is").suppress() + NAME))
         | NUMBER
         | string_atom
         | lparen + matchlist + rparen.suppress()
         | lbrack + matchlist + rbrack.suppress()
-        | lbrace + matchlist + rbrace.suppress()
-        ))
+        ), rparen)), rparen)
 
     else_stmt = condense(Keyword("else") + suite)
     match_stmt = attach(
