@@ -854,7 +854,7 @@ class processor(object):
     div_slash = fixto((slash | Literal("\xf7"))+~slash, "/")
     div_dubslash = fixto(dubslash | Combine(Literal("\xf7")+slash), "//")
 
-    NAME = (~Keyword("False")
+    name = (~Keyword("False")
             + ~Keyword("None")
             + ~Keyword("True")
             + ~Keyword("and")
@@ -889,7 +889,7 @@ class processor(object):
             + ~Keyword("yield")
             + Regex("(?![0-9])\\w+")
             )
-    dotted_name = condense(NAME + ZeroOrMore(dot + NAME))
+    dotted_name = condense(name + ZeroOrMore(dot + name))
 
     integer = Word(nums)
     binint = Word("01")
@@ -901,7 +901,7 @@ class processor(object):
     sci_e = CaselessLiteral("e")
     numitem = Combine(basenum + sci_e + integer) | basenum
 
-    NUMBER = (attach(Combine(anyint + underscore + integer), anyint_proc)
+    number = (attach(Combine(anyint + underscore + integer), anyint_proc)
               | Combine(CaselessLiteral("0b") + binint)
               | Combine(CaselessLiteral("0o") + octint)
               | Combine(CaselessLiteral("0x") + hexint)
@@ -916,13 +916,13 @@ class processor(object):
 
     bit_b = Optional(CaselessLiteral("b"))
     raw_r = Optional(CaselessLiteral("r"))
-    STRING = Combine((bit_b + raw_r | raw_r + bit_b) + string_ref)
+    string = Combine((bit_b + raw_r | raw_r + bit_b) + string_ref)
     lineitem = Combine(Optional(comment) + Literal(linebreak))
-    NEWLINE = condense(OneOrMore(lineitem))
-    STARTMARKER = StringStart()
-    ENDMARKER = StringEnd()
-    INDENT = Literal(openstr)
-    DEDENT = Literal(closestr)
+    newline = condense(OneOrMore(lineitem))
+    startmarker = StringStart()
+    endmarker = StringEnd()
+    indent = Literal(openstr)
+    dedent = Literal(closestr)
 
     augassign = (heavy_arrow
                  | Combine(dotdot + equals)
@@ -959,7 +959,7 @@ class processor(object):
     expr = Forward()
     comp_for = Forward()
 
-    vardef = NAME
+    vardef = name
     tfpdef = condense(vardef + Optional(colon + test))
     callarg = test
     default = Optional(condense(equals + test))
@@ -1023,12 +1023,12 @@ class processor(object):
             ) + fixto(rbrack, ")")
         )
 
-    func_atom = NAME | op_atom | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
+    func_atom = name | op_atom | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
     keyword_atom = Keyword("None") | Keyword("True") | Keyword("False")
-    string_atom = addspace(OneOrMore(STRING))
+    string_atom = addspace(OneOrMore(string))
     atom = (keyword_atom
             | ellipses
-            | NUMBER
+            | number
             | string_atom
             | func_atom
             | condense(lbrack + Optional(testlist_comp) + rbrack)
@@ -1041,7 +1041,7 @@ class processor(object):
     slicetestgroup = Optional(test, default="")
     sliceopgroup = colon.suppress() + slicetestgroup
     subscriptgroup = Group(slicetestgroup + sliceopgroup + Optional(sliceopgroup) | test)
-    simple_trailer = condense(lbrack + subscriptlist + rbrack) | condense(dot + NAME)
+    simple_trailer = condense(lbrack + subscriptlist + rbrack) | condense(dot + name)
     trailer = (Group(condense(dollar + lparen) + callargslist + rparen.suppress())
                | condense(lparen + callargslist + rparen)
                | Group(dotdot + func_atom)
@@ -1050,7 +1050,7 @@ class processor(object):
                )
 
     assignlist = Forward()
-    assign_item = NAME + ZeroOrMore(simple_trailer) | lparen + assignlist + rparen | lbrack + assignlist + rbrack
+    assign_item = name + ZeroOrMore(simple_trailer) | lparen + assignlist + rparen | lbrack + assignlist + rbrack
     assignlist <<= itemlist(Optional(star) + assign_item, comma)
 
     atom_item = trace(attach(atom + ZeroOrMore(trailer), item_proc), "atom_item")
@@ -1098,8 +1098,8 @@ class processor(object):
     stmt = Forward()
     suite = Forward()
 
-    argument = condense(NAME + equals + test) | addspace(NAME + Optional(comp_for))
-    classdef = condense(addspace(Keyword("class") + NAME) + Optional(condense(lparen + Optional(testlist) + rparen)) + suite)
+    argument = condense(name + equals + test) | addspace(name + Optional(comp_for))
+    classdef = condense(addspace(Keyword("class") + name) + Optional(condense(lparen + Optional(testlist) + rparen)) + suite)
     comp_iter = Forward()
     comp_for <<= addspace(Keyword("for") + exprlist + Keyword("in") + test_item + Optional(comp_iter))
     comp_if = addspace(Keyword("if") + test_nocond + Optional(comp_iter))
@@ -1113,8 +1113,8 @@ class processor(object):
     raise_stmt = addspace(Keyword("raise") + Optional(test + Optional(Keyword("from") + test)))
     flow_stmt = break_stmt | continue_stmt | return_stmt | raise_stmt | yield_stmt
 
-    dotted_as_name = addspace(dotted_name + Optional(Keyword("as") + NAME))
-    import_as_name = addspace(NAME + Optional(Keyword("as") + NAME))
+    dotted_as_name = addspace(dotted_name + Optional(Keyword("as") + name))
+    import_as_name = addspace(name + Optional(Keyword("as") + name))
     import_as_names = itemlist(import_as_name, comma)
     dotted_as_names = itemlist(dotted_as_name, comma)
     import_name = addspace(Keyword("import") + parenwrap(lparen, dotted_as_names, rparen))
@@ -1122,17 +1122,17 @@ class processor(object):
                    + Keyword("import") + (star | parenwrap(lparen, import_as_names, rparen)))
     import_stmt = import_from | import_name
 
-    namelist = parenwrap(lparen, itemlist(NAME, comma), rparen)
+    namelist = parenwrap(lparen, itemlist(name, comma), rparen)
     global_stmt = addspace(Keyword("global") + namelist)
     nonlocal_stmt = addspace(Keyword("nonlocal") + namelist)
     del_stmt = addspace(Keyword("del") + assignlist)
-    with_item = addspace(test + Optional(Keyword("as") + NAME))
+    with_item = addspace(test + Optional(Keyword("as") + name))
     match = Forward()
     matchlist = Group(match + ZeroOrMore(comma.suppress() + match) + Optional(comma.suppress()))
-    match <<= parenwrap(lparen, Group(Optional(NAME + equals.suppress()) + parenwrap(lparen, Group(
+    match <<= parenwrap(lparen, Group(Optional(name + equals.suppress()) + parenwrap(lparen, Group(
         keyword_atom
-        | Group(NAME + Optional(Keyword("is").suppress() + NAME))
-        | NUMBER
+        | Group(name + Optional(Keyword("is").suppress() + name))
+        | number
         | string_atom
         | lparen + matchlist + rparen.suppress()
         | lbrack + matchlist + rbrack.suppress()
@@ -1141,7 +1141,7 @@ class processor(object):
     else_stmt = condense(Keyword("else") + suite)
     match_stmt = attach(
         Keyword("match").suppress() + matchlist + Keyword("in").suppress() + test + colon.suppress()
-        + Group((NEWLINE.suppress() + INDENT.suppress() + OneOrMore(stmt) + DEDENT.suppress()) | simple_stmt)
+        + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
         , match_proc) + Optional(else_stmt)
     assert_stmt = addspace(Keyword("assert") + testlist)
     if_stmt = condense(addspace(Keyword("if") + condense(test + suite))
@@ -1150,7 +1150,7 @@ class processor(object):
                        )
     while_stmt = addspace(Keyword("while") + condense(test + suite + Optional(else_stmt)))
     for_stmt = addspace(Keyword("for") + exprlist + Keyword("in") + condense(testlist + suite + Optional(else_stmt)))
-    except_clause = addspace(Keyword("except") + test + Optional(Keyword("as") + NAME))
+    except_clause = addspace(Keyword("except") + test + Optional(Keyword("as") + name))
     try_stmt = condense(Keyword("try") + suite + (
         Keyword("finally") + suite
         | (
@@ -1160,12 +1160,12 @@ class processor(object):
         ))
     with_stmt = addspace(Keyword("with") + condense(itemlist(with_item, comma) + suite))
 
-    base_funcdef = addspace(condense(NAME + parameters) + Optional(arrow + test))
+    base_funcdef = addspace(condense(name + parameters) + Optional(arrow + test))
     funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
 
-    datadef = condense(attach(Keyword("data").suppress() + NAME + lparen.suppress() + itemlist(~underscore + NAME, comma) + rparen.suppress(), data_proc) + suite)
+    datadef = condense(attach(Keyword("data").suppress() + name + lparen.suppress() + itemlist(~underscore + name, comma) + rparen.suppress(), data_proc) + suite)
 
-    decorators = attach(OneOrMore(at.suppress() + test + NEWLINE.suppress()), decorator_proc)
+    decorators = attach(OneOrMore(at.suppress() + test + newline.suppress()), decorator_proc)
     decorated = condense(decorators + (classdef | funcdef | datadef))
 
     compound_stmt = trace(match_stmt | if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | datadef | decorated, "compound_stmt")
@@ -1177,17 +1177,17 @@ class processor(object):
 
     keyword_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt | assert_stmt
     small_stmt = trace(keyword_stmt ^ expr_stmt, "small_stmt")
-    simple_stmt <<= trace(condense(itemlist(small_stmt, semicolon) + NEWLINE), "simple_stmt")
+    simple_stmt <<= trace(condense(itemlist(small_stmt, semicolon) + newline), "simple_stmt")
     stmt <<= trace(compound_stmt | simple_stmt, "stmt")
-    suite <<= trace(condense(colon + NEWLINE + INDENT + OneOrMore(stmt) + DEDENT) | addspace(colon + simple_stmt), "suite")
+    suite <<= trace(condense(colon + newline + indent + OneOrMore(stmt) + dedent) | addspace(colon + simple_stmt), "suite")
 
-    single_input = trace(NEWLINE | stmt, "single_input")
+    single_input = trace(newline | stmt, "single_input")
     file_input = trace(condense(ZeroOrMore(single_input)), "file_input")
-    eval_input = trace(condense(testlist + NEWLINE), "eval_input")
+    eval_input = trace(condense(testlist + newline), "eval_input")
 
-    single_parser = condense(STARTMARKER + single_input + ENDMARKER)
-    file_parser = condense(STARTMARKER + file_input + ENDMARKER)
-    eval_parser = condense(STARTMARKER + eval_input + ENDMARKER)
+    single_parser = condense(startmarker + single_input + endmarker)
+    file_parser = condense(startmarker + file_input + endmarker)
+    eval_parser = condense(startmarker + eval_input + endmarker)
 
     def parse_single(self, inputstring):
         """Parses Console Input."""
