@@ -444,8 +444,8 @@ def decorator_proc(tokens):
 
 def match_proc(tokens):
     """Processes Match Blocks."""
-    #TODO - Temporary Testing Code:
-    return "print("+str(tokens)+")"
+    matches, args, stmts = tokens
+    return "print(str("+repr(matches)+")+'\\n'+str("+repr(args)+")+'\\n'+str("+repr(stmts)+"))"
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # PARSER:
