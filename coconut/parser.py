@@ -978,9 +978,9 @@ class processor(object):
     testlist_star_expr = itemlist(test_star_expr, comma)
     testlist_comp = addspace(test_star_expr + comp_for) | testlist_star_expr
     dictorsetmaker = addspace(condense(test + colon) + test + comp_for
-                      ^ itemlist(condense(test + colon) + test, comma)
-                      ^ test + comp_for
-                      ^ testlist
+                      | itemlist(condense(test + colon) + test, comma)
+                      | test + comp_for
+                      | testlist
                       )
 
     op_atom = condense(
