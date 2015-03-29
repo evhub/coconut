@@ -452,7 +452,7 @@ def decorator_proc(tokens):
         decorates.append("@"+varname)
     return linebreak.join(defs + decorates) + linebreak
 
-def convert_match(original, item):
+def convert_match(original, item, names):
     """Performs Pattern-Matching Compilation."""
     checks = []
     defs = []
@@ -460,8 +460,13 @@ def convert_match(original, item):
         match = original[0]
         if isinstance(match, list):
             if 0 < len(match) <= 2:
-                if match[0] != wildcard:
-                    defs.append(match[0]+" = "+item)
+                setvar = match[0]
+                if setvar != wildcard:
+                    if setvar in names:
+                        checks.append(names[setvar]+" == "+item)
+                    else:
+                        defs.append(setvar+" = "+item)
+                    names[setvar] = item
                 if len(match) > 1:
                     checks.append("isinstance("+item+", ("+match[1]+"))")
             else:
@@ -480,7 +485,7 @@ def convert_match(original, item):
             raise CoconutException("invalid len 2 inner match tokens: "+repr(original))
         checks.append("len("+item+") == "+str(len(match)))
         for x in range(0, len(match)):
-            inner_checks, inner_defs = convert_match(match[x], item+"["+str(x)+"]")
+            inner_checks, inner_defs = convert_match(match[x], item+"["+str(x)+"]", names)
             checks += inner_checks
             defs += inner_defs
     elif len(original) == 3:
@@ -488,10 +493,15 @@ def convert_match(original, item):
             match = original[1]
         elif original[1] == "=":
             setvar, match = original[0], original[2]
-            defs.append(setvar+" = "+item)
+            if setvar in names:
+                checks.append(names[setvar]+" == "+item)
+            else:
+                defs.append(setvar+" = "+item)
+            if setvar != wildcard:
+                names[setvar] = item
         else:
             raise CoconutException("invalid len 3 inner match tokens: "+repr(original))
-        inner_checks, inner_defs = convert_match(match, item)
+        inner_checks, inner_defs = convert_match(match, item, names)
         checks += inner_checks
         defs += inner_defs
     else:
@@ -502,7 +512,7 @@ def match_proc(tokens):
     """Processes Match Blocks."""
     matches, item, stmts = tokens.asList()
     out = match_var + " = " + item
-    checks, defs = convert_match(("*", matches), match_var)
+    checks, defs = convert_match(("*", matches), match_var, {})
     out += "\nif " + " and ".join(checks) + ":\n" + openstr
     for match_def in defs:
         out += match_def + "\n"
