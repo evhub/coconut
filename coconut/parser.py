@@ -230,7 +230,8 @@ startcomment = "#"
 endline = "\n\r"
 escape = "\\"
 tablen = 4
-decorator_var = "_coconut_decorator_"
+decorator_var = "_coconut_decorator"
+match_var = "_coconut_match"
 wildcard = "_"
 
 ParserElement.setDefaultWhitespaceChars(white)
@@ -445,7 +446,7 @@ def decorator_proc(tokens):
     defs = []
     decorates = []
     for x in range(0, len(tokens)):
-        varname = decorator_var + str(x)
+        varname = decorator_var + "_" + str(x)
         defs.append(varname+" = "+tokens[x])
         decorates.append("@"+varname)
     return linebreak.join(defs + decorates) + linebreak
@@ -483,7 +484,7 @@ def convert_match(original, item):
         if original[0] == "(" and original[2] == ")":
             match = original[1]
         elif original[1] == "=":
-            setvar, match = original[0], original[1]
+            setvar, match = original[0], original[2]
             defs.append(setvar+" = "+item)
         else:
             raise CoconutException("invalid len 3 inner match tokens: "+repr(original))
@@ -497,8 +498,9 @@ def convert_match(original, item):
 def match_proc(tokens):
     """Processes Match Blocks."""
     matches, item, stmts = tokens.asList()
-    checks, defs = convert_match(("*", matches), item)
-    out = "if " + " and ".join(checks) + ":\n" + openstr
+    out = match_var + " = " + item
+    checks, defs = convert_match(("*", matches), match_var)
+    out += "\nif " + " and ".join(checks) + ":\n" + openstr
     for match_def in defs:
         out += match_def + "\n"
     out += "".join(stmts) + closestr
