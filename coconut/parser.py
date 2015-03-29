@@ -463,7 +463,7 @@ def convert_match(original, item):
                 if match[0] != wildcard:
                     defs.append(match[0]+" = "+item)
                 if len(match) > 1:
-                    checks.append("isinstance("+item+", "+match[1]+")")
+                    checks.append("isinstance("+item+", ("+match[1]+"))")
             else:
                 raise CoconutException("invalid len 1 inner match tokens: "+repr(original))
         elif match in const_vars:
@@ -1146,7 +1146,7 @@ class processor(object):
         | number
         | string_atom
         | name + equals + match
-        | Group(name + Optional(Keyword("is").suppress() + name))
+        | Group(name + Optional(Keyword("is").suppress() + namelist))
         | lparen + matchlist_req + rparen.suppress()
         | lbrack + matchlist + rbrack.suppress()
         | lparen + match + rparen
