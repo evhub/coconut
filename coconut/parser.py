@@ -231,7 +231,7 @@ endline = "\n\r"
 escape = "\\"
 tablen = 4
 decorator_var = "_coconut_decorator"
-match_var = "_coconut_match"
+match_var = "_coconut_tomatch"
 wildcard = "_"
 const_vars = ["True", "False", "None"]
 
