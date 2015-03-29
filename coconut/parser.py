@@ -217,6 +217,8 @@ headers["module"] = headers["top"] + headers["import"] + headers["funcs"] + head
 # CONSTANTS:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+ParserElement.enablePackrat()
+
 openstr = "\u204b"
 closestr = "\xb6"
 linebreak = "\n"
@@ -229,6 +231,8 @@ endline = "\n\r"
 escape = "\\"
 tablen = 4
 decorator_var = "_coconut_decorator_"
+
+ParserElement.setDefaultWhitespaceChars(white)
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -308,7 +312,10 @@ class tracer(object):
             def callback(original, location, tokens):
                 """Callback Function Constructed By tracer."""
                 return self.trace(original, location, tokens, message)
-        return attach(item, callback)
+        bound = attach(item, callback)
+        if message is not None:
+            bound.setName(message)
+        return bound
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # PROCESSORS:
@@ -446,13 +453,7 @@ def get_matches(matches, item):
     """Performs Pattern-Matching Compilation."""
     checks = []
     defs = []
-    for match_top in matches:
-        if len(match_top) == 1:
-            match = match_top[0]
-        else:
-            group_def, match = match_top
-            defs.append(group_def+" = "+item)
-        print(match)
+    for match in matches:
         if len(match) == 1:
             match = match[0]
             if isinstance(match, list):
@@ -461,7 +462,7 @@ def get_matches(matches, item):
                     if len(match) > 1:
                         checks.append("isinstance("+item+", "+match[1]+")")
                 else:
-                    raise CoconutException("invalid inner match tokens: "+repr(match))
+                    raise CoconutException("invalid len 1 inner match tokens: "+repr(match))
             else:
                 checks.append(item+" == "+match)
         elif len(match) == 2:
@@ -470,26 +471,32 @@ def get_matches(matches, item):
                 checks.append("isinstance("+item+", tuple)")
             elif list_type == "[":
                 checks.append("isinstance("+item+", list)")
-            else:
-                raise CoconutException("invalid match list type: "+repr(list_type))
+            elif list_type != "*":
+                raise CoconutException("invalid len 2 inner match tokens: "+repr(match))
             checks.append("len("+item+") == "+str(len(match)))
             for x in range(0, len(match)):
                 inner_checks, inner_defs = get_matches(match[x], item+"["+str(x)+"]")
                 checks += inner_checks
                 defs += inner_defs
+        elif len(match) == 3:
+            if match[0] == "(" and match[2] == ")":
+                next_match = match[1]
+            elif match[1] == "=":
+                match_var, next_match = match[0], match[1]
+                defs.append(match_var+" = "+item)
+            else:
+                raise CoconutException("invalid len 3 inner match tokens: "+repr(match))
+            inner_checks, inner_defs = getmatches(next_match, item)
+            checks += inner_checks
+            defs += inner_defs
         else:
             raise CoconutException("invalid match tokens: "+repr(match))
     return checks, defs
 
 def match_proc(tokens):
     """Processes Match Blocks."""
-    matches, item, stmts = tokens
-    checks = ["len("+item+") == "+str(len(matches))]
-    defs = []
-    for x in range(0, len(matches)):
-        inner_checks, inner_defs = get_matches(matches[x], item+"["+str(x)+"]")
-        checks += inner_checks
-        defs += inner_defs
+    matches, item, stmts = tokens.asList()
+    checks, defs = get_matches(("*", matches), item)
     out = "if " + " and ".join(checks) + ":\n" + openstr
     for match_def in defs:
         out += match_def + "\n"
@@ -807,8 +814,6 @@ class processor(object):
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # GRAMMAR:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-    ParserElement.setDefaultWhitespaceChars(white)
 
     comma = Literal(",")
     dot = ~Literal("..")+Literal(".")
@@ -1129,14 +1134,17 @@ class processor(object):
     with_item = addspace(test + Optional(Keyword("as") + name))
     match = Forward()
     matchlist = Group(match + ZeroOrMore(comma.suppress() + match) + Optional(comma.suppress()))
-    match <<= parenwrap(lparen, Group(Optional(name + equals.suppress()) + parenwrap(lparen, Group(
+    matchlist_req = Group(match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress()) | Optional(match + comma.suppress()))
+    match <<= Group(
         keyword_atom
-        | Group(name + Optional(Keyword("is").suppress() + name))
         | number
         | string_atom
-        | lparen + matchlist + rparen.suppress()
+        | name + equals + match
+        | Group(name + Optional(Keyword("is").suppress() + name))
+        | lparen + matchlist_req + rparen.suppress()
         | lbrack + matchlist + rbrack.suppress()
-        ), rparen)), rparen)
+        | lparen + match + rparen
+        )
 
     else_stmt = condense(Keyword("else") + suite)
     match_stmt = attach(
@@ -1171,9 +1179,9 @@ class processor(object):
     compound_stmt = trace(match_stmt | if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | datadef | decorated, "compound_stmt")
 
     expr_stmt = trace(addspace(attach(assignlist + augassign + (yield_expr | testlist), assign_proc)
-                         | attach(base_funcdef + equals.suppress() + (yield_expr | testlist_star_expr), func_proc)
-                         | ZeroOrMore(assignlist + equals) + (yield_expr | testlist_star_expr)
-                         ), "expr_stmt")
+                      | attach(base_funcdef + equals.suppress() + (yield_expr | testlist_star_expr), func_proc)
+                      | ZeroOrMore(assignlist + equals) + (yield_expr | testlist_star_expr)
+                      ), "expr_stmt")
 
     keyword_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt | assert_stmt
     small_stmt = trace(keyword_stmt ^ expr_stmt, "small_stmt")
