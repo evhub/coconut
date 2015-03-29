@@ -231,6 +231,7 @@ endline = "\n\r"
 escape = "\\"
 tablen = 4
 decorator_var = "_coconut_decorator_"
+wildcard = "_"
 
 ParserElement.setDefaultWhitespaceChars(white)
 
@@ -449,54 +450,54 @@ def decorator_proc(tokens):
         decorates.append("@"+varname)
     return linebreak.join(defs + decorates) + linebreak
 
-def get_matches(matches, item):
+def convert_match(original, item):
     """Performs Pattern-Matching Compilation."""
     checks = []
     defs = []
-    for match in matches:
-        if len(match) == 1:
-            match = match[0]
-            if isinstance(match, list):
-                if 0 < len(match) <= 2:
+    if len(original) == 1:
+        match = original[0]
+        if isinstance(match, list):
+            if 0 < len(match) <= 2:
+                if match[0] != wildcard:
                     defs.append(match[0]+" = "+item)
-                    if len(match) > 1:
-                        checks.append("isinstance("+item+", "+match[1]+")")
-                else:
-                    raise CoconutException("invalid len 1 inner match tokens: "+repr(match))
+                if len(match) > 1:
+                    checks.append("isinstance("+item+", "+match[1]+")")
             else:
-                checks.append(item+" == "+match)
-        elif len(match) == 2:
-            list_type, match = match
-            if list_type == "(":
-                checks.append("isinstance("+item+", tuple)")
-            elif list_type == "[":
-                checks.append("isinstance("+item+", list)")
-            elif list_type != "*":
-                raise CoconutException("invalid len 2 inner match tokens: "+repr(match))
-            checks.append("len("+item+") == "+str(len(match)))
-            for x in range(0, len(match)):
-                inner_checks, inner_defs = get_matches(match[x], item+"["+str(x)+"]")
-                checks += inner_checks
-                defs += inner_defs
-        elif len(match) == 3:
-            if match[0] == "(" and match[2] == ")":
-                next_match = match[1]
-            elif match[1] == "=":
-                match_var, next_match = match[0], match[1]
-                defs.append(match_var+" = "+item)
-            else:
-                raise CoconutException("invalid len 3 inner match tokens: "+repr(match))
-            inner_checks, inner_defs = getmatches(next_match, item)
+                raise CoconutException("invalid len 1 inner match tokens: "+repr(original))
+        else:
+            checks.append(item+" == "+match)
+    elif len(original) == 2:
+        list_type, match = original
+        if list_type == "(":
+            checks.append("isinstance("+item+", tuple)")
+        elif list_type == "[":
+            checks.append("isinstance("+item+", list)")
+        elif list_type != "*":
+            raise CoconutException("invalid len 2 inner match tokens: "+repr(original))
+        checks.append("len("+item+") == "+str(len(match)))
+        for x in range(0, len(match)):
+            inner_checks, inner_defs = convert_match(match[x], item+"["+str(x)+"]")
             checks += inner_checks
             defs += inner_defs
+    elif len(original) == 3:
+        if original[0] == "(" and original[2] == ")":
+            match = original[1]
+        elif original[1] == "=":
+            setvar, match = original[0], original[1]
+            defs.append(setvar+" = "+item)
         else:
-            raise CoconutException("invalid match tokens: "+repr(match))
+            raise CoconutException("invalid len 3 inner match tokens: "+repr(original))
+        inner_checks, inner_defs = convert_match(match, item)
+        checks += inner_checks
+        defs += inner_defs
+    else:
+        raise CoconutException("invalid match tokens: "+repr(original))
     return checks, defs
 
 def match_proc(tokens):
     """Processes Match Blocks."""
     matches, item, stmts = tokens.asList()
-    checks, defs = get_matches(("*", matches), item)
+    checks, defs = convert_match(("*", matches), item)
     out = "if " + " and ".join(checks) + ":\n" + openstr
     for match_def in defs:
         out += match_def + "\n"
