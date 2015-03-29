@@ -233,6 +233,7 @@ tablen = 4
 decorator_var = "_coconut_decorator"
 match_var = "_coconut_match"
 wildcard = "_"
+const_vars = ["True", "False", "None"]
 
 ParserElement.setDefaultWhitespaceChars(white)
 
@@ -465,6 +466,8 @@ def convert_match(original, item):
                     checks.append("isinstance("+item+", "+match[1]+")")
             else:
                 raise CoconutException("invalid len 1 inner match tokens: "+repr(original))
+        elif match in const_vars:
+            checks.append(item+" is "+match)
         else:
             checks.append(item+" == "+match)
     elif len(original) == 2:
