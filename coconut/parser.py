@@ -1225,6 +1225,7 @@ class processor(object):
     del_stmt = addspace(Keyword("del") + assignlist)
     with_item = addspace(test + Optional(Keyword("as") + name))
 
+    matchlist_name = name | lparen.suppress() + itemlist(name, comma) + rparen.suppress()
     match = Forward()
     matchlist = Group(match + ZeroOrMore(comma.suppress() + match) + Optional(comma.suppress()))
     matchlist_list = Optional(matchlist)
@@ -1241,7 +1242,7 @@ class processor(object):
         match_const
         | name + equals + match
         | name + lparen + matchlist_list + rparen.suppress()
-        | Group(name + Optional(Keyword("is").suppress() + namelist))
+        | Group(name + Optional(Keyword("is").suppress() + matchlist_name))
         | lparen + matchlist_tuple + rparen.suppress() + Optional((plus | dubcolon) + name)
         | lparen + match + rparen
         | lbrack + matchlist_list + rbrack.suppress() + Optional((plus | dubcolon) + name)
