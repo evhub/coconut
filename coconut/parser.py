@@ -456,8 +456,11 @@ def convert_match(original, item, names):
     """Performs Pattern-Matching Processing."""
     checks = []
     defs = []
-    if len(original) == 2 and original[0] == "{":
-        match = original[1]
+    if (len(original) == 2 or len(original) == 1) and original[0] == "{":
+        if original:
+            match = original[1]
+        else:
+            match = ()
         checks.append("isinstance("+item+", dict)")
         checks.append("len("+item+") == "+str(len(match)))
         for x in range(0, len(match)):
@@ -466,7 +469,7 @@ def convert_match(original, item, names):
             inner_checks, inner_defs = convert_match(v, item+"["+k+"]", names)
             checks += inner_checks
             defs += inner_defs
-    elif len(original) == 2 or (len(original) == 4 and original[2] == "+") or (len(original) == 1 and original[0] in ("(", "[", "{")):
+    elif len(original) == 2 or (len(original) == 4 and original[2] == "+") or (len(original) == 1 and original[0] in ("(", "[")):
         tail = None
         if len(original) == 4:
             series_type, match, _, tail = original
