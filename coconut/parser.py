@@ -453,7 +453,7 @@ def decorator_proc(tokens):
     return linebreak.join(defs + decorates) + linebreak
 
 def convert_match(original, item, names):
-    """Performs Pattern-Matching Compilation."""
+    """Performs Pattern-Matching Processing."""
     checks = []
     defs = []
     if len(original) == 1:
@@ -470,20 +470,27 @@ def convert_match(original, item, names):
                 if len(match) > 1:
                     checks.append("isinstance("+item+", ("+match[1]+"))")
             else:
-                raise CoconutException("invalid len 1 inner match tokens: "+repr(original))
+                raise CoconutException("invalid const match tokens: "+repr(original))
         elif match in const_vars:
             checks.append(item+" is "+match)
         else:
             checks.append(item+" == "+match)
-    elif len(original) == 2:
-        list_type, match = original
-        if list_type == "(":
+    elif len(original) == 2 or (len(original) == 4 and original[2] == "+"):
+        if len(original) == 2:
+            series_type, match = original
+            tail = None
+        else:
+            series_type, match, _, tail = original
+        if series_type == "(":
             checks.append("isinstance("+item+", tuple)")
-        elif list_type == "[":
+        elif series_type == "[":
             checks.append("isinstance("+item+", list)")
-        elif list_type != "*":
-            raise CoconutException("invalid len 2 inner match tokens: "+repr(original))
-        checks.append("len("+item+") == "+str(len(match)))
+        elif series_type != "*":
+            raise CoconutException("invalid series match tokens: "+repr(original))
+        if tail is None:
+            checks.append("len("+item+") == "+str(len(match)))
+        else:
+            defs.append(tail+" = "+item+"["+str(len(match))+":]")
         for x in range(0, len(match)):
             inner_checks, inner_defs = convert_match(match[x], item+"["+str(x)+"]", names)
             checks += inner_checks
@@ -500,7 +507,7 @@ def convert_match(original, item, names):
             if setvar != wildcard:
                 names[setvar] = item
         else:
-            raise CoconutException("invalid len 3 inner match tokens: "+repr(original))
+            raise CoconutException("invalid wrap match tokens: "+repr(original))
         inner_checks, inner_defs = convert_match(match, item, names)
         checks += inner_checks
         defs += inner_defs
@@ -1157,9 +1164,9 @@ class processor(object):
         | string_atom
         | name + equals + match
         | Group(name + Optional(Keyword("is").suppress() + namelist))
-        | lparen + matchlist_req + rparen.suppress()
-        | lbrack + matchlist + rbrack.suppress()
+        | lparen + matchlist_req + rparen.suppress() + Optional(plus + name)
         | lparen + match + rparen
+        | lbrack + matchlist + rbrack.suppress() + Optional(plus + name)
         )
 
     else_stmt = condense(Keyword("else") + suite)
