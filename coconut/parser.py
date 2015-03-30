@@ -1232,7 +1232,7 @@ class processor(object):
     match_stmt = attach(
         Keyword("match").suppress() + matchlist + Keyword("in").suppress() + test + Optional(Keyword("if").suppress() + test) + colon.suppress()
         + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
-        , match_proc) + Optional(condense(fixto(Keyword("else"), "if "+ match_check_var +" is True") + suite))
+        , match_proc) + Optional(condense(fixto(Keyword("else"), "if not "+ match_check_var) + suite))
     assert_stmt = addspace(Keyword("assert") + testlist)
     if_stmt = condense(addspace(Keyword("if") + condense(test + suite))
                        + ZeroOrMore(addspace(Keyword("elif") + condense(test + suite)))
