@@ -1236,7 +1236,7 @@ class processor(object):
     matchlist_set = Group(match_const + ZeroOrMore(comma.suppress() + match_const) + Optional(comma.suppress()))
     match_pair = Group(match_const + colon.suppress() + match)
     matchlist_dict = Optional(Group(match_pair + ZeroOrMore(comma.suppress() + match_pair) + Optional(comma.suppress())))
-    match <<= Group(
+    match <<= trace(Group(
         match_const
         | name + equals + match
         | name + lparen + matchlist_list + rparen.suppress()
@@ -1246,7 +1246,7 @@ class processor(object):
         | lbrack + matchlist_list + rbrack.suppress() + Optional((plus | dubcolon) + name)
         | lbrace + matchlist_dict + rbrace.suppress()
         | lbrace + matchlist_set + rbrace
-        )
+        ), "match")
 
     else_stmt = condense(Keyword("else") + suite)
     match_stmt = attach(
