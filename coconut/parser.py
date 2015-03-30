@@ -517,6 +517,12 @@ def convert_match(original, item, names):
             checks.append(item+" is "+match)
         else:
             checks.append(item+" == "+match)
+    elif len(original) == 3 and original[0] == "{" and original[2] == "}":
+        match = original[1]
+        checks.append("isinstance("+item+", set)")
+        checks.append("len("+item+") == "+str(len(match)))
+        for const in match:
+            checks.append(const+" in "+item)
     elif len(original) == 3 and original[1] == "(":
         data_type, _, match = original
         checks.append("isinstance("+item+", "+data_type+")")
@@ -1195,6 +1201,7 @@ class processor(object):
         | number
         | string_atom
         )
+    matchlist_set = Group(match_const + ZeroOrMore(comma.suppress() + match_const) + Optional(comma.suppress()))
     match_pair = Group(match_const + colon.suppress() + match)
     matchlist_dict = Optional(Group(match_pair + ZeroOrMore(comma.suppress() + match_pair) + Optional(comma.suppress())))
     match <<= match_const | Group(
@@ -1205,6 +1212,7 @@ class processor(object):
         | lparen + match + rparen
         | lbrack + matchlist_list + rbrack.suppress() + Optional((plus | dubcolon) + name)
         | lbrace + matchlist_dict + rbrace.suppress()
+        | lbrace + matchlist_set + rbrace
         )
 
     else_stmt = condense(Keyword("else") + suite)
