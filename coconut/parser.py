@@ -535,7 +535,7 @@ class matcher(object):
                 self.checks.append(item+" == "+match)
         elif len(original) == 3 and original[0] == "{" and original[2] == "}":
             match = original[1]
-            self.checks.append("isinstance("+item+", set)")
+            self.checks.append("isinstance("+item+", (set, frozenset))")
             self.checks.append("len("+item+") == "+str(len(match)))
             for const in match:
                 self.checks.append(const+" in "+item)
