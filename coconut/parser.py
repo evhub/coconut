@@ -453,103 +453,105 @@ def decorator_proc(tokens):
         decorates.append("@"+varname)
     return linebreak.join(defs + decorates) + linebreak
 
-def convert_match(original, item, names):
-    """Performs Pattern-Matching Processing."""
-    checks = []
-    defs = []
-    if (len(original) == 2 or len(original) == 1) and original[0] == "{":
-        if original:
-            match = original[1]
-        else:
-            match = ()
-        checks.append("isinstance("+item+", dict)")
-        checks.append("len("+item+") == "+str(len(match)))
-        for x in range(0, len(match)):
-            k,v = match[x]
-            checks.append(k+" in "+item)
-            inner_checks, inner_defs = convert_match(v, item+"["+k+"]", names)
-            checks += inner_checks
-            defs += inner_defs
-    elif len(original) == 2 or (len(original) == 4 and original[2] == "+") or (len(original) == 1 and original[0] in ("(", "[")):
-        tail = None
-        if len(original) == 4:
-            series_type, match, _, tail = original
-        elif len(original) == 2:
-            series_type, match = original
-        else:
-            series_type, match = original[0], ()
-        if series_type == "(":
-            checks.append("isinstance("+item+", tuple)")
-        elif series_type == "[":
-            checks.append("isinstance("+item+", list)")
-        elif series_type != "*":
-            raise CoconutException("invalid series match tokens: "+repr(original))
-        if tail is None:
-            checks.append("len("+item+") == "+str(len(match)))
-        else:
-            defs.append(tail+" = "+item+"["+str(len(match))+":]")
-        for x in range(0, len(match)):
-            inner_checks, inner_defs = convert_match(match[x], item+"["+str(x)+"]", names)
-            checks += inner_checks
-            defs += inner_defs
-    elif len(original) == 4 and original[2] == "::":
-        _, match, _, tail = original
-        defs.append(tail+" = "+item_proc([item, ["$[", [str(len(match)), ""]]]))
-        for x in range(0, len(match)):
-            inner_checks, inner_defs = convert_match(match[x], item_proc([item, ["$[", [str(x)]]]), names)
-            checks += inner_checks
-            defs += inner_defs
-    elif len(original) == 1:
-        match = original[0]
-        if isinstance(match, list):
-            if 0 < len(match) <= 2:
-                setvar = match[0]
-                if setvar != wildcard:
-                    if setvar in names:
-                        checks.append(names[setvar]+" == "+item)
-                    else:
-                        defs.append(setvar+" = "+item)
-                        names[setvar] = item
-                if len(match) > 1:
-                    checks.append("isinstance("+item+", ("+match[1]+"))")
+class matcher(object):
+    """Pattern-Matching Processor."""
+
+    def __init__(self):
+        self.checks = []
+        self.defs = []
+        self.names = {}
+
+    def start(self, matches, item):
+        """Starts Pattern-Matching Processing."""
+        self.match(("*", matches), item)
+
+    def match(self, original, item):
+        """Performs Pattern-Matching Processing."""
+        if (len(original) == 2 or len(original) == 1) and original[0] == "{":
+            if original:
+                match = original[1]
             else:
-                raise CoconutException("invalid const match tokens: "+repr(original))
-        elif match in const_vars:
-            checks.append(item+" is "+match)
-        else:
-            checks.append(item+" == "+match)
-    elif len(original) == 3 and original[0] == "{" and original[2] == "}":
-        match = original[1]
-        checks.append("isinstance("+item+", set)")
-        checks.append("len("+item+") == "+str(len(match)))
-        for const in match:
-            checks.append(const+" in "+item)
-    elif len(original) == 3 and original[1] == "(":
-        data_type, _, match = original
-        checks.append("isinstance("+item+", "+data_type+")")
-        for x in range(0, len(match)):
-            inner_checks, inner_defs = convert_match(match[x], item+"["+str(x)+"]", names)
-            checks += inner_checks
-            defs += inner_defs
-    elif len(original) == 3:
-        if original[0] == "(" and original[2] == ")":
-            match = original[1]
-        elif original[1] == "=":
-            setvar, match = original[0], original[2]
-            if setvar in names:
-                checks.append(names[setvar]+" == "+item)
+                match = ()
+            self.checks.append("isinstance("+item+", dict)")
+            self.checks.append("len("+item+") == "+str(len(match)))
+            for x in range(0, len(match)):
+                k,v = match[x]
+                self.checks.append(k+" in "+item)
+                self.match(v, item+"["+k+"]")
+        elif len(original) == 2 or (len(original) == 4 and original[2] == "+") or (len(original) == 1 and original[0] in ("(", "[")):
+            tail = None
+            if len(original) == 4:
+                series_type, match, _, tail = original
+            elif len(original) == 2:
+                series_type, match = original
             else:
-                defs.append(setvar+" = "+item)
-                if setvar != wildcard:
-                    names[setvar] = item
+                series_type, match = original[0], ()
+            if series_type == "(":
+                self.checks.append("isinstance("+item+", tuple)")
+            elif series_type == "[":
+                self.checks.append("isinstance("+item+", list)")
+            elif series_type != "*":
+                raise CoconutException("invalid series match tokens: "+repr(original))
+            if tail is None:
+                self.checks.append("len("+item+") == "+str(len(match)))
+            else:
+                self.defs.append(tail+" = "+item+"["+str(len(match))+":]")
+            for x in range(0, len(match)):
+                self.match(match[x], item+"["+str(x)+"]")
+        elif len(original) == 4 and original[2] == "::":
+            _, match, _, tail = original
+            self.defs.append(tail+" = "+item_proc([item, ["$[", [str(len(match)), ""]]]))
+            for x in range(0, len(match)):
+                self.match(match[x], item_proc([item, ["$[", [str(x)]]]))
+        elif len(original) == 1:
+            match = original[0]
+            if isinstance(match, list):
+                if 0 < len(match) <= 2:
+                    setvar = match[0]
+                    if setvar != wildcard:
+                        if setvar in self.names:
+                            self.checks.append(self.names[setvar]+" == "+item)
+                        else:
+                            self.defs.append(setvar+" = "+item)
+                            self.names[setvar] = item
+                    if len(match) > 1:
+                        self.checks.append("isinstance("+item+", ("+match[1]+"))")
+                else:
+                    raise CoconutException("invalid const match tokens: "+repr(original))
+            elif match in const_vars:
+                self.checks.append(item+" is "+match)
+            else:
+                self.checks.append(item+" == "+match)
+        elif len(original) == 3 and original[0] == "{" and original[2] == "}":
+            match = original[1]
+            self.checks.append("isinstance("+item+", set)")
+            self.checks.append("len("+item+") == "+str(len(match)))
+            for const in match:
+                self.checks.append(const+" in "+item)
+        elif len(original) == 3 and original[1] == "(":
+            data_type, _, match = original
+            self.checks.append("isinstance("+item+", "+data_type+")")
+            for x in range(0, len(match)):
+                self.match(match[x], item+"["+str(x)+"]")
+        elif len(original) == 3:
+            if original[0] == "(" and original[2] == ")":
+                match = original[1]
+            elif original[1] == "=":
+                setvar, match = original[0], original[2]
+                if setvar in self.names:
+                    self.checks.append(self.names[setvar]+" == "+item)
+                else:
+                    self.defs.append(setvar+" = "+item)
+                    if setvar != wildcard:
+                        self.names[setvar] = item
+            else:
+                raise CoconutException("invalid wrap match tokens: "+repr(original))
+            self.match(match, item)
         else:
-            raise CoconutException("invalid wrap match tokens: "+repr(original))
-        inner_checks, inner_defs = convert_match(match, item, names)
-        checks += inner_checks
-        defs += inner_defs
-    else:
-        raise CoconutException("invalid inner match tokens: "+repr(original))
-    return checks, defs
+            raise CoconutException("invalid inner match tokens: "+repr(original))
+
+    def out(self):
+        return self.checks, self.defs
 
 def match_proc(tokens):
     """Processes Match Blocks."""
@@ -563,7 +565,9 @@ def match_proc(tokens):
         raise CoconutException("invalid top-level match tokens: "+repr(tokens))
     out = match_check_var + " = False\n"
     out += match_to_var + " = " + item + "\n"
-    checks, defs = convert_match(("*", matches), match_to_var, {})
+    matching = matcher()
+    matching.start(matches, match_to_var)
+    checks, defs = matching.out()
     out += "if " + " and ".join(checks) + ":\n" + openstr
     for match_def in defs:
         out += match_def + "\n"
