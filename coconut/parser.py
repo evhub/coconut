@@ -231,7 +231,8 @@ endline = "\n\r"
 escape = "\\"
 tablen = 4
 decorator_var = "_coconut_decorator"
-match_var = "_coconut_tomatch"
+match_to_var = "_coconut_match_to"
+match_check_var = "_coconut_match_check"
 wildcard = "_"
 const_vars = ["True", "False", "None"]
 
@@ -547,18 +548,30 @@ def convert_match(original, item, names):
         checks += inner_checks
         defs += inner_defs
     else:
-        raise CoconutException("invalid match tokens: "+repr(original))
+        raise CoconutException("invalid inner match tokens: "+repr(original))
     return checks, defs
 
 def match_proc(tokens):
     """Processes Match Blocks."""
-    matches, item, stmts = tokens.asList()
-    out = match_var + " = " + item
-    checks, defs = convert_match(("*", matches), match_var, {})
-    out += "\nif " + " and ".join(checks) + ":\n" + openstr
+    tokens = tokens.asList()
+    if len(tokens) == 3:
+        matches, item, stmts = tokens
+        cond = None
+    elif len(tokens) == 4:
+        matches, item, cond, stmts = tokens
+    else:
+        raise CoconutException("invalid top-level match tokens: "+repr(tokens))
+    out = match_check_var + " = False\n"
+    out += match_to_var + " = " + item + "\n"
+    checks, defs = convert_match(("*", matches), match_to_var, {})
+    out += "if " + " and ".join(checks) + ":\n" + openstr
     for match_def in defs:
         out += match_def + "\n"
-    out += "".join(stmts) + closestr
+    if cond is not None:
+        out += "if " + cond + ":\n" + openstr
+    out += "".join(stmts)
+    out += match_check_var + " = True\n"
+    out += closestr * (1 + int(cond is not None))
     return out
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1217,9 +1230,9 @@ class processor(object):
 
     else_stmt = condense(Keyword("else") + suite)
     match_stmt = attach(
-        Keyword("match").suppress() + matchlist + Keyword("in").suppress() + test + colon.suppress()
+        Keyword("match").suppress() + matchlist + Keyword("in").suppress() + test + Optional(Keyword("if").suppress() + test) + colon.suppress()
         + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
-        , match_proc) + Optional(else_stmt)
+        , match_proc) + Optional(condense(fixto(Keyword("else"), "if "+ match_check_var +" is True") + suite))
     assert_stmt = addspace(Keyword("assert") + testlist)
     if_stmt = condense(addspace(Keyword("if") + condense(test + suite))
                        + ZeroOrMore(addspace(Keyword("elif") + condense(test + suite)))
