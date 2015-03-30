@@ -930,10 +930,8 @@ class processor(object):
     div_slash = fixto((slash | Literal("\xf7"))+~slash, "/")
     div_dubslash = fixto(dubslash | Combine(Literal("\xf7")+slash), "//")
 
-    name = (~Keyword("False")
-            + ~Keyword("None")
-            + ~Keyword("True")
-            + ~Keyword("and")
+    name = (
+            ~Keyword("and")
             + ~Keyword("as")
             + ~Keyword("assert")
             + ~Keyword("break")
@@ -965,6 +963,8 @@ class processor(object):
             + ~Keyword("yield")
             + Regex("(?![0-9])\\w+")
             )
+    for const_var in const_vars:
+        name = ~Keyword(const_var) + name
     dotted_name = condense(name + ZeroOrMore(dot + name))
 
     integer = Word(nums)
@@ -1100,7 +1100,9 @@ class processor(object):
         )
 
     func_atom = name | op_atom | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
-    keyword_atom = Keyword("None") | Keyword("True") | Keyword("False")
+    keyword_atom = Keyword(const_vars[0])
+    for x in range(1, len(const_vars)):
+        keyword_atom |= Keyword(const_vars[x])
     string_atom = addspace(OneOrMore(string))
     atom = (
         keyword_atom
