@@ -514,6 +514,13 @@ def convert_match(original, item, names):
             checks.append(item+" is "+match)
         else:
             checks.append(item+" == "+match)
+    elif len(original) == 3 and original[1] == "(":
+        data_type, _, match = original
+        checks.append("isinstance("+item+", "+data_type+")")
+        for x in range(0, len(match)):
+            inner_checks, inner_defs = convert_match(match[x], item+"["+str(x)+"]", names)
+            checks += inner_checks
+            defs += inner_defs
     elif len(original) == 3:
         if original[0] == "(" and original[2] == ")":
             match = original[1]
@@ -1189,6 +1196,7 @@ class processor(object):
     matchlist_dict = Optional(Group(match_pair + ZeroOrMore(comma.suppress() + match_pair) + Optional(comma.suppress())))
     match <<= match_const | Group(
         name + equals + match
+        | name + lparen + matchlist_list + rparen.suppress()
         | Group(name + Optional(Keyword("is").suppress() + namelist))
         | lparen + matchlist_tuple + rparen.suppress() + Optional((plus | dubcolon) + name)
         | lparen + match + rparen
