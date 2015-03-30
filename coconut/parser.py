@@ -1182,7 +1182,7 @@ class processor(object):
     matchlist_tuple = Group(match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress()) | Optional(match + comma.suppress()))
     matchlist_dict = Group(Group(match_const + colon.suppress() + match) + ZeroOrMore(comma.suppress() + Group(match_const + colon.suppress() + match)) + Optional(comma.suppress()))
     match <<= match_const | Group(
-        | name + equals + match
+        name + equals + match
         | Group(name + Optional(Keyword("is").suppress() + namelist))
         | lparen + matchlist_tuple + rparen.suppress() + Optional((plus | dubcolon) + name)
         | lparen + match + rparen
