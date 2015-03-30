@@ -509,7 +509,7 @@ def convert_match(original, item, names):
                         checks.append(names[setvar]+" == "+item)
                     else:
                         defs.append(setvar+" = "+item)
-                    names[setvar] = item
+                        names[setvar] = item
                 if len(match) > 1:
                     checks.append("isinstance("+item+", ("+match[1]+"))")
             else:
@@ -540,8 +540,8 @@ def convert_match(original, item, names):
                 checks.append(names[setvar]+" == "+item)
             else:
                 defs.append(setvar+" = "+item)
-            if setvar != wildcard:
-                names[setvar] = item
+                if setvar != wildcard:
+                    names[setvar] = item
         else:
             raise CoconutException("invalid wrap match tokens: "+repr(original))
         inner_checks, inner_defs = convert_match(match, item, names)
@@ -1209,7 +1209,7 @@ class processor(object):
     matchlist = Group(match + ZeroOrMore(comma.suppress() + match) + Optional(comma.suppress()))
     matchlist_list = Optional(matchlist)
     matchlist_tuple = Group(match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress()) | Optional(match + comma.suppress()))
-    match_const = Group(
+    match_const = (
         keyword_atom
         | number
         | string_atom
@@ -1217,8 +1217,9 @@ class processor(object):
     matchlist_set = Group(match_const + ZeroOrMore(comma.suppress() + match_const) + Optional(comma.suppress()))
     match_pair = Group(match_const + colon.suppress() + match)
     matchlist_dict = Optional(Group(match_pair + ZeroOrMore(comma.suppress() + match_pair) + Optional(comma.suppress())))
-    match <<= match_const | Group(
-        name + equals + match
+    match <<= Group(
+        match_const
+        | name + equals + match
         | name + lparen + matchlist_list + rparen.suppress()
         | Group(name + Optional(Keyword("is").suppress() + namelist))
         | lparen + matchlist_tuple + rparen.suppress() + Optional((plus | dubcolon) + name)
