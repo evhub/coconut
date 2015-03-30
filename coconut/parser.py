@@ -475,6 +475,16 @@ def convert_match(original, item, names):
             checks.append(item+" is "+match)
         else:
             checks.append(item+" == "+match)
+    elif len(original) == 2 and original[0] == "{":
+        match = original[1]
+        checks.append("isinstance("+item+", dict)")
+        checks.append("len("+item+") == "+str(len(match)))
+        for x in range(0, len(match)):
+            k,v = match[x]
+            checks.append(k+" in "+item)
+            inner_checks, inner_defs = convert_match(v, item+"["+k+"]", names)
+            checks += inner_checks
+            defs += inner_defs
     elif len(original) == 2 or (len(original) == 4 and original[2] == "+"):
         if len(original) == 2:
             series_type, match = original
@@ -497,9 +507,9 @@ def convert_match(original, item, names):
             defs += inner_defs
     elif len(original) == 4 and original[2] == "::":
         _, match, _, tail = original
-        defs.append(tail+" = "+item_proc([item, ["$[", str(len(match)), ""]]))
+        defs.append(tail+" = "+item_proc([item, ["$[", [str(len(match)), ""]]]))
         for x in range(0, len(match)):
-            inner_checks, inner_defs = convert_match(match[x], item_proc([item, ["$[", str(x)]]), names)
+            inner_checks, inner_defs = convert_match(match[x], item_proc([item, ["$[", [str(x)]]]), names)
             checks += inner_checks
             defs += inner_defs
     elif len(original) == 3:
@@ -1163,17 +1173,21 @@ class processor(object):
     del_stmt = addspace(Keyword("del") + assignlist)
     with_item = addspace(test + Optional(Keyword("as") + name))
     match = Forward()
-    matchlist = Group(match + ZeroOrMore(comma.suppress() + match) + Optional(comma.suppress()))
-    matchlist_req = Group(match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress()) | Optional(match + comma.suppress()))
-    match <<= Group(
+    match_const = Group(
         keyword_atom
         | number
         | string_atom
+        )
+    matchlist = Group(match + ZeroOrMore(comma.suppress() + match) + Optional(comma.suppress()))
+    matchlist_tuple = Group(match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress()) | Optional(match + comma.suppress()))
+    matchlist_dict = Group(Group(match_const + colon.suppress() + match) + ZeroOrMore(comma.suppress() + Group(match_const + colon.suppress() + match)) + Optional(comma.suppress()))
+    match <<= match_const | Group(
         | name + equals + match
         | Group(name + Optional(Keyword("is").suppress() + namelist))
-        | lparen + matchlist_req + rparen.suppress() + Optional((plus | dubcolon) + name)
+        | lparen + matchlist_tuple + rparen.suppress() + Optional((plus | dubcolon) + name)
         | lparen + match + rparen
         | lbrack + matchlist + rbrack.suppress() + Optional((plus | dubcolon) + name)
+        | lbrace + matchlist_dict + rbrace.suppress()
         )
 
     else_stmt = condense(Keyword("else") + suite)
