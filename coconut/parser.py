@@ -63,7 +63,7 @@ class __coconut__(object):
     methodcaller = operator.methodcaller
     import itertools
     chain = itertools.chain
-    slice = itertools.islice
+    islice = itertools.islice
     takewhile = itertools.takewhile
     dropwhile = itertools.dropwhile
     import collections
@@ -133,7 +133,7 @@ methodcaller = operator.methodcaller
 
 import itertools
 chain = itertools.chain
-slice = itertools.islice
+islice = itertools.islice
 takewhile = itertools.takewhile
 dropwhile = itertools.dropwhile
 
@@ -368,7 +368,7 @@ def item_proc(tokens):
                             else:
                                 arg = "None"
                         args.append(arg)
-                    out = "__coconut__.slice("+out
+                    out = "__coconut__.islice("+out
                     if len(args) == 1:
                         out += ", "+args[0]+", ("+args[0]+") + 1)"
                         out = "next("+out+")"
@@ -506,9 +506,9 @@ class matcher(object):
             itervar = match_iter_var+"_"+str(self.iter_index)
             self.iter_index += 1
             if series_type == "(":
-                self.pres.append(itervar+" = tuple(__coconut__.slice("+item+", 0, "+str(len(match))+"))")
+                self.pres.append(itervar+" = tuple(__coconut__.islice("+item+", 0, "+str(len(match))+"))")
             elif series_type == "[":
-                self.pres.append(itervar+" = list(__coconut__.slice("+item+", 0, "+str(len(match))+"))")
+                self.pres.append(itervar+" = list(__coconut__.islice("+item+", 0, "+str(len(match))+"))")
             else:
                 raise CoconutException("invalid iterator match tokens: "+repr(original))
             self.defs.append(tail+" = "+item)
@@ -1111,7 +1111,7 @@ class processor(object):
                 | fixto(Keyword("in"), "__coconut__.operator.__contains__")
             ) + rparen
             | fixto(lbrack, "(") + (
-                fixto(dollar, "__coconut__.slice")
+                fixto(dollar, "__coconut__.islice")
                 | fixto(plus, "__coconut__.operator.__concat__")
             ) + fixto(rbrack, ")")
         )
