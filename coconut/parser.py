@@ -298,13 +298,14 @@ class tracer(object):
         if self.on:
             original = str(original)
             location = int(location)
+            tokens = tokens.asList()
             out = ""
             if message is not None:
                 out += "["+message+"] "
             if len(tokens) == 1:
                 out += repr(tokens[0])
             else:
-                out += str(tokens.asList())
+                out += str(tokens)
             out += " (line "+str(lineno(location, original))+", col "+str(col(location, original))+")"
             self.show(out)
         return tokens
