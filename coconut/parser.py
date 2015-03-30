@@ -456,26 +456,7 @@ def convert_match(original, item, names):
     """Performs Pattern-Matching Processing."""
     checks = []
     defs = []
-    if len(original) == 1:
-        match = original[0]
-        if isinstance(match, list):
-            if 0 < len(match) <= 2:
-                setvar = match[0]
-                if setvar != wildcard:
-                    if setvar in names:
-                        checks.append(names[setvar]+" == "+item)
-                    else:
-                        defs.append(setvar+" = "+item)
-                    names[setvar] = item
-                if len(match) > 1:
-                    checks.append("isinstance("+item+", ("+match[1]+"))")
-            else:
-                raise CoconutException("invalid const match tokens: "+repr(original))
-        elif match in const_vars:
-            checks.append(item+" is "+match)
-        else:
-            checks.append(item+" == "+match)
-    elif len(original) == 2 and original[0] == "{":
+    if len(original) == 2 and original[0] == "{":
         match = original[1]
         checks.append("isinstance("+item+", dict)")
         checks.append("len("+item+") == "+str(len(match)))
@@ -485,12 +466,14 @@ def convert_match(original, item, names):
             inner_checks, inner_defs = convert_match(v, item+"["+k+"]", names)
             checks += inner_checks
             defs += inner_defs
-    elif len(original) == 2 or (len(original) == 4 and original[2] == "+"):
-        if len(original) == 2:
-            series_type, match = original
-            tail = None
-        else:
+    elif len(original) == 2 or (len(original) == 4 and original[2] == "+") or (len(original) == 1 and original[0] in ("(", "[", "{")):
+        tail = None
+        if len(original) == 4:
             series_type, match, _, tail = original
+        elif len(original) == 2:
+            series_type, match = original
+        else:
+            series_type, match = original[0], ()
         if series_type == "(":
             checks.append("isinstance("+item+", tuple)")
         elif series_type == "[":
@@ -512,6 +495,25 @@ def convert_match(original, item, names):
             inner_checks, inner_defs = convert_match(match[x], item_proc([item, ["$[", [str(x)]]]), names)
             checks += inner_checks
             defs += inner_defs
+    elif len(original) == 1:
+        match = original[0]
+        if isinstance(match, list):
+            if 0 < len(match) <= 2:
+                setvar = match[0]
+                if setvar != wildcard:
+                    if setvar in names:
+                        checks.append(names[setvar]+" == "+item)
+                    else:
+                        defs.append(setvar+" = "+item)
+                    names[setvar] = item
+                if len(match) > 1:
+                    checks.append("isinstance("+item+", ("+match[1]+"))")
+            else:
+                raise CoconutException("invalid const match tokens: "+repr(original))
+        elif match in const_vars:
+            checks.append(item+" is "+match)
+        else:
+            checks.append(item+" == "+match)
     elif len(original) == 3:
         if original[0] == "(" and original[2] == ")":
             match = original[1]
