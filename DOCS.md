@@ -180,7 +180,7 @@ In addition to Python's normal binary, octal, and hexadecimal integer syntax, Co
 
 ##### Python Docs
 
-A base-n literal consists of the digits 0 to n-1, with `a` to `z` (or `A` to `Z`) having values 10 to 35. The default base is 10. The allowed values are 0 and 2-36. Base 0 means to interpret exactly as a code literal, so that the actual base is 2, 8, 10, or 16, and so that `010`, `010_0`, and `010_8` are 8, while `10` and `010_10` are 10.
+A base-n literal consists of the digits 0 to n-1, with `a` to `z` (or `A` to `Z`) having values 10 to 35. The default base is 10. The allowed values are 0 and 2-36. Base 0 means to interpret exactly as a code literal, so that the actual base is 2, 8, 10, or 16, and so that `010`, `010_0`, and `010_8` are 8, while `10`, `10_0`, and `010_10` are 10.
 
 ##### Example
 
