@@ -1071,14 +1071,15 @@ class processor(object):
     func_atom = name | op_atom | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
     keyword_atom = Keyword("None") | Keyword("True") | Keyword("False")
     string_atom = addspace(OneOrMore(string))
-    atom = (keyword_atom
-            | ellipses
-            | number
-            | string_atom
-            | func_atom
-            | condense(lbrack + Optional(testlist_comp) + rbrack)
-            | condense(lbrace + Optional(dictorsetmaker) + rbrace)
-            )
+    atom = (
+        keyword_atom
+        | ellipses
+        | number
+        | string_atom
+        | func_atom
+        | condense(lbrack + Optional(testlist_comp) + rbrack)
+        | condense(lbrace + Optional(dictorsetmaker) + rbrace)
+        )
     slicetest = Optional(test)
     sliceop = condense(colon + slicetest)
     subscript = condense(slicetest + sliceop + Optional(sliceop)) | test
@@ -1172,21 +1173,24 @@ class processor(object):
     nonlocal_stmt = addspace(Keyword("nonlocal") + namelist)
     del_stmt = addspace(Keyword("del") + assignlist)
     with_item = addspace(test + Optional(Keyword("as") + name))
+
     match = Forward()
+    matchlist = Group(match + ZeroOrMore(comma.suppress() + match) + Optional(comma.suppress()))
+    matchlist_list = Optional(matchlist)
+    matchlist_tuple = Group(match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress()) | Optional(match + comma.suppress()))
     match_const = Group(
         keyword_atom
         | number
         | string_atom
         )
-    matchlist = Group(match + ZeroOrMore(comma.suppress() + match) + Optional(comma.suppress()))
-    matchlist_tuple = Group(match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress()) | Optional(match + comma.suppress()))
-    matchlist_dict = Group(Group(match_const + colon.suppress() + match) + ZeroOrMore(comma.suppress() + Group(match_const + colon.suppress() + match)) + Optional(comma.suppress()))
+    match_pair = Group(match_const + colon.suppress() + match)
+    matchlist_dict = Optional(Group(match_pair + ZeroOrMore(comma.suppress() + match_pair) + Optional(comma.suppress())))
     match <<= match_const | Group(
         name + equals + match
         | Group(name + Optional(Keyword("is").suppress() + namelist))
         | lparen + matchlist_tuple + rparen.suppress() + Optional((plus | dubcolon) + name)
         | lparen + match + rparen
-        | lbrack + matchlist + rbrack.suppress() + Optional((plus | dubcolon) + name)
+        | lbrack + matchlist_list + rbrack.suppress() + Optional((plus | dubcolon) + name)
         | lbrace + matchlist_dict + rbrace.suppress()
         )
 
