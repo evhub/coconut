@@ -233,6 +233,7 @@ tablen = 4
 decorator_var = "_coconut_decorator"
 match_to_var = "_coconut_match_to"
 match_check_var = "_coconut_match_check"
+match_iter_var = "_coconut_match_iter"
 wildcard = "_"
 const_vars = ["True", "False", "None"]
 
@@ -376,7 +377,7 @@ def item_proc(tokens):
                             out += ", "+arg
                         out += ")"
                 else:
-                    raise CoconutException("invalid isplit args: "+repr(trailer[1]))
+                    raise CoconutException("invalid iterator slice args: "+repr(trailer[1]))
             elif trailer[0] == "..":
                 out = "__coconut__.compose("+out+", "+trailer[1]+")"
             else:
@@ -457,6 +458,8 @@ class matcher(object):
     """Pattern-Matching Processor."""
 
     def __init__(self):
+        self.iter_index = 0
+        self.pres = []
         self.checks = []
         self.defs = []
         self.names = {}
@@ -499,10 +502,18 @@ class matcher(object):
             for x in range(0, len(match)):
                 self.match(match[x], item+"["+str(x)+"]")
         elif len(original) == 4 and original[2] == "::":
-            _, match, _, tail = original
-            self.defs.append(tail+" = "+item_proc([item, ["$[", [str(len(match)), ""]]]))
+            series_type, match, _, tail = original
+            itervar = match_iter_var+"_"+str(self.iter_index)
+            self.iter_index += 1
+            if series_type == "(":
+                self.pres.append(itervar+" = tuple(__coconut__.slice("+item+", 0, "+str(len(match))+"))")
+            elif series_type == "[":
+                self.pres.append(itervar+" = list(__coconut__.slice("+item+", 0, "+str(len(match))+"))")
+            else:
+                raise CoconutException("invalid iterator match tokens: "+repr(original))
+            self.defs.append(tail+" = "+item)
             for x in range(0, len(match)):
-                self.match(match[x], item_proc([item, ["$[", [str(x)]]]))
+                self.match(match[x], itervar+"["+str(x)+"]")
         elif len(original) == 1:
             match = original[0]
             if isinstance(match, list):
@@ -551,7 +562,7 @@ class matcher(object):
             raise CoconutException("invalid inner match tokens: "+repr(original))
 
     def out(self):
-        return self.checks, self.defs
+        return self.pres, self.checks, self.defs
 
 def match_proc(tokens):
     """Processes Match Blocks."""
@@ -567,7 +578,9 @@ def match_proc(tokens):
     out += match_to_var + " = " + item + "\n"
     matching = matcher()
     matching.start(matches, match_to_var)
-    checks, defs = matching.out()
+    pres, checks, defs = matching.out()
+    for pre_def in pres:
+        out += pre_def + "\n"
     out += "if " + " and ".join(checks) + ":\n" + openstr
     for match_def in defs:
         out += match_def + "\n"
