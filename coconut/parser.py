@@ -495,6 +495,13 @@ def convert_match(original, item, names):
             inner_checks, inner_defs = convert_match(match[x], item+"["+str(x)+"]", names)
             checks += inner_checks
             defs += inner_defs
+    elif len(original) == 4 and original[2] == "::":
+        _, match, _, tail = original
+        defs.append(tail+" = "+item_proc([item, ["$[", str(len(match)), ""]]))
+        for x in range(0, len(match)):
+            inner_checks, inner_defs = convert_match(match[x], item_proc([item, ["$[", str(x)]]), names)
+            checks += inner_checks
+            defs += inner_defs
     elif len(original) == 3:
         if original[0] == "(" and original[2] == ")":
             match = original[1]
@@ -1164,9 +1171,9 @@ class processor(object):
         | string_atom
         | name + equals + match
         | Group(name + Optional(Keyword("is").suppress() + namelist))
-        | lparen + matchlist_req + rparen.suppress() + Optional(plus + name)
+        | lparen + matchlist_req + rparen.suppress() + Optional((plus | dubcolon) + name)
         | lparen + match + rparen
-        | lbrack + matchlist + rbrack.suppress() + Optional(plus + name)
+        | lbrack + matchlist + rbrack.suppress() + Optional((plus | dubcolon) + name)
         )
 
     else_stmt = condense(Keyword("else") + suite)
