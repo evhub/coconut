@@ -135,7 +135,7 @@ Coconut uses Haskell-style operator function short-hand, where the operator plac
 (::)        => (__coconut__.chain)
 (`)         => (__coconut__.infix)
 ($)         => (__coconut__.partial)
-[$]         => (__coconut__.slice)
+[$]         => (__coconut__.islice)
 (+)         => (__coconut__.operator.__add__)
 [+]         => (__coconut__.operator.__concat__)
 (-)         => (__coconut__.operator.__sub__)
