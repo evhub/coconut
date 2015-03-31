@@ -31,6 +31,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [recursive](#recursive)
 - [V. Keywords](#v-keywords)
     - [data](#data)
+    - [match](#match)
 - [VI. Coconut Module](#vi-coconut-module)
     - [coconut.convenience](#coconutconvenience)
 
@@ -646,7 +647,7 @@ Coconut provides `data` blocks for the creation of immutable classes derived fro
 
 ##### Python Docs
 
-Returns a new tuple subclass. The new subclass is used to create tuple-like objects that have fields accessible by attribute lookup as well as being indexable and iterable. Instances of the subclass also have a helpful docstring (with typename and field_names) and a helpful `__repr__()` method which lists the tuple contents in a `name=value` format.
+Returns a new tuple subclass. The new subclass is used to create tuple-like objects that have fields accessible by attribute lookup as well as being indexable and iterable. Instances of the subclass also have a helpful docstring (with type names and field names) and a helpful `__repr__()` method which lists the tuple contents in a `name=value` format.
 
 Any valid Python identifier may be used for a field name except for names starting with an underscore. Valid identifiers consist of letters, digits, and underscores but do not start with a digit or underscore and cannot be a keyword such as _class, for, return, global, pass, or raise_.
 
@@ -667,6 +668,41 @@ import collections
 class triangle(collections.namedtuple("triangle", "a, b, c")):
     def is_right(self):
         return self.a**2 + self.b**2 == self.c**2
+```
+
+### `match`
+
+Coconut provides `match` statements to allow for Haskell-style pattern-matching. Coconut match statement syntax looks like:
+```
+match <pattern> in <args> [if <cond>]:
+    <body>
+[else:
+    <body>]
+```
+
+`<args>` is the list/tuple of items to match in, `<cond>` is an optional additional check, and the `<body>`s are simply code that is executed if the header above them suceeds. `<pattern>` follows its own, special syntax, defined roughly like so:
+```
+match ::= (
+    "(" match ")"               # parentheses
+    | "None" | "True" | "False" # constants
+    | NUMBER                    # numbers
+    | STRING                    # strings
+    | NAME                      # assignment
+    | NAME "is" names           # type-checking
+    | NAME "=" match            # assignment
+    | NAME "(" matches ")"      # data types
+    | "(" matches ")"           # tuples
+    | "[" matches "]"           # lists
+    | "{" match_pairs "}"       # dictionaries
+    | "{" match_consts "}"      # sets
+    | (                         # head-tail splits
+        "(" matches ")"             # tuples
+        | "[" matches "]"           # lists
+      ) (
+        "+"                         # for a tuple/list
+        | "::"                      # for an iterator
+      ) match
+    )
 ```
 
 ## VI. Coconut Module
