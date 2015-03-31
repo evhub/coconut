@@ -455,7 +455,7 @@ def itemgetter(*items):
     return g
 ```
 
-The items can be any type accepted by the operand’s __getitem__() method. Dictionaries accept any hashable value. Lists, tuples, and strings accept an index or a slice.
+The items can be any type accepted by the operand’s `__getitem__` method. Dictionaries accept any hashable value. Lists, tuples, and strings accept an index or a slice.
 
 ##### Example
 
