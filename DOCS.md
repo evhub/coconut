@@ -643,7 +643,12 @@ _Can't be done without a long decorator definition. The full definition of the d
 
 ### `data`
 
-Coconut provides `data` blocks for the creation of immutable classes derived from `collections.namedtuple`.
+Coconut provides `data` blocks for the creation of immutable classes derived from `collections.namedtuple`. Coconut data statement syntax looks like:
+```
+data <name>(<args>):
+    <body>
+```
+`<name>` is the name of the new data type, `<args>` are the arguments to its constructor as well as the names of its attributes, and `<body>` contains the data type's methods.
 
 ##### Python Docs
 
@@ -679,7 +684,6 @@ match <pattern> in <args> [if <cond>]:
 [else:
     <body>]
 ```
-
 `<args>` is the list/tuple of items to match in, `<cond>` is an optional additional check, and the `<body>`s are simply code that is executed if the header above them suceeds. `<pattern>` follows its own, special syntax, defined roughly like so:
 ```
 match ::= (
