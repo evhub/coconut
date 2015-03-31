@@ -426,13 +426,6 @@ def assign_proc(tokens):
     if len(tokens) == 3:
         name, op, item = tokens
         out = ""
-        if isinstance(name, list):
-            if len(name) == 1:
-                name = tokens[0][0]
-            else:
-                raise CoconutException("invalid assignment name: "+repr(name))
-            out += assign_var+" = "+name + linebreak
-            name = assign_var
         if op == "|>=":
             out += name+" = __coconut__.pipe("+name+", ("+item+"))"
         elif op == "..=":
@@ -1310,7 +1303,7 @@ class processor(object):
     compound_stmt = trace(simple_compound_stmt | with_stmt | while_stmt | for_stmt | funcdef | classdef | datadef | decorated, "compound_stmt")
 
     expr_stmt = trace(addspace(
-                      attach((simple_assign | Group(assignlist)) + augassign + (yield_expr | testlist), assign_proc)
+                      attach(simple_assign + augassign + (yield_expr | testlist), assign_proc)
                       | attach(base_funcdef + equals.suppress() + (yield_expr | testlist_star_expr), func_proc)
                       | ZeroOrMore(assignlist + equals) + (yield_expr | testlist_star_expr)
                       ), "expr_stmt")
