@@ -237,6 +237,7 @@ decorator_var = "_coconut_decorator"
 match_to_var = "_coconut_match_to"
 match_check_var = "_coconut_match_check"
 match_iter_var = "_coconut_match_iter"
+assign_var = "_coconut_assign"
 wildcard = "_"
 const_vars = ["True", "False", "None"]
 
@@ -423,14 +424,24 @@ def lambda_proc(tokens):
 def assign_proc(tokens):
     """Processes Assignments."""
     if len(tokens) == 3:
-        if tokens[1] == "|>=":
-            return tokens[0]+" = __coconut__.pipe("+tokens[0]+", ("+tokens[2]+"))"
-        elif tokens[1] == "..=":
-            return tokens[0]+" = __coconut__.compose("+tokens[0]+", ("+tokens[2]+"))"
-        elif tokens[1] == "::=":
-            return tokens[0]+" = __coconut__.chain("+tokens[0]+", ("+tokens[2]+"))"
+        name, op, item = tokens
+        out = ""
+        if isinstance(name, list):
+            if len(name) == 1:
+                name = tokens[0][0]
+            else:
+                raise CoconutException("invalid assignment name: "+repr(name))
+            out += assign_var+" = "+name + linebreak
+            name = assign_var
+        if op == "|>=":
+            out += name+" = __coconut__.pipe("+name+", ("+item+"))"
+        elif op == "..=":
+            out += name+" = __coconut__.compose("+name+", ("+item+"))"
+        elif op == "::=":
+            out += name+" = __coconut__.chain("+name+", ("+item+"))"
         else:
-            return tokens
+            out += name+" "+op+" "+item
+        return out
     else:
         raise CoconutException("invalid assignment tokens: "+repr(tokens))
 
@@ -1159,7 +1170,8 @@ class processor(object):
                )
 
     assignlist = Forward()
-    assign_item = name + ZeroOrMore(simple_trailer) | lparen + assignlist + rparen | lbrack + assignlist + rbrack
+    simple_assign = name + ZeroOrMore(simple_trailer)
+    assign_item = simple_assign | lparen + assignlist + rparen | lbrack + assignlist + rbrack
     assignlist <<= itemlist(Optional(star) + assign_item, comma)
 
     atom_item = trace(attach(atom + ZeroOrMore(trailer), item_proc), "atom_item")
@@ -1235,7 +1247,7 @@ class processor(object):
     namelist = parenwrap(lparen, itemlist(name, comma), rparen)
     global_stmt = addspace(Keyword("global") + namelist)
     nonlocal_stmt = addspace(Keyword("nonlocal") + namelist)
-    del_stmt = addspace(Keyword("del") + assignlist)
+    del_stmt = addspace(Keyword("del") + itemlist(simple_assign, comma))
     with_item = addspace(test + Optional(Keyword("as") + name))
 
     matchlist_name = name | lparen.suppress() + itemlist(name, comma) + rparen.suppress()
@@ -1297,7 +1309,8 @@ class processor(object):
     simple_compound_stmt <<= if_stmt | try_stmt | match_stmt
     compound_stmt = trace(simple_compound_stmt | with_stmt | while_stmt | for_stmt | funcdef | classdef | datadef | decorated, "compound_stmt")
 
-    expr_stmt = trace(addspace(attach(assignlist + augassign + (yield_expr | testlist), assign_proc)
+    expr_stmt = trace(addspace(
+                      attach((simple_assign | Group(assignlist)) + augassign + (yield_expr | testlist), assign_proc)
                       | attach(base_funcdef + equals.suppress() + (yield_expr | testlist_star_expr), func_proc)
                       | ZeroOrMore(assignlist + equals) + (yield_expr | testlist_star_expr)
                       ), "expr_stmt")
