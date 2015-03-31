@@ -455,6 +455,13 @@ def decorator_proc(tokens):
         decorates.append("@"+varname)
     return linebreak.join(defs + decorates) + linebreak
 
+def else_proc(tokens):
+    """Processes Compound Else Statements."""
+    if len(tokens) == 1:
+        return linebreak + openstr + tokens[0] + closestr
+    else:
+        raise CoconutException("invalid compound else statement tokens: "+repr(tokens))
+
 class matcher(object):
     """Pattern-Matching Processor."""
 
@@ -575,20 +582,20 @@ def match_proc(tokens):
         matches, item, cond, stmts = tokens
     else:
         raise CoconutException("invalid top-level match tokens: "+repr(tokens))
-    out = match_check_var + " = False\n"
-    out += match_to_var + " = " + item + "\n"
+    out = match_check_var + " = False" + linebreak
+    out += match_to_var + " = " + item + linebreak
     matching = matcher()
     matching.start(matches, match_to_var)
     pres, checks, defs = matching.out()
     for pre_def in pres:
-        out += pre_def + "\n"
-    out += "if " + " and ".join(checks) + ":\n" + openstr
+        out += pre_def + linebreak
+    out += "if " + " and ".join(checks) + ":" + linebreak + openstr
     for match_def in defs:
-        out += match_def + "\n"
+        out += match_def + linebreak
     if cond is not None:
-        out += "if " + cond + ":\n" + openstr
+        out += "if " + cond + ":" + linebreak + openstr
     out += "".join(stmts)
-    out += match_check_var + " = True\n"
+    out += match_check_var + " = True" + linebreak
     out += closestr * (1 + int(cond is not None))
     return out
 
@@ -1192,6 +1199,7 @@ class processor(object):
     exprlist = itemlist(star_expr | expr, comma)
 
     simple_stmt = Forward()
+    compound_stmt = Forward()
     stmt = Forward()
     suite = Forward()
 
@@ -1250,11 +1258,11 @@ class processor(object):
         | lbrace + matchlist_set + rbrace
         ), "match")
 
-    else_stmt = condense(Keyword("else") + suite)
-    match_stmt = attach(
+    else_stmt = condense(Keyword("else") + suite) | condense(Keyword("else") + colon + attach(compound_stmt, else_proc))
+    match_stmt = condense(attach(
         Keyword("match").suppress() + matchlist + Keyword("in").suppress() + test + Optional(Keyword("if").suppress() + test) + colon.suppress()
         + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
-        , match_proc) + Optional(condense(fixto(Keyword("else"), "if not "+ match_check_var) + suite))
+        , match_proc) + Optional(condense(fixto(Keyword("else"), "if not "+ match_check_var) + suite)))
     assert_stmt = addspace(Keyword("assert") + testlist)
     if_stmt = condense(addspace(Keyword("if") + condense(test + suite))
                        + ZeroOrMore(addspace(Keyword("elif") + condense(test + suite)))
@@ -1280,7 +1288,7 @@ class processor(object):
     decorators = attach(OneOrMore(at.suppress() + test + newline.suppress()), decorator_proc)
     decorated = condense(decorators + (classdef | funcdef | datadef))
 
-    compound_stmt = trace(match_stmt | if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | datadef | decorated, "compound_stmt")
+    compound_stmt <<= trace(match_stmt | if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | datadef | decorated, "compound_stmt")
 
     expr_stmt = trace(addspace(attach(assignlist + augassign + (yield_expr | testlist), assign_proc)
                       | attach(base_funcdef + equals.suppress() + (yield_expr | testlist_star_expr), func_proc)
