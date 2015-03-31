@@ -13,6 +13,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [Operator Functions](#operator-functions)
     - [Non-Decimal Integers](#non-decimal-integers)
     - [Enhanced Decorators](#enhanced-decorators)
+    - [Enhanced Else Statements](#enhanced-else-statements)
     - [Unicode Alternatives](#unicode-alternatives)
 - [III. Operators](#iii-operators)
     - [Compose](#compose)
@@ -213,6 +214,37 @@ def wrapper(func):
 @wrapper
 def func(x):
     return x**2
+```
+
+### Enhanced Else Statements
+
+Coconut supports the compound statements `try`, `if`, and `match` on the end of an `else` statement like any simple statement would be. This is most useful for mixing `match` and `if` statements together, but also allows for compound `try`s.
+
+##### Example
+
+Coconut:
+```
+try:
+    unsafe_1()
+except MyError:
+    handle_1()
+else: try:
+    unsafe_2()
+except MyError:
+    handle_2()
+```
+
+Python:
+```
+try:
+    unsafe_1()
+except MyError:
+    handle_1()
+else:
+    try:
+        unsafe_2()
+    except MyError:
+        handle_2()
 ```
 
 ### Unicode Alternatives
