@@ -728,7 +728,7 @@ match <pattern> in <args> [if <cond>]:
 ```
 `<args>` is the list/tuple of items to match in, `<cond>` is an optional additional check, and the `<body>`s are simply code that is executed if the header above them suceeds. `<pattern>` follows its own, special syntax, defined roughly like so:
 ```
-pattern ::= (
+pattern := (
     "(" pattern ")"             # parentheses
     | "None" | "True" | "False" # constants
     | NUMBER                    # numbers
