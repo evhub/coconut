@@ -986,6 +986,8 @@ class processor(object):
             + ~Keyword("while")
             + ~Keyword("with")
             + ~Keyword("yield")
+            + ~Keyword("data")
+            + ~Keyword("match")
             + Regex("(?![0-9])\\w+")
             )
     for const_var in const_vars:
@@ -1199,7 +1201,7 @@ class processor(object):
     exprlist = itemlist(star_expr | expr, comma)
 
     simple_stmt = Forward()
-    compound_stmt = Forward()
+    simple_compound_stmt = Forward()
     stmt = Forward()
     suite = Forward()
 
@@ -1258,7 +1260,7 @@ class processor(object):
         | lbrace + matchlist_set + rbrace
         ), "match")
 
-    else_stmt = condense(Keyword("else") + suite) | condense(Keyword("else") + colon + attach(compound_stmt, else_proc))
+    else_stmt = condense(Keyword("else") + suite) | condense(Keyword("else") + colon + trace(attach(simple_compound_stmt, else_proc), "simple_compound_stmt"))
     match_stmt = condense(attach(
         Keyword("match").suppress() + matchlist + Keyword("in").suppress() + test + Optional(Keyword("if").suppress() + test) + colon.suppress()
         + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
@@ -1288,7 +1290,8 @@ class processor(object):
     decorators = attach(OneOrMore(at.suppress() + test + newline.suppress()), decorator_proc)
     decorated = condense(decorators + (classdef | funcdef | datadef))
 
-    compound_stmt <<= trace(match_stmt | if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | datadef | decorated, "compound_stmt")
+    simple_compound_stmt <<= match_stmt | if_stmt | try_stmt | with_stmt
+    compound_stmt = trace(simple_compound_stmt | while_stmt | for_stmt | funcdef | classdef | datadef | decorated, "compound_stmt")
 
     expr_stmt = trace(addspace(attach(assignlist + augassign + (yield_expr | testlist), assign_proc)
                       | attach(base_funcdef + equals.suppress() + (yield_expr | testlist_star_expr), func_proc)
