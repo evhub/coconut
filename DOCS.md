@@ -686,26 +686,26 @@ match <pattern> in <args> [if <cond>]:
 ```
 `<args>` is the list/tuple of items to match in, `<cond>` is an optional additional check, and the `<body>`s are simply code that is executed if the header above them suceeds. `<pattern>` follows its own, special syntax, defined roughly like so:
 ```
-match ::= (
-    "(" match ")"               # parentheses
+pattern ::= (
+    "(" pattern ")"             # parentheses
     | "None" | "True" | "False" # constants
     | NUMBER                    # numbers
     | STRING                    # strings
     | NAME                      # capture
     | NAME "is" names           # type-checking
-    | NAME "=" match            # assignment
-    | NAME "(" matches ")"      # data types
-    | "(" matches ")"           # tuples
-    | "[" matches "]"           # lists
-    | "{" match_pairs "}"       # dictionaries
-    | "{" match_consts "}"      # sets
+    | NAME "=" pattern          # assignment
+    | NAME "(" patterns ")"     # data types
+    | "(" patterns ")"          # tuples
+    | "[" patterns "]"          # lists
+    | "{" pattern_pairs "}"     # dictionaries
+    | "{" pattern_consts "}"    # sets
     | (                         # head-tail splits
-        "(" matches ")"             # tuples
-        | "[" matches "]"           # lists
+        "(" patterns ")"            # tuples
+        | "[" patterns "]"          # lists
       ) (
         "+"                         # for a tuple/list
         | "::"                      # for an iterator
-      ) match
+      ) pattern
     )
 ```
 
