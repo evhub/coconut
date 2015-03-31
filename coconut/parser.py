@@ -1260,11 +1260,12 @@ class processor(object):
         | lbrace + matchlist_set + rbrace
         ), "match")
 
-    else_stmt = condense(Keyword("else") + suite) | condense(Keyword("else") + colon + trace(attach(simple_compound_stmt, else_proc), "simple_compound_stmt"))
+    else_suite = suite | colon + trace(attach(simple_compound_stmt, else_proc), "simple_compound_stmt")
+    else_stmt = condense(Keyword("else") + else_suite)
     match_stmt = condense(attach(
         Keyword("match").suppress() + matchlist + Keyword("in").suppress() + test + Optional(Keyword("if").suppress() + test) + colon.suppress()
         + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
-        , match_proc) + Optional(condense(fixto(Keyword("else"), "if not "+ match_check_var) + suite)))
+        , match_proc) + Optional(condense(fixto(Keyword("else"), "if not "+ match_check_var) + else_suite)))
     assert_stmt = addspace(Keyword("assert") + testlist)
     if_stmt = condense(addspace(Keyword("if") + condense(test + suite))
                        + ZeroOrMore(addspace(Keyword("elif") + condense(test + suite)))
@@ -1290,7 +1291,7 @@ class processor(object):
     decorators = attach(OneOrMore(at.suppress() + test + newline.suppress()), decorator_proc)
     decorated = condense(decorators + (classdef | funcdef | datadef))
 
-    simple_compound_stmt <<= match_stmt | if_stmt | try_stmt
+    simple_compound_stmt <<= if_stmt | try_stmt | match_stmt
     compound_stmt = trace(simple_compound_stmt | with_stmt | while_stmt | for_stmt | funcdef | classdef | datadef | decorated, "compound_stmt")
 
     expr_stmt = trace(addspace(attach(assignlist + augassign + (yield_expr | testlist), assign_proc)
