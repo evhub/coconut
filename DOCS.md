@@ -687,7 +687,7 @@ match ::= (
     | "None" | "True" | "False" # constants
     | NUMBER                    # numbers
     | STRING                    # strings
-    | NAME                      # assignment
+    | NAME                      # capture
     | NAME "is" names           # type-checking
     | NAME "=" match            # assignment
     | NAME "(" matches ")"      # data types
