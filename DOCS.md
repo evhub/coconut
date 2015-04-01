@@ -787,6 +787,19 @@ pattern := (
 
 Coconut:
 ```
+def classify_tuple(value):
+    match _ is tuple in value:
+        match () in value:
+            return "empty tuple"
+        match (_,) in value:
+            return "singleton tuple"
+        match (x,x) in value:
+            return "duplicate pair tuple of "+str(x)
+        match (_,_) in value:
+            return "pair tuple"
+        return "tuple"
+    else:
+        return "not a tuple"
 ```
 
 Python:
