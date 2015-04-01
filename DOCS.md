@@ -11,6 +11,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [Infix Calling](#infix-calling)
     - [Function Definition](#function-definition)
     - [Operator Functions](#operator-functions)
+    - [Set Literals](#set-literals)
     - [Non-Decimal Integers](#non-decimal-integers)
     - [Enhanced Decorators](#enhanced-decorators)
     - [Enhanced Else Statements](#enhanced-else-statements)
@@ -175,6 +176,22 @@ Python:
 ```
 import operator
 prod = reduce(operator.__mul__, items)
+```
+
+### Set Literals
+
+In addition to Python's normal set literals using curly braces, Coconut supports a special `s` (for `set`) or `f` (for `frozenset`) in front of a Python-like set literal to ensure it is a set literal of the specified type even when it otherwise would not be, such as when it is empty, or if a `frozenset` is desired.
+
+#### Example
+
+Coconut:
+```
+empty_frozen_set = f{}
+```
+
+Python:
+```
+empty_frozen_set = frozenset([])
 ```
 
 ### Non-Decimal Integers

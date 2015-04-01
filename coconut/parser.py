@@ -350,7 +350,7 @@ def anyint_proc(tokens):
         item, base = tokens[0].split("_")
         return 'int("'+item+'", '+base+")"
     else:
-        raise CoconutException("invalid anyint token")
+        raise CoconutException("invalid anyint tokens: "+repr(toknes))
 
 def list_proc(tokens):
     """Properly Formats Lists."""
@@ -482,6 +482,19 @@ def else_proc(tokens):
     else:
         raise CoconutException("invalid compound else statement tokens: "+repr(tokens))
 
+def set_proc(tokens):
+    """Processes Set Literals."""
+    if len(tokens) == 2:
+        set_type, set_maker = tokens
+        if set_type == "s":
+            return "set(["+set_maker+"])"
+        elif set_type == "f":
+            return "frozenset(["+set_maker+"])"
+        else:
+            raise CoconutException("invalid set type: "+str(set_type))
+    else:
+        raise CoconutException("invalid set literal tokens: "+repr(tokens))
+
 class matcher(object):
     """Pattern-Matching Processor."""
     position = 0
@@ -577,8 +590,19 @@ class matcher(object):
             if len(original) > 1:
                 self.checks.append("isinstance("+item+", ("+original[1]+"))")
         elif "set" in original:
-            match = original[0]
-            self.checks.append("isinstance("+item+", (set, frozenset))")
+            if len(original) == 1:
+                self.checks.append("isinstance("+item+", (set, frozenset))")
+                match = original[0]
+            elif len(original) == 2:
+                if original[0] == "s":
+                    self.checks.append("isinstance("+item+", set)")
+                elif original[0] == "f":
+                    self.checks.append("isinstance("+item+", frozenset)")
+                else:
+                    raise CoconutException("invalid set type: "+str(original[0]))
+                match = original[1]
+            else:
+                raise CoconutException("invalid set match tokens: "+repr(original))
             self.checks.append("len("+item+") == "+str(len(match)))
             for const in match:
                 self.checks.append(const+" in "+item)
@@ -1117,11 +1141,12 @@ class processor(object):
     test_star_expr = star_expr | test
     testlist_star_expr = itemlist(test_star_expr, comma)
     testlist_comp = addspace(test_star_expr + comp_for) | testlist_star_expr
-    dictorsetmaker = addspace(condense(test + colon) + test + comp_for
-                      | itemlist(condense(test + colon) + test, comma)
-                      | test + comp_for
-                      | testlist
-                      )
+    setmaker = addspace(test + comp_for | testlist)
+    dictorsetmaker = addspace(
+        condense(test + colon) + test + comp_for
+        | itemlist(condense(test + colon) + test, comma)
+        | setmaker
+        )
 
     op_atom = condense(
             lparen + (
@@ -1168,14 +1193,16 @@ class processor(object):
     for x in range(1, len(const_vars)):
         keyword_atom |= Keyword(const_vars[x])
     string_atom = addspace(OneOrMore(string))
+    set_letter = fixto(CaselessLiteral("s"), "s") | fixto(CaselessLiteral("f"), "f")
     atom = (
         keyword_atom
         | ellipses
         | number
         | string_atom
-        | func_atom
         | condense(lbrack + Optional(testlist_comp) + rbrack)
         | condense(lbrace + Optional(dictorsetmaker) + rbrace)
+        | attach(set_letter + lbrace.suppress() + Optional(setmaker) + rbrace.suppress(), set_proc)
+        | func_atom
         )
     slicetest = Optional(test)
     sliceop = condense(colon + slicetest)
@@ -1294,7 +1321,7 @@ class processor(object):
         | (lparen.suppress() + match + rparen.suppress())("paren")
         | (lbrack + matchlist_list + rbrack.suppress() + Optional((plus | dubcolon) + name))("series")
         | (lbrace.suppress() + matchlist_dict + rbrace.suppress())("dict")
-        | (lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
+        | (Optional(set_letter) + lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
         ), "match")
 
     else_suite = suite | colon + trace(attach(simple_compound_stmt, else_proc), "simple_compound_stmt")
