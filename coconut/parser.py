@@ -599,25 +599,20 @@ class matcher(object):
                 self.checks.append("isinstance("+item+", ("+original[1]+"))")
         elif "set" in original:
             if len(original) == 1:
-                if original[0] == "s":
-                    self.checks.append("isinstance("+item+", set)")
-                    match = []
-                elif original[0] == "f":
-                    self.checks.append("isinstance("+item+", frozenset)")
-                    match = []
+                if isinstance(original[0], str):
+                    set_type, match = original[0], ()
                 else:
-                    self.checks.append("isinstance("+item+", (set, frozenset))")
-                    match = original[0]
+                    set_type, match = "", original[0]
             elif len(original) == 2:
-                if original[0] == "s":
-                    self.checks.append("isinstance("+item+", set)")
-                elif original[0] == "f":
-                    self.checks.append("isinstance("+item+", frozenset)")
-                else:
-                    raise CoconutException("invalid set type: "+str(original[0]))
-                match = original[1]
+                set_type, match = original
             else:
                 raise CoconutException("invalid set match tokens: "+repr(original))
+            if set_type == "s":
+                self.checks.append("isinstance("+item+", set)")
+            elif set_type == "f":
+                self.checks.append("isinstance("+item+", frozenset)")
+            else:
+                raise CoconutException("invalid set type: "+str(set_type))
             self.checks.append("len("+item+") == "+str(len(match)))
             for const in match:
                 self.checks.append(const+" in "+item)
