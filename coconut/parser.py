@@ -479,10 +479,6 @@ class matcher(object):
         self.defs = []
         self.names = {}
 
-    def start(self, matches, item):
-        """Starts Pattern-Matching Processing."""
-        self.match(("*", matches), item)
-
     def match(self, original, item):
         """Performs Pattern-Matching Processing."""
         if (len(original) == 2 or len(original) == 1) and original[0] == "{":
@@ -508,7 +504,7 @@ class matcher(object):
                 self.checks.append("isinstance("+item+", tuple)")
             elif series_type == "[":
                 self.checks.append("isinstance("+item+", list)")
-            elif series_type != "*":
+            else:
                 raise CoconutException("invalid series match tokens: "+repr(original))
             if tail is None:
                 self.checks.append("len("+item+") == "+str(len(match)))
@@ -592,7 +588,7 @@ def match_proc(tokens):
     out = match_check_var + " = False" + linebreak
     out += match_to_var + " = " + item + linebreak
     matching = matcher()
-    matching.start(matches, match_to_var)
+    matching.match(matches, match_to_var)
     pres, checks, defs = matching.out()
     for pre_def in pres:
         out += pre_def + linebreak

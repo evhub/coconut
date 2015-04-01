@@ -144,8 +144,8 @@ class cli(object):
             self.console.print(self.version())
         if args.autopep8 is not None:
             self.processor.autopep8(args.autopep8)
-        if args.e is not None:
-            self.execute(self.processor.parse_single(args.e[0]))
+        if getattr(args, "exec") is not None:
+            self.execute(self.processor.parse_single(getattr(args, "exec")[0]))
         if args.source is not None:
             if args.run and os.path.isdir(args.source):
                 raise parser.CoconutException("source path can't point to file when --run is enabled")
@@ -165,7 +165,7 @@ class cli(object):
         stdin = not sys.stdin.isatty()
         if stdin:
             self.execute(self.processor.parse_block(sys.stdin.read().decode(ENCODING)))
-        if args.interact or not (stdin or args.source or args.e or args.version):
+        if args.interact or not (stdin or args.source or getattr(args, "exec") or args.version):
             self.start_prompt()
 
     def compile_path(self, path, write=True, show=False, run=False):

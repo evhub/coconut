@@ -766,6 +766,16 @@ pattern := (
 - List/Tuple Splits (`<list/tuple> + <var>`): will match the beginning of the list/tuple against the `<list/tuple>`, then bind the rest to `<var>`.
 - Iterator Splits (`<list/tuple> :: <var>`): will match the beginning of the iterator against the `<list/tuple>`, then bind the rest to `<var>`.
 
+##### Example
+
+Coconut:
+```
+```
+
+Python:
+
+_Can't be done._
+
 ## VI. Coconut Module
 
 ### `coconut.convenience`

@@ -24,6 +24,7 @@ This tutorial will teach you how to write elegant, Pythonic code in a functional
     - [Chaining](#chaining)
 - [IV. Values](#iv-values)
     - [data](#data)
+    - [match](#match)
 - [V. Further Reading](#v-further-reading)
 
 ## I. Getting Started
@@ -241,6 +242,14 @@ data vector(x, y):
         return (self.x**2 + self.y**2)**.5
 
 vector(3, 4) |> abs |> print
+```
+
+### `match`
+
+While not only useful for working with values, pattern-matching is tailored to them, allowing the ability to check and deconstruct values. Coconut provides fully-featured pattern-matching through its `match` statements. Since `match` statements are complicated and don't have an equivalent in pure Python, it's best to simply jump right in and get a feel for them. Once you do, you'll see they make a lot of sense.
+
+We'll start with a simple factorial function, implemented using match statements:
+```
 ```
 
 ## V. Further Reading
