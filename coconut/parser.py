@@ -254,6 +254,7 @@ match_iter_var = "_coconut_match_iter"
 assign_var = "_coconut_assign"
 wildcard = "_"
 const_vars = ["True", "False", "None"]
+reserved_vars = ["data", "match"]
 
 ParserElement.setDefaultWhitespaceChars(white)
 
@@ -1021,6 +1022,7 @@ class processor(object):
     underscore = Literal("_")
     pound = Literal("#")
     backtick = Literal("`")
+    backslash = Literal("\\")
 
     mul_star = fixto(star | ~Literal("\xd7\xd7")+Literal("\xd7"), "*")
     exp_dubstar = fixto(dubstar | Literal("\xd7\xd7") | Literal("\u2191"), "**")
@@ -1060,12 +1062,12 @@ class processor(object):
             + ~Keyword("while")
             + ~Keyword("with")
             + ~Keyword("yield")
-            + ~Keyword("data")
-            + ~Keyword("match")
             + Regex("(?![0-9])\\w+")
             )
-    for const_var in const_vars:
-        name = ~Keyword(const_var) + name
+    for k in const_vars + reserved_vars:
+        name = ~Keyword(k) + name
+    for k in reserved_vars:
+        name = name | fixto(backslash + Keyword(k), k)
     dotted_name = condense(name + ZeroOrMore(dot + name))
 
     integer = Word(nums)
