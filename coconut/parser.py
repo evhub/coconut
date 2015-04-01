@@ -599,7 +599,12 @@ class matcher(object):
                 self.checks.append("isinstance("+item+", ("+original[1]+"))")
         elif "set" in original:
             if len(original) == 1:
-                self.checks.append("isinstance("+item+", (set, frozenset))")
+                if original[0] == "s":
+                    self.checks.append("isinstance("+item+", set)")
+                elif original[0] == "f":
+                    self.checks.append("isinstance("+item+", frozenset)")
+                else:
+                    self.checks.append("isinstance("+item+", (set, frozenset))")
                 match = original[0]
             elif len(original) == 2:
                 if original[0] == "s":
