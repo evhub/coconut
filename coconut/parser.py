@@ -524,7 +524,7 @@ class matcher(object):
                 k,v = match[x]
                 self.checks.append(k+" in "+item)
                 self.match(v, item+"["+k+"]")
-        elif "series" in original and (len(original) != 4 or original[2] != "::"):
+        elif "series" in original and (len(original) != 4 or original[2] == "+"):
             tail = None
             if len(original) == 4:
                 series_type, match, _, tail = original
@@ -1290,9 +1290,9 @@ class processor(object):
         | (name + equals.suppress() + match)("assign")
         | (name + lparen.suppress() + matchlist_list + rparen.suppress())("data")
         | (name + Optional(Keyword("is").suppress() + matchlist_name))("var")
-        | (lparen.suppress + matchlist_tuple + rparen.suppress() + Optional((plus | dubcolon) + name))("series")
+        | (lparen + matchlist_tuple + rparen.suppress() + Optional((plus | dubcolon) + name))("series")
         | (lparen.suppress() + match + rparen.suppress())("paren")
-        | (lbrack.suppress + matchlist_list + rbrack.suppress() + Optional((plus | dubcolon) + name))("series")
+        | (lbrack + matchlist_list + rbrack.suppress() + Optional((plus | dubcolon) + name))("series")
         | (lbrace.suppress() + matchlist_dict + rbrace.suppress())("dict")
         | (lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
         ), "match")
