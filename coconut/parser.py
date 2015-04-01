@@ -547,7 +547,7 @@ class matcher(object):
                 self.match(match[x], item+"["+str(x)+"]")
         elif len(original) == 4 and original[2] == "::":
             series_type, match, _, tail = original
-            self.checks.append("__coconut__.isiterable(item)")
+            self.checks.append("__coconut__.isiterable("+item+")")
             itervar = match_iter_var+"_"+str(self.iter_index)
             self.iter_index += 1
             if series_type == "(":
