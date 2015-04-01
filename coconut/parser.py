@@ -619,6 +619,7 @@ class matcher(object):
                 out += linebreak.join(defs) + linebreak
         out += body
         out += closestr * closes
+        return out
 
 def match_proc(tokens):
     """Processes Match Blocks."""
