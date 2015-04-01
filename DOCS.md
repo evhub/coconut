@@ -751,7 +751,20 @@ pattern := (
     )
 ```
 
-
+`match` statements will take this pattern and attempt to "match" against it, performing the checks and deconstructions on the arguments as specified by the pattern. The different constructs that can be specified in a pattern, and their function, are:
+- Constants, Numbers, and Strings: will only match to the same constant, number, or string in the same position in the arguments.
+- Variables: will match to anything, and will be bound to whatever they match to, with some exceptions:
+ * If the same variable is used multiple times, a check will be performed that each use match to the same value.
+ * If the variable name `_` is used, nothing will be bound and everything will always match to it.
+- Explicit Bindings (`<var>=<pattern>`): will bind `<var>` to `<pattern>`.
+- Type Checks (`<var> is <types>`): will check that whatever is in that position is of type(s) `<types>` before binding the `<var>`.
+- Data Types (`<name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`.
+- Tuples (`(<patterns>)`): will only match to a tuple of the same length, and will check the contents against `<patterns>`.
+- Lists (`[<patterns>]`): will only match to a list of the same length, and will check the contents against `<patterns>`.
+- Dicts (`{<pairs>}`): will only match a dict of the same length, and will check the contents against `<pairs>`.
+- Sets (`{<constants>}`): will only match a set of the same length and contents.
+- List/Tuple Splits (`<list/tuple> + <var>`): will match the beginning of the list/tuple against the `<list/tuple>`, then bind the rest to `<var>`.
+- Iterator Splits (`<list/tuple> :: <var>`): will match the beginning of the iterator against the `<list/tuple>`, then bind the rest to `<var>`.
 
 ## VI. Coconut Module
 
