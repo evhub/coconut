@@ -490,6 +490,7 @@ class matcher(object):
 
     def __init__(self):
         """Creates The Matcher."""
+        self.checkdefs = []
         self.increment()
         self.names = {}
 
