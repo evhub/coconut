@@ -721,12 +721,12 @@ class triangle(collections.namedtuple("triangle", "a, b, c")):
 
 Coconut provides `match` statements to allow for Haskell-style pattern-matching. Coconut match statement syntax looks like:
 ```
-match <pattern> in <args> [if <cond>]:
+match <pattern> in <value> [if <cond>]:
     <body>
 [else:
     <body>]
 ```
-`<args>` is the list/tuple of items to match in, `<cond>` is an optional additional check, and the `<body>`s are simply code that is executed if the header above them suceeds. `<pattern>` follows its own, special syntax, defined roughly like so:
+`<value>` is the item to match against, `<cond>` is an optional additional check, and the `<body>`s are simply code that is executed if the header above them suceeds. `<pattern>` follows its own, special syntax, defined roughly like so:
 ```
 pattern := (
     "(" pattern ")"             # parentheses
