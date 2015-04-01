@@ -1193,8 +1193,8 @@ class processor(object):
                )
 
     assignlist = Forward()
-    simple_assign = name + ZeroOrMore(simple_trailer)
-    assign_item = simple_assign | lparen + assignlist + rparen | lbrack + assignlist + rbrack
+    simple_assign = condense(name + ZeroOrMore(simple_trailer))
+    assign_item = condense(simple_assign | lparen + assignlist + rparen | lbrack + assignlist + rbrack)
     assignlist <<= itemlist(Optional(star) + assign_item, comma)
 
     atom_item = trace(attach(atom + ZeroOrMore(trailer), item_proc), "atom_item")
