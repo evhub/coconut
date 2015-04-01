@@ -588,11 +588,11 @@ def match_proc(tokens):
     matching = matcher()
     matching.match(matches, match_to_var)
     pres, checks, defs = matching.out()
-    out = match_to_var + " = " + item + linebreak
+    out = match_check_var + " = False" + linebreak
+    out += match_to_var + " = " + item + linebreak
     for pre_def in pres:
         out += pre_def + linebreak
     if checks:
-        out += match_check_var + " = False" + linebreak
         out += "if " + " and ".join(checks) + ":" + linebreak + openstr
     for match_def in defs:
         out += match_def + linebreak
