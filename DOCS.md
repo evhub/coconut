@@ -34,6 +34,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
 - [V. Keywords](#v-keywords)
     - [data](#data)
     - [match](#match)
+    - [Backslash Escaping](#backslash-escaping)
 - [VI. Coconut Module](#vi-coconut-module)
     - [coconut.convenience](#coconutconvenience)
 
@@ -827,6 +828,24 @@ def classify(value):
 Python:
 
 _Can't be done._
+
+### Backslash Escaping
+
+To allow access to the valid Python variable names `data` and `match` in Coconut, those keywords may be backslash-escaped to turn them into the variable instead.
+
+##### Example
+
+Coconut:
+```
+\data = 5
+print(\data)
+```
+
+Python:
+```
+data = 5
+print(data)
+```
 
 ## VI. Coconut Module
 
