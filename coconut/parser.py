@@ -316,11 +316,10 @@ class tracer(object):
         if self.on:
             original = str(original)
             location = int(location)
-            tokens = tokens.asList()
             out = ""
             if message is not None:
                 out += "["+message+"] "
-            if len(tokens) == 1:
+            if len(tokens) == 1 and isinstance(tokens[0], str):
                 out += repr(tokens[0])
             else:
                 out += str(tokens)
@@ -514,9 +513,9 @@ class matcher(object):
 
     def match(self, original, item):
         """Performs Pattern-Matching Processing."""
-        if (len(original) == 2 or len(original) == 1) and original[0] == "{":
+        if "dict" in original:
             if original:
-                match = original[1]
+                match = original[0]
             else:
                 match = ()
             self.checks.append("isinstance("+item+", dict)")
@@ -525,7 +524,7 @@ class matcher(object):
                 k,v = match[x]
                 self.checks.append(k+" in "+item)
                 self.match(v, item+"["+k+"]")
-        elif len(original) == 2 or (len(original) == 4 and original[2] == "+") or (len(original) == 1 and original[0] in ("(", "[")):
+        elif "series" in original and (len(original) != 4 or original[2] != "::"):
             tail = None
             if len(original) == 4:
                 series_type, match, _, tail = original
@@ -545,7 +544,7 @@ class matcher(object):
                 self.defs.append(tail+" = "+item+"["+str(len(match))+":]")
             for x in range(0, len(match)):
                 self.match(match[x], item+"["+str(x)+"]")
-        elif len(original) == 4 and original[2] == "::":
+        elif "series" in original and len(original) == 4 and original[2] == "::":
             series_type, match, _, tail = original
             self.checks.append("__coconut__.iterable("+item+")")
             itervar = match_iter_var+"_"+str(self.iter_index)
@@ -561,49 +560,43 @@ class matcher(object):
                 self.increment()
                 self.match(match[x], itervar+"["+str(x)+"]")
                 self.decrement()
-        elif len(original) == 1:
+        elif "const" in original:
             match = original[0]
-            if isinstance(match, list):
-                if 0 < len(match) <= 2:
-                    setvar = match[0]
-                    if setvar != wildcard:
-                        if setvar in self.names:
-                            self.checks.append(self.names[setvar]+" == "+item)
-                        else:
-                            self.defs.append(setvar+" = "+item)
-                            self.names[setvar] = item
-                    if len(match) > 1:
-                        self.checks.append("isinstance("+item+", ("+match[1]+"))")
-                else:
-                    raise CoconutException("invalid const match tokens: "+repr(original))
-            elif match in const_vars:
+            if match in const_vars:
                 self.checks.append(item+" is "+match)
             else:
                 self.checks.append(item+" == "+match)
-        elif len(original) == 3 and original[0] == "{" and original[2] == "}":
-            match = original[1]
-            self.checks.append("isinstance("+item+", (set, frozenset))")
-            self.checks.append("len("+item+") == "+str(len(match)))
-            for const in match:
-                self.checks.append(const+" in "+item)
-        elif len(original) == 3 and original[1] == "(":
-            data_type, _, match = original
-            self.checks.append("isinstance("+item+", "+data_type+")")
-            for x in range(0, len(match)):
-                self.match(match[x], item+"["+str(x)+"]")
-        elif len(original) == 3:
-            if original[0] == "(" and original[2] == ")":
-                match = original[1]
-            elif original[1] == "=":
-                setvar, match = original[0], original[2]
+        elif "var" in original:
+            setvar = original[0]
+            if setvar != wildcard:
                 if setvar in self.names:
                     self.checks.append(self.names[setvar]+" == "+item)
                 else:
                     self.defs.append(setvar+" = "+item)
-                    if setvar != wildcard:
-                        self.names[setvar] = item
+                    self.names[setvar] = item
+            if len(original) > 1:
+                self.checks.append("isinstance("+item+", ("+match[1]+"))")
+        elif "set" in original:
+            match = original[0]
+            self.checks.append("isinstance("+item+", (set, frozenset))")
+            self.checks.append("len("+item+") == "+str(len(match)))
+            for const in match:
+                self.checks.append(const+" in "+item)
+        elif "data" in original:
+            data_type, match = original
+            self.checks.append("isinstance("+item+", "+data_type+")")
+            for x in range(0, len(match)):
+                self.match(match[x], item+"["+str(x)+"]")
+        elif "paren" in original:
+            self.match(original[0], item)
+        elif "assign" in original:
+            setvar, match = original
+            if setvar in self.names:
+                self.checks.append(self.names[setvar]+" == "+item)
             else:
-                raise CoconutException("invalid wrap match tokens: "+repr(original))
+                self.defs.append(setvar+" = "+item)
+                if setvar != wildcard:
+                    self.names[setvar] = item
             self.match(match, item)
         else:
             raise CoconutException("invalid inner match tokens: "+repr(original))
@@ -623,7 +616,6 @@ class matcher(object):
 
 def match_proc(tokens):
     """Processes Match Blocks."""
-    tokens = tokens.asList()
     if len(tokens) == 3:
         matches, item, stmts = tokens
         cond = None
@@ -1294,15 +1286,15 @@ class processor(object):
     match_pair = Group(match_const + colon.suppress() + match)
     matchlist_dict = Optional(Group(match_pair + ZeroOrMore(comma.suppress() + match_pair) + Optional(comma.suppress())))
     match <<= trace(Group(
-        match_const
-        | name + equals + match
-        | name + lparen + matchlist_list + rparen.suppress()
-        | Group(name + Optional(Keyword("is").suppress() + matchlist_name))
-        | lparen + matchlist_tuple + rparen.suppress() + Optional((plus | dubcolon) + name)
-        | lparen + match + rparen
-        | lbrack + matchlist_list + rbrack.suppress() + Optional((plus | dubcolon) + name)
-        | lbrace + matchlist_dict + rbrace.suppress()
-        | lbrace + matchlist_set + rbrace
+        (match_const)("const")
+        | (name + equals.suppress() + match)("assign")
+        | (name + lparen.suppress() + matchlist_list + rparen.suppress())("data")
+        | (name + Optional(Keyword("is").suppress() + matchlist_name))("var")
+        | (lparen.suppress + matchlist_tuple + rparen.suppress() + Optional((plus | dubcolon) + name))("series")
+        | (lparen.suppress() + match + rparen.suppress())("paren")
+        | (lbrack.suppress + matchlist_list + rbrack.suppress() + Optional((plus | dubcolon) + name))("series")
+        | (lbrace.suppress() + matchlist_dict + rbrace.suppress())("dict")
+        | (lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
         ), "match")
 
     else_suite = suite | colon + trace(attach(simple_compound_stmt, else_proc), "simple_compound_stmt")
