@@ -322,7 +322,7 @@ class tracer(object):
             if len(tokens) == 1 and isinstance(tokens[0], str):
                 out += repr(tokens[0])
             else:
-                out += str(tokens)
+                out += tokens.dump()
             out += " (line "+str(lineno(location, original))+", col "+str(col(location, original))+")"
             self.show(out)
         return tokens
@@ -575,7 +575,7 @@ class matcher(object):
                     self.defs.append(setvar+" = "+item)
                     self.names[setvar] = item
             if len(original) > 1:
-                self.checks.append("isinstance("+item+", ("+match[1]+"))")
+                self.checks.append("isinstance("+item+", ("+original[1]+"))")
         elif "set" in original:
             match = original[0]
             self.checks.append("isinstance("+item+", (set, frozenset))")
