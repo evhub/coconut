@@ -1303,13 +1303,13 @@ class processor(object):
     matchlist_name = name | lparen.suppress() + itemlist(name, comma) + rparen.suppress()
     match = Forward()
     matchlist_list = Optional(Group(match + ZeroOrMore(comma.suppress() + match) + Optional(comma.suppress())))
-    matchlist_tuple = Group(match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress()) | Optional(match + comma.suppress()))
+    matchlist_tuple = Optional(Group(match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress()) | match + comma.suppress()))
     match_const = (
         keyword_atom
         | number
         | string_atom
         )
-    matchlist_set = Group(match_const + ZeroOrMore(comma.suppress() + match_const) + Optional(comma.suppress()))
+    matchlist_set = Optional(Group(match_const + ZeroOrMore(comma.suppress() + match_const) + Optional(comma.suppress())))
     match_pair = Group(match_const + colon.suppress() + match)
     matchlist_dict = Optional(Group(match_pair + ZeroOrMore(comma.suppress() + match_pair) + Optional(comma.suppress())))
     match <<= trace(Group(
