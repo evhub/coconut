@@ -602,7 +602,7 @@ class matcher(object):
                 if isinstance(original[0], str):
                     set_type, match = original[0], ()
                 else:
-                    set_type, match = "", original[0]
+                    set_type, match = None, original[0]
             elif len(original) == 2:
                 set_type, match = original
             else:
@@ -611,6 +611,8 @@ class matcher(object):
                 self.checks.append("isinstance("+item+", set)")
             elif set_type == "f":
                 self.checks.append("isinstance("+item+", frozenset)")
+            elif not set_type:
+                self.checks.append("isinstance("+item+", (set, frozenset))")
             else:
                 raise CoconutException("invalid set type: "+str(set_type))
             self.checks.append("len("+item+") == "+str(len(match)))

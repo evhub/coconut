@@ -746,24 +746,24 @@ match <pattern> in <value> [if <cond>]:
 `<value>` is the item to match against, `<cond>` is an optional additional check, and the `<body>`s are simply code that is executed if the header above them suceeds. `<pattern>` follows its own, special syntax, defined roughly like so:
 ```
 pattern := (
-    "(" pattern ")"             # parentheses
-    | "None" | "True" | "False" # constants
-    | NUMBER                    # numbers
-    | STRING                    # strings
-    | NAME                      # capture
-    | NAME "is" names           # type-checking
-    | NAME "=" pattern          # assignment
-    | NAME "(" patterns ")"     # data types
-    | "(" patterns ")"          # tuples
-    | "[" patterns "]"          # lists
-    | "{" pattern_pairs "}"     # dictionaries
-    | "{" pattern_consts "}"    # sets
-    | (                         # head-tail splits
-        "(" patterns ")"            # tuples
-        | "[" patterns "]"          # lists
+    "(" pattern ")"                     # parentheses
+    | "None" | "True" | "False"         # constants
+    | NUMBER                            # numbers
+    | STRING                            # strings
+    | NAME                              # capture
+    | NAME "is" names                   # type-checking
+    | NAME "=" pattern                  # assignment
+    | NAME "(" patterns ")"             # data types
+    | "(" patterns ")"                  # tuples
+    | "[" patterns "]"                  # lists
+    | "{" pattern_pairs "}"             # dictionaries
+    | ["s" | "f"] {" pattern_consts "}" # sets
+    | (                                 # head-tail splits
+        "(" patterns ")"                    # tuples
+        | "[" patterns "]"                  # lists
       ) (
-        "+"                         # for a tuple/list
-        | "::"                      # for an iterator
+        "+"                                 # for a tuple/list
+        | "::"                              # for an iterator
       ) pattern
     )
 ```
