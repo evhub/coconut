@@ -562,6 +562,7 @@ class matcher(object):
             if tail is None:
                 self.checks.append("len("+item+") == "+str(len(match)))
             else:
+                self.checks.append("len("+item+") >= "+str(len(match)))
                 self.defs.append(tail+" = "+item+"["+str(len(match))+":]")
             for x in range(0, len(match)):
                 self.match(match[x], item+"["+str(x)+"]")
