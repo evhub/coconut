@@ -70,6 +70,11 @@ class __coconut__(object):
     import collections
     data = staticmethod(collections.namedtuple)
     @staticmethod
+    def isiterable(obj):
+        try: iter(obj)
+        except TypeError: return False
+        else: return True
+    @staticmethod
     def bool_and(a, b):
         """Boolean And Operator Function."""
         return a and b
@@ -141,6 +146,15 @@ tee = itertools.tee
 
 import collections
 data = collections.namedtuple
+
+def isiterable(obj):
+    """Determines Whether An Object Is Iterable."""
+    try:
+        iter(obj)
+    except TypeError:
+        return False
+    else:
+        return True
 
 def bool_and(a, b):
     """Boolean And Operator Function."""
@@ -471,13 +485,31 @@ def else_proc(tokens):
 
 class matcher(object):
     """Pattern-Matching Processor."""
+    position = 0
+    iter_index = 0
 
     def __init__(self):
-        self.iter_index = 0
-        self.pres = []
-        self.checks = []
-        self.defs = []
+        """Creates The Matcher."""
+        self.increment()
         self.names = {}
+
+    def set_position(self, position):
+        """Sets The If-Statement Position."""
+        if position < 0:
+            raise CoconutException("invalid match index: "+str(position))
+        while position >= len(self.checkdefs):
+            self.checkdefs.append(([], []))
+        self.checks = self.checkdefs[position][0]
+        self.defs = self.checkdefs[position][1]
+        self.position = position
+
+    def increment(self):
+        """Advances The If-Statement Position."""
+        self.set_position(self.position+1)
+
+    def decrement(self):
+        """Decrements The If-Statement Position."""
+        self.set_position(self.position-1)
 
     def match(self, original, item):
         """Performs Pattern-Matching Processing."""
@@ -514,17 +546,20 @@ class matcher(object):
                 self.match(match[x], item+"["+str(x)+"]")
         elif len(original) == 4 and original[2] == "::":
             series_type, match, _, tail = original
+            self.checks.append("__coconut__.isiterable(item)")
             itervar = match_iter_var+"_"+str(self.iter_index)
             self.iter_index += 1
             if series_type == "(":
-                self.pres.append(itervar+" = tuple(__coconut__.islice("+item+", 0, "+str(len(match))+"))")
+                self.defs.append(itervar+" = tuple(__coconut__.islice("+item+", 0, "+str(len(match))+"))")
             elif series_type == "[":
-                self.pres.append(itervar+" = list(__coconut__.islice("+item+", 0, "+str(len(match))+"))")
+                self.defs.append(itervar+" = list(__coconut__.islice("+item+", 0, "+str(len(match))+"))")
             else:
                 raise CoconutException("invalid iterator match tokens: "+repr(original))
             self.defs.append(tail+" = "+item)
             for x in range(0, len(match)):
+                self.increment()
                 self.match(match[x], itervar+"["+str(x)+"]")
+                self.decrement()
         elif len(original) == 1:
             match = original[0]
             if isinstance(match, list):
@@ -572,8 +607,17 @@ class matcher(object):
         else:
             raise CoconutException("invalid inner match tokens: "+repr(original))
 
-    def out(self):
-        return self.pres, self.checks, self.defs
+    def out(self, header, body):
+        out = header
+        closes = 0
+        for checks, defs in self.checkdefs:
+            if checks:
+                out += "if (" + ") and (".join(checks) + "):" + linebreak + openstr
+                closes += 1
+            if defs:
+                out += linebreak.join(defs) + linebreak
+        out += body
+        out += closestr * closes
 
 def match_proc(tokens):
     """Processes Match Blocks."""
@@ -587,21 +631,16 @@ def match_proc(tokens):
         raise CoconutException("invalid top-level match tokens: "+repr(tokens))
     matching = matcher()
     matching.match(matches, match_to_var)
-    pres, checks, defs = matching.out()
-    out = match_check_var + " = False" + linebreak
-    out += match_to_var + " = " + item + linebreak
-    for pre_def in pres:
-        out += pre_def + linebreak
-    if checks:
-        out += "if " + " and ".join(checks) + ":" + linebreak + openstr
-    for match_def in defs:
-        out += match_def + linebreak
     if cond:
-        out += "if " + cond + ":" + linebreak + openstr
-    out += "".join(stmts)
-    out += match_check_var + " = True" + linebreak
-    out += closestr * (int(bool(checks)) + int(bool(cond)))
-    return out
+        matching.increment()
+        matching.checks.append(cond)
+    return matching.out(
+        match_check_var + " = False" + linebreak
+        + match_to_var + " = " + item + linebreak
+        ,
+        "".join(stmts)
+        + match_check_var + " = True" + linebreak
+        )
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # PARSER:
