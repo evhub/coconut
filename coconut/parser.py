@@ -322,7 +322,7 @@ class tracer(object):
             if len(tokens) == 1 and isinstance(tokens[0], str):
                 out += repr(tokens[0])
             else:
-                out += tokens.dump()
+                out += str(tokens)
             out += " (line "+str(lineno(location, original))+", col "+str(col(location, original))+")"
             self.show(out)
         return tokens
