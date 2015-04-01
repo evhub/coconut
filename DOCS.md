@@ -787,7 +787,7 @@ pattern := (
 
 Coconut:
 ```
-def classify_tuple(value):
+def classify(value):
     match _ is tuple in value:
         match () in value:
             return "empty tuple"
@@ -798,8 +798,30 @@ def classify_tuple(value):
         match (_,_) in value:
             return "pair tuple"
         return "tuple"
-    else:
-        return "not a tuple"
+    match _ is list in value:
+        match [] in value:
+            return "empty list"
+        match [_] in value:
+            return "singleton list"
+        match [x,x] in value:
+            return "duplicate pair list of "+str(x)
+        match [_,_] in value:
+            return "pair list"
+        return "list"
+    match _ is dict in value:
+        match {} in value:
+            return "empty dict"
+        else:
+            return "dict"
+    match _ is (set, frozenset) in value:
+        match s{} in value:
+            return "empty set"
+        match f{} in value:
+            return "empty set"
+        match {0} in value:
+            return "set of 0"
+        return "set"
+    raise TypeError()
 ```
 
 Python:

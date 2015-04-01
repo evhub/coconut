@@ -241,6 +241,7 @@ data vector(x, y):
     def __abs__(self):
         return (self.x**2 + self.y**2)**.5
 
+vector(1, 1) |> print # all data types come with a built-in __repr__
 vector(3, 4) |> abs |> print
 ```
 
@@ -250,7 +251,92 @@ While not only useful for working with values, pattern-matching is tailored to t
 
 We'll start with a simple factorial function, implemented using match statements:
 ```
+def factorial(value):
+    match 0 in value:
+        return 1
+    match n is int in value:
+        if n > 0:
+            return n * factorial(n-1)
+    raise TypeError("invalid argument to factorial of: "+repr(value))
+
+3 |> factorial |> print
 ```
+You should now be able to see the basic syntax that match statements follow: `match <pattern> in <value>`. The match statement will attempt to match the value against the pattern, and if successful, bind any variables in the pattern to whatever is in the same position in the value, and execute the code below the match statement.
+
+What is allowed in the match statement's pattern is the thing with no equivalent in Python. The factorial function gives you a couple of examples, though: constants (`0`), variables (`n`), and optional type checks appended to variables (`is int`).
+
+Match statements also support, in their basic syntax, an `if <cond>` that will check the condition as well as the match before executing the code below. Knowing this, we can slightly simplify our factorial function from earlier:
+```
+def factorial(value):
+    match 0 in value:
+        return 1
+    match n is int in value if n > 0:
+        return n * factorial(n-1)
+    raise TypeError("arg to factorial must be int > 0")
+
+3 |> factorial |> print
+```
+
+Match statements are also very useful when working with lists or tuples, as they allow them to be easily deconstructed. Here's an example:
+```
+def classify_tuple(value):
+    match _ is tuple in value:
+        match () in value:
+            return "empty tuple"
+        match (_,) in value:
+            return "singleton tuple"
+        match (x,x) in value:
+            return "duplicate pair tuple of "+str(x)
+        match (_,_) in value:
+            return "pair tuple"
+        return "tuple"
+    else:
+        return "not a tuple"
+
+() |> classify_tuple |> print
+(1) |> classify_tuple |> print
+(1,1) |> classify_tuple |> print
+(1,2) |> classify_tuple |> print
+(1,1,1) |> classify_tuple |> print
+[1,1] |> classify_tuple |> print
+```
+There are a couple of new things here that deserve attention:
+
+First, the use of normal tuple notation to access and check agains the contents of the tuple. The same thing can be done with lists.
+
+Second, the use of the wildcard, `_`. Unlike other variables, like `x` in this example, `_` will never be bound to a value, and can be repeated multiple times without requiring the repeats to be the same value. Making sure all uses of the same variable are equal, however, like in `(x,x)` , is actually a very useful feature of match statements, as can be seen from this example.
+
+Third, the use of an `else` statement on the end. This works much like else statements in other parts of Python: the code under it is only executed if the corresponding match fails.
+
+Next, I mentioned earlier that match statements played nicely with values, and this is particularly true for values defined by the user with the `data` statement. These can be matched against and their contents accessed like so:
+```
+data point(x, y):
+    def transform(self, other):
+        match point(x, y) in other:
+            return point(self.x + x, self.y + y)
+        else:
+            raise TypeError("arg to transform must be a point")
+
+point(1,2) |> point(3,4).transform |> print
+```
+
+As you can see, matching to data types can be very useful. Even more common, however, are head-tail list or tuple deconstructions. Here's an example:
+```
+def duplicate_first(value):
+    match l=([x] + xs) in value:
+        return [x] + l
+    else:
+        raise TypeError()
+
+[1,2,3] |> duplicate_first |> print
+```
+There are another couple new things here that deserve attention:
+
+First, in addition to implicit bindings with variables, match statements also support explicit bindings with the equals sign.
+
+Second, match statements allow a `+ <var>` (or `:: <var>` for any iterable) at the end of a list or tuple literal to match the rest of the sequence.
+
+Finally, while not in any of the examples, match statements also support dictionary and set literals in their patterns, and the values of a dictionary can even be bound to.
 
 ## V. Further Reading
 
