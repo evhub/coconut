@@ -1241,8 +1241,7 @@ class processor(object):
 
     matchlist_name = name | lparen.suppress() + itemlist(name, comma) + rparen.suppress()
     match = Forward()
-    matchlist = Group(match + ZeroOrMore(comma.suppress() + match) + Optional(comma.suppress()))
-    matchlist_list = Optional(matchlist)
+    matchlist_list = Optional(Group(match + ZeroOrMore(comma.suppress() + match) + Optional(comma.suppress())))
     matchlist_tuple = Group(match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress()) | Optional(match + comma.suppress()))
     match_const = (
         keyword_atom
@@ -1267,7 +1266,7 @@ class processor(object):
     else_suite = suite | colon + trace(attach(simple_compound_stmt, else_proc), "simple_compound_stmt")
     else_stmt = condense(Keyword("else") + else_suite)
     match_stmt = condense(attach(
-        Keyword("match").suppress() + matchlist + Keyword("in").suppress() + test + Optional(Keyword("if").suppress() + test) + colon.suppress()
+        Keyword("match").suppress() + match + Keyword("in").suppress() + test + Optional(Keyword("if").suppress() + test) + colon.suppress()
         + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
         , match_proc) + Optional(condense(fixto(Keyword("else"), "if not "+ match_check_var) + else_suite)))
     assert_stmt = addspace(Keyword("assert") + testlist)
