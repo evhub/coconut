@@ -601,11 +601,13 @@ class matcher(object):
             if len(original) == 1:
                 if original[0] == "s":
                     self.checks.append("isinstance("+item+", set)")
+                    match = []
                 elif original[0] == "f":
                     self.checks.append("isinstance("+item+", frozenset)")
+                    match = []
                 else:
                     self.checks.append("isinstance("+item+", (set, frozenset))")
-                match = original[0]
+                    match = original[0]
             elif len(original) == 2:
                 if original[0] == "s":
                     self.checks.append("isinstance("+item+", set)")
