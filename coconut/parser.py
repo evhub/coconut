@@ -1314,14 +1314,14 @@ class processor(object):
     matchlist_dict = Optional(Group(match_pair + ZeroOrMore(comma.suppress() + match_pair) + Optional(comma.suppress())))
     match <<= trace(Group(
         (match_const)("const")
-        | (name + equals.suppress() + match)("assign")
-        | (name + lparen.suppress() + matchlist_list + rparen.suppress())("data")
-        | (name + Optional(Keyword("is").suppress() + matchlist_name))("var")
         | (lparen + matchlist_tuple + rparen.suppress() + Optional((plus | dubcolon) + name))("series")
         | (lparen.suppress() + match + rparen.suppress())("paren")
         | (lbrack + matchlist_list + rbrack.suppress() + Optional((plus | dubcolon) + name))("series")
         | (lbrace.suppress() + matchlist_dict + rbrace.suppress())("dict")
         | (Optional(set_letter) + lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
+        | (name + equals.suppress() + match)("assign")
+        | (name + lparen.suppress() + matchlist_list + rparen.suppress())("data")
+        | (name + Optional(Keyword("is").suppress() + matchlist_name))("var")
         ), "match")
 
     else_suite = suite | colon + trace(attach(simple_compound_stmt, else_proc), "simple_compound_stmt")
