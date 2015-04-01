@@ -484,7 +484,15 @@ def else_proc(tokens):
 
 def set_proc(tokens):
     """Processes Set Literals."""
-    if len(tokens) == 2:
+    if len(tokens) == 1:
+        set_type = tokens[0]
+        if set_type == "s":
+            return "set()"
+        elif set_type == "f":
+            return "frozenset()"
+        else:
+            raise CoconutException("invalid set type: "+str(set_type))
+    elif len(tokens) == 2:
         set_type, set_maker = tokens
         if set_type == "s":
             return "set(["+set_maker+"])"

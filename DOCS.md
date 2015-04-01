@@ -191,7 +191,7 @@ empty_frozen_set = f{}
 
 Python:
 ```
-empty_frozen_set = frozenset([])
+empty_frozen_set = frozenset()
 ```
 
 ### Non-Decimal Integers
