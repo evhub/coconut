@@ -585,21 +585,22 @@ def match_proc(tokens):
         matches, item, cond, stmts = tokens
     else:
         raise CoconutException("invalid top-level match tokens: "+repr(tokens))
-    out = match_check_var + " = False" + linebreak
-    out += match_to_var + " = " + item + linebreak
     matching = matcher()
     matching.match(matches, match_to_var)
     pres, checks, defs = matching.out()
+    out = match_to_var + " = " + item + linebreak
     for pre_def in pres:
         out += pre_def + linebreak
-    out += "if " + " and ".join(checks) + ":" + linebreak + openstr
+    if checks:
+        out += match_check_var + " = False" + linebreak
+        out += "if " + " and ".join(checks) + ":" + linebreak + openstr
     for match_def in defs:
         out += match_def + linebreak
-    if cond is not None:
+    if cond:
         out += "if " + cond + ":" + linebreak + openstr
     out += "".join(stmts)
     out += match_check_var + " = True" + linebreak
-    out += closestr * (1 + int(cond is not None))
+    out += closestr * (int(bool(checks)) + int(bool(cond)))
     return out
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
