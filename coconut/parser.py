@@ -693,8 +693,9 @@ class matcher(object):
             for match in original:
                 self.match(match, item)
         elif "or" in original:
-            for match in original:
-                self.duplicate().match(match, item)
+            self.match(original[0], item)
+            for x in range(1, len(original)):
+                self.duplicate().match(original[x], item)
         else:
             raise CoconutException("invalid inner match tokens: "+repr(original))
 
