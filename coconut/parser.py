@@ -736,7 +736,7 @@ def match_proc(tokens):
     out = linebreak.join(match_saves) + linebreak
     out += match_check_var + " = False" + linebreak
     out += match_to_var + " = " + item + linebreak
-    out += matching.out()`
+    out += matching.out()
     out += "if "+match_check_var+":" + linebreak + openstr + "".join(stmts) + closestr
     out += linebreak.join(match_redos) + linebreak
     return out
