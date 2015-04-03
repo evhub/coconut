@@ -247,10 +247,10 @@ startcomment = "#"
 endline = "\n\r"
 escape = "\\"
 tablen = 4
-decorator_var = "_coconut_decorator"
-match_to_var = "_coconut_match_to"
-match_check_var = "_coconut_match_check"
-match_iter_var = "_coconut_match_iter"
+base_decorator_var = "_coconut_decorator"
+base_match_to_var = "_coconut_match_to"
+base_match_check_var = "_coconut_match_check"
+base_match_iter_var = "_coconut_match_iter"
 wildcard = "_"
 const_vars = ["True", "False", "None"]
 reserved_vars = ["data", "match"]
@@ -470,7 +470,7 @@ def decorator_proc(tokens):
     defs = []
     decorates = []
     for x in range(0, len(tokens)):
-        varname = decorator_var + "_" + str(x)
+        varname = base_decorator_var + "_" + str(x)
         defs.append(varname+" = "+tokens[x])
         decorates.append("@"+varname)
     return linebreak.join(defs + decorates) + linebreak
@@ -503,14 +503,13 @@ def set_proc(tokens):
     else:
         raise CoconutException("invalid set literal tokens: "+repr(tokens))
 
-class match_var
-
 class matcher(object):
     """Pattern-Matching Processor."""
     position = 0
 
-    def __init__(self, checkvar, checkdefs=None, names=None):
+    def __init__(self, varmaker, checkvar, checkdefs=None, names=None):
         """Creates The Matcher."""
+        self.varmaker = varmaker
         self.checkvar = checkvar
         self.checkdefs = []
         if checkdefs is None:
@@ -528,7 +527,7 @@ class matcher(object):
 
     def duplicate(self):
         """Duplicates The Matcher To others."""
-        self.others.append(matcher(self.checkdefs, self.names))
+        self.others.append(matcher(self.varmaker, self.checkvar, self.checkdefs, self.names))
         self.others[-1].set_checks(0, ["not "+self.checkvar] + self.others[-1].get_checks(0))
         return self.others[-1]
 
@@ -621,7 +620,7 @@ class matcher(object):
         elif "series" in original and len(original) == 4 and original[2] == "::":
             series_type, match, _, tail = original
             self.checks.append("__coconut__.iterable("+item+")")
-            itervar = match_iter_var
+            itervar = self.varmaker.match_iter_var()
             if series_type == "(":
                 self.defs.append(itervar+" = tuple(__coconut__.islice("+item+", 0, "+str(len(match))+"))")
             elif series_type == "[":
@@ -714,7 +713,7 @@ class matcher(object):
             out += other.out()
         return out
 
-def match_proc(tokens):
+def match_proc(varmaker, tokens):
     """Processes Match Blocks."""
     if len(tokens) == 3:
         matches, item, stmts = tokens
@@ -723,9 +722,9 @@ def match_proc(tokens):
         matches, item, cond, stmts = tokens
     else:
         raise CoconutException("invalid top-level match tokens: "+repr(tokens))
-    tovar = match_to_var
-    checkvar = match_check_var
-    matching = matcher(checkvar)
+    tovar = varmaker.match_to_var()
+    checkvar = varmaker.match_check_var()
+    matching = matcher(varmaker, checkvar)
     matching.match(matches, tovar)
     if cond:
         matching.increment(True)
@@ -752,6 +751,7 @@ class processor(object):
         self.strict = strict
         self.string_ref <<= self.trace(attach(self.string_marker, self.string_repl), "string_ref")
         self.comment <<= self.trace(attach(self.comment_marker, self.comment_repl), "comment")
+        self.full_match <<= attach(self.pre_full_match, self.full_match_proc)
         self.setup()
         self.clean()
 
@@ -764,6 +764,31 @@ class processor(object):
         """Resets References."""
         self.indchar = None
         self.refs = []
+        self.match_check_index = 0
+        self.match_to_index = 0
+        self.match_iter_index = 0
+
+    def match_check_var(self):
+        """Gets A Clean match_check_var."""
+        match_check_var = base_match_check_var + "_" + str(self.match_check_index)
+        self.match_check_index += 1
+        return match_check_var
+
+    def match_to_var(self):
+        """Gets A Clean match_to_var."""
+        match_to_var = base_match_to_var + "_" + str(self.match_to_index)
+        self.match_to_index += 1
+        return match_to_var
+
+    def match_iter_var(self):
+        """Gets A Clean match_iter_var."""
+        match_iter_var = base_match_iter_var + "_" + str(self.match_iter_index)
+        self.match_iter_index += 1
+        return match_iter_var
+
+    def full_match_proc(self, tokens):
+        """Processes Full Matches."""
+        return match_proc(self, tokens)
 
     def wrapstr(self, text, strchar, multiline):
         """Wraps A String."""
@@ -1410,10 +1435,12 @@ class processor(object):
 
     else_suite = suite | colon + trace(attach(simple_compound_stmt, else_proc), "else_suite")
     else_stmt = condense(Keyword("else") + else_suite)
-    match_stmt = condense(attach(
+    pre_full_match = (
         Keyword("match").suppress() + match + Keyword("in").suppress() + test + Optional(Keyword("if").suppress() + test) + colon.suppress()
         + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
-        , match_proc) + Optional(else_stmt))
+        )
+    full_match = Forward()
+    match_stmt = condense(full_match + Optional(else_stmt))
     assert_stmt = addspace(Keyword("assert") + testlist)
     if_stmt = condense(addspace(Keyword("if") + condense(test + suite))
                        + ZeroOrMore(addspace(Keyword("elif") + condense(test + suite)))
