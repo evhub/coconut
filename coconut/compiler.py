@@ -241,6 +241,7 @@ class cli(object):
 
     def start_prompt(self):
         """Starts The Interpreter."""
+        self.check_runner()
         self.console.print("[Interpreter:]")
         self.running = True
         while self.running:
@@ -269,12 +270,16 @@ class cli(object):
 
     def execute(self, compiled=None, error=True):
         """Executes Compiled Code."""
-        if self.runner is None:
-            self.start_runner()
+        self.check_runner()
         if compiled is not None:
             if self.show:
-                print(compild)
+                print(compiled)
             self.runner.run(compiled, error)
+
+    def check_runner(self):
+        """Makes Sure There Is A Runner."""
+        if self.runner is None:
+            self.start_runner()
 
     def start_runner(self):
         """Starts The Runner."""
