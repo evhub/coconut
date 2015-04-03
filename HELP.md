@@ -336,7 +336,16 @@ First, in addition to implicit bindings with variables, match statements also su
 
 Second, match statements allow a `+ <var>` (or `:: <var>` for any iterable) at the end of a list or tuple literal to match the rest of the sequence.
 
-Finally, while not in any of the examples, match statements also support dictionary and set literals in their patterns, and the values of a dictionary can even be bound to.
+Finally, while not in any of the examples, match statements also support dictionary and set literals in their patterns, and the values of a dictionary can even be bound to, like so:
+```
+def dictpoint(value):
+    match {"x":x is int, "y":y is int} in value:
+        return (x, y)
+    else:
+        raise TypeError("value must be of form {'x':int, 'y':int}")
+
+{"x":1, "y":2} |> dictpoint |> print
+```
 
 ## V. Further Reading
 
