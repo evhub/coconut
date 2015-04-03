@@ -251,12 +251,6 @@ decorator_var = "_coconut_decorator"
 match_to_var = "_coconut_match_to"
 match_check_var = "_coconut_match_check"
 match_iter_var = "_coconut_match_iter"
-match_vars = [match_to_var, match_check_var, match_iter_var]
-match_saves = []
-match_redos = []
-for match_var in match_vars:
-    match_saves.append(match_var+"_save = "+match_var)
-    match_redos.append(match_var+" = "+match_var+"_save")
 wildcard = "_"
 const_vars = ["True", "False", "None"]
 reserved_vars = ["data", "match"]
@@ -509,13 +503,15 @@ def set_proc(tokens):
     else:
         raise CoconutException("invalid set literal tokens: "+repr(tokens))
 
+class match_var
+
 class matcher(object):
     """Pattern-Matching Processor."""
     position = 0
-    iter_index = 0
 
-    def __init__(self, checkdefs=None, names=None):
+    def __init__(self, checkvar, checkdefs=None, names=None):
         """Creates The Matcher."""
+        self.checkvar = checkvar
         self.checkdefs = []
         if checkdefs is None:
             self.increment()
@@ -533,7 +529,7 @@ class matcher(object):
     def duplicate(self):
         """Duplicates The Matcher To others."""
         self.others.append(matcher(self.checkdefs, self.names))
-        self.others[-1].set_checks(0, ["not "+match_check_var] + self.others[-1].get_checks(0))
+        self.others[-1].set_checks(0, ["not "+self.checkvar] + self.others[-1].get_checks(0))
         return self.others[-1]
 
     def get_checks(self, position):
@@ -625,8 +621,7 @@ class matcher(object):
         elif "series" in original and len(original) == 4 and original[2] == "::":
             series_type, match, _, tail = original
             self.checks.append("__coconut__.iterable("+item+")")
-            itervar = match_iter_var+"_"+str(self.iter_index)
-            self.iter_index += 1
+            itervar = match_iter_var
             if series_type == "(":
                 self.defs.append(itervar+" = tuple(__coconut__.islice("+item+", 0, "+str(len(match))+"))")
             elif series_type == "[":
@@ -713,7 +708,7 @@ class matcher(object):
                 closes += 1
             if defs:
                 out += linebreak.join(defs) + linebreak
-        out += match_check_var + " = True" + linebreak
+        out += self.checkvar + " = True" + linebreak
         out += closestr * closes
         for other in self.others:
             out += other.out()
@@ -728,17 +723,17 @@ def match_proc(tokens):
         matches, item, cond, stmts = tokens
     else:
         raise CoconutException("invalid top-level match tokens: "+repr(tokens))
-    matching = matcher()
-    matching.match(matches, match_to_var)
+    tovar = match_to_var
+    checkvar = match_check_var
+    matching = matcher(checkvar)
+    matching.match(matches, tovar)
     if cond:
         matching.increment(True)
         matching.add_check(cond)
-    out = linebreak.join(match_saves) + linebreak
-    out += match_check_var + " = False" + linebreak
-    out += match_to_var + " = " + item + linebreak
+    out = checkvar + " = False" + linebreak
+    out += tovar + " = " + item + linebreak
     out += matching.out()
-    out += "if "+match_check_var+":" + linebreak + openstr + "".join(stmts) + closestr
-    out += linebreak.join(match_redos) + linebreak
+    out += "if "+checkvar+":" + linebreak + openstr + "".join(stmts) + closestr
     return out
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
