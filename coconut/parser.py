@@ -512,20 +512,40 @@ class matcher(object):
     def __init__(self, checkdefs=None, names=None):
         """Creates The Matcher."""
         self.checkdefs = []
-        if checkdefs is not None:
+        if checkdefs is None:
+            self.increment()
+        else:
             for checks, defs in checkdefs:
                 self.checkdefs.append((checks[:], defs[:]))
+            self.checks = self.get_checks(-1)
+            self.defs = self.get_defs(-1)
         if names is None:
             self.names = {}
         else:
             self.names = dict(names)
         self.others = []
-        self.increment()
 
     def duplicate(self):
         """Duplicates The Matcher To others."""
         self.others.append(matcher(self.checkdefs, self.names))
+        self.others[-1].set_checks(0, ["not "+match_check_var] + self.others[-1].get_checks(0))
         return self.others[-1]
+
+    def get_checks(self, position):
+        """Gets The Checks At The Position."""
+        return self.checkdefs[position][0]
+
+    def set_checks(self, position, checks):
+        """Sets The Checks At The Position."""
+        self.checkdefs[position][0] = checks
+
+    def set_defs(self, position, defs):
+        """Sets The Defs At The Position."""
+        self.checkdefs[position][1] = defs
+
+    def get_defs(self, position):
+        """Gets The Defs At The Position."""
+        return self.checkdefs[position][1]
 
     def add_check(self, check_item):
         """Adds A Check Universally."""
