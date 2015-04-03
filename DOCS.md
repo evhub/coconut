@@ -748,6 +748,7 @@ match <pattern> in <value> [if <cond>]:
 ```
 pattern := (
     "(" pattern ")"                     # parentheses
+    | pattern "and" pattern             # multiple patterns
     | "None" | "True" | "False"         # constants
     | NUMBER                            # numbers
     | STRING                            # strings
@@ -831,7 +832,7 @@ _Can't be done._
 
 ### Backslash Escaping
 
-To allow access to the valid Python variable names `data` and `match` in Coconut, those keywords may be backslash-escaped to turn them into the variable instead.
+To allow access to the valid Python variable names `data` and `match` in Coconut, those keywords may be backslash-escaped to turn them into the variables instead.
 
 ##### Example
 

@@ -511,9 +511,9 @@ class matcher(object):
 
     def __init__(self):
         """Creates The Matcher."""
+        self.names = {}
         self.checkdefs = []
         self.increment()
-        self.names = {}
 
     def set_position(self, position):
         """Sets The If-Statement Position."""
@@ -636,11 +636,14 @@ class matcher(object):
                 if setvar != wildcard:
                     self.names[setvar] = item
             self.match(match, item)
+        elif "and" in original:
+            for match in original:
+                self.match(match, item)
         else:
             raise CoconutException("invalid inner match tokens: "+repr(original))
 
-    def out(self, header, body):
-        out = header
+    def out(self):
+        out = ""
         closes = 0
         for checks, defs in self.checkdefs:
             if checks:
@@ -648,7 +651,7 @@ class matcher(object):
                 closes += 1
             if defs:
                 out += linebreak.join(defs) + linebreak
-        out += body
+        out += match_check_var + " = True" + linebreak
         out += closestr * closes
         return out
 
@@ -666,13 +669,11 @@ def match_proc(tokens):
     if cond:
         matching.increment()
         matching.checks.append(cond)
-    return matching.out(
-        match_check_var + " = False" + linebreak
-        + match_to_var + " = " + item + linebreak
-        ,
-        "".join(stmts)
-        + match_check_var + " = True" + linebreak
-        )
+    out = match_check_var + " = False" + linebreak
+    out += match_to_var + " = " + item + linebreak
+    out += matching.out()
+    out += "if "+match_check_var+":" + linebreak + openstr + "".join(stmts) + closestr
+    return out
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # PARSER:
@@ -1327,7 +1328,7 @@ class processor(object):
     matchlist_set = Optional(Group(match_const + ZeroOrMore(comma.suppress() + match_const) + Optional(comma.suppress())))
     match_pair = Group(match_const + colon.suppress() + match)
     matchlist_dict = Optional(Group(match_pair + ZeroOrMore(comma.suppress() + match_pair) + Optional(comma.suppress())))
-    match <<= trace(Group(
+    base_match = Group(
         (match_const)("const")
         | (lparen + matchlist_tuple + rparen.suppress() + Optional((plus | dubcolon) + name))("series")
         | (lparen.suppress() + match + rparen.suppress())("paren")
@@ -1337,7 +1338,9 @@ class processor(object):
         | (name + equals.suppress() + match)("assign")
         | (name + lparen.suppress() + matchlist_list + rparen.suppress())("data")
         | (name + Optional(Keyword("is").suppress() + matchlist_name))("var")
-        ), "match")
+        )
+    matchlist_and = base_match + OneOrMore(Keyword("and").suppress() + base_match)
+    match <<= Group(matchlist_and("and")) | base_match
 
     else_suite = suite | colon + trace(attach(simple_compound_stmt, else_proc), "simple_compound_stmt")
     else_stmt = condense(Keyword("else") + else_suite)
