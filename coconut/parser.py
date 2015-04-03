@@ -516,7 +516,7 @@ class matcher(object):
             self.increment()
         else:
             for checks, defs in checkdefs:
-                self.checkdefs.append((checks[:], defs[:]))
+                self.checkdefs.append([checks[:], defs[:]])
             self.checks = self.get_checks(-1)
             self.defs = self.get_defs(-1)
         if names is None:
@@ -564,7 +564,7 @@ class matcher(object):
         if position < 0:
             raise CoconutException("invalid match index: "+str(position))
         while position >= len(self.checkdefs):
-            self.checkdefs.append(([], []))
+            self.checkdefs.append([[], []])
         self.checks = self.checkdefs[position][0]
         self.defs = self.checkdefs[position][1]
         self.position = position
