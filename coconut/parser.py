@@ -509,11 +509,35 @@ class matcher(object):
     position = 0
     iter_index = 0
 
-    def __init__(self):
+    def __init__(self, checkdefs=None, names=None):
         """Creates The Matcher."""
-        self.names = {}
         self.checkdefs = []
+        if checkdefs is not None:
+            for checks, defs in checkdefs:
+                self.checkdefs.append((checks[:], defs[:]))
+        if names is None:
+            self.names = {}
+        else:
+            self.names = dict(names)
+        self.others = []
         self.increment()
+
+    def duplicate(self):
+        """Duplicates The Matcher To others."""
+        self.others.append(matcher(self.checkdefs, self.names))
+        return self.others[-1]
+
+    def add_check(self, check_item):
+        """Adds A Check Universally."""
+        self.checks.append(check_item)
+        for other in self.others:
+            other.add_check(check_item)
+
+    def add_def(self, def_item):
+        """Adds A Def Universally."""
+        self.defs.append(def_item)
+        for other in self.others:
+            other.add_def(def_item)
 
     def set_position(self, position):
         """Sets The If-Statement Position."""
@@ -525,13 +549,19 @@ class matcher(object):
         self.defs = self.checkdefs[position][1]
         self.position = position
 
-    def increment(self):
+    def increment(self, forall=False):
         """Advances The If-Statement Position."""
         self.set_position(self.position+1)
+        if forall:
+            for other in self.others:
+                other.increment(True)
 
-    def decrement(self):
+    def decrement(self, forall=False):
         """Decrements The If-Statement Position."""
         self.set_position(self.position-1)
+        if forall:
+            for other in self.others:
+                other.decrement(True)
 
     def match(self, original, item):
         """Performs Pattern-Matching Processing."""
@@ -639,6 +669,9 @@ class matcher(object):
         elif "and" in original:
             for match in original:
                 self.match(match, item)
+        elif "or" in original:
+            for match in original:
+                self.duplicate().match(match, item)
         else:
             raise CoconutException("invalid inner match tokens: "+repr(original))
 
@@ -653,6 +686,8 @@ class matcher(object):
                 out += linebreak.join(defs) + linebreak
         out += match_check_var + " = True" + linebreak
         out += closestr * closes
+        for other in self.others:
+            out += other.out()
         return out
 
 def match_proc(tokens):
@@ -667,8 +702,8 @@ def match_proc(tokens):
     matching = matcher()
     matching.match(matches, match_to_var)
     if cond:
-        matching.increment()
-        matching.checks.append(cond)
+        matching.increment(True)
+        matching.add_check(cond)
     out = match_check_var + " = False" + linebreak
     out += match_to_var + " = " + item + linebreak
     out += matching.out()
@@ -1340,7 +1375,9 @@ class processor(object):
         | (name + Optional(Keyword("is").suppress() + matchlist_name))("var")
         )
     matchlist_and = base_match + OneOrMore(Keyword("and").suppress() + base_match)
-    match <<= Group(matchlist_and("and")) | base_match
+    and_match = Group(matchlist_and("and")) | base_match
+    matchlist_or = and_match + OneOrMore(Keyword("or").suppress() + and_match)
+    match <<= Group(matchlist_or("or")) | and_match
 
     else_suite = suite | colon + trace(attach(simple_compound_stmt, else_proc), "simple_compound_stmt")
     else_stmt = condense(Keyword("else") + else_suite)

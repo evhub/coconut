@@ -748,7 +748,6 @@ match <pattern> in <value> [if <cond>]:
 ```
 pattern := (
     "(" pattern ")"                     # parentheses
-    | pattern "and" pattern             # multiple patterns
     | "None" | "True" | "False"         # constants
     | NUMBER                            # numbers
     | STRING                            # strings
@@ -767,6 +766,8 @@ pattern := (
         "+"                                 # for a tuple/list
         | "::"                              # for an iterator
       ) pattern
+    | pattern "and" pattern             # match all
+    | pattern "or" pattern              # match any
     )
 ```
 
