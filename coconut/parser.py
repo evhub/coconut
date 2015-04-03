@@ -251,7 +251,12 @@ decorator_var = "_coconut_decorator"
 match_to_var = "_coconut_match_to"
 match_check_var = "_coconut_match_check"
 match_iter_var = "_coconut_match_iter"
-assign_var = "_coconut_assign"
+match_vars = [match_to_var, match_check_var, match_iter_var]
+match_saves = []
+match_redos = []
+for match_var in match_vars:
+    match_saves.append(match_var+"_save = "+match_var)
+    match_redos.append(match_var+" = "+match_var+"_save")
 wildcard = "_"
 const_vars = ["True", "False", "None"]
 reserved_vars = ["data", "match"]
@@ -728,10 +733,12 @@ def match_proc(tokens):
     if cond:
         matching.increment(True)
         matching.add_check(cond)
-    out = match_check_var + " = False" + linebreak
+    out = linebreak.join(match_saves) + linebreak
+    out += match_check_var + " = False" + linebreak
     out += match_to_var + " = " + item + linebreak
-    out += matching.out()
+    out += matching.out()`
     out += "if "+match_check_var+":" + linebreak + openstr + "".join(stmts) + closestr
+    out += linebreak.join(match_redos) + linebreak
     return out
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
