@@ -634,21 +634,23 @@ class matcher(object):
                 self.match(match[x], itervar+"["+str(x)+"]")
                 self.decrement()
         elif "const" in original:
-            match = original[0]
+            (match,) = original
             if match in const_vars:
                 self.checks.append(item+" is "+match)
             else:
                 self.checks.append(item+" == "+match)
+        elif "is" in original:
+            match, type_check = original
+            self.checks.append("isinstance("+item+", ("+type_check"))")
+            self.match(match, item)
         elif "var" in original:
-            setvar = original[0]
+            (setvar,) = original
             if setvar != wildcard:
                 if setvar in self.names:
                     self.checks.append(self.names[setvar]+" == "+item)
                 else:
                     self.defs.append(setvar+" = "+item)
                     self.names[setvar] = item
-            if len(original) > 1:
-                self.checks.append("isinstance("+item+", ("+original[1]+"))")
         elif "set" in original:
             if len(original) == 1:
                 if isinstance(original[0], str):
@@ -676,7 +678,8 @@ class matcher(object):
             for x in range(0, len(match)):
                 self.match(match[x], item+"["+str(x)+"]")
         elif "paren" in original:
-            self.match(original[0], item)
+            (match,) = original
+            self.match(match, item)
         elif "assign" in original:
             setvar, match = original
             if setvar in self.names:
@@ -1371,7 +1374,6 @@ class processor(object):
     del_stmt = addspace(Keyword("del") + itemlist(simple_assign, comma))
     with_item = addspace(test + Optional(Keyword("as") + name))
 
-    matchlist_name = name | lparen.suppress() + itemlist(name, comma) + rparen.suppress()
     match = Forward()
     matchlist_list = Optional(Group(match + ZeroOrMore(comma.suppress() + match) + Optional(comma.suppress())))
     matchlist_tuple = Optional(Group(match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress()) | match + comma.suppress()))
@@ -1392,20 +1394,22 @@ class processor(object):
         | (Optional(set_letter) + lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
         | (name + equals.suppress() + match)("assign")
         | (name + lparen.suppress() + matchlist_list + rparen.suppress())("data")
-        | (name + Optional(Keyword("is").suppress() + matchlist_name))("var")
+        | name("var")
         )
-    matchlist_and = base_match + OneOrMore(Keyword("and").suppress() + base_match)
-    and_match = Group(matchlist_and("and")) | base_match
+    matchlist_name = name | lparen.suppress() + itemlist(name, comma) + rparen.suppress()
+    is_match = (base_match + Keyword("is").suppress() + matchlist_name)("is") | base_match
+    matchlist_and = is_match + OneOrMore(Keyword("and").suppress() + is_match)
+    and_match = Group(matchlist_and("and")) | is_match
     matchlist_or = and_match + OneOrMore(Keyword("or").suppress() + and_match)
     or_match = Group(matchlist_or("or")) | and_match
     match <<= trace(or_match, "match")
 
-    else_suite = suite | colon + trace(attach(simple_compound_stmt, else_proc), "simple_compound_stmt")
+    else_suite = suite | colon + trace(attach(simple_compound_stmt, else_proc), "else_suite")
     else_stmt = condense(Keyword("else") + else_suite)
     match_stmt = condense(attach(
         Keyword("match").suppress() + match + Keyword("in").suppress() + test + Optional(Keyword("if").suppress() + test) + colon.suppress()
         + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
-        , match_proc) + Optional(condense(fixto(Keyword("else"), "if not "+ match_check_var) + else_suite)))
+        , match_proc) + Optional(else_stmt))
     assert_stmt = addspace(Keyword("assert") + testlist)
     if_stmt = condense(addspace(Keyword("if") + condense(test + suite))
                        + ZeroOrMore(addspace(Keyword("elif") + condense(test + suite)))

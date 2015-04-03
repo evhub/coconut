@@ -751,9 +751,7 @@ pattern := (
     | "None" | "True" | "False"         # constants
     | NUMBER                            # numbers
     | STRING                            # strings
-    | NAME                              # capture
-    | NAME "is" names                   # type-checking
-    | NAME "=" pattern                  # assignment
+    | NAME ["=" pattern]                # capture
     | NAME "(" patterns ")"             # data types
     | "(" patterns ")"                  # tuples
     | "[" patterns "]"                  # lists
@@ -766,6 +764,7 @@ pattern := (
         "+"                                 # for a tuple/list
         | "::"                              # for an iterator
       ) pattern
+    | pattern "is" names                # type-checking
     | pattern "and" pattern             # match all
     | pattern "or" pattern              # match any
     )
