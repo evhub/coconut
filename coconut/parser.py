@@ -1397,7 +1397,8 @@ class processor(object):
     matchlist_and = base_match + OneOrMore(Keyword("and").suppress() + base_match)
     and_match = Group(matchlist_and("and")) | base_match
     matchlist_or = and_match + OneOrMore(Keyword("or").suppress() + and_match)
-    match <<= trace(Group(matchlist_or("or")) | and_match, "match")
+    or_match = Group(matchlist_or("or")) | and_match
+    match <<= trace(or_match, "match")
 
     else_suite = suite | colon + trace(attach(simple_compound_stmt, else_proc), "simple_compound_stmt")
     else_stmt = condense(Keyword("else") + else_suite)
