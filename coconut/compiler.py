@@ -77,7 +77,6 @@ class cli(object):
     """The Coconut Command-Line Interface."""
     code_ext = ".coc"
     comp_ext = ".py"
-    max_debug = 2
     commandline = argparse.ArgumentParser(description="The Coconut Programming Language.")
     commandline.add_argument("source", metavar="source", type=str, nargs="?", default=None, help="path to the coconut file/folder to compile")
     commandline.add_argument("dest", metavar="dest", type=str, nargs="?", default=None, help="destination directory for compiled files (defaults to the source directory)")
@@ -88,11 +87,11 @@ class cli(object):
     commandline.add_argument("-n", "--nowrite", action="store_const", const=True, default=False, help="disable writing the compiled source")
     commandline.add_argument("-i", "--interact", action="store_const", const=True, default=False, help="force the interpreter to start (otherwise starts if no other command is given)")
     commandline.add_argument("-q", "--quiet", action="store_const", const=True, default=False, help="suppress all info and debug output")
-    commandline.add_argument("-d", "--debug", metavar="level", type=int, nargs="?", default=0, const=1, help="enable debug output (0 is off, no arg defaults to 1, max is "+str(max_debug)+")")
+    commandline.add_argument("-d", "--debug", action="store_const", const=True, default=False, help="enable printing debug output")
     commandline.add_argument("-e", "--exec", metavar="code", type=str, nargs=1, default=None, help="run a line of coconut passed in as a string")
     commandline.add_argument("--autopep8", type=str, nargs=argparse.REMAINDER, default=None, help="use autopep8 to format compiled code (remaining args passed to autopep8)")
     processor = None
-    debug = False
+    show = False
     running = False
     runner = None
 
@@ -112,18 +111,6 @@ class cli(object):
         self.processor = parser.processor(strict)
         self.processor.TRACER.show = self.console.debug
 
-    def debug_set(self, level=0):
-        """Sets The Debug Level."""
-        self.debug = level >= 1
-        self.processor.debug(level >= 2)
-
-    def debug_level(self, level=0):
-        """Processes A Debug Level."""
-        if level < 0 or self.max_debug < level:
-            raise parser.CoconutException("debug level must be in range(0, "+str(self.max_debug+1)+")")
-        else:
-            self.debug_set(level)
-
     def quiet(self, state=None):
         """Quiets Output."""
         if state is None:
@@ -137,9 +124,12 @@ class cli(object):
     def cmd(self, args):
         """Parses Command-Line Arguments."""
         self.setup(args.strict)
-        self.debug_level(args.debug)
+        if args.debug:
+            self.processor.debug(True)
         if args.quiet:
             self.quiet(True)
+        if args.print:
+            self.show = True
         if args.version:
             self.console.print(self.version())
         if args.autopep8 is not None:
@@ -151,37 +141,37 @@ class cli(object):
                 raise parser.CoconutException("source path can't point to file when --run is enabled")
             if args.dest is None:
                 if args.nowrite:
-                    self.compile_path(args.source, None, show=args.print, run=args.run)
+                    self.compile_path(args.source, None, run=args.run)
                 else:
-                    self.compile_path(args.source, show=args.print, run=args.run)
+                    self.compile_path(args.source, run=args.run)
             elif args.nowrite:
                 raise parser.CoconutException("destination path can't be given when --nowrite is enabled")
             elif os.path.isfile(args.dest):
                 raise parser.CoconutException("destination path can't point to file")
             else:
-                self.compile_path(args.source, args.dest, show=args.print, run=args.run)
-        elif args.run or args.print:
-            raise parser.CoconutException("a source file must be specified when --run or --print is enabled")
+                self.compile_path(args.source, args.dest, run=args.run)
+        elif args.run:
+            raise parser.CoconutException("a source file must be specified when --run is enabled")
         stdin = not sys.stdin.isatty()
         if stdin:
             self.execute(self.processor.parse_block(sys.stdin.read().decode(ENCODING)))
         if args.interact or not (stdin or args.source or getattr(args, "exec") or args.version):
             self.start_prompt()
 
-    def compile_path(self, path, write=True, show=False, run=False):
+    def compile_path(self, path, write=True, run=False):
         """Compiles A Path."""
         if os.path.isfile(path):
             if write is None:
                 module = None
             else:
                 module = False
-            self.compile_file(path, write, module, show, run)
+            self.compile_file(path, write, module, run)
         elif os.path.isdir(path):
-            self.compile_module(path, write, show, run)
+            self.compile_module(path, write, run)
         else:
             raise parser.CoconutException("could not find source path "+repr(path))
 
-    def compile_module(self, directory, write=True, show=False, run=False):
+    def compile_module(self, directory, write=True, run=False):
         """Compiles A Module."""
         for dirpath, dirnames, filenames in os.walk(directory):
             writedir = write
@@ -197,12 +187,12 @@ class cli(object):
             wrote = False
             for filename in filenames:
                 if os.path.splitext(filename)[1] == self.code_ext:
-                    self.compile_file(os.path.join(dirpath, filename), writedir, module, show, run)
+                    self.compile_file(os.path.join(dirpath, filename), writedir, module, run)
                     wrote = True
             if wrote and tocreate is not None:
                 self.create_module(tocreate)
 
-    def compile_file(self, filepath, write=True, module=False, show=False, run=False):
+    def compile_file(self, filepath, write=True, module=False, run=False):
         """Compiles A File."""
         if write is None:
             destpath = None
@@ -215,9 +205,9 @@ class cli(object):
             if not ext:
                 ext = self.comp_ext
             destpath = base + ext
-        self.compile(filepath, destpath, module, show, run)
+        self.compile(filepath, destpath, module, run)
 
-    def compile(self, codepath, destpath=None, module=False, show=False, run=False):
+    def compile(self, codepath, destpath=None, module=False, run=False):
         """Compiles A Source Coconut File To A Destination Python File."""
         codepath = fixpath(codepath)
         self.console.print("Compiling "+repr(codepath)+"...")
@@ -231,7 +221,7 @@ class cli(object):
             compiled = self.processor.parse_file(code)
         else:
             raise parser.CoconutException("invalid value for module boolean of "+repr(module))
-        if show:
+        if self.show:
             print(compiled)
         if run:
             self.execute(compiled)
@@ -282,8 +272,8 @@ class cli(object):
         if self.runner is None:
             self.start_runner()
         if compiled is not None:
-            if self.debug:
-                self.console.debug("Executing "+repr(compiled)+"...")
+            if self.show:
+                print(compild)
             self.runner.run(compiled, error)
 
     def start_runner(self):
