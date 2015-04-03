@@ -641,7 +641,7 @@ class matcher(object):
                 self.checks.append(item+" == "+match)
         elif "is" in original:
             match, type_check = original
-            self.checks.append("isinstance("+item+", ("+type_check"))")
+            self.checks.append("isinstance("+item+", ("+type_check+"))")
             self.match(match, item)
         elif "var" in original:
             (setvar,) = original
