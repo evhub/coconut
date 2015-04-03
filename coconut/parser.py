@@ -1397,7 +1397,8 @@ class processor(object):
         | name("var")
         )
     matchlist_name = name | lparen.suppress() + itemlist(name, comma) + rparen.suppress()
-    is_match = (base_match + Keyword("is").suppress() + matchlist_name)("is") | base_match
+    matchlist_is = base_match + Keyword("is").suppress() + matchlist_name
+    is_match = Group(matchlist_is("is")) | base_match
     matchlist_and = is_match + OneOrMore(Keyword("and").suppress() + is_match)
     and_match = Group(matchlist_and("and")) | is_match
     matchlist_or = and_match + OneOrMore(Keyword("or").suppress() + and_match)
