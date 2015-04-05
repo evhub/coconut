@@ -98,13 +98,13 @@ class terminal(object):
         return inputstring
     def display(self, messages, color=None, sig=""):
         """Prints Messages."""
-        if self.on:
-            message = " ".join(str(msg) for msg in messages)
-            for line in message.splitlines():
-                print(self.addcolor(sig+line, color))
+        message = " ".join(str(msg) for msg in messages)
+        for line in message.splitlines():
+            print(self.addcolor(sig+line, color))
     def print(self, *messages):
         """Prints Messages With Main Color."""
-        self.display(messages, color=self.main_color, sig=self.main_sig)
+        if self.on:
+            self.display(messages, color=self.main_color, sig=self.main_sig)
     def debug(self, *messages):
         """Prints Messages With Debug Color."""
         self.display(messages, color=self.debug_color, sig=self.debug_sig)
