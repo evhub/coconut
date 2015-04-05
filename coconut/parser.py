@@ -87,10 +87,6 @@ class __coconut__(object):
         """Composing (f..g)."""
         return lambda *args, **kwargs: f(g(*args, **kwargs))
     @staticmethod
-    def infix(a, func, b):
-        """Infix Calling (5 `mod` 6)."""
-        return func(a, b)
-    @staticmethod
     def pipe(*args):
         """Pipelining (x |> func)."""
         out = args[0]
@@ -167,10 +163,6 @@ def bool_or(a, b):
 def compose(f, g):
     """Composing (f..g)."""
     return lambda *args, **kwargs: f(g(*args, **kwargs))
-
-def infix(a, func, b):
-    """Infix Calling (5 `mod` 6)."""
-    return func(a, b)
 
 def pipe(*args):
     """Pipelining (x |> func)."""
@@ -416,7 +408,7 @@ def infix_proc(tokens):
     if len(tokens) == 1:
         return tokens[0]
     else:
-        return "__coconut__.infix("+infix_proc(tokens[:-2])+", "+tokens[-2]+", "+tokens[-1]+")"
+        return tokens[-2]+"("+infix_proc(tokens[:-2])+", "+tokens[-1]+")"
 
 def pipe_proc(tokens):
     """Processes Pipe Calls."""
@@ -1233,7 +1225,6 @@ class processor(object):
                 fixto(pipeline, "__coconut__.pipe")
                 | fixto(dotdot, "__coconut__.compose")
                 | fixto(dubcolon, "__coconut__.chain")
-                | fixto(backtick, "__coconut__.infix")
                 | fixto(dollar, "__coconut__.partial")
                 | fixto(dot, "__coconut__.operator.attrgetter")
                 | fixto(exp_dubstar, "__coconut__.operator.__pow__")
