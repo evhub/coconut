@@ -119,7 +119,7 @@ class cli(object):
 
     def version(self):
         """Gets Version Info."""
-        return "Version "+repr(VERSION)+" running on Python "+sys.version
+        return "Version "+VERSION+" ["+VERSION_NAME+"] running on Python "+sys.version
 
     def cmd(self, args):
         """Parses Command-Line Arguments."""

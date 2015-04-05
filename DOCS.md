@@ -879,4 +879,4 @@ Executes the given _args_ as if they were fed to `coconut` on the command-line.
 
 #### `coconut.convenience.version`
 
-A constant containing the string printed by `coconut -v`. To get only the Coconut version instead of the entire version string, use `coconut.convenience.VERSION`.
+A constant containing the string printed by `coconut -v`. To get only the Coconut version instead of the entire version string, use `coconut.convenience.VERSION`, and for the version's codename use `coconut.convenience.VERSION_NAME`.
