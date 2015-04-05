@@ -75,6 +75,7 @@ class executor(object):
 
 class cli(object):
     """The Coconut Command-Line Interface."""
+    version = "Version "+VERSION+" ["+VERSION_NAME+"] running on Python "+" ".join(sys.version.splitlines())
     code_ext = ".coc"
     comp_ext = ".py"
     commandline = argparse.ArgumentParser(description="The Coconut Programming Language.")
@@ -117,10 +118,6 @@ class cli(object):
             state = self.console.on
         self.console.on = not state
 
-    def version(self):
-        """Gets Version Info."""
-        return "Version "+VERSION+" ["+VERSION_NAME+"] running on Python "+sys.version
-
     def cmd(self, args):
         """Parses Command-Line Arguments."""
         self.setup(args.strict)
@@ -131,7 +128,7 @@ class cli(object):
         if args.print:
             self.show = True
         if args.version:
-            self.console.print(self.version())
+            self.console.print(self.version)
         if args.autopep8 is not None:
             self.processor.autopep8(args.autopep8)
         if getattr(args, "exec") is not None:

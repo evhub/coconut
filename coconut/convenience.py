@@ -55,4 +55,4 @@ def cmd(args):
     """Processes Command-Line Arguments."""
     return COMPILER.cmd(COMPILER.commandline.parse_args(args))
 
-version = COMPILER.version()
+version = COMPILER.version
