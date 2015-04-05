@@ -155,7 +155,7 @@ class cli(object):
         stdin = not sys.stdin.isatty()
         if stdin:
             self.execute(self.processor.parse_block(sys.stdin.read().decode(ENCODING)))
-        if args.interact or not (stdin or args.source or getattr(args, "exec") or args.version):
+        if args.interact or not (stdin or args.source or args.version or getattr(args, "exec")):
             self.start_prompt()
 
     def compile_path(self, path, write=True, run=False):
