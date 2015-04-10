@@ -160,12 +160,12 @@ For all of the examples in this tutorial you should try predicting and then test
 
 ### Backtick Calling
 
-Another common idiom in functional programming is to write functions that are intended to behave somewhat like operators. To assist with this, Coconut provies backtick calling, a function can be called by surrounding it with backticks, and then placing its arguments around it. Backtick calling can also be used to allow for non-parenthesized calling, which makes long function calls easier to read.
+Another common idiom in functional programming is to write functions that are intended to behave somewhat like operators. To assist with this, Coconut provies backtick calling, where a function can be called by surrounding it with backticks, and then placing its arguments around it. If more than two arguments are needed on one side of the function, backticks can be used to seperate them.
 
 Here's an example:
 ```
 mod = (x, y) -> x % y
-`print` "5 mod 3 = ", (5 `mod` 3)
+`print` "5 mod 3 = " `(5 `mod` 3)
 ```
 
 ### Operator Functions

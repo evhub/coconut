@@ -405,11 +405,21 @@ def chain_proc(tokens):
 
 def infix_proc(tokens):
     """Processes Infix Calls."""
-    args = []
-    for arg in tokens[0] + tokens[2] + [infix_proc([[]]+tokens[2:])]:
-        if arg:
-            args.append(arg)
-    return "(" + tokens[1] + ")(" + ", ".join(args) + ")"
+    if len(tokens) < 3:
+        raise CoconutException("invalid infix tokens: "+repr(tokens))
+    else:
+        items = []
+        for item in tokens[0]:
+            items.append(item)
+        for item in tokens[2]:
+            items.append(item)
+        if len(tokens) > 3:
+            items.append(infix_proc([[]]+tokens[3:]))
+        args = []
+        for arg in items:
+            if arg:
+                args.append(arg)
+        return "(" + tokens[1] + ")(" + ", ".join(args) + ")"
 
 def pipe_proc(tokens):
     """Processes Pipe Calls."""
@@ -1207,9 +1217,7 @@ class processor(object):
 
     parameters = condense(lparen + argslist + rparen)
 
-    infix_tests = Group(addspace(ZeroOrMore(condense(test + comma)) + Optional(test)))
-    infix_item = attach(infix_tests + OneOrMore(backtick.suppress() + test + backtick.suppress() + infix_tests), infix_proc)
-    testlist = infix_item | itemlist(test, comma)
+    testlist = itemlist(test, comma)
 
     yield_arg = addspace(Keyword("from") + test) | testlist
     yield_expr = addspace(Keyword("yield") + Optional(yield_arg))
@@ -1320,7 +1328,11 @@ class processor(object):
 
     chain_expr = attach(or_expr + ZeroOrMore(dubcolon.suppress() + or_expr), chain_proc)
 
-    pipe_expr = attach(chain_expr + ZeroOrMore(pipeline.suppress() + chain_expr), pipe_proc)
+    infix_preargs = Group(backtick.suppress() | OneOrMore(chain_expr + backtick.suppress()) + Optional(backtick.suppress()))
+    infix_postargs = Group(OneOrMore(backtick.suppress() + chain_expr) + Optional(backtick.suppress()) | backtick.suppress())
+    infix_item = attach(infix_preargs + chain_expr + infix_postargs, infix_proc) | chain_expr
+
+    pipe_expr = attach(infix_expr + ZeroOrMore(pipeline.suppress() + infix_expr), pipe_proc)
 
     expr <<= trace(pipe_expr, "expr")
     comparison = addspace(expr + ZeroOrMore(comp_op + expr))
