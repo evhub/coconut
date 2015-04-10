@@ -405,14 +405,11 @@ def chain_proc(tokens):
 
 def infix_proc(tokens):
     """Processes Infix Calls."""
-    if len(tokens) == 1:
-        return tokens[0]
-    else:
-        args = []
-        for arg in (infix_proc([tokens[0]]), infix_proc(tokens[2:])):
-            if arg:
-                args.append(arg)
-        return "(" + tokens[1] + ")(" + ", ".join(args) + ")"
+    args = []
+    for arg in tokens[0] + tokens[2] + [infix_proc([[]]+tokens[2:])]:
+        if arg:
+            args.append(arg)
+    return "(" + tokens[1] + ")(" + ", ".join(args) + ")"
 
 def pipe_proc(tokens):
     """Processes Pipe Calls."""
@@ -1210,9 +1207,10 @@ class processor(object):
 
     parameters = condense(lparen + argslist + rparen)
 
-    tests = itemlist(test, comma)
-    infix_item = attach(Group(Optional(tests)) + OneOrMore(backtick.suppress() + test + backtick.suppress() + Group(Optional(tests))), infix_proc)
-    testlist = infix_item | tests
+    infix_tests = Group(addspace(ZeroOrMore(condense(test + comma)) + Optional(test)))
+    infix_item = attach(infix_tests + OneOrMore(backtick.suppress() + test + backtick.suppress() + infix_tests), infix_proc)
+    testlist = infix_item | itemlist(test, comma)
+
     yield_arg = addspace(Keyword("from") + test) | testlist
     yield_expr = addspace(Keyword("yield") + Optional(yield_arg))
     star_expr = condense(star + expr)
