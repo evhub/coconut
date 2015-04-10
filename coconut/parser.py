@@ -1211,8 +1211,8 @@ class processor(object):
     parameters = condense(lparen + argslist + rparen)
 
     tests = itemlist(test, comma)
-    call_item = attach(Optional(tests) + OneOrMore(backtick.suppress() + test + backtick.suppress() + Optional(tests)), infix_proc)
-    testlist = tests | call_item
+    infix_item = attach(Group(Optional(tests)) + OneOrMore(backtick.suppress() + test + backtick.suppress() + Group(Optional(tests))), infix_proc)
+    testlist = infix_item | tests
     yield_arg = addspace(Keyword("from") + test) | testlist
     yield_expr = addspace(Keyword("yield") + Optional(yield_arg))
     star_expr = condense(star + expr)
