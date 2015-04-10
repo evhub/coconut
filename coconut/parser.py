@@ -408,7 +408,11 @@ def infix_proc(tokens):
     if len(tokens) == 1:
         return tokens[0]
     else:
-        return tokens[-2]+"("+infix_proc(tokens[:-2])+", "+tokens[-1]+")"
+        args = []
+        for arg in (infix_proc([tokens[0]]), infix_proc(tokens[2:])):
+            if arg:
+                args.append(arg)
+        return "(" + tokens[1] + ")(" + ", ".join(args) + ")"
 
 def pipe_proc(tokens):
     """Processes Pipe Calls."""
@@ -1206,7 +1210,8 @@ class processor(object):
 
     parameters = condense(lparen + argslist + rparen)
 
-    testlist = itemlist(test, comma)
+    call_item = attach(Optional(testlist) + OneOrMore(backtick.suppress() + test + backtick.suppress() + Optional(testlist)), infix_proc) | chain_expr
+    testlist = itemlist(test, comma) | call_item
     yield_arg = addspace(Keyword("from") + test) | testlist
     yield_expr = addspace(Keyword("yield") + Optional(yield_arg))
     star_expr = condense(star + expr)
@@ -1316,9 +1321,7 @@ class processor(object):
 
     chain_expr = attach(or_expr + ZeroOrMore(dubcolon.suppress() + or_expr), chain_proc)
 
-    infix_expr = attach(chain_expr + ZeroOrMore(backtick.suppress() + test + backtick.suppress() + chain_expr), infix_proc)
-
-    pipe_expr = attach(infix_expr + ZeroOrMore(pipeline.suppress() + infix_expr), pipe_proc)
+    pipe_expr = attach(chain_expr + ZeroOrMore(pipeline.suppress() + chain_expr), pipe_proc)
 
     expr <<= trace(pipe_expr, "expr")
     comparison = addspace(expr + ZeroOrMore(comp_op + expr))

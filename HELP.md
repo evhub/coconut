@@ -15,9 +15,9 @@ This tutorial will teach you how to write elegant, Pythonic code in a functional
     - [Partial Application](#partial-application)
     - [Function Composition](#function-composition)
     - [Pipe Forward](#pipe-forward)
+    - [Backtick Calling](#backtick-calling)
     - [Operator Functions](#operator-functions)
     - [Function Definition](#function-definition)
-    - [Infix Calling](#infix-calling)
     - [reduce](#reduce)
 - [III. Iterators](#iii-iterators)
     - [Slicing](#slicing)
@@ -158,6 +158,16 @@ plus1 = (x) -> x+1
 ```
 For all of the examples in this tutorial you should try predicting and then testing to check.
 
+### Backtick Calling
+
+Another common idiom in functional programming is to write functions that are intended to behave somewhat like operators. To assist with this, Coconut provies backtick calling, a function can be called by surrounding it with backticks, and then placing its arguments around it. Backtick calling can also be used to allow for non-parenthesized calling, which makes long function calls easier to read.
+
+Here's an example:
+```
+mod = (x, y) -> x % y
+`print` "5 mod 3 = ", (5 `mod` 3)
+```
+
 ### Operator Functions
 
 A very common thing to do in functional programming is to make use of function versions of built-in operators, currying them, composing them, and piping them. To make this easy, Coconut provides a short-hand syntax to access operator functions, where the operator is simply surrounded by parentheses to retrieve the function.
@@ -176,16 +186,6 @@ Here's an example:
 ```
 f(x) = x**2 + x
 5 |> f |> print
-```
-
-### Infix Calling
-
-Another common idiom in functional programming is to write functions that are intended to behave somewhat like operators. To assist with this, Coconut provies infix calling, where a two-argument function can be called by surrounding it with backticks and placing it in-between its two arguments.
-
-Here's an example:
-```
-mod = (%)
-print(5 `mod` 3)
 ```
 
 ### `reduce`

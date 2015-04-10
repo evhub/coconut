@@ -8,7 +8,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [Optional Arguments](#optional-arguments)
 - [II. Syntax](#ii-syntax)
     - [Lambdas](#lambdas)
-    - [Infix Calling](#infix-calling)
+    - [Backtick Calling](#backtick-calling)
     - [Function Definition](#function-definition)
     - [Operator Functions](#operator-functions)
     - [Enhanced Set Literals](#enhanced-set-literals)
@@ -96,20 +96,20 @@ Python:
 lambda x, y: 2*(x+y)
 ```
 
-### Infix Calling
+### Backtick Calling
 
-Coconut uses Haskell-style infix calling, where the infix function is surrounded by backticks and placed between its two operands. Infix calling has a precedence in-between chaining and piping.
+Coconut allows for an alternative function-calling syntax, backtick calling, where a function is surrounded by backticks and then can have arguments, seperated by commas unless adjacent to the function, placed either behind it or in-front of it. This allows for Haskell-style infix calling and space-seperated arguments. Backtick calling has a precedence equal to commas.
 
 ##### Example
 
 Coconut:
 ```
-x `mod` 2 == 1
+`f` (x `mod` 2), 5 == 1
 ```
 
 Python:
 ```
-mod(x, 2) == 1
+f(mod(x, 2), 5) == 1
 ```
 
 ### Function Definition
@@ -311,7 +311,7 @@ fog = lambda *args, **kwargs: f(g(*args, **kwargs))
 
 ### Pipe Forward
 
-Coconut uses the FSharp-style pipe forward operator `|>` for reverse function application. It has a precedence in-between infix calls and comparisons. The in-place operator is `|>=`.
+Coconut uses the FSharp-style pipe forward operator `|>` for reverse function application. It has a precedence in-between backtick calls and comparisons. The in-place operator is `|>=`.
 
 ##### Example
 
@@ -327,7 +327,7 @@ ans = g(f(5))
 
 ### Chain
 
-Coconut uses the FSharp-style concatenation operator `::` for iterator chaining. It has a precedence in-between bitwise or and infix calls. The in-place operator is `::=`.
+Coconut uses the FSharp-style concatenation operator `::` for iterator chaining. It has a precedence in-between bitwise or and backtick calls. The in-place operator is `::=`.
 
 ##### Python Docs
 
