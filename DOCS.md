@@ -98,18 +98,18 @@ lambda x, y: 2*(x+y)
 
 ### Backtick Calling
 
-Coconut allows for an alternative function-calling syntax, backtick calling, where a function is surrounded by backticks and then can have arguments, seperated by backticks unless adjacent to the function, placed either behind it or in-front of it. This allows for Haskell-style infix calling and space-seperated arguments. Backtick calling has a precedence in-between chaining and piping.
+Coconut allows for Haskell-style infix calling, where a function is surrounded by backticks and then can have arguments placed in front of or behind it. Backtick calling has a precedence in-between chaining and piping.
 
 ##### Example
 
 Coconut:
 ```
-`f` (x `mod` 2) `5 == 1
+`f` (x `mod` 2) == 1
 ```
 
 Python:
 ```
-f(mod(x, 2), 5) == 1
+f(mod(x, 2)) == 1
 ```
 
 ### Function Definition

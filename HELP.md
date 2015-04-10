@@ -15,8 +15,8 @@ This tutorial will teach you how to write elegant, Pythonic code in a functional
     - [Partial Application](#partial-application)
     - [Function Composition](#function-composition)
     - [Pipe Forward](#pipe-forward)
-    - [Backtick Calling](#backtick-calling)
     - [Operator Functions](#operator-functions)
+    - [Backtick Calling](#backtick-calling)
     - [Function Definition](#function-definition)
     - [reduce](#reduce)
 - [III. Iterators](#iii-iterators)
@@ -158,16 +158,6 @@ plus1 = (x) -> x+1
 ```
 For all of the examples in this tutorial you should try predicting and then testing to check.
 
-### Backtick Calling
-
-Another common idiom in functional programming is to write functions that are intended to behave somewhat like operators. To assist with this, Coconut provies backtick calling, where a function can be called by surrounding it with backticks, and then placing its arguments around it. If more than two arguments are needed on one side of the function, backticks can be used to seperate them.
-
-Here's an example:
-```
-mod = (x, y) -> x % y
-`print` "5 mod 3 = " `(5 `mod` 3)
-```
-
 ### Operator Functions
 
 A very common thing to do in functional programming is to make use of function versions of built-in operators, currying them, composing them, and piping them. To make this easy, Coconut provides a short-hand syntax to access operator functions, where the operator is simply surrounded by parentheses to retrieve the function.
@@ -177,6 +167,16 @@ Here's an example:
 5 |> (-)$(2) |> (*)$(2) |> print
 ```
 _Note: If you've been dutifully guessing and checking, you probablly guessed `6` for this and were surprised to find that the actual answer was `-6`. This happens because partial application always starts with the first argument, and the first argument to `(-)` is the thing you're subtracting from, not the thing you're subtracting!_
+
+### Backtick Calling
+
+Another common idiom in functional programming is to write functions that are intended to behave somewhat like operators. To assist with this, Coconut provies backtick calling, where a function can be called by surrounding it with backticks, and then its arguments placed around it.
+
+Here's an example:
+```
+mod = (%)
+`print` (5 `mod` 3)
+```
 
 ### Function Definition
 
