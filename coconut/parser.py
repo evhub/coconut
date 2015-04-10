@@ -1328,9 +1328,9 @@ class processor(object):
 
     chain_expr = attach(or_expr + ZeroOrMore(dubcolon.suppress() + or_expr), chain_proc)
 
-    infix_arg = Group(Optional(chain_expr))
-    infix_item = attach(infix_arg + backtick.suppress() + chain_expr + backtick.suppress() + infix_arg, infix_proc)
-    infix_expr = infix_item | chain_expr
+    infix_expr = Forward()
+    infix_item = attach(Group(Optional(chain_expr)) + backtick.suppress() + chain_expr + backtick.suppress() + Group(Optional(infix_expr)), infix_proc)
+    infix_expr <<= infix_item | chain_expr
 
     pipe_expr = attach(infix_expr + ZeroOrMore(pipeline.suppress() + infix_expr), pipe_proc)
 
