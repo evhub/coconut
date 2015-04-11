@@ -1228,7 +1228,7 @@ class processor(object):
     setmaker = addspace(test + comp_for | testlist)
     dictorsetmaker = addspace(
         condense(test + colon) + test + comp_for
-        | itemlist(condense(test + colon) + test, comma)
+        | itemlist(addspace(condense(test + colon) + test), comma)
         | setmaker
         )
 
