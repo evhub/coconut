@@ -32,6 +32,7 @@ except ImportError:
 
 VERSION = "0.2.1-dev"
 VERSION_NAME = "Eocene"
+VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
 
 ENCODING = "UTF"
 

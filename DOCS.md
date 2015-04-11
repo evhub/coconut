@@ -857,10 +857,10 @@ The recommended way to use Coconut as a module is to use `from coconut.convenien
 
 **parse**(_code,_ **[**_mode_**]**)
 
-Likely the most useful of the convenience functions, `parse` takes Coconut code as input and outputs the equivalent compiled Python code. The second argument, _mode_, is used to indicate the context for the parsing. Possible values of mode are:
+Likely the most useful of the convenience functions, `parse` takes Coconut code as input and outputs the equivalent compiled Python code. The second argument, _mode_, is used to indicate the context for the parsing. Possible values of _mode_ are:
 
+- `"file"`: a stand-alone file (the default)
 - `"single"`: a single line of code
-- `"file"`: a stand-alone file (the default mode)
 - `"module"`: a file in a folder or module
 - `"block"`: many lines of code
 - `"eval"`: a single expression
@@ -879,4 +879,11 @@ Executes the given _args_ as if they were fed to `coconut` on the command-line.
 
 #### `coconut.convenience.version`
 
-A constant containing the string printed by `coconut -v`. To get only the Coconut version instead of the entire version string, use `coconut.convenience.VERSION`, and for the version's codename use `coconut.convenience.VERSION_NAME`.
+**version**(**[**_which_**]**)
+
+Retrieves a string containing information about the Coconut version. The optional argument _which_ is the type of version information desired. Possible values of _which_ are:
+
+- `"num"`: the numerical version (the default)
+- `"name"`: the version codename
+- `"full"`: the numerical version with the codename attached
+- `"-v"`: the full string printed by `coconut -v`

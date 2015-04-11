@@ -31,7 +31,7 @@ headers = {
 
 r'''#!/usr/bin/env python
 
-# Compiled with Coconut version '''+VERSION+' ['+VERSION_NAME+']'+'''
+# Compiled with Coconut version '''+VERSION_STR+'''
 
 # Coconut Header: --------------------------------------------------------------
 

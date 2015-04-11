@@ -41,7 +41,7 @@ def parse(code, mode="file"):
     elif mode == "debug":
         return PARSER.parse_debug(code)
     else:
-        raise CoconutException("invalid mode "+repr(mode)+"; valid modes are 'single', 'file', 'module', 'block', 'eval', and 'debug'")
+        raise CoconutException("invalid parse mode "+repr(mode)+"; valid modes are 'single', 'file', 'module', 'block', 'eval', and 'debug'")
 
 autopep8 = PARSER.autopep8
 
@@ -55,4 +55,15 @@ def cmd(args):
     """Processes Command-Line Arguments."""
     return COMPILER.cmd(COMPILER.commandline.parse_args(args))
 
-version = COMPILER.version
+def version(which="num"):
+    """Gets The Coconut Version."""
+    if which == "num":
+        return VERSION
+    elif which == "name":
+        return VERSION_NAME
+    elif which == "full":
+        return VERSION_STR
+    elif which == "-v":
+        return COMPILER.version
+    else:
+        raise CoconutException("invalid version type "+repr(which)+"; valid versions are 'num', 'name', 'full', and '-v'")
