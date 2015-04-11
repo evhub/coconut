@@ -31,6 +31,8 @@ headers = {
 
 r'''#!/usr/bin/env python
 
+# Compiled with Coconut version '''+VERSION+' ['+VERSION_NAME+']'+'''
+
 # Coconut Header: --------------------------------------------------------------
 
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
