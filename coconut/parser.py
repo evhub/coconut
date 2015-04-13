@@ -634,10 +634,11 @@ class matcher(object):
             else:
                 raise CoconutException("invalid iterator match tokens: "+repr(original))
             self.defs.append(tail+" = "+item)
+            self.increment()
+            self.checks.append("len("+itervar+") >= "+str(len(match)))
             for x in range(0, len(match)):
-                self.increment()
                 self.match(match[x], itervar+"["+str(x)+"]")
-                self.decrement()
+            self.decrement()
         elif "const" in original:
             (match,) = original
             if match in const_vars:
