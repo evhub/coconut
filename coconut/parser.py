@@ -591,30 +591,28 @@ class matcher(object):
     def match(self, original, item):
         """Performs Pattern-Matching Processing."""
         if "dict" in original:
-            if original:
+            if len(original) == 1:
                 match = original[0]
             else:
-                match = ()
+                raise CoconutException("invalid dict match tokens: "+repr(original))
             self.checks.append("isinstance("+item+", dict)")
             self.checks.append("len("+item+") == "+str(len(match)))
             for x in range(0, len(match)):
                 k,v = match[x]
                 self.checks.append(k+" in "+item)
                 self.match(v, item+"["+k+"]")
-        elif "series" in original and (len(original) != 4 or original[2] == "+"):
+        elif "series" in original and (len(original) == 2 or (len(original) == 4 and original[2] == "+")):
             tail = None
-            if len(original) == 4:
-                series_type, match, _, tail = original
-            elif len(original) == 2:
+            if len(original) == 2:
                 series_type, match = original
             else:
-                series_type, match = original[0], ()
+                series_type, match, _, tail = original
             if series_type == "(":
                 self.checks.append("isinstance("+item+", tuple)")
             elif series_type == "[":
                 self.checks.append("isinstance("+item+", list)")
             else:
-                raise CoconutException("invalid series match tokens: "+repr(original))
+                raise CoconutException("invalid series match type: "+repr(series_type))
             if tail is None:
                 self.checks.append("len("+item+") == "+str(len(match)))
             else:
@@ -658,12 +656,7 @@ class matcher(object):
                     self.defs.append(setvar+" = "+item)
                     self.names[setvar] = item
         elif "set" in original:
-            if len(original) == 1:
-                if isinstance(original[0], str):
-                    set_type, match = original[0], ()
-                else:
-                    set_type, match = None, original[0]
-            elif len(original) == 2:
+            if len(original) == 2:
                 set_type, match = original
             else:
                 raise CoconutException("invalid set match tokens: "+repr(original))
@@ -1389,16 +1382,16 @@ class processor(object):
     with_item = addspace(test + Optional(Keyword("as") + name))
 
     match = Forward()
-    matchlist_list = Optional(Group(match + ZeroOrMore(comma.suppress() + match) + Optional(comma.suppress())))
-    matchlist_tuple = Optional(Group(match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress()) | match + comma.suppress()))
+    matchlist_list = Group(Optional(match + ZeroOrMore(comma.suppress() + match) + Optional(comma.suppress())))
+    matchlist_tuple = Group(Optional(match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress()) | match + comma.suppress()))
     match_const = (
         keyword_atom
         | number
         | string_atom
         )
-    matchlist_set = Optional(Group(match_const + ZeroOrMore(comma.suppress() + match_const) + Optional(comma.suppress())))
+    matchlist_set = Group(Optional(match_const + ZeroOrMore(comma.suppress() + match_const) + Optional(comma.suppress())))
     match_pair = Group(match_const + colon.suppress() + match)
-    matchlist_dict = Optional(Group(match_pair + ZeroOrMore(comma.suppress() + match_pair) + Optional(comma.suppress())))
+    matchlist_dict = Group(Optional(match_pair + ZeroOrMore(comma.suppress() + match_pair) + Optional(comma.suppress())))
     base_match = Group(
         (match_const)("const")
         | (lparen + matchlist_tuple + rparen.suppress() + Optional((plus | dubcolon) + name))("series")
