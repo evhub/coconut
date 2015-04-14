@@ -656,7 +656,9 @@ class matcher(object):
                     self.defs.append(setvar+" = "+item)
                     self.names[setvar] = item
         elif "set" in original:
-            if len(original) == 2:
+            if len(original) == 1:
+                set_type, match = None, original[0]
+            elif len(original) == 2:
                 set_type, match = original
             else:
                 raise CoconutException("invalid set match tokens: "+repr(original))
