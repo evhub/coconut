@@ -46,8 +46,6 @@ except NameError:
     pass
 else:
     range = xrange
-    def xrange(*args, **kwargs):
-        raise NameError("name 'xrange' is not defined")
 
 try:
     ascii
@@ -68,8 +66,6 @@ else:
     __print = print
     def print(*args, **kwargs):
         return __print(*(str(x).encode(ENCODING) for x in args), **kwargs)
-    def unicode(*args, **kwargs):
-        raise NameError("name 'unicode' is not defined")
 
 try:
     raw_input
