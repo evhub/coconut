@@ -56,15 +56,14 @@ except NameError: unichr = chr
 try: unicode
 except NameError: pass
 else:
-    bytes = str
-    str = unicode
-    def unicode(*args, **kwargs):
-        """Removed by Coconut."""
-        raise NameError("name 'unicode' is not defined")
+    bytes, str = str, unicode
     _coconut_print = print
     def print(*args, **kwargs):
         """Wraps _coconut_print."""
         return _coconut_print(*(str(x).encode(ENCODING) for x in args), **kwargs)
+    def unicode(*args, **kwargs):
+        """Removed by Coconut."""
+        raise NameError("name 'unicode' is not defined")
 try: raw_input
 except NameError: pass
 else:
