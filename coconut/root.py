@@ -64,13 +64,12 @@ try:
 except NameError:
     pass
 else:
-    bytes = str
-    str = unicode
-    def unicode(*args, **kwargs):
-        raise NameError("name 'unicode' is not defined")
+    bytes, str = str, unicode
     __print = print
     def print(*args, **kwargs):
         return __print(*(str(x).encode(ENCODING) for x in args), **kwargs)
+    def unicode(*args, **kwargs):
+        raise NameError("name 'unicode' is not defined")
 
 try:
     raw_input
