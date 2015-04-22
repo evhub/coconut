@@ -34,12 +34,44 @@ r'''#!/usr/bin/env python
 # Compiled with Coconut version '''+VERSION_STR+'''
 
 # Coconut Header: --------------------------------------------------------------
+''',
 
+"future":
+
+r'''
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
-try:
-    from future_builtins import *
-except ImportError:
-    pass
+try: from future_builtins import *
+except ImportError: pass
+try: xrange
+except NameError: pass
+else:
+    range = xrange
+    def xrange(*args, **kwargs):
+        """Removed by Coconut."""
+        raise NameError("name 'xrange' is not defined")
+try: ascii
+except NameError: ascii = repr
+try: unichr
+except NameError: unichr = chr
+try: unicode
+except NameError: pass
+else:
+    bytes = str
+    str = unicode
+    def unicode(*args, **kwargs):
+        """Removed by Coconut."""
+        raise NameError("name 'unicode' is not defined")
+    _coconut_print = print
+    def print(*args, **kwargs):
+        """Wraps _coconut_print."""
+        return _coconut_print(*(str(x).encode(ENCODING) for x in args), **kwargs)
+try: raw_input
+except NameError: pass
+else:
+    _coconut_input = raw_input
+    def input(*args, **kwargs):
+        """Wraps _coconut_input."""
+        return _coconut_input(*args, **kwargs).decode(ENCODING)
 ''',
 
 "import":
@@ -55,7 +87,7 @@ import __coconut__
 
 r'''
 class __coconut__(object):
-    """Built-In Coconut Functions."""
+    """Built-in Coconut Functions."""
     import functools
     partial = functools.partial
     reduce = functools.reduce
@@ -73,6 +105,7 @@ class __coconut__(object):
     data = staticmethod(collections.namedtuple)
     @staticmethod
     def iterable(obj):
+        """Determines Whether an Object Is Iterable."""
         try: iter(obj)
         except TypeError: return False
         else: return True
@@ -124,8 +157,6 @@ class __coconut__(object):
 "body":
 
 r'''
-"""Built-In Coconut Functions."""
-
 import functools
 partial = functools.partial
 reduce = functools.reduce
@@ -146,7 +177,7 @@ import collections
 data = collections.namedtuple
 
 def iterable(obj):
-    """Determines Whether An Object Is Iterable."""
+    """Determines Whether an Object Is Iterable."""
     try:
         iter(obj)
     except TypeError:
@@ -219,10 +250,10 @@ r'''
 '''
 }
 
-headers["package"] = headers["top"] + headers["body"]
-headers["code"] = headers["top"] + headers["class"] + headers["funcs"]
-headers["file"] = headers["code"] + headers["bottom"]
-headers["module"] = headers["top"] + headers["import"] + headers["funcs"] + headers["bottom"]
+headers["package"] = headers["top"] + headers["future"] + headers["body"]
+headers["code"]    = headers["top"] + headers["future"] + headers["class"]  + headers["funcs"]
+headers["file"]    = headers["top"] + headers["future"] + headers["class"]  + headers["funcs"] + headers["bottom"]
+headers["module"]  = headers["top"] + headers["future"] + headers["import"] + headers["funcs"] + headers["bottom"]
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
