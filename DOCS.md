@@ -104,7 +104,7 @@ Coconut allows for Haskell-style infix calling, where a function is surrounded b
 
 Coconut:
 ```
-`f` (x `mod` 2) == 1
+(x `mod` 2) `f` == 1
 ```
 
 Python:

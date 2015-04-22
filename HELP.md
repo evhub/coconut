@@ -175,7 +175,7 @@ Another common idiom in functional programming is to write functions that are in
 Here's an example:
 ```
 mod = (%)
-`print` (5 `mod` 3)
+(5 `mod` 3) `print`
 ```
 
 ### Function Definition
