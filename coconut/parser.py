@@ -57,14 +57,14 @@ else:
     _coconut_print = print
     def print(*args, **kwargs):
         """Wraps _coconut_print."""
-        return _coconut_print(*(str(x).encode(ENCODING) for x in args), **kwargs)
+        return _coconut_print(*(str(x).encode("utf8") for x in args), **kwargs)
 try: raw_input
 except NameError: pass
 else:
     _coconut_input = raw_input
     def input(*args, **kwargs):
         """Wraps _coconut_input."""
-        return _coconut_input(*args, **kwargs).decode(ENCODING)
+        return _coconut_input(*args, **kwargs).decode("utf8")
 ''',
 
 "import":
