@@ -46,9 +46,6 @@ try: xrange
 except NameError: pass
 else:
     range = xrange
-    def xrange(*args, **kwargs):
-        """Removed by Coconut."""
-        raise NameError("name 'xrange' is not defined")
 try: ascii
 except NameError: ascii = repr
 try: unichr
@@ -61,9 +58,6 @@ else:
     def print(*args, **kwargs):
         """Wraps _coconut_print."""
         return _coconut_print(*(str(x).encode(ENCODING) for x in args), **kwargs)
-    def unicode(*args, **kwargs):
-        """Removed by Coconut."""
-        raise NameError("name 'unicode' is not defined")
 try: raw_input
 except NameError: pass
 else:
