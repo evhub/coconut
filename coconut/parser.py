@@ -157,6 +157,8 @@ class __coconut__(object):
 "body":
 
 r'''
+"""Built-in Coconut Functions."""
+
 import functools
 partial = functools.partial
 reduce = functools.reduce
