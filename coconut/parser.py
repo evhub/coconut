@@ -293,6 +293,31 @@ class CoconutException(ParseFatalException):
         """Wraps repr."""
         return repr(self)
 
+class CoconutSyntaxError(CoconutException):
+    """Coconut SyntaxError."""
+    def __init__(self, message, source, point=None):
+        """Creates The Coconut SyntaxError."""
+        self.value = message
+        if point is None:
+            self.value += linebreak + "  " + source
+        else:
+            if point >= len(source):
+                point = len(source)-1
+            part = source.splitlines()[lineno(point, source)-1]
+            self.value += linebreak + "  " + part + linebreak + "  "
+            for x in xrange(0, col(point, source)):
+                if part[x] in white:
+                    self.value += part[x]
+                else:
+                    self.value += " "
+            self.value += "^"
+
+class CoconutStyleError(CoconutSyntaxError):
+    """Coconut --strict Error."""
+    def __init__(self, message, source, point=None):
+        message += " (disable --strict to dismiss)"
+        CoconutSyntaxError.__init__(self, message, source, point)
+
 def attach(item, action):
     """Attaches A Parse Action To An Item."""
     return item.copy().addParseAction(action)
@@ -804,27 +829,6 @@ class processor(object):
         self.refs.append(text)
         return "#"+str(len(self.refs)-1)
 
-    def getpart(self, iterstring, point):
-        """Gets A Part Of A String For An Error Message."""
-        out = ""
-        i = point
-        while 0 <= i:
-            if i >= len(iterstring):
-                i -= 1
-            elif iterstring[i] in endline:
-                break
-            else:
-                out = iterstring[i] + out
-                i -= 1
-        i = point+1
-        while i < len(iterstring):
-            if iterstring[i] in endline:
-                break
-            else:
-                out += iterstring[i]
-                i += 1
-        return "line "+repr(out)
-
     def prepare(self, inputstring, strip=False, **kwargs):
         """Prepares A String For Processing."""
         if strip:
@@ -857,7 +861,7 @@ class processor(object):
                     elif c == hold[1][0]:
                         hold[2] += c
                     elif len(hold[2]) > len(hold[1]):
-                        raise CoconutException("invalid number of string closes in "+self.getpart(inputstring, x))
+                        raise CoconutSyntaxError("invalid number of string closes", inputstring, x)
                     elif hold[2] == hold[1]:
                         out.append(self.wrapstr(hold[0], hold[1][0], True))
                         hold = None
@@ -888,7 +892,7 @@ class processor(object):
                     hold = [c, found, None]
                     found = None
                 else:
-                    raise CoconutException("invalid number of string starts in "+self.getpart(inputstring, x))
+                    raise CoconutSyntaxError("invalid number of string starts", inputstring, x)
             elif c in startcomment:
                 hold = [""]
             elif c in holds:
@@ -897,19 +901,19 @@ class processor(object):
                 out.append(c)
             x += 1
         if hold is not None or found is not None:
-            raise CoconutException("unclosed string in "+self.getpart(inputstring, x))
+            raise CoconutSyntaxError("unclosed string", inputstring, x)
         return "".join(out)
 
     def leading(self, inputstring):
         """Counts Leading Whitespace."""
         count = 0
-        for c in inputstring:
-            if c not in white:
+        for x in xrange(0, len(inputstring)):
+            if inputstring[x] not in white:
                 break
             elif self.indchar is None:
-                self.indchar = c
-            elif self.indchar != c:
-                raise CoconutException("illegal mixing of tabs and spaces in "+repr(inputstring))
+                self.indchar = inputstring[x]
+            elif self.indchar != inputstring[x]:
+                raise CoconutSyntaxError("illegal mixing of tabs and spaces", inputstring, x)
             count += 1
         return count
 
@@ -945,7 +949,7 @@ class processor(object):
         for line in lines:
             if line and line[-1] in white:
                 if self.strict:
-                    raise CoconutException("[strict] found trailing whitespace in "+repr(line))
+                    raise CoconutStyleError("found trailing whitespace", line)
                 else:
                     line = line.rstrip()
             if new:
@@ -957,7 +961,7 @@ class processor(object):
                     new.append(line)
             elif last is not None and last.endswith("\\"):
                 if self.strict:
-                    raise CoconutException("[strict] found backslash continuation in "+repr(last))
+                    raise CoconutStyleError("found backslash continuation", last)
                 else:
                     new[-1] = last[:-1]+" "+line
             elif count < 0:
@@ -966,7 +970,7 @@ class processor(object):
                 check = self.leading(line)
                 if current is None:
                     if check:
-                        raise CoconutException("illegal initial indent in "+repr(line))
+                        raise CoconutSyntaxError("illegal initial indent", line)
                     else:
                         current = 0
                 elif check > current:
@@ -979,11 +983,11 @@ class processor(object):
                     levels = levels[:point]
                     current = levels.pop()
                 elif current != check:
-                    raise CoconutException("illegal dedent to unused indentation level in "+repr(line))
+                    raise CoconutSyntaxError("illegal dedent to unused indentation level", line)
                 new.append(line)
             count += self.change(line)
         if count != 0:
-            raise CoconutException("unclosed parenthetical in "+repr(new[-1]))
+            raise CoconutSyntaxError("unclosed parenthetical", new[-1])
         new.append(closestr*len(levels))
         return linebreak.join(new)
 
@@ -1016,11 +1020,21 @@ class processor(object):
             out.append(line)
         return linebreak.join(out)
 
+    def indebug(self):
+        """Checks Whether Debug Mode Is Active."""
+        return self.TRACER.on
+
+    def todebug(self, tag, code):
+        """If Debugging, Prints A Debug Message."""
+        if self.indebug():
+            self.TRACER.show("["+str(tag)+"] "+repr(code))
+
     def pre(self, inputstring, **kwargs):
         """Performs Pre-Processing."""
         out = str(inputstring)
         for proc in self.preprocs:
             out = proc(out, **kwargs)
+            self.todebug(proc, out)
         return out
 
     def reindproc(self, inputstring, strip=True, **kwargs):
@@ -1044,6 +1058,7 @@ class processor(object):
             out = tokens[0]
             for proc in self.postprocs:
                 out = proc(out, **kwargs)
+                self.todebug(proc, out)
             return out
         else:
             raise CoconutException("multiple tokens leftover: "+repr(tokens))
