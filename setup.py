@@ -45,7 +45,7 @@ setuptools.setup(
         "Topic :: Software Development :: Code Generators",
         "Topic :: Software Development :: Compilers",
         "Topic :: Software Development :: Interpreters",
-        "Topic :: Software Development :: Libraries",
+        "Topic :: Software Development :: Libraries :: Python Modules",
         "Topic :: Utilities",
         "Environment :: Console",
         "Programming Language :: Python",
@@ -56,7 +56,9 @@ setuptools.setup(
         "Programming Language :: Python :: 3.4",
         "Operating System :: OS Independent",
         "License :: OSI Approved :: Apache Software License",
-        "Framework :: IPython"
+        "Framework :: IPython",
+        "Programming Language :: Other",
+        "Programming Language :: Other Scripting Engines"
         ],
     keywords=["functional programming language"],
     packages=setuptools.find_packages(),
