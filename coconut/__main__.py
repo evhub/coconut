@@ -29,9 +29,8 @@ from coconut import compiler
 
 def main():
     """The Main Coconut Entry Point."""
-    try:
-        compiler.readline
-    except AttributeError:
+    from os import name
+    if name == "nt":
         cmd = compiler.cli()
     else:
         cmd = compiler.cli(main_color="cyan", debug_color="yellow")
