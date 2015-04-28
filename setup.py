@@ -58,7 +58,8 @@ setuptools.setup(
         "Programming Language :: Python :: 3.3",
         "Programming Language :: Python :: 3.4",
         "Operating System :: OS Independent",
-        "License :: OSI Approved :: Apache Software License"
+        "License :: OSI Approved :: Apache Software License",
+        "Framework :: IPython"
         ],
     keywords=["functional programming language"],
     packages=setuptools.find_packages(),

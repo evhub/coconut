@@ -21,13 +21,43 @@ from .parser import processor, CoconutException
 from .compiler import cli
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# COMPILING:
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+COMPILER = cli()
+
+def cmd(args, interact=False):
+    """Processes Command-Line Arguments."""
+    if isinstance(args, (str, bytes)):
+        args = args.split()
+    return COMPILER.cmd(COMPILER.commandline.parse_args(args), interact)
+
+def version(which="num"):
+    """Gets The Coconut Version."""
+    if which == "num":
+        return VERSION
+    elif which == "name":
+        return VERSION_NAME
+    elif which == "full":
+        return VERSION_STR
+    elif which == "-v":
+        return COMPILER.version
+    else:
+        raise CoconutException("invalid version type "+repr(which)+"; valid versions are 'num', 'name', 'full', and '-v'")
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # PARSING:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-PARSER = processor()
+def get_PARSER():
+    """Gets COMPILER.processor."""
+    if COMPILER.processor is None:
+        COMPILER.setup()
+    return COMPILER.processor
 
 def parse(code, mode="file"):
     """Parses Coconut Code."""
+    PARSER = get_PARSER()
     if mode == "single":
         return PARSER.parse_single(code)
     elif mode == "file":
@@ -42,28 +72,3 @@ def parse(code, mode="file"):
         return PARSER.parse_debug(code)
     else:
         raise CoconutException("invalid parse mode "+repr(mode)+"; valid modes are 'single', 'file', 'module', 'block', 'eval', and 'debug'")
-
-autopep8 = processor.autopep8
-
-#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# COMPILING:
-#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-COMPILER = cli()
-
-def cmd(args):
-    """Processes Command-Line Arguments."""
-    return COMPILER.cmd(COMPILER.commandline.parse_args(args))
-
-def version(which="num"):
-    """Gets The Coconut Version."""
-    if which == "num":
-        return VERSION
-    elif which == "name":
-        return VERSION_NAME
-    elif which == "full":
-        return VERSION_STR
-    elif which == "-v":
-        return COMPILER.version
-    else:
-        raise CoconutException("invalid version type "+repr(which)+"; valid versions are 'num', 'name', 'full', and '-v'")

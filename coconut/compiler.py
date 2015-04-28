@@ -91,7 +91,7 @@ class cli(object):
     commandline.add_argument("-i", "--interact", action="store_const", const=True, default=False, help="force the interpreter to start (otherwise starts if no other command is given)")
     commandline.add_argument("-q", "--quiet", action="store_const", const=True, default=False, help="suppress all informational output")
     commandline.add_argument("-d", "--debug", action="store_const", const=True, default=False, help="enable printing debug output")
-    commandline.add_argument("-e", "--exec", metavar="code", type=str, nargs=1, default=None, help="run a line of coconut passed in as a string")
+    commandline.add_argument("-e", "--exec", metavar="code", type=str, nargs=1, default=None, help="run a line of coconut passed in as a string (can also be accomplished with a pipe)")
     commandline.add_argument("--autopep8", type=str, nargs=argparse.REMAINDER, default=None, help="use autopep8 to format compiled code (remaining args passed to autopep8)")
     processor = None
     show = False
@@ -120,7 +120,7 @@ class cli(object):
             state = self.console.on
         self.console.on = not state
 
-    def cmd(self, args):
+    def cmd(self, args, interact=True):
         """Parses Command-Line Arguments."""
         self.setup(args.strict)
         if args.debug:
@@ -153,8 +153,8 @@ class cli(object):
             raise parser.CoconutException("a source file must be specified when --run is enabled")
         stdin = not sys.stdin.isatty()
         if stdin:
-            self.execute(self.processor.parse_block(sys.stdin.read().decode(ENCODING)))
-        if args.interact or not (stdin or args.source or args.version or getattr(args, "exec")):
+            self.execute(self.processor.parse_block(sys.stdin.read()))
+        if args.interact or (interact and not (stdin or args.source or args.version or getattr(args, "exec"))):
             self.start_prompt()
 
     def compile_path(self, path, write=True, run=False):

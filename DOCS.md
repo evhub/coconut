@@ -6,6 +6,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [Usage](#usage)
     - [Positional Arguments](#positional-arguments)
     - [Optional Arguments](#optional-arguments)
+    - [IPython](#ipython)
 - [II. Syntax](#ii-syntax)
     - [Lambdas](#lambdas)
     - [Backtick Calling](#backtick-calling)
@@ -65,9 +66,13 @@ dest                  destination directory for compiled files (defaults to the 
 -i, --interact        force the interpreter to start (otherwise starts if no other command is given)
 -q, --quiet           suppress all informational output
 -d, --debug           enable printing debug output
--e, --exec            run a line of coconut passed in as a string
+-e, --exec            run a line of coconut passed in as a string (can also be accomplished with a pipe)
 --autopep8            use autopep8 to format compiled code (remaining args passed to autopep8)
 ```
+
+### IPython
+
+If you prefer IPython to a normal Python shell, coconut can also be used as an IPython extension. The code `%load_ext coconut` will provide access to the `%coconut` and `%%coconut` magics. The `%coconut` magic will run a line of coconut with default parameters, whereas the `%%coconut` magic will take command-line arguments on the first line, and run any coconut code provided in the rest of the cell with those parameters.
 
 ## II. Syntax
 
@@ -865,17 +870,11 @@ Likely the most useful of the convenience functions, `parse` takes Coconut code 
 - `"block"`: many lines of code
 - `"eval"`: a single expression
 
-#### `coconut.convenience.autopep8`
-
-**autopep8**(**[**_args_**]**)
-
-Enables `autopep8` with the given command-line _args_ for all future calls to `parse`.
-
 #### `coconut.convenience.cmd`
 
-**cmd**(_args_)
+**cmd**(_args_, **[**_interact_**]**)
 
-Executes the given _args_ as if they were fed to `coconut` on the command-line.
+Executes the given _args_ as if they were fed to `coconut` on the command-line, with the exception that unless _interact_ is true or `-i` is passed, the interpreter will not be started.
 
 #### `coconut.convenience.version`
 
