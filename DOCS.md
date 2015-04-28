@@ -44,7 +44,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
 ### Usage
 
 ```
-coconut [-h] [source] [dest] [-v] [-s] [-p] [-r] [-n] [-i] [-q] [-d] [-e code] [--autopep8 ...]
+coconut [-h] [source] [dest] [-v] [-s] [-p] [-r] [-n] [-i] [-q] [-d] [-c code] [--autopep8 ...]
 ```
 
 ### Positional Arguments
@@ -66,7 +66,7 @@ dest                  destination directory for compiled files (defaults to the 
 -i, --interact        force the interpreter to start (otherwise starts if no other command is given)
 -q, --quiet           suppress all informational output
 -d, --debug           enable printing debug output
--e, --exec            run a line of coconut passed in as a string (can also be accomplished with a pipe)
+-c, --code            run a line of coconut passed in as a string (can also be accomplished with a pipe)
 --autopep8            use autopep8 to format compiled code (remaining args passed to autopep8)
 ```
 
