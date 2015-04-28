@@ -772,7 +772,6 @@ class processor(object):
     TRACER = tracer()
     trace = TRACER.bind
     debug = TRACER.debug
-    verbosity = 20
 
     def __init__(self, strict=False):
         """Creates A New Processor."""
@@ -808,12 +807,23 @@ class processor(object):
     def getpart(self, iterstring, point):
         """Gets A Part Of A String For An Error Message."""
         out = ""
-        i = point-self.verbosity
-        while i < point+self.verbosity:
-            if i >= 0 and i < len(iterstring):
+        i = point
+        while 0 <= i:
+            if i >= len(iterstring):
+                i -= 1
+            elif iterstring[i] in endline:
+                break
+            else:
+                out = iterstring[i] + out
+                i -= 1
+        i = point+1
+        while i < len(iterstring):
+            if iterstring[i] in endline:
+                break
+            else:
                 out += iterstring[i]
-            i += 1
-        return "..."+repr(out)+"..."
+                i += 1
+        return "line "+repr(out)
 
     def prepare(self, inputstring, strip=False, **kwargs):
         """Prepares A String For Processing."""
@@ -1115,6 +1125,7 @@ class processor(object):
     pound = Literal("#")
     backtick = Literal("`")
     backslash = Literal("\\")
+    dubbackslash = Literal("\\\\")
 
     mul_star = fixto(star | ~Literal("\xd7\xd7")+Literal("\xd7"), "*")
     exp_dubstar = fixto(dubstar | Literal("\xd7\xd7") | Literal("\u2191"), "**")
