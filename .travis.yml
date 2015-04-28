@@ -15,7 +15,7 @@ install:
 script:
   - coconut --version
   - coconut --strict --print --debug --code "print(__coconut__)"
-  - '"print(__coconut__)" | coconut --strict --print --debug'
+  - echo "print(__coconut__)" | coconut --strict --print --debug
   - ipython --ext coconut -c "%coconut print(__coconut__)"
   - coconut src/cocotest build/cocotest --strict --print --debug --autopep8
   - coconut src/runner.coc build --strict --print --debug --autopep8
