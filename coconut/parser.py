@@ -915,7 +915,7 @@ class processor(object):
             elif inputstring[x] == "\t":
                 if self.indchar is None:
                     self.indchar = "\t"
-                count += tablen
+                count += tablen - x % tablen
             else:
                 break
             if self.strict and self.indchar != inputstring[x]:
