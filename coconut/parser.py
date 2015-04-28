@@ -1149,7 +1149,6 @@ class processor(object):
     pound = Literal("#")
     backtick = Literal("`")
     backslash = Literal("\\")
-    dubbackslash = Literal("\\\\")
 
     mul_star = fixto(star | ~Literal("\xd7\xd7")+Literal("\xd7"), "*")
     exp_dubstar = fixto(dubstar | Literal("\xd7\xd7") | Literal("\u2191"), "**")
