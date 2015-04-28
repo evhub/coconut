@@ -305,7 +305,7 @@ class CoconutSyntaxError(CoconutException):
                 point = len(source)-1
             part = source.splitlines()[lineno(point, source)-1]
             self.value += linebreak + "  " + part + linebreak + "  "
-            for x in xrange(0, col(point, source)):
+            for x in range(0, col(point, source)):
                 if part[x] in white:
                     self.value += part[x]
                 else:
@@ -907,7 +907,7 @@ class processor(object):
     def leading(self, inputstring):
         """Counts Leading Whitespace."""
         count = 0
-        for x in xrange(0, len(inputstring)):
+        for x in range(0, len(inputstring)):
             if inputstring[x] == " ":
                 if self.indchar is None:
                     self.indchar = " "
