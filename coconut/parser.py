@@ -1043,7 +1043,7 @@ class processor(object):
         out = str(inputstring)
         for proc in self.preprocs:
             out = proc(out, **kwargs)
-            self.todebug(proc, out)
+            self.todebug(proc.__name__, out)
         return out
 
     def reindproc(self, inputstring, strip=True, **kwargs):
@@ -1067,7 +1067,7 @@ class processor(object):
             out = tokens[0]
             for proc in self.postprocs:
                 out = proc(out, **kwargs)
-                self.todebug(proc, out)
+                self.todebug(proc.__name__, out)
             return out
         else:
             raise CoconutException("multiple tokens leftover: "+repr(tokens))
