@@ -908,13 +908,18 @@ class processor(object):
         """Counts Leading Whitespace."""
         count = 0
         for x in xrange(0, len(inputstring)):
-            if inputstring[x] not in white:
+            if inputstring[x] == " ":
+                if self.indchar is None:
+                    self.indchar = " "
+                count += 1
+            elif inputstring[x] == "\t":
+                if self.indchar is None:
+                    self.indchar = "\t"
+                count += tablen
+            else:
                 break
-            elif self.indchar is None:
-                self.indchar = inputstring[x]
-            elif self.indchar != inputstring[x]:
-                raise CoconutSyntaxError("illegal mixing of tabs and spaces", inputstring, x)
-            count += 1
+            if self.strict and self.indchar != inputstring[x]:
+                raise CoconutStyleError("found mixing of tabs and spaces", inputstring, x)
         return count
 
     def change(self, inputstring):
@@ -986,8 +991,12 @@ class processor(object):
                     raise CoconutSyntaxError("illegal dedent to unused indentation level", line)
                 new.append(line)
             count += self.change(line)
-        if count != 0:
-            raise CoconutSyntaxError("unclosed parenthetical", new[-1])
+        if new:
+            last = new[-1].split(startcomment, 1)[0].rstrip()
+            if last.endswith("\\"):
+                raise CoconutSyntaxError("illegal final backslash continuation", last)
+            if count != 0:
+                raise CoconutSyntaxError("unclosed parenthetical", new[-1])
         new.append(closestr*len(levels))
         return linebreak.join(new)
 
