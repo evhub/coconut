@@ -38,36 +38,38 @@ class executor(object):
         if extras is not None:
             for k,v in extras.items():
                 self.variables[k] = v
-    def run(__self, __code, __error=False):
+    def run(_coconut_executor, _coconut_code, _coconut_error=False):
         """Executes Python Code."""
-        __globals = globals().copy()
-        __locals = locals().copy()
-        for __k, __v in __self.variables.items():
-            globals()[__k] = __v
+        _coconut_globals = globals().copy()
+        _coconut_locals = locals().copy()
+        for k, v in _coconut_executor.variables.items():
+            globals()[k] = v
+        del k, v
         try:
-            exec(__code)
+            exec(_coconut_code)
         except Exception:
-            if __error:
+            if _coconut_error:
                 raise
             else:
                 print_error()
-        __overrides = {}
-        for __k, __v in list(globals().items()):
-            if __k in __self.variables:
-                __self.variables[__k] = __v
-                del globals()[__k]
-            elif __k not in __globals:
-                __overrides[__k] = __v
-                del globals()[__k]
-        for __k, __v in locals().items():
-            if __k in __self.variables:
-                __self.variables[__k] = __v
-            elif __k not in __locals:
-                __self.variables[__k] = __v
-        for __k, __v in __overrides.items():
-            __self.variables[__k] = __v
-        for __k, __v in __globals.items():
-            globals()[__k] = __v
+        _coconut_overrides = {}
+        for k, v in list(globals().items()):
+            if k in _coconut_executor.variables:
+                _coconut_executor.variables[k] = v
+                del globals()[k]
+            elif k not in _coconut_globals:
+                _coconut_overrides[k] = v
+                del globals()[k]
+        del k, v
+        for k, v in locals().items():
+            if k in _coconut_executor.variables:
+                _coconut_executor.variables[k] = v
+            elif k not in _coconut_locals:
+                _coconut_executor.variables[k] = v
+        for k, v in _coconut_overrides.items():
+            _coconut_executor.variables[k] = v
+        for k, v in _coconut_globals.items():
+            globals()[k] = v
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # MAIN:
@@ -281,6 +283,8 @@ class cli(object):
     def start_runner(self):
         """Starts The Runner."""
         self.runner = executor({
-            "exit" : self.exit
+            "_coconut_compiler": self,
+            "_coconut_parser": self.processor,
+            "exit": self.exit
             })
         self.runner.run(parser.headers["code"])
