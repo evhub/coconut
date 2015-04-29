@@ -6,6 +6,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [Usage](#usage)
     - [Positional Arguments](#positional-arguments)
     - [Optional Arguments](#optional-arguments)
+    - [Compiled Files](#compiled-files)
     - [IPython](#ipython)
 - [II. Syntax](#ii-syntax)
     - [Lambdas](#lambdas)
@@ -70,9 +71,15 @@ dest                  destination directory for compiled files (defaults to the 
 --autopep8            use autopep8 to format compiled code (remaining args passed to autopep8)
 ```
 
+### Compiled Files
+
+Compiled files produced by the Coconut command-line utility will vary based on how it is used. If an entire folder of files is compiled, a `__coconut__.py` file will be created to house necessary functions, whereas if only a single file is compiled, that information will be stored within a header inside the file. Regardless of which method is used, each `.coc` file found will compile to another file with the same name, except with `.py` instead of `.coc`, which will hold the compiled code.
+
+If an extension other than `.py` is desired for the compiled files, such as `.pyde` for Python Processing, then that extension can be put before `.coc` in the source file name, and it will be used instead of `.py` for the compiled files. For example, `name.coc` will compile to `name.py`, whereas `name.pyde.coc` will compile to `name.pyde`.
+
 ### IPython
 
-If you prefer IPython to the normal Python shell, coconut can also be used as an IPython extension. The code `%load_ext coconut` will provide access to the `%coconut` and `%%coconut` magics. The `%coconut` magic will run a line of coconut with default parameters, whereas the `%%coconut` magic will take command-line arguments on the first line, and run any coconut code provided in the rest of the cell with those parameters.
+If you prefer IPython to the normal Python shell, coconut can also be used as an IPython extension. The code `%load_ext coconut` will provide access to the `%coconut` and `%%coconut` magics. The `%coconut` magic will run a line of Coconut with default parameters, whereas the `%%coconut` magic will take command-line arguments on the first line, and run any coconut code provided in the rest of the cell with those parameters.
 
 ## II. Syntax
 
