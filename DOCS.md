@@ -73,7 +73,7 @@ dest                  destination directory for compiled files (defaults to the 
 
 ### Compiled Files
 
-Compiled files produced by the Coconut command-line utility will vary based on how it is used. If an entire folder of files is compiled, a `__coconut__.py` file will be created to house necessary functions, whereas if only a single file is compiled, that information will be stored within a header inside the file. Regardless of which method is used, each `.coc` file found will compile to another file with the same name, except with `.py` instead of `.coc`, which will hold the compiled code.
+Files compiled by the `coconut` command-line utility will vary based on compilation parameters. If an entire folder of files is compiled, a `__coconut__.py` file will be created to house necessary functions, whereas if only a single file is compiled, that information will be stored within a header inside the file. Regardless of which method is used, each `.coc` file found will compile to another file with the same name, except with `.py` instead of `.coc`, which will hold the compiled code.
 
 If an extension other than `.py` is desired for the compiled files, such as `.pyde` for [Python Processing](http://py.processing.org/), then that extension can be put before `.coc` in the source file name, and it will be used instead of `.py` for the compiled files. For example, `name.coc` will compile to `name.py`, whereas `name.pyde.coc` will compile to `name.pyde`.
 
@@ -249,7 +249,7 @@ def func(x):
 
 ### Enhanced Else Statements
 
-Coconut supports the compound statements `try`, `if`, and `match` on the end of an `else` statement like any simple statement would be. This is most useful for mixing `match` and `if` statements together, but also allows for compound `try`s.
+Coconut supports the compound statements `try`, `if`, and `match` on the end of an `else` statement like any simple statement would be. This is most useful for mixing `match` and `if` statements together, but also allows for compound `try` statements.
 
 ##### Example
 
