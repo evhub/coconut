@@ -79,7 +79,7 @@ If an extension other than `.py` is desired for the compiled files, such as `.py
 
 ### IPython
 
-If you prefer [IPython](http://ipython.org/) to the normal Python shell, coconut can also be used as an IPython extension. The code `%load_ext coconut` will provide access to the `%coconut` and `%%coconut` magics. The `%coconut` magic will run a line of Coconut with default parameters, whereas the `%%coconut` magic will take command-line arguments on the first line, and run any coconut code provided in the rest of the cell with those parameters.
+If you prefer [IPython](http://ipython.org/) to the normal Python shell, coconut can also be used as an IPython extension. The code `%load_ext coconut` will provide access to the `%coconut` (or `%coc`) and `%%coconut` (or `%%coc`) magics. The `%coconut` magic will run a line of Coconut with default parameters, whereas the `%%coconut` magic will take command-line arguments on the first line, and run any coconut code provided in the rest of the cell with those parameters.
 
 ## II. Syntax
 
