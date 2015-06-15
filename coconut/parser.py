@@ -832,7 +832,7 @@ class processor(object):
         found = None
         for c in text:
             if found is True:
-                fulltext += self.refs[int(c)]
+                fulltext += self.string_repl([c])
                 found = False
             elif found is False:
                 if c == '"':
