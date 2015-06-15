@@ -803,13 +803,15 @@ class processor(object):
         self.strict = strict
         self.string_ref <<= self.trace(attach(self.string_marker, self.string_repl), "string_ref")
         self.comment <<= self.trace(attach(self.comment_marker, self.comment_repl), "comment")
+        self.passthrough <<= self.trace(attach(self.passthrough_marker, self.passthrough_repl), "passthrough")
+        self.passthrough_block <<= self.trace(attach(self.passthrough_block_marker, self.passthrough_repl), "passthrough_block")
         self.setup()
         self.clean()
 
     def setup(self):
         """Initializes The Processor."""
-        self.preprocs = [self.prepare, self.strproc, self.indproc]
-        self.postprocs = [self.reindproc, self.headerproc]
+        self.preprocs = [self.prepare, self.str_proc, self.passthrough_proc, self.ind_proc]
+        self.postprocs = [self.reind_proc, self.header_proc]
 
     def clean(self):
         """Resets References."""
@@ -819,12 +821,21 @@ class processor(object):
         self.match_to_index = 0
         self.match_iter_index = 0
 
-    def wrapstr(self, text, strchar, multiline):
+    def wrap_str(self, text, strchar, multiline):
         """Wraps A String."""
         self.refs.append((text, strchar, multiline))
         return '"'+str(len(self.refs)-1)+'"'
 
-    def wrapcomment(self, text):
+    def wrap_passthrough(self, text, multiline):
+        """Wraps A Passthrough."""
+        self.refs.append(text)
+        if multiline:
+            marker = "\\"
+        else:
+            marker = "\\\\"
+        return marker + str(len(self.refs)-1)
+
+    def wrap_comment(self, text):
         """Wraps A Comment."""
         self.refs.append(text)
         return "#"+str(len(self.refs)-1)
@@ -836,7 +847,7 @@ class processor(object):
         else:
             return inputstring
 
-    def strproc(self, inputstring, **kwargs):
+    def str_proc(self, inputstring, **kwargs):
         """Processes Strings."""
         out = []
         found = None
@@ -850,7 +861,7 @@ class processor(object):
             if hold is not None:
                 if len(hold) == 1:
                     if c in endline:
-                        out.append(self.wrapcomment(hold[0])+c)
+                        out.append(self.wrap_comment(hold[0])+c)
                         hold = None
                     else:
                         hold[0] += c
@@ -863,7 +874,7 @@ class processor(object):
                     elif len(hold[2]) > len(hold[1]):
                         raise CoconutSyntaxError("invalid number of string closes", inputstring, x)
                     elif hold[2] == hold[1]:
-                        out.append(self.wrapstr(hold[0], hold[1][0], True))
+                        out.append(self.wrap_str(hold[0], hold[1][0], True))
                         hold = None
                         x -= 1
                     else:
@@ -872,7 +883,7 @@ class processor(object):
                 elif hold[0].endswith(escape) and not hold[0].endswith(escape*2):
                     hold[0] += c
                 elif c == hold[1]:
-                    out.append(self.wrapstr(hold[0], hold[1], False))
+                    out.append(self.wrap_str(hold[0], hold[1], False))
                     hold = None
                 elif c == hold[1][0]:
                     hold[2] = c
@@ -885,7 +896,7 @@ class processor(object):
                     hold = [c, found, None]
                     found = None
                 elif len(found) == 2:
-                    out.append(self.wrapstr("", found[0], False))
+                    out.append(self.wrap_str("", found[0], False))
                     found = None
                     x -= 1
                 elif len(found) == 3:
@@ -902,6 +913,46 @@ class processor(object):
             x += 1
         if hold is not None or found is not None:
             raise CoconutSyntaxError("unclosed string", inputstring, x)
+        return "".join(out)
+
+    def passthrough_proc(self, inputstring, **kwargs):
+        """Processes Python Passthroughs."""
+        out = []
+        found = None
+        hold = None
+        for c in inputstring:
+            if hold:
+                if isinstance(hold, str):
+                    if c == hold:
+                        out.append(self.wrap_passthrough(found, False) + hold)
+                        found = None
+                        hold = None
+                    else:
+                        found += c
+                else:
+                    if c == "(":
+                        hold += 1
+                    elif c == ")":
+                        hold -= 1
+                    if hold == 0:
+                        out.append(self.wrap_passthrough(found, True))
+                        found = None
+                        hold = None
+                    else:
+                        found += c
+            elif found:
+                if c == escape:
+                    hold = linebreak
+                    found = ""
+                elif c == "(":
+                    hold = 1
+                    found = ""
+                else:
+                    out.append(escape + c)
+            elif c == escape:
+                found = True
+            else:
+                out.append(c)
         return "".join(out)
 
     def leading(self, inputstring):
@@ -944,7 +995,7 @@ class processor(object):
                 count += 1
         return count
 
-    def indproc(self, inputstring, **kwargs):
+    def ind_proc(self, inputstring, **kwargs):
         """Processes Indentation."""
         lines = inputstring.splitlines()
         new = []
@@ -1046,7 +1097,7 @@ class processor(object):
             self.todebug(proc.__name__, out)
         return out
 
-    def reindproc(self, inputstring, strip=True, **kwargs):
+    def reind_proc(self, inputstring, strip=True, **kwargs):
         """Reformats Indentation."""
         out = inputstring
         if strip:
@@ -1057,7 +1108,7 @@ class processor(object):
         out += linebreak
         return out
 
-    def headerproc(self, inputstring, header="file", **kwargs):
+    def header_proc(self, inputstring, header="file", **kwargs):
         """Adds The Header."""
         return headers[header]+inputstring
 
@@ -1093,7 +1144,7 @@ class processor(object):
                     string = strchar+string+strchar
                 return string
             else:
-                raise CoconutException("string marker points to comment")
+                raise CoconutException("string marker points to comment/passthrough")
         else:
             raise CoconutException("invalid string marker")
 
@@ -1105,6 +1156,17 @@ class processor(object):
                 raise CoconutException("comment marker points to string")
             else:
                 return "#"+ref
+        else:
+            raise CoconutException("invalid comment marker")
+
+    def passthrough_repl(self, tokens):
+        """Replaces Passthrough References."""
+        if len(tokens) == 1:
+            ref = self.refs[int(tokens[0])]
+            if isinstance(ref, tuple):
+                raise CoconutException("passthrough marker points to string")
+            else:
+                return ref
         else:
             raise CoconutException("invalid comment marker")
 
@@ -1149,6 +1211,7 @@ class processor(object):
     pound = Literal("#")
     backtick = Literal("`")
     backslash = Literal("\\")
+    dubbackslash = Literal("\\\\")
 
     mul_star = fixto(star | ~Literal("\xd7\xd7")+Literal("\xd7"), "*")
     exp_dubstar = fixto(dubstar | Literal("\xd7\xd7") | Literal("\u2191"), "**")
@@ -1215,9 +1278,13 @@ class processor(object):
 
     string_ref = Forward()
     comment = Forward()
+    passthrough = Forward()
+    passthrough_block = Forward()
 
     string_marker = Combine(Literal('"').suppress() + integer + Literal('"').suppress())
     comment_marker = Combine(pound.suppress() + integer)
+    passthrough_marker = Combine(backslash.suppress() + integer)
+    passthrough_block_marker = Combine(dubbackslash.suppress() + integer)
 
     bit_b = Optional(CaselessLiteral("b"))
     raw_r = Optional(CaselessLiteral("r"))
@@ -1334,12 +1401,14 @@ class processor(object):
     for x in range(1, len(const_vars)):
         keyword_atom |= Keyword(const_vars[x])
     string_atom = addspace(OneOrMore(string))
+    passthrough_atom = addspace(OneOrMore(passthrough))
     set_letter = fixto(CaselessLiteral("s"), "s") | fixto(CaselessLiteral("f"), "f")
     atom = (
         keyword_atom
         | ellipses
         | number
         | string_atom
+        | passthrough_atom
         | condense(lbrack + Optional(testlist_comp) + rbrack)
         | condense(lbrace + Optional(dictorsetmaker) + rbrace)
         | attach(set_letter + lbrace.suppress() + Optional(setmaker) + rbrace.suppress(), set_proc)
@@ -1412,6 +1481,7 @@ class processor(object):
     simple_compound_stmt = Forward()
     stmt = Forward()
     suite = Forward()
+    nocolon_suite = Forward()
 
     argument = condense(name + equals + test) | addspace(name + Optional(comp_for))
     classdef = condense(addspace(Keyword("class") + name) + Optional(condense(lparen + Optional(testlist) + rparen)) + suite)
@@ -1506,7 +1576,9 @@ class processor(object):
     decorators = attach(OneOrMore(at.suppress() + test + newline.suppress()), decorator_proc)
     decorated = condense(decorators + (classdef | funcdef | datadef))
 
-    simple_compound_stmt <<= if_stmt | try_stmt | match_stmt
+    passthrough_stmt = condense(passthrough_block + nocolon_suite)
+
+    simple_compound_stmt <<= if_stmt | try_stmt | match_stmt | passthrough_stmt
     compound_stmt = trace(simple_compound_stmt | with_stmt | while_stmt | for_stmt | funcdef | classdef | datadef | decorated, "compound_stmt")
 
     expr_stmt = trace(addspace(
@@ -1519,7 +1591,8 @@ class processor(object):
     small_stmt = trace(keyword_stmt ^ expr_stmt, "small_stmt")
     simple_stmt <<= trace(condense(itemlist(small_stmt, semicolon) + newline), "simple_stmt")
     stmt <<= trace(compound_stmt | simple_stmt, "stmt")
-    suite <<= trace(condense(colon + newline + indent + OneOrMore(stmt) + dedent) | addspace(colon + simple_stmt), "suite")
+    nocolon_suite <<= condense(newline + indent + OneOrMore(stmt) + dedent) | addspace(colon + simple_stmt)
+    suite <<= trace(condense(colon + nocolon_suite), "suite")
 
     single_input = trace(newline | stmt, "single_input")
     file_input = trace(condense(ZeroOrMore(single_input)), "file_input")
