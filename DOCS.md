@@ -18,6 +18,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [Enhanced Decorators](#enhanced-decorators)
     - [Enhanced Else Statements](#enhanced-else-statements)
     - [Unicode Alternatives](#unicode-alternatives)
+    - [Code Passthrough](#code-passthrough)
 - [III. Operators](#iii-operators)
     - [Compose](#compose)
     - [Pipe Forward](#pipe-forward)
@@ -301,6 +302,24 @@ Coconut supports unicode alternatives to many different symbols. The full list o
 « (\xab)                    => "<<"
 » (\xbb)                    => ">>"
 … (\u2026)                  => "..."
+```
+
+### Code Passthrough
+
+Coconut supports the ability to pass arbitrary code through the compiler without being touched, for compatibility with other variants of Python. Anything other than strings placed between `\(` and the corresponding close paren will be passed through, as well as any line starting with `\\`, which will have the additional effect of allowing indentation under it.
+
+##### Example
+
+Coconut:
+```
+\\cdef f(x):
+    return x |> g
+```
+
+Python:
+```
+cdef f(x):
+    return g(x)
 ```
 
 ## III. Operators

@@ -1576,7 +1576,7 @@ class processor(object):
     decorators = attach(OneOrMore(at.suppress() + test + newline.suppress()), decorator_proc)
     decorated = condense(decorators + (classdef | funcdef | datadef))
 
-    passthrough_stmt = condense(passthrough_block + nocolon_suite)
+    passthrough_stmt = condense(passthrough_block + Optional(nocolon_suite))
 
     simple_compound_stmt <<= if_stmt | try_stmt | match_stmt | passthrough_stmt
     compound_stmt = trace(simple_compound_stmt | with_stmt | while_stmt | for_stmt | funcdef | classdef | datadef | decorated, "compound_stmt")
