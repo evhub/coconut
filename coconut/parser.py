@@ -828,7 +828,22 @@ class processor(object):
 
     def wrap_passthrough(self, text, multiline):
         """Wraps A Passthrough."""
-        self.refs.append(text)
+        fulltext = ""
+        found = None
+        for c in text:
+            if found is True:
+                fulltext += self.refs[int(c)]
+                found = False
+            elif found is False:
+                if c == '"':
+                    found = None
+                else:
+                    raise CoconutException("invalid string reference inside passthrough: "+text)
+            elif c == '"':
+                found = True
+            else:
+                fulltext += c
+        self.refs.append(fulltext)
         if multiline:
             marker = "\\"
         else:
