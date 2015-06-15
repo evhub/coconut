@@ -832,15 +832,13 @@ class processor(object):
         found = None
         for c in text:
             if found is True:
-                fulltext += self.string_repl([c])
-                found = False
-            elif found is False:
                 if c == '"':
+                    fulltext += self.string_repl([found])
                     found = None
                 else:
-                    raise CoconutException("invalid string reference inside passthrough: "+text)
+                    found += c
             elif c == '"':
-                found = True
+                found = ""
             else:
                 fulltext += c
         self.refs.append(fulltext)
