@@ -949,6 +949,7 @@ class processor(object):
                     found = ""
                 else:
                     out.append(escape + c)
+                    found = None
             elif c == escape:
                 found = True
             else:
