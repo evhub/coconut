@@ -831,7 +831,7 @@ class processor(object):
         fulltext = ""
         found = None
         for c in text:
-            if found:
+            if found is not None:
                 if c == '"':
                     fulltext += self.string_repl([found])
                     found = None
@@ -934,7 +934,7 @@ class processor(object):
         found = None
         hold = None
         for c in inputstring:
-            if hold:
+            if hold is not None:
                 if isinstance(hold, str):
                     if c == hold:
                         out.append(self.wrap_passthrough(found, False) + hold)
