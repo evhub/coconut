@@ -831,7 +831,7 @@ class processor(object):
         fulltext = ""
         found = None
         for c in text:
-            if found is True:
+            if found:
                 if c == '"':
                     fulltext += self.string_repl([found])
                     found = None
