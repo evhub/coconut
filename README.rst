@@ -34,12 +34,11 @@ If you know Python, then you already know how useful immutable lists can be: wel
 4. But... Coconut has pattern matching.
 
 If you've ever used a functional programming language before, you probably know how awesome pattern matching is. Coconut's ``match`` statement brings all that to Python. Here's just a taste how powerful Coconut's pattern-matching is:
-```
-data point(x, y): pass
-
-match point(x, 2) in point(1, 2):
-    print(x) # => 1
-```
+    >>> data point(x, y): pass
+    >>> my_point = point(1, 2)
+    >>> match point(x, 2) in my_point:
+           print(x)
+    1
 
 5. But... Coconut allows for truly Pythonic functional programming.
 
