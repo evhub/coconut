@@ -933,32 +933,29 @@ class processor(object):
         out = []
         found = None
         hold = None
+        count = None
         for c in inputstring:
             if hold is not None:
-                if isinstance(hold, str):
-                    if c == hold:
-                        out.append(self.wrap_passthrough(found, False) + hold)
-                        found = None
-                        hold = None
-                    else:
-                        found += c
+                if c in downs:
+                    count -= 1
+                elif c in ups:
+                    count += 1
+                if count == 0:
+                    if hold is True:
+                        out.append
+                if c == hold:
+                    out.append(self.wrap_passthrough(found, False) + hold)
+                    found = None
                 else:
-                    if c == "(":
-                        hold += 1
-                    elif c == ")":
-                        hold -= 1
-                    if hold == 0:
-                        out.append(self.wrap_passthrough(found, True))
-                        found = None
-                        hold = None
-                    else:
-                        found += c
+                    found += c
             elif found:
                 if c == escape:
                     hold = linebreak
+                    count = 0
                     found = ""
                 elif c == "(":
-                    hold = 1
+                    hold = ")"
+                    count = 1
                     found = ""
                 else:
                     out.append(escape + c)
