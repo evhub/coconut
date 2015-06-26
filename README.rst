@@ -45,4 +45,4 @@ If you've ever used a functional programming language before, you probably know 
 
 Not only can Coconut do all those awesome things, it also has syntactic support for iterator chaining, iterator slicing, partial application, function composition, pipeline-style programming, infix calling, frozen set literals, unicode operators, and a whole host of other constructs for you to explore.
 
-Ready to give Coconut a try? Head over to the HELP_ file for a full tutorial to HELP_ (ha, get it?) you get started.
+Ready to give Coconut a try? Head over to the HELP_ file for a full tutorial to help (ha, get it?) you get started.
