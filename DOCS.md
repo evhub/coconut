@@ -779,6 +779,7 @@ match <pattern> in <value> [if <cond>]:
 pattern := (
     "(" pattern ")"                     # parentheses
     | "None" | "True" | "False"         # constants
+    | "=" NAME                          # check
     | NUMBER                            # numbers
     | STRING                            # strings
     | NAME ["=" pattern]                # capture
@@ -806,6 +807,7 @@ pattern := (
  * If the same variable is used multiple times, a check will be performed that each use match to the same value.
  * If the variable name `_` is used, nothing will be bound and everything will always match to it.
 - Explicit Bindings (`<var>=<pattern>`): will bind `<var>` to `<pattern>`.
+- Checks (`=<var>`): will check that whatever is in that position is equal to the previously defined variable `<var>`.
 - Type Checks (`<var> is <types>`): will check that whatever is in that position is of type(s) `<types>` before binding the `<var>`.
 - Data Types (`<name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`.
 - Tuples (`(<patterns>)`): will only match to a tuple of the same length, and will check the contents against `<patterns>`.

@@ -308,7 +308,7 @@ Second, the use of the wildcard, `_`. Unlike other variables, like `x` in this e
 
 Third, the use of an `else` statement on the end. This works much like else statements in other parts of Python: the code under it is only executed if the corresponding match fails.
 
-Next, I mentioned earlier that match statements played nicely with values, and this is particularly true for values defined by the user with the `data` statement. These can be matched against and their contents accessed like so:
+Next, I mentioned earlier that match statements played nicely with values. Here's an example of that:
 ```
 data point(x, y):
     def transform(self, other):
@@ -316,11 +316,20 @@ data point(x, y):
             return point(self.x + x, self.y + y)
         else:
             raise TypeError("arg to transform must be a point")
+    def __eq__(self, other):
+        match point(=self.x, =self.y) in other:
+            return True
+        else:
+            return False
 
 point(1,2) |> point(3,4).transform |> print
+print( point(1,2) == point(1, 2) )
 ```
+As you can see, matching to data types can be very useful. Values defined by the user with the `data` statement can be matched against and their contents accessed by specifically referencing arguments to the data type's constructor.
 
-As you can see, matching to data types can be very useful. Even more common, however, are head-tail list or tuple deconstructions. Here's an example:
+Additionally, this example demonstrates checks against predefined variables, which can be done by prefixing the variable name with an equals sign.
+
+Even more common, however, are head-tail list or tuple deconstructions. Here's an example:
 ```
 def duplicate_first(value):
     match l=([x] + xs) in value:

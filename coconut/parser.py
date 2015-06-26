@@ -1529,22 +1529,23 @@ class processor(object):
         keyword_atom
         | number
         | string_atom
+        | condense(equals.suppress() + dotted_name)
         )
     matchlist_set = Group(Optional(match_const + ZeroOrMore(comma.suppress() + match_const) + Optional(comma.suppress())))
     match_pair = Group(match_const + colon.suppress() + match)
     matchlist_dict = Group(Optional(match_pair + ZeroOrMore(comma.suppress() + match_pair) + Optional(comma.suppress())))
     base_match = Group(
         (match_const)("const")
-        | (lparen + matchlist_tuple + rparen.suppress() + Optional((plus | dubcolon) + name))("series")
+        | (lparen + matchlist_tuple + rparen.suppress() + Optional((plus | dubcolon) + dotted_name))("series")
         | (lparen.suppress() + match + rparen.suppress())("paren")
-        | (lbrack + matchlist_list + rbrack.suppress() + Optional((plus | dubcolon) + name))("series")
+        | (lbrack + matchlist_list + rbrack.suppress() + Optional((plus | dubcolon) + dotted_name))("series")
         | (lbrace.suppress() + matchlist_dict + rbrace.suppress())("dict")
         | (Optional(set_letter) + lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
-        | (name + equals.suppress() + match)("assign")
-        | (name + lparen.suppress() + matchlist_list + rparen.suppress())("data")
-        | name("var")
+        | (dotted_name + equals.suppress() + match)("assign")
+        | (dotted_name + lparen.suppress() + matchlist_list + rparen.suppress())("data")
+        | dotted_name("var")
         )
-    matchlist_name = name | lparen.suppress() + itemlist(name, comma) + rparen.suppress()
+    matchlist_name = dotted_name | lparen.suppress() + itemlist(dotted_name, comma) + rparen.suppress()
     matchlist_is = base_match + Keyword("is").suppress() + matchlist_name
     is_match = Group(matchlist_is("is")) | base_match
     matchlist_and = is_match + OneOrMore(Keyword("and").suppress() + is_match)
