@@ -944,6 +944,8 @@ class processor(object):
                     if c == hold:
                         out.append(self.wrap_passthrough(found, False) + hold)
                         found = None
+                        hold = None
+                        count = None
                     else:
                         found += c
             elif found:
