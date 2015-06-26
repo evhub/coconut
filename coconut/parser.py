@@ -940,23 +940,22 @@ class processor(object):
                     count -= 1
                 elif c in ups:
                     count += 1
-                if count == 0:
-                    if c == hold:
-                        out.append(self.wrap_passthrough(found, False) + hold)
-                        found = None
-                        hold = None
-                        count = None
-                    else:
-                        found += c
+                if count <= 0 and c == hold:
+                    out.append(self.wrap_passthrough(found, False) + hold)
+                    found = None
+                    hold = None
+                    count = None
+                else:
+                    found += c
             elif found:
                 if c == escape:
+                    found = ""
                     hold = linebreak
                     count = 0
-                    found = ""
                 elif c == "(":
+                    found = ""
                     hold = ")"
                     count = 1
-                    found = ""
                 else:
                     out.append(escape + c)
                     found = None
