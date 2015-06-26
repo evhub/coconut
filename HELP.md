@@ -316,14 +316,14 @@ data point(x, y):
             return point(self.x + x, self.y + y)
         else:
             raise TypeError("arg to transform must be a point")
-    def __eq__(self, other):
+    def equals(self, other):
         match point(=self.x, =self.y) in other:
             return True
         else:
             return False
 
 point(1,2) |> point(3,4).transform |> print
-print( point(1,2) == point(1, 2) )
+point(1,2) |> point(1,2).equals |> print
 ```
 As you can see, matching to data types can be very useful. Values defined by the user with the `data` statement can be matched against and their contents accessed by specifically referencing arguments to the data type's constructor.
 
