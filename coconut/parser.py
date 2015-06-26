@@ -941,13 +941,11 @@ class processor(object):
                 elif c in ups:
                     count += 1
                 if count == 0:
-                    if hold is True:
-                        out.append
-                if c == hold:
-                    out.append(self.wrap_passthrough(found, False) + hold)
-                    found = None
-                else:
-                    found += c
+                    if c == hold:
+                        out.append(self.wrap_passthrough(found, False) + hold)
+                        found = None
+                    else:
+                        found += c
             elif found:
                 if c == escape:
                     hold = linebreak
