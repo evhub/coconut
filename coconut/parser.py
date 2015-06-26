@@ -846,7 +846,7 @@ class processor(object):
             marker = "\\"
         else:
             marker = "\\\\"
-        return marker + str(len(self.refs)-1)
+        return marker + str(len(self.refs)-1) + linebreak*(not multiline)
 
     def wrap_comment(self, text):
         """Wraps A Comment."""
@@ -926,7 +926,8 @@ class processor(object):
             x += 1
         if hold is not None or found is not None:
             raise CoconutSyntaxError("unclosed string", inputstring, x)
-        return "".join(out)
+        else:
+            return "".join(out)
 
     def passthrough_proc(self, inputstring, **kwargs):
         """Processes Python Passthroughs."""
@@ -934,17 +935,17 @@ class processor(object):
         found = None
         hold = None
         count = None
-        for c in inputstring:
+        multiline = None
+        for x in range(0, len(inputstring)):
+            c = inputstring[x]
             if hold is not None:
-                if c in downs:
-                    count -= 1
-                elif c in ups:
-                    count += 1
-                if count <= 0 and c == hold:
-                    out.append(self.wrap_passthrough(found, False) + hold)
+                count += self.change(c)
+                if count >= 0 and c == hold:
+                    out.append(self.wrap_passthrough(found, multiline))
                     found = None
                     hold = None
                     count = None
+                    multiline = None
                 else:
                     found += c
             elif found:
@@ -952,10 +953,12 @@ class processor(object):
                     found = ""
                     hold = linebreak
                     count = 0
+                    multiline = False
                 elif c == "(":
                     found = ""
                     hold = ")"
-                    count = 1
+                    count = -1
+                    multiline = True
                 else:
                     out.append(escape + c)
                     found = None
@@ -963,7 +966,10 @@ class processor(object):
                 found = True
             else:
                 out.append(c)
-        return "".join(out)
+        if hold is not None or found is not None:
+            raise CoconutSyntaxError("unclosed passthrough", inputstring, x)
+        else:
+            return "".join(out)
 
     def leading(self, inputstring):
         """Counts Leading Whitespace."""
@@ -986,20 +992,8 @@ class processor(object):
     def change(self, inputstring):
         """Determines The Parenthetical Change Of Level."""
         count = 0
-        hold = None
         for c in inputstring:
-            if hold:
-                if c == escape:
-                    hold[1] = not hold[1]
-                elif hold[1]:
-                    hold[1] = False
-                elif c == hold[0]:
-                    hold = None
-            elif c in startcomment:
-                break
-            elif c in holds:
-                hold = [c, False]
-            elif c in downs:
+            if c in downs:
                 count -= 1
             elif c in ups:
                 count += 1
