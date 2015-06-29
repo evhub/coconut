@@ -27,7 +27,7 @@ Hate typing out ``lambda`` every time you want to create an anonymous function? 
 
 3. *But...* **Coconut has immutable data constructors.**
 
-If you know Python, then you already know how useful immutable lists can be: well, they're called tuples, of course! Python lets tuples hog all that immutability goodness, but wouldn't it be nice if you could make anything immutable? Coconut's ``data`` statement allows you to define immutable classes, to create any sort of immutable data type that you wish!
+If you know Python, then you already know how useful immutable lists can be. Don't believe me? They're called tuples, of course! Python lets tuples hog all that immutability goodness, but wouldn't it be nice if you could make anything immutable? Coconut's ``data`` statement allows you to define immutable classes, to create any sort of immutable data type that you wish!
 
 4. *But...* **Coconut has pattern matching.**
 
