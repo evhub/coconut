@@ -925,7 +925,7 @@ class processor(object):
                     hold = None
                 elif c == hold[1][0]:
                     hold[2] = c
-                elif c in endline:
+                elif len(hold[1]) == 1 and c in endline:
                     raise CoconutSyntaxError("linebreak in non-multiline string", inputstring, x)
                 else:
                     hold[0] += c
