@@ -37,6 +37,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
 - [V. Keywords](#v-keywords)
     - [data](#data)
     - [match](#match)
+    - [case](#case)
     - [Backslash Escaping](#backslash-escaping)
 - [VI. Coconut Module](#vi-coconut-module)
     - [coconut.convenience](#coconutconvenience)
@@ -774,7 +775,7 @@ match <pattern> in <value> [if <cond>]:
 [else:
     <body>]
 ```
-`<value>` is the item to match against, `<cond>` is an optional additional check, and the `<body>`s are simply code that is executed if the header above them suceeds. `<pattern>` follows its own, special syntax, defined roughly like so:
+`<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds. `<pattern>` follows its own, special syntax, defined roughly like so:
 ```
 pattern := (
     "(" pattern ")"                     # parentheses
@@ -856,6 +857,45 @@ def classify(value):
             return "set of 0"
         return "set"
     raise TypeError()
+```
+
+Python:
+
+_Can't be done._
+
+### `case`
+
+Coconut's `case` statements are an extension of Coconut's `match` statements for use when many matches are to be attempted against one object, and only one should succeed. Each pattern in a case block is checked until a match is found, and then the corresponding body is executed, and the case block terminated. The syntax for case blocks is:
+```
+case <value>:
+    match <pattern> [if <cond>]:
+        <body>
+    match <pattern> [if <cond>]:
+        <body>
+    ...
+[else:
+    <body>]
+```
+`<pattern>` is any `match` pattern, `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds.
+
+##### Example
+
+Coconut:
+```
+def classify_tuple(value):
+    out = ""
+    case value:
+        match ():
+            out += "empty"
+        match (_,):
+            out += "singleton"
+        match (x,x):
+            out += "duplicate pair of "+str(x)
+        match (_,_):
+            out += "pair"
+    else:
+        raise TypeError()
+    return out
 ```
 
 Python:

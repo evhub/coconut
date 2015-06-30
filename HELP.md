@@ -25,6 +25,7 @@ This tutorial will teach you how to write elegant, Pythonic code in a functional
 - [IV. Values](#iv-values)
     - [data](#data)
     - [match](#match)
+    - [case](#case)
 - [V. Further Reading](#v-further-reading)
 
 ## I. Getting Started
@@ -355,6 +356,22 @@ def dictpoint(value):
 
 {"x":1, "y":2} |> dictpoint |> print
 ```
+
+### `case`
+
+`case` statements are simply a convenience for doing multiple `match` statements against the same value, where only one of them should succeed. They look like this:
+```
+def factorial(value):
+    case value:
+        match 0:
+            return 1
+        match n is int if n > 0:
+            return n * factorial(n-1)
+    else:
+        return None
+    raise TypeError()
+```
+Note the absence of an `in` in the `match` statements: that's because the `value` in `case value` is taking its place. Additionally, unlike lone match statements, only one match statement inside of a case block will ever succeed, so you should put more general matches below more specific ones.
 
 ## V. Further Reading
 
