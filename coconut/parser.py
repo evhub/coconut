@@ -95,14 +95,11 @@ class __coconut__(object):
     dropwhile = itertools.dropwhile
     tee = itertools.tee
     import collections
-    import collections.abc
     data = staticmethod(collections.namedtuple)
-    @staticmethod
-    def iterable(obj):
-        """Determines Whether an Object Is Iterable."""
-        try: iter(obj)
-        except TypeError: return False
-        else: return True
+    try:
+        import collections.abc as abc
+    except ImportError:
+        abc = collections
     @staticmethod
     def bool_and(a, b):
         """Boolean And Operator Function."""
@@ -172,14 +169,10 @@ tee = itertools.tee
 import collections
 data = collections.namedtuple
 
-def iterable(obj):
-    """Determines Whether an Object Is Iterable."""
-    try:
-        iter(obj)
-    except TypeError:
-        return False
-    else:
-        return True
+try:
+    import collections.abc as abc
+except ImportError:
+    abc = collections
 
 def bool_and(a, b):
     """Boolean And Operator Function."""
@@ -647,7 +640,7 @@ class matcher(object):
                 match = original[0]
             else:
                 raise CoconutException("invalid dict match tokens: "+repr(original))
-            self.checks.append("isinstance("+item+", __coconut__.collections.abc.Mapping)")
+            self.checks.append("isinstance("+item+", __coconut__.abc.Mapping)")
             self.checks.append("len("+item+") == "+str(len(match)))
             for x in range(0, len(match)):
                 k,v = match[x]
@@ -659,11 +652,8 @@ class matcher(object):
                 series_type, match = original
             else:
                 series_type, match, _, tail = original
-            if series_type == "(":
-                self.checks.append("isinstance("+item+", __coconut__.collections.abc.Sequence)")
-                self.checks.append("not isinstance("+item+", __coconut__.collections.abc.MutableSequence)")
-            elif series_type == "[":
-                self.checks.append("isinstance("+item+", __coconut__.collections.abc.MutableSequence)")
+            if series_type in ("(", "]"):
+                self.checks.append("isinstance("+item+", __coconut__.abc.Sequence)")
             else:
                 raise CoconutException("invalid series match type: "+repr(series_type))
             if tail is None:
@@ -675,7 +665,7 @@ class matcher(object):
                 self.match(match[x], item+"["+str(x)+"]")
         elif "series" in original and len(original) == 4 and original[2] == "::":
             series_type, match, _, tail = original
-            self.checks.append("__coconut__.iterable("+item+")")
+            self.checks.append("isinstance("+item+", __coconut__.abc.Iterable)")
             itervar = match_iter_var + "_" + str(self.iter_index)
             self.iter_index += 1
             if series_type == "(":
@@ -710,20 +700,10 @@ class matcher(object):
                     self.names[setvar] = item
         elif "set" in original:
             if len(original) == 1:
-                set_type, match = None, original[0]
-            elif len(original) == 2:
-                set_type, match = original
+                match = original[0]
             else:
                 raise CoconutException("invalid set match tokens: "+repr(original))
-            if set_type == "s":
-                self.checks.append("isinstance("+item+", __coconut__.collections.abc.MutableSet)")
-            elif set_type == "f":
-                self.checks.append("isinstance("+item+", __coconut__.collections.abc.Set)")
-                self.checks.append("not isinstance("+item+", __coconut__.collections.abc.MutableSet)")
-            elif not set_type:
-                self.checks.append("isinstance("+item+", __coconut__.collections.abc.Set)")
-            else:
-                raise CoconutException("invalid set type: "+str(set_type))
+            self.checks.append("isinstance("+item+", __coconut__.abc.Set)")
             self.checks.append("len("+item+") == "+str(len(match)))
             for const in match:
                 self.checks.append(const+" in "+item)
@@ -1568,7 +1548,7 @@ class processor(object):
         | (lparen.suppress() + match + rparen.suppress())("paren")
         | (lbrack + matchlist_list + rbrack.suppress() + Optional((plus | dubcolon) + name))("series")
         | (lbrace.suppress() + matchlist_dict + rbrace.suppress())("dict")
-        | (Optional(set_letter) + lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
+        | (lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
         | (name + equals.suppress() + match)("assign")
         | (name + lparen.suppress() + matchlist_list + rparen.suppress())("data")
         | name("var")

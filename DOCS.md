@@ -811,11 +811,11 @@ pattern := (
 - Checks (`=<var>`): will check that whatever is in that position is equal to the previously defined variable `<var>`.
 - Type Checks (`<var> is <types>`): will check that whatever is in that position is of type(s) `<types>` before binding the `<var>`.
 - Data Types (`<name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`.
-- Tuples (`(<patterns>)`): will only match to a tuple of the same length, and will check the contents against `<patterns>`.
-- Lists (`[<patterns>]`): will only match to a list of the same length, and will check the contents against `<patterns>`.
-- Dicts (`{<pairs>}`): will only match a dict of the same length, and will check the contents against `<pairs>`.
+- Tuples (`(<patterns>)`): will only match to an immutable sequence (`collections.abc.Sequence` but not `collections.abc.MutableSequence`) of the same length, and will check the contents against `<patterns>`.
+- Lists (`[<patterns>]`): will only match to a mutable sequence (`collections.abc.MutableSequence`) of the same length, and will check the contents against `<patterns>`.
+- Dicts (`{<pairs>}`): will only match a mapping (`collections.abc.Mapping`) of the same length, and will check the contents against `<pairs>`.
 - Sets (`{<constants>}`): will only match a set of the same length and contents.
-- List/Tuple Splits (`<list/tuple> + <var>`): will match the beginning of the list/tuple against the `<list/tuple>`, then bind the rest to `<var>`.
+- List/Tuple Splits (`<list/tuple> + <var>`): will match the beginning of the [im]mutable sequence against the `<list/tuple>`, then bind the rest to `<var>`.
 - Iterator Splits (`<list/tuple> :: <var>`): will match the beginning of the iterator against the `<list/tuple>`, then bind the rest to `<var>`.
 
 ##### Example
