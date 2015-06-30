@@ -95,6 +95,7 @@ class __coconut__(object):
     dropwhile = itertools.dropwhile
     tee = itertools.tee
     import collections
+    import collections.abc
     data = staticmethod(collections.namedtuple)
     @staticmethod
     def iterable(obj):
@@ -646,7 +647,7 @@ class matcher(object):
                 match = original[0]
             else:
                 raise CoconutException("invalid dict match tokens: "+repr(original))
-            self.checks.append("isinstance("+item+", dict)")
+            self.checks.append("isinstance("+item+", __coconut__.collections.abc.Mapping)")
             self.checks.append("len("+item+") == "+str(len(match)))
             for x in range(0, len(match)):
                 k,v = match[x]
@@ -659,9 +660,10 @@ class matcher(object):
             else:
                 series_type, match, _, tail = original
             if series_type == "(":
-                self.checks.append("isinstance("+item+", tuple)")
+                self.checks.append("isinstance("+item+", __coconut__.collections.abc.Sequence)")
+                self.checks.append("not isinstance("+item+", __coconut__.collections.abc.MutableSequence)")
             elif series_type == "[":
-                self.checks.append("isinstance("+item+", list)")
+                self.checks.append("isinstance("+item+", __coconut__.collections.abc.MutableSequence)")
             else:
                 raise CoconutException("invalid series match type: "+repr(series_type))
             if tail is None:
@@ -714,11 +716,12 @@ class matcher(object):
             else:
                 raise CoconutException("invalid set match tokens: "+repr(original))
             if set_type == "s":
-                self.checks.append("isinstance("+item+", set)")
+                self.checks.append("isinstance("+item+", __coconut__.collections.abc.MutableSet)")
             elif set_type == "f":
-                self.checks.append("isinstance("+item+", frozenset)")
+                self.checks.append("isinstance("+item+", __coconut__.collections.abc.Set)")
+                self.checks.append("not isinstance("+item+", __coconut__.collections.abc.MutableSet)")
             elif not set_type:
-                self.checks.append("isinstance("+item+", (set, frozenset))")
+                self.checks.append("isinstance("+item+", __coconut__.collections.abc.Set)")
             else:
                 raise CoconutException("invalid set type: "+str(set_type))
             self.checks.append("len("+item+") == "+str(len(match)))
