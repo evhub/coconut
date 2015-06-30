@@ -925,14 +925,19 @@ class processor(object):
                     hold = None
                 elif c == hold[1][0]:
                     hold[2] = c
+                elif c in endline:
+                    raise CoconutSyntaxError("linebreak in non-multiline string", inputstring, x)
                 else:
                     hold[0] += c
             elif found is not None:
                 if c == found[0]:
                     found += c
                 elif len(found) == 1:
-                    hold = [c, found, None]
-                    found = None
+                    if c in endline:
+                        raise CoconutSyntaxError("linebreak in non-multiline string", inputstring, x)
+                    else:
+                        hold = [c, found, None]
+                        found = None
                 elif len(found) == 2:
                     out.append(self.wrap_str("", found[0], False))
                     found = None
