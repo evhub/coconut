@@ -273,7 +273,7 @@ match_check_var = "_coconut_match_check"
 match_iter_var = "_coconut_match_iter"
 wildcard = "_"
 const_vars = ["True", "False", "None"]
-reserved_vars = ["data", "match"]
+reserved_vars = ["data", "match", "case"]
 
 ParserElement.setDefaultWhitespaceChars(white)
 
@@ -775,17 +775,42 @@ def match_proc(tokens):
         matches, item, cond, stmts = tokens
     else:
         raise CoconutException("invalid top-level match tokens: "+repr(tokens))
-    tovar = match_to_var
-    checkvar = match_check_var
-    matching = matcher(checkvar)
-    matching.match(matches, tovar)
+    matching = matcher(match_check_var)
+    matching.match(matches, match_to_var)
     if cond:
         matching.increment(True)
         matching.add_check(cond)
-    out = checkvar + " = False" + linebreak
-    out += tovar + " = " + item + linebreak
+    out = match_check_var + " = False" + linebreak
+    out += match_to_var + " = " + item + linebreak
     out += matching.out()
-    out += "if "+checkvar+":" + linebreak + openstr + "".join(stmts) + closestr
+    out += "if "+match_check_var+":" + linebreak + openstr + "".join(stmts) + closestr
+    return out
+
+def case_to_match(tokens, item):
+    """Converts Case Tokens To Match Tokens."""
+    if len(tokens) == 2:
+        matches, stmts = tokens
+        return matches, item, stmts
+    elif len(tokens) == 3:
+        matches, cond, stmts = tokens
+        return matches, item, cond, stmts
+    else:
+        raise CoconutException("invalid case match tokens: "+repr(tokens))
+
+def case_proc(tokens):
+    """Processes Case Blocks."""
+    if len(tokens) == 2:
+        item, cases = tokens
+        default = None
+    elif len(tokens) == 3:
+        item, cases, default = tokens
+    else:
+        raise CoconutException("invalid top-level case tokens: "+repr(tokens))
+    out = match_proc(case_to_match(cases[0], item))
+    for case in cases[1:]:
+        out += "if not "+match_check_var+":" + linebreak + openstr + match_proc(case_to_match(case, item)) + closestr
+    if default is not None:
+        out += "if not "+match_check_var+default
     return out
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1549,13 +1574,24 @@ class processor(object):
     or_match = Group(matchlist_or("or")) | and_match
     match <<= trace(or_match, "match")
 
-    else_suite = suite | colon + trace(attach(simple_compound_stmt, else_proc), "else_suite")
+    else_suite = condense(suite | colon + trace(attach(simple_compound_stmt, else_proc), "else_suite"))
     else_stmt = condense(Keyword("else") + else_suite)
-    full_match = attach(
-        Keyword("match").suppress() + match + Keyword("in").suppress() + test + Optional(Keyword("if").suppress() + test) + colon.suppress()
-        + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
-        , match_proc)
+
+    match_suite = colon.suppress() + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
+    full_match = trace(attach(
+        Keyword("match").suppress() + match + Keyword("in").suppress() + test + Optional(Keyword("if").suppress() + test) + match_suite
+        , match_proc), "full_match")
     match_stmt = condense(full_match + Optional(else_stmt))
+
+    case_match = trace(Group(
+        Keyword("match").suppress() + match + Optional(Keyword("if").suppress() + test) + match_suite
+        ), "case_match")
+    case_stmt = attach(
+        Keyword("case").suppress() + test + colon.suppress() + newline.suppress()
+        + indent.suppress() + Group(OneOrMore(case_match))
+        + dedent.suppress() + Optional(Keyword("else").suppress() + else_suite)
+        , case_proc)
+
     assert_stmt = addspace(Keyword("assert") + testlist)
     if_stmt = condense(addspace(Keyword("if") + condense(test + suite))
                        + ZeroOrMore(addspace(Keyword("elif") + condense(test + suite)))
@@ -1583,7 +1619,7 @@ class processor(object):
 
     passthrough_stmt = condense(passthrough_block + Optional(nocolon_suite))
 
-    simple_compound_stmt <<= if_stmt | try_stmt | match_stmt | passthrough_stmt
+    simple_compound_stmt <<= if_stmt | try_stmt | case_stmt | match_stmt | passthrough_stmt
     compound_stmt = trace(simple_compound_stmt | with_stmt | while_stmt | for_stmt | funcdef | classdef | datadef | decorated, "compound_stmt")
 
     expr_stmt = trace(addspace(
