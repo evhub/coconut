@@ -280,26 +280,22 @@ def factorial(value):
 
 Match statements are also very useful when working with lists or tuples, as they allow them to be easily deconstructed. Here's an example:
 ```
-def classify_tuple(value):
-    match _ is tuple in value:
-        match () in value:
-            return "empty tuple"
-        match (_,) in value:
-            return "singleton tuple"
-        match (x,x) in value:
-            return "duplicate pair tuple of "+str(x)
-        match (_,_) in value:
-            return "pair tuple"
-        return "tuple"
-    else:
-        return "not a tuple"
+def classify_sequence(value):
+    match [] in value:
+        return "empty"
+    match [_] in value:
+        return "empty"
+    match [x,x] in value:
+        return "duplicate pair of "+str(x)
+    match [_,_]:
+        return "pair"
 
-() |> classify_tuple |> print
-(1) |> classify_tuple |> print
-(1,1) |> classify_tuple |> print
-(1,2) |> classify_tuple |> print
-(1,1,1) |> classify_tuple |> print
-[1,1] |> classify_tuple |> print
+() |> classify_sequence |> print
+(1) |> classify_sequence |> print
+(1,1) |> classify_sequence |> print
+(1,2) |> classify_sequence |> print
+(1,1,1) |> classify_sequence |> print
+[1,1] |> classify_sequence |> print
 ```
 There are a couple of new things here that deserve attention:
 
