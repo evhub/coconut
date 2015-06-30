@@ -652,15 +652,17 @@ class matcher(object):
                 series_type, match = original
             else:
                 series_type, match, _, tail = original
-            if series_type in ("(", "]"):
-                self.checks.append("isinstance("+item+", __coconut__.abc.Sequence)")
-            else:
-                raise CoconutException("invalid series match type: "+repr(series_type))
+            self.checks.append("isinstance("+item+", __coconut__.abc.Sequence)")
             if tail is None:
                 self.checks.append("len("+item+") == "+str(len(match)))
             else:
                 self.checks.append("len("+item+") >= "+str(len(match)))
-                self.defs.append(tail+" = "+item+"["+str(len(match))+":]")
+                if series_type == "(":
+                    self.defs.append(tail+" = tuple("+item+"["+str(len(match))+":])")
+                elif series_type == "[":
+                    self.defs.append(tail+" = list("+item+"["+str(len(match))+":])")
+                else:
+                    raise CoconutException("invalid series match type: "+repr(series_type))
             for x in range(0, len(match)):
                 self.match(match[x], item+"["+str(x)+"]")
         elif "series" in original and len(original) == 4 and original[2] == "::":

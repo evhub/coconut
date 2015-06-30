@@ -778,27 +778,27 @@ match <pattern> in <value> [if <cond>]:
 `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds. `<pattern>` follows its own, special syntax, defined roughly like so:
 ```
 pattern := (
-    "(" pattern ")"                     # parentheses
-    | "None" | "True" | "False"         # constants
-    | "=" NAME                          # check
-    | NUMBER                            # numbers
-    | STRING                            # strings
-    | NAME ["=" pattern]                # capture
-    | NAME "(" patterns ")"             # data types
-    | "(" patterns ")"                  # tuples
-    | "[" patterns "]"                  # lists
-    | "{" pattern_pairs "}"             # dictionaries
-    | ["s" | "f"] {" pattern_consts "}" # sets
-    | (                                 # head-tail splits
-        "(" patterns ")"                    # tuples
-        | "[" patterns "]"                  # lists
+    "(" pattern ")"                 # parentheses
+    | "None" | "True" | "False"     # constants
+    | "=" NAME                      # check
+    | NUMBER                        # numbers
+    | STRING                        # strings
+    | NAME ["=" pattern]            # capture
+    | NAME "(" patterns ")"         # data types
+    | "(" patterns ")"              # tuples
+    | "[" patterns "]"              # lists
+    | "{" pattern_pairs "}"         # dictionaries
+    | {" pattern_consts "}"         # sets
+    | (                             # head-tail splits
+        "(" patterns ")"                # tuples
+        | "[" patterns "]"              # lists
       ) (
-        "+"                                 # for a tuple/list
-        | "::"                              # for an iterator
+        "+"                             # for a tuple/list
+        | "::"                          # for an iterator
       ) pattern
-    | pattern "is" names                # type-checking
-    | pattern "and" pattern             # match all
-    | pattern "or" pattern              # match any
+    | pattern "is" names            # type-checking
+    | pattern "and" pattern         # match all
+    | pattern "or" pattern          # match any
     )
 ```
 
@@ -811,52 +811,25 @@ pattern := (
 - Checks (`=<var>`): will check that whatever is in that position is equal to the previously defined variable `<var>`.
 - Type Checks (`<var> is <types>`): will check that whatever is in that position is of type(s) `<types>` before binding the `<var>`.
 - Data Types (`<name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`.
-- Tuples (`(<patterns>)`): will only match to an immutable sequence (`collections.abc.Sequence` but not `collections.abc.MutableSequence`) of the same length, and will check the contents against `<patterns>`.
-- Lists (`[<patterns>]`): will only match to a mutable sequence (`collections.abc.MutableSequence`) of the same length, and will check the contents against `<patterns>`.
+- Lists (`[<patterns>]`) or Tuples (`(<patterns>)`): will only match a sequence (`collections.abc.Sequence`) of the same length, and will check the contents against `<patterns>`.
 - Dicts (`{<pairs>}`): will only match a mapping (`collections.abc.Mapping`) of the same length, and will check the contents against `<pairs>`.
-- Sets (`{<constants>}`): will only match a set of the same length and contents.
-- List/Tuple Splits (`<list/tuple> + <var>`): will match the beginning of the [im]mutable sequence against the `<list/tuple>`, then bind the rest to `<var>`.
-- Iterator Splits (`<list/tuple> :: <var>`): will match the beginning of the iterator against the `<list/tuple>`, then bind the rest to `<var>`.
+- Sets (`{<constants>}`): will only match a set (`collections.abc.Set`) of the same length and contents.
+- List/Tuple Splits (`<list/tuple> + <var>`): will match the beginning of the [im]mutable sequence against the `<list/tuple>`, then bind the rest to `<var>`, and call `list` or `tuple` on it, depending on which construct was used.
+- Iterator Splits (`<list/tuple> :: <var>`): will match the beginning of an iterable (`collections.abc.Iterable`) against the `<list/tuple>`, then bind the rest to `<var>`, and call `list` or `tuple` on it, depending on which construct was used.
 
 ##### Example
 
 Coconut:
 ```
-def classify(value):
-    match _ is tuple in value:
-        match () in value:
-            return "empty tuple"
-        match (_,) in value:
-            return "singleton tuple"
-        match (x,x) in value:
-            return "duplicate pair tuple of "+str(x)
-        match (_,_) in value:
-            return "pair tuple"
-        return "tuple"
-    match _ is list in value:
-        match [] in value:
-            return "empty list"
-        match [_] in value:
-            return "singleton list"
-        match [x,x] in value:
-            return "duplicate pair list of "+str(x)
-        match [_,_] in value:
-            return "pair list"
-        return "list"
-    match _ is dict in value:
-        match {} in value:
-            return "empty dict"
-        else:
-            return "dict"
-    match _ is (set, frozenset) in value:
-        match s{} in value:
-            return "empty set"
-        match f{} in value:
-            return "empty set"
-        match {0} in value:
-            return "set of 0"
-        return "set"
-    raise TypeError()
+def factorial(value):
+    match 0 in value:
+        return 1
+    match n is int in value if n > 0:
+        return n * factorial3(n-1)
+    match [] in value:
+        return []
+    match [head] + tail in value:
+        return [factorial(head)] + factorial(tail)
 ```
 
 Python:
