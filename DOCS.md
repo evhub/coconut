@@ -856,8 +856,8 @@ case <value>:
 Coconut:
 ```
 def classify_sequence(value):
-    out = ""
-    case value:
+    out = ""        # unlike with normal matches, only one of the patterns
+    case value:     #  will match, and out will only get appended to once
         match ():
             out += "empty"
         match (_,):
@@ -877,7 +877,7 @@ _Can't be done._
 
 ### Backslash Escaping
 
-To allow access to the valid Python variable names `data` and `match` in Coconut, those keywords may be backslash-escaped to turn them into the variables instead.
+To allow access to the valid Python variable names `data`, `match`, and `case` in Coconut, those keywords may be backslash-escaped to turn them into the variables instead.
 
 ##### Example
 

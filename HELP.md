@@ -290,12 +290,12 @@ def classify_sequence(value):
     match [_,_]:
         return "pair"
 
+[] |> classify_sequence |> print
 () |> classify_sequence |> print
-(1) |> classify_sequence |> print
+[1] |> classify_sequence |> print
 (1,1) |> classify_sequence |> print
 (1,2) |> classify_sequence |> print
 (1,1,1) |> classify_sequence |> print
-[1,1] |> classify_sequence |> print
 ```
 There are a couple of new things here that deserve attention:
 
