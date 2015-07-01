@@ -1421,7 +1421,8 @@ class processor(object):
         keyword_atom |= Keyword(const_vars[x])
     string_atom = addspace(OneOrMore(string))
     passthrough_atom = addspace(OneOrMore(passthrough))
-    set_letter = fixto(CaselessLiteral("s"), "s") | fixto(CaselessLiteral("f"), "f")
+    set_s = fixto(CaselessLiteral("s"), "s")
+    set_letter = set_s | fixto(CaselessLiteral("f"), "f")
     atom = (
         keyword_atom
         | ellipses
@@ -1550,7 +1551,7 @@ class processor(object):
         | (lparen.suppress() + match + rparen.suppress())("paren")
         | (lbrack + matchlist_list + rbrack.suppress() + Optional((plus | dubcolon) + name))("series")
         | (lbrace.suppress() + matchlist_dict + rbrace.suppress())("dict")
-        | (lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
+        | (Optional(set_s.suppress()) + lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
         | (name + equals.suppress() + match)("assign")
         | (name + lparen.suppress() + matchlist_list + rparen.suppress())("data")
         | name("var")

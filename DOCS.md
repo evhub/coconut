@@ -788,7 +788,7 @@ pattern := (
     | "(" patterns ")"              # tuples
     | "[" patterns "]"              # lists
     | "{" pattern_pairs "}"         # dictionaries
-    | {" pattern_consts "}"         # sets
+    | ["s"] "{" pattern_consts "}"  # sets
     | (                             # head-tail splits
         "(" patterns ")"                # tuples
         | "[" patterns "]"              # lists
