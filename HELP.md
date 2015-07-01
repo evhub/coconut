@@ -364,8 +364,7 @@ def factorial(value):
         match n is int if n > 0:
             return n * factorial(n-1)
     else:
-        return None
-    raise TypeError()
+        raise TypeError()
 ```
 Note the absence of an `in` in the `match` statements: that's because the `value` in `case value` is taking its place. Additionally, unlike lone match statements, only one match statement inside of a case block will ever succeed, so you should put more general matches below more specific ones.
 

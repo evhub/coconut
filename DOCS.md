@@ -855,7 +855,7 @@ case <value>:
 
 Coconut:
 ```
-def classify_tuple(value):
+def classify_sequence(value):
     out = ""
     case value:
         match ():
