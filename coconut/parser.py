@@ -838,6 +838,8 @@ class processor(object):
 
     def wrap_passthrough(self, text, multiline):
         """Wraps A Passthrough."""
+        if not multiline:
+            text = text.lstrip()
         fulltext = ""
         found = None
         for c in text:
@@ -853,10 +855,13 @@ class processor(object):
                 fulltext += c
         self.refs.append(fulltext)
         if multiline:
-            marker = "\\"
+            out = "\\"
         else:
-            marker = "\\\\"
-        return marker + str(len(self.refs)-1) + linebreak*(not multiline)
+            out = "\\\\"
+        out += str(len(self.refs)-1)
+        if not multiline:
+            out += linebreak
+        return out
 
     def wrap_comment(self, text):
         """Wraps A Comment."""
