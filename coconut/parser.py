@@ -455,7 +455,7 @@ def assign_proc(tokens):
         if op == "|>=":
             out += name+" = ("+item+")("+name+")"
         elif op == "..=":
-            out += name+" = lambda *args, **kwargs: ("+name+")(("+item+")(*args, **kwargs))"
+            out += name+" = (lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)))("+name+", "+item+")"
         elif op == "::=":
             out += name+" = __coconut__.chain("+name+", ("+item+"))"
         else:
