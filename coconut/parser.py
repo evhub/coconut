@@ -398,7 +398,7 @@ def item_proc(tokens):
                 else:
                     raise CoconutException("invalid iterator slice args: "+repr(trailer[1]))
             elif trailer[0] == "..":
-                out = "(lambda *args, **kwargs: ("+out+")(("+trailer[1]+")(*args, **kwargs)))
+                out = "(lambda *args, **kwargs: ("+out+")(("+trailer[1]+")(*args, **kwargs)))"
             else:
                 raise CoconutException("invalid special trailer: "+repr(trailer[0]))
         else:
