@@ -217,7 +217,7 @@ def N():
 
 N()$[10:15] |> list |> print
 ```
-_Note: Unlike Python's sequence slicing, Coconut's iterator slicing makes no guarantee that the original iterator be preserved._
+_Note: Unlike Python's sequence slicing, Coconut's iterator slicing makes no guarantee that the original iterator be preserved (to preserve the original iterator, use Coconut's `tee` function)._
 
 ### Chaining
 

@@ -146,7 +146,7 @@ def exp(x, b=2): return b**x
 
 Coconut uses Haskell-style operator function short-hand, where the operator placed within parentheses can be used as a function. The full list of operator functions is as follows:
 ```
-(|>)        => (__coconut__.pipe)
+(|>)        => (<lambda>)
 (..)        => (__coconut__.compose)
 (::)        => (__coconut__.chain)
 ($)         => (__coconut__.partial)
@@ -173,8 +173,8 @@ Coconut uses Haskell-style operator function short-hand, where the operator plac
 (!=)        => (__coconut__.operator.__ne__)
 (~)         => (__coconut__.operator.__inv__)
 (not)       => (__coconut__.operator.__not__)
-(and)       => (__coconut__.bool_and)
-(or)        => (__coconut__.bool_or)
+(and)       => (<lambda>)
+(or)        => (<lambda>)
 (is)        => (__coconut__.operator.is_)
 (in)        => (__coconut__.operator.__contains__)
 ```
@@ -420,7 +420,7 @@ pow2 = functools.partial(pow, 2)
 
 ### Iterator Slice
 
-Coconut uses a `$` sign right after an iterator before a slice to perform iterator slicing. It works just like sequence slicing, with the exception that no guarantee that the original iterator be preserved is made. It has the same precedence as subscription.
+Coconut uses a `$` sign right after an iterator before a slice to perform iterator slicing. It works just like sequence slicing, with the exception that no guarantee that the original iterator be preserved is made (to preserve the original iterator, use Coconut's `tee` function). It has the same precedence as subscription.
 
 ##### Python Docs
 

@@ -101,9 +101,9 @@ class __coconut__(object):
     except ImportError:
         abc = collections
     @staticmethod
-    def compose(f, g):
+    def compose(*args):
         """Composing (f..g)."""
-        return lambda *args, **kwargs: f(g(*args, **kwargs))
+        return reduce(lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)), args)
     @staticmethod
     def recursive(func):
         """Tail Call Optimizer."""
@@ -159,9 +159,9 @@ try:
 except ImportError:
     abc = collections
 
-def compose(f, g):
+def compose(*args):
     """Composing (f..g)."""
-    return lambda *args, **kwargs: f(g(*args, **kwargs))
+    rreturn reduce(lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)), args)
 
 def recursive(func):
     """Tail Call Optimizer."""
