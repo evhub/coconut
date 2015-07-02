@@ -101,24 +101,9 @@ class __coconut__(object):
     except ImportError:
         abc = collections
     @staticmethod
-    def bool_and(a, b):
-        """Boolean And Operator Function."""
-        return a and b
-    @staticmethod
-    def bool_or(a, b):
-        """Boolean Or Operator Function."""
-        return a or b
-    @staticmethod
     def compose(f, g):
         """Composing (f..g)."""
         return lambda *args, **kwargs: f(g(*args, **kwargs))
-    @staticmethod
-    def pipe(*args):
-        """Pipelining (x |> func)."""
-        out = args[0]
-        for func in args[1:]:
-            out = func(out)
-        return out
     @staticmethod
     def recursive(func):
         """Tail Call Optimizer."""
@@ -174,24 +159,9 @@ try:
 except ImportError:
     abc = collections
 
-def bool_and(a, b):
-    """Boolean And Operator Function."""
-    return a and b
-
-def bool_or(a, b):
-    """Boolean Or Operator Function."""
-    return a or b
-
 def compose(f, g):
     """Composing (f..g)."""
     return lambda *args, **kwargs: f(g(*args, **kwargs))
-
-def pipe(*args):
-    """Pipelining (x |> func)."""
-    out = args[0]
-    for func in args[1:]:
-        out = func(out)
-    return out
 
 def recursive(func):
     """Tail Call Optimizer."""
@@ -473,7 +443,8 @@ def pipe_proc(tokens):
     if len(tokens) == 1:
         return tokens[0]
     else:
-        return "__coconut__.pipe("+", ".join(tokens)+")"
+        func = tokens.pop()
+        return func+"("+pipe_proc(tokens)+")"
 
 def lambda_proc(tokens):
     """Processes Lambda Calls."""
@@ -490,7 +461,7 @@ def assign_proc(tokens):
         name, op, item = tokens
         out = ""
         if op == "|>=":
-            out += name+" = __coconut__.pipe("+name+", ("+item+"))"
+            out += name+" = ("+item+")("+name+")"
         elif op == "..=":
             out += name+" = __coconut__.compose("+name+", ("+item+"))"
         elif op == "::=":
@@ -880,6 +851,10 @@ class processor(object):
         out = []
         found = None
         hold = None
+        _comment = 0
+        _char = 0
+        _start = 1
+        _store = 2
         x = 0
         while x <= len(inputstring):
             if x == len(inputstring):
@@ -889,36 +864,36 @@ class processor(object):
             if hold is not None:
                 if len(hold) == 1:
                     if c in endline:
-                        out.append(self.wrap_comment(hold[0])+c)
+                        out.append(self.wrap_comment(hold[_comment])+c)
                         hold = None
                     else:
-                        hold[0] += c
-                elif hold[2] is not None:
+                        hold[_comment] += c
+                elif hold[_store] is not None:
                     if c == escape:
-                        hold[0] += hold[2]+c
-                        hold[2] = None
-                    elif c == hold[1][0]:
-                        hold[2] += c
-                    elif len(hold[2]) > len(hold[1]):
+                        hold[_char] += hold[_store]+c
+                        hold[_store] = None
+                    elif c == hold[_start][0]:
+                        hold[_store] += c
+                    elif len(hold[_store]) > len(hold[_start]):
                         raise CoconutSyntaxError("invalid number of string closes", inputstring, x)
-                    elif hold[2] == hold[1]:
-                        out.append(self.wrap_str(hold[0], hold[1][0], True))
+                    elif hold[_store] == hold[_start]:
+                        out.append(self.wrap_str(hold[_char], hold[_start][0], True))
                         hold = None
                         x -= 1
                     else:
-                        hold[0] += hold[2]+c
-                        hold[2] = None
-                elif hold[0].endswith(escape) and not hold[0].endswith(escape*2):
-                    hold[0] += c
-                elif c == hold[1]:
-                    out.append(self.wrap_str(hold[0], hold[1], False))
+                        hold[_char] += hold[_store]+c
+                        hold[_store] = None
+                elif hold[_char].endswith(escape) and not hold[_char].endswith(escape*2):
+                    hold[_char] += c
+                elif c == hold[_start]:
+                    out.append(self.wrap_str(hold[_char], hold[_start], False))
                     hold = None
-                elif c == hold[1][0]:
-                    hold[2] = c
-                elif len(hold[1]) == 1 and c in endline:
+                elif c == hold[_start][0]:
+                    hold[_store] = c
+                elif len(hold[_start]) == 1 and c in endline:
                     raise CoconutSyntaxError("linebreak in non-multiline string", inputstring, x)
                 else:
-                    hold[0] += c
+                    hold[_char] += c
             elif found is not None:
                 if c == found[0]:
                     found += c
@@ -1080,6 +1055,8 @@ class processor(object):
         out = []
         level = 0
         hold = None
+        _char = 0
+        _escape = 1
         for line in inputstring.splitlines():
             if hold is None and not line.startswith(startcomment):
                 while line.startswith(openstr) or line.startswith(closestr):
@@ -1092,10 +1069,10 @@ class processor(object):
             for c in line:
                 if hold:
                     if c == escape:
-                        hold[1] = not hold[1]
-                    elif hold[1]:
-                        hold[1] = False
-                    elif c == hold[0]:
+                        hold[_escape] = not hold[_escape]
+                    elif hold[_escape]:
+                        hold[_escape] = False
+                    elif c == hold[_char]:
                         hold = None
                 elif c in holds:
                     hold = [c, False]
@@ -1383,7 +1360,7 @@ class processor(object):
 
     op_atom = condense(
             lparen + (
-                fixto(pipeline, "__coconut__.pipe")
+                fixto(pipeline, "lambda *args: __coconut__.reduce(lambda x, f: f(x), args)")
                 | fixto(dotdot, "__coconut__.compose")
                 | fixto(dubcolon, "__coconut__.chain")
                 | fixto(dollar, "__coconut__.partial")
@@ -1409,8 +1386,8 @@ class processor(object):
                 | fixto(ne, "__coconut__.operator.__ne__")
                 | fixto(tilde, "__coconut__.operator.__inv__")
                 | fixto(Keyword("not"), "__coconut__.operator.__not__")
-                | fixto(Keyword("and"), "__coconut__.bool_and")
-                | fixto(Keyword("or"), "__coconut__.bool_or")
+                | fixto(Keyword("and"), "lambda a, b: a and b")
+                | fixto(Keyword("or"), "lambda a, b: a or b")
                 | fixto(Keyword("is"), "__coconut__.operator.is_")
                 | fixto(Keyword("in"), "__coconut__.operator.__contains__")
             ) + rparen
