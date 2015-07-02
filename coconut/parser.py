@@ -161,7 +161,7 @@ except ImportError:
 
 def compose(*args):
     """Composing (f..g)."""
-    rreturn reduce(lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)), args)
+    return reduce(lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)), args)
 
 def recursive(func):
     """Tail Call Optimizer."""
