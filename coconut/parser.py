@@ -101,10 +101,6 @@ class __coconut__(object):
     except ImportError:
         abc = collections
     @staticmethod
-    def compose(*args):
-        """Composing (f..g)."""
-        return reduce(lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)), args)
-    @staticmethod
     def recursive(func):
         """Tail Call Optimizer."""
         state = [True, None]
@@ -158,10 +154,6 @@ try:
     import collections.abc as abc
 except ImportError:
     abc = collections
-
-def compose(*args):
-    """Composing (f..g)."""
-    return reduce(lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)), args)
 
 def recursive(func):
     """Tail Call Optimizer."""
@@ -406,7 +398,7 @@ def item_proc(tokens):
                 else:
                     raise CoconutException("invalid iterator slice args: "+repr(trailer[1]))
             elif trailer[0] == "..":
-                out = "__coconut__.compose("+out+", "+trailer[1]+")"
+                out = "(lambda *args, **kwargs: ("+out+")(("+trailer[1]+")(*args, **kwargs)))
             else:
                 raise CoconutException("invalid special trailer: "+repr(trailer[0]))
         else:
@@ -463,7 +455,7 @@ def assign_proc(tokens):
         if op == "|>=":
             out += name+" = ("+item+")("+name+")"
         elif op == "..=":
-            out += name+" = __coconut__.compose("+name+", ("+item+"))"
+            out += name+" = lambda *args, **kwargs: ("+name+")(("+item+")(*args, **kwargs))"
         elif op == "::=":
             out += name+" = __coconut__.chain("+name+", ("+item+"))"
         else:
@@ -1361,7 +1353,7 @@ class processor(object):
     op_atom = condense(
             lparen + (
                 fixto(pipeline, "lambda *args: __coconut__.reduce(lambda x, f: f(x), args)")
-                | fixto(dotdot, "__coconut__.compose")
+                | fixto(dotdot, "lambda *args: reduce(lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)), args)")
                 | fixto(dubcolon, "__coconut__.chain")
                 | fixto(dollar, "__coconut__.partial")
                 | fixto(dot, "__coconut__.operator.attrgetter")

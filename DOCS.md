@@ -147,7 +147,7 @@ def exp(x, b=2): return b**x
 Coconut uses Haskell-style operator function short-hand, where the operator placed within parentheses can be used as a function. The full list of operator functions is as follows:
 ```
 (|>)        => (<lambda>)
-(..)        => (__coconut__.compose)
+(..)        => (<lambda>)
 (::)        => (__coconut__.chain)
 ($)         => (__coconut__.partial)
 [$]         => (__coconut__.islice)
