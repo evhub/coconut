@@ -250,7 +250,8 @@ class cli(object):
                 print()
                 self.exit()
             else:
-                self.execute(self.handle(code), False)
+                if code:
+                    self.execute(self.handle(code), False)
 
     def exit(self):
         """Exits The Interpreter."""
