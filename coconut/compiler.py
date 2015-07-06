@@ -289,6 +289,8 @@ class cli(object):
 
     def start_runner(self):
         """Starts The Runner."""
+        import sys
+        sys.path.append(os.getcwd())
         self.runner = executor({
             "_coconut_compiler": self,
             "_coconut_parser": self.processor,
