@@ -27,11 +27,17 @@ headers = {
 
 "none": '',
 
-"top":
+"initial":
 
 r'''#!/usr/bin/env python
 
 # Compiled with Coconut version '''+VERSION_STR+'''
+
+''',
+
+"top":
+
+r'''
 
 # Coconut Header: --------------------------------------------------------------
 ''',
@@ -775,6 +781,7 @@ class processor(object):
         """Creates A New Processor."""
         self.strict = strict
         self.string_ref <<= self.trace(attach(self.string_marker, self.string_repl), "string_ref")
+        self.moduledoc <<= attach(self.string_marker, self.set_docstring)
         self.comment <<= self.trace(attach(self.comment_marker, self.comment_repl), "comment")
         self.passthrough <<= self.trace(attach(self.passthrough_marker, self.passthrough_repl), "passthrough")
         self.passthrough_block <<= self.trace(attach(self.passthrough_block_marker, self.passthrough_repl), "passthrough_block")
@@ -793,6 +800,7 @@ class processor(object):
         self.match_check_index = 0
         self.match_to_index = 0
         self.match_iter_index = 0
+        self.docstring = ""
 
     def wrap_str(self, text, strchar, multiline):
         """Wraps A String."""
@@ -1103,7 +1111,7 @@ class processor(object):
 
     def header_proc(self, inputstring, header="file", **kwargs):
         """Adds The Header."""
-        return headers[header]+inputstring
+        return headers["initial"] + self.docstring + headers[header] + inputstring
 
     def post(self, tokens, **kwargs):
         """Performs Post-Processing."""
@@ -1140,6 +1148,11 @@ class processor(object):
                 raise CoconutException("string marker points to comment/passthrough")
         else:
             raise CoconutException("invalid string marker")
+
+    def set_docstring(self, tokens):
+        """Sets The Docstring."""
+        self.docstring = self.string_repl(tokens)
+        return ""
 
     def comment_repl(self, tokens):
         """Replaces Comment References."""
@@ -1270,6 +1283,7 @@ class processor(object):
               )
 
     string_ref = Forward()
+    moduledoc = Forward()
     comment = Forward()
     passthrough = Forward()
     passthrough_block = Forward()
@@ -1284,7 +1298,7 @@ class processor(object):
     string = Combine((bit_b + raw_r | raw_r + bit_b) + string_ref)
     lineitem = Combine(Optional(comment) + Literal(linebreak))
     newline = condense(OneOrMore(lineitem))
-    startmarker = StringStart()
+    startmarker = StringStart() + ZeroOrMore(lineitem) + Optional(moduledoc)
     endmarker = StringEnd()
     indent = Literal(openstr)
     dedent = Literal(closestr)
