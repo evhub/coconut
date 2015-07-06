@@ -242,7 +242,15 @@ class cli(object):
         self.console.print("[Interpreter:]")
         self.running = True
         while self.running:
-            self.execute(self.handle(input(self.prompt)), False)
+            try:
+                code = input(self.prompt)
+            except KeyboardInterrupt:
+                print("\nKeyboardInterrupt")
+            except EOFError:
+                print()
+                self.exit()
+            else:
+                self.execute(self.handle(code), False)
 
     def exit(self):
         """Exits The Interpreter."""
