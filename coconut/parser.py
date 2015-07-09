@@ -522,6 +522,15 @@ def set_proc(tokens):
     else:
         raise CoconutException("invalid set literal tokens: "+repr(tokens))
 
+def class_proc(tokens):
+    """Processes Class Inheritance Lists."""
+    if len(tokens) == 0:
+        return "(object)"
+    elif len(tokens) == 1:
+        return "("+tokens[0]+")"
+    else:
+        raise CoconutException("invalid class inheritance tokens: "+repr(tokens))
+
 class matcher(object):
     """Pattern-Matching Processor."""
     position = 0
@@ -1109,9 +1118,9 @@ class processor(object):
         out += linebreak
         return out
 
-    def header_proc(self, inputstring, header="file", **kwargs):
+    def header_proc(self, inputstring, header="file", initial="initial", **kwargs):
         """Adds The Header."""
-        return headers["initial"] + self.docstring + headers[header] + inputstring
+        return headers[initial] + self.docstring + headers[header] + inputstring
 
     def post(self, tokens, **kwargs):
         """Performs Post-Processing."""
@@ -1492,7 +1501,8 @@ class processor(object):
     nocolon_suite = Forward()
 
     argument = condense(name + equals + test) | addspace(name + Optional(comp_for))
-    classdef = condense(addspace(Keyword("class") + name) + Optional(condense(lparen + Optional(testlist) + rparen)) + suite)
+    classlist = attach(Optional(lparen.suppress() + Optional(testlist) + rparen.suppress()), class_proc)
+    classdef = condense(addspace(Keyword("class") + name) + classlist + suite)
     comp_iter = Forward()
     comp_for <<= addspace(Keyword("for") + exprlist + Keyword("in") + test_item + Optional(comp_iter))
     comp_if = addspace(Keyword("if") + test_nocond + Optional(comp_iter))
@@ -1624,7 +1634,7 @@ class processor(object):
 
     def parse_single(self, inputstring):
         """Parses Console Input."""
-        out = self.post(self.single_parser.parseString(self.pre(inputstring)), header="none")
+        out = self.post(self.single_parser.parseString(self.pre(inputstring)), header="none", initial="none")
         self.clean()
         return out
 
@@ -1642,18 +1652,18 @@ class processor(object):
 
     def parse_block(self, inputstring):
         """Parses Block Text."""
-        out = self.post(self.file_parser.parseString(self.pre(inputstring)), header="none")
+        out = self.post(self.file_parser.parseString(self.pre(inputstring)), header="none", initial="none")
         self.clean()
         return out
 
     def parse_eval(self, inputstring):
         """Parses Eval Input."""
-        out = self.post(self.eval_parser.parseString(self.pre(inputstring, strip=True)), header="none")
+        out = self.post(self.eval_parser.parseString(self.pre(inputstring, strip=True)), header="none", initial="none")
         self.clean()
         return out
 
     def parse_debug(self, inputstring):
         """Parses Debug Input."""
-        out = self.post(self.file_parser.parseString(self.pre(inputstring, strip=True)), header="none")
+        out = self.post(self.file_parser.parseString(self.pre(inputstring, strip=True)), header="none", initial="none")
         self.clean()
         return out
