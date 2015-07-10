@@ -379,6 +379,8 @@ def item_proc(tokens):
     for trailer in tokens:
         if isinstance(trailer, str):
             out += trailer
+        elif len(trailer) == 1:
+            raise CoconutSyntaxError("not enough arguments after:", trailer[0])
         elif len(trailer) == 2:
             if trailer[0] == "$(":
                 out = "__coconut__.partial("+out+", "+trailer[1]+")"
@@ -1442,7 +1444,7 @@ class processor(object):
     trailer = (Group(condense(dollar + lparen) + callargslist + rparen.suppress())
                | condense(lparen + callargslist + rparen)
                | Group(dotdot + func_atom)
-               | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())
+               | Group(condense(dollar + lbrack) + Optional(subscriptgroup) + rbrack.suppress())
                | simple_trailer
                )
 
