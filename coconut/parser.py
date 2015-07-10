@@ -380,7 +380,7 @@ def item_proc(tokens):
         if isinstance(trailer, str):
             out += trailer
         elif len(trailer) == 1:
-            raise CoconutSyntaxError("not enough arguments after:", trailer[0])
+            raise CoconutSyntaxError("not enough arguments", trailer[0])
         elif len(trailer) == 2:
             if trailer[0] == "$(":
                 out = "__coconut__.partial("+out+", "+trailer[1]+")"
