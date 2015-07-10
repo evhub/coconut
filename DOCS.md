@@ -6,6 +6,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [Usage](#usage)
     - [Positional Arguments](#positional-arguments)
     - [Optional Arguments](#optional-arguments)
+    - [Python Versions](#python-versions)
     - [Compiled Files](#compiled-files)
     - [IPython](#ipython)
 - [II. Syntax](#ii-syntax)
@@ -72,6 +73,10 @@ dest                  destination directory for compiled files (defaults to the 
 -c, --code            run a line of coconut passed in as a string (can also be accomplished with a pipe)
 --autopep8            use autopep8 to format compiled code (remaining args passed to autopep8)
 ```
+
+### Python Versions
+
+The primary target for Coconut is Python 3, but the compiler will run on Python 2 or 3, and, unless constructs are used that are only present in Python 3, will attempt to produce universal code that will run like it does in Python 3 in Python 2. The officially supported versions are `2.7`, `3.3`, and `3.4`.
 
 ### Compiled Files
 
