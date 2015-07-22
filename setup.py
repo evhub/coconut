@@ -20,15 +20,15 @@ import sys
 import os.path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from coconut.util import *
+from coconut.root import *
 import setuptools
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # MAIN:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-with openfile("README.rst", "r") as opened:
-    readme = readfile(opened)
+with open("README.rst", "r") as opened:
+    readme = opened.read()
 
 setuptools.setup(
     name="coconut",

@@ -20,7 +20,7 @@ import sys
 import os.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from coconut.util import *
+from coconut.root import *
 from coconut import compiler
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

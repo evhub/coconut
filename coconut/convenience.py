@@ -16,7 +16,7 @@ Description: Coconut Convenience Functions.
 
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
-from .util import *
+from .root import *
 from .parser import processor, CoconutException
 from .compiler import cli
 
