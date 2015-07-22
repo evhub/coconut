@@ -484,6 +484,8 @@ def data_proc(tokens):
     """Processes data blocks."""
     if len(tokens) == 2:
         return "class "+tokens[0]+"(__coconut__.data('"+tokens[0]+"', '"+tokens[1]+"'))"
+    elif len(tokens) == 1:
+        return "class "+tokens[0]+"(__coconut__.data('"+tokens[0]+"', ''))"
     else:
         raise CoconutException("invalid data tokens: "+repr(tokens))
 
@@ -1604,7 +1606,8 @@ class processor(object):
     base_funcdef = addspace(condense(name + parameters) + Optional(arrow + test))
     funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
 
-    datadef = condense(attach(Keyword("data").suppress() + name + lparen.suppress() + itemlist(~underscore + name, comma) + rparen.suppress(), data_proc) + suite)
+    data_args = Optional(lparen.suppress() + Optional(itemlist(~underscore + name, comma)) + rparen.suppress())
+    datadef = condense(attach(Keyword("data").suppress() + name + data_args, data_proc) + suite)
 
     decorators = attach(OneOrMore(at.suppress() + test + newline.suppress()), decorator_proc)
     decorated = condense(decorators + (classdef | funcdef | datadef))
