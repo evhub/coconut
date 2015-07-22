@@ -23,10 +23,10 @@ from .root import *
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 def load_ipython_extension(ipython):
-    """Loads Coconut As An IPython Extension."""
+    """Loads Coconut as an IPython extesion."""
     from .convenience import cmd, parse
     def magic(line, cell=None):
-        """Coconut IPython Magic."""
+        """Coconut IPython magic."""
         if cell is None:
             code = line
         else:

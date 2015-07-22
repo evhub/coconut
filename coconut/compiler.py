@@ -16,6 +16,7 @@ Description: The Coconut Compiler.
 
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
+from .root import *
 from . import parser
 import argparse
 import os
@@ -28,39 +29,39 @@ import traceback
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 def openfile(filename, opentype="r+b"):
-    """Returns An Open File Object."""
+    """Returns an open file object."""
     return codecs.open(filename, opentype, encoding=ENCODING)
 
 def writefile(openedfile, writer):
-    """Sets The Contents Of A File."""
+    """Sets the contents of a file."""
     openedfile.seek(0)
     openedfile.truncate()
     openedfile.write(writer)
 
 def readfile(openedfile):
-    """Reads The Contents Of A File."""
+    """Reads the contents of a file."""
     openedfile.seek(0)
     return str(openedfile.read())
 
 def fixpath(path):
-    """Properly Formats A Path."""
+    """Properly formats a path."""
     return os.path.normpath(os.path.realpath(path))
 
 def print_error():
-    """Processes An Error."""
+    """Processes an error."""
     err_type, err_value, err_trace = sys.exc_info()
     traceback.print_exception(err_type, err_value, err_trace)
 
 class executor(object):
-    """Compiled Python Executor."""
+    """Compiled Python executor."""
     def __init__(self, extras=None):
-        """Creates The Executor."""
+        """Creates the executor."""
         self.variables = {}
         if extras is not None:
             for k,v in extras.items():
                 self.variables[k] = v
     def run(_coconut_executor, _coconut_code, _coconut_error=False):
-        """Executes Python Code."""
+        """Executes Python code."""
         _coconut_globals = globals().copy()
         _coconut_locals = locals().copy()
         for __k, __v in _coconut_executor.variables.items():
@@ -91,7 +92,7 @@ class executor(object):
             globals()[__k] = __v
 
 class terminal(object):
-    """Wraps Base Terminal Commands To Create A Fake Console."""
+    """Manages printing and reading data to the console."""
     colors = {
         "end" : "\033[0m",
         "bold" : "\033[1m",
@@ -121,7 +122,7 @@ class terminal(object):
     on = True
 
     def __init__(self, main_color=None, debug_color=None, main_sig="", debug_sig=None):
-        """Creates The Terminal Wrapper."""
+        """Creates the terminal."""
         self.main_color = main_color
         self.debug_color = debug_color
         self.main_sig = main_sig
@@ -131,32 +132,32 @@ class terminal(object):
             self.debug_sig = debug_sig
 
     def addcolor(self, inputstring, color):
-        """Adds The Specified Colors To The String."""
+        """Adds the specified color to the string."""
         if color is not None:
             return self.colors[str(color)] + inputstring + self.colors["end"]
         else:
             return inputstring
 
     def delcolor(self, inputstring):
-        """Removes Recognized Colors From A String."""
+        """Removes recognized colors from a string."""
         inputstring = str(inputstring)
         for x in self.colors:
             inputstring = inputstring.replace(x, "")
         return inputstring
 
     def display(self, messages, color=None, sig=""):
-        """Prints Messages."""
+        """Prints messages."""
         message = " ".join(str(msg) for msg in messages)
         for line in message.splitlines():
             print(self.addcolor(sig+line, color))
 
     def print(self, *messages):
-        """Prints Messages With Main Color."""
+        """Prints messages with main color."""
         if self.on:
             self.display(messages, color=self.main_color, sig=self.main_sig)
 
     def debug(self, *messages):
-        """Prints Messages With Debug Color."""
+        """Prints messages with debug color."""
         self.display(messages, color=self.debug_color, sig=self.debug_sig)
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -164,7 +165,7 @@ class terminal(object):
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 class cli(object):
-    """The Coconut Command-Line Interface."""
+    """The Coconut command-line interface."""
     version = "Version "+VERSION_STR+" running on Python "+" ".join(sys.version.splitlines())
     code_ext = ".coc"
     comp_ext = ".py"
@@ -187,29 +188,29 @@ class cli(object):
     runner = None
 
     def __init__(self, main_color=None, debug_color=None, prompt=">>> ", moreprompt="    ", main_sig="Coconut: ", debug_sig=None):
-        """Creates The CLI."""
+        """Creates the CLI."""
         self.console = terminal(main_color, debug_color, main_sig, debug_sig)
         self.prompt = self.console.addcolor(prompt, main_color)
         self.moreprompt = self.console.addcolor(moreprompt, main_color)
 
     def start(self):
-        """Gets Command-Line Arguments."""
+        """Gets command-line arguments."""
         args = self.commandline.parse_args()
         self.cmd(args)
 
     def setup(self, strict=False):
-        """Creates The Processor."""
+        """Creates the processor."""
         self.processor = parser.processor(strict)
         self.processor.TRACER.show = self.console.debug
 
     def quiet(self, state=None):
-        """Quiets Output."""
+        """Quiets output."""
         if state is None:
             state = self.console.on
         self.console.on = not state
 
     def cmd(self, args, interact=True):
-        """Parses Command-Line Arguments."""
+        """Parses command-line arguments."""
         self.setup(args.strict)
         if args.debug:
             self.processor.debug(True)
@@ -246,7 +247,7 @@ class cli(object):
             self.start_prompt()
 
     def compile_path(self, path, write=True, run=False):
-        """Compiles A Path."""
+        """Compiles a path."""
         if os.path.isfile(path):
             if write is None:
                 module = None
@@ -259,7 +260,7 @@ class cli(object):
             raise parser.CoconutException("could not find source path "+repr(path))
 
     def compile_module(self, directory, write=True, run=False):
-        """Compiles A Module."""
+        """Compiles a module."""
         for dirpath, dirnames, filenames in os.walk(directory):
             writedir = write
             module = True
@@ -280,7 +281,7 @@ class cli(object):
                 self.create_module(tocreate)
 
     def compile_file(self, filepath, write=True, module=False, run=False):
-        """Compiles A File."""
+        """Compiles a file."""
         if write is None:
             destpath = None
         elif write is True:
@@ -295,7 +296,7 @@ class cli(object):
         self.compile(filepath, destpath, module, run)
 
     def compile(self, codepath, destpath=None, module=False, run=False):
-        """Compiles A Source Coconut File To A Destination Python File."""
+        """Compiles a source Coconut file to a destination Python file."""
         codepath = fixpath(codepath)
         self.console.print("Compiling "+repr(codepath)+"...")
         with openfile(codepath, "r") as opened:
@@ -322,12 +323,12 @@ class cli(object):
             self.console.print("Compiled "+repr(destpath)+".")
 
     def create_module(self, dirpath):
-        """Sets Up A Module Directory."""
+        """Sets up a module directory."""
         with openfile(os.path.join(dirpath, "__coconut__.py"), "w") as opened:
             writefile(opened, parser.headers["package"])
 
     def start_prompt(self):
-        """Starts The Interpreter."""
+        """Starts the interpreter."""
         self.check_runner()
         self.console.print("[Interpreter:]")
         self.running = True
@@ -344,11 +345,11 @@ class cli(object):
                     self.execute(self.handle(code), False)
 
     def exit(self):
-        """Exits The Interpreter."""
+        """Exits the interpreter."""
         self.running = False
 
     def handle(self, code):
-        """Compiles Coconut Interpreter Input."""
+        """Compiles Coconut interpreter input."""
         try:
             compiled = self.processor.parse_single(code)
         except (parser.ParseFatalException, parser.ParseException):
@@ -365,7 +366,7 @@ class cli(object):
         return compiled
 
     def execute(self, compiled=None, error=True):
-        """Executes Compiled Code."""
+        """Executes compiled code."""
         self.check_runner()
         if compiled is not None:
             if self.show:
@@ -373,12 +374,12 @@ class cli(object):
             self.runner.run(compiled, error)
 
     def check_runner(self):
-        """Makes Sure There Is A Runner."""
+        """Makes sure there is a runner."""
         if self.runner is None:
             self.start_runner()
 
     def start_runner(self):
-        """Starts The Runner."""
+        """Starts the runner."""
         import sys
         sys.path.append(os.getcwd())
         self.runner = executor({

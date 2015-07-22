@@ -27,13 +27,13 @@ from .compiler import cli
 COMPILER = cli()
 
 def cmd(args, interact=False):
-    """Processes Command-Line Arguments."""
+    """Processes command-line arguments."""
     if isinstance(args, (str, bytes)):
         args = args.split()
     return COMPILER.cmd(COMPILER.commandline.parse_args(args), interact)
 
 def version(which="num"):
-    """Gets The Coconut Version."""
+    """Gets the Coconut version."""
     if which == "num":
         return VERSION
     elif which == "name":
@@ -56,7 +56,7 @@ def get_PARSER():
     return COMPILER.processor
 
 def parse(code, mode="file"):
-    """Parses Coconut Code."""
+    """Parses Coconut code."""
     PARSER = get_PARSER()
     if mode == "single":
         return PARSER.parse_single(code)

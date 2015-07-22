@@ -28,7 +28,7 @@ from coconut import compiler
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 def main():
-    """The Main Coconut Entry Point."""
+    """The main Coconut entry point."""
     from os import name
     if name == "nt":
         cmd = compiler.cli()

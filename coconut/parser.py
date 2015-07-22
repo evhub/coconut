@@ -244,12 +244,12 @@ ParserElement.setDefaultWhitespaceChars(white)
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 class CoconutException(ParseFatalException):
-    """Base Coconut Exception."""
+    """Base Coconut exception."""
     def __init__(self, value):
-        """Creates The Coconut Exception."""
+        """creates the Coconut exception."""
         self.value = value
     def __repr__(self):
-        """Displays The Coconut Exception."""
+        """Displays the Coconut exception."""
         return self.value
     def __str__(self):
         """Wraps repr."""
@@ -258,7 +258,7 @@ class CoconutException(ParseFatalException):
 class CoconutSyntaxError(CoconutException):
     """Coconut SyntaxError."""
     def __init__(self, message, source, point=None):
-        """Creates The Coconut SyntaxError."""
+        """Creates the Coconut SyntaxError."""
         self.value = message
         if point is None:
             self.value += linebreak + "  " + source
@@ -275,51 +275,52 @@ class CoconutSyntaxError(CoconutException):
             self.value += "^"
 
 class CoconutStyleError(CoconutSyntaxError):
-    """Coconut --strict Error."""
+    """Coconut --strict error."""
     def __init__(self, message, source, point=None):
+        """Creates the --strict Coconut error."""
         message += " (disable --strict to dismiss)"
         CoconutSyntaxError.__init__(self, message, source, point)
 
 def attach(item, action):
-    """Attaches A Parse Action To An Item."""
+    """Attaches a parse action to an item."""
     return item.copy().addParseAction(action)
 
 def fixto(item, output):
-    """Forces An Item To Result In A Specific Output."""
+    """Forces an item to result in a specific output."""
     return attach(item, replaceWith(output))
 
 def addspace(item):
-    """Condenses And Adds Space To The Tokenized Output."""
+    """Condenses and adds space to the tokenized output."""
     def callback(tokens):
-        """Callback Function Constructed By addspace."""
+        """Callback function constructed by addspace."""
         return " ".join(tokens)
     return attach(item, callback)
 
 def condense(item):
-    """Condenses The Tokenized Output."""
+    """Condenses the tokenized output."""
     def callback(tokens):
-        """Callback Function Constructed By condense."""
+        """Callback function constructed by condense."""
         return "".join(tokens)
     return attach(item, callback)
 
 def parenwrap(lparen, item, rparen):
-    """Wraps An Item In Optional Parentheses."""
+    """Wraps an item in optional parentheses."""
     return condense(lparen.suppress() + item + rparen.suppress() ^ item)
 
 class tracer(object):
-    """Debug Tracer."""
+    """Debug tracer."""
     show = print
 
     def __init__(self, on=False):
-        """Creates The Tracer."""
+        """Creates the tracer."""
         self.debug(on)
 
     def debug(self, on=True):
-        """Changes The Tracer's State."""
+        """Changes the tracer's state."""
         self.on = on
 
     def trace(self, original, location, tokens, message=None):
-        """Tracer Parse Action."""
+        """Tracer parse action."""
         if self.on:
             original = str(original)
             location = int(location)
@@ -335,12 +336,12 @@ class tracer(object):
         return tokens
 
     def bind(self, item, message=None):
-        """Traces A Parse Element."""
+        """Traces a parse element."""
         if message is None:
             callback = self.trace
         else:
             def callback(original, location, tokens):
-                """Callback Function Constructed By tracer."""
+                """Callback function constructed by tracer."""
                 return self.trace(original, location, tokens, message)
         bound = attach(item, callback)
         if message is not None:
@@ -352,7 +353,7 @@ class tracer(object):
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 def anyint_proc(tokens):
-    """Replaces Underscored Integers."""
+    """Replaces underscored integers."""
     if len(tokens) == 1:
         item, base = tokens[0].split("_")
         return 'int("'+item+'", '+base+")"
@@ -360,7 +361,7 @@ def anyint_proc(tokens):
         raise CoconutException("invalid anyint tokens: "+repr(toknes))
 
 def list_proc(tokens):
-    """Properly Formats Lists."""
+    """Properly formats lists."""
     out = []
     for x in range(0, len(tokens)):
         if x%2 == 0:
@@ -370,11 +371,11 @@ def list_proc(tokens):
     return " ".join(out)
 
 def itemlist(item, sep):
-    """Creates A List Containing An Item."""
+    """Creates a list containing an item."""
     return attach(item + ZeroOrMore(sep + item) + Optional(sep), list_proc)
 
 def item_proc(tokens):
-    """Processes Items."""
+    """Processes items."""
     out = tokens.pop(0)
     for trailer in tokens:
         if isinstance(trailer, str):
@@ -414,14 +415,14 @@ def item_proc(tokens):
     return out
 
 def chain_proc(tokens):
-    """Processes Chain Calls."""
+    """Processes chain calls."""
     if len(tokens) == 1:
         return tokens[0]
     else:
         return "__coconut__.chain("+", ".join(tokens)+")"
 
 def infix_proc(tokens):
-    """Processes Infix Calls."""
+    """Processes infix calls."""
     if len(tokens) < 3:
         raise CoconutException("invalid infix tokens: "+repr(tokens))
     else:
@@ -439,7 +440,7 @@ def infix_proc(tokens):
         return "(" + tokens[1] + ")(" + ", ".join(args) + ")"
 
 def pipe_proc(tokens):
-    """Processes Pipe Calls."""
+    """Processes pipe calls."""
     if len(tokens) == 1:
         return tokens[0]
     else:
@@ -447,7 +448,7 @@ def pipe_proc(tokens):
         return func+"("+pipe_proc(tokens)+")"
 
 def lambda_proc(tokens):
-    """Processes Lambda Calls."""
+    """Processes lambda calls."""
     if len(tokens) == 1:
         return "lambda: "+tokens[0]
     elif len(tokens) == 2:
@@ -456,7 +457,7 @@ def lambda_proc(tokens):
         raise CoconutException("invalid lambda tokens: "+repr(tokens))
 
 def assign_proc(tokens):
-    """Processes Assignments."""
+    """Processes assignments."""
     if len(tokens) == 3:
         name, op, item = tokens
         out = ""
@@ -473,21 +474,21 @@ def assign_proc(tokens):
         raise CoconutException("invalid assignment tokens: "+repr(tokens))
 
 def func_proc(tokens):
-    """Processes Mathematical Function Definitons."""
+    """Processes mathematical function definitons."""
     if len(tokens) == 2:
         return "def "+tokens[0]+": return "+tokens[1]
     else:
         raise CoconutException("invalid mathematical function definition tokens: "+repr(tokens))
 
 def data_proc(tokens):
-    """Processes Data Blocks."""
+    """Processes data blocks."""
     if len(tokens) == 2:
         return "class "+tokens[0]+"(__coconut__.data('"+tokens[0]+"', '"+tokens[1]+"'))"
     else:
         raise CoconutException("invalid data tokens: "+repr(tokens))
 
 def decorator_proc(tokens):
-    """Processes Decorators."""
+    """Processes decorators."""
     defs = []
     decorates = []
     for x in range(0, len(tokens)):
@@ -497,14 +498,14 @@ def decorator_proc(tokens):
     return linebreak.join(defs + decorates) + linebreak
 
 def else_proc(tokens):
-    """Processes Compound Else Statements."""
+    """Processes compound else statements."""
     if len(tokens) == 1:
         return linebreak + openstr + tokens[0] + closestr
     else:
         raise CoconutException("invalid compound else statement tokens: "+repr(tokens))
 
 def set_proc(tokens):
-    """Processes Set Literals."""
+    """Processes set literals."""
     if len(tokens) == 1:
         set_type = tokens[0]
         if set_type == "s":
@@ -525,7 +526,7 @@ def set_proc(tokens):
         raise CoconutException("invalid set literal tokens: "+repr(tokens))
 
 def class_proc(tokens):
-    """Processes Class Inheritance Lists."""
+    """Processes class inheritance lists."""
     if len(tokens) == 0:
         return "(object)"
     elif len(tokens) == 1:
@@ -534,12 +535,12 @@ def class_proc(tokens):
         raise CoconutException("invalid class inheritance tokens: "+repr(tokens))
 
 class matcher(object):
-    """Pattern-Matching Processor."""
+    """Pattern-matching processor."""
     position = 0
     iter_index = 0
 
     def __init__(self, checkvar, checkdefs=None, names=None):
-        """Creates The Matcher."""
+        """Creates the matcher."""
         self.checkvar = checkvar
         self.checkdefs = []
         if checkdefs is None:
@@ -556,41 +557,41 @@ class matcher(object):
         self.others = []
 
     def duplicate(self):
-        """Duplicates The Matcher To others."""
+        """Duplicates the matcher to others."""
         self.others.append(matcher(self.checkvar, self.checkdefs, self.names))
         self.others[-1].set_checks(0, ["not "+self.checkvar] + self.others[-1].get_checks(0))
         return self.others[-1]
 
     def get_checks(self, position):
-        """Gets The Checks At The Position."""
+        """Gets the checks at the position."""
         return self.checkdefs[position][0]
 
     def set_checks(self, position, checks):
-        """Sets The Checks At The Position."""
+        """Sets the checks at the position."""
         self.checkdefs[position][0] = checks
 
     def set_defs(self, position, defs):
-        """Sets The Defs At The Position."""
+        """Sets the defs at the position."""
         self.checkdefs[position][1] = defs
 
     def get_defs(self, position):
-        """Gets The Defs At The Position."""
+        """Gets the defs at the position."""
         return self.checkdefs[position][1]
 
     def add_check(self, check_item):
-        """Adds A Check Universally."""
+        """Adds a check universally."""
         self.checks.append(check_item)
         for other in self.others:
             other.add_check(check_item)
 
     def add_def(self, def_item):
-        """Adds A Def Universally."""
+        """Adds a def universally."""
         self.defs.append(def_item)
         for other in self.others:
             other.add_def(def_item)
 
     def set_position(self, position):
-        """Sets The If-Statement Position."""
+        """Sets the if-statement position."""
         if position < 0:
             raise CoconutException("invalid match index: "+str(position))
         while position >= len(self.checkdefs):
@@ -600,21 +601,21 @@ class matcher(object):
         self.position = position
 
     def increment(self, forall=False):
-        """Advances The If-Statement Position."""
+        """Advances the if-statement position."""
         self.set_position(self.position+1)
         if forall:
             for other in self.others:
                 other.increment(True)
 
     def decrement(self, forall=False):
-        """Decrements The If-Statement Position."""
+        """Decrements the if-statement position."""
         self.set_position(self.position-1)
         if forall:
             for other in self.others:
                 other.decrement(True)
 
     def match(self, original, item):
-        """Performs Pattern-Matching Processing."""
+        """Performs pattern-matching processing."""
         if "dict" in original:
             if len(original) == 1:
                 match = original[0]
@@ -732,7 +733,7 @@ class matcher(object):
         return out
 
 def match_proc(tokens):
-    """Processes Match Blocks."""
+    """Processes match blocks."""
     if len(tokens) == 3:
         matches, item, stmts = tokens
         cond = None
@@ -752,7 +753,7 @@ def match_proc(tokens):
     return out
 
 def case_to_match(tokens, item):
-    """Converts Case Tokens To Match Tokens."""
+    """Converts case tokens to match tokens."""
     if len(tokens) == 2:
         matches, stmts = tokens
         return matches, item, stmts
@@ -763,7 +764,7 @@ def case_to_match(tokens, item):
         raise CoconutException("invalid case match tokens: "+repr(tokens))
 
 def case_proc(tokens):
-    """Processes Case Blocks."""
+    """Processes case blocks."""
     if len(tokens) == 2:
         item, cases = tokens
         default = None
@@ -783,13 +784,13 @@ def case_proc(tokens):
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 class processor(object):
-    """The Coconut Processor."""
+    """The Coconut processor."""
     TRACER = tracer()
     trace = TRACER.bind
     debug = TRACER.debug
 
     def __init__(self, strict=False):
-        """Creates A New Processor."""
+        """Creates a new processor."""
         self.strict = strict
         self.string_ref <<= self.trace(attach(self.string_marker, self.string_repl), "string_ref")
         self.moduledoc <<= attach(self.string_marker, self.set_docstring)
@@ -800,12 +801,12 @@ class processor(object):
         self.clean()
 
     def setup(self):
-        """Initializes The Processor."""
+        """Initializes the processor."""
         self.preprocs = [self.prepare, self.str_proc, self.passthrough_proc, self.ind_proc]
         self.postprocs = [self.reind_proc, self.header_proc]
 
     def clean(self):
-        """Resets References."""
+        """Resets references."""
         self.indchar = None
         self.refs = []
         self.match_check_index = 0
@@ -814,12 +815,12 @@ class processor(object):
         self.docstring = ""
 
     def wrap_str(self, text, strchar, multiline):
-        """Wraps A String."""
+        """Wraps a string."""
         self.refs.append((text, strchar, multiline))
         return '"'+str(len(self.refs)-1)+'"'
 
     def wrap_passthrough(self, text, multiline):
-        """Wraps A Passthrough."""
+        """Wraps a passthrough."""
         if not multiline:
             text = text.lstrip()
         fulltext = ""
@@ -846,19 +847,19 @@ class processor(object):
         return out
 
     def wrap_comment(self, text):
-        """Wraps A Comment."""
+        """Wraps a comment."""
         self.refs.append(text)
         return "#"+str(len(self.refs)-1)
 
     def prepare(self, inputstring, strip=False, **kwargs):
-        """Prepares A String For Processing."""
+        """Prepares a string for processing."""
         if strip:
             return inputstring.strip()
         else:
             return inputstring
 
     def str_proc(self, inputstring, **kwargs):
-        """Processes Strings."""
+        """Processes strings."""
         out = []
         found = None
         hold = None
@@ -936,7 +937,7 @@ class processor(object):
             return "".join(out)
 
     def passthrough_proc(self, inputstring, **kwargs):
-        """Processes Python Passthroughs."""
+        """Processes python passthroughs."""
         out = []
         found = None
         hold = None
@@ -978,7 +979,7 @@ class processor(object):
             return "".join(out)
 
     def leading(self, inputstring):
-        """Counts Leading Whitespace."""
+        """Counts leading whitespace."""
         count = 0
         for x in range(0, len(inputstring)):
             if inputstring[x] == " ":
@@ -996,7 +997,7 @@ class processor(object):
         return count
 
     def change(self, inputstring):
-        """Determines The Parenthetical Change Of Level."""
+        """Determines the parenthetical change of level."""
         count = 0
         for c in inputstring:
             if c in downs:
@@ -1006,7 +1007,7 @@ class processor(object):
         return count
 
     def ind_proc(self, inputstring, **kwargs):
-        """Processes Indentation."""
+        """Processes indentation."""
         lines = inputstring.splitlines()
         new = []
         levels = []
@@ -1062,7 +1063,7 @@ class processor(object):
         return linebreak.join(new)
 
     def reindent(self, inputstring):
-        """Reconverts Indent Tokens Into Indentation."""
+        """Reconverts indent tokens into indentation."""
         out = []
         level = 0
         hold = None
@@ -1093,16 +1094,16 @@ class processor(object):
         return linebreak.join(out)
 
     def indebug(self):
-        """Checks Whether Debug Mode Is Active."""
+        """Checks whether debug mode is active."""
         return self.TRACER.on
 
     def todebug(self, tag, code):
-        """If Debugging, Prints A Debug Message."""
+        """If debugging, prints a debug message."""
         if self.indebug():
             self.TRACER.show("["+str(tag)+"] "+repr(code))
 
     def pre(self, inputstring, **kwargs):
-        """Performs Pre-Processing."""
+        """Performs pre-processing."""
         out = str(inputstring)
         for proc in self.preprocs:
             out = proc(out, **kwargs)
@@ -1110,7 +1111,7 @@ class processor(object):
         return out
 
     def reind_proc(self, inputstring, strip=True, **kwargs):
-        """Reformats Indentation."""
+        """Reformats indentation."""
         out = inputstring
         if strip:
             out = out.strip()
@@ -1121,11 +1122,11 @@ class processor(object):
         return out
 
     def header_proc(self, inputstring, header="file", initial="initial", **kwargs):
-        """Adds The Header."""
+        """Adds the header."""
         return headers[initial] + self.docstring + headers[header] + inputstring
 
     def post(self, tokens, **kwargs):
-        """Performs Post-Processing."""
+        """Performs post-processing."""
         if len(tokens) == 1:
             out = tokens[0]
             for proc in self.postprocs:
@@ -1136,16 +1137,16 @@ class processor(object):
             raise CoconutException("multiple tokens leftover: "+repr(tokens))
 
     def autopep8(self, arglist=[]):
-        """Enables autopep8 Integration."""
+        """Enables autopep8 integration."""
         import autopep8
         args = autopep8.parse_args([""]+arglist)
         def pep8_fixer(code, **kwargs):
-            """Automatic PEP8 Fixer."""
+            """Automatic PEP8 fixer."""
             return autopep8.fix_code(code, options=args)
         self.postprocs.append(pep8_fixer)
 
     def string_repl(self, tokens):
-        """Replaces String References."""
+        """Replaces string references."""
         if len(tokens) == 1:
             ref = self.refs[int(tokens[0])]
             if isinstance(ref, tuple):
@@ -1161,12 +1162,12 @@ class processor(object):
             raise CoconutException("invalid string marker")
 
     def set_docstring(self, tokens):
-        """Sets The Docstring."""
+        """Sets the docstring."""
         self.docstring = self.string_repl(tokens)
         return ""
 
     def comment_repl(self, tokens):
-        """Replaces Comment References."""
+        """Replaces comment references."""
         if len(tokens) == 1:
             ref = self.refs[int(tokens[0])]
             if isinstance(ref, tuple):
@@ -1177,7 +1178,7 @@ class processor(object):
             raise CoconutException("invalid comment marker")
 
     def passthrough_repl(self, tokens):
-        """Replaces Passthrough References."""
+        """Replaces passthrough references."""
         if len(tokens) == 1:
             ref = self.refs[int(tokens[0])]
             if isinstance(ref, tuple):
@@ -1635,37 +1636,37 @@ class processor(object):
     eval_parser = condense(startmarker + eval_input + endmarker)
 
     def parse_single(self, inputstring):
-        """Parses Console Input."""
+        """Parses console input."""
         out = self.post(self.single_parser.parseString(self.pre(inputstring)), header="none", initial="none")
         self.clean()
         return out
 
     def parse_file(self, inputstring):
-        """Parses File Input."""
+        """Parses file input."""
         out = self.post(self.file_parser.parseString(self.pre(inputstring)), header="file")
         self.clean()
         return out
 
     def parse_module(self, inputstring):
-        """Parses Module Input."""
+        """Parses module input."""
         out = self.post(self.file_parser.parseString(self.pre(inputstring)), header="module")
         self.clean()
         return out
 
     def parse_block(self, inputstring):
-        """Parses Block Text."""
+        """Parses block text."""
         out = self.post(self.file_parser.parseString(self.pre(inputstring)), header="none", initial="none")
         self.clean()
         return out
 
     def parse_eval(self, inputstring):
-        """Parses Eval Input."""
+        """Parses eval input."""
         out = self.post(self.eval_parser.parseString(self.pre(inputstring, strip=True)), header="none", initial="none")
         self.clean()
         return out
 
     def parse_debug(self, inputstring):
-        """Parses Debug Input."""
+        """Parses debug input."""
         out = self.post(self.file_parser.parseString(self.pre(inputstring, strip=True)), header="none", initial="none")
         self.clean()
         return out
