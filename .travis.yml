@@ -23,3 +23,5 @@ script:
 
 notifications:
   email: false
+
+sudo: false
