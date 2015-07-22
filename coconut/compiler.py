@@ -18,11 +18,12 @@ from __future__ import with_statement, print_function, absolute_import, unicode_
 
 from .root import *
 from . import parser
-import argparse
+import codecs
 import os
 import os.path
 import sys
 import traceback
+import argparse
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
