@@ -235,7 +235,7 @@ match_check_var = "_coconut_match_check"
 match_iter_var = "_coconut_match_iter"
 wildcard = "_"
 const_vars = ["True", "False", "None"]
-reserved_vars = ["data", "match", "case"]
+reserved_vars = ["data", "match", "case", "async", "await"]
 
 ParserElement.setDefaultWhitespaceChars(white)
 
