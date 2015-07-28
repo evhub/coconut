@@ -77,7 +77,7 @@ dest                  destination directory for compiled files (defaults to the 
 
 ### Python Versions
 
-The primary target for Coconut is Python 3, but the compiler will run on Python 2 or 3, and, unless constructs are used that are only present in Python 3, will attempt to produce universal code that will run like it does in Python 3 in Python 2. The officially supported versions are `2.7`, `3.3`, and `3.4`.
+The primary target for Coconut is Python 3, but the compiler will run on Python 2 or 3, and, unless constructs are used that are only present in Python 3, will attempt to produce universal code that will run like it does in Python 3 in Python 2. The officially supported versions are `2.7`, `3.3`, `3.4`, and `3.5`.
 
 ### Compiled Files
 
@@ -92,6 +92,8 @@ If the `--strict` or `-s` flag is enabled, Coconut will throw errors on various 
 - Use of the Python-style `lambda` statement
 - Use of backslash continuations
 - Trailing whitespace
+
+It is recommended that you use the `--strict` flag if you are starting a new Coconut project.
 
 ### IPython
 
@@ -892,7 +894,7 @@ _Can't be done._
 
 ### Backslash Escaping
 
-To allow access to the valid Python variable names `data`, `match`, and `case` in Coconut, those keywords may be backslash-escaped to turn them into the variables instead.
+To allow access to the valid Python variable names `data`, `match`, and `case` in Coconut, those keywords may be backslash-escaped to turn them into the variables instead. Additionally, to provide more seamless integration with Python 3.5, the variable names `async` and `await` must also be backslash-escaped.
 
 ##### Example
 
