@@ -145,22 +145,18 @@ class terminal(object):
             print(self.addcolor(sig+line, color))
 
     def show(self, *messages):
-        """Prints messages without a signature."""
+        """Prints messages with main color without a signature."""
         if self.on:
             self.display(messages, color=self.main_color)
 
-    def print(self, *messages, sig=None):
+    def print(self, *messages):
         """Prints messages with main color."""
         if self.on:
-            if sig is None:
-                sig = self.main_sig
-            self.display(messages, color=self.main_color, sig=sig)
+            self.display(messages, self.main_color, self.main_sig)
 
-    def debug(self, *messages, sig=None):
+    def debug(self, *messages):
         """Prints messages with debug color."""
-        if sig is None:
-            sig = self.debug_sig
-        self.display(messages, color=self.debug_color, sig=sig)
+        self.display(messages, self.debug_color, self.debug_sig)
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # MAIN:
@@ -332,7 +328,7 @@ class cli(object):
     def start_prompt(self):
         """Starts the interpreter."""
         self.check_runner()
-        self.console.print("\n", sig="Coconut Interpreter:")
+        self.console.show("Coconut Interpreter:")
         self.console.show('(type "exit()" or press Ctrl-D to end)')
         self.running = True
         while self.running:
