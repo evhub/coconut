@@ -1504,16 +1504,17 @@ class processor(object):
     or_test = addspace(and_test + ZeroOrMore(Keyword("or") + and_test))
     test_item = or_test
     test_nocond = Forward()
-    lambdef_params = lparen.suppress() + varargslist + rparen.suppress()
+    classic_lambdef_params = parenwrap(lparen, varargslist, rparen)
+    new_lambdef_params = lparen.suppress() + varargslist + rparen.suppress()
 
     classic_lambdef_ref = Forward()
-    classic_lambdef = addspace(Keyword("lambda") + condense(lambdef_params + colon) + test)
-    new_lambdef = attach(lambdef_params + arrow.suppress() + test, lambda_proc)
+    classic_lambdef = addspace(Keyword("lambda") + condense(classic_lambdef_params + colon) + test)
+    new_lambdef = attach(new_lambdef_params + arrow.suppress() + test, lambda_proc)
     lambdef = trace(classic_lambdef_ref | new_lambdef, "lambdef")
 
     classic_lambdef_nocond_ref = Forward()
-    classic_lambdef_nocond = addspace(Keyword("lambda") + condense(lambdef_params + colon) + test_nocond)
-    new_lambdef_nocond = attach(lambdef_params + arrow.suppress() + test_nocond, lambda_proc)
+    classic_lambdef_nocond = addspace(Keyword("lambda") + condense(classic_lambdef_params + colon) + test_nocond)
+    new_lambdef_nocond = attach(new_lambdef_params + arrow.suppress() + test_nocond, lambda_proc)
     lambdef_nocond = trace(classic_lambdef_nocond_ref | new_lambdef_nocond, "lambdef_nocond")
 
     test <<= lambdef | trace(addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test)), "test")
