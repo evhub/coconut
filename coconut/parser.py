@@ -795,7 +795,7 @@ class processor(object):
         """Creates a new processor."""
         self.strict = strict
         self.string_ref <<= self.trace(attach(self.string_marker, self.string_repl), "string_ref")
-        self.moduledoc <<= attach(self.string_marker, self.set_docstring)
+        self.moduledoc <<= self.trace(attach(self.string_marker + self.newline, self.set_docstring), "moduledoc")
         self.comment <<= self.trace(attach(self.comment_marker, self.comment_repl), "comment")
         self.passthrough <<= self.trace(attach(self.passthrough_marker, self.passthrough_repl), "passthrough")
         self.passthrough_block <<= self.trace(attach(self.passthrough_block_marker, self.passthrough_repl), "passthrough_block")
@@ -1165,8 +1165,11 @@ class processor(object):
 
     def set_docstring(self, tokens):
         """Sets the docstring."""
-        self.docstring = self.string_repl(tokens)
-        return ""
+        if len(tokens) == 2:
+            self.docstring = self.string_repl([tokens[0]])
+            return tokens[1]
+        else:
+            raise CoconutException("invalid docstring tokens: "+repr(tokens))
 
     def comment_repl(self, tokens):
         """Replaces comment references."""
@@ -1312,7 +1315,7 @@ class processor(object):
     string = Combine((bit_b + raw_r | raw_r + bit_b) + string_ref)
     lineitem = Combine(Optional(comment) + Literal(linebreak))
     newline = condense(OneOrMore(lineitem))
-    startmarker = StringStart() + ZeroOrMore(lineitem) + Optional(moduledoc)
+    startmarker = StringStart() + condense(ZeroOrMore(lineitem) + Optional(moduledoc))
     endmarker = StringEnd()
     indent = Literal(openstr)
     dedent = Literal(closestr)
@@ -1629,10 +1632,11 @@ class processor(object):
     stmt <<= trace(compound_stmt | simple_stmt, "stmt")
     nocolon_suite <<= condense(newline + indent + OneOrMore(stmt) + dedent)
     suite <<= trace(condense(colon + nocolon_suite) | addspace(colon + simple_stmt), "suite")
+    line = trace(newline | stmt, "line")
 
-    single_input = trace(newline | stmt, "single_input")
-    file_input = trace(condense(ZeroOrMore(single_input)), "file_input")
-    eval_input = trace(condense(testlist + newline), "eval_input")
+    single_input = trace(Optional(line), "single_input")
+    file_input = trace(condense(ZeroOrMore(line)), "file_input")
+    eval_input = trace(condense(testlist + Optional(newline)), "eval_input")
 
     single_parser = condense(startmarker + single_input + endmarker)
     file_parser = condense(startmarker + file_input + endmarker)
