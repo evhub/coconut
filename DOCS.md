@@ -317,6 +317,7 @@ Coconut supports unicode alternatives to many different symbols. The full list o
 « (\xab)                    => "<<"
 » (\xbb)                    => ">>"
 … (\u2026)                  => "..."
+⋅ (\u22c5)                  => "@" (only matrix multiplication)
 ```
 
 ### Code Passthrough

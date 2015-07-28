@@ -1253,6 +1253,7 @@ class processor(object):
     sub_minus = fixto(minus | Literal("\u2212"), "-")
     div_slash = fixto((slash | Literal("\xf7"))+~slash, "/")
     div_dubslash = fixto(dubslash | Combine(Literal("\xf7")+slash), "//")
+    matrix_at = at | Literal("\u22c5")
 
     name = (
             ~Keyword("and")
@@ -1478,7 +1479,7 @@ class processor(object):
 
     factor <<= trace(condense(unary + factor) | power, "factor")
 
-    mulop = mul_star | div_slash | div_dubslash | percent
+    mulop = mul_star | div_slash | div_dubslash | percent | matrix_at
     term = addspace(factor + ZeroOrMore(mulop + factor))
     arith = plus | sub_minus
     arith_expr = addspace(term + ZeroOrMore(arith + term))
