@@ -1474,7 +1474,7 @@ class processor(object):
     atom_item = trace(attach(atom + ZeroOrMore(trailer), item_proc), "atom_item")
 
     factor = Forward()
-    power = trace(condense(atom_item + Optional(exp_dubstar + factor)), "power")
+    power = trace(condense(addspace(Optional(Keyword("await")) + atom_item) + Optional(exp_dubstar + factor)), "power")
     unary = plus | neg_minus | tilde
 
     factor <<= trace(condense(unary + factor) | power, "factor")
@@ -1628,17 +1628,19 @@ class processor(object):
 
     base_funcdef = addspace(condense(name + parameters) + Optional(arrow + test))
     funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
+    async_funcdef = addspace(Keyword("async") + funcdef)
+    async_stmt = async_funcdef | addspace(Keyword("async") + (with_stmt | for_stmt))
 
     data_args = Optional(lparen.suppress() + Optional(itemlist(~underscore + name, comma)) + rparen.suppress())
     datadef = condense(attach(Keyword("data").suppress() + name + data_args, data_proc) + suite)
 
     decorators = attach(OneOrMore(at.suppress() + test + newline.suppress()), decorator_proc)
-    decorated = condense(decorators + (classdef | funcdef | datadef))
+    decorated = condense(decorators + (classdef | funcdef | async_funcdef | datadef))
 
     passthrough_stmt = condense(passthrough_block + (nocolon_suite | newline))
 
     simple_compound_stmt <<= if_stmt | try_stmt | case_stmt | match_stmt | passthrough_stmt
-    compound_stmt = trace(simple_compound_stmt | with_stmt | while_stmt | for_stmt | funcdef | classdef | datadef | decorated, "compound_stmt")
+    compound_stmt = trace(simple_compound_stmt | with_stmt | while_stmt | for_stmt | funcdef | classdef | datadef | decorated | async_stmt, "compound_stmt")
 
     expr_stmt = trace(addspace(
                       attach(simple_assign + augassign + (yield_expr | testlist), assign_proc)
