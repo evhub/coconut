@@ -48,15 +48,6 @@ def fixpath(path):
     """Properly formats a path."""
     return os.path.normpath(os.path.realpath(path))
 
-def print_error():
-    """Processes a user error."""
-    traceback.print_exc()
-
-def print_coconut_error():
-    """Processes a coconut error."""
-    err_type, err_value, err_trace = sys.exc_info()
-    print("\n".join(traceback.format_exception_only(err_type, err_value)).rstrip())
-
 class executor(object):
     """Compiled Python executor."""
     def __init__(self, extras=None):
@@ -77,7 +68,7 @@ class executor(object):
             if _coconut_error:
                 raise
             else:
-                print_error()
+                traceback.print_exc()
         _coconut_overrides = {}
         for __k, __v in list(globals().items()):
             if __k in _coconut_executor.variables:
@@ -126,15 +117,12 @@ class terminal(object):
         }
     on = True
 
-    def __init__(self, main_color=None, debug_color=None, main_sig="", debug_sig=None):
+    def __init__(self, main_color=None, debug_color=None, main_sig="", debug_sig=""):
         """Creates the terminal."""
         self.main_color = main_color
         self.debug_color = debug_color
         self.main_sig = main_sig
-        if debug_sig is None:
-            self.debug_sig = self.main_sig
-        else:
-            self.debug_sig = debug_sig
+        self.debug_sig = debug_sig
 
     def addcolor(self, inputstring, color):
         """Adds the specified color to the string."""
@@ -201,7 +189,7 @@ class cli(object):
     running = False
     runner = None
 
-    def __init__(self, main_color=None, debug_color=None, prompt=">>> ", moreprompt="    ", main_sig="Coconut: ", debug_sig=None):
+    def __init__(self, main_color=None, debug_color=None, prompt=">>> ", moreprompt="    ", main_sig="Coconut: ", debug_sig=""):
         """Creates the CLI."""
         self.console = terminal(main_color, debug_color, main_sig, debug_sig)
         self.prompt = self.console.addcolor(prompt, main_color)
@@ -379,7 +367,9 @@ class cli(object):
             try:
                 compiled = self.processor.parse_single(code)
             except parser.coconut_error:
-                print_coconut_error()
+                err_type, err_value, err_trace = sys.exc_info()
+                err_msg = "\n".join(traceback.format_exception_only(err_type, err_value)).rstrip()
+                print(err_msg)
                 return None
         return compiled
 
