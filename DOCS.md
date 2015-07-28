@@ -8,6 +8,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [Optional Arguments](#optional-arguments)
     - [Python Versions](#python-versions)
     - [Compiled Files](#compiled-files)
+    - [strict Mode](#strict-mode)
     - [IPython](#ipython)
 - [II. Syntax](#ii-syntax)
     - [Lambdas](#lambdas)
@@ -84,6 +85,14 @@ Files compiled by the `coconut` command-line utility will vary based on compilat
 
 If an extension other than `.py` is desired for the compiled files, such as `.pyde` for [Python Processing](http://py.processing.org/), then that extension can be put before `.coc` in the source file name, and it will be used instead of `.py` for the compiled files. For example, `name.coc` will compile to `name.py`, whereas `name.pyde.coc` will compile to `name.pyde`.
 
+### `--strict` Mode
+
+If the `--strict` or `-s` flag is enabled, Coconut will throw errors on various style problems. These are:
+- Mixing of tabs and spaces
+- Use of the Python-style `lambda` statement
+- Use of backslash continuations
+- Trailing whitespace
+
 ### IPython
 
 If you prefer [IPython](http://ipython.org/) to the normal Python shell, coconut can also be used as an IPython extension. The code `%load_ext coconut` will provide access to the `%coconut` and `%%coconut` magics. The `%coconut` magic will run a line of Coconut with default parameters, whereas the `%%coconut` magic will take command-line arguments on the first line, and run any coconut code provided in the rest of the cell with those parameters.
@@ -92,7 +101,7 @@ If you prefer [IPython](http://ipython.org/) to the normal Python shell, coconut
 
 ### Lambdas
 
-Python's `lambda` statements are removed in Coconut in favor of a simple, Coffee-style `->` operator. The operator has the same precedence as the old statement.
+Coconut provides an alternative to Python's `lambda` statements in favor of a simple, Coffee-style `->` operator. The operator has the same precedence as the old statement.
 
 ##### Python Docs
 

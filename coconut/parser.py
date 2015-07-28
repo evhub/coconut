@@ -799,6 +799,8 @@ class processor(object):
         self.comment <<= self.trace(attach(self.comment_marker, self.comment_repl), "comment")
         self.passthrough <<= self.trace(attach(self.passthrough_marker, self.passthrough_repl), "passthrough")
         self.passthrough_block <<= self.trace(attach(self.passthrough_block_marker, self.passthrough_repl), "passthrough_block")
+        self.classic_lambdef_ref <<= attach(self.classic_lambdef, self.lambda_check)
+        self.classic_lambdef_nocond_ref <<= attach(self.classic_lambdef_nocond, self.lambda_check)
         self.setup()
         self.clean()
 
@@ -1161,7 +1163,7 @@ class processor(object):
             else:
                 raise CoconutException("string marker points to comment/passthrough")
         else:
-            raise CoconutException("invalid string marker")
+            raise CoconutException("invalid string marker: "+repr(tokens))
 
     def set_docstring(self, tokens):
         """Sets the docstring."""
@@ -1180,7 +1182,7 @@ class processor(object):
             else:
                 return "#"+ref
         else:
-            raise CoconutException("invalid comment marker")
+            raise CoconutException("invalid comment marker: "+repr(tokens))
 
     def passthrough_repl(self, tokens):
         """Replaces passthrough references."""
@@ -1191,7 +1193,16 @@ class processor(object):
             else:
                 return ref
         else:
-            raise CoconutException("invalid comment marker")
+            raise CoconutException("invalid passthrough marker: "+repr(tokens))
+
+    def lambda_check(self, tokens):
+        """Checks for Python-style lambdas."""
+        if len(tokens) != 1:
+            raise CoconutException("invalid Python-style lambda tokens: "+repr(tokens))
+        elif self.strict:
+            raise CoconutStyleError("found Python-style lambda", tokens[0])
+        else:
+            return tokens[0]
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # GRAMMAR:
@@ -1495,8 +1506,15 @@ class processor(object):
     test_nocond = Forward()
     lambdef_params = lparen.suppress() + varargslist + rparen.suppress()
 
-    lambdef = trace(attach(lambdef_params + arrow.suppress() + test, lambda_proc), "lambdef")
-    lambdef_nocond = trace(attach(lambdef_params + arrow.suppress() + test_nocond, lambda_proc), "lambdef_nocond")
+    classic_lambdef_ref = Forward()
+    classic_lambdef = addspace(Keyword("lambda") + condense(lambdef_params + colon) + test)
+    new_lambdef = attach(lambdef_params + arrow.suppress() + test, lambda_proc)
+    lambdef = trace(classic_lambdef_ref | new_lambdef, "lambdef")
+
+    classic_lambdef_nocond_ref = Forward()
+    classic_lambdef_nocond = addspace(Keyword("lambda") + condense(lambdef_params + colon) + test_nocond)
+    new_lambdef_nocond = attach(lambdef_params + arrow.suppress() + test_nocond, lambda_proc)
+    lambdef_nocond = trace(classic_lambdef_nocond_ref | new_lambdef_nocond, "lambdef_nocond")
 
     test <<= lambdef | trace(addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test)), "test")
     test_nocond <<= lambdef_nocond | trace(test_item, "test_item")

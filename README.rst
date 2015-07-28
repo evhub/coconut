@@ -19,11 +19,11 @@ Why Coconut?
 
 1. **It's just Python!**
 
-Love Python? So do I! All valid Python, with the exception of Python's ``lambda`` statement, is valid Coconut. That means that not only does learning Coconut not require learning new libraries, it doesn't even require learning a new core syntax! Integrating Coconut into your existing projects is as simple as replacing ``.py`` with ``.coc``.
+Love Python? So do I! All valid Python 3 is also valid Coconut. That means that not only does learning Coconut not require learning new libraries, it doesn't even require learning a new core syntax! Integrating Coconut into your existing projects is as simple as replacing ``.py`` with ``.coc``.
 
 2. *But...* **Coconut has nicer lambdas.**
 
-Hate typing out ``lambda`` every time you want to create an anonymous function? Love rhetorical questions and parallel grammatical structure? So do I! Coconut's lambdas are as simple as ``(x) -> x``.
+Hate typing out ``lambda`` every time you want to create an anonymous function? Love rhetorical questions and parallel grammatical structure? So do I! Coconut supports lambdas that are as simple as ``(x) -> x``.
 
 3. *But...* **Coconut has immutable data constructors.**
 

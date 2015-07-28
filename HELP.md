@@ -48,7 +48,7 @@ Now that you've installed Coconut, it's time to create your first Coconut progra
 
 ### Start Coding!
 
-If you're familiar with Python, then you're already familiar with most of Coconut. Coconut is nearly a strict superset of Python 3 syntax, with the sole exception of `lambda` statements, which will be later in this tutorial. For now, let's start with a simple `hello, world!` program. Put this code inside your `tutorial.coc`:
+If you're familiar with Python, then you're already familiar with most of Coconut: Coconut is a strict superset of Python 3 syntax. Before we get into Coconut's unique features, though, let's start with a simple `hello, world!` program. Put this code inside your `tutorial.coc`:
 ```
 print("hello, world!")
 ```
@@ -106,7 +106,7 @@ As this tutorial starts introducing new concepts, it'll be useful to be able to 
 
 ### Lambdas
 
-Now that you've gotten your feet wet with a simple `hello, world!` program, but before we delve into the special things Coconut can do that Python can't, we should cover the one exception to the rule of Coconut being a strict superset of Python: lambdas.
+Now that you've gotten your feet wet with a simple `hello, world!` program, but before we delve into the special things Coconut can do that Python can't, we should cover the biggest (optional) syntax change that Coconut makes over Python: better lambdas.
 
 In Python, lambdas are ugly and bulky, requiring the entire word `lambda` to be written out every time one is constructed. This is fine if in-line functions are very rarely needed, but in functional programming in-line functions are an essential tool, and so Coconut substitues in a much simpler lambda syntax: the `->` operator.
 
