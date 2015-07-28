@@ -49,9 +49,13 @@ def fixpath(path):
     return os.path.normpath(os.path.realpath(path))
 
 def print_error():
-    """Processes an error."""
+    """Processes a user error."""
+    traceback.print_exc()
+
+def print_coconut_error():
+    """Processes a coconut error."""
     err_type, err_value, err_trace = sys.exc_info()
-    traceback.print_exception(err_type, err_value, err_trace)
+    print("\n".join(traceback.format_exception_only(err_type, err_value)).rstrip())
 
 class executor(object):
     """Compiled Python executor."""
@@ -152,14 +156,23 @@ class terminal(object):
         for line in message.splitlines():
             print(self.addcolor(sig+line, color))
 
-    def print(self, *messages):
+    def show(self, *messages):
+        """Prints messages without a signature."""
+        if self.on:
+            self.display(messages, color=self.main_color)
+
+    def print(self, *messages, sig=None):
         """Prints messages with main color."""
         if self.on:
-            self.display(messages, color=self.main_color, sig=self.main_sig)
+            if sig is None:
+                sig = self.main_sig
+            self.display(messages, color=self.main_color, sig=sig)
 
-    def debug(self, *messages):
+    def debug(self, *messages, sig=None):
         """Prints messages with debug color."""
-        self.display(messages, color=self.debug_color, sig=self.debug_sig)
+        if sig is None:
+            sig = self.debug_sig
+        self.display(messages, color=self.debug_color, sig=sig)
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # MAIN:
@@ -331,7 +344,8 @@ class cli(object):
     def start_prompt(self):
         """Starts the interpreter."""
         self.check_runner()
-        self.console.print("[Interpreter:]")
+        self.console.print("\n", sig="Coconut Interpreter:")
+        self.console.show('(type "exit()" or press Ctrl-D to end)')
         self.running = True
         while self.running:
             try:
@@ -343,7 +357,9 @@ class cli(object):
                 self.exit()
             else:
                 if code:
-                    self.execute(self.handle(code), False)
+                    compiled = self.handle(code)
+                    if compiled:
+                        self.execute(compiled, False)
 
     def exit(self):
         """Exits the interpreter."""
@@ -353,7 +369,7 @@ class cli(object):
         """Compiles Coconut interpreter input."""
         try:
             compiled = self.processor.parse_single(code)
-        except (parser.ParseFatalException, parser.ParseException):
+        except parser.coconut_error:
             while True:
                 line = input(self.moreprompt)
                 if line:
@@ -362,8 +378,9 @@ class cli(object):
                     break
             try:
                 compiled = self.processor.parse_single(code)
-            except (parser.ParseFatalException, parser.ParseException):
-                return print_error()
+            except parser.coconut_error:
+                print_coconut_error()
+                return None
         return compiled
 
     def execute(self, compiled=None, error=True):

@@ -243,6 +243,8 @@ ParserElement.setDefaultWhitespaceChars(white)
 # UTILITIES:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+coconut_error = ParseFatalException, ParseException
+
 class CoconutException(ParseFatalException):
     """Base Coconut exception."""
     def __init__(self, value):
