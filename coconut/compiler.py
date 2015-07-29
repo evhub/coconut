@@ -325,6 +325,17 @@ class cli(object):
         with openfile(os.path.join(dirpath, "__coconut__.py"), "w") as opened:
             writefile(opened, parser.headers["package"])
 
+    def prompt_with(self, prompt):
+        """Prompts for code."""
+        try:
+            return input(prompt)
+        except KeyboardInterrupt:
+            print("\nKeyboardInterrupt")
+        except EOFError:
+            print()
+            self.exit()
+        return None
+
     def start_prompt(self):
         """Starts the interpreter."""
         self.check_runner()
@@ -332,18 +343,11 @@ class cli(object):
         self.console.show('(type "exit()" or press Ctrl-D to end)')
         self.running = True
         while self.running:
-            try:
-                code = input(self.prompt)
-            except KeyboardInterrupt:
-                print("\nKeyboardInterrupt")
-            except EOFError:
-                print()
-                self.exit()
-            else:
-                if code:
-                    compiled = self.handle(code)
-                    if compiled:
-                        self.execute(compiled, False)
+            code = self.prompt_with(self.prompt)
+            if code:
+                compiled = self.handle(code)
+                if compiled:
+                    self.execute(compiled, False)
 
     def exit(self):
         """Exits the interpreter."""
@@ -355,9 +359,11 @@ class cli(object):
             compiled = self.processor.parse_single(code)
         except parser.coconut_error:
             while True:
-                line = input(self.moreprompt)
+                line = self.prompt_with(self.moreprompt)
                 if line:
                     code += "\n"+line
+                elif line is None:
+                    return None
                 else:
                     break
             try:

@@ -233,9 +233,11 @@ decorator_var = "_coconut_decorator"
 match_to_var = "_coconut_match_to"
 match_check_var = "_coconut_match_check"
 match_iter_var = "_coconut_match_iter"
+op_var = "_coconut_op"
 wildcard = "_"
 const_vars = ["True", "False", "None"]
 reserved_vars = ["data", "match", "case", "async", "await"]
+op_subs = {}
 
 ParserElement.setDefaultWhitespaceChars(white)
 
@@ -439,7 +441,20 @@ def infix_proc(tokens):
         for arg in items:
             if arg:
                 args.append(arg)
-        return "(" + tokens[1] + ")(" + ", ".join(args) + ")"
+        return tokens[1] + "(" + ", ".join(args) + ")"
+
+def op_proc(tokens):
+    """Processes operator names."""
+    if len(tokens) == 1:
+        chars = [""]
+        for c in tokens[0]:
+            if c in op_subs:
+                chars.append(op_subs[c])
+            else:
+                chars.append(ord(c))
+        return op_var + "_".join(chars)
+    else:
+        raise CoconutException("invalid operator name tokens: "+repr(tokens))
 
 def pipe_proc(tokens):
     """Processes pipe calls."""
@@ -1293,8 +1308,9 @@ class processor(object):
     for k in const_vars + reserved_vars:
         name = ~Keyword(k) + name
     for k in reserved_vars:
-        name = name | fixto(backslash + Keyword(k), k)
+        name |= fixto(backslash + Keyword(k), k)
     dotted_name = condense(name + ZeroOrMore(dot + name))
+    op_name = attach(Word("".join(op_subs.keys())), op_proc)
 
     integer = Word(nums)
     binint = Word("01")
@@ -1495,7 +1511,8 @@ class processor(object):
     chain_expr = attach(or_expr + ZeroOrMore(dubcolon.suppress() + or_expr), chain_proc)
 
     infix_expr = Forward()
-    infix_item = attach(Group(Optional(chain_expr)) + backtick.suppress() + chain_expr + backtick.suppress() + Group(Optional(infix_expr)), infix_proc)
+    infix_op = condense(fixto(backtick.suppress(), "(") + (chain_expr | op_name) + fixto(backtick.suppress(), ")"))
+    infix_item = attach(Group(Optional(chain_expr)) + infix_op + Group(Optional(infix_expr)), infix_proc)
     infix_expr <<= infix_item | chain_expr
 
     pipe_expr = attach(infix_expr + ZeroOrMore(pipeline.suppress() + infix_expr), pipe_proc)
@@ -1628,7 +1645,10 @@ class processor(object):
         ))
     with_stmt = addspace(Keyword("with") + condense(itemlist(with_item, comma) + suite))
 
-    base_funcdef = addspace(condense(name + parameters) + Optional(arrow + test))
+    name_funcdef = condense(name + parameters)
+    op_funcdef_item = backtick.suppress() + (name | op_name) + backtick.suppress()
+    op_funcdef = attach(Group(Optional(name)) + op_funcdef_item + Group(Optional(name)), infix_proc)
+    base_funcdef = addspace((op_funcdef | name_funcdef) + Optional(arrow + test))
     funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
     async_funcdef = addspace(Keyword("async") + funcdef)
     async_stmt = async_funcdef | addspace(Keyword("async") + (with_stmt | for_stmt))
