@@ -144,7 +144,7 @@ f(mod(x, 2)) == 1
 
 ### Function Definition
 
-Coconut allows for math-style in-line function definition, where the body of the function is assigned directly to the function call. The function call that is assinged to can be parenthesis-style or backtick-style.
+Coconut allows for math-style in-line function definition, where the body of the function is assigned directly to the function call. The function call that is assinged to can be parenthesis-style or backtick-style, although if it is backtick-style keyword arguments must be placed within parentheses.
 
 ##### Example
 

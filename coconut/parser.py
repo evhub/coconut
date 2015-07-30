@@ -233,11 +233,9 @@ decorator_var = "_coconut_decorator"
 match_to_var = "_coconut_match_to"
 match_check_var = "_coconut_match_check"
 match_iter_var = "_coconut_match_iter"
-op_var = "_coconut_op"
 wildcard = "_"
 const_vars = ["True", "False", "None"]
 reserved_vars = ["data", "match", "case", "async", "await"]
-op_subs = {}
 
 ParserElement.setDefaultWhitespaceChars(white)
 
@@ -442,19 +440,6 @@ def infix_proc(tokens):
             if arg:
                 args.append(arg)
         return tokens[1] + "(" + ", ".join(args) + ")"
-
-def op_proc(tokens):
-    """Processes operator names."""
-    if len(tokens) == 1:
-        chars = [""]
-        for c in tokens[0]:
-            if c in op_subs:
-                chars.append(op_subs[c])
-            else:
-                chars.append(ord(c))
-        return op_var + "_".join(chars)
-    else:
-        raise CoconutException("invalid operator name tokens: "+repr(tokens))
 
 def pipe_proc(tokens):
     """Processes pipe calls."""
@@ -1273,44 +1258,43 @@ class processor(object):
     matrix_at = at | Literal("\xd7")
 
     name = (
-            ~Keyword("and")
-            + ~Keyword("as")
-            + ~Keyword("assert")
-            + ~Keyword("break")
-            + ~Keyword("class")
-            + ~Keyword("continue")
-            + ~Keyword("def")
-            + ~Keyword("del")
-            + ~Keyword("elif")
-            + ~Keyword("else")
-            + ~Keyword("except")
-            + ~Keyword("finally")
-            + ~Keyword("for")
-            + ~Keyword("from")
-            + ~Keyword("global")
-            + ~Keyword("if")
-            + ~Keyword("import")
-            + ~Keyword("in")
-            + ~Keyword("is")
-            + ~Keyword("lambda")
-            + ~Keyword("nonlocal")
-            + ~Keyword("not")
-            + ~Keyword("or")
-            + ~Keyword("pass")
-            + ~Keyword("raise")
-            + ~Keyword("return")
-            + ~Keyword("try")
-            + ~Keyword("while")
-            + ~Keyword("with")
-            + ~Keyword("yield")
-            + Regex("(?![0-9])\\w+")
-            )
+        ~Keyword("and")
+        + ~Keyword("as")
+        + ~Keyword("assert")
+        + ~Keyword("break")
+        + ~Keyword("class")
+        + ~Keyword("continue")
+        + ~Keyword("def")
+        + ~Keyword("del")
+        + ~Keyword("elif")
+        + ~Keyword("else")
+        + ~Keyword("except")
+        + ~Keyword("finally")
+        + ~Keyword("for")
+        + ~Keyword("from")
+        + ~Keyword("global")
+        + ~Keyword("if")
+        + ~Keyword("import")
+        + ~Keyword("in")
+        + ~Keyword("is")
+        + ~Keyword("lambda")
+        + ~Keyword("nonlocal")
+        + ~Keyword("not")
+        + ~Keyword("or")
+        + ~Keyword("pass")
+        + ~Keyword("raise")
+        + ~Keyword("return")
+        + ~Keyword("try")
+        + ~Keyword("while")
+        + ~Keyword("with")
+        + ~Keyword("yield")
+        + Regex("(?![0-9])\\w+")
+        )
     for k in const_vars + reserved_vars:
         name = ~Keyword(k) + name
     for k in reserved_vars:
         name |= fixto(backslash + Keyword(k), k)
     dotted_name = condense(name + ZeroOrMore(dot + name))
-    op_name = attach(Word("".join(op_subs.keys())), op_proc)
 
     integer = Word(nums)
     binint = Word("01")
@@ -1412,43 +1396,43 @@ class processor(object):
         )
 
     op_atom = condense(
-            lparen + (
-                fixto(pipeline, "lambda *args: __coconut__.reduce(lambda x, f: f(x), args)")
-                | fixto(dotdot, "lambda *args: reduce(lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)), args)")
-                | fixto(dubcolon, "__coconut__.chain")
-                | fixto(dollar, "__coconut__.partial")
-                | fixto(dot, "__coconut__.operator.attrgetter")
-                | fixto(exp_dubstar, "__coconut__.operator.__pow__")
-                | fixto(mul_star, "__coconut__.operator.__mul__")
-                | fixto(div_dubslash, "__coconut__.operator.__floordiv__")
-                | fixto(div_slash, "__coconut__.operator.__truediv__")
-                | fixto(percent, "__coconut__.operator.__mod__")
-                | fixto(plus, "__coconut__.operator.__add__")
-                | fixto(sub_minus, "__coconut__.operator.__sub__")
-                | fixto(neg_minus, "__coconut__.operator.__neg__")
-                | fixto(amp, "__coconut__.operator.__and__")
-                | fixto(caret, "__coconut__.operator.__xor__")
-                | fixto(bar, "__coconut__.operator.__or__")
-                | fixto(lshift, "__coconut__.operator.__lshift__")
-                | fixto(rshift, "__coconut__.operator.__rshift__")
-                | fixto(lt, "__coconut__.operator.__lt__")
-                | fixto(gt, "__coconut__.operator.__gt__")
-                | fixto(eq, "__coconut__.operator.__eq__")
-                | fixto(le, "__coconut__.operator.__le__")
-                | fixto(ge, "__coconut__.operator.__ge__")
-                | fixto(ne, "__coconut__.operator.__ne__")
-                | fixto(tilde, "__coconut__.operator.__inv__")
-                | fixto(Keyword("not"), "__coconut__.operator.__not__")
-                | fixto(Keyword("and"), "lambda a, b: a and b")
-                | fixto(Keyword("or"), "lambda a, b: a or b")
-                | fixto(Keyword("is"), "__coconut__.operator.is_")
-                | fixto(Keyword("in"), "__coconut__.operator.__contains__")
-            ) + rparen
-            | fixto(lbrack, "(") + (
-                fixto(dollar, "__coconut__.islice")
-                | fixto(plus, "__coconut__.operator.__concat__")
-            ) + fixto(rbrack, ")")
-        )
+        lparen + (
+            fixto(pipeline, "lambda *args: __coconut__.reduce(lambda x, f: f(x), args)")
+            | fixto(dotdot, "lambda *args: reduce(lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)), args)")
+            | fixto(dubcolon, "__coconut__.chain")
+            | fixto(dollar, "__coconut__.partial")
+            | fixto(dot, "__coconut__.operator.attrgetter")
+            | fixto(exp_dubstar, "__coconut__.operator.__pow__")
+            | fixto(mul_star, "__coconut__.operator.__mul__")
+            | fixto(div_dubslash, "__coconut__.operator.__floordiv__")
+            | fixto(div_slash, "__coconut__.operator.__truediv__")
+            | fixto(percent, "__coconut__.operator.__mod__")
+            | fixto(plus, "__coconut__.operator.__add__")
+            | fixto(sub_minus, "__coconut__.operator.__sub__")
+            | fixto(neg_minus, "__coconut__.operator.__neg__")
+            | fixto(amp, "__coconut__.operator.__and__")
+            | fixto(caret, "__coconut__.operator.__xor__")
+            | fixto(bar, "__coconut__.operator.__or__")
+            | fixto(lshift, "__coconut__.operator.__lshift__")
+            | fixto(rshift, "__coconut__.operator.__rshift__")
+            | fixto(lt, "__coconut__.operator.__lt__")
+            | fixto(gt, "__coconut__.operator.__gt__")
+            | fixto(eq, "__coconut__.operator.__eq__")
+            | fixto(le, "__coconut__.operator.__le__")
+            | fixto(ge, "__coconut__.operator.__ge__")
+            | fixto(ne, "__coconut__.operator.__ne__")
+            | fixto(tilde, "__coconut__.operator.__inv__")
+            | fixto(Keyword("not"), "__coconut__.operator.__not__")
+            | fixto(Keyword("and"), "lambda a, b: a and b")
+            | fixto(Keyword("or"), "lambda a, b: a or b")
+            | fixto(Keyword("is"), "__coconut__.operator.is_")
+            | fixto(Keyword("in"), "__coconut__.operator.__contains__")
+        ) + rparen
+        | fixto(lbrack, "(") + (
+            fixto(dollar, "__coconut__.islice")
+            | fixto(plus, "__coconut__.operator.__concat__")
+        ) + fixto(rbrack, ")")
+    )
 
     func_atom = name | op_atom | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
     keyword_atom = Keyword(const_vars[0])
@@ -1511,7 +1495,7 @@ class processor(object):
     chain_expr = attach(or_expr + ZeroOrMore(dubcolon.suppress() + or_expr), chain_proc)
 
     infix_expr = Forward()
-    infix_op = condense(fixto(backtick.suppress(), "(") + (chain_expr | op_name) + fixto(backtick.suppress(), ")"))
+    infix_op = condense(fixto(backtick.suppress(), "(") + chain_expr + fixto(backtick.suppress(), ")"))
     infix_item = attach(Group(Optional(chain_expr)) + infix_op + Group(Optional(infix_expr)), infix_proc)
     infix_expr <<= infix_item | chain_expr
 
@@ -1646,8 +1630,9 @@ class processor(object):
     with_stmt = addspace(Keyword("with") + condense(itemlist(with_item, comma) + suite))
 
     name_funcdef = condense(name + parameters)
-    op_funcdef_item = backtick.suppress() + (name | op_name) + backtick.suppress()
-    op_funcdef = attach(Group(Optional(name)) + op_funcdef_item + Group(Optional(name)), infix_proc)
+    op_funcdef_arg = condense(parenwrap(lparen.suppress(), tfpdef + Optional(default), rparen.suppress()))
+    op_funcdef_name = backtick.suppress() + name + backtick.suppress()
+    op_funcdef = attach(Group(Optional(op_funcdef_arg)) + op_funcdef_name + Group(Optional(op_funcdef_arg)), infix_proc)
     base_funcdef = addspace((op_funcdef | name_funcdef) + Optional(arrow + test))
     funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
     async_funcdef = addspace(Keyword("async") + funcdef)
