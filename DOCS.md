@@ -303,8 +303,8 @@ Coconut supports unicode alternatives to many different symbols. The full list o
 → (\u2192)                  => "->"
 ↦ (\u21a6)                  => "|>"
 ⇒ (\u21d2)                  => "|>="
-× (\xd7)                    => "*"
-↑ (\u2191) or ×× (\xd7\xd7) => "**"
+⋅ (\u22c5)                  => "*"
+↑ (\u2191)                  => "**"
 ÷ (\xf7)                    => "/"
 ÷/ (\xf7/)                  => "//"
 − (\u2212)                  => "-" (only subtraction)
@@ -319,7 +319,7 @@ Coconut supports unicode alternatives to many different symbols. The full list o
 « (\xab)                    => "<<"
 » (\xbb)                    => ">>"
 … (\u2026)                  => "..."
-⋅ (\u22c5)                  => "@" (only matrix multiplication)
+× (\xd7)                    => "@" (only matrix multiplication)
 ```
 
 ### Code Passthrough

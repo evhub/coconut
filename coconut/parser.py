@@ -1264,13 +1264,13 @@ class processor(object):
     backslash = Literal("\\")
     dubbackslash = Literal("\\\\")
 
-    mul_star = fixto(star | ~Literal("\xd7\xd7")+Literal("\xd7"), "*")
-    exp_dubstar = fixto(dubstar | Literal("\xd7\xd7") | Literal("\u2191"), "**")
+    mul_star = fixto(star | Literal("\u22c5"), "*")
+    exp_dubstar = fixto(dubstar | Literal("\u2191"), "**")
     neg_minus = fixto(minus | Literal("\u207b"), "-")
     sub_minus = fixto(minus | Literal("\u2212"), "-")
     div_slash = fixto((slash | Literal("\xf7"))+~slash, "/")
     div_dubslash = fixto(dubslash | Combine(Literal("\xf7")+slash), "//")
-    matrix_at = at | Literal("\u22c5")
+    matrix_at = at | Literal("\xd7")
 
     name = (
             ~Keyword("and")
