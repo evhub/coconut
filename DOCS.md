@@ -8,7 +8,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [Optional Arguments](#optional-arguments)
     - [Python Versions](#python-versions)
     - [Compiled Files](#compiled-files)
-    - [strict Mode](#strict-mode)
+    - [--strict Mode](#--strict-mode)
     - [IPython](#ipython)
 - [II. Syntax](#ii-syntax)
     - [Lambdas](#lambdas)
