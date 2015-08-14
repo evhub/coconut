@@ -1457,7 +1457,7 @@ class processor(object):
         | passthrough_atom
         | condense(lbrack + Optional(testlist_comp) + rbrack)
         | condense(lbrace + Optional(dictmaker) + rbrace)
-        | condense(fixto(lbrace, "set(") + Optional(setmaker) + fixto(rbrace, ")"))
+        | condense(fixto(lbrace, "set([") + Optional(setmaker) + fixto(rbrace, "])"))
         | attach(set_letter + lbrace.suppress() + Optional(setmaker) + rbrace.suppress(), set_proc)
         | func_atom
         )
