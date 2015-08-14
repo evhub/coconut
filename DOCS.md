@@ -78,7 +78,7 @@ dest                  destination directory for compiled files (defaults to the 
 
 ### Python Versions
 
-While Coconut syntax is based off of Python 3, the compiler will run on Python 2 or 3, and, unless constructs are used that are only present in Python 3, will attempt to produce universal code that will run like it does in Python 3 in Python 2. The officially supported versions are `2.6`, `2.7`, `3.3`, `3.4`, and `3.5`. If universal code is not desired, `2` (meaning `2.6` - `2.7`) or `3` (meaning `3.3` - `3.5`)  should be specified as the target.
+While Coconut syntax is based off of Python 3, the compiler will run on Python 2 or 3, and will attempt to produce universal code that will run like it does in Python 3 in Python 2. The officially supported versions are `2.6`, `2.7`, `3.3`, `3.4`, and `3.5`. If universal code is not desired, `2` (meaning `2.6` - `2.7`) or `3` (meaning `3.3` - `3.5`)  should be specified as the target.
 
 ### Compiled Files
 

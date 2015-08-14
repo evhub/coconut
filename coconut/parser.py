@@ -291,6 +291,13 @@ class CoconutStyleError(CoconutSyntaxError):
         message += " (disable --strict to dismiss)"
         CoconutSyntaxError.__init__(self, message, source, point)
 
+class CoconutTargetError(CoconutSyntaxError):
+    """Coconut --target error."""
+    def __init__(self, message, source, point=None):
+        """Creates the --target Coconut error."""
+        message += " (enable --target 3 to dismiss)"
+        CoconutSyntaxError.__init__(self, message, source, point)
+
 def attach(item, action):
     """Attaches a parse action to an item."""
     return item.copy().addParseAction(action)
@@ -817,6 +824,9 @@ class processor(object):
         self.classic_lambdef_ref <<= attach(self.classic_lambdef, self.lambda_check)
         self.classic_lambdef_nocond_ref <<= attach(self.classic_lambdef_nocond, self.lambda_check)
         self.u_string_ref <<= attach(self.u_string, self.u_string_check)
+        self.typedef_ref <<= attach(self.typedef, self.typedef_check)
+        self.yield_from_ref <<= attach(self.yield_from, self.yield_from_check)
+        self.matrix_at_ref <<= attach(self.matrix_at, self.matrix_at_check)
         self.setup()
         self.clean()
 
@@ -1223,9 +1233,36 @@ class processor(object):
     def u_string_check(self, tokens):
         """Checks for Python2-style unicode strings."""
         if len(tokens) != 1:
-            raise CoconutException("invalid Python2-style unicode string tokens: "+repr(tokens))
+            raise CoconutException("invalid Python-2-style unicode string tokens: "+repr(tokens))
         elif self.strict:
-            raise CoconutStyleError("found Python2-style unicode string", tokens[0])
+            raise CoconutStyleError("found Python-2-style unicode string", tokens[0])
+        else:
+            return tokens[0]
+
+    def typedef_check(self, tokens):
+        """Checks for Python 3 type defs."""
+        if len(tokens) != 1:
+            raise CoconutException("invalid Python 3 type def tokens: "+repr(tokens))
+        elif self.version != "3":
+            raise CoconutTargetError("found Python 3 type def", tokens[0])
+        else:
+            return tokens[0]
+
+    def yield_from_check(self, tokens):
+        """Checks for Python 3 yield from."""
+        if len(tokens) != 1:
+            raise CoconutException("invalid Python 3 yield from tokens: "+repr(tokens))
+        elif self.version != "3":
+            raise CoconutTargetError("found Python 3 yield from", tokens[0])
+        else:
+            return tokens[0]
+
+    def matrix_at_check(self, tokens):
+        """Checks for Python 3.5 matrix multiplication."""
+        if len(tokens) != 1:
+            raise CoconutException("invalid Python 3.5 matrix multiplication tokens: "+repr(tokens))
+        elif self.version != "3":
+            raise CoconutTargetError("found Python 3.5 matrix multiplication", tokens[0])
         else:
             return tokens[0]
 
@@ -1279,6 +1316,7 @@ class processor(object):
     div_slash = fixto((slash | Literal("\xf7"))+~slash, "/")
     div_dubslash = fixto(dubslash | Combine(Literal("\xf7")+slash), "//")
     matrix_at = at | Literal("\xd7")
+    matrix_at_ref = Forward()
 
     name = (
         ~Keyword("and")
@@ -1398,7 +1436,9 @@ class processor(object):
     comp_for = Forward()
 
     vardef = name
-    tfpdef = condense(vardef + Optional(colon + test))
+    typedef = condense(vardef + colon + test)
+    typedef_ref = Forward()
+    tfpdef = vardef | typedef_ref
     callarg = test
     default = Optional(condense(equals + test))
 
@@ -1410,7 +1450,9 @@ class processor(object):
 
     testlist = itemlist(test, comma)
 
-    yield_arg = addspace(Keyword("from") + test) | testlist
+    yield_from = addspace(Keyword("from") + test)
+    yield_from_ref = Forward()
+    yield_arg = yield_from_ref | testlist
     yield_expr = addspace(Keyword("yield") + Optional(yield_arg))
     star_expr = condense(star + expr)
     test_star_expr = star_expr | test
@@ -1424,8 +1466,8 @@ class processor(object):
 
     op_atom = condense(
         lparen + (
-            fixto(pipeline, "lambda *args: __coconut__.reduce(lambda x, f: f(x), args)")
-            | fixto(dotdot, "lambda *args: reduce(lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)), args)")
+            fixto(pipeline, "lambda x, f: f(x)")
+            | fixto(dotdot, "lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs))")
             | fixto(dubcolon, "__coconut__.chain")
             | fixto(dollar, "__coconut__.partial")
             | fixto(dot, "__coconut__.operator.attrgetter")
@@ -1449,6 +1491,7 @@ class processor(object):
             | fixto(ge, "__coconut__.operator.__ge__")
             | fixto(ne, "__coconut__.operator.__ne__")
             | fixto(tilde, "__coconut__.operator.__inv__")
+            | fixto(matrix_at_ref, "lambda a, b: a @ b")
             | fixto(Keyword("not"), "__coconut__.operator.__not__")
             | fixto(Keyword("and"), "lambda a, b: a and b")
             | fixto(Keyword("or"), "lambda a, b: a or b")
@@ -1509,7 +1552,7 @@ class processor(object):
 
     factor <<= trace(condense(unary + factor) | power, "factor")
 
-    mulop = mul_star | div_slash | div_dubslash | percent | matrix_at
+    mulop = mul_star | div_slash | div_dubslash | percent | matrix_at_ref
     term = addspace(factor + ZeroOrMore(mulop + factor))
     arith = plus | sub_minus
     arith_expr = addspace(term + ZeroOrMore(arith + term))
