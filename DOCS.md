@@ -90,10 +90,11 @@ If an extension other than `.py` is desired for the compiled files, such as `.py
 If the `--strict` or `-s` flag is enabled, Coconut will throw errors on various style problems. These are:
 - Mixing of tabs and spaces
 - Use of the Python-style `lambda` statement
+- Use of `u` to denote Unicode strings
 - Use of backslash continuations
 - Trailing whitespace
 
-It is recommended that you use the `--strict` flag if you are starting a new Coconut project.
+It is recommended that you use the `--strict` flag if you are starting a new Coconut project, as it will help you write cleaner code.
 
 ### IPython
 

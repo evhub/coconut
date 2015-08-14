@@ -811,6 +811,7 @@ class processor(object):
         self.passthrough_block <<= self.trace(attach(self.passthrough_block_marker, self.passthrough_repl), "passthrough_block")
         self.classic_lambdef_ref <<= attach(self.classic_lambdef, self.lambda_check)
         self.classic_lambdef_nocond_ref <<= attach(self.classic_lambdef_nocond, self.lambda_check)
+        self.u_string_ref <<= attach(self.u_string, self.u_string_check)
         self.setup()
         self.clean()
 
@@ -1214,6 +1215,15 @@ class processor(object):
         else:
             return tokens[0]
 
+    def u_string_check(self, tokens):
+        """Checks for Python2-style unicode strings."""
+        if len(tokens) != 1:
+            raise CoconutException("invalid Python2-style unicode string tokens: "+repr(tokens))
+        elif self.strict:
+            raise CoconutStyleError("found Python2-style unicode string", tokens[0])
+        else:
+            return tokens[0]
+
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # GRAMMAR:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1334,7 +1344,12 @@ class processor(object):
 
     bit_b = Optional(CaselessLiteral("b"))
     raw_r = Optional(CaselessLiteral("r"))
-    string = Combine((bit_b + raw_r | raw_r + bit_b) + string_ref)
+    b_string = Combine((bit_b + raw_r | raw_r + bit_b) + string_ref)
+    unicode_u = CaselessLiteral("u")
+    u_string = Combine((unicode_u + raw_r | raw_r + unicode_u) + string_ref)
+    u_string_ref = Forward()
+    string = b_string | u_string_ref
+
     lineitem = Combine(Optional(comment) + Literal(linebreak))
     newline = condense(OneOrMore(lineitem))
     startmarker = StringStart() + condense(ZeroOrMore(lineitem) + Optional(moduledoc))
