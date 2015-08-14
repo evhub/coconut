@@ -800,9 +800,14 @@ class processor(object):
     TRACER = tracer()
     trace = TRACER.bind
     debug = TRACER.debug
+    versions = [None, "2", "3"]
 
-    def __init__(self, strict=False):
+    def __init__(self, strict=False, version=None):
         """Creates a new processor."""
+        if version in self.versions:
+            self.version = version
+        else:
+            raise CoconutException("unsupported target Python version "+repr(version)+' (supported targets are "2" and "3", or leave blank for universal)')
         self.strict = strict
         self.string_ref <<= self.trace(attach(self.string_marker, self.string_repl), "string_ref")
         self.moduledoc <<= self.trace(attach(self.string_marker + self.newline, self.set_docstring), "moduledoc")
@@ -1138,7 +1143,7 @@ class processor(object):
 
     def header_proc(self, inputstring, header="file", initial="initial", **kwargs):
         """Adds the header."""
-        return headers(initial) + self.docstring + headers(header) + inputstring
+        return headers(initial, self.version) + self.docstring + headers(header, self.version) + inputstring
 
     def post(self, tokens, **kwargs):
         """Performs post-processing."""

@@ -49,15 +49,15 @@ def version(which="num"):
 # PARSING:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-def get_PARSER():
+def setup(strict=False, target=None):
     """Gets COMPILER.processor."""
     if COMPILER.processor is None:
-        COMPILER.setup()
+        COMPILER.setup(strict, target)
     return COMPILER.processor
 
 def parse(code, mode="file"):
     """Parses Coconut code."""
-    PARSER = get_PARSER()
+    PARSER = setup()
     if mode == "single":
         return PARSER.parse_single(code)
     elif mode == "file":

@@ -171,6 +171,7 @@ class cli(object):
     commandline.add_argument("source", metavar="source", type=str, nargs="?", default=None, help="path to the coconut file/folder to compile")
     commandline.add_argument("dest", metavar="dest", type=str, nargs="?", default=None, help="destination directory for compiled files (defaults to the source directory)")
     commandline.add_argument("-v", "--version", action="store_const", const=True, default=False, help="print coconut and python version information")
+    commandline.add_argument("-t", "--target", metavar="version", type=str, nargs=1, default=None, help="specify target python version")
     commandline.add_argument("-s", "--strict", action="store_const", const=True, default=False, help="enforce code cleanliness standards")
     commandline.add_argument("-p", "--print", action="store_const", const=True, default=False, help="print the compiled source")
     commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run the compiled source")
@@ -184,6 +185,7 @@ class cli(object):
     show = False
     running = False
     runner = None
+    target = None
 
     def __init__(self, main_color=None, debug_color=None, prompt=">>> ", moreprompt="    ", main_sig="Coconut: ", debug_sig=""):
         """Creates the CLI."""
@@ -196,9 +198,9 @@ class cli(object):
         args = self.commandline.parse_args()
         self.cmd(args)
 
-    def setup(self, strict=False):
+    def setup(self, strict=False, target=None):
         """Creates the processor."""
-        self.processor = parser.processor(strict)
+        self.processor = parser.processor(strict, target)
         self.processor.TRACER.show = self.console.debug
 
     def quiet(self, state=None):
@@ -209,7 +211,7 @@ class cli(object):
 
     def cmd(self, args, interact=True):
         """Parses command-line arguments."""
-        self.setup(args.strict)
+        self.setup(args.strict, args.target[0])
         if args.debug:
             self.processor.debug(True)
         if args.quiet:
@@ -323,7 +325,7 @@ class cli(object):
     def create_module(self, dirpath):
         """Sets up a module directory."""
         with openfile(os.path.join(dirpath, "__coconut__.py"), "w") as opened:
-            writefile(opened, parser.headers("package"))
+            writefile(opened, parser.headers("package", self.processor.version))
 
     def prompt_with(self, prompt):
         """Prompts for code."""
@@ -397,4 +399,4 @@ class cli(object):
             "_coconut_parser": self.processor,
             "exit": self.exit
             })
-        self.runner.run(parser.headers("code"))
+        self.runner.run(parser.headers("code", self.processor.version))
