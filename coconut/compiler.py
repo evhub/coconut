@@ -48,6 +48,12 @@ def fixpath(path):
     """Properly formats a path."""
     return os.path.normpath(os.path.realpath(path))
 
+def print_error():
+    """Displays a formatted error."""
+    err_type, err_value, err_trace = sys.exc_info()
+    err_msg = "\n".join(traceback.format_exception_only(err_type, err_value)).rstrip()
+    print(err_msg)
+
 class executor(object):
     """Compiled Python executor."""
     def __init__(self, extras=None):
@@ -211,40 +217,43 @@ class cli(object):
 
     def cmd(self, args, interact=True):
         """Parses command-line arguments."""
-        self.setup(args.strict, args.target[0])
-        if args.debug:
-            self.processor.debug(True)
-        if args.quiet:
-            self.quiet(True)
-        if args.print:
-            self.show = True
-        if args.version:
-            self.console.print(self.version)
-        if args.autopep8 is not None:
-            self.processor.autopep8(args.autopep8)
-        if args.code is not None:
-            self.execute(self.processor.parse_single(args.code[0]))
-        if args.source is not None:
-            if args.run and os.path.isdir(args.source):
-                raise parser.CoconutException("source path can't point to file when --run is enabled")
-            if args.dest is None:
-                if args.nowrite:
-                    self.compile_path(args.source, None, run=args.run)
+        try:
+            self.setup(args.strict, args.target[0])
+            if args.debug:
+                self.processor.debug(True)
+            if args.quiet:
+                self.quiet(True)
+            if args.print:
+                self.show = True
+            if args.version:
+                self.console.print(self.version)
+            if args.autopep8 is not None:
+                self.processor.autopep8(args.autopep8)
+            if args.code is not None:
+                self.execute(self.processor.parse_single(args.code[0]))
+            if args.source is not None:
+                if args.run and os.path.isdir(args.source):
+                    raise parser.CoconutException("source path can't point to file when --run is enabled")
+                if args.dest is None:
+                    if args.nowrite:
+                        self.compile_path(args.source, None, run=args.run)
+                    else:
+                        self.compile_path(args.source, run=args.run)
+                elif args.nowrite:
+                    raise parser.CoconutException("destination path can't be given when --nowrite is enabled")
+                elif os.path.isfile(args.dest):
+                    raise parser.CoconutException("destination path can't point to file")
                 else:
-                    self.compile_path(args.source, run=args.run)
-            elif args.nowrite:
-                raise parser.CoconutException("destination path can't be given when --nowrite is enabled")
-            elif os.path.isfile(args.dest):
-                raise parser.CoconutException("destination path can't point to file")
-            else:
-                self.compile_path(args.source, args.dest, run=args.run)
-        elif args.run:
-            raise parser.CoconutException("a source file must be specified when --run is enabled")
-        stdin = not sys.stdin.isatty()
-        if stdin:
-            self.execute(self.processor.parse_block(sys.stdin.read()))
-        if args.interact or (interact and not (stdin or args.source or args.version or args.code)):
-            self.start_prompt()
+                    self.compile_path(args.source, args.dest, run=args.run)
+            elif args.run:
+                raise parser.CoconutException("a source file must be specified when --run is enabled")
+            stdin = not sys.stdin.isatty()
+            if stdin:
+                self.execute(self.processor.parse_block(sys.stdin.read()))
+            if args.interact or (interact and not (stdin or args.source or args.version or args.code)):
+                self.start_prompt()
+        except parser.coconut_error:
+            print_error()
 
     def compile_path(self, path, write=True, run=False):
         """Compiles a path."""
@@ -371,9 +380,7 @@ class cli(object):
             try:
                 compiled = self.processor.parse_single(code)
             except parser.coconut_error:
-                err_type, err_value, err_trace = sys.exc_info()
-                err_msg = "\n".join(traceback.format_exception_only(err_type, err_value)).rstrip()
-                print(err_msg)
+                print_error()
                 return None
         return compiled
 

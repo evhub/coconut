@@ -807,7 +807,7 @@ class processor(object):
         if version in self.versions:
             self.version = version
         else:
-            raise CoconutException("unsupported target Python version "+repr(version)+' (supported targets are "2" and "3", or leave blank for universal)')
+            raise CoconutException("unsupported target Python version "+repr(version)+" (supported targets are '2' and '3', or leave blank for universal)")
         self.strict = strict
         self.string_ref <<= self.trace(attach(self.string_marker, self.string_repl), "string_ref")
         self.moduledoc <<= self.trace(attach(self.string_marker + self.newline, self.set_docstring), "moduledoc")
