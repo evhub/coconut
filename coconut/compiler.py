@@ -171,7 +171,7 @@ class cli(object):
     commandline.add_argument("source", metavar="source", type=str, nargs="?", default=None, help="path to the coconut file/folder to compile")
     commandline.add_argument("dest", metavar="dest", type=str, nargs="?", default=None, help="destination directory for compiled files (defaults to the source directory)")
     commandline.add_argument("-v", "--version", action="store_const", const=True, default=False, help="print coconut and python version information")
-    commandline.add_argument("-t", "--target", metavar="version", type=str, nargs=1, default=None, help="specify target python version")
+    commandline.add_argument("-t", "--target", metavar="version", type=str, nargs=1, default=[None], help="specify target python version")
     commandline.add_argument("-s", "--strict", action="store_const", const=True, default=False, help="enforce code cleanliness standards")
     commandline.add_argument("-p", "--print", action="store_const", const=True, default=False, help="print the compiled source")
     commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run the compiled source")
