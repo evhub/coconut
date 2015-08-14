@@ -23,28 +23,30 @@ from pyparsing import *
 # HEADERS:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-headers = {
-
-"none": '',
-
-"initial":
-
-r'''#!/usr/bin/env python
+def headers(which, version=None):
+    if which == "none":
+        return ""
+    elif which == "initial":
+        if version is None:
+            header = "#!/usr/bin/env python"
+        elif version == "2":
+            header = "#!/usr/bin/python2"
+        elif version == "3":
+            header = "#!/usr/bin/python3"
+        else:
+            raise CoconutException("invalid Python version: "+repr(version))
+        header += r'''
 
 # Compiled with Coconut version '''+VERSION_STR+'''
 
-''',
-
-"top":
-
-r'''
+'''
+    else:
+        header = r'''
 
 # Coconut Header: --------------------------------------------------------------
-''',
-
-"future":
-
-r'''
+        '''
+        if version is None:
+            header += r'''
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 try: from future_builtins import *
 except ImportError: pass
@@ -56,6 +58,7 @@ try: ascii
 except NameError: ascii = repr
 try: unichr
 except NameError: unichr = chr
+_coconut_encoding = "utf8"
 try: unicode
 except NameError: pass
 else:
@@ -63,78 +66,35 @@ else:
     _coconut_print = print
     def print(*args, **kwargs):
         """Wraps _coconut_print."""
-        return _coconut_print(*(str(x).encode("utf8") for x in args), **kwargs)
+        return _coconut_print(*(str(x).encode(_coconut_encoding) for x in args), **kwargs)
 try: raw_input
 except NameError: pass
 else:
     _coconut_input = raw_input
     def input(*args, **kwargs):
         """Wraps _coconut_input."""
-        return _coconut_input(*args, **kwargs).decode("utf8")
-''',
-
-"import":
-
-r'''
-import sys as _coconut_sys
-import os.path as _coconut_os_path
-_coconut_sys.path.append(_coconut_os_path.dirname(_coconut_os_path.abspath(__file__)))
-import __coconut__
-''',
-
-"class":
-
-r'''
-class __coconut__(object):
-    """Built-in Coconut Functions."""
-    import functools
-    partial = functools.partial
-    reduce = functools.reduce
-    import operator
-    itemgetter = operator.itemgetter
-    attrgetter = operator.attrgetter
-    methodcaller = operator.methodcaller
-    import itertools
-    chain = itertools.chain
-    islice = itertools.islice
-    takewhile = itertools.takewhile
-    dropwhile = itertools.dropwhile
-    tee = itertools.tee
-    import collections
-    data = staticmethod(collections.namedtuple)
-    try:
-        import collections.abc as abc
-    except ImportError:
-        abc = collections
-    @staticmethod
-    def recursive(func):
-        """Tail Call Optimizer."""
-        state = [True, None]
-        recurse = object()
-        @functools.wraps(func)
-        def tailed_func(*args, **kwargs):
-            """Tail Recursion Wrapper."""
-            if state[0]:
-                state[0] = False
-                try:
-                    while True:
-                        result = func(*args, **kwargs)
-                        if result is recurse:
-                            args, kwargs = state[1]
-                            state[1] = None
-                        else:
-                            return result
-                finally:
-                    state[0] = True
-            else:
-                state[1] = args, kwargs
-                return recurse
-        return tailed_func
-''',
-
-"body":
-
-r'''
+        return _coconut_input(*args, **kwargs).decode(_coconut_encoding)
+'''
+        elif version == "2":
+            header += r'''
+from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
+from future_builtins import *
+range = xrange
+ascii = repr
+unichr = chr
+_coconut_encoding = "utf8"
+bytes, str = str, unicode
+_coconut_print = print
+def print(*args, **kwargs):
+    """Wraps _coconut_print."""
+    return _coconut_print(*(str(x).encode(_coconut_encoding) for x in args), **kwargs)
+_coconut_input = raw_input
+def input(*args, **kwargs):
+    """Wraps _coconut_input."""
+    return _coconut_input(*args, **kwargs).decode(_coconut_encoding)
+'''
+        if which == "package":
+            header += r'''
 """Built-in Coconut Functions."""
 
 import functools
@@ -184,11 +144,66 @@ def recursive(func):
             state[1] = args, kwargs
             return recurse
     return tailed_func
-''',
-
-"funcs":
-
-r'''
+'''
+        else:
+            if which == "module":
+                header += r'''
+import sys as _coconut_sys
+import os.path as _coconut_os_path
+_coconut_sys.path.append(_coconut_os_path.dirname(_coconut_os_path.abspath(__file__)))
+import __coconut__
+'''
+            elif which == "code" or which == "file":
+                header += r'''
+class __coconut__(object):
+    """Built-in Coconut Functions."""
+    import functools
+    partial = functools.partial
+    reduce = functools.reduce
+    import operator
+    itemgetter = operator.itemgetter
+    attrgetter = operator.attrgetter
+    methodcaller = operator.methodcaller
+    import itertools
+    chain = itertools.chain
+    islice = itertools.islice
+    takewhile = itertools.takewhile
+    dropwhile = itertools.dropwhile
+    tee = itertools.tee
+    import collections
+    data = staticmethod(collections.namedtuple)
+    try:
+        import collections.abc as abc
+    except ImportError:
+        abc = collections
+    @staticmethod
+    def recursive(func):
+        """Tail Call Optimizer."""
+        state = [True, None]
+        recurse = object()
+        @functools.wraps(func)
+        def tailed_func(*args, **kwargs):
+            """Tail Recursion Wrapper."""
+            if state[0]:
+                state[0] = False
+                try:
+                    while True:
+                        result = func(*args, **kwargs)
+                        if result is recurse:
+                            args, kwargs = state[1]
+                            state[1] = None
+                        else:
+                            return result
+                finally:
+                    state[0] = True
+            else:
+                state[1] = args, kwargs
+                return recurse
+        return tailed_func
+'''
+            else:
+                raise CoconutException("invalid header type: "+repr(which))
+            header += r'''
 reduce = __coconut__.reduce
 itemgetter = __coconut__.itemgetter
 attrgetter = __coconut__.attrgetter
@@ -197,20 +212,13 @@ takewhile = __coconut__.takewhile
 dropwhile = __coconut__.dropwhile
 tee = __coconut__.tee
 recursive = __coconut__.recursive
-''',
-
-"bottom":
-
-r'''
+'''
+            if which != "code":
+                header += r'''
 # Compiled Coconut: ------------------------------------------------------------
 
 '''
-}
-
-headers["package"] = headers["top"] + headers["future"] + headers["body"]
-headers["code"]    = headers["top"] + headers["future"] + headers["class"]  + headers["funcs"]
-headers["file"]    = headers["top"] + headers["future"] + headers["class"]  + headers["funcs"] + headers["bottom"]
-headers["module"]  = headers["top"] + headers["future"] + headers["import"] + headers["funcs"] + headers["bottom"]
+    return header
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
@@ -1129,7 +1137,7 @@ class processor(object):
 
     def header_proc(self, inputstring, header="file", initial="initial", **kwargs):
         """Adds the header."""
-        return headers[initial] + self.docstring + headers[header] + inputstring
+        return headers(initial) + self.docstring + headers(header) + inputstring
 
     def post(self, tokens, **kwargs):
         """Performs post-processing."""
@@ -1389,10 +1397,9 @@ class processor(object):
     testlist_star_expr = itemlist(test_star_expr, comma)
     testlist_comp = addspace(test_star_expr + comp_for) | testlist_star_expr
     setmaker = addspace(test + comp_for | testlist)
-    dictorsetmaker = addspace(
+    dictmaker = addspace(
         condense(test + colon) + test + comp_for
         | itemlist(addspace(condense(test + colon) + test), comma)
-        | setmaker
         )
 
     op_atom = condense(
@@ -1449,7 +1456,8 @@ class processor(object):
         | string_atom
         | passthrough_atom
         | condense(lbrack + Optional(testlist_comp) + rbrack)
-        | condense(lbrace + Optional(dictorsetmaker) + rbrace)
+        | condense(lbrace + Optional(dictmaker) + rbrace)
+        | condense(fixto(lbrace, "set(") + Optional(setmaker) + fixto(rbrace, ")"))
         | attach(set_letter + lbrace.suppress() + Optional(setmaker) + rbrace.suppress(), set_proc)
         | func_atom
         )

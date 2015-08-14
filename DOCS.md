@@ -77,7 +77,7 @@ dest                  destination directory for compiled files (defaults to the 
 
 ### Python Versions
 
-The primary target for Coconut is Python 3, but the compiler will run on Python 2 or 3, and, unless constructs are used that are only present in Python 3, will attempt to produce universal code that will run like it does in Python 3 in Python 2. The officially supported versions are `2.7`, `3.3`, `3.4`, and `3.5`.
+The primary target for Coconut is Python 3, but the compiler will run on Python 2 or 3, and, unless constructs are used that are only present in Python 3, will attempt to produce universal code that will run like it does in Python 3 in Python 2. The officially supported versions are `2.6`, `2.7`, `3.3`, `3.4`, and `3.5`.
 
 ### Compiled Files
 
