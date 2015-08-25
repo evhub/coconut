@@ -56,7 +56,9 @@ except NameError:
 try:
     unichr
 except NameError:
-    unichr = chr
+    pass
+else:
+    chr = unichr
 
 try:
     unicode

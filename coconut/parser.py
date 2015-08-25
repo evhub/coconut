@@ -58,7 +58,10 @@ else:
 try: ascii
 except NameError: ascii = repr
 try: unichr
-except NameError: unichr = chr
+except NameError: pass
+else:
+    _coconut_chr = chr
+    chr = unichr
 _coconut_encoding = "utf8"
 try: unicode
 except NameError: pass
@@ -82,7 +85,8 @@ from __future__ import with_statement, print_function, absolute_import, unicode_
 from future_builtins import *
 range = xrange
 ascii = repr
-unichr = chr
+_coconut_chr = chr
+chr = unichr
 _coconut_encoding = "utf8"
 bytes, str = str, unicode
 _coconut_print = print
