@@ -106,7 +106,7 @@ As this tutorial starts introducing new concepts, it'll be useful to be able to 
 
 ### Lambdas
 
-Now that you've gotten your feet wet with a simple `hello, world!` program, but before we delve into the special things Coconut can do that Python can't, we should cover the biggest (optional) syntax change that Coconut makes over Python: better lambdas.
+Now that you've gotten your feet wet with a simple `hello, world!` program, but before we delve into the special things Coconut can do that Python can't, we should cover the biggest (optional) syntax change, as opposed to syntax addition, that Coconut makes over Python: better lambdas.
 
 In Python, lambdas are ugly and bulky, requiring the entire word `lambda` to be written out every time one is constructed. This is fine if in-line functions are very rarely needed, but in functional programming in-line functions are an essential tool, and so Coconut substitues in a much simpler lambda syntax: the `->` operator.
 
