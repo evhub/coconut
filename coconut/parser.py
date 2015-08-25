@@ -60,24 +60,24 @@ except NameError: ascii = repr
 try: unichr
 except NameError: pass
 else:
-    _coconut_chr = chr
+    py2_chr = chr
     chr = unichr
-_coconut_encoding = "utf8"
+_coconut_encoding = '''+ENCODING+r'''
 try: unicode
 except NameError: pass
 else:
     bytes, str = str, unicode
-    _coconut_print = print
+    py2_print = print
     def print(*args, **kwargs):
-        """Wraps _coconut_print."""
-        return _coconut_print(*(str(x).encode(_coconut_encoding) for x in args), **kwargs)
+        """Wraps py2_print."""
+        return py2_print(*(str(x).encode(_coconut_encoding) for x in args), **kwargs)
 try: raw_input
 except NameError: pass
 else:
-    _coconut_input = raw_input
+    py2_input = raw_input
     def input(*args, **kwargs):
-        """Wraps _coconut_input."""
-        return _coconut_input(*args, **kwargs).decode(_coconut_encoding)
+        """Wraps py2_input."""
+        return py2_input(*args, **kwargs).decode(_coconut_encoding)
 '''
         elif version == "2":
             header += r'''
@@ -85,18 +85,18 @@ from __future__ import with_statement, print_function, absolute_import, unicode_
 from future_builtins import *
 range = xrange
 ascii = repr
-_coconut_chr = chr
+py2_chr = chr
 chr = unichr
-_coconut_encoding = "utf8"
+_coconut_encoding = '''+ENCODING+r'''
 bytes, str = str, unicode
-_coconut_print = print
+py2_print = print
 def print(*args, **kwargs):
-    """Wraps _coconut_print."""
-    return _coconut_print(*(str(x).encode(_coconut_encoding) for x in args), **kwargs)
-_coconut_input = raw_input
+    """Wraps py2_print."""
+    return py2_print(*(str(x).encode(_coconut_encoding) for x in args), **kwargs)
+py2_input = raw_input
 def input(*args, **kwargs):
-    """Wraps _coconut_input."""
-    return _coconut_input(*args, **kwargs).decode(_coconut_encoding)
+    """Wraps py2_input."""
+    return py2_input(*args, **kwargs).decode(_coconut_encoding)
 '''
         if which == "package":
             header += r'''
