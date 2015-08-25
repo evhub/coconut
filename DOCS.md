@@ -948,5 +948,5 @@ Retrieves a string containing information about the Coconut version. The optiona
 
 - `"num"`: the numerical version (the default)
 - `"name"`: the version codename
-- `"full"`: the numerical version with the codename attached
+- `"spec"`: the numerical version with the codename attached
 - `"-v"`: the full string printed by `coconut -v`

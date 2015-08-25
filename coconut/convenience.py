@@ -38,12 +38,12 @@ def version(which="num"):
         return VERSION
     elif which == "name":
         return VERSION_NAME
-    elif which == "full":
+    elif which == "spec":
         return VERSION_STR
     elif which == "-v":
         return COMPILER.version
     else:
-        raise CoconutException("invalid version type "+repr(which)+"; valid versions are 'num', 'name', 'full', and '-v'")
+        raise CoconutException("invalid version type "+repr(which)+"; valid versions are 'num', 'name', 'spec', and '-v'")
 
 #-----------------------------------------------------------------------------------------------------------------------
 # PARSING:
