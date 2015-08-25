@@ -1238,7 +1238,6 @@ class processor(object):
 
     def u_string_check(self, tokens):
         """Checks for Python2-style unicode strings."""
-        if len(tokens) != 1:
         return self.check_strict("Python-2-style unicode string", tokens)
 
     def check_py3(self, name, tokens):
