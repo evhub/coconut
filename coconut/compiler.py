@@ -6,7 +6,7 @@
 
 """
 Author: Evan Hubinger
-Date Created: 2014
+License: Apache 2.0
 Description: The Coconut Compiler.
 """
 

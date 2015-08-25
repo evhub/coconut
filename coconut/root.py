@@ -6,7 +6,7 @@
 
 """
 Author: Evan Hubinger
-Date Created: 2015
+License: Apache 2.0
 Description: The Coconut Root.
 """
 
