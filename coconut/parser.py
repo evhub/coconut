@@ -243,7 +243,7 @@ match_check_var = "_coconut_match_check"
 match_iter_var = "_coconut_match_iter"
 wildcard = "_"
 const_vars = ["True", "False", "None"]
-reserved_vars = ["data", "match", "case", "async", "await"]
+reserved_vars = ["nonlocal", "data", "match", "case", "async", "await"]
 
 ParserElement.setDefaultWhitespaceChars(white)
 
@@ -825,8 +825,10 @@ class processor(object):
         self.classic_lambdef_nocond_ref <<= attach(self.classic_lambdef_nocond, self.lambda_check)
         self.u_string_ref <<= attach(self.u_string, self.u_string_check)
         self.typedef_ref <<= attach(self.typedef, self.typedef_check)
+        self.return_typedef_ref <<= attach(self.return_typedef, self.typedef_check)
         self.yield_from_ref <<= attach(self.yield_from, self.yield_from_check)
         self.matrix_at_ref <<= attach(self.matrix_at, self.matrix_at_check)
+        self.nonlocal_stmt_ref <<= attach(self.nonlocal_stmt, self.nonlocal_check)
         self.setup()
         self.clean()
 
@@ -1221,50 +1223,48 @@ class processor(object):
         else:
             raise CoconutException("invalid passthrough marker: "+repr(tokens))
 
-    def lambda_check(self, tokens):
-        """Checks for Python-style lambdas."""
+    def check_strict(self, name, tokens):
+        """Checks that syntax meets --strict requirements."""
         if len(tokens) != 1:
-            raise CoconutException("invalid Python-style lambda tokens: "+repr(tokens))
+            raise CoconutException("invalid "+name+" tokens: "+repr(tokens))
         elif self.strict:
-            raise CoconutStyleError("found Python-style lambda", tokens[0])
+            raise CoconutStyleError("found "+name, tokens[0])
         else:
             return tokens[0]
+
+    def lambda_check(self, tokens):
+        """Checks for Python-style lambdas."""
+        return self.check_strict("Python-style lambda", tokens)
 
     def u_string_check(self, tokens):
         """Checks for Python2-style unicode strings."""
         if len(tokens) != 1:
-            raise CoconutException("invalid Python-2-style unicode string tokens: "+repr(tokens))
-        elif self.strict:
-            raise CoconutStyleError("found Python-2-style unicode string", tokens[0])
+        return self.check_strict("Python-2-style unicode string", tokens)
+
+    def check_py3(self, name, tokens):
+        """Checks for Python 3 syntax."""
+        if len(tokens) != 1:
+            raise CoconutException("invalid "+name+" tokens: "+repr(tokens))
+        elif self.version != "3":
+            raise CoconutTargetError("found "+name, tokens[0])
         else:
             return tokens[0]
 
     def typedef_check(self, tokens):
         """Checks for Python 3 type defs."""
-        if len(tokens) != 1:
-            raise CoconutException("invalid Python 3 type def tokens: "+repr(tokens))
-        elif self.version != "3":
-            raise CoconutTargetError("found Python 3 type def", tokens[0])
-        else:
-            return tokens[0]
+        return self.check_py3("Python 3 type def", tokens)
 
     def yield_from_check(self, tokens):
         """Checks for Python 3 yield from."""
-        if len(tokens) != 1:
-            raise CoconutException("invalid Python 3 yield from tokens: "+repr(tokens))
-        elif self.version != "3":
-            raise CoconutTargetError("found Python 3 yield from", tokens[0])
-        else:
-            return tokens[0]
+        return self.check_py3("Python 3 yield from", tokens)
 
     def matrix_at_check(self, tokens):
         """Checks for Python 3.5 matrix multiplication."""
-        if len(tokens) != 1:
-            raise CoconutException("invalid Python 3.5 matrix multiplication tokens: "+repr(tokens))
-        elif self.version != "3":
-            raise CoconutTargetError("found Python 3.5 matrix multiplication", tokens[0])
-        else:
-            return tokens[0]
+        return self.check_py3("Python 3.5 matrix multiplication", tokens)
+
+    def nonlocal_check(self, tokens):
+        """Checks for Python 3 nonlocal statement."""
+        return self.check_py3("Python 3 nonlocal statement", tokens)
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # GRAMMAR:
@@ -1339,7 +1339,6 @@ class processor(object):
         + ~Keyword("in")
         + ~Keyword("is")
         + ~Keyword("lambda")
-        + ~Keyword("nonlocal")
         + ~Keyword("not")
         + ~Keyword("or")
         + ~Keyword("pass")
@@ -1438,7 +1437,7 @@ class processor(object):
     vardef = name
     typedef = condense(vardef + colon + test)
     typedef_ref = Forward()
-    tfpdef = vardef | typedef_ref
+    tfpdef = typedef_ref | vardef
     callarg = test
     default = Optional(condense(equals + test))
 
@@ -1700,11 +1699,13 @@ class processor(object):
         ))
     with_stmt = addspace(Keyword("with") + condense(itemlist(with_item, comma) + suite))
 
+    return_typedef_ref = Forward()
     name_funcdef = condense(name + parameters)
     op_funcdef_arg = condense(parenwrap(lparen.suppress(), tfpdef + Optional(default), rparen.suppress()))
     op_funcdef_name = backtick.suppress() + name + backtick.suppress()
     op_funcdef = attach(Group(Optional(op_funcdef_arg)) + op_funcdef_name + Group(Optional(op_funcdef_arg)), infix_proc)
-    base_funcdef = addspace((op_funcdef | name_funcdef) + Optional(arrow + test))
+    return_typedef = addspace(arrow + test)
+    base_funcdef = addspace((op_funcdef | name_funcdef) + Optional(return_typedef_ref))
     funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
     async_funcdef = addspace(Keyword("async") + funcdef)
     async_stmt = async_funcdef | addspace(Keyword("async") + (with_stmt | for_stmt))
@@ -1726,7 +1727,8 @@ class processor(object):
                       | ZeroOrMore(assignlist + equals) + (yield_expr | testlist_star_expr)
                       ), "expr_stmt")
 
-    keyword_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt | assert_stmt
+    nonlocal_stmt_ref = Forward()
+    keyword_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt_ref | assert_stmt
     small_stmt = trace(keyword_stmt ^ expr_stmt, "small_stmt")
     simple_stmt <<= trace(condense(itemlist(small_stmt, semicolon) + newline), "simple_stmt")
     stmt <<= trace(compound_stmt | simple_stmt, "stmt")
