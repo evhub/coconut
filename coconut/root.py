@@ -30,8 +30,9 @@ except ImportError:
 # CONSTANTS:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-VERSION = "0.2.3-dev"
-VERSION_NAME = "Guam"
+VERSION = "0.2.3"
+VERSION_NAME = "Hawaii"
+
 VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
 
 ENCODING = "UTF"
