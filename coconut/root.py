@@ -35,7 +35,7 @@ VERSION_NAME = "Hawaii"
 
 VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
 
-ENCODING = "UTF"
+ENCODING = "UTF-8"
 
 #-----------------------------------------------------------------------------------------------------------------------
 # SETUP:

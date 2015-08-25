@@ -35,7 +35,7 @@ def headers(which, version=None):
             header = "#!/usr/bin/python3"
         else:
             raise CoconutException("invalid Python version: "+repr(version))
-        header += r'''
+        header += '''# -*- coding: '''+ENCODING+''' -*-
 
 # Compiled with Coconut version '''+VERSION_STR+'''
 
