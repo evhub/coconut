@@ -62,7 +62,7 @@ except NameError: pass
 else:
     py2_chr = chr
     chr = unichr
-_coconut_encoding = '''+ENCODING+r'''
+_coconut_encoding = "'''+ENCODING+r'''"
 try: unicode
 except NameError: pass
 else:
@@ -87,7 +87,7 @@ range = xrange
 ascii = repr
 py2_chr = chr
 chr = unichr
-_coconut_encoding = '''+ENCODING+r'''
+_coconut_encoding = "'''+ENCODING+r'''"
 bytes, str = str, unicode
 py2_print = print
 def print(*args, **kwargs):
