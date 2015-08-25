@@ -829,6 +829,7 @@ class processor(object):
         self.yield_from_ref <<= attach(self.yield_from, self.yield_from_check)
         self.matrix_at_ref <<= attach(self.matrix_at, self.matrix_at_check)
         self.nonlocal_stmt_ref <<= attach(self.nonlocal_stmt, self.nonlocal_check)
+        self.dict_comp_ref <<= attach(self.dict_comp, self.dict_comp_check)
         self.setup()
         self.clean()
 
@@ -1265,6 +1266,10 @@ class processor(object):
         """Checks for Python 3 nonlocal statement."""
         return self.check_py3("Python 3 nonlocal statement", tokens)
 
+    def dict_comp_check(self, tokens):
+        """Checks for Python 3 dictionary comprehension."""
+        return self.check_py3("Python 3 dictionary comprehension", tokens)
+
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # GRAMMAR:
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1448,6 +1453,7 @@ class processor(object):
 
     testlist = itemlist(test, comma)
 
+    dict_comp_ref = Forward()
     yield_from = addspace(Keyword("from") + test)
     yield_from_ref = Forward()
     yield_arg = yield_from_ref | testlist
@@ -1457,10 +1463,9 @@ class processor(object):
     testlist_star_expr = itemlist(test_star_expr, comma)
     testlist_comp = addspace(test_star_expr + comp_for) | testlist_star_expr
     setmaker = addspace(test + comp_for | testlist)
-    dictmaker = addspace(
-        condense(test + colon) + test + comp_for
-        | itemlist(addspace(condense(test + colon) + test), comma)
-        )
+    dict_comp = addspace(condense(test + colon) + test + comp_for)
+    dict_item = addspace(itemlist(addspace(condense(test + colon) + test), comma))
+    dictmaker = dict_comp_ref | dict_item
 
     op_atom = condense(
         lparen + (
