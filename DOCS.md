@@ -80,7 +80,7 @@ dest                  destination directory for compiled files (defaults to the 
 
 While Coconut syntax is based off of Python 3, the compiler will run on Python 2 or 3, and will attempt to produce universal code that will run like it does in Python 3 in Python 2. The officially supported versions are `2.6`, `2.7`, `3.3`, `3.4`, and `3.5`. If universal code is not desired, `2` (meaning `2.6` - `2.7`) or `3` (meaning `3.3` - `3.5`)  should be specified as the target.
 
-The given target will only affect the compiled code and whether or not Python-3-specific syntax is allowed. Coconut will always use Python 3 standards and syntax accross all targets whenever possible. This includes overwriting Python 2 built-ins to use the Python 3 versions where possible. If access to the Python 2 versions is desired, the old builtin can be retrieved by prefixing it with `py2_`.
+The given target will only affect the compiled code and whether or not Python-3-specific syntax is allowed. Coconut will always use Python 3 standards and syntax accross all targets whenever possible. While this includes all syntactical constructs, it does not include changing any imports, variable names, or library interfaces. Universal compatibility with those must still be done manually. It does, however, include overwriting Python 2 built-ins to use the Python 3 versions where possible. If access to the Python 2 versions is desired, the old builtin can be retrieved by prefixing it with `py2_`.
 
 ### Compiled Files
 
@@ -148,18 +148,20 @@ f(mod(x, 2)) == 1
 
 ### Function Definition
 
-Coconut allows for math-style in-line function definition, where the body of the function is assigned directly to the function call. The function call that is assinged to can be parenthesis-style or backtick-style, although if it is backtick-style keyword arguments must be placed within parentheses.
+Coconut allows for math-style in-line function definition, where the body of the function is assigned directly to the function call. The function call that is assigned to can be parenthesis-style or backtick-style, although if it is backtick-style keyword arguments must be placed within parentheses. Additionally, backtick-style definition is also allowed in normal Python `def` statements.
 
 ##### Example
 
 Coconut:
 ```
 exp(x, b=2) = b**x
+a `mod` b = a % b
 ```
 
 Python:
 ```
 def exp(x, b=2): return b**x
+def mod(a, b): return a % b
 ```
 
 ### Operator Functions
@@ -731,7 +733,7 @@ sliced = itertools.islice(temp, 5, None)
 
 ### `recursive`
 
-Coconut provides a `recursive` decorator to perform tail recursion optimization on a function written in a tail-recursive style, where it directly returns all calls to itself. Do not use this decorator on a function not written in a tail-recursive style or you will get strange errors.
+Coconut provides a `recursive` decorator to perform tail recursion optimization on a function written in a tail-recursive style, where it directly returns all calls to itself. Do not use this decorator on a function not written in a tail-recursive style or the function will likely break.
 
 ##### Example
 
@@ -898,7 +900,7 @@ _Can't be done._
 
 ### Backslash Escaping
 
-To allow access to the valid Python variable names `data`, `match`, and `case` in Coconut, those keywords may be backslash-escaped to turn them into the variables instead. Additionally, to provide more seamless integration with Python 3.5, the variable names `async` and `await` must also be backslash-escaped.
+To allow access to the valid Python variable names `data`, `match`, and `case` in Coconut, those keywords may be backslash-escaped to turn them into the variables instead. Additionally, to provide more seamless integration with Python 3.5, the variable names `async` and `await` must be backslash-escaped, and to provide backwards compatibility with Python 2, the variable name `nonlocal` must be backslash-escaped.
 
 ##### Example
 

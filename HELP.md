@@ -26,7 +26,13 @@ This tutorial will teach you how to write elegant, Pythonic code in a functional
     - [data](#data)
     - [match](#match)
     - [case](#case)
-- [V. Further Reading](#v-further-reading)
+- [V. Advanced Features](#v-advanced-features)
+    - [itemgetter, attrgetter, and methodcaller](#itemgetter-attrgetter-and-methodcaller)
+    - [takewhile and dropwhile](#takewhile-and-dropwhile)
+    - [recursive](#recursive)
+    - [Set Literals](#set-literals)
+    - [Non-Decimal Integers](#non-decimal-integers)
+- [VI. Further Reading](#vi-further-reading)
 
 ## I. Getting Started
 
@@ -77,6 +83,8 @@ When compiling large projects, one will often want to compile all the code at on
 ```
 coconut <source directory> <destination directory>
 ```
+
+_Note: The full documentation for all of the compiler's features can be found in the [DOCS](https://github.com/evhub/coconut/blob/master/DOCS.md)._
 
 ### Play Around!
 
@@ -165,6 +173,11 @@ Here's an example:
 ```
 f(x) = x**2 + x
 5 |> f |> print
+```
+
+Coconut also supports backtick calling syntax in mathematical or normal function definition, like so:
+```
+a `mod` b = a % b
 ```
 
 ### `reduce`
@@ -368,6 +381,32 @@ def factorial(value):
 ```
 Note the absence of an `in` in the `match` statements: that's because the `value` in `case value` is taking its place. Additionally, unlike lone match statements, only one match statement inside of a case block will ever succeed, so you should put more general matches below more specific ones.
 
-## V. Further Reading
+## V. Advanced Features
+
+### `itemgetter`, `attrgetter`, and `methodcaller`
+
+Coconut adds the new built-in functions `itemgetter`, `attrgetter`, and `methodcaller`. These functions allow operations like getting an element, getting an attribute, or calling a method to be used like functions. Each one works the same way: provide it with the items to get, attributes to get, or method with arguments to call, and it will construct a function that will do that on the object it's called on.
+
+_Note: The full documentation for each of these functions can be found in the [DOCS](https://github.com/evhub/coconut/blob/master/DOCS.md)._
+
+### `takewhile` and `dropwhile`
+
+Coconut adds the new built-in functions `takewhile` and `dropwhile`. Both take a condition as the first argument, and an iterable as the second, and either take from, or drop from, that iterable while the condition is true.
+
+_Note: The full documentation for both of these functions can be found in the [DOCS](https://github.com/evhub/coconut/blob/master/DOCS.md)._
+
+### `recursive`
+
+Coconut adds the new built-in decorator `recursive`, which optimizes any function written in a tail-recursive style, where it directly returns all calls to itself. Do not use this decorator on a function not written in a tail-recursive style or you will get strange errors.
+
+### Set Literals
+
+Coconut allows an optional `s` to be prepended in front of Python set literals. While in most cases this does nothing, in the case of the empty set it lets Coconut know that it is an empty set and not an empty dictionary. Additionally, an `f` is also supported, in which case a Python `frozenset` will be generated instead of a normal set.
+
+### Non-Decimal Integers
+
+Coconut allows non-decimal integers to be written in the form `num_base`. In many cases this is more readable than Python's default C-style notation, although in some cases if the number starts with a letter, a `0` may need to be placed in front to differentiate it from a variable.
+
+## VI. Further Reading
 
 This tutorial was too short to be able to fully cover all the features provided by the Coconut programming language. For the full documentation, see the [DOCS](https://github.com/evhub/coconut/blob/master/DOCS.md) file.
