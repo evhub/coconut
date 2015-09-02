@@ -21,13 +21,13 @@ Why Coconut?
 
 Love Python? So do I! All valid Python 3 is also valid Coconut. That means that not only does learning Coconut not require learning new libraries, it doesn't even require learning a new core syntax! Integrating Coconut into your existing projects is as simple as replacing ``.py`` with ``.coc``.
 
-2. *But...* **Coconut has nicer lambdas.**
+2. *But...* **Coconut has nicer syntax.**
 
-Hate typing out ``lambda`` every time you want to create an anonymous function? Love rhetorical questions and parallel grammatical structure? So do I! Coconut supports lambdas that are as simple as ``(x) -> x``.
+Hate typing out ``lambda`` or ``def`` every time you want to create a one-line function? Love rhetorical questions and parallel grammatical structure? So do I! Coconut supports function definition syntax that's as simple as ``(x) -> x`` or ``f(x) = x``.
 
-3. *But...* **Coconut has immutable data constructors.**
+3. *But...* **Coconut has immutable data types.**
 
-If you know Python, then you already know how useful immutable lists can be. Don't believe me? They're called tuples, of course! Python lets tuples hog all that immutability goodness, but wouldn't it be nice if you could make anything immutable? Coconut's ``data`` statement allows you to define immutable classes, to create any sort of immutable data type that you wish!
+If you know Python, then you already know how useful immutable lists can be. Don't believe me? They're called tuples, of course! Python lets tuples hog all that immutability goodness, but wouldn't it be nice if you could create arbitrary immutable data types? Coconut's ``data`` statement allows you to create any sort of immutable data type that you wish!
 
 4. *But...* **Coconut has pattern matching.**
 
