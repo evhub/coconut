@@ -717,6 +717,7 @@ class matcher(object):
         elif "data" in original:
             data_type, match = original
             self.checks.append("isinstance("+item+", "+data_type+")")
+            self.checks.append("len("+item+") == "+str(len(match)))
             for x in range(0, len(match)):
                 self.match(match[x], item+"["+str(x)+"]")
         elif "paren" in original:

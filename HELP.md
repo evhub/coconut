@@ -69,31 +69,11 @@ $ python tutorial.py
 hello, world!
 ```
 
-### Understanding Compiled Code
+### Understanding The Compiler
 
 If you look in your `tutorial.coc` directory, you should notice that a new file, `tutorial.py` was created when you ran the compiler. That file contains the compiled Python code, which was why you had to enter `python tutorial.py` instead of `python tutorial.coc` to run it.
 
-Open `tutorial.py` and look inside. You should see two sections, `Coconut Header` and `Compiled Coconut`. The `Coconut Header` section contains code inserted into all compiled coconut files, whereas the `Compiled Coconut` section contains the specific code the compiler produced from your source file.
-
-### Understanding Compiled Folders
-
-You might have noticed that the `Coconut Header` section in `tutorial.py` is somewhat large (while Coconut tries to keep the size small, there's only so much it can do). This is because that section contains all the code necessary to set up the Coconut environment. Because Coconut needs to set up that environment in every file, it puts a header at the top.
-
-It would be rather innefficient, however, if Coconut put that entire header in every file of a module (or other folder of files that are intended to stay together). Instead, when compiling a folder, Coconut puts all of that code in a `__coconut__.py` file in the folder directory.
-
-### Compile a Folder!
-
-To compile a folder this way, simply call the `coconut` command with the folder directory as the first argument. Go ahead and try it on the `tutorial.coc` directory:
-```
-coconut <tutorial.coc directory>
-cd <tutorial.coc directory>
-python tutorial.py
-```
-If everything is working properly, you should see exactly the same output as before.
-
-If you now go into the `tutorial.coc` directory, however, you should see a new file, `__coconut__.py`, which contains the header from earlier in non-class form, and if you now open the `tutorial.py` file, you should see a significantly shortened header that imports the larger header file.
-
-_Note: When compiling modules, one will often want to compile to a different location than the source. To accomplish this, simply pass the destination directory as the second argument to `coconut`, like so:_
+When compiling large projects, one will often want to compile all the code at once, and then have it transfered to a different location than the source. To accomplish this, simply pass the destination directory as the second argument to `coconut`, like so:
 ```
 coconut <source directory> <destination directory>
 ```
@@ -105,8 +85,6 @@ As this tutorial starts introducing new concepts, it'll be useful to be able to 
 ## II. Functions
 
 ### Lambdas
-
-Now that you've gotten your feet wet with a simple `hello, world!` program, but before we delve into the special things Coconut can do that Python can't, we should cover the biggest (optional) syntax change, as opposed to syntax addition, that Coconut makes over Python: better lambdas.
 
 In Python, lambdas are ugly and bulky, requiring the entire word `lambda` to be written out every time one is constructed. This is fine if in-line functions are very rarely needed, but in functional programming in-line functions are an essential tool, and so Coconut substitues in a much simpler lambda syntax: the `->` operator.
 
@@ -161,7 +139,7 @@ For all of the examples in this tutorial you should try predicting and then test
 
 ### Operator Functions
 
-A very common thing to do in functional programming is to make use of function versions of built-in operators, currying them, composing them, and piping them. To make this easy, Coconut provides a short-hand syntax to access operator functions, where the operator is simply surrounded by parentheses to retrieve the function.
+A very common thing to do in functional programming is to make use of function versions of built-in operators: currying them, composing them, and piping them. To make this easy, Coconut provides a short-hand syntax to access operator functions, where the operator is simply surrounded by parentheses to retrieve the function.
 
 Here's an example:
 ```
@@ -203,7 +181,7 @@ range(1, 5) |> prod |> print
 
 ### Slicing
 
-Another mainstay of functional programming is lazy evaluation, where sequences are only evaluated when their contents are requested, allowing for things like infinite sequences. In Python, this can be done via iterators. Unfortunately, many of the tools necessary for working with iterators just like one would work with sequences are absent.
+Another mainstay of functional programming is lazy evaluation, where sequences are only evaluated when their contents are requested, allowing for things like infinite sequences. In Python, this can be done via iterators. Unfortunately, many of the tools necessary for working with iterators just like one would work with lists are absent.
 
 Coconut aims to fix this, and the first part of that is Coconut's iterator slicing. Coconut's iterator slicing works much the same as Python's sequence slicing, and looks much the same as Coconut's partial application, but with brackets instead of parentheses.
 
@@ -242,8 +220,10 @@ data vector(x, y):
     def __abs__(self):
         return (self.x**2 + self.y**2)**.5
 
-vector(1, 1) |> print # all data types come with a built-in __repr__
-vector(3, 4) |> abs |> print
+v = vector(3, 4)
+v |> print # all data types come with a built-in __repr__
+v |> abs |> print
+v.x = 2 # this will fail because data objects are immutable
 ```
 
 ### `match`
@@ -287,7 +267,7 @@ def classify_sequence(value):
         return "empty"
     match [x,x] in value:
         return "duplicate pair of "+str(x)
-    match [_,_]:
+    match [_,_] in value:
         return "pair"
 
 [] |> classify_sequence |> print
@@ -299,7 +279,7 @@ def classify_sequence(value):
 ```
 There are a couple of new things here that deserve attention:
 
-First, the use of normal tuple notation to access and check agains the contents of the tuple. List notation can also be used, and both lists and tuples will match either.
+First, the use of normal tuple notation to access and check against the contents of the tuple. List notation can also be used, and both lists and tuples will match either.
 
 Second, the use of the wildcard, `_`. Unlike other variables, like `x` in this example, `_` will never be bound to a value, and can be repeated multiple times without requiring the repeats to be the same value. Making sure all uses of the same variable are equal, however, like in `(x,x)` , is actually a very useful feature of match statements, as can be seen from this example.
 
@@ -313,18 +293,38 @@ data point(x, y):
             return point(self.x + x, self.y + y)
         else:
             raise TypeError("arg to transform must be a point")
-    def equals(self, other):
+    def __eq__(self, other):
         match point(=self.x, =self.y) in other:
             return True
         else:
             return False
 
 point(1,2) |> point(3,4).transform |> print
-point(1,2) |> point(1,2).equals |> print
+point(1,2) |> point(1,2).__eq__ |> print
 ```
 As you can see, matching to data types can be very useful. Values defined by the user with the `data` statement can be matched against and their contents accessed by specifically referencing arguments to the data type's constructor.
 
 Additionally, this example demonstrates checks against predefined variables, which can be done by prefixing the variable name with an equals sign.
+
+This combination of data types and match statements can be used to powerful effect to replicate the usage of algebraic data types in functional programming. Here's an example:
+```
+data empty(): pass
+data leaf(n): pass
+data node(t, t): pass
+tree = (empty, leaf, node)
+
+def depth(t):
+    match tree() in t:
+        return 0
+    match tree(n) in t:
+        return 1
+    match tree(l, r):
+        return 1 + max([depth(l), depth(r)])
+
+empty() |> depth |> print
+leaf(5) |> depth |> print
+node(leaf(2), node(empty(), leaf(3))) |> depth |> print
+```
 
 Even more common, however, are head-tail list or tuple deconstructions. Here's an example:
 ```
