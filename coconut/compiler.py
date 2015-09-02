@@ -52,7 +52,7 @@ def print_error():
     """Displays a formatted error."""
     err_type, err_value, err_trace = sys.exc_info()
     err_msg = "\n".join(traceback.format_exception_only(err_type, err_value)).rstrip()
-    print(err_msg)
+    print(err_msg, file=sys.stderr)
 
 class executor(object):
     """Compiled Python executor."""
@@ -254,6 +254,7 @@ class cli(object):
                 self.start_prompt()
         except parser.coconut_error:
             print_error()
+            sys.exit(1)
 
     def compile_path(self, path, write=True, run=False):
         """Compiles a path."""
@@ -399,7 +400,6 @@ class cli(object):
 
     def start_runner(self):
         """Starts the runner."""
-        import sys
         sys.path.append(os.getcwd())
         self.runner = executor({
             "_coconut_compiler": self,

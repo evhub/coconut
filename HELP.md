@@ -310,7 +310,7 @@ This combination of data types and match statements can be used to powerful effe
 ```
 data empty(): pass
 data leaf(n): pass
-data node(t, t): pass
+data node(l, r): pass
 tree = (empty, leaf, node)
 
 def depth(t):
@@ -318,7 +318,7 @@ def depth(t):
         return 0
     match tree(n) in t:
         return 1
-    match tree(l, r):
+    match tree(l, r) in t:
         return 1 + max([depth(l), depth(r)])
 
 empty() |> depth |> print
