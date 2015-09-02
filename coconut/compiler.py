@@ -144,11 +144,15 @@ class terminal(object):
             inputstring = inputstring.replace(x, "")
         return inputstring
 
-    def display(self, messages, color=None, sig=""):
+    def display(self, messages, color=None, sig="", debug=False):
         """Prints messages."""
         message = " ".join(str(msg) for msg in messages)
         for line in message.splitlines():
-            print(self.addcolor(sig+line, color))
+            msg = self.addcolor(sig+line, color)
+            if debug is True:
+                print(msg, file=sys.stderr)
+            else:
+                print(msg)
 
     def show(self, *messages):
         """Prints messages with main color without a signature."""
@@ -162,7 +166,7 @@ class terminal(object):
 
     def debug(self, *messages):
         """Prints messages with debug color."""
-        self.display(messages, self.debug_color, self.debug_sig)
+        self.display(messages, self.debug_color, self.debug_sig, True)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
