@@ -1214,7 +1214,7 @@ class processor(object):
             if isinstance(ref, tuple):
                 raise CoconutException("comment marker points to string")
             else:
-                return "#"+ref
+                return " #"+ref
         else:
             raise CoconutException("invalid comment marker: "+repr(tokens))
 
