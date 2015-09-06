@@ -186,7 +186,7 @@ class __coconut__(object):
         """Tail Call Optimizer."""
         state = [True, None]
         recurse = object()
-        @functools.wraps(func)
+        @__coconut__.functools.wraps(func)
         def tailed_func(*args, **kwargs):
             """Tail Recursion Wrapper."""
             if state[0]:
