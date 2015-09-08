@@ -366,18 +366,18 @@ fog = lambda *args, **kwargs: f(g(*args, **kwargs))
 
 ### Pipe Forward
 
-Coconut uses the FSharp-style pipe forward operator `|>` for reverse function application. It has a precedence in-between backtick calls and comparisons. The in-place operator is `|>=`.
+Coconut uses the FSharp-style pipe forward operator `|>` (or `|*>` for piping multiple arguments using Python's `*` calling) for reverse function application. It has a precedence in-between backtick calls and comparisons. The in-place operator is `|>=` (or `|*>=` for multiple arguments).
 
 ##### Example
 
 Coconut:
 ```
-ans = 5 |> f |> g
+ans = 5 |> f |*> g
 ```
 
 Python:
 ```
-ans = g(f(5))
+ans = g(*f(5))
 ```
 
 ### Chain

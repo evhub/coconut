@@ -467,7 +467,13 @@ def pipe_proc(tokens):
         return tokens[0]
     else:
         func = tokens.pop()
-        return func+"("+pipe_proc(tokens)+")"
+        op = tokens.pop()
+        if op == "|>":
+            return func+"("+pipe_proc(tokens)+")"
+        elif op == "|*>":
+            return func+"(*"+pipe_proc(tokens)+")"
+        else:
+            raise CoconutException("invalid pipe operator: "+op)
 
 def lambda_proc(tokens):
     """Processes lambda calls."""
@@ -485,6 +491,8 @@ def assign_proc(tokens):
         out = ""
         if op == "|>=":
             out += name+" = ("+item+")("+name+")"
+        elif op == "|*>=":
+            out += name+" = ("+item+")(*"+name+")"
         elif op == "..=":
             out += name+" = (lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)))("+name+", "+item+")"
         elif op == "::=":
@@ -1290,6 +1298,7 @@ class processor(object):
     at = Literal("@")
     arrow = fixto(Literal("->") | Literal("\u2192"), "->")
     heavy_arrow = fixto(Literal("|>=") | Literal("\u21d2"), "|>=")
+    heavy_star_arrow = fixto(Literal("|*>=") | Literal("\u21db"), "|*>=")
     dubcolon = Literal("::")
     colon = fixto(~dubcolon+Literal(":"), ":")
     semicolon = Literal(";")
@@ -1304,6 +1313,7 @@ class processor(object):
     slash = Literal("/")
     dubslash = Literal("//")
     pipeline = fixto(Literal("|>") | Literal("\u21a6"), "|>")
+    starpipe = fixto(Literal("|*>") | Literal("\u2905"), "|*>")
     amp = fixto(Literal("&") | Literal("\u2227") | Literal("\u2229"), "&")
     caret = fixto(Literal("^") | Literal("\u22bb") | Literal("\u2295"), "^")
     bar = fixto(Literal("|") | Literal("\u2228") | Literal("\u222a"), "|")
@@ -1411,6 +1421,7 @@ class processor(object):
     dedent = Literal(closestr)
 
     augassign = (heavy_arrow
+                 | heavy_star_arrow
                  | Combine(dotdot + equals)
                  | Combine(dubcolon + equals)
                  | Combine(div_dubslash + equals)
@@ -1477,6 +1488,7 @@ class processor(object):
     op_atom = condense(
         lparen + (
             fixto(pipeline, "lambda x, f: f(x)")
+            | fixto(starpipe, "lambda xs, f: f(*xs)")
             | fixto(dotdot, "lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs))")
             | fixto(dubcolon, "__coconut__.chain")
             | fixto(dollar, "__coconut__.partial")
@@ -1580,7 +1592,8 @@ class processor(object):
     infix_item = attach(Group(Optional(chain_expr)) + infix_op + Group(Optional(infix_expr)), infix_proc)
     infix_expr <<= infix_item | chain_expr
 
-    pipe_expr = attach(infix_expr + ZeroOrMore(pipeline.suppress() + infix_expr), pipe_proc)
+    pipe_op = pipeline | starpipe
+    pipe_expr = attach(infix_expr + ZeroOrMore(pipe_op + infix_expr), pipe_proc)
 
     expr <<= trace(pipe_expr, "expr")
     comparison = addspace(expr + ZeroOrMore(comp_op + expr))
