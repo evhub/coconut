@@ -1109,6 +1109,7 @@ class processor(object):
         _char = 0
         _escape = 1
         for line in inputstring.splitlines():
+            line = line.strip()
             if hold is None and not line.startswith(startcomment):
                 while line.startswith(openstr) or line.startswith(closestr):
                     if line[0] == openstr:

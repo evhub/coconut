@@ -323,8 +323,6 @@ class cli(object):
             compiled = self.processor.parse_file(code)
         else:
             raise parser.CoconutException("invalid value for module boolean of "+repr(module))
-        if self.show:
-            print(compiled)
         if run:
             self.execute(compiled)
         if destpath is not None:
