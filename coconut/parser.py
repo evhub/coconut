@@ -472,6 +472,10 @@ def pipe_proc(tokens):
             return func+"("+pipe_proc(tokens)+")"
         elif op == "|*>":
             return func+"(*"+pipe_proc(tokens)+")"
+        elif op == "<|":
+            return pipe_proc(tokens)+"("+func+")"
+        elif op == "<*|":
+            return pipe_proc(tokens)+"(*"+func+")"
         else:
             raise CoconutException("invalid pipe operator: "+op)
 
@@ -493,6 +497,10 @@ def assign_proc(tokens):
             out += name+" = ("+item+")("+name+")"
         elif op == "|*>=":
             out += name+" = ("+item+")(*"+name+")"
+        elif op == "<|=":
+            out += name+" = "+name+"(("+item+"))"
+        elif op == "<*|=":
+            out += name+" = "+name+"(*("+item+"))"
         elif op == "..=":
             out += name+" = (lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)))("+name+", "+item+")"
         elif op == "::=":
@@ -1297,8 +1305,6 @@ class processor(object):
     rparen = Literal(")")
     at = Literal("@")
     arrow = fixto(Literal("->") | Literal("\u2192"), "->")
-    heavy_arrow = fixto(Literal("|>=") | Literal("\u21d2"), "|>=")
-    heavy_star_arrow = fixto(Literal("|*>=") | Literal("\u21db"), "|*>=")
     dubcolon = Literal("::")
     colon = fixto(~dubcolon+Literal(":"), ":")
     semicolon = Literal(";")
@@ -1313,7 +1319,9 @@ class processor(object):
     slash = Literal("/")
     dubslash = Literal("//")
     pipeline = fixto(Literal("|>") | Literal("\u21a6"), "|>")
-    starpipe = fixto(Literal("|*>") | Literal("\u2905"), "|*>")
+    starpipe = fixto(Literal("|*>") | Literal("*\u21a6"), "|*>")
+    backpipe = fixto(Literal("<|") | Literal("\u21a4"), "<|")
+    backstarpipe = fixto(Literal("<*|") | Literal("\u21a4*"), "<*|")
     amp = fixto(Literal("&") | Literal("\u2227") | Literal("\u2229"), "&")
     caret = fixto(Literal("^") | Literal("\u22bb") | Literal("\u2295"), "^")
     bar = fixto(Literal("|") | Literal("\u2228") | Literal("\u222a"), "|")
@@ -1420,8 +1428,10 @@ class processor(object):
     indent = Literal(openstr)
     dedent = Literal(closestr)
 
-    augassign = (heavy_arrow
-                 | heavy_star_arrow
+    augassign = (Combine(pipeline + equals)
+                 | Combine(starpipe + equals)
+                 | Combine(backpipe + equals)
+                 | Combine(backstarpipe + equals)
                  | Combine(dotdot + equals)
                  | Combine(dubcolon + equals)
                  | Combine(div_dubslash + equals)
@@ -1489,6 +1499,8 @@ class processor(object):
         lparen + (
             fixto(pipeline, "lambda x, f: f(x)")
             | fixto(starpipe, "lambda xs, f: f(*xs)")
+            | fixto(backpipe, "lambda f, x: f(x)")
+            | fixto(backstarpipe, "lambda f, xs: f(*xs)")
             | fixto(dotdot, "lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs))")
             | fixto(dubcolon, "__coconut__.chain")
             | fixto(dollar, "__coconut__.partial")
@@ -1592,7 +1604,7 @@ class processor(object):
     infix_item = attach(Group(Optional(chain_expr)) + infix_op + Group(Optional(infix_expr)), infix_proc)
     infix_expr <<= infix_item | chain_expr
 
-    pipe_op = pipeline | starpipe
+    pipe_op = pipeline | starpipe | backpipe | backstarpipe
     pipe_expr = attach(infix_expr + ZeroOrMore(pipe_op + infix_expr), pipe_proc)
 
     expr <<= trace(pipe_expr, "expr")
@@ -1731,6 +1743,7 @@ class processor(object):
     return_typedef = addspace(arrow + test)
     base_funcdef = addspace((op_funcdef | name_funcdef) + Optional(return_typedef_ref))
     funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
+    math_funcdef = attach(base_funcdef + equals.suppress() + (yield_expr | testlist_star_expr), func_proc)
     async_funcdef = addspace(Keyword("async") + funcdef)
     async_stmt = async_funcdef | addspace(Keyword("async") + (with_stmt | for_stmt))
 
@@ -1738,7 +1751,7 @@ class processor(object):
     datadef = condense(attach(Keyword("data").suppress() + name + data_args, data_proc) + suite)
 
     decorators = attach(OneOrMore(at.suppress() + test + newline.suppress()), decorator_proc)
-    decorated = condense(decorators + (classdef | funcdef | async_funcdef | datadef))
+    decorated = condense(decorators + (classdef | funcdef | async_funcdef | datadef | math_funcdef))
 
     passthrough_stmt = condense(passthrough_block + (nocolon_suite | newline))
 
@@ -1747,7 +1760,7 @@ class processor(object):
 
     expr_stmt = trace(addspace(
                       attach(simple_assign + augassign + (yield_expr | testlist), assign_proc)
-                      | attach(base_funcdef + equals.suppress() + (yield_expr | testlist_star_expr), func_proc)
+                      | math_funcdef
                       | ZeroOrMore(assignlist + equals) + (yield_expr | testlist_star_expr)
                       ), "expr_stmt")
 

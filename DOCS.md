@@ -23,7 +23,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [Code Passthrough](#code-passthrough)
 - [III. Operators](#iii-operators)
     - [Compose](#compose)
-    - [Pipe Forward](#pipe-forward)
+    - [Pipeline](#pipeline)
     - [Chain](#chain)
     - [Partial](#partial)
     - [Iterator Slice](#iterator-slice)
@@ -308,7 +308,9 @@ Coconut supports unicode alternatives to many different symbols. The full list o
 ```
 → (\u2192)                  => "->"
 ↦ (\u21a6)                  => "|>"
-⇒ (\u21d2)                  => "|>="
+*↦ (*\u21a6)                => "|*>"
+↤ (\u21a4)                  => "<|"
+↤* (\u21a4*)                => "<*|"
 ⋅ (\u22c5)                  => "*"
 ↑ (\u2191)                  => "**"
 ÷ (\xf7)                    => "/"
@@ -364,9 +366,15 @@ Python:
 fog = lambda *args, **kwargs: f(g(*args, **kwargs))
 ```
 
-### Pipe Forward
+### Pipeline
 
-Coconut uses the FSharp-style pipe forward operator `|>` (or `|*>` for piping multiple arguments using Python's `*` calling) for reverse function application. It has a precedence in-between backtick calls and comparisons. The in-place operator is `|>=` (or `|*>=` for multiple arguments).
+Coconut uses the FSharp-style pipe operators for pipeline-style function application. All the operators have a precedence in-between backtick calls and comparisons and are left-associative. The different operators are:
+```
+(|>)    => pipe forward
+(|*>)   => multiple-argument pipe forward
+(<|)    => pipe backward
+(<*|)   => multiple-argument pipe backward
+```
 
 ##### Example
 
