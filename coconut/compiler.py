@@ -325,6 +325,8 @@ class cli(object):
             raise parser.CoconutException("invalid value for module boolean of "+repr(module))
         if run:
             self.execute(compiled)
+        elif self.show:
+            print(compiled)
         if destpath is not None:
             destpath = fixpath(destpath)
             destdir = os.path.dirname(destpath)
