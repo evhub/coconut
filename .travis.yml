@@ -10,11 +10,11 @@ matrix:
     - python: "2.6"
       script:
         - coconut --version
-        - coconut --strict --print --debug --code "__coconut__ |> print"
-        - echo "__coconut__ |> print" | coconut --strict --print --debug
-        - coconut src/cocotest build/cocotest --strict --print --debug --autopep8
-        - coconut src/runner.coc build --strict --print --debug --autopep8
-        - python build/runner.py -tt -vv
+        - coconut --strict --print --code "__coconut__ |> print"
+        - echo "__coconut__ |> print" | coconut --strict --print
+        - coconut src/cocotest build/cocotest --strict --print --autopep8
+        - coconut src/runner.coc build --strict --print --autopep8
+        - python -tt build/runner.py
 
 install:
   - pip install .
@@ -25,12 +25,12 @@ install:
 
 script:
   - coconut --version
-  - coconut --strict --print --debug --code "__coconut__ |> print"
-  - echo "__coconut__ |> print" | coconut --strict --print --debug
+  - coconut --strict --print --code "__coconut__ |> print"
+  - echo "__coconut__ |> print" | coconut --strict --print
   - ipython --ext coconut -c "%coconut __coconut__ |> print"
-  - coconut src/cocotest build/cocotest --strict --print --debug --autopep8
-  - coconut src/runner.coc build --strict --print --debug --autopep8
-  - python build/runner.py -tt -vv
+  - coconut src/cocotest build/cocotest --strict --print --autopep8
+  - coconut src/runner.coc build --strict --print --autopep8
+  - python -tt build/runner.py
 
 notifications:
   email: false
