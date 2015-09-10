@@ -42,7 +42,6 @@ def headers(which, version=None):
 '''
     else:
         header = r'''
-
 # Coconut Header: --------------------------------------------------------------
         '''
         if version is None:
@@ -1194,7 +1193,7 @@ class processor(object):
     def set_docstring(self, tokens):
         """Sets the docstring."""
         if len(tokens) == 2:
-            self.docstring = "\n"+self.string_repl([tokens[0]])
+            self.docstring = "\n"+self.string_repl([tokens[0]])+"\n"
             return tokens[1]
         else:
             raise CoconutException("invalid docstring tokens: "+repr(tokens))
