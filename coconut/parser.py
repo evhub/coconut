@@ -128,7 +128,7 @@ except ImportError:
 
 def recursive(func):
     """Tail Call Optimizer."""
-    state = [True, None]
+    state = [True, None] # toplevel, (args, kwargs)
     recurse = object()
     @functools.wraps(func)
     def tailed_func(*args, **kwargs):
@@ -184,7 +184,7 @@ class __coconut__(object):
     @staticmethod
     def recursive(func):
         """Tail Call Optimizer."""
-        state = [True, None]
+        state = [True, None] # toplevel, (args, kwargs)
         recurse = object()
         @__coconut__.functools.wraps(func)
         def tailed_func(*args, **kwargs):
