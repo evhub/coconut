@@ -39,7 +39,6 @@ def headers(which, version=None):
 # -*- coding: '''+ENCODING+''' -*-
 
 # Compiled with Coconut version '''+VERSION_STR+'''
-
 '''
     else:
         header = r'''
@@ -103,23 +102,9 @@ def input(*args, **kwargs):
 """Built-in Coconut Functions."""
 
 import functools
-partial = functools.partial
-reduce = functools.reduce
-
 import operator
-itemgetter = operator.itemgetter
-attrgetter = operator.attrgetter
-methodcaller = operator.methodcaller
-
 import itertools
-chain = itertools.chain
-islice = itertools.islice
-takewhile = itertools.takewhile
-dropwhile = itertools.dropwhile
-tee = itertools.tee
-
 import collections
-data = collections.namedtuple
 
 try:
     import collections.abc as abc
@@ -163,20 +148,9 @@ import __coconut__
 class __coconut__(object):
     """Built-in Coconut Functions."""
     import functools
-    partial = functools.partial
-    reduce = functools.reduce
     import operator
-    itemgetter = operator.itemgetter
-    attrgetter = operator.attrgetter
-    methodcaller = operator.methodcaller
     import itertools
-    chain = itertools.chain
-    islice = itertools.islice
-    takewhile = itertools.takewhile
-    dropwhile = itertools.dropwhile
-    tee = itertools.tee
     import collections
-    data = staticmethod(collections.namedtuple)
     try:
         import collections.abc as abc
     except ImportError:
@@ -209,13 +183,13 @@ class __coconut__(object):
             else:
                 raise CoconutException("invalid header type: "+repr(which))
             header += r'''
-reduce = __coconut__.reduce
-itemgetter = __coconut__.itemgetter
-attrgetter = __coconut__.attrgetter
-methodcaller = __coconut__.methodcaller
-takewhile = __coconut__.takewhile
-dropwhile = __coconut__.dropwhile
-tee = __coconut__.tee
+reduce = __coconut__.functools.reduce
+itemgetter = __coconut__.operator.itemgetter
+attrgetter = __coconut__.operator.attrgetter
+methodcaller = __coconut__.operator.methodcaller
+takewhile = __coconut__.itertools.takewhile
+dropwhile = __coconut__.itertools.dropwhile
+tee = __coconut__.itertools.tee
 recursive = __coconut__.recursive
 '''
             if which != "code":
@@ -406,7 +380,7 @@ def item_proc(tokens):
             raise CoconutSyntaxError("an argument is required", trailer[0])
         elif len(trailer) == 2:
             if trailer[0] == "$(":
-                out = "__coconut__.partial("+out+", "+trailer[1]+")"
+                out = "__coconut__.functools.partial("+out+", "+trailer[1]+")"
             elif trailer[0] == "$[":
                 if 0 < len(trailer[1]) <= 3:
                     args = []
@@ -418,7 +392,7 @@ def item_proc(tokens):
                             else:
                                 arg = "None"
                         args.append(arg)
-                    out = "__coconut__.islice("+out
+                    out = "__coconut__.itertools.islice("+out
                     if len(args) == 1:
                         out += ", "+args[0]+", ("+args[0]+") + 1)"
                         out = "next("+out+")"
@@ -441,7 +415,7 @@ def chain_proc(tokens):
     if len(tokens) == 1:
         return tokens[0]
     else:
-        return "__coconut__.chain("+", ".join(tokens)+")"
+        return "__coconut__.itertools.chain("+", ".join(tokens)+")"
 
 def infix_proc(tokens):
     """Processes infix calls."""
@@ -504,7 +478,7 @@ def assign_proc(tokens):
         elif op == "..=":
             out += name+" = (lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)))("+name+", "+item+")"
         elif op == "::=":
-            out += name+" = __coconut__.chain("+name+", ("+item+"))"
+            out += name+" = __coconut__.itertools.chain("+name+", ("+item+"))"
         else:
             out += name+" "+op+" "+item
         return out
@@ -521,9 +495,9 @@ def func_proc(tokens):
 def data_proc(tokens):
     """Processes data blocks."""
     if len(tokens) == 2:
-        return "class "+tokens[0]+"(__coconut__.data('"+tokens[0]+"', '"+tokens[1]+"'))"
+        return "class "+tokens[0]+"(__coconut__.collections.namedtuple('"+tokens[0]+"', '"+tokens[1]+"'))"
     elif len(tokens) == 1:
-        return "class "+tokens[0]+"(__coconut__.data('"+tokens[0]+"', ''))"
+        return "class "+tokens[0]+"(__coconut__.collections.namedtuple('"+tokens[0]+"', ''))"
     else:
         raise CoconutException("invalid data tokens: "+repr(tokens))
 
@@ -692,9 +666,9 @@ class matcher(object):
             itervar = match_iter_var + "_" + str(self.iter_index)
             self.iter_index += 1
             if series_type == "(":
-                self.defs.append(itervar+" = tuple(__coconut__.islice("+item+", 0, "+str(len(match))+"))")
+                self.defs.append(itervar+" = tuple(__coconut__.itertools.islice("+item+", 0, "+str(len(match))+"))")
             elif series_type == "[":
-                self.defs.append(itervar+" = list(__coconut__.islice("+item+", 0, "+str(len(match))+"))")
+                self.defs.append(itervar+" = list(__coconut__.itertools.islice("+item+", 0, "+str(len(match))+"))")
             else:
                 raise CoconutException("invalid iterator match tokens: "+repr(original))
             self.defs.append(tail+" = "+item)
@@ -1220,7 +1194,7 @@ class processor(object):
     def set_docstring(self, tokens):
         """Sets the docstring."""
         if len(tokens) == 2:
-            self.docstring = self.string_repl([tokens[0]])
+            self.docstring = "\n"+self.string_repl([tokens[0]])
             return tokens[1]
         else:
             raise CoconutException("invalid docstring tokens: "+repr(tokens))
@@ -1502,8 +1476,8 @@ class processor(object):
             | fixto(backpipe, "lambda f, x: f(x)")
             | fixto(backstarpipe, "lambda f, xs: f(*xs)")
             | fixto(dotdot, "lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs))")
-            | fixto(dubcolon, "__coconut__.chain")
-            | fixto(dollar, "__coconut__.partial")
+            | fixto(dubcolon, "__coconut__.itertools.chain")
+            | fixto(dollar, "__coconut__.functools.partial")
             | fixto(dot, "__coconut__.operator.attrgetter")
             | fixto(exp_dubstar, "__coconut__.operator.__pow__")
             | fixto(mul_star, "__coconut__.operator.__mul__")
@@ -1525,7 +1499,7 @@ class processor(object):
             | fixto(ge, "__coconut__.operator.__ge__")
             | fixto(ne, "__coconut__.operator.__ne__")
             | fixto(tilde, "__coconut__.operator.__inv__")
-            | fixto(matrix_at_ref, "lambda a, b: a @ b")
+            | fixto(matrix_at_ref, "__coconut__.operator.__matmul__")
             | fixto(Keyword("not"), "__coconut__.operator.__not__")
             | fixto(Keyword("and"), "lambda a, b: a and b")
             | fixto(Keyword("or"), "lambda a, b: a or b")
@@ -1533,7 +1507,7 @@ class processor(object):
             | fixto(Keyword("in"), "__coconut__.operator.__contains__")
         ) + rparen
         | fixto(lbrack, "(") + (
-            fixto(dollar, "__coconut__.islice")
+            fixto(dollar, "__coconut__.itertools.islice")
             | fixto(plus, "__coconut__.operator.__concat__")
         ) + fixto(rbrack, ")")
     )
