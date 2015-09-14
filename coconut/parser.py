@@ -1266,6 +1266,12 @@ class processor(object):
         """Checks for Python 3 dictionary comprehension."""
         return self.check_py3("Python 3 dictionary comprehension", tokens)
 
+    def parse(self, inputstring, parser, preargs, postargs):
+        """Uses the parser to parse the inputstring."""
+        out = self.post(parser.parseString(self.pre(inputstring, **preargs)), **postargs)
+        self.clean()
+        return out
+
 #-----------------------------------------------------------------------------------------------------------------------
 # GRAMMAR:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1756,36 +1762,24 @@ class processor(object):
 
     def parse_single(self, inputstring):
         """Parses console input."""
-        out = self.post(self.single_parser.parseString(self.pre(inputstring)), header="none", initial="none")
-        self.clean()
-        return out
+        return self.parse(inputstring, self.single_parser, {}, {header="none", initial="none"})
 
     def parse_file(self, inputstring):
         """Parses file input."""
-        out = self.post(self.file_parser.parseString(self.pre(inputstring)), header="file")
-        self.clean()
-        return out
+        return self.parse(inputstring, self.file_parser, {}, {header="file"})
 
     def parse_module(self, inputstring):
         """Parses module input."""
-        out = self.post(self.file_parser.parseString(self.pre(inputstring)), header="module")
-        self.clean()
-        return out
+        return self.parse(inputstring, self.file_parseer, {}, {header="module"})
 
     def parse_block(self, inputstring):
         """Parses block text."""
-        out = self.post(self.file_parser.parseString(self.pre(inputstring)), header="none", initial="none")
-        self.clean()
-        return out
+        return self.parse(inputstring, self.file_parser, {}, {header="none", initial="none"})
 
     def parse_eval(self, inputstring):
         """Parses eval input."""
-        out = self.post(self.eval_parser.parseString(self.pre(inputstring, strip=True)), header="none", initial="none")
-        self.clean()
-        return out
+        return self.parse(inputstring, self.eval_parser, {strip=True}, {header="none", initial="none"})
 
     def parse_debug(self, inputstring):
         """Parses debug input."""
-        out = self.post(self.file_parser.parseString(self.pre(inputstring, strip=True)), header="none", initial="none")
-        self.clean()
-        return out
+        return self.parse(inputstring, self.file_parser, {strip=True}, {header="none", initial="none"})
