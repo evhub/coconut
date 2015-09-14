@@ -1778,7 +1778,7 @@ class processor(object):
 
     def parse_module(self, inputstring):
         """Parses module input."""
-        return self.parse(inputstring, self.file_parseer, {}, {"header": "module"})
+        return self.parse(inputstring, self.file_parser, {}, {"header": "module"})
 
     def parse_block(self, inputstring):
         """Parses block text."""
