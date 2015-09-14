@@ -51,8 +51,10 @@ def fixpath(path):
 def print_error():
     """Displays a formatted error."""
     err_type, err_value, err_trace = sys.exc_info()
-    err_msg = "\n".join(traceback.format_exception_only(err_type, err_value)).rstrip()
-    print(err_msg, file=sys.stderr)
+    err_name, err_msg = "\n".join(traceback.format_exception_only(err_type, err_value)).rstrip().split(": ", 1)
+    err_name = err_name.split(".")[-1]
+    err = err_name+": "+err_msg
+    print(err, file=sys.stderr)
 
 class executor(object):
     """Compiled Python executor."""
