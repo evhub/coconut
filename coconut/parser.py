@@ -229,9 +229,7 @@ ParserElement.setDefaultWhitespaceChars(white)
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
 
-coconut_error = ParseFatalException, ParseException
-
-class CoconutException(ParseFatalException):
+class CoconutException(Exception):
     """Base Coconut exception."""
     def __init__(self, value):
         """creates the Coconut exception."""
@@ -261,6 +259,12 @@ class CoconutSyntaxError(CoconutException):
                 else:
                     self.value += " "
             self.value += "^"
+
+class CoconutParseError(CoconutSyntaxError):
+    """Coconut ParseError."""
+    def __init__(self, line, col, lineno):
+        """Creates Tthe Coconut ParseError."""
+        CoconutSyntaxError.__init__(self, "parsing failed at line "+str(lineno)+" col "+str(col), line, col)
 
 class CoconutStyleError(CoconutSyntaxError):
     """Coconut --strict error."""
@@ -1268,8 +1272,12 @@ class processor(object):
 
     def parse(self, inputstring, parser, preargs, postargs):
         """Uses the parser to parse the inputstring."""
-        out = self.post(parser.parseString(self.pre(inputstring, **preargs)), **postargs)
-        self.clean()
+        try:
+            out = self.post(parser.parseString(self.pre(inputstring, **preargs)), **postargs)
+        except ParseBaseException as err:
+            raise CoconutParseError(err.line, err.col, err.lineno)
+        finally:
+            self.clean()
         return out
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1762,24 +1770,24 @@ class processor(object):
 
     def parse_single(self, inputstring):
         """Parses console input."""
-        return self.parse(inputstring, self.single_parser, {}, {header="none", initial="none"})
+        return self.parse(inputstring, self.single_parser, {}, {"header": "none", "initial": "none"})
 
     def parse_file(self, inputstring):
         """Parses file input."""
-        return self.parse(inputstring, self.file_parser, {}, {header="file"})
+        return self.parse(inputstring, self.file_parser, {}, {"header": "file"})
 
     def parse_module(self, inputstring):
         """Parses module input."""
-        return self.parse(inputstring, self.file_parseer, {}, {header="module"})
+        return self.parse(inputstring, self.file_parseer, {}, {"header": "module"})
 
     def parse_block(self, inputstring):
         """Parses block text."""
-        return self.parse(inputstring, self.file_parser, {}, {header="none", initial="none"})
+        return self.parse(inputstring, self.file_parser, {}, {"header": "none", "initial": "none"})
 
     def parse_eval(self, inputstring):
         """Parses eval input."""
-        return self.parse(inputstring, self.eval_parser, {strip=True}, {header="none", initial="none"})
+        return self.parse(inputstring, self.eval_parser, {"strip": True}, {"header": "none", "initial": "none"})
 
     def parse_debug(self, inputstring):
         """Parses debug input."""
-        return self.parse(inputstring, self.file_parser, {strip=True}, {header="none", initial="none"})
+        return self.parse(inputstring, self.file_parser, {"strip": True}, {"header": "none", "initial": "none"})

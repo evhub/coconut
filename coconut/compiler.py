@@ -256,7 +256,7 @@ class cli(object):
                 self.execute(self.processor.parse_block(sys.stdin.read()))
             if args.interact or (interact and not (stdin or args.source or args.version or args.code)):
                 self.start_prompt()
-        except parser.coconut_error:
+        except parser.CoconutException:
             print_error()
             sys.exit(1)
 
@@ -373,7 +373,7 @@ class cli(object):
         """Compiles Coconut interpreter input."""
         try:
             compiled = self.processor.parse_single(code)
-        except parser.coconut_error:
+        except parser.CoconutException:
             while True:
                 line = self.prompt_with(self.moreprompt)
                 if line:
@@ -384,7 +384,7 @@ class cli(object):
                     break
             try:
                 compiled = self.processor.parse_single(code)
-            except parser.coconut_error:
+            except parser.CoconutException:
                 print_error()
                 return None
         return compiled
