@@ -31,7 +31,7 @@ except ImportError:
 #-----------------------------------------------------------------------------------------------------------------------
 
 VERSION = "0.2.3-dev"
-VERSION_NAME = "Hawaii"
+VERSION_NAME = "Hawaii" #Ilocos
 
 VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
 

@@ -263,7 +263,7 @@ class CoconutSyntaxError(CoconutException):
 class CoconutParseError(CoconutSyntaxError):
     """Coconut ParseError."""
     def __init__(self, line, col, lineno):
-        """Creates Tthe Coconut ParseError."""
+        """Creates The Coconut ParseError."""
         CoconutSyntaxError.__init__(self, "parsing failed at line "+str(lineno)+" col "+str(col), line, col)
 
 class CoconutStyleError(CoconutSyntaxError):
@@ -655,14 +655,34 @@ class matcher(object):
                 self.checks.append("len("+item+") == "+str(len(match)))
             else:
                 self.checks.append("len("+item+") >= "+str(len(match)))
+                if len(match):
+                    splice = "["+str(len(match))+":]"
+                else:
+                    splice = ""
                 if series_type == "(":
-                    self.defs.append(tail+" = tuple("+item+"["+str(len(match))+":])")
+                    self.defs.append(tail+" = tuple("+item+splice+")")
                 elif series_type == "[":
-                    self.defs.append(tail+" = list("+item+"["+str(len(match))+":])")
+                    self.defs.append(tail+" = list("+item+splice+")")
                 else:
                     raise CoconutException("invalid series match type: "+repr(series_type))
             for x in range(0, len(match)):
                 self.match(match[x], item+"["+str(x)+"]")
+        elif "rseries" in original:
+            front, series_type, match = original
+            self.checks.append("isinstance("+item+", __coconut__.abc.Sequence)")
+            self.checks.append("len("+item+") >= "+str(len(match)))
+            if len(match):
+                splice = "[:"+str(-len(match))+"]"
+            else:
+                splice = ""
+            if series_type == "(":
+                self.defs.append(front+" = tuple("+item+splice+")")
+            elif series_type == "[":
+                self.defs.append(front+" = list("+item+splice+")")
+            else:
+                raise CoconutException("invalid series match type: "+repr(series_type))
+            for x in range(0, len(match)):
+                self.match(match[x], item+"["+str(x - len(match))+"]")
         elif "series" in original and len(original) == 4 and original[2] == "::":
             series_type, match, _, tail = original
             self.checks.append("isinstance("+item+", __coconut__.abc.Iterable)")
@@ -767,7 +787,17 @@ def match_proc(tokens):
     out = match_check_var + " = False" + linebreak
     out += match_to_var + " = " + item + linebreak
     out += matching.out()
-    out += "if "+match_check_var+":" + linebreak + openstr + "".join(stmts) + closestr
+    if stmts is not None:
+        out += "if "+match_check_var+":" + linebreak + openstr + "".join(stmts) + closestr
+    return out
+
+def match_assign_proc(tokens):
+    """Processes match assign blocks."""
+    matches, item = tokens
+    out = match_proc((matches, item, None))
+    out += ("if not "+match_check_var+":" + linebreak + openstr +
+        'raise ValueError("no match for pattern in " '+repr(item)+")"
+        + linebreak + closestr)
     return out
 
 def case_to_match(tokens, item):
@@ -1473,10 +1503,6 @@ class processor(object):
     yield_from_ref = Forward()
     yield_arg = yield_from_ref | testlist
     yield_expr = addspace(Keyword("yield") + Optional(yield_arg))
-    star_expr = condense(star + expr)
-    test_star_expr = star_expr | test
-    testlist_star_expr = itemlist(test_star_expr, comma)
-    testlist_comp = addspace(test_star_expr + comp_for) | testlist_star_expr
     setmaker = addspace(test + comp_for | testlist)
     dict_comp = addspace(condense(test + colon) + test + comp_for)
     dict_item = addspace(itemlist(addspace(condense(test + colon) + test), comma))
@@ -1525,6 +1551,7 @@ class processor(object):
         ) + fixto(rbrack, ")")
     )
 
+    testlist_comp = Forward()
     func_atom = name | op_atom | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
     keyword_atom = Keyword(const_vars[0])
     for x in range(1, len(const_vars)):
@@ -1532,7 +1559,8 @@ class processor(object):
     string_atom = addspace(OneOrMore(string))
     passthrough_atom = addspace(OneOrMore(passthrough))
     set_s = fixto(CaselessLiteral("s"), "s")
-    set_letter = set_s | fixto(CaselessLiteral("f"), "f")
+    set_f = fixto(CaselessLiteral("f"), "f")
+    set_letter = set_s | set_f
     atom = (
         keyword_atom
         | ellipses
@@ -1562,8 +1590,9 @@ class processor(object):
 
     assignlist = Forward()
     simple_assign = condense(name + ZeroOrMore(simple_trailer))
-    assign_item = condense(simple_assign | lparen + assignlist + rparen | lbrack + assignlist + rbrack)
-    assignlist <<= itemlist(Optional(star) + assign_item, comma)
+    assign_item = condense(Optional(star) + (simple_assign | lparen + assignlist + rparen | lbrack + assignlist + rbrack))
+    assignlist <<= itemlist(assign_item, comma)
+    testlist_comp <<= addspace(assign_item + comp_for) | testlist
 
     atom_item = trace(attach(atom + ZeroOrMore(trailer), item_proc), "atom_item")
 
@@ -1616,7 +1645,6 @@ class processor(object):
 
     test <<= lambdef | trace(addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test)), "test")
     test_nocond <<= lambdef_nocond | trace(test_item, "test_item")
-    exprlist = itemlist(star_expr | expr, comma)
 
     simple_stmt = Forward()
     simple_compound_stmt = Forward()
@@ -1628,7 +1656,7 @@ class processor(object):
     classlist = attach(Optional(lparen.suppress() + Optional(testlist) + rparen.suppress()), class_proc)
     classdef = condense(addspace(Keyword("class") + name) + classlist + suite)
     comp_iter = Forward()
-    comp_for <<= addspace(Keyword("for") + exprlist + Keyword("in") + test_item + Optional(comp_iter))
+    comp_for <<= addspace(Keyword("for") + assignlist + Keyword("in") + test_item + Optional(comp_iter))
     comp_if = addspace(Keyword("if") + test_nocond + Optional(comp_iter))
     comp_iter <<= comp_for | comp_if
 
@@ -1674,6 +1702,8 @@ class processor(object):
         | (lbrack + matchlist_list + rbrack.suppress() + Optional((plus | dubcolon) + name))("series")
         | (lbrace.suppress() + matchlist_dict + rbrace.suppress())("dict")
         | (Optional(set_s.suppress()) + lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
+        | (name + plus.suppress() + lparen + matchlist_tuple + rparen.suppress())("rseries")
+        | (name + plus.suppress() + lbrack + matchlist_list + rbrack.suppress())("rseries")
         | (name + equals.suppress() + match)("assign")
         | (name + lparen.suppress() + matchlist_list + rparen.suppress())("data")
         | name("var")
@@ -1696,6 +1726,8 @@ class processor(object):
         , match_proc), "full_match")
     match_stmt = condense(full_match + Optional(else_stmt))
 
+    match_assign_stmt = trace(attach(match + equals.suppress() + (yield_expr | testlist) + newline.suppress(), match_assign_proc), "match_assign_stmt")
+
     case_match = trace(Group(
         Keyword("match").suppress() + match + Optional(Keyword("if").suppress() + test) + match_suite
         ), "case_match")
@@ -1711,7 +1743,7 @@ class processor(object):
                        + Optional(else_stmt)
                        )
     while_stmt = addspace(Keyword("while") + condense(test + suite + Optional(else_stmt)))
-    for_stmt = addspace(Keyword("for") + exprlist + Keyword("in") + condense(testlist + suite + Optional(else_stmt)))
+    for_stmt = addspace(Keyword("for") + assignlist + Keyword("in") + condense(testlist + suite + Optional(else_stmt)))
     except_clause = addspace(Keyword("except") + test + Optional(Keyword("as") + name))
     try_stmt = condense(Keyword("try") + suite + (
         Keyword("finally") + suite
@@ -1730,7 +1762,7 @@ class processor(object):
     return_typedef = addspace(arrow + test)
     base_funcdef = addspace((op_funcdef | name_funcdef) + Optional(return_typedef_ref))
     funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
-    math_funcdef = attach(base_funcdef + equals.suppress() + (yield_expr | testlist_star_expr), func_proc)
+    math_funcdef = attach(base_funcdef + equals.suppress() + (yield_expr | testlist), func_proc)
     async_funcdef = addspace(Keyword("async") + funcdef)
     async_stmt = async_funcdef | addspace(Keyword("async") + (with_stmt | for_stmt))
 
@@ -1742,20 +1774,34 @@ class processor(object):
 
     passthrough_stmt = condense(passthrough_block + (nocolon_suite | newline))
 
-    simple_compound_stmt <<= if_stmt | try_stmt | case_stmt | match_stmt | passthrough_stmt
-    compound_stmt = trace(simple_compound_stmt | with_stmt | while_stmt | for_stmt | funcdef | classdef | datadef | decorated | async_stmt, "compound_stmt")
-
+    simple_compound_stmt <<= (if_stmt
+                              | try_stmt
+                              | case_stmt
+                              | match_stmt
+                              | passthrough_stmt
+                              )
+    compound_stmt = trace(simple_compound_stmt
+                          | with_stmt
+                          | while_stmt
+                          | for_stmt
+                          | funcdef
+                          | classdef
+                          | datadef
+                          | decorated
+                          | async_stmt
+                          | match_assign_stmt
+                          , "compound_stmt")
     expr_stmt = trace(addspace(
                       attach(simple_assign + augassign + (yield_expr | testlist), assign_proc)
                       | math_funcdef
-                      | ZeroOrMore(assignlist + equals) + (yield_expr | testlist_star_expr)
+                      | ZeroOrMore(assignlist + equals) + (yield_expr | testlist)
                       ), "expr_stmt")
 
     nonlocal_stmt_ref = Forward()
     keyword_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt_ref | assert_stmt
     small_stmt = trace(keyword_stmt ^ expr_stmt, "small_stmt")
     simple_stmt <<= trace(condense(itemlist(small_stmt, semicolon) + newline), "simple_stmt")
-    stmt <<= trace(compound_stmt | simple_stmt, "stmt")
+    stmt <<= trace(compound_stmt ^ simple_stmt, "stmt")
     nocolon_suite <<= condense(newline + indent + OneOrMore(stmt) + dedent)
     suite <<= trace(condense(colon + nocolon_suite) | addspace(colon + simple_stmt), "suite")
     line = trace(newline | stmt, "line")

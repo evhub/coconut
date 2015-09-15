@@ -221,6 +221,10 @@ class cli(object):
             state = self.console.on
         self.console.on = not state
 
+    def indebug(self):
+        """Determines whether the parser is in debug mode."""
+        return self.processor.indebug()
+
     def cmd(self, args, interact=True):
         """Parses command-line arguments."""
         try:
@@ -259,8 +263,11 @@ class cli(object):
             if args.interact or (interact and not (stdin or args.source or args.version or args.code)):
                 self.start_prompt()
         except parser.CoconutException:
-            print_error()
-            sys.exit(1)
+            if self.indebug():
+                raise
+            else:
+                print_error()
+                sys.exit(1)
 
     def compile_path(self, path, write=True, run=False):
         """Compiles a path."""
@@ -387,7 +394,10 @@ class cli(object):
             try:
                 compiled = self.processor.parse_single(code)
             except parser.CoconutException:
-                print_error()
+                if self.indebug():
+                    raise
+                else:
+                    print_error()
                 return None
         return compiled
 

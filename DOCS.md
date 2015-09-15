@@ -11,6 +11,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [--strict Mode](#--strict-mode)
     - [IPython](#ipython)
 - [II. Syntax](#ii-syntax)
+    - [Destructuring Assignment](#destructuring-assignment)
     - [Lambdas](#lambdas)
     - [Backtick Calling](#backtick-calling)
     - [Function Definition](#function-definition)
@@ -104,6 +105,20 @@ It is recommended that you use the `--strict` flag if you are starting a new Coc
 If you prefer [IPython](http://ipython.org/) to the normal Python shell, coconut can also be used as an IPython extension. The code `%load_ext coconut` will provide access to the `%coconut` and `%%coconut` magics. The `%coconut` magic will run a line of Coconut with default parameters, whereas the `%%coconut` magic will take command-line arguments on the first line, and run any coconut code provided in the rest of the cell with those parameters.
 
 ## II. Syntax
+
+### Destructuring Assignment
+
+Coconut supports significantly enhanced destructuring assignment, similar to Python's tuple/list destructuring, but much more powerful. The syntax for Coconut's destructuring assignment is:
+```
+<pattern> = <value>
+```
+where `<value>` is any expression and `<pattern>` is defined by Coconut's [`match` statement](#match). Coconut's destructuring assignment is equivalent to a match statement that looks like:
+```
+match <pattern> in <value>:
+    pass
+else:
+    raise ValueError(<error message>)
+```
 
 ### Lambdas
 
@@ -832,6 +847,10 @@ pattern := (
         "+"                             # for a tuple/list
         | "::"                          # for an iterator
       ) pattern
+    | pattern "+" (                 # init-last splits
+        "(" patterns ")"                # tuples
+        | "[" patterns "]"              # lists
+      )
     | pattern "is" names            # type-checking
     | pattern "and" pattern         # match all
     | pattern "or" pattern          # match any
