@@ -870,6 +870,7 @@ pattern := (
 - Dicts (`{<pairs>}`): will only match a mapping (`collections.abc.Mapping`) of the same length, and will check the contents against `<pairs>`.
 - Sets (`{<constants>}`): will only match a set (`collections.abc.Set`) of the same length and contents.
 - List/Tuple Splits (`<list/tuple> + <var>`): will match the beginning of the [im]mutable sequence against the `<list/tuple>`, then bind the rest to `<var>`, and call `list` or `tuple` on it, depending on which construct was used.
+- Init/Last Splits (`<var> + <list/tuple>`): exactly the same as list/tuple splits, but on the end instead of the beginning of the sequence.
 - Iterator Splits (`<list/tuple> :: <var>`): will match the beginning of an iterable (`collections.abc.Iterable`) against the `<list/tuple>`, then bind the rest to `<var>`.
 
 ##### Example

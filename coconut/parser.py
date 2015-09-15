@@ -1789,7 +1789,6 @@ class processor(object):
                           | datadef
                           | decorated
                           | async_stmt
-                          | match_assign_stmt
                           , "compound_stmt")
     expr_stmt = trace(addspace(
                       attach(simple_assign + augassign + (yield_expr | testlist), assign_proc)
@@ -1801,7 +1800,7 @@ class processor(object):
     keyword_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt_ref | assert_stmt
     small_stmt = trace(keyword_stmt ^ expr_stmt, "small_stmt")
     simple_stmt <<= trace(condense(itemlist(small_stmt, semicolon) + newline), "simple_stmt")
-    stmt <<= trace(compound_stmt ^ simple_stmt, "stmt")
+    stmt <<= trace(compound_stmt | simple_stmt | match_assign_stmt, "stmt")
     nocolon_suite <<= condense(newline + indent + OneOrMore(stmt) + dedent)
     suite <<= trace(condense(colon + nocolon_suite) | addspace(colon + simple_stmt), "suite")
     line = trace(newline | stmt, "line")
