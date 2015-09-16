@@ -30,6 +30,7 @@ This tutorial will teach you how to write elegant, Pythonic code in a functional
     - [`itemgetter`, `attrgetter`, and `methodcaller`](#itemgetter-attrgetter-and-methodcaller)
     - [`takewhile` and `dropwhile`](#takewhile-and-dropwhile)
     - [`recursive`](#recursive)
+    - [Implicit Partial Application](#implicit-partial-application)
     - [Set Literals](#set-literals)
     - [Non-Decimal Integers](#non-decimal-integers)
 - [VI. Further Reading](#vi-further-reading)
@@ -403,6 +404,15 @@ _Note: The full documentation for both of these functions can be found in the [D
 ### `recursive`
 
 Coconut adds the new built-in decorator `recursive`, which optimizes any function written in a tail-recursive style, where it directly returns all calls to itself. Do not use this decorator on a function not written in a tail-recursive style or you will get strange errors.
+
+### Implicit Partial Application
+
+Coconut allows for commonly-used partial applications to be shorthanded like so:
+* `.name` = `attrgetter$("name")`
+* `obj.` = `getattr$(obj)`
+* `func$` = `($)$(func)`
+* `series[]` = `operator.__getitem__$(series)` (would otherwise require `import operator`)
+* `series$[]` = `[$]$(series)`
 
 ### Set Literals
 

@@ -17,6 +17,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [Operator Functions](#operator-functions)
     - [Enhanced Set Literals](#enhanced-set-literals)
     - [Destructuring Assignment](#destructuring-assignment)
+    - [Implicit Partial Application](#implicit-partial-application)
     - [Non-Decimal Integers](#non-decimal-integers)
     - [Enhanced Decorators](#enhanced-decorators)
     - [Enhanced Else Statements](#enhanced-else-statements)
@@ -26,7 +27,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [Compose](#compose)
     - [Pipeline](#pipeline)
     - [Chain](#chain)
-    - [Partial](#partial)
+    - [Partial Application](#partial-application)
     - [Iterator Slice](#iterator-slice)
 - [IV. Built-Ins](#iv-built-ins)
     - [`reduce`](#reduce)
@@ -256,6 +257,31 @@ Python:
 empty_frozen_set = frozenset()
 ```
 
+### Implicit Partial Application
+
+Coconut supports a number of different syntactical aliases for common partial application use cases. These are:
+```
+.name       =>      attrgetter("name")
+obj.        =>      functools.partial(getattr, obj)
+func$       =>      functools.partial(functools.partial, func)
+series[]    =>      functools.partial(operator.__getitem__, series)
+series$[]   =>      functools.partial(itertools.islice, series)
+```
+
+##### Example
+
+Coconut:
+```
+1 |> "123"[]
+mod$ <| 5 <| 3
+```
+
+Python:
+```
+"123"[1]
+mod(5, 3)
+```
+
 ### Non-Decimal Integers
 
 In addition to Python's normal binary, octal, and hexadecimal integer syntax, Coconut also supports its own universal non-decimal integer syntax `<base>"_"<number>`.
@@ -442,7 +468,7 @@ import itertools
 combined = itertools.chain(range(0,5), range(10,15))
 ```
 
-### Partial
+### Partial Application
 
 Coconut uses a `$` sign right after a function before a function call to perform partial application. It has the same precedence as subscription.
 
