@@ -376,7 +376,7 @@ def anyint_proc(tokens):
         base, item = tokens[0].split("_")
         return '__coconut__.int("'+item+'", '+base+")"
     else:
-        raise CoconutException("invalid anyint tokens: "+repr(toknes))
+        raise CoconutException("invalid anyint tokens: "+repr(tokens))
 
 def list_proc(tokens):
     """Properly formats lists."""
@@ -392,6 +392,13 @@ def itemlist(item, sep):
     """Creates a list containing an item."""
     return attach(item + ZeroOrMore(sep + item) + Optional(sep), list_proc)
 
+def attr_proc(tokens):
+    """Processes attrgetter literals."""
+    if len(tokens) == 1:
+        return '__coconut__.operator.attrgetter("'+tokens[0]+'")'
+    else:
+        raise CoconutException("invalid attrgetter literal tokens: "+repr(tokens))
+
 def item_proc(tokens):
     """Processes items."""
     out = tokens.pop(0)
@@ -399,7 +406,16 @@ def item_proc(tokens):
         if isinstance(trailer, str):
             out += trailer
         elif len(trailer) == 1:
-            raise CoconutSyntaxError("an argument is required", trailer[0])
+            if trailer[0] == "$[]":
+                out = "__coconut__.functools.partial(__coconut__.itertools.slice, "+out+")"
+            elif trailer[0] == "$":
+                out = "__coconut__.functools.partial(__coconut__.functools.partial, "+out+")"
+            elif trailer[0] == "[]":
+                out += "__coconut__.functools.partial(__coconut__.operator.__getitem__, "+out+")"
+            elif trailer[0] == ".":
+                out = "__coconut__.functools.partial(__coconut__.getattr, "+out+")"
+            else:
+                raise CoconutSyntaxError("an argument is required", trailer[0])
         elif len(trailer) == 2:
             if trailer[0] == "$(":
                 out = "__coconut__.functools.partial("+out+", "+trailer[1]+")"
@@ -1582,6 +1598,7 @@ class processor(object):
         keyword_atom |= Keyword(const_vars[x])
     string_atom = addspace(OneOrMore(string))
     passthrough_atom = addspace(OneOrMore(passthrough))
+    attr_atom = attach(condense(dot.suppress() + name), attr_proc)
     set_s = fixto(CaselessLiteral("s"), "s")
     set_f = fixto(CaselessLiteral("f"), "f")
     set_letter = set_s | set_f
@@ -1596,6 +1613,7 @@ class processor(object):
         | condense(fixto(lbrace, "__coconut__.set([") + Optional(setmaker) + fixto(rbrace, "])"))
         | attach(set_letter + lbrace.suppress() + Optional(setmaker) + rbrace.suppress(), set_proc)
         | func_atom
+        | attr_atom
         )
     slicetest = Optional(test)
     sliceop = condense(colon + slicetest)
@@ -1609,7 +1627,11 @@ class processor(object):
                | condense(lparen + callargslist + rparen)
                | Group(dotdot + func_atom)
                | Group(condense(dollar + lbrack) + Optional(subscriptgroup) + rbrack.suppress())
+               | Group(condense(dollar + lbrack + rbrack))
+               | Group(dollar)
                | simple_trailer
+               | Group(condense(lbrack + rbrack))
+               | Group(dot)
                )
 
     assignlist = Forward()
