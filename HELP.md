@@ -182,6 +182,8 @@ Coconut also supports backtick calling syntax in mathematical or normal function
 a `mod` b = a % b
 ```
 
+_Note: If you would like to be more explicit in your in-line function definition, you can optionally place a `def` at the beginning of the line._
+
 ### `reduce`
 
 A Python 2 built-in that was removed in Python 3, Coconut re-introduces `reduce`, as it can be very useful for functional programming.
@@ -357,16 +359,17 @@ First, in addition to implicit bindings with variables, match statements also su
 
 Second, match statements allow a `+ <var>` (or `:: <var>` for any iterable) at the end of a list or tuple literal to match the rest of the sequence.
 
-Finally, while not in any of the examples, match statements also support dictionary and set literals in their patterns, and the values of a dictionary can even be bound to, like so:
+Finally, all of the match syntax that you have learned up to this point can also be used in simple assignment statements, like so:
 ```
 def dictpoint(value):
-    match {"x":x is int, "y":y is int} in value:
-        return (x, y)
-    else:
-        raise TypeError("value must be of form {'x':int, 'y':int}")
+    {"x":x is int, "y":y is int} = value
+    return x, y
 
 {"x":1, "y":2} |> dictpoint |> print
 ```
+This example shows how match statement syntax can be used in a simple assignment statement, much like Python's destructuring assignment for lists and tuples. In this case, a dictionary is being destructured, which is another type of pattern, in addition to set literals, that can be matched against.
+
+_Note: If you would like to be more explicit in your pattern-matching assignment statements, you can optionally place a `match` at the beginning of the line._
 
 ### `case`
 

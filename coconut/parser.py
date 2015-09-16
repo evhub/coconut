@@ -1726,7 +1726,8 @@ class processor(object):
         , match_proc), "full_match")
     match_stmt = condense(full_match + Optional(else_stmt))
 
-    match_assign_stmt = trace(attach(match + equals.suppress() + (yield_expr | testlist) + newline.suppress(), match_assign_proc), "match_assign_stmt")
+    match_assign_stmt = trace(attach(Optional(Keyword("match").suppress()) + match + equals.suppress() + (yield_expr | testlist)
+                              + newline.suppress(), match_assign_proc), "match_assign_stmt")
 
     case_match = trace(Group(
         Keyword("match").suppress() + match + Optional(Keyword("if").suppress() + test) + match_suite
@@ -1762,7 +1763,7 @@ class processor(object):
     return_typedef = addspace(arrow + test)
     base_funcdef = addspace((op_funcdef | name_funcdef) + Optional(return_typedef_ref))
     funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
-    math_funcdef = attach(base_funcdef + equals.suppress() + (yield_expr | testlist), func_proc)
+    math_funcdef = attach(Optional(Keyword("def").suppress()) + base_funcdef + equals.suppress() + (yield_expr | testlist), func_proc)
     async_funcdef = addspace(Keyword("async") + funcdef)
     async_stmt = async_funcdef | addspace(Keyword("async") + (with_stmt | for_stmt))
 

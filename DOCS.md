@@ -11,12 +11,12 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [--strict Mode](#--strict-mode)
     - [IPython](#ipython)
 - [II. Syntax](#ii-syntax)
-    - [Destructuring Assignment](#destructuring-assignment)
     - [Lambdas](#lambdas)
     - [Backtick Calling](#backtick-calling)
     - [Function Definition](#function-definition)
     - [Operator Functions](#operator-functions)
     - [Enhanced Set Literals](#enhanced-set-literals)
+    - [Destructuring Assignment](#destructuring-assignment)
     - [Non-Decimal Integers](#non-decimal-integers)
     - [Enhanced Decorators](#enhanced-decorators)
     - [Enhanced Else Statements](#enhanced-else-statements)
@@ -102,23 +102,9 @@ It is recommended that you use the `--strict` flag if you are starting a new Coc
 
 ### IPython
 
-If you prefer [IPython](http://ipython.org/) to the normal Python shell, coconut can also be used as an IPython extension. The code `%load_ext coconut` will provide access to the `%coconut` and `%%coconut` magics. The `%coconut` magic will run a line of Coconut with default parameters, whereas the `%%coconut` magic will take command-line arguments on the first line, and run any coconut code provided in the rest of the cell with those parameters.
+If you prefer [IPython](http://ipython.org/) to the normal Python shell, coconut can also be used as an IPython extension. The line magic `%load_ext coconut` will provide access to the `%coconut` and `%%coconut` magics. The `%coconut` magic will run a line of Coconut with default parameters, whereas the `%%coconut` magic will take command-line arguments on the first line, and run any coconut code provided in the rest of the cell with those parameters.
 
 ## II. Syntax
-
-### Destructuring Assignment
-
-Coconut supports significantly enhanced destructuring assignment, similar to Python's tuple/list destructuring, but much more powerful. The syntax for Coconut's destructuring assignment is:
-```
-<pattern> = <value>
-```
-where `<value>` is any expression and `<pattern>` is defined by Coconut's [`match` statement](#match). Coconut's destructuring assignment is equivalent to a match statement that looks like:
-```
-match <pattern> in <value>:
-    pass
-else:
-    raise ValueError(<error message>)
-```
 
 ### Lambdas
 
@@ -163,7 +149,13 @@ f(mod(x, 2)) == 1
 
 ### Function Definition
 
-Coconut allows for math-style in-line function definition, where the body of the function is assigned directly to the function call. The function call that is assigned to can be parenthesis-style or backtick-style, although if it is backtick-style keyword arguments must be placed within parentheses. Additionally, backtick-style definition is also allowed in normal Python `def` statements.
+Coconut allows for math-style in-line function definition, where the body of the function is assigned directly to the function call. The syntax for in-line function definition is
+```
+["def"] (<name>(<args>) | <arg1> "`" <name> "`" <arg2>) "=" <body>
+```
+where `<name>` is the name of the function and `<args>` are the functions arguments, and the `def` at the beginning is optional. If backtick-style is used, then keyword arguments must be placed within parentheses.
+
+Additionally, backtick-style definition is also allowed in normal Python `def` statements.
 
 ##### Example
 
@@ -232,6 +224,20 @@ Python:
 ```
 import operator
 prod = reduce(operator.__mul__, items)
+```
+
+### Destructuring Assignment
+
+Coconut supports significantly enhanced destructuring assignment, similar to Python's tuple/list destructuring, but much more powerful. The syntax for Coconut's destructuring assignment is
+```
+["match"] <pattern> = <value>
+```
+where `<value>` is any expression and `<pattern>` is defined by Coconut's [`match` statement](#match). The `match` keyword at the beginning is optional. Coconut's destructuring assignment is equivalent to a match statement that looks like:
+```
+match <pattern> in <value>:
+    pass
+else:
+    raise ValueError(<error message>)
 ```
 
 ### Enhanced Set Literals
@@ -819,14 +825,14 @@ class triangle(collections.namedtuple("triangle", "a, b, c")):
 
 ### `match`
 
-Coconut provides `match` statements to allow for Haskell-style pattern-matching. Coconut match statement syntax looks like:
+Coconut provides `match` statements to allow for Haskell-style pattern-matching. Coconut match statement syntax is
 ```
 match <pattern> in <value> [if <cond>]:
     <body>
 [else:
     <body>]
 ```
-`<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds. `<pattern>` follows its own, special syntax, defined roughly like so:
+where `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds. `<pattern>` follows its own, special syntax, defined roughly like so:
 ```
 pattern := (
     "(" pattern ")"                 # parentheses
@@ -894,7 +900,7 @@ _Can't be done._
 
 ### `case`
 
-Coconut's `case` statements are an extension of Coconut's `match` statements for use when many matches are to be attempted against one object, and only one should succeed. Each pattern in a case block is checked until a match is found, and then the corresponding body is executed, and the case block terminated. The syntax for case blocks is:
+Coconut's `case` statements are an extension of Coconut's `match` statements for use when many matches are to be attempted against one object, and only one should succeed. Each pattern in a case block is checked until a match is found, and then the corresponding body is executed, and the case block terminated. The syntax for case blocks is
 ```
 case <value>:
     match <pattern> [if <cond>]:
@@ -905,7 +911,7 @@ case <value>:
 [else:
     <body>]
 ```
-`<pattern>` is any `match` pattern, `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds.
+where `<pattern>` is any `match` pattern, `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds.
 
 ##### Example
 
