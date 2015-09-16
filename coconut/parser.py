@@ -875,7 +875,7 @@ class processor(object):
         self.nonlocal_stmt_ref <<= attach(self.nonlocal_stmt, self.nonlocal_check)
         self.dict_comp_ref <<= attach(self.dict_comp, self.dict_comp_check)
         self.star_assign_item_ref <<= attach(self.star_assign_item, self.star_assign_item_check)
-        self.classic_lambdef_ref <<= attach(self.classic_lambdef, self.lambddef_check)
+        self.classic_lambdef_ref <<= attach(self.classic_lambdef, self.lambdef_check)
         self.classic_lambdef_nocond_ref <<= attach(self.classic_lambdef_nocond, self.lambdef_check)
         self.setup()
         self.clean()
