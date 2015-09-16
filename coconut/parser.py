@@ -1631,7 +1631,7 @@ class processor(object):
                | Group(dollar)
                | simple_trailer
                | Group(condense(lbrack + rbrack))
-               | Group(dot)
+               | Group(dot + ~dot)
                )
 
     assignlist = Forward()
