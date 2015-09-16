@@ -545,7 +545,7 @@ def set_proc(tokens):
         if set_type == "s":
             return "__coconut__.set()"
         elif set_type == "f":
-            return "__coconut__frozenset()"
+            return "__coconut__.frozenset()"
         else:
             raise CoconutException("invalid set type: "+str(set_type))
     elif len(tokens) == 2:
