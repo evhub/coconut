@@ -118,6 +118,7 @@ tuple = tuple
 list = list
 len = len
 isinstance = isinstance
+getattr = getattr
 
 def recursive(func):
     """Tail Call Optimizer."""
@@ -171,6 +172,7 @@ class __coconut__(object):
     list = list
     len = len
     isinstance = isinstance
+    getattr = getattr
     @staticmethod
     def recursive(func):
         """Tail Call Optimizer."""
@@ -1537,9 +1539,9 @@ class processor(object):
             | fixto(backpipe, "lambda f, x: f(x)")
             | fixto(backstarpipe, "lambda f, xs: f(*xs)")
             | fixto(dotdot, "lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs))")
+            | fixto(dot, "__coconut__.getattr")
             | fixto(dubcolon, "__coconut__.itertools.chain")
             | fixto(dollar, "__coconut__.functools.partial")
-            | fixto(dot, "__coconut__.operator.attrgetter")
             | fixto(exp_dubstar, "__coconut__.operator.__pow__")
             | fixto(mul_star, "__coconut__.operator.__mul__")
             | fixto(div_dubslash, "__coconut__.operator.__floordiv__")

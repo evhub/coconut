@@ -180,7 +180,7 @@ Coconut uses Haskell-style operator function short-hand, where the operator plac
 (<|)        => (<lambda>)
 (|*>)       => (<lambda>)
 (..)        => (<lambda>)
-(.)         => (__coconut__.operator.attrgetter)
+(.)         => (<lambda>)
 (::)        => (__coconut__.itertools.chain)
 ($)         => (__coconut__.functools.partial)
 [$]         => (__coconut__.itertools.islice)
