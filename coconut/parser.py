@@ -838,8 +838,8 @@ def case_proc(tokens):
         raise CoconutException("invalid top-level case tokens: "+repr(tokens))
     out = match_proc(case_to_match(cases[0], item))
     for case in cases[1:]:
-        out += "if not "+match_check_var+":" + linebreak + openstr
-            + match_proc(case_to_match(case, item)) + closestr
+        out += ("if not "+match_check_var+":" + linebreak + openstr
+            + match_proc(case_to_match(case, item)) + closestr)
     if default is not None:
         out += "if not "+match_check_var+default
     return out
