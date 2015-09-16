@@ -849,8 +849,6 @@ class processor(object):
         self.comment <<= self.trace(attach(self.comment_marker, self.comment_repl), "comment")
         self.passthrough <<= self.trace(attach(self.passthrough_marker, self.passthrough_repl), "passthrough")
         self.passthrough_block <<= self.trace(attach(self.passthrough_block_marker, self.passthrough_repl), "passthrough_block")
-        self.classic_lambdef_ref <<= attach(self.classic_lambdef, self.lambda_check)
-        self.classic_lambdef_nocond_ref <<= attach(self.classic_lambdef_nocond, self.lambda_check)
         self.u_string_ref <<= attach(self.u_string, self.u_string_check)
         self.typedef_ref <<= attach(self.typedef, self.typedef_check)
         self.return_typedef_ref <<= attach(self.return_typedef, self.typedef_check)
@@ -858,6 +856,9 @@ class processor(object):
         self.matrix_at_ref <<= attach(self.matrix_at, self.matrix_at_check)
         self.nonlocal_stmt_ref <<= attach(self.nonlocal_stmt, self.nonlocal_check)
         self.dict_comp_ref <<= attach(self.dict_comp, self.dict_comp_check)
+        self.star_assign_item_ref <<= attach(self.star_assign_item, self.star_assign_item_check)
+        self.classic_lambdef_ref <<= attach(self.classic_lambdef, self.lambda_check)
+        self.classic_lambdef_nocond_ref <<= attach(self.classic_lambdef_nocond, self.lambda_check)
         self.setup()
         self.clean()
 
@@ -1299,6 +1300,10 @@ class processor(object):
         """Checks for Python 3 dictionary comprehension."""
         return self.check_py3("Python 3 dictionary comprehension", tokens)
 
+    def star_assign_item_check(self, tokens):
+        """Checks for Python 3 starred assignment."""
+        return self.check_py3("Python 3 starred assignment", tokens)
+
     def parse(self, inputstring, parser, preargs, postargs):
         """Uses the parser to parse the inputstring."""
         try:
@@ -1588,8 +1593,11 @@ class processor(object):
                )
 
     assignlist = Forward()
+    star_assign_item_ref = Forward()
     simple_assign = condense(name + ZeroOrMore(simple_trailer))
-    assign_item = condense(Optional(star) + (simple_assign | lparen + assignlist + rparen | lbrack + assignlist + rbrack))
+    base_assign_item = condense(simple_assign | lparen + assignlist + rparen | lbrack + assignlist + rbrack)
+    star_assign_item = condense(Optional(star) + base_assign_item)
+    assign_item = star_assign_item_ref | base_assign_item
     assignlist <<= itemlist(assign_item, comma)
 
     atom_item = trace(attach(atom + ZeroOrMore(trailer), item_proc), "atom_item")
