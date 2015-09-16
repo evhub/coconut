@@ -1596,7 +1596,7 @@ class processor(object):
     star_assign_item_ref = Forward()
     simple_assign = condense(name + ZeroOrMore(simple_trailer))
     base_assign_item = condense(simple_assign | lparen + assignlist + rparen | lbrack + assignlist + rbrack)
-    star_assign_item = condense(Optional(star) + base_assign_item)
+    star_assign_item = condense(star + base_assign_item)
     assign_item = star_assign_item_ref | base_assign_item
     assignlist <<= itemlist(assign_item, comma)
 
