@@ -740,10 +740,9 @@ class matcher(object):
             setvar, match = original
             if setvar in self.names:
                 self.checks.append(self.names[setvar]+" == "+item)
-            else:
+            elif setvar != wildcard:
                 self.defs.append(setvar+" = "+item)
-                if setvar != wildcard:
-                    self.names[setvar] = item
+                self.names[setvar] = item
             self.match(match, item)
         elif "and" in original:
             for match in original:
