@@ -407,11 +407,11 @@ def item_proc(tokens):
             out += trailer
         elif len(trailer) == 1:
             if trailer[0] == "$[]":
-                out = "__coconut__.functools.partial(__coconut__.itertools.slice, "+out+")"
+                out = "(lambda i: next(__coconut__.itertools.islice("+out+", i, i+1)))"
             elif trailer[0] == "$":
                 out = "__coconut__.functools.partial(__coconut__.functools.partial, "+out+")"
             elif trailer[0] == "[]":
-                out += "__coconut__.functools.partial(__coconut__.operator.__getitem__, "+out+")"
+                out = "__coconut__.functools.partial(__coconut__.operator.__getitem__, "+out+")"
             elif trailer[0] == ".":
                 out = "__coconut__.functools.partial(__coconut__.getattr, "+out+")"
             else:
@@ -1626,7 +1626,7 @@ class processor(object):
     trailer = (Group(condense(dollar + lparen) + callargslist + rparen.suppress())
                | condense(lparen + callargslist + rparen)
                | Group(dotdot + func_atom)
-               | Group(condense(dollar + lbrack) + Optional(subscriptgroup) + rbrack.suppress())
+               | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())
                | Group(condense(dollar + lbrack + rbrack))
                | Group(dollar)
                | simple_trailer
