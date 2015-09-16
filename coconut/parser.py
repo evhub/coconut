@@ -110,6 +110,15 @@ try:
 except ImportError:
     abc = collections
 
+object = object
+int = int
+set = set
+frozenset = frozenset
+tuple = tuple
+list = list
+len = len
+isinstance = isinstance
+
 def recursive(func):
     """Tail Call Optimizer."""
     state = [True, None] # toplevel, (args, kwargs)
@@ -154,6 +163,14 @@ class __coconut__(object):
         import collections.abc as abc
     except ImportError:
         abc = collections
+    object = object
+    int = int
+    set = set
+    frozenset = frozenset
+    tuple = tuple
+    list = list
+    len = len
+    isinstance = isinstance
     @staticmethod
     def recursive(func):
         """Tail Call Optimizer."""
@@ -355,7 +372,7 @@ def anyint_proc(tokens):
     """Replaces underscored integers."""
     if len(tokens) == 1:
         base, item = tokens[0].split("_")
-        return 'int("'+item+'", '+base+")"
+        return '__coconut__.int("'+item+'", '+base+")"
     else:
         raise CoconutException("invalid anyint tokens: "+repr(toknes))
 
@@ -526,17 +543,17 @@ def set_proc(tokens):
     if len(tokens) == 1:
         set_type = tokens[0]
         if set_type == "s":
-            return "set()"
+            return "__coconut__.set()"
         elif set_type == "f":
-            return "frozenset()"
+            return "__coconut__frozenset()"
         else:
             raise CoconutException("invalid set type: "+str(set_type))
     elif len(tokens) == 2:
         set_type, set_maker = tokens
         if set_type == "s":
-            return "set(["+set_maker+"])"
+            return "__coconut__.set(["+set_maker+"])"
         elif set_type == "f":
-            return "frozenset(["+set_maker+"])"
+            return "__coconut__.frozenset(["+set_maker+"])"
         else:
             raise CoconutException("invalid set type: "+str(set_type))
     else:
@@ -545,7 +562,7 @@ def set_proc(tokens):
 def class_proc(tokens):
     """Processes class inheritance lists."""
     if len(tokens) == 0:
-        return "(object)"
+        return "(__coconut__.object)"
     elif len(tokens) == 1:
         return "("+tokens[0]+")"
     else:
@@ -638,8 +655,8 @@ class matcher(object):
                 match = original[0]
             else:
                 raise CoconutException("invalid dict match tokens: "+repr(original))
-            self.checks.append("isinstance("+item+", __coconut__.abc.Mapping)")
-            self.checks.append("len("+item+") == "+str(len(match)))
+            self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Mapping)")
+            self.checks.append("__coconut__.len("+item+") == "+str(len(match)))
             for x in range(0, len(match)):
                 k,v = match[x]
                 self.checks.append(k+" in "+item)
@@ -650,53 +667,53 @@ class matcher(object):
                 series_type, match = original
             else:
                 series_type, match, _, tail = original
-            self.checks.append("isinstance("+item+", __coconut__.abc.Sequence)")
+            self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Sequence)")
             if tail is None:
-                self.checks.append("len("+item+") == "+str(len(match)))
+                self.checks.append("__coconut__.len("+item+") == "+str(len(match)))
             else:
-                self.checks.append("len("+item+") >= "+str(len(match)))
+                self.checks.append("__coconut__.len("+item+") >= "+str(len(match)))
                 if len(match):
                     splice = "["+str(len(match))+":]"
                 else:
                     splice = ""
                 if series_type == "(":
-                    self.defs.append(tail+" = tuple("+item+splice+")")
+                    self.defs.append(tail+" = __coconut__.tuple("+item+splice+")")
                 elif series_type == "[":
-                    self.defs.append(tail+" = list("+item+splice+")")
+                    self.defs.append(tail+" = __coconut__.list("+item+splice+")")
                 else:
                     raise CoconutException("invalid series match type: "+repr(series_type))
             for x in range(0, len(match)):
                 self.match(match[x], item+"["+str(x)+"]")
         elif "rseries" in original:
             front, series_type, match = original
-            self.checks.append("isinstance("+item+", __coconut__.abc.Sequence)")
-            self.checks.append("len("+item+") >= "+str(len(match)))
+            self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Sequence)")
+            self.checks.append("__coconut__.len("+item+") >= "+str(len(match)))
             if len(match):
                 splice = "[:"+str(-len(match))+"]"
             else:
                 splice = ""
             if series_type == "(":
-                self.defs.append(front+" = tuple("+item+splice+")")
+                self.defs.append(front+" = __coconut__.tuple("+item+splice+")")
             elif series_type == "[":
-                self.defs.append(front+" = list("+item+splice+")")
+                self.defs.append(front+" = __coconut__.list("+item+splice+")")
             else:
                 raise CoconutException("invalid series match type: "+repr(series_type))
             for x in range(0, len(match)):
                 self.match(match[x], item+"["+str(x - len(match))+"]")
         elif "series" in original and len(original) == 4 and original[2] == "::":
             series_type, match, _, tail = original
-            self.checks.append("isinstance("+item+", __coconut__.abc.Iterable)")
+            self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Iterable)")
             itervar = match_iter_var + "_" + str(self.iter_index)
             self.iter_index += 1
             if series_type == "(":
-                self.defs.append(itervar+" = tuple(__coconut__.itertools.islice("+item+", 0, "+str(len(match))+"))")
+                self.defs.append(itervar+" = __coconut__.tuple(__coconut__.itertools.islice("+item+", 0, "+str(len(match))+"))")
             elif series_type == "[":
-                self.defs.append(itervar+" = list(__coconut__.itertools.islice("+item+", 0, "+str(len(match))+"))")
+                self.defs.append(itervar+" = __coconut__.list(__coconut__.itertools.islice("+item+", 0, "+str(len(match))+"))")
             else:
                 raise CoconutException("invalid iterator match tokens: "+repr(original))
             self.defs.append(tail+" = "+item)
             self.increment()
-            self.checks.append("len("+itervar+") >= "+str(len(match)))
+            self.checks.append("__coconut__.len("+itervar+") >= "+str(len(match)))
             for x in range(0, len(match)):
                 self.match(match[x], itervar+"["+str(x)+"]")
             self.decrement()
@@ -708,7 +725,7 @@ class matcher(object):
                 self.checks.append(item+" == "+match)
         elif "is" in original:
             match, type_check = original
-            self.checks.append("isinstance("+item+", ("+type_check+"))")
+            self.checks.append("__coconut__.isinstance("+item+", ("+type_check+"))")
             self.match(match, item)
         elif "var" in original:
             (setvar,) = original
@@ -723,14 +740,14 @@ class matcher(object):
                 match = original[0]
             else:
                 raise CoconutException("invalid set match tokens: "+repr(original))
-            self.checks.append("isinstance("+item+", __coconut__.abc.Set)")
-            self.checks.append("len("+item+") == "+str(len(match)))
+            self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Set)")
+            self.checks.append("__coconut__.len("+item+") == "+str(len(match)))
             for const in match:
                 self.checks.append(const+" in "+item)
         elif "data" in original:
             data_type, match = original
-            self.checks.append("isinstance("+item+", "+data_type+")")
-            self.checks.append("len("+item+") == "+str(len(match)))
+            self.checks.append("__coconut__.isinstance("+item+", "+data_type+")")
+            self.checks.append("__coconut__.len("+item+") == "+str(len(match)))
             for x in range(0, len(match)):
                 self.match(match[x], item+"["+str(x)+"]")
         elif "paren" in original:
@@ -794,8 +811,8 @@ def match_assign_proc(original, loc, tokens):
     """Processes match assign blocks."""
     matches, item = tokens
     out = match_proc((matches, item, None))
-    out += ("if not "+match_check_var+":" + linebreak + openstr +
-        'raise ValueError("pattern-matching failed for " '+repr(original.strip())+")"
+    out += ("if not "+match_check_var+":" + linebreak + openstr
+        + 'raise ValueError("pattern-matching failed for " '+repr(original.strip())+")"
         + linebreak + closestr)
     return out
 
@@ -821,7 +838,8 @@ def case_proc(tokens):
         raise CoconutException("invalid top-level case tokens: "+repr(tokens))
     out = match_proc(case_to_match(cases[0], item))
     for case in cases[1:]:
-        out += "if not "+match_check_var+":" + linebreak + openstr + match_proc(case_to_match(case, item)) + closestr
+        out += "if not "+match_check_var+":" + linebreak + openstr
+            + match_proc(case_to_match(case, item)) + closestr
     if default is not None:
         out += "if not "+match_check_var+default
     return out
