@@ -258,17 +258,17 @@ empty_frozen_set = frozenset()
 
 ### Non-Decimal Integers
 
-In addition to Python's normal binary, octal, and hexadecimal integer syntax, Coconut also supports its own universal non-decimal integer syntax, where the base is put after an underscore at the end.
+In addition to Python's normal binary, octal, and hexadecimal integer syntax, Coconut also supports its own universal non-decimal integer syntax `<base>"_"<number>`.
 
 ##### Python Docs
 
-A base-n literal consists of the digits 0 to n-1, with `a` to `z` (or `A` to `Z`) having values 10 to 35. The default base is 10. The allowed values are 0 and 2-36. Base 0 means to interpret exactly as a code literal, so that the actual base is 2, 8, 10, or 16, and so that `010`, `010_0`, and `010_8` are 8, while `10`, `10_0`, and `010_10` are 10.
+A base-n literal consists of the digits 0 to n-1, with `a` to `z` (or `A` to `Z`) having values 10 to 35. The default base is 10. The allowed values are 0 and 2-36. Base 0 means to interpret exactly as a code literal, so that the actual base is 2, 8, 10, or 16, and so that `010`, `0_010`, and `8_010` are 8, while `10`, `0_10`, and `10_010` are 10.
 
 ##### Example
 
 Coconut:
 ```
-10A_12 == 154
+12_10A == 154
 ```
 
 Python:

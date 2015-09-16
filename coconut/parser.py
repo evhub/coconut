@@ -354,7 +354,7 @@ class tracer(object):
 def anyint_proc(tokens):
     """Replaces underscored integers."""
     if len(tokens) == 1:
-        item, base = tokens[0].split("_")
+        base, item = tokens[0].split("_")
         return 'int("'+item+'", '+base+")"
     else:
         raise CoconutException("invalid anyint tokens: "+repr(toknes))
@@ -1412,7 +1412,7 @@ class processor(object):
     sci_e = CaselessLiteral("e")
     numitem = Combine(basenum + sci_e + integer) | basenum
 
-    number = (attach(Combine(anyint + underscore + integer), anyint_proc)
+    number = (attach(Combine(integer + underscore + anyint), anyint_proc)
               | Combine(CaselessLiteral("0b") + binint)
               | Combine(CaselessLiteral("0o") + octint)
               | Combine(CaselessLiteral("0x") + hexint)

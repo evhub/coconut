@@ -410,7 +410,7 @@ Coconut allows an optional `s` to be prepended in front of Python set literals. 
 
 ### Non-Decimal Integers
 
-Coconut allows non-decimal integers to be written in the form `num_base`. In many cases this is more readable than Python's default C-style notation, although in some cases if the number starts with a letter, a `0` may need to be placed in front to differentiate it from a variable.
+Coconut allows non-decimal integers to be written in the form `base_num`. In many cases this is more readable than Python's default C-style notation.
 
 ## VI. Further Reading
 
