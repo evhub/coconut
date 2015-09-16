@@ -473,7 +473,7 @@ def pipe_proc(tokens):
         else:
             raise CoconutException("invalid pipe operator: "+op)
 
-def lambda_proc(tokens):
+def lambdef_proc(tokens):
     """Processes lambda calls."""
     if len(tokens) == 1:
         return "lambda: "+tokens[0]
@@ -875,8 +875,8 @@ class processor(object):
         self.nonlocal_stmt_ref <<= attach(self.nonlocal_stmt, self.nonlocal_check)
         self.dict_comp_ref <<= attach(self.dict_comp, self.dict_comp_check)
         self.star_assign_item_ref <<= attach(self.star_assign_item, self.star_assign_item_check)
-        self.classic_lambdef_ref <<= attach(self.classic_lambdef, self.lambda_check)
-        self.classic_lambdef_nocond_ref <<= attach(self.classic_lambdef_nocond, self.lambda_check)
+        self.classic_lambdef_ref <<= attach(self.classic_lambdef, self.lambddef_check)
+        self.classic_lambdef_nocond_ref <<= attach(self.classic_lambdef_nocond, self.lambdef_check)
         self.setup()
         self.clean()
 
@@ -1281,7 +1281,7 @@ class processor(object):
         else:
             return tokens[0]
 
-    def lambda_check(self, tokens):
+    def lambdef_check(self, tokens):
         """Checks for Python-style lambdas."""
         return self.check_strict("Python-style lambda", tokens)
 
@@ -1659,12 +1659,12 @@ class processor(object):
 
     classic_lambdef_ref = Forward()
     classic_lambdef = addspace(Keyword("lambda") + condense(classic_lambdef_params + colon) + test)
-    new_lambdef = attach(new_lambdef_params + arrow.suppress() + test, lambda_proc)
+    new_lambdef = attach(new_lambdef_params + arrow.suppress() + test, lambdef_proc)
     lambdef = trace(classic_lambdef_ref | new_lambdef, "lambdef")
 
     classic_lambdef_nocond_ref = Forward()
     classic_lambdef_nocond = addspace(Keyword("lambda") + condense(classic_lambdef_params + colon) + test_nocond)
-    new_lambdef_nocond = attach(new_lambdef_params + arrow.suppress() + test_nocond, lambda_proc)
+    new_lambdef_nocond = attach(new_lambdef_params + arrow.suppress() + test_nocond, lambdef_proc)
     lambdef_nocond = trace(classic_lambdef_nocond_ref | new_lambdef_nocond, "lambdef_nocond")
 
     test <<= lambdef | trace(addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test)), "test")
