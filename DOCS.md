@@ -232,7 +232,7 @@ Coconut supports significantly enhanced destructuring assignment, similar to Pyt
 ```
 ["match"] <pattern> = <value>
 ```
-where `<value>` is any expression and `<pattern>` is defined by Coconut's [`match` statement](#match). The `match` keyword at the beginning is optional. Coconut's destructuring assignment is equivalent to a match statement that looks like:
+where `<value>` is any expression and `<pattern>` is defined by Coconut's [`match` statement](#match). The `match` keyword at the beginning is optional, but is sometimes necessary to disambiguate destructuring assignment from normal assignment or in-line function definition, which will always take precedence. Coconut's destructuring assignment is equivalent to a match statement that looks like:
 ```
 match <pattern> in <value>:
     pass
