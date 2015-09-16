@@ -1550,7 +1550,7 @@ class processor(object):
         ) + fixto(rbrack, ")")
     )
 
-    testlist_comp = Forward()
+    testlist_comp = addspace(test + comp_for) | testlist
     func_atom = name | op_atom | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
     keyword_atom = Keyword(const_vars[0])
     for x in range(1, len(const_vars)):
@@ -1591,7 +1591,6 @@ class processor(object):
     simple_assign = condense(name + ZeroOrMore(simple_trailer))
     assign_item = condense(Optional(star) + (simple_assign | lparen + assignlist + rparen | lbrack + assignlist + rbrack))
     assignlist <<= itemlist(assign_item, comma)
-    testlist_comp <<= addspace(assign_item + comp_for) | testlist
 
     atom_item = trace(attach(atom + ZeroOrMore(trailer), item_proc), "atom_item")
 
