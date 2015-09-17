@@ -412,7 +412,7 @@ Coconut allows for commonly-used partial applications to be shorthanded like so:
 * `obj.` = `getattr$(obj)`
 * `func$` = `($)$(func)`
 * `series[]` = `operator.__getitem__$(series)` (would otherwise require `import operator`)
-* `series$[]` = `[$]$(series)`
+* `series$[]` = the equivalent of `series[]` for iterators
 
 ### Set Literals
 

@@ -265,7 +265,7 @@ Coconut supports a number of different syntactical aliases for common partial ap
 obj.        =>      functools.partial(getattr, obj)
 func$       =>      functools.partial(functools.partial, func)
 series[]    =>      functools.partial(operator.__getitem__, series)
-series$[]   =>      functools.partial(itertools.islice, series)
+series$[]   =>      <lambda> # the equivalent of series[] for iterators
 ```
 
 ##### Example
