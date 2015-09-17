@@ -1585,10 +1585,6 @@ class processor(object):
             | fixto(Keyword("is"), "__coconut__.operator.is_")
             | fixto(Keyword("in"), "__coconut__.operator.__contains__")
         ) + rparen
-        | fixto(lbrack, "(") + (
-            fixto(dollar, "__coconut__.itertools.islice")
-            | fixto(plus, "__coconut__.operator.__concat__")
-        ) + fixto(rbrack, ")")
     )
 
     testlist_comp = addspace(test + comp_for) | testlist
