@@ -21,16 +21,19 @@ matrix:
         - coconut --strict --print --code "__coconut__ |> print"
         - echo "__coconut__ |> print" | coconut --strict --print
 
-        - coconut src/runner.coc file_build --strict --autopep8
-        - coconut src/cocotest/__init__.coc file_build/cocotest --strict --autopep8
-        - coconut src/cocotest/main.coc file_build/cocotest --strict --autopep8
-        - coconut src/cocotest/util.coc file_build/cocotest --strict --autopep8
+        - coconut src/runner.coc file_build --strict
+        - coconut src/cocotest/__init__.coc file_build/cocotest --strict
+        - coconut src/cocotest/main.coc file_build/cocotest --strict
+        - coconut src/cocotest/util.coc file_build/cocotest --strict
         - python -tt file_build/runner.py
 
-        - coconut src folder_build --strict --autopep8
+        - coconut src folder_build --strict
         - python -tt folder_build/runner.py
 
-        - coconut src target_build --strict --print --target 2 --autopep8
+        - coconut src autopep8_build --strict --autopep8
+        - python -tt autopep8_build/runner.py
+
+        - coconut src target_build --strict --print --target 2
         - python -tt target_build/runner.py
 
     - python: "2.7"
@@ -40,16 +43,19 @@ matrix:
         - echo "__coconut__ |> print" | coconut --strict --print
         - ipython --ext coconut -c "%coconut __coconut__ |> print"
 
-        - coconut src/runner.coc file_build --strict --autopep8
-        - coconut src/cocotest/__init__.coc file_build/cocotest --strict --autopep8
-        - coconut src/cocotest/main.coc file_build/cocotest --strict --autopep8
-        - coconut src/cocotest/util.coc file_build/cocotest --strict --autopep8
+        - coconut src/runner.coc file_build --strict
+        - coconut src/cocotest/__init__.coc file_build/cocotest --strict
+        - coconut src/cocotest/main.coc file_build/cocotest --strict
+        - coconut src/cocotest/util.coc file_build/cocotest --strict
         - python -tt file_build/runner.py
 
-        - coconut src folder_build --strict --autopep8
+        - coconut src folder_build --strict
         - python -tt folder_build/runner.py
 
-        - coconut src target_build --strict --print --target 2 --autopep8
+        - coconut src autopep8_build --strict --autopep8
+        - python -tt autopep8_build/runner.py
+
+        - coconut src target_build --strict --print --target 2
         - python -tt target_build/runner.py
 
     - python: "3.3"
@@ -59,16 +65,19 @@ matrix:
         - echo "__coconut__ |> print" | coconut --strict --print
         - ipython --ext coconut -c "%coconut __coconut__ |> print"
 
-        - coconut src/runner.coc file_build --strict --autopep8
-        - coconut src/cocotest/__init__.coc file_build/cocotest --strict --autopep8
-        - coconut src/cocotest/main.coc file_build/cocotest --strict --autopep8
-        - coconut src/cocotest/util.coc file_build/cocotest --strict --autopep8
+        - coconut src/runner.coc file_build --strict
+        - coconut src/cocotest/__init__.coc file_build/cocotest --strict
+        - coconut src/cocotest/main.coc file_build/cocotest --strict
+        - coconut src/cocotest/util.coc file_build/cocotest --strict
         - python -tt file_build/runner.py
 
-        - coconut src folder_build --strict --autopep8
+        - coconut src folder_build --strict
         - python -tt folder_build/runner.py
 
-        - coconut src target_build --strict --print --target 3 --autopep8
+        - coconut src autopep8_build --strict --autopep8
+        - python -tt autopep8_build/runner.py
+
+        - coconut src target_build --strict --print --target 3
         - python -tt target_build/runner.py
 
     - python: "3.4"
@@ -78,14 +87,17 @@ matrix:
         - echo "__coconut__ |> print" | coconut --strict --print
         - ipython --ext coconut -c "%coconut __coconut__ |> print"
 
-        - coconut src/runner.coc file_build --strict --autopep8
-        - coconut src/cocotest/__init__.coc file_build/cocotest --strict --autopep8
-        - coconut src/cocotest/main.coc file_build/cocotest --strict --autopep8
-        - coconut src/cocotest/util.coc file_build/cocotest --strict --autopep8
+        - coconut src/runner.coc file_build --strict
+        - coconut src/cocotest/__init__.coc file_build/cocotest --strict
+        - coconut src/cocotest/main.coc file_build/cocotest --strict
+        - coconut src/cocotest/util.coc file_build/cocotest --strict
         - python -tt file_build/runner.py
 
-        - coconut src folder_build --strict --autopep8
+        - coconut src folder_build --strict
         - python -tt folder_build/runner.py
 
-        - coconut src target_build --strict --print --target 3 --autopep8
+        - coconut src autopep8_build --strict --autopep8
+        - python -tt autopep8_build/runner.py
+
+        - coconut src target_build --strict --print --target 3
         - python -tt target_build/runner.py
