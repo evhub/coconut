@@ -832,7 +832,7 @@ def match_assign_proc(original, loc, tokens):
     matches, item = tokens
     out = match_proc((matches, item, None))
     out += ("if not "+match_check_var+":" + linebreak + openstr
-        + 'raise ValueError("pattern-matching failed for " '+repr(original.strip())+")"
+        + 'raise ValueError("pattern-matching failed for " '+repr(line(loc, original).strip())+")"
         + linebreak + closestr)
     return out
 
