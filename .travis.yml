@@ -1,24 +1,9 @@
 language: python
 
-python:
-  - "2.7"
-  - "3.3"
-  - "3.4"
+sudo: false
 
-matrix:
-  include:
-    - python: "2.6"
-      script:
-        - coconut --version
-        - coconut --strict --print --code "__coconut__ |> print"
-        - echo "__coconut__ |> print" | coconut --strict --print
-        - coconut src/runner.coc file_build --strict --autopep8
-        - coconut src/cocotest/__init__.coc file_build/cocotest --strict --autopep8
-        - coconut src/cocotest/main.coc file_build/cocotest --strict --autopep8
-        - coconut src/cocotest/util.coc file_build/cocotest --strict --autopep8
-        - python -tt file_build/runner.py
-        - coconut src folder_build --strict --print --autopep8
-        - python -tt folder_build/runner.py
+notifications:
+  email: false
 
 install:
   - pip install .
@@ -27,20 +12,80 @@ install:
   - git clone https://github.com/evhub/cocotest.git
   - cd cocotest
 
-script:
-  - coconut --version
-  - coconut --strict --print --code "__coconut__ |> print"
-  - echo "__coconut__ |> print" | coconut --strict --print
-  - ipython --ext coconut -c "%coconut __coconut__ |> print"
-  - coconut src/runner.coc file_build --strict --autopep8
-  - coconut src/cocotest/__init__.coc file_build/cocotest --strict --autopep8
-  - coconut src/cocotest/main.coc file_build/cocotest --strict --autopep8
-  - coconut src/cocotest/util.coc file_build/cocotest --strict --autopep8
-  - python -tt file_build/runner.py
-  - coconut src folder_build --strict --print --autopep8
-  - python -tt folder_build/runner.py
+matrix:
+  include:
 
-notifications:
-  email: false
+    - python: "2.6"
+      script:
+        - coconut --version
+        - coconut --strict --print --code "__coconut__ |> print"
+        - echo "__coconut__ |> print" | coconut --strict --print
 
-sudo: false
+        - coconut src/runner.coc file_build --strict --autopep8
+        - coconut src/cocotest/__init__.coc file_build/cocotest --strict --autopep8
+        - coconut src/cocotest/main.coc file_build/cocotest --strict --autopep8
+        - coconut src/cocotest/util.coc file_build/cocotest --strict --autopep8
+        - python -tt file_build/runner.py
+
+        - coconut src folder_build --strict --autopep8
+        - python -tt folder_build/runner.py
+
+        - coconut src target_build --strict --print --target 2 --autopep8
+        - python -tt target_build/runner.py
+
+    - python: "2.7"
+      script:
+        - coconut --version
+        - coconut --strict --print --code "__coconut__ |> print"
+        - echo "__coconut__ |> print" | coconut --strict --print
+        - ipython --ext coconut -c "%coconut __coconut__ |> print"
+
+        - coconut src/runner.coc file_build --strict --autopep8
+        - coconut src/cocotest/__init__.coc file_build/cocotest --strict --autopep8
+        - coconut src/cocotest/main.coc file_build/cocotest --strict --autopep8
+        - coconut src/cocotest/util.coc file_build/cocotest --strict --autopep8
+        - python -tt file_build/runner.py
+
+        - coconut src folder_build --strict --autopep8
+        - python -tt folder_build/runner.py
+
+        - coconut src target_build --strict --print --target 2 --autopep8
+        - python -tt target_build/runner.py
+
+    - python: "3.3"
+      script:
+        - coconut --version
+        - coconut --strict --print --code "__coconut__ |> print"
+        - echo "__coconut__ |> print" | coconut --strict --print
+        - ipython --ext coconut -c "%coconut __coconut__ |> print"
+
+        - coconut src/runner.coc file_build --strict --autopep8
+        - coconut src/cocotest/__init__.coc file_build/cocotest --strict --autopep8
+        - coconut src/cocotest/main.coc file_build/cocotest --strict --autopep8
+        - coconut src/cocotest/util.coc file_build/cocotest --strict --autopep8
+        - python -tt file_build/runner.py
+
+        - coconut src folder_build --strict --autopep8
+        - python -tt folder_build/runner.py
+
+        - coconut src target_build --strict --print --target 3 --autopep8
+        - python -tt target_build/runner.py
+
+    - python: "3.4"
+      script:
+        - coconut --version
+        - coconut --strict --print --code "__coconut__ |> print"
+        - echo "__coconut__ |> print" | coconut --strict --print
+        - ipython --ext coconut -c "%coconut __coconut__ |> print"
+
+        - coconut src/runner.coc file_build --strict --autopep8
+        - coconut src/cocotest/__init__.coc file_build/cocotest --strict --autopep8
+        - coconut src/cocotest/main.coc file_build/cocotest --strict --autopep8
+        - coconut src/cocotest/util.coc file_build/cocotest --strict --autopep8
+        - python -tt file_build/runner.py
+
+        - coconut src folder_build --strict --autopep8
+        - python -tt folder_build/runner.py
+
+        - coconut src target_build --strict --print --target 3 --autopep8
+        - python -tt target_build/runner.py
