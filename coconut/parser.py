@@ -830,7 +830,7 @@ def match_proc(tokens):
 def match_assign_proc(original, loc, tokens):
     """Processes match assign blocks."""
     matches, item = tokens
-    match_line = repr(line(loc, original)).strip(openstr).strip(closestr).strip()
+    match_line = repr(line(loc, original).strip(openstr).strip(closestr).strip())
     out = match_proc((matches, item, None))
     out += ("if not "+match_check_var+":" + linebreak + openstr
         + 'raise ValueError("pattern-matching failed for " '+match_line+")"
