@@ -897,6 +897,7 @@ class processor(object):
         self.star_assign_item_ref <<= attach(self.star_assign_item, self.star_assign_item_check)
         self.classic_lambdef_ref <<= attach(self.classic_lambdef, self.lambdef_check)
         self.classic_lambdef_nocond_ref <<= attach(self.classic_lambdef_nocond, self.lambdef_check)
+        self.set_literal_ref <<= attach(self.set_literal, self.set_literal_convert)
         self.setup()
         self.clean()
 
@@ -1342,6 +1343,15 @@ class processor(object):
         """Checks for Python 3 starred assignment."""
         return self.check_py3("Python 3 starred assignment", tokens)
 
+    def set_literal_convert(self, tokens):
+        """Converts set literals to the right form for the target Python."""
+        if len(tokens) != 1:
+            raise CoconutException("Invalid set literal tokens: "+repr(tokens))
+        elif self.version == "3":
+            return "{"+tokens[0]+"}"
+        else:
+            return "set(["+tokens[0]+"])"
+
     def parse(self, inputstring, parser, preargs, postargs):
         """Uses the parser to parse the inputstring."""
         try:
@@ -1597,9 +1607,12 @@ class processor(object):
     string_atom = addspace(OneOrMore(string))
     passthrough_atom = addspace(OneOrMore(passthrough))
     attr_atom = attach(condense(dot.suppress() + name), attr_proc)
+
+    set_literal_ref = Forward()
     set_s = fixto(CaselessLiteral("s"), "s")
     set_f = fixto(CaselessLiteral("f"), "f")
     set_letter = set_s | set_f
+    set_literal = lbrace.suppress() + setmaker + rbrace.suppress()
     atom = (
         keyword_atom
         | ellipses
@@ -1608,7 +1621,7 @@ class processor(object):
         | passthrough_atom
         | condense(lbrack + Optional(testlist_comp) + rbrack)
         | condense(lbrace + Optional(dictmaker) + rbrace)
-        | condense(fixto(lbrace, "__coconut__.set([") + Optional(setmaker) + fixto(rbrace, "])"))
+        | set_literal_ref
         | attach(set_letter + lbrace.suppress() + Optional(setmaker) + rbrace.suppress(), set_proc)
         | func_atom
         | attr_atom
