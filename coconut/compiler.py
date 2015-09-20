@@ -176,7 +176,7 @@ class terminal(object):
 
 class cli(object):
     """The Coconut command-line interface."""
-    version = "Coconut version "+VERSION_STR+" running on Python "+" ".join(sys.version.splitlines())
+    version = "Version "+VERSION_STR+" running on Python "+" ".join(sys.version.splitlines())
     code_ext = ".coc"
     comp_ext = ".py"
     commandline = argparse.ArgumentParser(description="The Coconut Programming Language.")
