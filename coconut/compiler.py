@@ -98,30 +98,30 @@ class executor(object):
 class terminal(object):
     """Manages printing and reading data to the console."""
     colors = {
-        "end" : "\033[0m",
-        "bold" : "\033[1m",
-        "blink" : "\033[5m",
-        "black" : "\033[30m",
-        "red" : "\033[31m",
-        "green" : "\033[32m",
-        "yellow" : "\033[33m",
-        "blue" : "\033[34m",
-        "magenta" : "\033[35m",
-        "cyan" : "\033[36m",
-        "white" : "\033[37m",
-        "blackhighlight" : "\033[40m",
-        "redhighlight" : "\033[41m",
-        "greenhighlight" : "\033[42m",
-        "yellowhighlight" : "\033[43m",
-        "bluehighlight" : "\033[44m",
-        "magentahighlight" : "\033[45m",
-        "cyanhighlight" : "\033[46m",
-        "whitehighlight" : "\033[47m",
-        "pink" : "\033[95m",
-        "purple" : "\033[94m",
-        "lightgreen" : "\033[92m",
-        "lightyellow" : "\033[93m",
-        "lightred" : "\033[91m"
+        "end": "\033[0m",
+        "bold": "\033[1m",
+        "blink": "\033[5m",
+        "black": "\033[30m",
+        "red": "\033[31m",
+        "green": "\033[32m",
+        "yellow": "\033[33m",
+        "blue": "\033[34m",
+        "magenta": "\033[35m",
+        "cyan": "\033[36m",
+        "white": "\033[37m",
+        "blackhighlight": "\033[40m",
+        "redhighlight": "\033[41m",
+        "greenhighlight": "\033[42m",
+        "yellowhighlight": "\033[43m",
+        "bluehighlight": "\033[44m",
+        "magentahighlight": "\033[45m",
+        "cyanhighlight": "\033[46m",
+        "whitehighlight": "\033[47m",
+        "pink": "\033[95m",
+        "purple": "\033[94m",
+        "lightgreen": "\033[92m",
+        "lightyellow": "\033[93m",
+        "lightred": "\033[91m"
         }
     on = True
 
@@ -135,7 +135,7 @@ class terminal(object):
     def addcolor(self, inputstring, color):
         """Adds the specified color to the string."""
         if color is not None:
-            return self.colors[str(color)] + inputstring + self.colors["end"]
+            return self.colors[color] + inputstring + self.colors["end"]
         else:
             return inputstring
 
@@ -176,7 +176,7 @@ class terminal(object):
 
 class cli(object):
     """The Coconut command-line interface."""
-    version = "Version "+VERSION_STR+" running on Python "+" ".join(sys.version.splitlines())
+    version = "Coconut version "+VERSION_STR+" running on Python "+" ".join(sys.version.splitlines())
     code_ext = ".coc"
     comp_ext = ".py"
     commandline = argparse.ArgumentParser(description="The Coconut Programming Language.")

@@ -23,7 +23,7 @@ from .root import *
 #-----------------------------------------------------------------------------------------------------------------------
 
 def load_ipython_extension(ipython):
-    """Loads Coconut as an IPython extesion."""
+    """Loads Coconut as an IPython extension."""
     from .convenience import cmd, parse
     def magic(line, cell=None):
         """Coconut IPython magic."""
