@@ -274,7 +274,7 @@ class CoconutSyntaxError(CoconutException):
                 point = len(source)-1
             part = source.splitlines()[lineno(point, source)-1]
             self.value += linebreak + "  " + part + linebreak + "  "
-            for x in range(0, col(point, source)):
+            for x in range(0, col(point, source)-1):
                 if part[x] in white:
                     self.value += part[x]
                 else:
@@ -285,7 +285,7 @@ class CoconutParseError(CoconutSyntaxError):
     """Coconut ParseError."""
     def __init__(self, line, col, lineno):
         """Creates The Coconut ParseError."""
-        CoconutSyntaxError.__init__(self, "parsing failed at line "+str(lineno)+" col "+str(col), line, col)
+        CoconutSyntaxError.__init__(self, "parsing failed in line "+str(lineno), line, col-1)
 
 class CoconutStyleError(CoconutSyntaxError):
     """Coconut --strict error."""
@@ -1049,7 +1049,7 @@ class processor(object):
             c = inputstring[x]
             if hold is not None:
                 count += self.change(c)
-                if count >= 0 and c == hold:
+                if count >= 0 and c in hold:
                     out.append(self.wrap_passthrough(found, multiline))
                     found = None
                     hold = None
@@ -1060,7 +1060,7 @@ class processor(object):
             elif found:
                 if c == escape:
                     found = ""
-                    hold = linebreak
+                    hold = endline
                     count = 0
                     multiline = False
                 elif c == "(":
@@ -1267,7 +1267,7 @@ class processor(object):
     def set_docstring(self, tokens):
         """Sets the docstring."""
         if len(tokens) == 2:
-            self.docstring = "\n"+self.string_repl([tokens[0]])+"\n"
+            self.docstring = linebreak + self.string_repl([tokens[0]]) + linebreak
             return tokens[1]
         else:
             raise CoconutException("invalid docstring tokens: "+repr(tokens))
