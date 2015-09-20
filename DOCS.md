@@ -418,7 +418,7 @@ fog = lambda *args, **kwargs: f(g(*args, **kwargs))
 
 ### Pipeline
 
-Coconut uses the FSharp-style pipe operators for pipeline-style function application. All the operators have a precedence in-between backtick calls and comparisons and are left-associative. The different operators are:
+Coconut uses the FSharp-style pipe operators for pipeline-style function application. All the operators have a precedence in-between backtick calls and comparisons and are left-associative. All operators also support in-place versions. The different operators are:
 ```
 (|>)    => pipe forward
 (|*>)   => multiple-argument pipe forward

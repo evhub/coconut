@@ -241,6 +241,36 @@ match_to_var = "_coconut_match_to"
 match_check_var = "_coconut_match_check"
 match_iter_var = "_coconut_match_iter"
 wildcard = "_"
+keywords = ["and",
+            "as",
+            "as",
+            "assert",
+            "break",
+            "class",
+            "continue",
+            "def",
+            "del",
+            "elif",
+            "else",
+            "except",
+            "finally",
+            "for",
+            "from",
+            "global",
+            "if",
+            "import",
+            "in",
+            "is",
+            "lambda",
+            "not",
+            "or",
+            "pass",
+            "raise",
+            "return",
+            "try",
+            "while",
+            "with",
+            "yield"]
 const_vars = ["True", "False", "None"]
 reserved_vars = ["nonlocal", "data", "match", "case", "async", "await"]
 
@@ -1417,39 +1447,8 @@ class processor(object):
     matrix_at = at | Literal("\xd7")
     matrix_at_ref = Forward()
 
-    name = (
-        ~Keyword("and")
-        + ~Keyword("as")
-        + ~Keyword("assert")
-        + ~Keyword("break")
-        + ~Keyword("class")
-        + ~Keyword("continue")
-        + ~Keyword("def")
-        + ~Keyword("del")
-        + ~Keyword("elif")
-        + ~Keyword("else")
-        + ~Keyword("except")
-        + ~Keyword("finally")
-        + ~Keyword("for")
-        + ~Keyword("from")
-        + ~Keyword("global")
-        + ~Keyword("if")
-        + ~Keyword("import")
-        + ~Keyword("in")
-        + ~Keyword("is")
-        + ~Keyword("lambda")
-        + ~Keyword("not")
-        + ~Keyword("or")
-        + ~Keyword("pass")
-        + ~Keyword("raise")
-        + ~Keyword("return")
-        + ~Keyword("try")
-        + ~Keyword("while")
-        + ~Keyword("with")
-        + ~Keyword("yield")
-        + Regex("(?![0-9])\\w+")
-        )
-    for k in const_vars + reserved_vars:
+    name = Regex("(?![0-9])\\w+")
+    for k in keywords + const_vars + reserved_vars:
         name = ~Keyword(k) + name
     for k in reserved_vars:
         name |= fixto(backslash + Keyword(k), k)
