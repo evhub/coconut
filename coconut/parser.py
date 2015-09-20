@@ -535,9 +535,9 @@ def func_proc(tokens):
 def data_proc(tokens):
     """Processes data blocks."""
     if len(tokens) == 2:
-        return "class "+tokens[0]+"(__coconut__.collections.namedtuple('"+tokens[0]+"', '"+tokens[1]+"'))"
+        return "class "+tokens[0]+'(__coconut__.collections.namedtuple("'+tokens[0]+'", "'+tokens[1]+'"))'
     elif len(tokens) == 1:
-        return "class "+tokens[0]+"(__coconut__.collections.namedtuple('"+tokens[0]+"', ''))"
+        return "class "+tokens[0]+'(__coconut__.collections.namedtuple("'+tokens[0]+'", ""))'
     else:
         raise CoconutException("invalid data tokens: "+repr(tokens))
 
