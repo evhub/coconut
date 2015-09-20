@@ -1406,9 +1406,15 @@ class processor(object):
     at = Literal("@")
     arrow = fixto(Literal("->") | Literal("\u2192"), "->")
     dubcolon = Literal("::")
-    colon = fixto(~dubcolon+Literal(":"), ":")
+    colon = ~dubcolon+Literal(":")
     semicolon = Literal(";")
     equals = Literal("=")
+    lt = ~Literal("<<")+Literal("<")
+    gt = ~Literal(">>")+Literal(">")
+    eq = Combine(equals + equals)
+    le = fixto(Combine(lt + equals) | Literal("\u2264"), "<=")
+    ge = fixto(Combine(gt + equals) | Literal("\u2265"), ">=")
+    ne = fixto(Combine(bang + equals) | Literal("\u2260"), "!=")
     lbrack = Literal("[")
     rbrack = Literal("]")
     lbrace = Literal("{")
@@ -1416,8 +1422,8 @@ class processor(object):
     plus = Literal("+")
     minus = Literal("-")
     bang = fixto(Literal("!") | Literal("\xac"), "!")
-    slash = Literal("/")
     dubslash = Literal("//")
+    slash = ~dubslash+Literal("/")
     pipeline = fixto(Literal("|>") | Literal("\u21a6"), "|>")
     starpipe = fixto(Literal("|*>") | Literal("*\u21a6"), "|*>")
     backpipe = fixto(Literal("<|") | Literal("\u21a4"), "<|")
@@ -1435,14 +1441,14 @@ class processor(object):
     underscore = Literal("_")
     pound = Literal("#")
     backtick = Literal("`")
-    backslash = Literal("\\")
     dubbackslash = Literal("\\\\")
+    backslash = ~dubbackslash+Literal("\\")
 
     mul_star = fixto(star | Literal("\u22c5"), "*")
     exp_dubstar = fixto(dubstar | Literal("\u2191"), "**")
     neg_minus = fixto(minus | Literal("\u207b"), "-")
     sub_minus = fixto(minus | Literal("\u2212"), "-")
-    div_slash = fixto((slash | Literal("\xf7"))+~slash, "/")
+    div_slash = fixto(slash | Literal("\xf7")+~slash, "/")
     div_dubslash = fixto(dubslash | Combine(Literal("\xf7")+slash), "//")
     matrix_at = at | Literal("\xd7")
     matrix_at_ref = Forward()
@@ -1516,13 +1522,6 @@ class processor(object):
                  | Combine(lshift + equals)
                  | Combine(rshift + equals)
                  )
-
-    lt = ~Literal("<<")+Literal("<")
-    gt = ~Literal(">>")+Literal(">")
-    eq = Combine(equals + equals)
-    le = fixto(Combine(lt + equals) | Literal("\u2264"), "<=")
-    ge = fixto(Combine(gt + equals) | Literal("\u2265"), ">=")
-    ne = fixto(Combine(bang + equals) | Literal("\u2260"), "!=")
 
     comp_op = (le | ge | ne | lt | gt | eq
                | addspace(Keyword("not") + Keyword("in"))
@@ -1661,7 +1660,7 @@ class processor(object):
 
     factor <<= trace(condense(unary + factor) | power, "factor")
 
-    mulop = mul_star | div_slash | div_dubslash | percent | matrix_at_ref
+    mulop = mul_star | div_dubslash | div_slash | percent | matrix_at_ref
     term = addspace(factor + ZeroOrMore(mulop + factor))
     arith = plus | sub_minus
     arith_expr = addspace(term + ZeroOrMore(arith + term))
