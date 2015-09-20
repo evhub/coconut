@@ -913,6 +913,12 @@ class processor(object):
         else:
             raise CoconutException("unsupported target Python version "+repr(version)+" (supported targets are '2' and '3', or leave blank for universal)")
         self.strict = strict
+        self.bind()
+        self.setup()
+        self.clean()
+
+    def bind(self):
+        """Binds reference objects to the proper parse actions."""
         self.string_ref <<= self.trace(attach(self.string_marker, self.string_repl), "string_ref")
         self.moduledoc <<= self.trace(attach(self.string_marker + self.newline, self.set_docstring), "moduledoc")
         self.comment <<= self.trace(attach(self.comment_marker, self.comment_repl), "comment")
@@ -929,8 +935,6 @@ class processor(object):
         self.classic_lambdef_ref <<= attach(self.classic_lambdef, self.lambdef_check)
         self.classic_lambdef_nocond_ref <<= attach(self.classic_lambdef_nocond, self.lambdef_check)
         self.set_literal_ref <<= attach(self.set_literal, self.set_literal_convert)
-        self.setup()
-        self.clean()
 
     def setup(self):
         """Initializes the processor."""
@@ -941,9 +945,6 @@ class processor(object):
         """Resets references."""
         self.indchar = None
         self.refs = []
-        self.match_check_index = 0
-        self.match_to_index = 0
-        self.match_iter_index = 0
         self.docstring = ""
 
     def wrap_str(self, text, strchar, multiline):
