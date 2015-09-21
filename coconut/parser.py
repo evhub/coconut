@@ -280,6 +280,10 @@ ParserElement.setDefaultWhitespaceChars(white)
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
 
+def clean(line):
+    """Cleans a line."""
+    return line.strip(openstr).strip(closestr).strip()
+
 class CoconutException(Exception):
     """Base Coconut exception."""
     def __init__(self, value):
@@ -315,7 +319,7 @@ class CoconutParseError(CoconutSyntaxError):
     """Coconut ParseError."""
     def __init__(self, line, col, lineno):
         """Creates The Coconut ParseError."""
-        CoconutSyntaxError.__init__(self, "parsing failed in line "+str(lineno), line, col-1)
+        CoconutSyntaxError.__init__(self, "parsing failed in line "+str(lineno), clean(line), col-1)
 
 class CoconutStyleError(CoconutSyntaxError):
     """Coconut --strict error."""
@@ -860,7 +864,7 @@ def match_proc(tokens):
 def match_assign_proc(original, loc, tokens):
     """Processes match assign blocks."""
     matches, item = tokens
-    match_line = repr(line(loc, original).strip(openstr).strip(closestr).strip())
+    match_line = repr(clean(line(loc, original)))
     out = match_proc((matches, item, None))
     out += ("if not "+match_check_var+":" + linebreak + openstr
         + 'raise ValueError("pattern-matching failed for " '+match_line+")"
