@@ -935,6 +935,8 @@ class processor(object):
         self.classic_lambdef_ref <<= attach(self.classic_lambdef, self.lambdef_check)
         self.classic_lambdef_nocond_ref <<= attach(self.classic_lambdef_nocond, self.lambdef_check)
         self.set_literal_ref <<= attach(self.set_literal, self.set_literal_convert)
+        self.async_stmt_ref <<= attach(self.async_stmt, self.async_stmt_check)
+        self.await_keyword_ref <<= attach(self.await_keyword, self.await_keyword_check)
 
     def setup(self):
         """Initializes the processor."""
@@ -1375,6 +1377,14 @@ class processor(object):
         """Checks for Python 3 starred assignment."""
         return self.check_py3("Python 3 starred assignment", tokens)
 
+    def async_stmt_check(self, tokens):
+        """Checks for Python 3.5 async statement."""
+        return self.check_py3("Python 3.5 async statement", tokens)
+
+    def await_keyword_check(self, tokens):
+        """Checks for Python 3.5 await statement."""
+        return self.check_py3("Python 3.5 await expression", tokens)
+
     def set_literal_convert(self, tokens):
         """Converts set literals to the right form for the target Python."""
         if len(tokens) != 1:
@@ -1657,7 +1667,9 @@ class processor(object):
     atom_item = trace(attach(atom + ZeroOrMore(trailer), item_proc), "atom_item")
 
     factor = Forward()
-    power = trace(condense(addspace(Optional(Keyword("await")) + atom_item) + Optional(exp_dubstar + factor)), "power")
+    await_keyword_ref = Forward()
+    await_keyword = Keyword("await")
+    power = trace(condense(addspace(Optional(await_keyword_ref) + atom_item) + Optional(exp_dubstar + factor)), "power")
     unary = plus | neg_minus | tilde
 
     factor <<= trace(condense(unary + factor) | power, "factor")
@@ -1816,6 +1828,7 @@ class processor(object):
     with_stmt = addspace(Keyword("with") + condense(itemlist(with_item, comma) + suite))
 
     return_typedef_ref = Forward()
+    async_stmt_ref = Forward()
     name_funcdef = condense(name + parameters)
     op_funcdef_arg = condense(parenwrap(lparen.suppress(), tfpdef + Optional(default), rparen.suppress()))
     op_funcdef_name = backtick.suppress() + name + backtick.suppress()
@@ -1849,7 +1862,7 @@ class processor(object):
                           | classdef
                           | datadef
                           | decorated
-                          | async_stmt
+                          | async_stmt_ref
                           , "compound_stmt")
     expr_stmt = trace(addspace(
                       attach(simple_assign + augassign + (yield_expr | testlist), assign_proc)
