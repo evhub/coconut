@@ -939,7 +939,8 @@ class processor(object):
         self.classic_lambdef_ref <<= attach(self.classic_lambdef, self.lambdef_check)
         self.classic_lambdef_nocond_ref <<= attach(self.classic_lambdef_nocond, self.lambdef_check)
         self.set_literal_ref <<= attach(self.set_literal, self.set_literal_convert)
-        self.async_stmt_ref <<= attach(self.async_stmt, self.async_stmt_check)
+        self.async_funcdef_ref <<= attach(self.async_funcdef, self.async_stmt_check)
+        self.async_block_ref <<= attach(self.async_block, self.async_stmt_check)
         self.await_keyword_ref <<= attach(self.await_keyword, self.await_keyword_check)
 
     def setup(self):
@@ -1832,7 +1833,8 @@ class processor(object):
     with_stmt = addspace(Keyword("with") + condense(itemlist(with_item, comma) + suite))
 
     return_typedef_ref = Forward()
-    async_stmt_ref = Forward()
+    async_funcdef_ref = Forward()
+    async_block_ref = Forward()
     name_funcdef = condense(name + parameters)
     op_funcdef_arg = condense(parenwrap(lparen.suppress(), tfpdef + Optional(default), rparen.suppress()))
     op_funcdef_name = backtick.suppress() + name + backtick.suppress()
@@ -1842,13 +1844,14 @@ class processor(object):
     funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
     math_funcdef = attach(Optional(Keyword("def").suppress()) + base_funcdef + equals.suppress() + (yield_expr | testlist), func_proc)
     async_funcdef = addspace(Keyword("async") + funcdef)
-    async_stmt = async_funcdef | addspace(Keyword("async") + (with_stmt | for_stmt))
+    async_block = addspace(Keyword("async") + (with_stmt | for_stmt))
+    async_stmt = async_funcdef_ref | async_block_ref
 
     data_args = Optional(lparen.suppress() + Optional(itemlist(~underscore + name, comma)) + rparen.suppress())
     datadef = condense(attach(Keyword("data").suppress() + name + data_args, data_proc) + suite)
 
     decorators = attach(OneOrMore(at.suppress() + test + newline.suppress()), decorator_proc)
-    decorated = condense(decorators + (classdef | funcdef | async_funcdef | datadef | math_funcdef))
+    decorated = condense(decorators + (classdef | funcdef | async_funcdef_ref | datadef | math_funcdef))
 
     passthrough_stmt = condense(passthrough_block + (nocolon_suite | newline))
 
