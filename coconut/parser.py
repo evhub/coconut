@@ -1869,7 +1869,7 @@ class processor(object):
                           | classdef
                           | datadef
                           | decorated
-                          | async_stmt_ref
+                          | async_stmt
                           , "compound_stmt")
     expr_stmt = trace(addspace(
                       attach(simple_assign + augassign + (yield_expr | testlist), assign_proc)
