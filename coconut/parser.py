@@ -1538,6 +1538,7 @@ class processor(object):
                  | Combine(caret + equals)
                  | Combine(lshift + equals)
                  | Combine(rshift + equals)
+                 | Combine(matrix_at_ref + equals)
                  )
 
     comp_op = (le | ge | ne | lt | gt | eq
