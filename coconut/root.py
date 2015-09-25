@@ -30,7 +30,7 @@ except ImportError:
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-VERSION = "0.3.0"
+VERSION = "0.3.0-dev"
 VERSION_NAME = "Ilocos"
 
 VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
