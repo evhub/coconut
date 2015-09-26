@@ -443,7 +443,8 @@ def item_proc(tokens):
             out += trailer
         elif len(trailer) == 1:
             if trailer[0] == "$[]":
-                out = "(lambda i: __coconut__.itertools.islice("+out+", i.start, i.stop, i.step) if isinstance(i, __coconut__.slice) else next(__coconut__.itertools.islice("+out+", i, i+1)))"
+                out = ("(lambda i: __coconut__.itertools.islice("+out+", i.start, i.stop, i.step) if isinstance(i, __coconut__.slice)"
+                       " else next(__coconut__.itertools.islice("+out+", i, i+1)))")
             elif trailer[0] == "$":
                 out = "__coconut__.functools.partial(__coconut__.functools.partial, "+out+")"
             elif trailer[0] == "[]":
@@ -915,7 +916,8 @@ class processor(object):
         if version in self.versions:
             self.version = version
         else:
-            raise CoconutException("unsupported target Python version "+repr(version)+" (supported targets are '2' and '3', or leave blank for universal)")
+            raise CoconutException("unsupported target Python version "+repr(version)+
+                                   " (supported targets are '2' and '3', or leave blank for universal)")
         self.strict = strict
         self.bind()
         self.setup()
