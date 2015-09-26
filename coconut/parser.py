@@ -900,6 +900,15 @@ def case_proc(tokens):
         out += "if not "+match_check_var+default
     return out
 
+def except_proc(token):
+    """Processes except statements."""
+    if len(tokens) == 1:
+        return "except ("+tokens[0]+")"
+    elif len(tokens) == 2:
+        return "except ("+tokens[0]+") as "+tokens[1]
+    else:
+        raise CoconutException("invalid except tokens: "+repr(tokens))
+
 #-----------------------------------------------------------------------------------------------------------------------
 # PARSER:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1825,7 +1834,7 @@ class processor(object):
                        )
     while_stmt = addspace(Keyword("while") + condense(test + suite + Optional(else_stmt)))
     for_stmt = addspace(Keyword("for") + assignlist + Keyword("in") + condense(testlist + suite + Optional(else_stmt)))
-    except_clause = addspace(Keyword("except") + test + Optional(Keyword("as") + name))
+    except_clause = attach(Keyword("except").suppress() + test + Optional(Keyword("as").suppress() + name), except_proc)
     try_stmt = condense(Keyword("try") + suite + (
         Keyword("finally") + suite
         | (
