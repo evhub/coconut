@@ -1844,7 +1844,7 @@ class processor(object):
     base_funcdef = addspace((op_funcdef | name_funcdef) + Optional(return_typedef_ref))
     funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
     math_funcdef = attach(Optional(Keyword("def").suppress()) + base_funcdef + equals.suppress() + (yield_expr | testlist), func_proc)
-    async_funcdef = addspace(Keyword("async") + funcdef)
+    async_funcdef = addspace(Keyword("async") + (funcdef | math_funcdef))
     async_block = addspace(Keyword("async") + (with_stmt | for_stmt))
     async_stmt = async_funcdef_ref | async_block_ref
 
@@ -1852,7 +1852,7 @@ class processor(object):
     datadef = condense(attach(Keyword("data").suppress() + name + data_args, data_proc) + suite)
 
     decorators = attach(OneOrMore(at.suppress() + test + newline.suppress()), decorator_proc)
-    decorated = condense(decorators + (classdef | funcdef | async_funcdef_ref | datadef | math_funcdef))
+    decorated = condense(decorators + (classdef | datadef| funcdef | async_funcdef_ref | math_funcdef))
 
     passthrough_stmt = condense(passthrough_block + (nocolon_suite | newline))
 
