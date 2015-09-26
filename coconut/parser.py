@@ -900,7 +900,7 @@ def case_proc(tokens):
         out += "if not "+match_check_var+default
     return out
 
-def except_proc(token):
+def except_proc(tokens):
     """Processes except statements."""
     if len(tokens) == 1:
         return "except ("+tokens[0]+")"
