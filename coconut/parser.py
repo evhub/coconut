@@ -1589,7 +1589,7 @@ class processor(object):
     dictmaker = dict_comp_ref | dict_item
 
     op_atom = condense(
-        lparen + (
+        lparen,suppress() + (
             fixto(pipeline, "lambda x, f: f(x)")
             | fixto(starpipe, "lambda xs, f: f(*xs)")
             | fixto(backpipe, "lambda f, x: f(x)")
@@ -1624,7 +1624,7 @@ class processor(object):
             | fixto(Keyword("or"), "lambda a, b: a or b")
             | fixto(Keyword("is"), "__coconut__.operator.is_")
             | fixto(Keyword("in"), "__coconut__.operator.__contains__")
-        ) + rparen
+        ) + rparen.suppress()
     )
 
     testlist_comp = addspace(test + comp_for) | testlist
