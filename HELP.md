@@ -271,7 +271,7 @@ def factorial(value):
         return 1
     match n is int in value if n > 0:
         return n * factorial(n-1)
-    raise TypeError("arg to factorial must be int > 0")
+    raise TypeError("invalid argument to factorial of: "+repr(value))
 
 3 |> factorial |> print
 ```
