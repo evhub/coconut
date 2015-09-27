@@ -1834,8 +1834,8 @@ class processor(object):
                        )
     while_stmt = addspace(Keyword("while") + condense(test + suite + Optional(else_stmt)))
     for_stmt = addspace(Keyword("for") + assignlist + Keyword("in") + condense(testlist + suite + Optional(else_stmt)))
-    except_clause = attach(Keyword("except").suppress() + test + Optional(Keyword("as").suppress() + name), except_proc)
-    try_stmt = condense(Keyword("try") + suite + Optional(
+    except_clause = attach(Keyword("except").suppress() + testlist + Optional(Keyword("as").suppress() + name), except_proc)
+    try_stmt = condense(Keyword("try") + suite + (
         Keyword("finally") + suite
         | (
             OneOrMore(except_clause + suite) + Optional(Keyword("except") + suite)
