@@ -21,6 +21,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [Non-Decimal Integers](#non-decimal-integers)
     - [Enhanced Decorators](#enhanced-decorators)
     - [Enhanced Else Statements](#enhanced-else-statements)
+    - [Enhanced Except Statements](#enhanced-except-statements)
     - [Unicode Alternatives](#unicode-alternatives)
     - [Code Passthrough](#code-passthrough)
 - [III. Operators](#iii-operators)
@@ -350,6 +351,28 @@ else:
         unsafe_2()
     except MyError:
         handle_2()
+```
+
+### Enhanced Except Statements
+
+Python 3 requires that if multiple exceptions are to be caught, they must be placed inside of parentheses, so as to disallow Python 2's use of a comma instead of `as`. Coconut allows commas in except statements to translate to catching multiple exceptions without the need for parentheses.
+
+##### Example
+
+Coconut:
+```
+try:
+    unsafe_func(arg)
+except SyntaxError, ValueError as err:
+    handle(err)
+```
+
+Python:
+```
+try:
+    unsafe_func(arg)
+except (SyntaxError, ValueError) as err:
+    handle(err)
 ```
 
 ### Unicode Alternatives
