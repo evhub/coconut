@@ -492,8 +492,8 @@ def chain_proc(tokens):
     else:
         return "__coconut__.itertools.chain("+", ".join(tokens)+")"
 
-def infix_proc(tokens):
-    """Processes infix calls."""
+def get_infix_items(tokens):
+    """Performs infix token processing."""
     if len(tokens) < 3:
         raise CoconutException("invalid infix tokens: "+repr(tokens))
     else:
@@ -508,7 +508,17 @@ def infix_proc(tokens):
         for arg in items:
             if arg:
                 args.append(arg)
-        return "("+tokens[1]+")("+", ".join(args)+")"
+        return tokens[1], args
+
+def infix_proc(tokens):
+    """Processes infix calls."""
+    func, args = get_infix_items(tokens)
+    return "("+func+")("+", ".join(args)+")"
+
+def op_funcdef_proc(tokens):
+    """Processes infix defs."""
+    func, args = get_infix_items(tokens)
+    return func+"("+", ".join(args)+")"
 
 def pipe_proc(tokens):
     """Processes pipe calls."""
@@ -1851,7 +1861,7 @@ class processor(object):
     name_funcdef = condense(name + parameters)
     op_funcdef_arg = condense(parenwrap(lparen.suppress(), tfpdef + Optional(default), rparen.suppress()))
     op_funcdef_name = backtick.suppress() + name + backtick.suppress()
-    op_funcdef = attach(Group(Optional(op_funcdef_arg)) + op_funcdef_name + Group(Optional(op_funcdef_arg)), infix_proc)
+    op_funcdef = attach(Group(Optional(op_funcdef_arg)) + op_funcdef_name + Group(Optional(op_funcdef_arg)), op_funcdef_proc)
     return_typedef = addspace(arrow + test)
     base_funcdef = addspace((op_funcdef | name_funcdef) + Optional(return_typedef_ref))
     funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
