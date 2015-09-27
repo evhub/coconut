@@ -297,7 +297,7 @@ def classify_sequence(value):
 ```
 There are a couple of new things here that deserve attention:
 
-First, the use of normal tuple notation to access and check against the contents of the tuple. List notation can also be used, and both lists and tuples will match either.
+First, the use of normal list notation to access and check against the contents of the sequence. Tuple notation can also be used, and both lists and tuples will match either.
 
 Second, the use of the wildcard, `_`. Unlike other variables, like `x` in this example, `_` will never be bound to a value, and can be repeated multiple times without requiring the repeats to be the same value. Making sure all uses of the same variable are equal, however, like in `(x,x)` , is actually a very useful feature of match statements, as can be seen from this example.
 
