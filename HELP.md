@@ -138,7 +138,7 @@ Try again to predict what you think will be printed, then test it to see if you 
 
 Another useful functional programming operator is pipe forward, which makes pipeline-style programming, where a value is fed from function to function, transformed at each step, much easier and more elegant. In Coconut, pipe forward is done by the `|>` operator (or `|*>` for multiple arguments).
 
-_Note: Pipe backwards is also available, and accessed by the `<|` operator (or `<*|` for multiple arguments), although it usually less useful._
+_Note: Pipe backwards is also available, and accessed by the `<|` operator (or `<*|` for multiple arguments), although it is usually less useful._
 
 Here's an example:
 ```
