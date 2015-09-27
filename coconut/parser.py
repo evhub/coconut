@@ -508,7 +508,7 @@ def infix_proc(tokens):
         for arg in items:
             if arg:
                 args.append(arg)
-        return tokens[1] + "(" + ", ".join(args) + ")"
+        return "("+tokens[1]+")("+", ".join(args)+")"
 
 def pipe_proc(tokens):
     """Processes pipe calls."""
@@ -518,13 +518,13 @@ def pipe_proc(tokens):
         func = tokens.pop()
         op = tokens.pop()
         if op == "|>":
-            return func+"("+pipe_proc(tokens)+")"
+            return "("+func+")("+pipe_proc(tokens)+")"
         elif op == "|*>":
-            return func+"(*"+pipe_proc(tokens)+")"
+            return "("+func+")(*"+pipe_proc(tokens)+")"
         elif op == "<|":
-            return pipe_proc(tokens)+"("+func+")"
+            return "("+pipe_proc(tokens)+")("+func+")"
         elif op == "<*|":
-            return pipe_proc(tokens)+"(*"+func+")"
+            return "("+pipe_proc(tokens)+")(*"+func+")"
         else:
             raise CoconutException("invalid pipe operator: "+op)
 
