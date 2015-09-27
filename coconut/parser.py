@@ -1589,13 +1589,16 @@ class processor(object):
     dictmaker = dict_comp_ref | dict_item
 
     op_atom = condense(
-        lparen.suppress() + (
+        lparen + (
             fixto(pipeline, "lambda x, f: f(x)")
             | fixto(starpipe, "lambda xs, f: f(*xs)")
             | fixto(backpipe, "lambda f, x: f(x)")
             | fixto(backstarpipe, "lambda f, xs: f(*xs)")
             | fixto(dotdot, "lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs))")
-            | fixto(dot, "__coconut__.getattr")
+            | fixto(Keyword("and"), "lambda a, b: a and b")
+            | fixto(Keyword("or"), "lambda a, b: a or b")
+        ) + rparen | lparen.suppress() + (
+            fixto(dot, "__coconut__.getattr")
             | fixto(dubcolon, "__coconut__.itertools.chain")
             | fixto(dollar, "__coconut__.functools.partial")
             | fixto(exp_dubstar, "__coconut__.operator.__pow__")
@@ -1620,8 +1623,6 @@ class processor(object):
             | fixto(tilde, "__coconut__.operator.__inv__")
             | fixto(matrix_at_ref, "__coconut__.operator.__matmul__")
             | fixto(Keyword("not"), "__coconut__.operator.__not__")
-            | fixto(Keyword("and"), "lambda a, b: a and b")
-            | fixto(Keyword("or"), "lambda a, b: a or b")
             | fixto(Keyword("is"), "__coconut__.operator.is_")
             | fixto(Keyword("in"), "__coconut__.operator.__contains__")
         ) + rparen.suppress()
