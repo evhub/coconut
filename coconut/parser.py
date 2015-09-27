@@ -1589,7 +1589,7 @@ class processor(object):
     dictmaker = dict_comp_ref | dict_item
 
     op_atom = condense(
-        lparen,suppress() + (
+        lparen.suppress() + (
             fixto(pipeline, "lambda x, f: f(x)")
             | fixto(starpipe, "lambda xs, f: f(*xs)")
             | fixto(backpipe, "lambda f, x: f(x)")
