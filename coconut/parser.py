@@ -1952,9 +1952,9 @@ class processor(object):
     op_match_funcdef_arg = condense(parenwrap(lparen.suppress(), match + Optional(default), rparen.suppress()))
     op_match_funcdef = attach(Group(Optional(op_funcdef_arg)) + op_funcdef_name + Group(Optional(op_funcdef_arg)), op_match_funcdef_proc)
     name_match_funcdef = attach(name + lparen.suppress() + matchlist_list + rparen.suppress(), name_match_funcdef_proc)
-    base_match_funcdef = addspace((op_match_funcdef | name_match_funcdef) + Optional(return_typedef_ref))
-    full_match_funcdef = Keyword("def").suppress() + condense(base_match_funcdef + newline + indent.suppress() + OneOrMore(stmt) + dedent)
-    math_match_funcdef = attach(Keyword("def").suppress() + base_match_funcdef + equals.suppress() + (yield_expr | testlist), match_func_proc)
+    base_match_funcdef = Keyword("def").suppress() + (op_match_funcdef | name_match_funcdef)
+    full_match_funcdef = condense(base_match_funcdef + newline + indent.suppress() + OneOrMore(stmt) + dedent)
+    math_match_funcdef = attach(base_match_funcdef + equals.suppress() + (yield_expr | testlist), match_func_proc)
     math_match_funcdef_block = math_match_funcdef + newline
     match_funcdef = Optional(Keyword("match")).suppress() + full_match_funcdef
     async_match_funcdef = addspace((Optional(Keyword("match")).suppress() + Keyword("async") | Keyword("async") + Optional(Keyword("match")).suppress()) + (full_match_funcdef | math_match_funcdef_block))
