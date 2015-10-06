@@ -48,12 +48,15 @@ def fixpath(path):
     """Properly formats a path."""
     return os.path.normpath(os.path.realpath(path))
 
-def print_error():
+def print_error(verbose=False):
     """Displays a formatted error."""
     err_type, err_value, err_trace = sys.exc_info()
-    err_name, err_msg = "\n".join(traceback.format_exception_only(err_type, err_value)).strip().split(": ", 1)
-    err_name = err_name.split(".")[-1]
-    err = err_name+": "+err_msg
+    if verbose:
+        err = "".join(traceback.format_exception(err_type, err_value, err_trace)).strip()
+    else:
+        err_name, err_msg = "".join(traceback.format_exception_only(err_type, err_value)).strip().split(": ", 1)
+        err_name = err_name.split(".")[-1]
+        err = err_name+": "+err_msg
     print(err, file=sys.stderr)
 
 class executor(object):
@@ -263,11 +266,8 @@ class cli(object):
             if args.interact or (interact and not (stdin or args.source or args.version or args.code)):
                 self.start_prompt()
         except parser.CoconutException:
-            if self.indebug():
-                raise
-            else:
-                print_error()
-                sys.exit(1)
+            print_error(self.indebug())
+            sys.exit(1)
 
     def compile_path(self, path, write=True, run=False):
         """Compiles a path."""
@@ -394,10 +394,7 @@ class cli(object):
             try:
                 compiled = self.processor.parse_single(code)
             except parser.CoconutException:
-                if self.indebug():
-                    raise
-                else:
-                    print_error()
+                print_error(self.indebug())
                 return None
         return compiled
 
