@@ -1956,11 +1956,11 @@ class processor(object):
     async_block = addspace(Keyword("async") + (with_stmt | for_stmt))
 
     async_match_funcdef_ref = Forward()
-    op_match_funcdef_arg = condense(parenwrap(lparen.suppress(), match + Optional(default), rparen.suppress()))
+    op_match_funcdef_arg = parenwrap(lparen.suppress(), match, rparen.suppress())
     op_match_funcdef = attach(Group(Optional(op_funcdef_arg)) + op_funcdef_name + Group(Optional(op_funcdef_arg)), op_match_funcdef_proc)
     name_match_funcdef = attach(name + lparen.suppress() + matchlist_list + rparen.suppress(), name_match_funcdef_proc)
     base_match_funcdef = Keyword("def").suppress() + (op_match_funcdef | name_match_funcdef)
-    full_match_funcdef = attach(base_match_funcdef + match_suite, full_match_funcdef_proc)
+    full_match_funcdef = trace(attach(base_match_funcdef + match_suite, full_match_funcdef_proc), "base_match_funcdef")
     math_match_funcdef = attach(Optional(Keyword("match").suppress()) + base_match_funcdef + equals.suppress() + (yield_expr | testlist), match_func_proc)
     math_match_funcdef_block = math_match_funcdef + newline
     match_funcdef = Optional(Keyword("match").suppress()) + full_match_funcdef
