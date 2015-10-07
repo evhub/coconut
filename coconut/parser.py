@@ -1956,7 +1956,7 @@ class processor(object):
     return_typedef = addspace(arrow + test)
     base_funcdef = addspace((op_funcdef | name_funcdef) + Optional(return_typedef_ref))
     funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
-    math_funcdef = attach(Optional(Keyword("def").suppress()) + base_funcdef + equals.suppress() + (yield_expr | testlist), func_proc)
+    math_funcdef = attach(Keyword("def").suppress() + base_funcdef + equals.suppress() + (yield_expr | testlist), func_proc)
     math_funcdef_block = math_funcdef + newline
     async_funcdef = addspace(Keyword("async") + (funcdef | math_funcdef_block))
     async_block = addspace(Keyword("async") + (with_stmt | for_stmt))
