@@ -110,7 +110,7 @@ If you prefer [IPython](http://ipython.org/) to the normal Python shell, coconut
 
 ### `__coconut__`
 
-Inside of any Coconut program, there will be necessary functions and variables stored inside a class/module named `__coconut__`. Modifying it will most likely break your code.
+Inside of any Coconut program, there will be necessary functions and variables stored inside a class/module named `__coconut__`. Therefore, modifying the `__coconut__` variable inside your program will most likely break your code.
 
 ## II. Syntax
 
