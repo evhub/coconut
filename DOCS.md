@@ -39,6 +39,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [`dropwhile`](#dropwhile)
     - [`tee`](#tee)
     - [`recursive`](#recursive)
+    - [`__coconut_version__`](#__coconut_version__)
 - [V. Keywords](#v-keywords)
     - [`data`](#data)
     - [`match`](#match)
@@ -835,6 +836,10 @@ def collatz(n):
 Python:
 
 _Can't be done without a long decorator definition. The full definition of the decorator in Python can be found in the Coconut header._
+
+### `__coconut_version__`
+
+Coconut provides the built-in double-underscore constant variable `__coconut_version__` to allow direct access to the version of Coconut that the code was compiled in.
 
 ## V. Keywords
 

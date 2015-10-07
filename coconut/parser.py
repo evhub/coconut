@@ -99,6 +99,7 @@ def input(*args, **kwargs):
         if which == "package":
             header += r'''
 """Built-in Coconut Functions."""
+version = "'''+VERSION+r'''"
 
 import functools
 import operator
@@ -160,6 +161,7 @@ import __coconut__
                 header += r'''
 class __coconut__(object):
     """Built-in Coconut Functions."""
+    version = "'''+VERSION+r'''"
     import functools
     import operator
     import itertools
@@ -207,6 +209,7 @@ class __coconut__(object):
             else:
                 raise CoconutException("invalid header type: "+repr(which))
             header += r'''
+__coconut_version__ = __coconut__.version
 reduce = __coconut__.functools.reduce
 itemgetter = __coconut__.operator.itemgetter
 attrgetter = __coconut__.operator.attrgetter
