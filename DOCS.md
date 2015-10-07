@@ -115,7 +115,7 @@ Coconut provides an alternative to Python's `lambda` statements in favor of a si
 ##### Python Docs
 
 Lambda forms (lambda expressions) have the same syntactic position as expressions. They are a shorthand to create anonymous functions; the expression `(arguments) -> expression` yields a function object. The unnamed object behaves like a function object defined with:
-```
+```python
 def <lambda>(arguments):
     return expression
 ```
@@ -124,12 +124,12 @@ Note that functions created with lambda forms cannot contain statements or annot
 ##### Example
 
 Coconut:
-```
+```python
 (x, y) -> 2*(x+y)
 ```
 
 Python:
-```
+```python
 lambda x, y: 2*(x+y)
 ```
 
@@ -140,12 +140,12 @@ Coconut allows for Haskell-style infix calling, where a function is surrounded b
 ##### Example
 
 Coconut:
-```
+```python
 (x `mod` 2) `f` == 1
 ```
 
 Python:
-```
+```python
 f(mod(x, 2)) == 1
 ```
 
@@ -163,13 +163,13 @@ where `<name>` is the name of the function and `<args>` are the functions argume
 ##### Example
 
 Coconut:
-```
+```python
 def exp(x, b=2) = b**x
 def a `mod` b = a % b
 ```
 
 Python:
-```
+```python
 def exp(x, b=2): return b**x
 def mod(a, b): return a % b
 ```
@@ -217,12 +217,12 @@ Coconut uses Haskell-style operator function short-hand, where the operator plac
 ##### Example
 
 Coconut:
-```
+```python
 prod = reduce((*), items)
 ```
 
 Python:
-```
+```python
 import operator
 prod = reduce(operator.__mul__, items)
 ```
@@ -234,13 +234,12 @@ Coconut supports significantly enhanced destructuring assignment, similar to Pyt
 ["match"] <pattern> = <value>
 ```
 where `<value>` is any expression and `<pattern>` is defined by Coconut's [`match` statement](#match). The `match` keyword at the beginning is optional, but is sometimes necessary to disambiguate destructuring assignment from normal assignment or in-line function definition, which will always take precedence. Coconut's destructuring assignment is equivalent to a match statement that follows the syntax:
-```
+```python
 match <pattern> in <value>:
     pass
 else:
-    raise ValueError(<error message>)
+    raise MatchError(<error message>)
 ```
-
 If a destructuring assignment statement fails, then instead of continuing on as if a `match` block had failed, a `MatchError` object will be raised describing the failure.
 
 ### Enhanced Set Literals
@@ -250,12 +249,12 @@ In addition to Python's normal set literals using curly braces, Coconut supports
 #### Example
 
 Coconut:
-```
+```python
 empty_frozen_set = f{}
 ```
 
 Python:
-```
+```python
 empty_frozen_set = frozenset()
 ```
 
@@ -273,13 +272,13 @@ series$[]   =>      <lambda> # the equivalent of series[] for iterators
 ##### Example
 
 Coconut:
-```
+```python
 1 |> "123"[]
 mod$ <| 5 <| 3
 ```
 
 Python:
-```
+```python
 "123"[1]
 mod(5, 3)
 ```
@@ -295,12 +294,12 @@ A base-n literal consists of the digits 0 to n-1, with `a` to `z` (or `A` to `Z`
 ##### Example
 
 Coconut:
-```
+```python
 12_10A == 154
 ```
 
 Python:
-```
+```python
 int("10A", 12) == 154
 ```
 
@@ -311,13 +310,13 @@ Unlike Python, which only supports a single variable or function call in a decor
 ##### Example
 
 Coconut:
-```
+```python
 @ wrapper1 .. wrapper2 $(arg)
 def func(x) = x**2
 ```
 
 Python:
-```
+```python
 def wrapper(func):
     return wrapper1(wrapper2(arg, func))
 @wrapper
@@ -332,7 +331,7 @@ Coconut supports the compound statements `try`, `if`, and `match` on the end of 
 ##### Example
 
 Coconut:
-```
+```python
 try:
     unsafe_1()
 except MyError:
@@ -344,7 +343,7 @@ except MyError:
 ```
 
 Python:
-```
+```python
 try:
     unsafe_1()
 except MyError:
@@ -363,7 +362,7 @@ Python 3 requires that if multiple exceptions are to be caught, they must be pla
 ##### Example
 
 Coconut:
-```
+```python
 try:
     unsafe_func(arg)
 except SyntaxError, ValueError as err:
@@ -371,7 +370,7 @@ except SyntaxError, ValueError as err:
 ```
 
 Python:
-```
+```python
 try:
     unsafe_func(arg)
 except (SyntaxError, ValueError) as err:
@@ -413,13 +412,13 @@ Coconut supports the ability to pass arbitrary code through the compiler without
 ##### Example
 
 Coconut:
-```
+```python
 \\cdef f(x):
     return x |> g
 ```
 
 Python:
-```
+```python
 cdef f(x):
     return g(x)
 ```
@@ -433,12 +432,12 @@ Coconut uses the `..` operator for function composition. It has a precedence in-
 ##### Example
 
 Coconut:
-```
+```python
 fog = f..g
 ```
 
 Python:
-```
+```python
 fog = lambda *args, **kwargs: f(g(*args, **kwargs))
 ```
 
@@ -455,12 +454,12 @@ Coconut uses the FSharp-style pipe operators for pipeline-style function applica
 ##### Example
 
 Coconut:
-```
+```python
 ans = 5 |> f |*> g
 ```
 
 Python:
-```
+```python
 ans = g(*f(5))
 ```
 
@@ -471,7 +470,7 @@ Coconut uses the FSharp-style concatenation operator `::` for iterator chaining.
 ##### Python Docs
 
 Make an iterator that returns elements from the first iterable until it is exhausted, then proceeds to the next iterable, until all of the iterables are exhausted. Used for treating consecutive sequences as a single sequence. Equivalent to:
-```
+```python
 def chain(*iterables):
     # chain('ABC', 'DEF') --> A B C D E F
     for it in iterables:
@@ -482,12 +481,12 @@ def chain(*iterables):
 ##### Example
 
 Coconut:
-```
+```python
 combined = range(0,5) :: range(10,15)
 ```
 
 Python:
-```
+```python
 import itertools
 combined = itertools.chain(range(0,5), range(10,15))
 ```
@@ -499,7 +498,7 @@ Coconut uses a `$` sign right after a function before a function call to perform
 ##### Python Docs
 
 Return a new `partial` object which when called will behave like _func_ called with the positional arguments _args_ and keyword arguments _keywords_. If more arguments are supplied to the call, they are appended to _args_. If additional keyword arguments are supplied, they extend and override _keywords_. Roughly equivalent to:
-```
+```python
 def partial(func, *args, **keywords):
     def newfunc(*fargs, **fkeywords):
         newkeywords = keywords.copy()
@@ -515,12 +514,12 @@ The `partial` object is used for partial function application which “freezes�
 ##### Example
 
 Coconut:
-```
+```python
 pow2 = pow$(2)
 ```
 
 Python:
-```
+```python
 import functools
 pow2 = functools.partial(pow, 2)
 ```
@@ -532,7 +531,7 @@ Coconut uses a `$` sign right after an iterator before a slice to perform iterat
 ##### Python Docs
 
 Make an iterator that returns selected elements from the _iterable_. If _start_ is non-zero, then elements from the _iterable_ are skipped until _start_ is reached. Afterward, elements are returned consecutively unless _step_ is set higher than one which results in items being skipped. If _stop_ is `None`, then iteration continues until the iterator is exhausted, if at all; otherwise, it stops at the specified position. Unlike regular slicing, iterator slicing does not support negative values for _start_, _stop_, or _step_. Can be used to extract related fields from data where the internal structure has been flattened (for example, a multi-line report may list a name field on every third line). Equivalent to:
-```
+```python
 def islice(iterable, *args):
     # islice('ABCDEFG', 2) --> A B
     # islice('ABCDEFG', 2, 4) --> C D
@@ -551,12 +550,12 @@ If _start_ is `None`, then iteration starts at zero. If _step_ is `None`, then t
 ##### Example
 
 Coconut:
-```
+```python
 selection = map(f, iteritem)$[5:10]
 ```
 
 Python:
-```
+```python
 import itertools
 selection = itertools.islice(map(f, iteritem), 5, 10)
 ```
@@ -576,12 +575,12 @@ Apply _function_ of two arguments cumulatively to the items of _sequence_, from 
 ##### Example
 
 Coconut:
-```
+```python
 prod = reduce((*), items)
 ```
 
 Python:
-```
+```python
 import functools
 prod = functools.reduce(operator.__mul__, items)
 ```
@@ -600,7 +599,7 @@ Return a callable object that fetches _items_ from its operand using the operand
 - After `g = itemgetter(2, 5, 3)`, the call `g(r)` returns `(r[2], r[5], r[3])`.
 
 Equivalent to:
-```
+```python
 def itemgetter(*items):
     if len(items) == 1:
         item = items[0]
@@ -617,12 +616,12 @@ The items can be any type accepted by the operand’s `__getitem__` method. Dict
 ##### Example
 
 Coconut:
-```
+```python
 letters = "ABCDEFG" |> itemgetter(1, 3, 5) |> reduce$([+])
 ```
 
 Python:
-```
+```python
 import operator
 letters = functools.reduce(operator.__concat__, operator.itemgetter(1, 3, 5)("ABCDEFG"))
 ```
@@ -642,7 +641,7 @@ Return a callable object that fetches _attrs_ from its operand. If more than one
 - After `f = attrgetter('name.first', 'name.last')`, the call `f(b)` returns `(b.name.first, b.name.last)`.
 
 Equivalent to:
-```
+```python
 def attrgetter(*items):
     if any(not isinstance(item, str) for item in items):
         raise TypeError('attribute name must be a string')
@@ -664,12 +663,12 @@ def resolve_attr(obj, attr):
 ##### Example
 
 Coconut:
-```
+```python
 coords = point |> attrgetter("x", "y")
 ```
 
 Python:
-```
+```python
 import operator
 coords = operator.attrgetter("x", "y")(point)
 ```
@@ -688,7 +687,7 @@ Return a callable object that calls the method _name- on its operand. If additio
 - After `f = methodcaller('name', 'foo', bar=1)`, the call `f(b)` returns `b.name('foo', bar=1)`.
 
 Equivalent to:
-```
+```python
 def methodcaller(name, *args, **kwargs):
     def caller(obj):
         return getattr(obj, name)(*args, **kwargs)
@@ -698,12 +697,12 @@ def methodcaller(name, *args, **kwargs):
 ##### Example
 
 Coconut:
-```
+```python
 clean = map(methodcaller("strip"), unclean)
 ```
 
 Python:
-```
+```python
 import operator
 clean = map(operator.methodcaller("strip"), unclean)
 ```
@@ -717,7 +716,7 @@ Coconut provides `functools.takewhile` as a built-in under the name `takewhile`.
 **takewhile**(_predicate, iterable_)
 
 Make an iterator that returns elements from the _iterable_ as long as the _predicate_ is true. Equivalent to:
-```
+```python
 def takewhile(predicate, iterable):
     # takewhile(lambda x: x<5, [1,4,6,4,1]) --> 1 4
     for x in iterable:
@@ -730,12 +729,12 @@ def takewhile(predicate, iterable):
 ##### Example
 
 Coconut:
-```
+```python
 negatives = takewhile(numiter, (x) -> x<0)
 ```
 
 Python:
-```
+```python
 import functools
 negatives = functools.takewhile(numiter, lambda x: x<0)
 ```
@@ -749,7 +748,7 @@ Coconut provides `functools.dropwhile` as a built-in under the name `dropwhile`.
 **dropwhile**(_predicate, iterable_)
 
 Make an iterator that drops elements from the _iterable_ as long as the _predicate_ is true; afterwards, returns every element. Note: the iterator does not produce any output until the predicate first becomes false, so it may have a lengthy start-up time. Equivalent to:
-```
+```python
 def dropwhile(predicate, iterable):
     # dropwhile(lambda x: x<5, [1,4,6,4,1]) --> 6 4 1
     iterable = iter(iterable)
@@ -764,12 +763,12 @@ def dropwhile(predicate, iterable):
 ##### Example
 
 Coconut:
-```
+```python
 positives = dropwhile(numiter, (x) -> x<0)
 ```
 
 Python:
-```
+```python
 import functools
 positives = functools.dropwhile(numiter, lambda x: x<0)
 ```
@@ -783,7 +782,7 @@ Coconut provides `itertools.tee` as a built-in under the name `tee`.
 **tee**(_iterable, n=2_)
 
 Return _n_ independent iterators from a single iterable. Equivalent to:
-```
+```python
 def tee(iterable, n=2):
     it = iter(iterable)
     deques = [collections.deque() for i in range(n)]
@@ -803,13 +802,13 @@ This itertool may require significant auxiliary storage (depending on how much t
 ##### Example
 
 Coconut:
-```
+```python
 original, temp = tee(original)
 sliced = temp$[5:]
 ```
 
 Python:
-```
+```python
 import itertools
 original, temp = itertools.tee(original)
 sliced = itertools.islice(temp, 5, None)
@@ -822,7 +821,7 @@ Coconut provides a `recursive` decorator to perform tail recursion optimization 
 ##### Example
 
 Coconut:
-```
+```python
 @recursive
 def collatz(n):
     if n == 1:
@@ -842,7 +841,7 @@ _Can't be done without a long decorator definition. The full definition of the d
 ### `data`
 
 Coconut provides `data` blocks for the creation of immutable classes derived from `collections.namedtuple`. Coconut data statement syntax looks like:
-```
+```python
 data <name>(<args>):
     <body>
 ```
@@ -859,14 +858,14 @@ Named tuple instances do not have per-instance dictionaries, so they are lightwe
 ##### Example
 
 Coconut:
-```
+```python
 data triangle(a, b, c):
     def is_right(self):
         return self.a**2 + self.b**2 == self.c**2
 ```
 
 Python:
-```
+```python
 import collections
 class triangle(collections.namedtuple("triangle", "a, b, c")):
     def is_right(self):
@@ -876,7 +875,7 @@ class triangle(collections.namedtuple("triangle", "a, b, c")):
 ### `match`
 
 Coconut provides `match` statements to allow for Haskell-style pattern-matching. Coconut match statement syntax is
-```
+```python
 match <pattern> in <value> [if <cond>]:
     <body>
 [else:
@@ -932,7 +931,7 @@ pattern := (
 ##### Example
 
 Coconut:
-```
+```python
 def factorial(value):
     match 0 in value:
         return 1
@@ -951,7 +950,7 @@ _Can't be done._
 ### `case`
 
 Coconut's `case` statements are an extension of Coconut's `match` statements for use when many matches are to be attempted against one object, and only one should succeed. Each pattern in a case block is checked until a match is found, and then the corresponding body is executed, and the case block terminated. The syntax for case blocks is
-```
+```python
 case <value>:
     match <pattern> [if <cond>]:
         <body>
@@ -966,7 +965,7 @@ where `<pattern>` is any `match` pattern, `<value>` is the item to match against
 ##### Example
 
 Coconut:
-```
+```python
 def classify_sequence(value):
     out = ""        # unlike with normal matches, only one of the patterns
     case value:     #  will match, and out will only get appended to once
@@ -994,13 +993,13 @@ To allow access to the valid Python variable names `data`, `match`, and `case` i
 ##### Example
 
 Coconut:
-```
+```python
 \data = 5
 print(\data)
 ```
 
 Python:
-```
+```python
 data = 5
 print(data)
 ```

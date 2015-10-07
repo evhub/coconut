@@ -56,7 +56,7 @@ Now that you've installed Coconut, it's time to create your first Coconut progra
 ### Start Coding!
 
 If you're familiar with Python, then you're already familiar with most of Coconut: Coconut is a strict superset of Python 3 syntax. Before we get into Coconut's unique features, though, let's start with a simple `hello, world!` program. Put this code inside your `tutorial.coc`:
-```
+```python
 print("hello, world!")
 ```
 
@@ -98,7 +98,7 @@ As this tutorial starts introducing new concepts, it'll be useful to be able to 
 In Python, lambdas are ugly and bulky, requiring the entire word `lambda` to be written out every time one is constructed. This is fine if in-line functions are very rarely needed, but in functional programming in-line functions are an essential tool, and so Coconut substitues in a much simpler lambda syntax: the `->` operator.
 
 Just to demonstrate the lambda syntax, try modifying your `hello, world!` program by adding a function defined with a lambda that prints `"hello, "+arg+"!"`, and call it with `"lambdas"` as the `arg`:
-```
+```python
 hello = (arg="world") -> print("hello, "+arg+"!")   # Coconut still supports Python's "def" blocks,
 hello("lambdas")                                    #  but we're trying to demonstrate lambdas here
 ```
@@ -116,7 +116,7 @@ hello, lambdas!
 Partial application, or currying, is a mainstay of functional programming, and for good reason: it allows the dynamic customization of functions to fit the needs of where they are being used. Partial application allows a new function to be created out of an old function with some of its arguments pre-specified. In Coconut, partial application is done by putting a `$` in-between a function and its arguments when calling it.
 
 Here's an example of the power of partial application in Coconut:
-```
+```python
 nums = range(0, 5)
 expnums = map(pow$(2), nums)
 print(list(expnums))
@@ -128,7 +128,7 @@ Try to predict what you think will be printed, then either use the interpreter o
 Another mainstay of functional programming, one very common in mathematics, is function composition, the ability to combine multiple functions into one. In Coconut, function composition is done by the `..` operator.
 
 Here's an example of function composition:
-```
+```python
 zipsum = map$(sum)..zip
 print(list(zipsum([1,2,3], [10,20,30])))
 ```
@@ -141,7 +141,7 @@ Another useful functional programming operator is pipe forward, which makes pipe
 _Note: Pipe backwards is also available, and accessed by the `<|` operator (or `<*|` for multiple arguments), although it is usually less useful._
 
 Here's an example:
-```
+```python
 sq = (x) -> x**2
 plus1 = (x) -> x+1
 3 |> plus1 |> sq |> print
@@ -153,7 +153,7 @@ For all of the examples in this tutorial you should try predicting and then test
 A very common thing to do in functional programming is to make use of function versions of built-in operators: currying them, composing them, and piping them. To make this easy, Coconut provides a short-hand syntax to access operator functions, where the operator is simply surrounded by parentheses to retrieve the function.
 
 Here's an example:
-```
+```python
 5 |> (-)$(2) |> (*)$(2) |> print
 ```
 _Note: If you've been dutifully guessing and checking, you probablly guessed `6` for this and were surprised to find that the actual answer was `-6`. This happens because partial application always starts with the first argument, and the first argument to `(-)` is the thing you're subtracting from, not the thing you're subtracting!_
@@ -163,7 +163,7 @@ _Note: If you've been dutifully guessing and checking, you probablly guessed `6`
 Another common idiom in functional programming is to write functions that are intended to behave somewhat like operators. To assist with this, Coconut provies backtick calling, where a function can be called by surrounding it with backticks, and then its arguments placed around it.
 
 Here's an example:
-```
+```python
 mod = (%)
 (5 `mod` 3) `print`
 ```
@@ -173,13 +173,13 @@ mod = (%)
 Up until now, we've been using assignment to a lambda for function one-liners. While this works fine, it has some disadvantages, namely that the function will appear unnamed in any tracebacks, and both the `=` and `->` operators have to be typed out each time. To fix both of these problems, Coconut allows for mathematical function definition.
 
 Here's an example:
-```
+```python
 def f(x) = x**2 + x     # note the = instead of the :
 5 |> f |> print
 ```
 
 Coconut also supports backtick calling syntax in mathematical or normal function definition, like so:
-```
+```python
 def (a) `mod` (b) = a % b
 ```
 
@@ -188,7 +188,7 @@ def (a) `mod` (b) = a % b
 A Python 2 built-in that was removed in Python 3, Coconut re-introduces `reduce`, as it can be very useful for functional programming.
 
 Here's an example:
-```
+```python
 prod = reduce$((*))
 range(1, 5) |> prod |> print
 ```
@@ -202,7 +202,7 @@ Another mainstay of functional programming is lazy evaluation, where sequences a
 Coconut aims to fix this, and the first part of that is Coconut's iterator slicing. Coconut's iterator slicing works much the same as Python's sequence slicing, and looks much the same as Coconut's partial application, but with brackets instead of parentheses.
 
 Here's an example:
-```
+```python
 def N():
     x = 0
     while True:
@@ -218,7 +218,7 @@ _Note: Unlike Python's sequence slicing, Coconut's iterator slicing makes no gua
 Another useful tool to make working with iterators as easy as working with sequences is the ability to combine multiple iterators together. This operation is called chain, and is equivalent to addition with sequences. In Coconut, chaining is done by the `::` operator.
 
 Here's an example:
-```
+```python
 (range(-10, 0) :: N())$[5:15] |> list |> print
 ```
 
@@ -231,7 +231,7 @@ Another  mainstay of functional programming that Coconut improves in Python is t
 The syntax for `data` blocks is a cross between the syntax for functions and the syntax for classes. The first line looks like a function definition (`data name(args):`), but the rest of the body looks like a class, usually containing method definitions. This is because while `data` blocks actually end up as classes in Python, Coconut automatically creates a special, immutable constructor based on the given `args`.
 
 Here's an example:
-```
+```python
 data vector(x, y):
     def __abs__(self):
         return (self.x**2 + self.y**2)**.5
@@ -247,7 +247,7 @@ v.x = 2 # this will fail because data objects are immutable
 While not only useful for working with values, pattern-matching is tailored to them, allowing the ability to check and deconstruct values. Coconut provides fully-featured pattern-matching through its `match` statements. Since `match` statements are complicated and don't have an equivalent in pure Python, it's best to simply jump right in and get a feel for them. Once you do, you'll see they make a lot of sense.
 
 We'll start with a simple factorial function, implemented using match statements:
-```
+```python
 def factorial(value):
     match 0 in value:
         return 1
@@ -263,7 +263,7 @@ You should now be able to see the basic syntax that match statements follow: `ma
 What is allowed in the match statement's pattern is the thing with no equivalent in Python. The factorial function gives you a couple of examples, though: constants (`0`), variables (`n`), and optional type checks appended to variables (`is int`).
 
 Match statements also support, in their basic syntax, an `if <cond>` that will check the condition as well as the match before executing the code below. Knowing this, we can slightly simplify our factorial function from earlier:
-```
+```python
 def factorial(value):
     match 0 in value:
         return 1
@@ -275,7 +275,7 @@ def factorial(value):
 ```
 
 Match statements are also very useful when working with lists or tuples, as they allow them to be easily deconstructed. Here's an example:
-```
+```python
 def classify_sequence(value):
     match [] in value:
         return "empty"
@@ -302,7 +302,7 @@ Second, the use of the wildcard, `_`. Unlike other variables, like `x` in this e
 Third, the use of an `else` statement on the end. This works much like else statements in other parts of Python: the code under it is only executed if the corresponding match fails.
 
 Next, I mentioned earlier that match statements played nicely with values. Here's an example of that:
-```
+```python
 data point(x, y):
     def transform(self, other):
         match point(x, y) in other:
@@ -323,7 +323,7 @@ As you can see, matching to data types can be very useful. Values defined by the
 Additionally, this example demonstrates checks against predefined variables, which can be done by prefixing the variable name with an equals sign.
 
 This combination of data types and match statements can be used to powerful effect to replicate the usage of algebraic data types in functional programming. Here's an example:
-```
+```python
 data empty(): pass
 data leaf(n): pass
 data node(l, r): pass
@@ -343,7 +343,7 @@ node(leaf(2), node(empty(), leaf(3))) |> depth |> print
 ```
 
 Even more common, however, are head-tail list or tuple deconstructions. Here's an example:
-```
+```python
 def duplicate_first(value):
     match l=([x] + xs) in value:
         return [x] + l
@@ -359,7 +359,7 @@ First, in addition to implicit bindings with variables, match statements also su
 Second, match statements allow a `+ <var>` (or `:: <var>` for any iterable) at the end of a list or tuple literal to match the rest of the sequence.
 
 Finally, all of the match syntax that you have learned up to this point can also be used in simple assignment statements, like so:
-```
+```python
 def dictpoint(value):
     {"x":x is int, "y":y is int} = value
     return x, y
@@ -375,7 +375,7 @@ _Note: If you would like to be more explicit in your pattern-matching assignment
 ### `case`
 
 `case` statements are simply a convenience for doing multiple `match` statements against the same value, where only one of them should succeed. They look like this:
-```
+```python
 def factorial(value):
     case value:
         match 0:
