@@ -938,14 +938,18 @@ def match_proc(tokens):
         out += "if "+match_check_var+":" + linebreak + openstr + "".join(stmts) + closestr
     return out
 
+def pattern_error(original, loc):
+    """Constructs a pattern-matching error message."""
+    match_line = repr(repr(clean(line(loc, original))))
+    return ("if not " + match_check_var + ":" + linebreak + openstr
+        + 'raise ValueError("pattern-matching failed for " ' + match_line + ' " in " + repr(repr(' + match_to_var + '))' + ")"
+        + linebreak + closestr)
+
 def match_assign_proc(original, loc, tokens):
     """Processes match assign blocks."""
     matches, item = tokens
-    match_line = repr(clean(line(loc, original)))
     out = match_proc((matches, item, None))
-    out += ("if not "+match_check_var+":" + linebreak + openstr
-        + 'raise ValueError("pattern-matching failed for " '+match_line+")"
-        + linebreak + closestr)
+    out += pattern_error(original, loc)
     return out
 
 def case_to_match(tokens, item):
@@ -979,15 +983,12 @@ def case_proc(tokens):
 def name_match_funcdef_proc(original, loc, tokens):
     """Processes match defs."""
     func, matches = tokens
-    match_line = repr(clean(line(loc, original)))
     matching = matcher(match_check_var)
     matching.match_sequence(("(", matches), match_to_var)
     out = "def " + func + " (*" + match_to_var + "):" + linebreak + openstr
     out += match_check_var + " = False" + linebreak
     out += matching.out()
-    out += ("if not "+match_check_var+":" + linebreak + openstr
-        + 'raise ValueError("pattern-matching failed for " '+match_line+")"
-        + linebreak + closestr)
+    out += pattern_error(original, loc)
     return out
 
 def op_match_funcdef_proc(original, loc, tokens):
