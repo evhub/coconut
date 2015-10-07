@@ -1030,7 +1030,7 @@ Additionally, if `--strict` or `--target` are required, the extra function `setu
 
 **cmd**(_args_, **[**_interact_**]**)
 
-Executes the given _args_ as if they were fed to `coconut` on the command-line, with the exception that unless _interact_ is true or `-i` is passed, the interpreter will not be started.
+Executes the given _args_ as if they were fed to `coconut` on the command-line, with the exception that unless _interact_ is true or `-i` is passed, the interpreter will not be started. Additionally, since `parse` and `cmd` share the same convenience parsing object, any changes made to the parsing with `cmd` will work just as if they were made with `setup`.
 
 #### `coconut.convenience.version`
 
