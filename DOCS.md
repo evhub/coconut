@@ -412,7 +412,7 @@ Coconut supports the ability to pass arbitrary code through the compiler without
 ##### Example
 
 Coconut:
-```python
+```
 \\cdef f(x):
     return x |> g
 ```
@@ -993,7 +993,7 @@ To allow access to the valid Python variable names `data`, `match`, and `case` i
 ##### Example
 
 Coconut:
-```python
+```
 \data = 5
 print(\data)
 ```
@@ -1022,9 +1022,9 @@ Likely the most useful of the convenience functions, `parse` takes Coconut code 
 - `"block"`: many lines of code
 - `"eval"`: a single expression
 
-Additionally, if `--strict` or `--target` are required, the extra function `setup` must be called before the first invocation of `parse`:
-
 **setup**(**[[**_strict_**]**_, target_**]**)
+
+Additionally, if `--strict` or `--target` are required, the extra function `setup` must be called before the first invocation of `parse`. The two arguments to `setup`, _strict_ and _parse_ are both booleans expressing whether those flags should be included when creating the convenience parsing object. By default, or if setup is never called, both will be set to `False`.
 
 #### `coconut.convenience.cmd`
 

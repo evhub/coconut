@@ -173,13 +173,13 @@ mod = (%)
 Up until now, we've been using assignment to a lambda for function one-liners. While this works fine, it has some disadvantages, namely that the function will appear unnamed in any tracebacks, and both the `=` and `->` operators have to be typed out each time. To fix both of these problems, Coconut allows for mathematical function definition.
 
 Here's an example:
-```python
+```
 def f(x) = x**2 + x     # note the = instead of the :
 5 |> f |> print
 ```
 
 Coconut also supports backtick calling syntax in mathematical or normal function definition, like so:
-```python
+```
 def (a) `mod` (b) = a % b
 ```
 
