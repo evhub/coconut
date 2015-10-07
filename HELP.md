@@ -180,7 +180,7 @@ f(x) = x**2 + x
 
 Coconut also supports backtick calling syntax in mathematical or normal function definition, like so:
 ```
-a `mod` b = a % b
+(a) `mod` (b) = a % b
 ```
 
 _Note: If you would like to be more explicit in your in-line function definition, you can optionally place a `def` at the beginning of the line._

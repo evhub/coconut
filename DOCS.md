@@ -153,11 +153,12 @@ f(mod(x, 2)) == 1
 
 Coconut allows for math-style in-line function definition, where the body of the function is assigned directly to the function call. The syntax for in-line function definition is
 ```
-["def"] (<name> "(" <args> ")" | <arg1> "`" <name> "`" <arg2>) "=" <body>
+["def"] (
+    <name> "(" <args> ")"
+    | "(" <arg1> ")" "`" <name> "`" "(" <arg2> ")"
+) "=" <body>
 ```
-where `<name>` is the name of the function and `<args>` are the functions arguments, and the `def` at the beginning is optional. If backtick-style is used, then keyword arguments must be placed within parentheses.
-
-Additionally, backtick-style definition is also allowed in normal Python `def` statements.
+where `<name>` is the name of the function and `<args>` are the functions arguments, and the `def` at the beginning is optional. Additionally, backtick-style definition is also allowed in normal Python `def` statements.
 
 ##### Example
 
