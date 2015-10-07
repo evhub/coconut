@@ -43,7 +43,7 @@ def headers(which, version=None):
     else:
         header = r'''
 # Coconut Header: --------------------------------------------------------------
-        '''
+'''
         if version is None:
             header += r'''
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
