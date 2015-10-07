@@ -10,6 +10,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [Compiled Files](#compiled-files)
     - [--strict Mode](#--strict-mode)
     - [IPython](#ipython)
+    - [`__coconut__`](#__coconut__)
 - [II. Syntax](#ii-syntax)
     - [Lambdas](#lambdas)
     - [Backtick Calling](#backtick-calling)
@@ -106,6 +107,10 @@ It is recommended that you use the `--strict` or `-s` flag if you are starting a
 ### IPython
 
 If you prefer [IPython](http://ipython.org/) to the normal Python shell, coconut can also be used as an IPython extension. The line magic `%load_ext coconut` will provide access to the `%coconut` and `%%coconut` magics. The `%coconut` magic will run a line of Coconut with default parameters, whereas the `%%coconut` magic will take command-line arguments on the first line, and run any coconut code provided in the rest of the cell with those parameters.
+
+### `__coconut__`
+
+Inside of any Coconut program, there will be necessary functions and variables stored inside a class/module named `__coconut__`. Modifying it will most likely break your code.
 
 ## II. Syntax
 
