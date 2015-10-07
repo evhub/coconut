@@ -174,16 +174,14 @@ Up until now, we've been using assignment to a lambda for function one-liners. W
 
 Here's an example:
 ```
-f(x) = x**2 + x
+def f(x) = x**2 + x     # note the = instead of the :
 5 |> f |> print
 ```
 
 Coconut also supports backtick calling syntax in mathematical or normal function definition, like so:
 ```
-(a) `mod` (b) = a % b
+def (a) `mod` (b) = a % b
 ```
-
-_Note: If you would like to be more explicit in your in-line function definition, you can optionally place a `def` at the beginning of the line._
 
 ### `reduce`
 

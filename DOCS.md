@@ -153,19 +153,19 @@ f(mod(x, 2)) == 1
 
 Coconut allows for math-style in-line function definition, where the body of the function is assigned directly to the function call. The syntax for in-line function definition is
 ```
-["def"] (
+"def" (
     <name> "(" <args> ")"
     | "(" <arg1> ")" "`" <name> "`" "(" <arg2> ")"
 ) "=" <body>
 ```
-where `<name>` is the name of the function and `<args>` are the functions arguments, and the `def` at the beginning is optional. Additionally, backtick-style definition is also allowed in normal Python `def` statements.
+where `<name>` is the name of the function and `<args>` are the functions arguments. Additionally, backtick-style definition is also allowed in normal Python block function definition statements.
 
 ##### Example
 
 Coconut:
 ```
-exp(x, b=2) = b**x
-a `mod` b = a % b
+def exp(x, b=2) = b**x
+def a `mod` b = a % b
 ```
 
 Python:
@@ -313,7 +313,7 @@ Unlike Python, which only supports a single variable or function call in a decor
 Coconut:
 ```
 @ wrapper1 .. wrapper2 $(arg)
-func(x) = x**2
+def func(x) = x**2
 ```
 
 Python:
