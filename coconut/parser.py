@@ -144,6 +144,9 @@ def recursive(func):
             state[1] = args, kwargs
             return recurse
     return tailed_func
+
+class MatchError(Exception):
+    pass
 '''
         else:
             if which == "module":
@@ -199,6 +202,7 @@ class __coconut__(object):
                 state[1] = args, kwargs
                 return recurse
         return tailed_func
+    class MatchError(Exception): pass
 '''
             else:
                 raise CoconutException("invalid header type: "+repr(which))
@@ -211,6 +215,7 @@ takewhile = __coconut__.itertools.takewhile
 dropwhile = __coconut__.itertools.dropwhile
 tee = __coconut__.itertools.tee
 recursive = __coconut__.recursive
+MatchError = __coconut__.MatchError
 '''
             if which != "code":
                 header += r'''
@@ -942,7 +947,7 @@ def pattern_error(original, loc):
     """Constructs a pattern-matching error message."""
     match_line = repr(repr(clean(line(loc, original))))
     return ("if not " + match_check_var + ":" + linebreak + openstr
-        + 'raise ValueError("pattern-matching failed for " ' + match_line + ' " in " + repr(repr(' + match_to_var + '))' + ")"
+        + 'raise __coconut__.MatchError("pattern-matching failed for " ' + match_line + ' " in " + repr(repr(' + match_to_var + '))' + ")"
         + linebreak + closestr)
 
 def match_assign_proc(original, loc, tokens):

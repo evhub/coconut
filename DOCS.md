@@ -241,6 +241,8 @@ else:
     raise ValueError(<error message>)
 ```
 
+If a destructuring assignment statement fails, then instead of continuing on as if a `match` block had failed, a `MatchError` object will be raised describing the failure.
+
 ### Enhanced Set Literals
 
 In addition to Python's normal set literals using curly braces, Coconut supports a special `s` (for `set`) or `f` (for `frozenset`) in front of a Python-like set literal to ensure it is a set literal of the specified type even when it otherwise would not be, such as when it is empty, or if a `frozenset` is desired.

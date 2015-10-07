@@ -370,6 +370,8 @@ def dictpoint(value):
 ```
 This example shows how match statement syntax can be used in a simple assignment statement, much like Python's destructuring assignment for lists and tuples. In this case, a dictionary is being destructured, which is another type of pattern, in addition to set literals, that can be matched against.
 
+If an in-line match in an assignment statement fails, then instead of continuing on as if a `match` block had failed, a `MatchError` object will be raised describing the failure.
+
 _Note: If you would like to be more explicit in your pattern-matching assignment statements, you can optionally place a `match` at the beginning of the line._
 
 ### `case`
