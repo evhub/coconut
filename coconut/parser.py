@@ -1966,7 +1966,7 @@ class processor(object):
     math_match_funcdef_block = math_match_funcdef + newline
     match_funcdef = Optional(Keyword("match").suppress()) + full_match_funcdef
     async_match_funcdef = addspace((Optional(Keyword("match")).suppress() + Keyword("async") | Keyword("async") + Optional(Keyword("match")).suppress()) + (full_match_funcdef | math_match_funcdef_block))
-    async_stmt = async_funcdef_ref | async_block_ref | async_match_funcdef
+    async_stmt = async_block_ref | async_funcdef_ref | async_match_funcdef
 
     data_args = Optional(lparen.suppress() + Optional(itemlist(~underscore + name, comma)) + rparen.suppress())
     datadef = condense(attach(Keyword("data").suppress() + name + data_args, data_proc) + suite)
