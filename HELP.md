@@ -358,7 +358,7 @@ First, in addition to implicit bindings with variables, match statements also su
 
 Second, match statements allow a `+ <var>` (or `:: <var>` for any iterable) at the end of a list or tuple literal to match the rest of the sequence.
 
-Finally, all of the match syntax that you have learned up to this point can also be used in simple assignment statements, like so:
+Additionally, all of the match syntax that you have learned up to this point can also be used in simple assignment statements, like so:
 ```python
 def dictpoint(value):
     {"x":x is int, "y":y is int} = value
@@ -368,9 +368,17 @@ def dictpoint(value):
 ```
 This example shows how match statement syntax can be used in a simple assignment statement, much like Python's destructuring assignment for lists and tuples. In this case, a dictionary is being destructured, which is another type of pattern, in addition to set literals, that can be matched against.
 
-If an in-line match in an assignment statement fails, then instead of continuing on as if a `match` block had failed, a `MatchError` object will be raised describing the failure.
+This example could also be rewritten more cleanly using Coconut's pattern-matching function definition, like so:
+```python
+def dictpoint({"x":x is int, "y":y is int}):
+    return x, y
 
-_Note: If you would like to be more explicit in your pattern-matching assignment statements, you can optionally place a `match` at the beginning of the line._
+{"x":1, "y":2} |> dictpoint |> print
+```
+
+If a pattern-matching assignment statement or function definition fails, then instead of continuing on as if a `match` block had failed, a `MatchError` object will be raised describing the failure.
+
+_Note: If you would like to be more explicit in your pattern-matching assignment or function definition statements, you can optionally place a `match` at the beginning of the line._
 
 ### `case`
 

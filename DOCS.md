@@ -14,10 +14,11 @@ This documentation will cover all the technical details of the [Coconut](https:/
 - [II. Syntax](#ii-syntax)
     - [Lambdas](#lambdas)
     - [Backtick Calling](#backtick-calling)
-    - [Function Definition](#function-definition)
+    - [Mathematical Function Definition](#mathematical-function-definition)
     - [Operator Functions](#operator-functions)
     - [Enhanced Set Literals](#enhanced-set-literals)
     - [Destructuring Assignment](#destructuring-assignment)
+    - [Pattern-Matching Function Definition](#pattern-matching-function-definition)
     - [Implicit Partial Application](#implicit-partial-application)
     - [Non-Decimal Integers](#non-decimal-integers)
     - [Enhanced Decorators](#enhanced-decorators)
@@ -155,7 +156,7 @@ Python:
 f(mod(x, 2)) == 1
 ```
 
-### Function Definition
+### Mathematical Function Definition
 
 Coconut allows for math-style in-line function definition, where the body of the function is assigned directly to the function call. The syntax for in-line function definition is
 ```
@@ -239,7 +240,7 @@ Coconut supports significantly enhanced destructuring assignment, similar to Pyt
 ```
 ["match"] <pattern> = <value>
 ```
-where `<value>` is any expression and `<pattern>` is defined by Coconut's [`match` statement](#match). The `match` keyword at the beginning is optional, but is sometimes necessary to disambiguate destructuring assignment from normal assignment or in-line function definition, which will always take precedence. Coconut's destructuring assignment is equivalent to a match statement that follows the syntax:
+where `<value>` is any expression and `<pattern>` is defined by Coconut's [`match` statement](#match). The `match` keyword at the beginning is optional, but is sometimes necessary to disambiguate destructuring assignment from normal assignment, which will always take precedence. Coconut's destructuring assignment is equivalent to a match statement that follows the syntax:
 ```python
 match <pattern> in <value>:
     pass
@@ -247,6 +248,19 @@ else:
     raise MatchError(<error message>)
 ```
 If a destructuring assignment statement fails, then instead of continuing on as if a `match` block had failed, a `MatchError` object will be raised describing the failure.
+
+##### Example
+
+Coconut:
+```python
+def last_two(l):
+    _ + [a, b] = l
+    return a, b
+```
+
+Python:
+
+_Can't be done._
 
 ### Enhanced Set Literals
 
@@ -263,6 +277,21 @@ Python:
 ```python
 empty_frozen_set = frozenset()
 ```
+
+### Pattern-Matching Function Definition
+
+Coconut supports pattern-matching / destructuring assignment syntax inside of function definition. The syntax for pattern-matching function definition is
+```
+[match] def <name>(<match>, <match>, ...):
+    <body>
+```
+where `<name>` is the name of the function, `<body>` is the body of the function, and `<pattern>` is defined by Coconut's [`match` statement](#match). The `match` keyword at the beginning is optional, but is sometimes necessary to disambiguate pattern-matching function definition from normal function definition, which will always take precedence. Coconut's pattern-matching function definition is equivalent to a destructuring assignment statement that looks like:
+```
+def <name>(*args):
+    match [<match>, <match>, ...] = args
+    <body>
+```
+If pattern-matching function definition fails, it will raise a `MatchError` just like destructuring assignment.
 
 ### Implicit Partial Application
 
