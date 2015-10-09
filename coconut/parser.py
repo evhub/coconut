@@ -290,7 +290,7 @@ ParserElement.setDefaultWhitespaceChars(white)
 
 def clean(line):
     """Cleans a line."""
-    return line.strip(openstr).strip(closestr).strip()
+    return line.replace(openstr, "").replace(closestr, "").strip()
 
 class CoconutException(Exception):
     """Base Coconut exception."""
