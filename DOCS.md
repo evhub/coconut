@@ -16,10 +16,10 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [Backtick Calling](#backtick-calling)
     - [Mathematical Function Definition](#mathematical-function-definition)
     - [Operator Functions](#operator-functions)
-    - [Enhanced Set Literals](#enhanced-set-literals)
     - [Destructuring Assignment](#destructuring-assignment)
     - [Pattern-Matching Function Definition](#pattern-matching-function-definition)
     - [Implicit Partial Application](#implicit-partial-application)
+    - [Enhanced Set Literals](#enhanced-set-literals)
     - [Non-Decimal Integers](#non-decimal-integers)
     - [Enhanced Decorators](#enhanced-decorators)
     - [Enhanced Else Statements](#enhanced-else-statements)
@@ -262,22 +262,6 @@ Python:
 
 _Can't be done._
 
-### Enhanced Set Literals
-
-In addition to Python's normal set literals using curly braces, Coconut supports a special `s` (for `set`) or `f` (for `frozenset`) in front of a Python-like set literal to ensure it is a set literal of the specified type even when it otherwise would not be, such as when it is empty, or if a `frozenset` is desired.
-
-#### Example
-
-Coconut:
-```python
-empty_frozen_set = f{}
-```
-
-Python:
-```python
-empty_frozen_set = frozenset()
-```
-
 ### Pattern-Matching Function Definition
 
 Coconut supports pattern-matching / destructuring assignment syntax inside of function definition. The syntax for pattern-matching function definition is
@@ -292,6 +276,18 @@ def <name>(*args):
     <body>
 ```
 If pattern-matching function definition fails, it will raise a `MatchError` just like destructuring assignment.
+
+##### Example
+
+Coconut:
+```python
+def last_two(_ + [a, b]):
+    return a, b
+```
+
+Python:
+
+_Can't be done._
 
 ### Implicit Partial Application
 
@@ -316,6 +312,22 @@ Python:
 ```python
 "123"[1]
 mod(5, 3)
+```
+
+### Enhanced Set Literals
+
+In addition to Python's normal set literals using curly braces, Coconut supports a special `s` (for `set`) or `f` (for `frozenset`) in front of a Python-like set literal to ensure it is a set literal of the specified type even when it otherwise would not be, such as when it is empty, or if a `frozenset` is desired.
+
+#### Example
+
+Coconut:
+```python
+empty_frozen_set = f{}
+```
+
+Python:
+```python
+empty_frozen_set = frozenset()
 ```
 
 ### Non-Decimal Integers
