@@ -72,9 +72,9 @@ dest                  destination directory for compiled files (defaults to the 
 -v, --version         print coconut and python version information
 -t, --target          specify target python version
 -s, --strict          enforce code cleanliness standards
--p, --print           print the compiled source
--r, --run             run the compiled source
--n, --nowrite         disable writing the compiled source
+-p, --print           print the compiled python
+-r, --run             run the compiled python
+-n, --nowrite         disable writing the compiled python
 -i, --interact        force the interpreter to start (otherwise starts if no other command is given)
 -q, --quiet           suppress all informational output
 -d, --debug           enable printing debug output
