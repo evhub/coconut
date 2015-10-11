@@ -260,7 +260,7 @@ def last_two(l):
 
 Python:
 
-_Can't be done._
+_Can't be done without a long series of checks at the top of the function. See the compiled code for the full definition._
 
 ### Pattern-Matching Function Definition
 
@@ -287,7 +287,7 @@ def last_two(_ + [a, b]):
 
 Python:
 
-_Can't be done._
+_Can't be done without a long series of checks at the top of the function. See the compiled code for the full definition._
 
 ### Implicit Partial Application
 
@@ -996,7 +996,7 @@ def factorial(value):
 
 Python:
 
-_Can't be done._
+_Can't be done without a long series of checks for each `match` statement. See the compiled code for the full definition._
 
 ### `case`
 
@@ -1035,7 +1035,7 @@ def classify_sequence(value):
 
 Python:
 
-_Can't be done._
+_Can't be done without a long series of checks for each `match` statement. See the compiled code for the full definition._
 
 ### Backslash Escaping
 
