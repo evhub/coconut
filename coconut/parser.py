@@ -933,7 +933,7 @@ def match_proc(tokens):
     elif len(tokens) == 4:
         matches, item, cond, stmts = tokens
     else:
-        raise CoconutException("invalid top-level match tokens: "+repr(tokens))
+        raise CoconutException("invalid outer match tokens: "+repr(tokens))
     matching = matcher(match_check_var)
     matching.match(matches, match_to_var)
     if cond:
@@ -950,7 +950,8 @@ def pattern_error(original, loc):
     """Constructs a pattern-matching error message."""
     match_line = repr(repr(clean(line(loc, original))))
     return ("if not " + match_check_var + ":" + linebreak + openstr
-        + 'raise __coconut__.MatchError("pattern-matching failed for " ' + match_line + ' " in " + repr(repr(' + match_to_var + '))' + ")"
+        + 'raise __coconut__.MatchError("pattern-matching failed for " '
+            + match_line + ' " in " + repr(repr(' + match_to_var + '))' + ")"
         + linebreak + closestr)
 
 def match_assign_proc(original, loc, tokens):
@@ -1168,19 +1169,19 @@ class processor(object):
                     if c in endline:
                         raise CoconutSyntaxError("linebreak in non-multiline string", inputstring, x)
                     else:
-                        hold = [c, found, None]
+                        hold = [c, found, None] # [_char, _start, _store]
                         found = None
                 elif len(found) == 2:
                     out.append(self.wrap_str("", found[0], False))
                     found = None
                     x -= 1
                 elif len(found) == 3:
-                    hold = [c, found, None]
+                    hold = [c, found, None] # [_char, _start, _store]
                     found = None
                 else:
                     raise CoconutSyntaxError("invalid number of string starts", inputstring, x)
             elif c in startcomment:
-                hold = [""]
+                hold = [""] # [_comment]
             elif c in holds:
                 found = c
             else:

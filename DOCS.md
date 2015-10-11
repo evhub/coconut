@@ -260,7 +260,7 @@ def last_two(l):
 
 Python:
 
-_Can't be done without a long series of checks at the top of the function. See the compiled code for the full definition._
+_Can't be done without a long series of checks in place of the destructuring assignment statement. See the compiled code for the full definition._
 
 ### Pattern-Matching Function Definition
 
