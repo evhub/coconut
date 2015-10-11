@@ -1028,8 +1028,8 @@ class processor(object):
         if version in self.versions:
             self.version = version
         else:
-            raise CoconutException("unsupported target Python version "+repr(version)+
-                                   " (supported targets are '2' and '3', or leave blank for universal)")
+            raise CoconutException("unsupported target Python version " + repr(version)
+                                   + " (supported targets are '2' and '3', or leave blank for universal)")
         self.strict = strict
         self.bind()
         self.setup()
