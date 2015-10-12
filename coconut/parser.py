@@ -951,7 +951,7 @@ def pattern_error(original, loc):
     match_line = repr(repr(clean(line(loc, original))))
     return ("if not " + match_check_var + ":" + linebreak + openstr
         + 'raise __coconut__.MatchError("pattern-matching failed for " '
-            + match_line + ' " in " + repr(repr(' + match_to_var + '))' + ")"
+            + match_line + ' " in " + repr(repr(' + match_to_var + ")))"
         + linebreak + closestr)
 
 def match_assign_proc(original, loc, tokens):
