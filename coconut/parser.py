@@ -30,9 +30,9 @@ def headers(which, version=None):
         if version is None:
             header = "#!/usr/bin/env python"
         elif version == "2":
-            header = "#!/usr/bin/python2"
+            header = "#!/usr/bin/env python2"
         elif version == "3":
-            header = "#!/usr/bin/python3"
+            header = "#!/usr/bin/env python3"
         else:
             raise CoconutException("invalid Python version: "+repr(version))
         header += '''
