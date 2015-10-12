@@ -105,12 +105,21 @@ import functools
 import operator
 import itertools
 import collections
-
+'''
+            if version == "2":
+                header += r'''abc = collections
+'''
+            elif version == "3":
+                header += r'''import collections.abc as abc
+'''
+            else:
+                header += r'''
 try:
     import collections.abc as abc
 except ImportError:
     abc = collections
-
+'''
+            header += r'''
 object = object
 int = int
 set = set
@@ -169,10 +178,21 @@ class __coconut__(object):
     import operator
     import itertools
     import collections
-    try:
-        import collections.abc as abc
-    except ImportError:
-        abc = collections
+'''
+                if version == "2":
+                    header += r'''abc = collections
+'''
+                elif version == "3":
+                    header += r'''import collections.abc as abc
+'''
+                else:
+                    header += r'''
+try:
+    import collections.abc as abc
+except ImportError:
+    abc = collections
+'''
+                header += r'''
     object = object
     int = int
     set = set
