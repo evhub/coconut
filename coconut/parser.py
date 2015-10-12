@@ -147,7 +147,10 @@ def recursive(func):
     return tailed_func
 
 class MatchError(Exception):
-    pass
+    def __init__(self, message, pattern, value):
+        super(MatchError, self).__init__(message)
+        self.pattern = pattern
+        self.value = value
 '''
         else:
             if which == "module":
@@ -204,7 +207,11 @@ class __coconut__(object):
                 state[1] = args, kwargs
                 return recurse
         return tailed_func
-    class MatchError(Exception): pass
+    class MatchError(Exception):
+        def __init__(self, message, pattern, value):
+            super(MatchError, self).__init__(message)
+            self.pattern = pattern
+            self.value = value
 '''
             else:
                 raise CoconutException("invalid header type: "+repr(which))
@@ -327,21 +334,21 @@ class CoconutParseError(CoconutSyntaxError):
     """Coconut ParseError."""
     def __init__(self, line, col, lineno):
         """Creates The Coconut ParseError."""
-        CoconutSyntaxError.__init__(self, "parsing failed in line "+str(lineno), clean(line), col-1)
+        super(CoconutParseError, self).__init__("parsing failed in line "+str(lineno), clean(line), col-1)
 
 class CoconutStyleError(CoconutSyntaxError):
     """Coconut --strict error."""
     def __init__(self, message, source, point=None):
         """Creates the --strict Coconut error."""
         message += " (disable --strict to dismiss)"
-        CoconutSyntaxError.__init__(self, message, source, point)
+        super(CoconutStyleError, self).__init__(message, source, point)
 
 class CoconutTargetError(CoconutSyntaxError):
     """Coconut --target error."""
     def __init__(self, message, source, point=None):
         """Creates the --target Coconut error."""
         message += " (enable --target 3 to dismiss)"
-        CoconutSyntaxError.__init__(self, message, source, point)
+        super(CoconutTargetError, self).__init__(message, source, point)
 
 def attach(item, action):
     """Attaches a parse action to an item."""
@@ -948,10 +955,11 @@ def match_proc(tokens):
 
 def pattern_error(original, loc):
     """Constructs a pattern-matching error message."""
-    match_line = repr(repr(clean(line(loc, original))))
+    match_line = repr(clean(line(loc, original)))
     return ("if not " + match_check_var + ":" + linebreak + openstr
         + 'raise __coconut__.MatchError("pattern-matching failed for " '
-            + match_line + ' " in " + repr(repr(' + match_to_var + ")))"
+            + repr(match_line) + ' " in " + repr(repr(' + match_to_var + ")), "
+            + match_line + ", " + match_to_var + ")"
         + linebreak + closestr)
 
 def match_assign_proc(original, loc, tokens):

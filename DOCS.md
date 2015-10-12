@@ -245,7 +245,10 @@ where `<value>` is any expression and `<pattern>` is defined by Coconut's [`matc
 match <pattern> in <value>:
     pass
 else:
-    raise MatchError(<error message>)
+    err = MatchError(<error message>)
+    err.pattern = "<pattern>"
+    err.value = <value>
+    raise err
 ```
 If a destructuring assignment statement fails, then instead of continuing on as if a `match` block had failed, a `MatchError` object will be raised describing the failure.
 
@@ -275,7 +278,7 @@ def <name>(*args):
     match [<match>, <match>, ...] = args
     <body>
 ```
-If pattern-matching function definition fails, it will raise a `MatchError` just like destructuring assignment.
+If pattern-matching function definition fails, it will raise a `MatchError` object just like destructuring assignment.
 
 ##### Example
 
