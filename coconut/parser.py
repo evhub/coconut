@@ -180,17 +180,17 @@ class __coconut__(object):
     import collections
 '''
                 if version == "2":
-                    header += r'''abc = collections
+                    header += r'''    abc = collections
 '''
                 elif version == "3":
-                    header += r'''import collections.abc as abc
+                    header += r'''    import collections.abc as abc
 '''
                 else:
                     header += r'''
-try:
-    import collections.abc as abc
-except ImportError:
-    abc = collections
+    try:
+        import collections.abc as abc
+    except ImportError:
+        abc = collections
 '''
                 header += r'''
     object = object
