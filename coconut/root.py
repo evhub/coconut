@@ -31,7 +31,7 @@ except ImportError:
 #-----------------------------------------------------------------------------------------------------------------------
 
 VERSION = "0.3.1-dev"
-VERSION_NAME = "Ilocos"
+VERSION_NAME = "Jawz"
 
 VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
 
