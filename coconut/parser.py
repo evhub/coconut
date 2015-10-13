@@ -156,10 +156,7 @@ def recursive(func):
     return tailed_func
 
 class MatchError(Exception):
-    def __init__(self, message, pattern, value):
-        super(MatchError, self).__init__(message)
-        self.pattern = pattern
-        self.value = value
+    pass
 '''
         else:
             if which == "module":
@@ -227,11 +224,7 @@ class __coconut__(object):
                 state[1] = args, kwargs
                 return recurse
         return tailed_func
-    class MatchError(Exception):
-        def __init__(self, message, pattern, value):
-            super(MatchError, self).__init__(message)
-            self.pattern = pattern
-            self.value = value
+    class MatchError(Exception): pass
 '''
             else:
                 raise CoconutException("invalid header type: "+repr(which))
@@ -275,6 +268,7 @@ decorator_var = "_coconut_decorator"
 match_to_var = "_coconut_match_to"
 match_check_var = "_coconut_match_check"
 match_iter_var = "_coconut_match_iter"
+match_err_var = "_coconut_match_err"
 wildcard = "_"
 keywords = ["and",
             "as",
@@ -977,9 +971,11 @@ def pattern_error(original, loc):
     """Constructs a pattern-matching error message."""
     match_line = repr(clean(line(loc, original)))
     return ("if not " + match_check_var + ":" + linebreak + openstr
-        + 'raise __coconut__.MatchError("pattern-matching failed for " '
-            + repr(match_line) + ' " in " + repr(repr(' + match_to_var + ")), "
-            + match_line + ", " + match_to_var + ")"
+        match_err_var + ' = __coconut__.MatchError("pattern-matching failed for " '
+            + repr(match_line) + ' " in " + repr(repr(' + match_to_var + ")))"
+            + linebreak + match_err_var + ".pattern = " + match_line
+            + linebreak + match_err_var + ".value = " + match_to_var
+            + linebreak + "raise " + match_err_var
         + linebreak + closestr)
 
 def match_assign_proc(original, loc, tokens):
