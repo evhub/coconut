@@ -99,8 +99,8 @@ In Python, lambdas are ugly and bulky, requiring the entire word `lambda` to be 
 
 Just to demonstrate the lambda syntax, try modifying your `hello, world!` program by adding a function defined with a lambda that prints `"hello, "+arg+"!"`, and call it with `"lambdas"` as the `arg`:
 ```python
-hello = (arg="world") -> print("hello, "+arg+"!")   # Coconut still supports Python's "def" blocks,
-hello("lambdas")                                    #  but we're trying to demonstrate lambdas here
+hello = (arg="world") -> print("hello, "+arg+"!") # Coconut still supports Python's "def" blocks,
+hello("lambdas")                                  #  but we're trying to demonstrate lambdas here
 ```
 
 Then run it and test that it works:
@@ -174,7 +174,7 @@ Up until now, we've been using assignment to a lambda for function one-liners. W
 
 Here's an example:
 ```
-def f(x) = x**2 + x     # note the = instead of the :
+def f(x) = x**2 + x # note the = instead of the :
 5 |> f |> print
 ```
 
