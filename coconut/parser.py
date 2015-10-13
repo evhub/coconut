@@ -971,7 +971,7 @@ def pattern_error(original, loc):
     """Constructs a pattern-matching error message."""
     match_line = repr(clean(line(loc, original)))
     return ("if not " + match_check_var + ":" + linebreak + openstr
-        match_err_var + ' = __coconut__.MatchError("pattern-matching failed for " '
+        + match_err_var + ' = __coconut__.MatchError("pattern-matching failed for " '
             + repr(match_line) + ' " in " + repr(repr(' + match_to_var + ")))"
             + linebreak + match_err_var + ".pattern = " + match_line
             + linebreak + match_err_var + ".value = " + match_to_var
