@@ -10,7 +10,6 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [Compiled Files](#compiled-files)
     - [--strict Mode](#--strict-mode)
     - [IPython](#ipython)
-    - [`__coconut__`](#__coconut__)
 - [II. Syntax](#ii-syntax)
     - [Lambdas](#lambdas)
     - [Backtick Calling](#backtick-calling)
@@ -47,6 +46,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [`match`](#match)
     - [`case`](#case)
     - [Backslash Escaping](#backslash-escaping)
+    - [Reserved Variables](#reserved-variables)
 - [VI. Coconut Module](#vi-coconut-module)
     - [`coconut.convenience`](#coconutconvenience)
 
@@ -108,10 +108,6 @@ It is recommended that you use the `--strict` or `-s` flag if you are starting a
 ### IPython
 
 If you prefer [IPython](http://ipython.org/) to the normal Python shell, coconut can also be used as an IPython extension. The line magic `%load_ext coconut` will provide access to the `%coconut` and `%%coconut` magics. The `%coconut` line magic will run a line of Coconut with default parameters, whereas the `%%coconut` block magic will take command-line arguments on the first line, and run any coconut code provided in the rest of the cell with those parameters.
-
-### `__coconut__`
-
-Inside of any Coconut program, there will be necessary functions and variables stored inside a class/module named `__coconut__`. Therefore, modifying the `__coconut__` variable inside your program will most likely break your code.
 
 ## II. Syntax
 
@@ -1057,6 +1053,12 @@ Python:
 data = 5
 print(data)
 ```
+
+### Reserved Variables
+
+The Coconut compiler will modify and reference certain variables with the assumption that the code being compiled does not modify them in any way. If your code does modify any of these variables, your code is unlikely to work properly. These reserved variables are:
+- the single variable name `__coconut__`
+- all variable names of the form `_coconut_name`
 
 ## VI. Coconut Module
 
