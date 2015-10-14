@@ -20,6 +20,7 @@ This tutorial will teach you how to write elegant, Pythonic code in a functional
     - [Function Definition](#function-definition)
     - [`reduce`](#reduce)
 - [III. Iterators](#iii-iterators)
+    - [Lazy Lists](#lazy-lists)
     - [Slicing](#slicing)
     - [Chaining](#chaining)
 - [IV. Values](#iv-values)
@@ -201,11 +202,25 @@ range(1, 5) |> prod |> print
 
 ## III. Iterators
 
-### Slicing
+### Lazy Lists
 
 Another mainstay of functional programming is lazy evaluation, where sequences are only evaluated when their contents are requested, allowing for things like infinite sequences. In Python, this can be done via iterators. Unfortunately, many of the tools necessary for working with iterators just like one would work with lists are absent.
 
-Coconut aims to fix this, and the first part of that is Coconut's iterator slicing. Coconut's iterator slicing works much the same as Python's sequence slicing, and looks much the same as Coconut's partial application, but with brackets instead of parentheses.
+Coconut aims to fix this, and the first part of that is Coconut's lazy lists. Coconut's lazy lists look, and work, much like normal lists or tuples, but are really represented as iterators, and thus can support lazy evaluation.
+
+The syntax for lazy lists is simply to use so-called "banana brackets" (`(|` and `|)`) instead of normal brackets or parentheses to surround the list.
+
+Here's an example:
+```python
+hello = (| print("hello,"), print("world!") |)
+list(items)
+```
+
+### Slicing
+
+Once you have constructed iterators using Python's `yield` statement or Coconut's lazy list syntax, you need to be able to work with those iterators in the same way you would work with lists.
+
+Coconut provides the tools to do this, and the first part of that is Coconut's iterator slicing. Coconut's iterator slicing works much the same as Python's sequence slicing, and looks much the same as Coconut's partial application, but with brackets instead of parentheses.
 
 Here's an example:
 ```python

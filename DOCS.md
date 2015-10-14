@@ -12,6 +12,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [IPython](#ipython)
 - [II. Syntax](#ii-syntax)
     - [Lambdas](#lambdas)
+    - [Lazy Lists](#lazy-lists)
     - [Backtick Calling](#backtick-calling)
     - [Mathematical Function Definition](#mathematical-function-definition)
     - [Operator Functions](#operator-functions)
@@ -136,6 +137,20 @@ Python:
 lambda x, y: 2*(x+y)
 ```
 
+### Lazy Lists
+
+Coconut supports the creation of lazy lists, where the contents in the list will be treated as a Python iterator and not evaluated until they are needed. Lazy lists can be created in Coconut simply by simply surrounding a comma-seperated list of items with `(|` and `|)` instead of `[` and `]` for a list or `(` and `)` for a tuple.
+
+##### Example
+
+Coconut:
+```python
+nums = (|-3, -1, 1 |) :: range(2,10)
+```
+
+Python:
+_Can't be done without a complicated iterator comprehension in place of the lazy list. See the compiled code for the Python syntax._
+
 ### Backtick Calling
 
 Coconut allows for Haskell-style infix calling, where a function is surrounded by backticks and then can have arguments placed in front of or behind it. Backtick calling has a precedence in-between chaining and piping.
@@ -259,7 +274,7 @@ def last_two(l):
 
 Python:
 
-_Can't be done without a long series of checks in place of the destructuring assignment statement. See the compiled code for the full definition._
+_Can't be done without a long series of checks in place of the destructuring assignment statement. See the compiled code for the Python syntax._
 
 ### Pattern-Matching Function Definition
 
@@ -286,7 +301,7 @@ def last_two(_ + [a, b]):
 
 Python:
 
-_Can't be done without a long series of checks at the top of the function. See the compiled code for the full definition._
+_Can't be done without a long series of checks at the top of the function. See the compiled code for the Python syntax._
 
 ### Implicit Partial Application
 
@@ -995,7 +1010,7 @@ def factorial(value):
 
 Python:
 
-_Can't be done without a long series of checks for each `match` statement. See the compiled code for the full definition._
+_Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._
 
 ### `case`
 
@@ -1034,7 +1049,7 @@ def classify_sequence(value):
 
 Python:
 
-_Can't be done without a long series of checks for each `match` statement. See the compiled code for the full definition._
+_Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._
 
 ### Backslash Escaping
 
