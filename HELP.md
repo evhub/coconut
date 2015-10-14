@@ -166,7 +166,7 @@ _Note: If you've been dutifully guessing and checking, you probablly guessed `6`
 
 ### Backtick Calling
 
-Another common idiom in functional programming is to write functions that are intended to behave somewhat like operators. To assist with this, Coconut provies backtick calling, where a function can be called by surrounding it with backticks, and then its arguments placed around it.
+Another common idiom in functional programming is to write functions that are intended to behave somewhat like operators. To assist with this, Coconut provides backtick calling, where a function can be called by surrounding it with backticks, and then its arguments placed around it.
 
 Here's an example:
 ```python
