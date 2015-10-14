@@ -20,7 +20,7 @@ matrix:
         - coconut --version
         - coconut --strict --print --code "__coconut__ |> print"
         - echo "__coconut__ |> print" | coconut --strict --print
-        - python -c "from coconut.convenience import parse; parse('__coconut__ |> print')"
+        - python -c "from coconut.convenience import parse; exec parse('__coconut__ |> print')"
 
         - coconut src/runner.coc file_build --strict
         - coconut src/cocotest/__init__.coc file_build/cocotest --strict
@@ -50,7 +50,7 @@ matrix:
         - coconut --version
         - coconut --strict --print --code "__coconut__ |> print"
         - echo "__coconut__ |> print" | coconut --strict --print
-        - python -c "from coconut.convenience import parse; parse('__coconut__ |> print')"
+        - python -c "from coconut.convenience import parse; exec parse('__coconut__ |> print')"
         - ipython --ext coconut -c "%coconut __coconut__ |> print"
 
         - coconut src/runner.coc file_build --strict
@@ -81,7 +81,7 @@ matrix:
         - coconut --version
         - coconut --strict --print --code "__coconut__ |> print"
         - echo "__coconut__ |> print" | coconut --strict --print
-        - python -c "from coconut.convenience import parse; parse('__coconut__ |> print')"
+        - python -c "from coconut.convenience import parse; eval(parse('__coconut__ |> print'))"
         - ipython --ext coconut -c "%coconut __coconut__ |> print"
 
         - coconut src/runner.coc file_build --strict
@@ -112,7 +112,7 @@ matrix:
         - coconut --version
         - coconut --strict --print --code "__coconut__ |> print"
         - echo "__coconut__ |> print" | coconut --strict --print
-        - python -c "from coconut.convenience import parse; parse('__coconut__ |> print')"
+        - python -c "from coconut.convenience import parse; eval(parse('__coconut__ |> print'))"
         - ipython --ext coconut -c "%coconut __coconut__ |> print"
 
         - coconut src/runner.coc file_build --strict
