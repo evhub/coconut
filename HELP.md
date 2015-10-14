@@ -68,11 +68,13 @@ python tutorial.py
 ```
 
 If everything is working properly, you should see something like this:
+`coconut tutorial.coc`
 ```
-$ coconut tutorial.coc
 Coconut: Compiling '<tutorial.coc directory>'...
 Coconut: Compiled '<tutorial.py directory>'.
-$ python tutorial.py
+```
+`python tutorial.py`
+```
 hello, world!
 ```
 
@@ -104,10 +106,12 @@ hello("lambdas")                                  #  but we're trying to demonst
 ```
 
 Then run it and test that it works:
+`coconut tutorial.coc`
 ```
-$ coconut tutorial.coc
 ...
-$ python tutorial.py
+```
+`python tutorial.py`
+```
 hello, lambdas!
 ```
 
