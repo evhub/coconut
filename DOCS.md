@@ -1072,11 +1072,13 @@ The recommended way to use Coconut as a module is to use `from coconut.convenien
 
 Likely the most useful of the convenience functions, `parse` takes Coconut code as input and outputs the equivalent compiled Python code. The second argument, _mode_, is used to indicate the context for the parsing. Possible values of _mode_ are:
 
-- `"file"`: a stand-alone file (the default)
+- `"exec"`: code for use in `exec` (the default)
+- `"file"`: a stand-alone file
 - `"single"`: a single line of code
 - `"module"`: a file in a folder or module
-- `"block"`: many lines of code
+- `"block"`: any number of lines of code
 - `"eval"`: a single expression
+- `"debug"`: lines of code with no header
 
 **setup**(**[[**_strict_**]**_, target_**]**)
 

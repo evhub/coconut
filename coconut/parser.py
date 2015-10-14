@@ -2057,6 +2057,10 @@ class processor(object):
         """Parses file input."""
         return self.parse(inputstring, self.file_parser, {}, {"header": "file"})
 
+    def parse_exec(self, inputstring):
+        """Parses exec input."""
+        return self.parse(inputstring, self.file_parser, {}, {"header": "file", "initial": "none"})
+
     def parse_module(self, inputstring):
         """Parses module input."""
         return self.parse(inputstring, self.file_parser, {}, {"header": "module"})

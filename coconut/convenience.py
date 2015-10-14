@@ -55,13 +55,15 @@ def setup(strict=False, target=None):
         COMPILER.setup(strict, target)
     return COMPILER.processor
 
-def parse(code, mode="file"):
+def parse(code, mode="exec"):
     """Parses Coconut code."""
     PARSER = setup()
     if mode == "single":
         return PARSER.parse_single(code)
     elif mode == "file":
         return PARSER.parse_file(code)
+    elif mode == "exec":
+        return PARSER.parse_exec(code)
     elif mode == "module":
         return PARSER.parse_module(code)
     elif mode == "block":
@@ -71,4 +73,5 @@ def parse(code, mode="file"):
     elif mode == "debug":
         return PARSER.parse_debug(code)
     else:
-        raise CoconutException("invalid parse mode "+repr(mode)+"; valid modes are 'single', 'file', 'module', 'block', 'eval', and 'debug'")
+        raise CoconutException("invalid parse mode " + repr(mode)
+            + "; valid modes are 'exec', 'file', 'single', 'module', 'block', 'eval', and 'debug'")
