@@ -734,13 +734,14 @@ class matcher(object):
 
     def set_position(self, position):
         """Sets the if-statement position."""
-        if position < 0:
+        if position > 0:
+            while position >= len(self.checkdefs):
+                self.checkdefs.append([[], []])
+            self.checks = self.checkdefs[position][0]
+            self.defs = self.checkdefs[position][1]
+            self.position = position
+        else:
             raise CoconutException("invalid match index: "+str(position))
-        while position >= len(self.checkdefs):
-            self.checkdefs.append([[], []])
-        self.checks = self.checkdefs[position][0]
-        self.defs = self.checkdefs[position][1]
-        self.position = position
 
     def increment(self, forall=False):
         """Advances the if-statement position."""
@@ -972,10 +973,10 @@ def pattern_error(original, loc):
     match_line = repr(clean(line(loc, original)))
     return ("if not " + match_check_var + ":" + linebreak + openstr
         + match_err_var + ' = __coconut__.MatchError("pattern-matching failed for " '
-            + repr(match_line) + ' " in " + repr(repr(' + match_to_var + ")))"
-            + linebreak + match_err_var + ".pattern = " + match_line
-            + linebreak + match_err_var + ".value = " + match_to_var
-            + linebreak + "raise " + match_err_var
+        + repr(match_line) + ' " in " + repr(repr(' + match_to_var + ")))"
+        + linebreak + match_err_var + ".pattern = " + match_line
+        + linebreak + match_err_var + ".value = " + match_to_var
+        + linebreak + "raise " + match_err_var
         + linebreak + closestr)
 
 def match_assign_proc(original, loc, tokens):
@@ -1054,7 +1055,7 @@ class processor(object):
             self.version = version
         else:
             raise CoconutException("unsupported target Python version " + repr(version)
-                                   + " (supported targets are '2' and '3', or leave blank for universal)")
+                + " (supported targets are '2' and '3', or leave blank for universal)")
         self.strict = strict
         self.bind()
         self.setup()
