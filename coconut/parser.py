@@ -269,6 +269,7 @@ match_to_var = "_coconut_match_to"
 match_check_var = "_coconut_match_check"
 match_iter_var = "_coconut_match_iter"
 match_err_var = "_coconut_match_err"
+lazy_func_var = "_coconut_lazy_func"
 wildcard = "_"
 keywords = ["and",
             "as",
@@ -675,6 +676,14 @@ def class_proc(tokens):
         return "("+tokens[0]+")"
     else:
         raise CoconutException("invalid class inheritance tokens: "+repr(tokens))
+
+def lazy_list_proc(tokens):
+    """Processes lazy lists."""
+    if len(tokens) == 0:
+        raise CoconutException("invalid lazy list tokens: "+repr(tokens))
+    else:
+        return ("(" + lazy_func_var + "() for " + lazy_func_var + " in (lambda: "
+            + ", lambda: ".join(tokens) + "))")
 
 class matcher(object):
     """Pattern-matching processor."""
@@ -1570,6 +1579,8 @@ class processor(object):
     rbrack = Literal("]")
     lbrace = Literal("{")
     rbrace = Literal("}")
+    lbanana = Literal("(|")
+    rbanana = Literal("|)")
     plus = Literal("+")
     minus = Literal("-")
     bang = fixto(Literal("!") | Literal("\xac"), "!")
@@ -1759,7 +1770,10 @@ class processor(object):
     )
 
     testlist_comp = addspace(test + comp_for) | testlist
-    func_atom = name | op_atom | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
+    lazy_list = attach(lbanana.suppress()
+        + test + OneOrMore(comma.suppress() + test) + Optional(comma.suppress())
+        + rbanana.suppress(), lazy_list_proc)
+    func_atom = name | op_atom | condense(lparen + Optional(yield_expr | testlist_comp) + rparen) | lazy_list
     keyword_atom = Keyword(const_vars[0])
     for x in range(1, len(const_vars)):
         keyword_atom |= Keyword(const_vars[x])
