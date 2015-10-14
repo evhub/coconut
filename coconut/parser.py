@@ -1767,7 +1767,7 @@ class processor(object):
 
     testlist_comp = addspace(test + comp_for) | testlist
     lazy_list = attach(lbanana.suppress()
-        + test + OneOrMore(comma.suppress() + test) + Optional(comma.suppress())
+        + test + ZeroOrMore(comma.suppress() + test) + Optional(comma.suppress())
         + rbanana.suppress(), lazy_list_proc)
     func_atom = name | op_atom | condense(lparen + Optional(yield_expr | testlist_comp) + rparen) | lazy_list
     keyword_atom = Keyword(const_vars[0])
