@@ -131,7 +131,7 @@ Try to predict what you think will be printed, then either use the interpreter o
 
 ### Function Composition
 
-Another mainstay of functional programming, one very common in mathematics, is function composition, the ability to combine multiple functions into one. In Coconut, function composition is done by the `..` operator.
+Another mainstay of functional programming, one very common in mathematics, is function composition, the ability to combine multiple functions into one. In Coconut, function composition is done with the `..` operator.
 
 Here's an example of function composition:
 ```python
@@ -142,7 +142,7 @@ Try again to predict what you think will be printed, then test it to see if you 
 
 ### Pipe Forward
 
-Another useful functional programming operator is pipe forward, which makes pipeline-style programming, where a value is fed from function to function, transformed at each step, much easier and more elegant. In Coconut, pipe forward is done by the `|>` operator (or `|*>` for multiple arguments).
+Another useful functional programming operator is pipe forward, which makes pipeline-style programming, where a value is fed from function to function, transformed at each step, much easier and more elegant. In Coconut, pipe forward is done with the `|>` operator (or `|*>` for multiple arguments).
 
 _Note: Pipe backwards is also available, and accessed by the `<|` operator (or `<*|` for multiple arguments), although it is usually less useful._
 
@@ -221,7 +221,7 @@ _Note: Unlike Python's sequence slicing, Coconut's iterator slicing makes no gua
 
 ### Chaining
 
-Another useful tool to make working with iterators as easy as working with sequences is the ability to combine multiple iterators together. This operation is called chain, and is equivalent to addition with sequences. In Coconut, chaining is done by the `::` operator.
+Another useful tool to make working with iterators as easy as working with sequences is the ability to combine multiple iterators together. This operation is called chain, and is equivalent to addition with sequences. In Coconut, chaining is done with the `::` operator.
 
 Here's an example:
 ```python
