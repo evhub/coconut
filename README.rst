@@ -17,23 +17,23 @@ The full Coconut **documentation** can be found in the DOCS_ file. If you're loo
 Why Coconut?
 ------------
 
-1. **It's just Python!**
+\1. **It's just Python!**
 
 Love Python? So do I! All valid Python 3 is also valid Coconut. That means that not only does learning Coconut not require learning new libraries, it doesn't even require learning a new core syntax! Integrating Coconut into your existing projects is as simple as replacing ``.py`` with ``.coc``.
 
-2. *But...* **Coconut has powerful destructuring assignment.**
+\2. *But...* **Coconut has powerful destructuring assignment.**
 
 Enjoy writing simple, readable code like ``a, b = get_two_items()``, but wish you could do something like ``{"text": text, "tags": {"href": link}} = get_html()``? Coconut provides destructuring assignment that can accoplish all that and much, much more!
 
-3. *But...* **Coconut has nicer syntax.**
+\3. *But...* **Coconut has nicer syntax.**
 
 Hate typing out ``lambda`` or ``return`` every time you want to create a one-line function? Love rhetorical questions and parallel grammatical structure? So do I! Coconut supports function definition syntax that's as simple as ``(x) -> x`` or ``def f(x) = x``.
 
-4. *But...* **Coconut has algebraic data types.**
+\4. *But...* **Coconut has algebraic data types.**
 
 If you know Python, then you already know how useful immutable lists can be. Don't believe me? They're called tuples, of course! Python lets tuples hog all that immutability goodness, but wouldn't it be nice if you could create arbitrary immutable data types? Coconut's ``data`` statement allows you to create any sort of immutable data type that you wish!
 
-5. *But...* **Coconut has pattern matching.**
+\5. *But...* **Coconut has pattern matching.**
 
 If you've ever used a functional programming language before, you probably know how awesome pattern matching is. Coconut's ``match`` statement brings all that to Python. Here's just a taste of how powerful Coconut's pattern-matching is:
 
@@ -43,7 +43,7 @@ If you've ever used a functional programming language before, you probably know 
            print(x)
     3
 
-5. *But...* **Coconut allows for truly Pythonic functional programming.**
+\6. *But...* **Coconut allows for truly Pythonic functional programming.**
 
 Not only can Coconut do all those awesome things, it also has syntactic support for iterator chaining, iterator slicing, partial application, function composition, pipeline-style programming, infix calling, frozen set literals, unicode operators, tail call optimization, and a whole host of other constructs for you to explore.
 
