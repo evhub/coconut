@@ -45,6 +45,6 @@ If you've ever used a functional programming language before, you probably know 
 
 \6. *But...* **Coconut allows for truly Pythonic functional programming.**
 
-Not only can Coconut do all those awesome things, it also has syntactic support for iterator chaining, iterator slicing, partial application, function composition, pipeline-style programming, infix calling, frozen set literals, unicode operators, tail call optimization, and a whole host of other constructs for you to explore.
+Not only can Coconut do all those awesome things, it also has syntactic support for lazy lists, iterator chaining, iterator slicing, partial application, function composition, pipeline-style programming, infix calling, frozen set literals, unicode operators, tail call optimization, and a whole host of other constructs for you to explore.
 
 Ready to give Coconut a try? Head over to the HELP_ file for a full tutorial to help (ha, get it?) you get started.
