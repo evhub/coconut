@@ -98,7 +98,7 @@ def input(*args, **kwargs):
 '''
         if which == "package":
             header += r'''
-"""Built-in Coconut Functions."""
+"""Built-in Coconut functions."""
 version = "'''+VERSION+r'''"
 
 import functools
@@ -131,7 +131,7 @@ getattr = getattr
 slice = slice
 
 def recursive(func):
-    """Tail Call Optimizer."""
+    """Tail recursion optimizer."""
     state = [True, None] # toplevel, (args, kwargs)
     recurse = object()
     @functools.wraps(func)
@@ -155,7 +155,7 @@ def recursive(func):
     return tailed_func
 
 class MatchError(Exception):
-    pass
+    """Pattern-matching error."""
 '''
         else:
             if which == "module":
@@ -168,7 +168,7 @@ import __coconut__
             elif which == "code" or which == "file":
                 header += r'''
 class __coconut__(object):
-    """Built-in Coconut Functions."""
+    """Built-in Coconut functions."""
     version = "'''+VERSION+r'''"
     import functools
     import operator
@@ -197,7 +197,7 @@ class __coconut__(object):
     slice = slice
     @staticmethod
     def recursive(func):
-        """Tail Call Optimizer."""
+        """Tail recursion optimizer."""
         state = [True, None] # toplevel, (args, kwargs)
         recurse = object()
         @__coconut__.functools.wraps(func)
@@ -219,7 +219,8 @@ class __coconut__(object):
                 state[1] = args, kwargs
                 return recurse
         return tailed_func
-    class MatchError(Exception): pass
+    class MatchError(Exception):
+        """Pattern-matching error."""
 '''
             else:
                 raise CoconutException("invalid header type: "+repr(which))
