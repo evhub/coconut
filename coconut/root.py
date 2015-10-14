@@ -30,7 +30,7 @@ except ImportError:
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-VERSION = "0.3.1"
+VERSION = "0.3.2-dev"
 VERSION_NAME = "Jawz"
 
 VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
