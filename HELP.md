@@ -236,10 +236,13 @@ _Note: Unlike Python's sequence slicing, Coconut's iterator slicing makes no gua
 
 ### Chaining
 
-Another useful tool to make working with iterators as easy as working with sequences is the ability to combine multiple iterators together. This operation is called chain, and is equivalent to addition with sequences. In Coconut, chaining is done with the `::` operator.
+Another useful tool to make working with iterators as easy as working with sequences is the ability to lazily combine multiple iterators together. This operation is called chain, and is equivalent to addition with sequences, except that nothing gets evaluated until it is needed. In Coconut, chaining is done with the `::` operator.
 
 Here's an example:
 ```python
+def N(n=0):
+    return (| 0 |) :: N(n+1)
+
 (range(-10, 0) :: N())$[5:15] |> list |> print
 ```
 

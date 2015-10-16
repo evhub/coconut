@@ -511,12 +511,21 @@ def item_proc(tokens):
             raise CoconutException("invalid trailer tokens: "+repr(trailer))
     return out
 
+def lazy_list_proc(tokens):
+    """Processes lazy lists."""
+    return (
+        "(" + lazy_func_var + "() for " + lazy_func_var + " in ("
+            + ("lambda: " if len(tokens) != 0 else "")
+            + ", lambda: ".join(tokens) + ("," if len(tokens) == 1 else "")
+        + "))"
+    )
+
 def chain_proc(tokens):
     """Processes chain calls."""
     if len(tokens) == 1:
         return tokens[0]
     else:
-        return "__coconut__.itertools.chain("+", ".join(tokens)+")"
+        return "__coconut__.itertools.chain.from_iterable(" + lazy_list_proc(tokens) + ")"
 
 def get_infix_items(tokens):
     """Performs infix token processing."""
@@ -672,15 +681,6 @@ def class_proc(tokens):
         return "("+tokens[0]+")"
     else:
         raise CoconutException("invalid class inheritance tokens: "+repr(tokens))
-
-def lazy_list_proc(tokens):
-    """Processes lazy lists."""
-    return (
-        "(" + lazy_func_var + "() for " + lazy_func_var + " in ("
-            + ("lambda: " if len(tokens) != 0 else "")
-            + ", lambda: ".join(tokens) + ("," if len(tokens) == 1 else "")
-        + "))"
-    )
 
 class matcher(object):
     """Pattern-matching processor."""
