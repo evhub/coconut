@@ -586,19 +586,20 @@ def assign_proc(tokens):
     """Processes assignments."""
     if len(tokens) == 3:
         name, op, item = tokens
+        item = "(" + item + ")"
         out = ""
         if op == "|>=":
-            out += name+" = ("+item+")("+name+")"
+            out += name+" = "+item+"("+name+")"
         elif op == "|*>=":
-            out += name+" = ("+item+")(*"+name+")"
+            out += name+" = "+item+"(*"+name+")"
         elif op == "<|=":
-            out += name+" = "+name+"(("+item+"))"
+            out += name+" = "+name+"("+item+")"
         elif op == "<*|=":
-            out += name+" = "+name+"(*("+item+"))"
+            out += name+" = "+name+"(*"+item+")"
         elif op == "..=":
             out += name+" = (lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)))("+name+", "+item+")"
         elif op == "::=":
-            out += name+" = __coconut__.itertools.chain("+name+", ("+item+"))"
+            out += name+" = "+chain_proc((name, item))
         else:
             out += name+" "+op+" "+item
         return out
