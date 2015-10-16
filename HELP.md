@@ -241,7 +241,7 @@ Another useful tool to make working with iterators as easy as working with seque
 Here's an example:
 ```python
 def N(n=0):
-    return (| 0 |) :: N(n+1)
+    return (0,) :: N(n+1) # no infinite loop because :: is lazy
 
 (range(-10, 0) :: N())$[5:15] |> list |> print
 ```
