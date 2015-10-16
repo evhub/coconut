@@ -599,7 +599,7 @@ def assign_proc(tokens):
         elif op == "..=":
             out += name+" = (lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)))("+name+", "+item+")"
         elif op == "::=":
-            out += name+" = "+chain_proc((name, item))
+            out += name+" = __coconut__.itertools.chain("+name+", "+item+")"
         else:
             out += name+" "+op+" "+item
         return out
