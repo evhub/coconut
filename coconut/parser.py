@@ -265,7 +265,7 @@ match_to_var = "_coconut_match_to"
 match_check_var = "_coconut_match_check"
 match_iter_var = "_coconut_match_iter"
 match_err_var = "_coconut_match_err"
-lazy_func_var = "_coconut_lazy_func"
+lazy_func_var = "_coconut_lazy"
 wildcard = "_"
 keywords = ["and",
             "as",
