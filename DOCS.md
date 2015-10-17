@@ -526,14 +526,14 @@ ans = g(*f(5))
 
 ### Chain
 
-Coconut uses the FSharp-style concatenation operator `::` for iterator chaining. Coconut's iterator chaining is done lazily, in that the arguments are not evaluated until they are needed. It has a precedence in-between bitwise or and backtick calls. The in-place operator is `::=`.
+Coconut uses the FSharp-style concatenation operator `::` for iterator chaining. Coconut's iterator chaining is done lazily, in that the arguments are not evaluated until they are needed. It has a precedence in-between bitwise or and backtick calls. The in-place operator is `::=`, although neither the in-place operator nor the operator function `(::)` will evaluate lazily in the same way that the normal operator will.
 
 ##### Python Docs
 
-Make an iterator that returns elements from the first iterable until it is exhausted, then proceeds to the next iterable, until all of the iterables are exhausted. Used for treating consecutive sequences as a single sequence. Gets chained inputs from a single iterable argument that is evaluated lazily. Roughly equivalent to:
+Make an iterator that returns elements from the first iterable until it is exhausted, then proceeds to the next iterable, until all of the iterables are exhausted. Used for treating consecutive sequences as a single sequence. Chained inputs are evaluated lazily. Roughly equivalent to:
 ```python
-def chain.from_iterable(iterables):
-    # chain.from_iterable(['ABC', 'DEF']) --> A B C D E F
+def chain(*iterables):
+    # chain('ABC', 'DEF') --> A B C D E F
     for it in iterables:
         for element in it:
             yield element
