@@ -39,12 +39,20 @@ If you've ever used a functional programming language before, you probably know 
 
     >>> data point(x, y): pass
     >>> my_point = point(3, 0)
-    >>> match point(x, 0) in my_point:
-           print(x)
-    3
+    >>> match point(a, 0) in my_point:
+           print("x = " + str(a))
+    x = 3
 
-\6. *But...* **Coconut allows for truly Pythonic functional programming.**
+\6. *But...* **Coconut supports lazy lists.**
 
-Not only can Coconut do all those awesome things, it also has syntactic support for lazy lists, iterator chaining, iterator slicing, partial application, function composition, pipeline-style programming, infix calling, frozen set literals, unicode operators, tail call optimization, and a whole host of other constructs for you to explore.
+Common to functional programming, but missing from Python, are lazily-evaluated lists. Coconut's powerful constructs for working with lazy lists allows for such cool things as:
+
+    >>> def natural_numbers(n=0) = (n,) :: natural_numbers(n+1)
+    >>> natural_numbers()$[0:5] |> list |> print
+    [0, 1, 2, 3, 4]
+
+\7. *But...* **Coconut allows for truly Pythonic functional programming.**
+
+Not only can Coconut do all those awesome things, it also has syntactic support for partial application, function composition, infix calling, frozen set literals, unicode operators, tail call optimization, and a whole host of other constructs for you to explore.
 
 Ready to give Coconut a try? Head over to the HELP_ file for a full tutorial to help (ha, get it?) you get started.
