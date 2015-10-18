@@ -54,8 +54,11 @@ except NameError: pass
 else:
     py2_range = range
     range = xrange
-try: ascii
-except NameError: ascii = repr
+try: long
+except NameError: pass
+else:
+    py2_int = int
+    int = long
 try: unichr
 except NameError: pass
 else:
@@ -84,7 +87,8 @@ from __future__ import with_statement, print_function, absolute_import, unicode_
 from future_builtins import *
 py2_range = range
 range = xrange
-ascii = repr
+py2_int = int
+int = long
 py2_chr = chr
 chr = unichr
 _coconut_encoding = "'''+ENCODING+r'''"
@@ -799,6 +803,8 @@ class matcher(object):
                 self.defs.append(tail+" = __coconut__.tuple("+item+splice+")")
             elif series_type == "[":
                 self.defs.append(tail+" = __coconut__.list("+item+splice+")")
+            elif series_type == "(|":
+                self.defs.append(tail+" = ("+lazy_item_var+" for "+lazy_item_var+" in "+item+splice+")")
             else:
                 raise CoconutException("invalid series match type: "+repr(series_type))
         for x in range(0, len(match)):
@@ -817,6 +823,8 @@ class matcher(object):
             self.defs.append(front+" = __coconut__.tuple("+item+splice+")")
         elif series_type == "[":
             self.defs.append(front+" = __coconut__.list("+item+splice+")")
+        elif series_type == "(|":
+            self.defs.append(front+" = ("+lazy_item_var+" for "+lazy_item_var+" in "+item+splice+")")
         else:
             raise CoconutException("invalid series match type: "+repr(series_type))
         for x in range(0, len(match)):
@@ -1930,15 +1938,16 @@ class processor(object):
     matchlist_set = Group(Optional(match_const + ZeroOrMore(comma.suppress() + match_const) + Optional(comma.suppress())))
     match_pair = Group(match_const + colon.suppress() + match)
     matchlist_dict = Group(Optional(match_pair + ZeroOrMore(comma.suppress() + match_pair) + Optional(comma.suppress())))
+    match_list = Group(lbrack + matchlist_list + rbrack.suppress())
+    match_tuple = Group(lparen + matchlist_tuple + rparen.suppress())
+    match_lazy = Group(lbanana + matchlist_list + rbanana.suppress())
     base_match = Group(
         (match_const)("const")
-        | (lparen + matchlist_tuple + rparen.suppress() + Optional((plus | dubcolon) + name))("series")
         | (lparen.suppress() + match + rparen.suppress())("paren")
-        | (lbrack + matchlist_list + rbrack.suppress() + Optional((plus | dubcolon) + name))("series")
         | (lbrace.suppress() + matchlist_dict + rbrace.suppress())("dict")
         | (Optional(set_s.suppress()) + lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
-        | (name + plus.suppress() + lparen + matchlist_tuple + rparen.suppress())("rseries")
-        | (name + plus.suppress() + lbrack + matchlist_list + rbrack.suppress())("rseries")
+        | ((match_list | match_tuple | match_lazy) + Optional((plus | dubcolon) + name))("series")
+        | (name + plus.suppress() + (match_list | match_tuple | match_lazy))("rseries")
         | (name + equals.suppress() + match)("assign")
         | (name + lparen.suppress() + matchlist_list + rparen.suppress())("data")
         | name("var")

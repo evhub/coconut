@@ -91,9 +91,11 @@ The given target will only affect the compiled code and whether or not Python-3-
 
 Coconut will, however, overwrite Python 2 built-ins to use the Python 3 versions where possible. If access to the Python 2 versions is desired, the old builtin can be retrieved by prefixing it with `py2_`. The old built-ins available are:
 - `py2_range`
+- `py2_int`
 - `py2_chr`
 - `py2_print`
 - `py2_input`
+_Note: No `py2_str` is provided even though it is overwritten because it should be retrieved using `bytes` instead._
 
 ### Compiled Files
 
@@ -966,11 +968,13 @@ pattern := (
     | NAME "(" patterns ")"         # data types
     | "(" patterns ")"              # tuples
     | "[" patterns "]"              # lists
+    | "(|" patterns "|)"            # lazy lists
     | "{" pattern_pairs "}"         # dictionaries
     | ["s"] "{" pattern_consts "}"  # sets
     | (                             # head-tail splits
         "(" patterns ")"                # tuples
         | "[" patterns "]"              # lists
+        | "(|" patterns "|)"            # lazy lists
       ) (
         "+"                             # for a tuple/list
         | "::"                          # for an iterator
@@ -978,6 +982,7 @@ pattern := (
     | pattern "+" (                 # init-last splits
         "(" patterns ")"                # tuples
         | "[" patterns "]"              # lists
+        | "(|" patterns "|)"            # lazy lists
       )
     | pattern "is" names            # type-checking
     | pattern "and" pattern         # match all
@@ -994,11 +999,11 @@ pattern := (
 - Checks (`=<var>`): will check that whatever is in that position is equal to the previously defined variable `<var>`.
 - Type Checks (`<var> is <types>`): will check that whatever is in that position is of type(s) `<types>` before binding the `<var>`.
 - Data Types (`<name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`.
-- Lists (`[<patterns>]`) or Tuples (`(<patterns>)`): will only match a sequence (`collections.abc.Sequence`) of the same length, and will check the contents against `<patterns>`.
+- Lists (`[<patterns>]`), Tuples (`(<patterns>)`), or Lazy lists (`(|<patterns>|)`): will only match a sequence (`collections.abc.Sequence`) of the same length, and will check the contents against `<patterns>`.
 - Dicts (`{<pairs>}`): will only match a mapping (`collections.abc.Mapping`) of the same length, and will check the contents against `<pairs>`.
 - Sets (`{<constants>}`): will only match a set (`collections.abc.Set`) of the same length and contents.
-- List/Tuple Splits (`<list/tuple> + <var>`): will match the beginning of the [im]mutable sequence against the `<list/tuple>`, then bind the rest to `<var>`, and call `list` or `tuple` on it, depending on which construct was used.
-- Init/Last Splits (`<var> + <list/tuple>`): exactly the same as list/tuple splits, but on the end instead of the beginning of the sequence.
+- Head-Tail Splits (`<list/tuple/lazy list> + <var>`): will match the beginning of the sequence against the `<list/tuple/lazy list>`, then bind the rest to `<var>`, and make it the type of the construct used.
+- Init-Last Splits (`<var> + <list/tuple/lazy list>`): exactly the same as head-tail splits, but on the end instead of the beginning of the sequence.
 - Iterator Splits (`<list/tuple> :: <var>`): will match the beginning of an iterable (`collections.abc.Iterable`) against the `<list/tuple>`, then bind the rest to `<var>`.
 
 ##### Example
