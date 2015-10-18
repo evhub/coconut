@@ -265,7 +265,7 @@ match_to_var = "_coconut_match_to"
 match_check_var = "_coconut_match_check"
 match_iter_var = "_coconut_match_iter"
 match_err_var = "_coconut_match_err"
-lazy_func_var = "_coconut_lazy"
+lazy_item_var = "_coconut_lazy_item"
 wildcard = "_"
 keywords = ["and",
             "as",
@@ -514,7 +514,7 @@ def item_proc(tokens):
 def lazy_list_proc(tokens):
     """Processes lazy lists."""
     return (
-        "(" + lazy_func_var + "() for " + lazy_func_var + " in ("
+        "(" + lazy_item_var + "() for " + lazy_item_var + " in ("
             + ("lambda: " if len(tokens) != 0 else "")
             + ", lambda: ".join(tokens) + ("," if len(tokens) == 1 else "")
         + "))"
@@ -1768,21 +1768,21 @@ class processor(object):
     )
 
     testlist_comp = addspace(test + comp_for) | testlist
-    lazy_items = Optional(test + ZeroOrMore(comma.suppress() + test) + Optional(comma.suppress()))
-    lazy_list = attach(lbanana.suppress() + lazy_items + rbanana.suppress(), lazy_list_proc)
-    func_atom = name | op_atom | condense(lparen + Optional(yield_expr | testlist_comp) + rparen) | lazy_list
+    func_atom = name | op_atom | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
     keyword_atom = Keyword(const_vars[0])
     for x in range(1, len(const_vars)):
         keyword_atom |= Keyword(const_vars[x])
     string_atom = addspace(OneOrMore(string))
     passthrough_atom = addspace(OneOrMore(passthrough))
     attr_atom = attach(condense(dot.suppress() + name), attr_proc)
-
     set_literal_ref = Forward()
     set_s = fixto(CaselessLiteral("s"), "s")
     set_f = fixto(CaselessLiteral("f"), "f")
     set_letter = set_s | set_f
     set_literal = lbrace.suppress() + setmaker + rbrace.suppress()
+    set_letter_literal = attach(set_letter + lbrace.suppress() + Optional(setmaker) + rbrace.suppress(), set_proc)
+    lazy_items = Optional(test + ZeroOrMore(comma.suppress() + test) + Optional(comma.suppress()))
+    lazy_list = attach(lbanana.suppress() + lazy_items + rbanana.suppress(), lazy_list_proc)
     atom = (
         keyword_atom
         | ellipses
@@ -1792,10 +1792,12 @@ class processor(object):
         | condense(lbrack + Optional(testlist_comp) + rbrack)
         | condense(lbrace + Optional(dictmaker) + rbrace)
         | set_literal_ref
-        | attach(set_letter + lbrace.suppress() + Optional(setmaker) + rbrace.suppress(), set_proc)
+        | set_letter_literal
+        | lazy_list
         | func_atom
         | attr_atom
         )
+
     slicetest = Optional(test)
     sliceop = condense(colon + slicetest)
     subscript = condense(slicetest + sliceop + Optional(sliceop)) | test
