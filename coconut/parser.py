@@ -52,6 +52,7 @@ except ImportError: pass
 try: xrange
 except NameError: pass
 else:
+    py2_range = range
     range = xrange
 try: ascii
 except NameError: ascii = repr
@@ -81,6 +82,7 @@ else:
             header += r'''
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 from future_builtins import *
+py2_range = range
 range = xrange
 ascii = repr
 py2_chr = chr
