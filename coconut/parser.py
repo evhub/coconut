@@ -1100,6 +1100,7 @@ class processor(object):
         self.async_match_funcdef_ref <<= attach(self.async_match_funcdef, self.async_stmt_check)
         self.async_block_ref <<= attach(self.async_block, self.async_stmt_check)
         self.await_keyword_ref <<= attach(self.await_keyword, self.await_keyword_check)
+        self.complex_raise_stmt_ref <<= attach(self.complex_raise_stmt, self.complex_raise_stmt_check)
 
     def setup(self):
         """Initializes the processor."""
@@ -1548,6 +1549,10 @@ class processor(object):
         """Checks for Python 3.5 await statement."""
         return self.check_py3("Python 3.5 await expression", tokens)
 
+    def complex_raise_stmt_check(self, tokens):
+        """Checks for Python 3 raise from statement."""
+        return self.check_py3("Python 3 raise from statement", tokens)
+
     def set_literal_convert(self, tokens):
         """Converts set literals to the right form for the target Python."""
         if len(tokens) != 1:
@@ -1903,12 +1908,15 @@ class processor(object):
     comp_if = addspace(Keyword("if") + test_nocond + Optional(comp_iter))
     comp_iter <<= comp_for | comp_if
 
+    complex_raise_stmt_ref = Forward()
     pass_stmt = Keyword("pass")
     break_stmt = Keyword("break")
     continue_stmt = Keyword("continue")
     return_stmt = addspace(Keyword("return") + Optional(testlist))
     yield_stmt = yield_expr
-    raise_stmt = addspace(Keyword("raise") + Optional(test + Optional(Keyword("from") + test)))
+    simple_raise_stmt = addspace(Keyword("raise") + Optional(test))
+    complex_raise_stmt = addspace(simple_raise_stmt + Keyword("from") + test)
+    raise_stmt = simple_raise_stmt | complex_raise_stmt_ref
     flow_stmt = break_stmt | continue_stmt | return_stmt | raise_stmt | yield_stmt
 
     dotted_as_name = addspace(dotted_name + Optional(Keyword("as") + name))
