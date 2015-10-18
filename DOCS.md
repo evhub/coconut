@@ -973,16 +973,16 @@ pattern := (
     | (                             # head-tail splits
         "(" patterns ")"                # tuples
         | "[" patterns "]"              # lists
-        | "(|" patterns "|)"            # lazy lists
-      ) (
-        "+"                             # for a tuple/list
-        | "::"                          # for an iterator
-      ) pattern
+      ) "+" pattern
     | pattern "+" (                 # init-last splits
         "(" patterns ")"                # tuples
         | "[" patterns "]"              # lists
-        | "(|" patterns "|)"            # lazy lists
       )
+    | (                             # iterator splits
+        "(" patterns ")"                # tuples
+        | "[" patterns "]"              # lists
+        | "(|" patterns "|)"            # lazy lists
+      ) "::" pattern
     | pattern "is" names            # type-checking
     | pattern "and" pattern         # match all
     | pattern "or" pattern          # match any
@@ -1001,9 +1001,9 @@ pattern := (
 - Lists (`[<patterns>]`), Tuples (`(<patterns>)`), or Lazy lists (`(|<patterns>|)`): will only match a sequence (`collections.abc.Sequence`) of the same length, and will check the contents against `<patterns>`.
 - Dicts (`{<pairs>}`): will only match a mapping (`collections.abc.Mapping`) of the same length, and will check the contents against `<pairs>`.
 - Sets (`{<constants>}`): will only match a set (`collections.abc.Set`) of the same length and contents.
-- Head-Tail Splits (`<list/tuple/lazy list> + <var>`): will match the beginning of the sequence against the `<list/tuple/lazy list>`, then bind the rest to `<var>`, and make it the type of the construct used.
-- Init-Last Splits (`<var> + <list/tuple/lazy list>`): exactly the same as head-tail splits, but on the end instead of the beginning of the sequence.
-- Iterator Splits (`<list/tuple> :: <var>`): will match the beginning of an iterable (`collections.abc.Iterable`) against the `<list/tuple>`, then bind the rest to `<var>`.
+- Head-Tail Splits (`<list/tuple> + <var>`): will match the beginning of the sequence against the `<list/tuple>`, then bind the rest to `<var>`, and make it the type of the construct used.
+- Init-Last Splits (`<var> + <list/tuple>`): exactly the same as head-tail splits, but on the end instead of the beginning of the sequence.
+- Iterator Splits (`<list/tuple/lazy list> :: <var>`, or `<lazy list>`): will match the beginning of an iterable (`collections.abc.Iterable`) against the `<list/tuple/lazy list>`, then bind the rest to `<var>` or check that the iterable is done.
 
 ##### Example
 

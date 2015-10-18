@@ -796,12 +796,34 @@ class matcher(object):
                 self.defs.append(tail+" = __coconut__.tuple("+item+splice+")")
             elif series_type == "[":
                 self.defs.append(tail+" = __coconut__.list("+item+splice+")")
-            elif series_type == "(|":
-                self.defs.append(tail+" = ("+lazy_item_var+" for "+lazy_item_var+" in "+item+splice+")")
             else:
                 raise CoconutException("invalid series match type: "+repr(series_type))
         for x in range(0, len(match)):
             self.match(match[x], item+"["+str(x)+"]")
+
+    def match_iterator(self, original, item):
+        """Matches an iterator."""
+        tail = None
+        if len(original) == 2:
+            _, match = original
+        else:
+            _, match, _, tail = original
+        self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Iterable)")
+        itervar = match_iter_var + "_" + str(self.iter_index)
+        self.iter_index += 1
+        if tail is None:
+            self.defs.append(itervar+" = __coconut__.tuple("+item+")")
+        else:
+            self.defs.append(itervar+" = __coconut__.tuple(__coconut__.itertools.islice("+item+", 0, "+str(len(match))+"))")
+            self.defs.append(tail+" = "+item)
+        self.increment()
+        if tail is None:
+            self.checks.append("__coconut__.len("+itervar+") == "+str(len(match)))
+        else:
+            self.checks.append("__coconut__.len("+itervar+") >= "+str(len(match)))
+        for x in range(0, len(match)):
+            self.match(match[x], itervar+"["+str(x)+"]")
+        self.decrement()
 
     def match_rsequence(self, original, item):
         """Matches a reverse sequence."""
@@ -816,33 +838,10 @@ class matcher(object):
             self.defs.append(front+" = __coconut__.tuple("+item+splice+")")
         elif series_type == "[":
             self.defs.append(front+" = __coconut__.list("+item+splice+")")
-        elif series_type == "(|":
-            self.defs.append(front+" = ("+lazy_item_var+" for "+lazy_item_var+" in "+item+splice+")")
         else:
             raise CoconutException("invalid series match type: "+repr(series_type))
         for x in range(0, len(match)):
             self.match(match[x], item+"["+str(x - len(match))+"]")
-
-    def match_iterator(self, original, item):
-        """Matches an iterator."""
-        series_type, match, _, tail = original
-        self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Iterable)")
-        itervar = match_iter_var + "_" + str(self.iter_index)
-        self.iter_index += 1
-        if series_type == "(":
-            self.defs.append(itervar+" = __coconut__.tuple(__coconut__.itertools.islice("+item+", 0, "+str(len(match))+"))")
-        elif series_type == "[":
-            self.defs.append(itervar+" = __coconut__.list(__coconut__.itertools.islice("+item+", 0, "+str(len(match))+"))")
-        elif series_type == "(|":
-            self.defs.append(itervar+" = __coconut__.itertools.islice("+item+", 0, "+str(len(match))+")")
-        else:
-            raise CoconutException("invalid iterator match tokens: "+repr(original))
-        self.defs.append(tail+" = "+item)
-        self.increment()
-        self.checks.append("__coconut__.len("+itervar+") >= "+str(len(match)))
-        for x in range(0, len(match)):
-            self.match(match[x], itervar+"["+str(x)+"]")
-        self.decrement()
 
     def match_const(self, original, item):
         """Matches a constant."""
@@ -917,12 +916,12 @@ class matcher(object):
         """Performs pattern-matching processing."""
         if "dict" in original:
             self.match_dict(original, item)
-        elif "series" in original and (len(original) == 2 or (len(original) == 4 and original[2] == "+")):
+        elif "iter" in original:
+            self.match_iterator(original, item)
+        elif "series" in original:
             self.match_sequence(original, item)
         elif "rseries" in original:
             self.match_rsequence(original, item)
-        elif "series" in original and len(original) == 4 and original[2] == "::":
-            self.match_iterator(original, item)
         elif "const" in original:
             self.match_const(original, item)
         elif "is" in original:
@@ -1949,7 +1948,8 @@ class processor(object):
         | (lparen.suppress() + match + rparen.suppress())("paren")
         | (lbrace.suppress() + matchlist_dict + rbrace.suppress())("dict")
         | (Optional(set_s.suppress()) + lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
-        | ((match_list | match_tuple | match_lazy) + Optional((plus | dubcolon) + name))("series")
+        | ((match_list | match_tuple) + Optional(plus + name))("series")
+        | ((match_list | match_tuple | match_lazy) + Optional(dubcolon + name))("iter")
         | (name + plus.suppress() + (match_list | match_tuple | match_lazy))("rseries")
         | (name + equals.suppress() + match)("assign")
         | (name + lparen.suppress() + matchlist_list + rparen.suppress())("data")
