@@ -54,11 +54,6 @@ except NameError: pass
 else:
     py2_range = range
     range = xrange
-try: long
-except NameError: pass
-else:
-    py2_int = int
-    int = long
 try: unichr
 except NameError: pass
 else:
@@ -87,8 +82,6 @@ from __future__ import with_statement, print_function, absolute_import, unicode_
 from future_builtins import *
 py2_range = range
 range = xrange
-py2_int = int
-int = long
 py2_chr = chr
 chr = unichr
 _coconut_encoding = "'''+ENCODING+r'''"
