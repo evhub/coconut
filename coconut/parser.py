@@ -689,6 +689,7 @@ class matcher(object):
 
     def __init__(self, checkvar, checkdefs=None, names=None):
         """Creates the matcher."""
+        self.setup()
         self.checkvar = checkvar
         self.checkdefs = []
         if checkdefs is None:
@@ -703,6 +704,25 @@ class matcher(object):
         else:
             self.names = dict(names)
         self.others = []
+
+    def setup(self):
+        """Sets up match functions."""
+        self.matchers = {
+            "dict": self.match_dict,
+            "iter": self.match_iterator,
+            "series": self.match_sequence,
+            "rseries": self.match_rsequence,
+            "mseries": self.match_msequence,
+            "const": self.match_const,
+            "is": self.match_typedef,
+            "var": self.match_var,
+            "set": self.match_set,
+            "data": self.match_data,
+            "paren": self.match_paren,
+            "assign": self.match_assign,
+            "and": self.match_and,
+            "or": self.match_or
+        }
 
     def duplicate(self):
         """Duplicates the matcher to others."""
@@ -938,36 +958,10 @@ class matcher(object):
 
     def match(self, original, item):
         """Performs pattern-matching processing."""
-        if "dict" in original:
-            self.match_dict(original, item)
-        elif "iter" in original:
-            self.match_iterator(original, item)
-        elif "series" in original:
-            self.match_sequence(original, item)
-        elif "rseries" in original:
-            self.match_rsequence(original, item)
-        elif "mseries" in original:
-            self.match_msequence(original, item)
-        elif "const" in original:
-            self.match_const(original, item)
-        elif "is" in original:
-            self.match_typedef(original, item)
-        elif "var" in original:
-            self.match_var(original, item)
-        elif "set" in original:
-            self.match_set(original, item)
-        elif "data" in original:
-            self.match_data(original, item)
-        elif "paren" in original:
-            self.match_paren(original, item)
-        elif "assign" in original:
-            self.match_assign(original, item)
-        elif "and" in original:
-            self.match_and(original, item)
-        elif "or" in original:
-            self.match_or(original, item)
-        else:
-            raise CoconutException("invalid inner match tokens: "+repr(original))
+        for flag, matchfunc in self.matchers:
+            if flag in original:
+                return matchfunc(original, item)
+        raise CoconutException("invalid inner match tokens: "+repr(original))
 
     def out(self):
         out = ""
