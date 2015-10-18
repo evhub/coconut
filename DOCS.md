@@ -91,7 +91,6 @@ The given target will only affect the compiled code and whether or not Python-3-
 
 Coconut will, however, overwrite Python 2 built-ins to use the Python 3 versions where possible. If access to the Python 2 versions is desired, the old builtin can be retrieved by prefixing it with `py2_`. The old built-ins available are:
 - `py2_range`
-- `py2_int`
 - `py2_chr`
 - `py2_print`
 - `py2_input`
