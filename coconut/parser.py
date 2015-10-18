@@ -833,6 +833,8 @@ class matcher(object):
             self.defs.append(itervar+" = __coconut__.tuple(__coconut__.itertools.islice("+item+", 0, "+str(len(match))+"))")
         elif series_type == "[":
             self.defs.append(itervar+" = __coconut__.list(__coconut__.itertools.islice("+item+", 0, "+str(len(match))+"))")
+        elif series_type == "(|":
+            self.defs.append(itervar+" = __coconut__.itertools.islice("+item+", 0, "+str(len(match))+")")
         else:
             raise CoconutException("invalid iterator match tokens: "+repr(original))
         self.defs.append(tail+" = "+item)
