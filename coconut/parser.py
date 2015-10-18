@@ -1849,7 +1849,7 @@ class processor(object):
                | Group(dollar)
                | simple_trailer
                | Group(condense(lbrack + rbrack))
-               | Group(dot + ~dot)
+               | Group(dot)
                )
 
     assignlist = Forward()
@@ -2003,7 +2003,7 @@ class processor(object):
     match_stmt = condense(full_match + Optional(else_stmt))
 
     match_assign_stmt = trace(attach(
-        (Keyword("match").suppress() | ~assignlist) + match + equals.suppress() + (yield_expr | testlist) + newline.suppress()
+        (Keyword("match").suppress() | ~(assignlist+equals)) + match + equals.suppress() + (yield_expr | testlist) + newline.suppress()
         , match_assign_proc), "match_assign_stmt")
 
     case_match = trace(Group(
