@@ -958,9 +958,9 @@ class matcher(object):
 
     def match(self, original, item):
         """Performs pattern-matching processing."""
-        for flag, matchfunc in self.matchers:
+        for flag in self.matchers:
             if flag in original:
-                return matchfunc(original, item)
+                return self.matchers[flag](original, item)
         raise CoconutException("invalid inner match tokens: "+repr(original))
 
     def out(self):
