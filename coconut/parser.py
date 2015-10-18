@@ -2002,8 +2002,9 @@ class processor(object):
         , match_proc), "full_match")
     match_stmt = condense(full_match + Optional(else_stmt))
 
-    match_assign_stmt = trace(attach(Optional(Keyword("match").suppress()) + match + equals.suppress() + (yield_expr | testlist)
-                              + newline.suppress(), match_assign_proc), "match_assign_stmt")
+    match_assign_stmt = trace(attach(
+        (Keyword("match").suppress() | ~assignlist) + match + equals.suppress() + (yield_expr | testlist) + newline.suppress()
+        , match_assign_proc), "match_assign_stmt")
 
     case_match = trace(Group(
         Keyword("match").suppress() + match + Optional(Keyword("if").suppress() + test) + match_suite
@@ -2082,10 +2083,12 @@ class processor(object):
                           | datadef
                           | decorated
                           | async_stmt
+                          | math_match_funcdef
+                          | match_assign_stmt
                           , "compound_stmt")
     expr_stmt = trace(addspace(
-                      attach(simple_assign + augassign + (yield_expr | testlist), assign_proc)
-                      | math_funcdef | math_match_funcdef
+                      math_funcdef
+                      | attach(simple_assign + augassign + (yield_expr | testlist), assign_proc)
                       | ZeroOrMore(assignlist + equals) + (yield_expr | testlist)
                       ), "expr_stmt")
 
@@ -2093,7 +2096,7 @@ class processor(object):
     keyword_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt_ref | assert_stmt
     small_stmt = trace(keyword_stmt ^ expr_stmt, "small_stmt")
     simple_stmt <<= trace(condense(itemlist(small_stmt, semicolon) + newline), "simple_stmt")
-    stmt <<= trace(compound_stmt | simple_stmt | match_assign_stmt, "stmt")
+    stmt <<= trace(compound_stmt | simple_stmt, "stmt")
     nocolon_suite <<= condense(newline + indent + OneOrMore(stmt) + dedent)
     suite <<= trace(condense(colon + nocolon_suite) | addspace(colon + simple_stmt), "suite")
     line = trace(newline | stmt, "line")
