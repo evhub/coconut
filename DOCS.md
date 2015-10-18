@@ -978,6 +978,13 @@ pattern := (
         "(" patterns ")"                # tuples
         | "[" patterns "]"              # lists
       )
+    | (                             # head-last splits
+        "(" patterns ")"                # tuples
+        | "[" patterns "]"              # lists
+      ) "+" pattern "+" (
+        "(" patterns ")"                # this match must be the same
+        | "[" patterns "]"              #  construct as the first match
+      )
     | (                             # iterator splits
         "(" patterns ")"                # tuples
         | "[" patterns "]"              # lists
@@ -1003,6 +1010,7 @@ pattern := (
 - Sets (`{<constants>}`): will only match a set (`collections.abc.Set`) of the same length and contents.
 - Head-Tail Splits (`<list/tuple> + <var>`): will match the beginning of the sequence against the `<list/tuple>`, then bind the rest to `<var>`, and make it the type of the construct used.
 - Init-Last Splits (`<var> + <list/tuple>`): exactly the same as head-tail splits, but on the end instead of the beginning of the sequence.
+- Head-Last Splits (`<list/tuple> + <var> + <list/tuple>`): the combination of a head-tail and an init-last split.
 - Iterator Splits (`<list/tuple/lazy list> :: <var>`, or `<lazy list>`): will match the beginning of an iterable (`collections.abc.Iterable`) against the `<list/tuple/lazy list>`, then bind the rest to `<var>` or check that the iterable is done.
 
 ##### Example

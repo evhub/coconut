@@ -782,7 +782,7 @@ class matcher(object):
         if len(original) == 2:
             series_type, match = original
         else:
-            series_type, match, _, tail = original
+            series_type, match, tail = original
         self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Sequence)")
         if tail is None:
             self.checks.append("__coconut__.len("+item+") == "+str(len(match)))
@@ -807,7 +807,7 @@ class matcher(object):
         if len(original) == 2:
             _, match = original
         else:
-            _, match, _, tail = original
+            _, match, tail = original
         self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Iterable)")
         itervar = match_iter_var + "_" + str(self.iter_index)
         self.iter_index += 1
@@ -842,6 +842,30 @@ class matcher(object):
             raise CoconutException("invalid series match type: "+repr(series_type))
         for x in range(0, len(match)):
             self.match(match[x], item+"["+str(x - len(match))+"]")
+
+    def match_msequence(self, original, item):
+        """Matches a middle sequence."""
+        series_type, head_match, middle, _, last_match = original
+        self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Sequence)")
+        self.checks.append("__coconut__.len("+item+") >= "+str(len(head_match) + len(last_match)))
+        if len(head_match) and len(last_match):
+            splice = "["+str(len(head_match))+":"+str(-len(last_match))+"]"
+        elif len(head_match):
+            splice = "["+str(len(head_match))+":]"
+        elif len(last_match):
+            splice = "[:"+str(-len(last_match))+"]"
+        else:
+            splice = ""
+        if series_type == "(":
+            self.defs.append(middle+" = __coconut__.tuple("+item+splice+")")
+        elif series_type == "[":
+            self.defs.append(middle+" = __coconut__.list("+item+splice+")")
+        else:
+            raise CoconutException("invalid series match type: "+repr(series_type))
+        for x in range(0, len(head_match)):
+            self.match(head_match[x], item+"["+str(x)+"]")
+        for x in range(0, len(last_match)):
+            self.match(last_match[x], item+"["+str(x - len(last_match))+"]")
 
     def match_const(self, original, item):
         """Matches a constant."""
@@ -922,6 +946,8 @@ class matcher(object):
             self.match_sequence(original, item)
         elif "rseries" in original:
             self.match_rsequence(original, item)
+        elif "mseries" in original:
+            self.match_msequence(original, item)
         elif "const" in original:
             self.match_const(original, item)
         elif "is" in original:
@@ -1948,9 +1974,11 @@ class processor(object):
         | (lparen.suppress() + match + rparen.suppress())("paren")
         | (lbrace.suppress() + matchlist_dict + rbrace.suppress())("dict")
         | (Optional(set_s.suppress()) + lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
-        | ((match_list | match_tuple) + Optional(plus + name))("series")
-        | ((match_list | match_tuple | match_lazy) + Optional(dubcolon + name))("iter")
-        | (name + plus.suppress() + (match_list | match_tuple | match_lazy))("rseries")
+        | ((match_list | match_tuple) + Optional(plus.suppress() + name))("series")
+        | ((match_list | match_tuple | match_lazy) + Optional(dubcolon.suppress() + name))("iter")
+        | (name + plus.suppress() + (match_list | match_tuple))("rseries")
+        | (match_list + plus.suppress() + name + plus.suppress() + match_list)("mseries")
+        | (match_tuple + plus.suppress() + name + plus.suppress() + match_tuple)("mseries")
         | (name + equals.suppress() + match)("assign")
         | (name + lparen.suppress() + matchlist_list + rparen.suppress())("data")
         | name("var")
