@@ -1946,9 +1946,9 @@ class processor(object):
     matchlist_set = Group(Optional(match_const + ZeroOrMore(comma.suppress() + match_const) + Optional(comma.suppress())))
     match_pair = Group(match_const + colon.suppress() + match)
     matchlist_dict = Group(Optional(match_pair + ZeroOrMore(comma.suppress() + match_pair) + Optional(comma.suppress())))
-    match_list = Group(lbrack + matchlist_list + rbrack.suppress())
-    match_tuple = Group(lparen + matchlist_tuple + rparen.suppress())
-    match_lazy = Group(lbanana + matchlist_list + rbanana.suppress())
+    match_list = lbrack + matchlist_list + rbrack.suppress()
+    match_tuple = lparen + matchlist_tuple + rparen.suppress()
+    match_lazy = lbanana + matchlist_list + rbanana.suppress()
     base_match = Group(
         (match_const)("const")
         | (lparen.suppress() + match + rparen.suppress())("paren")
