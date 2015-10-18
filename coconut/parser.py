@@ -1974,9 +1974,9 @@ class processor(object):
         | (lparen.suppress() + match + rparen.suppress())("paren")
         | (lbrace.suppress() + matchlist_dict + rbrace.suppress())("dict")
         | (Optional(set_s.suppress()) + lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
-        | ((match_list | match_tuple) + Optional(plus.suppress() + name))("series")
-        | match_lazy("iter")
         | ((match_list | match_tuple | match_lazy) + dubcolon.suppress() + name)("iter")
+        | match_lazy("iter")
+        | ((match_list | match_tuple) + Optional(plus.suppress() + name))("series")
         | (name + plus.suppress() + (match_list | match_tuple))("rseries")
         | (match_list + plus.suppress() + name + plus.suppress() + match_list)("mseries")
         | (match_tuple + plus.suppress() + name + plus.suppress() + match_tuple)("mseries")
@@ -2083,12 +2083,12 @@ class processor(object):
                           | datadef
                           | decorated
                           | async_stmt
+                          | math_funcdef
                           | math_match_funcdef
                           | match_assign_stmt
                           , "compound_stmt")
     expr_stmt = trace(addspace(
-                      math_funcdef
-                      | attach(simple_assign + augassign + (yield_expr | testlist), assign_proc)
+                      attach(simple_assign + augassign + (yield_expr | testlist), assign_proc)
                       | ZeroOrMore(assignlist + equals) + (yield_expr | testlist)
                       ), "expr_stmt")
 
