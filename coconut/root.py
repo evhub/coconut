@@ -17,14 +17,11 @@ Description: The Coconut root.
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
 try:
-    from future_builtins import *
-except ImportError:
-    pass
-
-try:
     import readline
 except ImportError:
     pass
+
+import sys
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
@@ -41,40 +38,28 @@ ENCODING = "UTF-8"
 # SETUP:
 #-----------------------------------------------------------------------------------------------------------------------
 
-try:
-    xrange
-except NameError:
-    pass
-else:
+if sys.version < (3,):
+
+    from future_builtins import *
     range = xrange
 
-try:
-    ascii
-except NameError:
-    ascii = repr
+    py2_int = int
+    class metaint(type):
+        def __instancecheck__(cls, inst):
+            return isinstance(inst, (py2_int, long))
+    class int(py2_int):
+        """Python 3 int."""
+        __metaclass__ = metaint
 
-try:
-    unichr
-except NameError:
-    pass
-else:
     chr = unichr
-
-try:
-    unicode
-except NameError:
-    pass
-else:
     bytes, str = str, unicode
-    __print = print
-    def print(*args, **kwargs):
-        return __print(*(str(x).encode(ENCODING) for x in args), **kwargs)
 
-try:
-    raw_input
-except NameError:
-    pass
-else:
-    __input = raw_input
+    py2_print = print
+    def print(*args, **kwargs):
+        """Python 3 print."""
+        return py2_print(*(str(x).encode(ENCODING) for x in args), **kwargs)
+
+    py2_input = raw_input
     def input(*args, **kwargs):
-        return __input(*args, **kwargs).decode(ENCODING)
+        """Python 3 input."""
+        return py2_input(*args, **kwargs).decode(ENCODING)

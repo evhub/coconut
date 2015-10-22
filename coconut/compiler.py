@@ -21,7 +21,6 @@ from . import parser
 import codecs
 import os
 import os.path
-import sys
 import traceback
 import argparse
 
