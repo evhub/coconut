@@ -67,8 +67,8 @@ if _coconut_sys.version_info < (3,):
         """Python 3 int."""
         __metaclass__ = _coconut_metaint
     py2_chr, chr = chr, unichr
-    _coconut_encoding = "'''+ENCODING+r'''"
     bytes, str = str, unicode
+    _coconut_encoding = "'''+ENCODING+r'''"
     py2_print = print
     _coconut_print = print
     def print(*args, **kwargs):
@@ -95,8 +95,8 @@ class int(_coconut_int):
     """Python 3 int."""
     __metaclass__ = _coconut_metaint
 py2_chr, chr = chr, unichr
-_coconut_encoding = "'''+ENCODING+r'''"
 bytes, str = str, unicode
+_coconut_encoding = "'''+ENCODING+r'''"
 py2_print = print
 _coconut_print = print
 def print(*args, **kwargs):
