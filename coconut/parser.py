@@ -47,7 +47,7 @@ def headers(which, version=None):
 '''
     else:
         header = ""
-    if which != "initial:
+    if which != "initial":
         header = r'''# Coconut Header: --------------------------------------------------------------
 '''
         if version is None:
