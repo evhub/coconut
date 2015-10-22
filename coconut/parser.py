@@ -54,7 +54,7 @@ def headers(which, version=None):
             header += r'''
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 import sys as _coconut_sys
-if _coconut_sys.version < (3,):
+if _coconut_sys.version_info < (3,):
     py2_ascii, py2_filter, py2_hex, py2_map, py2_oct, py2_zip = ascii, filter, hex, map, oct, zip
     from future_builtins import *
     py2_range, range = range, xrange

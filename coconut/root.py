@@ -38,7 +38,7 @@ ENCODING = "UTF-8"
 # SETUP:
 #-----------------------------------------------------------------------------------------------------------------------
 
-if sys.version < (3,):
+if sys.version_info < (3,):
 
     from future_builtins import *
     range = xrange
