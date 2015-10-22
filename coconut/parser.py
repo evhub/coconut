@@ -50,91 +50,152 @@ def headers(which, version=None):
     if which != "initial:
         header = r'''# Coconut Header: --------------------------------------------------------------
 '''
-        if version == "3":
+        if version is None:
             header += r'''
-try: __coconut__
-except NameError:
+from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
+import sys as _coconut_sys
+if _coconut_sys.version < (3,):
+    py2_ascii, py2_filter, py2_hex, py2_map, py2_oct, py2_zip = ascii, filter, hex, map, oct, zip
+    from future_builtins import *
+    py2_range, range = range, xrange
+    py2_int = int
+    _coconut_int, _coconut_long = int, long
+    class _coconut_metaint(type):
+        def __instancecheck__(cls, inst):
+            return isinstance(inst, (_coconut_int, _coconut_long))
+    class int(_coconut_int):
+        """Python 3 int."""
+        __metaclass__ = _coconut_metaint
+    py2_chr, chr = chr, unichr
+    _coconut_encoding = "'''+ENCODING+r'''"
+    bytes, str = str, unicode
+    py2_print = print
+    _coconut_print = print
+    def print(*args, **kwargs):
+        """Python 3 print."""
+        return _coconut_print(*(str(x).encode(_coconut_encoding) for x in args), **kwargs)
+    py2_input = raw_input
+    _coconut_input = raw_input
+    def input(*args, **kwargs):
+        """Python 3 input."""
+        return _coconut_input(*args, **kwargs).decode(_coconut_encoding)
 '''
         elif version == "2":
             header += r'''
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
-try: __coconut__
-except NameError:
-    from future_builtins import *
-    py2_range = range
-    range = xrange
-    py2_int = int
-    class _coconut_metaint(type):
-        def __instancecheck__(cls, inst):
-            return isinstance(inst, (py2_int, long))
-    class int(py2_int):
-        """Wraps py2_int and long."""
-        __metaclass__ = _coconut_metaint
-    py2_chr = chr
-    chr = unichr
-    _coconut_encoding = "'''+ENCODING+r'''"
-    bytes, str = str, unicode
-    py2_print = print
-    def print(*args, **kwargs):
-        """Wraps py2_print."""
-        return py2_print(*(str(x).encode(_coconut_encoding) for x in args), **kwargs)
-    py2_input = raw_input
-    def input(*args, **kwargs):
-        """Wraps py2_input."""
-        return py2_input(*args, **kwargs).decode(_coconut_encoding)
-'''
-        else:
-            header += r'''
-from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
-try: __coconut__
-except NameError:
-    import sys as _coconut_sys
-    if sys.version < (3,):
-        from future_builtins import *
-        py2_range = range
-        range = xrange
-        py2_int = int
-        class _coconut_metaint(type):
-            def __instancecheck__(cls, inst):
-                return isinstance(inst, (py2_int, long))
-        class int(py2_int):
-            """Wraps py2_int and long."""
-            __metaclass__ = _coconut_metaint
-        py2_chr = chr
-        chr = unichr
-        _coconut_encoding = "'''+ENCODING+r'''"
-        bytes, str = str, unicode
-        py2_print = print
-        def print(*args, **kwargs):
-            """Wraps py2_print."""
-            return py2_print(*(str(x).encode(_coconut_encoding) for x in args), **kwargs)
-        py2_input = raw_input
-        def input(*args, **kwargs):
-            """Wraps py2_input."""
-            return py2_input(*args, **kwargs).decode(_coconut_encoding)
+py2_ascii, py2_filter, py2_hex, py2_map, py2_oct, py2_zip = ascii, filter, hex, map, oct, zip
+from future_builtins import *
+py2_range, range = range, xrange
+py2_int = int
+_coconut_int, _coconut_long = int, long
+class _coconut_metaint(type):
+    def __instancecheck__(cls, inst):
+        return isinstance(inst, (_coconut_int, _coconut_long))
+class int(_coconut_int):
+    """Python 3 int."""
+    __metaclass__ = _coconut_metaint
+py2_chr, chr = chr, unichr
+_coconut_encoding = "'''+ENCODING+r'''"
+bytes, str = str, unicode
+py2_print = print
+_coconut_print = print
+def print(*args, **kwargs):
+    """Python 3 print."""
+    return _coconut_print(*(str(x).encode(_coconut_encoding) for x in args), **kwargs)
+py2_input = raw_input
+_coconut_input = raw_input
+def input(*args, **kwargs):
+    """Python 3 input."""
+    return _coconut_input(*args, **kwargs).decode(_coconut_encoding)
 '''
         if which == "package":
             header += r'''
-    version = "'''+VERSION+r'''"
+version = "'''+VERSION+r'''"
 
+import functools
+import operator
+import itertools
+import collections
+'''
+            if version == "2":
+                header += r'''abc = collections
+'''
+            elif version == "3":
+                header += r'''import collections.abc as abc
+'''
+            else:
+                header += r'''try:
+    import collections.abc as abc
+except ImportError:
+    abc = collections
+'''
+            header += r'''
+object = object
+int = int
+set = set
+frozenset = frozenset
+tuple = tuple
+list = list
+len = len
+isinstance = isinstance
+getattr = getattr
+slice = slice
+
+def recursive(func):
+    """Tail recursion optimizer."""
+    state = [True, None] # toplevel, (args, kwargs)
+    recurse = object()
+    @functools.wraps(func)
+    def tailed_func(*args, **kwargs):
+        """Tail Recursion Wrapper."""
+        if state[0]:
+            state[0] = False
+            try:
+                while True:
+                    result = func(*args, **kwargs)
+                    if result is recurse:
+                        args, kwargs = state[1]
+                        state[1] = None
+                    else:
+                        return result
+            finally:
+                state[0] = True
+        else:
+            state[1] = args, kwargs
+            return recurse
+    return tailed_func
+
+class MatchError(Exception):
+    """Pattern-matching error."""
+'''
+        else:
+            if which == "module":
+                header += r'''
+import sys as _coconut_sys
+import os.path as _coconut_os_path
+_coconut_sys.path.append(_coconut_os_path.dirname(_coconut_os_path.abspath(__file__)))
+import __coconut__
+'''
+            elif which == "code" or which == "file":
+                header += r'''
+class __coconut__(object):
+    """Built-in Coconut functions."""
+    version = "'''+VERSION+r'''"
     import functools
     import operator
     import itertools
     import collections
 '''
-            if version == "2":
-                header += r'''    abc = collections
-'''
-            elif version == "3":
-                header += r'''    import collections.abc as abc
-'''
-            else:
-                header += r'''    try:
+                if version == "2":
+                    header += r'''    abc = collections'''
+                elif version == "3":
+                    header += r'''    import collections.abc as abc'''
+                else:
+                    header += r'''    try:
         import collections.abc as abc
     except ImportError:
-        abc = collections
-'''
-            header += r'''
+        abc = collections'''
+                header += r'''
     object = object
     int = int
     set = set
@@ -145,12 +206,12 @@ except NameError:
     isinstance = isinstance
     getattr = getattr
     slice = slice
-
+    @staticmethod
     def recursive(func):
         """Tail recursion optimizer."""
         state = [True, None] # toplevel, (args, kwargs)
         recurse = object()
-        @functools.wraps(func)
+        @__coconut__.functools.wraps(func)
         def tailed_func(*args, **kwargs):
             """Tail Recursion Wrapper."""
             if state[0]:
@@ -169,88 +230,22 @@ except NameError:
                 state[1] = args, kwargs
                 return recurse
         return tailed_func
-
     class MatchError(Exception):
         """Pattern-matching error."""
-'''
-        else:
-            if which == "module":
-                header += r'''
-    import sys as _coconut_sys
-    import os.path as _coconut_os_path
-    _coconut_sys.path.append(_coconut_os_path.dirname(_coconut_os_path.abspath(__file__)))
-    import __coconut__
-'''
-            elif which == "code" or which == "file":
-                header += r'''
-    class __coconut__(object):
-        """Built-in Coconut functions."""
-        version = "'''+VERSION+r'''"
-        import functools
-        import operator
-        import itertools
-        import collections
-'''
-                if version == "2":
-                    header += r'''        abc = collections'''
-                elif version == "3":
-                    header += r'''        import collections.abc as abc'''
-                else:
-                    header += r'''        try:
-            import collections.abc as abc
-        except ImportError:
-            abc = collections'''
-                header += r'''
-        object = object
-        int = int
-        set = set
-        frozenset = frozenset
-        tuple = tuple
-        list = list
-        len = len
-        isinstance = isinstance
-        getattr = getattr
-        slice = slice
-        @staticmethod
-        def recursive(func):
-            """Tail recursion optimizer."""
-            state = [True, None] # toplevel, (args, kwargs)
-            recurse = object()
-            @__coconut__.functools.wraps(func)
-            def tailed_func(*args, **kwargs):
-                """Tail Recursion Wrapper."""
-                if state[0]:
-                    state[0] = False
-                    try:
-                        while True:
-                            result = func(*args, **kwargs)
-                            if result is recurse:
-                                args, kwargs = state[1]
-                                state[1] = None
-                            else:
-                                return result
-                    finally:
-                        state[0] = True
-                else:
-                    state[1] = args, kwargs
-                    return recurse
-            return tailed_func
-        class MatchError(Exception):
-            """Pattern-matching error."""
 '''
             else:
                 raise CoconutException("invalid header type: "+repr(which))
             header += r'''
-    __coconut_version__ = __coconut__.version
-    reduce = __coconut__.functools.reduce
-    itemgetter = __coconut__.operator.itemgetter
-    attrgetter = __coconut__.operator.attrgetter
-    methodcaller = __coconut__.operator.methodcaller
-    takewhile = __coconut__.itertools.takewhile
-    dropwhile = __coconut__.itertools.dropwhile
-    tee = __coconut__.itertools.tee
-    recursive = __coconut__.recursive
-    MatchError = __coconut__.MatchError
+__coconut_version__ = __coconut__.version
+reduce = __coconut__.functools.reduce
+itemgetter = __coconut__.operator.itemgetter
+attrgetter = __coconut__.operator.attrgetter
+methodcaller = __coconut__.operator.methodcaller
+takewhile = __coconut__.itertools.takewhile
+dropwhile = __coconut__.itertools.dropwhile
+tee = __coconut__.itertools.tee
+recursive = __coconut__.recursive
+MatchError = __coconut__.MatchError
 '''
             if which != "code":
                 header += r'''
@@ -1704,7 +1699,7 @@ class processor(object):
     bit_b = Optional(CaselessLiteral("b"))
     raw_r = Optional(CaselessLiteral("r"))
     b_string = Combine((bit_b + raw_r | raw_r + bit_b) + string_ref)
-    unicode_u = CaselessLiteral("u")
+    unicode_u = CaselessLiteral("u").suppress()
     u_string = Combine((unicode_u + raw_r | raw_r + unicode_u) + string_ref)
     u_string_ref = Forward()
     string = b_string | u_string_ref
