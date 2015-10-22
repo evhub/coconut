@@ -57,12 +57,12 @@ else:
 try: long
 except NameError: pass
 else:
+    py2_int = int
     class _coconut_metaint(type):
         def __instancecheck__(cls, inst):
-            return isinstance(inst, (int, long))
-    py2_int = int
+            return isinstance(inst, (py2_int, long))
     class int(py2_int):
-        """Wraps py2_int."""
+        """Wraps py2_int and long."""
         __metaclass__ = _coconut_metaint
 try: unichr
 except NameError: pass
@@ -92,12 +92,12 @@ from __future__ import with_statement, print_function, absolute_import, unicode_
 from future_builtins import *
 py2_range = range
 range = xrange
+py2_int = int
 class _coconut_metaint(type):
     def __instancecheck__(cls, inst):
-        return isinstance(inst, (int, long))
-py2_int = int
+        return isinstance(inst, (py2_int, long))
 class int(py2_int):
-    """Wraps py2_int."""
+    """Wraps py2_int and long."""
     __metaclass__ = _coconut_metaint
 py2_chr = chr
 chr = unichr
