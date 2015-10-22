@@ -26,7 +26,7 @@ from pyparsing import *
 def headers(which, version=None):
     if which == "none":
         return ""
-    elif which == "initial":
+    if which == "initial" or which == "package":
         if version is None:
             header = "#!/usr/bin/env python"
         elif version == "2":
@@ -41,22 +41,28 @@ def headers(which, version=None):
 # Compiled with Coconut version '''+VERSION_STR+'''
 
 '''
+        if which == "package":
+            header += '''"""Built-in Coconut functions."""
+
+'''
     else:
+        header = ""
+    if which != "initial:
         header = r'''# Coconut Header: --------------------------------------------------------------
 '''
-        if version is None:
+        if version == "3":
+            header += r'''
+try: __coconut__
+except NameError:
+'''
+        elif version == "2":
             header += r'''
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
-try: from future_builtins import *
-except ImportError: pass
-try: xrange
-except NameError: pass
-else:
+try: __coconut__
+except NameError:
+    from future_builtins import *
     py2_range = range
     range = xrange
-try: long
-except NameError: pass
-else:
     py2_int = int
     class _coconut_metaint(type):
         def __instancecheck__(cls, inst):
@@ -64,143 +70,71 @@ else:
     class int(py2_int):
         """Wraps py2_int and long."""
         __metaclass__ = _coconut_metaint
-try: unichr
-except NameError: pass
-else:
     py2_chr = chr
     chr = unichr
-_coconut_encoding = "'''+ENCODING+r'''"
-try: unicode
-except NameError: pass
-else:
+    _coconut_encoding = "'''+ENCODING+r'''"
     bytes, str = str, unicode
     py2_print = print
     def print(*args, **kwargs):
         """Wraps py2_print."""
         return py2_print(*(str(x).encode(_coconut_encoding) for x in args), **kwargs)
-try: raw_input
-except NameError: pass
-else:
     py2_input = raw_input
     def input(*args, **kwargs):
         """Wraps py2_input."""
         return py2_input(*args, **kwargs).decode(_coconut_encoding)
 '''
-        elif version == "2":
+        else:
             header += r'''
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
-from future_builtins import *
-py2_range = range
-range = xrange
-py2_int = int
-class _coconut_metaint(type):
-    def __instancecheck__(cls, inst):
-        return isinstance(inst, (py2_int, long))
-class int(py2_int):
-    """Wraps py2_int and long."""
-    __metaclass__ = _coconut_metaint
-py2_chr = chr
-chr = unichr
-_coconut_encoding = "'''+ENCODING+r'''"
-bytes, str = str, unicode
-py2_print = print
-def print(*args, **kwargs):
-    """Wraps py2_print."""
-    return py2_print(*(str(x).encode(_coconut_encoding) for x in args), **kwargs)
-py2_input = raw_input
-def input(*args, **kwargs):
-    """Wraps py2_input."""
-    return py2_input(*args, **kwargs).decode(_coconut_encoding)
+try: __coconut__
+except NameError:
+    import sys as _coconut_sys
+    if sys.version < (3,):
+        from future_builtins import *
+        py2_range = range
+        range = xrange
+        py2_int = int
+        class _coconut_metaint(type):
+            def __instancecheck__(cls, inst):
+                return isinstance(inst, (py2_int, long))
+        class int(py2_int):
+            """Wraps py2_int and long."""
+            __metaclass__ = _coconut_metaint
+        py2_chr = chr
+        chr = unichr
+        _coconut_encoding = "'''+ENCODING+r'''"
+        bytes, str = str, unicode
+        py2_print = print
+        def print(*args, **kwargs):
+            """Wraps py2_print."""
+            return py2_print(*(str(x).encode(_coconut_encoding) for x in args), **kwargs)
+        py2_input = raw_input
+        def input(*args, **kwargs):
+            """Wraps py2_input."""
+            return py2_input(*args, **kwargs).decode(_coconut_encoding)
 '''
         if which == "package":
             header += r'''
-"""Built-in Coconut functions."""
-version = "'''+VERSION+r'''"
-
-import functools
-import operator
-import itertools
-import collections
-'''
-            if version == "2":
-                header += r'''abc = collections
-'''
-            elif version == "3":
-                header += r'''import collections.abc as abc
-'''
-            else:
-                header += r'''try:
-    import collections.abc as abc
-except ImportError:
-    abc = collections
-'''
-            header += r'''
-object = object
-int = int
-set = set
-frozenset = frozenset
-tuple = tuple
-list = list
-len = len
-isinstance = isinstance
-getattr = getattr
-slice = slice
-
-def recursive(func):
-    """Tail recursion optimizer."""
-    state = [True, None] # toplevel, (args, kwargs)
-    recurse = object()
-    @functools.wraps(func)
-    def tailed_func(*args, **kwargs):
-        """Tail Recursion Wrapper."""
-        if state[0]:
-            state[0] = False
-            try:
-                while True:
-                    result = func(*args, **kwargs)
-                    if result is recurse:
-                        args, kwargs = state[1]
-                        state[1] = None
-                    else:
-                        return result
-            finally:
-                state[0] = True
-        else:
-            state[1] = args, kwargs
-            return recurse
-    return tailed_func
-
-class MatchError(Exception):
-    """Pattern-matching error."""
-'''
-        else:
-            if which == "module":
-                header += r'''
-import sys as _coconut_sys
-import os.path as _coconut_os_path
-_coconut_sys.path.append(_coconut_os_path.dirname(_coconut_os_path.abspath(__file__)))
-import __coconut__
-'''
-            elif which == "code" or which == "file":
-                header += r'''
-class __coconut__(object):
-    """Built-in Coconut functions."""
     version = "'''+VERSION+r'''"
+
     import functools
     import operator
     import itertools
     import collections
 '''
-                if version == "2":
-                    header += r'''    abc = collections'''
-                elif version == "3":
-                    header += r'''    import collections.abc as abc'''
-                else:
-                    header += r'''    try:
+            if version == "2":
+                header += r'''    abc = collections
+'''
+            elif version == "3":
+                header += r'''    import collections.abc as abc
+'''
+            else:
+                header += r'''    try:
         import collections.abc as abc
     except ImportError:
-        abc = collections'''
-                header += r'''
+        abc = collections
+'''
+            header += r'''
     object = object
     int = int
     set = set
@@ -211,12 +145,12 @@ class __coconut__(object):
     isinstance = isinstance
     getattr = getattr
     slice = slice
-    @staticmethod
+
     def recursive(func):
         """Tail recursion optimizer."""
         state = [True, None] # toplevel, (args, kwargs)
         recurse = object()
-        @__coconut__.functools.wraps(func)
+        @functools.wraps(func)
         def tailed_func(*args, **kwargs):
             """Tail Recursion Wrapper."""
             if state[0]:
@@ -235,22 +169,88 @@ class __coconut__(object):
                 state[1] = args, kwargs
                 return recurse
         return tailed_func
+
     class MatchError(Exception):
         """Pattern-matching error."""
+'''
+        else:
+            if which == "module":
+                header += r'''
+    import sys as _coconut_sys
+    import os.path as _coconut_os_path
+    _coconut_sys.path.append(_coconut_os_path.dirname(_coconut_os_path.abspath(__file__)))
+    import __coconut__
+'''
+            elif which == "code" or which == "file":
+                header += r'''
+    class __coconut__(object):
+        """Built-in Coconut functions."""
+        version = "'''+VERSION+r'''"
+        import functools
+        import operator
+        import itertools
+        import collections
+'''
+                if version == "2":
+                    header += r'''        abc = collections'''
+                elif version == "3":
+                    header += r'''        import collections.abc as abc'''
+                else:
+                    header += r'''        try:
+            import collections.abc as abc
+        except ImportError:
+            abc = collections'''
+                header += r'''
+        object = object
+        int = int
+        set = set
+        frozenset = frozenset
+        tuple = tuple
+        list = list
+        len = len
+        isinstance = isinstance
+        getattr = getattr
+        slice = slice
+        @staticmethod
+        def recursive(func):
+            """Tail recursion optimizer."""
+            state = [True, None] # toplevel, (args, kwargs)
+            recurse = object()
+            @__coconut__.functools.wraps(func)
+            def tailed_func(*args, **kwargs):
+                """Tail Recursion Wrapper."""
+                if state[0]:
+                    state[0] = False
+                    try:
+                        while True:
+                            result = func(*args, **kwargs)
+                            if result is recurse:
+                                args, kwargs = state[1]
+                                state[1] = None
+                            else:
+                                return result
+                    finally:
+                        state[0] = True
+                else:
+                    state[1] = args, kwargs
+                    return recurse
+            return tailed_func
+        class MatchError(Exception):
+            """Pattern-matching error."""
 '''
             else:
                 raise CoconutException("invalid header type: "+repr(which))
             header += r'''
-__coconut_version__ = __coconut__.version
-reduce = __coconut__.functools.reduce
-itemgetter = __coconut__.operator.itemgetter
-attrgetter = __coconut__.operator.attrgetter
-methodcaller = __coconut__.operator.methodcaller
-takewhile = __coconut__.itertools.takewhile
-dropwhile = __coconut__.itertools.dropwhile
-tee = __coconut__.itertools.tee
-recursive = __coconut__.recursive
-MatchError = __coconut__.MatchError
+    __coconut_version__ = __coconut__.version
+    reduce = __coconut__.functools.reduce
+    itemgetter = __coconut__.operator.itemgetter
+    attrgetter = __coconut__.operator.attrgetter
+    methodcaller = __coconut__.operator.methodcaller
+    takewhile = __coconut__.itertools.takewhile
+    dropwhile = __coconut__.itertools.dropwhile
+    tee = __coconut__.itertools.tee
+    recursive = __coconut__.recursive
+    MatchError = __coconut__.MatchError
 '''
             if which != "code":
                 header += r'''
