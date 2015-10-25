@@ -63,7 +63,6 @@ if _coconut_sys.version_info < (3,):
     class _coconut_metaint(type):
         def __instancecheck__(cls, inst):
             return isinstance(inst, (_coconut_int, _coconut_long))
-
     class int(_coconut_int):
         """Python 3 int."""
         __metaclass__ = _coconut_metaint
@@ -92,7 +91,6 @@ _coconut_int, _coconut_long = int, long
 class _coconut_metaint(type):
     def __instancecheck__(cls, inst):
         return isinstance(inst, (_coconut_int, _coconut_long))
-
 class int(_coconut_int):
     """Python 3 int."""
     __metaclass__ = _coconut_metaint
@@ -199,7 +197,7 @@ class __coconut__(object):
         abc = collections'''
                 header += r'''
     object = object
-    int = int
+    int = staticmethod(int)
     set = set
     frozenset = frozenset
     tuple = tuple
