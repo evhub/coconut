@@ -25,6 +25,4 @@ from tempfile import NamedTemporaryFile
 def execfunc(code, gvars=None, lvars=None):
     codefile = NamedTemporaryFile()
     codefile.write(code)
-    codefilename = codefile.name
-    codefile.close()
-    return execfile(codefilename, gvars, lvars)
+    return execfile(codefile.name, gvars, lvars)
