@@ -10,9 +10,14 @@ License: Apache 2.0
 Description: The Python 3 exec function in Python 3.
 """
 
+from .root import *
+
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTION:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def execfunc(code, gvars=None, lvars=None):
+def execfunc(code, gvars, lvars):
+    """Wraps exec."""
     return exec(compile(code, "<string>", "exec"), gvars, lvars)
+
+execheader = execfunc

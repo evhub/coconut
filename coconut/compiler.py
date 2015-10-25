@@ -17,32 +17,20 @@ Description: The Coconut CLI.
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
 from .root import *
+if PY2:
+    from .py2_exec import *
+else:
+    from .py3_exec import *
 from . import parser
-import codecs
-import os
-import os.path
 import traceback
 import argparse
 import ast
+import os
+import os.path
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
-
-def openfile(filename, opentype="r+b"):
-    """Returns an open file object."""
-    return codecs.open(filename, opentype, encoding=ENCODING)
-
-def writefile(openedfile, writer):
-    """Sets the contents of a file."""
-    openedfile.seek(0)
-    openedfile.truncate()
-    openedfile.write(writer)
-
-def readfile(openedfile):
-    """Reads the contents of a file."""
-    openedfile.seek(0)
-    return str(openedfile.read())
 
 def fixpath(path):
     """Properly formats a path."""
@@ -68,10 +56,13 @@ class executor(object):
             for k,v in extras.items():
                 self.gvars[k] = v
         self.lvars = {}
-    def run(self, code, err=False):
+    def run(self, code, err=False, header=False):
         """Executes Python code."""
         try:
-            execfunc(code, self.gvars, self.lvars)
+            if header:
+                execheader(code, self.gvars, self.lvars)
+            else:
+                execfunc(code, self.gvars, self.lvars)
         except Exception:
             if err:
                 raise
