@@ -58,6 +58,7 @@ class executor(object):
         self.lvars = {}
     def run(self, code, err=False, header=False):
         """Executes Python code."""
+        print(code)
         try:
             if header:
                 execheader(code, self.gvars, self.lvars)

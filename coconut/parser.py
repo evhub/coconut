@@ -197,7 +197,7 @@ class __coconut__(object):
         abc = collections'''
                 header += r'''
     object = object
-    int = staticmethod(int)
+    int = int
     set = set
     frozenset = frozenset
     tuple = tuple
