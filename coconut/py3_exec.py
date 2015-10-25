@@ -19,5 +19,3 @@ from .root import *
 def execfunc(code, gvars, lvars):
     """Wraps exec."""
     return exec(compile(code, "<string>", "exec"), gvars, lvars)
-
-execheader = execfunc

@@ -42,26 +42,22 @@ PY2 = sys.version_info < (3,)
 #-----------------------------------------------------------------------------------------------------------------------
 
 if PY2:
-
+   py2_filter, py2_hex, py2_map, py2_oct, py2_zip = filter, hex, map, oct, zip
     from future_builtins import *
-    range = xrange
-
+    py2_range, range = range, xrange
     py2_int = int
-    class metaint(type):
+    class _coconut_metaint(type):
         def __instancecheck__(cls, inst):
             return isinstance(inst, (py2_int, long))
     class int(py2_int):
         """Python 3 int."""
-        __metaclass__ = metaint
-
-    chr = unichr
+        __metaclass__ = _coconut_metaint
+    py2_chr, chr = chr, unichr
     bytes, str = str, unicode
-
     py2_print = print
     def print(*args, **kwargs):
         """Python 3 print."""
         return py2_print(*(str(x).encode(ENCODING) for x in args), **kwargs)
-
     py2_input = raw_input
     def input(*args, **kwargs):
         """Python 3 input."""

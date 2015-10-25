@@ -24,9 +24,9 @@ import traceback
 import argparse
 import ast
 if PY2:
-    from .py2_exec import execfunc, execheader
+    from .py2_exec import execfunc
 else:
-    from .py3_exec import execfunc, execheader
+    from .py3_exec import execfunc
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -56,13 +56,10 @@ class executor(object):
             for k,v in extras.items():
                 self.gvars[k] = v
         self.lvars = {}
-    def run(self, code, err=False, header=False):
+    def run(self, code, err=False):
         """Executes Python code."""
         try:
-            if header:
-                execheader(code, self.gvars, self.lvars)
-            else:
-                execfunc(code, self.gvars, self.lvars)
+            execfunc(code, self.gvars, self.lvars)
         except Exception:
             if err:
                 raise
@@ -385,9 +382,33 @@ class cli(object):
     def start_runner(self):
         """Starts the runner."""
         sys.path.append(os.getcwd())
-        self.runner = executor({
-            "_coconut_compiler": self,
-            "_coconut_parser": self.processor,
+        extras = {
             "exit": self.exit
-            })
-        self.runner.run(parser.headers("code", "2" if PY2 else "3"), header=True)
+            }
+        if PY2:
+            extras.update({
+                "py2_filter": py2_filter,
+                "py2_hex": py2_hex,
+                "py2_map": py2_map,
+                "py2_oct": py2_oct,
+                "py2_zip": py2_zip,
+                "filter": filter,
+                "hex": hex,
+                "map": map,
+                "oct": oct,
+                "zip": zip,
+                "py2_range": py2_range,
+                "range": range,
+                "py2_int": py2_int,
+                "int": int,
+                "py2_chr": py2_chr,
+                "chr": chr,
+                "bytes": bytes,
+                "str": str,
+                "py2_print": py2_print,
+                "print": print,
+                "py2_Input": py2_Input,
+                "input": input
+                })
+        self.runner = executor(extras)
+        self.runner.run(parser.headers("code", "2" if PY2 else "3"))
