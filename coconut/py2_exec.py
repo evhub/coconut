@@ -38,9 +38,8 @@ def execheader(code, gvars, lvars):
         filename = basefilename + "_" + i
         i += 1
     try:
-        codefile = openfile(filename)
-        writefile(codefile, code)
-        execfile(filename, gvars, lvars)
+        with openfile(filename) as codefile:
+            writefile(codefile, code)
+            execfile(filename, gvars, lvars)
     finally:
-        codefile.close()
         os.remove(filename)
