@@ -23,6 +23,7 @@ import os
 import os.path
 import traceback
 import argparse
+import ast
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -72,8 +73,10 @@ class executor(object):
         _coconut_locals = locals().copy()
         for __k, __v in _coconut_executor.variables.items():
             globals()[__k] = __v
+        _coconut_stmts = map(lambda __c: ast.Module([__c]), ast.parse(_coconut_code).body)
         try:
-            exec(_coconut_code)
+            for __c in _coconut_stmts:
+                exec(compile(__c, "<string>", "exec"))
         except Exception:
             if _coconut_error:
                 raise
