@@ -407,7 +407,7 @@ class cli(object):
                 "str": str,
                 "py2_print": py2_print,
                 "print": print,
-                "py2_Input": py2_Input,
+                "py2_input": py2_input,
                 "input": input
                 })
         self.runner = executor(extras)
