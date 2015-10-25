@@ -27,7 +27,7 @@ import sys
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-VERSION = "0.3.2"
+VERSION = "0.3.3-dev"
 VERSION_NAME = "Kopyor"
 
 VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
