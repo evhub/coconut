@@ -401,4 +401,4 @@ class cli(object):
             "_coconut_parser": self.processor,
             "exit": self.exit
             })
-        self.runner.run(parser.headers("code", self.processor.version))
+        self.runner.run(parser.headers("code", "2" if PY2 else "3"))
