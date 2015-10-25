@@ -50,7 +50,12 @@ def headers(which, version=None):
     if which != "initial":
         header = r'''# Coconut Header: --------------------------------------------------------------
 '''
-        if version is None:
+        if which == "code":
+            if version != "3":
+                header += r'''
+from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
+'''
+        elif version is None:
             header += r'''
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 import sys as _coconut_sys

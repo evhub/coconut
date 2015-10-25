@@ -17,16 +17,16 @@ Description: The Coconut CLI.
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
 from .root import *
-if PY2:
-    from .py2_exec import *
-else:
-    from .py3_exec import *
 from . import parser
+import os
+import os.path
 import traceback
 import argparse
 import ast
-import os
-import os.path
+if PY2:
+    from .py2_exec import execfunc, execheader
+else:
+    from .py3_exec import execfunc, execheader
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -58,7 +58,6 @@ class executor(object):
         self.lvars = {}
     def run(self, code, err=False, header=False):
         """Executes Python code."""
-        print(code)
         try:
             if header:
                 execheader(code, self.gvars, self.lvars)
@@ -391,4 +390,4 @@ class cli(object):
             "_coconut_parser": self.processor,
             "exit": self.exit
             })
-        self.runner.run(parser.headers("code", "2" if PY2 else "3"))
+        self.runner.run(parser.headers("code", "2" if PY2 else "3"), header=True)
