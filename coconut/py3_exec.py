@@ -14,4 +14,5 @@ Description: The Python 3 exec function in Python 3.
 # FUNCTION:
 #-----------------------------------------------------------------------------------------------------------------------
 
-execfunc = exec
+def execfunc(code, gvars=None, lvars=None):
+    return exec(compile(code, "<string>", "exec"), gvars, lvars)

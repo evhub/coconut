@@ -16,16 +16,11 @@ Description: The Python 3 exec function in Python 2.
 
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
+from StringIO import StringIO
+
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTION:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def execfunc(object, globals=None, locals=None):
-    if globals is None and locals is None:
-        exec object
-    elif locals is None:
-        exec object in globals
-    elif globals is None:
-        exec object in locals
-    else:
-        exec object in globals, locals
+def execfunc(code, gvars=None, lvars=None):
+    return execfile(StringIO(code), gvars, lvars)

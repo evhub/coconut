@@ -71,9 +71,7 @@ class executor(object):
     def run(self, code, err=False):
         """Executes Python code."""
         try:
-            for stmt in ast.parse(code).body:
-                stmt_code = ast.Module([stmt])
-                execfunc(compile(stmt_code, "<string>", "exec"), self.gvars, self.lvars)
+            execfunc(code, self.gvars, self.lvars)
         except Exception:
             if err:
                 raise
