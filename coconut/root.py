@@ -42,7 +42,7 @@ PY2 = sys.version_info < (3,)
 #-----------------------------------------------------------------------------------------------------------------------
 
 if PY2:
-   py2_filter, py2_hex, py2_map, py2_oct, py2_zip = filter, hex, map, oct, zip
+    py2_filter, py2_hex, py2_map, py2_oct, py2_zip = filter, hex, map, oct, zip
     from future_builtins import *
     py2_range, range = range, xrange
     py2_int = int
