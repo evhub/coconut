@@ -2127,9 +2127,9 @@ class processor(object):
     suite <<= trace(condense(colon + nocolon_suite) | addspace(colon + simple_stmt), "suite")
     line = trace(newline | stmt, "line")
 
-    single_input = trace(Optional(line), "single_input")
+    single_input = trace(condense(Optional(line) + ZeroOrMore(newline)), "single_input")
     file_input = trace(condense(ZeroOrMore(line)), "file_input")
-    eval_input = trace(condense(testlist + Optional(newline)), "eval_input")
+    eval_input = trace(condense(testlist + ZeroOrMore(newline)), "eval_input")
 
     single_parser = condense(startmarker + single_input + endmarker)
     file_parser = condense(startmarker + file_input + endmarker)
