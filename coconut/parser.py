@@ -625,7 +625,7 @@ def assign_proc(tokens):
 def func_proc(tokens):
     """Processes mathematical function definitons."""
     if len(tokens) == 2:
-        return "def "+tokens[0]+": return "+tokens[1]
+        return "def " + tokens[0] + ": return " + tokens[1]
     else:
         raise CoconutException("invalid mathematical function definition tokens: "+repr(tokens))
 
@@ -1716,26 +1716,27 @@ class processor(object):
     indent = Literal(openstr)
     dedent = Literal(closestr)
 
-    augassign = (Combine(pipeline + equals)
-                 | Combine(starpipe + equals)
-                 | Combine(backpipe + equals)
-                 | Combine(backstarpipe + equals)
-                 | Combine(dotdot + equals)
-                 | Combine(dubcolon + equals)
-                 | Combine(div_dubslash + equals)
-                 | Combine(div_slash + equals)
-                 | Combine(exp_dubstar + equals)
-                 | Combine(mul_star + equals)
-                 | Combine(plus + equals)
-                 | Combine(sub_minus + equals)
-                 | Combine(percent + equals)
-                 | Combine(amp + equals)
-                 | Combine(bar + equals)
-                 | Combine(caret + equals)
-                 | Combine(lshift + equals)
-                 | Combine(rshift + equals)
-                 | Combine(matrix_at_ref + equals)
-                 )
+    augassign = (
+        Combine(pipeline + equals)
+        | Combine(starpipe + equals)
+        | Combine(backpipe + equals)
+        | Combine(backstarpipe + equals)
+        | Combine(dotdot + equals)
+        | Combine(dubcolon + equals)
+        | Combine(div_dubslash + equals)
+        | Combine(div_slash + equals)
+        | Combine(exp_dubstar + equals)
+        | Combine(mul_star + equals)
+        | Combine(plus + equals)
+        | Combine(sub_minus + equals)
+        | Combine(percent + equals)
+        | Combine(amp + equals)
+        | Combine(bar + equals)
+        | Combine(caret + equals)
+        | Combine(lshift + equals)
+        | Combine(rshift + equals)
+        | Combine(matrix_at_ref + equals)
+        )
 
     comp_op = (le | ge | ne | lt | gt | eq
                | addspace(Keyword("not") + Keyword("in"))
@@ -1852,16 +1853,17 @@ class processor(object):
     sliceopgroup = colon.suppress() + slicetestgroup
     subscriptgroup = Group(slicetestgroup + sliceopgroup + Optional(sliceopgroup) | test)
     simple_trailer = condense(lbrack + subscriptlist + rbrack) | condense(dot + name)
-    trailer = (Group(condense(dollar + lparen) + callargslist + rparen.suppress())
-               | condense(lparen + callargslist + rparen)
-               | Group(dotdot + func_atom)
-               | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())
-               | Group(condense(dollar + lbrack + rbrack))
-               | Group(dollar)
-               | simple_trailer
-               | Group(condense(lbrack + rbrack))
-               | Group(dot)
-               )
+    trailer = (
+        Group(condense(dollar + lparen) + callargslist + rparen.suppress())
+        | condense(lparen + callargslist + rparen)
+        | Group(dotdot + func_atom)
+        | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())
+        | Group(condense(dollar + lbrack + rbrack))
+        | Group(dollar)
+        | simple_trailer
+        | Group(condense(lbrack + rbrack))
+        | Group(dot)
+        )
 
     assignlist = Forward()
     star_assign_item_ref = Forward()
@@ -2053,9 +2055,8 @@ class processor(object):
     return_typedef = addspace(arrow + test)
     base_funcdef = addspace((op_funcdef | name_funcdef) + Optional(return_typedef_ref))
     funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
-    math_funcdef = attach(Keyword("def").suppress() + base_funcdef + equals.suppress() + (yield_expr | testlist), func_proc)
-    math_funcdef_block = math_funcdef + newline
-    async_funcdef = addspace(Keyword("async") + (funcdef | math_funcdef_block))
+    math_funcdef = attach(Keyword("def").suppress() + base_funcdef + equals.suppress() + (yield_expr | testlist), func_proc) + newline
+    async_funcdef = addspace(Keyword("async") + (funcdef | math_funcdef))
     async_block = addspace(Keyword("async") + (with_stmt | for_stmt))
 
     async_match_funcdef_ref = Forward()
@@ -2064,40 +2065,54 @@ class processor(object):
     name_match_funcdef = attach(name + lparen.suppress() + matchlist_list + rparen.suppress(), name_match_funcdef_proc)
     base_match_funcdef = Keyword("def").suppress() + (op_match_funcdef | name_match_funcdef)
     full_match_funcdef = trace(attach(base_match_funcdef + match_suite, full_match_funcdef_proc), "base_match_funcdef")
-    math_match_funcdef = attach(Optional(Keyword("match").suppress()) + base_match_funcdef + equals.suppress() + (yield_expr | testlist), match_func_proc)
-    math_match_funcdef_block = math_match_funcdef + newline
+    math_match_funcdef = attach(
+        Optional(Keyword("match").suppress()) + base_match_funcdef + equals.suppress() + (yield_expr | testlist)
+        , match_func_proc) + newline
     match_funcdef = Optional(Keyword("match").suppress()) + full_match_funcdef
-    async_match_funcdef = addspace((Optional(Keyword("match")).suppress() + Keyword("async") | Keyword("async") + Optional(Keyword("match")).suppress()) + (full_match_funcdef | math_match_funcdef_block))
+    async_match_funcdef = addspace(
+        (Optional(Keyword("match")).suppress() + Keyword("async") | Keyword("async") + Optional(Keyword("match")).suppress())
+        + (full_match_funcdef | math_match_funcdef))
     async_stmt = async_block_ref | async_funcdef_ref | async_match_funcdef
 
     data_args = Optional(lparen.suppress() + Optional(itemlist(~underscore + name, comma)) + rparen.suppress())
     datadef = condense(attach(Keyword("data").suppress() + name + data_args, data_proc) + suite)
 
     decorators = attach(OneOrMore(at.suppress() + test + newline.suppress()), decorator_proc)
-    decorated = condense(decorators + (classdef | datadef| funcdef | match_funcdef | async_funcdef_ref | async_match_funcdef_ref | math_funcdef_block | math_match_funcdef_block))
+    decorated = condense(decorators + (
+        classdef
+        | datadef
+        | funcdef
+        | match_funcdef
+        | async_funcdef_ref
+        | async_match_funcdef_ref
+        | math_funcdef
+        | math_match_funcdef
+        ))
 
     passthrough_stmt = condense(passthrough_block + (nocolon_suite | newline))
 
-    simple_compound_stmt <<= (if_stmt
-                              | try_stmt
-                              | case_stmt
-                              | match_stmt
-                              | passthrough_stmt
-                              )
-    compound_stmt = trace(simple_compound_stmt
-                          | with_stmt
-                          | while_stmt
-                          | for_stmt
-                          | funcdef
-                          | match_funcdef
-                          | classdef
-                          | datadef
-                          | decorated
-                          | async_stmt
-                          | math_funcdef
-                          | math_match_funcdef
-                          | match_assign_stmt
-                          , "compound_stmt")
+    simple_compound_stmt <<= (
+        if_stmt
+        | try_stmt
+        | case_stmt
+        | match_stmt
+        | passthrough_stmt
+        )
+    compound_stmt = trace(
+        simple_compound_stmt
+        | with_stmt
+        | while_stmt
+        | for_stmt
+        | funcdef
+        | match_funcdef
+        | classdef
+        | datadef
+        | decorated
+        | async_stmt
+        | math_funcdef
+        | math_match_funcdef
+        | match_assign_stmt
+        , "compound_stmt")
     expr_stmt = trace(addspace(
                       attach(simple_assign + augassign + (yield_expr | testlist), assign_proc)
                       | ZeroOrMore(assignlist + equals) + (yield_expr | testlist)
