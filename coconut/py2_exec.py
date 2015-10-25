@@ -16,8 +16,6 @@ Description: The Python 3 exec function in Python 2.
 
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
-from .root import *
-
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTION:
 #-----------------------------------------------------------------------------------------------------------------------

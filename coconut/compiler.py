@@ -18,19 +18,30 @@ from __future__ import with_statement, print_function, absolute_import, unicode_
 
 from .root import *
 from . import parser
+import codecs
+import traceback
 import os
 import os.path
-import traceback
 import argparse
-import ast
-if PY2:
-    from .py2_exec import execfunc
-else:
-    from .py3_exec import execfunc
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
+
+def openfile(filename, opentype="r+b"):
+    """Returns an open file object."""
+    return codecs.open(filename, opentype, encoding=ENCODING)
+
+def writefile(openedfile, writer):
+    """Sets the contents of a file."""
+    openedfile.seek(0)
+    openedfile.truncate()
+    openedfile.write(writer)
+
+def readfile(openedfile):
+    """Reads the contents of a file."""
+    openedfile.seek(0)
+    return str(openedfile.read())
 
 def fixpath(path):
     """Properly formats a path."""

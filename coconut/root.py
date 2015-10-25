@@ -22,7 +22,6 @@ except ImportError:
     pass
 
 import sys
-import codecs
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
@@ -62,23 +61,6 @@ if PY2:
     def input(*args, **kwargs):
         """Python 3 input."""
         return py2_input(*args, **kwargs).decode(ENCODING)
-
-#-----------------------------------------------------------------------------------------------------------------------
-# UTILITIES:
-#-----------------------------------------------------------------------------------------------------------------------
-
-def openfile(filename, opentype="r+b"):
-    """Returns an open file object."""
-    return codecs.open(filename, opentype, encoding=ENCODING)
-
-def writefile(openedfile, writer):
-    """Sets the contents of a file."""
-    openedfile.seek(0)
-    openedfile.truncate()
-    openedfile.write(writer)
-
-def readfile(openedfile):
-    """Reads the contents of a file."""
-    openedfile.seek(0)
-    return str(openedfile.read())
-
+    from py2_exec import execfunc
+else:
+    from py3_exec import execfunc
