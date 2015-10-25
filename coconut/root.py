@@ -34,11 +34,13 @@ VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
 
 ENCODING = "UTF-8"
 
+PY2 = sys.version_info < (3,)
+
 #-----------------------------------------------------------------------------------------------------------------------
 # SETUP:
 #-----------------------------------------------------------------------------------------------------------------------
 
-if sys.version_info < (3,):
+if PY2:
 
     from future_builtins import *
     range = xrange
@@ -63,3 +65,9 @@ if sys.version_info < (3,):
     def input(*args, **kwargs):
         """Python 3 input."""
         return py2_input(*args, **kwargs).decode(ENCODING)
+
+    from .py2_exec import execfunc
+
+else:
+
+    from .py3_exec import execfunc

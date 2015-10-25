@@ -63,42 +63,22 @@ class executor(object):
     """Compiled Python executor."""
     def __init__(self, extras=None):
         """Creates the executor."""
-        self.variables = {}
+        self.gvars = {}
         if extras is not None:
             for k,v in extras.items():
-                self.variables[k] = v
-    def run(_coconut_executor, _coconut_code, _coconut_error=False):
+                self.gvars[k] = v
+        self.lvars = {}
+    def run(self, code, err=False):
         """Executes Python code."""
-        _coconut_globals = globals().copy()
-        _coconut_locals = locals().copy()
-        for __k, __v in _coconut_executor.variables.items():
-            globals()[__k] = __v
-        _coconut_stmts = map(lambda __c: ast.Module([__c]), ast.parse(_coconut_code).body)
         try:
-            for __c in _coconut_stmts:
-                exec(compile(__c, "<string>", "exec"))
+            for stmt in ast.parse(code).body:
+                stmt_code = ast.Module([stmt])
+                execfunc(compile(stmt_code, "<string>", "exec"), self.gvars, self.lvars)
         except Exception:
-            if _coconut_error:
+            if err:
                 raise
             else:
                 traceback.print_exc()
-        _coconut_overrides = {}
-        for __k, __v in list(globals().items()):
-            if __k in _coconut_executor.variables:
-                _coconut_executor.variables[__k] = __v
-                del globals()[__k]
-            elif __k not in _coconut_globals:
-                _coconut_overrides[__k] = __v
-                del globals()[__k]
-        for __k, __v in locals().items():
-            if __k in _coconut_executor.variables:
-                _coconut_executor.variables[__k] = __v
-            elif __k not in _coconut_locals:
-                _coconut_executor.variables[__k] = __v
-        for __k, __v in _coconut_overrides.items():
-            _coconut_executor.variables[__k] = __v
-        for __k, __v in _coconut_globals.items():
-            globals()[__k] = __v
 
 class terminal(object):
     """Manages printing and reading data to the console."""
