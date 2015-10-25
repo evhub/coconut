@@ -28,7 +28,7 @@ import sys
 #-----------------------------------------------------------------------------------------------------------------------
 
 VERSION = "0.3.2-dev"
-VERSION_NAME = "Jawz"
+VERSION_NAME = "Kopyor"
 
 VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
 
