@@ -42,4 +42,5 @@ def execheader(code, gvars, lvars):
             writefile(codefile, code)
             execfile(filename, gvars, lvars)
     finally:
-        os.remove(filename)
+        if os.path.isfile(filename):
+            os.remove(filename)
