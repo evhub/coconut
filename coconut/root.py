@@ -61,6 +61,6 @@ if PY2:
     def input(*args, **kwargs):
         """Python 3 input."""
         return py2_input(*args, **kwargs).decode(ENCODING)
-    from py2_exec import execfunc
+    from .py2_exec import execfunc
 else:
-    from py3_exec import execfunc
+    from .py3_exec import execfunc
