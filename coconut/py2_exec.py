@@ -38,7 +38,7 @@ def execheader(code, gvars, lvars):
         filename = basefilename + "_" + i
         i += 1
     try:
-        with openfile(filename) as codefile:
+        with openfile(filename, "w+") as codefile:
             writefile(codefile, code)
             execfile(filename, gvars, lvars)
     finally:
