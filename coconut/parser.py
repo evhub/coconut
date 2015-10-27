@@ -282,6 +282,7 @@ match_check_var = "_coconut_match_check"
 match_iter_var = "_coconut_match_iter"
 match_err_var = "_coconut_match_err"
 lazy_item_var = "_coconut_lazy_item"
+lazy_chain_var = "_coconut_lazy_chain"
 wildcard = "_"
 keywords = ["and",
             "as",
@@ -597,30 +598,6 @@ def lambdef_proc(tokens):
         return "lambda "+tokens[0]+": "+tokens[1]
     else:
         raise CoconutException("invalid lambda tokens: "+repr(tokens))
-
-def assign_proc(tokens):
-    """Processes assignments."""
-    if len(tokens) == 3:
-        name, op, item = tokens
-        item = "(" + item + ")"
-        out = ""
-        if op == "|>=":
-            out += name+" = "+item+"("+name+")"
-        elif op == "|*>=":
-            out += name+" = "+item+"(*"+name+")"
-        elif op == "<|=":
-            out += name+" = "+name+"("+item+")"
-        elif op == "<*|=":
-            out += name+" = "+name+"(*"+item+")"
-        elif op == "..=":
-            out += name+" = (lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)))("+name+", "+item+")"
-        elif op == "::=":
-            out += name+" = __coconut__.itertools.chain("+name+", "+item+")"
-        else:
-            out += name+" "+op+" "+item
-        return out
-    else:
-        raise CoconutException("invalid assignment tokens: "+repr(tokens))
 
 def func_proc(tokens):
     """Processes mathematical function definitons."""
@@ -1116,6 +1093,7 @@ class processor(object):
         self.comment <<= self.trace(attach(self.comment_marker, self.comment_repl), "comment")
         self.passthrough <<= self.trace(attach(self.passthrough_marker, self.passthrough_repl), "passthrough")
         self.passthrough_block <<= self.trace(attach(self.passthrough_block_marker, self.passthrough_repl), "passthrough_block")
+        self.augassign_stmt_ref <<= attach(self.augassign_stmt, self.augassign_repl)
         self.u_string_ref <<= attach(self.u_string, self.u_string_check)
         self.typedef_ref <<= attach(self.typedef, self.typedef_check)
         self.return_typedef_ref <<= attach(self.return_typedef, self.typedef_check)
@@ -1143,6 +1121,7 @@ class processor(object):
         self.indchar = None
         self.refs = []
         self.docstring = ""
+        self.ichain_count = 0
 
     def wrap_str(self, text, strchar, multiline):
         """Wraps a string."""
@@ -1521,6 +1500,33 @@ class processor(object):
                 return ref
         else:
             raise CoconutException("invalid passthrough marker: "+repr(tokens))
+
+    def augassign_repl(self, tokens):
+        """Processes assignments."""
+        if len(tokens) == 3:
+            name, op, item = tokens
+            item = "(" + item + ")"
+            out = ""
+            if op == "|>=":
+                out += name+" = "+item+"("+name+")"
+            elif op == "|*>=":
+                out += name+" = "+item+"(*"+name+")"
+            elif op == "<|=":
+                out += name+" = "+name+"("+item+")"
+            elif op == "<*|=":
+                out += name+" = "+name+"(*"+item+")"
+            elif op == "..=":
+                out += name+" = (lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)))("+name+", "+item+")"
+            elif op == "::=":
+                ichain_var = lazy_chain_var+"_"+str(self.ichain_count)
+                out += ichain_var+" = "+name+linebreak
+                out += name+" = __coconut__.itertools.chain("+ichain_var+", "+item+")"
+                self.ichain_count += 1
+            else:
+                out += name+" "+op+" "+item
+            return out
+        else:
+            raise CoconutException("invalid assignment tokens: "+repr(tokens))
 
     def check_strict(self, name, tokens):
         """Checks that syntax meets --strict requirements."""
@@ -2113,8 +2119,10 @@ class processor(object):
         | math_match_funcdef
         | match_assign_stmt
         , "compound_stmt")
+    augassign_stmt_ref = Forward()
+    augassign_stmt = simple_assign + augassign + (yield_expr | testlist)
     expr_stmt = trace(addspace(
-                      attach(simple_assign + augassign + (yield_expr | testlist), assign_proc)
+                      augassign_stmt_ref
                       | ZeroOrMore(assignlist + equals) + (yield_expr | testlist)
                       ), "expr_stmt")
 
