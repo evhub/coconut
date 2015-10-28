@@ -1520,7 +1520,7 @@ class processor(object):
             elif op == "::=":
                 ichain_var = lazy_chain_var+"_"+str(self.ichain_count)
                 out += ichain_var+" = "+name+linebreak
-                out += name+" = __coconut__.itertools.chain("+ichain_var+", "+item+")"
+                out += name+" = __coconut__.itertools.chain.from_iterable("+lazy_list_proc([ichain_var, item])+")"
                 self.ichain_count += 1
             else:
                 out += name+" "+op+" "+item
