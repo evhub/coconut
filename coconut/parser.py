@@ -55,6 +55,19 @@ def headers(which, version=None):
                 header += r'''
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 '''
+            header += r'''
+global __coconut__
+global __coconut_version__
+global reduce
+global itemgetter
+global attrgetter
+global methodcaller
+global takewhile
+global dropwhile
+global tee
+global recursive
+global MatchError
+'''
         elif version is None:
             header += r'''
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division

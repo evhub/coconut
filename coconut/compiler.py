@@ -63,10 +63,9 @@ class executor(object):
     def __init__(self, extras=None):
         """Creates the executor."""
         self.gvars = {}
-        if extras is not None:
-            for k,v in extras.items():
-                self.gvars[k] = v
         self.lvars = {}
+        if extras is not None:
+            self.gvars.update(extras)
     def run(self, code, err=False):
         """Executes Python code."""
         try:
