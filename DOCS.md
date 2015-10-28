@@ -245,6 +245,7 @@ Coconut uses Haskell-style operator function short-hand, where the operator plac
 (is)        => (operator.is_)
 (in)        => (operator.__contains__)
 ```
+_Note: The `(::)` operator cannot evaluate its arguments lazily, since its arguments will always be evaluated before it can be called on them._
 
 ##### Example
 
@@ -567,9 +568,7 @@ ans = g(*f(5))
 
 ### Chain
 
-Coconut uses the FSharp-style concatenation operator `::` for iterator chaining. Coconut's iterator chaining is done lazily, in that the arguments are not evaluated until they are needed. It has a precedence in-between bitwise or and backtick calls.
-
-The in-place operator is `::=`, although neither the in-place operator nor the operator function `(::)` will evaluate lazily in the same way that the normal operator will. This is to help avoid the issue of referencing a variable in the lazy definition of it, which will cause Python to have a Segmentation Fault.
+Coconut uses the FSharp-style concatenation operator `::` for iterator chaining. Coconut's iterator chaining is done lazily, in that the arguments are not evaluated until they are needed. It has a precedence in-between bitwise or and backtick calls. The in-place operator is `::=`.
 
 ##### Python Docs
 
