@@ -1688,11 +1688,14 @@ class processor(object):
     basenum = Combine(integer + dot + Optional(integer) | Optional(integer) + dot + integer) | integer
     sci_e = CaselessLiteral("e")
     numitem = Combine(basenum + sci_e + integer) | basenum
+    complex_i = CaselessLiteral("j") | fixto(CaselessLiteral("i"), "j")
+    complex_num = Combine(numitem + complex_i)
 
     number = (attach(Combine(integer + underscore + anyint), anyint_proc)
               | Combine(CaselessLiteral("0b") + binint)
               | Combine(CaselessLiteral("0o") + octint)
               | Combine(CaselessLiteral("0x") + hexint)
+              | complex_num
               | numitem
               )
 

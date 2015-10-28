@@ -20,6 +20,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [Pattern-Matching Function Definition](#pattern-matching-function-definition)
     - [Implicit Partial Application](#implicit-partial-application)
     - [Enhanced Set Literals](#enhanced-set-literals)
+    - [Enhanced Imaginary Literals](#enhanced-imaginary-literals)
     - [Non-Decimal Integers](#non-decimal-integers)
     - [Enhanced Decorators](#enhanced-decorators)
     - [Enhanced Else Statements](#enhanced-else-statements)
@@ -355,6 +356,33 @@ empty_frozen_set = f{}
 Python:
 ```python
 empty_frozen_set = frozenset()
+```
+
+### Enhanced Imaginary Literals
+
+In addition to Python's `<num>j` or `<num>J` notation for imaginary literals, Coconut also supports `<num>i` or `<num>I`.
+
+### Python Docs
+
+Imaginary literals are described by the following lexical definitions:
+```
+imagnumber ::=  (floatnumber | intpart) ("j" | "J" | "i" | "I")
+```
+An imaginary literal yields a complex number with a real part of 0.0. Complex numbers are represented as a pair of floating point numbers and have the same restrictions on their range. To create a complex number with a nonzero real part, add a floating point number to it, e.g., `(3+4i)`. Some examples of imaginary literals:
+```
+3.14i   10.i    10i     .001i   1e100i  3.14e-10i
+```
+
+### Example
+
+Coconut:
+```
+3 + 4i |> abs
+```
+
+Python:
+```
+abs(3 + 4j)
 ```
 
 ### Non-Decimal Integers
