@@ -51,7 +51,7 @@ matrix:
         - coconut --strict --print --code "assert '__coconut__' in \`globals\`"
         - echo "assert '__coconut__' in \`globals\`" | coconut --strict --print
         - python -c "from coconut.convenience import parse; exec parse('assert \'__coconut__\' in \`globals\`')"
-        - ipython --ext coconut -c "%coconut __coconut__ |> print"
+        - ipython --ext coconut -c "%coconut assert '__coconut__' in \`globals\`"
 
         - coconut src/runner.coc file_build --strict
         - coconut src/cocotest/__init__.coc file_build/cocotest --strict
@@ -82,7 +82,7 @@ matrix:
         - coconut --strict --print --code "assert '__coconut__' in \`globals\`"
         - echo "assert '__coconut__' in \`globals\`" | coconut --strict --print
         - python -c "from coconut.convenience import parse; exec(parse('assert \'__coconut__\' in \`globals\`'))"
-        - ipython --ext coconut -c "%coconut __coconut__ |> print"
+        - ipython --ext coconut -c "%coconut assert '__coconut__' in \`globals\`"
 
         - coconut src/runner.coc file_build --strict
         - coconut src/cocotest/__init__.coc file_build/cocotest --strict
@@ -113,7 +113,7 @@ matrix:
         - coconut --strict --print --code "assert '__coconut__' in \`globals\`"
         - echo "assert '__coconut__' in \`globals\`" | coconut --strict --print
         - python -c "from coconut.convenience import parse; exec(parse('assert \'__coconut__\' in \`globals\`'))"
-        - ipython --ext coconut -c "%coconut __coconut__ |> print"
+        - ipython --ext coconut -c "%coconut assert '__coconut__' in \`globals\`"
 
         - coconut src/runner.coc file_build --strict
         - coconut src/cocotest/__init__.coc file_build/cocotest --strict
