@@ -1686,7 +1686,7 @@ class processor(object):
     anyint = Word(nums, alphanums)
 
     basenum = Combine(integer + dot + Optional(integer) | Optional(integer) + dot + integer) | integer
-    sci_e = CaselessLiteral("e")
+    sci_e = Combine(CaselessLiteral("e") + Optional(plus | neg_minus))
     numitem = Combine(basenum + sci_e + integer) | basenum
     complex_i = CaselessLiteral("j") | fixto(CaselessLiteral("i"), "j")
     complex_num = Combine(numitem + complex_i)
