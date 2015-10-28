@@ -70,7 +70,7 @@ class executor(object):
     def run(self, code, err=False):
         """Executes Python code."""
         try:
-            execfunc(code, self.gvars, self.lvars)
+            exec(code, self.gvars, self.lvars)
         except Exception:
             if err:
                 raise
