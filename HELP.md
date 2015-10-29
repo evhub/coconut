@@ -34,6 +34,7 @@ This tutorial will teach you how to write elegant, Pythonic code in a functional
     - [Implicit Partial Application](#implicit-partial-application)
     - [Set Literals](#set-literals)
     - [Non-Decimal Integers](#non-decimal-integers)
+    - [Imaginary Literals](#imaginary-literals)
 - [VI. Further Reading](#vi-further-reading)
 
 ## I. Getting Started
@@ -453,6 +454,10 @@ Coconut allows an optional `s` to be prepended in front of Python set literals. 
 ### Non-Decimal Integers
 
 Coconut allows non-decimal integers to be written in the form `base_num`. In many cases this is more readable than Python's default C-style notation.
+
+### Imaginary Literals
+
+Coconut allows imaginary number literals to be written with an `i` or `I` instead of a `j` or `J`, to make it more readable if used in a mathematical context.
 
 ## VI. Further Reading
 
