@@ -336,6 +336,12 @@ ParserElement.setDefaultWhitespaceChars(white)
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
 
+def addskip(skips, skip):
+    if skip in skips:
+        raise CoconutException("duplicate skip of line " + str(skip))
+    else:
+        skips |= set((skip,))
+
 def clean(line):
     """Cleans a line."""
     return line.replace(openstr, "").replace(closestr, "").strip()
@@ -1088,7 +1094,7 @@ class processor(object):
         self.refs = []
         self.docstring = ""
         self.ichain_count = 0
-        self.skips = []
+        self.skips = set()
 
     def adjust(self, ln):
         """Adjusts a line number."""
@@ -1154,7 +1160,7 @@ class processor(object):
         _start = 1
         _store = 2
         x = 0
-        skips = self.skips[:]
+        skips = self.skips.copy()
         while x <= len(inputstring):
             if x == len(inputstring):
                 c = linebreak
@@ -1184,12 +1190,12 @@ class processor(object):
                             if len(hold[_start]) == 1:
                                 raise CoconutSyntaxError("linebreak in non-multiline string", inputstring, x, self.adjust(lineno(x, inputstring)))
                             else:
-                                skips.append(self.adjust(lineno(x, inputstring)))
+                                addskip(skips, self.adjust(lineno(x, inputstring)))
                         hold[_contents] += hold[_store]+c
                         hold[_store] = None
                 elif hold[_contents].endswith(escape) and not hold[_contents].endswith(escape*2):
                     if c in endline:
-                        skips.append(self.adjust(lineno(x, inputstring)))
+                        addskip(skips, self.adjust(lineno(x, inputstring)))
                     hold[_contents] += c
                 elif c == hold[_start]:
                     out.append(self.wrap_str(hold[_contents], hold[_start], False))
@@ -1201,7 +1207,7 @@ class processor(object):
                         if len(hold[_start]) == 1:
                             raise CoconutSyntaxError("linebreak in non-multiline string", inputstring, x, self.adjust(lineno(x, inputstring)))
                         else:
-                            skips.append(self.adjust(lineno(x, inputstring)))
+                            addskip(skips, self.adjust(lineno(x, inputstring)))
                     hold[_contents] += c
             elif found is not None:
                 if c == found[0]:
@@ -1218,7 +1224,7 @@ class processor(object):
                     x -= 1
                 elif len(found) == 3: # "___"
                     if c in endline:
-                        skips.append(self.adjust(lineno(x, inputstring)))
+                        addskip(skips, self.adjust(lineno(x, inputstring)))
                     hold = [c, found, None] # [_contents, _start, _store]
                     found = None
                 else:
@@ -1243,7 +1249,7 @@ class processor(object):
         hold = None
         count = None
         multiline = None
-        skips = self.skips[:]
+        skips = self.skips.copy()
         for x in range(0, len(inputstring)):
             c = inputstring[x]
             if hold is not None:
@@ -1256,7 +1262,7 @@ class processor(object):
                     multiline = None
                 else:
                     if c in endline:
-                        skips.append(self.adjust(lineno(x, inputstring)))
+                        addskip(skips, self.adjust(lineno(x, inputstring)))
                     found += c
             elif found:
                 if c == escape:
@@ -1317,7 +1323,7 @@ class processor(object):
         levels = []
         count = 0
         current = None
-        skips = self.skips[:]
+        skips = self.skips.copy()
         for ln in range(0, len(lines)):
             line = lines[ln]
             if line and line[-1] in white:
@@ -1333,15 +1339,15 @@ class processor(object):
                 if count >= 0:
                     new.append(line)
                 else:
-                    skips.append(self.adjust(ln))
+                    addskip(skips, self.adjust(ln))
             elif last is not None and last.endswith("\\"):
                 if self.strict:
                     raise CoconutStyleError("found backslash continuation", last, len(last), self.adjust(lineno(x, inputstring))-1)
                 else:
-                    skips.append(self.adjust(ln))
+                    addskip(skips, self.adjust(ln))
                     new[-1] = last[:-1]+" "+line
             elif count < 0:
-                skips.append(self.adjust(ln))
+                addskip(skips, self.adjust(ln))
                 new[-1] = last+" "+line
             else:
                 check = self.leading(line)
