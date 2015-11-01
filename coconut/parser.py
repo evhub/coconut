@@ -354,9 +354,11 @@ class CoconutException(Exception):
 
 class CoconutSyntaxError(CoconutException):
     """Coconut SyntaxError."""
-    def __init__(self, message, source, point=None):
+    def __init__(self, message, source, point=None, ln=None):
         """Creates the Coconut SyntaxError."""
         self.value = message
+        if ln is not None:
+            self.value += " (line " + str(ln) + ")"
         if point is None:
             self.value += linebreak + "  " + source
         else:
@@ -373,23 +375,23 @@ class CoconutSyntaxError(CoconutException):
 
 class CoconutParseError(CoconutSyntaxError):
     """Coconut ParseError."""
-    def __init__(self, line, col, lineno):
+    def __init__(self, line, col, ln):
         """Creates The Coconut ParseError."""
-        super(CoconutParseError, self).__init__("parsing failed in line "+str(lineno), clean(line), col-1)
+        super(CoconutParseError, self).__init__("parsing failed", clean(line), col-1, ln)
 
 class CoconutStyleError(CoconutSyntaxError):
     """Coconut --strict error."""
-    def __init__(self, message, source, point=None):
+    def __init__(self, message, source, point=None, ln=None):
         """Creates the --strict Coconut error."""
         message += " (disable --strict to dismiss)"
-        super(CoconutStyleError, self).__init__(message, source, point)
+        super(CoconutStyleError, self).__init__(message, source, point, ln)
 
 class CoconutTargetError(CoconutSyntaxError):
     """Coconut --target error."""
-    def __init__(self, message, source, point=None):
+    def __init__(self, message, source, point=None, ln=None):
         """Creates the --target Coconut error."""
         message += " (enable --target 3 to dismiss)"
-        super(CoconutTargetError, self).__init__(message, source, point)
+        super(CoconutTargetError, self).__init__(message, source, point, ln)
 
 def attach(item, action):
     """Attaches a parse action to an item."""
@@ -490,56 +492,6 @@ def attr_proc(tokens):
         return '__coconut__.operator.attrgetter("'+tokens[0]+'")'
     else:
         raise CoconutException("invalid attrgetter literal tokens: "+repr(tokens))
-
-def item_proc(tokens):
-    """Processes items."""
-    out = tokens.pop(0)
-    for trailer in tokens:
-        if isinstance(trailer, str):
-            out += trailer
-        elif len(trailer) == 1:
-            if trailer[0] == "$[]":
-                out = ("(lambda i: __coconut__.itertools.islice("+out+", i.start, i.stop, i.step) if isinstance(i, __coconut__.slice)"
-                       " else next(__coconut__.itertools.islice("+out+", i, i+1)))")
-            elif trailer[0] == "$":
-                out = "__coconut__.functools.partial(__coconut__.functools.partial, "+out+")"
-            elif trailer[0] == "[]":
-                out = "__coconut__.functools.partial(__coconut__.operator.__getitem__, "+out+")"
-            elif trailer[0] == ".":
-                out = "__coconut__.functools.partial(__coconut__.getattr, "+out+")"
-            else:
-                raise CoconutSyntaxError("an argument is required", trailer[0])
-        elif len(trailer) == 2:
-            if trailer[0] == "$(":
-                out = "__coconut__.functools.partial("+out+", "+trailer[1]+")"
-            elif trailer[0] == "$[":
-                if 0 < len(trailer[1]) <= 3:
-                    args = []
-                    for x in range(0, len(trailer[1])):
-                        arg = trailer[1][x]
-                        if not arg:
-                            if x == 0:
-                                arg = "0"
-                            else:
-                                arg = "None"
-                        args.append(arg)
-                    out = "__coconut__.itertools.islice("+out
-                    if len(args) == 1:
-                        out += ", "+args[0]+", ("+args[0]+") + 1)"
-                        out = "next("+out+")"
-                    else:
-                        for arg in args:
-                            out += ", "+arg
-                        out += ")"
-                else:
-                    raise CoconutException("invalid iterator slice args: "+repr(trailer[1]))
-            elif trailer[0] == "..":
-                out = "(lambda *args, **kwargs: "+out+"(("+trailer[1]+")(*args, **kwargs)))"
-            else:
-                raise CoconutException("invalid special trailer: "+repr(trailer[0]))
-        else:
-            raise CoconutException("invalid trailer tokens: "+repr(trailer))
-    return out
 
 def lazy_list_proc(tokens):
     """Processes lazy lists."""
@@ -1106,6 +1058,7 @@ class processor(object):
         self.comment <<= self.trace(attach(self.comment_marker, self.comment_repl), "comment")
         self.passthrough <<= self.trace(attach(self.passthrough_marker, self.passthrough_repl), "passthrough")
         self.passthrough_block <<= self.trace(attach(self.passthrough_block_marker, self.passthrough_repl), "passthrough_block")
+        self.atom_item_ref <<= self.trace(attach(self.atom_item, self.item_repl), "atom_item")
         self.augassign_stmt_ref <<= attach(self.augassign_stmt, self.augassign_repl)
         self.u_string_ref <<= attach(self.u_string, self.u_string_check)
         self.typedef_ref <<= attach(self.typedef, self.typedef_check)
@@ -1135,6 +1088,17 @@ class processor(object):
         self.refs = []
         self.docstring = ""
         self.ichain_count = 0
+        self.skips = []
+
+    def adjust(self, ln):
+        """Adjusts a line number."""
+        adj_ln = -1
+        ind = 0
+        while ind < ln:
+            adj_ln += 1
+            if adj_ln not in self.skips:
+                ind += 1
+        return adj_ln
 
     def wrap_str(self, text, strchar, multiline):
         """Wraps a string."""
@@ -1176,7 +1140,7 @@ class processor(object):
     def prepare(self, inputstring, strip=False, **kwargs):
         """Prepares a string for processing."""
         if strip:
-            return inputstring.strip()
+            return newstring.strip()
         else:
             return inputstring
 
@@ -1186,17 +1150,18 @@ class processor(object):
         found = None
         hold = None
         _comment = 0
-        _char = 0
+        _contents = 0
         _start = 1
         _store = 2
         x = 0
+        skips = self.skips[:]
         while x <= len(inputstring):
             if x == len(inputstring):
                 c = linebreak
             else:
                 c = inputstring[x]
             if hold is not None:
-                if len(hold) == 1:
+                if len(hold) == 1: # [_comment]
                     if c in endline:
                         out.append(self.wrap_comment(hold[_comment])+c)
                         hold = None
@@ -1204,48 +1169,60 @@ class processor(object):
                         hold[_comment] += c
                 elif hold[_store] is not None:
                     if c == escape:
-                        hold[_char] += hold[_store]+c
+                        hold[_contents] += hold[_store]+c
                         hold[_store] = None
                     elif c == hold[_start][0]:
                         hold[_store] += c
                     elif len(hold[_store]) > len(hold[_start]):
-                        raise CoconutSyntaxError("invalid number of string closes", inputstring, x)
+                        raise CoconutSyntaxError("invalid number of string closes", inputstring, x, self.adjust(lineno(x, inputstring)))
                     elif hold[_store] == hold[_start]:
-                        out.append(self.wrap_str(hold[_char], hold[_start][0], True))
+                        out.append(self.wrap_str(hold[_contents], hold[_start][0], True))
                         hold = None
                         x -= 1
                     else:
-                        hold[_char] += hold[_store]+c
+                        if c in endline:
+                            if len(hold[_start]) == 1:
+                                raise CoconutSyntaxError("linebreak in non-multiline string", inputstring, x, self.adjust(lineno(x, inputstring)))
+                            else:
+                                skips.append(self.adjust(lineno(x, inputstring)))
+                        hold[_contents] += hold[_store]+c
                         hold[_store] = None
-                elif hold[_char].endswith(escape) and not hold[_char].endswith(escape*2):
-                    hold[_char] += c
+                elif hold[_contents].endswith(escape) and not hold[_contents].endswith(escape*2):
+                    if c in endline:
+                        skips.append(self.adjust(lineno(x, inputstring)))
+                    hold[_contents] += c
                 elif c == hold[_start]:
-                    out.append(self.wrap_str(hold[_char], hold[_start], False))
+                    out.append(self.wrap_str(hold[_contents], hold[_start], False))
                     hold = None
                 elif c == hold[_start][0]:
                     hold[_store] = c
-                elif len(hold[_start]) == 1 and c in endline:
-                    raise CoconutSyntaxError("linebreak in non-multiline string", inputstring, x)
                 else:
-                    hold[_char] += c
+                    if c in endline:
+                        if len(hold[_start]) == 1:
+                            raise CoconutSyntaxError("linebreak in non-multiline string", inputstring, x, self.adjust(lineno(x, inputstring)))
+                        else:
+                            skips.append(self.adjust(lineno(x, inputstring)))
+                    hold[_contents] += c
             elif found is not None:
                 if c == found[0]:
                     found += c
-                elif len(found) == 1:
+                elif len(found) == 1: # "_"
                     if c in endline:
-                        raise CoconutSyntaxError("linebreak in non-multiline string", inputstring, x)
+                        raise CoconutSyntaxError("linebreak in non-multiline string", inputstring, x, self.adjust(lineno(x, inputstring)))
                     else:
-                        hold = [c, found, None] # [_char, _start, _store]
+                        hold = [c, found, None] # [_contents, _start, _store]
                         found = None
-                elif len(found) == 2:
+                elif len(found) == 2: # "__"
                     out.append(self.wrap_str("", found[0], False))
                     found = None
                     x -= 1
-                elif len(found) == 3:
-                    hold = [c, found, None] # [_char, _start, _store]
+                elif len(found) == 3: # "___"
+                    if c in endline:
+                        skips.append(self.adjust(lineno(x, inputstring)))
+                    hold = [c, found, None] # [_contents, _start, _store]
                     found = None
                 else:
-                    raise CoconutSyntaxError("invalid number of string starts", inputstring, x)
+                    raise CoconutSyntaxError("invalid number of string starts", inputstring, x, self.adjust(lineno(x, inputstring)))
             elif c in startcomment:
                 hold = [""] # [_comment]
             elif c in holds:
@@ -1254,8 +1231,9 @@ class processor(object):
                 out.append(c)
             x += 1
         if hold is not None or found is not None:
-            raise CoconutSyntaxError("unclosed string", inputstring, x)
+            raise CoconutSyntaxError("unclosed string", inputstring, x, self.adjust(lineno(x, inputstring)))
         else:
+            self.skips = skips
             return "".join(out)
 
     def passthrough_proc(self, inputstring, **kwargs):
@@ -1265,6 +1243,7 @@ class processor(object):
         hold = None
         count = None
         multiline = None
+        skips = self.skips[:]
         for x in range(0, len(inputstring)):
             c = inputstring[x]
             if hold is not None:
@@ -1276,6 +1255,8 @@ class processor(object):
                     count = None
                     multiline = None
                 else:
+                    if c in endline:
+                        skips.append(self.adjust(lineno(x, inputstring)))
                     found += c
             elif found:
                 if c == escape:
@@ -1296,8 +1277,9 @@ class processor(object):
             else:
                 out.append(c)
         if hold is not None or found is not None:
-            raise CoconutSyntaxError("unclosed passthrough", inputstring, x)
+            raise CoconutSyntaxError("unclosed passthrough", inputstring, x, self.adjust(lineno(x, inputstring)))
         else:
+            self.skips = skips
             return "".join(out)
 
     def leading(self, inputstring):
@@ -1315,7 +1297,7 @@ class processor(object):
             else:
                 break
             if self.strict and self.indchar != inputstring[x]:
-                raise CoconutStyleError("found mixing of tabs and spaces", inputstring, x)
+                raise CoconutStyleError("found mixing of tabs and spaces", inputstring, x, self.adjust(lineno(x, inputstring)))
         return count
 
     def change(self, inputstring):
@@ -1335,10 +1317,12 @@ class processor(object):
         levels = []
         count = 0
         current = None
-        for line in lines:
+        skips = self.skips[:]
+        for ln in range(0, len(lines)):
+            line = lines[ln]
             if line and line[-1] in white:
                 if self.strict:
-                    raise CoconutStyleError("found trailing whitespace", line)
+                    raise CoconutStyleError("found trailing whitespace", line, len(line), self.adjust(lineno(x, inputstring)))
                 else:
                     line = line.rstrip()
             if new:
@@ -1348,18 +1332,22 @@ class processor(object):
             if not line or line.lstrip().startswith(startcomment):
                 if count >= 0:
                     new.append(line)
+                else:
+                    skips.append(self.adjust(ln))
             elif last is not None and last.endswith("\\"):
                 if self.strict:
-                    raise CoconutStyleError("found backslash continuation", last)
+                    raise CoconutStyleError("found backslash continuation", last, len(last), self.adjust(lineno(x, inputstring))-1)
                 else:
+                    skips.append(self.adjust(ln))
                     new[-1] = last[:-1]+" "+line
             elif count < 0:
+                skips.append(self.adjust(ln))
                 new[-1] = last+" "+line
             else:
                 check = self.leading(line)
                 if current is None:
                     if check:
-                        raise CoconutSyntaxError("illegal initial indent", line)
+                        raise CoconutSyntaxError("illegal initial indent", line, 0, self.adjust(lineno(x, inputstring)))
                     else:
                         current = 0
                 elif check > current:
@@ -1372,15 +1360,16 @@ class processor(object):
                     levels = levels[:point]
                     current = levels.pop()
                 elif current != check:
-                    raise CoconutSyntaxError("illegal dedent to unused indentation level", line)
+                    raise CoconutSyntaxError("illegal dedent to unused indentation level", line, 0, self.adjust(lineno(x, inputstring)))
                 new.append(line)
             count += self.change(line)
+        self.skips = skips
         if new:
             last = new[-1].split(startcomment, 1)[0].rstrip()
             if last.endswith("\\"):
-                raise CoconutSyntaxError("illegal final backslash continuation", last)
+                raise CoconutSyntaxError("illegal final backslash continuation", last, len(last), self.adjust(len(new)-1))
             if count != 0:
-                raise CoconutSyntaxError("unclosed parenthetical", new[-1])
+                raise CoconutSyntaxError("unclosed parenthetical", new[-1], len(new[-1]), self.adjust(len(new)-1))
         new.append(closestr*len(levels))
         return linebreak.join(new)
 
@@ -1514,6 +1503,58 @@ class processor(object):
         else:
             raise CoconutException("invalid passthrough marker: "+repr(tokens))
 
+    def item_repl(self, original, location, tokens):
+        """Processes items."""
+        out = tokens.pop(0)
+        for trailer in tokens:
+            if isinstance(trailer, str):
+                out += trailer
+            elif len(trailer) == 1:
+                if trailer[0] == "$[]":
+                    out = ("(lambda i: __coconut__.itertools.islice("+out+", i.start, i.stop, i.step) if isinstance(i, __coconut__.slice)"
+                           " else next(__coconut__.itertools.islice("+out+", i, i+1)))")
+                elif trailer[0] == "$":
+                    out = "__coconut__.functools.partial(__coconut__.functools.partial, "+out+")"
+                elif trailer[0] == "[]":
+                    out = "__coconut__.functools.partial(__coconut__.operator.__getitem__, "+out+")"
+                elif trailer[0] == ".":
+                    out = "__coconut__.functools.partial(__coconut__.getattr, "+out+")"
+                elif trailer[0] == "$(":
+                    raise CoconutSyntaxError("a partial application argument is required", original, location, self.adjust(lineno(location, original)))
+                else:
+                    raise CoconutException("invalid trailer symbol: "+repr(trailer[0]))
+            elif len(trailer) == 2:
+                if trailer[0] == "$(":
+                    out = "__coconut__.functools.partial("+out+", "+trailer[1]+")"
+                elif trailer[0] == "$[":
+                    if 0 < len(trailer[1]) <= 3:
+                        args = []
+                        for x in range(0, len(trailer[1])):
+                            arg = trailer[1][x]
+                            if not arg:
+                                if x == 0:
+                                    arg = "0"
+                                else:
+                                    arg = "None"
+                            args.append(arg)
+                        out = "__coconut__.itertools.islice("+out
+                        if len(args) == 1:
+                            out += ", "+args[0]+", ("+args[0]+") + 1)"
+                            out = "next("+out+")"
+                        else:
+                            for arg in args:
+                                out += ", "+arg
+                            out += ")"
+                    else:
+                        raise CoconutException("invalid iterator slice args: "+repr(trailer[1]))
+                elif trailer[0] == "..":
+                    out = "(lambda *args, **kwargs: "+out+"(("+trailer[1]+")(*args, **kwargs)))"
+                else:
+                    raise CoconutException("invalid special trailer: "+repr(trailer[0]))
+            else:
+                raise CoconutException("invalid trailer tokens: "+repr(trailer))
+        return out
+
     def augassign_repl(self, tokens):
         """Processes assignments."""
         if len(tokens) == 3:
@@ -1541,67 +1582,67 @@ class processor(object):
         else:
             raise CoconutException("invalid assignment tokens: "+repr(tokens))
 
-    def check_strict(self, name, tokens):
+    def check_strict(self, name, original, location, tokens):
         """Checks that syntax meets --strict requirements."""
         if len(tokens) != 1:
             raise CoconutException("invalid "+name+" tokens: "+repr(tokens))
         elif self.strict:
-            raise CoconutStyleError("found "+name, tokens[0])
+            raise CoconutStyleError("found "+name, original, location, self.adjust(lineno(location, original)))
         else:
             return tokens[0]
 
-    def lambdef_check(self, tokens):
+    def lambdef_check(self, original, location, tokens):
         """Checks for Python-style lambdas."""
-        return self.check_strict("Python-style lambda", tokens)
+        return self.check_strict("Python-style lambda", original, location, tokens)
 
-    def u_string_check(self, tokens):
+    def u_string_check(self, original, location, tokens):
         """Checks for Python2-style unicode strings."""
-        return self.check_strict("Python-2-style unicode string", tokens)
+        return self.check_strict("Python-2-style unicode string", original, location, tokens)
 
-    def check_py3(self, name, tokens):
+    def check_py3(self, name, original, location, tokens):
         """Checks for Python 3 syntax."""
         if len(tokens) != 1:
             raise CoconutException("invalid "+name+" tokens: "+repr(tokens))
         elif self.version != "3":
-            raise CoconutTargetError("found "+name, tokens[0])
+            raise CoconutTargetError("found "+name, original, location, self.adjust(lineno(location, original)))
         else:
             return tokens[0]
 
-    def typedef_check(self, tokens):
+    def typedef_check(self, original, location, tokens):
         """Checks for Python 3 type defs."""
-        return self.check_py3("Python 3 type def", tokens)
+        return self.check_py3("Python 3 type def", original, location, tokens)
 
-    def yield_from_check(self, tokens):
+    def yield_from_check(self, original, location, tokens):
         """Checks for Python 3 yield from."""
-        return self.check_py3("Python 3 yield from", tokens)
+        return self.check_py3("Python 3 yield from", original, location, tokens)
 
-    def matrix_at_check(self, tokens):
+    def matrix_at_check(self, original, location, tokens):
         """Checks for Python 3.5 matrix multiplication."""
-        return self.check_py3("Python 3.5 matrix multiplication", tokens)
+        return self.check_py3("Python 3.5 matrix multiplication", original, location, tokens)
 
-    def nonlocal_check(self, tokens):
+    def nonlocal_check(self, original, location, tokens):
         """Checks for Python 3 nonlocal statement."""
-        return self.check_py3("Python 3 nonlocal statement", tokens)
+        return self.check_py3("Python 3 nonlocal statement", original, location, tokens)
 
-    def dict_comp_check(self, tokens):
+    def dict_comp_check(self, original, location, tokens):
         """Checks for Python 3 dictionary comprehension."""
-        return self.check_py3("Python 3 dictionary comprehension", tokens)
+        return self.check_py3("Python 3 dictionary comprehension", original, location, tokens)
 
-    def star_assign_item_check(self, tokens):
+    def star_assign_item_check(self, original, location, tokens):
         """Checks for Python 3 starred assignment."""
-        return self.check_py3("Python 3 starred assignment", tokens)
+        return self.check_py3("Python 3 starred assignment", original, location, tokens)
 
-    def async_stmt_check(self, tokens):
+    def async_stmt_check(self, original, location, tokens):
         """Checks for Python 3.5 async statement."""
-        return self.check_py3("Python 3.5 async statement", tokens)
+        return self.check_py3("Python 3.5 async statement", original, location, tokens)
 
-    def await_keyword_check(self, tokens):
+    def await_keyword_check(self, original, location, tokens):
         """Checks for Python 3.5 await statement."""
-        return self.check_py3("Python 3.5 await expression", tokens)
+        return self.check_py3("Python 3.5 await expression", original, location, tokens)
 
-    def complex_raise_stmt_check(self, tokens):
+    def complex_raise_stmt_check(self, original, location, tokens):
         """Checks for Python 3 raise from statement."""
-        return self.check_py3("Python 3 raise from statement", tokens)
+        return self.check_py3("Python 3 raise from statement", original, location, tokens)
 
     def set_literal_convert(self, tokens):
         """Converts set literals to the right form for the target Python."""
@@ -1617,7 +1658,7 @@ class processor(object):
         try:
             out = self.post(parser.parseString(self.pre(inputstring, **preargs)), **postargs)
         except ParseBaseException as err:
-            raise CoconutParseError(err.line, err.col, err.lineno)
+            raise CoconutParseError(err.line, err.col, self.adjust(err.lineno))
         finally:
             self.clean()
         return out
@@ -1895,12 +1936,13 @@ class processor(object):
     assign_item = star_assign_item_ref | base_assign_item
     assignlist <<= itemlist(assign_item, comma)
 
-    atom_item = trace(attach(atom + ZeroOrMore(trailer), item_proc), "atom_item")
+    atom_item_ref = Forward()
+    atom_item = atom + ZeroOrMore(trailer)
 
     factor = Forward()
     await_keyword_ref = Forward()
     await_keyword = Keyword("await")
-    power = trace(condense(addspace(Optional(await_keyword_ref) + atom_item) + Optional(exp_dubstar + factor)), "power")
+    power = trace(condense(addspace(Optional(await_keyword_ref) + atom_item_ref) + Optional(exp_dubstar + factor)), "power")
     unary = plus | neg_minus | tilde
 
     factor <<= trace(condense(unary + factor) | power, "factor")
