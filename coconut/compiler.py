@@ -66,6 +66,9 @@ class executor(object):
         self.lvars = {}
         if extras is not None:
             self.gvars.update(extras)
+    def setfile(self, path):
+        """Sets __file__."""
+        self.gvars["__file__"] = path
     def run(self, code, err=False):
         """Executes Python code."""
         try:
@@ -299,6 +302,8 @@ class cli(object):
     def compile(self, codepath, destpath=None, module=False, run=False):
         """Compiles a source Coconut file to a destination Python file."""
         codepath = fixpath(codepath)
+        if destpath is not None:
+            destpath = fixpath(destpath)
         self.console.print("Compiling "+repr(codepath)+"...")
         with openfile(codepath, "r") as opened:
             code = readfile(opened)
@@ -311,11 +316,10 @@ class cli(object):
         else:
             raise parser.CoconutException("invalid value for module boolean of "+repr(module))
         if run:
-            self.execute(compiled)
+            self.execute(compiled, path=(destpath if destpath is not None else codepath))
         elif self.show:
             print(compiled)
         if destpath is not None:
-            destpath = fixpath(destpath)
             destdir = os.path.dirname(destpath)
             if not os.path.exists(destdir):
                 os.makedirs(destdir)
@@ -376,18 +380,20 @@ class cli(object):
                 return None
         return compiled
 
-    def execute(self, compiled=None, error=True):
+    def execute(self, compiled=None, error=True, path=None):
         """Executes compiled code."""
-        self.check_runner()
+        self.check_runner(path)
         if compiled is not None:
             if self.show:
                 print(compiled)
             self.runner.run(compiled, error)
 
-    def check_runner(self):
+    def check_runner(self, path=None):
         """Makes sure there is a runner."""
         if self.runner is None:
             self.start_runner()
+        if path is not None:
+            self.runner.setfile(path)
 
     def start_runner(self):
         """Starts the runner."""
