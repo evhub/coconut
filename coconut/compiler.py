@@ -62,17 +62,16 @@ class executor(object):
     """Compiled Python executor."""
     def __init__(self, extras=None):
         """Creates the executor."""
-        self.gvars = {}
-        self.lvars = {}
+        self.vars = {}
         if extras is not None:
-            self.gvars.update(extras)
+            self.vars.update(extras)
     def setfile(self, path):
         """Sets __file__."""
-        self.gvars["__file__"] = path
+        self.vars["__file__"] = path
     def run(self, code, err=False):
         """Executes Python code."""
         try:
-            exec(code, self.gvars, self.lvars)
+            exec(code, self.vars)
         except Exception:
             if err:
                 raise
