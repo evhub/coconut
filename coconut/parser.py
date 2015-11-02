@@ -366,11 +366,11 @@ class CoconutSyntaxError(CoconutException):
         if ln is not None:
             self.value += " (line " + str(ln) + ")"
         if point is None:
-            self.value += linebreak + "  " + source
+            self.value += linebreak + "  " + clean(source)
         else:
             if point >= len(source):
                 point = len(source)-1
-            part = source.splitlines()[lineno(point, source)-1]
+            part = clean(source.splitlines()[lineno(point, source)-1])
             self.value += linebreak + "  " + part + linebreak + "  "
             for x in range(0, col(point, source)-1):
                 if part[x] in white:
@@ -383,7 +383,7 @@ class CoconutParseError(CoconutSyntaxError):
     """Coconut ParseError."""
     def __init__(self, line, col, ln):
         """Creates The Coconut ParseError."""
-        super(CoconutParseError, self).__init__("parsing failed", clean(line), col-1, ln)
+        super(CoconutParseError, self).__init__("parsing failed", line, col-1, ln)
 
 class CoconutStyleError(CoconutSyntaxError):
     """Coconut --strict error."""
@@ -1098,7 +1098,7 @@ class processor(object):
 
     def adjust(self, ln):
         """Adjusts a line number."""
-        adj_ln = -1
+        adj_ln = 0
         ind = 0
         while ind < ln:
             adj_ln += 1
@@ -1326,9 +1326,10 @@ class processor(object):
         skips = self.skips.copy()
         for ln in range(0, len(lines)):
             line = lines[ln]
+            ln += 1
             if line and line[-1] in white:
                 if self.strict:
-                    raise CoconutStyleError("found trailing whitespace", line, len(line), self.adjust(lineno(x, inputstring)))
+                    raise CoconutStyleError("found trailing whitespace", line, len(line), self.adjust(ln))
                 else:
                     line = line.rstrip()
             if new:
@@ -1342,7 +1343,7 @@ class processor(object):
                     addskip(skips, self.adjust(ln))
             elif last is not None and last.endswith("\\"):
                 if self.strict:
-                    raise CoconutStyleError("found backslash continuation", last, len(last), self.adjust(lineno(x, inputstring))-1)
+                    raise CoconutStyleError("found backslash continuation", last, len(last), self.adjust(ln-1))
                 else:
                     addskip(skips, self.adjust(ln))
                     new[-1] = last[:-1]+" "+line
@@ -1353,7 +1354,7 @@ class processor(object):
                 check = self.leading(line)
                 if current is None:
                     if check:
-                        raise CoconutSyntaxError("illegal initial indent", line, 0, self.adjust(lineno(x, inputstring)))
+                        raise CoconutSyntaxError("illegal initial indent", line, 0, self.adjust(ln))
                     else:
                         current = 0
                 elif check > current:
@@ -1366,16 +1367,16 @@ class processor(object):
                     levels = levels[:point]
                     current = levels.pop()
                 elif current != check:
-                    raise CoconutSyntaxError("illegal dedent to unused indentation level", line, 0, self.adjust(lineno(x, inputstring)))
+                    raise CoconutSyntaxError("illegal dedent to unused indentation level", line, 0, self.adjust(ln))
                 new.append(line)
             count += self.change(line)
         self.skips = skips
         if new:
             last = new[-1].split(startcomment, 1)[0].rstrip()
             if last.endswith("\\"):
-                raise CoconutSyntaxError("illegal final backslash continuation", last, len(last), self.adjust(len(new)-1))
+                raise CoconutSyntaxError("illegal final backslash continuation", last, len(last), self.adjust(len(new)))
             if count != 0:
-                raise CoconutSyntaxError("unclosed parenthetical", new[-1], len(new[-1]), self.adjust(len(new)-1))
+                raise CoconutSyntaxError("unclosed parenthetical", new[-1], len(new[-1]), self.adjust(len(new)))
         new.append(closestr*len(levels))
         return linebreak.join(new)
 
@@ -1426,6 +1427,7 @@ class processor(object):
         for proc in self.preprocs:
             out = proc(out, **kwargs)
             self.todebug(proc.__name__, out)
+        self.todebug("skips", list(sorted(self.skips)))
         return out
 
     def reind_proc(self, inputstring, strip=True, **kwargs):
