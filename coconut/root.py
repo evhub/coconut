@@ -27,8 +27,8 @@ import sys
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-VERSION = "0.3.3-dev"
-VERSION_NAME = "Kopyor"
+VERSION = "0.3.3"
+VERSION_NAME = "Lauric"
 
 VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
 
