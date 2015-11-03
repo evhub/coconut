@@ -175,8 +175,10 @@ class MatchError(Exception):
 '''
         else:
             if which == "module":
+                if version is not None:
+                    header += r'''
+import sys as _coconut_sys'''
                 header += r'''
-import sys as _coconut_sys
 import os.path as _coconut_os_path
 _coconut_sys.path.append(_coconut_os_path.dirname(_coconut_os_path.abspath(__file__)))
 import __coconut__
