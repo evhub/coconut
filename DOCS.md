@@ -101,6 +101,7 @@ Coconut will, however, overwrite Python 2 built-ins to use the Python 3 versions
 - `py2_chr`
 - `py2_print`
 - `py2_input`
+
 _Note: No `py2_str` is provided even though it is overwritten because it should be retrieved using `bytes` instead._
 
 ### Compiled Files
