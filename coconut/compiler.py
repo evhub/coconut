@@ -260,7 +260,7 @@ class cli(object):
         elif os.path.isdir(path):
             self.compile_module(path, write, run)
         else:
-            raise parser.CoconutException("could not find source path "+repr(path))
+            raise parser.CoconutException("could not find source path "+path)
 
     def compile_module(self, directory, write=True, run=False):
         """Compiles a module."""
@@ -303,7 +303,7 @@ class cli(object):
         codepath = fixpath(codepath)
         if destpath is not None:
             destpath = fixpath(destpath)
-        self.console.print("Compiling "+repr(codepath)+"...")
+        self.console.print("Compiling "+codepath+"...")
         with openfile(codepath, "r") as opened:
             code = readfile(opened)
         if module is True:
@@ -313,7 +313,7 @@ class cli(object):
         elif module is False:
             compiled = self.processor.parse_file(code)
         else:
-            raise parser.CoconutException("invalid value for module boolean of "+repr(module))
+            raise parser.CoconutException("invalid value for module boolean: "+repr(module)
         if run:
             self.execute(compiled, path=(destpath if destpath is not None else codepath))
         elif self.show:
@@ -324,7 +324,7 @@ class cli(object):
                 os.makedirs(destdir)
             with openfile(destpath, "w") as opened:
                 writefile(opened, compiled)
-            self.console.print("Compiled "+repr(destpath)+".")
+            self.console.print("Compiled "+destpath+".")
 
     def create_module(self, dirpath):
         """Sets up a module directory."""
