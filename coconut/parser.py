@@ -42,7 +42,7 @@ def headers(which, version=None):
 
 '''
         if which == "package":
-            header += '''"""Built-in Coconut functions."""
+            header += r'''"""Built-in Coconut functions."""
 
 '''
     else:
