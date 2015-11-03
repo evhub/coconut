@@ -274,7 +274,6 @@ white = " \t\f"
 downs = "([{"
 ups = ")]}"
 holds = "'\""
-startcomment = "#"
 escape = "\\"
 tablen = 4
 decorator_var = "_coconut_decorator"
@@ -1219,7 +1218,7 @@ class processor(object):
                     found = None
                 else:
                     raise CoconutSyntaxError("invalid number of string starts", inputstring, x, self.adjust(lineno(x, inputstring)))
-            elif c in startcomment:
+            elif c == "#":
                 hold = [""] # [_comment]
             elif c in holds:
                 found = c
@@ -1323,10 +1322,10 @@ class processor(object):
                 else:
                     line = line.rstrip()
             if new:
-                last = new[-1].split(startcomment, 1)[0].rstrip()
+                last = new[-1].split("#", 1)[0].rstrip()
             else:
                 last = None
-            if not line or line.lstrip().startswith(startcomment):
+            if not line or line.lstrip().startswith("#"):
                 if count >= 0:
                     new.append(line)
                 else:
@@ -1362,7 +1361,7 @@ class processor(object):
             count += self.change(line)
         self.skips = skips
         if new:
-            last = new[-1].split(startcomment, 1)[0].rstrip()
+            last = new[-1].split("#", 1)[0].rstrip()
             if last.endswith("\\"):
                 raise CoconutSyntaxError("illegal final backslash continuation", last, len(last), self.adjust(len(new)))
             if count != 0:
@@ -1379,7 +1378,7 @@ class processor(object):
         _escape = 1
         for line in inputstring.splitlines():
             line = line.strip()
-            if hold is None and not line.startswith(startcomment):
+            if hold is None and not line.startswith("#"):
                 while line.startswith(openstr) or line.startswith(closestr):
                     if line[0] == openstr:
                         level += 1
