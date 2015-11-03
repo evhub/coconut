@@ -273,7 +273,6 @@ downs = "([{"
 ups = ")]}"
 holds = "'\""
 startcomment = "#"
-endline = "\n\r"
 escape = "\\"
 tablen = 4
 decorator_var = "_coconut_decorator"
@@ -1136,9 +1135,8 @@ class processor(object):
     def prepare(self, inputstring, strip=False, **kwargs):
         """Prepares a string for processing."""
         if strip:
-            return newstring.strip()
-        else:
-            return inputstring
+            inputstring = inputstring.strip()
+        return linebreak.join(inputstring.splitlines())
 
     def str_proc(self, inputstring, **kwargs):
         """Processes strings."""
@@ -1158,7 +1156,7 @@ class processor(object):
                 c = inputstring[x]
             if hold is not None:
                 if len(hold) == 1: # [_comment]
-                    if c in endline:
+                    if c == linebreak:
                         out.append(self.wrap_comment(hold[_comment])+c)
                         hold = None
                     else:
@@ -1176,7 +1174,7 @@ class processor(object):
                         hold = None
                         x -= 1
                     else:
-                        if c in endline:
+                        if c == linebreak:
                             if len(hold[_start]) == 1:
                                 raise CoconutSyntaxError("linebreak in non-multiline string", inputstring, x, self.adjust(lineno(x, inputstring)))
                             else:
@@ -1184,7 +1182,7 @@ class processor(object):
                         hold[_contents] += hold[_store]+c
                         hold[_store] = None
                 elif hold[_contents].endswith(escape) and not hold[_contents].endswith(escape*2):
-                    if c in endline:
+                    if c == linebreak:
                         skips = addskip(skips, self.adjust(lineno(x, inputstring)))
                     hold[_contents] += c
                 elif c == hold[_start]:
@@ -1193,7 +1191,7 @@ class processor(object):
                 elif c == hold[_start][0]:
                     hold[_store] = c
                 else:
-                    if c in endline:
+                    if c == linebreak:
                         if len(hold[_start]) == 1:
                             raise CoconutSyntaxError("linebreak in non-multiline string", inputstring, x, self.adjust(lineno(x, inputstring)))
                         else:
@@ -1203,7 +1201,7 @@ class processor(object):
                 if c == found[0]:
                     found += c
                 elif len(found) == 1: # "_"
-                    if c in endline:
+                    if c == linebreak:
                         raise CoconutSyntaxError("linebreak in non-multiline string", inputstring, x, self.adjust(lineno(x, inputstring)))
                     else:
                         hold = [c, found, None] # [_contents, _start, _store]
@@ -1213,7 +1211,7 @@ class processor(object):
                     found = None
                     x -= 1
                 elif len(found) == 3: # "___"
-                    if c in endline:
+                    if c == linebreak:
                         skips = addskip(skips, self.adjust(lineno(x, inputstring)))
                     hold = [c, found, None] # [_contents, _start, _store]
                     found = None
@@ -1244,20 +1242,20 @@ class processor(object):
             c = inputstring[x]
             if hold is not None:
                 count += self.change(c)
-                if count >= 0 and c in hold:
+                if count >= 0 and c == hold:
                     out.append(self.wrap_passthrough(found, multiline))
                     found = None
                     hold = None
                     count = None
                     multiline = None
                 else:
-                    if c in endline:
+                    if c == linebreak:
                         skips = addskip(skips, self.adjust(lineno(x, inputstring)))
                     found += c
             elif found:
                 if c == escape:
                     found = ""
-                    hold = endline
+                    hold = linebreak
                     count = 0
                     multiline = False
                 elif c == "(":
