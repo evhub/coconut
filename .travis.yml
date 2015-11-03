@@ -22,6 +22,9 @@ matrix:
         - echo "assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --print
         - python -c "from coconut.convenience import parse; exec parse('assert \'__coconut__\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()')"
 
+        - git clone https://github.com/evhub/prisoner.git
+        - coconut prisoner --strict
+
         - coconut src/runner.coc file_build --strict
         - coconut src/cocotest/__init__.coc file_build/cocotest --strict
         - coconut src/cocotest/main.coc file_build/cocotest --strict
@@ -42,10 +45,6 @@ matrix:
 
         - coconut src target_build --strict --print --target 2
         - python -tt target_build/runner.py
-
-        - git clone https://github.com/evhub/prisoner.git
-        - coconut prisoner/prisoner --strict
-        - python -tt prisoner/prisoner
 
     - python: "2.7"
 
@@ -63,6 +62,9 @@ matrix:
         - python -c "from coconut.convenience import parse; exec parse('assert \'__coconut__\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()')"
         - ipython --ext coconut -c "%coconut assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
 
+        - git clone https://github.com/evhub/prisoner.git
+        - coconut prisoner --strict
+
         - coconut src/runner.coc file_build --strict
         - coconut src/cocotest/__init__.coc file_build/cocotest --strict
         - coconut src/cocotest/main.coc file_build/cocotest --strict
@@ -84,10 +86,6 @@ matrix:
         - coconut src target_build --strict --print --target 2
         - python -tt target_build/runner.py
 
-        - git clone https://github.com/evhub/prisoner.git
-        - coconut prisoner/prisoner --strict
-        - python -tt prisoner/prisoner
-
     - python: "3.3"
 
       install:
@@ -103,6 +101,9 @@ matrix:
         - echo "assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --print
         - python -c "from coconut.convenience import parse; exec(parse('assert \'__coconut__\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()'))"
         - ipython --ext coconut -c "%coconut assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
+
+        - git clone https://github.com/evhub/prisoner.git
+        - coconut prisoner --strict
 
         - coconut src/runner.coc file_build --strict
         - coconut src/cocotest/__init__.coc file_build/cocotest --strict
@@ -124,10 +125,6 @@ matrix:
 
         - coconut src target_build --strict --print --target 3
         - python -tt target_build/runner.py
-
-        - git clone https://github.com/evhub/prisoner.git
-        - coconut prisoner/prisoner --strict
-        - python -tt prisoner/prisoner
 
     - python: "3.4"
 
@@ -145,6 +142,9 @@ matrix:
         - python -c "from coconut.convenience import parse; exec(parse('assert \'__coconut__\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()'))"
         - ipython --ext coconut -c "%coconut assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
 
+        - git clone https://github.com/evhub/prisoner.git
+        - coconut prisoner --strict
+
         - coconut src/runner.coc file_build --strict
         - coconut src/cocotest/__init__.coc file_build/cocotest --strict
         - coconut src/cocotest/main.coc file_build/cocotest --strict
@@ -165,7 +165,3 @@ matrix:
 
         - coconut src target_build --strict --print --target 3
         - python -tt target_build/runner.py
-
-        - git clone https://github.com/evhub/prisoner.git
-        - coconut prisoner/prisoner --strict
-        - python -tt prisoner/prisoner
