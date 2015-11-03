@@ -43,6 +43,10 @@ matrix:
         - coconut src target_build --strict --print --target 2
         - python -tt target_build/runner.py
 
+        - git clone https://github.com/evhub/prisoner.git
+        - coconut prisoner/prisoner --strict
+        - python -tt prisoner/prisoner
+
     - python: "2.7"
 
       install:
@@ -79,6 +83,10 @@ matrix:
 
         - coconut src target_build --strict --print --target 2
         - python -tt target_build/runner.py
+
+        - git clone https://github.com/evhub/prisoner.git
+        - coconut prisoner/prisoner --strict
+        - python -tt prisoner/prisoner
 
     - python: "3.3"
 
@@ -117,6 +125,10 @@ matrix:
         - coconut src target_build --strict --print --target 3
         - python -tt target_build/runner.py
 
+        - git clone https://github.com/evhub/prisoner.git
+        - coconut prisoner/prisoner --strict
+        - python -tt prisoner/prisoner
+
     - python: "3.4"
 
       install:
@@ -153,3 +165,7 @@ matrix:
 
         - coconut src target_build --strict --print --target 3
         - python -tt target_build/runner.py
+
+        - git clone https://github.com/evhub/prisoner.git
+        - coconut prisoner/prisoner --strict
+        - python -tt prisoner/prisoner
