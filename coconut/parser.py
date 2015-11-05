@@ -1833,6 +1833,7 @@ class processor(object):
     dict_comp = addspace(condense(test + colon) + test + comp_for)
     dict_item = addspace(itemlist(addspace(condense(test + colon) + test), comma))
     dictmaker = dict_comp_ref | dict_item
+    test_expr = yield_expr | testlist
 
     op_atom = condense(
         lparen + (
@@ -2077,7 +2078,7 @@ class processor(object):
     match_stmt = condense(full_match + Optional(else_stmt))
 
     match_assign_stmt = trace(attach(
-        (Keyword("match").suppress() | ~(assignlist+equals)) + match + equals.suppress() + (yield_expr | testlist) + newline.suppress()
+        (Keyword("match").suppress() | ~(assignlist+equals)) + match + equals.suppress() + test_expr + newline.suppress()
         , match_assign_proc), "match_assign_stmt")
 
     case_match = trace(Group(
@@ -2116,7 +2117,7 @@ class processor(object):
     return_typedef = addspace(arrow + test)
     base_funcdef = addspace((op_funcdef | name_funcdef) + Optional(return_typedef_ref))
     funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
-    math_funcdef = attach(Keyword("def").suppress() + base_funcdef + equals.suppress() + (yield_expr | testlist), func_proc) + newline
+    math_funcdef = attach(Keyword("def").suppress() + base_funcdef + equals.suppress() + test_expr, func_proc) + newline
     async_funcdef = addspace(Keyword("async") + (funcdef | math_funcdef))
     async_block = addspace(Keyword("async") + (with_stmt | for_stmt))
 
@@ -2127,7 +2128,7 @@ class processor(object):
     base_match_funcdef = Keyword("def").suppress() + (op_match_funcdef | name_match_funcdef)
     full_match_funcdef = trace(attach(base_match_funcdef + match_suite, full_match_funcdef_proc), "base_match_funcdef")
     math_match_funcdef = attach(
-        Optional(Keyword("match").suppress()) + base_match_funcdef + equals.suppress() + (yield_expr | testlist)
+        Optional(Keyword("match").suppress()) + base_match_funcdef + equals.suppress() + test_expr
         , match_func_proc) + newline
     match_funcdef = Optional(Keyword("match").suppress()) + full_match_funcdef
     async_match_funcdef = addspace(
@@ -2175,10 +2176,10 @@ class processor(object):
         | match_assign_stmt
         , "compound_stmt")
     augassign_stmt_ref = Forward()
-    augassign_stmt = simple_assign + augassign + (yield_expr | testlist)
+    augassign_stmt = simple_assign + augassign + test_expr
     expr_stmt = trace(addspace(
                       augassign_stmt_ref
-                      | ZeroOrMore(assignlist + equals) + (yield_expr | testlist)
+                      | ZeroOrMore(~test_expr + assignlist + equals) + test_expr
                       ), "expr_stmt")
 
     nonlocal_stmt_ref = Forward()
