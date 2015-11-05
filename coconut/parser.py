@@ -1675,7 +1675,8 @@ class processor(object):
     dubcolon = Literal("::")
     colon = ~dubcolon+Literal(":")
     semicolon = Literal(";")
-    equals = Literal("=")
+    eq = Literal("==")
+    equals = ~eq+Literal("=")
     lbrack = Literal("[")
     rbrack = Literal("]")
     lbrace = Literal("{")
@@ -1709,7 +1710,6 @@ class processor(object):
 
     lt = ~Literal("<<")+Literal("<")
     gt = ~Literal(">>")+Literal(">")
-    eq = Combine(equals + equals)
     le = fixto(Combine(lt + equals) | Literal("\u2264"), "<=")
     ge = fixto(Combine(gt + equals) | Literal("\u2265"), ">=")
     ne = fixto(Combine(bang + equals) | Literal("\u2260"), "!=")
@@ -2179,7 +2179,7 @@ class processor(object):
     augassign_stmt = simple_assign + augassign + test_expr
     expr_stmt = trace(addspace(
                       augassign_stmt_ref
-                      | ZeroOrMore(~test_expr + assignlist + equals) + test_expr
+                      | ZeroOrMore(assignlist + equals) + test_expr
                       ), "expr_stmt")
 
     nonlocal_stmt_ref = Forward()
