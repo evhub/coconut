@@ -17,7 +17,7 @@ matrix:
         - cd cocotest
         - git clone https://github.com/evhub/prisoner.git
         - rm src/cocotest/py3_test.coc
-        - cp src src_target
+        - cp -r src src_target
         - rm src/cocotest/py2_test.coc
 
       script:
@@ -61,7 +61,7 @@ matrix:
         - cd cocotest
         - git clone https://github.com/evhub/prisoner.git
         - rm src/cocotest/py3_test.coc
-        - cp src src_target
+        - cp -r src src_target
         - rm src/cocotest/py2_test.coc
 
       script:
@@ -106,7 +106,7 @@ matrix:
         - cd cocotest
         - git clone https://github.com/evhub/prisoner.git
         - rm src/cocotest/py2_test.coc
-        - cp src src_target
+        - cp -r src src_target
         - rm src/cocotest/py3_test.coc
 
       script:
@@ -156,7 +156,7 @@ matrix:
         - cd cocotest
         - git clone https://github.com/evhub/prisoner.git
         - rm src/cocotest/py2_test.coc
-        - cp src src_target
+        - cp -r src src_target
         - rm src/cocotest/py3_test.coc
 
       script:
