@@ -34,10 +34,6 @@ matrix:
         - coconut src_target/cocotest/py2_test.coc file_build/cocotest --strict --target 2
         - python -tt file_build/runner.py
 
-        - cp file_build/cocotest/py2_test.py run_build/cocotest/py2_test.py
-        - cp folder_build/cocotest/py2_test.py folder_build/cocotest/py2_test.py
-        - cp autopep8_build/cocotest/py2_test.py autopep8_build/cocotest/py2_test.py
-
         - coconut src/cocotest run_build/cocotest --strict
         - cp src/runner.coc run_build/runner.coc
         - cd run_build
