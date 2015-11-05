@@ -81,20 +81,19 @@ matrix:
         - coconut src_target/cocotest/py2_test.coc file_build/cocotest --strict --target 2
         - python -tt file_build/runner.py
 
-        - cp file_build/cocotest/py2_test.py run_build/cocotest/py2_test.py
-        - cp folder_build/cocotest/py2_test.py folder_build/cocotest/py2_test.py
-        - cp autopep8_build/cocotest/py2_test.py autopep8_build/cocotest/py2_test.py
-
         - coconut src/cocotest run_build/cocotest --strict
         - cp src/runner.coc run_build/runner.coc
+        - cp file_build/cocotest/py2_test.py run_build/cocotest/py2_test.py
         - cd run_build
         - coconut --run runner.coc --nowrite --strict
         - cd ..
 
         - coconut src folder_build --strict
+        - cp file_build/cocotest/py2_test.py folder_build/cocotest/py2_test.py
         - python -tt folder_build/runner.py
 
         - coconut src autopep8_build --strict --autopep8
+        - cp file_build/cocotest/py2_test.py autopep8_build/cocotest/py2_test.py
         - python -tt autopep8_build/runner.py
 
         - coconut src_target target_build --strict --print --target 2
@@ -128,26 +127,20 @@ matrix:
         - coconut src_target/cocotest/py3_test.coc file_build/cocotest --strict --target 3
         - python -tt file_build/runner.py
 
-        - cp file_build/cocotest/py3_test.py run_build/cocotest/py3_test.py
-        - cp folder_build/cocotest/py3_test.py folder_build/cocotest/py3_test.py
-        - cp autopep8_build/cocotest/py3_test.py autopep8_build/cocotest/py3_test.py
-
-        - cp src/cocotest/py3_test.coc src/cocotest/py3_test.coc.not
-        - rm src/cocotest/py3_test.coc
-
         - coconut src/cocotest run_build/cocotest --strict
         - cp src/runner.coc run_build/runner.coc
+        - cp file_build/cocotest/py3_test.py run_build/cocotest/py3_test.py
         - cd run_build
         - coconut --run runner.coc --nowrite --strict
         - cd ..
 
         - coconut src folder_build --strict
+        - cp file_build/cocotest/py3_test.py folder_build/cocotest/py3_test.py
         - python -tt folder_build/runner.py
 
         - coconut src autopep8_build --strict --autopep8
+        - cp file_build/cocotest/py3_test.py autopep8_build/cocotest/py3_test.py
         - python -tt autopep8_build/runner.py
-
-        - cp src/cocotest/py3_test.coc.not src/cocotest/py3_test.coc
 
         - coconut src_target target_build --strict --print --target 3
         - python -tt target_build/runner.py
@@ -180,26 +173,21 @@ matrix:
         - coconut src_target/cocotest/py3_test.coc file_build/cocotest --strict --target 3
         - python -tt file_build/runner.py
 
-        - cp file_build/cocotest/py3_test.py run_build/cocotest/py3_test.py
-        - cp folder_build/cocotest/py3_test.py folder_build/cocotest/py3_test.py
-        - cp autopep8_build/cocotest/py3_test.py autopep8_build/cocotest/py3_test.py
-
-        - cp src/cocotest/py3_test.coc src/cocotest/py3_test.coc.not
-        - rm src/cocotest/py3_test.coc
-
         - coconut src/cocotest run_build/cocotest --strict
         - cp src/runner.coc run_build/runner.coc
+        - cp file_build/cocotest/py3_test.py run_build/cocotest/py3_test.py
         - cd run_build
         - coconut --run runner.coc --nowrite --strict
         - cd ..
 
         - coconut src folder_build --strict
+        - cp file_build/cocotest/py3_test.py folder_build/cocotest/py3_test.py
+
         - python -tt folder_build/runner.py
 
         - coconut src autopep8_build --strict --autopep8
+        - cp file_build/cocotest/py3_test.py autopep8_build/cocotest/py3_test.py
         - python -tt autopep8_build/runner.py
-
-        - cp src/cocotest/py3_test.coc.not src/cocotest/py3_test.coc
 
         - coconut src_target target_build --strict --print --target 3
         - python -tt target_build/runner.py
