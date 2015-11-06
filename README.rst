@@ -23,7 +23,7 @@ Love Python? So do I! All valid Python 3 is also valid Coconut. That means that 
 
 \2. *But...* **Coconut has powerful destructuring assignment.**
 
-Enjoy writing simple, readable code like ``a, b = get_two_items()``, but wish you could do something like ``{"text": text, "tags": {"href": link}} = get_html()``? Coconut provides destructuring assignment that can accoplish all that and much, much more!
+Enjoy writing simple, readable code like ``a, b = get_two_items()``, but wish you could do something like ``{"text": text, "tags": [first] + rest} = get_dict()``? Coconut provides destructuring assignment that can accoplish all that and much, much more!
 
 \3. *But...* **Coconut has nicer syntax.**
 
