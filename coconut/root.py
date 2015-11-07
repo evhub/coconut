@@ -27,12 +27,15 @@ import sys
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-VERSION = "0.3.3-dev"
+VERSION = "0.3.3"
 VERSION_NAME = "Lauric"
-
-VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
+DEVELOP = True
 
 ENCODING = "UTF-8"
+
+if DEVELOP:
+    VERSION += "-post_dev"
+VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
 
 PY2 = sys.version_info < (3,)
 
