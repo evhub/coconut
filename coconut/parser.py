@@ -1956,7 +1956,7 @@ class processor(object):
     chain_expr = attach(or_expr + ZeroOrMore(dubcolon.suppress() + or_expr), chain_proc)
 
     infix_expr = Forward()
-    infix_op = condense(fixto(backtick.suppress(), "(") + chain_expr + fixto(backtick.suppress(), ")"))
+    infix_op = condense(backtick.suppress() + chain_expr + backtick.suppress())
     infix_item = attach(Group(Optional(chain_expr)) + infix_op + Group(Optional(infix_expr)), infix_proc)
     infix_expr <<= infix_item | chain_expr
 
