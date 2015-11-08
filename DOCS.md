@@ -35,9 +35,6 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [Iterator Slice](#iterator-slice)
 - [IV. Built-Ins](#iv-built-ins)
     - [`reduce`](#reduce)
-    - [`itemgetter`](#itemgetter)
-    - [`attrgetter`](#attrgetter)
-    - [`methodcaller`](#methodcaller)
     - [`takewhile`](#takewhile)
     - [`dropwhile`](#dropwhile)
     - [`tee`](#tee)
@@ -323,7 +320,7 @@ _Can't be done without a long series of checks at the top of the function. See t
 
 Coconut supports a number of different syntactical aliases for common partial application use cases. These are:
 ```
-.name       =>      attrgetter("name")
+.name       =>      operator.attrgetter("name")
 obj.        =>      functools.partial(getattr, obj)
 func$       =>      functools.partial(functools.partial, func)
 series[]    =>      functools.partial(operator.__getitem__, series)
@@ -687,128 +684,6 @@ Python:
 ```python
 import functools
 prod = functools.reduce(operator.__mul__, items)
-```
-
-### `itemgetter`
-
-Coconut provides `operator.itemgetter` as a built-in under the name `itemgetter`.
-
-##### Python Docs
-
-**itemgetter**(_\*items_)
-
-Return a callable object that fetches _items_ from its operand using the operand’s `__getitem__()` method. If multiple items are specified, returns a tuple of lookup values. For example:
-
-- After `f = itemgetter(2)`, the call `f(r)` returns `r[2]`.
-- After `g = itemgetter(2, 5, 3)`, the call `g(r)` returns `(r[2], r[5], r[3])`.
-
-Equivalent to:
-```python
-def itemgetter(*items):
-    if len(items) == 1:
-        item = items[0]
-        def g(obj):
-            return obj[item]
-    else:
-        def g(obj):
-            return tuple(obj[item] for item in items)
-    return g
-```
-
-The items can be any type accepted by the operand’s `__getitem__` method. Dictionaries accept any hashable value. Lists, tuples, and strings accept an index or a slice.
-
-##### Example
-
-Coconut:
-```python
-letters = "ABCDEFG" |> itemgetter(1, 3, 5) |> reduce$([+])
-```
-
-Python:
-```python
-import operator
-letters = functools.reduce(operator.__concat__, operator.itemgetter(1, 3, 5)("ABCDEFG"))
-```
-
-### `attrgetter`
-
-Coconut provides `operator.attrgetter` as a built-in under the name `attrgetter`.
-
-##### Python Docs
-
-**attrgetter**(_\*attrs_)
-
-Return a callable object that fetches _attrs_ from its operand. If more than one attribute is requested, returns a tuple of attributes. The attribute names can also contain dots. For example:
-
-- After `f = attrgetter('name')`, the call `f(b)` returns `b.name`.
-- After `f = attrgetter('name', 'date')`, the call `f(b)` returns `(b.name, b.date)`.
-- After `f = attrgetter('name.first', 'name.last')`, the call `f(b)` returns `(b.name.first, b.name.last)`.
-
-Equivalent to:
-```python
-def attrgetter(*items):
-    if any(not isinstance(item, str) for item in items):
-        raise TypeError('attribute name must be a string')
-    if len(items) == 1:
-        attr = items[0]
-        def g(obj):
-            return resolve_attr(obj, attr)
-    else:
-        def g(obj):
-            return tuple(resolve_attr(obj, attr) for attr in items)
-    return g
-
-def resolve_attr(obj, attr):
-    for name in attr.split("."):
-        obj = getattr(obj, name)
-    return obj
-```
-
-##### Example
-
-Coconut:
-```python
-coords = point |> attrgetter("x", "y")
-```
-
-Python:
-```python
-import operator
-coords = operator.attrgetter("x", "y")(point)
-```
-
-### `methodcaller`
-
-Coconut provides `operator.methodcaller` as a built-in under the name `methodcaller`.
-
-##### Python Docs
-
-**methodcaller**(_name_**[**_, args..._**]**)
-
-Return a callable object that calls the method _name- on its operand. If additional arguments and/or keyword arguments are given, they will be given to the method as well. For example:
-
-- After `f = methodcaller('name')`, the call `f(b)` returns `b.name()`.
-- After `f = methodcaller('name', 'foo', bar=1)`, the call `f(b)` returns `b.name('foo', bar=1)`.
-
-Equivalent to:
-```python
-def methodcaller(name, *args, **kwargs):
-    def caller(obj):
-        return getattr(obj, name)(*args, **kwargs)
-    return caller
-```
-
-##### Example
-
-Coconut:
-```python
-clean = map(methodcaller("strip"), unclean)
-```
-
-Python:
-```python
-import operator
-clean = map(operator.methodcaller("strip"), unclean)
 ```
 
 ### `takewhile`

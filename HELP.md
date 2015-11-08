@@ -28,7 +28,6 @@ This tutorial will teach you how to write elegant, Pythonic code in a functional
     - [`match`](#match)
     - [`case`](#case)
 - [V. Advanced Features](#v-advanced-features)
-    - [`itemgetter`, `attrgetter`, and `methodcaller`](#itemgetter-attrgetter-and-methodcaller)
     - [`takewhile` and `dropwhile`](#takewhile-and-dropwhile)
     - [`recursive`](#recursive)
     - [Implicit Partial Application](#implicit-partial-application)
@@ -422,12 +421,6 @@ Note the absence of an `in` in the `match` statements: that's because the `value
 
 ## V. Advanced Features
 
-### `itemgetter`, `attrgetter`, and `methodcaller`
-
-Coconut adds the new built-in functions `itemgetter`, `attrgetter`, and `methodcaller`. These functions allow operations like getting an element, getting an attribute, or calling a method to be used like functions. Each one works the same way: provide it with the items to get, attributes to get, or method with arguments to call, and it will construct a function that will do that on the object it's called on.
-
-_Note: The full documentation for each of these functions can be found in the [DOCS](https://github.com/evhub/coconut/blob/master/DOCS.md)._
-
 ### `takewhile` and `dropwhile`
 
 Coconut adds the new built-in functions `takewhile` and `dropwhile`. Both take a condition as the first argument, and an iterable as the second, and either take from, or drop from, that iterable while the condition is true.
@@ -441,10 +434,10 @@ Coconut adds the new built-in decorator `recursive`, which optimizes any functio
 ### Implicit Partial Application
 
 Coconut allows for commonly-used partial applications to be shorthanded like so:
-* `.name` = `attrgetter$("name")`
+* `.name` = `operator.attrgetter$("name")`
 * `obj.` = `getattr$(obj)`
 * `func$` = `($)$(func)`
-* `series[]` = `operator.__getitem__$(series)` (would otherwise require `import operator`)
+* `series[]` = `operator.__getitem__$(series)`
 * `series$[]` = the equivalent of `series[]` for iterators
 
 ### Set Literals

@@ -245,9 +245,6 @@ class __coconut__(object):
             header += r'''
 __coconut_version__ = __coconut__.version
 reduce = __coconut__.functools.reduce
-itemgetter = __coconut__.operator.itemgetter
-attrgetter = __coconut__.operator.attrgetter
-methodcaller = __coconut__.operator.methodcaller
 takewhile = __coconut__.itertools.takewhile
 dropwhile = __coconut__.itertools.dropwhile
 tee = __coconut__.itertools.tee
