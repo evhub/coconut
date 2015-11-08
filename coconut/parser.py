@@ -502,7 +502,11 @@ def chain_proc(tokens):
     else:
         return "__coconut__.itertools.chain.from_iterable(" + lazy_list_proc(tokens) + ")"
 
-def get_infix_items(tokens):
+def infix_error(tokens):
+    """Raises inner infix error."""
+    raise CoconutException("invalid inner infix tokens: "+repr(tokens))
+
+def get_infix_items(tokens, callback=infix_error):
     """Performs infix token processing."""
     if len(tokens) < 3:
         raise CoconutException("invalid infix tokens: "+repr(tokens))
@@ -513,7 +517,7 @@ def get_infix_items(tokens):
         for item in tokens[2]:
             items.append(item)
         if len(tokens) > 3:
-            items.append(infix_proc([[]]+tokens[3:]))
+            items.append(callback([[]]+tokens[3:]))
         args = []
         for arg in items:
             if arg:
@@ -522,7 +526,7 @@ def get_infix_items(tokens):
 
 def infix_proc(tokens):
     """Processes infix calls."""
-    func, args = get_infix_items(tokens)
+    func, args = get_infix_items(tokens, infix_proc)
     return "("+func+")("+", ".join(args)+")"
 
 def op_funcdef_proc(tokens):
