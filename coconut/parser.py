@@ -645,24 +645,6 @@ class matcher(object):
 
     def __init__(self, checkvar, checkdefs=None, names=None):
         """Creates the matcher."""
-        self.setup()
-        self.checkvar = checkvar
-        self.checkdefs = []
-        if checkdefs is None:
-            self.increment()
-        else:
-            for checks, defs in checkdefs:
-                self.checkdefs.append([checks[:], defs[:]])
-            self.checks = self.get_checks(-1)
-            self.defs = self.get_defs(-1)
-        if names is None:
-            self.names = {}
-        else:
-            self.names = dict(names)
-        self.others = []
-
-    def setup(self):
-        """Sets up match functions."""
         self.matchers = {
             "dict": self.match_dict,
             "iter": self.match_iterator,
@@ -679,6 +661,20 @@ class matcher(object):
             "and": self.match_and,
             "or": self.match_or
         }
+        self.checkvar = checkvar
+        self.checkdefs = []
+        if checkdefs is None:
+            self.increment()
+        else:
+            for checks, defs in checkdefs:
+                self.checkdefs.append([checks[:], defs[:]])
+            self.checks = self.get_checks(-1)
+            self.defs = self.get_defs(-1)
+        if names is None:
+            self.names = {}
+        else:
+            self.names = dict(names)
+        self.others = []
 
     def duplicate(self):
         """Duplicates the matcher to others."""
