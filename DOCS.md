@@ -38,6 +38,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [`takewhile`](#takewhile)
     - [`dropwhile`](#dropwhile)
     - [`tee`](#tee)
+    - [`datamaker`](#datamaker)
     - [`recursive`](#recursive)
     - [`__coconut_version__`](#__coconut_version__)
 - [V. Keywords](#v-keywords)
@@ -791,6 +792,32 @@ Python:
 import itertools
 original, temp = itertools.tee(original)
 sliced = itertools.islice(temp, 5, None)
+```
+
+### `datamaker`
+
+Coconut provides the `datamaker` function to allow direct access to the base constructor of data types created with the Coconut `data` statement. This is particularly useful when writing alternative constructors for data types by overwriting `__new__`. Equivalent to:
+```python
+def datamaker(cls):
+    """Data constructor utility."""
+    return super(cls, cls).__new__$(cls)
+```
+
+##### Example
+
+Coconut:
+```python
+data trilen(h):
+    def __new__(cls, a, b):
+        return (a**2 + b**2)**0.5 |> datamaker(cls)
+```
+
+Python:
+```python
+import collections
+data trilen(collections.namedtuple("trilen", "hc")):
+    def __new__(cls, a, b):
+        return super(cls, cls).__new__(cls, (a**2 + b**2)**0.5)
 ```
 
 ### `recursive`

@@ -25,6 +25,7 @@ This tutorial will teach you how to write elegant, Pythonic code in a functional
     - [Chaining](#chaining)
 - [IV. Values](#iv-values)
     - [`data`](#data)
+    - [`datamaker`](#datamaker)
     - [`match`](#match)
     - [`case`](#case)
 - [V. Advanced Features](#v-advanced-features)
@@ -264,6 +265,15 @@ v = vector(3, 4)
 v |> print # all data types come with a built-in __repr__
 v |> abs |> print
 v.x = 2 # this will fail because data objects are immutable
+```
+
+### `datamaker`
+
+Coconut provides the built-in function `datamaker` for creating custom constructors for data types. This is done like so:
+```python
+data trilen(h):
+    def __new__(cls, a, b):
+        return (a**2 + b**2)**0.5 |> datamaker(cls)
 ```
 
 ### `match`
