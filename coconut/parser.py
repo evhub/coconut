@@ -370,21 +370,21 @@ class CoconutParseError(CoconutSyntaxError):
     """Coconut ParseError."""
     def __init__(self, line, col, ln):
         """Creates The Coconut ParseError."""
-        super(self).__init__("parsing failed", line, col-1, ln)
+        super(CoconutParseError, self).__init__("parsing failed", line, col-1, ln)
 
 class CoconutStyleError(CoconutSyntaxError):
     """Coconut --strict error."""
     def __init__(self, message, source, point=None, ln=None):
         """Creates the --strict Coconut error."""
         message += " (disable --strict to dismiss)"
-        super(self).__init__(message, source, point, ln)
+        super(CoconutStyleError, self).__init__(message, source, point, ln)
 
 class CoconutTargetError(CoconutSyntaxError):
     """Coconut --target error."""
     def __init__(self, message, source, point=None, ln=None):
         """Creates the --target Coconut error."""
         message += " (enable --target 3 to dismiss)"
-        super(self).__init__(message, source, point, ln)
+        super(CoconutTargetError, self).__init__(message, source, point, ln)
 
 def attach(item, action):
     """Attaches a parse action to an item."""
