@@ -170,6 +170,10 @@ def recursive(func):
             return recurse
     return tailed_func
 
+def datamaker(cls):
+    """Data constructor utility."""
+    return functools.partial(super(cls, cls).__new__, cls)
+
 class MatchError(Exception):
     """Pattern-matching error."""
 '''
@@ -237,6 +241,10 @@ class __coconut__(object):
                 state[1] = args, kwargs
                 return recurse
         return tailed_func
+    @staticmethod
+    def datamaker(cls):
+        """Data constructor utility."""
+        return __coconut__.functools.partial(super(cls, cls).__new__, cls)
     class MatchError(Exception):
         """Pattern-matching error."""
 '''
@@ -249,6 +257,7 @@ takewhile = __coconut__.itertools.takewhile
 dropwhile = __coconut__.itertools.dropwhile
 tee = __coconut__.itertools.tee
 recursive = __coconut__.recursive
+datamaker = __coconut__.datamaker
 MatchError = __coconut__.MatchError
 '''
             if which != "code":
