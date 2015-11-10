@@ -814,7 +814,7 @@ data trilen(h):
 Python:
 ```python
 import collections
-data trilen(collections.namedtuple("trilen", "hc")):
+class trilen(collections.namedtuple("trilen", "hc")):
     def __new__(cls, a, b):
         return super(cls, cls).__new__(cls, (a**2 + b**2)**0.5)
 ```
