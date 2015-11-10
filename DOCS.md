@@ -799,7 +799,6 @@ sliced = itertools.islice(temp, 5, None)
 Coconut provides the `datamaker` function to allow direct access to the base constructor of data types created with the Coconut `data` statement. This is particularly useful when writing alternative constructors for data types by overwriting `__new__`. Equivalent to:
 ```python
 def datamaker(cls):
-    """Data constructor utility."""
     return super(cls, cls).__new__$(cls)
 ```
 
