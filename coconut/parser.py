@@ -147,7 +147,7 @@ getattr = getattr
 slice = slice
 
 def recursive(func):
-    """Tail recursion optimizer."""
+    """Returns tail-call-optimized function."""
     state = [True, None] # toplevel, (args, kwargs)
     recurse = object()
     @functools.wraps(func)
@@ -171,7 +171,7 @@ def recursive(func):
     return tailed_func
 
 def datamaker(cls):
-    """Data constructor utility."""
+    """Returns base data constructor."""
     return functools.partial(super(cls, cls).__new__, cls)
 
 class MatchError(Exception):
@@ -219,7 +219,7 @@ class __coconut__(object):
     slice = slice
     @staticmethod
     def recursive(func):
-        """Tail recursion optimizer."""
+        """Returns tail-call-optimized function."""
         state = [True, None] # toplevel, (args, kwargs)
         recurse = object()
         @__coconut__.functools.wraps(func)
@@ -243,7 +243,7 @@ class __coconut__(object):
         return tailed_func
     @staticmethod
     def datamaker(cls):
-        """Data constructor utility."""
+        """Returns base data constructor."""
         return __coconut__.functools.partial(super(cls, cls).__new__, cls)
     class MatchError(Exception):
         """Pattern-matching error."""
