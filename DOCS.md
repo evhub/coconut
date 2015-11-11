@@ -55,7 +55,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
 ### Usage
 
 ```
-coconut [-h] [source] [dest] [-v] [-s] [-p] [-r] [-n] [-i] [-q] [-d] [-c code] [--autopep8 ...]
+coconut [-h] [-v] [source] [dest] [-t version] [-s] [-p] [-r] [-n] [-i] [-q] [-d] [-c code] [--autopep8 ...]
 ```
 
 ### Positional Arguments
