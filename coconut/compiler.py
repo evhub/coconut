@@ -173,7 +173,7 @@ class cli(object):
     commandline.add_argument("-n", "--nowrite", action="store_const", const=True, default=False, help="disable writing the compiled python")
     commandline.add_argument("-i", "--interact", action="store_const", const=True, default=False, help="force the interpreter to start (otherwise starts if no other command is given)")
     commandline.add_argument("-q", "--quiet", action="store_const", const=True, default=False, help="suppress all informational output")
-    commandline.add_argument("-d", "--debug", action="store_const", const=True, default=False, help="enable printing debug output")
+    commandline.add_argument("-d", "--debug", action="store_const", const=True, default=False, help="print verbose debug output")
     commandline.add_argument("-c", "--code", metavar="code", type=str, nargs=1, default=None, help="run a line of coconut passed in as a string (can also be accomplished with a pipe)")
     commandline.add_argument("--autopep8", type=str, nargs=argparse.REMAINDER, default=None, help="use autopep8 to format compiled code (remaining args passed to autopep8)")
     processor = None
