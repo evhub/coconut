@@ -1529,7 +1529,7 @@ class processor(object):
                 elif trailer[0] == "$(":
                     raise CoconutSyntaxError("a partial application argument is required", original, location, self.adjust(lineno(location, original)))
                 else:
-                    raise CoconutException("invalid trailer symbol", trailer0]))
+                    raise CoconutException("invalid trailer symbol", trailer[0])
             elif len(trailer) == 2:
                 if trailer[0] == "$(":
                     out = "__coconut__.functools.partial("+out+", "+trailer[1]+")"
@@ -1557,7 +1557,7 @@ class processor(object):
                 elif trailer[0] == "..":
                     out = "(lambda *args, **kwargs: "+out+"(("+trailer[1]+")(*args, **kwargs)))"
                 else:
-                    raise CoconutException("invalid special trailer", trailer0]))
+                    raise CoconutException("invalid special trailer", trailer[0])
             else:
                 raise CoconutException("invalid trailer tokens", trailer)
         return out
