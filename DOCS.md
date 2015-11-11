@@ -77,7 +77,7 @@ dest                  destination directory for compiled files (defaults to the 
 -n, --nowrite         disable writing the compiled python
 -i, --interact        force the interpreter to start (otherwise starts if no other command is given)
 -q, --quiet           suppress all informational output
--d, --debug           enable printing debug output
+-d, --debug           print verbose debug output
 -c, --code            run a line of coconut passed in as a string (can also be accomplished with a pipe)
 --autopep8            use autopep8 to format compiled code (remaining args passed to autopep8)
 ```
