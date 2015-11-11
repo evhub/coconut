@@ -43,7 +43,7 @@ def version(which="num"):
     elif which == "-v":
         return COMPILER.version
     else:
-        raise CoconutException("invalid version type "+repr(which)+"; valid versions are 'num', 'name', 'spec', and '-v'")
+        raise CoconutException("invalid version type "+ascii(which)+"; valid versions are 'num', 'name', 'spec', and '-v'")
 
 #-----------------------------------------------------------------------------------------------------------------------
 # PARSING:
@@ -73,5 +73,5 @@ def parse(code, mode="exec"):
     elif mode == "debug":
         return PARSER.parse_debug(code)
     else:
-        raise CoconutException("invalid parse mode " + repr(mode)
+        raise CoconutException("invalid parse mode " + ascii(mode)
             + "; valid modes are 'exec', 'file', 'single', 'module', 'block', 'eval', and 'debug'")

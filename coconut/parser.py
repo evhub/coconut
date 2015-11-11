@@ -34,7 +34,7 @@ def headers(which, version=None):
         elif version == "3":
             header = "#!/usr/bin/env python3"
         else:
-            raise CoconutException("invalid Python version: "+repr(version))
+            raise CoconutException("invalid Python version: "+ascii(version))
         header += '''
 # -*- coding: '''+ENCODING+''' -*-
 
@@ -145,6 +145,7 @@ len = len
 isinstance = isinstance
 getattr = getattr
 slice = slice
+ascii = ascii
 
 def recursive(func):
     """Returns tail-call-optimized function."""
@@ -217,6 +218,7 @@ class __coconut__(object):
     isinstance = isinstance
     getattr = getattr
     slice = slice
+    ascii = ascii
     @staticmethod
     def recursive(func):
         """Returns tail-call-optimized function."""
@@ -249,7 +251,7 @@ class __coconut__(object):
         """Pattern-matching error."""
 '''
             else:
-                raise CoconutException("invalid header type: "+repr(which))
+                raise CoconutException("invalid header type: "+ascii(which))
             header += r'''
 __coconut_version__ = __coconut__.version
 reduce = __coconut__.functools.reduce
@@ -442,7 +444,7 @@ class tracer(object):
             if message is not None:
                 out += "["+message+"] "
             if len(tokens) == 1 and isinstance(tokens[0], str):
-                out += repr(tokens[0])
+                out += ascii(tokens[0])
             else:
                 out += str(tokens)
             out += " (line "+str(lineno(location, original))+", col "+str(col(location, original))+")"
@@ -472,7 +474,7 @@ def anyint_proc(tokens):
         base, item = tokens[0].split("_")
         return '__coconut__.int("'+item+'", '+base+")"
     else:
-        raise CoconutException("invalid anyint tokens: "+repr(tokens))
+        raise CoconutException("invalid anyint tokens: "+ascii(tokens))
 
 def list_proc(tokens):
     """Properly formats lists."""
@@ -493,7 +495,7 @@ def attr_proc(tokens):
     if len(tokens) == 1:
         return '__coconut__.operator.attrgetter("'+tokens[0]+'")'
     else:
-        raise CoconutException("invalid attrgetter literal tokens: "+repr(tokens))
+        raise CoconutException("invalid attrgetter literal tokens: "+ascii(tokens))
 
 def lazy_list_proc(tokens):
     """Processes lazy lists."""
@@ -513,12 +515,12 @@ def chain_proc(tokens):
 
 def infix_error(tokens):
     """Raises inner infix error."""
-    raise CoconutException("invalid inner infix tokens: "+repr(tokens))
+    raise CoconutException("invalid inner infix tokens: "+ascii(tokens))
 
 def get_infix_items(tokens, callback=infix_error):
     """Performs infix token processing."""
     if len(tokens) < 3:
-        raise CoconutException("invalid infix tokens: "+repr(tokens))
+        raise CoconutException("invalid infix tokens: "+ascii(tokens))
     else:
         items = []
         for item in tokens[0]:
@@ -568,28 +570,28 @@ def lambdef_proc(tokens):
     elif len(tokens) == 2:
         return "lambda "+tokens[0]+": "+tokens[1]
     else:
-        raise CoconutException("invalid lambda tokens: "+repr(tokens))
+        raise CoconutException("invalid lambda tokens: "+ascii(tokens))
 
 def func_proc(tokens):
     """Processes mathematical function definitons."""
     if len(tokens) == 2:
         return "def " + tokens[0] + ": return " + tokens[1]
     else:
-        raise CoconutException("invalid mathematical function definition tokens: "+repr(tokens))
+        raise CoconutException("invalid mathematical function definition tokens: "+ascii(tokens))
 
 def match_func_proc(tokens):
     """Processes match mathematical function definitions."""
     if len(tokens) == 2:
         return tokens[0] + "return " + tokens[1] + linebreak + closestr
     else:
-        raise CoconutException("invalid pattern-matching mathematical function definition tokens: "+repr(tokens))
+        raise CoconutException("invalid pattern-matching mathematical function definition tokens: "+ascii(tokens))
 
 def full_match_funcdef_proc(tokens):
     """Processes full match function definition."""
     if len(tokens) == 2:
         return tokens[0] + "".join(tokens[1]) + closestr
     else:
-        raise CoconutException("invalid pattern-matching function definition tokens: "+repr(tokens))
+        raise CoconutException("invalid pattern-matching function definition tokens: "+ascii(tokens))
 
 def data_proc(tokens):
     """Processes data blocks."""
@@ -598,7 +600,7 @@ def data_proc(tokens):
     elif len(tokens) == 1:
         return "class "+tokens[0]+'(__coconut__.collections.namedtuple("'+tokens[0]+'", ""))'
     else:
-        raise CoconutException("invalid data tokens: "+repr(tokens))
+        raise CoconutException("invalid data tokens: "+ascii(tokens))
 
 def decorator_proc(tokens):
     """Processes decorators."""
@@ -615,7 +617,7 @@ def else_proc(tokens):
     if len(tokens) == 1:
         return linebreak + openstr + tokens[0] + closestr
     else:
-        raise CoconutException("invalid compound else statement tokens: "+repr(tokens))
+        raise CoconutException("invalid compound else statement tokens: "+ascii(tokens))
 
 def set_proc(tokens):
     """Processes set literals."""
@@ -636,7 +638,7 @@ def set_proc(tokens):
         else:
             raise CoconutException("invalid set type: "+str(set_type))
     else:
-        raise CoconutException("invalid set literal tokens: "+repr(tokens))
+        raise CoconutException("invalid set literal tokens: "+ascii(tokens))
 
 def class_proc(tokens):
     """Processes class inheritance lists."""
@@ -645,7 +647,7 @@ def class_proc(tokens):
     elif len(tokens) == 1:
         return "("+tokens[0]+")"
     else:
-        raise CoconutException("invalid class inheritance tokens: "+repr(tokens))
+        raise CoconutException("invalid class inheritance tokens: "+ascii(tokens))
 
 class matcher(object):
     """Pattern-matching processor."""
@@ -749,7 +751,7 @@ class matcher(object):
         if len(original) == 1:
             match = original[0]
         else:
-            raise CoconutException("invalid dict match tokens: "+repr(original))
+            raise CoconutException("invalid dict match tokens: "+ascii(original))
         self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Mapping)")
         self.checks.append("__coconut__.len("+item+") == "+str(len(match)))
         for x in range(0, len(match)):
@@ -778,7 +780,7 @@ class matcher(object):
             elif series_type == "[":
                 self.defs.append(tail+" = __coconut__.list("+item+splice+")")
             else:
-                raise CoconutException("invalid series match type: "+repr(series_type))
+                raise CoconutException("invalid series match type: "+ascii(series_type))
         for x in range(0, len(match)):
             self.match(match[x], item+"["+str(x)+"]")
 
@@ -820,7 +822,7 @@ class matcher(object):
         elif series_type == "[":
             self.defs.append(front+" = __coconut__.list("+item+splice+")")
         else:
-            raise CoconutException("invalid series match type: "+repr(series_type))
+            raise CoconutException("invalid series match type: "+ascii(series_type))
         for x in range(0, len(match)):
             self.match(match[x], item+"["+str(x - len(match))+"]")
 
@@ -842,7 +844,7 @@ class matcher(object):
         elif series_type == "[":
             self.defs.append(middle+" = __coconut__.list("+item+splice+")")
         else:
-            raise CoconutException("invalid series match type: "+repr(series_type))
+            raise CoconutException("invalid series match type: "+ascii(series_type))
         for x in range(0, len(head_match)):
             self.match(head_match[x], item+"["+str(x)+"]")
         for x in range(0, len(last_match)):
@@ -877,7 +879,7 @@ class matcher(object):
         if len(original) == 1:
             match = original[0]
         else:
-            raise CoconutException("invalid set match tokens: "+repr(original))
+            raise CoconutException("invalid set match tokens: "+ascii(original))
         self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Set)")
         self.checks.append("__coconut__.len("+item+") == "+str(len(match)))
         for const in match:
@@ -922,7 +924,7 @@ class matcher(object):
         for flag in self.matchers:
             if flag in original:
                 return self.matchers[flag](original, item)
-        raise CoconutException("invalid inner match tokens: "+repr(original))
+        raise CoconutException("invalid inner match tokens: "+ascii(original))
 
     def out(self):
         out = ""
@@ -947,7 +949,7 @@ def match_proc(tokens):
     elif len(tokens) == 4:
         matches, item, cond, stmts = tokens
     else:
-        raise CoconutException("invalid outer match tokens: "+repr(tokens))
+        raise CoconutException("invalid outer match tokens: "+ascii(tokens))
     matching = matcher(match_check_var)
     matching.match(matches, match_to_var)
     if cond:
@@ -962,10 +964,10 @@ def match_proc(tokens):
 
 def pattern_error(original, loc):
     """Constructs a pattern-matching error message."""
-    match_line = repr(clean(line(loc, original)))
+    match_line = ascii(clean(line(loc, original)))
     return ("if not " + match_check_var + ":" + linebreak + openstr
         + match_err_var + ' = __coconut__.MatchError("pattern-matching failed for " '
-        + repr(match_line) + ' " in " + repr(repr(' + match_to_var + ")))"
+        + ascii(match_line) + ' " in " + __coconut__.ascii(__coconut__.ascii(' + match_to_var + ")))"
         + linebreak + match_err_var + ".pattern = " + match_line
         + linebreak + match_err_var + ".value = " + match_to_var
         + linebreak + "raise " + match_err_var
@@ -987,7 +989,7 @@ def case_to_match(tokens, item):
         matches, cond, stmts = tokens
         return matches, item, cond, stmts
     else:
-        raise CoconutException("invalid case match tokens: "+repr(tokens))
+        raise CoconutException("invalid case match tokens: "+ascii(tokens))
 
 def case_proc(tokens):
     """Processes case blocks."""
@@ -997,7 +999,7 @@ def case_proc(tokens):
     elif len(tokens) == 3:
         item, cases, default = tokens
     else:
-        raise CoconutException("invalid top-level case tokens: "+repr(tokens))
+        raise CoconutException("invalid top-level case tokens: "+ascii(tokens))
     out = match_proc(case_to_match(cases[0], item))
     for case in cases[1:]:
         out += ("if not "+match_check_var+":" + linebreak + openstr
@@ -1028,7 +1030,7 @@ def except_proc(tokens):
     elif len(tokens) == 2:
         return "except ("+tokens[0]+") as "+tokens[1]
     else:
-        raise CoconutException("invalid except tokens: "+repr(tokens))
+        raise CoconutException("invalid except tokens: "+ascii(tokens))
 
 #-----------------------------------------------------------------------------------------------------------------------
 # PARSER:
@@ -1046,7 +1048,7 @@ class processor(object):
         if version in self.versions:
             self.version = version
         else:
-            raise CoconutException("unsupported target Python version " + repr(version)
+            raise CoconutException("unsupported target Python version " + ascii(version)
                 + " (supported targets are '2' and '3', or leave blank for universal)")
         self.strict = strict
         self.bind()
@@ -1414,7 +1416,7 @@ class processor(object):
     def todebug(self, tag, code):
         """If debugging, prints a debug message."""
         if self.indebug():
-            self.TRACER.show("["+str(tag)+"] "+repr(code))
+            self.TRACER.show("["+str(tag)+"] "+ascii(code))
 
     def pre(self, inputstring, **kwargs):
         """Performs pre-processing."""
@@ -1449,7 +1451,7 @@ class processor(object):
                 self.todebug(proc.__name__, out)
             return out
         else:
-            raise CoconutException("multiple tokens leftover: "+repr(tokens))
+            raise CoconutException("multiple tokens leftover: "+ascii(tokens))
 
     def autopep8(self, arglist=[]):
         """Enables autopep8 integration."""
@@ -1474,7 +1476,7 @@ class processor(object):
             else:
                 raise CoconutException("string marker points to comment/passthrough")
         else:
-            raise CoconutException("invalid string marker: "+repr(tokens))
+            raise CoconutException("invalid string marker: "+ascii(tokens))
 
     def set_docstring(self, tokens):
         """Sets the docstring."""
@@ -1482,7 +1484,7 @@ class processor(object):
             self.docstring = self.string_repl([tokens[0]]) + linebreak*2
             return tokens[1]
         else:
-            raise CoconutException("invalid docstring tokens: "+repr(tokens))
+            raise CoconutException("invalid docstring tokens: "+ascii(tokens))
 
     def comment_repl(self, tokens):
         """Replaces comment references."""
@@ -1493,7 +1495,7 @@ class processor(object):
             else:
                 return " #"+ref
         else:
-            raise CoconutException("invalid comment marker: "+repr(tokens))
+            raise CoconutException("invalid comment marker: "+ascii(tokens))
 
     def passthrough_repl(self, tokens):
         """Replaces passthrough references."""
@@ -1504,7 +1506,7 @@ class processor(object):
             else:
                 return ref
         else:
-            raise CoconutException("invalid passthrough marker: "+repr(tokens))
+            raise CoconutException("invalid passthrough marker: "+ascii(tokens))
 
     def item_repl(self, original, location, tokens):
         """Processes items."""
@@ -1525,7 +1527,7 @@ class processor(object):
                 elif trailer[0] == "$(":
                     raise CoconutSyntaxError("a partial application argument is required", original, location, self.adjust(lineno(location, original)))
                 else:
-                    raise CoconutException("invalid trailer symbol: "+repr(trailer[0]))
+                    raise CoconutException("invalid trailer symbol: "+ascii(trailer[0]))
             elif len(trailer) == 2:
                 if trailer[0] == "$(":
                     out = "__coconut__.functools.partial("+out+", "+trailer[1]+")"
@@ -1549,13 +1551,13 @@ class processor(object):
                                 out += ", "+arg
                             out += ")"
                     else:
-                        raise CoconutException("invalid iterator slice args: "+repr(trailer[1]))
+                        raise CoconutException("invalid iterator slice args: "+ascii(trailer[1]))
                 elif trailer[0] == "..":
                     out = "(lambda *args, **kwargs: "+out+"(("+trailer[1]+")(*args, **kwargs)))"
                 else:
-                    raise CoconutException("invalid special trailer: "+repr(trailer[0]))
+                    raise CoconutException("invalid special trailer: "+ascii(trailer[0]))
             else:
-                raise CoconutException("invalid trailer tokens: "+repr(trailer))
+                raise CoconutException("invalid trailer tokens: "+ascii(trailer))
         return out
 
     def augassign_repl(self, tokens):
@@ -1583,12 +1585,12 @@ class processor(object):
                 out += name+" "+op+" "+item
             return out
         else:
-            raise CoconutException("invalid assignment tokens: "+repr(tokens))
+            raise CoconutException("invalid assignment tokens: "+ascii(tokens))
 
     def check_strict(self, name, original, location, tokens):
         """Checks that syntax meets --strict requirements."""
         if len(tokens) != 1:
-            raise CoconutException("invalid "+name+" tokens: "+repr(tokens))
+            raise CoconutException("invalid "+name+" tokens: "+ascii(tokens))
         elif self.strict:
             raise CoconutStyleError("found "+name, original, location, self.adjust(lineno(location, original)))
         else:
@@ -1605,7 +1607,7 @@ class processor(object):
     def check_py3(self, name, original, location, tokens):
         """Checks for Python 3 syntax."""
         if len(tokens) != 1:
-            raise CoconutException("invalid "+name+" tokens: "+repr(tokens))
+            raise CoconutException("invalid "+name+" tokens: "+ascii(tokens))
         elif self.version != "3":
             raise CoconutTargetError("found "+name, original, location, self.adjust(lineno(location, original)))
         else:
@@ -1650,7 +1652,7 @@ class processor(object):
     def set_literal_convert(self, tokens):
         """Converts set literals to the right form for the target Python."""
         if len(tokens) != 1:
-            raise CoconutException("Invalid set literal tokens: "+repr(tokens))
+            raise CoconutException("Invalid set literal tokens: "+ascii(tokens))
         elif self.version == "3":
             return "{"+tokens[0]+"}"
         else:
