@@ -407,6 +407,7 @@ class cli(object):
                 "py2_map": py2_map,
                 "py2_oct": py2_oct,
                 "py2_zip": py2_zip,
+                "ascii": ascii,
                 "filter": filter,
                 "hex": hex,
                 "map": map,
