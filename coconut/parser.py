@@ -1553,7 +1553,7 @@ class processor(object):
                                 out += ", "+arg
                             out += ")"
                     else:
-                        raise CoconutException("invalid iterator slice args", trailer1]))
+                        raise CoconutException("invalid iterator slice args", trailer[1])
                 elif trailer[0] == "..":
                     out = "(lambda *args, **kwargs: "+out+"(("+trailer[1]+")(*args, **kwargs)))"
                 else:
