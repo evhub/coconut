@@ -292,8 +292,7 @@ match_err_var = "_coconut_match_err"
 lazy_item_var = "_coconut_lazy_item"
 lazy_chain_var = "_coconut_lazy_chain"
 wildcard = "_"
-keywords = ["and",
-            "as",
+keywords = ("and",
             "as",
             "assert",
             "break",
@@ -321,9 +320,9 @@ keywords = ["and",
             "try",
             "while",
             "with",
-            "yield"]
-const_vars = ["True", "False", "None"]
-reserved_vars = ["nonlocal", "data", "match", "case", "async", "await"]
+            "yield")
+const_vars = ("True", "False", "None")
+reserved_vars = ("nonlocal", "data", "match", "case", "async", "await")
 
 ParserElement.setDefaultWhitespaceChars(white)
 
@@ -1043,7 +1042,7 @@ class processor(object):
     TRACER = tracer()
     trace = TRACER.bind
     debug = TRACER.debug
-    versions = [None, "2", "3"]
+    versions = (None, "2", "3")
 
     def __init__(self, strict=False, version=None):
         """Creates a new processor."""
@@ -1544,11 +1543,10 @@ class processor(object):
                                 else:
                                     arg = "None"
                             args.append(arg)
-                        out = "__coconut__.itertools.islice("+out
                         if len(args) == 1:
-                            out += ", "+args[0]+", ("+args[0]+") + 1)"
-                            out = "next("+out+")"
+                            out = "next(__coconut__.itertools.islice(" + out + ", " + args[0] + ", (" + args[0] + ") + 1))"
                         else:
+                            out = "__coconut__.itertools.islice(" + out
                             for arg in args:
                                 out += ", "+arg
                             out += ")"
