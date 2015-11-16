@@ -49,6 +49,9 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [Reserved Variables](#reserved-variables)
 - [VI. Coconut Module](#vi-coconut-module)
     - [`coconut.convenience`](#coconutconvenience)
+    - [`coconut.convenience.parse`](#coconutconvenienceparse)
+    - [`coconut.convenience.cmd`](#coconutconveniencecmd)
+    - [`coconut.convenience.version`](#coconutconvenienceversion)
 
 ## I. Command Line
 
