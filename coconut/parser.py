@@ -1850,6 +1850,7 @@ class processor(object):
     parameters = condense(lparen + argslist + rparen)
 
     testlist = itemlist(test, comma)
+    multi_testlist = addspace(OneOrMore(condense(test + comma)) + Optional(test))
 
     dict_comp_ref = Forward()
     yield_from = addspace(Keyword("from") + test)
@@ -1914,7 +1915,7 @@ class processor(object):
     set_s = fixto(CaselessLiteral("s"), "s")
     set_f = fixto(CaselessLiteral("f"), "f")
     set_letter = set_s | set_f
-    setmaker = Group(addspace(test + comp_for))("comp") | Group(test)("single") | Group(testlist)("list")
+    setmaker = Group(addspace(test + comp_for))("comp") | Group(multi_testlist)("list")) | (Group(test)("single")
     set_literal = lbrace.suppress() + setmaker + rbrace.suppress()
     set_letter_literal = set_letter + lbrace.suppress() + Optional(setmaker) + rbrace.suppress()
     lazy_items = Optional(test + ZeroOrMore(comma.suppress() + test) + Optional(comma.suppress()))
@@ -2036,11 +2037,10 @@ class processor(object):
     break_stmt = Keyword("break")
     continue_stmt = Keyword("continue")
     return_stmt = addspace(Keyword("return") + Optional(testlist))
-    yield_stmt = yield_expr
     simple_raise_stmt = addspace(Keyword("raise") + Optional(test))
     complex_raise_stmt = addspace(simple_raise_stmt + Keyword("from") + test)
     raise_stmt = simple_raise_stmt | complex_raise_stmt_ref
-    flow_stmt = break_stmt | continue_stmt | return_stmt | raise_stmt | yield_stmt
+    flow_stmt = break_stmt | continue_stmt | return_stmt | raise_stmt | yield_expr
 
     dotted_as_name = addspace(dotted_name + Optional(Keyword("as") + name))
     import_as_name = addspace(name + Optional(Keyword("as") + name))
