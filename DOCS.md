@@ -631,7 +631,7 @@ pow2 = functools.partial(pow, 2)
 
 ### Iterator Slice
 
-Coconut uses a `$` sign right after an iterator before a slice to perform iterator slicing. It works just like sequence slicing, with the exception that no guarantee that the original iterator be preserved is made (to preserve the original iterator, use Coconut's [`tee` function](#tee)). It has the same precedence as subscription.
+Coconut uses a `$` sign right after an iterator before a slice to perform iterator slicing. It works just like sequence slicing, with the exception that negative indices are not allowed and no guarantee is made that the original iterator be preserved (to preserve the original iterator, use Coconut's [`tee` function](#tee)). For dynamically determining the slice parameters, iterator slicing supports slicing with a `slice` object in the same way as can be done with normal slicing. It has the same precedence as subscription.
 
 ##### Python Docs
 
