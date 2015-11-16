@@ -1023,6 +1023,11 @@ def set_to_tuple(tokens):
     else:
         raise CoconutException("invalid set maker item", tokens[0])
 
+def islice_lambda(out):
+    """Constructs a function that behaves like slicing for islice."""
+    return ("(lambda i: __coconut__.itertools.islice("+out+", i.start, i.stop, i.step) if isinstance(i, __coconut__.slice)"
+            " else next(__coconut__.itertools.islice("+out+", i, i + 1)))")
+
 #-----------------------------------------------------------------------------------------------------------------------
 # PARSER:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1508,8 +1513,7 @@ class processor(object):
                 out += trailer
             elif len(trailer) == 1:
                 if trailer[0] == "$[]":
-                    out = ("(lambda i: __coconut__.itertools.islice("+out+", i.start, i.stop, i.step) if isinstance(i, __coconut__.slice)"
-                           " else next(__coconut__.itertools.islice("+out+", i, i+1)))")
+                    out = islice_lambda(out)
                 elif trailer[0] == "$":
                     out = "__coconut__.functools.partial(__coconut__.functools.partial, "+out+")"
                 elif trailer[0] == "[]":
@@ -1535,8 +1539,7 @@ class processor(object):
                                     arg = "None"
                             args.append(arg)
                         if len(args) == 1:
-                            out = ("(lambda i: __coconut__.itertools.islice("+out+", i.start, i.stop, i.step) if isinstance(i, __coconut__.slice)"
-                           " else next(__coconut__.itertools.islice("+out+", i, i+1)))(" + args[0] + ")")
+                            out = islice_lambda(out) + "(" + args[0] + ")"
                         else:
                             out = "__coconut__.itertools.islice(" + out
                             for arg in args:
