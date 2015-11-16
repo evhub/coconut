@@ -62,9 +62,31 @@ setuptools.setup(
         "Framework :: IPython",
         "Development Status :: 3 - Alpha"
         ],
-    keywords=["functional programming language"],
+    keywords=[
+        "functional programming language",
+        "functional programming",
+        "programming language",
+        "pattern matching",
+        "pattern-matching",
+        "data type",
+        "data types",
+        "lambda",
+        "lambdas",
+        "lazy list",
+        "lazy lists",
+        "lazy evaluation",
+        "tail recursion",
+        "tail call",
+        "infix",
+        "function composition",
+        "partial application",
+        "currying",
+        "curry"
+        ],
     packages=setuptools.find_packages(),
-    install_requires=["pyparsing"],
+    install_requires=[
+        "pyparsing==2.0.5"
+        ],
     entry_points={"console_scripts":[
         "coconut = coconut.__main__:main"
         ]}
