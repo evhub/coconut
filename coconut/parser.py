@@ -629,15 +629,21 @@ def set_proc(tokens):
         elif set_type == "f":
             return "__coconut__.frozenset()"
         else:
-            raise CoconutException("invalid set type: "+str(set_type))
+            raise CoconutException("invalid set type", set_type)
     elif len(tokens) == 2:
-        set_type, set_maker = tokens
-        if set_type == "s":
-            return "__coconut__.set(["+set_maker+"])"
-        elif set_type == "f":
-            return "__coconut__.frozenset(["+set_maker+"])"
+        set_type, set_items = tokens
+        if "comp" in set_items or "list" in set_items:
+            set_maker = "(" + set_items[0] + ")"
+        elif "single" in set_items:
+            set_maker = "(" + set_items[0] + ",)"
         else:
-            raise CoconutException("invalid set type: "+str(set_type))
+            raise CoconutException("invalid set maker items", set_items)
+        if set_type == "s":
+            return "__coconut__.set("+set_maker+")"
+        elif set_type == "f":
+            return "__coconut__.frozenset("+set_maker+")"
+        else:
+            raise CoconutException("invalid set type", set_type)
     else:
         raise CoconutException("invalid set literal tokens", tokens)
 
@@ -1896,7 +1902,8 @@ class processor(object):
     set_f = fixto(CaselessLiteral("f"), "f")
     set_letter = set_s | set_f
     set_literal = lbrace.suppress() + setmaker + rbrace.suppress()
-    set_letter_literal = attach(set_letter + lbrace.suppress() + Optional(setmaker) + rbrace.suppress(), set_proc)
+    setmaker_items = Group(addspace(test + comp_for))("comp") | Group(test)("single") | Group(testlist)("list")
+    set_letter_literal = attach(set_letter + lbrace.suppress() + Optional(setmaker_items) + rbrace.suppress(), set_proc)
     lazy_items = Optional(test + ZeroOrMore(comma.suppress() + test) + Optional(comma.suppress()))
     lazy_list = attach(lbanana.suppress() + lazy_items + rbanana.suppress(), lazy_list_proc)
     atom = (
