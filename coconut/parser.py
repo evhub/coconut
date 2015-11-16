@@ -1535,7 +1535,8 @@ class processor(object):
                                     arg = "None"
                             args.append(arg)
                         if len(args) == 1:
-                            out = "next(__coconut__.itertools.islice(" + out + ", " + args[0] + ", (" + args[0] + ") + 1))"
+                            out = ("(lambda i: __coconut__.itertools.islice("+out+", i.start, i.stop, i.step) if isinstance(i, __coconut__.slice)"
+                           " else next(__coconut__.itertools.islice("+out+", i, i+1)))(" + args[0] + ")")
                         else:
                             out = "__coconut__.itertools.islice(" + out
                             for arg in args:
