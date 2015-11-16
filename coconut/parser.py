@@ -620,33 +620,6 @@ def else_proc(tokens):
     else:
         raise CoconutException("invalid compound else statement tokens", tokens)
 
-def set_proc(tokens):
-    """Processes set literals."""
-    if len(tokens) == 1:
-        set_type = tokens[0]
-        if set_type == "s":
-            return "__coconut__.set()"
-        elif set_type == "f":
-            return "__coconut__.frozenset()"
-        else:
-            raise CoconutException("invalid set type", set_type)
-    elif len(tokens) == 2:
-        set_type, set_items = tokens
-        if "comp" in set_items or "list" in set_items:
-            set_maker = "(" + set_items[0] + ")"
-        elif "single" in set_items:
-            set_maker = "(" + set_items[0] + ",)"
-        else:
-            raise CoconutException("invalid set maker items", set_items)
-        if set_type == "s":
-            return "__coconut__.set("+set_maker+")"
-        elif set_type == "f":
-            return "__coconut__.frozenset("+set_maker+")"
-        else:
-            raise CoconutException("invalid set type", set_type)
-    else:
-        raise CoconutException("invalid set literal tokens", tokens)
-
 def class_proc(tokens):
     """Processes class inheritance lists."""
     if len(tokens) == 0:
@@ -1039,6 +1012,17 @@ def except_proc(tokens):
     else:
         raise CoconutException("invalid except tokens", tokens)
 
+def set_to_tuple(tokens):
+    """Converts set literal tokens to tuples."""
+    if len(tokens) != 1:
+        raise CoconutException("invalid set maker tokens", tokens)
+    elif "comp" in tokens or "list" in tokens:
+        return "(" + tokens[0] + ")"
+    elif "single" in tokens:
+        return "(" + tokens[0] + ",)"
+    else:
+        raise CoconutException("invalid set maker item", tokens[0])
+
 #-----------------------------------------------------------------------------------------------------------------------
 # PARSER:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1070,6 +1054,8 @@ class processor(object):
         self.passthrough <<= self.trace(attach(self.passthrough_marker, self.passthrough_repl), "passthrough")
         self.passthrough_block <<= self.trace(attach(self.passthrough_block_marker, self.passthrough_repl), "passthrough_block")
         self.atom_item_ref <<= self.trace(attach(self.atom_item, self.item_repl), "atom_item")
+        self.set_literal_ref <<= self.trace(attach(self.set_literal, self.set_literal_convert), "set_literal")
+        self.set_letter_literal_ref <<= self.trace(attach(self.set_letter_literal, self.set_letter_literal_convert), "set_letter_literal")
         self.augassign_stmt_ref <<= attach(self.augassign_stmt, self.augassign_repl)
         self.u_string_ref <<= attach(self.u_string, self.u_string_check)
         self.typedef_ref <<= attach(self.typedef, self.typedef_check)
@@ -1081,7 +1067,6 @@ class processor(object):
         self.star_assign_item_ref <<= attach(self.star_assign_item, self.star_assign_item_check)
         self.classic_lambdef_ref <<= attach(self.classic_lambdef, self.lambdef_check)
         self.classic_lambdef_nocond_ref <<= attach(self.classic_lambdef_nocond, self.lambdef_check)
-        self.set_literal_ref <<= attach(self.set_literal, self.set_literal_convert)
         self.async_funcdef_ref <<= attach(self.async_funcdef, self.async_stmt_check)
         self.async_match_funcdef_ref <<= attach(self.async_match_funcdef, self.async_stmt_check)
         self.async_block_ref <<= attach(self.async_block, self.async_stmt_check)
@@ -1658,11 +1643,39 @@ class processor(object):
     def set_literal_convert(self, tokens):
         """Converts set literals to the right form for the target Python."""
         if len(tokens) != 1:
-            raise CoconutException("Invalid set literal tokens", tokens)
+            raise CoconutException("invalid set literal tokens", tokens)
+        elif len(tokens[0]) != 1:
+            raise CoconutException("invalid set literal item", tokens[0])
         elif self.version == "3":
-            return "{"+tokens[0]+"}"
+            return "{" + tokens[0][0] + "}"
         else:
-            return "set(["+tokens[0]+"])"
+            return "__coconut__.set(" + set_to_tuple(tokens[0]) + ")"
+
+    def set_letter_literal_convert(self, tokens):
+        """Processes set literals."""
+        if len(tokens) == 1:
+            set_type = tokens[0]
+            if set_type == "s":
+                return "__coconut__.set()"
+            elif set_type == "f":
+                return "__coconut__.frozenset()"
+            else:
+                raise CoconutException("invalid set type", set_type)
+        elif len(tokens) == 2:
+            set_type, set_items = tokens
+            if len(set_items) != 1:
+                raise CoconutException("invalid set literal item", tokens[0])
+            elif set_type == "s":
+                if self.version == "3":
+                    return "{" + set_items[0] + "}"
+                else:
+                    return "__coconut__.set(" + set_to_tuple(set_items) + ")"
+            elif set_type == "f":
+                return "__coconut__.frozenset(" + set_to_tuple(set_items) + ")"
+            else:
+                raise CoconutException("invalid set type", set_type)
+        else:
+            raise CoconutException("invalid set literal tokens", tokens)
 
     def parse(self, inputstring, parser, preargs, postargs):
         """Uses the parser to parse the inputstring."""
@@ -1843,7 +1856,6 @@ class processor(object):
     yield_from_ref = Forward()
     yield_arg = yield_from_ref | testlist
     yield_expr = addspace(Keyword("yield") + Optional(yield_arg))
-    setmaker = addspace(test + comp_for | testlist)
     dict_comp = addspace(condense(test + colon) + test + comp_for)
     dict_item = addspace(itemlist(addspace(condense(test + colon) + test), comma))
     dictmaker = dict_comp_ref | dict_item
@@ -1898,12 +1910,13 @@ class processor(object):
     passthrough_atom = addspace(OneOrMore(passthrough))
     attr_atom = attach(condense(dot.suppress() + name), attr_proc)
     set_literal_ref = Forward()
+    set_letter_literal_ref = Forward()
     set_s = fixto(CaselessLiteral("s"), "s")
     set_f = fixto(CaselessLiteral("f"), "f")
     set_letter = set_s | set_f
+    setmaker = Group(addspace(test + comp_for))("comp") | Group(test)("single") | Group(testlist)("list")
     set_literal = lbrace.suppress() + setmaker + rbrace.suppress()
-    setmaker_items = Group(addspace(test + comp_for))("comp") | Group(test)("single") | Group(testlist)("list")
-    set_letter_literal = attach(set_letter + lbrace.suppress() + Optional(setmaker_items) + rbrace.suppress(), set_proc)
+    set_letter_literal = set_letter + lbrace.suppress() + Optional(setmaker_items) + rbrace.suppress()
     lazy_items = Optional(test + ZeroOrMore(comma.suppress() + test) + Optional(comma.suppress()))
     lazy_list = attach(lbanana.suppress() + lazy_items + rbanana.suppress(), lazy_list_proc)
     atom = (
@@ -1915,7 +1928,7 @@ class processor(object):
         | condense(lbrack + Optional(testlist_comp) + rbrack)
         | condense(lbrace + Optional(dictmaker) + rbrace)
         | set_literal_ref
-        | set_letter_literal
+        | set_letter_literal_ref
         | lazy_list
         | func_atom
         | attr_atom
