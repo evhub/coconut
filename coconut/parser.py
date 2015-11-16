@@ -1915,7 +1915,7 @@ class processor(object):
     set_s = fixto(CaselessLiteral("s"), "s")
     set_f = fixto(CaselessLiteral("f"), "f")
     set_letter = set_s | set_f
-    setmaker = Group(addspace(test + comp_for))("comp") | Group(multi_testlist)("list")) | (Group(test)("single")
+    setmaker = Group(addspace(test + comp_for))("comp") | Group(multi_testlist)("list") | Group(test)("single")
     set_literal = lbrace.suppress() + setmaker + rbrace.suppress()
     set_letter_literal = set_letter + lbrace.suppress() + Optional(setmaker) + rbrace.suppress()
     lazy_items = Optional(test + ZeroOrMore(comma.suppress() + test) + Optional(comma.suppress()))
