@@ -902,7 +902,7 @@ class matcher(object):
     def match(self, original, item):
         """Performs pattern-matching processing."""
         for flag in self.matchers:
-            if flag in original:
+            if flag in original.keys():
                 return self.matchers[flag](original, item)
         raise CoconutException("invalid inner match tokens", original)
 
@@ -1016,9 +1016,9 @@ def set_to_tuple(tokens):
     """Converts set literal tokens to tuples."""
     if len(tokens) != 1:
         raise CoconutException("invalid set maker tokens", tokens)
-    elif "comp" in tokens or "list" in tokens:
+    elif "comp" in tokens.keys() or "list" in tokens.keys():
         return "(" + tokens[0] + ")"
-    elif "single" in tokens:
+    elif "single" in tokens.keys():
         return "(" + tokens[0] + ",)"
     else:
         raise CoconutException("invalid set maker item", tokens[0])
@@ -1915,7 +1915,7 @@ class processor(object):
     set_s = fixto(CaselessLiteral("s"), "s")
     set_f = fixto(CaselessLiteral("f"), "f")
     set_letter = set_s | set_f
-    setmaker = Group(addspace(test + comp_for))("comp") | Group(multi_testlist)("list") | Group(test)("single")
+    setmaker = Group(addspace(test + comp_for)("comp") | multi_testlist("list") | test("single"))
     set_literal = lbrace.suppress() + setmaker + rbrace.suppress()
     set_letter_literal = set_letter + lbrace.suppress() + Optional(setmaker) + rbrace.suppress()
     lazy_items = Optional(test + ZeroOrMore(comma.suppress() + test) + Optional(comma.suppress()))
