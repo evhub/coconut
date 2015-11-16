@@ -1916,7 +1916,7 @@ class processor(object):
     set_letter = set_s | set_f
     setmaker = Group(addspace(test + comp_for))("comp") | Group(test)("single") | Group(testlist)("list")
     set_literal = lbrace.suppress() + setmaker + rbrace.suppress()
-    set_letter_literal = set_letter + lbrace.suppress() + Optional(setmaker_items) + rbrace.suppress()
+    set_letter_literal = set_letter + lbrace.suppress() + Optional(setmaker) + rbrace.suppress()
     lazy_items = Optional(test + ZeroOrMore(comma.suppress() + test) + Optional(comma.suppress()))
     lazy_list = attach(lbanana.suppress() + lazy_items + rbanana.suppress(), lazy_list_proc)
     atom = (
