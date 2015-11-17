@@ -2355,7 +2355,7 @@ class ParseExpression(ParserElement):
             "" + str(self)
         except:
             print(type(self))
-            print(self.__str__.__doc__)
+            print(self.name)
             print(repr(repr(self)))
         self.errmsg = "Expected " + str(self)
 
