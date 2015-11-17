@@ -1,7 +1,7 @@
 Coconut
 =======
 
-*Coconut is a variant of Python built for simple, elegant functional programming.*
+*Coconut is a variant of Python built for simple, elegant, Pythonic functional programming.*
 
 Coconut can be found on GitHub_ and PyPI_.
 

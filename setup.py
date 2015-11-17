@@ -33,7 +33,7 @@ with open("README.rst", "r") as opened:
 setuptools.setup(
     name="coconut",
     version=VERSION,
-    description="The Coconut Programming Language.",
+    description="Simple, elegant, Pythonic functional programming.",
     long_description=readme,
     url="https://github.com/evhub/coconut",
     author="Evan Hubinger",
