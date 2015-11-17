@@ -17,7 +17,7 @@ Description: The Coconut transpiler.
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
 from .root import *
-from .pyparsing import *
+from pyparsing import *
 
 #-----------------------------------------------------------------------------------------------------------------------
 # HEADERS:
