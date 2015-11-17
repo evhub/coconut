@@ -22,6 +22,8 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
+from __future__ import unicode_literals
+
 __doc__ = \
 """
 pyparsing module - Classes and methods to define and execute parsing grammars
@@ -89,7 +91,7 @@ __all__ = [
 'htmlComment', 'javaStyleComment', 'keepOriginalText', 'line', 'lineEnd', 'lineStart', 'lineno',
 'makeHTMLTags', 'makeXMLTags', 'matchOnlyAtCol', 'matchPreviousExpr', 'matchPreviousLiteral',
 'nestedExpr', 'nullDebugAction', 'nums', 'oneOf', 'opAssoc', 'operatorPrecedence', 'printables',
-'punc8bit', 'pythonStyleComment', 'quotedString', 'removeQuotes', 'replaceHTMLEntity', 
+'punc8bit', 'pythonStyleComment', 'quotedString', 'removeQuotes', 'replaceHTMLEntity',
 'replaceWith', 'restOfLine', 'sglQuotedString', 'srange', 'stringEnd',
 'stringStart', 'traceParseAction', 'unicodeString', 'upcaseTokens', 'withAttribute',
 'indentedBlock', 'originalTextFor', 'ungroup', 'infixNotation','locatedExpr', 'withClass',
@@ -144,9 +146,9 @@ else:
             singleArgBuiltins.append(getattr(__builtin__,fname))
         except AttributeError:
             continue
-            
+
 _generatorType = type((y for y in range(1)))
- 
+
 def _xml_escape(data):
     """Escape &, <, >, ", ', etc. in a string of data."""
 
@@ -384,7 +386,7 @@ class ParseResults(object):
     def itervalues( self ):
         """Returns all named result values."""
         return (self[k] for k in self.iterkeys())
-            
+
     def iteritems( self ):
         return ((k, self[k]) for k in self.iterkeys())
 
@@ -400,7 +402,7 @@ class ParseResults(object):
         def values( self ):
             """Returns all named result values."""
             return list(self.itervalues())
-                
+
         def items( self ):
             """Returns all named result keys and values as a list of tuples."""
             return list(self.iteritems())
@@ -409,15 +411,15 @@ class ParseResults(object):
         """Since keys() returns an iterator, this method is helpful in bypassing
            code that looks for the existence of any defined results names."""
         return bool(self.__tokdict)
-        
+
     def pop( self, *args, **kwargs):
         """Removes and returns item at specified index (default=last).
            Supports both list and dict semantics for pop(). If passed no
            argument or an integer argument, it will use list semantics
-           and pop tokens from the list of parsed tokens. If passed a 
+           and pop tokens from the list of parsed tokens. If passed a
            non-integer argument (most likely a string), it will use dict
-           semantics and pop the corresponding value from any defined 
-           results names. A second default return value argument is 
+           semantics and pop the corresponding value from any defined
+           results names. A second default return value argument is
            supported, just as in dict.pop()."""
         if not args:
             args = [-1]
@@ -426,8 +428,8 @@ class ParseResults(object):
                 args = (args[0], v)
             else:
                 raise TypeError("pop() got an unexpected keyword argument '%s'" % k)
-        if (isinstance(args[0], int) or 
-                        len(args) == 1 or 
+        if (isinstance(args[0], int) or
+                        len(args) == 1 or
                         args[0] in self):
             index = args[0]
             ret = self[index]
@@ -479,7 +481,7 @@ class ParseResults(object):
             return self[name]
         except KeyError:
             return ""
-            
+
         if name in self.__tokdict:
             if name not in self.__accumNames:
                 return self.__tokdict[name][-1][0]
@@ -504,7 +506,7 @@ class ParseResults(object):
                 self[k] = v
                 if isinstance(v[0],ParseResults):
                     v[0].__parent = wkref(self)
-            
+
         self.__toklist += other.__toklist
         self.__accumNames.update( other.__accumNames )
         return self
@@ -512,7 +514,7 @@ class ParseResults(object):
     def __radd__(self, other):
         if isinstance(other,int) and other == 0:
             return self.copy()
-        
+
     def __repr__( self ):
         return "(%s, %s)" % ( repr( self.__toklist ), repr( self.__tokdict ) )
 
@@ -660,12 +662,12 @@ class ParseResults(object):
                     out.append("\n%s%s[%d]:\n%s%s%s" % (indent,('  '*(depth)),i,indent,('  '*(depth+1)),vv.dump(indent,depth+1) ))
                 else:
                     out.append("\n%s%s[%d]:\n%s%s%s" % (indent,('  '*(depth)),i,indent,('  '*(depth+1)),_ustr(vv)))
-            
+
         return "".join(out)
 
     def pprint(self, *args, **kwargs):
         """Pretty-printer for parsed results as a list, using the C{pprint} module.
-           Accepts additional positional or keyword args as defined for the 
+           Accepts additional positional or keyword args as defined for the
            C{pprint.pprint} method. (U{http://docs.python.org/3/library/pprint.html#pprint.pprint})"""
         pprint.pprint(self.asList(), *args, **kwargs)
 
@@ -783,7 +785,7 @@ def _trim_arity(func, maxargs=2):
                     continue
                 raise
     return wrapper
- 
+
 class ParserElement(object):
     """Abstract base level parser element class."""
     DEFAULT_WHITE_CHARS = " \n\t\r"
@@ -849,9 +851,9 @@ class ParserElement(object):
            NOTE: this returns a *copy* of the original C{ParserElement} object;
            this is so that the client can define a basic element, such as an
            integer, and reference it in multiple places with different names.
-           
+
            You can also set results names using the abbreviated syntax,
-           C{expr("name")} in place of C{expr.setResultsName("name")} - 
+           C{expr("name")} in place of C{expr.setResultsName("name")} -
            see L{I{__call__}<__call__>}.
         """
         newself = self.copy()
@@ -908,7 +910,7 @@ class ParserElement(object):
         return self
 
     def addCondition(self, *fns, **kwargs):
-        """Add a boolean predicate function to expression's list of parse actions. See 
+        """Add a boolean predicate function to expression's list of parse actions. See
         L{I{setParseAction}<setParseAction>}. Optional keyword argument C{message} can
         be used to define a custom message to be used in the raised exception."""
         msg = kwargs.get("message") or "failed user-defined condition"
@@ -1415,10 +1417,10 @@ class ParserElement(object):
              userdata = Word(alphas).setResultsName("name") + Word(nums+"-").setResultsName("socsecno")
            could be written as::
              userdata = Word(alphas)("name") + Word(nums+"-")("socsecno")
-             
+
            If C{name} is given with a trailing C{'*'} character, then C{listAllMatches} will be
            passed as C{True}.
-           
+
            If C{name} is omitted, same as calling C{L{copy}}.
            """
         if name is not None:
@@ -1550,10 +1552,10 @@ class ParserElement(object):
         """Execute the parse expression on a series of test strings, showing each
            test, the parsed results or where the parse failed. Quick and easy way to
            run a parse expression against a list of sample strings.
-           
+
            Parameters:
             - tests - a list of separate test strings, or a multiline string of test strings
-            - parseAll - (default=False) - flag to pass to C{L{parseString}} when running tests           
+            - parseAll - (default=False) - flag to pass to C{L{parseString}} when running tests
         """
         if isinstance(tests, basestring):
             tests = map(str.strip, tests.splitlines())
@@ -1571,7 +1573,7 @@ class ParserElement(object):
             out.append('')
             print('\n'.join(out))
 
-        
+
 class Token(ParserElement):
     """Abstract C{ParserElement} subclass, for defining atomic matching patterns."""
     def __init__( self ):
@@ -1720,7 +1722,7 @@ class Word(Token):
        maximum, and/or exact length.  The default value for C{min} is 1 (a
        minimum value < 1 is not valid); the default values for C{max} and C{exact}
        are 0, meaning no maximum or exact length restriction. An optional
-       C{exclude} parameter can list characters that might be found in 
+       C{exclude} parameter can list characters that might be found in
        the input C{bodyChars} string; useful to define a word of all printables
        except for one or two characters, for instance.
     """
@@ -1866,7 +1868,7 @@ class Regex(Token):
             self.pattern = \
             self.reString = str(pattern)
             self.flags = flags
-            
+
         else:
             raise ValueError("Regex may only be constructed with a string or a compiled RE object")
 
@@ -2352,7 +2354,7 @@ class ParseExpression(ParserElement):
                 self.mayIndexError  |= other.mayIndexError
 
         self.errmsg = "Expected " + str(self)
-        
+
         return self
 
     def setResultsName( self, name, listAllMatches=False ):
@@ -2364,7 +2366,7 @@ class ParseExpression(ParserElement):
         for e in self.exprs:
             e.validate(tmp)
         self.checkRecursion( [] )
-        
+
     def copy(self):
         ret = super(ParseExpression,self).copy()
         ret.exprs = [e.copy() for e in self.exprs]
@@ -2973,10 +2975,10 @@ class Forward(ParseElementEnhance):
         self.saveAsList = self.expr.saveAsList
         self.ignoreExprs.extend(self.expr.ignoreExprs)
         return self
-        
+
     def __ilshift__(self, other):
         return self << other
-    
+
     def leaveWhitespace( self ):
         self.skipWhitespace = False
         return self
@@ -3344,12 +3346,12 @@ def originalTextFor(expr, asString=True):
        restore the parsed fields of an HTML start tag into the raw tag text itself, or to
        revert separate tokens with intervening whitespace back to the original matching
        input text. Simpler to use than the parse action C{L{keepOriginalText}}, and does not
-       require the inspect module to chase up the call stack.  By default, returns a 
-       string containing the original parsed text.  
-       
-       If the optional C{asString} argument is passed as C{False}, then the return value is a 
-       C{L{ParseResults}} containing any results names that were originally matched, and a 
-       single token containing the original matched text from the input string.  So if 
+       require the inspect module to chase up the call stack.  By default, returns a
+       string containing the original parsed text.
+
+       If the optional C{asString} argument is passed as C{False}, then the return value is a
+       C{L{ParseResults}} containing any results names that were originally matched, and a
+       single token containing the original matched text from the input string.  So if
        the expression passed to C{L{originalTextFor}} contains expressions with defined
        results names, you must set C{asString} to C{False} if you want to preserve those
        results name values."""
@@ -3368,7 +3370,7 @@ def originalTextFor(expr, asString=True):
     matchExpr.setParseAction(extractText)
     return matchExpr
 
-def ungroup(expr): 
+def ungroup(expr):
     """Helper to undo pyparsing's default grouping of And expressions, even
        if all but one are non-empty."""
     return TokenConverter(expr).setParseAction(lambda t:t[0])
@@ -3412,8 +3414,8 @@ def srange(s):
        The values enclosed in the []'s may be::
           a single character
           an escaped character with a leading backslash (such as \- or \])
-          an escaped hex character with a leading '\x' (\x21, which is a '!' character) 
-            (\0x## is also supported for backwards compatibility) 
+          an escaped hex character with a leading '\x' (\x21, which is a '!' character)
+            (\0x## is also supported for backwards compatibility)
           an escaped octal character with a leading '\0' (\041, which is a '!' character)
           a range of any of the above, separated by a dash ('a-z', etc.)
           any combination of the above ('aeiouy', 'a-zA-Z0-9_$', etc.)
@@ -3536,7 +3538,7 @@ def withAttribute(*args,**attrDict):
         - a list of name-value tuples, as in ( ("ns1:class", "Customer"), ("ns2:align","right") )
        For attribute names with a namespace prefix, you must use the second form.  Attribute
        names are matched insensitive to upper/lower case.
-       
+
        If just testing for C{class} (with or without a namespace), use C{L{withClass}}.
 
        To verify that the attribute exists, but without specifying a value, pass
@@ -3562,7 +3564,7 @@ def withClass(classname, namespace=''):
        difficult because C{class} is a reserved word in Python.
        """
     classattr = "%s:class" % namespace if namespace else "class"
-    return withAttribute(**{classattr : classname})        
+    return withAttribute(**{classattr : classname})
 
 opAssoc = _Constants()
 opAssoc.LEFT = object()
@@ -3682,7 +3684,7 @@ def nestedExpr(opener="(", closer=")", content=None, ignoreExpr=quotedString.cop
                                 ).setParseAction(lambda t:t[0].strip()))
             else:
                 if ignoreExpr is not None:
-                    content = (Combine(OneOrMore(~ignoreExpr + 
+                    content = (Combine(OneOrMore(~ignoreExpr +
                                     ~Literal(opener) + ~Literal(closer) +
                                     CharsNotIn(ParserElement.DEFAULT_WHITE_CHARS,exact=1))
                                 ).setParseAction(lambda t:t[0].strip()))
@@ -3802,4 +3804,4 @@ if __name__ == "__main__":
           Select
           Select ^^^ frox Sys.dual
           Select A, B, C from Sys.dual, Table2""")
-    
+
