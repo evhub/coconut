@@ -22,8 +22,6 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-from __future__ import unicode_literals
-
 __doc__ = \
 """
 pyparsing module - Classes and methods to define and execute parsing grammars
@@ -2353,6 +2351,7 @@ class ParseExpression(ParserElement):
                 self.mayReturnEmpty |= other.mayReturnEmpty
                 self.mayIndexError  |= other.mayIndexError
 
+        print(repr(self))
         self.errmsg = "Expected " + str(self)
 
         return self
