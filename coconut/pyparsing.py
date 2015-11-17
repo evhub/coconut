@@ -2351,7 +2351,7 @@ class ParseExpression(ParserElement):
                 self.mayReturnEmpty |= other.mayReturnEmpty
                 self.mayIndexError  |= other.mayIndexError
 
-        print(repr(self))
+        print(repr(str(self)))
         self.errmsg = "Expected " + str(self)
 
         return self
