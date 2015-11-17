@@ -27,9 +27,9 @@ import sys
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-VERSION = "0.3.3"
-VERSION_NAME = "Lauric"
-DEVELOP = True
+VERSION = "0.3.4"
+VERSION_NAME = "Macapuno"
+DEVELOP = False
 
 ENCODING = "UTF-8"
 
