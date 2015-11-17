@@ -128,10 +128,10 @@ else:
             # unicode object (being a subclass of basestring) count as a "string
             # object"?
             # If so, then return a unicode object:
-            return unicode(obj)
+            #return unicode(obj)
             # Else encode it... but how? There are many choices... :)
             # Replace unprintables with escape codes?
-            #return unicode(obj).encode(sys.getdefaultencoding(), 'backslashreplace_errors')
+            return unicode(obj).encode(sys.getdefaultencoding(), 'backslashreplace_errors')
             # Replace unprintables with question marks?
             #return unicode(obj).encode(sys.getdefaultencoding(), 'replace')
             # ...
