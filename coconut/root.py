@@ -29,7 +29,7 @@ import sys
 
 VERSION = "0.3.4"
 VERSION_NAME = "Macapuno"
-DEVELOP = False
+DEVELOP = True
 
 ENCODING = "UTF-8"
 
