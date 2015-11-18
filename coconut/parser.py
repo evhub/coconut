@@ -89,7 +89,7 @@ ParserElement.setDefaultWhitespaceChars(white)
 
 def genhash(code):
     """Generates a hash from code."""
-    return hash((VERSION_STR, code))
+    return hex(hash((VERSION_STR, code)))
 
 def gethash(compiled):
     """Retrieves a hash from a header."""
