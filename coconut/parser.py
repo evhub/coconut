@@ -20,13 +20,90 @@ from .root import *
 from pyparsing import *
 
 #-----------------------------------------------------------------------------------------------------------------------
+# CONSTANTS:
+#-----------------------------------------------------------------------------------------------------------------------
+
+hash_prefix = '# hash((coconut_version, coconut_code)) == '
+openstr = "\u204b"
+closestr = "\xb6"
+linebreak = "\n"
+white = " \t\f"
+downs = "([{"
+ups = ")]}"
+holds = "'\""
+escape = "\\"
+tablen = 4
+decorator_var = "_coconut_decorator"
+match_to_var = "_coconut_match_to"
+match_check_var = "_coconut_match_check"
+match_iter_var = "_coconut_match_iter"
+match_err_var = "_coconut_match_err"
+lazy_item_var = "_coconut_lazy_item"
+lazy_chain_var = "_coconut_lazy_chain"
+wildcard = "_"
+keywords = ("and",
+            "as",
+            "assert",
+            "break",
+            "class",
+            "continue",
+            "def",
+            "del",
+            "elif",
+            "else",
+            "except",
+            "finally",
+            "for",
+            "from",
+            "global",
+            "if",
+            "import",
+            "in",
+            "is",
+            "lambda",
+            "not",
+            "or",
+            "pass",
+            "raise",
+            "return",
+            "try",
+            "while",
+            "with",
+            "yield")
+const_vars = ("True",
+              "False",
+              "None")
+reserved_vars = ("nonlocal",
+                 "data",
+                 "match",
+                 "case",
+                 "async",
+                 "await")
+
+ParserElement.enablePackrat()
+ParserElement.setDefaultWhitespaceChars(white)
+
+#-----------------------------------------------------------------------------------------------------------------------
 # HEADERS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def headers(which, version=None):
+def genhash(code):
+    """Generates a hash from code."""
+    return hash((VERSION_STR, code))
+
+def gethash(compiled):
+    """Retrieves a hash from a header."""
+    lines = compiled.splitlines()
+    if len(lines) < 3 or not lines[2].startswith(hash_prefix):
+        return None
+    else:
+        return lines[2][len(hash_prefix):]
+
+def headers(which, version=None, usehash=None):
+    """Generates the specified header."""
     if which == "none":
         return ""
-    if which == "initial" or which == "package":
+    elif which == "initial" or which == "package":
         if version is None:
             header = "#!/usr/bin/env python"
         elif version == "2":
@@ -37,7 +114,10 @@ def headers(which, version=None):
             raise CoconutException("invalid Python version", version)
         header += '''
 # -*- coding: '''+ENCODING+''' -*-
-
+'''
+        if usehash is not None:
+            header += hash_prefix + usehash + "\n"
+        header += '''
 # Compiled with Coconut version '''+VERSION_STR+'''
 
 '''
@@ -45,6 +125,8 @@ def headers(which, version=None):
             header += r'''"""Built-in Coconut functions."""
 
 '''
+    elif usehash is not None:
+        raise CoconutException("can only add a hash to an initial or package header, not "+str(which))
     else:
         header = ""
     if which != "initial":
@@ -268,63 +350,6 @@ MatchError = __coconut__.MatchError
 
 '''
     return header
-
-#-----------------------------------------------------------------------------------------------------------------------
-# CONSTANTS:
-#-----------------------------------------------------------------------------------------------------------------------
-
-ParserElement.enablePackrat()
-
-openstr = "\u204b"
-closestr = "\xb6"
-linebreak = "\n"
-white = " \t\f"
-downs = "([{"
-ups = ")]}"
-holds = "'\""
-escape = "\\"
-tablen = 4
-decorator_var = "_coconut_decorator"
-match_to_var = "_coconut_match_to"
-match_check_var = "_coconut_match_check"
-match_iter_var = "_coconut_match_iter"
-match_err_var = "_coconut_match_err"
-lazy_item_var = "_coconut_lazy_item"
-lazy_chain_var = "_coconut_lazy_chain"
-wildcard = "_"
-keywords = ("and",
-            "as",
-            "assert",
-            "break",
-            "class",
-            "continue",
-            "def",
-            "del",
-            "elif",
-            "else",
-            "except",
-            "finally",
-            "for",
-            "from",
-            "global",
-            "if",
-            "import",
-            "in",
-            "is",
-            "lambda",
-            "not",
-            "or",
-            "pass",
-            "raise",
-            "return",
-            "try",
-            "while",
-            "with",
-            "yield")
-const_vars = ("True", "False", "None")
-reserved_vars = ("nonlocal", "data", "match", "case", "async", "await")
-
-ParserElement.setDefaultWhitespaceChars(white)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -1444,9 +1469,9 @@ class processor(object):
         out += linebreak
         return out
 
-    def header_proc(self, inputstring, header="file", initial="initial", **kwargs):
+    def header_proc(self, inputstring, header="file", initial="initial", usehash=None, **kwargs):
         """Adds the header."""
-        return headers(initial, self.version) + self.docstring + headers(header, self.version) + inputstring
+        return headers(initial, self.version, usehash) + self.docstring + headers(header, self.version) + inputstring
 
     def post(self, tokens, **kwargs):
         """Performs post-processing."""
@@ -2244,17 +2269,25 @@ class processor(object):
         """Parses console input."""
         return self.parse(inputstring, self.single_parser, {}, {"header": "none", "initial": "none"})
 
-    def parse_file(self, inputstring):
+    def parse_file(self, inputstring, addhash=True):
         """Parses file input."""
-        return self.parse(inputstring, self.file_parser, {}, {"header": "file"})
+        if addhash:
+            usehash = genhash(inputstring)
+        else:
+            usehash = None
+        return self.parse(inputstring, self.file_parser, {}, {"header": "file", "usehash": usehash})
 
     def parse_exec(self, inputstring):
         """Parses exec input."""
         return self.parse(inputstring, self.file_parser, {}, {"header": "file", "initial": "none"})
 
-    def parse_module(self, inputstring):
+    def parse_module(self, inputstring, addhash=True):
         """Parses module input."""
-        return self.parse(inputstring, self.file_parser, {}, {"header": "module"})
+        if addhash:
+            usehash = genhash(inputstring)
+        else:
+            usehash = None
+        return self.parse(inputstring, self.file_parser, {}, {"header": "module", "usehash": usehash})
 
     def parse_block(self, inputstring):
         """Parses block text."""
