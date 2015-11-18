@@ -18,6 +18,7 @@ from __future__ import with_statement, print_function, absolute_import, unicode_
 
 from .root import *
 from pyparsing import *
+from zlib import adler32
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
@@ -89,7 +90,7 @@ ParserElement.setDefaultWhitespaceChars(white)
 
 def genhash(code):
     """Generates a hash from code."""
-    return hex(hash((VERSION_STR, code)))
+    return hex(adler32((VERSION_STR, code)) & 0xffffffff)
 
 def gethash(compiled):
     """Retrieves a hash from a header."""
