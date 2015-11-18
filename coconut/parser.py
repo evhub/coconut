@@ -88,9 +88,9 @@ ParserElement.setDefaultWhitespaceChars(white)
 # HEADERS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def genhash(code):
+def genhash(code=""):
     """Generates a hash from code."""
-    return hex(adler32((VERSION_STR, code)) & 0xffffffff)
+    return hex(adler32(VERSION_STR + "\x00" + code) & 0xffffffff) # necessary for cross-compatibility
 
 def gethash(compiled):
     """Retrieves a hash from a header."""
@@ -117,7 +117,7 @@ def headers(which, version=None, usehash=None):
 # -*- coding: '''+ENCODING+''' -*-
 '''
         if usehash is not None:
-            header += hash_prefix + usehash + "\n"
+            header += hash_prefix + usehash + linebreak
         header += '''
 # Compiled with Coconut version '''+VERSION_STR+'''
 
