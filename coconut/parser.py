@@ -1039,17 +1039,23 @@ class processor(object):
     debug = TRACER.debug
     versions = (None, "2", "3")
 
-    def __init__(self, strict=False, version=None):
+    def __init__(self, strict=False, version=None, display=print):
         """Creates a new processor."""
+        self.display = display
+        self.setup(strict, version)
+        self.preprocs = [self.prepare, self.str_proc, self.passthrough_proc, self.ind_proc]
+        self.postprocs = [self.reind_proc, self.header_proc]
+        self.bind()
+        self.clean()
+
+    def setup(self, strict=False, version=None):
+        """Initializes strict and version."""
         if version in self.versions:
             self.version = version
         else:
             raise CoconutException("unsupported target Python version " + ascii(version)
                 + " (supported targets are '2' and '3', or leave blank for universal)")
         self.strict = strict
-        self.bind()
-        self.setup()
-        self.clean()
 
     def bind(self):
         """Binds reference objects to the proper parse actions."""
@@ -1078,11 +1084,6 @@ class processor(object):
         self.await_keyword_ref <<= attach(self.await_keyword, self.await_keyword_check)
         self.complex_raise_stmt_ref <<= attach(self.complex_raise_stmt, self.complex_raise_stmt_check)
 
-    def setup(self):
-        """Initializes the processor."""
-        self.preprocs = [self.prepare, self.str_proc, self.passthrough_proc, self.ind_proc]
-        self.postprocs = [self.reind_proc, self.header_proc]
-
     def clean(self):
         """Resets references."""
         self.indchar = None
@@ -1090,6 +1091,10 @@ class processor(object):
         self.docstring = ""
         self.ichain_count = 0
         self.skips = set()
+
+    def warn(self, msg):
+        """Displays a message."""
+        self.display("CoconutWarning: " + str(msg))
 
     def adjust(self, ln):
         """Adjusts a line number."""
@@ -1296,8 +1301,12 @@ class processor(object):
                 count += tablen - x % tablen
             else:
                 break
-            if self.strict and self.indchar != inputstring[x]:
-                raise CoconutStyleError("found mixing of tabs and spaces", inputstring, x, self.adjust(lineno(x, inputstring)))
+            if self.indchar != inputstring[x]:
+                err = CoconutStyleError("found mixing of tabs and spaces", inputstring, x, self.adjust(lineno(x, inputstring)))
+                if self.strict:
+                    raise err
+                else:
+                    self.warn(err)
         return count
 
     def change(self, inputstring):

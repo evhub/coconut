@@ -195,8 +195,11 @@ class cli(object):
 
     def setup(self, strict=False, target=None):
         """Creates the processor."""
-        self.processor = parser.processor(strict, target)
-        self.processor.TRACER.show = self.console.debug
+        if self.processor is None:
+            self.processor = parser.processor(strict, target, self.console.show)
+            self.processor.TRACER.show = self.console.debug
+        else:
+            self.processor.setup(strict, target)
 
     def quiet(self, state=None):
         """Quiets output."""

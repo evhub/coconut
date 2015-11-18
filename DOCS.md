@@ -50,6 +50,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
 - [VI. Coconut Module](#vi-coconut-module)
     - [`coconut.convenience`](#coconutconvenience)
     - [`coconut.convenience.parse`](#coconutconvenienceparse)
+    - [`coconut.convenience.setup`](#coconutconveniencesetup)
     - [`coconut.convenience.cmd`](#coconutconveniencecmd)
     - [`coconut.convenience.version`](#coconutconvenienceversion)
 
@@ -114,7 +115,7 @@ If an extension other than `.py` is desired for the compiled files, such as `.py
 ### `--strict` Mode
 
 If the `--strict` or `-s` flag is enabled, Coconut will throw errors on various style problems. These are:
-- Mixing of tabs and spaces
+- Mixing of tabs and spaces (otherwise would show a warning)
 - Use of the Python-style `lambda` statement
 - Use of `u` to denote Unicode strings
 - Use of backslash continuations (implicit continuations are preferred)
@@ -1053,9 +1054,15 @@ Likely the most useful of the convenience functions, `parse` takes Coconut code 
 - `"eval"`: a single expression
 - `"debug"`: lines of code with no header
 
-**setup**(**[[**_strict_**]**_, target_**]**)
+#### `coconut.convenience.setup`
 
-Additionally, if `--strict` or `--target` are required, the extra function `setup` must be called before the first invocation of `parse`. The two arguments to `setup`, _strict_ and _parse_ are both booleans expressing whether those flags should be included when creating the convenience parsing object. By default, or if setup is never called, both will be set to `False`.
+**setup**(**[[[**_strict_**]**_, target_**]**_, quiet_**]**)
+
+If `--strict`, `--target`, or `--quiet` are desired for `parse`, the three arguments to `setup`, _strict_, _target_, and _quiet_, will each set the value of the corresponding flag. The possible values for each flag are:
+
+- _strict_: `False` (default) or `True`
+- _target_: `None` (default), `"2"`, or `"3"`
+- _quiet_: `False` (default) or `True`
 
 #### `coconut.convenience.cmd`
 

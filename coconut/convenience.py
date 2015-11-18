@@ -49,29 +49,29 @@ def version(which="num"):
 # PARSING:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def setup(strict=False, target=None):
+def setup(strict=False, target=None, quiet=False):
     """Gets COMPILER.processor."""
-    if COMPILER.processor is None:
-        COMPILER.setup(strict, target)
-    return COMPILER.processor
+    COMPILER.setup(strict, target)
+    COMPILER.quiet(quiet)
 
 def parse(code, mode="exec"):
     """Parses Coconut code."""
-    PARSER = setup()
+    if COMPILER.processor is None:
+        setup()
     if mode == "single":
-        return PARSER.parse_single(code)
+        return COMPILER.processor.parse_single(code)
     elif mode == "file":
-        return PARSER.parse_file(code)
+        return COMPILER.processor.parse_file(code)
     elif mode == "exec":
-        return PARSER.parse_exec(code)
+        return COMPILER.processor.parse_exec(code)
     elif mode == "module":
-        return PARSER.parse_module(code)
+        return COMPILER.processor.parse_module(code)
     elif mode == "block":
-        return PARSER.parse_block(code)
+        return COMPILER.processor.parse_block(code)
     elif mode == "eval":
-        return PARSER.parse_eval(code)
+        return COMPILER.processor.parse_eval(code)
     elif mode == "debug":
-        return PARSER.parse_debug(code)
+        return COMPILER.processor.parse_debug(code)
     else:
         raise CoconutException("invalid parse mode " + ascii(mode)
             + "; valid modes are 'exec', 'file', 'single', 'module', 'block', 'eval', and 'debug'")
