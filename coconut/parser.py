@@ -24,7 +24,7 @@ from zlib import adler32
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-hash_prefix = '# hash((coconut_version, coconut_code)) == '
+hash_prefix = '# __coconut_hash__ = '
 openstr = "\u204b"
 closestr = "\xb6"
 linebreak = "\n"
@@ -90,7 +90,8 @@ ParserElement.setDefaultWhitespaceChars(white)
 
 def genhash(code=""):
     """Generates a hash from code."""
-    return hex(adler32(VERSION_STR + "\x00" + code) & 0xffffffff) # necessary for cross-compatibility
+    byte_stream = bytes(VERSION_STR + "\x00" + code, encoding=ENCODING)
+    return hex(adler32(byte_stream) & 0xffffffff) # necessary for cross-compatibility
 
 def gethash(compiled):
     """Retrieves a hash from a header."""
