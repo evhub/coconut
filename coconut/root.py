@@ -20,7 +20,7 @@ try:
     import readline
 except ImportError:
     pass
-
+from codecs import open
 import sys
 
 #-----------------------------------------------------------------------------------------------------------------------

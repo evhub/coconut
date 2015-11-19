@@ -18,7 +18,6 @@ from __future__ import with_statement, print_function, absolute_import, unicode_
 
 from .root import *
 from . import parser
-import codecs
 import traceback
 import os
 import os.path
@@ -30,7 +29,7 @@ import argparse
 
 def openfile(filename, opentype="r+b"):
     """Returns an open file object."""
-    return codecs.open(filename, opentype, encoding=ENCODING)
+    return open(filename, opentype, encoding=ENCODING)
 
 def writefile(openedfile, writer):
     """Sets the contents of a file."""
