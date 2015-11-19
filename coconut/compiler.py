@@ -332,7 +332,7 @@ class cli(object):
     def create_module(self, dirpath):
         """Sets up a module directory."""
         with openfile(os.path.join(dirpath, "__coconut__.py"), "w") as opened:
-            writefile(opened, parser.headers("package", self.processor.version))
+            writefile(opened, parser.headers("package", self.processor.version, parser.genhash()))
 
     def prompt_with(self, prompt):
         """Prompts for code."""

@@ -88,7 +88,7 @@ ParserElement.setDefaultWhitespaceChars(white)
 # HEADERS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def genhash(code=""):
+def genhash(code="\x00"):
     """Generates a hash from code."""
     byte_stream = bytes(VERSION_STR + "\x00" + code, encoding=ENCODING)
     return hex(adler32(byte_stream) & 0xffffffff) # necessary for cross-compatibility
