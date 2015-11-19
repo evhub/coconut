@@ -132,7 +132,7 @@ def headers(which, version=None, usehash=None):
     else:
         header = ""
     if which != "initial":
-        header = r'''# Coconut Header: --------------------------------------------------------------
+        header += r'''# Coconut Header: --------------------------------------------------------------
 '''
         if which == "code":
             if version != "3":
