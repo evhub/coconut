@@ -313,7 +313,7 @@ class cli(object):
 
     def compile(self, codepath, destpath=None, module=False, run=False, force=False):
         """Compiles a source Coconut file to a destination Python file."""
-        self.console.print("Compiling "+codepath+"...")
+        self.console.print("Compiling       "+codepath+"    ...")
         with openfile(codepath, "r") as opened:
             code = readfile(opened)
         foundhash = None if force else hashashof(destpath, code)
@@ -322,7 +322,7 @@ class cli(object):
                 self.execute(foundhash, path=destpath)
             elif self.show:
                 print(foundhash)
-            self.console.print("Left unchanged "+destpath+" (pass --force to overwrite).")
+            self.console.print("Left unchanged  "+destpath+"    (pass --force to overwrite).")
         else:
             if module is True:
                 compiled = self.processor.parse_module(code)
@@ -344,12 +344,12 @@ class cli(object):
                     os.makedirs(destdir)
                 with openfile(destpath, "w") as opened:
                     writefile(opened, compiled)
-                self.console.print("Compiled to "+destpath+".")
+                self.console.print("Compiled to     "+destpath+"    .")
 
     def create_module(self, dirpath):
         """Sets up a module directory."""
         filepath = os.path.join(dirpath, "__coconut__.py")
-        with openfile(filepath, "r+") as opened:
+        with openfile(filepath, "w") as opened:
             writefile(opened, parser.headers("package", self.processor.version))
 
     def prompt_with(self, prompt):
