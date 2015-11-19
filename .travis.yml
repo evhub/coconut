@@ -48,6 +48,8 @@ matrix:
         - coconut src force_build --strict --force
         - cp file_build/cocotest/py2_test.py force_build/cocotest/py2_test.py
         - python -tt force_build/runner.py
+        - coconut src force_build --strict
+        - python -tt force_build/runner.py
         - coconut src force_build --strict --force
         - python -tt force_build/runner.py
 
@@ -99,6 +101,8 @@ matrix:
 
         - coconut src force_build --strict --force
         - cp file_build/cocotest/py2_test.py force_build/cocotest/py2_test.py
+        - python -tt force_build/runner.py
+        - coconut src force_build --strict
         - python -tt force_build/runner.py
         - coconut src force_build --strict --force
         - python -tt force_build/runner.py
@@ -152,6 +156,8 @@ matrix:
         - coconut src force_build --strict --force
         - cp file_build/cocotest/py3_test.py force_build/cocotest/py3_test.py
         - python -tt force_build/runner.py
+        - coconut src force_build --strict
+        - python -tt force_build/runner.py
         - coconut src force_build --strict --force
         - python -tt force_build/runner.py
 
@@ -203,6 +209,8 @@ matrix:
 
         - coconut src force_build --strict --force
         - cp file_build/cocotest/py3_test.py force_build/cocotest/py3_test.py
+        - python -tt force_build/runner.py
+        - coconut src force_build --strict
         - python -tt force_build/runner.py
         - coconut src force_build --strict --force
         - python -tt force_build/runner.py

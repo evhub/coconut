@@ -241,15 +241,15 @@ class cli(object):
                     raise parser.CoconutException("source path must point to file not directory when --run is enabled")
                 if args.dest is None:
                     if args.nowrite:
-                        self.compile_path(args.source, None, run=args.run)
+                        self.compile_path(args.source, None, run=args.run, force=args.force)
                     else:
-                        self.compile_path(args.source, run=args.run)
+                        self.compile_path(args.source, run=args.run, force=args.force)
                 elif args.nowrite:
                     raise parser.CoconutException("destination path can't be given when --nowrite is enabled")
                 elif os.path.isfile(args.dest):
                     raise parser.CoconutException("destination path must point to directory not file")
                 else:
-                    self.compile_path(args.source, args.dest, run=args.run)
+                    self.compile_path(args.source, args.dest, run=args.run, force=args.force)
             elif args.run:
                 raise parser.CoconutException("a source file must be specified when --run is enabled")
             stdin = not sys.stdin.isatty()
