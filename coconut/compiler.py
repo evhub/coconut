@@ -50,7 +50,7 @@ def hashashof(destpath, code):
     """Determines if a file has the hash of the code."""
     if destpath is not None and os.path.isfile(destpath):
         with openfile(destpath, "r") as opened:
-            compiled = readfile(destpath)
+            compiled = readfile(opened)
             if parser.genhash(code) == parser.gethash(compiled):
                 return compiled
     return False
