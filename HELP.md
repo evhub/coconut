@@ -74,7 +74,7 @@ If everything is working properly, you should see something like this:
 `coconut tutorial.coc`
 ```
 Coconut: Compiling <tutorial.coc directory>...
-Coconut: Compiled <tutorial.py directory>.
+Coconut: Compiled to <tutorial.py directory>.
 ```
 `python tutorial.py`
 ```
