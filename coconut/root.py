@@ -56,17 +56,17 @@ if PY2:
         def __init__(self, *args, **kwargs):
             """Python 3 bytes constructor."""
             if len(args) == 1 and isinstance(args[0], int):
-                super(self).__init__(b"\x00" * args[0])
+                str.__init__(self, b"\x00" * args[0])
             else:
-                super(self).__init__(*args, **kwargs)
+                str.__init__(self, *args, **kwargs)
     class str(unicode):
         """Python 3 str."""
         def __init__(self, *args, **kwargs):
             """Python 3 str constructor."""
             if len(args) == 1 and isinstance(args[0], bytes):
-                return super(self).__init__(repr(args[0]))
+                return unicode.__init__(self, repr(args[0]))
             else:
-                return super(self).__init__(*args, **kwargs)
+                return unicode.__init__(self, *args, **kwargs)
     def print(*args, **kwargs):
         """Python 3 print."""
         return print(*(str(x).encode(ENCODING) for x in args), **kwargs)

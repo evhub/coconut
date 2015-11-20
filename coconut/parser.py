@@ -162,17 +162,17 @@ if _coconut_sys.version_info < (3,):
         def __init__(self, *args, **kwargs):
             """Python 3 bytes constructor."""
             if len(args) == 1 and isinstance(args[0], _coconut_new_int):
-                super(self).__init__(b"\x00" * args[0])
+                _coconut_str.__init__(self, b"\x00" * args[0])
             else:
-                super(self).__init__(*args, **kwargs)
+                _coconut_str.__init__(self, *args, **kwargs)
     class str(_coconut_unicode):
         """Python 3 str."""
         def __init__(self, *args, **kwargs):
             """Python 3 str constructor."""
             if len(args) == 1 and isinstance(args[0], _coconut_str):
-                return super(self).__init__(repr(args[0]))
+                return _coconut_unicode.__init__(self, repr(args[0]))
             else:
-                return super(self).__init__(*args, **kwargs)
+                return _coconut_unicode.__init__(self, *args, **kwargs)
     _coconut_encoding = "'''+ENCODING+r'''"
     py2_print = print
     _coconut_print = py2_print
@@ -210,17 +210,17 @@ class bytes(_coconut_str):
     def __init__(self, *args, **kwargs):
         """Python 3 bytes constructor."""
         if len(args) == 1 and isinstance(args[0], _coconut_new_int):
-            super(self).__init__(b"\x00" * args[0])
+            _coconut_str.__init__(self, b"\x00" * args[0])
         else:
-            super(self).__init__(*args, **kwargs)
+            _coconut_str.__init__(self, *args, **kwargs)
 class str(_coconut_unicode):
     """Python 3 str."""
     def __init__(self, *args, **kwargs):
         """Python 3 str constructor."""
         if len(args) == 1 and isinstance(args[0], _coconut_str):
-            return super(self).__init__(repr(args[0]))
+            return _coconut_unicode.__init__(self, repr(args[0]))
         else:
-            return super(self).__init__(*args, **kwargs)
+            return _coconut_unicode.__init__(self, *args, **kwargs)
 _coconut_encoding = "'''+ENCODING+r'''"
 py2_print = print
 _coconut_print = py2_print
