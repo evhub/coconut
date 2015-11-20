@@ -51,18 +51,22 @@ if PY2:
     class int(int):
         """Python 3 int."""
         __metaclass__ = _coconut_metaint
-    def bytes(*args, **kwargs):
+    class bytes(str):
         """Python 3 bytes."""
-        if len(args) == 1 and isinstance(args[0], _coconut_int):
-            return b'\x00' * args[0]
-        else:
-            return str(*args, **kwargs)
-    def str(*args, **kwargs):
+        def __init__(self, *args, **kwargs):
+            """Python 3 bytes constructor."""
+            if len(args) == 1 and isinstance(args[0], int):
+                super(self).__init__(b"\x00" * args[0])
+            else:
+                super(self).__init__(*args, **kwargs)
+    class str(unicode):
         """Python 3 str."""
-        if len(args) == 1 and isinstance(args[0], _coconut_str):
-            return unicode(repr(args[0]))
-        else:
-            return unicode(*args, **kwargs)
+        def __init__(self, *args, **kwargs):
+            """Python 3 str constructor."""
+            if len(args) == 1 and isinstance(args[0], bytes):
+                return super(self).__init__(repr(args[0]))
+            else:
+                return super(self).__init__(*args, **kwargs)
     def print(*args, **kwargs):
         """Python 3 print."""
         return print(*(str(x).encode(ENCODING) for x in args), **kwargs)
