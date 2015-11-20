@@ -51,9 +51,10 @@ def hashashof(destpath, code):
     if destpath is not None and os.path.isfile(destpath):
         with openfile(destpath, "r") as opened:
             compiled = readfile(opened)
-            if parser.genhash(code) == parser.gethash(compiled):
+            hashash = parser.gethash(compiled)
+            if hashash is not None and hashash == parser.genhash(code):
                 return compiled
-    return False
+    return None
 
 def print_error(verbose=False):
     """Displays a formatted error."""
@@ -434,6 +435,8 @@ class cli(object):
                 "map": map,
                 "oct": oct,
                 "zip": zip,
+                "py2_open": py2_open,
+                "open": open,
                 "py2_range": py2_range,
                 "range": range,
                 "py2_int": py2_int,

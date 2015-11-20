@@ -102,6 +102,7 @@ Coconut will, however, overwrite Python 2 built-ins to use the Python 3 versions
 - `py2_range`
 - `py2_int`
 - `py2_chr`
+- `py2_open`
 - `py2_print`
 - `py2_input`
 

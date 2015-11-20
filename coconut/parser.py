@@ -147,6 +147,8 @@ import sys as _coconut_sys
 if _coconut_sys.version_info < (3,):
     py2_filter, py2_hex, py2_map, py2_oct, py2_zip = filter, hex, map, oct, zip
     from future_builtins import *
+    py2_open = open
+    from io import open
     py2_range, range = range, xrange
     py2_int = int
     _coconut_int, _coconut_long = int, long
@@ -175,6 +177,8 @@ if _coconut_sys.version_info < (3,):
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 py2_filter, py2_hex, py2_map, py2_oct, py2_zip = filter, hex, map, oct, zip
 from future_builtins import *
+py2_open = open
+from io import open
 py2_range, range = range, xrange
 py2_int = int
 _coconut_int, _coconut_long = int, long
@@ -1564,7 +1568,7 @@ class processor(object):
             elif len(trailer) == 2:
                 if trailer[0] == "$(":
                     out = "__coconut__.functools.partial("+out+", "+trailer[1]+")"
-                elif trailer[0] == "$[":
+                elif trailer[0] == "$[" or trailer[0] == "$[=":
                     if 0 < len(trailer[1]) <= 3:
                         args = []
                         for x in range(0, len(trailer[1])):
@@ -1575,13 +1579,15 @@ class processor(object):
                                 else:
                                     arg = "None"
                             args.append(arg)
-                        if len(args) == 1:
-                            out = islice_lambda(out) + "(" + args[0] + ")"
-                        else:
+                        if len(args) != 1:
                             out = "__coconut__.itertools.islice(" + out
                             for arg in args:
                                 out += ", "+arg
                             out += ")"
+                        elif trailer[0] == "$[=":
+                            out = "next(__coconut__.itertools.islice("+out+", "+args[0]+", ("+args[0]+") + 1))"
+                        else:
+                            out = islice_lambda(out) + "(" + args[0] + ")"
                     else:
                         raise CoconutException("invalid iterator slice args", trailer[1])
                 elif trailer[0] == "..":
@@ -1961,19 +1967,25 @@ class processor(object):
     set_letter_literal = set_letter + lbrace.suppress() + Optional(setmaker) + rbrace.suppress()
     lazy_items = Optional(test + ZeroOrMore(comma.suppress() + test) + Optional(comma.suppress()))
     lazy_list = attach(lbanana.suppress() + lazy_items + rbanana.suppress(), lazy_list_proc)
-    atom = (
+    const_atom = (
         keyword_atom
-        | ellipses
         | number
         | string_atom
-        | passthrough_atom
+        )
+    known_atom = (
+        const_atom
+        | ellipses
+        | attr_atom
         | condense(lbrack + Optional(testlist_comp) + rbrack)
         | condense(lbrace + Optional(dictmaker) + rbrace)
         | set_literal_ref
         | set_letter_literal_ref
         | lazy_list
+        )
+    atom = (
+        known_atom
+        | passthrough_atom
         | func_atom
-        | attr_atom
         )
 
     slicetest = Optional(test)
@@ -1983,11 +1995,13 @@ class processor(object):
     slicetestgroup = Optional(test, default="")
     sliceopgroup = colon.suppress() + slicetestgroup
     subscriptgroup = Group(slicetestgroup + sliceopgroup + Optional(sliceopgroup) | test)
+    known_subscriptgroup = Group(known_atom)
     simple_trailer = condense(lbrack + subscriptlist + rbrack) | condense(dot + name)
     trailer = (
         Group(condense(dollar + lparen) + callargslist + rparen.suppress())
         | condense(lparen + callargslist + rparen)
         | Group(dotdot + func_atom)
+        | Group(fixto(dollar + lbrack, "$[=") + known_subscriptgroup + rbrack.suppress())
         | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())
         | Group(condense(dollar + lbrack + rbrack))
         | Group(dollar)
@@ -2101,12 +2115,7 @@ class processor(object):
     match = Forward()
     matchlist_list = Group(Optional(match + ZeroOrMore(comma.suppress() + match) + Optional(comma.suppress())))
     matchlist_tuple = Group(Optional(match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress()) | match + comma.suppress()))
-    match_const = (
-        keyword_atom
-        | number
-        | string_atom
-        | condense(equals.suppress() + simple_assign)
-        )
+    match_const = const_atom | condense(equals.suppress() + simple_assign)
     matchlist_set = Group(Optional(match_const + ZeroOrMore(comma.suppress() + match_const) + Optional(comma.suppress())))
     match_pair = Group(match_const + colon.suppress() + match)
     matchlist_dict = Group(Optional(match_pair + ZeroOrMore(comma.suppress() + match_pair) + Optional(comma.suppress())))
