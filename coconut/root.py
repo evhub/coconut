@@ -43,25 +43,29 @@ PY2 = sys.version_info < (3,)
 #-----------------------------------------------------------------------------------------------------------------------
 
 if PY2:
-    py2_filter, py2_hex, py2_map, py2_oct, py2_zip = filter, hex, map, oct, zip
     from future_builtins import *
-    py2_open = open
     from io import open
-    py2_range, range = range, xrange
-    py2_int = int
     class _coconut_metaint(type):
         def __instancecheck__(cls, inst):
-            return isinstance(inst, (py2_int, long))
-    class int(py2_int):
+            return isinstance(inst, (int, long))
+    class int(int):
         """Python 3 int."""
         __metaclass__ = _coconut_metaint
-    py2_chr, chr = chr, unichr
-    bytes, str = str, unicode
-    py2_print = print
+    def bytes(*args, **kwargs):
+        """Python 3 bytes."""
+        if len(args) == 1 and isinstance(args[0], _coconut_int):
+            return b'\x00' * args[0]
+        else:
+            return str(*args, **kwargs)
+    def str(*args, **kwargs):
+        """Python 3 str."""
+        if len(args) == 1 and isinstance(args[0], _coconut_str):
+            return unicode(repr(args[0]))
+        else:
+            return unicode(*args, **kwargs)
     def print(*args, **kwargs):
         """Python 3 print."""
-        return py2_print(*(str(x).encode(ENCODING) for x in args), **kwargs)
-    py2_input = raw_input
+        return print(*(str(x).encode(ENCODING) for x in args), **kwargs)
     def input(*args, **kwargs):
         """Python 3 input."""
-        return py2_input(*args, **kwargs).decode(ENCODING)
+        return input(*args, **kwargs).decode(ENCODING)

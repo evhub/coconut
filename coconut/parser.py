@@ -154,7 +154,20 @@ if _coconut_sys.version_info < (3,):
         """Python 3 int."""
         __metaclass__ = _coconut_metaint
     py2_chr, chr = chr, unichr
-    bytes, str = str, unicode
+    py2_str = str
+    _coconut_str, _coconut_unicode = str, unicode
+    def bytes(*args, **kwargs):
+        """Python 3 bytes."""
+        if len(args) == 1 and isinstance(args[0], _coconut_int):
+            return b"\x00" * args[0]
+        else:
+            return str(*args, **kwargs)
+    def str(*args, **kwargs):
+        """Python 3 str."""
+        if len(args) == 1 and isinstance(args[0], _coconut_str):
+            return _coconut_unicode(repr(args[0]))
+        else:
+            return _coconut_unicode(*args, **kwargs)
     _coconut_encoding = "'''+ENCODING+r'''"
     py2_print = print
     _coconut_print = print
@@ -184,7 +197,20 @@ class int(_coconut_int):
     """Python 3 int."""
     __metaclass__ = _coconut_metaint
 py2_chr, chr = chr, unichr
-bytes, str = str, unicode
+py2_str = str
+_coconut_str, _coconut_unicode = str, unicode
+def bytes(*args, **kwargs):
+    """Python 3 bytes."""
+    if len(args) == 1 and isinstance(args[0], _coconut_int):
+        return b"\x00" * args[0]
+    else:
+        return str(*args, **kwargs)
+def str(*args, **kwargs):
+    """Python 3 str."""
+    if len(args) == 1 and isinstance(args[0], _coconut_str):
+        return _coconut_unicode(repr(args[0]))
+    else:
+        return _coconut_unicode(*args, **kwargs)
 _coconut_encoding = "'''+ENCODING+r'''"
 py2_print = print
 _coconut_print = print

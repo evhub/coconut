@@ -93,7 +93,7 @@ While Coconut syntax is based off of Python 3, the compiler will run on Python 2
 
 The given target will only affect the compiled code and whether or not Python-3-specific syntax is allowed. Where Python 3 and Python 2 syntax standards differ, Coconut syntax will always follow Python 3 accross all targets. Coconut will not, however, change any imports, variable names, or library interfaces. Universal compatibility with those must still be done manually.
 
-Coconut will, however, overwrite Python 2 built-ins to use the Python 3 versions where possible. If access to the Python 2 versions is desired, the old builtin can be retrieved by prefixing it with `py2_`. The old built-ins available are:
+Coconut will, however, add in new Python 3 built-ins and overwrite Python 2 built-ins to use the Python 3 versions where possible. If access to the Python 2 versions is desired, the old builtin can be retrieved by prefixing it with `py2_`. The old built-ins available are:
 - `py2_filter`
 - `py2_hex`
 - `py2_map`
@@ -102,11 +102,10 @@ Coconut will, however, overwrite Python 2 built-ins to use the Python 3 versions
 - `py2_range`
 - `py2_int`
 - `py2_chr`
+- `py2_str`
 - `py2_open`
 - `py2_print`
 - `py2_input`
-
-_Note: No `py2_str` is provided even though it is overwritten because it should be retrieved using `bytes` instead._
 
 ### Compiled Files
 
