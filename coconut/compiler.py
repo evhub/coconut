@@ -419,36 +419,7 @@ class cli(object):
     def start_runner(self):
         """Starts the runner."""
         sys.path.append(os.getcwd())
-        extras = {
+        self.runner = executor({
             "exit": self.exit
-            }
-        if PY2:
-            extras.update({
-                "py2_filter": py2_filter,
-                "py2_hex": py2_hex,
-                "py2_map": py2_map,
-                "py2_oct": py2_oct,
-                "py2_zip": py2_zip,
-                "ascii": ascii,
-                "filter": filter,
-                "hex": hex,
-                "map": map,
-                "oct": oct,
-                "zip": zip,
-                "py2_open": py2_open,
-                "open": open,
-                "py2_range": py2_range,
-                "range": range,
-                "py2_int": py2_int,
-                "int": int,
-                "py2_chr": py2_chr,
-                "chr": chr,
-                "bytes": bytes,
-                "str": str,
-                "py2_print": py2_print,
-                "print": print,
-                "py2_input": py2_input,
-                "input": input
-                })
-        self.runner = executor(extras)
+            })
         self.runner.run(parser.headers("code", "2" if PY2 else "3"))
