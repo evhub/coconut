@@ -57,21 +57,37 @@ py2_str = str
 _coconut_str, _coconut_unicode = py2_str, unicode
 _coconut_new_int = int
 bytes = _coconut_str
-def _coconut_bytes_init(self, *args, **kwargs):
-    """Python 3 bytes constructor."""
-    if len(args) == 1 and isinstance(args[0], _coconut_new_int):
-        _coconut_str.__init__(self, b"\x00" * args[0], **kwargs)
-    else:
-        _coconut_str.__init__(self, *args, **kwargs)
-bytes.__init__ = _coconut_bytes_init
-str = _coconut_unicode
-def _coconut_str_init(self, *args, **kwargs):
-    """Python 3 str constructor."""
-    if len(args) == 1 and isinstance(args[0], _coconut_str):
-        return _coconut_unicode.__init__(self, repr(args[0]), **kwargs)
-    else:
-        return _coconut_unicode.__init__(self, *args, **kwargs)
-str.__init__ = _coconut_str_init
+class bytes(_coconut_str):
+    """Python 3 bytes."""
+    __metaclass__ = _coconut_metabytes
+    def __init__(self, *args, **kwargs):
+        """Python 3 bytes constructor."""
+        if len(args) == 1 and isinstance(args[0], _coconut_new_int):
+            if kwargs:
+                _coconut_str.__init__(self, b"\x00" * args[0], **kwargs)
+            else:
+                _coconut_str.__init__(self, b"\x00" * args[0])
+        elif kwargs:
+            _coconut_str.__init__(self, *args, **kwargs)
+        else:
+            _coconut_str.__init__(self, *args)
+class _coconut_metastr(type):
+    def __instancecheck__(cls, inst):
+        return isinstance(inst, _coconut_unicode)
+class str(_coconut_unicode):
+    """Python 3 str."""
+    __metaclass__ = _coconut_metastr
+    def __init__(self, *args, **kwargs):
+        """Python 3 str constructor."""
+        if len(args) == 1 and isinstance(args[0], _coconut_str):
+            if kwargs:
+                _coconut_unicode.__init__(self, repr(args[0]), **kwargs)
+            else:
+                _coconut_unicode.__init__(self, repr(args[0]))
+        elif kwargs:
+            _coconut_unicode.__init__(self, *args, **kwargs)
+        else:
+            _coconut_unicode.__init__(self, *args, **kwargs)
 _coconut_encoding = "'''+ENCODING+r'''"
 py2_print = print
 _coconut_print = py2_print
