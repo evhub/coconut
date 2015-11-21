@@ -45,10 +45,11 @@ PY2 = sys.version_info < (3,)
 if PY2:
     from future_builtins import *
     from io import open
+    py2_int = int
     class _coconut_metaint(type):
         def __instancecheck__(cls, inst):
-            return isinstance(inst, (int, long))
-    class int(int):
+            return isinstance(inst, (py2_int, long))
+    class int(py2_int):
         """Python 3 int."""
         __metaclass__ = _coconut_metaint
     class bytes(str):
@@ -67,9 +68,10 @@ if PY2:
                 return unicode.__init__(self, repr(args[0]))
             else:
                 return unicode.__init__(self, *args, **kwargs)
+    py2_print = print
     def print(*args, **kwargs):
         """Python 3 print."""
-        return print(*(str(x) for x in args), **kwargs)
+        return py2_print(*(str(x) for x in args), **kwargs)
     def input(*args, **kwargs):
         """Python 3 input."""
         return raw_input(*args, **kwargs).decode(ENCODING)
