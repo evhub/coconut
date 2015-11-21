@@ -38,40 +38,64 @@ VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
 
 PY2 = sys.version_info < (3,)
 
+PY2_HEADER = r'''py2_filter, py2_hex, py2_map, py2_oct, py2_zip = filter, hex, map, oct, zip
+from future_builtins import *
+py2_open = open
+from io import open
+py2_range, range = range, xrange
+py2_int = int
+_coconut_int, _coconut_long = py2_int, long
+class _coconut_metaint(type):
+    def __instancecheck__(cls, inst):
+        return isinstance(inst, (_coconut_int, _coconut_long))
+class int(_coconut_int):
+    """Python 3 int."""
+    __metaclass__ = _coconut_metaint
+py2_chr, chr = chr, unichr
+py2_str = str
+_coconut_str, _coconut_unicode = py2_str, unicode
+_coconut_new_int = int
+class _coconut_metabytes(type):
+    def __instancecheck__(cls, inst):
+        return isinstance(inst, _coconut_str)
+class bytes(_coconut_str):
+    """Python 3 bytes."""
+    __metaclass__ = _coconut_metabytes
+    def __init__(self, *args, **kwargs):
+        """Python 3 bytes constructor."""
+        if len(args) == 1 and isinstance(args[0], _coconut_new_int):
+            _coconut_str.__init__(self, b"\x00" * args[0])
+        else:
+            _coconut_str.__init__(self, *args, **kwargs)
+class _coconut_metastr(type):
+    def __instancecheck__(cls, inst):
+        return isinstance(inst, _coconut_unicode)
+class str(_coconut_unicode):
+    """Python 3 str."""
+    __metaclass__ = _coconut_metastr
+    def __init__(self, *args, **kwargs):
+        """Python 3 str constructor."""
+        if len(args) == 1 and isinstance(args[0], _coconut_str):
+            return _coconut_unicode.__init__(self, repr(args[0]))
+        else:
+            return _coconut_unicode.__init__(self, *args, **kwargs)
+_coconut_encoding = "'''+ENCODING+r'''"
+py2_print = print
+_coconut_print = py2_print
+_coconut_new_str = str
+def print(*args, **kwargs):
+    """Python 3 print."""
+    return _coconut_print(*(_coconut_new_str(x) for x in args), **kwargs)
+py2_input = input
+_coconut_raw_input = raw_input
+def input(*args, **kwargs):
+    """Python 3 input."""
+    return _coconut_raw_input(*args, **kwargs).decode(_coconut_encoding)
+'''
+
 #-----------------------------------------------------------------------------------------------------------------------
 # SETUP:
 #-----------------------------------------------------------------------------------------------------------------------
 
 if PY2:
-    from future_builtins import *
-    from io import open
-    py2_int = int
-    class _coconut_metaint(type):
-        def __instancecheck__(cls, inst):
-            return isinstance(inst, (py2_int, long))
-    class int(py2_int):
-        """Python 3 int."""
-        __metaclass__ = _coconut_metaint
-    class bytes(str):
-        """Python 3 bytes."""
-        def __init__(self, *args, **kwargs):
-            """Python 3 bytes constructor."""
-            if len(args) == 1 and isinstance(args[0], int):
-                str.__init__(self, b"\x00" * args[0])
-            else:
-                str.__init__(self, *args, **kwargs)
-    class str(unicode):
-        """Python 3 str."""
-        def __init__(self, *args, **kwargs):
-            """Python 3 str constructor."""
-            if len(args) == 1 and isinstance(args[0], bytes):
-                return unicode.__init__(self, repr(args[0]))
-            else:
-                return unicode.__init__(self, *args, **kwargs)
-    py2_print = print
-    def print(*args, **kwargs):
-        """Python 3 print."""
-        return py2_print(*(str(x) for x in args), **kwargs)
-    def input(*args, **kwargs):
-        """Python 3 input."""
-        return raw_input(*args, **kwargs).decode(ENCODING)
+    exec(PY2_HEADER)
