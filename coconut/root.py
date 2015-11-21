@@ -91,8 +91,7 @@ py2_input = input
 _coconut_raw_input = raw_input
 def input(*args, **kwargs):
     """Python 3 input."""
-    return _coconut_raw_input(*args, **kwargs).decode(_coconut_encoding)
-'''
+    return _coconut_raw_input(*args, **kwargs).decode(_coconut_encoding)'''
 
 #-----------------------------------------------------------------------------------------------------------------------
 # SETUP:

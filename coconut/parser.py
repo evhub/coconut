@@ -138,7 +138,8 @@ def headers(which, version=None, usehash=None):
         if version == "2":
             header += r'''
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
-''' + PY2_HEADER
+'''+PY2_HEADER+r'''
+'''
         elif version is None:
             header += r'''
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
@@ -147,9 +148,9 @@ if _coconut_sys.version_info < (3,):
 '''
             for line in PY2_HEADER.splitlines():
                 if line:
-                    header += "    " + line
+                    header += "    " + line + linebreak
                 else:
-                    header += line
+                    header += line + linebreak
         if which == "package":
             header += r'''
 version = "'''+VERSION+r'''"
