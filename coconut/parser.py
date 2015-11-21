@@ -145,7 +145,7 @@ from __future__ import with_statement, print_function, absolute_import, unicode_
 import sys as _coconut_sys
 if _coconut_sys.version_info < (3,):
 '''
-            for line in PY2_HEADER:
+            for line in PY2_HEADER.splitlines():
                 if line:
                     header += "    " + line
                 else:
