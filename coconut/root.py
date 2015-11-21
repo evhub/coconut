@@ -57,6 +57,9 @@ py2_str = str
 _coconut_str, _coconut_unicode = py2_str, unicode
 _coconut_new_int = int
 bytes = _coconut_str
+class _coconut_metabytes(type):
+    def __instancecheck__(cls, inst):
+        return isinstance(inst, _coconut_str)
 class bytes(_coconut_str):
     """Python 3 bytes."""
     __metaclass__ = _coconut_metabytes
