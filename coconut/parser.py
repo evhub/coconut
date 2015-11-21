@@ -176,9 +176,10 @@ if _coconut_sys.version_info < (3,):
     _coconut_encoding = "'''+ENCODING+r'''"
     py2_print = print
     _coconut_print = py2_print
+    _coconut_new_str = str
     def print(*args, **kwargs):
         """Python 3 print."""
-        return _coconut_print(*(str(x).encode(_coconut_encoding) for x in args), **kwargs)
+        return _coconut_print(*(_coconut_new_str(x) for x in args), **kwargs)
     py2_input = input
     _coconut_raw_input = raw_input
     def input(*args, **kwargs):
@@ -224,9 +225,10 @@ class str(_coconut_unicode):
 _coconut_encoding = "'''+ENCODING+r'''"
 py2_print = print
 _coconut_print = py2_print
+_coconut_new_str = str
 def print(*args, **kwargs):
     """Python 3 print."""
-    return _coconut_print(*(str(x).encode(_coconut_encoding) for x in args), **kwargs)
+    return _coconut_print(*(_coconut_new_str(x) for x in args), **kwargs)
 py2_input = input
 _coconut_raw_input = raw_input
 def input(*args, **kwargs):

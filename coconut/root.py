@@ -69,7 +69,7 @@ if PY2:
                 return unicode.__init__(self, *args, **kwargs)
     def print(*args, **kwargs):
         """Python 3 print."""
-        return print(*(str(x).encode(ENCODING) for x in args), **kwargs)
+        return print(*(str(x) for x in args), **kwargs)
     def input(*args, **kwargs):
         """Python 3 input."""
-        return input(*args, **kwargs).decode(ENCODING)
+        return raw_input(*args, **kwargs).decode(ENCODING)
