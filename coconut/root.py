@@ -63,34 +63,24 @@ class _coconut_metabytes(type):
 class bytes(_coconut_str):
     """Python 3 bytes."""
     __metaclass__ = _coconut_metabytes
-    def __init__(self, *args, **kwargs):
+    def __new__(cls, *args, **kwargs):
         """Python 3 bytes constructor."""
         if len(args) == 1 and isinstance(args[0], _coconut_new_int):
-            if kwargs:
-                _coconut_str.__init__(self, b"\x00" * args[0], **kwargs)
-            else:
-                _coconut_str.__init__(self, b"\x00" * args[0])
-        elif kwargs:
-            _coconut_str.__init__(self, *args, **kwargs)
+            return _coconut_str.__new__(cls, b"\x00" * args[0], **kwargs)
         else:
-            _coconut_str.__init__(self, *args)
+            return _coconut_str.__new__(cls, *args, **kwargs)
 class _coconut_metastr(type):
     def __instancecheck__(cls, inst):
         return isinstance(inst, _coconut_unicode)
 class str(_coconut_unicode):
     """Python 3 str."""
     __metaclass__ = _coconut_metastr
-    def __init__(self, *args, **kwargs):
+    def __new__(cls, *args, **kwargs):
         """Python 3 str constructor."""
         if len(args) == 1 and isinstance(args[0], _coconut_str):
-            if kwargs:
-                _coconut_unicode.__init__(self, repr(args[0]), **kwargs)
-            else:
-                _coconut_unicode.__init__(self, repr(args[0]))
-        elif kwargs:
-            _coconut_unicode.__init__(self, *args, **kwargs)
+            return _coconut_unicode.__new__(cls, repr(args[0]), **kwargs)
         else:
-            _coconut_unicode.__init__(self, *args, **kwargs)
+            return _coconut_unicode.__new__(cls, *args, **kwargs)
 _coconut_encoding = "'''+ENCODING+r'''"
 py2_print = print
 _coconut_print = py2_print
