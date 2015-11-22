@@ -2029,7 +2029,7 @@ class processor(object):
     nocolon_suite = Forward()
 
     argument = condense(name + equals + test) | addspace(name + Optional(comp_for))
-    classlist = attach(Optional(lparen.suppress() + Optional(testlist) + rparen.suppress()), class_proc)
+    classlist = attach(Optional(lparen.suppress() + varargslist + rparen.suppress()), class_proc)
     classdef = condense(addspace(Keyword("class") + name) + classlist + suite)
     comp_iter = Forward()
     comp_for <<= addspace(Keyword("for") + assignlist + Keyword("in") + test_item + Optional(comp_iter))
