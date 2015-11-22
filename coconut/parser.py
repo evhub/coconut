@@ -601,15 +601,6 @@ def else_proc(tokens):
     else:
         raise CoconutException("invalid compound else statement tokens", tokens)
 
-def class_proc(tokens):
-    """Processes class inheritance lists."""
-    if len(tokens) == 0:
-        return "(__coconut__.object)"
-    elif len(tokens) == 1:
-        return "("+tokens[0]+")"
-    else:
-        raise CoconutException("invalid class inheritance tokens", tokens)
-
 class matcher(object):
     """Pattern-matching processor."""
     position = 0
@@ -1048,6 +1039,7 @@ class processor(object):
         self.atom_item_ref <<= self.trace(attach(self.atom_item, self.item_repl), "atom_item")
         self.set_literal_ref <<= self.trace(attach(self.set_literal, self.set_literal_convert), "set_literal")
         self.set_letter_literal_ref <<= self.trace(attach(self.set_letter_literal, self.set_letter_literal_convert), "set_letter_literal")
+        self.classlist_ref <<= self.trace(attach(self.classlist, self.classlist_repl), "classlist")
         self.augassign_stmt_ref <<= attach(self.augassign_stmt, self.augassign_repl)
         self.u_string_ref <<= attach(self.u_string, self.u_string_check)
         self.typedef_ref <<= attach(self.typedef, self.typedef_check)
@@ -1574,6 +1566,27 @@ class processor(object):
         else:
             raise CoconutException("invalid assignment tokens", tokens)
 
+    def classlist_repl(self, original, location, tokens):
+        """Processes class inheritance lists."""
+        if len(tokens) == 0:
+            if self.version == "3":
+                return ""
+            else:
+                return "(__coconut__.object)"
+        elif len(tokens) == 1 and len(tokens[0]) == 1:
+            if "names" in tokens[0]:
+                return "(" + tokens[0] + ")"
+            elif "args" in tokens[0]:
+                if self.version == "3":
+                    return "(" + tokens[0] + ")"
+                else:
+                    raise CoconutTargetError("found Python 3 keyword class definition",
+                                             original, location, self.adjust(lineno(location, original)))
+            else:
+                raise CoconutException("invalid inner classlist token", tokens[0])
+        else:
+            raise CoconutException("invalid classlist tokens", tokens)
+
     def check_strict(self, name, original, location, tokens):
         """Checks that syntax meets --strict requirements."""
         if len(tokens) != 1:
@@ -2027,10 +2040,11 @@ class processor(object):
     stmt = Forward()
     suite = Forward()
     nocolon_suite = Forward()
+    classlist_ref = Forward()
 
     argument = condense(name + equals + test) | addspace(name + Optional(comp_for))
-    classlist = attach(Optional(lparen.suppress() + varargslist + rparen.suppress()), class_proc)
-    classdef = condense(addspace(Keyword("class") + name) + classlist + suite)
+    classlist = Optional(lparen.suppress() + Group(itemlist(name, comma)("names") | varargslist("args")) + rparen.suppress())
+    classdef = condense(addspace(Keyword("class") + name) + classlist_ref + suite)
     comp_iter = Forward()
     comp_for <<= addspace(Keyword("for") + assignlist + Keyword("in") + test_item + Optional(comp_iter))
     comp_if = addspace(Keyword("if") + test_nocond + Optional(comp_iter))
