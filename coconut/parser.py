@@ -2044,7 +2044,7 @@ class processor(object):
     classlist_ref = Forward()
 
     argument = condense(name + equals + test) | addspace(name + Optional(comp_for))
-    classlist = Optional(lparen.suppress() + Optional(Group(itemlist(name, comma)("names") | varargslist_req("args"))) + rparen.suppress())
+    classlist = Optional(lparen.suppress() + Optional(Group(itemlist(name, comma)("names") ^ varargslist_req("args"))) + rparen.suppress())
     classdef = condense(addspace(Keyword("class") + name) + classlist_ref + suite)
     comp_iter = Forward()
     comp_for <<= addspace(Keyword("for") + assignlist + Keyword("in") + test_item + Optional(comp_iter))
