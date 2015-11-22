@@ -1575,10 +1575,10 @@ class processor(object):
                 return "(__coconut__.object)"
         elif len(tokens) == 1 and len(tokens[0]) == 1:
             if "names" in tokens[0]:
-                return "(" + tokens[0] + ")"
+                return "(" + tokens[0][0] + ")"
             elif "args" in tokens[0]:
                 if self.version == "3":
-                    return "(" + tokens[0] + ")"
+                    return "(" + tokens[0][0] + ")"
                 else:
                     raise CoconutTargetError("found Python 3 keyword class definition",
                                              original, location, self.adjust(lineno(location, original)))
