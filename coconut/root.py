@@ -51,7 +51,6 @@ class _coconut_metaint(type):
 class int(_coconut_int):
     """Python 3 int."""
     __metaclass__ = _coconut_metaint
-_coconut_new_int = int
 class _coconut_metabytes(type):
     def __instancecheck__(cls, inst):
         return isinstance(inst, _coconut_str)
@@ -63,7 +62,7 @@ class bytes(_coconut_str):
         return _coconut_str.__new__(cls, _coconut_bytearray(*args, **kwargs))
 def print(*args, **kwargs):
     """Python 3 print."""
-    return _coconut_print(*(_coconut_new_str(x) for x in args), **kwargs)
+    return _coconut_print(*(_coconut_unicode(x).encode(_coconut_encoding) for x in args), **kwargs)
 def input(*args, **kwargs):
     """Python 3 input."""
     return _coconut_raw_input(*args, **kwargs).decode(_coconut_encoding)'''
