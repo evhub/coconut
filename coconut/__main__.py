@@ -7,7 +7,7 @@
 """
 Author: Evan Hubinger
 License: Apache 2.0
-Description: The main Coconut entry point.
+Description: Starts the Coconut command line utility.
 """
 
 #-----------------------------------------------------------------------------------------------------------------------

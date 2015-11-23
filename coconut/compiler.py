@@ -7,7 +7,7 @@
 """
 Author: Evan Hubinger
 License: Apache 2.0
-Description: The Coconut CLI.
+Description: Processes arguments to the Coconut command-line utility.
 """
 
 #-----------------------------------------------------------------------------------------------------------------------

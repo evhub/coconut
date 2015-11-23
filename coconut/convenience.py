@@ -7,7 +7,7 @@
 """
 Author: Evan Hubinger
 License: Apache 2.0
-Description: Coconut convenience functions.
+Description: Convenience functions for using Coconut as a module.
 """
 
 #-----------------------------------------------------------------------------------------------------------------------

@@ -7,7 +7,7 @@
 """
 Author: Evan Hubinger
 License: Apache 2.0
-Description: The Coconut installer.
+Description: Installer for the Coconut Programming Language.
 """
 
 #-----------------------------------------------------------------------------------------------------------------------

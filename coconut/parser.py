@@ -7,7 +7,7 @@
 """
 Author: Evan Hubinger
 License: Apache 2.0
-Description: The Coconut transpiler.
+Description: Compiles Coconut code into Python code.
 """
 
 #-----------------------------------------------------------------------------------------------------------------------

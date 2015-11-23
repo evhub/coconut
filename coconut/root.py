@@ -7,7 +7,7 @@
 """
 Author: Evan Hubinger
 License: Apache 2.0
-Description: The Coconut root.
+Description: Basic Coconut constants and compatibility handling.
 """
 
 #-----------------------------------------------------------------------------------------------------------------------
