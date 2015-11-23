@@ -1076,12 +1076,12 @@ Likely the most useful of the convenience functions, `parse` takes Coconut code 
 
 #### `coconut.convenience.setup`
 
-**setup**(**[[[**_strict_**]**_, target_**]**_, quiet_**]**)
+**setup**(**[[[**_target_**]**_, strict_**]**_, quiet_**]**)
 
-If `--strict`, `--target`, or `--quiet` are desired for `parse`, the three arguments to `setup`, _strict_, _target_, and _quiet_, will each set the value of the corresponding flag. The possible values for each flag are:
+If `--target`, `--strict`, or `--quiet` are desired for `parse`, the three arguments to `setup`, _target_, _strict_, and _quiet_, will each set the value of the corresponding flag. The possible values for each flag are:
 
-- _strict_: `False` (default) or `True`
 - _target_: `None` (default), `"2"`, or `"3"`
+- _strict_: `False` (default) or `True`
 - _quiet_: `False` (default) or `True`
 
 #### `coconut.convenience.cmd`

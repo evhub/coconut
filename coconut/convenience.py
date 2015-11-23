@@ -49,7 +49,7 @@ def version(which="num"):
 # PARSING:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def setup(strict=False, target=None, quiet=False):
+def setup(target=None, strict=False, quiet=False):
     """Gets COMPILER.processor."""
     COMPILER.setup(strict, target)
     COMPILER.quiet(quiet)
