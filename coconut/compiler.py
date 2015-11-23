@@ -333,10 +333,6 @@ class cli(object):
                 compiled = self.processor.parse_file(code)
             else:
                 raise parser.CoconutException("invalid value for module boolean", module)
-            if run:
-                self.execute(compiled, path=(destpath if destpath is not None else codepath))
-            elif self.show:
-                print(compiled)
             if destpath is None:
                 self.console.print("Compiled without writing to file.")
             else:
@@ -346,6 +342,10 @@ class cli(object):
                 with openfile(destpath, "w") as opened:
                     writefile(opened, compiled)
                 self.console.print("Compiled to     "+destpath+" .")
+            if run:
+                self.execute(compiled, path=(destpath if destpath is not None else codepath))
+            elif self.show:
+                print(compiled)
 
     def create_module(self, dirpath):
         """Sets up a module directory."""
