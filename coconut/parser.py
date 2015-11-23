@@ -18,7 +18,7 @@ from __future__ import with_statement, print_function, absolute_import, unicode_
 
 from .root import *
 from pyparsing import *
-from zlib import adler32
+from zlib import crc32 as checksum
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
@@ -90,7 +90,7 @@ ParserElement.setDefaultWhitespaceChars(white)
 
 def genhash(code="\x00"):
     """Generates a hash from code."""
-    return hex(adler32(
+    return hex(checksum(
             str(VERSION_STR + "\x00" + code).encode(ENCODING)
         ) & 0xffffffff) # necessary for cross-compatibility
 
