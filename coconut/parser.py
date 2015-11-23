@@ -25,6 +25,7 @@ from zlib import crc32 as checksum
 #-----------------------------------------------------------------------------------------------------------------------
 
 hash_prefix = '# __coconut_hash__ = '
+hash_sep = "\x00"
 openstr = "\u204b"
 closestr = "\xb6"
 linebreak = "\n"
@@ -88,10 +89,10 @@ ParserElement.setDefaultWhitespaceChars(white)
 # HEADERS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def genhash(code="\x00"):
+def genhash(code=hash_sep):
     """Generates a hash from code."""
     return hex(checksum(
-            str(VERSION_STR + "\x00" + code).encode(ENCODING)
+            str(VERSION_STR + hash_sep + code).encode(ENCODING)
         ) & 0xffffffff) # necessary for cross-compatibility
 
 def gethash(compiled):
