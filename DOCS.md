@@ -23,8 +23,9 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [Enhanced Imaginary Literals](#enhanced-imaginary-literals)
     - [Non-Decimal Integers](#non-decimal-integers)
     - [Enhanced Decorators](#enhanced-decorators)
-    - [Enhanced Else Statements](#enhanced-else-statements)
-    - [Enhanced Except Statements](#enhanced-except-statements)
+    - [Enhanced `else` Statements](#enhanced-else-statements)
+    - [Enhanced `except` Statements](#enhanced-except-statements)
+    - [Enhanced Variable Lists](#enhanced-variable-lists)
     - [Unicode Alternatives](#unicode-alternatives)
     - [Code Passthrough](#code-passthrough)
 - [III. Operators](#iii-operators)
@@ -431,7 +432,7 @@ def func(x):
     return x**2
 ```
 
-### Enhanced Else Statements
+### Enhanced `else` Statements
 
 Coconut supports the compound statements `try`, `if`, and `match` on the end of an `else` statement like any simple statement would be. This is most useful for mixing `match` and `if` statements together, but also allows for compound `try` statements.
 
@@ -462,7 +463,7 @@ else:
         handle_2()
 ```
 
-### Enhanced Except Statements
+### Enhanced `except` Statements
 
 Python 3 requires that if multiple exceptions are to be caught, they must be placed inside of parentheses, so as to disallow Python 2's use of a comma instead of `as`. Coconut allows commas in except statements to translate to catching multiple exceptions without the need for parentheses.
 
@@ -482,6 +483,24 @@ try:
     unsafe_func(arg)
 except (SyntaxError, ValueError) as err:
     handle(err)
+```
+
+### Enhanced Variable Lists
+
+Coconut allows for the more elegant parenthetical continuation instead of the less elegant backslash continuation in `import`, `del`, `global`, and `nonlocal` statements.
+
+##### Example
+
+Coconut:
+```python
+global (really_long_global_variable_name_the_first_one,
+        really_long_global_variable_name_the_second_one)
+```
+
+Python:
+```python
+global really_long_global_variable_name_the_first_one, \
+        really_long_global_variable_name_the_second_one
 ```
 
 ### Unicode Alternatives

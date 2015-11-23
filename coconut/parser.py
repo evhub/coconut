@@ -1503,7 +1503,8 @@ class processor(object):
                 elif trailer[0] == ".":
                     out = "__coconut__.functools.partial(__coconut__.getattr, "+out+")"
                 elif trailer[0] == "$(":
-                    raise CoconutSyntaxError("a partial application argument is required", original, location, self.adjust(lineno(location, original)))
+                    raise CoconutSyntaxError("a partial application argument is required",
+                                             original, location, self.adjust(lineno(location, original)))
                 else:
                     raise CoconutException("invalid trailer symbol", trailer[0])
             elif len(trailer) == 2:
@@ -2073,7 +2074,8 @@ class processor(object):
     namelist = parenwrap(lparen, itemlist(name, comma), rparen)
     global_stmt = addspace(Keyword("global") + namelist)
     nonlocal_stmt = addspace(Keyword("nonlocal") + namelist)
-    del_stmt = addspace(Keyword("del") + itemlist(simple_assign, comma))
+    simple_assignlist = parenwrap(lparen, itemlist(simple_assign, comma), rparen)
+    del_stmt = addspace(Keyword("del") + simple_assignlist)
     with_item = addspace(test + Optional(Keyword("as") + name))
 
     match = Forward()
