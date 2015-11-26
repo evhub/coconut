@@ -21,7 +21,7 @@ import os.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from coconut.root import *
-from coconut import compiler
+from coconut.command import cli
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
@@ -31,9 +31,9 @@ def main():
     """Runs the Coconut CLI."""
     from os import name
     if name == "nt":
-        cmd = compiler.cli()
+        cmd = cli()
     else:
-        cmd = compiler.cli(main_color="cyan", debug_color="yellow")
+        cmd = cli(main_color="cyan", debug_color="yellow")
     cmd.start()
 
 if __name__ == "__main__":
