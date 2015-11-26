@@ -1088,12 +1088,10 @@ class processor(object):
     def wrap_str(self, text, strchar, multiline):
         """Wraps a string."""
         self.refs.append((text, strchar, multiline))
-        return '"'+str(len(self.refs)-1)+'"'
+        return '"' + str(len(self.refs)-1) + '"'
 
-    def wrap_passthrough(self, text, multiline):
-        """Wraps a passthrough."""
-        if not multiline:
-            text = text.lstrip()
+    def expand(self, text):
+        """Expands strings in text."""
         fulltext = ""
         found = None
         for c in text:
@@ -1107,7 +1105,13 @@ class processor(object):
                 found = ""
             else:
                 fulltext += c
-        self.refs.append(fulltext)
+        return fulltext
+
+    def wrap_passthrough(self, text, multiline):
+        """Wraps a passthrough."""
+        if not multiline:
+            text = text.lstrip()
+        self.refs.append(self.expand(text))
         if multiline:
             out = "\\"
         else:
@@ -1131,12 +1135,14 @@ class processor(object):
     def str_proc(self, inputstring, **kwargs):
         """Processes strings."""
         out = []
-        found = None
+        found = None # store of characters that might be the start of a string
         hold = None
-        _comment = 0
-        _contents = 0
-        _start = 1
-        _store = 2
+        # hold = [_comment]
+        _comment = 0 # the contents of the comment so far
+        # hold = [_contents, _start, _stop]
+        _contents = 0 # the contents of the string so far
+        _start = 1 # the string of characters that started the string
+        _stop = 2 # store of characters that might be the end of the string
         x = 0
         skips = self.skips.copy()
         while x <= len(inputstring):
@@ -1145,21 +1151,21 @@ class processor(object):
             else:
                 c = inputstring[x]
             if hold is not None:
-                if len(hold) == 1: # [_comment]
+                if len(hold) == 1: # hold == [_comment]
                     if c == linebreak:
                         out.append(self.wrap_comment(hold[_comment])+c)
                         hold = None
                     else:
                         hold[_comment] += c
-                elif hold[_store] is not None:
+                elif hold[_stop] is not None:
                     if c == "\\":
-                        hold[_contents] += hold[_store]+c
-                        hold[_store] = None
+                        hold[_contents] += hold[_stop]+c
+                        hold[_stop] = None
                     elif c == hold[_start][0]:
-                        hold[_store] += c
-                    elif len(hold[_store]) > len(hold[_start]):
+                        hold[_stop] += c
+                    elif len(hold[_stop]) > len(hold[_start]):
                         raise CoconutSyntaxError("invalid number of string closes", inputstring, x, self.adjust(lineno(x, inputstring)))
-                    elif hold[_store] == hold[_start]:
+                    elif hold[_stop] == hold[_start]:
                         out.append(self.wrap_str(hold[_contents], hold[_start][0], True))
                         hold = None
                         x -= 1
@@ -1169,8 +1175,8 @@ class processor(object):
                                 raise CoconutSyntaxError("linebreak in non-multiline string", inputstring, x, self.adjust(lineno(x, inputstring)))
                             else:
                                 skips = addskip(skips, self.adjust(lineno(x, inputstring)))
-                        hold[_contents] += hold[_store]+c
-                        hold[_store] = None
+                        hold[_contents] += hold[_stop]+c
+                        hold[_stop] = None
                 elif hold[_contents].endswith("\\") and not hold[_contents].endswith("\\\\"):
                     if c == linebreak:
                         skips = addskip(skips, self.adjust(lineno(x, inputstring)))
@@ -1179,7 +1185,7 @@ class processor(object):
                     out.append(self.wrap_str(hold[_contents], hold[_start], False))
                     hold = None
                 elif c == hold[_start][0]:
-                    hold[_store] = c
+                    hold[_stop] = c
                 else:
                     if c == linebreak:
                         if len(hold[_start]) == 1:
@@ -1190,20 +1196,20 @@ class processor(object):
             elif found is not None:
                 if c == found[0]:
                     found += c
-                elif len(found) == 1: # "_"
+                elif len(found) == 1: # found == "_"
                     if c == linebreak:
                         raise CoconutSyntaxError("linebreak in non-multiline string", inputstring, x, self.adjust(lineno(x, inputstring)))
                     else:
-                        hold = [c, found, None] # [_contents, _start, _store]
+                        hold = [c, found, None] # [_contents, _start, _stop]
                         found = None
-                elif len(found) == 2: # "__"
+                elif len(found) == 2: # found == "__"
                     out.append(self.wrap_str("", found[0], False))
                     found = None
                     x -= 1
-                elif len(found) == 3: # "___"
+                elif len(found) == 3: # found == "___"
                     if c == linebreak:
                         skips = addskip(skips, self.adjust(lineno(x, inputstring)))
-                    hold = [c, found, None] # [_contents, _start, _store]
+                    hold = [c, found, None] # [_contents, _start, _stop]
                     found = None
                 else:
                     raise CoconutSyntaxError("invalid number of string starts", inputstring, x, self.adjust(lineno(x, inputstring)))
@@ -1223,9 +1229,9 @@ class processor(object):
     def passthrough_proc(self, inputstring, **kwargs):
         """Processes python passthroughs."""
         out = []
-        found = None
-        hold = None
-        count = None
+        found = None # store of characters that might be the start of a passthrough
+        hold = None # the contents of the passthrough so far
+        count = None # current parenthetical level
         multiline = None
         skips = self.skips.copy()
         for x in range(0, len(inputstring)):
@@ -1366,9 +1372,9 @@ class processor(object):
         """Reconverts indent tokens into indentation."""
         out = []
         level = 0
-        hold = None
-        _char = 0
-        _escape = 1
+        hold = None # [_char, _escape]
+        _char = 0 # the hold character that started the string
+        _escape = 1 # bool for whether or not an escape character was just found
         for line in inputstring.splitlines():
             line = line.strip()
             if hold is None and not line.startswith("#"):
@@ -1381,7 +1387,7 @@ class processor(object):
                 line = " "*tablen*level + line
             for c in line:
                 if hold:
-                    if c == escape:
+                    if c == "\\":
                         hold[_escape] = not hold[_escape]
                     elif hold[_escape]:
                         hold[_escape] = False
@@ -1766,7 +1772,7 @@ class processor(object):
     matrix_at = at | Literal("\xd7")
     matrix_at_ref = Forward()
 
-    name = Regex("(?![0-9])\\w+")
+    name = Regex(r"(?![0-9])\w+")
     for k in keywords + const_vars + reserved_vars:
         name = ~Keyword(k) + name
     for k in reserved_vars:
