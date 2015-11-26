@@ -16,8 +16,7 @@ Description: Processes arguments to the Coconut command-line utility.
 
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
-from .root import *
-from compiler import *
+from .compiler import *
 import traceback
 import os
 import os.path
