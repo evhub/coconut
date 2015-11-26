@@ -17,8 +17,8 @@ Description: Convenience functions for using Coconut as a module.
 from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
 
 from .root import *
-from .parser import CoconutException
-from .compiler import cli
+from .compiler import CoconutException
+from .command import cli
 
 #-----------------------------------------------------------------------------------------------------------------------
 # COMPILING:
