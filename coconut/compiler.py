@@ -1249,7 +1249,7 @@ class processor(object):
                         skips = addskip(skips, self.adjust(lineno(x, inputstring)))
                     found += c
             elif found:
-                if c == "\\':
+                if c == "\\":
                     found = ""
                     hold = linebreak
                     count = 0
