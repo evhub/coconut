@@ -305,7 +305,7 @@ class cli(object):
         self.console.print("Compiling       "+codepath+" ...")
         with openfile(codepath, "r") as opened:
             code = readfile(opened)
-        foundhash = None if force else hashashof(destpath, code)
+        foundhash = None if force else self.hashashof(destpath, code)
         if foundhash:
             if run:
                 self.execute(foundhash, path=destpath)
