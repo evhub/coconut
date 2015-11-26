@@ -31,7 +31,7 @@ def main():
     """Runs the Coconut CLI."""
     from os import name
     if name == "nt":
-        cmd = cli()
+        cmd = cli() # don't use unix color codes on windows
     else:
         cmd = cli(main_color="cyan", debug_color="yellow")
     cmd.start()

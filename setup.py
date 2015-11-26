@@ -31,14 +31,14 @@ with open("README.rst", "r") as opened:
     readme = opened.read()
 
 setuptools.setup(
-    name="coconut",
-    version=VERSION,
-    description="Simple, elegant, Pythonic functional programming.",
-    long_description=readme,
-    url="https://github.com/evhub/coconut",
-    author="Evan Hubinger",
-    author_email="evanjhub@gmail.com",
-    classifiers=[
+    name = "coconut",
+    version = VERSION,
+    description = "Simple, elegant, Pythonic functional programming.",
+    long_description = readme,
+    url = "https://github.com/evhub/coconut",
+    author = "Evan Hubinger",
+    author_email = "evanjhub@gmail.com",
+    classifiers = [
         "License :: OSI Approved :: Apache Software License",
         "Intended Audience :: Developers",
         "Intended Audience :: Information Technology",
@@ -62,7 +62,7 @@ setuptools.setup(
         "Framework :: IPython",
         "Development Status :: 3 - Alpha"
         ],
-    keywords=[
+    keywords = [
         "functional programming language",
         "functional programming",
         "functional",
@@ -87,11 +87,11 @@ setuptools.setup(
         "currying",
         "curry"
         ],
-    packages=setuptools.find_packages(),
-    install_requires=[
+    packages = setuptools.find_packages(),
+    install_requires = [
         "pyparsing==2.0.5"
         ],
-    entry_points={"console_scripts":[
+    entry_points = {"console_scripts":[
         "coconut = coconut.__main__:main"
         ]}
     )

@@ -28,13 +28,13 @@ import argparse
 
 def openfile(filename, opentype="r+"):
     """Returns an open file object."""
-    return open(filename, opentype, encoding=ENCODING)
+    return open(filename, opentype, encoding=ENCODING) # uses io.open from .root
 
-def writefile(openedfile, writer):
+def writefile(openedfile, newcontents):
     """Sets the contents of a file."""
     openedfile.seek(0)
     openedfile.truncate()
-    openedfile.write(writer)
+    openedfile.write(newcontents)
 
 def readfile(openedfile):
     """Reads the contents of a file."""
@@ -45,23 +45,13 @@ def fixpath(path):
     """Properly formats a path."""
     return os.path.normpath(os.path.realpath(path))
 
-def hashashof(destpath, code):
-    """Determines if a file has the hash of the code."""
-    if destpath is not None and os.path.isfile(destpath):
-        with openfile(destpath, "r") as opened:
-            compiled = readfile(opened)
-            hashash = gethash(compiled)
-            if hashash is not None and hashash == genhash(code):
-                return compiled
-    return None
-
 def print_error(verbose=False):
     """Displays a formatted error."""
     err_type, err_value, err_trace = sys.exc_info()
     if verbose:
-        err = "".join(traceback.format_exception(err_type, err_value, err_trace)).strip()
+        err = linebreak.join(traceback.format_exception(err_type, err_value, err_trace)).strip()
     else:
-        err_name, err_msg = "".join(traceback.format_exception_only(err_type, err_value)).strip().split(": ", 1)
+        err_name, err_msg = linebreak.join(traceback.format_exception_only(err_type, err_value)).strip().split(": ", 1)
         err_name = err_name.split(".")[-1]
         err = err_name+": "+err_msg
     print(err, file=sys.stderr)
@@ -198,9 +188,8 @@ class cli(object):
         self.moreprompt = self.console.addcolor(moreprompt, main_color)
 
     def start(self):
-        """Gets command-line arguments."""
-        args = self.commandline.parse_args()
-        self.cmd(args)
+        """Processes command-line arguments."""
+        self.cmd(self.commandline.parse_args())
 
     def setup(self, strict=False, target=None):
         """Creates the processor."""
@@ -217,7 +206,7 @@ class cli(object):
         self.console.on = not state
 
     def indebug(self):
-        """Determines whether the parser is in debug mode."""
+        """Determines whether the processor is in debug mode."""
         return self.processor.indebug()
 
     def cmd(self, args, interact=True):
@@ -326,12 +315,12 @@ class cli(object):
         else:
             if module is True:
                 compiled = self.processor.parse_module(code)
-            elif module is None:
-                compiled = self.processor.parse_block(code)
             elif module is False:
                 compiled = self.processor.parse_file(code)
+            elif module is None:
+                compiled = self.processor.parse_block(code)
             else:
-                raise CoconutException("invalid value for module boolean", module)
+                raise CoconutException("invalid value for module", module)
             if destpath is None:
                 self.console.print("Compiled without writing to file.")
             else:
@@ -352,12 +341,22 @@ class cli(object):
         with openfile(filepath, "w") as opened:
             writefile(opened, headers("package", self.processor.version))
 
+    def hashashof(self, destpath, code):
+        """Determines if a file has the hash of the code."""
+        if destpath is not None and os.path.isfile(destpath):
+            with openfile(destpath, "r") as opened:
+                compiled = readfile(opened)
+                hashash = gethash(compiled)
+                if hashash is not None and hashash == self.processor.genhash(code):
+                    return compiled
+        return None
+
     def prompt_with(self, prompt):
         """Prompts for code."""
         try:
-            return input(prompt)
+            return input(prompt) # using input from .root
         except KeyboardInterrupt:
-            print("\nKeyboardInterrupt")
+            print(linebreak + "KeyboardInterrupt")
         except EOFError:
             print()
             self.exit()
@@ -388,7 +387,7 @@ class cli(object):
             while True:
                 line = self.prompt_with(self.moreprompt)
                 if line:
-                    code += "\n" + line
+                    code += linebreak + line
                 elif line is None:
                     return None
                 else:

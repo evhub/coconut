@@ -26,14 +26,13 @@ from zlib import crc32 as checksum
 
 hash_prefix = '# __coconut_hash__ = '
 hash_sep = "\x00"
-openstr = "\u204b"
-closestr = "\xb6"
+openindent = "\u204b"
+closeindent = "\xb6"
 linebreak = "\n"
 white = " \t\f"
 downs = "([{"
 ups = ")]}"
 holds = "'\""
-escape = "\\"
 tablen = 4
 decorator_var = "_coconut_decorator"
 match_to_var = "_coconut_match_to"
@@ -43,44 +42,50 @@ match_err_var = "_coconut_match_err"
 lazy_item_var = "_coconut_lazy_item"
 lazy_chain_var = "_coconut_lazy_chain"
 wildcard = "_"
-keywords = ("and",
-            "as",
-            "assert",
-            "break",
-            "class",
-            "continue",
-            "def",
-            "del",
-            "elif",
-            "else",
-            "except",
-            "finally",
-            "for",
-            "from",
-            "global",
-            "if",
-            "import",
-            "in",
-            "is",
-            "lambda",
-            "not",
-            "or",
-            "pass",
-            "raise",
-            "return",
-            "try",
-            "while",
-            "with",
-            "yield")
-const_vars = ("True",
-              "False",
-              "None")
-reserved_vars = ("nonlocal",
-                 "data",
-                 "match",
-                 "case",
-                 "async",
-                 "await")
+keywords = (
+    "and",
+    "as",
+    "assert",
+    "break",
+    "class",
+    "continue",
+    "def",
+    "del",
+    "elif",
+    "else",
+    "except",
+    "finally",
+    "for",
+    "from",
+    "global",
+    "if",
+    "import",
+    "in",
+    "is",
+    "lambda",
+    "not",
+    "or",
+    "pass",
+    "raise",
+    "return",
+    "try",
+    "while",
+    "with",
+    "yield"
+    )
+const_vars = (
+    "True",
+    "False",
+    "None"
+    )
+reserved_vars = (
+    "nonlocal",
+    "data",
+    "match",
+    "case",
+    "async",
+    "await"
+    )
 
 ParserElement.enablePackrat()
 ParserElement.setDefaultWhitespaceChars(white)
@@ -88,12 +93,6 @@ ParserElement.setDefaultWhitespaceChars(white)
 #-----------------------------------------------------------------------------------------------------------------------
 # HEADERS:
 #-----------------------------------------------------------------------------------------------------------------------
-
-def genhash(code=hash_sep):
-    """Generates a hash from code."""
-    return hex(checksum(
-            str(VERSION_STR + hash_sep + code).encode(ENCODING)
-        ) & 0xffffffff) # necessary for cross-compatibility
 
 def gethash(compiled):
     """Retrieves a hash from a header."""
@@ -323,7 +322,7 @@ def addskip(skips, skip):
 
 def clean(line):
     """Cleans a line."""
-    return line.replace(openstr, "").replace(closestr, "").strip()
+    return line.replace(openindent, "").replace(closeindent, "").strip()
 
 class CoconutException(Exception):
     """Base Coconut exception."""
@@ -565,14 +564,14 @@ def func_proc(tokens):
 def match_func_proc(tokens):
     """Processes match mathematical function definitions."""
     if len(tokens) == 2:
-        return tokens[0] + "return " + tokens[1] + linebreak + closestr
+        return tokens[0] + "return " + tokens[1] + linebreak + closeindent
     else:
         raise CoconutException("invalid pattern-matching mathematical function definition tokens", tokens)
 
 def full_match_funcdef_proc(tokens):
     """Processes full match function definition."""
     if len(tokens) == 2:
-        return tokens[0] + "".join(tokens[1]) + closestr
+        return tokens[0] + "".join(tokens[1]) + closeindent
     else:
         raise CoconutException("invalid pattern-matching function definition tokens", tokens)
 
@@ -598,7 +597,7 @@ def decorator_proc(tokens):
 def else_proc(tokens):
     """Processes compound else statements."""
     if len(tokens) == 1:
-        return linebreak + openstr + tokens[0] + closestr
+        return linebreak + openindent + tokens[0] + closeindent
     else:
         raise CoconutException("invalid compound else statement tokens", tokens)
 
@@ -884,12 +883,12 @@ class matcher(object):
         closes = 0
         for checks, defs in self.checkdefs:
             if checks:
-                out += "if (" + ") and (".join(checks) + "):" + linebreak + openstr
+                out += "if (" + ") and (".join(checks) + "):" + linebreak + openindent
                 closes += 1
             if defs:
                 out += linebreak.join(defs) + linebreak
         out += self.checkvar + " = True" + linebreak
-        out += closestr * closes
+        out += closeindent * closes
         for other in self.others:
             out += other.out()
         return out
@@ -912,19 +911,19 @@ def match_proc(tokens):
     out += match_to_var + " = " + item + linebreak
     out += matching.out()
     if stmts is not None:
-        out += "if "+match_check_var+":" + linebreak + openstr + "".join(stmts) + closestr
+        out += "if "+match_check_var+":" + linebreak + openindent + "".join(stmts) + closeindent
     return out
 
 def pattern_error(original, loc):
     """Constructs a pattern-matching error message."""
     match_line = ascii(clean(line(loc, original)))
-    return ("if not " + match_check_var + ":" + linebreak + openstr
+    return ("if not " + match_check_var + ":" + linebreak + openindent
         + match_err_var + ' = __coconut__.MatchError("pattern-matching failed for " '
         + ascii(match_line) + ' " in " + __coconut__.ascii(__coconut__.ascii(' + match_to_var + ")))"
         + linebreak + match_err_var + ".pattern = " + match_line
         + linebreak + match_err_var + ".value = " + match_to_var
         + linebreak + "raise " + match_err_var
-        + linebreak + closestr)
+        + linebreak + closeindent)
 
 def match_assign_proc(original, loc, tokens):
     """Processes match assign blocks."""
@@ -955,8 +954,8 @@ def case_proc(tokens):
         raise CoconutException("invalid top-level case tokens", tokens)
     out = match_proc(case_to_match(cases[0], item))
     for case in cases[1:]:
-        out += ("if not "+match_check_var+":" + linebreak + openstr
-            + match_proc(case_to_match(case, item)) + closestr)
+        out += ("if not "+match_check_var+":" + linebreak + openindent
+            + match_proc(case_to_match(case, item)) + closeindent)
     if default is not None:
         out += "if not "+match_check_var+default
     return out
@@ -966,7 +965,7 @@ def name_match_funcdef_proc(original, loc, tokens):
     func, matches = tokens
     matching = matcher(match_check_var)
     matching.match_sequence(("(", matches), match_to_var)
-    out = "def " + func + " (*" + match_to_var + "):" + linebreak + openstr
+    out = "def " + func + " (*" + match_to_var + "):" + linebreak + openindent
     out += match_check_var + " = False" + linebreak
     out += matching.out()
     out += pattern_error(original, loc)
@@ -1066,6 +1065,12 @@ class processor(object):
         self.ichain_count = 0
         self.skips = set()
 
+    def genhash(self, code=hash_sep):
+        """Generates a hash from code."""
+        return hex(checksum(
+                hash_sep.join((VERSION_STR, str(self.version), str(code))).encode(ENCODING)
+            ) & 0xffffffff) # necessary for cross-compatibility
+
     def warn(self, msg):
         """Displays a message."""
         self.display("CoconutWarning: " + str(msg))
@@ -1147,7 +1152,7 @@ class processor(object):
                     else:
                         hold[_comment] += c
                 elif hold[_store] is not None:
-                    if c == escape:
+                    if c == "\\":
                         hold[_contents] += hold[_store]+c
                         hold[_store] = None
                     elif c == hold[_start][0]:
@@ -1166,7 +1171,7 @@ class processor(object):
                                 skips = addskip(skips, self.adjust(lineno(x, inputstring)))
                         hold[_contents] += hold[_store]+c
                         hold[_store] = None
-                elif hold[_contents].endswith(escape) and not hold[_contents].endswith(escape*2):
+                elif hold[_contents].endswith("\\") and not hold[_contents].endswith("\\\\"):
                     if c == linebreak:
                         skips = addskip(skips, self.adjust(lineno(x, inputstring)))
                     hold[_contents] += c
@@ -1238,7 +1243,7 @@ class processor(object):
                         skips = addskip(skips, self.adjust(lineno(x, inputstring)))
                     found += c
             elif found:
-                if c == escape:
+                if c == "\\':
                     found = ""
                     hold = linebreak
                     count = 0
@@ -1249,9 +1254,9 @@ class processor(object):
                     count = -1
                     multiline = True
                 else:
-                    out.append(escape + c)
+                    out.append("\\" + c)
                     found = None
-            elif c == escape:
+            elif c == "\\":
                 found = True
             else:
                 out.append(c)
@@ -1337,10 +1342,10 @@ class processor(object):
                 elif check > current:
                     levels.append(current)
                     current = check
-                    line = openstr+line
+                    line = openindent+line
                 elif check in levels:
                     point = levels.index(check)+1
-                    line = closestr*(len(levels[point:])+1)+line
+                    line = closeindent*(len(levels[point:])+1)+line
                     levels = levels[:point]
                     current = levels.pop()
                 elif current != check:
@@ -1354,7 +1359,7 @@ class processor(object):
                 raise CoconutSyntaxError("illegal final backslash continuation", last, len(last), self.adjust(len(new)))
             if count != 0:
                 raise CoconutSyntaxError("unclosed parenthetical", new[-1], len(new[-1]), self.adjust(len(new)))
-        new.append(closestr*len(levels))
+        new.append(closeindent*len(levels))
         return linebreak.join(new)
 
     def reindent(self, inputstring):
@@ -1367,10 +1372,10 @@ class processor(object):
         for line in inputstring.splitlines():
             line = line.strip()
             if hold is None and not line.startswith("#"):
-                while line.startswith(openstr) or line.startswith(closestr):
-                    if line[0] == openstr:
+                while line.startswith(openindent) or line.startswith(closeindent):
+                    if line[0] == openindent:
                         level += 1
-                    elif line[0] == closestr:
+                    elif line[0] == closeindent:
                         level -= 1
                     line = line[1:]
                 line = " "*tablen*level + line
@@ -1811,8 +1816,8 @@ class processor(object):
     newline = condense(OneOrMore(lineitem))
     startmarker = StringStart() + condense(ZeroOrMore(lineitem) + Optional(moduledoc))
     endmarker = StringEnd()
-    indent = Literal(openstr)
-    dedent = Literal(closestr)
+    indent = Literal(openindent)
+    dedent = Literal(closeindent)
 
     augassign = (
         Combine(pipeline + equals)
@@ -2251,7 +2256,7 @@ class processor(object):
     def parse_file(self, inputstring, addhash=True):
         """Parses file input."""
         if addhash:
-            usehash = genhash(inputstring)
+            usehash = self.genhash(inputstring)
         else:
             usehash = None
         return self.parse(inputstring, self.file_parser, {}, {"header": "file", "usehash": usehash})
@@ -2263,7 +2268,7 @@ class processor(object):
     def parse_module(self, inputstring, addhash=True):
         """Parses module input."""
         if addhash:
-            usehash = genhash(inputstring)
+            usehash = self.genhash(inputstring)
         else:
             usehash = None
         return self.parse(inputstring, self.file_parser, {}, {"header": "module", "usehash": usehash})
