@@ -102,7 +102,7 @@ def gethash(compiled):
     else:
         return lines[2][len(hash_prefix):]
 
-def headers(which, version=None, usehash=None):
+def _headers(which, version=None, usehash=None):
     """Generates the specified header."""
     if which == "none":
         return ""
@@ -119,7 +119,8 @@ def headers(which, version=None, usehash=None):
 # -*- coding: '''+ENCODING+''' -*-
 '''
         if usehash is not None:
-            header += hash_prefix + usehash + linebreak
+            header += hash_prefix + usehash + '''
+'''
         header += '''
 # Compiled with Coconut version '''+VERSION_STR+'''
 
@@ -148,9 +149,11 @@ if _coconut_sys.version_info < (3,):
 '''
             for line in PY2_HEADER.splitlines():
                 if line:
-                    header += "    " + line + linebreak
+                    header += "    " + line + '''
+'''
                 else:
-                    header += line + linebreak
+                    header += line + '''
+'''
         if which == "package":
             header += r'''
 version = "'''+VERSION+r'''"
@@ -1016,7 +1019,7 @@ class processor(object):
         self.display = display
         self.setup(strict, version)
         self.preprocs = [self.prepare, self.str_proc, self.passthrough_proc, self.ind_proc]
-        self.postprocs = [self.reind_proc, self.header_proc]
+        self.postprocs = [self.reind_proc, self.header_proc, self.polish]
         self.bind()
         self.clean()
 
@@ -1431,7 +1434,15 @@ class processor(object):
 
     def header_proc(self, inputstring, header="file", initial="initial", usehash=None, **kwargs):
         """Adds the header."""
-        return headers(initial, self.version, usehash) + self.docstring + headers(header, self.version) + inputstring
+        return _headers(initial, self.version, usehash) + self.docstring + _headers(header, self.version) + inputstring
+
+    def headers(self, header, usehash=None):
+        """Gets a polished header."""
+        return self.polish(_headers(header, self.version, usehash))
+
+    def polish(self, inputstring, **kwargs):
+        """Does final polishing touches."""
+        return linebreak.join(inputstring.splitlines())
 
     def post(self, tokens, **kwargs):
         """Performs post-processing."""

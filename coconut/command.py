@@ -339,7 +339,7 @@ class cli(object):
         """Sets up a module directory."""
         filepath = os.path.join(dirpath, "__coconut__.py")
         with openfile(filepath, "w") as opened:
-            writefile(opened, headers("package", self.processor.version))
+            writefile(opened, self.processor.headers("package"))
 
     def hashashof(self, destpath, code):
         """Determines if a file has the hash of the code."""
@@ -420,4 +420,4 @@ class cli(object):
         self.runner = executor({
             "exit": self.exit
             })
-        self.runner.run(headers("code", "2" if PY2 else "3"))
+        self.runner.run(self.processor.headers("code"))
