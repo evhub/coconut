@@ -14,7 +14,7 @@ Description: Basic Coconut constants and compatibility handling.
 # IMPORTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
+from __future__ import print_function, absolute_import, unicode_literals, division
 
 try:
     import readline

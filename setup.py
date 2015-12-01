@@ -14,7 +14,7 @@ Description: Installer for the Coconut Programming Language.
 # IMPORTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
+from __future__ import print_function, absolute_import, unicode_literals, division
 
 import sys
 import os.path

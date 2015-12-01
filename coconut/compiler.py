@@ -14,7 +14,7 @@ Description: Compiles Coconut code into Python code.
 # IMPORTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
+from __future__ import print_function, absolute_import, unicode_literals, division
 
 from .root import *
 from pyparsing import *
@@ -138,12 +138,12 @@ def _headers(which, version=None, usehash=None):
 '''
         if version == "2":
             header += r'''
-from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
+from __future__ import print_function, absolute_import, unicode_literals, division
 '''+PY2_HEADER+r'''
 '''
         elif version is None:
             header += r'''
-from __future__ import with_statement, print_function, absolute_import, unicode_literals, division
+from __future__ import print_function, absolute_import, unicode_literals, division
 import sys as _coconut_sys
 if _coconut_sys.version_info < (3,):
 '''
