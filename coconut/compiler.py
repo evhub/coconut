@@ -1431,6 +1431,7 @@ class processor(object):
                         found = None
                     elif len(found) == 3: # found == "____"
                         hold = [0, found, None] # [_escape, _start, _stop]
+                        found = None
                     else:
                         raise CoconutException("invalid string start code", line)
                 elif c in holds:
