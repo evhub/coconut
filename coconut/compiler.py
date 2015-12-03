@@ -314,15 +314,6 @@ MatchError = __coconut__.MatchError
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def addskip(skips, skip):
-    if skip < 1:
-        raise CoconutException("invalid skip of line " + str(skip))
-    elif skip in skips:
-        raise CoconutException("duplicate skip of line " + str(skip))
-    else:
-        skips |= set((skip,))
-        return skips
-
 def clean(line):
     """Cleans a line."""
     return line.replace(openindent, "").replace(closeindent, "").strip()
@@ -381,6 +372,25 @@ class CoconutTargetError(CoconutSyntaxError):
         """Creates the --target Coconut error."""
         message += " (enable --target 3 to dismiss)"
         super(CoconutTargetError, self).__init__(message, source, point, ln)
+
+def addskip(skips, skip):
+    """Adds a line skip to the skips."""
+    if skip < 1:
+        raise CoconutException("invalid skip of line " + str(skip))
+    elif skip in skips:
+        raise CoconutException("duplicate skip of line " + str(skip))
+    else:
+        skips |= set((skip,))
+        return skips
+
+def count_end(teststr, testchar):
+    """Counts instances of testchar at end of teststr."""
+    count = 0
+    x = len(teststr)
+    while x > 0 and teststr[x] == testchar:
+        count += 1
+        x -= 1
+    return count
 
 def attach(item, action):
     """Attaches a parse action to an item."""
@@ -1180,7 +1190,7 @@ class processor(object):
                                 skips = addskip(skips, self.adjust(lineno(x, inputstring)))
                         hold[_contents] += hold[_stop]+c
                         hold[_stop] = None
-                elif hold[_contents].endswith("\\") and not hold[_contents].endswith("\\\\"):
+                elif count_end(hold[_contents], "\\") % 2 == 1:
                     if c == linebreak:
                         skips = addskip(skips, self.adjust(lineno(x, inputstring)))
                     hold[_contents] += c
@@ -1375,9 +1385,11 @@ class processor(object):
         """Reconverts indent tokens into indentation."""
         out = []
         level = 0
-        hold = None # [_char, _escape]
-        _char = 0 # the hold character that started the string
-        _escape = 1 # bool for whether or not an escape character was just found
+        found = None # store of characters that might be the start of a string
+        hold = None # [_escape, _start, _stop]
+        _escape = 0 # whether an escape was just encountered in the string
+        _start = 1 # the string of characters that started the string
+        _stop = 2 # store of characters that might be the end of the string
         for line in inputstring.splitlines():
             line = line.strip()
             if hold is None and not line.startswith("#"):
@@ -1388,16 +1400,43 @@ class processor(object):
                         level -= 1
                     line = line[1:]
                 line = " "*tablen*level + line
-            for c in line:
-                if hold:
-                    if c == "\\":
-                        hold[_escape] = not hold[_escape]
-                    elif hold[_escape]:
-                        hold[_escape] = False
-                    elif c == hold[_char]:
-                        hold = None
+            for c in line + linebreak:
+                if hold is not None:
+                    if hold[_stop] is not None:
+                        if c == "\\":
+                            hold[_escape] = (hold[_escape] + 1) % 2
+                            hold[_stop] = None
+                        elif c == hold[_start][0]:
+                            hold[_escape] = 0
+                            hold[_stop] += c
+                        elif len(hold[_stop]) > len(hold[_start]):
+                            raise CoconutException("invalid string close code", line)
+                        elif hold[_stop] == hold[_start]:
+                            hold = None
+                        else:
+                            hold[_escape] = 0
+                            hold[_stop] = None
+                    elif hold[_escape] != 1:
+                        if c == hold[_start]:
+                            hold = None
+                        elif c == hold[_start][0]:
+                            hold[_stop] = c
+                elif found is not None:
+                    if c == found[0]:
+                        found += c
+                    elif len(found) == 1: # found == "_"
+                        hold = [0, found, None] # [_escape, _start, _stop]
+                        found = None
+                    elif len(found) == 2: # found == "___"
+                        found = None
+                    elif len(found) == 3: # found == "____"
+                        hold = [0, found, None] # [_escape, _start, _stop]
+                    else:
+                        raise CoconutException("invalid string start code", line)
                 elif c in holds:
-                    hold = [c, False]
+                    found = c
+            if found is not None:
+                raise CoconutException("invalid unclosed string code", line)
             if hold is None:
                 line = line.rstrip()
             out.append(line)
