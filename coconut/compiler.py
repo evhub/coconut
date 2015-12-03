@@ -387,7 +387,7 @@ def count_end(teststr, testchar):
     """Counts instances of testchar at end of teststr."""
     count = 0
     x = len(teststr) - 1
-    while x > 0 and teststr[x] == testchar:
+    while x >= 0 and teststr[x] == testchar:
         count += 1
         x -= 1
     return count
@@ -1163,6 +1163,7 @@ class processor(object):
                 c = linebreak
             else:
                 c = inputstring[x]
+            print(x, c, found, hold)
             if hold is not None:
                 if len(hold) == 1: # hold == [_comment]
                     if c == linebreak:
@@ -1413,6 +1414,8 @@ class processor(object):
                             raise CoconutException("invalid string close code", line)
                         elif hold[_stop] == hold[_start]:
                             hold = None
+                        elif c == linebreak and len(hold[_start]) == 1:
+                            raise CoconutException("invalid linebreak in string code", line)
                         else:
                             hold[_escape] = 0
                             hold[_stop] = None
@@ -1421,10 +1424,14 @@ class processor(object):
                             hold = None
                         elif c == hold[_start][0]:
                             hold[_stop] = c
+                    elif c == linebreak and len(hold[_start]) == 1:
+                        raise CoconutException("invalid linebreak in string code", line)
                 elif found is not None:
                     if c == found[0]:
                         found += c
                     elif len(found) == 1: # found == "_"
+                        if c == linebreak:
+                            raise CoconutException("invalid linebreak in string code", line)
                         hold = [0, found, None] # [_escape, _start, _stop]
                         found = None
                     elif len(found) == 2: # found == "___"
