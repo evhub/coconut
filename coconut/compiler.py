@@ -1163,7 +1163,6 @@ class processor(object):
                 c = linebreak
             else:
                 c = inputstring[x]
-            print(x, c, found, hold)
             if hold is not None:
                 if len(hold) == 1: # hold == [_comment]
                     if c == linebreak:
@@ -1239,6 +1238,74 @@ class processor(object):
         else:
             self.skips = skips
             return "".join(out)
+
+    def reindent(self, inputstring):
+        """Reconverts indent tokens into indentation."""
+        out = []
+        level = 0
+        found = None # store of characters that might be the start of a string
+        hold = None # [_escape, _start, _stop]
+        _escape = 0 # whether an escape was just encountered in the string
+        _start = 1 # the string of characters that started the string
+        _stop = 2 # store of characters that might be the end of the string
+        for line in inputstring.splitlines():
+            line = line.strip()
+            if hold is None and not line.startswith("#"):
+                while line.startswith(openindent) or line.startswith(closeindent):
+                    if line[0] == openindent:
+                        level += 1
+                    elif line[0] == closeindent:
+                        level -= 1
+                    line = line[1:]
+                line = " "*tablen*level + line
+            for c in line + linebreak:
+                if hold is not None:
+                    if hold[_stop] is not None:
+                        if c == "\\":
+                            hold[_escape] = (hold[_escape] + 1) % 2
+                            hold[_stop] = None
+                        elif c == hold[_start][0]:
+                            hold[_escape] = 0
+                            hold[_stop] += c
+                        elif len(hold[_stop]) > len(hold[_start]):
+                            raise CoconutException("invalid string close code", line)
+                        elif hold[_stop] == hold[_start]:
+                            hold = None
+                        elif c == linebreak and len(hold[_start]) == 1:
+                            raise CoconutException("invalid linebreak in string code", line)
+                        else:
+                            hold[_escape] = 0
+                            hold[_stop] = None
+                    elif hold[_escape] != 1:
+                        if c == hold[_start]:
+                            hold = None
+                        elif c == hold[_start][0]:
+                            hold[_stop] = c
+                    elif c == linebreak and len(hold[_start]) == 1:
+                        raise CoconutException("invalid linebreak in string code", line)
+                elif found is not None:
+                    if c == found[0]:
+                        found += c
+                    elif len(found) == 1: # found == "_"
+                        if c == linebreak:
+                            raise CoconutException("invalid linebreak in string code", line)
+                        hold = [0, found, None] # [_escape, _start, _stop]
+                        found = None
+                    elif len(found) == 2: # found == "___"
+                        found = None
+                    elif len(found) == 3: # found == "____"
+                        hold = [0, found, None] # [_escape, _start, _stop]
+                        found = None
+                    else:
+                        raise CoconutException("invalid string start code", line)
+                elif c in holds:
+                    found = c
+            if found is not None:
+                raise CoconutException("invalid unclosed string code", line)
+            if hold is None:
+                line = line.rstrip()
+            out.append(line)
+        return linebreak.join(out)
 
     def passthrough_proc(self, inputstring, **kwargs):
         """Processes python passthroughs."""
@@ -1381,74 +1448,6 @@ class processor(object):
                 raise CoconutSyntaxError("unclosed parenthetical", new[-1], len(new[-1]), self.adjust(len(new)))
         new.append(closeindent*len(levels))
         return linebreak.join(new)
-
-    def reindent(self, inputstring):
-        """Reconverts indent tokens into indentation."""
-        out = []
-        level = 0
-        found = None # store of characters that might be the start of a string
-        hold = None # [_escape, _start, _stop]
-        _escape = 0 # whether an escape was just encountered in the string
-        _start = 1 # the string of characters that started the string
-        _stop = 2 # store of characters that might be the end of the string
-        for line in inputstring.splitlines():
-            line = line.strip()
-            if hold is None and not line.startswith("#"):
-                while line.startswith(openindent) or line.startswith(closeindent):
-                    if line[0] == openindent:
-                        level += 1
-                    elif line[0] == closeindent:
-                        level -= 1
-                    line = line[1:]
-                line = " "*tablen*level + line
-            for c in line + linebreak:
-                if hold is not None:
-                    if hold[_stop] is not None:
-                        if c == "\\":
-                            hold[_escape] = (hold[_escape] + 1) % 2
-                            hold[_stop] = None
-                        elif c == hold[_start][0]:
-                            hold[_escape] = 0
-                            hold[_stop] += c
-                        elif len(hold[_stop]) > len(hold[_start]):
-                            raise CoconutException("invalid string close code", line)
-                        elif hold[_stop] == hold[_start]:
-                            hold = None
-                        elif c == linebreak and len(hold[_start]) == 1:
-                            raise CoconutException("invalid linebreak in string code", line)
-                        else:
-                            hold[_escape] = 0
-                            hold[_stop] = None
-                    elif hold[_escape] != 1:
-                        if c == hold[_start]:
-                            hold = None
-                        elif c == hold[_start][0]:
-                            hold[_stop] = c
-                    elif c == linebreak and len(hold[_start]) == 1:
-                        raise CoconutException("invalid linebreak in string code", line)
-                elif found is not None:
-                    if c == found[0]:
-                        found += c
-                    elif len(found) == 1: # found == "_"
-                        if c == linebreak:
-                            raise CoconutException("invalid linebreak in string code", line)
-                        hold = [0, found, None] # [_escape, _start, _stop]
-                        found = None
-                    elif len(found) == 2: # found == "___"
-                        found = None
-                    elif len(found) == 3: # found == "____"
-                        hold = [0, found, None] # [_escape, _start, _stop]
-                        found = None
-                    else:
-                        raise CoconutException("invalid string start code", line)
-                elif c in holds:
-                    found = c
-            if found is not None:
-                raise CoconutException("invalid unclosed string code", line)
-            if hold is None:
-                line = line.rstrip()
-            out.append(line)
-        return linebreak.join(out)
 
     def indebug(self):
         """Checks whether debug mode is active."""
