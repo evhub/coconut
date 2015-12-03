@@ -386,7 +386,7 @@ def addskip(skips, skip):
 def count_end(teststr, testchar):
     """Counts instances of testchar at end of teststr."""
     count = 0
-    x = len(teststr)
+    x = len(teststr) - 1
     while x > 0 and teststr[x] == testchar:
         count += 1
         x -= 1
