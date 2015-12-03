@@ -1249,15 +1249,16 @@ class processor(object):
         _start = 1 # the string of characters that started the string
         _stop = 2 # store of characters that might be the end of the string
         for line in inputstring.splitlines():
-            line = line.strip()
-            if hold is None and not line.startswith("#"):
-                while line.startswith(openindent) or line.startswith(closeindent):
-                    if line[0] == openindent:
-                        level += 1
-                    elif line[0] == closeindent:
-                        level -= 1
-                    line = line[1:]
-                line = " "*tablen*level + line
+            if hold is None:
+                line = line.strip()
+                if not line.startswith("#"):
+                    while line.startswith(openindent) or line.startswith(closeindent):
+                        if line[0] == openindent:
+                            level += 1
+                        elif line[0] == closeindent:
+                            level -= 1
+                        line = line[1:]
+                    line = " "*tablen*level + line
             for c in line + linebreak:
                 if hold is not None:
                     if hold[_stop] is not None:
