@@ -1039,7 +1039,7 @@ class processor(object):
             self.version = version
         else:
             raise CoconutException("unsupported target Python version " + ascii(version)
-                + " (supported targets are '2' and '3', or leave blank for universal)")
+                + " (supported targets are '2', '3', or leave blank for universal)")
         self.strict = strict
 
     def bind(self):
@@ -1250,7 +1250,7 @@ class processor(object):
         _stop = 2 # store of characters that might be the end of the string
         for line in inputstring.splitlines():
             if hold is None:
-                line = line.strip()
+                line = line.lstrip()
                 if not line.startswith("#"):
                     while line.startswith(openindent) or line.startswith(closeindent):
                         if line[0] == openindent:
@@ -1269,7 +1269,7 @@ class processor(object):
                             hold[_escape] = 0
                             hold[_stop] += c
                         elif len(hold[_stop]) > len(hold[_start]):
-                            raise CoconutException("invalid string close code", line)
+                            raise CoconutException("invalid close in string code", line)
                         elif hold[_stop] == hold[_start]:
                             hold = None
                         elif c == linebreak and len(hold[_start]) == 1:
