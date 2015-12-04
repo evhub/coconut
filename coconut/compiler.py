@@ -1686,11 +1686,11 @@ class processor(object):
 
     def typedef_check(self, original, location, tokens):
         """Checks for Python 3 type defs."""
-        return self.check_py3("Python 3 type def", original, location, tokens)
+        return self.check_py3("Python 3 type annotation", original, location, tokens)
 
     def yield_from_check(self, original, location, tokens):
         """Checks for Python 3 yield from."""
-        return self.check_py3("Python 3 yield from", original, location, tokens)
+        return self.check_py3("Python 3.3 yield from", original, location, tokens)
 
     def matrix_at_check(self, original, location, tokens):
         """Checks for Python 3.5 matrix multiplication."""

@@ -90,9 +90,11 @@ dest                  destination directory for compiled files (defaults to the 
 
 ### Python Versions
 
-While Coconut syntax is based off of Python 3, the compiler should run on any Python version `>= 2.6`, and will attempt to produce universal code that will run like it does on Python 3 in Python 2. The officially supported versions are CPython `2.6 - 3.5` and PyPy `2.7`. If universal code is not desired, `2` (meaning `2.6 - 2.7`) or `3` (meaning `3.3 - 3.5`) should be specified as the target.
+While Coconut syntax is based off of Python 3, the compiler should run on any Python version `>= 2.6` on the `2.x` branch or `>= 3.2` on the `3.x` branch, and will attempt to produce universal code that will run like it does on Python 3 in Python 2.
 
-The given target will only affect the compiled code and whether or not Python-3-specific syntax is allowed. Where Python 3 and Python 2 syntax standards differ, Coconut syntax will always follow Python 3 accross all targets. Coconut will not, however, change any imports, variable names, or library interfaces. Universal compatibility with those must still be done manually.
+_Note: While the compiler should run under any Python implementation of any version `>= 2.6` on the `2.x` branch or `>= 3.2` on the `3.x` branch, the tested against implementations are CPython `2.6, 2.7, 3.3, 3.4, 3.5` and PyPy `2.7`._
+
+If the version of Python that the compiled code will be running on is known ahead of time, one of `2` (for the `2.x` branch) or `3` (for the `3.x` branch) should be specified as the `--target`. The given target will only affect the compiled code and whether or not Python-3-specific syntax is allowed. Where Python 3 and Python 2 syntax standards differ, Coconut syntax will always follow Python 3 accross all targets. Coconut will not, however, change any imports, variable names, or library interfaces. Universal compatibility with those must still be done manually.
 
 Coconut will, however, add in new Python 3 built-ins and overwrite Python 2 built-ins to use the Python 3 versions where possible. If access to the Python 2 versions is desired, the old builtin can be retrieved by prefixing it with `py2_`. The old built-ins available are:
 - `py2_filter`
