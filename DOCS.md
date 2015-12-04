@@ -92,7 +92,7 @@ dest                  destination directory for compiled files (defaults to the 
 
 While Coconut syntax is based off of Python 3, the compiler should run on any Python version `>= 2.6` on the `2.x` branch or `>= 3.2` on the `3.x` branch, and will attempt to produce universal code that will run like it does on Python 3 in Python 2.
 
-_Note: While the compiler should run under any Python implementation of any version `>= 2.6` on the `2.x` branch or `>= 3.2` on the `3.x` branch, the tested against implementations are CPython `2.6, 2.7, 3.3, 3.4, 3.5` and PyPy `2.7`._
+_Note: While the compiler should run under any Python implementation of any version `>= 2.6` on the `2.x` branch or `>= 3.2` on the `3.x` branch, the tested against implementations are [CPython](https://www.python.org/) `2.6, 2.7, 3.3, 3.4, 3.5` and [PyPy](http://pypy.org/) `2.7`._
 
 If the version of Python that the compiled code will be running on is known ahead of time, one of `2` (for the `2.x` branch) or `3` (for the `3.x` branch) should be specified as the `--target`. The given target will only affect the compiled code and whether or not Python-3-specific syntax is allowed. Where Python 3 and Python 2 syntax standards differ, Coconut syntax will always follow Python 3 accross all targets. Coconut will not, however, change any imports, variable names, or library interfaces. Universal compatibility with those must still be done manually.
 
@@ -217,11 +217,11 @@ def mod(a, b): return a % b
 
 Coconut uses Haskell-style operator function short-hand, where the operator placed within parentheses can be used as a function. The full list of operator functions is as follows:
 ```
-(|>)        => (<lambda>)
-(|*>)       => (<lambda>)
-(<|)        => (<lambda>)
-(|*>)       => (<lambda>)
-(..)        => (<lambda>)
+(|>)        => (<lambda>) # pipe forward
+(|*>)       => (<lambda>) # multi-arg pipe forward
+(<|)        => (<lambda>) # pipe backward
+(|*>)       => (<lambda>) # multi-arg pipe backward
+(..)        => (<lambda>) # function composition
 (.)         => (getattr)
 (::)        => (itertools.chain) # will not evaluate its arguments lazily
 ($)         => (functools.partial)
@@ -246,8 +246,8 @@ Coconut uses Haskell-style operator function short-hand, where the operator plac
 (~)         => (operator.__inv__)
 (@)         => (operator.__matmul__)
 (not)       => (operator.__not__)
-(and)       => (<lambda>)
-(or)        => (<lambda>)
+(and)       => (<lambda>) # boolean and
+(or)        => (<lambda>) # boolean or
 (is)        => (operator.is_)
 (in)        => (operator.__contains__)
 ```
