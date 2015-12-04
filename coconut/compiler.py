@@ -1952,6 +1952,7 @@ class processor(object):
             | fixto(dotdot, "lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs))")
             | fixto(Keyword("and"), "lambda a, b: a and b")
             | fixto(Keyword("or"), "lambda a, b: a or b")
+            | fixto(minus, "lambda *args: __coconut__.operator.__neg__(*args) if len(args) < 2 else __coconut__.operator.__sub__(*args)")
         ) + rparen | lparen.suppress() + (
             fixto(dot, "__coconut__.getattr")
             | fixto(dubcolon, "__coconut__.itertools.chain")
@@ -1962,8 +1963,6 @@ class processor(object):
             | fixto(div_slash, "__coconut__.operator.__truediv__")
             | fixto(percent, "__coconut__.operator.__mod__")
             | fixto(plus, "__coconut__.operator.__add__")
-            | fixto(sub_minus, "__coconut__.operator.__sub__")
-            | fixto(neg_minus, "__coconut__.operator.__neg__")
             | fixto(amp, "__coconut__.operator.__and__")
             | fixto(caret, "__coconut__.operator.__xor__")
             | fixto(bar, "__coconut__.operator.__or__")

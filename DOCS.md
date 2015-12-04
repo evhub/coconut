@@ -223,11 +223,10 @@ Coconut uses Haskell-style operator function short-hand, where the operator plac
 (|*>)       => (<lambda>)
 (..)        => (<lambda>)
 (.)         => (getattr)
-(::)        => (itertools.chain)
+(::)        => (itertools.chain) # will not evaluate its arguments lazily
 ($)         => (functools.partial)
 (+)         => (operator.__add__)
-(-)         => (operator.__sub__)
-(\u207b)    => (operator.__neg__)
+(-)         => (<lambda>) # 1 arg: operator.__neg__, 2 args: operator.__sub__
 (*)         => (operator.__mul__)
 (**)        => (operator.__pow__)
 (/)         => (operator.__truediv__)
@@ -252,7 +251,6 @@ Coconut uses Haskell-style operator function short-hand, where the operator plac
 (is)        => (operator.is_)
 (in)        => (operator.__contains__)
 ```
-_Note: The `(::)` operator cannot evaluate its arguments lazily, since its arguments will always be evaluated before it can be called on them._
 
 ##### Example
 
