@@ -347,7 +347,7 @@ class CoconutSyntaxError(CoconutException):
             part = clean(source.splitlines()[lineno(point, source)-1])
             self.value += linebreak + "  " + part + linebreak + "  "
             for x in range(0, col(point, source)-1):
-                if part[x] in white:
+                if x < len(part) and part[x] in white:
                     self.value += part[x]
                 else:
                     self.value += " "
