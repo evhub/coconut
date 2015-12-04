@@ -368,7 +368,7 @@ empty_frozen_set = frozenset()
 
 In addition to Python's `<num>j` or `<num>J` notation for imaginary literals, Coconut also supports `<num>i` or `<num>I`.
 
-### Python Docs
+##### Python Docs
 
 Imaginary literals are described by the following lexical definitions:
 ```
@@ -379,7 +379,7 @@ An imaginary literal yields a complex number with a real part of 0.0. Complex nu
 3.14i   10.i    10i     .001i   1e100i  3.14e-10i
 ```
 
-### Example
+##### Example
 
 Coconut:
 ```
