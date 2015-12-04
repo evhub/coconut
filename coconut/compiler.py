@@ -1242,7 +1242,7 @@ class processor(object):
     def reindent(self, inputstring):
         """Reconverts indent tokens into indentation."""
         out = []
-        level = 0
+        level = 0 # current indentation level
         found = None # store of characters that might be the start of a string
         hold = None # [_escape, _start, _stop]
         _escape = 0 # whether an escape was just encountered in the string
