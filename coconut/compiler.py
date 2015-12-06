@@ -556,7 +556,7 @@ def pipe_proc(tokens):
         elif op == "<*|":
             return "("+pipe_proc(tokens)+")(*"+func+")"
         else:
-            raise CoconutException("invalid pipe operator: "+op)
+            raise CoconutException("invalid pipe operator", op)
 
 def lambdef_proc(tokens):
     """Processes lambda calls."""
