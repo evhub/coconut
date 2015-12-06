@@ -102,7 +102,7 @@ def gethash(compiled):
     else:
         return lines[2][len(hash_prefix):]
 
-def _headers(which, version=None, usehash=None):
+def getheader(which, version=None, usehash=None):
     """Generates the specified header."""
     if which == "none":
         return ""
@@ -1481,11 +1481,11 @@ class processor(object):
 
     def header_proc(self, inputstring, header="file", initial="initial", usehash=None, **kwargs):
         """Adds the header."""
-        return _headers(initial, self.version, usehash) + self.docstring + _headers(header, self.version) + inputstring
+        return getheader(initial, self.version, usehash) + self.docstring + getheader(header, self.version) + inputstring
 
     def headers(self, header, usehash=None):
         """Gets a polished header."""
-        return self.polish(_headers(header, self.version, usehash))
+        return self.polish(getheader(header, self.version, usehash))
 
     def polish(self, inputstring, **kwargs):
         """Does final polishing touches."""
