@@ -1815,11 +1815,11 @@ class processor(object):
     dubbackslash = Literal("\\\\")
     backslash = ~dubbackslash+Literal("\\")
 
-    lt = ~Literal("<<")+Literal("<")
-    gt = ~Literal(">>")+Literal(">")
-    le = fixto(Combine(lt + equals) | Literal("\u2264"), "<=")
-    ge = fixto(Combine(gt + equals) | Literal("\u2265"), ">=")
-    ne = fixto(Combine(bang + equals) | Literal("\u2260"), "!=")
+    lt = ~Literal("<<")+~Literal("<=")+Literal("<")
+    gt = ~Literal(">>")+~Literal(">=")+Literal(">")
+    le = fixto(Literal("<=") | Literal("\u2264"), "<=")
+    ge = fixto(Literal(">=") | Literal("\u2265"), ">=")
+    ne = fixto(Literal("!=") | Literal("\u2260"), "!=")
 
     mul_star = fixto(star | Literal("\u22c5"), "*")
     exp_dubstar = fixto(dubstar | Literal("\u2191"), "**")
@@ -2136,7 +2136,7 @@ class processor(object):
     import_as_names = itemlist(import_as_name, comma)
     dotted_as_names = itemlist(dotted_as_name, comma)
     import_name = addspace(Keyword("import") + parenwrap(lparen, dotted_as_names, rparen))
-    import_from = addspace(Keyword("from") + condense(ZeroOrMore(dot) + dotted_name | OneOrMore(dot))
+    import_from = addspace(Keyword("from") + condense(ZeroOrMore(Literal(".")) + dotted_name | OneOrMore(Literal(".")))
                    + Keyword("import") + (star | parenwrap(lparen, import_as_names, rparen)))
     import_stmt = import_from | import_name
 
