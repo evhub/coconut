@@ -91,6 +91,69 @@ ParserElement.enablePackrat()
 ParserElement.setDefaultWhitespaceChars(white)
 
 #-----------------------------------------------------------------------------------------------------------------------
+# EXCEPTIONS:
+#-----------------------------------------------------------------------------------------------------------------------
+
+def clean(line):
+    """Cleans a line."""
+    return line.replace(openindent, "").replace(closeindent, "").strip()
+
+class CoconutException(Exception):
+    """Base Coconut exception."""
+    def __init__(self, value, item=None):
+        """creates the Coconut exception."""
+        self.value = value
+        if item is not None:
+            self.value += ": " + ascii(item)
+    def __repr__(self):
+        """Displays the Coconut exception."""
+        return self.value
+    def __str__(self):
+        """Wraps repr."""
+        return repr(self)
+
+class CoconutSyntaxError(CoconutException):
+    """Coconut SyntaxError."""
+    def __init__(self, message, source, point=None, ln=None):
+        """Creates the Coconut SyntaxError."""
+        self.value = message
+        if ln is not None:
+            self.value += " (line " + str(ln) + ")"
+        if point is None:
+            self.value += linebreak + "  " + clean(source)
+        else:
+            if point >= len(source):
+                point = len(source)-1
+            part = clean(source.splitlines()[lineno(point, source)-1])
+            self.value += linebreak + "  " + part + linebreak + "  "
+            for x in range(0, col(point, source)-1):
+                if x < len(part) and part[x] in white:
+                    self.value += part[x]
+                else:
+                    self.value += " "
+            self.value += "^"
+
+class CoconutParseError(CoconutSyntaxError):
+    """Coconut ParseError."""
+    def __init__(self, line, col, ln):
+        """Creates The Coconut ParseError."""
+        super(CoconutParseError, self).__init__("parsing failed", line, col-1, ln)
+
+class CoconutStyleError(CoconutSyntaxError):
+    """Coconut --strict error."""
+    def __init__(self, message, source, point=None, ln=None):
+        """Creates the --strict Coconut error."""
+        message += " (disable --strict to dismiss)"
+        super(CoconutStyleError, self).__init__(message, source, point, ln)
+
+class CoconutTargetError(CoconutSyntaxError):
+    """Coconut --target error."""
+    def __init__(self, message, source, point=None, ln=None):
+        """Creates the --target Coconut error."""
+        message += " (enable --target 3 to dismiss)"
+        super(CoconutTargetError, self).__init__(message, source, point, ln)
+
+#-----------------------------------------------------------------------------------------------------------------------
 # HEADERS:
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -313,65 +376,6 @@ MatchError = __coconut__.MatchError
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
-
-def clean(line):
-    """Cleans a line."""
-    return line.replace(openindent, "").replace(closeindent, "").strip()
-
-class CoconutException(Exception):
-    """Base Coconut exception."""
-    def __init__(self, value, item=None):
-        """creates the Coconut exception."""
-        self.value = value
-        if item is not None:
-            self.value += ": " + ascii(item)
-    def __repr__(self):
-        """Displays the Coconut exception."""
-        return self.value
-    def __str__(self):
-        """Wraps repr."""
-        return repr(self)
-
-class CoconutSyntaxError(CoconutException):
-    """Coconut SyntaxError."""
-    def __init__(self, message, source, point=None, ln=None):
-        """Creates the Coconut SyntaxError."""
-        self.value = message
-        if ln is not None:
-            self.value += " (line " + str(ln) + ")"
-        if point is None:
-            self.value += linebreak + "  " + clean(source)
-        else:
-            if point >= len(source):
-                point = len(source)-1
-            part = clean(source.splitlines()[lineno(point, source)-1])
-            self.value += linebreak + "  " + part + linebreak + "  "
-            for x in range(0, col(point, source)-1):
-                if x < len(part) and part[x] in white:
-                    self.value += part[x]
-                else:
-                    self.value += " "
-            self.value += "^"
-
-class CoconutParseError(CoconutSyntaxError):
-    """Coconut ParseError."""
-    def __init__(self, line, col, ln):
-        """Creates The Coconut ParseError."""
-        super(CoconutParseError, self).__init__("parsing failed", line, col-1, ln)
-
-class CoconutStyleError(CoconutSyntaxError):
-    """Coconut --strict error."""
-    def __init__(self, message, source, point=None, ln=None):
-        """Creates the --strict Coconut error."""
-        message += " (disable --strict to dismiss)"
-        super(CoconutStyleError, self).__init__(message, source, point, ln)
-
-class CoconutTargetError(CoconutSyntaxError):
-    """Coconut --target error."""
-    def __init__(self, message, source, point=None, ln=None):
-        """Creates the --target Coconut error."""
-        message += " (enable --target 3 to dismiss)"
-        super(CoconutTargetError, self).__init__(message, source, point, ln)
 
 def addskip(skips, skip):
     """Adds a line skip to the skips."""
