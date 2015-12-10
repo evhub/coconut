@@ -1489,7 +1489,6 @@ class processor(object):
         out = self.reindent(out)
         if strip:
             out = out.strip()
-        out += linebreak
         return out
 
     def header_proc(self, inputstring, header="file", initial="initial", usehash=None, **kwargs):
@@ -1502,7 +1501,7 @@ class processor(object):
 
     def polish(self, inputstring, **kwargs):
         """Does final polishing touches."""
-        return linebreak.join(inputstring.splitlines())
+        return linebreak.join(inputstring.rstrip().splitlines()) + linebreak
 
     def post(self, tokens, **kwargs):
         """Performs post-processing."""
