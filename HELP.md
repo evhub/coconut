@@ -257,7 +257,7 @@ Here's an example:
 range(10) |> map$((x) -> x**2) |> map$(print) |> consume
 ```
 
-_Note: `consume` also takes one optional argument, `keep_last`, documented in [DOCS](https://github.com/evhub/coconut/blob/master/DOCS.md)._
+_Note: The full documentation for `consume` can be found in the [DOCS](https://github.com/evhub/coconut/blob/master/DOCS.md)._
 
 ## IV. Values
 
