@@ -23,6 +23,7 @@ This tutorial will teach you how to write elegant, Pythonic code in a functional
     - [Lazy Lists](#lazy-lists)
     - [Slicing](#slicing)
     - [Chaining](#chaining)
+    - [`consume`](#consume)
 - [IV. Values](#iv-values)
     - [`data`](#data)
     - [`datamaker`](#datamaker)
@@ -246,6 +247,17 @@ def N(n=0):
 
 (range(-10, 0) :: N())$[5:15] |> list |> print
 ```
+
+### `consume`
+
+In the process of lazily applying operations to iterators, eventually a point is reached where evaluation of the iterator is necessary. To do this efficiently, Coconut provides the `consume` function, which will fully exhaust the iterator givento it.
+
+Here's an example:
+```python
+range(10) |> map$((x) -> x**2) |> map$(print) |> consume
+```
+
+_Note: `consume` also takes one optional argument, `keep_last`, documented in [DOCS](https://github.com/evhub/coconut/blob/master/DOCS.md)._
 
 ## IV. Values
 

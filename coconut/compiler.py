@@ -275,9 +275,13 @@ def recursive(func):
             return recurse
     return tailed_func
 
-def datamaker(cls):
-    """Returns base data constructor."""
-    return functools.partial(super(cls, cls).__new__, cls)
+def datamaker(data_type):
+    """Returns base data constructor of data_type."""
+    return functools.partial(super(data_type, data_type).__new__, data_type)
+
+def consume(iterable, keep_last=0):
+    """Fully exhaust iterable and return the last keep_last elements."""
+    return collections.deque(iterable, maxlen=keep_last)
 
 class MatchError(Exception):
     """Pattern-matching error."""
@@ -348,9 +352,12 @@ class __coconut__(object):
                 return recurse
         return tailed_func
     @staticmethod
-    def datamaker(cls):
-        """Returns base data constructor."""
-        return __coconut__.functools.partial(super(cls, cls).__new__, cls)
+    def datamaker(data_type):
+        """Returns base data constructor of data_type."""
+        return __coconut__.functools.partial(super(data_type, data_type).__new__, data_type)
+    def consume(iterable, keep_last=0):
+        """Fully exhaust iterable and return the last keep_last elements."""
+        return __coconut__.collections.deque(iterable, maxlen=keep_last)
     class MatchError(Exception):
         """Pattern-matching error."""
 '''
@@ -364,6 +371,7 @@ dropwhile = __coconut__.itertools.dropwhile
 tee = __coconut__.itertools.tee
 recursive = __coconut__.recursive
 datamaker = __coconut__.datamaker
+consume = __coconut__.consume
 MatchError = __coconut__.MatchError
 '''
             if which != "code":

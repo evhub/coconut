@@ -39,6 +39,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [`takewhile`](#takewhile)
     - [`dropwhile`](#dropwhile)
     - [`tee`](#tee)
+    - [`consume`](#consume)
     - [`datamaker`](#datamaker)
     - [`recursive`](#recursive)
     - [`__coconut_version__`](#__coconut_version__)
@@ -608,13 +609,13 @@ def chain(*iterables):
 
 Coconut:
 ```python
-combined = range(0,5) :: range(10,15)
+combined = range(0, 5) :: range(10, 15)
 ```
 
 Python:
 ```python
 import itertools
-combined = itertools.chain(range(0,5), range(10,15))
+combined = itertools.chain(range(0, 5), range(10, 15))
 ```
 
 ### Partial Application
@@ -818,12 +819,34 @@ original, temp = itertools.tee(original)
 sliced = itertools.islice(temp, 5, None)
 ```
 
+### `consume`
+
+Coconut provides the `consume` function to efficiently exhaust an iterator and thus perform any lazy evaluation contained within it. `consume` takes one optional argument, `keep_last`, that defaults to 0 and specifies how many, if any, items from the end to return as an iterable (`None` will keep all elements). Equivalent to:
+```python
+def consume(iterable, keep_last=0):
+    """Fully exhaust iterable and return the last keep_last elements."""
+    return collections.deque(iterable, maxlen=keep_last)
+```
+
+##### Example
+
+Coconut:
+```python
+range(10) |> map$((x) -> x**2) |> map$(print) |> consume
+```
+
+Python:
+```python
+collections.deque(map(print, map(lambda x: x**2, range(10))), maxlen=0)
+```
+
 ### `datamaker`
 
 Coconut provides the `datamaker` function to allow direct access to the base constructor of data types created with the Coconut `data` statement. This is particularly useful when writing alternative constructors for data types by overwriting `__new__`. Equivalent to:
 ```python
-def datamaker(cls):
-    return super(cls, cls).__new__$(cls)
+def datamaker(data_type):
+    """Returns base data constructor of data_type."""
+    return super(data, data_type).__new__$(data_type)
 ```
 
 ##### Example
