@@ -355,6 +355,7 @@ class __coconut__(object):
     def datamaker(data_type):
         """Returns base data constructor of data_type."""
         return __coconut__.functools.partial(super(data_type, data_type).__new__, data_type)
+    @staticmethod
     def consume(iterable, keep_last=0):
         """Fully exhaust iterable and return the last keep_last elements."""
         return __coconut__.collections.deque(iterable, maxlen=keep_last)
