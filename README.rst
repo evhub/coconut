@@ -3,7 +3,7 @@ Coconut
 
 *Coconut is a variant of Python built for simple, elegant, Pythonic functional programming.*
 
-Coconut can be found on GitHub_ and PyPI_.
+Coconut can be found on GitHub_ and PyPI_, where it has been downloaded `over 20,000 times<http://pypi-ranking.info/module/coconut>`_.
 
 A full **introduction and tutorial** of the Coconut programming language can be found in the HELP_ file. If you don't know what you're doing, you should start there.
 
