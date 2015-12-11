@@ -167,7 +167,7 @@ Coconut supports the creation of lazy lists, where the contents in the list will
 
 Coconut:
 ```python
-nums = (|-3, -1, 1 |) :: range(2,10)
+nums = (| -3, -1, 1 |) :: range(2,10)
 ```
 
 Python:
