@@ -418,6 +418,7 @@ class cli(object):
         """Starts the runner."""
         sys.path.append(os.getcwd())
         self.runner = executor({
-            "exit": self.exit
+            "exit": self.exit,
+            "quit": self.exit
             })
         self.runner.run(self.processor.headers("code"))
