@@ -58,8 +58,9 @@ def print_error(verbose=False):
 
 class executor(object):
     """Compiled Python executor."""
-    def __init__(self, extras=None):
+    def __init__(self, extras=None, exit=sys.exit):
         """Creates the executor."""
+        self.exit = exit
         self.vars = {}
         if extras is not None:
             self.vars.update(extras)
@@ -75,6 +76,8 @@ class executor(object):
                 raise
             else:
                 traceback.print_exc()
+        except SystemExit:
+            self.exit()
 
 class terminal(object):
     """Manages printing and reading data to the console."""
@@ -417,8 +420,5 @@ class cli(object):
     def start_runner(self):
         """Starts the runner."""
         sys.path.append(os.getcwd())
-        self.runner = executor({
-            "exit": self.exit,
-            "quit": self.exit
-            })
+        self.runner = executor(exit=self.exit)
         self.runner.run(self.processor.headers("code"))
