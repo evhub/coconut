@@ -50,11 +50,11 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [Backslash Escaping](#backslash-escaping)
     - [Reserved Variables](#reserved-variables)
 - [VI. Coconut Module](#vi-coconut-module)
-    - [`coconut.convenience`](#coconutconvenience)
-    - [`coconut.convenience.parse`](#coconutconvenienceparse)
-    - [`coconut.convenience.setup`](#coconutconveniencesetup)
-    - [`coconut.convenience.cmd`](#coconutconveniencecmd)
-    - [`coconut.convenience.version`](#coconutconvenienceversion)
+    - [`coconut`](#coconut)
+    - [`coconut.parse`](#coconutparse)
+    - [`coconut.setup`](#coconutsetup)
+    - [`coconut.cmd`](#coconutcmd)
+    - [`coconut.version`](#coconutversion)
 
 ## I. Command Line
 
@@ -97,7 +97,7 @@ _Note: While the compiler should run under any Python implementation of any vers
 
 If the version of Python that the compiled code will be running on is known ahead of time, one of `2` (for the `2.x` branch) or `3` (for the `3.x` branch) should be specified as the `--target`. The given target will only affect the compiled code and whether or not Python-3-specific syntax is allowed. Where Python 3 and Python 2 syntax standards differ, Coconut syntax will always follow Python 3 accross all targets. Coconut will not, however, change any imports, variable names, or library interfaces. Universal compatibility with those must still be done manually.
 
-Coconut will, however, add in new Python 3 built-ins and overwrite Python 2 built-ins to use the Python 3 versions where possible. If access to the Python 2 versions is desired, the old builtin can be retrieved by prefixing it with `py2_`. The old built-ins available are:
+Coconut will, however, add in new Python 3 built-ins and overwrite Python 2 built-ins to use the Python 3 versions where possible. If access to the Python 2 versions is desired, the old builtins can be retrieved by prefixing them with `py2_`. The old built-ins available are:
 - `py2_filter`
 - `py2_hex`
 - `py2_map`
@@ -124,7 +124,7 @@ If the `--strict` or `-s` flag is enabled, Coconut will throw errors on various 
 - Use of the Python-style `lambda` statement
 - Use of `u` to denote Unicode strings
 - Use of backslash continuations (implicit continuations are preferred)
-- Trailing whitespace
+- Trailing whitespace at the end of lines
 
 It is recommended that you use the `--strict` or `-s` flag if you are starting a new Coconut project, as it will help you write cleaner code.
 
@@ -1079,11 +1079,11 @@ The Coconut compiler will modify and reference certain variables with the assump
 
 ## VI. Coconut Module
 
-### `coconut.convenience`
+### `coconut`
 
-The recommended way to use Coconut as a module is to use `from coconut.convenience import` and import whatever convenience functions you'll be using. Specifications of the different convenience functions are as follows.
+The recommended way to use Coconut as a module is to use `from coconut import` and import whatever convenience functions you'll be using. Specifications of the different convenience functions are as follows.
 
-#### `coconut.convenience.parse`
+#### `coconut.parse`
 
 **parse**(_code,_ **[**_mode_**]**)
 
@@ -1097,7 +1097,7 @@ Likely the most useful of the convenience functions, `parse` takes Coconut code 
 - `"eval"`: a single expression
 - `"debug"`: lines of code with no header
 
-#### `coconut.convenience.setup`
+#### `coconut.setup`
 
 **setup**(**[[[**_target_**]**_, strict_**]**_, quiet_**]**)
 
@@ -1107,13 +1107,13 @@ If `--target`, `--strict`, or `--quiet` are desired for `parse`, the three argum
 - _strict_: `False` (default) or `True`
 - _quiet_: `False` (default) or `True`
 
-#### `coconut.convenience.cmd`
+#### `coconut.cmd`
 
 **cmd**(_args_, **[**_interact_**]**)
 
 Executes the given _args_ as if they were fed to `coconut` on the command-line, with the exception that unless _interact_ is true or `-i` is passed, the interpreter will not be started. Additionally, since `parse` and `cmd` share the same convenience parsing object, any changes made to the parsing with `cmd` will work just as if they were made with `setup`.
 
-#### `coconut.convenience.version`
+#### `coconut.version`
 
 **version**(**[**_which_**]**)
 

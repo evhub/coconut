@@ -18,11 +18,12 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from .root import *
 from pyparsing import *
-from zlib import crc32 as checksum
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
+
+from zlib import crc32 as checksum
 
 hash_prefix = '# __coconut_hash__ = '
 hash_sep = "\x00"
