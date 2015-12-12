@@ -35,6 +35,3 @@ def load_ipython_extension(ipython):
         compiled = parse(code)
         ipython.run_cell(compiled, shell_futures=False)
     ipython.register_magic_function(magic, "line_cell", "coconut")
-
-if __name__ == "__main__":
-    from .convenience import *

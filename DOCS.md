@@ -50,11 +50,11 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [Backslash Escaping](#backslash-escaping)
     - [Reserved Variables](#reserved-variables)
 - [VI. Coconut Module](#vi-coconut-module)
-    - [`coconut`](#coconut)
-    - [`coconut.parse`](#coconutparse)
-    - [`coconut.setup`](#coconutsetup)
-    - [`coconut.cmd`](#coconutcmd)
-    - [`coconut.version`](#coconutversion)
+    - [`coconut.convenience`](#coconutconvenience)
+    - [`coconut.convenience.parse`](#coconutconvenienceparse)
+    - [`coconut.convenience.setup`](#coconutconveniencesetup)
+    - [`coconut.convenience.cmd`](#coconutconveniencecmd)
+    - [`coconut.convenience.version`](#coconutconvenienceversion)
 
 ## I. Command Line
 
@@ -1079,11 +1079,11 @@ The Coconut compiler will modify and reference certain variables with the assump
 
 ## VI. Coconut Module
 
-### `coconut`
+### `coconut.convenience`
 
-The recommended way to use Coconut as a module is to use `from coconut import` and import whatever convenience functions you'll be using. Specifications of the different convenience functions are as follows.
+The recommended way to use Coconut as a module is to use `from coconut.convenience import` and import whatever convenience functions you'll be using. Specifications of the different convenience functions are as follows.
 
-#### `coconut.parse`
+#### `coconut.convenience.parse`
 
 **parse**(_code,_ **[**_mode_**]**)
 
@@ -1097,7 +1097,7 @@ Likely the most useful of the convenience functions, `parse` takes Coconut code 
 - `"eval"`: a single expression
 - `"debug"`: lines of code with no header
 
-#### `coconut.setup`
+#### `coconut.convenience.setup`
 
 **setup**(**[[[**_target_**]**_, strict_**]**_, quiet_**]**)
 
@@ -1107,13 +1107,13 @@ If `--target`, `--strict`, or `--quiet` are desired for `parse`, the three argum
 - _strict_: `False` (default) or `True`
 - _quiet_: `False` (default) or `True`
 
-#### `coconut.cmd`
+#### `coconut.convenience.cmd`
 
 **cmd**(_args_, **[**_interact_**]**)
 
 Executes the given _args_ as if they were fed to `coconut` on the command-line, with the exception that unless _interact_ is true or `-i` is passed, the interpreter will not be started. Additionally, since `parse` and `cmd` share the same convenience parsing object, any changes made to the parsing with `cmd` will work just as if they were made with `setup`.
 
-#### `coconut.version`
+#### `coconut.convenience.version`
 
 **version**(**[**_which_**]**)
 
