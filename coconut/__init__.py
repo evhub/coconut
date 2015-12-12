@@ -16,7 +16,7 @@ Description: The Coconut Programming Language.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from .convenience import *
+from .root import *
 
 #-----------------------------------------------------------------------------------------------------------------------
 # IPYTHON:
@@ -24,6 +24,7 @@ from .convenience import *
 
 def load_ipython_extension(ipython):
     """Loads Coconut as an IPython extension."""
+    from .convenience import *
     def magic(line, cell=None):
         """Coconut IPython magic."""
         if cell is None:
@@ -34,3 +35,6 @@ def load_ipython_extension(ipython):
         compiled = parse(code)
         ipython.run_cell(compiled, shell_futures=False)
     ipython.register_magic_function(magic, "line_cell", "coconut")
+
+if __name__ == "__main__":
+    from .convenience import *
