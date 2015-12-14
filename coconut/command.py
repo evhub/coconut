@@ -244,6 +244,10 @@ class cli(object):
                     self.compile_path(args.source, args.dest, run=args.run, force=args.force)
             elif args.run:
                 raise CoconutException("a source file must be specified when --run is enabled")
+            elif args.nowrite:
+                raise CoconutException("a source file must be specified when --nowrite is enabled")
+            elif args.force:
+                raise CoconutException("a source file must be specified when --force is enabled")
             stdin = not sys.stdin.isatty()
             if stdin:
                 self.execute(self.processor.parse_block(sys.stdin.read()))
