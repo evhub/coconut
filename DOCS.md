@@ -55,6 +55,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
     - [`coconut.convenience.setup`](#coconutconveniencesetup)
     - [`coconut.convenience.cmd`](#coconutconveniencecmd)
     - [`coconut.convenience.version`](#coconutconvenienceversion)
+    - [`coconut.convenience.CoconutException`](#coconutconveniencecoconutexception)
 
 ## I. Command Line
 
@@ -1123,3 +1124,7 @@ Retrieves a string containing information about the Coconut version. The optiona
 - `"name"`: the version codename
 - `"spec"`: the numerical version with the codename attached
 - `"-v"`: the full string printed by `coconut -v`
+
+#### `coconut.convenience.CoconutException`
+
+If an error is encountered in a convenience function, a `CoconutException` instance may be raised. `coconut.convenience.CoconutException` is provided to allow catching such errors.
