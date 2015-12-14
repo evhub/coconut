@@ -27,9 +27,9 @@ import sys
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-VERSION = "0.3.4"
-VERSION_NAME = "Macapuno"
-DEVELOP = True
+VERSION = "0.3.5"
+VERSION_NAME = "Nucifera"
+DEVELOP = False
 
 ENCODING = "UTF-8"
 
