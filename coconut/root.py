@@ -29,7 +29,7 @@ import sys
 
 VERSION = "0.3.5"
 VERSION_NAME = "Nucifera"
-DEVELOP = False
+DEVELOP = True
 
 ENCODING = "UTF-8"
 
