@@ -23,7 +23,6 @@ This tutorial will teach you how to write elegant, Pythonic code in a functional
     - [Lazy Lists](#lazy-lists)
     - [Slicing](#slicing)
     - [Chaining](#chaining)
-    - [`consume`](#consume)
 - [IV. Values](#iv-values)
     - [`data`](#data)
     - [`datamaker`](#datamaker)
@@ -31,6 +30,7 @@ This tutorial will teach you how to write elegant, Pythonic code in a functional
     - [`case`](#case)
 - [V. Advanced Features](#v-advanced-features)
     - [`takewhile` and `dropwhile`](#takewhile-and-dropwhile)
+    - [`consume`](#consume)
     - [`recursive`](#recursive)
     - [Implicit Partial Application](#implicit-partial-application)
     - [Set Literals](#set-literals)
@@ -248,17 +248,6 @@ def N(n=0):
 (range(-10, 0) :: N())$[5:15] |> list |> print
 ```
 
-### `consume`
-
-In the process of lazily applying operations to iterators, eventually a point is reached where evaluation of the iterator is necessary. To do this efficiently, Coconut provides the `consume` function, which will fully exhaust the iterator givento it.
-
-Here's an example:
-```python
-range(10) |> map$((x) -> x**2) |> map$(print) |> consume
-```
-
-_Note: The full documentation for `consume` can be found in the [DOCS](https://github.com/evhub/coconut/blob/master/DOCS.md)._
-
 ## IV. Values
 
 ### `data`
@@ -448,6 +437,17 @@ Note the absence of an `in` in the `match` statements: that's because the `value
 Coconut adds the new built-in functions `takewhile` and `dropwhile`. Both take a condition as the first argument, and an iterable as the second, and either take from, or drop from, that iterable while the condition is true.
 
 _Note: The full documentation for both of these functions can be found in the [DOCS](https://github.com/evhub/coconut/blob/master/DOCS.md)._
+
+### `consume`
+
+In the process of lazily applying operations to iterators, eventually a point is reached where evaluation of the iterator is necessary. To do this efficiently, Coconut provides the `consume` function, which will fully exhaust the iterator givento it.
+
+Here's an example:
+```python
+range(10) |> map$((x) -> x**2) |> map$(print) |> consume
+```
+
+_Note: The full documentation for `consume` can be found in the [DOCS](https://github.com/evhub/coconut/blob/master/DOCS.md)._
 
 ### `recursive`
 
