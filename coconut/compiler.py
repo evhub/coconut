@@ -1702,7 +1702,7 @@ class processor(object):
         return self.check_py3("Python 3 type annotation", original, location, tokens)
 
     def yield_from_check(self, original, location, tokens):
-        """Checks for Python 3 yield from."""
+        """Checks for Python 3.3 yield from."""
         return self.check_py3("Python 3.3 yield from", original, location, tokens)
 
     def matrix_at_check(self, original, location, tokens):
