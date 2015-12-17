@@ -246,10 +246,10 @@ set = set
 frozenset = frozenset
 tuple = tuple
 list = list
+slice = slice
 len = len
 isinstance = isinstance
 getattr = getattr
-slice = slice
 ascii = ascii
 
 def recursive(func):
@@ -296,6 +296,7 @@ import sys as _coconut_sys'''
 import os.path as _coconut_os_path
 _coconut_sys.path.append(_coconut_os_path.dirname(_coconut_os_path.abspath(__file__)))
 import __coconut__
+_coconut_sys.path.pop()
 '''
             elif which == "code" or which == "file":
                 header += r'''
@@ -323,10 +324,10 @@ class __coconut__(object):
     frozenset = frozenset
     tuple = tuple
     list = list
+    slice = slice
     len = len
     isinstance = isinstance
     getattr = getattr
-    slice = slice
     ascii = ascii
     @staticmethod
     def recursive(func):
@@ -1610,7 +1611,7 @@ class processor(object):
                                 out += ", "+arg
                             out += ")"
                         elif trailer[0] == "$[=":
-                            out = "next(__coconut__.itertools.islice("+out+", "+args[0]+", ("+args[0]+") + 1))"
+                            out = "next(__coconut__.itertools.islice("+out+", "+args[0]+", "+args[0]+" + 1))"
                         else:
                             out = islice_lambda(out) + "(" + args[0] + ")"
                     else:
@@ -1627,22 +1628,21 @@ class processor(object):
         """Processes assignments."""
         if len(tokens) == 3:
             name, op, item = tokens
-            item = "(" + item + ")"
             out = ""
             if op == "|>=":
-                out += name+" = "+item+"("+name+")"
+                out += name+" = ("+item+")("+name+")"
             elif op == "|*>=":
-                out += name+" = "+item+"(*"+name+")"
+                out += name+" = ("+item+")(*"+name+")"
             elif op == "<|=":
-                out += name+" = "+name+"("+item+")"
+                out += name+" = "+name+"(("+item+"))"
             elif op == "<*|=":
-                out += name+" = "+name+"(*"+item+")"
+                out += name+" = "+name+"(*("+item+"))"
             elif op == "..=":
-                out += name+" = (lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)))("+name+", "+item+")"
+                out += name+" = (lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)))("+name+", ("+item+"))"
             elif op == "::=":
                 ichain_var = lazy_chain_var+"_"+str(self.ichain_count)
                 out += ichain_var+" = "+name+linebreak
-                out += name+" = __coconut__.itertools.chain.from_iterable("+lazy_list_proc([ichain_var, item])+")"
+                out += name+" = __coconut__.itertools.chain.from_iterable("+lazy_list_proc([ichain_var, "("+item+")"])+")"
                 self.ichain_count += 1
             else:
                 out += name+" "+op+" "+item
