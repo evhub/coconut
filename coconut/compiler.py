@@ -1093,10 +1093,10 @@ class processor(object):
         self.ichain_count = 0
         self.skips = set()
 
-    def genhash(self, code=hash_sep):
+    def genhash(self, *args):
         """Generates a hash from code."""
         return hex(checksum(
-                hash_sep.join((VERSION_STR, str(self.version), str(code))).encode(ENCODING)
+                hash_sep.join((VERSION_STR, str(self.version)) + tuple(map(str, args))).encode(ENCODING)
             ) & 0xffffffff) # necessary for cross-compatibility
 
     def warn(self, msg):
@@ -2332,7 +2332,7 @@ class processor(object):
     def parse_file(self, inputstring, addhash=True):
         """Parses file input."""
         if addhash:
-            usehash = self.genhash(inputstring)
+            usehash = self.genhash("parse_file", inputstring)
         else:
             usehash = None
         return self.parse(inputstring, self.file_parser, {}, {"header": "file", "usehash": usehash})
@@ -2344,7 +2344,7 @@ class processor(object):
     def parse_module(self, inputstring, addhash=True):
         """Parses module input."""
         if addhash:
-            usehash = self.genhash(inputstring)
+            usehash = self.genhash("parse_module", inputstring)
         else:
             usehash = None
         return self.parse(inputstring, self.file_parser, {}, {"header": "module", "usehash": usehash})
