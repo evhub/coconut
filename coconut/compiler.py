@@ -1038,6 +1038,7 @@ class processor(object):
     trace = TRACER.bind
     debug = TRACER.debug
     versions = (None, "2", "3")
+    using_autopep8 = False
 
     def __init__(self, strict=False, version=None, display=print):
         """Creates a new processor."""
@@ -1096,7 +1097,7 @@ class processor(object):
     def genhash(self, *args):
         """Generates a hash from code."""
         return hex(checksum(
-                hash_sep.join((VERSION_STR, str(self.version)) + tuple(map(str, args))).encode(ENCODING)
+                hash_sep.join((str(item) for item in (VERSION_STR, self.version, self.using_autopep8) + args)).encode(ENCODING)
             ) & 0xffffffff) # necessary for cross-compatibility
 
     def warn(self, msg):
@@ -1524,6 +1525,7 @@ class processor(object):
             """Automatic PEP8 fixer."""
             return autopep8.fix_code(code, options=args)
         self.postprocs.append(pep8_fixer)
+        self.using_autopep8 = True
 
     def string_repl(self, tokens):
         """Replaces string references."""
