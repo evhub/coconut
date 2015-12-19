@@ -261,23 +261,23 @@ class cli(object):
         """Compiles a path."""
         if os.path.isfile(path):
             if write is None:
-                module = None
+                package = None
             else:
-                module = False
-            self.compile_file(path, write, module, run, force)
+                package = False
+            self.compile_file(path, write, package, run, force)
         elif os.path.isdir(path):
-            self.compile_module(path, write, run, force)
+            self.compile_package(path, write, run, force)
         else:
             raise CoconutException("could not find source path "+path)
 
-    def compile_module(self, directory, write=True, run=False, force=False):
-        """Compiles a module."""
+    def compile_package(self, directory, write=True, run=False, force=False):
+        """Compiles a package."""
         for dirpath, dirnames, filenames in os.walk(directory):
             writedir = write
-            module = True
+            package = True
             if writedir is None:
                 tocreate = None
-                module = None
+                package = None
             elif writedir is True:
                 tocreate = dirpath
             else:
@@ -286,12 +286,12 @@ class cli(object):
             wrote = False
             for filename in filenames:
                 if os.path.splitext(filename)[1] == self.code_ext:
-                    self.compile_file(os.path.join(dirpath, filename), writedir, module, run, force)
+                    self.compile_file(os.path.join(dirpath, filename), writedir, package, run, force)
                     wrote = True
             if wrote and tocreate is not None:
-                self.create_module(tocreate)
+                self.create_package(tocreate)
 
-    def compile_file(self, filepath, write=True, module=False, run=False, force=False):
+    def compile_file(self, filepath, write=True, package=False, run=False, force=False):
         """Compiles a file."""
         filepath = fixpath(filepath)
         if write is None:
@@ -305,9 +305,9 @@ class cli(object):
             if not ext:
                 ext = self.comp_ext
             destpath = fixpath(base + ext)
-        self.compile(filepath, destpath, module, run, force)
+        self.compile(filepath, destpath, package, run, force)
 
-    def compile(self, codepath, destpath=None, module=False, run=False, force=False):
+    def compile(self, codepath, destpath=None, package=False, run=False, force=False):
         """Compiles a source Coconut file to a destination Python file."""
         self.console.print("Compiling       "+codepath+" ...")
         with openfile(codepath, "r") as opened:
@@ -320,14 +320,14 @@ class cli(object):
                 print(foundhash)
             self.console.print("Left unchanged  "+destpath+" (pass --force to overwrite).")
         else:
-            if module is True:
+            if package is True:
                 compiled = self.processor.parse_module(code)
-            elif module is False:
+            elif package is False:
                 compiled = self.processor.parse_file(code)
-            elif module is None:
+            elif package is None:
                 compiled = self.processor.parse_block(code)
             else:
-                raise CoconutException("invalid value for module", module)
+                raise CoconutException("invalid value for package", package)
             if destpath is None:
                 self.console.print("Compiled without writing to file.")
             else:
@@ -342,8 +342,8 @@ class cli(object):
             elif self.show:
                 print(compiled)
 
-    def create_module(self, dirpath):
-        """Sets up a module directory."""
+    def create_package(self, dirpath):
+        """Sets up a package directory."""
         filepath = os.path.join(dirpath, "__coconut__.py")
         with openfile(filepath, "w") as opened:
             writefile(opened, self.processor.headers("package"))
