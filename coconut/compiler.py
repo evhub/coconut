@@ -429,9 +429,14 @@ def condense(item):
         return "".join(tokens)
     return attach(item, callback)
 
-def parenwrap(lparen, item, rparen):
+def parenwrap(lparen, item, rparen, thorough=False):
     """Wraps an item in optional parentheses."""
-    return condense(lparen.suppress() + item + rparen.suppress() ^ item)
+    wrap = lparen.suppress() + item + rparen.suppress()
+    if thorough:
+        wrap ^= item
+    else:
+        wrap |= item
+    return condense(wrap)
 
 class tracer(object):
     """Debug tracer."""
