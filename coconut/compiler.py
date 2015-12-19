@@ -16,7 +16,7 @@ Description: Compiles Coconut code into Python code.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from .pyparsing import *
+from pyparsing import *
 from .root import *
 
 #-----------------------------------------------------------------------------------------------------------------------

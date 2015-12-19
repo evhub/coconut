@@ -89,7 +89,7 @@ setuptools.setup(
         ],
     packages = setuptools.find_packages(),
     install_requires = [
-        #"pyparsing==2.0.5"
+        "pyparsing==2.0.5"
         ],
     entry_points = {"console_scripts":[
         "coconut = coconut.__main__:main"
