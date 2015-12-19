@@ -36,6 +36,7 @@ ENCODING = "UTF-8"
 if DEVELOP:
     VERSION += "-post_dev"
 VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
+__version__ = VERSION
 
 PY2 = sys.version_info < (3,)
 PY2_HEADER = r'''_coconut_encoding = "'''+ENCODING+r'''"
