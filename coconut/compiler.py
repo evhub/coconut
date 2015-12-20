@@ -634,14 +634,14 @@ class matcher(object):
     __slots__ = [
         "matchers",
         "checkvar",
+        "position",
+        "iter_index",
         "checkdefs",
         "checks",
         "defs",
         "names",
         "others"
         ]
-    position = 0
-    iter_index = 0
 
     def __init__(self, checkvar, checkdefs=None, names=None):
         """Creates the matcher."""
@@ -662,6 +662,8 @@ class matcher(object):
             "or": self.match_or
         }
         self.checkvar = checkvar
+        self.position = 0
+        self.iter_index = 0
         self.checkdefs = []
         if checkdefs is None:
             self.increment()
