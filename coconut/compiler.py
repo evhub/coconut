@@ -661,7 +661,7 @@ class matcher(object):
 
     def duplicate(self):
         """Duplicates the matcher to others."""
-        self.others.append(matcher(match_check_var, self.checkdefs, self.names))
+        self.others.append(matcher(self.checkdefs, self.names))
         self.others[-1].set_checks(0, ["not "+match_check_var] + self.others[-1].get_checks(0))
         return self.others[-1]
 
@@ -938,7 +938,7 @@ def match_proc(tokens):
         matches, item, cond, stmts = tokens
     else:
         raise CoconutException("invalid outer match tokens", tokens)
-    matching = matcher(match_check_var)
+    matching = matcher()
     matching.match(matches, match_to_var)
     if cond:
         matching.increment(True)
