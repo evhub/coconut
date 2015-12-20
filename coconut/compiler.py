@@ -609,13 +609,15 @@ def full_match_funcdef_proc(tokens):
 
 def data_proc(tokens):
     """Processes data blocks."""
-    if len(tokens) == 3:
-        name, attrs, body = tokens
+    if len(tokens) == 2:
+        name, stmts = tokens
+        attrs = []
+    elif len(tokens) == 3:
+        name, attrs, stmts = tokens
     else:
         raise CoconutException("invalid data tokens", tokens)
-    attrstr = ", ".join(attrs)
-    return ("class " + name + '(__coconut__.collections.namedtuple("' + name + '", "' + attrstr + '")):'
-            + linebreak + openindent + "__slots__ = ()" + linebreak + body)
+    return ("class " + name + '(__coconut__.collections.namedtuple("' + name + '", "' + ", ".join(attrs) + '")):'
+            + linebreak + openindent + "__slots__ = ()" + linebreak + "".join(stmts) + closeindent)
 
 def decorator_proc(tokens):
     """Processes decorators."""
@@ -2138,7 +2140,7 @@ class processor(object):
     simple_compound_stmt = Forward()
     stmt = Forward()
     suite = Forward()
-    nocolon_suite = Forward()
+    base_suite = Forward()
     classlist_ref = Forward()
 
     argument = condense(name + equals + test) | addspace(name + Optional(comp_for))
@@ -2212,9 +2214,9 @@ class processor(object):
     else_suite = condense(suite | colon + trace(attach(simple_compound_stmt, else_proc), "else_suite"))
     else_stmt = condense(Keyword("else") + else_suite)
 
-    match_suite = colon.suppress() + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
+    full_suite = colon.suppress() + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
     full_match = trace(attach(
-        Keyword("match").suppress() + match + Keyword("in").suppress() + test + Optional(Keyword("if").suppress() + test) + match_suite
+        Keyword("match").suppress() + match + Keyword("in").suppress() + test + Optional(Keyword("if").suppress() + test) + full_suite
         , match_proc), "full_match")
     match_stmt = condense(full_match + Optional(else_stmt))
 
@@ -2223,7 +2225,7 @@ class processor(object):
         , match_assign_proc), "match_assign_stmt")
 
     case_match = trace(Group(
-        Keyword("match").suppress() + match + Optional(Keyword("if").suppress() + test) + match_suite
+        Keyword("match").suppress() + match + Optional(Keyword("if").suppress() + test) + full_suite
         ), "case_match")
     case_stmt = attach(
         Keyword("case").suppress() + test + colon.suppress() + newline.suppress()
@@ -2267,7 +2269,7 @@ class processor(object):
     op_match_funcdef = attach(Group(Optional(op_match_funcdef_arg)) + op_funcdef_name + Group(Optional(op_match_funcdef_arg)), op_match_funcdef_proc)
     name_match_funcdef = attach(name + lparen.suppress() + matchlist_list + rparen.suppress(), name_match_funcdef_proc)
     base_match_funcdef = Keyword("def").suppress() + (op_match_funcdef | name_match_funcdef)
-    full_match_funcdef = trace(attach(base_match_funcdef + match_suite, full_match_funcdef_proc), "base_match_funcdef")
+    full_match_funcdef = trace(attach(base_match_funcdef + full_suite, full_match_funcdef_proc), "base_match_funcdef")
     math_match_funcdef = attach(
         Optional(Keyword("match").suppress()) + base_match_funcdef + equals.suppress() + test_expr
         , match_func_proc) + newline
@@ -2278,7 +2280,7 @@ class processor(object):
     async_stmt = async_block_ref | async_funcdef_ref | async_match_funcdef
 
     data_args = Optional(lparen.suppress() + tokenlist(~underscore + name, comma) + rparen.suppress())
-    datadef = condense(attach(Keyword("data").suppress() + name + data_args + colon.suppress() + nocolon_suite, data_proc))
+    datadef = condense(attach(Keyword("data").suppress() + name + data_args + full_suite, data_proc))
 
     decorators = attach(OneOrMore(at.suppress() + test + newline.suppress()), decorator_proc)
     decorated = condense(decorators + (
@@ -2292,7 +2294,7 @@ class processor(object):
         | math_match_funcdef
         ))
 
-    passthrough_stmt = condense(passthrough_block + (nocolon_suite | newline))
+    passthrough_stmt = condense(passthrough_block + (base_suite | newline))
 
     simple_compound_stmt <<= (
         if_stmt
@@ -2328,8 +2330,8 @@ class processor(object):
     small_stmt = trace(keyword_stmt | expr_stmt, "small_stmt")
     simple_stmt <<= trace(condense(itemlist(small_stmt, semicolon) + newline), "simple_stmt")
     stmt <<= trace(compound_stmt | simple_stmt, "stmt")
-    nocolon_suite <<= condense(newline + indent + OneOrMore(stmt) + dedent)
-    suite <<= trace(condense(colon + nocolon_suite) | addspace(colon + simple_stmt), "suite")
+    base_suite <<= condense(newline + indent + OneOrMore(stmt) + dedent)
+    suite <<= trace(condense(colon + base_suite) | addspace(colon + simple_stmt), "suite")
     line = trace(newline | stmt, "line")
 
     single_input = trace(condense(Optional(line) + ZeroOrMore(newline)), "single_input")
