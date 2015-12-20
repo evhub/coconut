@@ -897,7 +897,7 @@ Coconut provides the built-in double-underscore constant variable `__coconut_ver
 
 ### `data`
 
-Coconut provides `data` blocks for the creation of immutable classes derived from `collections.namedtuple`. Coconut data statement syntax looks like:
+Coconut provides `data` blocks for the creation of immutable classes derived from `collections.namedtuple` and made immutable with `__slots__`. Coconut data statement syntax looks like:
 ```python
 data <name>(<args>):
     <body>
@@ -925,6 +925,7 @@ Python:
 ```python
 import collections
 class triangle(collections.namedtuple("triangle", "a, b, c")):
+    __slots__ = ()
     def is_right(self):
         return self.a**2 + self.b**2 == self.c**2
 ```
