@@ -634,8 +634,6 @@ class matcher(object):
     __slots__ = [
         "matchers",
         "checkvar",
-        "position",
-        "iter_index",
         "checkdefs",
         "checks",
         "defs",
