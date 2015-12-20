@@ -429,14 +429,9 @@ def condense(item):
         return "".join(tokens)
     return attach(item, callback)
 
-def parenwrap(lparen, item, rparen, thorough=False):
+def parenwrap(lparen, item, rparen):
     """Wraps an item in optional parentheses."""
-    wrap = lparen.suppress() + item + rparen.suppress()
-    if thorough:
-        wrap ^= item
-    else:
-        wrap |= item
-    return condense(wrap)
+    return condense(lparen.suppress() + item + rparen.suppress() | item)
 
 class tracer(object):
     """Debug tracer."""
@@ -636,6 +631,17 @@ def else_proc(tokens):
 
 class matcher(object):
     """Pattern-matching processor."""
+    __slots__ = [
+        "matchers",
+        "checkvar",
+        "position",
+        "iter_index",
+        "checkdefs",
+        "checks",
+        "defs",
+        "names",
+        "others"
+        ]
     position = 0
     iter_index = 0
 
