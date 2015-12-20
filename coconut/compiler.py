@@ -631,7 +631,7 @@ def else_proc(tokens):
 
 class matcher(object):
     """Pattern-matching processor."""
-    __slots__ = [
+    __slots__ = (
         "position",
         "iter_index",
         "checkdefs",
@@ -639,7 +639,7 @@ class matcher(object):
         "defs",
         "names",
         "others"
-        ]
+        )
 
     def __init__(self, checkdefs=None, names=None):
         """Creates the matcher."""
