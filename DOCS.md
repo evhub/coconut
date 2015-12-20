@@ -863,6 +863,7 @@ Python:
 ```python
 import collections
 class trilen(collections.namedtuple("trilen", "h")):
+    __slots__ = ()
     def __new__(cls, a, b):
         return super(cls, cls).__new__(cls, (a**2 + b**2)**0.5)
 ```
