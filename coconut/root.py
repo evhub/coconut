@@ -51,12 +51,14 @@ class _coconut_metaint(type):
 class int(_coconut_int):
     """Python 3 int."""
     __metaclass__ = _coconut_metaint
+    __slots__ = ()
 class _coconut_metabytes(type):
     def __instancecheck__(cls, inst):
         return isinstance(inst, _coconut_str)
 class bytes(_coconut_str):
     """Python 3 bytes."""
     __metaclass__ = _coconut_metabytes
+    __slots__ = ()
     def __new__(cls, *args, **kwargs):
         """Python 3 bytes constructor."""
         return _coconut_str.__new__(cls, _coconut_bytearray(*args, **kwargs))
