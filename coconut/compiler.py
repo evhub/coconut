@@ -632,7 +632,6 @@ def else_proc(tokens):
 class matcher(object):
     """Pattern-matching processor."""
     __slots__ = [
-        "checkvar",
         "position",
         "iter_index",
         "checkdefs",
@@ -642,9 +641,8 @@ class matcher(object):
         "others"
         ]
 
-    def __init__(self, checkvar, checkdefs=None, names=None):
+    def __init__(self, checkdefs=None, names=None):
         """Creates the matcher."""
-        self.checkvar = checkvar
         self.position = 0
         self.iter_index = 0
         self.checkdefs = []
@@ -663,8 +661,8 @@ class matcher(object):
 
     def duplicate(self):
         """Duplicates the matcher to others."""
-        self.others.append(matcher(self.checkvar, self.checkdefs, self.names))
-        self.others[-1].set_checks(0, ["not "+self.checkvar] + self.others[-1].get_checks(0))
+        self.others.append(matcher(match_check_var, self.checkdefs, self.names))
+        self.others[-1].set_checks(0, ["not "+match_check_var] + self.others[-1].get_checks(0))
         return self.others[-1]
 
     def get_checks(self, position):
@@ -925,7 +923,7 @@ class matcher(object):
                 closes += 1
             if defs:
                 out += linebreak.join(defs) + linebreak
-        out += self.checkvar + " = True" + linebreak
+        out += match_check_var + " = True" + linebreak
         out += closeindent * closes
         for other in self.others:
             out += other.out()
@@ -1001,7 +999,7 @@ def case_proc(tokens):
 def name_match_funcdef_proc(original, loc, tokens):
     """Processes match defs."""
     func, matches = tokens
-    matching = matcher(match_check_var)
+    matching = matcher()
     matching.match_sequence(("(", matches), match_to_var)
     out = "def " + func + " (*" + match_to_var + "):" + linebreak + openindent
     out += match_check_var + " = False" + linebreak
