@@ -632,7 +632,6 @@ def else_proc(tokens):
 class matcher(object):
     """Pattern-matching processor."""
     __slots__ = [
-        "matchers",
         "checkvar",
         "position",
         "iter_index",
@@ -645,22 +644,6 @@ class matcher(object):
 
     def __init__(self, checkvar, checkdefs=None, names=None):
         """Creates the matcher."""
-        self.matchers = {
-            "dict": self.match_dict,
-            "iter": self.match_iterator,
-            "series": self.match_sequence,
-            "rseries": self.match_rsequence,
-            "mseries": self.match_msequence,
-            "const": self.match_const,
-            "is": self.match_typedef,
-            "var": self.match_var,
-            "set": self.match_set,
-            "data": self.match_data,
-            "paren": self.match_paren,
-            "assign": self.match_assign,
-            "and": self.match_and,
-            "or": self.match_or
-        }
         self.checkvar = checkvar
         self.position = 0
         self.iter_index = 0
@@ -912,9 +895,25 @@ class matcher(object):
 
     def match(self, original, item):
         """Performs pattern-matching processing."""
-        for flag in self.matchers:
+        matchers = (
+            ("dict", self.match_dict),
+            ("iter", self.match_iterator),
+            ("series", self.match_sequence),
+            ("rseries", self.match_rsequence),
+            ("mseries", self.match_msequence),
+            ("const", self.match_const),
+            ("is", self.match_typedef),
+            ("var", self.match_var),
+            ("set", self.match_set),
+            ("data", self.match_data),
+            ("paren", self.match_paren),
+            ("assign", self.match_assign),
+            ("and", self.match_and),
+            ("or", self.match_or)
+        )
+        for flag, handler in matchers:
             if flag in original.keys():
-                return self.matchers[flag](original, item)
+                return handler(original, item)
         raise CoconutException("invalid inner match tokens", original)
 
     def out(self):
