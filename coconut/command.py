@@ -17,7 +17,6 @@ Description: Processes arguments to the Coconut command-line utility.
 from __future__ import print_function, absolute_import, unicode_literals, division
 
 from .compiler import *
-import traceback
 import os
 import os.path
 import argparse
@@ -44,17 +43,6 @@ def readfile(openedfile):
 def fixpath(path):
     """Properly formats a path."""
     return os.path.normpath(os.path.realpath(path))
-
-def print_error(verbose=False):
-    """Displays a formatted error."""
-    err_type, err_value, err_trace = sys.exc_info()
-    if verbose:
-        err = linebreak.join(traceback.format_exception(err_type, err_value, err_trace)).strip()
-    else:
-        err_name, err_msg = linebreak.join(traceback.format_exception_only(err_type, err_value)).strip().split(": ", 1)
-        err_name = err_name.split(".")[-1]
-        err = err_name+": "+err_msg
-    print(err, file=sys.stderr)
 
 class executor(object):
     """Compiled Python executor."""
@@ -136,7 +124,7 @@ class terminal(object):
         for line in message.splitlines():
             msg = self.addcolor(sig+line, color)
             if debug is True:
-                print(msg, file=sys.stderr)
+                xprint(msg)
             else:
                 print(msg)
 
@@ -197,8 +185,7 @@ class cli(object):
     def setup(self, strict=False, target=None):
         """Creates the processor."""
         if self.processor is None:
-            self.processor = processor(strict, target, self.console.show)
-            self.processor.TRACER.show = self.console.debug
+            self.processor = processor(strict, target, self.console.debug)
         else:
             self.processor.setup(strict, target)
 
@@ -254,7 +241,7 @@ class cli(object):
             if args.interact or (interact and not (stdin or args.source or args.version or args.code)):
                 self.start_prompt()
         except CoconutException:
-            print_error(self.indebug())
+            xprint(get_error(self.indebug()))
             sys.exit(1)
 
     def compile_path(self, path, write=True, run=False, force=False):
@@ -363,7 +350,7 @@ class cli(object):
         try:
             return input(prompt) # using input from .root
         except KeyboardInterrupt:
-            print(linebreak + "KeyboardInterrupt")
+            xprint(linebreak + "KeyboardInterrupt")
         except EOFError:
             print()
             self.exit()
@@ -402,7 +389,7 @@ class cli(object):
             try:
                 compiled = self.processor.parse_single(code)
             except CoconutException:
-                print_error(self.indebug())
+                xprint(get_error(self.indebug()))
                 return None
         return compiled
 

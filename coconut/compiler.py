@@ -18,6 +18,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from pyparsing import *
 from .root import *
+import traceback
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
@@ -102,7 +103,7 @@ def clean(line):
 class CoconutException(Exception):
     """Base Coconut exception."""
     def __init__(self, value, item=None):
-        """creates the Coconut exception."""
+        """Creates the Coconut exception."""
         self.value = value
         if item is not None:
             self.value += ": " + ascii(item)
@@ -153,6 +154,18 @@ class CoconutTargetError(CoconutSyntaxError):
         """Creates the --target Coconut error."""
         message += " (enable --target 3 to dismiss)"
         super(CoconutTargetError, self).__init__(message, source, point, ln)
+
+class CoconutWarning(Warning):
+    """Base Coconut warning."""
+    def __init__(self, *args, **kwargs):
+        """Creates the Coconut warning from a Coconut exception."""
+        CoconutSyntaxError.__init__(self, *args, **kwargs)
+    def __repr__(self):
+        """Displays the Coconut warning."""
+        return self.value
+    def __str__(self):
+        """Wraps repr."""
+        return repr(self)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # HEADERS:
@@ -388,6 +401,26 @@ MatchError = __coconut__.MatchError
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
 
+def xprint(*args):
+    """Prints to standard error."""
+    print(*args, file=sys.stderr)
+
+def format_error(err_type, err_value, err_trace=None):
+    """Properly formats the specified error."""
+    if err_trace is None:
+        err_name, err_msg = "".join(traceback.format_exception_only(err_type, err_value)).strip().split(": ", 1)
+        err_name = err_name.split(".")[-1]
+        return err_name + ": " + err_msg
+    else:
+        return "".join(traceback.format_exception(err_type, err_value, err_trace)).strip()
+
+def get_error(verbose=False):
+    """Displays a formatted error."""
+    err_type, err_value, err_trace = sys.exc_info()
+    if not verbose:
+        err_trace = None
+    return format_error(err_type, err_value, err_trace)
+
 def addskip(skips, skip):
     """Adds a line skip to the skips."""
     if skip < 1:
@@ -435,10 +468,10 @@ def parenwrap(lparen, item, rparen):
 
 class tracer(object):
     """Debug tracer."""
-    show = print
 
-    def __init__(self, on=False):
+    def __init__(self, show=xprint, on=False):
         """Creates the tracer."""
+        self.show = show
         self.debug(on)
 
     def debug(self, on=True):
@@ -1049,15 +1082,15 @@ def islice_lambda(out):
 
 class processor(object):
     """The Coconut processor."""
-    TRACER = tracer()
-    trace = TRACER.bind
-    debug = TRACER.debug
+    tracing = tracer()
+    trace = tracing.bind
+    debug = tracing.debug
     versions = (None, "2", "3")
     using_autopep8 = False
 
-    def __init__(self, strict=False, version=None, display=print):
+    def __init__(self, strict=False, version=None, debugger=xprint):
         """Creates a new processor."""
-        self.display = display
+        self.tracing.show = debugger
         self.setup(strict, version)
         self.preprocs = [self.prepare, self.str_proc, self.passthrough_proc, self.ind_proc]
         self.postprocs = [self.reind_proc, self.header_proc, self.polish]
@@ -1114,10 +1147,6 @@ class processor(object):
         return hex(checksum(
                 hash_sep.join((str(item) for item in (VERSION_STR, self.version, self.using_autopep8) + args)).encode(ENCODING)
             ) & 0xffffffff) # necessary for cross-compatibility
-
-    def warn(self, msg):
-        """Displays a message."""
-        self.display("CoconutWarning: " + str(msg))
 
     def adjust(self, ln):
         """Adjusts a line number."""
@@ -1400,11 +1429,11 @@ class processor(object):
             else:
                 break
             if self.indchar != inputstring[x]:
-                err = CoconutStyleError("found mixing of tabs and spaces", inputstring, x, self.adjust(lineno(x, inputstring)))
+                errargs = "found mixing of tabs and spaces", inputstring, x, self.adjust(lineno(x, inputstring))
                 if self.strict:
-                    raise err
+                    raise CoconutStyleError(*errargs)
                 else:
-                    self.warn(err)
+                    self.warn(CoconutWarning(*errargs))
         return count
 
     def change(self, inputstring):
@@ -1483,12 +1512,19 @@ class processor(object):
 
     def indebug(self):
         """Checks whether debug mode is active."""
-        return self.TRACER.on
+        return self.tracing.on
 
     def todebug(self, tag, code):
         """If debugging, prints a debug message."""
         if self.indebug():
-            self.TRACER.show("["+str(tag)+"] "+ascii(code))
+            self.tracing.show("["+str(tag)+"] "+ascii(code))
+
+    def warn(self, warning):
+        """Displays a warning."""
+        try:
+            raise warning
+        except CoconutWarning as err:
+            xprint(format_error(CoconutWarning, err))
 
     def pre(self, inputstring, **kwargs):
         """Performs pre-processing."""
