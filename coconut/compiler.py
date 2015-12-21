@@ -529,13 +529,15 @@ def list_proc(tokens):
             out[-1] += tokens[x]
     return " ".join(out)
 
+def tokenlist(item, sep, suppress=True):
+    """Creates a list of tokens matching the item."""
+    if suppress:
+        sep = sep.suppress()
+    return item + ZeroOrMore(sep + item) + Optional(sep)
+
 def itemlist(item, sep):
     """Creates a list of an item."""
-    return attach(item + ZeroOrMore(sep + item) + Optional(sep), list_proc)
-
-def tokenlist(item, sep):
-    """Creates a list of tokens matching the item."""
-    return Group(Optional(item + ZeroOrMore(sep.suppress() + item) + Optional(sep.suppress())))
+    return attach(tokenlist(item, sep, True), list_proc)
 
 def attr_proc(tokens):
     """Processes attrgetter literals."""
@@ -644,12 +646,12 @@ def data_proc(tokens):
     """Processes data blocks."""
     if len(tokens) == 2:
         name, stmts = tokens
-        attrs = []
+        attrs = ""
     elif len(tokens) == 3:
         name, attrs, stmts = tokens
     else:
         raise CoconutException("invalid data tokens", tokens)
-    return ("class " + name + '(__coconut__.collections.namedtuple("' + name + '", "' + ", ".join(attrs) + '")):'
+    return ("class " + name + '(__coconut__.collections.namedtuple("' + name + '", "' + attrs + '")):'
             + linebreak + openindent + "__slots__ = ()" + linebreak + "".join(stmts) + closeindent)
 
 def decorator_proc(tokens):
@@ -2214,12 +2216,12 @@ class processor(object):
     with_item = addspace(test + Optional(Keyword("as") + name))
 
     match = Forward()
-    matchlist_list = tokenlist(match, comma)
+    matchlist_list = Group(Optional(tokenlist(match, comma)))
     matchlist_tuple = Group(Optional(match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress()) | match + comma.suppress()))
     match_const = const_atom | condense(equals.suppress() + simple_assign)
-    matchlist_set = tokenlist(match_const, comma)
+    matchlist_set = Group(Optional(tokenlist(match_const, comma)))
     match_pair = Group(match_const + colon.suppress() + match)
-    matchlist_dict = tokenlist(match_pair, comma)
+    matchlist_dict = Group(Optional(tokenlist(match_pair, comma)))
     match_list = lbrack + matchlist_list + rbrack.suppress()
     match_tuple = lparen + matchlist_tuple + rparen.suppress()
     match_lazy = lbanana + matchlist_list + rbanana.suppress()
@@ -2315,7 +2317,7 @@ class processor(object):
         + (full_match_funcdef | math_match_funcdef))
     async_stmt = async_block_ref | async_funcdef_ref | async_match_funcdef
 
-    data_args = Optional(lparen.suppress() + tokenlist(~underscore + name, comma) + rparen.suppress())
+    data_args = Optional(lparen.suppress() + itemlist(~underscore + name, comma) + rparen.suppress())
     datadef = condense(attach(Keyword("data").suppress() + name + data_args + full_suite, data_proc))
 
     decorators = attach(OneOrMore(at.suppress() + test + newline.suppress()), decorator_proc)
