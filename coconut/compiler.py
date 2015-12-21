@@ -537,7 +537,7 @@ def tokenlist(item, sep, suppress=True):
 
 def itemlist(item, sep):
     """Creates a list of an item."""
-    return attach(tokenlist(item, sep, True), list_proc)
+    return attach(tokenlist(item, sep, False), list_proc)
 
 def attr_proc(tokens):
     """Processes attrgetter literals."""
