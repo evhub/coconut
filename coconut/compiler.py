@@ -2317,7 +2317,7 @@ class processor(object):
         + (full_match_funcdef | math_match_funcdef))
     async_stmt = async_block_ref | async_funcdef_ref | async_match_funcdef
 
-    data_args = Optional(lparen.suppress() + itemlist(~underscore + name, comma) + rparen.suppress())
+    data_args = Optional(lparen.suppress() + Optional(itemlist(~underscore + name, comma)) + rparen.suppress())
     datadef = condense(attach(Keyword("data").suppress() + name + data_args + full_suite, data_proc))
 
     decorators = attach(OneOrMore(at.suppress() + test + newline.suppress()), decorator_proc)
