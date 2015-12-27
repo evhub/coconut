@@ -157,6 +157,8 @@ class cli(object):
     commandline.add_argument("-v", "--version", action="store_const", const=True, default=False, help="print Coconut and Python version information")
     commandline.add_argument("-t", "--target", metavar="version", type=str, nargs=1, default=[None], help="specify target Python version")
     commandline.add_argument("-s", "--strict", action="store_const", const=True, default=False, help="enforce code cleanliness standards")
+    commandline.add_argument("-p", "--package", action="store_const", const=True, default=False, help="compile source as part of a package (defaults to only if source is a directory)")
+    commandline.add_argument("-a", "--standalone", action="store_const", const=True, default=False, help="compile source as standalone files (defaults to only if source is a single file)")
     commandline.add_argument("-d", "--display", action="store_const", const=True, default=False, help="print compiled Python")
     commandline.add_argument("-f", "--force", action="store_const", const=True, default=False, help="force overwriting of compiled Python (otherwise only overwrites when the source changes)")
     commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run the compiled Python")
@@ -219,22 +221,29 @@ class cli(object):
                 if args.run and os.path.isdir(args.source):
                     raise CoconutException("source path must point to file not directory when --run is enabled")
                 if args.dest is None:
-                    if args.nowrite:
-                        self.compile_path(args.source, None, run=args.run, force=args.force)
+                    if not args.nowrite:
+                        dest = True # auto-generate dest
+                    elif args.package or args.standalone:
+                        raise CoconutException("cannot specify --package or --standalone when --nowrite is enabled")
                     else:
-                        self.compile_path(args.source, run=args.run, force=args.force)
+                        dest = None
                 elif args.nowrite:
-                    raise CoconutException("destination path can't be given when --nowrite is enabled")
+                    raise CoconutException("destination path cannot be given when --nowrite is enabled")
                 elif os.path.isfile(args.dest):
                     raise CoconutException("destination path must point to directory not file")
                 else:
-                    self.compile_path(args.source, args.dest, run=args.run, force=args.force)
-            elif args.run:
-                raise CoconutException("a source file/folder must be specified when --run is enabled")
-            elif args.nowrite:
-                raise CoconutException("a source file/folder must be specified when --nowrite is enabled")
-            elif args.force:
-                raise CoconutException("a source file/folder must be specified when --force is enabled")
+                    dest = args.dest
+                if args.package and args.standalone:
+                    raise CoconutException("cannot compile both as --package and as --standalone")
+                elif args.package:
+                    package = True
+                elif args.standalone:
+                    package = False
+                else:
+                    package = None # auto-decide package
+                self.compile_path(args.source, dest, package, run=args.run, force=args.force)
+            elif args.run or args.nowrite or args.force or args.package or args.standalone:
+                raise CoconutException("a source file/folder must be specified when options that depend on the source are enabled")
             stdin = not sys.stdin.isatty()
             if stdin:
                 self.execute(self.processor.parse_block(sys.stdin.read()))
@@ -244,27 +253,25 @@ class cli(object):
             xprint(get_error(self.indebug()))
             sys.exit(1)
 
-    def compile_path(self, path, write=True, run=False, force=False):
+    def compile_path(self, path, write=True, package=None, run=False, force=False):
         """Compiles a path."""
         if os.path.isfile(path):
-            if write is None:
-                package = None
-            else:
+            if package is None and write is not None:
                 package = False
             self.compile_file(path, write, package, run, force)
         elif os.path.isdir(path):
-            self.compile_package(path, write, run, force)
+            if package is None and write is not None:
+                package = True
+            self.compile_package(path, write, package, run, force)
         else:
             raise CoconutException("could not find source path "+path)
 
-    def compile_package(self, directory, write=True, run=False, force=False):
+    def compile_package(self, directory, write=True, package=True, run=False, force=False):
         """Compiles a package."""
         for dirpath, dirnames, filenames in os.walk(directory):
             writedir = write
-            package = True
             if writedir is None:
                 tocreate = None
-                package = None
             elif writedir is True:
                 tocreate = dirpath
             else:
@@ -275,7 +282,7 @@ class cli(object):
                 if os.path.splitext(filename)[1] == self.code_ext:
                     self.compile_file(os.path.join(dirpath, filename), writedir, package, run, force)
                     wrote = True
-            if wrote and tocreate is not None:
+            if wrote and package and tocreate is not None:
                 self.create_package(tocreate)
 
     def compile_file(self, filepath, write=True, package=False, run=False, force=False):
