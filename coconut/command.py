@@ -258,16 +258,18 @@ class cli(object):
         if os.path.isfile(path):
             if package is None and write is not None:
                 package = False
+            # if package is still None, it means write is None, and compile neither as package nor standalone
             self.compile_file(path, write, package, run, force)
         elif os.path.isdir(path):
             if package is None and write is not None:
                 package = True
-            self.compile_package(path, write, package, run, force)
+            # passes package unchanged to compile_file, so see above for meaning
+            self.compile_folder(path, write, package, run, force)
         else:
             raise CoconutException("could not find source path "+path)
 
-    def compile_package(self, directory, write=True, package=True, run=False, force=False):
-        """Compiles a package."""
+    def compile_folder(self, directory, write=True, package=True, run=False, force=False):
+        """Compiles a directory."""
         for dirpath, dirnames, filenames in os.walk(directory):
             writedir = write
             if writedir is None:
