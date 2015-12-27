@@ -209,7 +209,7 @@ class cli(object):
                 self.processor.debug(True)
             if args.quiet:
                 self.quiet(True)
-            if args.print:
+            if args.display:
                 self.show = True
             if args.version:
                 self.console.print(self.version)
