@@ -157,15 +157,15 @@ class cli(object):
     commandline.add_argument("-v", "--version", action="store_const", const=True, default=False, help="print Coconut and Python version information")
     commandline.add_argument("-t", "--target", metavar="version", type=str, nargs=1, default=[None], help="specify target Python version")
     commandline.add_argument("-s", "--strict", action="store_const", const=True, default=False, help="enforce code cleanliness standards")
-    commandline.add_argument("-p", "--print", action="store_const", const=True, default=False, help="print the compiled Python")
+    commandline.add_argument("-d", "--display", action="store_const", const=True, default=False, help="print compiled Python")
     commandline.add_argument("-f", "--force", action="store_const", const=True, default=False, help="force overwriting of compiled Python (otherwise only overwrites when the source changes)")
     commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run the compiled Python")
     commandline.add_argument("-n", "--nowrite", action="store_const", const=True, default=False, help="disable writing the compiled Python")
     commandline.add_argument("-i", "--interact", action="store_const", const=True, default=False, help="force the interpreter to start (otherwise starts if no other command is given)")
     commandline.add_argument("-q", "--quiet", action="store_const", const=True, default=False, help="suppress all informational output")
-    commandline.add_argument("-d", "--debug", action="store_const", const=True, default=False, help="print verbose debug output")
     commandline.add_argument("-c", "--code", metavar="code", type=str, nargs=1, default=None, help="run a line of Coconut passed in as a string (can also be accomplished with a pipe)")
     commandline.add_argument("--autopep8", type=str, nargs=argparse.REMAINDER, default=None, help="use autopep8 to format compiled code (remaining args passed to autopep8)")
+    commandline.add_argument("--debug", action="store_const", const=True, default=False, help="print verbose debug output")
     processor = None
     show = False
     running = False
