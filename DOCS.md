@@ -62,7 +62,7 @@ This documentation will cover all the technical details of the [Coconut](https:/
 ### Usage
 
 ```
-coconut [-h] [-v] [source] [dest] [-t version] [-s] [-p] [-a] [-f] [-d] [-r] [-n] [-i] [-c code] [-q] [-D] [--autopep8 ...]
+coconut [-h] [-v] [source] [dest] [-t version] [-s] [-p] [-a] [-f] [-d] [-r] [-n] [-i] [-q] [-c code] [--debug] [--autopep8 ...]
 ```
 
 ### Positional Arguments
@@ -87,9 +87,9 @@ dest                  destination directory for compiled files (defaults to the 
 -r, --run             run the compiled Python
 -n, --nowrite         disable writing the compiled Python
 -i, --interact        force the interpreter to start (otherwise starts if no other command is given)
--c, --code            run a line of Coconut passed in as a string (can also be accomplished with a pipe)
 -q, --quiet           suppress all informational output
--D, --debug           print verbose debug output
+-c, --code            run a line of Coconut passed in as a string (can also be accomplished with a pipe)
+--debug               print verbose debug output
 --autopep8            use autopep8 to format compiled code (remaining args passed to autopep8)
 ```
 
