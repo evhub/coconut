@@ -124,7 +124,7 @@ class terminal(object):
         for line in message.splitlines():
             msg = self.addcolor(sig+line, color)
             if debug is True:
-                xprint(msg)
+                printerr(msg)
             else:
                 print(msg)
 
@@ -250,7 +250,7 @@ class cli(object):
             if args.interact or (interact and not (stdin or args.source or args.version or args.code)):
                 self.start_prompt()
         except CoconutException:
-            xprint(get_error(self.indebug()))
+            printerr(get_error(self.indebug()))
             sys.exit(1)
 
     def compile_path(self, path, write=True, package=None, run=False, force=False):
@@ -359,7 +359,7 @@ class cli(object):
         try:
             return input(prompt) # using input from .root
         except KeyboardInterrupt:
-            xprint(linebreak + "KeyboardInterrupt")
+            printerr(linebreak + "KeyboardInterrupt")
         except EOFError:
             print()
             self.exit()
@@ -398,7 +398,7 @@ class cli(object):
             try:
                 compiled = self.processor.parse_single(code)
             except CoconutException:
-                xprint(get_error(self.indebug()))
+                printerr(get_error(self.indebug()))
                 return None
         return compiled
 

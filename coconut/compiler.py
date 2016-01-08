@@ -401,7 +401,7 @@ MatchError = __coconut__.MatchError
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def xprint(*args):
+def printerr(*args):
     """Prints to standard error."""
     print(*args, file=sys.stderr)
 
@@ -469,7 +469,7 @@ def parenwrap(lparen, item, rparen):
 class tracer(object):
     """Debug tracer."""
 
-    def __init__(self, show=xprint, on=False):
+    def __init__(self, show=printerr, on=False):
         """Creates the tracer."""
         self.show = show
         self.debug(on)
@@ -1090,7 +1090,7 @@ class processor(object):
     versions = (None, "2", "3")
     using_autopep8 = False
 
-    def __init__(self, strict=False, version=None, debugger=xprint):
+    def __init__(self, strict=False, version=None, debugger=printerr):
         """Creates a new processor."""
         self.tracing.show = debugger
         self.setup(strict, version)
@@ -1526,7 +1526,7 @@ class processor(object):
         try:
             raise warning
         except CoconutWarning as err:
-            xprint(format_error(CoconutWarning, err))
+            printerr(format_error(CoconutWarning, err))
 
     def pre(self, inputstring, **kwargs):
         """Performs pre-processing."""
