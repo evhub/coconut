@@ -43,9 +43,9 @@ If you've ever used a functional programming language before, you probably know 
            print("x = " + str(a))
     x = 3
 
-\6. *But...* **Coconut supports lazy lists.**
+\6. *But...* **Coconut supports lazy evaluation.**
 
-Common to functional programming, but missing from Python, are lazily-evaluated lists. Coconut's powerful constructs for working with lazy lists allows for such cool things as:
+Common to functional programming, but missing from Python, is lazy evaluation, where expressions aren't evaluated until they're needed. Coconut's powerful constructs for lazy evaluation allows for such cool things as:
 
     >>> def natural_numbers(n=0) = (n,) :: natural_numbers(n+1)
     >>> natural_numbers()$[0:5] |> list |> print
@@ -53,6 +53,6 @@ Common to functional programming, but missing from Python, are lazily-evaluated 
 
 \7. *But...* **Coconut allows for truly Pythonic functional programming.**
 
-Not only can Coconut do all those awesome things, it also has syntactic support for partial application, function composition, infix calling, frozen set literals, unicode operators, tail call optimization, and a whole host of other constructs for you to explore.
+Not only can Coconut do all those awesome things, it also has syntactic support for partial application, function composition, infix calling, lazy lists, frozen set literals, unicode operators, tail call optimization, and a whole host of other constructs for you to explore.
 
 Ready to give Coconut a try? Head over to the HELP_ file for a full tutorial to help (ha, get it?) you get started.
