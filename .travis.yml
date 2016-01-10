@@ -26,25 +26,21 @@ matrix:
         - echo "assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --display
         - python -c "from coconut.convenience import parse; exec parse('assert \'__coconut__\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()')"
         - coconut prisoner --strict
-
         - coconut src/runner.coc file_build --strict
         - coconut src/cocotest/__init__.coc file_build/cocotest --strict
         - coconut src/cocotest/main.coc file_build/cocotest --strict
         - coconut src/cocotest/util.coc file_build/cocotest --strict
         - coconut src_target/cocotest/py2_test.coc file_build/cocotest --strict --target 2
         - python -tt file_build/runner.py
-
         - coconut src/cocotest run_build/cocotest --strict
         - cp src/runner.coc run_build/runner.coc
         - cp file_build/cocotest/py2_test.py run_build/cocotest/py2_test.py
         - cd run_build
         - coconut --run runner.coc --nowrite --strict
         - cd ..
-
         - coconut src folder_build --strict
         - cp file_build/cocotest/py2_test.py folder_build/cocotest/py2_test.py
         - python -tt folder_build/runner.py
-
         - coconut src force_build --strict --force
         - cp file_build/cocotest/py2_test.py force_build/cocotest/py2_test.py
         - python -tt force_build/runner.py
@@ -52,11 +48,9 @@ matrix:
         - python -tt force_build/runner.py
         - coconut src force_build --strict --force
         - python -tt force_build/runner.py
-
         - coconut src autopep8_build --strict --autopep8
         - cp file_build/cocotest/py2_test.py autopep8_build/cocotest/py2_test.py
         - python -tt autopep8_build/runner.py
-
         - coconut src_target target_build --strict --display --target 2
         - python -tt target_build/runner.py
 
@@ -65,10 +59,10 @@ matrix:
       install:
         - pip install .
         - pip install autopep8
-        - pip install ipython
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
         - git clone https://github.com/evhub/prisoner.git
+        - pip install ipython
         - rm src/cocotest/py3_test.coc
         - cp -r src src_target
         - rm src/cocotest/py2_test.coc
@@ -80,25 +74,21 @@ matrix:
         - python -c "from coconut.convenience import parse; exec parse('assert \'__coconut__\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()')"
         - ipython --ext coconut -c "%coconut assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - coconut prisoner --strict
-
         - coconut src/runner.coc file_build --strict
         - coconut src/cocotest/__init__.coc file_build/cocotest --strict
         - coconut src/cocotest/main.coc file_build/cocotest --strict
         - coconut src/cocotest/util.coc file_build/cocotest --strict
         - coconut src_target/cocotest/py2_test.coc file_build/cocotest --strict --target 2
         - python -tt file_build/runner.py
-
         - coconut src/cocotest run_build/cocotest --strict
         - cp src/runner.coc run_build/runner.coc
         - cp file_build/cocotest/py2_test.py run_build/cocotest/py2_test.py
         - cd run_build
         - coconut --run runner.coc --nowrite --strict
         - cd ..
-
         - coconut src folder_build --strict
         - cp file_build/cocotest/py2_test.py folder_build/cocotest/py2_test.py
         - python -tt folder_build/runner.py
-
         - coconut src force_build --strict --force
         - cp file_build/cocotest/py2_test.py force_build/cocotest/py2_test.py
         - python -tt force_build/runner.py
@@ -106,11 +96,9 @@ matrix:
         - python -tt force_build/runner.py
         - coconut src force_build --strict --force
         - python -tt force_build/runner.py
-
         - coconut src autopep8_build --strict --autopep8
         - cp file_build/cocotest/py2_test.py autopep8_build/cocotest/py2_test.py
         - python -tt autopep8_build/runner.py
-
         - coconut src_target target_build --strict --display --target 2
         - python -tt target_build/runner.py
 
@@ -119,10 +107,10 @@ matrix:
       install:
         - pip install .
         - pip install autopep8
-        - pip install ipython
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
         - git clone https://github.com/evhub/prisoner.git
+        - pip install ipython
         - rm src/cocotest/py3_test.coc
         - cp -r src src_target
         - rm src/cocotest/py2_test.coc
@@ -134,25 +122,21 @@ matrix:
         - python -c "from coconut.convenience import parse; exec parse('assert \'__coconut__\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()')"
         - ipython --ext coconut -c "%coconut assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - coconut prisoner --strict
-
         - coconut src/runner.coc file_build --strict
         - coconut src/cocotest/__init__.coc file_build/cocotest --strict
         - coconut src/cocotest/main.coc file_build/cocotest --strict
         - coconut src/cocotest/util.coc file_build/cocotest --strict
         - coconut src_target/cocotest/py2_test.coc file_build/cocotest --strict --target 2
         - python -tt file_build/runner.py
-
         - coconut src/cocotest run_build/cocotest --strict
         - cp src/runner.coc run_build/runner.coc
         - cp file_build/cocotest/py2_test.py run_build/cocotest/py2_test.py
         - cd run_build
         - coconut --run runner.coc --nowrite --strict
         - cd ..
-
         - coconut src folder_build --strict
         - cp file_build/cocotest/py2_test.py folder_build/cocotest/py2_test.py
         - python -tt folder_build/runner.py
-
         - coconut src force_build --strict --force
         - cp file_build/cocotest/py2_test.py force_build/cocotest/py2_test.py
         - python -tt force_build/runner.py
@@ -160,11 +144,9 @@ matrix:
         - python -tt force_build/runner.py
         - coconut src force_build --strict --force
         - python -tt force_build/runner.py
-
         - coconut src autopep8_build --strict --autopep8
         - cp file_build/cocotest/py2_test.py autopep8_build/cocotest/py2_test.py
         - python -tt autopep8_build/runner.py
-
         - coconut src_target target_build --strict --display --target 2
         - python -tt target_build/runner.py
 
@@ -173,10 +155,10 @@ matrix:
       install:
         - pip install .
         - pip install autopep8
-        - pip install ipython
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
         - git clone https://github.com/evhub/prisoner.git
+        - pip install ipython
         - rm src/cocotest/py2_test.coc
         - cp -r src src_target
         - rm src/cocotest/py3_test.coc
@@ -188,25 +170,21 @@ matrix:
         - python -c "from coconut.convenience import parse; exec(parse('assert \'__coconut__\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()'))"
         - ipython --ext coconut -c "%coconut assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - coconut prisoner --strict
-
         - coconut src/runner.coc file_build --strict
         - coconut src/cocotest/__init__.coc file_build/cocotest --strict
         - coconut src/cocotest/main.coc file_build/cocotest --strict
         - coconut src/cocotest/util.coc file_build/cocotest --strict
         - coconut src_target/cocotest/py3_test.coc file_build/cocotest --strict --target 3
         - python -tt file_build/runner.py
-
         - coconut src/cocotest run_build/cocotest --strict
         - cp src/runner.coc run_build/runner.coc
         - cp file_build/cocotest/py3_test.py run_build/cocotest/py3_test.py
         - cd run_build
         - coconut --run runner.coc --nowrite --strict
         - cd ..
-
         - coconut src folder_build --strict
         - cp file_build/cocotest/py3_test.py folder_build/cocotest/py3_test.py
         - python -tt folder_build/runner.py
-
         - coconut src force_build --strict --force
         - cp file_build/cocotest/py3_test.py force_build/cocotest/py3_test.py
         - python -tt force_build/runner.py
@@ -214,11 +192,9 @@ matrix:
         - python -tt force_build/runner.py
         - coconut src force_build --strict --force
         - python -tt force_build/runner.py
-
         - coconut src autopep8_build --strict --autopep8
         - cp file_build/cocotest/py3_test.py autopep8_build/cocotest/py3_test.py
         - python -tt autopep8_build/runner.py
-
         - coconut src_target target_build --strict --display --target 3
         - python -tt target_build/runner.py
 
@@ -227,10 +203,10 @@ matrix:
       install:
         - pip install .
         - pip install autopep8
-        - pip install ipython
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
         - git clone https://github.com/evhub/prisoner.git
+        - pip install ipython
         - rm src/cocotest/py2_test.coc
         - cp -r src src_target
         - rm src/cocotest/py3_test.coc
@@ -242,25 +218,21 @@ matrix:
         - python -c "from coconut.convenience import parse; exec(parse('assert \'__coconut__\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()'))"
         - ipython --ext coconut -c "%coconut assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - coconut prisoner --strict
-
         - coconut src/runner.coc file_build --strict
         - coconut src/cocotest/__init__.coc file_build/cocotest --strict
         - coconut src/cocotest/main.coc file_build/cocotest --strict
         - coconut src/cocotest/util.coc file_build/cocotest --strict
         - coconut src_target/cocotest/py3_test.coc file_build/cocotest --strict --target 3
         - python -tt file_build/runner.py
-
         - coconut src/cocotest run_build/cocotest --strict
         - cp src/runner.coc run_build/runner.coc
         - cp file_build/cocotest/py3_test.py run_build/cocotest/py3_test.py
         - cd run_build
         - coconut --run runner.coc --nowrite --strict
         - cd ..
-
         - coconut src folder_build --strict
         - cp file_build/cocotest/py3_test.py folder_build/cocotest/py3_test.py
         - python -tt folder_build/runner.py
-
         - coconut src force_build --strict --force
         - cp file_build/cocotest/py3_test.py force_build/cocotest/py3_test.py
         - python -tt force_build/runner.py
@@ -268,11 +240,9 @@ matrix:
         - python -tt force_build/runner.py
         - coconut src force_build --strict --force
         - python -tt force_build/runner.py
-
         - coconut src autopep8_build --strict --autopep8
         - cp file_build/cocotest/py3_test.py autopep8_build/cocotest/py3_test.py
         - python -tt autopep8_build/runner.py
-
         - coconut src_target target_build --strict --display --target 3
         - python -tt target_build/runner.py
 
@@ -281,10 +251,10 @@ matrix:
       install:
         - pip install .
         - pip install autopep8
-        - pip install ipython
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
         - git clone https://github.com/evhub/prisoner.git
+        - pip install ipython
         - rm src/cocotest/py2_test.coc
         - cp -r src src_target
         - rm src/cocotest/py3_test.coc
@@ -296,25 +266,21 @@ matrix:
         - python -c "from coconut.convenience import parse; exec(parse('assert \'__coconut__\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()'))"
         - ipython --ext coconut -c "%coconut assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - coconut prisoner --strict
-
         - coconut src/runner.coc file_build --strict
         - coconut src/cocotest/__init__.coc file_build/cocotest --strict
         - coconut src/cocotest/main.coc file_build/cocotest --strict
         - coconut src/cocotest/util.coc file_build/cocotest --strict
         - coconut src_target/cocotest/py3_test.coc file_build/cocotest --strict --target 3
         - python -tt file_build/runner.py
-
         - coconut src/cocotest run_build/cocotest --strict
         - cp src/runner.coc run_build/runner.coc
         - cp file_build/cocotest/py3_test.py run_build/cocotest/py3_test.py
         - cd run_build
         - coconut --run runner.coc --nowrite --strict
         - cd ..
-
         - coconut src folder_build --strict
         - cp file_build/cocotest/py3_test.py folder_build/cocotest/py3_test.py
         - python -tt folder_build/runner.py
-
         - coconut src force_build --strict --force
         - cp file_build/cocotest/py3_test.py force_build/cocotest/py3_test.py
         - python -tt force_build/runner.py
@@ -322,10 +288,8 @@ matrix:
         - python -tt force_build/runner.py
         - coconut src force_build --strict --force
         - python -tt force_build/runner.py
-
         - coconut src autopep8_build --strict --autopep8
         - cp file_build/cocotest/py3_test.py autopep8_build/cocotest/py3_test.py
         - python -tt autopep8_build/runner.py
-
         - coconut src_target target_build --strict --display --target 3
         - python -tt target_build/runner.py
