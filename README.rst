@@ -33,9 +33,9 @@ Hate typing out ``lambda`` or ``return`` every time you want to create a one-lin
 
 If you know Python, then you already know how useful immutable lists can be. Don't believe me? They're called tuples, of course! Python lets tuples hog all that immutability goodness, but wouldn't it be nice if you could create arbitrary immutable data types? Coconut's ``data`` statement allows you to create any sort of immutable data type that you wish!
 
-\5. *But...* **Coconut has pattern matching.**
+\5. *But...* **Coconut has pattern-matching.**
 
-If you've ever used a functional programming language before, you probably know how awesome pattern matching is. Coconut's ``match`` statement brings all that to Python. Here's just a taste of how powerful Coconut's pattern-matching is:
+If you've ever used a functional programming language before, you probably know how awesome pattern-matching is. Coconut's ``match`` statement brings all that to Python. Here's just a taste of how powerful Coconut's pattern-matching is:
 
     >>> data point(x, y): pass
     >>> my_point = point(3, 0)
