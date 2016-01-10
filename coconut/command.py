@@ -308,7 +308,7 @@ class cli(object):
         self.console.print("Compiling       "+codepath+" ...")
         with openfile(codepath, "r") as opened:
             code = readfile(opened)
-        foundhash = None if force else self.hashashof(destpath, code)
+        foundhash = None if force else self.hashashof(destpath, code, package)
         if foundhash:
             if run:
                 self.execute(foundhash, path=destpath)
@@ -344,13 +344,13 @@ class cli(object):
         with openfile(filepath, "w") as opened:
             writefile(opened, self.processor.headers("package"))
 
-    def hashashof(self, destpath, code):
+    def hashashof(self, destpath, code, package):
         """Determines if a file has the hash of the code."""
         if destpath is not None and os.path.isfile(destpath):
             with openfile(destpath, "r") as opened:
                 compiled = readfile(opened)
                 hashash = gethash(compiled)
-                if hashash is not None and hashash == self.processor.genhash(code):
+                if hashash is not None and hashash == self.processor.genhash(package, code):
                     return compiled
         return None
 
