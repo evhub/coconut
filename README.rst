@@ -43,7 +43,7 @@ If you've ever used a functional programming language before, you probably know 
            print("x = " + str(a))
     x = 3
 
-\6. *But...* **Coconut supports lazy evaluation.**
+\6. *But...* **Coconut has lazy evaluation.**
 
 Common to functional programming, but missing from Python, is lazy evaluation, where expressions aren't evaluated until they're needed. Coconut's powerful constructs for lazy evaluation allows for such cool things as:
 
