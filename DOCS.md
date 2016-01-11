@@ -76,7 +76,6 @@ dest                  destination directory for compiled files (defaults to the 
 
 ```
 -h, --help            show this help message and exit
--h, --help            show this help message and exit
 -v, --version         print Coconut and Python version information
 -t, --target          specify target Python version
 -s, --strict          enforce code cleanliness standards
