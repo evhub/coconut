@@ -29,7 +29,7 @@ import sys
 
 VERSION = "0.3.6"
 VERSION_NAME = "Odisha"
-DEVELOP = False
+DEVELOP = True
 
 ENCODING = "UTF-8"
 
