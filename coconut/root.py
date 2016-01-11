@@ -27,9 +27,9 @@ import sys
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-VERSION = "0.3.5"
-VERSION_NAME = "Nucifera"
-DEVELOP = True
+VERSION = "0.3.6"
+VERSION_NAME = "Odisha"
+DEVELOP = False
 
 ENCODING = "UTF-8"
 
