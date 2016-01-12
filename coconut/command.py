@@ -27,7 +27,7 @@ import argparse
 
 def openfile(filename, opentype="r+"):
     """Returns an open file object."""
-    return open(filename, opentype, encoding=ENCODING) # uses io.open from .root
+    return open(filename, opentype, encoding=encoding) # uses io.open from .root and encoding from .compiler
 
 def writefile(openedfile, newcontents):
     """Sets the contents of a file."""

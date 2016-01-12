@@ -26,6 +26,7 @@ import traceback
 
 from zlib import crc32 as checksum
 
+encoding = "UTF-8"
 hash_prefix = '# __coconut_hash__ = '
 hash_sep = "\x00"
 openindent = "\u204b"
@@ -97,7 +98,13 @@ ParserElement.setDefaultWhitespaceChars(white)
 
 def clean(line):
     """Cleans a line."""
-    return line.replace(openindent, "").replace(closeindent, "").strip()
+    return (line
+        .replace(openindent, "")
+        .replace(closeindent, "")
+        .strip()
+        .encode(sys.stdout.encoding, "replace")
+        .decode(sys.stdout.encoding)
+        )
 
 class CoconutException(Exception):
     """Base Coconut exception."""
@@ -192,7 +199,7 @@ def getheader(which, version=None, usehash=None):
         else:
             raise CoconutException("invalid Python version", version)
         header += '''
-# -*- coding: '''+ENCODING+''' -*-
+# -*- coding: '''+encoding+''' -*-
 '''
         if usehash is not None:
             header += hash_prefix + usehash + "\n"
@@ -983,8 +990,8 @@ def pattern_error(original, loc):
         + match_err_var + ' = __coconut__.MatchError("pattern-matching failed for " '
         + ascii(match_line) + ' " in " + __coconut__.ascii(__coconut__.ascii(' + match_to_var + ")))\n"
         + match_err_var + ".pattern = " + match_line + "\n"
-        + match_err_var + ".value = " + match_to_var + "\n"
-        + "raise " + match_err_var + "\n" + closeindent)
+        + match_err_var + ".value = " + match_to_var
+        + "\nraise " + match_err_var + "\n" + closeindent)
 
 def match_assign_proc(original, loc, tokens):
     """Processes match assign blocks."""
@@ -1130,7 +1137,7 @@ class processor(object):
     def genhash(self, package, code):
         """Generates a hash from code."""
         return hex(checksum(
-                hash_sep.join(str(item) for item in (VERSION_STR, self.version, self.using_autopep8, package, code)).encode(ENCODING)
+                hash_sep.join(str(item) for item in (VERSION_STR, self.version, self.using_autopep8, package, code)).encode(encoding)
             ) & 0xffffffff) # necessary for cross-compatibility
 
     def adjust(self, ln):

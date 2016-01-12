@@ -31,8 +31,6 @@ VERSION = "0.3.6"
 VERSION_NAME = "Odisha"
 DEVELOP = True
 
-ENCODING = "UTF-8"
-
 if DEVELOP:
     VERSION += "-post_dev"
 VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
