@@ -242,6 +242,7 @@ matrix:
         - rm src/cocotest/py2_test.coc
         - cp -r src src_target
         - rm src/cocotest/py3_test.coc
+        - rm src/cocotest/py33_test.coc
 
       script:
         - coconut --version
@@ -302,6 +303,7 @@ matrix:
         - rm src/cocotest/py2_test.coc
         - cp -r src src_target
         - rm src/cocotest/py3_test.coc
+        - rm src/cocotest/py33_test.coc
 
       script:
         - coconut --version
@@ -362,6 +364,7 @@ matrix:
         - rm src/cocotest/py2_test.coc
         - cp -r src src_target
         - rm src/cocotest/py3_test.coc
+        - rm src/cocotest/py33_test.coc
 
       script:
         - coconut --version
