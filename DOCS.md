@@ -1,63 +1,82 @@
 # Coconut Documentation
 
-This documentation will cover all the technical details of the [Coconut](https://github.com/evhub/coconut) programming language. This documentation is not intended as a tutorialized introduction, only a technical specification. For a full introduction and tutorial of the Coconut programming language, see the [HELP](https://github.com/evhub/coconut/blob/master/HELP.md) file.
+This documentation will cover all the technical details of the [Coconut Programming Language](https://github.com/evhub/coconut). This documentation is intended as a reference specification, not a tutorialized introduction. For a full introduction and tutorial of Coconut, see [HELP](https://github.com/evhub/coconut/blob/master/HELP.md).
 
-- [I. Command Line](#i-command-line)
-    - [Usage](#usage)
-    - [Positional Arguments](#positional-arguments)
-    - [Optional Arguments](#optional-arguments)
-    - [Python Versions](#python-versions)
-    - [Compiled Files](#compiled-files)
-    - [--strict Mode](#--strict-mode)
-    - [IPython](#ipython)
-- [II. Syntax](#ii-syntax)
-    - [Lambdas](#lambdas)
-    - [Lazy Lists](#lazy-lists)
-    - [Backtick Calling](#backtick-calling)
-    - [Mathematical Function Definition](#mathematical-function-definition)
-    - [Operator Functions](#operator-functions)
-    - [Destructuring Assignment](#destructuring-assignment)
-    - [Pattern-Matching Function Definition](#pattern-matching-function-definition)
-    - [Implicit Partial Application](#implicit-partial-application)
-    - [Enhanced Set Literals](#enhanced-set-literals)
-    - [Enhanced Imaginary Literals](#enhanced-imaginary-literals)
-    - [Non-Decimal Integers](#non-decimal-integers)
-    - [Enhanced Decorators](#enhanced-decorators)
-    - [Enhanced `else` Statements](#enhanced-else-statements)
-    - [Enhanced `except` Statements](#enhanced-except-statements)
-    - [Enhanced Variable Lists](#enhanced-variable-lists)
-    - [Unicode Alternatives](#unicode-alternatives)
-    - [Code Passthrough](#code-passthrough)
-- [III. Operators](#iii-operators)
-    - [Compose](#compose)
-    - [Pipeline](#pipeline)
-    - [Chain](#chain)
-    - [Partial Application](#partial-application)
-    - [Iterator Slice](#iterator-slice)
-- [IV. Built-Ins](#iv-built-ins)
-    - [`reduce`](#reduce)
-    - [`takewhile`](#takewhile)
-    - [`dropwhile`](#dropwhile)
-    - [`tee`](#tee)
-    - [`consume`](#consume)
-    - [`datamaker`](#datamaker)
-    - [`recursive`](#recursive)
-    - [`__coconut_version__`](#__coconut_version__)
-- [V. Keywords](#v-keywords)
-    - [`data`](#data)
-    - [`match`](#match)
-    - [`case`](#case)
-    - [Backslash Escaping](#backslash-escaping)
-    - [Reserved Variables](#reserved-variables)
-- [VI. Coconut Module](#vi-coconut-module)
-    - [`coconut.convenience`](#coconutconvenience)
-    - [`coconut.convenience.parse`](#coconutconvenienceparse)
-    - [`coconut.convenience.setup`](#coconutconveniencesetup)
-    - [`coconut.convenience.cmd`](#coconutconveniencecmd)
-    - [`coconut.convenience.version`](#coconutconvenienceversion)
-    - [`coconut.convenience.CoconutException`](#coconutconveniencecoconutexception)
+<!-- MarkdownTOC -->
 
-## I. Command Line
+1. [Compilation](#compilation)
+    1. [Installation](#installation)
+    2. [Usage](#usage)
+        1. [Positional Arguments](#positional-arguments)
+        2. [Optional Arguments](#optional-arguments)
+    3. [Naming Source Files](#naming-source-files)
+    4. [Compilation Modes](#compilation-modes)
+    5. [Compatible Python Versions](#compatible-python-versions)
+    6. [`--strict` Mode](#--strict-mode)
+    7. [IPython](#ipython)
+2. [Operators](#operators)
+    1. [Lambdas](#lambdas)
+    2. [Partial Application](#partial-application)
+    3. [Pipeline](#pipeline)
+    4. [Compose](#compose)
+    5. [Chain](#chain)
+    6. [Iterator Slice](#iterator-slice)
+    7. [Unicode Alternatives](#unicode-alternatives)
+3. [Keywords](#keywords)
+    1. [`data`](#data)
+    2. [`match`](#match)
+    3. [`case`](#case)
+    4. [Backslash Escaping](#backslash-escaping)
+    5. [Reserved Variables](#reserved-variables)
+4. [Expressions](#expressions)
+    1. [Lazy Lists](#lazy-lists)
+    2. [Implicit Partial Application](#implicit-partial-application)
+    3. [Set Literals](#set-literals)
+    4. [Imaginary Literals](#imaginary-literals)
+    5. [Non-Decimal Integers](#non-decimal-integers)
+5. [Function Creation](#function-creation)
+    1. [Operator Functions](#operator-functions)
+    2. [Shorthand Functions](#shorthand-functions)
+    3. [Infix Functions](#infix-functions)
+    4. [Pattern-Matching Functions](#pattern-matching-functions)
+6. [Statements](#statements)
+    1. [Destructuring Assignment](#destructuring-assignment)
+    2. [Decorators](#decorators)
+    3. [`else` Statements](#else-statements)
+    4. [`except` Statements](#except-statements)
+    5. [Variable Lists](#variable-lists)
+    6. [Code Passthrough](#code-passthrough)
+7. [Built-Ins](#built-ins)
+    1. [`reduce`](#reduce)
+    2. [`takewhile`](#takewhile)
+    3. [`dropwhile`](#dropwhile)
+    4. [`tee`](#tee)
+    5. [`consume`](#consume)
+    6. [`datamaker`](#datamaker)
+    7. [`recursive`](#recursive)
+    8. [`__coconut_version__`](#__coconut_version__)
+8. [Coconut Module](#coconut-module)
+    1. [`coconut.convenience`](#coconutconvenience)
+        1. [`coconut.convenience.parse`](#coconutconvenienceparse)
+        2. [`coconut.convenience.setup`](#coconutconveniencesetup)
+        3. [`coconut.convenience.cmd`](#coconutconveniencecmd)
+        4. [`coconut.convenience.version`](#coconutconvenienceversion)
+        5. [`coconut.convenience.CoconutException`](#coconutconveniencecoconutexception)
+
+<!-- /MarkdownTOC -->
+
+## Compilation
+
+The Coconut compiler turns Coconut code into Python code. The primary method of accessing the Coconut compiler is through the Coconut command-line utility, which also features an interpreter for real-time compilation.
+
+_Note: With only [one exception](#backslash-escaping), Coconut syntax is a strict superset of Python 3 syntax. That means if you're familiar with Python, you're already familiar with most of Coconut._
+
+### Installation
+
+Since Coconut is hosted on the [Python Package Index](https://pypi.python.org/pypi/coconut), it can be installed easily using `pip`. Simply install [Python](https://www.python.org/downloads/), open up a command line prompt, and enter:
+```
+python -m pip install coconut
+```
 
 ### Usage
 
@@ -65,14 +84,14 @@ This documentation will cover all the technical details of the [Coconut](https:/
 coconut [-h] [-v] [source] [dest] [-t version] [-s] [-p] [-a] [-f] [-d] [-r] [-n] [-i] [-q] [-c code] [--debug] [--autopep8 ...]
 ```
 
-### Positional Arguments
+#### Positional Arguments
 
 ```
 source                path to the coconut file/folder to compile
 dest                  destination directory for compiled files (defaults to the source directory)
 ```
 
-### Optional Arguments
+#### Optional Arguments
 
 ```
 -h, --help            show this help message and exit
@@ -92,7 +111,19 @@ dest                  destination directory for compiled files (defaults to the 
 --autopep8            use autopep8 to format compiled code (remaining args passed to autopep8)
 ```
 
-### Python Versions
+### Naming Source Files
+
+Coconut source files should, by convention, and so they can be recognized by the compiler and by third-party programs, use the extension `.coc`. It is recommended, if your text editor doesn't have Coconut support, that you set it up so it interprets all `.coc` files as Python code.
+
+When the compiler is called, each `.coc` file found will compile to another file with the same name, except with `.py` instead of `.coc`, which will hold the compiled code. If an extension other than `.py` is desired for the compiled files, such as `.pyde` for [Python Processing](http://py.processing.org/), then that extension can be put before `.coc` in the source file name, and it will be used instead of `.py` for the compiled files. For example, `name.coc` will compile to `name.py`, whereas `name.pyde.coc` will compile to `name.pyde`.
+
+### Compilation Modes
+
+Files compiled by the `coconut` command-line utility will vary based on compilation parameters. If an entire folder of files is compiled (package mode), a `__coconut__.py` file will be created to house necessary functions, whereas if only a single file is compiled (standalone mode), that information will be stored within a header inside the file.
+
+By default, if the `source` argument to the command-line utility is a file, it will perform standalone compilation on it, whereas if it is a directory, it will recursively search for all `.coc` files and perform package compilation on them. The command-line utility can also be forced to enter either mode with the `--package` (`-p`) and `--standalone` (`-a`) flags.
+
+### Compatible Python Versions
 
 While Coconut syntax is based off of Python 3, the compiler should run on any Python version `>= 2.6` on the `2.x` branch or `>= 3.2` on the `3.x` branch, and will attempt to produce universal code that will run like it does on Python 3 in Python 2.
 
@@ -114,12 +145,6 @@ Coconut will, however, add in new Python 3 built-ins and overwrite Python 2 buil
 - `py2_print`
 - `py2_input`
 
-### Compiled Files
-
-Files compiled by the `coconut` command-line utility will vary based on compilation parameters. If an entire folder of files is compiled, a `__coconut__.py` file will be created to house necessary functions, whereas if only a single file is compiled, that information will be stored within a header inside the file. Regardless of which method is used, each `.coc` file found will compile to another file with the same name, except with `.py` instead of `.coc`, which will hold the compiled code.
-
-If an extension other than `.py` is desired for the compiled files, such as `.pyde` for [Python Processing](http://py.processing.org/), then that extension can be put before `.coc` in the source file name, and it will be used instead of `.py` for the compiled files. For example, `name.coc` will compile to `name.py`, whereas `name.pyde.coc` will compile to `name.pyde`.
-
 ### `--strict` Mode
 
 If the `--strict` or `-s` flag is enabled, Coconut will throw errors on various style problems. These are:
@@ -135,11 +160,15 @@ It is recommended that you use the `--strict` or `-s` flag if you are starting a
 
 If you prefer [IPython](http://ipython.org/) to the normal Python shell, Coconut can also be used as an IPython extension. The line magic `%load_ext coconut` will provide access to the `%coconut` and `%%coconut` magics. The `%coconut` line magic will run a line of Coconut with default parameters, whereas the `%%coconut` block magic will take command-line arguments on the first line, and run any Coconut code provided in the rest of the cell with those parameters.
 
-## II. Syntax
+## Operators
 
 ### Lambdas
 
-Coconut provides an alternative to Python's `lambda` statements in favor of a simple, Coffee-style `->` operator. The operator has the same precedence as the old statement.
+Coconut provides the simple, clean `->` operator as an alternative to Python's `lambda` statements. The operator has the same precedence as the old statement.
+
+##### Rationale
+
+In Python, lambdas are ugly and bulky, requiring the entire word `lambda` to be written out every time one is constructed. This is fine if in-line functions are very rarely needed, but in functional programming in-line functions are an essential tool.
 
 ##### Python Docs
 
@@ -154,72 +183,609 @@ Note that functions created with lambda forms cannot contain statements or annot
 
 Coconut:
 ```python
-(x, y) -> 2*(x+y)
+pairs = zip(range(0, 10), range(10, 20))
+dubsums = map((x, y) -> 2*(x+y), pairs)
+dubsums |> list |> print
 ```
 
 Python:
 ```python
-lambda x, y: 2*(x+y)
+pairs = zip(range(0, 10), range(10, 20))
+dubsums = map(lambda x, y: 2*(x+y), pairs)
+print(list(dubsums))
 ```
 
-### Lazy Lists
+### Partial Application
 
-Coconut supports the creation of lazy lists, where the contents in the list will be treated as a Python iterator and not evaluated until they are needed. Lazy lists can be created in Coconut simply by simply surrounding a comma-seperated list of items with `(|` and `|)` instead of `[` and `]` for a list or `(` and `)` for a tuple.
+Coconut uses a `$` sign right after a function's name but before the open parenthesis used to call the function to denote partial application. It has the same precedence as subscription.
+
+##### Rationale
+
+Partial application, or currying, is a mainstay of functional programming, and for good reason: it allows the dynamic customization of functions to fit the needs of where they are being used. Partial application allows a new function to be created out of an old function with some of its arguments pre-specified.
+
+##### Python Docs
+
+Return a new `partial` object which when called will behave like _func_ called with the positional arguments _args_ and keyword arguments _keywords_. If more arguments are supplied to the call, they are appended to _args_. If additional keyword arguments are supplied, they extend and override _keywords_. Roughly equivalent to:
+```python
+def partial(func, *args, **keywords):
+    def newfunc(*fargs, **fkeywords):
+        newkeywords = keywords.copy()
+        newkeywords.update(fkeywords)
+        return func(*(args + fargs), **newkeywords)
+    newfunc.func = func
+    newfunc.args = args
+    newfunc.keywords = keywords
+    return newfunc
+```
+The `partial` object is used for partial function application which “freezes” some portion of a function’s arguments and/or keywords resulting in a new object with a simplified signature.
 
 ##### Example
 
 Coconut:
 ```python
-nums = (| -3, -1, 1 |) :: range(2,10)
+expnums = map(pow$(2), range(5))
+expnums |> list |> print
+```
+
+Python:
+```python
+import functools
+expnums = map(functools.partial(pow, 2), range(5))
+expnums |> list |> print
+```
+
+### Pipeline
+
+Coconut uses pipe operators for pipeline-style function application. All the operators have a precedence in-between infix calls and comparisons and are left-associative. All operators also support in-place versions. The different operators are:
+```
+(|>)    => pipe forward
+(|*>)   => multiple-argument pipe forward
+(<|)    => pipe backward
+(<*|)   => multiple-argument pipe backward
+```
+
+##### Example
+
+Coconut:
+```
+def sq(x) = x**2
+(1, 2) |*> (+) |> sq |> print
+```
+
+Python:
+```python
+import operator
+def sq(x): return x**2
+print(sq(operator.__add__(1, 2)))
+```
+
+### Compose
+
+Coconut uses the `..` operator for function composition. It has a precedence in-between subscription and exponentiation. The in-place operator is `..=`.
+
+##### Example
+
+Coconut:
+```python
+fog = f..g
+```
+
+Python:
+```python
+fog = lambda *args, **kwargs: f(g(*args, **kwargs))
+```
+
+### Chain
+
+Coconut uses the `::` operator for iterator chaining. Coconut's iterator chaining is done lazily, in that the arguments are not evaluated until they are needed. It has a precedence in-between bitwise or and infix calls. The in-place operator is `::=`.
+
+##### Rationale
+
+A useful tool to make working with iterators as easy as working with sequences is the ability to lazily combine multiple iterators together. This operation is called chain, and is equivalent to addition with sequences, except that nothing gets evaluated until it is needed.
+
+##### Python Docs
+
+Make an iterator that returns elements from the first iterable until it is exhausted, then proceeds to the next iterable, until all of the iterables are exhausted. Used for treating consecutive sequences as a single sequence. Chained inputs are evaluated lazily. Roughly equivalent to:
+```python
+def chain(*iterables):
+    # chain('ABC', 'DEF') --> A B C D E F
+    for it in iterables:
+        for element in it:
+            yield element
+```
+
+##### Example
+
+Coconut:
+```python
+def N(n=0):
+    return (0,) :: N(n+1) # no infinite loop because :: is lazy
+
+(range(-10, 0) :: N())$[5:15] |> list |> print
+```
+
+Python:
+
+_Can't be done without a complicated iterator comprehension in place of the lazy chaining. See the compiled code for the Python syntax._
+
+### Iterator Slice
+
+Coconut uses a `$` sign right after an iterator before a slice to perform iterator slicing. Coconut's iterator slicing works much the same as Python's sequence slicing, and looks much the same as Coconut's partial application, but with brackets instead of parentheses.
+
+Iterator slicing works just like sequence slicing, with two exceptions: negative indices are not allowed (use [`consume`](#consume)'s optional argument to get the effect of negative indices) and no guarantee is made that the original iterator be preserved (to preserve the original iterator, use Coconut's [`tee` function](#tee)).
+
+For dynamically determining the slice parameters, iterator slicing supports slicing with a `slice` object in the same way as can be done with normal slicing. It has the same precedence as subscription.
+
+##### Python Docs
+
+Make an iterator that returns selected elements from the _iterable_. If _start_ is non-zero, then elements from the _iterable_ are skipped until _start_ is reached. Afterward, elements are returned consecutively unless _step_ is set higher than one which results in items being skipped. If _stop_ is `None`, then iteration continues until the iterator is exhausted, if at all; otherwise, it stops at the specified position. Unlike regular slicing, iterator slicing does not support negative values for _start_, _stop_, or _step_. Can be used to extract related fields from data where the internal structure has been flattened (for example, a multi-line report may list a name field on every third line). Equivalent to:
+```python
+def islice(iterable, *args):
+    # islice('ABCDEFG', 2) --> A B
+    # islice('ABCDEFG', 2, 4) --> C D
+    # islice('ABCDEFG', 2, None) --> C D E F G
+    # islice('ABCDEFG', 0, None, 2) --> A C E G
+    s = slice(*args)
+    it = iter(range(s.start or 0, s.stop or sys.maxsize, s.step or 1))
+    nexti = next(it)
+    for i, element in enumerate(iterable):
+        if i == nexti:
+            yield element
+            nexti = next(it)
+```
+If _start_ is `None`, then iteration starts at zero. If _step_ is `None`, then the step defaults to one.
+
+##### Example
+
+Coconut:
+```python
+def N():
+    x = 0
+    while True:
+        yield x
+        x += 1
+
+N()$[10:15] |> list |> print
+```
+
+Python:
+```python
+import itertools
+
+def N():
+    x = 0
+    while True:
+        yield x
+        x += 1
+
+print(list(itertools.islice(N(), 10, 15)))
+```
+
+### Unicode Alternatives
+
+Coconut supports unicode alternatives to many different operator symbols. The unicode alternatives are relatively straightforward, and chosen to reflect the look and/or meaning of the original symbol.
+
+##### Full List
+
+```
+→ (\u2192)                  => "->"
+↦ (\u21a6)                  => "|>"
+*↦ (*\u21a6)                => "|*>"
+↤ (\u21a4)                  => "<|"
+↤* (\u21a4*)                => "<*|"
+⋅ (\u22c5)                  => "*"
+↑ (\u2191)                  => "**"
+÷ (\xf7)                    => "/"
+÷/ (\xf7/)                  => "//"
+− (\u2212)                  => "-" (only subtraction)
+⁻ (\u207b)                  => "-" (only negation)
+¬ (\xac)                    => "~"
+≠ (\u2260) or ¬= (\xac=)    => "!="
+≤ (\u2264)                  => "<="
+≥ (\u2265)                  => ">="
+∧ (\u2227) or ∩ (\u2229)    => "&"
+∨ (\u2228) or ∪ (\u222a)    => "|"
+⊻ (\u22bb) or ⊕ (\u2295)    => "^"
+« (\xab)                    => "<<"
+» (\xbb)                    => ">>"
+… (\u2026)                  => "..."
+× (\xd7)                    => "@" (only matrix multiplication)
+```
+
+## Keywords
+
+### `data`
+
+The syntax for `data` blocks is a cross between the syntax for functions and the syntax for classes. The first line looks like a function definition, but the rest of the body looks like a class, usually containing method definitions. This is because while `data` blocks actually end up as classes in Python, Coconut automatically creates a special, immutable constructor based on the given arguments.
+
+Coconut `data` blocks create immutable classes derived from `collections.namedtuple` and made immutable with `__slots__`. Coconut data statement syntax looks like:
+```python
+data <name>(<args>):
+    <body>
+```
+`<name>` is the name of the new data type, `<args>` are the arguments to its constructor as well as the names of its attributes, and `<body>` contains the data type's methods.
+
+##### Rationale
+
+A mainstay of functional programming that Coconut improves in Python is the use of values, or immutable data types. Immutable data can be very useful because it guarantees that once you have some data it won't change, but in Python creating custom immutable data types is difficult. Coconut makes it very easy by providing `data` blocks.
+
+##### Python Docs
+
+Returns a new tuple subclass. The new subclass is used to create tuple-like objects that have fields accessible by attribute lookup as well as being indexable and iterable. Instances of the subclass also have a helpful docstring (with type names and field names) and a helpful `__repr__()` method which lists the tuple contents in a `name=value` format.
+
+Any valid Python identifier may be used for a field name except for names starting with an underscore. Valid identifiers consist of letters, digits, and underscores but do not start with a digit or underscore and cannot be a keyword such as _class, for, return, global, pass, or raise_.
+
+Named tuple instances do not have per-instance dictionaries, so they are lightweight and require no more memory than regular tuples.
+
+##### Example
+
+Coconut:
+```python
+data vector(x, y):
+    def __abs__(self):
+        return (self.x**2 + self.y**2)**.5
+
+v = vector(3, 4)
+v |> print # all data types come with a built-in __repr__
+v |> abs |> print
+v.x = 2 # this will fail because data objects are immutable
+```
+
+Python:
+```python
+import collections
+class vector(collections.namedtuple("vector", "x, y")):
+    __slots__ = ()
+    def __abs__(self):
+        return (self.x**2 + self.y**2)**.5
+
+v = vector(3, 4)
+print(v)
+print(abs(v))
+v.x = 2 # throws an AttributeError
+```
+
+### `match`
+
+Coconut provides fully-featured, functional pattern-matching through its `match` statements.
+
+##### Overview
+
+Match statements follow the basic syntax `match <pattern> in <value>`. The match statement will attempt to match the value against the pattern, and if successful, bind any variables in the pattern to whatever is in the same position in the value, and execute the code below the match statement. Match statements also support, in their basic syntax, an `if <cond>` that will check the condition as well as the match before executing the code below. What is allowed in the match statement's pattern has no equivalent in Python, and thus the specifications below are provided to explain it.
+
+##### Syntax Specification
+
+Coconut match statement syntax is
+```python
+match <pattern> in <value> [if <cond>]:
+    <body>
+[else:
+    <body>]
+```
+where `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds. `<pattern>` follows its own, special syntax, defined roughly like so:
+```
+pattern := (
+    "(" pattern ")"                 # parentheses
+    | "None" | "True" | "False"     # constants
+    | "=" NAME                      # check
+    | NUMBER                        # numbers
+    | STRING                        # strings
+    | NAME ["=" pattern]            # capture
+    | NAME "(" patterns ")"         # data types
+    | "(" patterns ")"              # tuples
+    | "[" patterns "]"              # lists
+    | "(|" patterns "|)"            # lazy lists
+    | "{" pattern_pairs "}"         # dictionaries
+    | ["s"] "{" pattern_consts "}"  # sets
+    | (                             # head-tail splits
+        "(" patterns ")"                # tuples
+        | "[" patterns "]"              # lists
+      ) "+" pattern
+    | pattern "+" (                 # init-last splits
+        "(" patterns ")"                # tuples
+        | "[" patterns "]"              # lists
+      )
+    | (                             # head-last splits
+        "(" patterns ")"                # tuples
+        | "[" patterns "]"              # lists
+      ) "+" pattern "+" (
+        "(" patterns ")"                # this match must be the same
+        | "[" patterns "]"              #  construct as the first match
+      )
+    | (                             # iterator splits
+        "(" patterns ")"                # tuples
+        | "[" patterns "]"              # lists
+        | "(|" patterns "|)"            # lazy lists
+      ) "::" pattern
+    | pattern "is" names            # type-checking
+    | pattern "and" pattern         # match all
+    | pattern "or" pattern          # match any
+    )
+```
+
+##### Semantic Specification
+
+`match` statements will take their pattern and attempt to "match" against it, performing the checks and deconstructions on the arguments as specified by the pattern. The different constructs that can be specified in a pattern, and their function, are:
+- Constants, Numbers, and Strings: will only match to the same constant, number, or string in the same position in the arguments.
+- Variables: will match to anything, and will be bound to whatever they match to, with some exceptions:
+ * If the same variable is used multiple times, a check will be performed that each use match to the same value.
+ * If the variable name `_` is used, nothing will be bound and everything will always match to it.
+- Explicit Bindings (`<var>=<pattern>`): will bind `<var>` to `<pattern>`.
+- Checks (`=<var>`): will check that whatever is in that position is equal to the previously defined variable `<var>`.
+- Type Checks (`<var> is <types>`): will check that whatever is in that position is of type(s) `<types>` before binding the `<var>`.
+- Data Types (`<name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`.
+- Lists (`[<patterns>]`), Tuples (`(<patterns>)`), or Lazy lists (`(|<patterns>|)`): will only match a sequence (`collections.abc.Sequence`) of the same length, and will check the contents against `<patterns>`.
+- Dicts (`{<pairs>}`): will only match a mapping (`collections.abc.Mapping`) of the same length, and will check the contents against `<pairs>`.
+- Sets (`{<constants>}`): will only match a set (`collections.abc.Set`) of the same length and contents.
+- Head-Tail Splits (`<list/tuple> + <var>`): will match the beginning of the sequence against the `<list/tuple>`, then bind the rest to `<var>`, and make it the type of the construct used.
+- Init-Last Splits (`<var> + <list/tuple>`): exactly the same as head-tail splits, but on the end instead of the beginning of the sequence.
+- Head-Last Splits (`<list/tuple> + <var> + <list/tuple>`): the combination of a head-tail and an init-last split.
+- Iterator Splits (`<list/tuple/lazy list> :: <var>`, or `<lazy list>`): will match the beginning of an iterable (`collections.abc.Iterable`) against the `<list/tuple/lazy list>`, then bind the rest to `<var>` or check that the iterable is done.
+
+##### Examples
+
+Coconut:
+1.
+```python
+def factorial(value):
+    match 0 in value:
+        return 1
+    else: match n is int in value if n > 0: # possible because of Coconut's
+        return n * factorial(n-1)           #   enhanced else statements
+    else:
+        raise TypeError("invalid argument to factorial of: "+repr(value))
+
+3 |> factorial |> print
+```
+_Showcases `else` statements, which work much like `else` statements in Python: the code under an `else` statement is only executed if the corresponding match fails._
+2.
+```python
+data point(x, y):
+    def transform(self, other):
+        match point(x, y) in other:
+            return point(self.x + x, self.y + y)
+        else:
+            raise TypeError("arg to transform must be a point")
+    def __eq__(self, other):
+        match point(=self.x, =self.y) in other:
+            return True
+        else:
+            return False
+
+point(1,2) |> point(3,4).transform |> print
+point(1,2) |> point(1,2).__eq__ |> print
+```
+_Showcases matching to data types. Values defined by the user with the `data` statement can be matched against and their contents accessed by specifically referencing arguments to the data type's constructor._
+3.
+```python
+data empty(): pass
+data leaf(n): pass
+data node(l, r): pass
+tree = (empty, leaf, node)
+
+def depth(t):
+    match tree() in t:
+        return 0
+    match tree(n) in t:
+        return 1
+    match tree(l, r) in t:
+        return 1 + max([depth(l), depth(r)])
+
+empty() |> depth |> print
+leaf(5) |> depth |> print
+node(leaf(2), node(empty(), leaf(3))) |> depth |> print
+```
+_Showcases how the combination of data types and match statements can be used to powerful effect to replicate the usage of algebraic data types in other functional programming languages._
+4.
+```python
+def duplicate_first(value):
+    match l=([x] + xs) in value:
+        return [x] + l
+    else:
+        raise TypeError()
+
+[1,2,3] |> duplicate_first |> print
+```
+_Showcases head-tail splitting, one of the most common uses of pattern-matching, where a `+ <var>` (or `:: <var>` for any iterable) at the end of a list or tuple literal can be used to match the rest of the sequence._
+
+Python:
+
+_Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._
+
+### `case`
+
+Coconut's `case` statement is an extension of Coconut's `match` statement for performing multiple `match` statements against the same value, where only one of them should succeed. Unlike lone `match` statements, only one match statement inside of a `case` block will ever succeed, and thus more general matches should be put below more specific ones.
+
+Each pattern in a case block is checked until a match is found, and then the corresponding body is executed, and the case block terminated. The syntax for case blocks is
+```python
+case <value>:
+    match <pattern> [if <cond>]:
+        <body>
+    match <pattern> [if <cond>]:
+        <body>
+    ...
+[else:
+    <body>]
+```
+where `<pattern>` is any `match` pattern, `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds. Note the absence of an `in` in the `match` statements: that's because the `<value>` in `case <value>` is taking its place.
+
+##### Example
+
+Coconut:
+```python
+def classify_sequence(value):
+    out = ""        # unlike with normal matches, only one of the patterns
+    case value:     #  will match, and out will only get appended to once
+        match ():
+            out += "empty"
+        match (_,):
+            out += "singleton"
+        match (x,x):
+            out += "duplicate pair of "+str(x)
+        match (_,_):
+            out += "pair"
+        match _ is (tuple, list):
+            out += "sequence"
+    else:
+        raise TypeError()
+    return out
+
+[] |> classify_sequence |> print
+() |> classify_sequence |> print
+[1] |> classify_sequence |> print
+(1,1) |> classify_sequence |> print
+(1,2) |> classify_sequence |> print
+(1,1,1) |> classify_sequence |> print
+```
+
+Python:
+
+_Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._
+
+### Backslash Escaping
+
+To allow access to the valid Python variable names `data`, `match`, and `case` in Coconut, those keywords may be backslash-escaped to turn them into the variables instead. Additionally, to provide more seamless integration with Python 3.5, the variable names `async` and `await` must be backslash-escaped, and to provide backwards compatibility with Python 2, the variable name `nonlocal` must be backslash-escaped.
+
+##### Example
+
+Coconut:
+```
+\data = 5
+print(\data)
+```
+
+Python:
+```python
+data = 5
+print(data)
+```
+
+### Reserved Variables
+
+The Coconut compiler will modify and reference certain variables with the assumption that the code being compiled does not modify them in any way. If your code does modify any of these variables, your code is unlikely to work properly. These reserved variables are:
+- the single variable name `__coconut__`
+- all variable names of the form `_coconut_name`
+
+## Expressions
+
+### Lazy Lists
+
+Coconut supports the creation of lazy lists, where the contents in the list will be treated as an iterator and not evaluated until they are needed. Lazy lists can be created in Coconut simply by simply surrounding a comma-seperated list of items with `(|` and `|)` (so-called "banana brackets") instead of `[` and `]` for a list or `(` and `)` for a tuple.
+
+##### Rationale
+
+Lazy lists, where sequences are only evaluated when their contents are requested, are a mainstay of functional programming, allowing for dynamic evaluation of the list's contents.
+
+##### Example
+
+Coconut:
+```python
+(| print("hello,"), print("world!") |) |> print
 ```
 
 Python:
 _Can't be done without a complicated iterator comprehension in place of the lazy list. See the compiled code for the Python syntax._
 
-### Backtick Calling
+### Implicit Partial Application
 
-Coconut allows for Haskell-style infix calling, where a function is surrounded by backticks and then can have arguments placed in front of or behind it. Backtick calling has a precedence in-between chaining and piping.
+Coconut supports a number of different syntactical aliases for common partial application use cases. These are:
+```
+.name       =>      operator.attrgetter("name")
+obj.        =>      getattr$(obj)
+func$       =>      ($)$(func)
+series[]    =>      operator.__getitem__$(series)
+series$[]   =>      <lambda> # the equivalent of series[] for iterators
+```
 
 ##### Example
 
 Coconut:
 ```python
-(x `mod` 2) `f` == 1
+1 |> "123"[]
+mod$ <| 5 <| 3
 ```
 
 Python:
 ```python
-f(mod(x, 2)) == 1
+"123"[1]
+mod(5, 3)
 ```
 
-### Mathematical Function Definition
+### Set Literals
 
-Coconut allows for math-style in-line function definition, where the body of the function is assigned directly to the function call. The syntax for in-line function definition is
-```
-"def" (
-    <name> "(" <args> ")"
-    | "(" <arg1> ")" "`" <name> "`" "(" <arg2> ")"
-) "=" <body>
-```
-where `<name>` is the name of the function and `<args>` are the functions arguments. Additionally, backtick-style definition is also allowed in normal Python block function definition statements.
+Coconut allows an optional `s` to be prepended in front of Python set literals. While in most cases this does nothing, in the case of the empty set it lets Coconut know that it is an empty set and not an empty dictionary. Additionally, an `f` is also supported, in which case a Python `frozenset` will be generated instead of a normal set.
 
 ##### Example
 
 Coconut:
 ```python
-def exp(x, b=2) = b**x
-def a `mod` b = a % b
+empty_frozen_set = f{}
 ```
 
 Python:
 ```python
-def exp(x, b=2): return b**x
-def mod(a, b): return a % b
+empty_frozen_set = frozenset()
 ```
+
+### Imaginary Literals
+
+In addition to Python's `<num>j` or `<num>J` notation for imaginary literals, Coconut also supports `<num>i` or `<num>I`, to make imaginary literals more readable if used in a mathematical context.
+
+##### Python Docs
+
+Imaginary literals are described by the following lexical definitions:
+```
+imagnumber ::=  (floatnumber | intpart) ("j" | "J" | "i" | "I")
+```
+An imaginary literal yields a complex number with a real part of 0.0. Complex numbers are represented as a pair of floating point numbers and have the same restrictions on their range. To create a complex number with a nonzero real part, add a floating point number to it, e.g., `(3+4i)`. Some examples of imaginary literals:
+```
+3.14i   10.i    10i     .001i   1e100i  3.14e-10i
+```
+
+##### Example
+
+Coconut:
+```
+3 + 4i |> abs
+```
+
+Python:
+```
+abs(3 + 4j)
+```
+
+### Non-Decimal Integers
+
+In addition to Python's binary, octal, and hexadecimal integer syntax, Coconut also supports its own universal non-decimal integer syntax `base_num`. This allows support for all bases and improves readability over Python's C-style notation.
+
+##### Python Docs
+
+A base-n literal consists of the digits 0 to n-1, with `a` to `z` (or `A` to `Z`) having values 10 to 35. The default base is 10. The allowed values are 0 and 2-36. Base 0 means to interpret exactly as a code literal, so that the actual base is 2, 8, 10, or 16, and so that `010`, `0_0o10`, and `8_010` are 8, while `10`, `0_10`, and `10_010` are 10.
+
+##### Example
+
+Coconut:
+```python
+12_10A == 154
+```
+
+Python:
+```python
+int("10A", 12) == 154
+```
+
+## Function Creation
 
 ### Operator Functions
 
-Coconut uses Haskell-style operator function short-hand, where the operator placed within parentheses can be used as a function. The full list of operator functions is as follows:
+Coconut uses a simple operator function short-hand: surround an operator with parentheses to retrieve its function.
+
+##### Rationale
+
+A very common thing to do in functional programming is to make use of function versions of built-in operators: currying them, composing them, and piping them. To make this easy, Coconut provides a short-hand syntax to access operator functions.
+
+##### Full List
+
 ```
 (|>)        => (<lambda>) # pipe forward
 (|*>)       => (<lambda>) # multi-arg pipe forward
@@ -260,14 +826,111 @@ Coconut uses Haskell-style operator function short-hand, where the operator plac
 
 Coconut:
 ```python
-prod = reduce((*), items)
+pairs = zip(range(0, 10), range(10, 20))
+map((+), pairs) |> print
 ```
 
 Python:
 ```python
 import operator
-prod = reduce(operator.__mul__, items)
+pairs = zip(range(0, 10), range(10, 20))
+print(map(operator.__add__, pairs))
 ```
+
+### Shorthand Functions
+
+Coconut allows for shorthand in-line function definition, where the body of the function is assigned directly to the function call. The syntax for shorthand function definition is
+```python
+def <name>(<args>) = <expr>
+```
+where `<name>` is the name of the function, `<args>` are the functions arguments, and `<expr>` evaluates the value that the function should return.
+
+_Note: Shorthand function definition can be combined with infix and pattern-matching function definition._
+
+##### Rationale
+
+Coconut's shorthand function definition is as easy to write as assignment to a lambda, but will appear named in tracebacks, as it compiles to normal Python function definition.
+
+##### Example
+
+Coconut:
+```
+def binexp(x) = 2**x
+5 |> binexp |> print
+```
+
+Python:
+```python
+def binexp(x): return 2**x
+print(binexp(5))
+```
+
+### Infix Functions
+
+Coconut allows for infix function calling, where a function is surrounded by backticks and then can have arguments placed in front of or behind it. Backtick calling has a precedence in-between chaining and piping.
+
+Coconut also supports infix function definition to make definining functions that are intended for infix usage simpler. The syntax for infix function definition is
+```python
+def <arg> `<name>` <arg>:
+    <body>
+```
+where `<name>` is the name of the function, the `<arg>`s are the function arguments, and `<body>` is the body of the function.
+
+_Note: Infix function definition can be combined with shorthand and pattern-matching function definition._
+
+##### Rationale
+
+A common idiom in functional programming is to write functions that are intended to behave somewhat like operators, and to call and define them by placing them between their arguments. Coconut's infix syntax makes this possible.
+
+##### Example
+
+Coconut:
+```python
+def a `mod` b = a % b
+(x `mod` 2) `print`
+```
+
+Python:
+```python
+def mod(a, b): return a % b
+print(mod(x, 2))
+```
+
+### Pattern-Matching Functions
+
+Coconut supports pattern-matching / destructuring assignment syntax inside of function definition. The syntax for pattern-matching function definition is
+```
+[match] def <name>(<match>, <match>, ...):
+    <body>
+```
+where `<name>` is the name of the function, `<body>` is the body of the function, and `<pattern>` is defined by Coconut's [`match` statement](#match). The `match` keyword at the beginning is optional, but is sometimes necessary to disambiguate pattern-matching function definition from normal function definition, which will always take precedence. Coconut's pattern-matching function definition is equivalent to a [destructuring assignment](#destructuring-assignment) that looks like:
+```
+def <name>(*args):
+    match [<match>, <match>, ...] = args
+    <body>
+```
+If pattern-matching function definition fails, it will raise a `MatchError` object just like destructuring assignment.
+
+_Note: Pattern-matching function definition can be combined with shorthand and infix function definition._
+
+##### Example
+
+Coconut:
+```python
+def last_two(_ + [a, b]):
+    return a, b
+def xydict_to_xytuple({"x":x is int, "y":y is int}):
+    return x, y
+
+range(5) |> last_two |> print
+{"x":1, "y":2} |> xydict_to_xytuple |> print
+```
+
+Python:
+
+_Can't be done without a long series of checks at the top of the function. See the compiled code for the Python syntax._
+
+## Statements
 
 ### Destructuring Assignment
 
@@ -300,122 +963,7 @@ Python:
 
 _Can't be done without a long series of checks in place of the destructuring assignment statement. See the compiled code for the Python syntax._
 
-### Pattern-Matching Function Definition
-
-Coconut supports pattern-matching / destructuring assignment syntax inside of function definition. The syntax for pattern-matching function definition is
-```
-[match] def <name>(<match>, <match>, ...):
-    <body>
-```
-where `<name>` is the name of the function, `<body>` is the body of the function, and `<pattern>` is defined by Coconut's [`match` statement](#match). The `match` keyword at the beginning is optional, but is sometimes necessary to disambiguate pattern-matching function definition from normal function definition, which will always take precedence. Coconut's pattern-matching function definition is equivalent to a destructuring assignment statement that looks like:
-```
-def <name>(*args):
-    match [<match>, <match>, ...] = args
-    <body>
-```
-If pattern-matching function definition fails, it will raise a `MatchError` object just like destructuring assignment.
-
-##### Example
-
-Coconut:
-```python
-def last_two(_ + [a, b]):
-    return a, b
-```
-
-Python:
-
-_Can't be done without a long series of checks at the top of the function. See the compiled code for the Python syntax._
-
-### Implicit Partial Application
-
-Coconut supports a number of different syntactical aliases for common partial application use cases. These are:
-```
-.name       =>      operator.attrgetter("name")
-obj.        =>      functools.partial(getattr, obj)
-func$       =>      functools.partial(functools.partial, func)
-series[]    =>      functools.partial(operator.__getitem__, series)
-series$[]   =>      <lambda> # the equivalent of series[] for iterators
-```
-
-##### Example
-
-Coconut:
-```python
-1 |> "123"[]
-mod$ <| 5 <| 3
-```
-
-Python:
-```python
-"123"[1]
-mod(5, 3)
-```
-
-### Enhanced Set Literals
-
-In addition to Python's normal set literals using curly braces, Coconut supports a special `s` (for `set`) or `f` (for `frozenset`) in front of a Python-like set literal to ensure it is a set literal of the specified type even when it otherwise would not be, such as when it is empty, or if a `frozenset` is desired.
-
-#### Example
-
-Coconut:
-```python
-empty_frozen_set = f{}
-```
-
-Python:
-```python
-empty_frozen_set = frozenset()
-```
-
-### Enhanced Imaginary Literals
-
-In addition to Python's `<num>j` or `<num>J` notation for imaginary literals, Coconut also supports `<num>i` or `<num>I`.
-
-##### Python Docs
-
-Imaginary literals are described by the following lexical definitions:
-```
-imagnumber ::=  (floatnumber | intpart) ("j" | "J" | "i" | "I")
-```
-An imaginary literal yields a complex number with a real part of 0.0. Complex numbers are represented as a pair of floating point numbers and have the same restrictions on their range. To create a complex number with a nonzero real part, add a floating point number to it, e.g., `(3+4i)`. Some examples of imaginary literals:
-```
-3.14i   10.i    10i     .001i   1e100i  3.14e-10i
-```
-
-##### Example
-
-Coconut:
-```
-3 + 4i |> abs
-```
-
-Python:
-```
-abs(3 + 4j)
-```
-
-### Non-Decimal Integers
-
-In addition to Python's normal binary, octal, and hexadecimal integer syntax, Coconut also supports its own universal non-decimal integer syntax `<base>"_"<number>`.
-
-##### Python Docs
-
-A base-n literal consists of the digits 0 to n-1, with `a` to `z` (or `A` to `Z`) having values 10 to 35. The default base is 10. The allowed values are 0 and 2-36. Base 0 means to interpret exactly as a code literal, so that the actual base is 2, 8, 10, or 16, and so that `010`, `0_010`, and `8_010` are 8, while `10`, `0_10`, and `10_010` are 10.
-
-##### Example
-
-Coconut:
-```python
-12_10A == 154
-```
-
-Python:
-```python
-int("10A", 12) == 154
-```
-
-### Enhanced Decorators
+### Decorators
 
 Unlike Python, which only supports a single variable or function call in a decorator, Coconut supports any expression.
 
@@ -436,7 +984,7 @@ def func(x):
     return x**2
 ```
 
-### Enhanced `else` Statements
+### `else` Statements
 
 Coconut supports the compound statements `try`, `if`, and `match` on the end of an `else` statement like any simple statement would be. This is most useful for mixing `match` and `if` statements together, but also allows for compound `try` statements.
 
@@ -467,7 +1015,7 @@ else:
         handle_2()
 ```
 
-### Enhanced `except` Statements
+### `except` Statements
 
 Python 3 requires that if multiple exceptions are to be caught, they must be placed inside of parentheses, so as to disallow Python 2's use of a comma instead of `as`. Coconut allows commas in except statements to translate to catching multiple exceptions without the need for parentheses.
 
@@ -489,7 +1037,7 @@ except (SyntaxError, ValueError) as err:
     handle(err)
 ```
 
-### Enhanced Variable Lists
+### Variable Lists
 
 Coconut allows for the more elegant parenthetical continuation instead of the less elegant backslash continuation in `import`, `del`, `global`, and `nonlocal` statements.
 
@@ -505,34 +1053,6 @@ Python:
 ```python
 global really_long_global_variable_name_the_first_one, \
         really_long_global_variable_name_the_second_one
-```
-
-### Unicode Alternatives
-
-Coconut supports unicode alternatives to many different symbols. The full list of symbols is as follows:
-```
-→ (\u2192)                  => "->"
-↦ (\u21a6)                  => "|>"
-*↦ (*\u21a6)                => "|*>"
-↤ (\u21a4)                  => "<|"
-↤* (\u21a4*)                => "<*|"
-⋅ (\u22c5)                  => "*"
-↑ (\u2191)                  => "**"
-÷ (\xf7)                    => "/"
-÷/ (\xf7/)                  => "//"
-− (\u2212)                  => "-" (only subtraction)
-⁻ (\u207b)                  => "-" (only negation)
-¬ (\xac)                    => "~"
-≠ (\u2260) or ¬= (\xac=)    => "!="
-≤ (\u2264)                  => "<="
-≥ (\u2265)                  => ">="
-∧ (\u2227) or ∩ (\u2229)    => "&"
-∨ (\u2228) or ∪ (\u222a)    => "|"
-⊻ (\u22bb) or ⊕ (\u2295)    => "^"
-« (\xab)                    => "<<"
-» (\xbb)                    => ">>"
-… (\u2026)                  => "..."
-× (\xd7)                    => "@" (only matrix multiplication)
 ```
 
 ### Code Passthrough
@@ -553,144 +1073,7 @@ cdef f(x):
     return g(x)
 ```
 
-## III. Operators
-
-### Compose
-
-Coconut uses the `..` operator for function composition. It has a precedence in-between subscription and exponentiation. The in-place operator is `..=`.
-
-##### Example
-
-Coconut:
-```python
-fog = f..g
-```
-
-Python:
-```python
-fog = lambda *args, **kwargs: f(g(*args, **kwargs))
-```
-
-### Pipeline
-
-Coconut uses the FSharp-style pipe operators for pipeline-style function application. All the operators have a precedence in-between backtick calls and comparisons and are left-associative. All operators also support in-place versions. The different operators are:
-```
-(|>)    => pipe forward
-(|*>)   => multiple-argument pipe forward
-(<|)    => pipe backward
-(<*|)   => multiple-argument pipe backward
-```
-
-##### Example
-
-Coconut:
-```python
-ans = 5 |> f |*> g
-```
-
-Python:
-```python
-ans = g(*f(5))
-```
-
-### Chain
-
-Coconut uses the FSharp-style concatenation operator `::` for iterator chaining. Coconut's iterator chaining is done lazily, in that the arguments are not evaluated until they are needed. It has a precedence in-between bitwise or and backtick calls. The in-place operator is `::=`.
-
-##### Python Docs
-
-Make an iterator that returns elements from the first iterable until it is exhausted, then proceeds to the next iterable, until all of the iterables are exhausted. Used for treating consecutive sequences as a single sequence. Chained inputs are evaluated lazily. Roughly equivalent to:
-```python
-def chain(*iterables):
-    # chain('ABC', 'DEF') --> A B C D E F
-    for it in iterables:
-        for element in it:
-            yield element
-```
-
-##### Example
-
-Coconut:
-```python
-combined = range(0, 5) :: range(10, 15)
-```
-
-Python:
-```python
-import itertools
-combined = itertools.chain(range(0, 5), range(10, 15))
-```
-
-### Partial Application
-
-Coconut uses a `$` sign right after a function before a function call to perform partial application. It has the same precedence as subscription.
-
-##### Python Docs
-
-Return a new `partial` object which when called will behave like _func_ called with the positional arguments _args_ and keyword arguments _keywords_. If more arguments are supplied to the call, they are appended to _args_. If additional keyword arguments are supplied, they extend and override _keywords_. Roughly equivalent to:
-```python
-def partial(func, *args, **keywords):
-    def newfunc(*fargs, **fkeywords):
-        newkeywords = keywords.copy()
-        newkeywords.update(fkeywords)
-        return func(*(args + fargs), **newkeywords)
-    newfunc.func = func
-    newfunc.args = args
-    newfunc.keywords = keywords
-    return newfunc
-```
-The `partial` object is used for partial function application which “freezes” some portion of a function’s arguments and/or keywords resulting in a new object with a simplified signature.
-
-##### Example
-
-Coconut:
-```python
-pow2 = pow$(2)
-```
-
-Python:
-```python
-import functools
-pow2 = functools.partial(pow, 2)
-```
-
-### Iterator Slice
-
-Coconut uses a `$` sign right after an iterator before a slice to perform iterator slicing. It works just like sequence slicing, with the exception that negative indices are not allowed and no guarantee is made that the original iterator be preserved (to preserve the original iterator, use Coconut's [`tee` function](#tee)). For dynamically determining the slice parameters, iterator slicing supports slicing with a `slice` object in the same way as can be done with normal slicing. It has the same precedence as subscription.
-
-##### Python Docs
-
-Make an iterator that returns selected elements from the _iterable_. If _start_ is non-zero, then elements from the _iterable_ are skipped until _start_ is reached. Afterward, elements are returned consecutively unless _step_ is set higher than one which results in items being skipped. If _stop_ is `None`, then iteration continues until the iterator is exhausted, if at all; otherwise, it stops at the specified position. Unlike regular slicing, iterator slicing does not support negative values for _start_, _stop_, or _step_. Can be used to extract related fields from data where the internal structure has been flattened (for example, a multi-line report may list a name field on every third line). Equivalent to:
-```python
-def islice(iterable, *args):
-    # islice('ABCDEFG', 2) --> A B
-    # islice('ABCDEFG', 2, 4) --> C D
-    # islice('ABCDEFG', 2, None) --> C D E F G
-    # islice('ABCDEFG', 0, None, 2) --> A C E G
-    s = slice(*args)
-    it = iter(range(s.start or 0, s.stop or sys.maxsize, s.step or 1))
-    nexti = next(it)
-    for i, element in enumerate(iterable):
-        if i == nexti:
-            yield element
-            nexti = next(it)
-```
-If _start_ is `None`, then iteration starts at zero. If _step_ is `None`, then the step defaults to one.
-
-##### Example
-
-Coconut:
-```python
-selection = map(f, iteritem)$[5:10]
-```
-
-Python:
-```python
-import itertools
-selection = itertools.islice(map(f, iteritem), 5, 10)
-```
-
-## IV. Built-Ins
+## Built-Ins
 
 ### `reduce`
 
@@ -706,13 +1089,16 @@ Apply _function_ of two arguments cumulatively to the items of _sequence_, from 
 
 Coconut:
 ```python
-prod = reduce((*), items)
+prod = reduce$((*))
+range(10) |> prod |> list |> print
 ```
 
 Python:
 ```python
+import operator
 import functools
-prod = functools.reduce(operator.__mul__, items)
+prod = functools.partial(functools.reduce, operator.__mul__)
+print(list(prod(range(10))))
 ```
 
 ### `takewhile`
@@ -831,6 +1217,10 @@ def consume(iterable, keep_last=0):
     return collections.deque(iterable, maxlen=keep_last)
 ```
 
+##### Rationale
+
+In the process of lazily applying operations to iterators, eventually a point is reached where evaluation of the iterator is necessary. To do this efficiently, Coconut provides the `consume` function, which will fully exhaust the iterator given to it.
+
 ##### Example
 
 Coconut:
@@ -896,193 +1286,7 @@ _Can't be done without a long decorator definition. The full definition of the d
 
 Coconut provides the built-in double-underscore constant variable `__coconut_version__` to allow direct access to the version of Coconut that the code was compiled in.
 
-## V. Keywords
-
-### `data`
-
-Coconut provides `data` blocks for the creation of immutable classes derived from `collections.namedtuple` and made immutable with `__slots__`. Coconut data statement syntax looks like:
-```python
-data <name>(<args>):
-    <body>
-```
-`<name>` is the name of the new data type, `<args>` are the arguments to its constructor as well as the names of its attributes, and `<body>` contains the data type's methods.
-
-##### Python Docs
-
-Returns a new tuple subclass. The new subclass is used to create tuple-like objects that have fields accessible by attribute lookup as well as being indexable and iterable. Instances of the subclass also have a helpful docstring (with type names and field names) and a helpful `__repr__()` method which lists the tuple contents in a `name=value` format.
-
-Any valid Python identifier may be used for a field name except for names starting with an underscore. Valid identifiers consist of letters, digits, and underscores but do not start with a digit or underscore and cannot be a keyword such as _class, for, return, global, pass, or raise_.
-
-Named tuple instances do not have per-instance dictionaries, so they are lightweight and require no more memory than regular tuples.
-
-##### Example
-
-Coconut:
-```python
-data triangle(a, b, c):
-    def is_right(self):
-        return self.a**2 + self.b**2 == self.c**2
-```
-
-Python:
-```python
-import collections
-class triangle(collections.namedtuple("triangle", "a, b, c")):
-    __slots__ = ()
-    def is_right(self):
-        return self.a**2 + self.b**2 == self.c**2
-```
-
-### `match`
-
-Coconut provides `match` statements to allow for Haskell-style pattern-matching. Coconut match statement syntax is
-```python
-match <pattern> in <value> [if <cond>]:
-    <body>
-[else:
-    <body>]
-```
-where `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds. `<pattern>` follows its own, special syntax, defined roughly like so:
-```
-pattern := (
-    "(" pattern ")"                 # parentheses
-    | "None" | "True" | "False"     # constants
-    | "=" NAME                      # check
-    | NUMBER                        # numbers
-    | STRING                        # strings
-    | NAME ["=" pattern]            # capture
-    | NAME "(" patterns ")"         # data types
-    | "(" patterns ")"              # tuples
-    | "[" patterns "]"              # lists
-    | "(|" patterns "|)"            # lazy lists
-    | "{" pattern_pairs "}"         # dictionaries
-    | ["s"] "{" pattern_consts "}"  # sets
-    | (                             # head-tail splits
-        "(" patterns ")"                # tuples
-        | "[" patterns "]"              # lists
-      ) "+" pattern
-    | pattern "+" (                 # init-last splits
-        "(" patterns ")"                # tuples
-        | "[" patterns "]"              # lists
-      )
-    | (                             # head-last splits
-        "(" patterns ")"                # tuples
-        | "[" patterns "]"              # lists
-      ) "+" pattern "+" (
-        "(" patterns ")"                # this match must be the same
-        | "[" patterns "]"              #  construct as the first match
-      )
-    | (                             # iterator splits
-        "(" patterns ")"                # tuples
-        | "[" patterns "]"              # lists
-        | "(|" patterns "|)"            # lazy lists
-      ) "::" pattern
-    | pattern "is" names            # type-checking
-    | pattern "and" pattern         # match all
-    | pattern "or" pattern          # match any
-    )
-```
-
-`match` statements will take this pattern and attempt to "match" against it, performing the checks and deconstructions on the arguments as specified by the pattern. The different constructs that can be specified in a pattern, and their function, are:
-- Constants, Numbers, and Strings: will only match to the same constant, number, or string in the same position in the arguments.
-- Variables: will match to anything, and will be bound to whatever they match to, with some exceptions:
- * If the same variable is used multiple times, a check will be performed that each use match to the same value.
- * If the variable name `_` is used, nothing will be bound and everything will always match to it.
-- Explicit Bindings (`<var>=<pattern>`): will bind `<var>` to `<pattern>`.
-- Checks (`=<var>`): will check that whatever is in that position is equal to the previously defined variable `<var>`.
-- Type Checks (`<var> is <types>`): will check that whatever is in that position is of type(s) `<types>` before binding the `<var>`.
-- Data Types (`<name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`.
-- Lists (`[<patterns>]`), Tuples (`(<patterns>)`), or Lazy lists (`(|<patterns>|)`): will only match a sequence (`collections.abc.Sequence`) of the same length, and will check the contents against `<patterns>`.
-- Dicts (`{<pairs>}`): will only match a mapping (`collections.abc.Mapping`) of the same length, and will check the contents against `<pairs>`.
-- Sets (`{<constants>}`): will only match a set (`collections.abc.Set`) of the same length and contents.
-- Head-Tail Splits (`<list/tuple> + <var>`): will match the beginning of the sequence against the `<list/tuple>`, then bind the rest to `<var>`, and make it the type of the construct used.
-- Init-Last Splits (`<var> + <list/tuple>`): exactly the same as head-tail splits, but on the end instead of the beginning of the sequence.
-- Head-Last Splits (`<list/tuple> + <var> + <list/tuple>`): the combination of a head-tail and an init-last split.
-- Iterator Splits (`<list/tuple/lazy list> :: <var>`, or `<lazy list>`): will match the beginning of an iterable (`collections.abc.Iterable`) against the `<list/tuple/lazy list>`, then bind the rest to `<var>` or check that the iterable is done.
-
-##### Example
-
-Coconut:
-```python
-def factorial(value):
-    match 0 in value:
-        return 1
-    match n is int in value if n > 0:
-        return n * factorial3(n-1)
-    match [] in value:
-        return []
-    match [head] + tail in value:
-        return [factorial(head)] + factorial(tail)
-```
-
-Python:
-
-_Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._
-
-### `case`
-
-Coconut's `case` statements are an extension of Coconut's `match` statements for use when many matches are to be attempted against one object, and only one should succeed. Each pattern in a case block is checked until a match is found, and then the corresponding body is executed, and the case block terminated. The syntax for case blocks is
-```python
-case <value>:
-    match <pattern> [if <cond>]:
-        <body>
-    match <pattern> [if <cond>]:
-        <body>
-    ...
-[else:
-    <body>]
-```
-where `<pattern>` is any `match` pattern, `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds.
-
-##### Example
-
-Coconut:
-```python
-def classify_sequence(value):
-    out = ""        # unlike with normal matches, only one of the patterns
-    case value:     #  will match, and out will only get appended to once
-        match ():
-            out += "empty"
-        match (_,):
-            out += "singleton"
-        match (x,x):
-            out += "duplicate pair of "+str(x)
-        match (_,_):
-            out += "pair"
-    else:
-        raise TypeError()
-    return out
-```
-
-Python:
-
-_Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._
-
-### Backslash Escaping
-
-To allow access to the valid Python variable names `data`, `match`, and `case` in Coconut, those keywords may be backslash-escaped to turn them into the variables instead. Additionally, to provide more seamless integration with Python 3.5, the variable names `async` and `await` must be backslash-escaped, and to provide backwards compatibility with Python 2, the variable name `nonlocal` must be backslash-escaped.
-
-##### Example
-
-Coconut:
-```
-\data = 5
-print(\data)
-```
-
-Python:
-```python
-data = 5
-print(data)
-```
-
-### Reserved Variables
-
-The Coconut compiler will modify and reference certain variables with the assumption that the code being compiled does not modify them in any way. If your code does modify any of these variables, your code is unlikely to work properly. These reserved variables are:
-- the single variable name `__coconut__`
-- all variable names of the form `_coconut_name`
-
-## VI. Coconut Module
+## Coconut Module
 
 ### `coconut.convenience`
 
