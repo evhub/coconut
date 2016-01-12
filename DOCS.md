@@ -4,7 +4,8 @@ This documentation will cover all the technical details of the [Coconut Programm
 
 <!-- MarkdownTOC -->
 
-1. [Compilation](#compilation)
+1. [Overview](#overview)
+2. [Compilation](#compilation)
     1. [Installation](#installation)
     2. [Usage](#usage)
         1. [Positional Arguments](#positional-arguments)
@@ -14,7 +15,7 @@ This documentation will cover all the technical details of the [Coconut Programm
     5. [Compatible Python Versions](#compatible-python-versions)
     6. [`--strict` Mode](#--strict-mode)
     7. [IPython](#ipython)
-2. [Operators](#operators)
+3. [Operators](#operators)
     1. [Lambdas](#lambdas)
     2. [Partial Application](#partial-application)
     3. [Pipeline](#pipeline)
@@ -22,31 +23,31 @@ This documentation will cover all the technical details of the [Coconut Programm
     5. [Chain](#chain)
     6. [Iterator Slice](#iterator-slice)
     7. [Unicode Alternatives](#unicode-alternatives)
-3. [Keywords](#keywords)
+4. [Keywords](#keywords)
     1. [`data`](#data)
     2. [`match`](#match)
     3. [`case`](#case)
     4. [Backslash-Escaping](#backslash-escaping)
     5. [Reserved Variables](#reserved-variables)
-4. [Expressions](#expressions)
+5. [Expressions](#expressions)
     1. [Lazy Lists](#lazy-lists)
     2. [Implicit Partial Application](#implicit-partial-application)
     3. [Set Literals](#set-literals)
     4. [Imaginary Literals](#imaginary-literals)
     5. [Non-Decimal Integers](#non-decimal-integers)
-5. [Function Creation](#function-creation)
+6. [Function Creation](#function-creation)
     1. [Operator Functions](#operator-functions)
     2. [Shorthand Functions](#shorthand-functions)
     3. [Infix Functions](#infix-functions)
     4. [Pattern-Matching Functions](#pattern-matching-functions)
-6. [Statements](#statements)
+7. [Statements](#statements)
     1. [Destructuring Assignment](#destructuring-assignment)
     2. [Decorators](#decorators)
     3. [`else` Statements](#else-statements)
     4. [`except` Statements](#except-statements)
     5. [Variable Lists](#variable-lists)
     6. [Code Passthrough](#code-passthrough)
-7. [Built-Ins](#built-ins)
+8. [Built-Ins](#built-ins)
     1. [`reduce`](#reduce)
     2. [`takewhile`](#takewhile)
     3. [`dropwhile`](#dropwhile)
@@ -55,7 +56,7 @@ This documentation will cover all the technical details of the [Coconut Programm
     6. [`datamaker`](#datamaker)
     7. [`recursive`](#recursive)
     8. [`__coconut_version__`](#__coconut_version__)
-8. [Coconut Module](#coconut-module)
+9. [Coconut Module](#coconut-module)
     1. [`coconut.convenience`](#coconutconvenience)
         1. [`coconut.convenience.parse`](#coconutconvenienceparse)
         2. [`coconut.convenience.setup`](#coconutconveniencesetup)
@@ -65,19 +66,19 @@ This documentation will cover all the technical details of the [Coconut Programm
 
 <!-- /MarkdownTOC -->
 
-##### Overview
+## Overview
 
-Coconut is a variant of Python built for simple, elegant, Pythonic functional programming. With only [one exception](#backslash-escaping), Coconut syntax is a strict superset of Python 3 syntax. That means if you're familiar with Python, you're already familiar with most of Coconut!
+Coconut is a variant of [Python](https://www.python.org/) built for simple, elegant, Pythonic functional programming. With only [one exception](#backslash-escaping), Coconut syntax is a strict superset of Python 3 syntax. That means if you're familiar with Python, you're already familiar with most of Coconut!
 
 The Coconut compiler turns Coconut code into Python code. The primary method of accessing the Coconut compiler is through the Coconut command-line utility, which also features an interpreter for real-time compilation.
 
-While most of Coconut was thought up simply by trying to make functional programming work in Python, additional inspiration came from [Haskell](https://www.haskell.org/), [CoffeeScript](http://coffeescript.org/), [F#](http://fsharp.org/), and [patterns.py](https://github.com/Suor/patterns).
+While most of Coconut gets its inspiration simply from trying to make functional programming work in Python, additional inspiration came from [Haskell](https://www.haskell.org/), [CoffeeScript](http://coffeescript.org/), [F#](http://fsharp.org/), and [patterns.py](https://github.com/Suor/patterns).
 
 ## Compilation
 
 ### Installation
 
-Since Coconut is hosted on the [Python Package Index](https://pypi.python.org/pypi/coconut), it can be installed easily using `pip`. Simply install [Python](https://www.python.org/downloads/), open up a command line prompt, and enter:
+Since Coconut is hosted on the [Python Package Index](https://pypi.python.org/pypi/coconut), it can be installed easily using `pip`. Simply install [Python](https://www.python.org/downloads/), open up a command-line prompt, and enter:
 ```
 python -m pip install coconut
 ```
@@ -185,14 +186,14 @@ Note that functions created with lambda forms cannot contain statements or annot
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```python
 pairs = zip(range(0, 10), range(10, 20))
 dubsums = map((x, y) -> 2*(x+y), pairs)
 dubsums |> list |> print
 ```
 
-Python:
+**Python:**
 ```python
 pairs = zip(range(0, 10), range(10, 20))
 dubsums = map(lambda x, y: 2*(x+y), pairs)
@@ -225,13 +226,13 @@ The `partial` object is used for partial function application which â€œfreezesâ€
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```python
 expnums = map(pow$(2), range(5))
 expnums |> list |> print
 ```
 
-Python:
+**Python:**
 ```python
 import functools
 expnums = map(functools.partial(pow, 2), range(5))
@@ -250,13 +251,13 @@ Coconut uses pipe operators for pipeline-style function application. All the ope
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```
 def sq(x) = x**2
 (1, 2) |*> (+) |> sq |> print
 ```
 
-Python:
+**Python:**
 ```python
 import operator
 def sq(x): return x**2
@@ -269,12 +270,12 @@ Coconut uses the `..` operator for function composition. It has a precedence in-
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```python
 fog = f..g
 ```
 
-Python:
+**Python:**
 ```python
 fog = lambda *args, **kwargs: f(g(*args, **kwargs))
 ```
@@ -300,7 +301,7 @@ def chain(*iterables):
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```python
 def N(n=0):
     return (0,) :: N(n+1) # no infinite loop because :: is lazy
@@ -308,7 +309,7 @@ def N(n=0):
 (range(-10, 0) :: N())$[5:15] |> list |> print
 ```
 
-Python:
+**Python:**
 
 _Can't be done without a complicated iterator comprehension in place of the lazy chaining. See the compiled code for the Python syntax._
 
@@ -341,7 +342,7 @@ If _start_ is `None`, then iteration starts at zero. If _step_ is `None`, then t
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```python
 def N():
     x = 0
@@ -352,7 +353,7 @@ def N():
 N()$[10:15] |> list |> print
 ```
 
-Python:
+**Python:**
 ```python
 import itertools
 
@@ -423,7 +424,7 @@ Named tuple instances do not have per-instance dictionaries, so they are lightwe
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```python
 data vector(x, y):
     def __abs__(self):
@@ -435,7 +436,7 @@ v |> abs |> print
 v.x = 2 # this will fail because data objects are immutable
 ```
 
-Python:
+**Python:**
 ```python
 import collections
 class vector(collections.namedtuple("vector", "x, y")):
@@ -528,8 +529,7 @@ pattern := (
 
 ##### Examples
 
-Coconut:
-1.
+**Coconut:**
 ```python
 def factorial(value):
     match 0 in value:
@@ -542,7 +542,6 @@ def factorial(value):
 3 |> factorial |> print
 ```
 _Showcases `else` statements, which work much like `else` statements in Python: the code under an `else` statement is only executed if the corresponding match fails._
-2.
 ```python
 data point(x, y):
     def transform(self, other):
@@ -560,7 +559,6 @@ point(1,2) |> point(3,4).transform |> print
 point(1,2) |> point(1,2).__eq__ |> print
 ```
 _Showcases matching to data types. Values defined by the user with the `data` statement can be matched against and their contents accessed by specifically referencing arguments to the data type's constructor._
-3.
 ```python
 data empty(): pass
 data leaf(n): pass
@@ -580,7 +578,6 @@ leaf(5) |> depth |> print
 node(leaf(2), node(empty(), leaf(3))) |> depth |> print
 ```
 _Showcases how the combination of data types and match statements can be used to powerful effect to replicate the usage of algebraic data types in other functional programming languages._
-4.
 ```python
 def duplicate_first(value):
     match l=([x] + xs) in value:
@@ -592,7 +589,7 @@ def duplicate_first(value):
 ```
 _Showcases head-tail splitting, one of the most common uses of pattern-matching, where a `+ <var>` (or `:: <var>` for any iterable) at the end of a list or tuple literal can be used to match the rest of the sequence._
 
-Python:
+**Python:**
 
 _Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._
 
@@ -615,7 +612,7 @@ where `<pattern>` is any `match` pattern, `<value>` is the item to match against
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```python
 def classify_sequence(value):
     out = ""        # unlike with normal matches, only one of the patterns
@@ -642,7 +639,7 @@ def classify_sequence(value):
 (1,1,1) |> classify_sequence |> print
 ```
 
-Python:
+**Python:**
 
 _Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._
 
@@ -652,13 +649,13 @@ The requirement that Coconut keywords be backslash-escaped to make them variable
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```
 \data = 5
 print(\data)
 ```
 
-Python:
+**Python:**
 ```python
 data = 5
 print(data)
@@ -682,12 +679,12 @@ Lazy lists, where sequences are only evaluated when their contents are requested
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```python
 (| print("hello,"), print("world!") |) |> print
 ```
 
-Python:
+**Python:**
 _Can't be done without a complicated iterator comprehension in place of the lazy list. See the compiled code for the Python syntax._
 
 ### Implicit Partial Application
@@ -703,13 +700,13 @@ series$[]   =>      <lambda> # the equivalent of series[] for iterators
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```python
 1 |> "123"[]
 mod$ <| 5 <| 3
 ```
 
-Python:
+**Python:**
 ```python
 "123"[1]
 mod(5, 3)
@@ -721,12 +718,12 @@ Coconut allows an optional `s` to be prepended in front of Python set literals. 
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```python
 empty_frozen_set = f{}
 ```
 
-Python:
+**Python:**
 ```python
 empty_frozen_set = frozenset()
 ```
@@ -748,12 +745,12 @@ An imaginary literal yields a complex number with a real part of 0.0. Complex nu
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```
 3 + 4i |> abs
 ```
 
-Python:
+**Python:**
 ```
 abs(3 + 4j)
 ```
@@ -768,12 +765,12 @@ A base-n literal consists of the digits 0 to n-1, with `a` to `z` (or `A` to `Z`
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```python
 12_10A == 154
 ```
 
-Python:
+**Python:**
 ```python
 int("10A", 12) == 154
 ```
@@ -828,13 +825,13 @@ A very common thing to do in functional programming is to make use of function v
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```python
 pairs = zip(range(0, 10), range(10, 20))
 map((+), pairs) |> print
 ```
 
-Python:
+**Python:**
 ```python
 import operator
 pairs = zip(range(0, 10), range(10, 20))
@@ -857,13 +854,13 @@ Coconut's shorthand function definition is as easy to write as assignment to a l
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```
 def binexp(x) = 2**x
 5 |> binexp |> print
 ```
 
-Python:
+**Python:**
 ```python
 def binexp(x): return 2**x
 print(binexp(5))
@@ -888,13 +885,13 @@ A common idiom in functional programming is to write functions that are intended
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```python
 def a `mod` b = a % b
 (x `mod` 2) `print`
 ```
 
-Python:
+**Python:**
 ```python
 def mod(a, b): return a % b
 print(mod(x, 2))
@@ -919,7 +916,7 @@ _Note: Pattern-matching function definition can be combined with shorthand and i
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```python
 def last_two(_ + [a, b]):
     return a, b
@@ -930,7 +927,7 @@ range(5) |> last_two |> print
 {"x":1, "y":2} |> xydict_to_xytuple |> print
 ```
 
-Python:
+**Python:**
 
 _Can't be done without a long series of checks at the top of the function. See the compiled code for the Python syntax._
 
@@ -956,14 +953,14 @@ If a destructuring assignment statement fails, then instead of continuing on as 
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```python
 def last_two(l):
     _ + [a, b] = l
     return a, b
 ```
 
-Python:
+**Python:**
 
 _Can't be done without a long series of checks in place of the destructuring assignment statement. See the compiled code for the Python syntax._
 
@@ -973,13 +970,13 @@ Unlike Python, which only supports a single variable or function call in a decor
 
 ##### Example
 
-Coconut:
-```python
+**Coconut:**
+```
 @ wrapper1 .. wrapper2 $(arg)
 def func(x) = x**2
 ```
 
-Python:
+**Python:**
 ```python
 def wrapper(func):
     return wrapper1(wrapper2(arg, func))
@@ -994,7 +991,7 @@ Coconut supports the compound statements `try`, `if`, and `match` on the end of 
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```python
 try:
     unsafe_1()
@@ -1006,7 +1003,7 @@ except MyError:
     handle_2()
 ```
 
-Python:
+**Python:**
 ```python
 try:
     unsafe_1()
@@ -1025,7 +1022,7 @@ Python 3 requires that if multiple exceptions are to be caught, they must be pla
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```python
 try:
     unsafe_func(arg)
@@ -1033,7 +1030,7 @@ except SyntaxError, ValueError as err:
     handle(err)
 ```
 
-Python:
+**Python:**
 ```python
 try:
     unsafe_func(arg)
@@ -1047,13 +1044,13 @@ Coconut allows for the more elegant parenthetical continuation instead of the le
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```python
 global (really_long_global_variable_name_the_first_one,
         really_long_global_variable_name_the_second_one)
 ```
 
-Python:
+**Python:**
 ```python
 global really_long_global_variable_name_the_first_one, \
         really_long_global_variable_name_the_second_one
@@ -1065,13 +1062,13 @@ Coconut supports the ability to pass arbitrary code through the compiler without
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```
 \\cdef f(x):
     return x |> g
 ```
 
-Python:
+**Python:**
 ```python
 cdef f(x):
     return g(x)
@@ -1091,13 +1088,13 @@ Apply _function_ of two arguments cumulatively to the items of _sequence_, from 
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```python
 prod = reduce$((*))
 range(10) |> prod |> list |> print
 ```
 
-Python:
+**Python:**
 ```python
 import operator
 import functools
@@ -1126,12 +1123,12 @@ def takewhile(predicate, iterable):
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```python
 negatives = takewhile(numiter, (x) -> x<0)
 ```
 
-Python:
+**Python:**
 ```python
 import functools
 negatives = functools.takewhile(numiter, lambda x: x<0)
@@ -1160,12 +1157,12 @@ def dropwhile(predicate, iterable):
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```python
 positives = dropwhile(numiter, (x) -> x<0)
 ```
 
-Python:
+**Python:**
 ```python
 import functools
 positives = functools.dropwhile(numiter, lambda x: x<0)
@@ -1199,13 +1196,13 @@ This itertool may require significant auxiliary storage (depending on how much t
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```python
 original, temp = tee(original)
 sliced = temp$[5:]
 ```
 
-Python:
+**Python:**
 ```python
 import itertools
 original, temp = itertools.tee(original)
@@ -1227,12 +1224,12 @@ In the process of lazily applying operations to iterators, eventually a point is
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```python
 range(10) |> map$((x) -> x**2) |> map$(print) |> consume
 ```
 
-Python:
+**Python:**
 ```python
 collections.deque(map(print, map(lambda x: x**2, range(10))), maxlen=0)
 ```
@@ -1248,14 +1245,14 @@ def datamaker(data_type):
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```python
 data trilen(h):
     def __new__(cls, a, b):
         return (a**2 + b**2)**0.5 |> datamaker(cls)
 ```
 
-Python:
+**Python:**
 ```python
 import collections
 class trilen(collections.namedtuple("trilen", "h")):
@@ -1270,7 +1267,7 @@ Coconut provides a `recursive` decorator to perform tail recursion optimization 
 
 ##### Example
 
-Coconut:
+**Coconut:**
 ```python
 @recursive
 def collatz(n):
@@ -1282,7 +1279,7 @@ def collatz(n):
         return collatz(3*n+1)
 ```
 
-Python:
+**Python:**
 
 _Can't be done without a long decorator definition. The full definition of the decorator in Python can be found in the Coconut header._
 
