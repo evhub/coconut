@@ -30,7 +30,6 @@ hash_prefix = '# __coconut_hash__ = '
 hash_sep = "\x00"
 openindent = "\u204b"
 closeindent = "\xb6"
-linebreak = "\n"
 white = " \t\f"
 downs = "([{"
 ups = ")]}"
@@ -122,12 +121,12 @@ class CoconutSyntaxError(CoconutException):
         if ln is not None:
             self.value += " (line " + str(ln) + ")"
         if point is None:
-            self.value += linebreak + "  " + clean(source)
+            self.value += "\n  " + clean(source)
         else:
             if point >= len(source):
                 point = len(source)-1
             part = clean(source.splitlines()[lineno(point, source)-1])
-            self.value += linebreak + "  " + part + linebreak + "  "
+            self.value += "\n  " + part + "\n  "
             for x in range(0, col(point, source)-1):
                 if x < len(part) and part[x] in white:
                     self.value += part[x]
@@ -196,8 +195,7 @@ def getheader(which, version=None, usehash=None):
 # -*- coding: '''+ENCODING+''' -*-
 '''
         if usehash is not None:
-            header += hash_prefix + usehash + '''
-'''
+            header += hash_prefix + usehash + "\n"
         header += '''
 # Compiled with Coconut version '''+VERSION_STR+'''
 
@@ -213,24 +211,14 @@ def getheader(which, version=None, usehash=None):
     if which != "initial":
         header += r'''# Coconut Header: --------------------------------------------------------------
 '''
-        if version == "2":
+        if version != "3":
             header += r'''
 from __future__ import print_function, absolute_import, unicode_literals, division
-'''+PY2_HEADER+r'''
 '''
-        elif version is None:
-            header += r'''
-from __future__ import print_function, absolute_import, unicode_literals, division
-import sys as _coconut_sys
-if _coconut_sys.version_info < (3,):
-'''
-            for line in PY2_HEADER.splitlines():
-                if line:
-                    header += "    " + line + '''
-'''
-                else:
-                    header += line + '''
-'''
+            if version == "2":
+                header += PY2_HEADER
+            else:
+                header += PY2_HEADER_CHECK
         if which == "package":
             header += r'''
 version = "'''+VERSION+r'''"
@@ -299,7 +287,7 @@ class MatchError(Exception):
 '''
         else:
             if which == "module":
-                if version is not None:
+                if version == "3":
                     header += r'''
 import sys as _coconut_sys'''
                 header += r'''
@@ -321,8 +309,6 @@ class __coconut__(object):
 '''
                 if version == "2":
                     header += r'''    abc = collections'''
-                elif version == "3":
-                    header += r'''    import collections.abc as abc'''
                 else:
                     header += r'''    try:
         import collections.abc as abc
@@ -629,7 +615,7 @@ def func_proc(tokens):
 def match_func_proc(tokens):
     """Processes match mathematical function definitions."""
     if len(tokens) == 2:
-        return tokens[0] + "return " + tokens[1] + linebreak + closeindent
+        return tokens[0] + "return " + tokens[1] + "\n" + closeindent
     else:
         raise CoconutException("invalid pattern-matching mathematical function definition tokens", tokens)
 
@@ -649,8 +635,8 @@ def data_proc(tokens):
         name, attrs, stmts = tokens
     else:
         raise CoconutException("invalid data tokens", tokens)
-    return ("class " + name + '(__coconut__.collections.namedtuple("' + name + '", "' + attrs + '")):'
-            + linebreak + openindent + "__slots__ = ()" + linebreak + "".join(stmts) + closeindent)
+    return ("class " + name + '(__coconut__.collections.namedtuple("' + name + '", "' + attrs + '")):\n'
+            + openindent + "__slots__ = ()\n" + "".join(stmts) + closeindent)
 
 def decorator_proc(tokens):
     """Processes decorators."""
@@ -660,12 +646,12 @@ def decorator_proc(tokens):
         varname = decorator_var + "_" + str(x)
         defs.append(varname+" = "+tokens[x])
         decorates.append("@"+varname)
-    return linebreak.join(defs + decorates) + linebreak
+    return "\n".join(defs + decorates) + "\n"
 
 def else_proc(tokens):
     """Processes compound else statements."""
     if len(tokens) == 1:
-        return linebreak + openindent + tokens[0] + closeindent
+        return "\n" + openindent + tokens[0] + closeindent
     else:
         raise CoconutException("invalid compound else statement tokens", tokens)
 
@@ -959,11 +945,11 @@ class matcher(object):
         closes = 0
         for checks, defs in self.checkdefs:
             if checks:
-                out += "if (" + ") and (".join(checks) + "):" + linebreak + openindent
+                out += "if (" + ") and (".join(checks) + "):\n" + openindent
                 closes += 1
             if defs:
-                out += linebreak.join(defs) + linebreak
-        out += match_check_var + " = True" + linebreak
+                out += "\n".join(defs) + "\n"
+        out += match_check_var + " = True\n"
         out += closeindent * closes
         for other in self.others:
             out += other.out()
@@ -983,23 +969,22 @@ def match_proc(tokens):
     if cond:
         matching.increment(True)
         matching.add_check(cond)
-    out = match_check_var + " = False" + linebreak
-    out += match_to_var + " = " + item + linebreak
+    out = match_check_var + " = False\n"
+    out += match_to_var + " = " + item + "\n"
     out += matching.out()
     if stmts is not None:
-        out += "if "+match_check_var+":" + linebreak + openindent + "".join(stmts) + closeindent
+        out += "if "+match_check_var+":" + "\n" + openindent + "".join(stmts) + closeindent
     return out
 
 def pattern_error(original, loc):
     """Constructs a pattern-matching error message."""
     match_line = ascii(clean(line(loc, original)))
-    return ("if not " + match_check_var + ":" + linebreak + openindent
+    return ("if not " + match_check_var + ":\n" + openindent
         + match_err_var + ' = __coconut__.MatchError("pattern-matching failed for " '
-        + ascii(match_line) + ' " in " + __coconut__.ascii(__coconut__.ascii(' + match_to_var + ")))"
-        + linebreak + match_err_var + ".pattern = " + match_line
-        + linebreak + match_err_var + ".value = " + match_to_var
-        + linebreak + "raise " + match_err_var
-        + linebreak + closeindent)
+        + ascii(match_line) + ' " in " + __coconut__.ascii(__coconut__.ascii(' + match_to_var + ")))\n"
+        + match_err_var + ".pattern = " + match_line + "\n"
+        + match_err_var + ".value = " + match_to_var + "\n"
+        + "raise " + match_err_var + "\n" + closeindent)
 
 def match_assign_proc(original, loc, tokens):
     """Processes match assign blocks."""
@@ -1030,7 +1015,7 @@ def case_proc(tokens):
         raise CoconutException("invalid top-level case tokens", tokens)
     out = match_proc(case_to_match(cases[0], item))
     for case in cases[1:]:
-        out += ("if not "+match_check_var+":" + linebreak + openindent
+        out += ("if not "+match_check_var+":\n" + openindent
             + match_proc(case_to_match(case, item)) + closeindent)
     if default is not None:
         out += "if not "+match_check_var+default
@@ -1041,8 +1026,8 @@ def name_match_funcdef_proc(original, loc, tokens):
     func, matches = tokens
     matching = matcher()
     matching.match_sequence(("(", matches), match_to_var)
-    out = "def " + func + " (*" + match_to_var + "):" + linebreak + openindent
-    out += match_check_var + " = False" + linebreak
+    out = "def " + func + " (*" + match_to_var + "):\n" + openindent
+    out += match_check_var + " = False\n"
     out += matching.out()
     out += pattern_error(original, loc)
     return out
@@ -1191,7 +1176,7 @@ class processor(object):
             out = "\\\\"
         out += str(len(self.refs)-1)
         if not multiline:
-            out += linebreak
+            out += "\n"
         return out
 
     def wrap_comment(self, text):
@@ -1203,7 +1188,7 @@ class processor(object):
         """Prepares a string for processing."""
         if strip:
             inputstring = inputstring.strip()
-        return linebreak.join(inputstring.splitlines())
+        return "\n".join(inputstring.splitlines())
 
     def str_proc(self, inputstring, **kwargs):
         """Processes strings."""
@@ -1220,12 +1205,12 @@ class processor(object):
         skips = self.skips.copy()
         while x <= len(inputstring):
             if x == len(inputstring):
-                c = linebreak
+                c = "\n"
             else:
                 c = inputstring[x]
             if hold is not None:
                 if len(hold) == 1: # hold == [_comment]
-                    if c == linebreak:
+                    if c == "\n":
                         out.append(self.wrap_comment(hold[_comment])+c)
                         hold = None
                     else:
@@ -1243,7 +1228,7 @@ class processor(object):
                         hold = None
                         x -= 1
                     else:
-                        if c == linebreak:
+                        if c == "\n":
                             if len(hold[_start]) == 1:
                                 raise CoconutSyntaxError("linebreak in non-multiline string", inputstring, x, self.adjust(lineno(x, inputstring)))
                             else:
@@ -1251,7 +1236,7 @@ class processor(object):
                         hold[_contents] += hold[_stop]+c
                         hold[_stop] = None
                 elif count_end(hold[_contents], "\\") % 2 == 1:
-                    if c == linebreak:
+                    if c == "\n":
                         skips = addskip(skips, self.adjust(lineno(x, inputstring)))
                     hold[_contents] += c
                 elif c == hold[_start]:
@@ -1260,7 +1245,7 @@ class processor(object):
                 elif c == hold[_start][0]:
                     hold[_stop] = c
                 else:
-                    if c == linebreak:
+                    if c == "\n":
                         if len(hold[_start]) == 1:
                             raise CoconutSyntaxError("linebreak in non-multiline string", inputstring, x, self.adjust(lineno(x, inputstring)))
                         else:
@@ -1270,7 +1255,7 @@ class processor(object):
                 if c == found[0]:
                     found += c
                 elif len(found) == 1: # found == "_"
-                    if c == linebreak:
+                    if c == "\n":
                         raise CoconutSyntaxError("linebreak in non-multiline string", inputstring, x, self.adjust(lineno(x, inputstring)))
                     else:
                         hold = [c, found, None] # [_contents, _start, _stop]
@@ -1280,7 +1265,7 @@ class processor(object):
                     found = None
                     x -= 1
                 elif len(found) == 3: # found == "___"
-                    if c == linebreak:
+                    if c == "\n":
                         skips = addskip(skips, self.adjust(lineno(x, inputstring)))
                     hold = [c, found, None] # [_contents, _start, _stop]
                     found = None
@@ -1319,7 +1304,7 @@ class processor(object):
                             level -= 1
                         line = line[1:]
                     line = " "*tablen*level + line
-            for c in line + linebreak:
+            for c in line + "\n":
                 if hold is not None:
                     if hold[_stop] is not None:
                         if c == "\\":
@@ -1332,7 +1317,7 @@ class processor(object):
                             raise CoconutException("invalid close in string code", line)
                         elif hold[_stop] == hold[_start]:
                             hold = None
-                        elif c == linebreak and len(hold[_start]) == 1:
+                        elif c == "\n" and len(hold[_start]) == 1:
                             raise CoconutException("invalid linebreak in string code", line)
                         else:
                             hold[_escape] = 0
@@ -1342,13 +1327,13 @@ class processor(object):
                             hold = None
                         elif c == hold[_start][0]:
                             hold[_stop] = c
-                    elif c == linebreak and len(hold[_start]) == 1:
+                    elif c == "\n" and len(hold[_start]) == 1:
                         raise CoconutException("invalid linebreak in string code", line)
                 elif found is not None:
                     if c == found[0]:
                         found += c
                     elif len(found) == 1: # found == "_"
-                        if c == linebreak:
+                        if c == "\n":
                             raise CoconutException("invalid linebreak in string code", line)
                         hold = [0, found, None] # [_escape, _start, _stop]
                         found = None
@@ -1366,7 +1351,7 @@ class processor(object):
             if hold is None:
                 line = line.rstrip()
             out.append(line)
-        return linebreak.join(out)
+        return "\n".join(out)
 
     def passthrough_proc(self, inputstring, **kwargs):
         """Processes python passthroughs."""
@@ -1387,13 +1372,13 @@ class processor(object):
                     count = None
                     multiline = None
                 else:
-                    if c == linebreak:
+                    if c == "\n":
                         skips = addskip(skips, self.adjust(lineno(x, inputstring)))
                     found += c
             elif found:
                 if c == "\\":
                     found = ""
-                    hold = linebreak
+                    hold = "\n"
                     count = 0
                     multiline = False
                 elif c == "(":
@@ -1508,7 +1493,7 @@ class processor(object):
             if count != 0:
                 raise CoconutSyntaxError("unclosed parenthetical", new[-1], len(new[-1]), self.adjust(len(new)))
         new.append(closeindent*len(levels))
-        return linebreak.join(new)
+        return "\n".join(new)
 
     def indebug(self):
         """Checks whether debug mode is active."""
@@ -1555,7 +1540,7 @@ class processor(object):
 
     def polish(self, inputstring, **kwargs):
         """Does final polishing touches."""
-        return linebreak.join(inputstring.rstrip().splitlines()) + linebreak
+        return "\n".join(inputstring.rstrip().splitlines()) + "\n"
 
     def post(self, tokens, **kwargs):
         """Performs post-processing."""
@@ -1597,7 +1582,7 @@ class processor(object):
     def set_docstring(self, tokens):
         """Sets the docstring."""
         if len(tokens) == 2:
-            self.docstring = self.string_repl([tokens[0]]) + linebreak*2
+            self.docstring = self.string_repl([tokens[0]]) + "\n\n"
             return tokens[1]
         else:
             raise CoconutException("invalid docstring tokens", tokens)
@@ -1694,7 +1679,7 @@ class processor(object):
                 out += name+" = (lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)))("+name+", ("+item+"))"
             elif op == "::=":
                 ichain_var = lazy_chain_var+"_"+str(self.ichain_count)
-                out += ichain_var+" = "+name+linebreak
+                out += ichain_var+" = "+name+"\n"
                 out += name+" = __coconut__.itertools.chain.from_iterable("+lazy_list_proc([ichain_var, "("+item+")"])+")"
                 self.ichain_count += 1
             else:
@@ -1942,7 +1927,7 @@ class processor(object):
     u_string_ref = Forward()
     string = b_string | u_string_ref
 
-    lineitem = Combine(Optional(comment) + Literal(linebreak))
+    lineitem = Combine(Optional(comment) + Literal("\n"))
     newline = condense(OneOrMore(lineitem))
     startmarker = StringStart() + condense(ZeroOrMore(lineitem) + Optional(moduledoc))
     endmarker = StringEnd()

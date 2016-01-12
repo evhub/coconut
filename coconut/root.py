@@ -39,8 +39,7 @@ VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
 __version__ = VERSION
 
 PY2 = sys.version_info < (3,)
-PY2_HEADER = r'''_coconut_console_encoding = "'''+ENCODING+r'''"
-py2_filter, py2_hex, py2_map, py2_oct, py2_zip, py2_open, py2_range, py2_int, py2_chr, py2_str, py2_print, py2_input = filter, hex, map, oct, zip, open, range, int, chr, str, print, input
+PY2_HEADER_BASE = r'''py2_filter, py2_hex, py2_map, py2_oct, py2_zip, py2_open, py2_range, py2_int, py2_chr, py2_str, py2_print, py2_input = filter, hex, map, oct, zip, open, range, int, chr, str, print, input
 _coconut_int, _coconut_long, _coconut_str, _coconut_bytearray, _coconut_print, _coconut_unicode, _coconut_raw_input = int, long, str, bytearray, print, unicode, raw_input
 range, chr, str = xrange, unichr, unicode
 from future_builtins import *
@@ -64,10 +63,16 @@ class bytes(_coconut_str):
         return _coconut_str.__new__(cls, _coconut_bytearray(*args, **kwargs))
 def print(*args, **kwargs):
     """Python 3 print."""
-    return _coconut_print(*(_coconut_unicode(x).encode(_coconut_console_encoding) for x in args), **kwargs)
+    return _coconut_print(*(_coconut_unicode(x).replace("\n", _coconut_os.linesep).encode(_coconut_sys.stdout.encoding) for x in args), **kwargs)
 def input(*args, **kwargs):
     """Python 3 input."""
-    return _coconut_raw_input(*args, **kwargs).decode(_coconut_console_encoding)'''
+    return _coconut_raw_input(*args, **kwargs).decode(_coconut_sys.stdout.encoding).replace(_coconut_os.linesep, "\n")'''
+PY2_HEADER = r'import sys as _coconut_sys, os as _coconut_os\n' + PY2_HEADER_BASE + "\n"
+PY2_HEADER_CHECK = r'''import sys as _coconut_sys
+if _coconut_sys.version_info < (3,):
+'''
+for line in PY2_HEADER_BASE.splitlines():
+    PY2_HEADER_CHECK += "    " + line + "\n"
 
 #-----------------------------------------------------------------------------------------------------------------------
 # SETUP:
