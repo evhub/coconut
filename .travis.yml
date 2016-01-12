@@ -54,10 +54,10 @@ matrix:
         - coconut src force_build --strict --force
         - python -tt force_build/runner.py
         - coconut src strictless_build
-        - coconut src_target/cocotest/py2_test.coc autopep8_build/cocotest --package --autopep8 --target 2
+        - coconut src_target/cocotest/py2_test.coc strictless_build/cocotest --package --target 2
         - python -tt strictless_build/runner.py
         - coconut src autopep8_build --strict --autopep8
-        - coconut src_target/cocotest/py2_test.coc autopep8_build/cocotest --strict --package --autopep8 --target 2
+        - coconut src_target/cocotest/py2_test.coc autopep8_build/cocotest --strict --package --target 2 --autopep8
         - python -tt autopep8_build/runner.py
         - coconut src_target target_build --strict --display --target 2
         - python -tt target_build/runner.py
@@ -110,10 +110,10 @@ matrix:
         - coconut src force_build --strict --force
         - python -tt force_build/runner.py
         - coconut src strictless_build
-        - coconut src_target/cocotest/py2_test.coc autopep8_build/cocotest --package --autopep8 --target 2
+        - coconut src_target/cocotest/py2_test.coc strictless_build/cocotest --package --target 2
         - python -tt strictless_build/runner.py
         - coconut src autopep8_build --strict --autopep8
-        - coconut src_target/cocotest/py2_test.coc autopep8_build/cocotest --strict --package --autopep8 --target 2
+        - coconut src_target/cocotest/py2_test.coc autopep8_build/cocotest --strict --package --target 2 --autopep8
         - python -tt autopep8_build/runner.py
         - coconut src_target target_build --strict --display --target 2
         - python -tt target_build/runner.py
@@ -166,10 +166,10 @@ matrix:
         - coconut src force_build --strict --force
         - python -tt force_build/runner.py
         - coconut src strictless_build
-        - coconut src_target/cocotest/py2_test.coc autopep8_build/cocotest --package --autopep8 --target 2
+        - coconut src_target/cocotest/py2_test.coc strictless_build/cocotest --package --target 2
         - python -tt strictless_build/runner.py
         - coconut src autopep8_build --strict --autopep8
-        - coconut src_target/cocotest/py2_test.coc autopep8_build/cocotest --strict --package --autopep8 --target 2
+        - coconut src_target/cocotest/py2_test.coc autopep8_build/cocotest --strict --package --target 2 --autopep8
         - python -tt autopep8_build/runner.py
         - coconut src_target target_build --strict --display --target 2
         - python -tt target_build/runner.py
@@ -222,10 +222,10 @@ matrix:
         - coconut src force_build --strict --force
         - python -tt force_build/runner.py
         - coconut src strictless_build
-        - coconut src_target/cocotest/py3_test.coc autopep8_build/cocotest --package --autopep8 --target 3
+        - coconut src_target/cocotest/py3_test.coc strictless_build/cocotest --package --target 3
         - python -tt strictless_build/runner.py
         - coconut src autopep8_build --strict --autopep8
-        - coconut src_target/cocotest/py3_test.coc autopep8_build/cocotest --strict --package --autopep8 --target 3
+        - coconut src_target/cocotest/py3_test.coc autopep8_build/cocotest --strict --package --target 3 --autopep8
         - python -tt autopep8_build/runner.py
         - coconut src_target target_build --strict --display --target 3
         - python -tt target_build/runner.py
@@ -280,12 +280,12 @@ matrix:
         - coconut src force_build --strict --force
         - python -tt force_build/runner.py
         - coconut src strictless_build
-        - coconut src_target/cocotest/py3_test.coc autopep8_build/cocotest --package --autopep8 --target 3
-        - coconut src_target/cocotest/py33_test.coc autopep8_build/cocotest --package --autopep8 --target 3
+        - coconut src_target/cocotest/py3_test.coc strictless_build/cocotest --package --target 3
+        - coconut src_target/cocotest/py33_test.coc strictless_build/cocotest --package --target 3
         - python -tt strictless_build/runner.py
         - coconut src autopep8_build --strict --autopep8
-        - coconut src_target/cocotest/py3_test.coc autopep8_build/cocotest --strict --package --autopep8 --target 3
-        - coconut src_target/cocotest/py33_test.coc autopep8_build/cocotest --strict --package --autopep8 --target 3
+        - coconut src_target/cocotest/py3_test.coc autopep8_build/cocotest --strict --package --target 3 --autopep8
+        - coconut src_target/cocotest/py33_test.coc autopep8_build/cocotest --strict --package --target 3 --autopep8
         - python -tt autopep8_build/runner.py
         - coconut src_target target_build --strict --display --target 3
         - python -tt target_build/runner.py
@@ -340,12 +340,12 @@ matrix:
         - coconut src force_build --strict --force
         - python -tt force_build/runner.py
         - coconut src strictless_build
-        - coconut src_target/cocotest/py3_test.coc autopep8_build/cocotest --package --autopep8 --target 3
-        - coconut src_target/cocotest/py33_test.coc autopep8_build/cocotest --package --autopep8 --target 3
+        - coconut src_target/cocotest/py3_test.coc strictless_build/cocotest --package --target 3
+        - coconut src_target/cocotest/py33_test.coc strictless_build/cocotest --package --target 3
         - python -tt strictless_build/runner.py
         - coconut src autopep8_build --strict --autopep8
-        - coconut src_target/cocotest/py3_test.coc autopep8_build/cocotest --strict --package --autopep8 --target 3
-        - coconut src_target/cocotest/py33_test.coc autopep8_build/cocotest --strict --package --autopep8 --target 3
+        - coconut src_target/cocotest/py3_test.coc autopep8_build/cocotest --strict --package --target 3 --autopep8
+        - coconut src_target/cocotest/py33_test.coc autopep8_build/cocotest --strict --package --target 3 --autopep8
         - python -tt autopep8_build/runner.py
         - coconut src_target target_build --strict --display --target 3
         - python -tt target_build/runner.py
@@ -400,12 +400,12 @@ matrix:
         - coconut src force_build --strict --force
         - python -tt force_build/runner.py
         - coconut src strictless_build
-        - coconut src_target/cocotest/py3_test.coc autopep8_build/cocotest --package --autopep8 --target 3
-        - coconut src_target/cocotest/py33_test.coc autopep8_build/cocotest --package --autopep8 --target 3
+        - coconut src_target/cocotest/py3_test.coc strictless_build/cocotest --package --target 3
+        - coconut src_target/cocotest/py33_test.coc strictless_build/cocotest --package --target 3
         - python -tt strictless_build/runner.py
         - coconut src autopep8_build --strict --autopep8
-        - coconut src_target/cocotest/py3_test.coc autopep8_build/cocotest --strict --package --autopep8 --target 3
-        - coconut src_target/cocotest/py33_test.coc autopep8_build/cocotest --strict --package --autopep8 --target 3
+        - coconut src_target/cocotest/py3_test.coc autopep8_build/cocotest --strict --package --target 3 --autopep8
+        - coconut src_target/cocotest/py33_test.coc autopep8_build/cocotest --strict --package --target 3 --autopep8
         - python -tt autopep8_build/runner.py
         - coconut src_target target_build --strict --display --target 3
         - python -tt target_build/runner.py
@@ -458,10 +458,10 @@ matrix:
         - coconut src force_build --strict --force
         - python -tt force_build/runner.py
         - coconut src strictless_build
-        - coconut src_target/cocotest/py3_test.coc autopep8_build/cocotest --package --autopep8 --target 3
+        - coconut src_target/cocotest/py3_test.coc strictless_build/cocotest --package --target 3
         - python -tt strictless_build/runner.py
         - coconut src autopep8_build --strict --autopep8
-        - coconut src_target/cocotest/py3_test.coc autopep8_build/cocotest --strict --package --autopep8 --target 3
+        - coconut src_target/cocotest/py3_test.coc autopep8_build/cocotest --strict --package --target 3 --autopep8
         - python -tt autopep8_build/runner.py
         - coconut src_target target_build --strict --display --target 3
         - python -tt target_build/runner.py
