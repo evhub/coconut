@@ -310,7 +310,7 @@ import os.path as _coconut_os_path
 _coconut_file_path = _coconut_os_path.dirname(_coconut_os_path.abspath(__file__))
 _coconut_sys.path.insert(0, _coconut_file_path)
 import __coconut__
-_coconut_sys.remove(_coconut_file_path)
+_coconut_sys.path.remove(_coconut_file_path)
 '''
             elif which == "code" or which == "file":
                 header += r'''
