@@ -419,6 +419,6 @@ class cli(object):
 
     def start_runner(self):
         """Starts the runner."""
-        sys.path.append(os.getcwd())
+        sys.path.insert(0, os.getcwd())
         self.runner = executor(exit=self.exit)
         self.runner.run(self.processor.headers("code"))

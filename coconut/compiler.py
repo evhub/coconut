@@ -243,9 +243,6 @@ import collections
             if version == "2":
                 header += r'''abc = collections
 '''
-            elif version == "3":
-                header += r'''import collections.abc as abc
-'''
             else:
                 header += r'''try:
     import collections.abc as abc
