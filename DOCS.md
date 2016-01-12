@@ -1,6 +1,6 @@
 # Coconut Documentation
 
-This documentation will cover all the technical details of the [Coconut Programming Language](https://github.com/evhub/coconut). This documentation is intended as a reference specification, not a tutorialized introduction. For a full introduction and tutorial of Coconut, see [HELP](https://github.com/evhub/coconut/blob/master/HELP.md).
+This documentation will cover all the technical details of the [Coconut Programming Language](https://github.com/evhub/coconut), and is intended as a reference specification, not a tutorialized introduction. For a full introduction and tutorial of Coconut, see [HELP](https://github.com/evhub/coconut/blob/master/HELP.md).
 
 <!-- MarkdownTOC -->
 
@@ -26,7 +26,7 @@ This documentation will cover all the technical details of the [Coconut Programm
     1. [`data`](#data)
     2. [`match`](#match)
     3. [`case`](#case)
-    4. [Backslash Escaping](#backslash-escaping)
+    4. [Backslash-Escaping](#backslash-escaping)
     5. [Reserved Variables](#reserved-variables)
 4. [Expressions](#expressions)
     1. [Lazy Lists](#lazy-lists)
@@ -65,11 +65,15 @@ This documentation will cover all the technical details of the [Coconut Programm
 
 <!-- /MarkdownTOC -->
 
-## Compilation
+##### Overview
+
+Coconut is a variant of Python built for simple, elegant, Pythonic functional programming. With only [one exception](#backslash-escaping), Coconut syntax is a strict superset of Python 3 syntax. That means if you're familiar with Python, you're already familiar with most of Coconut!
 
 The Coconut compiler turns Coconut code into Python code. The primary method of accessing the Coconut compiler is through the Coconut command-line utility, which also features an interpreter for real-time compilation.
 
-_Note: With only [one exception](#backslash-escaping), Coconut syntax is a strict superset of Python 3 syntax. That means if you're familiar with Python, you're already familiar with most of Coconut._
+While most of Coconut was thought up simply by trying to make functional programming work in Python, additional inspiration came from [Haskell](https://www.haskell.org/), [CoffeeScript](http://coffeescript.org/), [F#](http://fsharp.org/), and [patterns.py](https://github.com/Suor/patterns).
+
+## Compilation
 
 ### Installation
 
@@ -113,7 +117,7 @@ dest                  destination directory for compiled files (defaults to the 
 
 ### Naming Source Files
 
-Coconut source files should, by convention, and so they can be recognized by the compiler and by third-party programs, use the extension `.coc`. It is recommended, if your text editor doesn't have Coconut support, that you set it up so it interprets all `.coc` files as Python code.
+Coconut source files should, so the compiler can recognize them, use the extension `.coc`. It is recommended, if your text editor doesn't have Coconut support, that you set it up so it interprets all `.coc` files as Python code.
 
 When the compiler is called, each `.coc` file found will compile to another file with the same name, except with `.py` instead of `.coc`, which will hold the compiled code. If an extension other than `.py` is desired for the compiled files, such as `.pyde` for [Python Processing](http://py.processing.org/), then that extension can be put before `.coc` in the source file name, and it will be used instead of `.py` for the compiled files. For example, `name.coc` will compile to `name.py`, whereas `name.pyde.coc` will compile to `name.pyde`.
 
@@ -642,9 +646,9 @@ Python:
 
 _Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._
 
-### Backslash Escaping
+### Backslash-Escaping
 
-To allow access to the valid Python variable names `data`, `match`, and `case` in Coconut, those keywords may be backslash-escaped to turn them into the variables instead. Additionally, to provide more seamless integration with Python 3.5, the variable names `async` and `await` must be backslash-escaped, and to provide backwards compatibility with Python 2, the variable name `nonlocal` must be backslash-escaped.
+The requirement that Coconut keywords be backslash-escaped to make them variables in Coconut is the one exception to the rule of all Python 3 being valid Coconut. To allow access to the valid Python variable names `data`, `match`, `case`, `async` (keyword in Python 3.5), `await` (keyword in Python 3.5), and `nonlocal` (keyword in Python 3) in Coconut, those keywords must be backslash-escaped to turn them into the variables instead.
 
 ##### Example
 
