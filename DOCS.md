@@ -124,7 +124,7 @@ When the compiler is called, each `.coc` file found will compile to another file
 
 ### Compilation Modes
 
-Files compiled by the `coconut` command-line utility will vary based on compilation parameters. If an entire folder of files is compiled (package mode), a `__coconut__.py` file will be created to house necessary functions, whereas if only a single file is compiled (standalone mode), that information will be stored within a header inside the file.
+Files compiled by the `coconut` command-line utility will vary based on compilation parameters. If an entire directory of files is compiled (which the compiler will search recursively for any folders containing `.coc` files), a `__coconut__.py` file will be created to house necessary functions (package mode), whereas if only a single file is compiled, that information will be stored within a header inside the file (standalone mode).
 
 By default, if the `source` argument to the command-line utility is a file, it will perform standalone compilation on it, whereas if it is a directory, it will recursively search for all `.coc` files and perform package compilation on them. The command-line utility can also be forced to enter either mode with the `--package` (`-p`) and `--standalone` (`-a`) flags.
 
@@ -132,7 +132,7 @@ By default, if the `source` argument to the command-line utility is a file, it w
 
 While Coconut syntax is based off of Python 3, the compiler should run on any Python version `>= 2.6` on the `2.x` branch or `>= 3.2` on the `3.x` branch, and will attempt to produce universal code that will run like it does on Python 3 in Python 2.
 
-_Note: While the compiler should run under any Python implementation of any version `>= 2.6` on the `2.x` branch or `>= 3.2` on the `3.x` branch, the tested against implementations are [CPython](https://www.python.org/) `2.6, 2.7, 3.3, 3.4, 3.5` and [PyPy](http://pypy.org/) `2.7`._
+_Note: While the compiler should run under any Python implementation of any version `>= 2.6` on the `2.x` branch or `>= 3.2` on the `3.x` branch, the tested against implementations are [CPython](https://www.python.org/) `2.6, 2.7, 3.2, 3.3, 3.4, 3.5` and [PyPy](http://pypy.org/) `2.7, 3.2`._
 
 If the version of Python that the compiled code will be running on is known ahead of time, one of `2` (for the `2.x` branch) or `3` (for the `3.x` branch) should be specified as the `--target`. The given target will only affect the compiled code and whether or not Python-3-specific syntax is allowed. Where Python 3 and Python 2 syntax standards differ, Coconut syntax will always follow Python 3 accross all targets. Coconut will not, however, change any imports, variable names, or library interfaces. Universal compatibility with those must still be done manually.
 
