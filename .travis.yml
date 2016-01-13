@@ -18,6 +18,7 @@ matrix:
         - git clone https://github.com/evhub/prisoner.git
         - rm src/cocotest/py33_test.coc
         - rm src/cocotest/py3_test.coc
+        - mkdir src_target
         - cp -r src/* src_target
         - rm src/cocotest/py2_test.coc
 
@@ -76,6 +77,7 @@ matrix:
         - pip install ipython
         - rm src/cocotest/py33_test.coc
         - rm src/cocotest/py3_test.coc
+        - mkdir src_target
         - cp -r src/* src_target
         - rm src/cocotest/py2_test.coc
 
@@ -135,6 +137,7 @@ matrix:
         - pip install ipython
         - rm src/cocotest/py33_test.coc
         - rm src/cocotest/py3_test.coc
+        - mkdir src_target
         - cp -r src/* src_target
         - rm src/cocotest/py2_test.coc
 
@@ -193,6 +196,7 @@ matrix:
         - git clone https://github.com/evhub/prisoner.git
         - rm src/cocotest/py33_test.coc
         - rm src/cocotest/py2_test.coc
+        - mkdir src_target
         - cp -r src/* src_target
         - rm src/cocotest/py3_test.coc
 
@@ -250,6 +254,7 @@ matrix:
         - git clone https://github.com/evhub/prisoner.git
         - pip install ipython
         - rm src/cocotest/py2_test.coc
+        - mkdir src_target
         - cp -r src/* src_target
         - rm src/cocotest/py3_test.coc
         - rm src/cocotest/py33_test.coc
@@ -314,6 +319,7 @@ matrix:
         - git clone https://github.com/evhub/prisoner.git
         - pip install ipython
         - rm src/cocotest/py2_test.coc
+        - mkdir src_target
         - cp -r src/* src_target
         - rm src/cocotest/py3_test.coc
         - rm src/cocotest/py33_test.coc
@@ -378,6 +384,7 @@ matrix:
         - git clone https://github.com/evhub/prisoner.git
         - pip install ipython
         - rm src/cocotest/py2_test.coc
+        - mkdir src_target
         - cp -r src/* src_target
         - rm src/cocotest/py3_test.coc
         - rm src/cocotest/py33_test.coc
@@ -442,6 +449,7 @@ matrix:
         - git clone https://github.com/evhub/prisoner.git
         - rm src/cocotest/py33_test.coc
         - rm src/cocotest/py2_test.coc
+        - mkdir src_target
         - cp -r src/* src_target
         - rm src/cocotest/py3_test.coc
 
