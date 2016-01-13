@@ -62,16 +62,16 @@ class bytes(_coconut_str):
         return _coconut_str.__new__(cls, _coconut_bytearray(*args, **kwargs))
 def print(*args, **kwargs):
     """Python 3 print."""
-    return _coconut_print(*(_coconut_unicode(x).replace("\n", _coconut_os.linesep).encode(_coconut_sys.stdout.encoding) for x in args), **kwargs)
+    return _coconut_print(*(_coconut_unicode(x).encode(_coconut_sys.stdout.encoding) for x in args), **kwargs)
 def input(*args, **kwargs):
     """Python 3 input."""
-    return _coconut_raw_input(*args, **kwargs).decode(_coconut_sys.stdout.encoding).replace(_coconut_os.linesep, "\n")'''
+    return _coconut_raw_input(*args, **kwargs).decode(_coconut_sys.stdout.encoding)'''
 PY2_HEADER = r'import sys as _coconut_sys, os as _coconut_os' + PY2_HEADER_BASE + "\n"
 PY2_HEADER_CHECK = r'''import sys as _coconut_sys
 if _coconut_sys.version_info < (3,):
     import os as _coconut_os'''
-for line in PY2_HEADER_BASE.splitlines():
-    PY2_HEADER_CHECK += "    " + line + "\n"
+for _line in PY2_HEADER_BASE.splitlines():
+    PY2_HEADER_CHECK += "    " + _line + "\n"
 
 #-----------------------------------------------------------------------------------------------------------------------
 # SETUP:

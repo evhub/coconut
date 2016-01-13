@@ -924,27 +924,27 @@ class matcher(object):
             self.duplicate().match(original[x], item)
         self.match(original[0], item)
 
+    matchers = {
+        "dict": lambda self: self.match_dict,
+        "iter": lambda self: self.match_iterator,
+        "series": lambda self: self.match_sequence,
+        "rseries": lambda self: self.match_rsequence,
+        "mseries": lambda self: self.match_msequence,
+        "const": lambda self: self.match_const,
+        "is": lambda self: self.match_typedef,
+        "var": lambda self: self.match_var,
+        "set": lambda self: self.match_set,
+        "data": lambda self: self.match_data,
+        "paren": lambda self: self.match_paren,
+        "assign": lambda self: self.match_assign,
+        "and": lambda self: self.match_and,
+        "or": lambda self: self.match_or
+    }
     def match(self, original, item):
         """Performs pattern-matching processing."""
-        matchers = (
-            ("dict", self.match_dict),
-            ("iter", self.match_iterator),
-            ("series", self.match_sequence),
-            ("rseries", self.match_rsequence),
-            ("mseries", self.match_msequence),
-            ("const", self.match_const),
-            ("is", self.match_typedef),
-            ("var", self.match_var),
-            ("set", self.match_set),
-            ("data", self.match_data),
-            ("paren", self.match_paren),
-            ("assign", self.match_assign),
-            ("and", self.match_and),
-            ("or", self.match_or)
-        )
-        for flag, handler in matchers:
+        for flag, handler in self.matchers.items():
             if flag in original.keys():
-                return handler(original, item)
+                return handler(self)(original, item)
         raise CoconutException("invalid inner match tokens", original)
 
     def out(self):
