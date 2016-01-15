@@ -359,7 +359,7 @@ class cli(object):
         try:
             return input(prompt) # using input from .root
         except KeyboardInterrupt:
-            printerr(linebreak + "KeyboardInterrupt")
+            printerr("\nKeyboardInterrupt")
         except EOFError:
             print()
             self.exit()
@@ -390,7 +390,7 @@ class cli(object):
             while True:
                 line = self.prompt_with(self.moreprompt)
                 if line:
-                    code += linebreak + line
+                    code += "\n" + line
                 elif line is None:
                     return None
                 else:
