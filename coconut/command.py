@@ -432,7 +432,7 @@ class cli(object):
         import subprocess
         install_args = ["jupyter", "kernelspec", "install", os.path.join(os.path.dirname(os.path.abspath(__file__)), "icoconut")]
         if args:
-            install_func = lambda args: subproccess.check_output(args, stderr=subprocess.STDOUT)
+            install_func = lambda args: subprocess.check_output(args, stderr=subprocess.STDOUT)
         else:
             install_func = lambda args: subprocess.check_call(args)
         try:
@@ -443,9 +443,9 @@ class cli(object):
             except subprocess.CalledProcessError:
                 errmsg = 'unable to install jupyter kernelspec file (failed command "'+" ".join(install_args)+'")'
                 if args:
-                    raise CoconutException(errmsg)
-                else:
                     self.processor.warn(CoconutWarning(errmsg))
+                else:
+                    raise CoconutException(errmsg)
         if args:
             if args[0] == "console":
                 run_args = ["jupyter", "console", "--kernel", "icoconut"] + args[1:]
