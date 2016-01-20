@@ -56,8 +56,6 @@ class kernel(Kernel):
             self.send_response(self.iopub_socket, "stream", message)
 
     def do_execute(self, code, silent, store_history=True, user_expressions=None, allow_stdin=False):
-        if silent:
-            store_history = False
         sys.stdout, stdout = StringIO(), sys.stdout
         try:
             runner.run(proc.parse_single(code))

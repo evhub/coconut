@@ -97,7 +97,7 @@ ParserElement.setDefaultWhitespaceChars(white)
 #-----------------------------------------------------------------------------------------------------------------------
 
 def clean(line):
-    """Cleans a line."""
+    """Cleans and strips a line."""
     stdout_encoding = encoding if sys.stdout.encoding is None else sys.stdout.encoding
     return (line
         .replace(openindent, "")
@@ -130,12 +130,12 @@ class CoconutSyntaxError(CoconutException):
             self.value += " (line " + str(ln) + ")"
         if source is not None:
             if point is None:
-                self.value += "\n  " + clean(source)
+                self.value += "\n" + " "*tablen + clean(source)
             else:
                 if point >= len(source):
                     point = len(source)-1
                 part = clean(source.splitlines()[lineno(point, source)-1])
-                self.value += "\n  " + part + "\n  "
+                self.value += "\n" + " "*tablen + part + "\n  "
                 for x in range(0, col(point, source)-1):
                     if x < len(part) and part[x] in white:
                         self.value += part[x]
