@@ -127,19 +127,20 @@ class CoconutSyntaxError(CoconutException):
         self.value = message
         if ln is not None:
             self.value += " (line " + str(ln) + ")"
-        if point is None:
-            self.value += "\n  " + clean(source)
-        else:
-            if point >= len(source):
-                point = len(source)-1
-            part = clean(source.splitlines()[lineno(point, source)-1])
-            self.value += "\n  " + part + "\n  "
-            for x in range(0, col(point, source)-1):
-                if x < len(part) and part[x] in white:
-                    self.value += part[x]
-                else:
-                    self.value += " "
-            self.value += "^"
+        if source is not None:
+            if point is None:
+                self.value += "\n  " + clean(source)
+            else:
+                if point >= len(source):
+                    point = len(source)-1
+                part = clean(source.splitlines()[lineno(point, source)-1])
+                self.value += "\n  " + part + "\n  "
+                for x in range(0, col(point, source)-1):
+                    if x < len(part) and part[x] in white:
+                        self.value += part[x]
+                    else:
+                        self.value += " "
+                self.value += "^"
 
 class CoconutParseError(CoconutSyntaxError):
     """Coconut ParseError."""
