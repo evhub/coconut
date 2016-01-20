@@ -98,12 +98,13 @@ ParserElement.setDefaultWhitespaceChars(white)
 
 def clean(line):
     """Cleans a line."""
+    stdout_encoding = encoding if sys.stdout.encoding is None else sys.stdout.encoding
     return (line
         .replace(openindent, "")
         .replace(closeindent, "")
         .strip()
-        .encode(sys.stdout.encoding, "replace")
-        .decode(sys.stdout.encoding)
+        .encode(stdout_encoding, "replace")
+        .decode(stdout_encoding)
         )
 
 class CoconutException(Exception):
@@ -122,7 +123,7 @@ class CoconutException(Exception):
 
 class CoconutSyntaxError(CoconutException):
     """Coconut SyntaxError."""
-    def __init__(self, message, source, point=None, ln=None):
+    def __init__(self, message, source=None, point=None, ln=None):
         """Creates the Coconut SyntaxError."""
         self.value = message
         if ln is not None:
@@ -150,14 +151,14 @@ class CoconutParseError(CoconutSyntaxError):
 
 class CoconutStyleError(CoconutSyntaxError):
     """Coconut --strict error."""
-    def __init__(self, message, source, point=None, ln=None):
+    def __init__(self, message, source=None, point=None, ln=None):
         """Creates the --strict Coconut error."""
         message += " (disable --strict to dismiss)"
         super(CoconutStyleError, self).__init__(message, source, point, ln)
 
 class CoconutTargetError(CoconutSyntaxError):
     """Coconut --target error."""
-    def __init__(self, message, source, point=None, ln=None):
+    def __init__(self, message, source=None, point=None, ln=None):
         """Creates the --target Coconut error."""
         message += " (enable --target 3 to dismiss)"
         super(CoconutTargetError, self).__init__(message, source, point, ln)

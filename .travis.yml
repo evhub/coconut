@@ -74,7 +74,7 @@ matrix:
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
         - git clone https://github.com/evhub/prisoner.git
-        - pip install ipython
+        - pip install jupyter
         - rm src/cocotest/py33_test.coc
         - rm src/cocotest/py3_test.coc
         - mkdir src_target
@@ -87,7 +87,7 @@ matrix:
         - echo "assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --display
         - python -c "from coconut.convenience import parse; exec parse('assert \'__coconut__\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()')"
         - ipython --ext coconut -c "%coconut assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
-        - coconut --ipython
+        - coconut --jupyter
         - coconut prisoner --strict
         - coconut src/runner.coc file_build --strict
         - coconut src/cocotest/__init__.coc file_build/cocotest --strict
@@ -135,7 +135,7 @@ matrix:
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
         - git clone https://github.com/evhub/prisoner.git
-        - pip install ipython
+        - pip install jupyter
         - rm src/cocotest/py33_test.coc
         - rm src/cocotest/py3_test.coc
         - mkdir src_target
@@ -148,7 +148,7 @@ matrix:
         - echo "assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --display
         - python -c "from coconut.convenience import parse; exec parse('assert \'__coconut__\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()')"
         - ipython --ext coconut -c "%coconut assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
-        - coconut --ipython
+        - coconut --jupyter
         - coconut prisoner --strict
         - coconut src/runner.coc file_build --strict
         - coconut src/cocotest/__init__.coc file_build/cocotest --strict
@@ -254,7 +254,7 @@ matrix:
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
         - git clone https://github.com/evhub/prisoner.git
-        - pip install ipython
+        - pip install jupyter
         - rm src/cocotest/py2_test.coc
         - mkdir src_target
         - cp -r src/* src_target
@@ -267,7 +267,7 @@ matrix:
         - echo "assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --display
         - python -c "from coconut.convenience import parse; exec(parse('assert \'__coconut__\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()'))"
         - ipython --ext coconut -c "%coconut assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
-        - coconut --ipython
+        - coconut --jupyter
         - coconut prisoner --strict
         - coconut src/runner.coc file_build --strict
         - coconut src/cocotest/__init__.coc file_build/cocotest --strict
@@ -320,7 +320,7 @@ matrix:
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
         - git clone https://github.com/evhub/prisoner.git
-        - pip install ipython
+        - pip install jupyter
         - rm src/cocotest/py2_test.coc
         - mkdir src_target
         - cp -r src/* src_target
@@ -333,7 +333,7 @@ matrix:
         - echo "assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --display
         - python -c "from coconut.convenience import parse; exec(parse('assert \'__coconut__\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()'))"
         - ipython --ext coconut -c "%coconut assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
-        - coconut --ipython
+        - coconut --jupyter
         - coconut prisoner --strict
         - coconut src/runner.coc file_build --strict
         - coconut src/cocotest/__init__.coc file_build/cocotest --strict
@@ -386,7 +386,7 @@ matrix:
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
         - git clone https://github.com/evhub/prisoner.git
-        - pip install ipython
+        - pip install jupyter
         - rm src/cocotest/py2_test.coc
         - mkdir src_target
         - cp -r src/* src_target
@@ -399,7 +399,7 @@ matrix:
         - echo "assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --display
         - python -c "from coconut.convenience import parse; exec(parse('assert \'__coconut__\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()'))"
         - ipython --ext coconut -c "%coconut assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
-        - coconut --ipython
+        - coconut --jupyter
         - coconut prisoner --strict
         - coconut src/runner.coc file_build --strict
         - coconut src/cocotest/__init__.coc file_build/cocotest --strict
