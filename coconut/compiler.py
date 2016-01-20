@@ -135,7 +135,7 @@ class CoconutSyntaxError(CoconutException):
                 if point >= len(source):
                     point = len(source)-1
                 part = clean(source.splitlines()[lineno(point, source)-1])
-                self.value += "\n" + " "*tablen + part + "\n  "
+                self.value += "\n" + " "*tablen + part + "\n" + " "*tablen
                 for x in range(0, col(point, source)-1):
                     if x < len(part) and part[x] in white:
                         self.value += part[x]
