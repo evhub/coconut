@@ -37,6 +37,7 @@ class kernel(Kernel):
     language_version = VERSION
     banner = "Coconut:"
     language_info = {
+        "name": "coconut",
         "mimetype": "text/x-python",
         "file_extension": ".coc",
         "codemirror_mode": "python",
