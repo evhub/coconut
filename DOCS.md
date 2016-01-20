@@ -14,40 +14,42 @@ This documentation will cover all the technical details of the [Coconut Programm
     4. [Compilation Modes](#compilation-modes)
     5. [Compatible Python Versions](#compatible-python-versions)
     6. [`--strict` Mode](#--strict-mode)
-    7. [IPython](#ipython)
-3. [Operators](#operators)
-    1. [Lambdas](#lambdas)
-    2. [Partial Application](#partial-application)
-    3. [Pipeline](#pipeline)
-    4. [Compose](#compose)
-    5. [Chain](#chain)
-    6. [Iterator Slice](#iterator-slice)
-    7. [Unicode Alternatives](#unicode-alternatives)
-4. [Keywords](#keywords)
+    7. [IPython / Jupyter Support](#ipython--jupyter-support)
+        1. [Kernel](#kernel)
+        2. [Extension](#extension)
+8. [Operators](#operators)
+    9. [Lambdas](#lambdas)
+    10. [Partial Application](#partial-application)
+    11. [Pipeline](#pipeline)
+    12. [Compose](#compose)
+    13. [Chain](#chain)
+    14. [Iterator Slice](#iterator-slice)
+    15. [Unicode Alternatives](#unicode-alternatives)
+3. [Keywords](#keywords)
     1. [`data`](#data)
     2. [`match`](#match)
     3. [`case`](#case)
     4. [Backslash-Escaping](#backslash-escaping)
     5. [Reserved Variables](#reserved-variables)
-5. [Expressions](#expressions)
+4. [Expressions](#expressions)
     1. [Lazy Lists](#lazy-lists)
     2. [Implicit Partial Application](#implicit-partial-application)
     3. [Set Literals](#set-literals)
     4. [Imaginary Literals](#imaginary-literals)
     5. [Non-Decimal Integers](#non-decimal-integers)
-6. [Function Notation](#function-notation)
+5. [Function Notation](#function-notation)
     1. [Operator Functions](#operator-functions)
     2. [Shorthand Functions](#shorthand-functions)
     3. [Infix Functions](#infix-functions)
     4. [Pattern-Matching Functions](#pattern-matching-functions)
-7. [Statements](#statements)
+6. [Statements](#statements)
     1. [Destructuring Assignment](#destructuring-assignment)
     2. [Decorators](#decorators)
     3. [`else` Statements](#else-statements)
     4. [`except` Statements](#except-statements)
     5. [Variable Lists](#variable-lists)
     6. [Code Passthrough](#code-passthrough)
-8. [Built-Ins](#built-ins)
+7. [Built-Ins](#built-ins)
     1. [`reduce`](#reduce)
     2. [`takewhile`](#takewhile)
     3. [`dropwhile`](#dropwhile)
@@ -56,7 +58,7 @@ This documentation will cover all the technical details of the [Coconut Programm
     6. [`datamaker`](#datamaker)
     7. [`recursive`](#recursive)
     8. [`__coconut_version__`](#__coconut_version__)
-9. [Coconut Module](#coconut-module)
+8. [Coconut Module](#coconut-module)
     1. [`coconut.convenience`](#coconutconvenience)
         1. [`coconut.convenience.parse`](#coconutconvenienceparse)
         2. [`coconut.convenience.setup`](#coconutconveniencesetup)
@@ -86,7 +88,7 @@ python -m pip install coconut
 ### Usage
 
 ```
-coconut [-h] [-v] [source] [dest] [-t version] [-s] [-p] [-a] [-f] [-d] [-r] [-n] [-i] [-q] [-c code] [--debug] [--autopep8 ...]
+coconut [-h] [-v] [source] [dest] [-t version] [-s] [-p] [-a] [-f] [-d] [-r] [-n] [-i] [-q] [-c code] [--jupyter ...] [--autopep8 ...] [--debug]
 ```
 
 #### Positional Arguments
@@ -112,8 +114,9 @@ dest                  destination directory for compiled files (defaults to the 
 -i, --interact        force the interpreter to start (otherwise starts if no other command is given)
 -q, --quiet           suppress all informational output
 -c, --code            run a line of Coconut passed in as a string (can also be accomplished with a pipe)
---debug               print verbose debug output
+--jupyter, --ipython  run Jupyter (formerly IPython) with Coconut as the kernel (remaining args passed to Jupyter)
 --autopep8            use autopep8 to format compiled code (remaining args passed to autopep8)
+--debug               print verbose debug output
 ```
 
 ### Naming Source Files
@@ -161,9 +164,17 @@ If the `--strict` or `-s` flag is enabled, Coconut will throw errors on various 
 
 It is recommended that you use the `--strict` or `-s` flag if you are starting a new Coconut project, as it will help you write cleaner code.
 
-### IPython
+### IPython / Jupyter Support
 
-If you prefer [IPython](http://ipython.org/) to the normal Python shell, Coconut can also be used as an IPython extension. The line magic `%load_ext coconut` will provide access to the `%coconut` and `%%coconut` magics. The `%coconut` line magic will run a line of Coconut with default parameters, whereas the `%%coconut` block magic will take command-line arguments on the first line, and run any Coconut code provided in the rest of the cell with those parameters.
+If you prefer [IPython](http://ipython.org/) (the python kernel for the [Jupyter](http://jupyter.org/) framework) to the normal Python shell, Coconut can be used as an IPython extension or Jupyter kernel.
+
+#### Kernel
+
+If Coconut is used as a kernel, all code in the console or cells marked as Coconut in the notebook will be sent directly to Coconut instead of Python to be evaluated. The command `coconut --jupyter console` (or `coconut --ipython console`) will launch an IPython / Jupyter console using Coconut as the kernel, and the command `coconut --jupyter notebook` (or `coconut --ipython notebook`) will launch an IPython / Jupyter notebook using Coconut as the kernel.
+
+#### Extension
+
+If Coconut is used as an extension, a special magic command will send snippets of code to be evaluated using Coconut instead of Python, but Python will still be used as the default. The line magic `%load_ext coconut` will load Coconut as an extension, adding the `%coconut` and `%%coconut` magics. The `%coconut` line magic will run a line of Coconut with default parameters, and the `%%coconut` block magic will take command-line arguments on the first line, and run any Coconut code provided in the rest of the cell with those parameters.
 
 ## Operators
 

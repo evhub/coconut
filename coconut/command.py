@@ -46,10 +46,12 @@ def fixpath(path):
 
 class executor(object):
     """Compiled Python executor."""
-    def __init__(self, extras=None, exit=sys.exit):
+    def __init__(self, header=None, extras=None, exit=sys.exit):
         """Creates the executor."""
         self.exit = exit
         self.vars = {}
+        if header is not None:
+            self.run(header)
         if extras is not None:
             self.vars.update(extras)
     def setfile(self, path):
@@ -59,7 +61,7 @@ class executor(object):
         """Executes Python code."""
         try:
             exec(code, self.vars)
-        except Exception:
+        except (Exception, KeyboardInterrupt):
             if err:
                 raise
             else:
@@ -166,9 +168,10 @@ class cli(object):
     commandline.add_argument("-i", "--interact", action="store_const", const=True, default=False, help="force the interpreter to start (otherwise starts if no other command is given)")
     commandline.add_argument("-q", "--quiet", action="store_const", const=True, default=False, help="suppress all informational output")
     commandline.add_argument("-c", "--code", metavar="code", type=str, nargs=1, default=None, help="run a line of Coconut passed in as a string (can also be accomplished with a pipe)")
-    commandline.add_argument("--debug", action="store_const", const=True, default=False, help="print verbose debug output")
+    commandline.add_argument("--jupyter", "--ipython", type=str, nargs=argparse.REMAINDER, default=None, help="run Jupyter (formerly IPython) with Coconut as the kernel (remaining args passed to Jupyter)")
     commandline.add_argument("--autopep8", type=str, nargs=argparse.REMAINDER, default=None, help="use autopep8 to format compiled code (remaining args passed to autopep8)")
-    processor = None
+    commandline.add_argument("--debug", action="store_const", const=True, default=False, help="print verbose debug output")
+    proc = None
     show = False
     running = False
     runner = None
@@ -186,10 +189,10 @@ class cli(object):
 
     def setup(self, strict=False, target=None):
         """Creates the processor."""
-        if self.processor is None:
-            self.processor = processor(strict, target, self.console.debug)
+        if self.proc is None:
+            self.proc = processor(strict, target, self.console.debug)
         else:
-            self.processor.setup(strict, target)
+            self.proc.setup(strict, target)
 
     def quiet(self, state=None):
         """Quiets output."""
@@ -199,14 +202,14 @@ class cli(object):
 
     def indebug(self):
         """Determines whether the processor is in debug mode."""
-        return self.processor.indebug()
+        return self.proc.indebug()
 
     def cmd(self, args, interact=True):
         """Parses command-line arguments."""
         try:
             self.setup(args.strict, args.target[0])
             if args.debug:
-                self.processor.debug(True)
+                self.proc.debug(True)
             if args.quiet:
                 self.quiet(True)
             if args.display:
@@ -214,9 +217,12 @@ class cli(object):
             if args.version:
                 self.console.print(self.version)
             if args.autopep8 is not None:
-                self.processor.autopep8(args.autopep8)
+                self.proc.autopep8(args.autopep8)
             if args.code is not None:
-                self.execute(self.processor.parse_single(args.code[0]))
+                self.execute(self.proc.parse_single(args.code[0]))
+            stdin = not sys.stdin.isatty()
+            if stdin:
+                self.execute(self.proc.parse_block(sys.stdin.read()))
             if args.source is not None:
                 if args.run and os.path.isdir(args.source):
                     raise CoconutException("source path must point to file not directory when --run is enabled")
@@ -244,10 +250,9 @@ class cli(object):
                 self.compile_path(args.source, dest, package, run=args.run, force=args.force)
             elif args.run or args.nowrite or args.force or args.package or args.standalone:
                 raise CoconutException("a source file/folder must be specified when options that depend on the source are enabled")
-            stdin = not sys.stdin.isatty()
-            if stdin:
-                self.execute(self.processor.parse_block(sys.stdin.read()))
-            if args.interact or (interact and not (stdin or args.source or args.version or args.code)):
+            if args.jupyter is not None:
+                self.start_jupyter(args.jupyter)
+            if args.interact or (interact and not (stdin or args.source or args.version or args.code or args.jupyter is not None)):
                 self.start_prompt()
         except CoconutException:
             printerr(get_error(self.indebug()))
@@ -317,11 +322,11 @@ class cli(object):
             self.console.print("Left unchanged  "+destpath+" (pass --force to overwrite).")
         else:
             if package is True:
-                compiled = self.processor.parse_module(code)
+                compiled = self.proc.parse_module(code)
             elif package is False:
-                compiled = self.processor.parse_file(code)
+                compiled = self.proc.parse_file(code)
             elif package is None:
-                compiled = self.processor.parse_block(code)
+                compiled = self.proc.parse_block(code)
             else:
                 raise CoconutException("invalid value for package", package)
             if destpath is None:
@@ -342,7 +347,7 @@ class cli(object):
         """Sets up a package directory."""
         filepath = os.path.join(dirpath, "__coconut__.py")
         with openfile(filepath, "w") as opened:
-            writefile(opened, self.processor.headers("package"))
+            writefile(opened, self.proc.headers("package"))
 
     def hashashof(self, destpath, code, package):
         """Determines if a file has the hash of the code."""
@@ -350,7 +355,7 @@ class cli(object):
             with openfile(destpath, "r") as opened:
                 compiled = readfile(opened)
                 hashash = gethash(compiled)
-                if hashash is not None and hashash == self.processor.genhash(package, code):
+                if hashash is not None and hashash == self.proc.genhash(package, code):
                     return compiled
         return None
 
@@ -385,7 +390,7 @@ class cli(object):
     def handle(self, code):
         """Compiles Coconut interpreter input."""
         try:
-            compiled = self.processor.parse_single(code)
+            compiled = self.proc.parse_single(code)
         except CoconutException:
             while True:
                 line = self.prompt_with(self.moreprompt)
@@ -396,7 +401,7 @@ class cli(object):
                 else:
                     break
             try:
-                compiled = self.processor.parse_single(code)
+                compiled = self.proc.parse_single(code)
             except CoconutException:
                 printerr(get_error(self.indebug()))
                 return None
@@ -420,5 +425,18 @@ class cli(object):
     def start_runner(self):
         """Starts the runner."""
         sys.path.insert(0, os.getcwd())
-        self.runner = executor(exit=self.exit)
-        self.runner.run(self.processor.headers("code"))
+        self.runner = executor(self.proc.headers("code"), exit=self.exit)
+
+    def start_jupyter(self, args):
+        """Starts Jupyter with the Coconut kernel."""
+        import subprocess
+        kernel_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "icoconut")
+        subprocess.check_output(["jupyter", "kernelspec", "install", kernel_path], stderr=subprocess.STDOUT)
+        if args:
+            if args[0] == "console":
+                args = ["jupyter", "console", "--kernel", "icoconut"] + args[1:]
+            elif args[0] == "notebook":
+                args = ["jupyter", "notebook"] + args[1:]
+            else:
+                raise CoconutException('first argument after --jupyter must be either "console" or "notebook"')
+            subprocess.call(args)
