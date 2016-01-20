@@ -39,7 +39,7 @@ class kernel(Kernel):
     implementation_version = VERSION
     language = "coconut"
     language_version = VERSION
-    banner = "Coconut Notebook:"
+    banner = "Coconut Interpreter:"
     language_info = {
         "mimetype": "text/x-python",
         "file_extension": ".coc",
