@@ -430,7 +430,13 @@ class cli(object):
     def start_jupyter(self, args):
         """Starts Jupyter with the Coconut kernel."""
         import subprocess
-        install_args = ["jupyter", "kernelspec", "install", os.path.join(os.path.dirname(os.path.abspath(__file__)), "icoconut")]
+        try:
+            subprocess.check_output("jupyter", stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError:
+            jupyter = "ipython"
+        else:
+            jupyter = "jupyter"
+        install_args = [jupyter, "kernelspec", "install", os.path.join(os.path.dirname(os.path.abspath(__file__)), "icoconut")]
         if args:
             install_func = lambda args: subprocess.check_output(args, stderr=subprocess.STDOUT)
         else:
@@ -449,9 +455,9 @@ class cli(object):
         if args:
             if args[0] == "console":
                 self.console.show("Coconut Kernel "+VERSION)
-                run_args = ["jupyter", "console", "--kernel", "icoconut"] + args[1:]
+                run_args = [jupyter, "console", "--kernel", "icoconut"] + args[1:]
             elif args[0] == "notebook":
-                run_args = ["jupyter", "notebook"] + args[1:]
+                run_args = [jupyter, "notebook"] + args[1:]
             else:
                 raise CoconutException('first argument after --jupyter must be either "console" or "notebook"')
             subprocess.call(run_args)
