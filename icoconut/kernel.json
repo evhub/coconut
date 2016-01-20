@@ -1,5 +1,0 @@
-{
-    "argv": ["python", "-m", "icoconut", "-f", "{connection_file}"],
-    "display_name": "Coconut",
-    "language": "coconut"
-}

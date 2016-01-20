@@ -18,9 +18,9 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 import sys
 import os.path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from icoconut.root import kernel
+from coconut.icoconut.root import kernel
 from ipykernel.kernelapp import IPKernelApp
 
 #-----------------------------------------------------------------------------------------------------------------------

@@ -430,8 +430,7 @@ class cli(object):
     def start_jupyter(self, args):
         """Starts Jupyter with the Coconut kernel."""
         import subprocess
-        kernel_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "icoconut")
-        install_args = ["jupyter", "kernelspec", "install", kernel_path]
+        install_args = ["jupyter", "kernelspec", "install", os.path.join(os.path.dirname(os.path.abspath(__file__)), "icoconut")]
         if args:
             subprocess.check_output(install_args, stderr=subprocess.STDOUT)
             if args[0] == "console":

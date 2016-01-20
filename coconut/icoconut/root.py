@@ -16,11 +16,7 @@ Description: The Coconut IPython kernel.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-import sys
-import os.path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-from coconut.command import *
+from ..command import *
 try:
     from cStringIO import StringIO
 except ImportError:
