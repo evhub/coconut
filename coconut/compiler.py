@@ -1817,6 +1817,10 @@ class processor(object):
         else:
             raise CoconutException("invalid set literal tokens", tokens)
 
+    def should_indent(self, code):
+        """Determines whether the next line should be indented."""
+        return code.split("#", 1)[0].rstrip().endswith(":")
+
     def parse(self, inputstring, parser, preargs, postargs):
         """Uses the parser to parse the inputstring."""
         try:

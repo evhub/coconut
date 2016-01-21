@@ -368,8 +368,10 @@ class cli(object):
                     return compiled
         return None
 
-    def prompt_with(self, prompt):
+    def prompt_with(self, prompt, default=None):
         """Prompts for code."""
+        if readline is not None and default is not None:
+            readline.set_pre_input_hook(lambda: readline.insert_text(default))
         try:
             return input(prompt) # using input from .root
         except KeyboardInterrupt:
@@ -377,6 +379,9 @@ class cli(object):
         except EOFError:
             print()
             self.exit()
+        finally:
+            if readline is not None and default is not None:
+                readline.set_pre_input_hook()
         return None
 
     def start_prompt(self):
@@ -402,11 +407,15 @@ class cli(object):
             compiled = self.proc.parse_single(code)
         except CoconutException:
             while True:
-                line = self.prompt_with(self.moreprompt)
-                if line:
-                    code += "\n" + line
-                elif line is None:
+                if self.proc.should_indent(code):
+                    default = " "*tablen
+                else:
+                    default = None
+                line = self.prompt_with(self.moreprompt, default)
+                if line is None:
                     return None
+                elif line.strip():
+                    code += "\n" + line
                 else:
                     break
             try:

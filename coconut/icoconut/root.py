@@ -105,6 +105,7 @@ class kernel(Kernel):
                 compiled = proc.parse_block(code)
         except CoconutException:
             printerr(get_error())
+            return None
         else:
             if evaluate:
                 return self._runner.run(compiled, dorun=eval)
@@ -146,7 +147,7 @@ class kernel(Kernel):
                 return {
                     "status": "complete"
                 }
-            elif code.rstrip().endswith(":"):
+            elif proc.should_indent(code):
                 return {
                     "status": "incomplete",
                     "indent": " "*tablen

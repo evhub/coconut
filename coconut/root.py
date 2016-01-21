@@ -19,7 +19,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 try:
     import readline
 except ImportError:
-    pass
+    readline = None
 
 import sys
 
