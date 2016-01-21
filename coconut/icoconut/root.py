@@ -74,11 +74,7 @@ class kernel(Kernel):
         "mimetype": "text/x-python",
         "file_extension": ".coc",
         "codemirror_mode": "python",
-        "pygments_lexer": "python",
-        "help_links": [
-            {"text": "Coconut Tutorial", "url": "https://github.com/evhub/coconut/blob/master/HELP.md"},
-            {"text": "Coconut Documentation", "url": "https://github.com/evhub/coconut/blob/master/DOCS.md"}
-        ]
+        "pygments_lexer": "python"
     }
 
     def _send(self, silent, text, debug=False):

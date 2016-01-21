@@ -123,7 +123,7 @@ class terminal(object):
             if os.name != "nt":
                 self.color = color
         else:
-            raise CoconutException('unrecognized color "'+color+'"')
+            raise CoconutException('unrecognized color "'+color+'" (enter a color name like "cyan")')
 
     def addcolor(self, inputstring, color):
         """Adds the specified color to the string."""
