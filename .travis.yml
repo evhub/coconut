@@ -23,7 +23,7 @@ matrix:
         - rm src/cocotest/py2_test.coc
 
       script:
-        - coconut --version
+        - coconut --version --color cyan
         - coconut --strict --display --code "assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - echo "assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --display
         - python -c "from coconut.convenience import parse; exec parse('assert \'__coconut__\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()')"
@@ -82,7 +82,7 @@ matrix:
         - rm src/cocotest/py2_test.coc
 
       script:
-        - coconut --version
+        - coconut --version --color cyan
         - coconut --strict --display --code "assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - echo "assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --display
         - python -c "from coconut.convenience import parse; exec parse('assert \'__coconut__\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()')"
@@ -143,7 +143,7 @@ matrix:
         - rm src/cocotest/py2_test.coc
 
       script:
-        - coconut --version
+        - coconut --version --color cyan
         - coconut --strict --display --code "assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - echo "assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --display
         - python -c "from coconut.convenience import parse; exec parse('assert \'__coconut__\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()')"
@@ -203,7 +203,7 @@ matrix:
         - rm src/cocotest/py3_test.coc
 
       script:
-        - coconut --version
+        - coconut --version --color cyan
         - coconut --strict --display --code "assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - echo "assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --display
         - python -c "from coconut.convenience import parse; exec(parse('assert \'__coconut__\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()'))"
@@ -262,7 +262,7 @@ matrix:
         - rm src/cocotest/py33_test.coc
 
       script:
-        - coconut --version
+        - coconut --version --color cyan
         - coconut --strict --display --code "assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - echo "assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --display
         - python -c "from coconut.convenience import parse; exec(parse('assert \'__coconut__\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()'))"
@@ -328,7 +328,7 @@ matrix:
         - rm src/cocotest/py33_test.coc
 
       script:
-        - coconut --version
+        - coconut --version --color cyan
         - coconut --strict --display --code "assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - echo "assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --display
         - python -c "from coconut.convenience import parse; exec(parse('assert \'__coconut__\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()'))"
@@ -394,7 +394,7 @@ matrix:
         - rm src/cocotest/py33_test.coc
 
       script:
-        - coconut --version
+        - coconut --version --color cyan
         - coconut --strict --display --code "assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - echo "assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --display
         - python -c "from coconut.convenience import parse; exec(parse('assert \'__coconut__\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()'))"
@@ -459,7 +459,7 @@ matrix:
         - rm src/cocotest/py3_test.coc
 
       script:
-        - coconut --version
+        - coconut --version --color cyan
         - coconut --strict --display --code "assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - echo "assert '__coconut__' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --display
         - python -c "from coconut.convenience import parse; exec(parse('assert \'__coconut__\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()'))"
