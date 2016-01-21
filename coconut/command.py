@@ -83,8 +83,8 @@ class executor(object):
 
 class terminal(object):
     """Manages printing and reading data to the console."""
+    endcolor = "\033[0m"
     colors = {
-        "end": "\033[0m",
         "bold": "\033[1m",
         "blink": "\033[5m",
         "black": "\033[30m",
@@ -128,7 +128,7 @@ class terminal(object):
     def addcolor(self, inputstring, color):
         """Adds the specified color to the string."""
         if color is not None:
-            return self.colors[color] + inputstring + self.colors["end"]
+            return self.colors[color] + inputstring + self.endcolor
         else:
             return inputstring
 
@@ -226,7 +226,10 @@ class cli(object):
 
     def indebug(self):
         """Determines whether the processor is in debug mode."""
-        return self.proc.indebug()
+        if self.proc is None:
+            return False
+        else:
+            return self.proc.indebug()
 
     def cmd(self, args, interact=True):
         """Parses command-line arguments."""
