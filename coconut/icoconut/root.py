@@ -75,10 +75,10 @@ class kernel(Kernel):
         except CoconutException:
             return {
                 "status": "incomplete",
-                "indent": "    "
+                "indent": " "*tablen
             }
         else:
             return {
                 "status": "complete",
-                "indent": "    "
+                "indent": " "*tablen
             }
