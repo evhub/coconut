@@ -9,6 +9,8 @@ A full **introduction and tutorial** of the Coconut programming language can be 
 
 The full Coconut **documentation** can be found in the DOCS_ file. If you're looking for info about a specific feature, you should go there.
 
+If you're having a problem with Coconut, please `create a new issue <https://github.com/evhub/coconut/issues/new>` detailing the problem, and it will be addressed as soon as possible.
+
 .. _Python: https://www.python.org/
 .. _GitHub: https://github.com/evhub/coconut
 .. _PyPI: https://pypi.python.org/pypi/coconut
