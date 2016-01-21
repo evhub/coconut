@@ -46,28 +46,37 @@ def fixpath(path):
 
 class executor(object):
     """Compiled Python executor."""
-    def __init__(self, header=None, extras=None, exit=sys.exit):
+    def __init__(self, header=None, extras=None, exit=None):
         """Creates the executor."""
         self.exit = exit
         self.vars = {}
         if header is not None:
             self.run(header)
         if extras is not None:
-            self.vars.update(extras)
+            self.bindvars(extras)
+
+    def bindvars(self, extras):
+        """Adds extra variable bindings."""
+        self.vars.update(extras)
+
     def setfile(self, path):
         """Sets __file__."""
         self.vars["__file__"] = path
-    def run(self, code, err=False):
+
+    def run(self, code, err=False, dorun=exec):
         """Executes Python code."""
         try:
-            exec(code, self.vars)
+            return dorun(code, self.vars)
         except (Exception, KeyboardInterrupt):
             if err:
                 raise
             else:
                 traceback.print_exc()
         except SystemExit:
-            self.exit()
+            if self.exit is None:
+                raise
+            else:
+                self.exit()
 
 class terminal(object):
     """Manages printing and reading data to the console."""

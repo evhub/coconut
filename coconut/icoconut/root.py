@@ -18,19 +18,52 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from ..command import *
 try:
-    from cStringIO import StringIO
+    from StringIO import StringIO
 except ImportError:
     from io import StringIO
 from ipykernel.kernelbase import Kernel
+
+#-----------------------------------------------------------------------------------------------------------------------
+# UTILITIES:
+#-----------------------------------------------------------------------------------------------------------------------
+
+class fakefile(StringIO):
+    """A file-like object wrapper around a messaging function."""
+    def __init__(self, send):
+        """Initialize with a messaging function."""
+        super(fakefile, self).__init__()
+        self._send = send
+
+    def _refresh(self):
+        """Send value to the messaging function."""
+        self._send(self.getvalue())
+        self.seek(0)
+        self.truncate()
+
+    def flush(self, *args, **kwargs):
+        """Flush to the messaging function."""
+        super(fakefile, self).flush(*args, **kwargs)
+        self._refresh()
+
+    def write(self, *args, **kwargs):
+        """Write to the messaging function."""
+        super(fakefile, self).write(*args, **kwargs)
+        self._refresh()
+
+    def writelines(self, *args, **kwargs):
+        """Write lines to the messaging function."""
+        super(fakefile, self).writelines(*args, **kwargs)
+        self._refresh()
 
 #-----------------------------------------------------------------------------------------------------------------------
 # KERNEL:
 #-----------------------------------------------------------------------------------------------------------------------
 
 proc = processor(version="2" if PY2 else "3")
-runner = executor(proc.headers("code"))
 
 class kernel(Kernel):
+    """Jupyter kernel for Coconut."""
+    _runner = None
     implementation = "icoconut"
     implementation_version = VERSION
     language = "coconut"
@@ -41,10 +74,15 @@ class kernel(Kernel):
         "mimetype": "text/x-python",
         "file_extension": ".coc",
         "codemirror_mode": "python",
-        "pygments_lexer": "python"
+        "pygments_lexer": "python",
+        "help_links": [
+            {"text": "Coconut Tutorial", "url": "https://github.com/evhub/coconut/blob/master/HELP.md"},
+            {"text": "Coconut Documentation", "url": "https://github.com/evhub/coconut/blob/master/DOCS.md"}
+        ]
     }
 
     def _send(self, silent, text, debug=False):
+        """Send message to console."""
         if not silent:
             message = {
                 "name": "stderr" if debug else "stdout",
@@ -52,33 +90,72 @@ class kernel(Kernel):
                 }
             self.send_response(self.iopub_socket, "stream", message)
 
-    def do_execute(self, code, silent, store_history=True, user_expressions=None, allow_stdin=False):
-        sys.stdout, stdout = StringIO(), sys.stdout
+    def _setup(self, force=False):
+        """Binds to the runner."""
+        if self._runner is None or force:
+            self._runner = executor(proc.headers("code"))
+
+    def _execute(self, code, evaluate=False):
+        """Compiles and runs code."""
+        self._setup()
         try:
-            runner.run(proc.parse_block(code))
+            if evaluate:
+                compiled = proc.parse_eval(code)
+            else:
+                compiled = proc.parse_block(code)
         except CoconutException:
-            self._send(silent, get_error(), True)
-        finally:
-            self._send(silent, sys.stdout.getvalue())
-            sys.stdout.close()
-            sys.stdout = stdout
+            printerr(get_error())
+        else:
+            if evaluate:
+                return self._runner.run(compiled, dorun=eval)
+            else:
+                return self._runner.run(compiled)
+
+    def do_execute(self, code, silent, store_history=True, user_expressions=None, allow_stdin=False):
+        """Execute Coconut code."""
+        if silent:
+            store_history = False
+        if user_expressions is None:
+            user_expressions = {}
+
+        stdout, stderr = sys.stdout, sys.stderr
+        sys.stdout = fakefile(lambda text: self._send(silent, text))
+        sys.stderr = fakefile(lambda text: self._send(silent, text, True))
+
+        self._execute(code)
+        for name in user_expressions:
+            user_expressions[name] = self._execute(user_expressions[name], True)
+
+        sys.stdout.close()
+        sys.stderr.close()
+        sys.stdout, sys.stderr = stdout, stderr
+        if not store_history:
+            self._setup(True)
         return {
             "status": "ok",
             "execution_count": self.execution_count,
-            "payload": [],
-            "user_expressions": user_expressions if user_expressions is not None else {}
+            "user_expressions": user_expressions
         }
 
     def do_is_complete(self, code):
+        """Check Coconut code for correctness."""
         try:
             proc.parse_block(code)
         except CoconutException:
-            return {
-                "status": "incomplete",
-                "indent": " "*tablen
-            }
+            if code.endswith("\n\n"):
+                return {
+                    "status": "complete"
+                }
+            elif code.rstrip().endswith(":"):
+                return {
+                    "status": "incomplete",
+                    "indent": " "*tablen
+                }
+            else:
+                return {
+                    "status": "incomplete"
+                }
         else:
             return {
-                "status": "complete",
-                "indent": " "*tablen
+                "status": "complete"
             }
