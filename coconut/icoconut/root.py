@@ -55,7 +55,7 @@ class kernel(Kernel):
     def do_execute(self, code, silent, store_history=True, user_expressions=None, allow_stdin=False):
         sys.stdout, stdout = StringIO(), sys.stdout
         try:
-            runner.run(proc.parse_single(code))
+            runner.run(proc.parse_block(code))
         except CoconutException:
             self._send(silent, get_error(), True)
         finally:
@@ -71,7 +71,7 @@ class kernel(Kernel):
 
     def do_is_complete(self, code):
         try:
-            proc.parse_single(code)
+            proc.parse_block(code)
         except CoconutException:
             return {
                 "status": "incomplete",
