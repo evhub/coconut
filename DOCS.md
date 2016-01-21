@@ -88,7 +88,7 @@ python -m pip install coconut
 ### Usage
 
 ```
-coconut [-h] [-v] [source] [dest] [-t version] [-s] [-p] [-a] [-f] [-d] [-r] [-n] [-i] [-q] [-c code] [--jupyter ...] [--autopep8 ...] [--debug]
+coconut [-h] [-v] [source] [dest] [-t version] [-s] [-p] [-a] [-f] [-d] [-r] [-n] [-i] [-q] [-c code] [--jupyter ...] [--autopep8 ...] [--color color] [--debug]
 ```
 
 #### Positional Arguments
@@ -116,6 +116,7 @@ dest                  destination directory for compiled files (defaults to the 
 -c, --code            run a line of Coconut passed in as a string (can also be accomplished with a pipe)
 --jupyter, --ipython  run Jupyter (formerly IPython) with Coconut as the kernel (remaining args passed to Jupyter)
 --autopep8            use autopep8 to format compiled code (remaining args passed to autopep8)
+--color               show all Coconut messages in the given color
 --debug               print verbose debug output
 ```
 

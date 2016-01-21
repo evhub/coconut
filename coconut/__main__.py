@@ -24,26 +24,12 @@ from coconut.root import *
 from coconut.command import cli
 
 #-----------------------------------------------------------------------------------------------------------------------
-# CONSTANTS:
-#-----------------------------------------------------------------------------------------------------------------------
-
-from os import name as os_name
-
-use_color = True
-main_color = "cyan"
-debug_color = "yellow"
-
-#-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def main(color=use_color):
+def main():
     """Runs the Coconut CLI."""
-    if not color or os_name == "nt": # don't use unix color codes on windows
-        cmd = cli()
-    else:
-        cmd = cli(main_color=main_color, debug_color=debug_color)
-    cmd.start()
+    cli().start()
 
 if __name__ == "__main__":
     main()
