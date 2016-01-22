@@ -14,8 +14,8 @@ If you're having a problem with Coconut, please `create a new issue <https://git
 .. _Python: https://www.python.org/
 .. _GitHub: https://github.com/evhub/coconut
 .. _PyPI: https://pypi.python.org/pypi/coconut
-.. _HELP: https://github.com/evhub/coconut/blob/master/HELP.md
-.. _DOCS: https://github.com/evhub/coconut/blob/master/DOCS.md
+.. _HELP: http://coconut.readthedocs.org/en/master/HELP.html
+.. _DOCS: http://coconut.readthedocs.org/en/master/DOCS.html
 
 Why Coconut?
 ------------

@@ -1,6 +1,6 @@
 # Coconut Documentation
 
-This documentation will cover all the technical details of the [Coconut Programming Language](https://github.com/evhub/coconut), and is intended as a reference specification, not a tutorialized introduction. For a full introduction and tutorial of Coconut, see [HELP](https://github.com/evhub/coconut/blob/master/HELP.md).
+This documentation will cover all the technical details of the [Coconut Programming Language](http://evhub.github.io/coconut/), and is intended as a reference specification, not a tutorialized introduction. For a full introduction and tutorial of Coconut, see [HELP](http://coconut.readthedocs.org/en/master/HELP.html).
 
 <!-- MarkdownTOC -->
 
