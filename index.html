@@ -19,66 +19,82 @@
     </section>
 
     <section class="main-content">
-      <h1>
-<a id="coconut" class="anchor" href="#coconut" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Coconut</h1>
+      <p><em>Coconut is a variant of <a href="https://www.python.org/">Python</a> built for simple, elegant, Pythonic functional programming.</em></p>
 
-<p><em>Coconut is a variant of Python built for simple, elegant, Pythonic functional programming.</em></p>
+<p>Coconut can be found on <a href="https://github.com/evhub/coconut">GitHub</a> and <a href="https://pypi.python.org/pypi/coconut">PyPI</a>, where it has been downloaded <a href="http://pypi-ranking.info/module/coconut">over 20,000 times</a>.</p>
 
-<p>Coconut can be found on GitHub_ and PyPI_, where it has been downloaded <code>over 20,000 times &lt;http://pypi-ranking.info/module/coconut&gt;</code>_.</p>
+<p>A full <strong>introduction and tutorial</strong> of the Coconut programming language can be found in the <a href="https://github.com/evhub/coconut/blob/master/HELP.md">HELP</a> file. If you don't know what you're doing, you should start there.</p>
 
-<p>A full <strong>introduction and tutorial</strong> of the Coconut programming language can be found in the HELP_ file. If you don't know what you're doing, you should start there.</p>
+<p>The full Coconut <strong>documentation</strong> can be found in the <a href="https://github.com/evhub/coconut/blob/master/DOCS.md">DOCS</a> file. If you're looking for info about a specific feature, you should go there.</p>
 
-<p>The full Coconut <strong>documentation</strong> can be found in the DOCS_ file. If you're looking for info about a specific feature, you should go there.</p>
+<p>If you're having a problem with Coconut, please create a new issue &lt;<a href="https://github.com/evhub/coconut/issues/new">https://github.com/evhub/coconut/issues/new</a>&gt; detailing the problem, and it will be addressed as soon as possible.</p>
 
-<p>.. _GitHub: <a href="https://github.com/evhub/coconut">https://github.com/evhub/coconut</a>
-.. _PyPI: <a href="https://pypi.python.org/pypi/coconut">https://pypi.python.org/pypi/coconut</a>
-.. _HELP: <a href="https://github.com/evhub/coconut/blob/master/HELP.md">https://github.com/evhub/coconut/blob/master/HELP.md</a>
-.. _DOCS: <a href="https://github.com/evhub/coconut/blob/master/DOCS.md">https://github.com/evhub/coconut/blob/master/DOCS.md</a></p>
+<h1>
+<a id="why-coconut" class="anchor" href="#why-coconut" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Why Coconut?</h1>
 
-<h2>
-<a id="why-coconut" class="anchor" href="#why-coconut" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Why Coconut?</h2>
-
-<p>\1. <strong>It's just Python!</strong></p>
+<ol>
+<li><strong>It's just Python!</strong></li>
+</ol>
 
 <p>Love Python? So do I! All valid Python 3 is also valid Coconut. That means that not only does learning Coconut not require learning new libraries, it doesn't even require learning a new core syntax! Integrating Coconut into your existing projects is as simple as replacing <code>.py</code> with <code>.coc</code>.</p>
 
-<p>\2. <em>But...</em> <strong>Coconut has powerful destructuring assignment.</strong></p>
+<ol>
+<li>
+<em>But...</em> <strong>Coconut has powerful destructuring assignment.</strong>
+</li>
+</ol>
 
 <p>Enjoy writing simple, readable code like <code>a, b = get_two_items()</code>, but wish you could do something like <code>{"text": text, "tags": [first] + rest} = get_dict()</code>? Coconut provides destructuring assignment that can accoplish all that and much, much more!</p>
 
-<p>\3. <em>But...</em> <strong>Coconut has nicer syntax.</strong></p>
+<ol>
+<li>
+<em>But...</em> <strong>Coconut has nicer syntax.</strong>
+</li>
+</ol>
 
 <p>Hate typing out <code>lambda</code> or <code>return</code> every time you want to create a one-line function? Love rhetorical questions and parallel grammatical structure? So do I! Coconut supports function definition syntax that's as simple as <code>(x) -&gt; x</code> or <code>def f(x) = x</code>.</p>
 
-<p>\4. <em>But...</em> <strong>Coconut has algebraic data types.</strong></p>
+<ol>
+<li>
+<em>But...</em> <strong>Coconut has algebraic data types.</strong>
+</li>
+</ol>
 
 <p>If you know Python, then you already know how useful immutable lists can be. Don't believe me? They're called tuples, of course! Python lets tuples hog all that immutability goodness, but wouldn't it be nice if you could create arbitrary immutable data types? Coconut's <code>data</code> statement allows you to create any sort of immutable data type that you wish!</p>
 
-<p>\5. <em>But...</em> <strong>Coconut has pattern-matching.</strong></p>
+<ol>
+<li>
+<em>But...</em> <strong>Coconut has pattern-matching.</strong>
+</li>
+</ol>
 
 <p>If you've ever used a functional programming language before, you probably know how awesome pattern-matching is. Coconut's <code>match</code> statement brings all that to Python. Here's just a taste of how powerful Coconut's pattern-matching is:</p>
 
-<pre><code>&gt;&gt;&gt; data point(x, y): pass
-&gt;&gt;&gt; my_point = point(3, 0)
-&gt;&gt;&gt; match point(a, 0) in my_point:
-       print("x = " + str(a))
-x = 3
-</code></pre>
+<blockquote>
+<p>&gt;&gt;&gt; data point(x, y): pass &gt;&gt;&gt; my_point = point(3, 0) &gt;&gt;&gt; match point(a, 0) in my_point: print("x = " + str(a)) x = 3</p>
+</blockquote>
 
-<p>\6. <em>But...</em> <strong>Coconut has lazy evaluation.</strong></p>
+<ol>
+<li>
+<em>But...</em> <strong>Coconut has lazy evaluation.</strong>
+</li>
+</ol>
 
 <p>Common to functional programming, but missing from Python, is lazy evaluation, where expressions aren't evaluated until they're needed. Coconut's powerful constructs for lazy evaluation allows for such cool things as:</p>
 
-<pre><code>&gt;&gt;&gt; def natural_numbers(n=0) = (n,) :: natural_numbers(n+1)
-&gt;&gt;&gt; natural_numbers()$[0:5] |&gt; list |&gt; print
-[0, 1, 2, 3, 4]
-</code></pre>
+<blockquote>
+<p>&gt;&gt;&gt; def natural_numbers(n=0) = (n,) :: natural_numbers(n+1) &gt;&gt;&gt; natural_numbers()$[0:5] |&gt; list |&gt; print [0, 1, 2, 3, 4]</p>
+</blockquote>
 
-<p>\7. <em>But...</em> <strong>Coconut allows for truly Pythonic functional programming.</strong></p>
+<ol>
+<li>
+<em>But...</em> <strong>Coconut allows for truly Pythonic functional programming.</strong>
+</li>
+</ol>
 
-<p>Not only can Coconut do all those awesome things, it also has syntactic support for partial application, function composition, infix calling, lazy lists, frozen set literals, unicode operators, tail call optimization, and a whole host of other constructs for you to explore.</p>
+<p>Not only can Coconut do all those awesome things, it also has syntactic support for partial application, function composition, infix calling, lazy lists, frozen set literals, unicode operators, tail call optimization, and a whole host of other constructs for you to explore, including built-in integration with IPython/Jupyter.</p>
 
-<p>Ready to give Coconut a try? Head over to the HELP_ file for a full tutorial to help (ha, get it?) you get started.</p>
+<p>Ready to give Coconut a try? Head over to the <a href="https://github.com/evhub/coconut/blob/master/HELP.md">HELP</a> file for a full tutorial to help (ha, get it?) you get started.</p>
 
       <footer class="site-footer">
         <span class="site-footer-owner"><a href="https://github.com/evhub/coconut">Coconut</a> is maintained by <a href="https://github.com/evhub">evhub</a>.</span>
