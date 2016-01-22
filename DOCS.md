@@ -60,11 +60,11 @@ This documentation will cover all the technical details of the [Coconut Programm
     8. [`__coconut_version__`](#__coconut_version__)
 8. [Coconut Module](#coconut-module)
     1. [`coconut.convenience`](#coconutconvenience)
-        1. [`coconut.convenience.parse`](#coconutconvenienceparse)
-        2. [`coconut.convenience.setup`](#coconutconveniencesetup)
-        3. [`coconut.convenience.cmd`](#coconutconveniencecmd)
-        4. [`coconut.convenience.version`](#coconutconvenienceversion)
-        5. [`coconut.convenience.CoconutException`](#coconutconveniencecoconutexception)
+        1. [`parse`](#parse)
+        2. [`setup`](#setup)
+        3. [`cmd`](#cmd)
+        4. [`version`](#version)
+        5. [`CoconutException`](#coconutexception)
 
 <!-- /MarkdownTOC -->
 
@@ -1305,9 +1305,9 @@ Coconut provides the built-in double-underscore constant variable `__coconut_ver
 
 The recommended way to use Coconut as a module is to use `from coconut.convenience import` and import whatever convenience functions you'll be using. Specifications of the different convenience functions are as follows.
 
-#### `coconut.convenience.parse`
+#### `parse`
 
-**parse**(_code,_ **[**_mode_**]**)
+**coconut.convenience.parse**(_code,_ **[**_mode_**]**)
 
 Likely the most useful of the convenience functions, `parse` takes Coconut code as input and outputs the equivalent compiled Python code. The second argument, _mode_, is used to indicate the context for the parsing. Possible values of _mode_ are:
 
@@ -1319,9 +1319,9 @@ Likely the most useful of the convenience functions, `parse` takes Coconut code 
 - `"eval"`: a single expression
 - `"debug"`: lines of code with no header
 
-#### `coconut.convenience.setup`
+#### `setup`
 
-**setup**(**[[[**_target_**]**_, strict_**]**_, quiet_**]**)
+**coconut.convenience.setup**(**[[[**_target_**]**_, strict_**]**_, quiet_**]**)
 
 If `--target`, `--strict`, or `--quiet` are desired for `parse`, the three arguments to `setup`, _target_, _strict_, and _quiet_, will each set the value of the corresponding flag. The possible values for each flag are:
 
@@ -1329,15 +1329,15 @@ If `--target`, `--strict`, or `--quiet` are desired for `parse`, the three argum
 - _strict_: `False` (default) or `True`
 - _quiet_: `False` (default) or `True`
 
-#### `coconut.convenience.cmd`
+#### `cmd`
 
-**cmd**(_args_, **[**_interact_**]**)
+**coconut.convenience.cmd**(_args_, **[**_interact_**]**)
 
 Executes the given _args_ as if they were fed to `coconut` on the command-line, with the exception that unless _interact_ is true or `-i` is passed, the interpreter will not be started. Additionally, since `parse` and `cmd` share the same convenience parsing object, any changes made to the parsing with `cmd` will work just as if they were made with `setup`.
 
-#### `coconut.convenience.version`
+#### `version`
 
-**version**(**[**_which_**]**)
+**coconut.convenience.version**(**[**_which_**]**)
 
 Retrieves a string containing information about the Coconut version. The optional argument _which_ is the type of version information desired. Possible values of _which_ are:
 
@@ -1346,6 +1346,6 @@ Retrieves a string containing information about the Coconut version. The optiona
 - `"spec"`: the numerical version with the codename attached
 - `"-v"`: the full string printed by `coconut -v`
 
-#### `coconut.convenience.CoconutException`
+#### `CoconutException`
 
 If an error is encountered in a convenience function, a `CoconutException` instance may be raised. `coconut.convenience.CoconutException` is provided to allow catching such errors.

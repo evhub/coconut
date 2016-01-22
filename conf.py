@@ -27,6 +27,8 @@ from recommonmark.parser import CommonMarkParser
 # DEFINITIONS:
 #-----------------------------------------------------------------------------------------------------------------------
 
+html_theme = "alabaster"
+
 project = "Coconut"
 copyright = "2015, Evan Hubinger"
 author = "Evan Hubinger"
@@ -39,5 +41,3 @@ source_parsers = {
     ".md": CommonMarkParser
 }
 source_suffix = [".rst", ".md"]
-
-html_theme = "alabaster"
