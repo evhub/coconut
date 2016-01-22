@@ -31,7 +31,7 @@ pip-delete-this-directory.txt
 
 # Sphinx documentation
 _build/
-make.batt
+make.bat
 Makefile
 
 # Macintosh Desktop Services Store files
