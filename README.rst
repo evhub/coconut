@@ -62,3 +62,6 @@ Ready to give Coconut a try? Head over to the HELP_ file for a full tutorial to 
 
 .. toctree::
    :maxdepth: 2
+
+   HELP
+   DOCS
