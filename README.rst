@@ -60,12 +60,5 @@ Not only can Coconut do all those awesome things, it also has syntactic support 
 
 Ready to give Coconut a try? Head over to the HELP_ file for a full tutorial to help (ha, get it?) you get started.
 
-Contents
---------
-
 .. toctree::
    :maxdepth: 2
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
