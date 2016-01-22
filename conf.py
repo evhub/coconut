@@ -39,6 +39,3 @@ source_parsers = {
     ".md": CommonMarkParser
 }
 source_suffix = [".rst", ".md"]
-
-html_theme = "alabaster"
-pygments_style = "sphinx"
