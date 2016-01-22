@@ -7,7 +7,7 @@
 """
 Author: Evan Hubinger
 License: Apache 2.0
-Description: Documentation Manager for the Coconut Programming Language.
+Description: Sphinx configuration file for the Coconut Programming Language.
 """
 
 #-----------------------------------------------------------------------------------------------------------------------
