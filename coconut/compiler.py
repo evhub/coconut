@@ -255,6 +255,7 @@ tuple = tuple
 list = list
 slice = slice
 len = len
+iter = iter
 isinstance = isinstance
 getattr = getattr
 ascii = ascii
@@ -332,6 +333,7 @@ class __coconut__(object):
     list = list
     slice = slice
     len = len
+    iter = iter
     isinstance = isinstance
     getattr = getattr
     ascii = ascii
@@ -804,13 +806,10 @@ class matcher(object):
         if tail is None:
             self.defs.append(itervar+" = __coconut__.tuple("+item+")")
         else:
-            self.defs.append(itervar+" = __coconut__.tuple(__coconut__.itertools.islice("+item+", 0, "+str(len(match))+"))")
-            self.defs.append(tail+" = "+item)
+            self.defs.append(tail+" = __coconut__.iter("+item+")")
+            self.defs.append(itervar+" = __coconut__.tuple(__coconut__.itertools.islice("+tail+", 0, "+str(len(match))+"))")
         self.increment()
-        if tail is None:
-            self.checks.append("__coconut__.len("+itervar+") == "+str(len(match)))
-        else:
-            self.checks.append("__coconut__.len("+itervar+") >= "+str(len(match)))
+        self.checks.append("__coconut__.len("+itervar+") == "+str(len(match)))
         for x in range(0, len(match)):
             self.match(match[x], itervar+"["+str(x)+"]")
         self.decrement()

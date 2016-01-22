@@ -246,7 +246,7 @@ class cli(object):
             if args.autopep8 is not None:
                 self.proc.autopep8(args.autopep8)
             if args.code is not None:
-                self.execute(self.proc.parse_single(args.code[0]))
+                self.execute(self.proc.parse_block(args.code[0]))
             stdin = not sys.stdin.isatty()
             if stdin:
                 self.execute(self.proc.parse_block(sys.stdin.read()))
@@ -386,10 +386,8 @@ class cli(object):
                     return compiled
         return None
 
-    def prompt_with(self, prompt, default=None):
+    def prompt_with(self, prompt):
         """Prompts for code."""
-        if readline is not None and default is not None:
-            readline.set_pre_input_hook(lambda: readline.insert_text(default))
         try:
             return input(prompt) # using input from .root
         except KeyboardInterrupt:
@@ -397,9 +395,6 @@ class cli(object):
         except EOFError:
             print()
             self.exit()
-        finally:
-            if readline is not None and default is not None:
-                readline.set_pre_input_hook()
         return None
 
     def start_prompt(self):
@@ -422,14 +417,10 @@ class cli(object):
     def handle(self, code):
         """Compiles Coconut interpreter input."""
         try:
-            compiled = self.proc.parse_single(code)
+            compiled = self.proc.parse_block(code)
         except CoconutException:
             while True:
-                if self.proc.should_indent(code):
-                    default = " "*tablen
-                else:
-                    default = None
-                line = self.prompt_with(self.moreprompt, default)
+                line = self.prompt_with(self.moreprompt)
                 if line is None:
                     return None
                 elif line.strip():
@@ -437,7 +428,7 @@ class cli(object):
                 else:
                     break
             try:
-                compiled = self.proc.parse_single(code)
+                compiled = self.proc.parse_block(code)
             except CoconutException:
                 printerr(get_error(self.indebug()))
                 return None
