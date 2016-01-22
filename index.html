@@ -19,7 +19,10 @@
     </section>
 
     <section class="main-content">
-      <p><em>Coconut is a variant of <a href="https://www.python.org/">Python</a> built for simple, elegant, Pythonic functional programming.</em></p>
+      <h1>
+<a id="coconut" class="anchor" href="#coconut" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Coconut</h1>
+
+<p><em>Coconut is a variant of <a href="https://www.python.org/">Python</a> built for simple, elegant, Pythonic functional programming.</em></p>
 
 <p>Coconut can be found on <a href="https://github.com/evhub/coconut">GitHub</a> and <a href="https://pypi.python.org/pypi/coconut">PyPI</a>, where it has been downloaded <a href="http://pypi-ranking.info/module/coconut">over 20,000 times</a>.</p>
 
@@ -27,7 +30,7 @@
 
 <p>The full Coconut <strong>documentation</strong> can be found in the <a href="https://github.com/evhub/coconut/blob/master/DOCS.md">DOCS</a> file. If you're looking for info about a specific feature, you should go there.</p>
 
-<p>If you're having a problem with Coconut, please create a new issue &lt;<a href="https://github.com/evhub/coconut/issues/new">https://github.com/evhub/coconut/issues/new</a>&gt; detailing the problem, and it will be addressed as soon as possible.</p>
+<p>If you're having a problem with Coconut, please <a href="https://github.com/evhub/coconut/issues/new">create a new issue</a> detailing the problem, and it will be addressed as soon as possible.</p>
 
 <h1>
 <a id="why-coconut" class="anchor" href="#why-coconut" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Why Coconut?</h1>
@@ -70,9 +73,12 @@
 
 <p>If you've ever used a functional programming language before, you probably know how awesome pattern-matching is. Coconut's <code>match</code> statement brings all that to Python. Here's just a taste of how powerful Coconut's pattern-matching is:</p>
 
-<blockquote>
-<p>&gt;&gt;&gt; data point(x, y): pass &gt;&gt;&gt; my_point = point(3, 0) &gt;&gt;&gt; match point(a, 0) in my_point: print("x = " + str(a)) x = 3</p>
-</blockquote>
+<pre><code>&gt;&gt;&gt; data point(x, y): pass
+&gt;&gt;&gt; my_point = point(3, 0)
+&gt;&gt;&gt; match point(a, 0) in my_point:
+       print("x = " + str(a))
+x = 3
+</code></pre>
 
 <ol>
 <li>
@@ -82,9 +88,10 @@
 
 <p>Common to functional programming, but missing from Python, is lazy evaluation, where expressions aren't evaluated until they're needed. Coconut's powerful constructs for lazy evaluation allows for such cool things as:</p>
 
-<blockquote>
-<p>&gt;&gt;&gt; def natural_numbers(n=0) = (n,) :: natural_numbers(n+1) &gt;&gt;&gt; natural_numbers()$[0:5] |&gt; list |&gt; print [0, 1, 2, 3, 4]</p>
-</blockquote>
+<pre><code>&gt;&gt;&gt; def natural_numbers(n=0) = (n,) :: natural_numbers(n+1)
+&gt;&gt;&gt; natural_numbers()$[0:5] |&gt; list |&gt; print
+[0, 1, 2, 3, 4]
+</code></pre>
 
 <ol>
 <li>
