@@ -245,6 +245,7 @@ a {
     font-size: 0.9rem; } }
 
 .code-box {
+  font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
   display: inline-block;
   margin-bottom: 1rem;
   color: rgba(0, 0, 0, 0.9);
