@@ -41,7 +41,7 @@ Coconut IPython Notebook
 
 .. image:: http://i.imgur.com/g1PkjJJ.png
 
-Writing Coconut Programs
-~~~~~~~~~~~~~~~~~~~~~~~~
+Full Coconut Programs
+~~~~~~~~~~~~~~~~~~~~~
 
 .. image:: http://i.imgur.com/YQ0o7bs.png
