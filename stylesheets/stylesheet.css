@@ -244,11 +244,11 @@ a {
   .site-footer {
     font-size: 0.9rem; } }
 
-.code-box {
+.code-block {
   font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
   display: inline-block;
   margin-bottom: 1rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 1.0);
   background-color: rgba(0, 0, 0, 1.0);
   border-color: rgba(0, 0, 0, 0.3);
   border-style: solid;
@@ -257,16 +257,16 @@ a {
   transition: color 0.2s, background-color 0.2s, border-color 0.2s; }
 
 @media screen and (min-width: 64em) {
-  .code-box {
+  .code-block {
     padding: 0.75rem 1rem; } }
 
 @media screen and (min-width: 42em) and (max-width: 64em) {
-  .code-box {
+  .code-block {
     padding: 0.6rem 0.9rem;
     font-size: 0.9rem; } }
 
 @media screen and (max-width: 42em) {
-  .code-box {
+  .code-block {
     display: block;
     width: 100%;
     padding: 0.75rem;
