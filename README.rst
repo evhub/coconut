@@ -27,3 +27,10 @@ Coconut is completely open-source, and new contributors are always welcome. Cont
 
    HELP
    DOCS
+
+Coconut in Action
+-----------------
+
+.. image:: http://i.imgur.com/zMQaGmi.png
+.. image:: http://i.imgur.com/g1PkjJJ.png
+.. image:: http://i.imgur.com/YQ0o7bs.png
