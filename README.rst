@@ -1,64 +1,26 @@
 Coconut
 =======
 
-*Coconut is a variant of Python_ built for simple, elegant, Pythonic functional programming.*
+Coconut_ is a variant of Python_ built for **simple, elegant, Pythonic functional programming**.
 
-Coconut can be found on GitHub_ and PyPI_, where it has been downloaded `over 20,000 times <http://pypi-ranking.info/module/coconut>`_.
+Coconut is hosted on PyPI_, where it has been downloaded `over 20,000 times <http://pypi-ranking.info/module/coconut>`_. Installing Coconut is as easy as:
 
-A full **introduction and tutorial** of the Coconut programming language can be found in the HELP_ file. If you don't know what you're doing, you should start there.
+    python -m pip install coconut
 
-The full Coconut **documentation** can be found in the DOCS_ file. If you're looking for info about a specific feature, you should go there.
+If you're new to Coconut, a **simple, easy-to-follow tutorial** of the Coconut Programming Language is provided in the Coconut Help_.
+
+If you're looking for info about a specific feature, Coconut's **complete documentation** can be accessed through the Coconut Docs_.
 
 If you're having a problem with Coconut, please `create a new issue <https://github.com/evhub/coconut/issues/new>`_ detailing the problem, and it will be addressed as soon as possible.
 
+Coconut is completely open-source, and new contributors are always welcome. Contributing to Coconut is as simple as forking Coconut on GitHub_, making your changes, and proposing a pull request.
+
+.. _Coconut: http://evhub.github.io/coconut/
 .. _Python: https://www.python.org/
-.. _GitHub: https://github.com/evhub/coconut
 .. _PyPI: https://pypi.python.org/pypi/coconut
-.. _HELP: http://coconut.readthedocs.org/en/master/HELP.html
-.. _DOCS: http://coconut.readthedocs.org/en/master/DOCS.html
-
-Why Coconut?
-------------
-
-\1. **It's just Python!**
-
-Love Python? So do I! All valid Python 3 is also valid Coconut. That means that not only does learning Coconut not require learning new libraries, it doesn't even require learning a new core syntax! Integrating Coconut into your existing projects is as simple as replacing ``.py`` with ``.coc``.
-
-\2. *But...* **Coconut has powerful destructuring assignment.**
-
-Enjoy writing simple, readable code like ``a, b = get_two_items()``, but wish you could do something like ``{"text": text, "tags": [first] + rest} = get_dict()``? Coconut provides destructuring assignment that can accoplish all that and much, much more!
-
-\3. *But...* **Coconut has nicer syntax.**
-
-Hate typing out ``lambda`` or ``return`` every time you want to create a one-line function? Love rhetorical questions and parallel grammatical structure? So do I! Coconut supports function definition syntax that's as simple as ``(x) -> x`` or ``def f(x) = x``.
-
-\4. *But...* **Coconut has algebraic data types.**
-
-If you know Python, then you already know how useful immutable lists can be. Don't believe me? They're called tuples, of course! Python lets tuples hog all that immutability goodness, but wouldn't it be nice if you could create arbitrary immutable data types? Coconut's ``data`` statement allows you to create any sort of immutable data type that you wish!
-
-\5. *But...* **Coconut has pattern-matching.**
-
-If you've ever used a functional programming language before, you probably know how awesome pattern-matching is. Coconut's ``match`` statement brings all that to Python. Here's just a taste of how powerful Coconut's pattern-matching is:
-
-    >>> data point(x, y): pass
-    >>> my_point = point(3, 0)
-    >>> match point(a, 0) in my_point:
-           print("x = " + str(a))
-    x = 3
-
-\6. *But...* **Coconut has lazy evaluation.**
-
-Common to functional programming, but missing from Python, is lazy evaluation, where expressions aren't evaluated until they're needed. Coconut's powerful constructs for lazy evaluation allows for such cool things as:
-
-    >>> def natural_numbers(n=0) = (n,) :: natural_numbers(n+1)
-    >>> natural_numbers()$[0:5] |> list |> print
-    [0, 1, 2, 3, 4]
-
-\7. *But...* **Coconut allows for truly Pythonic functional programming.**
-
-Not only can Coconut do all those awesome things, it also has syntactic support for partial application, function composition, infix calling, lazy lists, frozen set literals, unicode operators, tail call optimization, and a whole host of other constructs for you to explore, including built-in integration with IPython/Jupyter.
-
-Ready to give Coconut a try? Head over to the HELP_ file for a full tutorial to help (ha, get it?) you get started.
+.. _Help: http://coconut.readthedocs.org/en/master/HELP.html
+.. _Docs: http://coconut.readthedocs.org/en/master/DOCS.html
+.. _GitHub: https://github.com/evhub/coconut
 
 .. toctree::
    :maxdepth: 3
