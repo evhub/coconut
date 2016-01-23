@@ -31,6 +31,17 @@ Coconut is completely open-source, and new contributors are always welcome. Cont
 Coconut in Action
 -----------------
 
+Coconut Command-Line Interpreter
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. image:: http://i.imgur.com/zMQaGmi.png
+
+Coconut IPython Notebook
+~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. image:: http://i.imgur.com/g1PkjJJ.png
+
+Writing Coconut Programs
+~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. image:: http://i.imgur.com/YQ0o7bs.png
