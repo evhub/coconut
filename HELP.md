@@ -5,37 +5,41 @@ Why Coconut?
 
 1\. **It's just Python!**
 
-Love Python? So do I! All valid Python 3 is also valid Coconut. That means that not only does learning Coconut not require learning new libraries, it doesn't even require learning a new core syntax! Integrating Coconut into your existing projects is as simple as replacing ``.py`` with ``.coc``.
+Love Python? So do I! All valid Python 3 is also valid Coconut. That means that not only does learning Coconut not require learning new libraries, it doesn't even require learning a new core syntax! Integrating Coconut into your existing projects is as simple as replacing `.py` with `.coc`.
 
 2\. *But...* **Coconut has powerful destructuring assignment.**
 
-Enjoy writing simple, readable code like ``a, b = get_two_items()``, but wish you could do something like ``{"text": text, "tags": [first] + rest} = get_dict()``? Coconut provides destructuring assignment that can accoplish all that and much, much more!
+Enjoy writing simple, readable code like `a, b = get_two_items()`, but wish you could do something like `{"text": text, "tags": [first] + rest} = get_dict()`? Coconut provides destructuring assignment that can accoplish all that and much, much more!
 
 3\. *But...* **Coconut has nicer syntax.**
 
-Hate typing out ``lambda`` or ``return`` every time you want to create a one-line function? Love rhetorical questions and parallel grammatical structure? So do I! Coconut supports function definition syntax that's as simple as ``(x) -> x`` or ``def f(x) = x``.
+Hate typing out `lambda` or `return` every time you want to create a one-line function? Love rhetorical questions and parallel grammatical structure? So do I! Coconut supports function definition syntax that's as simple as `(x) -> x` or `def f(x) = x`.
 
 4\. *But...* **Coconut has algebraic data types.**
 
-If you know Python, then you already know how useful immutable lists can be. Don't believe me? They're called tuples, of course! Python lets tuples hog all that immutability goodness, but wouldn't it be nice if you could create arbitrary immutable data types? Coconut's ``data`` statement allows you to create any sort of immutable data type that you wish!
+If you know Python, then you already know how useful immutable lists can be. Don't believe me? They're called tuples, of course! Python lets tuples hog all that immutability goodness, but wouldn't it be nice if you could create arbitrary immutable data types? Coconut's `data` statement allows you to create any sort of immutable data type that you wish!
 
 5\. *But...* **Coconut has pattern-matching.**
 
-If you've ever used a functional programming language before, you probably know how awesome pattern-matching is. Coconut's ``match`` statement brings all that to Python. Here's just a taste of how powerful Coconut's pattern-matching is:
+If you've ever used a functional programming language before, you probably know how awesome pattern-matching is. Coconut's `match` statement brings all that to Python. Here's just a taste of how powerful Coconut's pattern-matching is:
 
-    >>> data point(x, y): pass
-    >>> my_point = point(3, 0)
-    >>> match point(a, 0) in my_point:
-           print("x = " + str(a))
-    x = 3
+```
+>>> data point(x, y): pass
+>>> my_point = point(3, 0)
+>>> match point(a, 0) in my_point:
+       print("x = " + str(a))
+x = 3
+```
 
 6\. *But...* **Coconut has lazy evaluation.**
 
 Common to functional programming, but missing from Python, is lazy evaluation, where expressions aren't evaluated until they're needed. Coconut's powerful constructs for lazy evaluation allows for such cool things as:
 
-    >>> def natural_numbers(n=0) = (n,) :: natural_numbers(n+1)
-    >>> natural_numbers()$[0:5] |> list |> print
-    [0, 1, 2, 3, 4]
+```
+>>> def natural_numbers(n=0) = (n,) :: natural_numbers(n+1)
+>>> natural_numbers()$[0:5] |> list |> print
+[0, 1, 2, 3, 4]
+```
 
 7\. *But...* **Coconut allows for truly Pythonic functional programming.**
 
@@ -67,7 +71,7 @@ def quick_sort(l):
             :: quick_sort((x for x in tail_ if x > head))
             )
     else:
-        return iter(())
+        return iter()
 ```
 
 ```python
