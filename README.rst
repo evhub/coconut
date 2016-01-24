@@ -7,7 +7,7 @@ Coconut is hosted on PyPI_, where it has been downloaded `over 20,000 times <htt
 
     python -m pip install coconut
 
-If you're new to Coconut, a **simple, easy-to-follow tutorial** of the Coconut Programming Language is provided in the Coconut Help_.
+If you're new to Coconut, a **straightforward, easy-to-follow tutorial** of the Coconut Programming Language is provided in the Coconut Help_.
 
 If you're looking for info about a specific feature, Coconut's **complete documentation** can be accessed through the Coconut Docs_.
 
