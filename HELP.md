@@ -100,8 +100,11 @@ data vector(pts):
             raise TypeError("vectors can only be added to other vectors of the same length")
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
-        match vector(pts) in other if len(pts) == len(self.pts):
-            return map((*), self.pts, pts) |> sum # dot product
+        match vector(pts) in other:
+            if len(pts) == len(self.pts):
+                return map((*), self.pts, pts) |> sum # dot product
+            else:
+                raise TypeError("cannot dot product vector by other vector of different length")
         else:
             return self.pts |> map$((*)$(other)) |*> vector # scalar multiplication
     def __neg__(self):
