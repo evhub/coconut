@@ -187,7 +187,7 @@ class cli(object):
     commandline.add_argument("-i", "--interact", action="store_const", const=True, default=False, help="force the interpreter to start (otherwise starts if no other command is given)")
     commandline.add_argument("-q", "--quiet", action="store_const", const=True, default=False, help="suppress all informational output")
     commandline.add_argument("-c", "--code", metavar="code", type=str, nargs=1, default=None, help="run a line of Coconut passed in as a string (can also be accomplished with a pipe)")
-    commandline.add_argument("--jupyter", "--ipython", type=str, nargs=argparse.REMAINDER, default=None, help="run Jupyter (formerly IPython) with Coconut as the kernel (remaining args passed to Jupyter)")
+    commandline.add_argument("--jupyter", "--ipython", type=str, nargs=argparse.REMAINDER, default=None, help="run Jupyter/IPython with Coconut as the kernel (remaining args passed to Jupyter)")
     commandline.add_argument("--autopep8", type=str, nargs=argparse.REMAINDER, default=None, help="use autopep8 to format compiled code (remaining args passed to autopep8)")
     commandline.add_argument("--color", metavar="color", type=str, nargs=1, default=[None], help="show all Coconut messages in the given color")
     commandline.add_argument("--debug", action="store_const", const=True, default=False, help="print verbose debug output")
@@ -474,7 +474,7 @@ class cli(object):
             try:
                 install_func(install_args + ["--user"])
             except subprocess.CalledProcessError:
-                errmsg = 'unable to install jupyter kernelspec file (failed command "'+" ".join(install_args)+'")'
+                errmsg = 'unable to install Jupyter kernel specification file (failed command "'+" ".join(install_args)+'")'
                 if args:
                     self.processor.warn(CoconutWarning(errmsg))
                 else:

@@ -114,7 +114,7 @@ dest                  destination directory for compiled files (defaults to the 
 -i, --interact        force the interpreter to start (otherwise starts if no other command is given)
 -q, --quiet           suppress all informational output
 -c, --code            run a line of Coconut passed in as a string (can also be accomplished with a pipe)
---jupyter, --ipython  run Jupyter (formerly IPython) with Coconut as the kernel (remaining args passed to Jupyter)
+--jupyter, --ipython  run Jupyter/IPython with Coconut as the kernel (remaining args passed to Jupyter)
 --autopep8            use autopep8 to format compiled code (remaining args passed to autopep8)
 --color               show all Coconut messages in the given color
 --debug               print verbose debug output
