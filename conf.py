@@ -28,7 +28,7 @@ import sphinx_bootstrap_theme
 # DEFINITIONS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-pygments_style = "sphinx"
+pygments_style = "default"
 html_theme = "bootstrap"
 html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
 
