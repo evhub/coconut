@@ -50,7 +50,7 @@ coconut -h
 ```
 which should display Coconut's command-line help.
 
-_Note: if you're having trouble installing Coconut, or if anything mentioned in the rest of this tutorial doesn't seem to work for you, feel free to [open an issue](https://github.com/evhub/coconut/issues/new) and it'll be addressed as soon as possible._
+_Note: if you're having trouble installing Coconut, or if anything else mentioned in this tutorial doesn't seem to work for you, feel free to [open an issue](https://github.com/evhub/coconut/issues/new) and it'll be addressed as soon as possible._
 
 ## Starting Out
 
