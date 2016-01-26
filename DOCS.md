@@ -1,7 +1,5 @@
 # Coconut Documentation
 
-This documentation will cover all the technical details of the [Coconut Programming Language](http://evhub.github.io/coconut/), and is intended as a reference specification, not a tutorialized introduction. For a full introduction and tutorial of Coconut, see [HELP](http://coconut.readthedocs.org/en/master/HELP.html).
-
 <!-- MarkdownTOC -->
 
 1. [Overview](#overview)
@@ -70,9 +68,11 @@ This documentation will cover all the technical details of the [Coconut Programm
 
 ## Overview
 
-Coconut is a variant of [Python](https://www.python.org/) built for simple, elegant, Pythonic functional programming. With only [one exception](#backslash-escaping), Coconut syntax is a strict superset of Python 3 syntax. That means if you're familiar with Python, you're already familiar with most of Coconut!
+This documentation covers all the technical details of the [Coconut Programming Language](http://evhub.github.io/coconut/), and is intended as a reference specification, not a tutorialized introduction. For a full introduction and tutorial of Coconut, see [HELP](http://coconut.readthedocs.org/en/master/HELP.html).
 
-The Coconut compiler turns Coconut code into Python code. The primary method of accessing the Coconut compiler is through the Coconut command-line utility, which also features an interpreter for real-time compilation.
+Coconut is a variant of [Python](https://www.python.org/) built for **simple, elegant, Pythonic functional programming**. With only [one exception](#backslash-escaping), Coconut syntax is a strict superset of Python 3 syntax. That means users familiar with Python will already be familiar with most of Coconut.
+
+The Coconut compiler turns Coconut code into Python code. The primary method of accessing the Coconut compiler is through the Coconut command-line utility, which also features an interpreter for real-time compilation. In addition to the command-line utility, Coconut also supports the use of IPython / Jupyter notebooks.
 
 While most of Coconut gets its inspiration simply from trying to make functional programming work in Python, additional inspiration came from [Haskell](https://www.haskell.org/), [CoffeeScript](http://coffeescript.org/), [F#](http://fsharp.org/), and [patterns.py](https://github.com/Suor/patterns).
 
@@ -171,7 +171,7 @@ If you prefer [IPython](http://ipython.org/) (the python kernel for the [Jupyter
 
 #### Kernel
 
-If Coconut is used as a kernel, all code in the console or notebook will be sent directly to Coconut instead of Python to be evaluated. The command `coconut --jupyter console` (or `coconut --ipython console`) will launch an IPython / Jupyter console using Coconut as the kernel, and the command `coconut --jupyter notebook` (or `coconut --ipython notebook`) will launch an IPython / Jupyter notebook using Coconut as the kernel. Additionally, the command `coconut --jupyter` (or `coconut --ipython`) will add Coconut as a language option inside of all Jupyter notebooks, even those not launched with Coconut. This command may need to be re-run when a new version of Coconut is installed.
+If Coconut is used as a kernel, all code in the console or notebook will be sent directly to Coconut instead of Python to be evaluated. The command `coconut --jupyter notebook` (or `coconut --ipython notebook`) will launch an IPython / Jupyter notebook using Coconut as the kernel and the command `coconut --jupyter console` (or `coconut --ipython console`) will launch an IPython / Jupyter console using Coconut as the kernel. Additionally, the command `coconut --jupyter` (or `coconut --ipython`) will add Coconut as a language option inside of all IPython / Jupyter notebooks, even those not launched with Coconut. This command may need to be re-run when a new version of Coconut is installed.
 
 #### Extension
 
