@@ -103,7 +103,7 @@ dest                  destination directory for compiled files (defaults to the 
 ```
 -h, --help            show this help message and exit
 -v, --version         print Coconut and Python version information
--t, --target          specify target Python version
+-t, --target          specify target Python version (defaults to universal)
 -s, --strict          enforce code cleanliness standards
 -p, --package         compile source as part of a package (defaults to only if source is a directory)
 -a, --standalone      compile source as standalone files (defaults to only if source is a single file)
@@ -124,13 +124,13 @@ dest                  destination directory for compiled files (defaults to the 
 
 Coconut source files should, so the compiler can recognize them, use the extension `.coc`. It is recommended, if your text editor doesn't have Coconut support, that you set it up so it interprets all `.coc` files as Python code.
 
-When the compiler is called, each `.coc` file found will compile to another file with the same name, except with `.py` instead of `.coc`, which will hold the compiled code. If an extension other than `.py` is desired for the compiled files, such as `.pyde` for [Python Processing](http://py.processing.org/), then that extension can be put before `.coc` in the source file name, and it will be used instead of `.py` for the compiled files. For example, `name.coc` will compile to `name.py`, whereas `name.pyde.coc` will compile to `name.pyde`.
+When Coconut compiles a `.coc` file, it will compile to another file with the same name, except with `.py` instead of `.coc`, which will hold the compiled code. If an extension other than `.py` is desired for the compiled files, such as `.pyde` for [Python Processing](http://py.processing.org/), then that extension can be put before `.coc` in the source file name, and it will be used instead of `.py` for the compiled files. For example, `name.coc` will compile to `name.py`, whereas `name.pyde.coc` will compile to `name.pyde`.
 
 ### Compilation Modes
 
-Files compiled by the `coconut` command-line utility will vary based on compilation parameters. If an entire directory of files is compiled (which the compiler will search recursively for any folders containing `.coc` files), a `__coconut__.py` file will be created to house necessary functions (package mode), whereas if only a single file is compiled, that information will be stored within a header inside the file (standalone mode).
+Files compiled by the `coconut` command-line utility will vary based on compilation parameters. If an entire directory of files is compiled (which the compiler will search recursively for any folders containing `.coc` files), a `__coconut__.py` file will be created to house necessary functions (package mode), whereas if only a single file is compiled, that information will be stored within a header inside the file (standalone mode). Standalone mode is better for single files because it gets rid of the overhead involved in importing `__coconut__.py`, but package mode is better for large packages because it gets rid of the need to run the same Coconut header code again in every file, since it can just be imported from `__coconut__.py`.
 
-By default, if the `source` argument to the command-line utility is a file, it will perform standalone compilation on it, whereas if it is a directory, it will recursively search for all `.coc` files and perform package compilation on them. The command-line utility can also be forced to enter either mode with the `--package` (`-p`) and `--standalone` (`-a`) flags.
+By default, if the `source` argument to the command-line utility is a file, it will perform standalone compilation on it, whereas if it is a directory, it will recursively search for all `.coc` files and perform package compilation on them. Thus, in most cases, the mode chosen by Coconut automatically will be the right one. But if it is very important that no additional files like `__coconut__.py` be created, for example, then the command-line utility can also be forced to use a specific mode with the `--package` (`-p`) and `--standalone` (`-a`) flags.
 
 ### Compatible Python Versions
 
