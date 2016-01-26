@@ -4,7 +4,8 @@
 
 1. [Introduction](#introduction)
 2. [Installation](#installation)
-3. [Examples](#examples)
+3. [Starting Out](#starting-out)
+4. [Examples](#examples)
 
 <!-- /MarkdownTOC -->
 
@@ -35,9 +36,33 @@ At its very core, Coconut is a compiler that turns Coconut code into Python code
 - interpret Coconut code on-the-fly
 - launch IPython / Jupyter notebooks that use Coconut as the kernel
 
-Installing Coconut is drop-dead simple: install [Python](https://www.python.org/downloads/), open a command-line prompt, and enter:
-```
+Installing Coconut, including all the features above, is drop-dead simple. Just
+1. install [Python](https://www.python.org/downloads/),
+2. open a command-line prompt,
+3. and enter:
+```bash
 python -m pip install coconut
+```
+
+To check that your installation is functioning properly, try entering into the command-line
+```bash
+coconut -h
+```
+which should display Coconut's command-line help.
+
+_Note: if you're having trouble installing Coconut, or if anything mentioned in the rest of this tutorial doesn't seem to work for you, feel free to [open an issue](https://github.com/evhub/coconut/issues/new) and it'll be addressed as soon as possible._
+
+## Starting Out
+
+Now that you've got Coconut installed, the obvious first thing to do is to play around with it. To launch the Coconut interpreter, just go to the command-line and type
+```bash
+coconut
+```
+and you should see something like
+```bash
+Coconut Interpreter:
+(type "exit()" or press Ctrl-D to end)
+>>>
 ```
 
 ## Examples
