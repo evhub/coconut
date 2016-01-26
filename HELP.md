@@ -207,6 +207,19 @@ Although the imperative approach is a fundamentally ugly method, Python does a s
 
 ### Recursive Method
 
+Recursion is one of the most fundamental tools of functional programming, and is thus a place where Coconut can really help clear up confusing code. Here's the recursive approach in pure Python:
+
+```python
+def factorial(n):
+    """Compute n! where n is an integer >= 0."""
+    if n == 0:
+        return 1
+    elif isinstance(n, int) and n > 0:
+        return n * factorial(n-1)
+    else:
+        raise TypeError("the argument to factorial must be an integer >= 0")
+```
+
 ```python
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
@@ -215,6 +228,19 @@ def factorial(n):
             return 1
         match n is int if n > 0:
             return n * factorial(n-1)
+    else:
+        raise TypeError("the argument to factorial must be an integer >= 0")
+```
+
+```python
+@recursive
+def factorial(n, acc=1):
+    """Compute n! where n is an integer >= 0."""
+    case n:
+        match 0:
+            return acc
+        match n is int if n > 0:
+            return factorial(n-1, acc*n)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
 ```

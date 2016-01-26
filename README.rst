@@ -1,6 +1,12 @@
 Coconut
 =======
 
+.. toctree::
+   :maxdepth: 3
+
+   HELP
+   DOCS
+
 Coconut_ is a variant of Python_ built for **simple, elegant, Pythonic functional programming**.
 
 Coconut is hosted on PyPI_, where it has been downloaded `over 20,000 times <http://pypi-ranking.info/module/coconut>`_. Installing Coconut is as easy as:
@@ -21,12 +27,6 @@ Coconut is completely open-source, and new contributors are always welcome. Cont
 .. _Help: http://coconut.readthedocs.org/en/master/HELP.html
 .. _Docs: http://coconut.readthedocs.org/en/master/DOCS.html
 .. _GitHub: https://github.com/evhub/coconut
-
-.. toctree::
-   :maxdepth: 3
-
-   HELP
-   DOCS
 
 Coconut in Action
 -----------------
