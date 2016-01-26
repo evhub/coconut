@@ -480,6 +480,7 @@ match <pattern> in <value> [if <cond>]:
     <body>]
 ```
 where `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds. `<pattern>` follows its own, special syntax, defined roughly like so:
+
 ```
 pattern := (
     "(" pattern ")"                 # parentheses
@@ -489,29 +490,29 @@ pattern := (
     | STRING                        # strings
     | NAME ["=" pattern]            # capture
     | NAME "(" patterns ")"         # data types
-    | "(" patterns ")"              # tuples
-    | "[" patterns "]"              # lists
+    | "(" patterns ")"              # sequences can be in tuple form
+    | "[" patterns "]"              #  or in list form
     | "(|" patterns "|)"            # lazy lists
     | "{" pattern_pairs "}"         # dictionaries
     | ["s"] "{" pattern_consts "}"  # sets
     | (                             # head-tail splits
-        "(" patterns ")"                # tuples
-        | "[" patterns "]"              # lists
+        "(" patterns ")"
+        | "[" patterns "]"
       ) "+" pattern
     | pattern "+" (                 # init-last splits
-        "(" patterns ")"                # tuples
-        | "[" patterns "]"              # lists
+        "(" patterns ")"
+        | "[" patterns "]"
       )
     | (                             # head-last splits
-        "(" patterns ")"                # tuples
-        | "[" patterns "]"              # lists
+        "(" patterns ")"
+        | "[" patterns "]"
       ) "+" pattern "+" (
         "(" patterns ")"                # this match must be the same
         | "[" patterns "]"              #  construct as the first match
       )
     | (                             # iterator splits
-        "(" patterns ")"                # tuples
-        | "[" patterns "]"              # lists
+        "(" patterns ")"
+        | "[" patterns "]"
         | "(|" patterns "|)"            # lazy lists
       ) "::" pattern
     | pattern "is" names            # type-checking
@@ -525,8 +526,8 @@ pattern := (
 `match` statements will take their pattern and attempt to "match" against it, performing the checks and deconstructions on the arguments as specified by the pattern. The different constructs that can be specified in a pattern, and their function, are:
 - Constants, Numbers, and Strings: will only match to the same constant, number, or string in the same position in the arguments.
 - Variables: will match to anything, and will be bound to whatever they match to, with some exceptions:
- * If the same variable is used multiple times, a check will be performed that each use match to the same value.
- * If the variable name `_` is used, nothing will be bound and everything will always match to it.
+  * If the same variable is used multiple times, a check will be performed that each use match to the same value.
+  * If the variable name `_` is used, nothing will be bound and everything will always match to it.
 - Explicit Bindings (`<var>=<pattern>`): will bind `<var>` to `<pattern>`.
 - Checks (`=<var>`): will check that whatever is in that position is equal to the previously defined variable `<var>`.
 - Type Checks (`<var> is <types>`): will check that whatever is in that position is of type(s) `<types>` before binding the `<var>`.
