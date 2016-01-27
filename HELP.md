@@ -147,18 +147,11 @@ To launch an IPython notebook with Coconut as the kernel, use the command
 ```bash
 coconut --ipython notebook
 ```
-or
-```bash
-coconut --jupyter notebook
-```
 and for launching an IPython console, use the command
 ```bash
 coconut --ipython console
 ```
-or
-```bash
-coconut --jupyter console
-```
+or equivalently, `--jupyter` can be substituted for `--ipython` in either command.
 
 To use Coconut as an extension inside of the Python kernel, add the code
 ```python
@@ -188,12 +181,11 @@ To start off with, we're going to have to decide what sort of an implementation 
 
 ### Imperative Method
 
-The imperative approach is the way you'd write `factorial` in a language like C. In pure Python, it looks something like this:
-
+The imperative approach is the way you'd write `factorial` in a language like C. In Coconut, it looks something like this:
 ```python
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
-    if isinstance(n, int) and n >= 0:
+    if n `isinstance` int and n >= 0:
         acc = 1
         for x in range(1, n+1):
             acc *= x
@@ -203,35 +195,72 @@ def factorial(n):
 
 ```
 
-Although the imperative approach is a fundamentally ugly method, Python does a spectacularly good job of making it look nice, and that's why this is mostly a toy example. But let's take a look at the recursive method.
+Since the imperative approach is a fundamentally non-functional method, Coconut can't help us improve this example very much. Even here, though, the use of Coconut's infix notation in `` n `isinstance` int `` makes the code slightly clearer and easier to read.
 
 ### Recursive Method
 
-Recursion is one of the most fundamental tools of functional programming, and is thus a place where Coconut can really help clear up confusing code. Here's the recursive approach in pure Python:
-
-```python
-def factorial(n):
-    """Compute n! where n is an integer >= 0."""
-    if n == 0:
-        return 1
-    elif isinstance(n, int) and n > 0:
-        return n * factorial(n-1)
-    else:
-        raise TypeError("the argument to factorial must be an integer >= 0")
-```
-
+Recursion is one of the most fundamental tools of functional programming, and is thus a place where Coconut can really help clear up confusing code. Here's the recursive approach in Coconut:
 ```python
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
     case n:
         match 0:
             return 1
-        match n is int if n > 0:
+        match _ is int if n > 0:
             return n * factorial(n-1)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
 ```
 
+Already, you can tell there's a lot more going on here than with the imperative method. That's intentional: Coconut is intended for functional programming, not imperative programminng, and so its new features are built to be most useful when programming in a functional style.
+
+Let's take a look at the specifics of the syntax in this example. The first thing we see is `case n`. This statement starts a `case` block, in which only `match` statements can occur. Each `match` statement will attempt to match its given pattern against the value in the `case` block. Only the first successful match inside of any given `case` block will be executed. When a match is successful, any variable bindings in that match will also be performed. Additionally, as is true in this case, `match` statements can also have `if` guards that will check the given condition before the match is considered final. Finally, after the `case` block, an `else` statement is allowed, which will only be excectued if no `match` statement is.
+
+Specifically, in this example, the first `match` statement checks whether `n` matches to `0`. If it does, it executes `return 1`. Then the second `match` statement checks whether `n` matches to `_ is int`, which performs an `isinstance` check on `n` against `int`, then checks whether `n > 0`, and if those are true, executes `return n * factorial(n-1)`. If neither of those two statements are executed, the `else` statement triggers and executes `raise TypeError("the argument to factorial must be an integer >= 0")`.
+
+Although this example is very basic, pattern-matching is both one of Coconut's most powerful and most complicated features. As a general intuitive guide, it is helpful to think _assignment_ whenever you see the keyword `match`. A good way to showcase this is that all `match` statements can be converted into equivalent destructuring assignment statements, which are also valid Coconut. In this case, the destructuring assignment equivalent to the `factorial` function above, in Coconut, would be:
+```python
+def factorial(n):
+    """Compute n! where n is an integer >= 0."""
+    match_success = False
+    try:
+        match 0 = n
+    except MatchError:
+        try:
+            match _ is int = n
+        except MatchError:
+            pass
+        else:
+            if n > 0:
+                match_success = True
+                return n * factorial(n-1)
+    if not match_success:
+        raise TypeError("the argument to factorial must be an integer >= 0")
+```
+
+As you can see, the destructuring assignment equivalent is much more cumbersome when you expect that the `match` might fail, which is why `match` statement syntax exists. But the destructuring assignment equivalent illuminates what exactly the pattern-matching is doing, by making it clear that `match` statements, and destructuring assignment statements, _are relly just fancy normal assignment statements_. In fact, the `match` keyword before the destructuring assignment statements in this example is optional. Exactly equivalent to the above would be:
+```python
+def factorial(n):
+    """Compute n! where n is an integer >= 0."""
+    match_success = False
+    try:
+        0 = n
+    except MatchError:
+        try:
+            _ is int = n
+        except MatchError:
+            pass
+        else:
+            if n > 0:
+                match_success = True
+                return n * factorial(n-1)
+    if not match_success:
+        raise TypeError("the argument to factorial must be an integer >= 0")
+```
+
+It will be helpful to, as we continue to use Coconut's pattern-matching and destructuring assignment statements in further examples, think _assignment_ whenever you see the keyword `match`.
+
+Up until now, for the recursive method, we have only dealt with pattern-matching, but there's actually another way that Coconut allows us to improve our `factorial` function: by writing it in a tail-recursive style and using Coconut's `recursive` decorator, like so:
 ```python
 @recursive
 def factorial(n, acc=1):
@@ -239,11 +268,13 @@ def factorial(n, acc=1):
     case n:
         match 0:
             return acc
-        match n is int if n > 0:
+        match _ is int if n > 0:
             return factorial(n-1, acc*n)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
 ```
+
+This version is exactly equivalent to the original version, with the exception that it will never raise a `MaximumRecursionDepthError`, because Coconut's `recursive` decorator will optimize away the tail recursion into a `while` loop.
 
 ### Iterative Method
 
@@ -257,7 +288,7 @@ def factorial(n):
     case n:
         match 0:
             return 1
-        match n is int if n > 0:
+        match _ is int if n > 0:
             return range(1, n+1) |> product
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
