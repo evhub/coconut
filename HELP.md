@@ -224,39 +224,22 @@ def factorial(n):
     """Compute n! where n is an integer >= 0."""
     match_success = False
     try:
-        match 0 = n
+        match 0 = n # the match is optional here
     except MatchError:
         try:
-            match _ is int = n
+            match _ is int = n # and here
         except MatchError:
             pass
-        else:
-            if n > 0:
-                match_success = True
-                return n * factorial(n-1)
+        else: if n > 0: # in Coconut, if, match and try are allowed after else
+            match_success = True
+            return n * factorial(n-1)
+    else:
+        match_success = True
     if not match_success:
         raise TypeError("the argument to factorial must be an integer >= 0")
 ```
 
-As you can see, the destructuring assignment equivalent is much more cumbersome when you expect that the `match` might fail, which is why `match` statement syntax exists. But the destructuring assignment equivalent illuminates what exactly the pattern-matching is doing, by making it clear that `match` statements, and destructuring assignment statements, _are relly just fancy normal assignment statements_. In fact, the `match` keyword before the destructuring assignment statements in this example is optional. Exactly equivalent to the above would be:
-```python
-def factorial(n):
-    """Compute n! where n is an integer >= 0."""
-    match_success = False
-    try:
-        0 = n
-    except MatchError:
-        try:
-            _ is int = n
-        except MatchError:
-            pass
-        else:
-            if n > 0:
-                match_success = True
-                return n * factorial(n-1)
-    if not match_success:
-        raise TypeError("the argument to factorial must be an integer >= 0")
-```
+As you can see, the destructuring assignment equivalent is much more cumbersome when you expect that the `match` might fail, which is why `match` statement syntax exists. But the destructuring assignment equivalent illuminates what exactly the pattern-matching is doing, by making it clear that `match` statements, and destructuring assignment statements, _are relly just fancy normal assignment statements_. In fact, the `match` keywords before the destructuring assignment statements in this example is optional.
 
 It will be helpful to, as we continue to use Coconut's pattern-matching and destructuring assignment statements in further examples, think _assignment_ whenever you see the keyword `match`.
 
