@@ -181,7 +181,7 @@ To start off with, we're going to have to decide what sort of an implementation 
 
 ### Imperative Method
 
-The imperative approach is the way you'd write `factorial` in a language like C. Imperative approaches involve lots of state change, where variables are regularly changed and loops are liberally used. In Coconut, the imperative approach looks something like this:
+The imperative approach is the way you'd write `factorial` in a language like C. Imperative approaches involve lots of state change, where variables are regularly changed and loops are liberally used. In Coconut, the imperative approach to the `factorial` problem looks like this:
 ```python
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
@@ -199,7 +199,7 @@ Since the imperative approach is a fundamentally non-functional method, Coconut 
 
 ### Recursive Method
 
-The recursive approach is the first of the fundamentally functional approaches, in that it doesn't involve the state change and loops of the imperative approach. Recursive approaches avoid the need to change variables by making that variable change implicit in the recursive function call. Here's the recursive approach in Coconut:
+The recursive approach is the first of the fundamentally functional approaches, in that it doesn't involve the state change and loops of the imperative approach. Recursive approaches avoid the need to change variables by making that variable change implicit in the recursive function call. Here's the recursive approach to the `factorial` problem in Coconut:
 ```python
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
@@ -261,12 +261,7 @@ This version is exactly equivalent to the original version, with the exception t
 
 ### Iterative Method
 
-The final, and other functional, approach, is the iterative one. Iterative approaches avoid the need for state change and loops by using higher-order functions like `map` and `reduce` to abstract out the basic operations being performed.
-
-```python
-product = reduce$((*))
-```
-
+The final, and other functional, approach, is the iterative one. Iterative approaches avoid the need for state change and loops by using higher-order functions, those that take other functions as their arguments, like `map` and `reduce`, to abstract out the basic operations being performed. In Coconut, the iterative appraoch to the `factorial` problem is:
 ```python
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
@@ -274,10 +269,43 @@ def factorial(n):
         match 0:
             return 1
         match _ is int if n > 0:
-            return range(1, n+1) |> product
+            return range(1, n+1) |> reduce$((*))
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
 ```
+
+This definition differs from the recursive definition only by one line. That's intentional: because both the iterative and recursive approaches are functional approaches, Coconut can provide a great assist in making the code cleaner and more readable. The one line that differs is this one:
+```python
+return range(1, n+1) |> reduce$((*))
+```
+
+Let's break down what's happening on this line. First, the `range` function constructs an iterator of all the numbers that need to be multiplied together. Then, it is piped into the function `reduce$((*))`, which does that multiplication. But how? What is `reduce$((*))`.
+
+We'll start with the base, the `reduce` function. `reduce` used to exist as a built-in in Python 2, and Coconut brings it back. `reduce` is a higher-order function that takes a function on two arguments as its first argument, and an iterator as its second argument, and applies that function to the given iterator by starting with the first element, and calling the function on the accumulated call so far and the next element, until the iterator is exhausted. Here's a visual representation:
+```python
+reduce(f, (a, b, c, d))
+
+acc                 iter
+                    (a, b, c, d)
+a                   (b, c, d)
+f(a, b)             (c, d)
+f(f(a, b), c)       (d)
+f(f(f(a, b), c), d)
+
+return acc
+```
+
+Now let's take a look at what we do to `reduce` to make it multiply all the numbers we feed into it together. The Coconut code that we saw for that was `reduce$((*))`. There are two different Coconut constructs being used here: the operator function for multiplication in the form of `(*)`, and partial application in the form of `$`.
+
+First, the operator function. In Coconut, a function form of any operator can be retrieved by surrounding that operator in parentheses. In this case, `(*)` is roughly equivalent to `lambda x, y: x*y`, but much cleaner and neater. In Coconut's lambda syntax, `(*)` is also equivalent to `(x, y) -> x*y`, which we will use from now on for all lambdas, even though both are legal Coconut, because Python's `lambda` statement is too ugly and bulky to use regularly. In fact, if Coconut's `--strict` mode is enabled, it will raise an error whenever Python `lambda` statements are used.
+
+Second, the partial application. In Coconut, if a function call is prefixed by a `$`, like in this example, instead of actually performing the function call, a new function is returned with the given arguments already provided to it, so that when it is then called, it will be called with both the partially-applied arguments and the new arguments, in that order. In this case, `reduce$(*)` is equivalent to `(*args, **kwargs) -> reduce((*), *args, **kwargs)`.
+
+Putting it all together, we can see how the single line of code
+```python
+range(1, n+1) |> reduce$((*))
+```
+is able to compute the proper factorial, without using any state or loops, only higher-order functions, in true functional style.
 
 ## Case Study 2: Quick Sort
 
