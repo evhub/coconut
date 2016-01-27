@@ -181,7 +181,7 @@ To start off with, we're going to have to decide what sort of an implementation 
 
 ### Imperative Method
 
-The imperative approach is the way you'd write `factorial` in a language like C. In Coconut, it looks something like this:
+The imperative approach is the way you'd write `factorial` in a language like C. Imperative approaches involve lots of state change, where variables are regularly changed and loops are liberally used. In Coconut, the imperative approach looks something like this:
 ```python
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
@@ -199,7 +199,7 @@ Since the imperative approach is a fundamentally non-functional method, Coconut 
 
 ### Recursive Method
 
-Recursion is one of the most fundamental tools of functional programming, and is thus a place where Coconut can really help clear up confusing code. Here's the recursive approach in Coconut:
+The recursive approach is the first of the fundamentally functional approaches, in that it doesn't involve the state change and loops of the imperative approach. Recursive approaches avoid the need to change variables by making that variable change implicit in the recursive function call. Here's the recursive approach in Coconut:
 ```python
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
@@ -260,6 +260,8 @@ def factorial(n, acc=1):
 This version is exactly equivalent to the original version, with the exception that it will never raise a `MaximumRecursionDepthError`, because Coconut's `recursive` decorator will optimize away the tail recursion into a `while` loop.
 
 ### Iterative Method
+
+The final, and other functional, approach, is the iterative one. Iterative approaches avoid the need for state change and loops by using higher-order functions like `map` and `reduce` to abstract out the basic operations being performed.
 
 ```python
 product = reduce$((*))

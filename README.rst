@@ -9,7 +9,7 @@ Coconut
 
 Coconut_ is a variant of Python_ built for **simple, elegant, Pythonic functional programming**.
 
-Coconut is hosted on PyPI_, where it has been downloaded `over 20,000 times <http://pypi-ranking.info/module/coconut>`_. Installing Coconut is as easy as:
+Coconut is hosted on PyPI_, where it has been downloaded `over 30,000 times <http://pypi-ranking.info/module/coconut>`_. Installing Coconut is as easy as:
 
     python -m pip install coconut
 
