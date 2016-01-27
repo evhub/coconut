@@ -3,19 +3,19 @@
 <!-- MarkdownTOC -->
 
 1. [Introduction](#introduction)
-2. [Installation](#installation)
-3. [Starting Out](#starting-out)
+    1. [Installation](#installation)
+2. [Starting Out](#starting-out)
     1. [Using the Interpreter](#using-the-interpreter)
     2. [Using the Compiler](#using-the-compiler)
     3. [Using IPython / Jupyter](#using-ipython--jupyter)
     4. [Case Studies](#case-studies)
-4. [Case Study 1: Factorial](#case-study-1-factorial)
+3. [Case Study 1: Factorial](#case-study-1-factorial)
     1. [Imperative Method](#imperative-method)
     2. [Recursive Method](#recursive-method)
     3. [Iterative Method](#iterative-method)
-5. [Case Study 2: Quick Sort](#case-study-2-quick-sort)
-6. [Case Study 3: Vectors](#case-study-3-vectors)
-7. [Case Study 4: Vector Fields](#case-study-4-vector-fields)
+4. [Case Study 2: Quick Sort](#case-study-2-quick-sort)
+5. [Case Study 3: Vectors](#case-study-3-vectors)
+6. [Case Study 4: Vector Fields](#case-study-4-vector-fields)
 
 <!-- /MarkdownTOC -->
 
@@ -39,7 +39,7 @@ Specifically, Coconut adds to Python _built-in, syntactical support_ for:
 
 and much more!
 
-## Installation
+### Installation
 
 At its very core, Coconut is a compiler that turns Coconut code into Python code. That means that anywhere where you can use a Python script, you can also use a compiled Coconut script. To access that core compiler, Coconut comes with a command-line utility, which can:
 - compile single Coconut files or entire Coconut projects
@@ -243,7 +243,7 @@ As you can see, the destructuring assignment equivalent is much more cumbersome 
 
 It will be helpful to, as we continue to use Coconut's pattern-matching and destructuring assignment statements in further examples, think _assignment_ whenever you see the keyword `match`.
 
-Up until now, for the recursive method, we have only dealt with pattern-matching, but there's actually another way that Coconut allows us to improve our `factorial` function: by writing it in a tail-recursive style and using Coconut's `recursive` decorator, like so:
+Up until now, for the recursive method, we have only dealt with pattern-matching, but there's actually another way that Coconut allows us to improve our `factorial` function: by writing it in a tail-recursive style, where it directly returns all calls to itself, and using Coconut's `recursive` decorator, like so:
 ```python
 @recursive
 def factorial(n, acc=1):
@@ -308,6 +308,8 @@ range(1, n+1) |> reduce$((*))
 is able to compute the proper factorial, without using any state or loops, only higher-order functions, in true functional style.
 
 ## Case Study 2: Quick Sort
+
+In the second case study, we will be implementing the quick sort algorithm. Our `quick_sort` function will take in an iterator, and output an iterator that is the sorted version of the original iterator.
 
 ```python
 def quick_sort(l):
