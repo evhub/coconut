@@ -32,7 +32,7 @@ html_theme = "bootstrap"
 html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
 
 project = "Coconut"
-copyright = "2015, Evan Hubinger"
+copyright = "2015, Evan Hubinger, licensed under Apache 2.0"
 author = "Evan Hubinger"
 version = VERSION
 
