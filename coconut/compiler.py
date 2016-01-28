@@ -247,19 +247,6 @@ except ImportError:
     abc = collections
 '''
             header += r'''
-object = object
-int = int
-set = set
-frozenset = frozenset
-tuple = tuple
-list = list
-slice = slice
-len = len
-iter = iter
-isinstance = isinstance
-getattr = getattr
-ascii = ascii
-
 def recursive(func):
     """Returns tail-call-optimized function."""
     state = [True, None] # toplevel, (args, kwargs)
@@ -325,18 +312,6 @@ class __coconut__(object):
     except ImportError:
         abc = collections'''
                 header += r'''
-    object = object
-    int = int
-    set = set
-    frozenset = frozenset
-    tuple = tuple
-    list = list
-    slice = slice
-    len = len
-    iter = iter
-    isinstance = isinstance
-    getattr = getattr
-    ascii = ascii
     @staticmethod
     def recursive(func):
         """Returns tail-call-optimized function."""
@@ -375,15 +350,15 @@ class __coconut__(object):
             else:
                 raise CoconutException("invalid header type", which)
             header += r'''
-__coconut_version__ = __coconut__.version
-reduce = __coconut__.functools.reduce
-takewhile = __coconut__.itertools.takewhile
-dropwhile = __coconut__.itertools.dropwhile
-tee = __coconut__.itertools.tee
-recursive = __coconut__.recursive
-datamaker = __coconut__.datamaker
-consume = __coconut__.consume
-MatchError = __coconut__.MatchError
+__builtins__.__coconut_version__ = __coconut__.version
+__builtins__.reduce = __coconut__.functools.reduce
+__builtins__.takewhile = __coconut__.itertools.takewhile
+__builtins__.dropwhile = __coconut__.itertools.dropwhile
+__builtins__.tee = __coconut__.itertools.tee
+__builtins__.recursive = __coconut__.recursive
+__builtins__.datamaker = __coconut__.datamaker
+__builtins__.consume = __coconut__.consume
+__builtins__.MatchError = __coconut__.MatchError
 '''
             if which != "code":
                 header += r'''
@@ -510,7 +485,7 @@ def anyint_proc(tokens):
     """Replaces underscored integers."""
     if len(tokens) == 1:
         base, item = tokens[0].split("_")
-        return '__coconut__.int("'+item+'", '+base+")"
+        return '__builtins__.int("'+item+'", '+base+")"
     else:
         raise CoconutException("invalid anyint tokens", tokens)
 
@@ -761,8 +736,8 @@ class matcher(object):
             match = original[0]
         else:
             raise CoconutException("invalid dict match tokens", original)
-        self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Mapping)")
-        self.checks.append("__coconut__.len("+item+") == "+str(len(match)))
+        self.checks.append("__builtins__.isinstance("+item+", __coconut__.abc.Mapping)")
+        self.checks.append("__builtins__.len("+item+") == "+str(len(match)))
         for x in range(0, len(match)):
             k,v = match[x]
             self.checks.append(k+" in "+item)
@@ -775,19 +750,19 @@ class matcher(object):
             series_type, match = original
         else:
             series_type, match, tail = original
-        self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Sequence)")
+        self.checks.append("__builtins__.isinstance("+item+", __coconut__.abc.Sequence)")
         if tail is None:
-            self.checks.append("__coconut__.len("+item+") == "+str(len(match)))
+            self.checks.append("__builtins__.len("+item+") == "+str(len(match)))
         else:
-            self.checks.append("__coconut__.len("+item+") >= "+str(len(match)))
+            self.checks.append("__builtins__.len("+item+") >= "+str(len(match)))
             if len(match):
                 splice = "["+str(len(match))+":]"
             else:
                 splice = ""
             if series_type == "(":
-                self.defs.append(tail+" = __coconut__.tuple("+item+splice+")")
+                self.defs.append(tail+" = __builtins__.tuple("+item+splice+")")
             elif series_type == "[":
-                self.defs.append(tail+" = __coconut__.list("+item+splice+")")
+                self.defs.append(tail+" = __builtins__.list("+item+splice+")")
             else:
                 raise CoconutException("invalid series match type", series_type)
         for x in range(0, len(match)):
@@ -800,16 +775,16 @@ class matcher(object):
             _, match = original
         else:
             _, match, tail = original
-        self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Iterable)")
+        self.checks.append("__builtins__.isinstance("+item+", __coconut__.abc.Iterable)")
         itervar = match_iter_var + "_" + str(self.iter_index)
         self.iter_index += 1
         if tail is None:
-            self.defs.append(itervar+" = __coconut__.tuple("+item+")")
+            self.defs.append(itervar+" = __builtins__.tuple("+item+")")
         else:
-            self.defs.append(tail+" = __coconut__.iter("+item+")")
-            self.defs.append(itervar+" = __coconut__.tuple(__coconut__.itertools.islice("+tail+", 0, "+str(len(match))+"))")
+            self.defs.append(tail+" = __builtins__.iter("+item+")")
+            self.defs.append(itervar+" = __builtins__.tuple(__coconut__.itertools.islice("+tail+", 0, "+str(len(match))+"))")
         self.increment()
-        self.checks.append("__coconut__.len("+itervar+") == "+str(len(match)))
+        self.checks.append("__builtins__.len("+itervar+") == "+str(len(match)))
         for x in range(0, len(match)):
             self.match(match[x], itervar+"["+str(x)+"]")
         self.decrement()
@@ -817,16 +792,16 @@ class matcher(object):
     def match_rsequence(self, original, item):
         """Matches a reverse sequence."""
         front, series_type, match = original
-        self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Sequence)")
-        self.checks.append("__coconut__.len("+item+") >= "+str(len(match)))
+        self.checks.append("__builtins__.isinstance("+item+", __coconut__.abc.Sequence)")
+        self.checks.append("__builtins__.len("+item+") >= "+str(len(match)))
         if len(match):
             splice = "[:"+str(-len(match))+"]"
         else:
             splice = ""
         if series_type == "(":
-            self.defs.append(front+" = __coconut__.tuple("+item+splice+")")
+            self.defs.append(front+" = __builtins__.tuple("+item+splice+")")
         elif series_type == "[":
-            self.defs.append(front+" = __coconut__.list("+item+splice+")")
+            self.defs.append(front+" = __builtins__.list("+item+splice+")")
         else:
             raise CoconutException("invalid series match type", series_type)
         for x in range(0, len(match)):
@@ -835,8 +810,8 @@ class matcher(object):
     def match_msequence(self, original, item):
         """Matches a middle sequence."""
         series_type, head_match, middle, _, last_match = original
-        self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Sequence)")
-        self.checks.append("__coconut__.len("+item+") >= "+str(len(head_match) + len(last_match)))
+        self.checks.append("__builtins__.isinstance("+item+", __coconut__.abc.Sequence)")
+        self.checks.append("__builtins__.len("+item+") >= "+str(len(head_match) + len(last_match)))
         if len(head_match) and len(last_match):
             splice = "["+str(len(head_match))+":"+str(-len(last_match))+"]"
         elif len(head_match):
@@ -846,9 +821,9 @@ class matcher(object):
         else:
             splice = ""
         if series_type == "(":
-            self.defs.append(middle+" = __coconut__.tuple("+item+splice+")")
+            self.defs.append(middle+" = __builtins__.tuple("+item+splice+")")
         elif series_type == "[":
-            self.defs.append(middle+" = __coconut__.list("+item+splice+")")
+            self.defs.append(middle+" = __builtins__.list("+item+splice+")")
         else:
             raise CoconutException("invalid series match type", series_type)
         for x in range(0, len(head_match)):
@@ -867,7 +842,7 @@ class matcher(object):
     def match_typedef(self, original, item):
         """Matches a typedef."""
         match, type_check = original
-        self.checks.append("__coconut__.isinstance("+item+", ("+type_check+"))")
+        self.checks.append("__builtins__.isinstance("+item+", ("+type_check+"))")
         self.match(match, item)
 
     def match_var(self, original, item):
@@ -886,16 +861,16 @@ class matcher(object):
             match = original[0]
         else:
             raise CoconutException("invalid set match tokens", original)
-        self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Set)")
-        self.checks.append("__coconut__.len("+item+") == "+str(len(match)))
+        self.checks.append("__builtins__.isinstance("+item+", __coconut__.abc.Set)")
+        self.checks.append("__builtins__.len("+item+") == "+str(len(match)))
         for const in match:
             self.checks.append(const+" in "+item)
 
     def match_data(self, original, item):
         """Matches a data type."""
         data_type, match = original
-        self.checks.append("__coconut__.isinstance("+item+", "+data_type+")")
-        self.checks.append("__coconut__.len("+item+") == "+str(len(match)))
+        self.checks.append("__builtins__.isinstance("+item+", "+data_type+")")
+        self.checks.append("__builtins__.len("+item+") == "+str(len(match)))
         for x in range(0, len(match)):
             self.match(match[x], item+"["+str(x)+"]")
 
@@ -989,7 +964,7 @@ def pattern_error(original, loc):
     match_line = ascii(clean(line(loc, original)))
     return ("if not " + match_check_var + ":\n" + openindent
         + match_err_var + ' = __coconut__.MatchError("pattern-matching failed for " '
-        + ascii(match_line) + ' " in " + __coconut__.ascii(__coconut__.ascii(' + match_to_var + ")))\n"
+        + ascii(match_line) + ' " in " + __builtins__.ascii(__builtins__.ascii(' + match_to_var + ")))\n"
         + match_err_var + ".pattern = " + match_line + "\n"
         + match_err_var + ".value = " + match_to_var
         + "\nraise " + match_err_var + "\n" + closeindent)
@@ -1066,7 +1041,7 @@ def set_to_tuple(tokens):
 
 def islice_lambda(out):
     """Constructs a function that behaves like slicing for islice."""
-    return ("(lambda i: __coconut__.itertools.islice("+out+", i.start, i.stop, i.step) if isinstance(i, __coconut__.slice)"
+    return ("(lambda i: __coconut__.itertools.islice("+out+", i.start, i.stop, i.step) if isinstance(i, __builtins__.slice)"
             " else next(__coconut__.itertools.islice("+out+", i, i + 1)))")
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1631,7 +1606,7 @@ class processor(object):
                 elif trailer[0] == "[]":
                     out = "__coconut__.functools.partial(__coconut__.operator.__getitem__, "+out+")"
                 elif trailer[0] == ".":
-                    out = "__coconut__.functools.partial(__coconut__.getattr, "+out+")"
+                    out = "__coconut__.functools.partial(__builtins__.getattr, "+out+")"
                 elif trailer[0] == "$(":
                     raise CoconutSyntaxError("a partial application argument is required",
                                              original, location, self.adjust(lineno(location, original)))
@@ -1702,7 +1677,7 @@ class processor(object):
             if self.version == "3":
                 return ""
             else:
-                return "(__coconut__.object)"
+                return "(__builtins__.object)"
         elif len(tokens) == 1 and len(tokens[0]) == 1:
             if "names" in tokens[0]:
                 return "(" + tokens[0][0] + ")"
@@ -1788,16 +1763,16 @@ class processor(object):
         elif self.version == "3":
             return "{" + tokens[0][0] + "}"
         else:
-            return "__coconut__.set(" + set_to_tuple(tokens[0]) + ")"
+            return "__builtins__.set(" + set_to_tuple(tokens[0]) + ")"
 
     def set_letter_literal_convert(self, tokens):
         """Processes set literals."""
         if len(tokens) == 1:
             set_type = tokens[0]
             if set_type == "s":
-                return "__coconut__.set()"
+                return "__builtins__.set()"
             elif set_type == "f":
-                return "__coconut__.frozenset()"
+                return "__builtins__.frozenset()"
             else:
                 raise CoconutException("invalid set type", set_type)
         elif len(tokens) == 2:
@@ -1808,9 +1783,9 @@ class processor(object):
                 if self.version == "3":
                     return "{" + set_items[0] + "}"
                 else:
-                    return "__coconut__.set(" + set_to_tuple(set_items) + ")"
+                    return "__builtins__.set(" + set_to_tuple(set_items) + ")"
             elif set_type == "f":
-                return "__coconut__.frozenset(" + set_to_tuple(set_items) + ")"
+                return "__builtins__.frozenset(" + set_to_tuple(set_items) + ")"
             else:
                 raise CoconutException("invalid set type", set_type)
         else:
@@ -2017,7 +1992,7 @@ class processor(object):
             | fixto(Keyword("or"), "lambda a, b: a or b")
             | fixto(minus, "lambda *args: __coconut__.operator.__neg__(*args) if len(args) < 2 else __coconut__.operator.__sub__(*args)")
         ) + rparen | lparen.suppress() + (
-            fixto(dot, "__coconut__.getattr")
+            fixto(dot, "__builtins__.getattr")
             | fixto(dubcolon, "__coconut__.itertools.chain")
             | fixto(dollar, "__coconut__.functools.partial")
             | fixto(exp_dubstar, "__coconut__.operator.__pow__")
