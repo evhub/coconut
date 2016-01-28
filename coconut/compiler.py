@@ -498,9 +498,12 @@ def condense(item):
         return "".join(tokens)
     return attach(item, callback)
 
-def parenwrap(lparen, item, rparen):
+def parenwrap(lparen, item, rparen, tokens=False):
     """Wraps an item in optional parentheses."""
-    return condense(lparen.suppress() + item + rparen.suppress() | item)
+    wrap = lparen.suppress() + item + rparen.suppress() | item
+    if not tokens:
+        wrap = condense(wrap)
+    return wrap
 
 class tracer(object):
     """Debug tracer."""
@@ -2265,8 +2268,8 @@ class processor(object):
 
     dotted_as_name = Group(dotted_name + Optional(Keyword("as").suppress() + name))
     import_as_name = Group(name + Optional(Keyword("as").suppress() + name))
-    import_names = Group(parenwrap(lparen, tokenlist(dotted_as_name, comma), rparen))
-    import_from_names = Group(parenwrap(lparen, tokenlist(import_as_name, comma), rparen))
+    import_names = Group(parenwrap(lparen, tokenlist(dotted_as_name, comma), rparen, tokens=True))
+    import_from_names = Group(parenwrap(lparen, tokenlist(import_as_name, comma), rparen, tokens=True))
     import_name = Keyword("import").suppress() + import_names
     import_from = (Keyword("from").suppress()
         + condense(ZeroOrMore(Literal(".")) + dotted_name | OneOrMore(Literal(".")))
