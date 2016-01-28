@@ -153,6 +153,7 @@ Coconut will, however, add in new Python 3 built-ins and overwrite Python 2 buil
 - `py2_open`
 - `py2_print`
 - `py2_input`
+- `py2_raw_input`
 
 ### `--strict` Mode
 
