@@ -66,7 +66,9 @@ def print(*args, **kwargs):
 def input(*args, **kwargs):
     """Python 3 input."""
     return _coconut_raw_input(*args, **kwargs).decode(_coconut_sys.stdout.encoding)
-raw_input = lambda *args: raise NameError('Coconut uses Python 3 "input" instead of Python 2 "raw_input"')'''
+def raw_input(*args):
+    """Raises NameError."""
+    raise NameError('Coconut uses Python 3 "input" instead of Python 2 "raw_input"')'''
 PY2_HEADER = r'import sys as _coconut_sys, os as _coconut_os' + PY2_HEADER_BASE + "\n"
 PY2_HEADER_CHECK = r'''import sys as _coconut_sys
 if _coconut_sys.version_info < (3,):

@@ -88,6 +88,47 @@ reserved_vars = (
     "async",
     "await"
     )
+new_to_old_stdlib = {
+    "builtins": "__builtin__",
+    "configparser": "ConfigParser",
+    "copyreg": "copy_reg",
+    "dbm.gnu": "gdbm",
+    "_dummy_thread": "dummy_thread",
+    "queue": "Queue",
+    "reprlib": "repr",
+    "socketserver": "SocketServer",
+    "_thread": "thread",
+    "tkinter": "Tkinter",
+    #"http.cookiejar": "cookielib",
+    #"http.cookies": "Cookie",
+    #"html.entites": "htmlentitydefs",
+    #"html.parser": "HTMLParser",
+    #"http.client": "httplib",
+    #"email.mime.multipart": "email.MIMEMultipart",
+    #"email.mime.nonmultipart": "email.MIMENonMultipart",
+    #"email.mime.text": "email.MIMEText",
+    #"email.mime.base": "email.MIMEBase",
+    #"tkinter.dialog": "Dialog",
+    #"tkinter.filedialog": "FileDialog",
+    #"tkinter.scrolledtext": "ScrolledText",
+    #"tkinter.simpledialog": "SimpleDialog",
+    #"tkinter.tix": "Tix",
+    #"tkinter.ttk": "ttk",
+    #"tkinter.constants": "Tkconstants",
+    #"tkinter.dnd": "Tkdnd",
+    #"tkinter.colorchooser": "tkColorChooser",
+    #"tkinter.commondialog": "tkCommonDialog",
+    #"tkinter.filedialog": "tkFileDialog",
+    #"tkinter.font": "tkFont",
+    #"tkinter.messagebox": "tkMessageBox",
+    #"tkinter.simpledialog": "tkSimpleDialog",
+    #"urllib.robotparser": "robotparser",
+    #"xmlrpc.client": "xmlrpclib",
+    #"xmlrpc.server": "SimpleXMLRPCServer",
+    #"urllib.request": "urllib2",
+    #"urllib.parse": "urllib2",
+    #"urllib.error": "urllib2"
+}
 
 ParserElement.enablePackrat()
 ParserElement.setDefaultWhitespaceChars(white)
@@ -582,12 +623,12 @@ def get_infix_items(tokens, callback=infix_error):
 def infix_proc(tokens):
     """Processes infix calls."""
     func, args = get_infix_items(tokens, infix_proc)
-    return "("+func+")("+", ".join(args)+")"
+    return "(" + func + ")(" + ", ".join(args) + ")"
 
 def op_funcdef_proc(tokens):
     """Processes infix defs."""
     func, args = get_infix_items(tokens)
-    return func+"("+", ".join(args)+")"
+    return func + "(" + ", ".join(args) + ")"
 
 def pipe_proc(tokens):
     """Processes pipe calls."""
@@ -597,22 +638,22 @@ def pipe_proc(tokens):
         func = tokens.pop()
         op = tokens.pop()
         if op == "|>":
-            return "("+func+")("+pipe_proc(tokens)+")"
+            return "(" + func + ")(" + pipe_proc(tokens) + ")"
         elif op == "|*>":
-            return "("+func+")(*"+pipe_proc(tokens)+")"
+            return "(" + func + ")(*" + pipe_proc(tokens) + ")"
         elif op == "<|":
-            return "("+pipe_proc(tokens)+")("+func+")"
+            return "(" + pipe_proc(tokens) + ")(" + func + ")"
         elif op == "<*|":
-            return "("+pipe_proc(tokens)+")(*"+func+")"
+            return "(" + pipe_proc(tokens) + ")(*" + func + ")"
         else:
             raise CoconutException("invalid pipe operator", op)
 
 def lambdef_proc(tokens):
     """Processes lambda calls."""
     if len(tokens) == 1:
-        return "lambda: "+tokens[0]
+        return "lambda: " + tokens[0]
     elif len(tokens) == 2:
-        return "lambda "+tokens[0]+": "+tokens[1]
+        return "lambda " + tokens[0] + ": " + tokens[1]
     else:
         raise CoconutException("invalid lambda tokens", tokens)
 
@@ -1110,6 +1151,7 @@ class processor(object):
         self.set_literal_ref <<= self.trace(attach(self.set_literal, self.set_literal_convert), "set_literal")
         self.set_letter_literal_ref <<= self.trace(attach(self.set_letter_literal, self.set_letter_literal_convert), "set_letter_literal")
         self.classlist_ref <<= self.trace(attach(self.classlist, self.classlist_repl), "classlist")
+        self.import_stmt_ref <<= self.trace(attach(self.import_stmt, self.import_repl), "import_stmt")
         self.augassign_stmt_ref <<= attach(self.augassign_stmt, self.augassign_repl)
         self.u_string_ref <<= attach(self.u_string, self.u_string_check)
         self.typedef_ref <<= attach(self.typedef, self.typedef_check)
@@ -1717,6 +1759,33 @@ class processor(object):
         else:
             raise CoconutException("invalid classlist tokens", tokens)
 
+    def import_repl(self, tokens):
+        """Universalizes imports."""
+        if len(tokens) == 1:
+            imp_from, imports = None, tokens[0]
+        elif len(tokens) == 2:
+            imp_from, imports = tokens
+        else:
+            raise CoconutException("invalid import tokens", tokens)
+        if imp_from is None:
+            if self.version is None:
+                # TODO
+                return "import " + ", ".join((" as ".join(imp) for imp in imports))
+            else:
+                if self.version == "2":
+                    for imp in imports:
+                        if imp[0] in new_to_old_stdlib:
+                            imp[0] = new_to_old_stdlib[imp[0]]
+                return "import " + ", ".join((" as ".join(imp) for imp in imports))
+        elif self.version == "3":
+            return "from " + imp_from + " import " + ", ".join((" as ".join(imp) for imp in imports))
+        elif self.version == "2":
+            # TODO
+            return "from " + imp_from + " import " + ", ".join((" as ".join(imp) for imp in imports))
+        else:
+            # TODO
+            return "from " + imp_from + " import " + ", ".join((" as ".join(imp) for imp in imports))
+
     def check_strict(self, name, original, location, tokens):
         """Checks that syntax meets --strict requirements."""
         if len(tokens) != 1:
@@ -2194,13 +2263,15 @@ class processor(object):
     raise_stmt = simple_raise_stmt | complex_raise_stmt_ref
     flow_stmt = break_stmt | continue_stmt | return_stmt | raise_stmt | yield_expr
 
-    dotted_as_name = addspace(dotted_name + Optional(Keyword("as") + name))
-    import_as_name = addspace(name + Optional(Keyword("as") + name))
-    import_as_names = itemlist(import_as_name, comma)
-    dotted_as_names = itemlist(dotted_as_name, comma)
-    import_name = addspace(Keyword("import") + parenwrap(lparen, dotted_as_names, rparen))
-    import_from = addspace(Keyword("from") + condense(ZeroOrMore(Literal(".")) + dotted_name | OneOrMore(Literal(".")))
-                   + Keyword("import") + (star | parenwrap(lparen, import_as_names, rparen)))
+    dotted_as_name = Group(dotted_name + Optional(Keyword("as").suppress() + name))
+    import_as_name = Group(name + Optional(Keyword("as").suppress() + name))
+    import_names = Group(parenwrap(lparen, tokenlist(dotted_as_name, comma), rparen))
+    import_from_names = Group(parenwrap(lparen, tokenlist(import_as_name, comma), rparen))
+    import_name = Keyword("import").suppress() + import_names
+    import_from = (Keyword("from").suppress()
+        + condense(ZeroOrMore(Literal(".")) + dotted_name | OneOrMore(Literal(".")))
+        + Keyword("import").suppress() + (Group(star) | import_from_names))
+    import_stmt_ref = Forward()
     import_stmt = import_from | import_name
 
     namelist = parenwrap(lparen, itemlist(name, comma), rparen)
@@ -2359,7 +2430,7 @@ class processor(object):
                       ), "expr_stmt")
 
     nonlocal_stmt_ref = Forward()
-    keyword_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt_ref | assert_stmt
+    keyword_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt_ref | global_stmt | nonlocal_stmt_ref | assert_stmt
     small_stmt = trace(keyword_stmt | expr_stmt, "small_stmt")
     simple_stmt <<= trace(condense(itemlist(small_stmt, semicolon) + newline), "simple_stmt")
     stmt <<= trace(compound_stmt | simple_stmt, "stmt")
