@@ -1797,7 +1797,7 @@ class processor(object):
                             old_imp += ".".join(exts)
                         break
                 paths = [imp if old_imp is None else old_imp]
-                if self.version is None and paths[0] != imp:
+                if self.version is None and old_imp is not None:
                     paths.append(imp)
             importmap.append((paths, impas))
         stmts = []
