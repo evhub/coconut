@@ -1086,7 +1086,7 @@ def islice_lambda(out):
     return ("(lambda i: __coconut__.itertools.islice("+out+", i.start, i.stop, i.step) if isinstance(i, __coconut__.slice)"
             " else next(__coconut__.itertools.islice("+out+", i, i + 1)))")
 
-def gen_imports(import_as_index, path, impas):
+def gen_imports(path, impas):
     """Generates import statements."""
     out = []
     parts = path.split("./")
@@ -1098,20 +1098,18 @@ def gen_imports(import_as_index, path, impas):
             out.append("import " + imp + " as " + impas)
         else:
             fake_mods = impas.split(".")
-            import_as_name = import_as_var + "_" + str(import_as_index)
-            import_as_index += 1
-            out.append("import " + imp + " as " + import_as_name)
+            out.append("import " + imp + " as " + import_as_var)
             for i in range(1, len(fake_mods)):
                 mod_name = ".".join(fake_mods[:i])
                 out.append(mod_name + ' = __coconut__.imp.new_module("' + mod_name + '")')
-            out.append(".".join(fake_mods) + " = " + import_as_name)
+            out.append(".".join(fake_mods) + " = " + import_as_var)
     else:
         imp_from, imp = parts
         if impas == imp:
             out.append("from " + imp_from + " import " + imp)
         else:
             out.append("from " + imp_from + " import " + imp + " as " + impas)
-    return import_as_index, out
+    return out
 
 #-----------------------------------------------------------------------------------------------------------------------
 # PARSER:
@@ -1803,10 +1801,9 @@ class processor(object):
                     paths.append(imp)
             importmap.append((paths, impas))
         stmts = []
-        import_as_index = 0
         for paths, impas in importmap:
             if len(paths) == 1:
-                import_as_index, more_stmts = gen_imports(import_as_index, paths[0], impas)
+                more_stmts = gen_imports(paths[0], impas)
                 if stmts and stmts[-1] == closeindent:
                     more_stmts[0] = stmts.pop() + more_stmts[0]
                 stmts.extend(more_stmts)
@@ -1816,11 +1813,11 @@ class processor(object):
                     stmts[-1] += "try:"
                 else:
                     stmts.append("try:")
-                import_as_index, more_stmts = gen_imports(import_as_index, first, impas)
+                more_stmts = gen_imports(first, impas)
                 more_stmts[0] = openindent + more_stmts[0]
                 stmts.extend(more_stmts)
                 stmts.append(closeindent + "except ImportError:")
-                import_as_index, more_stmts = gen_imports(import_as_index, second, impas)
+                more_stmts = gen_imports(second, impas)
                 more_stmts[0] = openindent + more_stmts[0]
                 stmts.extend(more_stmts)
                 stmts.append(closeindent)
