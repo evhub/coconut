@@ -43,6 +43,7 @@ match_iter_var = "_coconut_match_iter"
 match_err_var = "_coconut_match_err"
 lazy_item_var = "_coconut_lazy_item"
 lazy_chain_var = "_coconut_lazy_chain"
+import_as_var = "_coconut_import"
 wildcard = "_"
 keywords = (
     "and",
@@ -99,35 +100,35 @@ new_to_old_stdlib = {
     "socketserver": "SocketServer",
     "_thread": "thread",
     "tkinter": "Tkinter",
-    #"http.cookiejar": "cookielib",
-    #"http.cookies": "Cookie",
-    #"html.entites": "htmlentitydefs",
-    #"html.parser": "HTMLParser",
-    #"http.client": "httplib",
-    #"email.mime.multipart": "email.MIMEMultipart",
-    #"email.mime.nonmultipart": "email.MIMENonMultipart",
-    #"email.mime.text": "email.MIMEText",
-    #"email.mime.base": "email.MIMEBase",
-    #"tkinter.dialog": "Dialog",
-    #"tkinter.filedialog": "FileDialog",
-    #"tkinter.scrolledtext": "ScrolledText",
-    #"tkinter.simpledialog": "SimpleDialog",
-    #"tkinter.tix": "Tix",
-    #"tkinter.ttk": "ttk",
-    #"tkinter.constants": "Tkconstants",
-    #"tkinter.dnd": "Tkdnd",
-    #"tkinter.colorchooser": "tkColorChooser",
-    #"tkinter.commondialog": "tkCommonDialog",
-    #"tkinter.filedialog": "tkFileDialog",
-    #"tkinter.font": "tkFont",
-    #"tkinter.messagebox": "tkMessageBox",
-    #"tkinter.simpledialog": "tkSimpleDialog",
-    #"urllib.robotparser": "robotparser",
-    #"xmlrpc.client": "xmlrpclib",
-    #"xmlrpc.server": "SimpleXMLRPCServer",
-    #"urllib.request": "urllib2",
-    #"urllib.parse": "urllib2",
-    #"urllib.error": "urllib2"
+    "http.cookiejar": "cookielib",
+    "http.cookies": "Cookie",
+    "html.entites": "htmlentitydefs",
+    "html.parser": "HTMLParser",
+    "http.client": "httplib",
+    "email.mime.multipart": "email.MIMEMultipart",
+    "email.mime.nonmultipart": "email.MIMENonMultipart",
+    "email.mime.text": "email.MIMEText",
+    "email.mime.base": "email.MIMEBase",
+    "tkinter.dialog": "Dialog",
+    "tkinter.filedialog": "FileDialog",
+    "tkinter.scrolledtext": "ScrolledText",
+    "tkinter.simpledialog": "SimpleDialog",
+    "tkinter.tix": "Tix",
+    "tkinter.ttk": "ttk",
+    "tkinter.constants": "Tkconstants",
+    "tkinter.dnd": "Tkdnd",
+    "tkinter.colorchooser": "tkColorChooser",
+    "tkinter.commondialog": "tkCommonDialog",
+    "tkinter.filedialog": "tkFileDialog",
+    "tkinter.font": "tkFont",
+    "tkinter.messagebox": "tkMessageBox",
+    "tkinter.simpledialog": "tkSimpleDialog",
+    "urllib.robotparser": "robotparser",
+    "xmlrpc.client": "xmlrpclib",
+    "xmlrpc.server": "SimpleXMLRPCServer",
+    "urllib.request": "urllib2",
+    "urllib.parse": "urllib2",
+    "urllib.error": "urllib2"
 }
 
 ParserElement.enablePackrat()
@@ -273,10 +274,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
             header += r'''
 version = "'''+VERSION+r'''"
 
-import functools
-import operator
-import itertools
-import collections
+import imp, functools, operator, itertools, collections
 '''
             if version == "2":
                 header += r'''abc = collections
@@ -288,18 +286,7 @@ except ImportError:
     abc = collections
 '''
             header += r'''
-object = object
-int = int
-set = set
-frozenset = frozenset
-tuple = tuple
-list = list
-slice = slice
-len = len
-iter = iter
-isinstance = isinstance
-getattr = getattr
-ascii = ascii
+object, int, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii = object, int, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii
 
 def recursive(func):
     """Returns tail-call-optimized function."""
@@ -353,10 +340,7 @@ _coconut_sys.path.remove(_coconut_file_path)
 class __coconut__(object):
     """Built-in Coconut functions."""
     version = "'''+VERSION+r'''"
-    import functools
-    import operator
-    import itertools
-    import collections
+    import imp, functools, operator, itertools, collections
 '''
                 if version == "2":
                     header += r'''    abc = collections'''
@@ -366,18 +350,7 @@ class __coconut__(object):
     except ImportError:
         abc = collections'''
                 header += r'''
-    object = object
-    int = int
-    set = set
-    frozenset = frozenset
-    tuple = tuple
-    list = list
-    slice = slice
-    len = len
-    iter = iter
-    isinstance = isinstance
-    getattr = getattr
-    ascii = ascii
+    object, int, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii = object, int, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii
     @staticmethod
     def recursive(func):
         """Returns tail-call-optimized function."""
@@ -576,7 +549,7 @@ def tokenlist(item, sep, suppress=True):
 
 def itemlist(item, sep):
     """Creates a list of an item."""
-    return attach(tokenlist(item, sep, False), list_proc)
+    return attach(tokenlist(item, sep, suppress=False), list_proc)
 
 def attr_proc(tokens):
     """Processes attrgetter literals."""
@@ -1112,6 +1085,33 @@ def islice_lambda(out):
     """Constructs a function that behaves like slicing for islice."""
     return ("(lambda i: __coconut__.itertools.islice("+out+", i.start, i.stop, i.step) if isinstance(i, __coconut__.slice)"
             " else next(__coconut__.itertools.islice("+out+", i, i + 1)))")
+
+def gen_imports(import_as_index, path, impas):
+    """Generates import statements."""
+    out = []
+    parts = path.split("./")
+    if len(parts) == 1:
+        imp, = parts
+        if impas == imp:
+            out.append("import " + imp)
+        elif "." not in impas:
+            out.append("import " + imp + " as " + impas)
+        else:
+            fake_mods = impas.split(".")
+            import_as_name = import_as_var + "_" + str(import_as_index)
+            import_as_index += 1
+            out.append("import " + imp + " as " + import_as_name)
+            for i in range(1, len(fake_mods)):
+                mod_name = ".".join(fake_mods[:i])
+                out.append(mod_name + ' = __coconut__.imp.new_module("' + mod_name + '")')
+            out.append(".".join(fake_mods) + " = " + import_as_name)
+    else:
+        imp_from, imp = parts
+        if impas == imp:
+            out.append("from " + imp_from + " import " + imp)
+        else:
+            out.append("from " + imp_from + " import " + imp + " as " + impas)
+    return import_as_index, out
 
 #-----------------------------------------------------------------------------------------------------------------------
 # PARSER:
@@ -1770,24 +1770,53 @@ class processor(object):
             imp_from, imports = tokens
         else:
             raise CoconutException("invalid import tokens", tokens)
-        if imp_from is None:
-            if self.version is None:
-                # TODO
-                return "import " + ", ".join((" as ".join(imp) for imp in imports))
+        importmap = []
+        for imps in imports:
+            if len(imps) == 1:
+                imp, impas = imps[0], imps[0]
             else:
-                if self.version == "2":
-                    for imp in imports:
-                        if imp[0] in new_to_old_stdlib:
-                            imp[0] = new_to_old_stdlib[imp[0]]
-                return "import " + ", ".join((" as ".join(imp) for imp in imports))
-        elif self.version == "3":
-            return "from " + imp_from + " import " + ", ".join((" as ".join(imp) for imp in imports))
-        elif self.version == "2":
-            # TODO
-            return "from " + imp_from + " import " + ", ".join((" as ".join(imp) for imp in imports))
-        else:
-            # TODO
-            return "from " + imp_from + " import " + ", ".join((" as ".join(imp) for imp in imports))
+                imp, impas = imps
+            if imp_from is not None:
+                imp = imp_from + "./" + imp
+            if self.version == "3":
+                paths = [imp]
+            else:
+                old_imp = None
+                path = imp.split(".")
+                for i in reversed(range(1, len(path)+1)):
+                    base, exts = ".".join(path[:i]), path[i:]
+                    clean_base = base.replace("/", "")
+                    if clean_base in new_to_old_stdlib:
+                        old_imp = new_to_old_stdlib[clean_base]
+                        if exts:
+                            if "/" in base:
+                                old_imp += "./"
+                            else:
+                                old_imp += "."
+                            old_imp += ".".join(exts)
+                        break
+                paths = [imp if old_imp is None else old_imp]
+                if self.version is None and paths[0] != imp:
+                    paths.append(imp)
+            importmap.append((paths, impas))
+        stmts = []
+        import_as_index = 0
+        for paths, impas in importmap:
+            if len(paths) == 1:
+                import_as_index, more_stmts = gen_imports(import_as_index, paths[0], impas)
+                stmts.extend(more_stmts)
+            else:
+                first, second = paths
+                stmts.append("try:")
+                import_as_index, more_stmts = gen_imports(import_as_index, first, impas)
+                more_stmts[0] = openindent + more_stmts[0]
+                stmts.extend(more_stmts)
+                stmts.append(closeindent + "except ImportError:")
+                import_as_index, more_stmts = gen_imports(import_as_index, second, impas)
+                more_stmts[0] = openindent + more_stmts[0]
+                stmts.extend(more_stmts)
+                stmts.append(closeindent)
+        return "\n".join(stmts)
 
     def check_strict(self, name, original, location, tokens):
         """Checks that syntax meets --strict requirements."""
