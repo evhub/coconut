@@ -671,9 +671,14 @@ def decorator_proc(tokens):
     defs = []
     decorates = []
     for x in range(0, len(tokens)):
-        varname = decorator_var + "_" + str(x)
-        defs.append(varname+" = "+tokens[x])
-        decorates.append("@"+varname)
+        if "simple" in tokens[x].keys() and len(tokens[x]) == 1:
+            decorates.append("@"+tokens[x][0])
+        elif "complex" in tokens[x].keys() and len(tokens[x]) == 1:
+            varname = decorator_var + "_" + str(x)
+            defs.append(varname+" = "+tokens[x][0])
+            decorates.append("@"+varname)
+        else:
+            raise CoconutException("invalid decorator tokens", tokens[x])
     return "\n".join(defs + decorates) + "\n"
 
 def else_proc(tokens):
@@ -2423,7 +2428,9 @@ class processor(object):
     data_args = Optional(lparen.suppress() + Optional(itemlist(~underscore + name, comma)) + rparen.suppress())
     datadef = condense(attach(Keyword("data").suppress() + name + data_args + full_suite, data_proc))
 
-    decorators = attach(OneOrMore(at.suppress() + test + newline.suppress()), decorator_proc)
+    simple_decorator = (dotted_name + Optional(lparen + callargslist + rparen))("simple")
+    complex_decorator = test("complex")
+    decorators = attach(OneOrMore(at.suppress() + Group(simple_decorator | complex_decorator) + newline.suppress()), decorator_proc)
     decorated = condense(decorators + (
         classdef
         | datadef
