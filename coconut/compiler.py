@@ -1089,7 +1089,7 @@ def islice_lambda(out):
 def gen_imports(path, impas):
     """Generates import statements."""
     out = []
-    parts = path.split("./")
+    parts = path.split("./") # denotes from ... import ...
     if len(parts) == 1:
         imp, = parts
         if impas == imp:
@@ -1771,14 +1771,14 @@ class processor(object):
                                          original, location, self.adjust(lineno(location, original)))
         else:
             raise CoconutException("invalid import tokens", tokens)
-        importmap = []
+        importmap = [] # [([imps], impas), ...]
         for imps in imports:
             if len(imps) == 1:
                 imp, impas = imps[0], imps[0]
             else:
                 imp, impas = imps
             if imp_from is not None:
-                imp = imp_from + "./" + imp
+                imp = imp_from + "./" + imp # marker for from ... import ...
             if self.version == "3":
                 paths = [imp]
             else:
