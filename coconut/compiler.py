@@ -1762,12 +1762,15 @@ class processor(object):
         else:
             raise CoconutException("invalid classlist tokens", tokens)
 
-    def import_repl(self, tokens):
+    def import_repl(self, original, location, tokens):
         """Universalizes imports."""
         if len(tokens) == 1:
             imp_from, imports = None, tokens[0]
         elif len(tokens) == 2:
             imp_from, imports = tokens
+            if imp_from == "__future__":
+                raise CoconutSyntaxError("illegal __future__ statement (Coconut does these automatically)",
+                                         original, location, self.adjust(lineno(location, original)))
         else:
             raise CoconutException("invalid import tokens", tokens)
         importmap = []
@@ -1804,10 +1807,15 @@ class processor(object):
         for paths, impas in importmap:
             if len(paths) == 1:
                 import_as_index, more_stmts = gen_imports(import_as_index, paths[0], impas)
+                if stmts and stmts[-1] == closeindent:
+                    more_stmts[0] = stmts.pop() + more_stmts[0]
                 stmts.extend(more_stmts)
             else:
                 first, second = paths
-                stmts.append("try:")
+                if stmts and stmts[-1] == closeindent:
+                    stmts[-1] += "try:"
+                else:
+                    stmts.append("try:")
                 import_as_index, more_stmts = gen_imports(import_as_index, first, impas)
                 more_stmts[0] = openindent + more_stmts[0]
                 stmts.extend(more_stmts)
