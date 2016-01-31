@@ -283,9 +283,9 @@ import imp, functools, operator, itertools, collections
 '''
             else:
                 header += r'''if _coconut_sys.version_info < (3,3):
-    import collections.abc as abc
-else:
     abc = collections
+else:
+    import collections.abc as abc
 '''
             header += r'''
 object, int, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii = object, int, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii
@@ -345,9 +345,9 @@ class __coconut__(object):
                     header += r'''    abc = collections'''
                 else:
                     header += r'''    if _coconut_sys.version_info < (3,3):
-        import collections.abc as abc
+        abc = collections
     else:
-        abc = collections'''
+        import collections.abc as abc'''
                 header += r'''
     object, int, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii = object, int, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii
     @staticmethod
