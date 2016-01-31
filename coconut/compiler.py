@@ -282,7 +282,7 @@ import imp, functools, operator, itertools, collections
                 header += r'''abc = collections
 '''
             else:
-                header += r'''if _coconut_sys.version_info() < (3,3):
+                header += r'''if _coconut_sys.version_info < (3,3):
     import collections.abc as abc
 else:
     abc = collections
@@ -344,7 +344,7 @@ class __coconut__(object):
                 if version == "2":
                     header += r'''    abc = collections'''
                 else:
-                    header += r'''    if _coconut_sys.version_info() < (3,3):
+                    header += r'''    if _coconut_sys.version_info < (3,3):
         import collections.abc as abc
     else:
         abc = collections'''
@@ -1814,9 +1814,9 @@ class processor(object):
             else:
                 first, second = paths
                 if stmts and stmts[-1] == closeindent:
-                    stmts[-1] += "if _coconut_sys.version_info() < (3,):"
+                    stmts[-1] += r"if _coconut_sys.version_info < (3,):"
                 else:
-                    stmts.append("if _coconut_sys.version_info() < (3,):")
+                    stmts.append(r"if _coconut_sys.version_info < (3,):")
                 more_stmts = gen_imports(first, impas)
                 more_stmts[0] = openindent + more_stmts[0]
                 stmts.extend(more_stmts)
