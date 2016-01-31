@@ -266,10 +266,12 @@ def getheader(which, version=None, usehash=None):
             header += r'''
 from __future__ import print_function, absolute_import, unicode_literals, division
 '''
-            if version == "2":
-                header += PY2_HEADER
-            else:
-                header += PY2_HEADER_CHECK
+        if version == "3":
+            header += PY3_HEADER
+        elif version == "2":
+            header += PY2_HEADER
+        else:
+            header += PY2_HEADER_CHECK
         if which == "package":
             header += r'''
 version = "'''+VERSION+r'''"
@@ -280,9 +282,9 @@ import imp, functools, operator, itertools, collections
                 header += r'''abc = collections
 '''
             else:
-                header += r'''try:
+                header += r'''if _coconut_sys.version_info() < (3,3):
     import collections.abc as abc
-except ImportError:
+else:
     abc = collections
 '''
             header += r'''
@@ -325,9 +327,6 @@ class MatchError(Exception):
 '''
         else:
             if which == "module":
-                if version == "3":
-                    header += r'''
-import sys as _coconut_sys'''
                 header += r'''
 import os.path as _coconut_os_path
 _coconut_file_path = _coconut_os_path.dirname(_coconut_os_path.abspath(__file__))
@@ -345,9 +344,9 @@ class __coconut__(object):
                 if version == "2":
                     header += r'''    abc = collections'''
                 else:
-                    header += r'''    try:
+                    header += r'''    if _coconut_sys.version_info() < (3,3):
         import collections.abc as abc
-    except ImportError:
+    else:
         abc = collections'''
                 header += r'''
     object, int, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii = object, int, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii
@@ -1815,13 +1814,13 @@ class processor(object):
             else:
                 first, second = paths
                 if stmts and stmts[-1] == closeindent:
-                    stmts[-1] += "try:"
+                    stmts[-1] += "if _coconut_sys.version_info() < (3,):"
                 else:
-                    stmts.append("try:")
+                    stmts.append("if _coconut_sys.version_info() < (3,):")
                 more_stmts = gen_imports(first, impas)
                 more_stmts[0] = openindent + more_stmts[0]
                 stmts.extend(more_stmts)
-                stmts.append(closeindent + "except ImportError:")
+                stmts.append(closeindent + "else:")
                 more_stmts = gen_imports(second, impas)
                 more_stmts[0] = openindent + more_stmts[0]
                 stmts.extend(more_stmts)

@@ -75,6 +75,7 @@ if _coconut_sys.version_info < (3,):
     import os as _coconut_os'''
 for _line in PY2_HEADER_BASE.splitlines():
     PY2_HEADER_CHECK += "    " + _line + "\n"
+PY3_HEADER = r'import sys as _coconut_sys\n'
 
 #-----------------------------------------------------------------------------------------------------------------------
 # SETUP:
