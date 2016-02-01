@@ -141,19 +141,19 @@ The Coconut  compiler supports a large variety of different compilation options,
 
 Although all different types of programming can benefit from using more functional techniques, scientific computing, perhaps more than any other field, lends itself very well to functional programming, an observation the case studies in this tutorial are very good examples of. To that end, Coconut aims to provide extensive support for the established tools of scientific computing in Python.
 
-That means supporting IPython, as modern Python programming, particularly in the sciences, has gravitated towards the use of [IPython](http://ipython.org/) (the python kernel for the [Jupyter](http://jupyter.org/) framework) instead of the classic Python shell. Coconut supports being used both as a kernel for IPython notebooks and consoles, and as an extension inside of the Python kernel.
+That means supporting IPython / Jupyter, as modern Python programming, particularly in the sciences, has gravitated towards the use of [IPython](http://ipython.org/) (the python kernel for the [Jupyter](http://jupyter.org/) framework) instead of the classic Python shell. Coconut supports being used both as a kernel for Jupyter notebooks and consoles, and as an extension inside of the IPython kernel.
 
-To launch an IPython notebook with Coconut as the kernel, use the command
+To launch a Jupyter notebook with Coconut as the kernel, use the command
 ```bash
-coconut --ipython notebook
+coconut --jupyter notebook
 ```
-and for launching an IPython console, use the command
+and to launch a Jupyter console, use the command
 ```bash
-coconut --ipython console
+coconut --jupyter console
 ```
-or equivalently, `--jupyter` can be substituted for `--ipython` in either command.
+or equivalently, `--ipython` can be substituted for `--jupyter` in either command.
 
-To use Coconut as an extension inside of the Python kernel, add the code
+To use Coconut as an extension inside of the IPython kernel, add the code
 ```python
 %load_ext coconut
 ```
