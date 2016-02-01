@@ -309,8 +309,9 @@ is able to compute the proper factorial, without using any state or loops, only 
 
 ## Case Study 2: Quick Sort
 
-In the second case study, we will be implementing the quick sort algorithm. Our `quick_sort` function will take in an iterator, and output an iterator that is the sorted version of the original iterator.
+In the second case study, we will be implementing the quick sort algorithm. Our `quick_sort` function will take in an iterator, and output an iterator that is the sorted version of that iterator.
 
+Our method for tackling this problem is going to be a combination of the recursive and iterative approaches we used for the `factorial` problem, in that we're going to be lazily building up an iterator, and we're going to be doing it recursively. Here's the code, in Coconut:
 ```python
 def quick_sort(l):
     """Return sorted(l) where l is any iterator, using the quick sort algorithm."""
