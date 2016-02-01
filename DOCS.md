@@ -138,7 +138,7 @@ While Coconut syntax is based off of Python 3, Coconut code compiled in universa
 
 _Note: The tested against implementations are [CPython](https://www.python.org/) `2.6, 2.7, 3.2, 3.3, 3.4, 3.5` and [PyPy](http://pypy.org/) `2.7, 3.2`._
 
-If the version of Python that the compiled code will be running on is known ahead of time, one of `2` (for the `2.x` branch) or `3` (for the `3.x` branch) should be specified as the `--target`. The given target will only affect the compiled code and whether or not Python-3-specific syntax is allowed. Where Python 3 and Python 2 syntax standards differ, Coconut syntax will always follow Python 3 accross all targets.
+If the version of Python that the compiled code will be running on is known ahead of time, one of `2` (for the `2.x` branch) or `3` (for the `3.x` branch) should be specified as the `--target`. The given target will only affect the compiled code and whether or not certain Python-3-specific syntax is allowed, detailed below. Where Python 3 and Python 2 syntax standards differ, Coconut syntax will always follow Python 3 accross all targets.
 
 As part of Coconut's cross-compatibility efforts, Coconut adds in new Python 3 built-ins and overwrites Python 2 built-ins to use the Python 3 versions where possible. If access to the Python 2 versions is desired, the old builtins can be retrieved by prefixing them with `py2_`. The old built-ins available are:
 - `py2_filter`
@@ -154,6 +154,15 @@ As part of Coconut's cross-compatibility efforts, Coconut adds in new Python 3 b
 - `py2_print`
 - `py2_input`
 - `py2_raw_input`
+
+Finally, while Coconut will try to compile Python-3-specific syntax to its universal equivalent, the follow constructs have no equivalent in Python 2, and require `--target 3` to be specified to be used:
+- destructuring assignment with `*`s (use Coconut pattern-matching instead)
+- dictionary comprehension
+- function type annotation
+- the `nonlocal` keyword
+- keyword class definition
+- `@` as matrix multiplication (new in Python 3.5)
+- `async` and `await` statements (new in Python 3.5)
 
 ### `--strict` Mode
 

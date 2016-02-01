@@ -46,6 +46,7 @@ lazy_chain_var = "_coconut_lazy_chain"
 import_as_var = "_coconut_import"
 yield_from_var = "_coconut_yield_from"
 yield_item_var = "_coconut_yield_item"
+raise_from_var = "_coconut_raise_from"
 wildcard = "_"
 keywords = (
     "and",
@@ -1169,6 +1170,7 @@ class processor(object):
         self.set_letter_literal_ref <<= self.trace(attach(self.set_letter_literal, self.set_letter_literal_convert), "set_letter_literal")
         self.classlist_ref <<= self.trace(attach(self.classlist, self.classlist_repl), "classlist")
         self.import_stmt_ref <<= self.trace(attach(self.import_stmt, self.import_repl), "import_stmt")
+        self.complex_raise_stmt_ref <<= self.trace(attach(self.complex_raise_stmt, self.complex_raise_stmt_repl), "complex_raise_stmt")
         self.augassign_stmt_ref <<= attach(self.augassign_stmt, self.augassign_repl)
         self.u_string_ref <<= attach(self.u_string, self.u_string_check)
         self.typedef_ref <<= attach(self.typedef, self.typedef_check)
@@ -1183,7 +1185,6 @@ class processor(object):
         self.async_match_funcdef_ref <<= attach(self.async_match_funcdef, self.async_stmt_check)
         self.async_block_ref <<= attach(self.async_block, self.async_stmt_check)
         self.await_keyword_ref <<= attach(self.await_keyword, self.await_keyword_check)
-        self.complex_raise_stmt_ref <<= attach(self.complex_raise_stmt, self.complex_raise_stmt_check)
 
     def clean(self):
         """Resets references."""
@@ -1838,6 +1839,17 @@ class processor(object):
                 stmts.append(closeindent)
         return "\n".join(stmts)
 
+    def complex_raise_stmt_repl(self, tokens):
+        """Checks for Python 3 raise from statement."""
+        if len(tokens) != 2:
+            raise CoconutException("invalid raise from tokens", tokens)
+        elif self.version == "3":
+            return "raise " + tokens[0] + " from " + tokens[1]
+        else:
+            return (raise_from_var + " = " + tokens[0] + "\n"
+                    + raise_from_var + ".__cause__ = " + tokens[1] + "\n"
+                    + "raise " + raise_from_var)
+
     def check_strict(self, name, original, location, tokens):
         """Checks that syntax meets --strict requirements."""
         if len(tokens) != 1:
@@ -1891,10 +1903,6 @@ class processor(object):
     def await_keyword_check(self, original, location, tokens):
         """Checks for Python 3.5 await statement."""
         return self.check_py3("Python 3.5 await expression", original, location, tokens)
-
-    def complex_raise_stmt_check(self, original, location, tokens):
-        """Checks for Python 3 raise from statement."""
-        return self.check_py3("Python 3 raise from statement", original, location, tokens)
 
     def set_literal_convert(self, tokens):
         """Converts set literals to the right form for the target Python."""
@@ -2306,8 +2314,8 @@ class processor(object):
     continue_stmt = Keyword("continue")
     return_stmt = addspace(Keyword("return") + Optional(testlist))
     simple_raise_stmt = addspace(Keyword("raise") + Optional(test))
-    complex_raise_stmt = addspace(simple_raise_stmt + Keyword("from") + test)
-    raise_stmt = simple_raise_stmt | complex_raise_stmt_ref
+    complex_raise_stmt = Keyword("raise").suppress() + Optional(test) + Keyword("from").suppress() + test
+    raise_stmt = complex_raise_stmt_ref | simple_raise_stmt
     flow_stmt = break_stmt | continue_stmt | return_stmt | raise_stmt | yield_expr
 
     dotted_as_name = Group(dotted_name + Optional(Keyword("as").suppress() + name))
