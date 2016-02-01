@@ -44,6 +44,8 @@ match_err_var = "_coconut_match_err"
 lazy_item_var = "_coconut_lazy_item"
 lazy_chain_var = "_coconut_lazy_chain"
 import_as_var = "_coconut_import"
+yield_from_var = "_coconut_yield_from"
+yield_item_var = "_coconut_yield_item"
 wildcard = "_"
 keywords = (
     "and",
@@ -1115,6 +1117,16 @@ def gen_imports(path, impas):
             out.append("from " + imp_from + " import " + imp + " as " + impas)
     return out
 
+def yield_from_proc(tokens):
+    """Processes Python 3.3 yield from."""
+    if len(tokens) == 1:
+        yield_from = tokens[0]
+        return (yield_from_var + " = " + yield_from
+            + "\nfor " + yield_item_var + " in " + yield_from_var + ":\n"
+            + openindent + "yield " + yield_item_var + "\n" + closeindent)
+    else:
+        raise CoconutException("invalid yield from tokens", tokens)
+
 #-----------------------------------------------------------------------------------------------------------------------
 # PARSER:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1161,7 +1173,6 @@ class processor(object):
         self.u_string_ref <<= attach(self.u_string, self.u_string_check)
         self.typedef_ref <<= attach(self.typedef, self.typedef_check)
         self.return_typedef_ref <<= attach(self.return_typedef, self.typedef_check)
-        self.yield_from_ref <<= attach(self.yield_from, self.yield_from_check)
         self.matrix_at_ref <<= attach(self.matrix_at, self.matrix_at_check)
         self.nonlocal_stmt_ref <<= attach(self.nonlocal_stmt, self.nonlocal_check)
         self.dict_comp_ref <<= attach(self.dict_comp, self.dict_comp_check)
@@ -1857,10 +1868,6 @@ class processor(object):
         """Checks for Python 3 type defs."""
         return self.check_py3("Python 3 type annotation", original, location, tokens)
 
-    def yield_from_check(self, original, location, tokens):
-        """Checks for Python 3.3 yield from."""
-        return self.check_py3("Python 3.3 yield from", original, location, tokens)
-
     def matrix_at_check(self, original, location, tokens):
         """Checks for Python 3.5 matrix multiplication."""
         return self.check_py3("Python 3.5 matrix multiplication", original, location, tokens)
@@ -2107,10 +2114,9 @@ class processor(object):
     multi_testlist = addspace(OneOrMore(condense(test + comma)) + Optional(test))
 
     dict_comp_ref = Forward()
-    yield_from = addspace(Keyword("from") + test)
-    yield_from_ref = Forward()
-    yield_arg = yield_from_ref | testlist
-    yield_expr = addspace(Keyword("yield") + Optional(yield_arg))
+    yield_classic = addspace(Keyword("yield") + testlist)
+    yield_from = attach(Keyword("yield").suppress() + Keyword("from").suppress() + test, yield_from_proc)
+    yield_expr = yield_from | yield_classic
     dict_comp = addspace(condense(test + colon) + test + comp_for)
     dict_item = addspace(itemlist(addspace(condense(test + colon) + test), comma))
     dictmaker = dict_comp_ref | dict_item

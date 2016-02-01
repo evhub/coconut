@@ -16,6 +16,7 @@
 4. [Case Study 2: Quick Sort](#case-study-2-quick-sort)
 5. [Case Study 3: Vectors](#case-study-3-vectors)
 6. [Case Study 4: Vector Fields](#case-study-4-vector-fields)
+7. [Filling in the Gaps](#filling-in-the-gaps)
 
 <!-- /MarkdownTOC -->
 
@@ -314,16 +315,54 @@ In the second case study, we will be implementing the quick sort algorithm. Our 
 Our method for tackling this problem is going to be a combination of the recursive and iterative approaches we used for the `factorial` problem, in that we're going to be lazily building up an iterator, and we're going to be doing it recursively. Here's the code, in Coconut:
 ```python
 def quick_sort(l):
-    """Return sorted(l) where l is any iterator, using the quick sort algorithm."""
+    """Return a sorted iterator of l, using the quick sort algorithm, and without using any data until necessar."""
     match [head] :: tail in l:
         tail, tail_ = tee(tail)
-        return (quick_sort((x for x in tail if x <= head))
+        yield from (quick_sort((x for x in tail if x <= head))
             :: (head,)
             :: quick_sort((x for x in tail_ if x > head))
             )
-    else:
-        return iter()
 ```
+This `quick_sort` algorithm uses a bunch of new constructs, so let's go over them.
+
+First, the `::` operator, which appears here both in pattern-matching, and by itself. In essence, the `::` operator is `+` for iterators. On its own, it takes two iterators and concatenates, or chains, them together. In pattern-matching, it inverts that operation, destructuring the beginning of an iterator into a pattern, and binding the rest of that iterator to a variable.
+
+Which brings us to the second new thing, `match ... in ...` notation. The notation
+```python
+match pattern in item:
+    <body>
+else:
+    <else>
+```
+is shorthand for
+```python
+case item:
+    match pattern:
+        <body>
+else:
+    <else>
+```
+that avoids the need for an additional level of indentation when only one `match` is being performed.
+
+The third new construct is the built-in function `tee`. `tee` solves a problem for functional programming created by the implementation of Python's iterators: whenever an element of an iterator is accessed, it's lost. `tee` solves this problem by splitting an iterator in two (or more if the optional argument `n` is passed) independent iterators that both use the same underlying iterator to access their data, thus when an element of one is accessed, it isn't lost in the other.
+
+Finally, although it's not a new construct, since it exists in Python 3, the use of `yield from` here deserves a mention. In Python, `yield` is the statement used to construct iterators, function much like `return`, with the exception that multiple `yield`s can be encountered, and each one will produce another element. `yield from` is very similar, except instead of adding a single element to the produced iterator, it adds another whole iterator.
+
+Putting it all together, here's our `quick_sort` function again:
+```python
+def quick_sort(l):
+    """Return a sorted iterator of l, using the quick sort algorithm, and without using any data until necessary."""
+    match [head] :: tail in l:
+        tail, tail_ = tee(tail)
+        yield from (quick_sort((x for x in tail if x <= head))
+            :: (head,)
+            :: quick_sort((x for x in tail_ if x > head))
+            )
+```
+
+The function first attempts to split `l` into an initial element and a remaining iterator. If `l` is the empty iterator, that match will fail, and it will fall through, yielding the empty iterator. Otherwise, we make a copy of the rest of the iterator, and yield the join of (the quick sort of all the remaining elements less than the initial element), (the initial element), and (the quick sort of all the remaining elements greater than the initial element).
+
+The advantages of the basic approach used here, heavy use of iterators and recursion, as opposed to the classical imperative approach, are numerous. First, our approach is more clear and more readable, since it is describing _what_ `quick_sort` is instead of _how_ `quick_sort` could be implemented. Second, our approach is _lazy_ in that our `quick_sort` won't evaluate any data until it needs it. Finally, and although this isn't relevant for `quick_sort` it is relevant in many other cases, an example of which we'll see later in this tutorial, our approach allows for working with _infinite_ series just like they were finite.
 
 ## Case Study 3: Vectors
 
@@ -386,3 +425,5 @@ def vector_field():
 def magnitude_field():
     return vector_field |> map$(abs)
 ```
+
+## Filling in the Gaps
