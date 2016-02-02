@@ -2059,6 +2059,13 @@ class processor(object):
     passthrough = Forward()
     passthrough_block = Forward()
 
+    lineitem = Combine(Optional(comment) + Literal("\n"))
+    newline = condense(OneOrMore(lineitem))
+    startmarker = StringStart() + condense(ZeroOrMore(lineitem) + Optional(moduledoc_ref))
+    endmarker = StringEnd()
+    indent = Literal(openindent)
+    dedent = Literal(closeindent)
+
     string_marker = Combine(Literal('"').suppress() + integer + Literal('"').suppress())
     comment_marker = Combine(pound.suppress() + integer)
     passthrough_marker = Combine(backslash.suppress() + integer)
@@ -2073,13 +2080,6 @@ class processor(object):
     string = b_string | u_string_ref
     moduledoc = string + newline
     docstring = condense(moduledoc)
-
-    lineitem = Combine(Optional(comment) + Literal("\n"))
-    newline = condense(OneOrMore(lineitem))
-    startmarker = StringStart() + condense(ZeroOrMore(lineitem) + Optional(moduledoc_ref))
-    endmarker = StringEnd()
-    indent = Literal(openindent)
-    dedent = Literal(closeindent)
 
     augassign = (
         Combine(pipeline + equals)
