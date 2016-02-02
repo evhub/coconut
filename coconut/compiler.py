@@ -668,6 +668,8 @@ def data_proc(tokens):
     out = "class " + name + '(__coconut__.collections.namedtuple("' + name + '", "' + attrs + '")):\n' + openindent
     if "simple" in stmts.keys() and len(stmts) == 1:
         out += "__slots__ = ()\n" + stmts[0] + closeindent
+    elif "docstring" in stmts.keys() and len(stmts) == 1:
+        out += stmts[0] + "__slots__ = ()\n" + closeindent
     elif "complex" in stmts.keys() and len(stmts) == 1:
         out += "__slots__ = ()\n" + "".join(stmts[0]) + closeindent
     elif "complex" in stmts.keys() and len(stmts) == 2:
@@ -2451,7 +2453,7 @@ class processor(object):
     data_args = Optional(lparen.suppress() + Optional(itemlist(~underscore + name, comma)) + rparen.suppress())
     data_suite = colon.suppress() + Group(
         (newline.suppress() + indent.suppress() + Optional(docstring) + Group(OneOrMore(stmt)) + dedent.suppress())("complex")
-        | simple_stmt("simple"))
+        | docstring("docstring") | simple_stmt("simple"))
     datadef = condense(attach(Keyword("data").suppress() + name + data_args + data_suite, data_proc))
 
     simple_decorator = (dotted_name + Optional(lparen + callargslist + rparen))("simple")
