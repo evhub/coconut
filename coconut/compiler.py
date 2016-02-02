@@ -666,16 +666,23 @@ def data_proc(tokens):
     else:
         raise CoconutException("invalid data tokens", tokens)
     out = "class " + name + '(__coconut__.collections.namedtuple("' + name + '", "' + attrs + '")):\n' + openindent
+    rest = None
     if "simple" in stmts.keys() and len(stmts) == 1:
-        out += "__slots__ = ()\n" + stmts[0] + closeindent
+        out += "__slots__ = ()\n"
+        rest = stmts[0]
     elif "docstring" in stmts.keys() and len(stmts) == 1:
-        out += stmts[0] + "__slots__ = ()\n" + closeindent
+        out += stmts[0] + "__slots__ = ()\n"
     elif "complex" in stmts.keys() and len(stmts) == 1:
-        out += "__slots__ = ()\n" + "".join(stmts[0]) + closeindent
+        out += "__slots__ = ()\n"
+        rest = "".join(stmts[0])
     elif "complex" in stmts.keys() and len(stmts) == 2:
-        out += stmts[0] + "__slots__ = ()\n" + "".join(stmts[1]) + closeindent
+        out += stmts[0] + "__slots__ = ()\n"
+        rest = "".join(stmts[1])
     else:
         raise CoconutException("invalid inner data tokens", stmts)
+    if rest is not None and rest != "pass\n":
+        out += rest
+    out += closeindent
     return out
 
 def decorator_proc(tokens):
