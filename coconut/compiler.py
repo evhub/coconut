@@ -2463,7 +2463,7 @@ class processor(object):
         | docstring("docstring") | simple_stmt("simple"))
     datadef = condense(attach(Keyword("data").suppress() + name + data_args + data_suite, data_proc))
 
-    simple_decorator = (dotted_name + Optional(lparen + callargslist + rparen))("simple")
+    simple_decorator = condense(dotted_name + Optional(lparen + callargslist + rparen))("simple")
     complex_decorator = test("complex")
     decorators = attach(OneOrMore(at.suppress() + Group(simple_decorator | complex_decorator) + newline.suppress()), decorator_proc)
     decorated = condense(decorators + (
