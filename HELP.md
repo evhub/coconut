@@ -194,7 +194,13 @@ def factorial(n):
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
 
+# Test cases:
+0 |> factorial |> print
+3 |> factorial > print
+0.5 |> factorial |> print # should raise TypeError
+-1 |> factorial |> print # should also raise TypeError
 ```
+_Note: every time code is shown in this tutorial, it is highly recommended that you try the given code and test cases in the interpreter to see for yourself how it works._
 
 Since the imperative approach is a fundamentally non-functional method, Coconut can't help us improve this example very much. Even here, though, the use of Coconut's infix notation (where the function is put in-between its arguments, surrounded in backticks) in `` n `isinstance` int `` makes the code slightly cleaner and easier to read.
 
@@ -211,6 +217,12 @@ def factorial(n):
             return n * factorial(n-1)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
+
+# Test cases:
+0 |> factorial |> print
+3 |> factorial > print
+0.5 |> factorial |> print # should raise TypeError
+-1 |> factorial |> print # should also raise TypeError
 ```
 
 Already, you can tell there's a lot more going on here than with the imperative method. That's intentional: Coconut is intended for functional programming, not imperative programminng, and so its new features are built to be most useful when programming in a functional style.
@@ -238,6 +250,12 @@ def factorial(n):
         match_success = True
     if not match_success:
         raise TypeError("the argument to factorial must be an integer >= 0")
+
+# Test cases:
+0 |> factorial |> print
+3 |> factorial > print
+0.5 |> factorial |> print # should raise TypeError
+-1 |> factorial |> print # should also raise TypeError
 ```
 
 As you can see, the destructuring assignment equivalent is much more cumbersome when you expect that the `match` might fail, which is why `match` statement syntax exists. But the destructuring assignment equivalent illuminates what exactly the pattern-matching is doing, by making it clear that `match` statements, and destructuring assignment statements, _are relly just fancy normal assignment statements_. In fact, the `match` keywords before the destructuring assignment statements in this example is optional.
@@ -256,6 +274,12 @@ def factorial(n, acc=1):
             return factorial(n-1, acc*n)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
+
+# Test cases:
+0 |> factorial |> print
+3 |> factorial > print
+0.5 |> factorial |> print # should raise TypeError
+-1 |> factorial |> print # should also raise TypeError
 ```
 
 This version is exactly equivalent to the original version, with the exception that it will never raise a `MaximumRecursionDepthError`, because Coconut's `recursive` decorator will optimize away the tail recursion into a `while` loop.
@@ -273,6 +297,12 @@ def factorial(n):
             return range(1, n+1) |> reduce$((*))
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
+
+# Test cases:
+0 |> factorial |> print
+3 |> factorial > print
+0.5 |> factorial |> print # should raise TypeError
+-1 |> factorial |> print # should also raise TypeError
 ```
 
 This definition differs from the recursive definition only by one line. That's intentional: because both the iterative and recursive approaches are functional approaches, Coconut can provide a great assist in making the code cleaner and more readable. The one line that differs is this one:
@@ -322,6 +352,13 @@ def quick_sort(l):
             :: (head,)
             :: quick_sort((x for x in tail_ if x > head))
             )
+
+# Test cases:
+[] |> quick_sort |> list |> print
+[5] |> quick_sort |> list |> print
+[0, 1, 2, 3, 4, 5] |> quick_sort |> list |> print
+[5, 4, 3, 2, 1, 0] |> quick_sort |> list |> print
+[3, 0, 4, 5, 2, 1] |> quick_sort |> list |> print
 ```
 This `quick_sort` algorithm uses a bunch of new constructs, so let's go over them.
 
@@ -358,6 +395,13 @@ def quick_sort(l):
             :: (head,)
             :: quick_sort((x for x in tail_ if x > head))
             )
+
+# Test cases:
+[] |> quick_sort |> list |> print
+[5] |> quick_sort |> list |> print
+[0, 1, 2, 3, 4, 5] |> quick_sort |> list |> print
+[5, 4, 3, 2, 1, 0] |> quick_sort |> list |> print
+[3, 0, 4, 5, 2, 1] |> quick_sort |> list |> print
 ```
 
 The function first attempts to split `l` into an initial element and a remaining iterator. If `l` is the empty iterator, that match will fail, and it will fall through, yielding the empty iterator. Otherwise, we make a copy of the rest of the iterator, and yield the join of (the quick sort of all the remaining elements less than the initial element), (the initial element), and (the quick sort of all the remaining elements greater than the initial element).
@@ -367,6 +411,25 @@ The advantages of the basic approach used here, heavy use of iterators and recur
 And Coconut makes programming in such an advantageous functional approach significantly easier. In this example, Coconut's pattern-matching lets us easily split the given iterator, and Coconut's `::` iterator joining operator lets us easily put it back together again in sorted order.
 
 ## Case Study 3: Vectors
+
+In the next case study, we'll be doing something slightly different--instead of defining a function, we'll be creating an object. Specifically, we're going to try to implement an immutable n-vector that supports all the basic vector operations.
+
+In functional programming, it is often very desirable to define _immutable_ objects, those that can't be changed once created--like Python's strings or tuples. Like strings and tuples, immutable objects are useful for a wide variety of reasons: they're easier to reason about, since you can be guaranteed they won't change; they're hashable and pickleable, so they can be used as keys and serialized; and when combined with pattern-matching, they can be used as what are called _algebraic data types_ to build up and then deconstruct large, complicated data structures very easily.
+
+Coconut's `data` statement brings the power and utility of _immutable, algebraic data types_ to Python, and it is this that we will be using to construct our `vector` type. The demonstrate the syntax of `data` statements, we'll start by defining a simple 2-vector:
+```python
+data vector2(x, y):
+    """Immutable 2-vector."""
+    def __abs__(self):
+        """Return the magnitude of the 2-vector."""
+        return (self.x**2 + self.y**2)**0.5
+
+# Test cases:
+vector2(1, 2) |> print
+vector2(3, 4) |> abs |> print
+v = vector2(2, 3)
+v.x = 7 # should raise AttributeError
+```
 
 ```python
 data vector(pts):
