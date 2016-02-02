@@ -195,14 +195,14 @@ def factorial(n):
         raise TypeError("the argument to factorial must be an integer >= 0")
 
 # Test cases:
-0 |> factorial |> print
-3 |> factorial > print
-0.5 |> factorial |> print # should raise TypeError
--1 |> factorial |> print # should also raise TypeError
+-1 |> factorial |> print # TypeError
+0.5 |> factorial |> print # TypeError
+0 |> factorial |> print # 1
+3 |> factorial |> print # 6
 ```
-_Note: every time code is shown in this tutorial, it is highly recommended that you try the given code and test cases in the interpreter to see for yourself how it works._
+Before we delve into what exactly is happening here, let's give it a run and make sure the test cases check out. If we were really writing a Coconut program, we'd want to save and compile an actual file, but since we're just playing around, let's try copy-pasting into the interpreter. Here, you should get `1`, `6`, and then two `TypeError`s.
 
-Since the imperative approach is a fundamentally non-functional method, Coconut can't help us improve this example very much. Even here, though, the use of Coconut's infix notation (where the function is put in-between its arguments, surrounded in backticks) in `` n `isinstance` int `` makes the code slightly cleaner and easier to read.
+Now that we've verified it works, let's take a look at what's going on. Since the imperative approach is a fundamentally non-functional method, Coconut can't help us improve this example very much. Even here, though, the use of Coconut's infix notation (where the function is put in-between its arguments, surrounded in backticks) in `` n `isinstance` int `` makes the code slightly cleaner and easier to read.
 
 ### Recursive Method
 
@@ -219,13 +219,13 @@ def factorial(n):
         raise TypeError("the argument to factorial must be an integer >= 0")
 
 # Test cases:
-0 |> factorial |> print
-3 |> factorial > print
-0.5 |> factorial |> print # should raise TypeError
--1 |> factorial |> print # should also raise TypeError
+-1 |> factorial |> print # TypeError
+0.5 |> factorial |> print # TypeError
+0 |> factorial |> print # 1
+3 |> factorial |> print # 6
 ```
 
-Already, you can tell there's a lot more going on here than with the imperative method. That's intentional: Coconut is intended for functional programming, not imperative programminng, and so its new features are built to be most useful when programming in a functional style.
+Copy, paste! You should get the same test results as you got for the imperative version--but you can probably tell there's quite a lot more going on here than there. That's intentional: Coconut is intended for functional programming, not imperative programminng, and so its new features are built to be most useful when programming in a functional style.
 
 Let's take a look at the specifics of the syntax in this example. The first thing we see is `case n`. This statement starts a `case` block, in which only `match` statements can occur. Each `match` statement will attempt to match its given pattern against the value in the `case` block. Only the first successful match inside of any given `case` block will be executed. When a match is successful, any variable bindings in that match will also be performed. Additionally, as is true in this case, `match` statements can also have `if` guards that will check the given condition before the match is considered final. Finally, after the `case` block, an `else` statement is allowed, which will only be excectued if no `match` statement is.
 
@@ -235,30 +235,27 @@ Although this example is very basic, pattern-matching is both one of Coconut's m
 ```python
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
-    match_success = False
     try:
-        match 0 = n # the match is optional here
+        0 = n # destructuring assignment
     except MatchError:
         try:
-            match _ is int = n # and here
+            _ is int = n # also destructuring assignment
         except MatchError:
             pass
-        else: if n > 0: # in Coconut, if, match and try are allowed after else
-            match_success = True
+        else: if n > 0: # in Coconut, if, match, and try are allowed after else
             return n * factorial(n-1)
     else:
-        match_success = True
-    if not match_success:
-        raise TypeError("the argument to factorial must be an integer >= 0")
+        return 1
+    raise TypeError("the argument to factorial must be an integer >= 0")
 
 # Test cases:
-0 |> factorial |> print
-3 |> factorial > print
-0.5 |> factorial |> print # should raise TypeError
--1 |> factorial |> print # should also raise TypeError
+-1 |> factorial |> print # TypeError
+0.5 |> factorial |> print # TypeError
+0 |> factorial |> print # 1
+3 |> factorial |> print # 6
 ```
 
-As you can see, the destructuring assignment equivalent is much more cumbersome when you expect that the `match` might fail, which is why `match` statement syntax exists. But the destructuring assignment equivalent illuminates what exactly the pattern-matching is doing, by making it clear that `match` statements, and destructuring assignment statements, _are relly just fancy normal assignment statements_. In fact, the `match` keywords before the destructuring assignment statements in this example is optional.
+Copy, paste! While this destructuring assignment equivalent should work, it is much more cumbersome than `match` statements when you expect that they'll fail, which is why `match` statement syntax exists. But the destructuring assignment equivalent illuminates what exactly the pattern-matching is doing, by making it clear that `match` statements are really just fancy destructuring assignment statements, which _are really just fancy normal assignment statements_. In fact, to be explicit about using destructuring assignment instead of normal assignment, the `match` keyword can be put before a destructuring assignment statement to signify it as such.
 
 It will be helpful to, as we continue to use Coconut's pattern-matching and destructuring assignment statements in further examples, think _assignment_ whenever you see the keyword `match`.
 
@@ -276,13 +273,13 @@ def factorial(n, acc=1):
         raise TypeError("the argument to factorial must be an integer >= 0")
 
 # Test cases:
-0 |> factorial |> print
-3 |> factorial > print
-0.5 |> factorial |> print # should raise TypeError
--1 |> factorial |> print # should also raise TypeError
+-1 |> factorial |> print # TypeError
+0.5 |> factorial |> print # TypeError
+0 |> factorial |> print # 1
+3 |> factorial |> print # 6
 ```
 
-This version is exactly equivalent to the original version, with the exception that it will never raise a `MaximumRecursionDepthError`, because Coconut's `recursive` decorator will optimize away the tail recursion into a `while` loop.
+Copy, paste! This version is exactly equivalent to the original version, with the exception that it will never raise a `MaximumRecursionDepthError`, because Coconut's `recursive` decorator will optimize away the tail recursion into a `while` loop.
 
 ### Iterative Method
 
@@ -299,13 +296,13 @@ def factorial(n):
         raise TypeError("the argument to factorial must be an integer >= 0")
 
 # Test cases:
-0 |> factorial |> print
-3 |> factorial > print
-0.5 |> factorial |> print # should raise TypeError
--1 |> factorial |> print # should also raise TypeError
+-1 |> factorial |> print # TypeError
+0.5 |> factorial |> print # TypeError
+0 |> factorial |> print # 1
+3 |> factorial |> print # 6
 ```
 
-This definition differs from the recursive definition only by one line. That's intentional: because both the iterative and recursive approaches are functional approaches, Coconut can provide a great assist in making the code cleaner and more readable. The one line that differs is this one:
+Copy, paste! This definition differs from the recursive definition only by one line. That's intentional: because both the iterative and recursive approaches are functional approaches, Coconut can provide a great assist in making the code cleaner and more readable. The one line that differs is this one:
 ```python
 return range(1, n+1) |> reduce$((*))
 ```
@@ -354,13 +351,13 @@ def quick_sort(l):
             )
 
 # Test cases:
-[] |> quick_sort |> list |> print
-[5] |> quick_sort |> list |> print
-[0, 1, 2, 3, 4, 5] |> quick_sort |> list |> print
-[5, 4, 3, 2, 1, 0] |> quick_sort |> list |> print
-[3, 0, 4, 5, 2, 1] |> quick_sort |> list |> print
+[] |> quick_sort |> list |> print # []
+[3] |> quick_sort |> list |> print # [3]
+[0,1,2,3,4] |> quick_sort |> list |> print # [0,1,2,3,4]
+[4,3,2,1,0] |> quick_sort |> list |> print # [0,1,2,3,4]
+[3,0,4,2,1] |> quick_sort |> list |> print # [0,1,2,3,4]
 ```
-This `quick_sort` algorithm uses a bunch of new constructs, so let's go over them.
+Copy, paste! This `quick_sort` algorithm works uses a bunch of new constructs, so let's go over them.
 
 First, the `::` operator, which appears here both in pattern-matching and by itself. In essence, the `::` operator is `+` for iterators. On its own, it takes two iterators and concatenates, or chains, them together. In pattern-matching, it inverts that operation, destructuring the beginning of an iterator into a pattern, and binding the rest of that iterator to a variable.
 
@@ -395,13 +392,6 @@ def quick_sort(l):
             :: (head,)
             :: quick_sort((x for x in tail_ if x > head))
             )
-
-# Test cases:
-[] |> quick_sort |> list |> print
-[5] |> quick_sort |> list |> print
-[0, 1, 2, 3, 4, 5] |> quick_sort |> list |> print
-[5, 4, 3, 2, 1, 0] |> quick_sort |> list |> print
-[3, 0, 4, 5, 2, 1] |> quick_sort |> list |> print
 ```
 
 The function first attempts to split `l` into an initial element and a remaining iterator. If `l` is the empty iterator, that match will fail, and it will fall through, yielding the empty iterator. Otherwise, we make a copy of the rest of the iterator, and yield the join of (the quick sort of all the remaining elements less than the initial element), (the initial element), and (the quick sort of all the remaining elements greater than the initial element).
@@ -425,11 +415,13 @@ data vector2(x, y):
         return (self.x**2 + self.y**2)**0.5
 
 # Test cases:
-vector2(1, 2) |> print
-vector2(3, 4) |> abs |> print
+vector2(1, 2) |> print # vector2(x=1, y=2)
+vector2(3, 4) |> abs |> print # 5
 v = vector2(2, 3)
-v.x = 7 # should raise AttributeError
+v.x = 7 # AttributeError
 ```
+
+Copy, paste!
 
 ```python
 data vector(pts):
