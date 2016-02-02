@@ -665,8 +665,16 @@ def data_proc(tokens):
         name, attrs, stmts = tokens
     else:
         raise CoconutException("invalid data tokens", tokens)
-    return ("class " + name + '(__coconut__.collections.namedtuple("' + name + '", "' + attrs + '")):\n'
-            + openindent + "__slots__ = ()\n" + "".join(stmts) + closeindent)
+    out = "class " + name + '(__coconut__.collections.namedtuple("' + name + '", "' + attrs + '")):\n' + openindent
+    if "simple" in stmts.keys() and len(stmts) == 1:
+        out += "__slots__ = ()\n" + stmts[0] + closeindent
+    elif "complex" in stmts.keys() and len(stmts) == 1:
+        out += "__slots__ = ()\n" + "".join(stmts[0]) + closeindent
+    elif "complex" in stmts.keys() and len(stmts) == 2:
+        out += stmts[0] + "__slots__ = ()\n" + "".join(stmts[1]) + closeindent
+    else:
+        raise CoconutException("invalid inner data tokens", stmts)
+    return out
 
 def decorator_proc(tokens):
     """Processes decorators."""
@@ -1161,7 +1169,7 @@ class processor(object):
     def bind(self):
         """Binds reference objects to the proper parse actions."""
         self.string_ref <<= self.trace(attach(self.string_marker, self.string_repl), "string_ref")
-        self.moduledoc <<= self.trace(attach(self.string_marker + self.newline, self.set_docstring), "moduledoc")
+        self.moduledoc_ref <<= self.trace(attach(self.moduledoc, self.set_docstring), "moduledoc")
         self.comment <<= self.trace(attach(self.comment_marker, self.comment_repl), "comment")
         self.passthrough <<= self.trace(attach(self.passthrough_marker, self.passthrough_repl), "passthrough")
         self.passthrough_block <<= self.trace(attach(self.passthrough_block_marker, self.passthrough_repl), "passthrough_block")
@@ -1649,7 +1657,7 @@ class processor(object):
     def set_docstring(self, tokens):
         """Sets the docstring."""
         if len(tokens) == 2:
-            self.docstring = self.string_repl([tokens[0]]) + "\n\n"
+            self.docstring = tokens[0] + "\n\n"
             return tokens[1]
         else:
             raise CoconutException("invalid docstring tokens", tokens)
@@ -2046,7 +2054,7 @@ class processor(object):
               )
 
     string_ref = Forward()
-    moduledoc = Forward()
+    moduledoc_ref = Forward()
     comment = Forward()
     passthrough = Forward()
     passthrough_block = Forward()
@@ -2063,10 +2071,12 @@ class processor(object):
     u_string = Combine((unicode_u + raw_r | raw_r + unicode_u) + string_ref)
     u_string_ref = Forward()
     string = b_string | u_string_ref
+    moduledoc = string + newline
+    docstring = condense(moduledoc)
 
     lineitem = Combine(Optional(comment) + Literal("\n"))
     newline = condense(OneOrMore(lineitem))
-    startmarker = StringStart() + condense(ZeroOrMore(lineitem) + Optional(moduledoc))
+    startmarker = StringStart() + condense(ZeroOrMore(lineitem) + Optional(moduledoc_ref))
     endmarker = StringEnd()
     indent = Literal(openindent)
     dedent = Literal(closeindent)
@@ -2439,7 +2449,10 @@ class processor(object):
     async_stmt = async_block_ref | async_funcdef_ref | async_match_funcdef
 
     data_args = Optional(lparen.suppress() + Optional(itemlist(~underscore + name, comma)) + rparen.suppress())
-    datadef = condense(attach(Keyword("data").suppress() + name + data_args + full_suite, data_proc))
+    data_suite = colon.suppress() + Group(
+        (newline.suppress() + indent.suppress() + Optional(docstring) + Group(OneOrMore(stmt)) + dedent.suppress())("complex")
+        | simple_stmt("simple"))
+    datadef = condense(attach(Keyword("data").suppress() + name + data_args + data_suite, data_proc))
 
     simple_decorator = (dotted_name + Optional(lparen + callargslist + rparen))("simple")
     complex_decorator = test("complex")
