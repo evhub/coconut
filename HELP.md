@@ -469,18 +469,78 @@ Now that we have a constructor for our n-vector, it's time to write its methods.
 ```
 The basic algorithm here is map square over each element, sum them all, then square root the result, an algorithm which is so clean to implement in Coconut that it can be read right off the code.
 
-Next up is vector addition. The goal here is to add two vectors of equal length by adding their components. To do this, we're going to make use of Coconut's ability to pattern-match, or in this case destructuring assign, to data types.
-
+Next up is vector addition. The goal here is to add two vectors of equal length by adding their components. To do this, we're going to make use of Coconut's ability to perform pattern-matching, or in this case destructuring assignment, to data types, like so:
 ```python
     def __add__(self, other):
         """Add two vectors together."""
         vector(other_pts) = other
-        assert len(other_pts) == len(self.pts):
+        assert len(other_pts) == len(self.pts)
+        return map((+), self.pts, other_pts) |*> vector
+```
+
+There are a couple of new constructs here, but the main notable one is the destructuring assignment statement `vector(other_pts) = other` which showcases the syntax for pattern-matching against data types: it mimics exactly the original `data` declaration of that data type. In this case, `vector(other_pts) = other` will only match a vector, raising a `MatchError` otherwise, and if it does match a vector, will assign the vector's `pts` attribute to the variable `other_pts`.
+
+The other new construct used here is the `|*>`, or star-pipe, operator, which functions exactly like the normal pipe, except that instead of calling the function with one argument, it calls it with as many arguments as there are elements in the sequence passed into it. The difference between `|*>` and `|>` is exactly analagous to the difference between `f(args)` and `f(*args)`.
+
+Next is vector subtraction, which is just like vector addition, but with `(-)` instead of `(+)`:
+```python
+    def __sub__(self, other):
+        """Subtract one vector from another."""
+        vector(other_pts) = other
+        assert len(other_pts) == len(self.pts)
+        return map((-), self.pts, other_pts) |*> vector
+```
+
+One thing to note here is that unlike the other operator functions, `(-)` can either mean negation or subtraction, the meaning of which will be inferred based on how many arguments are passed, 1 for negation, 2 for subtraction. To show this, we'll use the same `(-)` function to implement vector negation, which should simply negate each element:
+```python
+    def __neg__(self):
+        """Retrieve the negative of the vector."""
+        return self.pts |> map$((-)) |*> vector
+```
+
+```python
+    def __eq__(self, other):
+        """Compare whether two vectors are equal."""
+        match vector(=self.pts) in other:
+            return True
+        else:
+            return False
+```
+
+The last method we'll implement is multiplication.
+
+```python
+    def __mul__(self, other):
+        """Scalar multiplication and dot product."""
+        match vector(other_pts) in other:
+            assert len(other_pts) == len(self.pts)
+            return map((*), self.pts, other_pts) |> sum # dot product
+        else:
+            return self.pts |> map$((*)$(other)) |*> vector # scalar multiplication
+```
+
+Finally, putting everything together:
+```python
+data vector(pts):
+    """Immutable n-vector."""
+    def __new__(cls, *pts):
+        """Create a new vector from the given pts."""
+        if len(pts) == 1 and pts[0] `isinstance` vector:
+            return pts[0] # vector(v) where v is a vector should return v
+        else:
+            return pts |> tuple |> datamaker(cls) # accesses base constructor
+    def __abs__(self):
+        """Return the magnitude of the vector."""
+        return self.pts |> map$((x) -> x**2) |> sum |> ((s) -> s**0.5)
+    def __add__(self, other):
+        """Add two vectors together."""
+        vector(other_pts) = other
+        assert len(other_pts) == len(self.pts)
         return map((+), self.pts, other_pts) |*> vector
     def __sub__(self, other):
         """Subtract one vector from another."""
         vector(other_pts) = other
-        assert len(other_pts) == len(self.pts):
+        assert len(other_pts) == len(self.pts)
         return map((-), self.pts, other_pts) |*> vector
     def __neg__(self):
         """Retrieve the negative of the vector."""
@@ -494,13 +554,30 @@ Next up is vector addition. The goal here is to add two vectors of equal length 
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
         match vector(other_pts) in other:
-            assert len(other_pts) == len(self.pts):
+            assert len(other_pts) == len(self.pts)
             return map((*), self.pts, other_pts) |> sum # dot product
         else:
             return self.pts |> map$((*)$(other)) |*> vector # scalar multiplication
+
+# Test cases:
+vector(1, 2, 3) |> print # vector(pts=(1, 2, 3))
+vector(4, 5) |> vector |> print # vector(pts=(4, 5))
+vector(3, 4) |> abs |> print # 5
+vector(1, 2) + vector(2, 3) |> print # vector(pts=(3, 5))
+vector(2, 2) - vector(0, 1) |> print # vector(pts=(2, 1))
+-vector(1, 3) |> print # vector(pts=(-1, -3))
+(vector(1, 2) == "string") |> print # False
+(vector(1, 2) == vector(3, 4)) |> print # False
+(vector(2, 4) == vector(2, 4)) |> print # True
+2*vector(1, 2) |> print # vector(pts=(2, 4))
+vector(1, 2) * vector(1, 3) |> print # 7
 ```
 
+Copy, paste!
+
 ## Case Study 4: Vector Fields
+
+one-line challenge for reader
 
 ```
 def diagonal_line(n) = range(n) |> map$((i) -> (i, n-i))
@@ -513,4 +590,4 @@ iterator slicing
 
 ## Filling in the Gaps
 
-Lazy lists, function composition, implicit partial, other pipes
+lazy lists, function composition, implicit partial, backwards pipes
