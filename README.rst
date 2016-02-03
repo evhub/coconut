@@ -28,9 +28,6 @@ Coconut is completely open-source, and new contributors are always welcome. Cont
 .. _Docs: http://coconut.readthedocs.org/en/master/DOCS.html
 .. _GitHub: https://github.com/evhub/coconut
 
-Coconut in Action
------------------
-
 Coconut Command-Line Interpreter
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
