@@ -462,7 +462,7 @@ class cli(object):
         else:
             install_func = lambda args: subprocess.check_call(args)
         try:
-            install_func("jupyter --version")
+            install_func(["jupyter", "--version"])
         except subprocess.CalledProcessError:
             jupyter = "ipython"
         else:
