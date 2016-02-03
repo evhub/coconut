@@ -22,14 +22,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "coc
 
 from root import *
 from recommonmark.parser import CommonMarkParser
-import sphinx_bootstrap_theme
+from sphinx_bootstrap_theme import get_html_theme_path
 
 #-----------------------------------------------------------------------------------------------------------------------
 # DEFINITIONS:
 #-----------------------------------------------------------------------------------------------------------------------
 
 html_theme = "bootstrap"
-html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
+html_theme_path = get_html_theme_path()
 
 project = "Coconut"
 copyright = "2015, Evan Hubinger, licensed under Apache 2.0"

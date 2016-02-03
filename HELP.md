@@ -498,6 +498,7 @@ One thing to note here is that unlike the other operator functions, `(-)` can ei
         return self.pts |> map$((-)) |*> vector
 ```
 
+Our next method will be equality. We're again going to use `data` pattern-matching to implement this, but this time inside of a `match` statement instead of with destructuring assignment, since we want to `return False` not raise an error if the match fails. Here's the code:
 ```python
     def __eq__(self, other):
         """Compare whether two vectors are equal."""
@@ -507,8 +508,9 @@ One thing to note here is that unlike the other operator functions, `(-)` can ei
             return False
 ```
 
-The last method we'll implement is multiplication.
+The only new construct here is the use of `=self.pts` in the `match` statement. This construct is used to perform a check inside of the pattern-matching, making sure the `match` only succeeds if `other.pts == self.pts`.
 
+The last method we'll implement is multiplication.
 ```python
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
