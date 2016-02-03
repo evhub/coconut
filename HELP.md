@@ -15,6 +15,9 @@
     3. [Iterative Method](#iterative-method)
 4. [Case Study 2: Quick Sort](#case-study-2-quick-sort)
 5. [Case Study 3: Vectors](#case-study-3-vectors)
+    1. [2-Vector](#2-vector)
+    2. [n-Vector Constructor](#n-vector-constructor)
+    3. [n-Vector Methods](#n-vector-methods)
 6. [Case Study 4: Vector Fields](#case-study-4-vector-fields)
 7. [Filling in the Gaps](#filling-in-the-gaps)
 
@@ -404,7 +407,13 @@ And Coconut makes programming in such an advantageous functional approach signif
 
 In the next case study, we'll be doing something slightly different--instead of defining a function, we'll be creating an object. Specifically, we're going to try to implement an immutable n-vector that supports all the basic vector operations.
 
-In functional programming, it is often very desirable to define _immutable_ objects, those that can't be changed once created--like Python's strings or tuples. Like strings and tuples, immutable objects are useful for a wide variety of reasons: they're easier to reason about, since you can be guaranteed they won't change; they're hashable and pickleable, so they can be used as keys and serialized; and when combined with pattern-matching, they can be used as what are called _algebraic data types_ to build up and then deconstruct large, complicated data structures very easily.
+In functional programming, it is often very desirable to define _immutable_ objects, those that can't be changed once created--like Python's strings or tuples. Like strings and tuples, immutable objects are useful for a wide variety of reasons:
+- they're easier to reason about, since you can be guaranteed they won't change,
+- they're hashable and pickleable, so they can be used as keys and serialized,
+- they're significantly more efficient since they require much less overhead,
+- and when combined with pattern-matching, they can be used as what are called _algebraic data types_ to build up and then deconstruct large, complicated data structures very easily.
+
+### 2-Vector
 
 Coconut's `data` statement brings the power and utility of _immutable, algebraic data types_ to Python, and it is this that we will be using to construct our `vector` type. The demonstrate the syntax of `data` statements, we'll start by defining a simple 2-vector:
 ```python
@@ -428,6 +437,8 @@ data <name>(<attributes>):
 ```
 where `<name>` and `<body>` are the same as the equivalent `class` definition, but `<attributes>` are the different attributes of the data type, in order that the constructor should take them as arguments. In this case, `vector2` is a data type of two attributes, `x` and `y`, with one defined method, `__abs__`, that computes the magnitude. As the test cases show, we can then create, print, but _not modify_ instances of `vector2`.
 
+### n-Vector Constructor
+
 Now that we've got the 2-vector under our belt, let's move to back to our original, more complicated problem: n-vectors, that is, vectors of arbitrary length. We're going to try to make our n-vector support all the basic vector operations, but we'll start out with just the `data` definition and the constructor:
 ```python
 data vector(pts):
@@ -440,43 +451,46 @@ data vector(pts):
             return pts |> tuple |> datamaker(cls) # accesses base constructor
 
 # Test cases:
-vector(1, 2) |> print # vector(pts=(1, 2))
+vector(1, 2, 3) |> print # vector(pts=(1, 2, 3))
+vector(4, 5) |> vector |> print # vector(pts=(4, 5))
 ```
+
+The big new thing here is how to write `data` constructors. Since `data` types are immutable, `__init__` construction won't work. Instead, a different special method `__new__` is used, which must return the newly constructed instance, and unlike most methods, takes the class not the object as the first argument. Since `__new__` needs to return a fully constructed instance, in almost all cases access to the underlying `data` constructor will be necessary. To achieve this, Coconut provides the built-in function `datamaker`, which takes a data type, often the first argument to `__new__`, and returns its underlying `data` constructor.
+
+In this case, the constructor checks whether nothing but another `vector` was passed, in which case it returns that, otherwise it returns the result of creating a tuple of the arguments and passing that to the underlying constructor, the form of which is `vector(pts)`, thus assigning the tuple to the `pts` attribute.
+
+### n-Vector Methods
 
 ```python
     def __abs__(self):
         """Return the magnitude of the vector."""
         return self.pts |> map$((x) -> x**2) |> sum |> ((s) -> s**0.5)
+    def __add__(self, other):
+        """Add two vectors together."""
+        vector(other_pts) = other
+        assert len(other_pts) == len(self.pts):
+        return map((+), self.pts, other_pts) |*> vector
+    def __sub__(self, other):
+        """Subtract one vector from another."""
+        vector(other_pts) = other
+        assert len(other_pts) == len(self.pts):
+        return map((-), self.pts, other_pts) |*> vector
+    def __neg__(self):
+        """Retrieve the negative of the vector."""
+        return self.pts |> map$((-)) |*> vector
     def __eq__(self, other):
         """Compare whether two vectors are equal."""
         match vector(=self.pts) in other:
             return True
         else:
             return False
-    def __add__(self, other):
-        """Add two vectors together."""
-        match vector(other_pts) in other if len(other_pts) == len(self.pts):
-            return map((+), self.pts, other_pts) |*> vector
-        else:
-            raise TypeError("vectors can only be added to other vectors of the same length")
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
         match vector(other_pts) in other:
-            if len(other_pts) == len(self.pts):
-                return map((*), self.pts, other_pts) |> sum # dot product
-            else:
-                raise TypeError("cannot dot product vector by other vector of different length")
+            assert len(other_pts) == len(self.pts):
+            return map((*), self.pts, other_pts) |> sum # dot product
         else:
             return self.pts |> map$((*)$(other)) |*> vector # scalar multiplication
-    def __neg__(self):
-        """Retrieve the negative of the vector."""
-        return self.pts |> map$((-)) |*> vector
-    def __sub__(self, other):
-        """Subtract one vector from another."""
-        match vector(other_pts) in other if len(other_pts) == len(self.pts):
-            return map((-), self.pts, other_pts) |*> vector
-        else:
-            raise TypeError("vectors can only have other vectors of the same length subtracted from them")
 ```
 
 ## Case Study 4: Vector Fields

@@ -432,6 +432,12 @@ data <name>(<args>):
 ```
 `<name>` is the name of the new data type, `<args>` are the arguments to its constructor as well as the names of its attributes, and `<body>` contains the data type's methods.
 
+Subclassing `data` types can be done easily by inheriting from them in a normal Python `class`, although to make the new subclass immutable, the line
+```python
+__slots__ = ()
+```
+will need to be added to the subclass before any method or attribute definitions.
+
 ##### Rationale
 
 A mainstay of functional programming that Coconut improves in Python is the use of values, or immutable data types. Immutable data can be very useful because it guarantees that once you have some data it won't change, but in Python creating custom immutable data types is difficult. Coconut makes it very easy by providing `data` blocks.
