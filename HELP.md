@@ -415,7 +415,7 @@ In functional programming, it is often very desirable to define _immutable_ obje
 
 ### 2-Vector
 
-Coconut's `data` statement brings the power and utility of _immutable, algebraic data types_ to Python, and it is this that we will be using to construct our `vector` type. The demonstrate the syntax of `data` statements, we'll start by defining a simple 2-vector:
+Coconut's `data` statement brings the power and utility of _immutable, algebraic data types_ to Python, and it is this that we will be using to construct our `vector` type. The demonstrate the syntax of `data` statements, we'll start by defining a simple 2-vector. Our vector will have one special method `__abs__` which will compute the vector's magnitude, defined as the square root of the sum of the squares of the elements. Here's our 2-vector:
 ```python
 data vector2(x, y):
     """Immutable 2-vector."""
@@ -455,16 +455,23 @@ vector(1, 2, 3) |> print # vector(pts=(1, 2, 3))
 vector(4, 5) |> vector |> print # vector(pts=(4, 5))
 ```
 
-The big new thing here is how to write `data` constructors. Since `data` types are immutable, `__init__` construction won't work. Instead, a different special method `__new__` is used, which must return the newly constructed instance, and unlike most methods, takes the class not the object as the first argument. Since `__new__` needs to return a fully constructed instance, in almost all cases access to the underlying `data` constructor will be necessary. To achieve this, Coconut provides the built-in function `datamaker`, which takes a data type, often the first argument to `__new__`, and returns its underlying `data` constructor.
+Copy, paste! The big new thing here is how to write `data` constructors. Since `data` types are immutable, `__init__` construction won't work. Instead, a different special method `__new__` is used, which must return the newly constructed instance, and unlike most methods, takes the class not the object as the first argument. Since `__new__` needs to return a fully constructed instance, in almost all cases access to the underlying `data` constructor will be necessary. To achieve this, Coconut provides the built-in function `datamaker`, which takes a data type, often the first argument to `__new__`, and returns its underlying `data` constructor.
 
 In this case, the constructor checks whether nothing but another `vector` was passed, in which case it returns that, otherwise it returns the result of creating a tuple of the arguments and passing that to the underlying constructor, the form of which is `vector(pts)`, thus assigning the tuple to the `pts` attribute.
 
 ### n-Vector Methods
 
+Now that we have a constructor for our n-vector, it's time to write its methods. First up is `__abs__`, which should compute the vector's magnitude. This will be slightly more complicated than with the 2-vector, since we have to make it work over an arbitrary number of `pts`. Fortunately, we can use Coconut's pipeline-style programming and partial application to make it simple:
 ```python
     def __abs__(self):
         """Return the magnitude of the vector."""
         return self.pts |> map$((x) -> x**2) |> sum |> ((s) -> s**0.5)
+```
+The basic algorithm here is map square over each element, sum them all, then square root the result, an algorithm which is so clean to implement in Coconut that it can be read right off the code.
+
+Next up is vector addition. The goal here is to add two vectors of equal length by adding their components. To do this, we're going to make use of Coconut's ability to pattern-match, or in this case destructuring assign, to data types.
+
+```python
     def __add__(self, other):
         """Add two vectors together."""
         vector(other_pts) = other
@@ -502,4 +509,8 @@ def vector_field() = linearized_plane() |> map$((xy) -> vector(*xy))
 def magnitude_field() = vector_field() |> map$(abs)
 ```
 
+iterator slicing
+
 ## Filling in the Gaps
+
+Lazy lists, function composition, implicit partial, other pipes
