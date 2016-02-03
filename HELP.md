@@ -225,7 +225,7 @@ def factorial(n):
 3 |> factorial |> print # 6
 ```
 
-Copy, paste! You should get the same test results as you got for the imperative version--but you can probably tell there's quite a lot more going on here than there. That's intentional: Coconut is intended for functional programming, not imperative programminng, and so its new features are built to be most useful when programming in a functional style.
+Copy and paste the code and tests into the interpreter. You should get the same test results as you got for the imperative version--but you can probably tell there's quite a lot more going on here than there. That's intentional: Coconut is intended for functional programming, not imperative programminng, and so its new features are built to be most useful when programming in a functional style.
 
 Let's take a look at the specifics of the syntax in this example. The first thing we see is `case n`. This statement starts a `case` block, in which only `match` statements can occur. Each `match` statement will attempt to match its given pattern against the value in the `case` block. Only the first successful match inside of any given `case` block will be executed. When a match is successful, any variable bindings in that match will also be performed. Additionally, as is true in this case, `match` statements can also have `if` guards that will check the given condition before the match is considered final. Finally, after the `case` block, an `else` statement is allowed, which will only be excectued if no `match` statement is.
 
@@ -255,7 +255,7 @@ def factorial(n):
 3 |> factorial |> print # 6
 ```
 
-Copy, paste! While this destructuring assignment equivalent should work, it is much more cumbersome than `match` statements when you expect that they'll fail, which is why `match` statement syntax exists. But the destructuring assignment equivalent illuminates what exactly the pattern-matching is doing, by making it clear that `match` statements are really just fancy destructuring assignment statements, which _are really just fancy normal assignment statements_. In fact, to be explicit about using destructuring assignment instead of normal assignment, the `match` keyword can be put before a destructuring assignment statement to signify it as such.
+First, copy and paste! While this destructuring assignment equivalent should work, it is much more cumbersome than `match` statements when you expect that they'll fail, which is why `match` statement syntax exists. But the destructuring assignment equivalent illuminates what exactly the pattern-matching is doing, by making it clear that `match` statements are really just fancy destructuring assignment statements, which _are really just fancy normal assignment statements_. In fact, to be explicit about using destructuring assignment instead of normal assignment, the `match` keyword can be put before a destructuring assignment statement to signify it as such.
 
 It will be helpful to, as we continue to use Coconut's pattern-matching and destructuring assignment statements in further examples, think _assignment_ whenever you see the keyword `match`.
 
@@ -428,8 +428,7 @@ data <name>(<attributes>):
 ```
 where `<name>` and `<body>` are the same as the equivalent `class` definition, but `<attributes>` are the different attributes of the data type, in order that the constructor should take them as arguments. In this case, `vector2` is a data type of two attributes, `x` and `y`, with one defined method, `__abs__`, that computes the magnitude. As the test cases show, we can then create, print, but _not modify_ instances of `vector2`.
 
-Now that we've got the 2-vector under our belt, let's move to back to our original, more complicated problem: n-vectors, that is, vectors of arbitrary length.
-
+Now that we've got the 2-vector under our belt, let's move to back to our original, more complicated problem: n-vectors, that is, vectors of arbitrary length. We're going to try to make our n-vector support all the basic vector operations, but we'll start out with just the `data` definition and the constructor:
 ```python
 data vector(pts):
     """Immutable n-vector."""
@@ -438,7 +437,10 @@ data vector(pts):
         if len(pts) == 1 and pts[0] `isinstance` vector:
             return pts[0] # vector(v) where v is a vector should return v
         else:
-            return pts |> tuple |> datamaker(cls)
+            return pts |> tuple |> datamaker(cls) # accesses base constructor
+```
+
+```python
     def __abs__(self):
         """Return the magnitude of the vector."""
         return self.pts |> map$((x) -> x**2) |> sum |> ((s) -> s**0.5)
