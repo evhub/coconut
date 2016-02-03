@@ -457,17 +457,17 @@ class cli(object):
     def start_jupyter(self, args):
         """Starts Jupyter with the Coconut kernel."""
         import subprocess
+        if args:
+            install_func = lambda args: subprocess.check_output(args, stderr=subprocess.STDOUT)
+        else:
+            install_func = lambda args: subprocess.check_call(args)
         try:
-            subprocess.check_output("jupyter", stderr=subprocess.STDOUT)
+            install_func("jupyter")
         except subprocess.CalledProcessError:
             jupyter = "ipython"
         else:
             jupyter = "jupyter"
         install_args = [jupyter, "kernelspec", "install", os.path.join(os.path.dirname(os.path.abspath(__file__)), "icoconut")]
-        if args:
-            install_func = lambda args: subprocess.check_output(args, stderr=subprocess.STDOUT)
-        else:
-            install_func = lambda args: subprocess.check_call(args)
         try:
             install_func(install_args)
         except subprocess.CalledProcessError:
