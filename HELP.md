@@ -438,6 +438,9 @@ data vector(pts):
             return pts[0] # vector(v) where v is a vector should return v
         else:
             return pts |> tuple |> datamaker(cls) # accesses base constructor
+
+# Test cases:
+vector(1, 2) |> print # vector(pts=(1, 2))
 ```
 
 ```python
@@ -478,18 +481,11 @@ data vector(pts):
 
 ## Case Study 4: Vector Fields
 
-```python
-def diagonal_line(x):
-    y = 0
-    while y <= x:
-        yield x-y, y
-        y += 1
-def linearized_plane(n=0):
-    return diagonal_line(n) :: linearized_plane(n+1)
-def vector_field():
-    return linearized_plane() |> map$((xy)-> vector(*xy))
-def magnitude_field():
-    return vector_field |> map$(abs)
+```
+def diagonal_line(n) = range(n) |> map$((i) -> (i, n-i))
+def linearized_plane(n=0) = diagonal_line(n) :: linearized_plane(n+1)
+def vector_field() = linearized_plane() |> map$((xy) -> vector(*xy))
+def magnitude_field() = vector_field() |> map$(abs)
 ```
 
 ## Filling in the Gaps
