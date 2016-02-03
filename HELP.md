@@ -421,7 +421,14 @@ v = vector2(2, 3)
 v.x = 7 # AttributeError
 ```
 
-Copy, paste!
+Copy, paste! This example shows the basic syntax of `data` statements:
+```
+data <name>(<attributes>):
+    <body>
+```
+where `<name>` and `<body>` are the same as the equivalent `class` definition, but `<attributes>` are the different attributes of the data type, in order that the constructor should take them as arguments. In this case, `vector2` is a data type of two attributes, `x` and `y`, with one defined method, `__abs__`, that computes the magnitude. As the test cases show, we can then create, print, but _not modify_ instances of `vector2`.
+
+Now that we've got the 2-vector under our belt, let's move to back to our original, more complicated problem: n-vectors, that is, vectors of arbitrary length.
 
 ```python
 data vector(pts):
@@ -443,15 +450,15 @@ data vector(pts):
             return False
     def __add__(self, other):
         """Add two vectors together."""
-        match vector(pts) in other if len(pts) == len(self.pts):
-            return map((+), self.pts, pts) |*> vector
+        match vector(other_pts) in other if len(other_pts) == len(self.pts):
+            return map((+), self.pts, other_pts) |*> vector
         else:
             raise TypeError("vectors can only be added to other vectors of the same length")
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
-        match vector(pts) in other:
-            if len(pts) == len(self.pts):
-                return map((*), self.pts, pts) |> sum # dot product
+        match vector(other_pts) in other:
+            if len(other_pts) == len(self.pts):
+                return map((*), self.pts, other_pts) |> sum # dot product
             else:
                 raise TypeError("cannot dot product vector by other vector of different length")
         else:
@@ -461,8 +468,8 @@ data vector(pts):
         return self.pts |> map$((-)) |*> vector
     def __sub__(self, other):
         """Subtract one vector from another."""
-        match vector(pts) in other if len(pts) == len(self.pts):
-            return map((-), self.pts, pts) |*> vector
+        match vector(other_pts) in other if len(other_pts) == len(self.pts):
+            return map((-), self.pts, other_pts) |*> vector
         else:
             raise TypeError("vectors can only have other vectors of the same length subtracted from them")
 ```
