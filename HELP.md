@@ -22,8 +22,7 @@
     1. [`diagonal_line`](#diagonal_line)
     2. [`linearized_plane`](#linearized_plane)
     3. [`vector_field`](#vector_field)
-    4. [`magnitude_field`](#magnitude_field)
-    5. [Applications](#applications)
+    4. [Applications](#applications)
 7. [Filling in the Gaps](#filling-in-the-gaps)
 
 <!-- /MarkdownTOC -->
@@ -715,19 +714,19 @@ _Hint: Remember, the way we defined vector it takes the components as separate a
 <br>
 <br>
 
+We're making good progress! Before we move on, check your solution against mine:
 ```
 def vector_field() = linearized_plane() |> map$((xy) -> vector(*xy))
 ```
-
-### `magnitude_field`
-
-```
-def magnitude_field() = vector_field() |> map$(abs)
-```
+All we're doing is taking our `linearized_plane` and mapping `vector` over it, but making sure to call vector with each element of the tuple as a separate argument.
 
 ### Applications
 
 iterator slicing
+
+```
+def magnitude_field() = vector_field() |> map$(abs)
+```
 
 ## Filling in the Gaps
 
