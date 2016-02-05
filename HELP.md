@@ -19,6 +19,11 @@
     2. [n-Vector Constructor](#n-vector-constructor)
     3. [n-Vector Methods](#n-vector-methods)
 6. [Case Study 4: Vector Fields](#case-study-4-vector-fields)
+    1. [`diagonal_line`](#diagonal_line)
+    2. [`linearized_plane`](#linearized_plane)
+    3. [`vector_field`](#vector_field)
+    4. [`magnitude_field`](#magnitude_field)
+    5. [Applications](#applications)
 7. [Filling in the Gaps](#filling-in-the-gaps)
 
 <!-- /MarkdownTOC -->
@@ -362,7 +367,7 @@ def quick_sort(l):
 ```
 Copy, paste! This `quick_sort` algorithm works uses a bunch of new constructs, so let's go over them.
 
-First, the `::` operator, which appears here both in pattern-matching and by itself. In essence, the `::` operator is `+` for iterators. On its own, it takes two iterators and concatenates, or chains, them together. In pattern-matching, it inverts that operation, destructuring the beginning of an iterator into a pattern, and binding the rest of that iterator to a variable.
+First, the `::` operator, which appears here both in pattern-matching and by itself. In essence, the `::` operator is `+` for iterators. On its own, it takes two iterators and concatenates, or chains, them together, and it does this lazily, not evaluating anything until its needed, so it can be used for making infinite iterators. In pattern-matching, it inverts that operation, destructuring the beginning of an iterator into a pattern, and binding the rest of that iterator to a variable.
 
 Which brings us to the second new thing, `match ... in ...` notation. The notation
 ```python
@@ -510,7 +515,7 @@ Our next method will be equality. We're again going to use `data` pattern-matchi
 
 The only new construct here is the use of `=self.pts` in the `match` statement. This construct is used to perform a check inside of the pattern-matching, making sure the `match` only succeeds if `other.pts == self.pts`.
 
-The last method we'll implement is multiplication.
+The last method we'll implement is multiplication. This one is a little bit tricky, since mathematically, there are a whole bunch of different ways to multiple vectors. For our purposes, we're just going to look at two: between two vectors of equal length, we want to compute the dot product, defined as the sum of the corresponding elements multiplied together, and between a vector and a scalar, we want to compute the scalar multiple, which is just each element multiplied by that scalar. Here's our implementation:
 ```python
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
@@ -518,8 +523,10 @@ The last method we'll implement is multiplication.
             assert len(other_pts) == len(self.pts)
             return map((*), self.pts, other_pts) |> sum # dot product
         else:
-            return self.pts |> map$((*)$(other)) |*> vector # scalar multiplication
+            return self.pts |> map$((*)$(other)) |*> vector # scalar multiple
 ```
+
+The first thing to note here is that unlike with addition and subtraction, where we wanted to raise an error if the vector match failed, here, we want to do scalar multiplication if the match fails, so instead of using destructuring assignment, we use a `match` statement. The second thing to note here is the combination of pipeline-style programming, partial application, operator functions, and higher-order functions we're using to compute the dot product and scalar multiple. For the dot product, we map multiplication over the two vectors, then sum the result. For the scalar multiple, we take the original points, map multiplication by the scalar over them, then use them to make a new vector.
 
 Finally, putting everything together:
 ```python
@@ -575,18 +582,150 @@ vector(2, 2) - vector(0, 1) |> print # vector(pts=(2, 1))
 vector(1, 2) * vector(1, 3) |> print # 7
 ```
 
-Copy, paste!
+Copy, paste! Now that was a lot of code. But looking it over, it looks clean, readable, and concise, and it does precisely what we intended it to do: create an algebraic data type for an immutable n-vector that supports the basic vector operations. And we did the whole thing without needing any imperative constructs like state or loops--pure functional programming.
 
 ## Case Study 4: Vector Fields
 
-one-line challenge for reader
+For the final case study, instead of me writing the code, and you looking at it, you'll be writing the code--of course, I won't be looking at it, but I will show you how I would have done it after you give it a shot by yourself.
+
+The bonus challenge for this section is to write each of the functions we'll be defining in just one line. To help with that, we're going to introduce a new concept up front, shorthand functions. A shorthand function looks like this
+```
+def <name>(<args>) = <return value>
+```
+which has the advantage over the classic Python
+```
+def <name>(<args>): return <return value>
+```
+of being shorter, more readable, and not requiring `return` to be typed out. If you try to go for the one-liner approach, using shorthand functions will help keep your lines short and your code readable.
+
+With that out of the way, it's time to introduce the general goal of this case study. We want to write a program that will allow us to produce infinite vector fields that we can iterate over and apply operations to. And in our case, we'll say we only care about vectors with positive components.
+
+Our first step, therefore, is going to be creating a field of all the points with positive `x` and `y` values--that is, the first quadrant of the `x-y` plane, which looks something like this:
+```
+...
+
+(0,2)   ...
+
+(0,1)   (1,1)   ...
+
+(0,0)   (1,0)   (2,0)   ...
+```
+
+But since we want to be able to iterate over that plane, we're going to need to linearize it somehow, and the easiest way to do that is to split it up into diagonals, and traverse the first diagonal, then the second diagonal, and so on, like this:
+```
+...
+
+(0,2)<  ...
+      \_
+(0,1)<  (1,1)<  ...
+      \_      \_
+(0,0) > (1,0) > (2,0) > ...
+```
+
+### `diagonal_line`
+
+Thus, our first function `diagonal_line(n)` should construct an iterator of all the points, represented as coordinate tuples, in the `n`th diagonal, starting with `(0, 0)` as the `0`th diagonal. Like we said at the start of this case study, this is where we I let go and you take over. Using all the tools of functional programming that Coconut provides, give `diagonal_line` a shot. One extra constaint just for this problem: try not to use a generator comprehension. In this case, a generator comprehension would work fine, but there are a lot of cases you will find where it won't, so you should try to get in the habit of using higher-order functions instead. When you're ready to move on, scroll down.
+
+_Hint: the `n`th diagonal should contain `n+1` elements, so try starting with `range(n+1)` and then transforming it in some way._
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+
+That wasn't so bad, now was it? Now, let's take a look at my solution:
+```
+def diagonal_line(n) = range(n+1) |> map$((i) -> (i, n-i))
+```
+Pretty simple, huh? We take `range(n+1)`, and use `map` to transform it into the right sequence of tuples.
+
+### `linearized_plane`
+
+Now that we've created our diagonal lines, we need to join them together to make the full linearized plane, and to do that we're going to write the function `linearized_plane()`. `linearized_plane` should produce an iterator that goes through all the points in the plane, in order of all the points in the first `diagonal(0)`, then the second `diagonal(1)`, and so on. `linearized_plane` is going to be, by necessity, an infinite iterator, since it needs to loop through all the points in the plane, which have no end. To help you accomplish this, remember that the `::` operator is lazy, and won't evaluate its operands until they're needed, which means it can be used to construct infinite iterators. When you're ready to move on, scroll down.
+
+_Hint: instead of defining the function as `linearized_plane()`, try defining it as `linearized_plane(n=0)`, where `n` is the diagonal to start at, and use recursion to build up from there._
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+
+That was a little bit rougher than the first one, but hopefully still not too bad. Let's compare to my solution:
+```
+def linearized_plane(n=0) = diagonal_line(n) :: linearized_plane(n+1)
+```
+As you can see, it's a very fundamentally simple solution: just use `::` and recursion to join all the diagonals together in order.
+
+### `vector_field`
+
+Now that we have a function that builds up all the points we need, it's time to turn them into vectors, and to do that we'll define the new function `vector_field()`, which should turn all the tuples in `linearized_plane` into vectors, using the n-vector class we defined earlier.
+
+_Hint: Remember, the way we defined vector it takes the components as separate arguments, not a single tuple._
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
 
 ```
-def diagonal_line(n) = range(n) |> map$((i) -> (i, n-i))
-def linearized_plane(n=0) = diagonal_line(n) :: linearized_plane(n+1)
 def vector_field() = linearized_plane() |> map$((xy) -> vector(*xy))
+```
+
+### `magnitude_field`
+
+```
 def magnitude_field() = vector_field() |> map$(abs)
 ```
+
+### Applications
 
 iterator slicing
 
