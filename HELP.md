@@ -24,6 +24,10 @@
     3. [`vector_field`](#vector_field)
     4. [Applications](#applications)
 7. [Filling in the Gaps](#filling-in-the-gaps)
+    1. [Lazy Lists](#lazy-lists)
+    2. [Function Composition](#function-composition)
+    3. [Implicit Partial Application](#implicit-partial-application)
+    4. [Further Reading](#further-reading)
 
 <!-- /MarkdownTOC -->
 
@@ -334,7 +338,7 @@ Now let's take a look at what we do to `reduce` to make it multiply all the numb
 
 First, the operator function. In Coconut, a function form of any operator can be retrieved by surrounding that operator in parentheses. In this case, `(*)` is roughly equivalent to `lambda x, y: x*y`, but much cleaner and neater. In Coconut's lambda syntax, `(*)` is also equivalent to `(x, y) -> x*y`, which we will use from now on for all lambdas, even though both are legal Coconut, because Python's `lambda` statement is too ugly and bulky to use regularly. In fact, if Coconut's `--strict` mode is enabled, it will raise an error whenever Python `lambda` statements are used.
 
-Second, the partial application. In Coconut, if a function call is prefixed by a `$`, like in this example, instead of actually performing the function call, a new function is returned with the given arguments already provided to it, so that when it is then called, it will be called with both the partially-applied arguments and the new arguments, in that order. In this case, `reduce$((*))` is equivalent to `(*args, **kwargs) -> reduce((*), *args, **kwargs)`.
+Second, the partial application. Think of partial application as _lazy function calling_, and `$` as the _lazy-ify_ operator, where lazy just means "don't evaluate this until you need to". In Coconut, if a function call is prefixed by a `$`, like in this example, instead of actually performing the function call, a new function is returned with the given arguments already provided to it, so that when it is then called, it will be called with both the partially-applied arguments and the new arguments, in that order. In this case, `reduce$((*))` is equivalent to `(*args, **kwargs) -> reduce((*), *args, **kwargs)`.
 
 Putting it all together, we can see how the single line of code
 ```python
@@ -625,6 +629,13 @@ But since we want to be able to iterate over that plane, we're going to need to 
 
 Thus, our first function `diagonal_line(n)` should construct an iterator of all the points, represented as coordinate tuples, in the `n`th diagonal, starting with `(0, 0)` as the `0`th diagonal. Like we said at the start of this case study, this is where we I let go and you take over. Using all the tools of functional programming that Coconut provides, give `diagonal_line` a shot. One extra constaint just for this problem: try not to use a generator comprehension. In this case, a generator comprehension would work fine, but there are a lot of cases you will find where it won't, so you should try to get in the habit of using higher-order functions instead. When you're ready to move on, scroll down.
 
+Here are some tests that you can use:
+```python
+diagonal_line(0) `isinstance` (list, tuple) |> print # False (should be an iterator)
+diagonal_line(0) |> list |> print # [(0, 0)]
+diagonal_line(1) |> list |> print # [(0, 1), (1, 0)]
+```
+
 _Hint: the `n`th diagonal should contain `n+1` elements, so try starting with `range(n+1)` and then transforming it in some way._
 
 <br>
@@ -657,6 +668,15 @@ Pretty simple, huh? We take `range(n+1)`, and use `map` to transform it into the
 ### `linearized_plane`
 
 Now that we've created our diagonal lines, we need to join them together to make the full linearized plane, and to do that we're going to write the function `linearized_plane()`. `linearized_plane` should produce an iterator that goes through all the points in the plane, in order of all the points in the first `diagonal(0)`, then the second `diagonal(1)`, and so on. `linearized_plane` is going to be, by necessity, an infinite iterator, since it needs to loop through all the points in the plane, which have no end. To help you accomplish this, remember that the `::` operator is lazy, and won't evaluate its operands until they're needed, which means it can be used to construct infinite iterators. When you're ready to move on, scroll down.
+
+Tests:
+```python
+# Note: these tests use $[] notation, which we haven't introduced yet
+#  but will introduce later in this case study; for now, just run the
+#  tests, and make sure you get the same result as is in the comment
+linearized_plane()$[0] |> print # (0, 0)
+linearized_plane()$[:3] |> list |> print # [(0, 0), (0, 1), (1, 0)]
+```
 
 _Hint: instead of defining the function as `linearized_plane()`, try defining it as `linearized_plane(n=0)`, where `n` is the diagonal to start at, and use recursion to build up from there._
 
@@ -691,6 +711,13 @@ As you can see, it's a very fundamentally simple solution: just use `::` and rec
 
 Now that we have a function that builds up all the points we need, it's time to turn them into vectors, and to do that we'll define the new function `vector_field()`, which should turn all the tuples in `linearized_plane` into vectors, using the n-vector class we defined earlier.
 
+Tests:
+```python
+# You'll need to bring in the vector class from earlier to make these work
+vector_field()$[0] |> print # vector(pts=(0, 0))
+vector_field()$[2:3] |> list |> print # [vector(pts=(1, 0))]
+```
+
 _Hint: Remember, the way we defined vector it takes the components as separate arguments, not a single tuple._
 
 <br>
@@ -722,12 +749,74 @@ All we're doing is taking our `linearized_plane` and mapping `vector` over it, b
 
 ### Applications
 
-iterator slicing
+Now that we've built all the functions we need for our vector field, it's time to put it all together and test it. Feel free to substitute in your versions of the functions below:
+```
+data vector(pts):
+    """Immutable n-vector."""
+    def __new__(cls, *pts):
+        """Create a new vector from the given pts."""
+        if len(pts) == 1 and pts[0] `isinstance` vector:
+            return pts[0] # vector(v) where v is a vector should return v
+        else:
+            return pts |> tuple |> datamaker(cls) # accesses base constructor
+    def __abs__(self):
+        """Return the magnitude of the vector."""
+        return self.pts |> map$((x) -> x**2) |> sum |> ((s) -> s**0.5)
+    def __add__(self, other):
+        """Add two vectors together."""
+        vector(other_pts) = other
+        assert len(other_pts) == len(self.pts)
+        return map((+), self.pts, other_pts) |*> vector
+    def __sub__(self, other):
+        """Subtract one vector from another."""
+        vector(other_pts) = other
+        assert len(other_pts) == len(self.pts)
+        return map((-), self.pts, other_pts) |*> vector
+    def __neg__(self):
+        """Retrieve the negative of the vector."""
+        return self.pts |> map$((-)) |*> vector
+    def __eq__(self, other):
+        """Compare whether two vectors are equal."""
+        match vector(=self.pts) in other:
+            return True
+        else:
+            return False
+    def __mul__(self, other):
+        """Scalar multiplication and dot product."""
+        match vector(other_pts) in other:
+            assert len(other_pts) == len(self.pts)
+            return map((*), self.pts, other_pts) |> sum # dot product
+        else:
+            return self.pts |> map$((*)$(other)) |*> vector # scalar multiplication
 
+def diagonal_line(n) = range(n+1) |> map$((i) -> (i, n-i))
+def linearized_plane(n=0) = diagonal_line(n) :: linearized_plane(n+1)
+def vector_field() = linearized_plane() |> map$((xy) -> vector(*xy))
+
+# Test cases:
+diagonal_line(0) `isinstance` (list, tuple) |> print # False (should be an iterator)
+diagonal_line(0) |> list |> print # [(0, 0)]
+diagonal_line(1) |> list |> print # [(0, 1), (1, 0)]
+linearized_plane()$[0] |> print # (0, 0)
+linearized_plane()$[:3] |> list |> print # [(0, 0), (0, 1), (1, 0)]
+vector_field()$[0] |> print # vector(pts=(0, 0))
+vector_field()$[2:3] |> list |> print # [vector(pts=(1, 0))]
 ```
-def magnitude_field() = vector_field() |> map$(abs)
-```
+
+Copy, paste! Once you've made sure everything is working correctly if you substituted in your own functions, take a look at the last 4 tests. You'll notice that they use a new notation, similar to the notation for partial application we saw earlier, but with brackets instead of parentheses. This is the notation for iterator slicing. Similar to how partial application was lazy function calling, iterator slicing is _lazy sequence slicing_. Like with partial application, it is helpful to think of `$` as the _lazy-ify_ operator, in this case turning normal Python slicing, which is evaluated immediately, into lazy iterator slicing, which is evaluated only when the elements in the slice are needed.
+
+With that in mind, now that we've built our vector field, it's time to use iterator slicing to play around with it. Try doing something cool to our vector fields like
+- create a `magnitude_field` where each point is that vector's magnitude
+- combine entire vector fields together with `map` and the vector addition and multiplication methods we wrote earlier
+
+then use iterator slicing to take out portions and examine them.
 
 ## Filling in the Gaps
 
-lazy lists, function composition, implicit partial, backwards pipes
+### Lazy Lists
+
+### Function Composition
+
+### Implicit Partial Application
+
+### Further Reading
