@@ -120,8 +120,7 @@ class terminal(object):
     def setcolor(self, color=None):
         """Set output color."""
         if color is None or color in self.colors:
-            if os.name != "nt":
-                self.color = color
+            self.color = color
         else:
             raise CoconutException('unrecognized color "'+color+'" (enter a color name like "cyan")')
 
