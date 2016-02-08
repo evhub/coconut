@@ -26,7 +26,7 @@
 7. [Filling in the Gaps](#filling-in-the-gaps)
     1. [Lazy Lists](#lazy-lists)
     2. [Function Composition](#function-composition)
-    3. [Implicit Partial Application](#implicit-partial-application)
+    3. [Implicit Partials](#implicit-partials)
     4. [Further Reading](#further-reading)
 
 <!-- /MarkdownTOC -->
@@ -236,7 +236,7 @@ def factorial(n):
 3 |> factorial |> print # 6
 ```
 
-Copy and paste the code and tests into the interpreter. You should get the same test results as you got for the imperative version--but you can probably tell there's quite a lot more going on here than there. That's intentional: Coconut is intended for functional programming, not imperative programminng, and so its new features are built to be most useful when programming in a functional style.
+Copy and paste the code and tests into the interpreter. You should get the same test results as you got for the imperative version—but you can probably tell there's quite a lot more going on here than there. That's intentional: Coconut is intended for functional programming, not imperative programminng, and so its new features are built to be most useful when programming in a functional style.
 
 Let's take a look at the specifics of the syntax in this example. The first thing we see is `case n`. This statement starts a `case` block, in which only `match` statements can occur. Each `match` statement will attempt to match its given pattern against the value in the `case` block. Only the first successful match inside of any given `case` block will be executed. When a match is successful, any variable bindings in that match will also be performed. Additionally, as is true in this case, `match` statements can also have `if` guards that will check the given condition before the match is considered final. Finally, after the `case` block, an `else` statement is allowed, which will only be excectued if no `match` statement is.
 
@@ -370,7 +370,7 @@ def quick_sort(l):
 ```
 Copy, paste! This `quick_sort` algorithm works uses a bunch of new constructs, so let's go over them.
 
-First, the `::` operator, which appears here both in pattern-matching and by itself. In essence, the `::` operator is `+` for iterators. On its own, it takes two iterators and concatenates, or chains, them together, and it does this lazily, not evaluating anything until its needed, so it can be used for making infinite iterators. In pattern-matching, it inverts that operation, destructuring the beginning of an iterator into a pattern, and binding the rest of that iterator to a variable.
+First, the `::` operator, which appears here both in pattern-matching and by itself. In essence, the `::` operator is lazy `+` for iterators. On its own, it takes two iterators and concatenates, or chains, them together, and it does this lazily, not evaluating anything until its needed, so it can be used for making infinite iterators. In pattern-matching, it inverts that operation, destructuring the beginning of an iterator into a pattern, and binding the rest of that iterator to a variable.
 
 Which brings us to the second new thing, `match ... in ...` notation. The notation
 ```python
@@ -413,9 +413,9 @@ And Coconut makes programming in such an advantageous functional approach signif
 
 ## Case Study 3: Vectors
 
-In the next case study, we'll be doing something slightly different--instead of defining a function, we'll be creating an object. Specifically, we're going to try to implement an immutable n-vector that supports all the basic vector operations.
+In the next case study, we'll be doing something slightly different—instead of defining a function, we'll be creating an object. Specifically, we're going to try to implement an immutable n-vector that supports all the basic vector operations.
 
-In functional programming, it is often very desirable to define _immutable_ objects, those that can't be changed once created--like Python's strings or tuples. Like strings and tuples, immutable objects are useful for a wide variety of reasons:
+In functional programming, it is often very desirable to define _immutable_ objects, those that can't be changed once created—like Python's strings or tuples. Like strings and tuples, immutable objects are useful for a wide variety of reasons:
 - they're easier to reason about, since you can be guaranteed they won't change,
 - they're hashable and pickleable, so they can be used as keys and serialized,
 - they're significantly more efficient since they require much less overhead,
@@ -585,11 +585,11 @@ vector(2, 2) - vector(0, 1) |> print # vector(pts=(2, 1))
 vector(1, 2) * vector(1, 3) |> print # 7
 ```
 
-Copy, paste! Now that was a lot of code. But looking it over, it looks clean, readable, and concise, and it does precisely what we intended it to do: create an algebraic data type for an immutable n-vector that supports the basic vector operations. And we did the whole thing without needing any imperative constructs like state or loops--pure functional programming.
+Copy, paste! Now that was a lot of code. But looking it over, it looks clean, readable, and concise, and it does precisely what we intended it to do: create an algebraic data type for an immutable n-vector that supports the basic vector operations. And we did the whole thing without needing any imperative constructs like state or loops—pure functional programming.
 
 ## Case Study 4: Vector Fields
 
-For the final case study, instead of me writing the code, and you looking at it, you'll be writing the code--of course, I won't be looking at it, but I will show you how I would have done it after you give it a shot by yourself.
+For the final case study, instead of me writing the code, and you looking at it, you'll be writing the code—of course, I won't be looking at it, but I will show you how I would have done it after you give it a shot by yourself.
 
 The bonus challenge for this section is to write each of the functions we'll be defining in just one line. To help with that, we're going to introduce a new concept up front, shorthand functions. A shorthand function looks like this
 ```
@@ -603,7 +603,7 @@ of being shorter, more readable, and not requiring `return` to be typed out. If 
 
 With that out of the way, it's time to introduce the general goal of this case study. We want to write a program that will allow us to produce infinite vector fields that we can iterate over and apply operations to. And in our case, we'll say we only care about vectors with positive components.
 
-Our first step, therefore, is going to be creating a field of all the points with positive `x` and `y` values--that is, the first quadrant of the `x-y` plane, which looks something like this:
+Our first step, therefore, is going to be creating a field of all the points with positive `x` and `y` values—that is, the first quadrant of the `x-y` plane, which looks something like this:
 ```
 ...
 
@@ -813,10 +813,40 @@ then use iterator slicing to take out portions and examine them.
 
 ## Filling in the Gaps
 
+And with that, this tutorial is out of case studies—but that doesn't mean Coconut is out of features! In this last section, we'll touch on three of the most important features of Coconut that we managed to miss in our case studies: lazy lists, function composition, and implicit partials.
+
 ### Lazy Lists
+
+First up is lazy lists. Lazy lists are lazily-evaluated iterator literals, similar in their laziness to Coconut's `::` operator, in that any expressions put inside a lazy list won't be evaluated until that element of the lazy list is needed. The syntax for lazy lists is exactly the same as the syntax for normal lists, but with "banana brackets" (`(|` and `|)`) instead of normal brackets, like so:
+```python
+abc = (| a, b, c |)
+```
 
 ### Function Composition
 
-### Implicit Partial Application
+Next is function composition. In Coconut, this is accomplished through the `..` operator, which takes two functions and composes them, creating a new function equivalent to `(*args, **kwargs) -> f1(f2(*args, **kwargs))`. This can be useful in combination with partial application for pieceing together multiple higher-order functions, like so:
+```python
+zipsum = map$(sum)..zip
+```
+
+Function composition also gets rid of the need for lots of parentheses when chaining function calls, like so:
+```python
+plus1..square(3) == 9
+```
+
+### Implicit Partials
+
+Last is implicit partials. Coconut supports a number of different "incomplete" expressions that will evaluate to a function that takes in the part necessary to complete them, that is, an implicit partial application function. The different allowable expressions are:
+```python
+.name
+obj.
+func$
+seq[]
+iter$[]
+```
 
 ### Further Reading
+
+And that's it for this tutorial! But that's hardly it for Coconut. All of the features examined in this tutorial, as well as a bunch of others, are documented in detail in Coconut's comprehensive [documentation](http://coconut.readthedocs.org/en/master/DOCS.html).
+
+Finally, Coconut is a new, growing language, and if you'd like to get involved in the development of Coconut, all the code is available completely open-source on Coconut's [GitHub](https://github.com/evhub/coconut). Contributing is a simple as forking the code, making your changes, and proposing a pull request.
