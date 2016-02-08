@@ -831,7 +831,7 @@ zipsum = map$(sum)..zip
 
 Function composition also gets rid of the need for lots of parentheses when chaining function calls, like so:
 ```python
-plus1..square(3) == 9
+plus1..square(3) == 10
 ```
 
 ### Implicit Partials
