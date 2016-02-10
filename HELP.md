@@ -527,6 +527,9 @@ The last method we'll implement is multiplication. This one is a little bit tric
             return map((*), self.pts, other_pts) |> sum # dot product
         else:
             return self.pts |> map$((*)$(other)) |*> vector # scalar multiple
+    def __rmul__(self, other):
+        """Necessary to make vector multiplication commutative."""
+        return self * other
 ```
 
 The first thing to note here is that unlike with addition and subtraction, where we wanted to raise an error if the vector match failed, here, we want to do scalar multiplication if the match fails, so instead of using destructuring assignment, we use a `match` statement. The second thing to note here is the combination of pipeline-style programming, partial application, operator functions, and higher-order functions we're using to compute the dot product and scalar multiple. For the dot product, we map multiplication over the two vectors, then sum the result. For the scalar multiple, we take the original points, map multiplication by the scalar over them, then use them to make a new vector.
@@ -570,6 +573,9 @@ data vector(pts):
             return map((*), self.pts, other_pts) |> sum # dot product
         else:
             return self.pts |> map$((*)$(other)) |*> vector # scalar multiplication
+    def __rmul__(self, other):
+        """Necessary to make vector multiplication commutative."""
+        return self * other
 
 # Test cases:
 vector(1, 2, 3) |> print # vector(pts=(1, 2, 3))
@@ -788,6 +794,9 @@ data vector(pts):
             return map((*), self.pts, other_pts) |> sum # dot product
         else:
             return self.pts |> map$((*)$(other)) |*> vector # scalar multiplication
+    def __rmul__(self, other):
+        """Necessary to make vector multiplication commutative."""
+        return self * other
 
 def diagonal_line(n) = range(n+1) |> map$((i) -> (i, n-i))
 def linearized_plane(n=0) = diagonal_line(n) :: linearized_plane(n+1)
