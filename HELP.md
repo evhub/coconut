@@ -83,11 +83,12 @@ Now that you've got Coconut installed, the obvious first thing to do is to play 
 coconut
 ```
 and you should see something like
-```python
-Coconut Interpreter:
-(type "exit()" or press Ctrl-D to end)
->>>
-```
+
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span style="color: #f8f8f2">Coconut</span> <span style="color: #f8f8f2">Interpreter:</span>
+<span style="color: #f8f8f2">(type</span> <span style="color: #e6db74">&quot;exit()&quot;</span> <span style="color: #f92672">or</span> <span style="color: #f8f8f2">press</span> <span style="color: #f8f8f2">Ctrl</span><span style="color: #f92672">-</span><span style="color: #f8f8f2">D</span> <span style="color: #f8f8f2">to</span> <span style="color: #f8f8f2">end)</span>
+<span style="color: #f92672">&gt;&gt;&gt;</span>
+</pre></div>
+
 which is Coconut's way of telling you you're ready to start entering code for it to evaluate. So let's do that!
 
 In case you missed it earlier, _all valid Python 3 is valid Coconut_ (with one very minor [exception](http://coconut.readthedocs.org/en/master/DOCS.html#backslash-escaping)). That doesn't mean compiled Coconut will only run on Python 3—in fact, compiled Coconut will run the same on any Python version—but it does mean that only Python 3 code is guaranteed to compile as Coconut code.
@@ -125,9 +126,10 @@ In pure Python 3, "hello, world!" is
 print("hello, world!")
 ```
 and while that will work in Coconut, equally as valid is to use a pipeline-style approach, which is what we'll do, and write
-```python
-"hello, world!" |> print
-```
+
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span style="color: #e6db74">&quot;hello, world!&quot;</span> <span style="color: #f92672">|&gt;</span> <span style="color: #66d9ef">print</span>
+</pre></div>
+
 which should let you see very clearly how Coconut's `|>` operator enables pipeline-style programming: it allows an object to be passed along from function to function, with a different operation performed at each step. In this case, we are piping the object `"hello, world!"` into the operation `print`. Now let's save our simple "hello, world!" program, and try to run it.
 
 Compiling Coconut files and projects with the Coconut command-line utility is incredibly simple. Just type
@@ -194,23 +196,24 @@ To start off with, we're going to have to decide what sort of an implementation 
 ### Imperative Method
 
 The imperative approach is the way you'd write `factorial` in a language like C. Imperative approaches involve lots of state change, where variables are regularly modified and loops are liberally used. In Coconut, the imperative approach to the `factorial` problem looks like this:
-```python
-def factorial(n):
-    """Compute n! where n is an integer >= 0."""
-    if n `isinstance` int and n >= 0:
-        acc = 1
-        for x in range(1, n+1):
-            acc *= x
-        return acc
-    else:
-        raise TypeError("the argument to factorial must be an integer >= 0")
 
-# Test cases:
--1 |> factorial |> print # TypeError
-0.5 |> factorial |> print # TypeError
-0 |> factorial |> print # 1
-3 |> factorial |> print # 6
-```
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span style="color: #66d9ef">def</span> <span style="color: #a6e22e">factorial</span><span style="color: #f8f8f2">(n):</span>
+    <span style="color: #e6db74">&quot;&quot;&quot;Compute n! where n is an integer &gt;= 0.&quot;&quot;&quot;</span>
+    <span style="color: #66d9ef">if</span> <span style="color: #f8f8f2">n</span> <span style="color: #e6db74">`isinstance`</span> <span style="color: #f8f8f2">int</span> <span style="color: #f92672">and</span> <span style="color: #f8f8f2">n</span> <span style="color: #f92672">&gt;=</span> <span style="color: #ae81ff">0</span><span style="color: #f8f8f2">:</span>
+        <span style="color: #f8f8f2">acc</span> <span style="color: #f92672">=</span> <span style="color: #ae81ff">1</span>
+        <span style="color: #66d9ef">for</span> <span style="color: #f8f8f2">x</span> <span style="color: #f92672">in</span> <span style="color: #f8f8f2">range(</span><span style="color: #ae81ff">1</span><span style="color: #f8f8f2">,</span> <span style="color: #f8f8f2">n</span><span style="color: #f92672">+</span><span style="color: #ae81ff">1</span><span style="color: #f8f8f2">):</span>
+            <span style="color: #f8f8f2">acc</span> <span style="color: #f92672">*=</span> <span style="color: #f8f8f2">x</span>
+        <span style="color: #66d9ef">return</span> <span style="color: #f8f8f2">acc</span>
+    <span style="color: #66d9ef">else</span><span style="color: #f8f8f2">:</span>
+        <span style="color: #66d9ef">raise</span> <span style="color: #a6e22e">TypeError</span><span style="color: #f8f8f2">(</span><span style="color: #e6db74">&quot;the argument to factorial must be an integer &gt;= 0&quot;</span><span style="color: #f8f8f2">)</span>
+
+<span style="color: #75715e"># Test cases:</span>
+<span style="color: #f92672">-</span><span style="color: #ae81ff">1</span> <span style="color: #f92672">|&gt;</span> <span style="color: #f8f8f2">factorial</span> <span style="color: #f92672">|&gt;</span> <span style="color: #66d9ef">print</span> <span style="color: #75715e"># TypeError</span>
+<span style="color: #ae81ff">0.5</span> <span style="color: #f92672">|&gt;</span> <span style="color: #f8f8f2">factorial</span> <span style="color: #f92672">|&gt;</span> <span style="color: #66d9ef">print</span> <span style="color: #75715e"># TypeError</span>
+<span style="color: #ae81ff">0</span> <span style="color: #f92672">|&gt;</span> <span style="color: #f8f8f2">factorial</span> <span style="color: #f92672">|&gt;</span> <span style="color: #66d9ef">print</span> <span style="color: #75715e"># 1</span>
+<span style="color: #ae81ff">3</span> <span style="color: #f92672">|&gt;</span> <span style="color: #f8f8f2">factorial</span> <span style="color: #f92672">|&gt;</span> <span style="color: #66d9ef">print</span> <span style="color: #75715e"># 6</span>
+</pre></div>
+
 Before we delve into what exactly is happening here, let's give it a run and make sure the test cases check out. If we were really writing a Coconut program, we'd want to save and compile an actual file, but since we're just playing around, let's try copy-pasting into the interpreter. Here, you should get `1`, `6`, and then two `TypeError`s.
 
 Now that we've verified it works, let's take a look at what's going on. Since the imperative approach is a fundamentally non-functional method, Coconut can't help us improve this example very much. Even here, though, the use of Coconut's infix notation (where the function is put in-between its arguments, surrounded in backticks) in `` n `isinstance` int `` makes the code slightly cleaner and easier to read.
