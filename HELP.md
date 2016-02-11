@@ -83,7 +83,7 @@ Now that you've got Coconut installed, the obvious first thing to do is to play 
 coconut
 ```
 and you should see something like
-```pycon3
+```force_pycon
 Coconut Interpreter:
 (type "exit()" or press Ctrl-D to end)
 >>>
@@ -94,7 +94,7 @@ In case you missed it earlier, _all valid Python 3 is valid Coconut_ (with one v
 
 That means that if you're familiar with Python, you're already familiar with a good deal of Coconut's core syntax and Coconut's entire standard library. To show that, let's try entering some basic Python into the Coconut interpreter.
 
-```pycon3
+```force_pycon
 >>> print("hello, world!")
 hello, world!
 >>> 1 + 1
@@ -113,7 +113,7 @@ First, we're going to need to create a file to put our code into. The file exten
 _Note: in Sublime Text, this is done by opening the `.coc` file, clicking on "Plain Text" at the bottom right, selecting "Open all with current extension as...", and then choosing "Python"._
 
 Now let's put some code in our `hello_world.coc` file. Unlike in Python, where headers like
-```pycon3
+```force_python
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 from __future__ import print_function, absolute_import, unicode_literals, division
@@ -121,11 +121,11 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 are common and often very necessary, the Coconut compiler will automatically take care of all of that for you, so all you need to worry about is your own code. To that end, let's add the code for our "hello, world!" program.
 
 In pure Python 3, "hello, world!" is
-```pycon3
+```force_python
 print("hello, world!")
 ```
 and while that will work in Coconut, equally as valid is to use a pipeline-style approach, which is what we'll do, and write
-```pycon3
+```force_python
 "hello, world!" |> print
 ```
 which should let you see very clearly how Coconut's `|>` operator enables pipeline-style programming: it allows an object to be passed along from function to function, with a different operation performed at each step. In this case, we are piping the object `"hello, world!"` into the operation `print`. Now let's save our simple "hello, world!" program, and try to run it.
@@ -166,15 +166,15 @@ coconut --jupyter console
 or equivalently, `--ipython` can be substituted for `--jupyter` in either command.
 
 To use Coconut as an extension inside of the IPython kernel, type the code
-```pycon3
+```force_python
 %load_ext coconut
 ```
 into your IPython notebook or console, and then to run Coconut code, use
-```pycon3
+```force_python
 %coconut <code>
 ```
 or
-```pycon3
+```force_python
 %%coconut <command-line-args>
 <code>
 ```
@@ -194,7 +194,7 @@ To start off with, we're going to have to decide what sort of an implementation 
 ### Imperative Method
 
 The imperative approach is the way you'd write `factorial` in a language like C. Imperative approaches involve lots of state change, where variables are regularly modified and loops are liberally used. In Coconut, the imperative approach to the `factorial` problem looks like this:
-```pycon3
+```force_python
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
     if n `isinstance` int and n >= 0:
@@ -218,7 +218,7 @@ Now that we've verified it works, let's take a look at what's going on. Since th
 ### Recursive Method
 
 The recursive approach is the first of the fundamentally functional approaches, in that it doesn't involve the state change and loops of the imperative approach. Recursive approaches avoid the need to change variables by making that variable change implicit in the recursive function call. Here's the recursive approach to the `factorial` problem in Coconut:
-```pycon3
+```force_python
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
     case n:
@@ -243,7 +243,7 @@ Let's take a look at the specifics of the syntax in this example. The first thin
 Specifically, in this example, the first `match` statement checks whether `n` matches to `0`. If it does, it executes `return 1`. Then the second `match` statement checks whether `n` matches to `_ is int`, which performs an `isinstance` check on `n` against `int`, then checks whether `n > 0`, and if those are true, executes `return n * factorial(n-1)`. If neither of those two statements are executed, the `else` statement triggers and executes `raise TypeError("the argument to factorial must be an integer >= 0")`.
 
 Although this example is very basic, pattern-matching is both one of Coconut's most powerful and most complicated features. As a general intuitive guide, it is helpful to think _assignment_ whenever you see the keyword `match`. A good way to showcase this is that all `match` statements can be converted into equivalent destructuring assignment statements, which are also valid Coconut. In this case, the destructuring assignment equivalent to the `factorial` function above, in Coconut, would be:
-```pycon3
+```force_python
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
     try:
@@ -271,7 +271,7 @@ First, copy and paste! While this destructuring assignment equivalent should wor
 It will be helpful to, as we continue to use Coconut's pattern-matching and destructuring assignment statements in further examples, think _assignment_ whenever you see the keyword `match`.
 
 Up until now, for the recursive method, we have only dealt with pattern-matching, but there's actually another way that Coconut allows us to improve our `factorial` function: by writing it in a tail-recursive style, where it directly returns all calls to itself, and using Coconut's `recursive` decorator, like so:
-```pycon3
+```force_python
 @recursive
 def factorial(n, acc=1):
     """Compute n! where n is an integer >= 0."""
@@ -295,7 +295,7 @@ Copy, paste! This version is exactly equivalent to the original version, with th
 ### Iterative Method
 
 The final, and other functional, approach, is the iterative one. Iterative approaches avoid the need for state change and loops by using higher-order functions, those that take other functions as their arguments, like `map` and `reduce`, to abstract out the basic operations being performed. In Coconut, the iterative appraoch to the `factorial` problem is:
-```pycon3
+```force_python
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
     case n:
@@ -321,7 +321,7 @@ return range(1, n+1) |> reduce$((*))
 Let's break down what's happening on this line. First, the `range` function constructs an iterator of all the numbers that need to be multiplied together. Then, it is piped into the function `reduce$((*))`, which does that multiplication. But how? What is `reduce$((*))`.
 
 We'll start with the base, the `reduce` function. `reduce` used to exist as a built-in in Python 2, and Coconut brings it back. `reduce` is a higher-order function that takes a function on two arguments as its first argument, and an iterator as its second argument, and applies that function to the given iterator by starting with the first element, and calling the function on the accumulated call so far and the next element, until the iterator is exhausted. Here's a visual representation:
-```pycon3
+```force_python
 reduce(f, (a, b, c, d))
 
 acc                 iter
@@ -341,7 +341,7 @@ First, the operator function. In Coconut, a function form of any operator can be
 Second, the partial application. Think of partial application as _lazy function calling_, and `$` as the _lazy-ify_ operator, where lazy just means "don't evaluate this until you need to". In Coconut, if a function call is prefixed by a `$`, like in this example, instead of actually performing the function call, a new function is returned with the given arguments already provided to it, so that when it is then called, it will be called with both the partially-applied arguments and the new arguments, in that order. In this case, `reduce$((*))` is equivalent to `(*args, **kwargs) -> reduce((*), *args, **kwargs)`.
 
 Putting it all together, we can see how the single line of code
-```pycon3
+```force_python
 range(1, n+1) |> reduce$((*))
 ```
 is able to compute the proper factorial, without using any state or loops, only higher-order functions, in true functional style. By supplying the tools we use here like partial application (`$`), pipeline-style programming (`|>`), higher-order functions (`reduce`), and operator functions (`(*)`), Coconut enables this sort of functional programming to be done cleanly, neatly, and easily.
@@ -351,7 +351,7 @@ is able to compute the proper factorial, without using any state or loops, only 
 In the second case study, we will be implementing the quick sort algorithm. Our `quick_sort` function will take in an iterator, and output an iterator that is the sorted version of that iterator.
 
 Our method for tackling this problem is going to be a combination of the recursive and iterative approaches we used for the `factorial` problem, in that we're going to be lazily building up an iterator, and we're going to be doing it recursively. Here's the code, in Coconut:
-```pycon3
+```force_python
 def quick_sort(l):
     """Return a sorted iterator of l, using the quick sort algorithm, and without using any data until necessary."""
     match [head] :: tail in l:
@@ -373,14 +373,14 @@ Copy, paste! This `quick_sort` algorithm works uses a bunch of new constructs, s
 First, the `::` operator, which appears here both in pattern-matching and by itself. In essence, the `::` operator is lazy `+` for iterators. On its own, it takes two iterators and concatenates, or chains, them together, and it does this lazily, not evaluating anything until its needed, so it can be used for making infinite iterators. In pattern-matching, it inverts that operation, destructuring the beginning of an iterator into a pattern, and binding the rest of that iterator to a variable.
 
 Which brings us to the second new thing, `match ... in ...` notation. The notation
-```pycon3
+```force_python
 match pattern in item:
     <body>
 else:
     <else>
 ```
 is shorthand for
-```pycon3
+```force_python
 case item:
     match pattern:
         <body>
@@ -394,7 +394,7 @@ The third new construct is the built-in function `tee`. `tee` solves a problem f
 Finally, although it's not a new construct, since it exists in Python 3, the use of `yield from` here deserves a mention. In Python, `yield` is the statement used to construct iterators, functioning much like `return`, with the exception that multiple `yield`s can be encountered, and each one will produce another element. `yield from` is very similar, except instead of adding a single element to the produced iterator, it adds another whole iterator.
 
 Putting it all together, here's our `quick_sort` function again:
-```pycon3
+```force_python
 def quick_sort(l):
     """Return a sorted iterator of l, using the quick sort algorithm, and without using any data until necessary."""
     match [head] :: tail in l:
@@ -424,7 +424,7 @@ In functional programming, it is often very desirable to define _immutable_ obje
 ### 2-Vector
 
 Coconut's `data` statement brings the power and utility of _immutable, algebraic data types_ to Python, and it is this that we will be using to construct our `vector` type. The demonstrate the syntax of `data` statements, we'll start by defining a simple 2-vector. Our vector will have one special method `__abs__` which will compute the vector's magnitude, defined as the square root of the sum of the squares of the elements. Here's our 2-vector:
-```pycon3
+```force_python
 data vector2(x, y):
     """Immutable 2-vector."""
     def __abs__(self):
@@ -439,7 +439,7 @@ v.x = 7 # AttributeError
 ```
 
 Copy, paste! This example shows the basic syntax of `data` statements:
-```pycon3
+```force_python
 data <name>(<attributes>):
     <body>
 ```
@@ -448,7 +448,7 @@ where `<name>` and `<body>` are the same as the equivalent `class` definition, b
 ### n-Vector Constructor
 
 Now that we've got the 2-vector under our belt, let's move to back to our original, more complicated problem: n-vectors, that is, vectors of arbitrary length. We're going to try to make our n-vector support all the basic vector operations, but we'll start out with just the `data` definition and the constructor:
-```pycon3
+```force_python
 data vector(pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
@@ -470,7 +470,7 @@ In this case, the constructor checks whether nothing but another `vector` was pa
 ### n-Vector Methods
 
 Now that we have a constructor for our n-vector, it's time to write its methods. First up is `__abs__`, which should compute the vector's magnitude. This will be slightly more complicated than with the 2-vector, since we have to make it work over an arbitrary number of `pts`. Fortunately, we can use Coconut's pipeline-style programming and partial application to make it simple:
-```pycon3
+```force_python
     def __abs__(self):
         """Return the magnitude of the vector."""
         return self.pts |> map$((x) -> x**2) |> sum |> ((s) -> s**0.5)
@@ -478,7 +478,7 @@ Now that we have a constructor for our n-vector, it's time to write its methods.
 The basic algorithm here is map square over each element, sum them all, then square root the result, an algorithm which is so clean to implement in Coconut that it can be read right off the code.
 
 Next up is vector addition. The goal here is to add two vectors of equal length by adding their components. To do this, we're going to make use of Coconut's ability to perform pattern-matching, or in this case destructuring assignment, to data types, like so:
-```pycon3
+```force_python
     def __add__(self, other):
         """Add two vectors together."""
         vector(other_pts) = other
@@ -491,7 +491,7 @@ There are a couple of new constructs here, but the main notable one is the destr
 The other new construct used here is the `|*>`, or star-pipe, operator, which functions exactly like the normal pipe, except that instead of calling the function with one argument, it calls it with as many arguments as there are elements in the sequence passed into it. The difference between `|*>` and `|>` is exactly analagous to the difference between `f(args)` and `f(*args)`.
 
 Next is vector subtraction, which is just like vector addition, but with `(-)` instead of `(+)`:
-```pycon3
+```force_python
     def __sub__(self, other):
         """Subtract one vector from another."""
         vector(other_pts) = other
@@ -500,14 +500,14 @@ Next is vector subtraction, which is just like vector addition, but with `(-)` i
 ```
 
 One thing to note here is that unlike the other operator functions, `(-)` can either mean negation or subtraction, the meaning of which will be inferred based on how many arguments are passed, 1 for negation, 2 for subtraction. To show this, we'll use the same `(-)` function to implement vector negation, which should simply negate each element:
-```pycon3
+```force_python
     def __neg__(self):
         """Retrieve the negative of the vector."""
         return self.pts |> map$((-)) |*> vector
 ```
 
 Our next method will be equality. We're again going to use `data` pattern-matching to implement this, but this time inside of a `match` statement instead of with destructuring assignment, since we want to `return False` not raise an error if the match fails. Here's the code:
-```pycon3
+```force_python
     def __eq__(self, other):
         """Compare whether two vectors are equal."""
         match vector(=self.pts) in other:
@@ -519,7 +519,7 @@ Our next method will be equality. We're again going to use `data` pattern-matchi
 The only new construct here is the use of `=self.pts` in the `match` statement. This construct is used to perform a check inside of the pattern-matching, making sure the `match` only succeeds if `other.pts == self.pts`.
 
 The last method we'll implement is multiplication. This one is a little bit tricky, since mathematically, there are a whole bunch of different ways to multiple vectors. For our purposes, we're just going to look at two: between two vectors of equal length, we want to compute the dot product, defined as the sum of the corresponding elements multiplied together, and between a vector and a scalar, we want to compute the scalar multiple, which is just each element multiplied by that scalar. Here's our implementation:
-```pycon3
+```force_python
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
         match vector(other_pts) in other:
@@ -535,7 +535,7 @@ The last method we'll implement is multiplication. This one is a little bit tric
 The first thing to note here is that unlike with addition and subtraction, where we wanted to raise an error if the vector match failed, here, we want to do scalar multiplication if the match fails, so instead of using destructuring assignment, we use a `match` statement. The second thing to note here is the combination of pipeline-style programming, partial application, operator functions, and higher-order functions we're using to compute the dot product and scalar multiple. For the dot product, we map multiplication over the two vectors, then sum the result. For the scalar multiple, we take the original points, map multiplication by the scalar over them, then use them to make a new vector.
 
 Finally, putting everything together:
-```pycon3
+```force_python
 data vector(pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
@@ -598,11 +598,11 @@ Copy, paste! Now that was a lot of code. But looking it over, it looks clean, re
 For the final case study, instead of me writing the code, and you looking at it, you'll be writing the code—of course, I won't be looking at it, but I will show you how I would have done it after you give it a shot by yourself.
 
 The bonus challenge for this section is to write each of the functions we'll be defining in just one line. To help with that, we're going to introduce a new concept up front, shorthand functions. A shorthand function looks like this
-```pycon3
+```force_python
 def <name>(<args>) = <return value>
 ```
 which has the advantage over the classic Python
-```pycon3
+```force_python
 def <name>(<args>): return <return value>
 ```
 of being shorter, more readable, and not requiring `return` to be typed out. If you try to go for the one-liner approach, using shorthand functions will help keep your lines short and your code readable.
@@ -636,7 +636,7 @@ But since we want to be able to iterate over that plane, we're going to need to 
 Thus, our first function `diagonal_line(n)` should construct an iterator of all the points, represented as coordinate tuples, in the `n`th diagonal, starting with `(0, 0)` as the `0`th diagonal. Like we said at the start of this case study, this is where we I let go and you take over. Using all the tools of functional programming that Coconut provides, give `diagonal_line` a shot. One extra constaint just for this problem: try not to use a generator comprehension. In this case, a generator comprehension would work fine, but there are a lot of cases you will find where it won't, so you should try to get in the habit of using higher-order functions instead. When you're ready to move on, scroll down.
 
 Here are some tests that you can use:
-```pycon3
+```force_python
 diagonal_line(0) `isinstance` (list, tuple) |> print # False (should be an iterator)
 diagonal_line(0) |> list |> print # [(0, 0)]
 diagonal_line(1) |> list |> print # [(0, 1), (1, 0)]
@@ -666,7 +666,7 @@ _Hint: the `n`th diagonal should contain `n+1` elements, so try starting with `r
 <br>
 
 That wasn't so bad, now was it? Now, let's take a look at my solution:
-```pycon3
+```force_python
 def diagonal_line(n) = range(n+1) |> map$((i) -> (i, n-i))
 ```
 Pretty simple, huh? We take `range(n+1)`, and use `map` to transform it into the right sequence of tuples.
@@ -676,7 +676,7 @@ Pretty simple, huh? We take `range(n+1)`, and use `map` to transform it into the
 Now that we've created our diagonal lines, we need to join them together to make the full linearized plane, and to do that we're going to write the function `linearized_plane()`. `linearized_plane` should produce an iterator that goes through all the points in the plane, in order of all the points in the first `diagonal(0)`, then the second `diagonal(1)`, and so on. `linearized_plane` is going to be, by necessity, an infinite iterator, since it needs to loop through all the points in the plane, which have no end. To help you accomplish this, remember that the `::` operator is lazy, and won't evaluate its operands until they're needed, which means it can be used to construct infinite iterators. When you're ready to move on, scroll down.
 
 Tests:
-```pycon3
+```force_python
 # Note: these tests use $[] notation, which we haven't introduced yet
 #  but will introduce later in this case study; for now, just run the
 #  tests, and make sure you get the same result as is in the comment
@@ -708,7 +708,7 @@ _Hint: instead of defining the function as `linearized_plane()`, try defining it
 <br>
 
 That was a little bit rougher than the first one, but hopefully still not too bad. Let's compare to my solution:
-```pycon3
+```force_python
 def linearized_plane(n=0) = diagonal_line(n) :: linearized_plane(n+1)
 ```
 As you can see, it's a very fundamentally simple solution: just use `::` and recursion to join all the diagonals together in order.
@@ -718,7 +718,7 @@ As you can see, it's a very fundamentally simple solution: just use `::` and rec
 Now that we have a function that builds up all the points we need, it's time to turn them into vectors, and to do that we'll define the new function `vector_field()`, which should turn all the tuples in `linearized_plane` into vectors, using the n-vector class we defined earlier.
 
 Tests:
-```pycon3
+```force_python
 # You'll need to bring in the vector class from earlier to make these work
 vector_field()$[0] |> print # vector(pts=(0, 0))
 vector_field()$[2:3] |> list |> print # [vector(pts=(1, 0))]
@@ -748,7 +748,7 @@ _Hint: Remember, the way we defined vector it takes the components as separate a
 <br>
 
 We're making good progress! Before we move on, check your solution against mine:
-```pycon3
+```force_python
 def vector_field() = linearized_plane() |> map$((xy) -> vector(*xy))
 ```
 All we're doing is taking our `linearized_plane` and mapping `vector` over it, but making sure to call vector with each element of the tuple as a separate argument.
@@ -756,7 +756,7 @@ All we're doing is taking our `linearized_plane` and mapping `vector` over it, b
 ### Applications
 
 Now that we've built all the functions we need for our vector field, it's time to put it all together and test it. Feel free to substitute in your versions of the functions below:
-```pycon3
+```force_python
 data vector(pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
@@ -827,26 +827,26 @@ And with that, this tutorial is out of case studies—but that doesn't mean Coco
 ### Lazy Lists
 
 First up is lazy lists. Lazy lists are lazily-evaluated iterator literals, similar in their laziness to Coconut's `::` operator, in that any expressions put inside a lazy list won't be evaluated until that element of the lazy list is needed. The syntax for lazy lists is exactly the same as the syntax for normal lists, but with "banana brackets" (`(|` and `|)`) instead of normal brackets, like so:
-```pycon3
+```force_python
 abc = (| a, b, c |)
 ```
 
 ### Function Composition
 
 Next is function composition. In Coconut, this is accomplished through the `..` operator, which takes two functions and composes them, creating a new function equivalent to `(*args, **kwargs) -> f1(f2(*args, **kwargs))`. This can be useful in combination with partial application for pieceing together multiple higher-order functions, like so:
-```pycon3
+```force_python
 zipsum = map$(sum)..zip
 ```
 
 Function composition also gets rid of the need for lots of parentheses when chaining function calls, like so:
-```pycon3
+```force_python
 plus1..square(3) == 10
 ```
 
 ### Implicit Partials
 
 Last is implicit partials. Coconut supports a number of different "incomplete" expressions that will evaluate to a function that takes in the part necessary to complete them, that is, an implicit partial application function. The different allowable expressions are:
-```pycon3
+```force_python
 .name
 obj.
 func$
