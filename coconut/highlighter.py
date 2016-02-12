@@ -65,8 +65,12 @@ class coclexer(Python3Lexer):
         (words(const_vars, suffix=r"\b"), Keyword.Constant)
     ]
     tokens["backtick"] = [(r"`.*?`", String.Backtick)]
-    tokens["name"] = tokens["name"] + [(r"[$]", Operator)]
+    tokens["name"] = tokens["name"] + [(r"[$|::]", Operator)]
 
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tablen, encoding=encoding):
         """Initialize the Python syntax highlighter."""
         super(coclexer, self).__init__(stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=encoding)
+    def add_filter(self, *args, **kwargs):
+        """Disables the raiseonerror filter."""
+        if len(args) >= 1 and args[0] != "raiseonerror":
+            super(coclexer, self).add_filter(*args, **kwargs)
