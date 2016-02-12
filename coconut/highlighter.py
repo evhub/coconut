@@ -56,7 +56,7 @@ class pyconlexer(PythonConsoleLexer):
 class coclexer(Python3Lexer):
     """Coconut syntax highlighter."""
     name = "coconut"
-    aliases = ["coc", "coconut", "force_coc", "force_coconut", "coconutcon", "force_coconutcon"]
+    aliases = ["coconut", "force_coconut", "coc", "force_coc", "coconutcon", "force_coconutcon"]
     filenames = ["*"+code_ext]
 
     tokens = Python3Lexer.tokens.copy()
@@ -70,7 +70,3 @@ class coclexer(Python3Lexer):
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tablen, encoding=encoding):
         """Initialize the Python syntax highlighter."""
         super(coclexer, self).__init__(stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=encoding)
-    def add_filter(self, *args, **kwargs):
-        """Disables the raiseonerror filter."""
-        if len(args) >= 1 and args[0] != "raiseonerror":
-            super(coclexer, self).add_filter(*args, **kwargs)

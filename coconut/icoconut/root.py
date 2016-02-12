@@ -68,7 +68,7 @@ class kernel(Kernel):
     implementation_version = VERSION
     language = "coconut"
     language_version = VERSION
-    banner = "Coconut:"
+    banner = "Coconut"
     language_info = {
         "name": "coconut",
         "mimetype": "text/x-python",
