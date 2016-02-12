@@ -83,7 +83,7 @@ Now that you've got Coconut installed, the obvious first thing to do is to play 
 coconut
 ```
 and you should see something like
-```coconut
+```coconutcon
 Coconut Interpreter:
 (type "exit()" or press Ctrl-D to end)
 >>>
@@ -135,7 +135,7 @@ Compiling Coconut files and projects with the Coconut command-line utility is in
 coconut /directory/to/hello_world.coc
 ```
 where `/directory/to/` is the path from the current working directory to `hello_world.coc`. Running this command should yield the output
-```bash
+```coconutcon
 Coconut: Compiling       /directory/to/hello_world.coc ...
 Coconut: Compiled to     /directory/to/hello_world.py .
 ```
