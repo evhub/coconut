@@ -82,7 +82,7 @@ class coclexer(Python3Lexer):
             ), prefix=r"(?<!\.)", suffix=r"\b"), Name.Builtin),
         (r"(?<!\.)MatchError\b", Name.Exception)
     ]
-    tokens["magicvars"] = tokens["magicvars"] + [
+    tokens["magicvars"] = (tokens["magicvars"] if "magicvars" in tokens else []) + [
         (r"__coconut_version__\b", Name.Variable.Magic)
     ]
     tokens["numbers"] = tokens["numbers"] + [
