@@ -681,7 +681,7 @@ The requirement that Coconut keywords be backslash-escaped to make them variable
 ##### Example
 
 ###### Coconut
-```
+```coconut
 \data = 5
 print(\data)
 ```
@@ -1096,7 +1096,7 @@ Coconut supports the ability to pass arbitrary code through the compiler without
 ##### Example
 
 ###### Coconut
-```
+```coconut
 \\cdef f(x):
     return x |> g
 ```
