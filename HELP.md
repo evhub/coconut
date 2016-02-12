@@ -1,7 +1,5 @@
 # Coconut Tutorial
 
-_TESTING_
-
 <!-- MarkdownTOC -->
 
 1. [Introduction](#introduction)
