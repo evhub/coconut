@@ -12,7 +12,7 @@ Description: Syntax highlighting for Coconut code.
 
 #-----------------------------------------------------------------------------------------------------------------------
 # IMPORTS:
-#----------------------gme------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
@@ -23,16 +23,24 @@ import pygments
 # LEXER:
 #-----------------------------------------------------------------------------------------------------------------------
 
-class pylexer(pygments.lexers.python.PythonLexer):
+class pylexer(pygments.lexers.PythonLexer):
     """Lenient Python syntax highlighter."""
-    def add_filter(*args, **kwargs):
+    name = "force_python"
+    aliases = ["force_python", "force_py"]
+    filenames = []
+    def add_filter(self, *args, **kwargs):
         """Disables the raiseonerror filter."""
-        if len(args) >= 1 and args[0] == "raiseonerror":
+        print(args, kwargs)
+        if len(args) >= 1 and args[0] != "raiseonerror":
             super(pylexer, self).add_filter(*args, **kwargs)
 
-class pyconlexer(pygments.lexers.python.PythonConsoleLexer):
+class pyconlexer(pygments.lexers.PythonConsoleLexer):
     """Lenient Python console syntax highlighter."""
-    def add_filter(*args, **kwargs):
+    name = "force_pycon"
+    aliases = ["force_pycon"]
+    filenames = []
+    def add_filter(self, *args, **kwargs):
         """Disables the raiseonerror filter."""
-        if len(args) >= 1 and args[0] == "raiseonerror":
+        print(args, kwargs)
+        if len(args) >= 1 and args[0] != "raiseonerror":
             super(pyconlexer, self).add_filter(*args, **kwargs)
