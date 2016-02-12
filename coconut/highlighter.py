@@ -88,6 +88,10 @@ class coclexer(Python3Lexer):
     tokens["numbers"] = tokens["numbers"] + [
         (r"\d+_[A-Za-z0-9]+", Number.Integer)
     ]
+    tokens["root"] = tokens["root"][:]
+    for i, (regexp, match) in enumerate(tokens["root"]):
+        if ":" in regexp and match is Punctuation:
+            tokens["root"][i] = (r"[]{}(),;[]|(?<!:):[^:]", match)
 
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tablen, encoding=encoding):
         """Initialize the Python syntax highlighter."""
