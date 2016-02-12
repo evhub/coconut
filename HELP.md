@@ -314,7 +314,7 @@ def factorial(n):
 ```
 
 Copy, paste! This definition differs from the recursive definition only by one line. That's intentional: because both the iterative and recursive approaches are functional approaches, Coconut can provide a great assist in making the code cleaner and more readable. The one line that differs is this one:
-```python
+```coconut
 return range(1, n+1) |> reduce$((*))
 ```
 

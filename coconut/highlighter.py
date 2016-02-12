@@ -27,35 +27,35 @@ from pygments.token import Text, Comment, Operator, Keyword, Name, String, Numbe
 
 class pylexer(Python3Lexer):
     """Lenient Python syntax highlighter."""
-    name = "force_python"
+    name = "Force Python"
     aliases = ["force_python", "force_py", "force_python3", "force_py3"]
     filenames = []
+
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tablen, encoding=encoding):
         """Initialize the Python syntax highlighter."""
         super(pylexer, self).__init__(stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=encoding)
     def add_filter(self, *args, **kwargs):
         """Disables the raiseonerror filter."""
-        print(args, kwargs)
         if len(args) >= 1 and args[0] != "raiseonerror":
             super(pylexer, self).add_filter(*args, **kwargs)
 
 class pyconlexer(PythonConsoleLexer):
     """Lenient Python console syntax highlighter."""
-    name = "force_pycon"
+    name = "Force Python Console"
     aliases = ["force_pycon", "force_pycon3"]
     filenames = []
+
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tablen, encoding=encoding, python3=True):
         """Initialize the Python console syntax highlighter."""
         super(pyconlexer, self).__init__(stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=encoding, python3=python3)
     def add_filter(self, *args, **kwargs):
         """Disables the raiseonerror filter."""
-        print(args, kwargs)
         if len(args) >= 1 and args[0] != "raiseonerror":
             super(pyconlexer, self).add_filter(*args, **kwargs)
 
-class coclexer(pylexer):
+class coclexer(Python3Lexer):
     """Coconut syntax highlighter."""
-    name = "coconut"
+    name = "Coconut"
     aliases = ["coc", "coconut", "force_coc" "force_coconut", "coconutcon", "force_coconutcon"]
     filenames = ["*"+code_ext]
 
@@ -66,3 +66,7 @@ class coclexer(pylexer):
     ]
     tokens["backtick"] = [("`.*?`", String.Backtick)]
     tokens["name"] = tokens["name"] + [(r"[$\\]", Operator)]
+
+    def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tablen, encoding=encoding):
+        """Initialize the Python syntax highlighter."""
+        super(coclexer, self).__init__(stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=encoding)
