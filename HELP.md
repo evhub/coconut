@@ -1,5 +1,7 @@
 # Coconut Tutorial
 
+_TESTING_
+
 <!-- MarkdownTOC -->
 
 1. [Introduction](#introduction)
@@ -83,7 +85,7 @@ Now that you've got Coconut installed, the obvious first thing to do is to play 
 coconut
 ```
 and you should see something like
-```pycon
+```coconut
 Coconut Interpreter:
 (type "exit()" or press Ctrl-D to end)
 >>>
