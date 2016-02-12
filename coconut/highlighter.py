@@ -27,7 +27,7 @@ from pygments.token import Text, Comment, Operator, Keyword, Name, String, Numbe
 
 class pylexer(Python3Lexer):
     """Lenient Python syntax highlighter."""
-    name = "Force Python"
+    name = "force_python"
     aliases = ["force_python", "force_py", "force_python3", "force_py3"]
     filenames = []
 
@@ -41,7 +41,7 @@ class pylexer(Python3Lexer):
 
 class pyconlexer(PythonConsoleLexer):
     """Lenient Python console syntax highlighter."""
-    name = "Force Python Console"
+    name = "force_pycon"
     aliases = ["force_pycon", "force_pycon3"]
     filenames = []
 
@@ -55,7 +55,7 @@ class pyconlexer(PythonConsoleLexer):
 
 class coclexer(Python3Lexer):
     """Coconut syntax highlighter."""
-    name = "Coconut"
+    name = "coconut"
     aliases = ["coconut", "force_coconut", "coc", "force_coc", "coconutcon", "force_coconutcon"]
     filenames = ["*"+code_ext]
 
@@ -86,7 +86,7 @@ class coclexer(Python3Lexer):
         (r"__coconut_version__\b", Name.Variable.Magic)
     ]
     tokens["numbers"] = tokens["numbers"] + [
-        (r"\d+_\d+", Number.Integer)
+        (r"\d+_[A-Za-z0-9]+", Number.Integer)
     ]
 
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tablen, encoding=encoding):
