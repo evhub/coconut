@@ -83,7 +83,7 @@ Now that you've got Coconut installed, the obvious first thing to do is to play 
 coconut
 ```
 and you should see something like
-```force_python
+```coconut
 Coconut Interpreter:
 (type "exit()" or press Ctrl-D to end)
 >>>
