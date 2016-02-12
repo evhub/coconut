@@ -43,3 +43,5 @@ source_parsers = {
     ".md": CommonMarkParser
 }
 source_suffix = [".rst", ".md"]
+
+extensions = ["coconut"]

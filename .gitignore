@@ -33,7 +33,6 @@ pip-delete-this-directory.txt
 _build/
 make.bat
 Makefile
-sphinx/
 
 # Macintosh Desktop Services Store files
 .DS_Store

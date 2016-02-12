@@ -1,3 +1,4 @@
+sphinx
 recommonmark
 sphinx_bootstrap_theme
--e git+https://github.com/evhub/sphinx.git@rtfd#egg=Sphinx
+coconut

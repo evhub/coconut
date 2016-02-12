@@ -119,7 +119,13 @@ setuptools.setup(
     install_requires = [
         "pyparsing==2.0.7"
         ],
-    entry_points = {"console_scripts": [
-        "coconut = coconut.__main__:main"
-        ]}
+    entry_points = {
+        "console_scripts": [
+            "coconut = coconut.__main__:main"
+            ],
+        "pygments.lexers": [
+            "force_python = coconut.highlighter:pylexer",
+            "force_pycon = coconut.highlighter:pyconlexer"
+            ]
+        }
     )
