@@ -200,7 +200,7 @@ In Python, lambdas are ugly and bulky, requiring the entire word `lambda` to be 
 ##### Python Docs
 
 Lambda forms (lambda expressions) have the same syntactic position as expressions. They are a shorthand to create anonymous functions; the expression `(arguments) -> expression` yields a function object. The unnamed object behaves like a function object defined with:
-```force_python
+```coconut
 def <lambda>(arguments):
     return expression
 ```
@@ -209,7 +209,7 @@ Note that functions created with lambda forms cannot contain statements or annot
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 pairs = zip(range(0, 10), range(10, 20))
 dubsums = map((x, y) -> 2*(x+y), pairs)
 dubsums |> list |> print
@@ -249,7 +249,7 @@ The `partial` object is used for partial function application which â€œfreezesâ€
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 expnums = map(pow$(2), range(5))
 expnums |> list |> print
 ```
@@ -264,7 +264,7 @@ expnums |> list |> print
 ### Pipeline
 
 Coconut uses pipe operators for pipeline-style function application. All the operators have a precedence in-between infix calls and comparisons and are left-associative. All operators also support in-place versions. The different operators are:
-```force_python
+```coconut
 (|>)    => pipe forward
 (|*>)   => multiple-argument pipe forward
 (<|)    => pipe backward
@@ -274,7 +274,7 @@ Coconut uses pipe operators for pipeline-style function application. All the ope
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 def sq(x) = x**2
 (1, 2) |*> (+) |> sq |> print
 ```
@@ -293,7 +293,7 @@ Coconut uses the `..` operator for function composition. It has a precedence in-
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 fog = f..g
 ```
 
@@ -324,7 +324,7 @@ def chain(*iterables):
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 def N(n=0):
     return (0,) :: N(n+1) # no infinite loop because :: is lazy
 
@@ -365,7 +365,7 @@ If _start_ is `None`, then iteration starts at zero. If _step_ is `None`, then t
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 def N():
     x = 0
     while True:
@@ -426,14 +426,14 @@ Coconut supports unicode alternatives to many different operator symbols. The un
 The syntax for `data` blocks is a cross between the syntax for functions and the syntax for classes. The first line looks like a function definition, but the rest of the body looks like a class, usually containing method definitions. This is because while `data` blocks actually end up as classes in Python, Coconut automatically creates a special, immutable constructor based on the given arguments.
 
 Coconut `data` blocks create immutable classes derived from `collections.namedtuple` and made immutable with `__slots__`. Coconut data statement syntax looks like:
-```force_python
+```coconut
 data <name>(<args>):
     <body>
 ```
 `<name>` is the name of the new data type, `<args>` are the arguments to its constructor as well as the names of its attributes, and `<body>` contains the data type's methods.
 
 Subclassing `data` types can be done easily by inheriting from them in a normal Python `class`, although to make the new subclass immutable, the line
-```force_python
+```coconut
 __slots__ = ()
 ```
 will need to be added to the subclass before any method or attribute definitions.
@@ -453,7 +453,7 @@ Named tuple instances do not have per-instance dictionaries, so they are lightwe
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 data vector(x, y):
     def __abs__(self):
         return (self.x**2 + self.y**2)**.5
@@ -489,7 +489,7 @@ Match statements follow the basic syntax `match <pattern> in <value>`. The match
 ##### Syntax Specification
 
 Coconut match statement syntax is
-```force_python
+```coconut
 match <pattern> in <value> [if <cond>]:
     <body>
 [else:
@@ -497,7 +497,7 @@ match <pattern> in <value> [if <cond>]:
 ```
 where `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds. `<pattern>` follows its own, special syntax, defined roughly like so:
 
-```force_python
+```coconut
 pattern := (
     "(" pattern ")"                 # parentheses
     | "None" | "True" | "False"     # constants
@@ -561,7 +561,7 @@ When checking whether or not an object can be matched against in a particular fa
 ##### Examples
 
 ###### Coconut
-```force_python
+```coconut
 def factorial(value):
     match 0 in value:
         return 1
@@ -573,7 +573,7 @@ def factorial(value):
 3 |> factorial |> print
 ```
 _Showcases `else` statements, which work much like `else` statements in Python: the code under an `else` statement is only executed if the corresponding match fails._
-```force_python
+```coconut
 data point(x, y):
     def transform(self, other):
         match point(x, y) in other:
@@ -590,7 +590,7 @@ point(1,2) |> point(3,4).transform |> print
 point(1,2) |> point(1,2).__eq__ |> print
 ```
 _Showcases matching to data types. Values defined by the user with the `data` statement can be matched against and their contents accessed by specifically referencing arguments to the data type's constructor._
-```force_python
+```coconut
 data empty(): pass
 data leaf(n): pass
 data node(l, r): pass
@@ -609,7 +609,7 @@ leaf(5) |> depth |> print
 node(leaf(2), node(empty(), leaf(3))) |> depth |> print
 ```
 _Showcases how the combination of data types and match statements can be used to powerful effect to replicate the usage of algebraic data types in other functional programming languages._
-```force_python
+```coconut
 def duplicate_first(value):
     match l=([x] + xs) in value:
         return [x] + l
@@ -629,7 +629,7 @@ _Can't be done without a long series of checks for each `match` statement. See t
 Coconut's `case` statement is an extension of Coconut's `match` statement for performing multiple `match` statements against the same value, where only one of them should succeed. Unlike lone `match` statements, only one match statement inside of a `case` block will ever succeed, and thus more general matches should be put below more specific ones.
 
 Each pattern in a case block is checked until a match is found, and then the corresponding body is executed, and the case block terminated. The syntax for case blocks is
-```force_python
+```coconut
 case <value>:
     match <pattern> [if <cond>]:
         <body>
@@ -644,7 +644,7 @@ where `<pattern>` is any `match` pattern, `<value>` is the item to match against
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 def classify_sequence(value):
     out = ""        # unlike with normal matches, only one of the patterns
     case value:     #  will match, and out will only get appended to once
@@ -713,7 +713,7 @@ Lazy lists, where sequences are only evaluated when their contents are requested
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 (| print("hello,"), print("world!") |) |> print
 ```
 
@@ -723,7 +723,7 @@ _Can't be done without a complicated iterator comprehension in place of the lazy
 ### Implicit Partial Application
 
 Coconut supports a number of different syntactical aliases for common partial application use cases. These are:
-```force_python
+```coconut
 .name       =>      operator.attrgetter("name")
 obj.        =>      getattr$(obj)
 func$       =>      ($)$(func)
@@ -734,7 +734,7 @@ iter$[]     =>      <lambda> # the equivalent of seq[] for iterators
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 1 |> "123"[]
 mod$ <| 5 <| 3
 ```
@@ -752,7 +752,7 @@ Coconut allows an optional `s` to be prepended in front of Python set literals. 
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 empty_frozen_set = f{}
 ```
 
@@ -768,18 +768,18 @@ In addition to Python's `<num>j` or `<num>J` notation for imaginary literals, Co
 ##### Python Docs
 
 Imaginary literals are described by the following lexical definitions:
-```force_python
+```coconut
 imagnumber ::=  (floatnumber | intpart) ("j" | "J" | "i" | "I")
 ```
 An imaginary literal yields a complex number with a real part of 0.0. Complex numbers are represented as a pair of floating point numbers and have the same restrictions on their range. To create a complex number with a nonzero real part, add a floating point number to it, e.g., `(3+4i)`. Some examples of imaginary literals:
-```force_python
+```coconut
 3.14i   10.i    10i     .001i   1e100i  3.14e-10i
 ```
 
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 3 + 4i |> abs
 ```
 
@@ -799,7 +799,7 @@ A base-n literal consists of the digits 0 to n-1, with `a` to `z` (or `A` to `Z`
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 12_10A == 154
 ```
 
@@ -820,7 +820,7 @@ A very common thing to do in functional programming is to make use of function v
 
 ##### Full List
 
-```force_python
+```coconut
 (|>)        => (<lambda>) # pipe forward
 (|*>)       => (<lambda>) # multi-arg pipe forward
 (<|)        => (<lambda>) # pipe backward
@@ -859,7 +859,7 @@ A very common thing to do in functional programming is to make use of function v
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 pairs = zip(range(0, 10), range(10, 20))
 map((+), pairs) |> print
 ```
@@ -874,7 +874,7 @@ print(map(operator.__add__, pairs))
 ### Shorthand Functions
 
 Coconut allows for shorthand in-line function definition, where the body of the function is assigned directly to the function call. The syntax for shorthand function definition is
-```force_python
+```coconut
 def <name>(<args>) = <expr>
 ```
 where `<name>` is the name of the function, `<args>` are the functions arguments, and `<expr>` evaluates the value that the function should return.
@@ -888,7 +888,7 @@ Coconut's shorthand function definition is as easy to write as assignment to a l
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 def binexp(x) = 2**x
 5 |> binexp |> print
 ```
@@ -904,7 +904,7 @@ print(binexp(5))
 Coconut allows for infix function calling, where a function is surrounded by backticks and then can have arguments placed in front of or behind it. Backtick calling has a precedence in-between chaining and piping.
 
 Coconut also supports infix function definition to make definining functions that are intended for infix usage simpler. The syntax for infix function definition is
-```force_python
+```coconut
 def <arg> `<name>` <arg>:
     <body>
 ```
@@ -919,7 +919,7 @@ A common idiom in functional programming is to write functions that are intended
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 def a `mod` b = a % b
 (x `mod` 2) `print`
 ```
@@ -933,12 +933,12 @@ print(mod(x, 2))
 ### Pattern-Matching Functions
 
 Coconut supports pattern-matching / destructuring assignment syntax inside of function definition. The syntax for pattern-matching function definition is
-```force_python
+```coconut
 [match] def <name>(<match>, <match>, ...):
     <body>
 ```
 where `<name>` is the name of the function, `<body>` is the body of the function, and `<pattern>` is defined by Coconut's [`match` statement](#match). The `match` keyword at the beginning is optional, but is sometimes necessary to disambiguate pattern-matching function definition from normal function definition, which will always take precedence. Coconut's pattern-matching function definition is equivalent to a [destructuring assignment](#destructuring-assignment) that looks like:
-```force_python
+```coconut
 def <name>(*args):
     match [<match>, <match>, ...] = args
     <body>
@@ -950,7 +950,7 @@ _Note: Pattern-matching function definition can be combined with shorthand and i
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 def last_two(_ + [a, b]):
     return a, b
 def xydict_to_xytuple({"x":x is int, "y":y is int}):
@@ -969,11 +969,11 @@ _Can't be done without a long series of checks at the top of the function. See t
 ### Destructuring Assignment
 
 Coconut supports significantly enhanced destructuring assignment, similar to Python's tuple/list destructuring, but much more powerful. The syntax for Coconut's destructuring assignment is
-```force_python
+```coconut
 [match] <pattern> = <value>
 ```
 where `<value>` is any expression and `<pattern>` is defined by Coconut's [`match` statement](#match). The `match` keyword at the beginning is optional, but is sometimes necessary to disambiguate destructuring assignment from normal assignment, which will always take precedence. Coconut's destructuring assignment is equivalent to a match statement that follows the syntax:
-```force_python
+```coconut
 match <pattern> in <value>:
     pass
 else:
@@ -987,7 +987,7 @@ If a destructuring assignment statement fails, then instead of continuing on as 
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 def last_two(l):
     _ + [a, b] = l
     return a, b
@@ -1004,7 +1004,7 @@ Unlike Python, which only supports a single variable or function call in a decor
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 @ wrapper1 .. wrapper2 $(arg)
 def func(x) = x**2
 ```
@@ -1025,7 +1025,7 @@ Coconut supports the compound statements `try`, `if`, and `match` on the end of 
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 try:
     unsafe_1()
 except MyError:
@@ -1056,7 +1056,7 @@ Python 3 requires that if multiple exceptions are to be caught, they must be pla
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 try:
     unsafe_func(arg)
 except SyntaxError, ValueError as err:
@@ -1078,7 +1078,7 @@ Coconut allows for the more elegant parenthetical continuation instead of the le
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 global (really_long_global_variable_name_the_first_one,
         really_long_global_variable_name_the_second_one)
 ```
@@ -1122,7 +1122,7 @@ Apply _function_ of two arguments cumulatively to the items of _sequence_, from 
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 prod = reduce$((*))
 range(10) |> prod |> list |> print
 ```
@@ -1157,7 +1157,7 @@ def takewhile(predicate, iterable):
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 negatives = takewhile(numiter, (x) -> x<0)
 ```
 
@@ -1191,7 +1191,7 @@ def dropwhile(predicate, iterable):
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 positives = dropwhile(numiter, (x) -> x<0)
 ```
 
@@ -1230,7 +1230,7 @@ This itertool may require significant auxiliary storage (depending on how much t
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 original, temp = tee(original)
 sliced = temp$[5:]
 ```
@@ -1245,7 +1245,7 @@ sliced = itertools.islice(temp, 5, None)
 ### `consume`
 
 Coconut provides the `consume` function to efficiently exhaust an iterator and thus perform any lazy evaluation contained within it. `consume` takes one optional argument, `keep_last`, that defaults to 0 and specifies how many, if any, items from the end to return as an iterable (`None` will keep all elements). Equivalent to:
-```force_python
+```coconut
 def consume(iterable, keep_last=0):
     """Fully exhaust iterable and return the last keep_last elements."""
     return collections.deque(iterable, maxlen=keep_last)
@@ -1258,7 +1258,7 @@ In the process of lazily applying operations to iterators, eventually a point is
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 range(10) |> map$((x) -> x**2) |> map$(print) |> consume
 ```
 
@@ -1270,7 +1270,7 @@ collections.deque(map(print, map(lambda x: x**2, range(10))), maxlen=0)
 ### `datamaker`
 
 Coconut provides the `datamaker` function to allow direct access to the base constructor of data types created with the Coconut `data` statement. This is particularly useful when writing alternative constructors for data types by overwriting `__new__`. Equivalent to:
-```force_python
+```coconut
 def datamaker(data_type):
     """Returns base data constructor of data_type."""
     return super(data, data_type).__new__$(data_type)
@@ -1279,7 +1279,7 @@ def datamaker(data_type):
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 data trilen(h):
     def __new__(cls, a, b):
         return (a**2 + b**2)**0.5 |> datamaker(cls)
@@ -1301,7 +1301,7 @@ Coconut provides a `recursive` decorator to perform tail recursion optimization 
 ##### Example
 
 ###### Coconut
-```force_python
+```coconut
 @recursive
 def collatz(n):
     if n == 1:

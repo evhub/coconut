@@ -22,6 +22,13 @@ import os.path
 import argparse
 
 #-----------------------------------------------------------------------------------------------------------------------
+# CONSTANTS:
+#-----------------------------------------------------------------------------------------------------------------------
+
+code_ext = ".coc"
+comp_ext = ".py"
+
+#-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -169,8 +176,6 @@ class terminal(object):
 class cli(object):
     """The Coconut command-line interface."""
     version = "Version "+VERSION_STR+" running on Python "+" ".join(sys.version.splitlines())
-    code_ext = ".coc"
-    comp_ext = ".py"
     commandline = argparse.ArgumentParser(description="The Coconut Programming Language.")
     commandline.add_argument("source", metavar="source", type=str, nargs="?", default=None, help="path to the Coconut file/folder to compile")
     commandline.add_argument("dest", metavar="dest", type=str, nargs="?", default=None, help="destination directory for compiled files (defaults to the source directory)")
@@ -312,7 +317,7 @@ class cli(object):
                 tocreate = writedir
             wrote = False
             for filename in filenames:
-                if os.path.splitext(filename)[1] == self.code_ext:
+                if os.path.splitext(filename)[1] == code_ext:
                     self.compile_file(os.path.join(dirpath, filename), writedir, package, run, force)
                     wrote = True
             if wrote and package and tocreate is not None:
@@ -330,7 +335,7 @@ class cli(object):
         if destpath is not None:
             base, ext = os.path.splitext(os.path.splitext(destpath)[0])
             if not ext:
-                ext = self.comp_ext
+                ext = comp_ext
             destpath = fixpath(base + ext)
         self.compile(filepath, destpath, package, run, force)
 

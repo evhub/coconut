@@ -72,7 +72,7 @@ class kernel(Kernel):
     language_info = {
         "name": "coconut",
         "mimetype": "text/x-python",
-        "file_extension": ".coc",
+        "file_extension": code_ext,
         "codemirror_mode": "python",
         "pygments_lexer": "python"
     }
