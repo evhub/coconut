@@ -64,8 +64,30 @@ class coclexer(Python3Lexer):
         (words(keywords + reserved_vars, suffix=r"\b"), Keyword),
         (words(const_vars, suffix=r"\b"), Keyword.Constant)
     ]
-    tokens["backtick"] = [(r"`.*?`", String.Backtick)]
-    tokens["name"] = tokens["name"] + [(r"[$|::]", Operator)]
+    tokens["backtick"] = [
+        (r"`.*?`", String.Backtick)
+    ]
+    tokens["name"] = tokens["name"] + [
+        (r"[$|::]", Operator)
+    ]
+    tokens["builtins"] = tokens["builtins"] + [
+        (words((
+            "reduce",
+            "takewhile",
+            "dropwhile",
+            "tee",
+            "recursive",
+            "datamaker",
+            "consume"
+            ), prefix=r"(?<!\.)", suffix=r"\b"), Name.Builtin),
+        (r"(?<!\.)MatchError\b", Name.Exception)
+    ]
+    tokens["magicvars"] = tokens["magicvars"] + [
+        (r"__coconut_version__\b", Name.Variable.Magic)
+    ]
+    tokens["numbers"] = tokens["numbers"] + [
+        (r"\d+_\d+", Number.Integer)
+    ]
 
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tablen, encoding=encoding):
         """Initialize the Python syntax highlighter."""
