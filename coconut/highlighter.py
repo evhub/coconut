@@ -65,7 +65,7 @@ class coclexer(Python3Lexer):
         (words(const_vars, suffix=r"\b"), Keyword.Constant)
     ]
     tokens["backtick"] = [(r"`.*?`", String.Backtick)]
-    tokens["name"] = tokens["name"] + [(r"[$\\]", Operator)]
+    tokens["name"] = tokens["name"] + [(r"[$]", Operator)]
 
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tablen, encoding=encoding):
         """Initialize the Python syntax highlighter."""
