@@ -498,7 +498,7 @@ match <pattern> in <value> [if <cond>]:
 where `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds. `<pattern>` follows its own, special syntax, defined roughly like so:
 
 ```coconut
-pattern := (
+pattern ::= (
     "(" pattern ")"                 # parentheses
     | "None" | "True" | "False"     # constants
     | "=" NAME                      # check

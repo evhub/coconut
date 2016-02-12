@@ -28,6 +28,10 @@ import argparse
 code_ext = ".coc"
 comp_ext = ".py"
 
+default_prompt = ">>> "
+default_moreprompt = "    "
+default_sig = "Coconut: "
+
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -201,7 +205,7 @@ class cli(object):
     runner = None
     target = None
 
-    def __init__(self, prompt=">>> ", moreprompt="    ", main_sig="Coconut: ", debug_sig=""):
+    def __init__(self, prompt=default_prompt, moreprompt=default_moreprompt, main_sig=default_sig, debug_sig=""):
         """Creates the CLI."""
         self.console = terminal(main_sig, debug_sig)
         self.prompt = prompt
