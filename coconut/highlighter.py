@@ -56,9 +56,10 @@ class pyconlexer(PythonConsoleLexer):
 class coclexer(pylexer):
     """Coconut syntax highlighter."""
     name = "coconut"
-    aliases = ["coc", "coconut", "force_coc" "force_coconut"]
+    aliases = ["coc", "coconut", "force_coc" "force_coconut", "coconutcon", "force_coconutcon"]
     filenames = ["*"+code_ext]
 
+    tokens = Python3Lexer.tokens.copy()
     tokens["keywords"] = [
         (words(keywords + reserved_vars, suffix=r"\b"), Keyword),
         (words(const_vars, suffix=r"\b"), Keyword.Constant)
