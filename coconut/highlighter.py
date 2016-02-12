@@ -27,7 +27,7 @@ from pygments.token import Text, Comment, Operator, Keyword, Name, String, Numbe
 
 class pylexer(Python3Lexer):
     """Lenient Python syntax highlighter."""
-    name = "force_python"
+    name = "Force Python"
     aliases = ["force_python", "force_py", "force_python3", "force_py3"]
     filenames = []
 
@@ -41,7 +41,7 @@ class pylexer(Python3Lexer):
 
 class pyconlexer(PythonConsoleLexer):
     """Lenient Python console syntax highlighter."""
-    name = "force_pycon"
+    name = "Force Python Console"
     aliases = ["force_pycon", "force_pycon3"]
     filenames = []
 
@@ -55,7 +55,7 @@ class pyconlexer(PythonConsoleLexer):
 
 class coclexer(Python3Lexer):
     """Coconut syntax highlighter."""
-    name = "coconut"
+    name = "Coconut"
     aliases = ["coconut", "force_coconut", "coc", "force_coc", "coconutcon", "force_coconutcon"]
     filenames = ["*"+code_ext]
 
@@ -68,7 +68,7 @@ class coclexer(Python3Lexer):
         (r"`.*?`", String.Backtick)
     ]
     tokens["name"] = tokens["name"] + [
-        (r"[$|::]", Operator)
+        (r"\$|::", Operator)
     ]
     tokens["builtins"] = tokens["builtins"] + [
         (words((
@@ -83,7 +83,7 @@ class coclexer(Python3Lexer):
         (r"(?<!\.)MatchError\b", Name.Exception)
     ]
     tokens["magicvars"] = (tokens["magicvars"] if "magicvars" in tokens else []) + [
-        (r"__coconut_version__\b", Name.Variable.Magic)
+        (r"(?<!\.)__coconut_version__\b", Name.Variable.Magic)
     ]
     tokens["numbers"] = tokens["numbers"] + [
         (r"\d+_[A-Za-z0-9]+", Number.Integer)
