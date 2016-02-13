@@ -56,8 +56,9 @@
     6. [`datamaker`](#datamaker)
     7. [`recursive`](#recursive)
     8. [`__coconut_version__`](#__coconut_version__)
-8. [Coconut Module](#coconut-module)
-    1. [`coconut.convenience`](#coconutconvenience)
+8. [Coconut Utilities](#coconut-utilities)
+    1. [Syntax Highlighting](#syntax-highlighting)
+    2. [`coconut.convenience`](#coconutconvenience)
         1. [`parse`](#parse)
         2. [`setup`](#setup)
         3. [`cmd`](#cmd)
@@ -122,9 +123,7 @@ dest                  destination directory for compiled files (defaults to the 
 
 ### Naming Source Files
 
-Coconut source files should, so the compiler can recognize them, use the extension `.coc`. It is recommended, if your text editor doesn't have Coconut support, that you set it up so it interprets all `.coc` files as Python code.
-
-When Coconut compiles a `.coc` file, it will compile to another file with the same name, except with `.py` instead of `.coc`, which will hold the compiled code. If an extension other than `.py` is desired for the compiled files, such as `.pyde` for [Python Processing](http://py.processing.org/), then that extension can be put before `.coc` in the source file name, and it will be used instead of `.py` for the compiled files. For example, `name.coc` will compile to `name.py`, whereas `name.pyde.coc` will compile to `name.pyde`.
+Coconut source files should, so the compiler can recognize them, use the extension `.coc`. When Coconut compiles a `.coc` file, it will compile to another file with the same name, except with `.py` instead of `.coc`, which will hold the compiled code. If an extension other than `.py` is desired for the compiled files, such as `.pyde` for [Python Processing](http://py.processing.org/), then that extension can be put before `.coc` in the source file name, and it will be used instead of `.py` for the compiled files. For example, `name.coc` will compile to `name.py`, whereas `name.pyde.coc` will compile to `name.pyde`.
 
 ### Compilation Modes
 
@@ -1320,7 +1319,11 @@ _Can't be done without a long decorator definition. The full definition of the d
 
 Coconut provides the built-in double-underscore constant variable `__coconut_version__` to allow direct access to the version of Coconut that the code was compiled in.
 
-## Coconut Module
+## Coconut Utilities
+
+### Syntax Highlighting
+
+When Coconut is installed, it will automatically add the `coconut` [pygments](http://pygments.org/) lexer, which this documentation uses for its syntax highlighting. This means that if your text editor supports pygments, you should be able to tell it to highlight all `.coc` files using that lexer. It is recommended, if your text editor doesn't have pygments support, that you set it up so it interprets all `.coc` files as Python code, as this should highlight most of your code well enough. Additionally, a syntax highlighting package for Sublime Text is under development, and will likely be released with the next version of Coconut.
 
 ### `coconut.convenience`
 

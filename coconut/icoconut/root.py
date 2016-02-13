@@ -71,10 +71,10 @@ class kernel(Kernel):
     banner = "Coconut"
     language_info = {
         "name": "coconut",
-        "mimetype": "text/x-python",
+        "mimetype": "text/x-python3",
         "file_extension": code_ext,
         "codemirror_mode": "python",
-        "pygments_lexer": "python"
+        "pygments_lexer": "coconut"
     }
 
     def _send(self, silent, text, debug=False):
