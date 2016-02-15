@@ -215,7 +215,7 @@ dubsums |> list |> print
 ```
 
 ###### Python
-```force_python
+```python3
 pairs = zip(range(0, 10), range(10, 20))
 dubsums = map(lambda x, y: 2*(x+y), pairs)
 print(list(dubsums))
@@ -232,7 +232,7 @@ Partial application, or currying, is a mainstay of functional programming, and f
 ##### Python Docs
 
 Return a new `partial` object which when called will behave like _func_ called with the positional arguments _args_ and keyword arguments _keywords_. If more arguments are supplied to the call, they are appended to _args_. If additional keyword arguments are supplied, they extend and override _keywords_. Roughly equivalent to:
-```force_python
+```python3
 def partial(func, *args, **keywords):
     def newfunc(*fargs, **fkeywords):
         newkeywords = keywords.copy()
@@ -254,7 +254,7 @@ expnums |> list |> print
 ```
 
 ###### Python
-```force_python
+```python3
 import functools
 expnums = map(functools.partial(pow, 2), range(5))
 expnums |> list |> print
@@ -279,7 +279,7 @@ def sq(x) = x**2
 ```
 
 ###### Python
-```force_python
+```python3
 import operator
 def sq(x): return x**2
 print(sq(operator.__add__(1, 2)))
@@ -297,7 +297,7 @@ fog = f..g
 ```
 
 ###### Python
-```force_python
+```python3
 fog = lambda *args, **kwargs: f(g(*args, **kwargs))
 ```
 
@@ -312,7 +312,7 @@ A useful tool to make working with iterators as easy as working with sequences i
 ##### Python Docs
 
 Make an iterator that returns elements from the first iterable until it is exhausted, then proceeds to the next iterable, until all of the iterables are exhausted. Used for treating consecutive sequences as a single sequence. Chained inputs are evaluated lazily. Roughly equivalent to:
-```force_python
+```python3
 def chain(*iterables):
     # chain('ABC', 'DEF') --> A B C D E F
     for it in iterables:
@@ -345,7 +345,7 @@ For dynamically determining the slice parameters, iterator slicing supports slic
 ##### Python Docs
 
 Make an iterator that returns selected elements from the _iterable_. If _start_ is non-zero, then elements from the _iterable_ are skipped until _start_ is reached. Afterward, elements are returned consecutively unless _step_ is set higher than one which results in items being skipped. If _stop_ is `None`, then iteration continues until the iterator is exhausted, if at all; otherwise, it stops at the specified position. Unlike regular slicing, iterator slicing does not support negative values for _start_, _stop_, or _step_. Can be used to extract related fields from data where the internal structure has been flattened (for example, a multi-line report may list a name field on every third line). Equivalent to:
-```force_python
+```python3
 def islice(iterable, *args):
     # islice('ABCDEFG', 2) --> A B
     # islice('ABCDEFG', 2, 4) --> C D
@@ -375,7 +375,7 @@ N()$[10:15] |> list |> print
 ```
 
 ###### Python
-```force_python
+```python3
 import itertools
 
 def N():
@@ -464,7 +464,7 @@ v.x = 2 # this will fail because data objects are immutable
 ```
 
 ###### Python
-```force_python
+```python3
 import collections
 class vector(collections.namedtuple("vector", "x, y")):
     __slots__ = ()
@@ -686,7 +686,7 @@ print(\data)
 ```
 
 ###### Python
-```force_python
+```python3
 data = 5
 print(data)
 ```
@@ -739,7 +739,7 @@ mod$ <| 5 <| 3
 ```
 
 ###### Python
-```force_python
+```python3
 "123"[1]
 mod(5, 3)
 ```
@@ -756,7 +756,7 @@ empty_frozen_set = f{}
 ```
 
 ###### Python
-```force_python
+```python3
 empty_frozen_set = frozenset()
 ```
 
@@ -783,7 +783,7 @@ An imaginary literal yields a complex number with a real part of 0.0. Complex nu
 ```
 
 ###### Python
-```force_python
+```python3
 abs(3 + 4j)
 ```
 
@@ -803,7 +803,7 @@ A base-n literal consists of the digits 0 to n-1, with `a` to `z` (or `A` to `Z`
 ```
 
 ###### Python
-```force_python
+```python3
 int("10A", 12) == 154
 ```
 
@@ -864,7 +864,7 @@ map((+), pairs) |> print
 ```
 
 ###### Python
-```force_python
+```python3
 import operator
 pairs = zip(range(0, 10), range(10, 20))
 print(map(operator.__add__, pairs))
@@ -893,7 +893,7 @@ def binexp(x) = 2**x
 ```
 
 ###### Python
-```force_python
+```python3
 def binexp(x): return 2**x
 print(binexp(5))
 ```
@@ -924,7 +924,7 @@ def a `mod` b = a % b
 ```
 
 ###### Python
-```force_python
+```python3
 def mod(a, b): return a % b
 print(mod(x, 2))
 ```
@@ -1009,7 +1009,7 @@ def func(x) = x**2
 ```
 
 ###### Python
-```force_python
+```python3
 def wrapper(func):
     return wrapper1(wrapper2(arg, func))
 @wrapper
@@ -1036,7 +1036,7 @@ except MyError:
 ```
 
 ###### Python
-```force_python
+```python3
 try:
     unsafe_1()
 except MyError:
@@ -1063,7 +1063,7 @@ except SyntaxError, ValueError as err:
 ```
 
 ###### Python
-```force_python
+```python3
 try:
     unsafe_func(arg)
 except (SyntaxError, ValueError) as err:
@@ -1083,7 +1083,7 @@ global (really_long_global_variable_name_the_first_one,
 ```
 
 ###### Python
-```force_python
+```python3
 global really_long_global_variable_name_the_first_one, \
         really_long_global_variable_name_the_second_one
 ```
@@ -1101,7 +1101,7 @@ Coconut supports the ability to pass arbitrary code through the compiler without
 ```
 
 ###### Python
-```force_python
+```python3
 cdef f(x):
     return g(x)
 ```
@@ -1127,7 +1127,7 @@ range(10) |> prod |> list |> print
 ```
 
 ###### Python
-```force_python
+```python3
 import operator
 import functools
 prod = functools.partial(functools.reduce, operator.__mul__)
@@ -1143,7 +1143,7 @@ Coconut provides `functools.takewhile` as a built-in under the name `takewhile`.
 **takewhile**(_predicate, iterable_)
 
 Make an iterator that returns elements from the _iterable_ as long as the _predicate_ is true. Equivalent to:
-```force_python
+```python3
 def takewhile(predicate, iterable):
     # takewhile(lambda x: x<5, [1,4,6,4,1]) --> 1 4
     for x in iterable:
@@ -1161,7 +1161,7 @@ negatives = takewhile(numiter, (x) -> x<0)
 ```
 
 ###### Python
-```force_python
+```python3
 import functools
 negatives = functools.takewhile(numiter, lambda x: x<0)
 ```
@@ -1175,7 +1175,7 @@ Coconut provides `functools.dropwhile` as a built-in under the name `dropwhile`.
 **dropwhile**(_predicate, iterable_)
 
 Make an iterator that drops elements from the _iterable_ as long as the _predicate_ is true; afterwards, returns every element. Note: the iterator does not produce any output until the predicate first becomes false, so it may have a lengthy start-up time. Equivalent to:
-```force_python
+```python3
 def dropwhile(predicate, iterable):
     # dropwhile(lambda x: x<5, [1,4,6,4,1]) --> 6 4 1
     iterable = iter(iterable)
@@ -1195,7 +1195,7 @@ positives = dropwhile(numiter, (x) -> x<0)
 ```
 
 ###### Python
-```force_python
+```python3
 import functools
 positives = functools.dropwhile(numiter, lambda x: x<0)
 ```
@@ -1209,7 +1209,7 @@ Coconut provides `itertools.tee` as a built-in under the name `tee`.
 **tee**(_iterable, n=2_)
 
 Return _n_ independent iterators from a single iterable. Equivalent to:
-```force_python
+```python3
 def tee(iterable, n=2):
     it = iter(iterable)
     deques = [collections.deque() for i in range(n)]
@@ -1235,7 +1235,7 @@ sliced = temp$[5:]
 ```
 
 ###### Python
-```force_python
+```python3
 import itertools
 original, temp = itertools.tee(original)
 sliced = itertools.islice(temp, 5, None)
@@ -1262,7 +1262,7 @@ range(10) |> map$((x) -> x**2) |> map$(print) |> consume
 ```
 
 ###### Python
-```force_python
+```python3
 collections.deque(map(print, map(lambda x: x**2, range(10))), maxlen=0)
 ```
 
@@ -1285,7 +1285,7 @@ data trilen(h):
 ```
 
 ###### Python
-```force_python
+```python3
 import collections
 class trilen(collections.namedtuple("trilen", "h")):
     __slots__ = ()
