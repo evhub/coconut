@@ -53,12 +53,13 @@ and much more!
 
 ### Installation
 
-At its very core, Coconut is a compiler that turns Coconut code into Python code. That means that anywhere where you can use a Python script, you can also use a compiled Coconut script. To access that core compiler, Coconut comes with a command-line utility, which can:
-- compile single Coconut files or entire Coconut projects
-- interpret Coconut code on-the-fly
-- hook into existing Python applications like IPython / Jupyter
+At its very core, Coconut is a compiler that turns Coconut code into Python code. That means that anywhere where you can use a Python script, you can also use a compiled Coconut script. To access that core compiler, Coconut comes with a command-line utility, which can
+- compile single Coconut files or entire Coconut projects,
+- interpret Coconut code on-the-fly, and
+- hook into existing Python applications like IPython / Jupyter.
 
 Installing Coconut, including all the features above, is drop-dead simple. Just
+
 1. install [Python](https://www.python.org/downloads/),
 2. open a command-line prompt,
 3. and enter:

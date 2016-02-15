@@ -27,18 +27,3 @@ Coconut is completely open-source, and new contributors are always welcome. Cont
 .. _Help: http://coconut.readthedocs.org/en/master/HELP.html
 .. _Docs: http://coconut.readthedocs.org/en/master/DOCS.html
 .. _GitHub: https://github.com/evhub/coconut
-
-Coconut Command-Line Interpreter
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. image:: http://i.imgur.com/zMQaGmi.png
-
-Coconut IPython Notebook
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. image:: http://i.imgur.com/g1PkjJJ.png
-
-Full Coconut Programs
-~~~~~~~~~~~~~~~~~~~~~
-
-.. image:: http://i.imgur.com/YQ0o7bs.png

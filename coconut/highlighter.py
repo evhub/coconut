@@ -18,8 +18,8 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from .command import *
 from pygments.lexers import Python3Lexer, PythonConsoleLexer
-from pygments.lexer import Lexer, RegexLexer, include, bygroups, using, default, words, combined, do_insertions
 from pygments.token import Text, Comment, Operator, Keyword, Name, String, Number, Punctuation, Generic, Other, Error
+from pygments.lexer import words
 
 #-----------------------------------------------------------------------------------------------------------------------
 # LEXERS:
