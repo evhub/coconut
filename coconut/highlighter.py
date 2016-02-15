@@ -59,9 +59,10 @@ class coclexer(Python3Lexer):
     tokens["backtick"] = [
         (r"`.*?`", String.Backtick)
     ]
-    tokens["name"] = tokens["name"] + [
-        (r">>>|\$|::", Operator)
-    ]
+    tokens["root"] = [
+        (r">>>", Generic.Prompt),
+        (r"\$|::", Operator)
+    ] + tokens["root"]
     tokens["builtins"] = tokens["builtins"] + [
         (words((
             "reduce",
