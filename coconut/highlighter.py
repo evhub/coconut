@@ -60,7 +60,6 @@ class coclexer(Python3Lexer):
         (r"`.*?`", String.Backtick)
     ]
     tokens["root"] = [
-        (r">>>", Generic.Prompt),
         (r"\$|::", Operator)
     ] + tokens["root"]
     tokens["builtins"] = tokens["builtins"] + [
@@ -75,9 +74,15 @@ class coclexer(Python3Lexer):
             ), prefix=r"(?<!\.)", suffix=r"\b"), Name.Builtin),
         (r"(?<!\.)MatchError\b", Name.Exception)
     ]
-    tokens["magicvars"] = (tokens["magicvars"] if "magicvars" in tokens else []) + [
+    magicvars = [
         (r"(?<!\.)__coconut_version__\b", Name.Variable.Magic)
     ]
+    if "magicvars" in tokens:
+        tokens["magicvars"] = tokens["magicvars"] + magicvars
+    elif "magicfuncs" in tokens:
+        tokens["magicfuncs"] = tokens["magicfuncs"] + magicvars
+    else:
+        tokens["builtins"] = tokens["builtins"] + magicvars
     tokens["numbers"] = tokens["numbers"] + [
         (r"\d+_[A-Za-z0-9]+", Number.Integer)
     ]
