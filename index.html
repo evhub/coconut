@@ -1,66 +1,94 @@
 <!DOCTYPE html>
 <html lang="en-us">
-  <head>
-    <meta charset="UTF-8">
-    <title>Coconut Programming Language</title>
-    <meta name="description" content="Simple, elegant, Pythonic functional programming.">
-    <meta name="keywords" content="Python, Functional, Programming, Language">
-    <meta name="author" content="Evan Hubinger">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
-    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
-    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
-  </head>
-  <body>
-    <section class="page-header">
-      <h1 class="project-name">Coconut</h1>
-      <h2 class="project-tagline">Simple, elegant, Pythonic functional programming.</h2>
-      <a href='http://coconut.readthedocs.org/en/master/HELP.html' class="btn">Tutorial</a>
-      <a href='http://coconut.readthedocs.org/en/master/DOCS.html' class="btn">Documentation</a>
-      <a href='https://github.com/evhub/coconut' class="btn">GitHub</a>
-      <a href='https://pypi.python.org/pypi/coconut' class="btn">PyPI</a>
-    </section>
-    <section class="main-content">
+<head>
+  <meta charset="UTF-8">
+  <title>Coconut Programming Language</title>
+  <meta name="description" content="Simple, elegant, Pythonic functional programming.">
+  <meta name="keywords" content="Python, Functional, Programming, Language">
+  <meta name="author" content="Evan Hubinger">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+  <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+  <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+</head>
+<body>
+<section class="page-header">
+  <h1 class="project-name">Coconut</h1>
+  <h2 class="project-tagline">Simple, elegant, Pythonic functional programming.</h2>
+  <a href='http://coconut.readthedocs.org/en/master/HELP.html' class="btn">Tutorial</a>
+  <a href='http://coconut.readthedocs.org/en/master/DOCS.html' class="btn">Documentation</a>
+  <a href='https://github.com/evhub/coconut' class="btn">GitHub</a>
+  <a href='https://pypi.python.org/pypi/coconut' class="btn">PyPI</a>
+</section>
+<section class="main-content">
 
-<h1><a id="coconut" class="anchor" href="#coconut" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Coconut</h1>
-<p>Coconut is a variant of <a href="https://www.python.org/">Python</a> built for <strong>simple, elegant, Pythonic functional programming</strong>.</p>
-<p>Coconut is hosted on <a href="https://pypi.python.org/pypi/coconut">PyPI</a>, where it has been downloaded <a href="http://pypi-ranking.info/module/coconut">over 30,000 times</a>. Installing Coconut is as easy as:</p>
+<h1>
+<a id="user-content-coconut" class="anchor" href="#coconut" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Coconut</h1>
+
+<p>Coconut is a <strong>simple, elegant, Pythonic functional programming language</strong> that compiles to <a href="https://www.python.org/">Python</a>. Since <strong>all valid Python is valid Coconut</strong>, joining the <a href="http://pypi-ranking.info/module/coconut">over 30,000 people</a> already using Coconut will only extend and enhance what you're already capable of in Python.</p>
+
+<p>Why use Coconut? Coconut is built to be fundamentally <strong>useful</strong>. Coconut enhances the repetoire of Python programmers to include the tools of modern functional programming, in such a way that those tools are <strong>easy</strong> to use and immensly <strong>powerful</strong>; that is, <strong>Coconut does to functional programming what Python did to imperative programming</strong>. And Coconut code runs the same on <strong>any Python version</strong>, making the Python 2/3 split a thing of the past.</p>
+
+<p>Specifically, Coconut adds to Python <strong>built-in, syntactical support</strong> for:</p>
+
+<ul>
+<li>pattern-matching</li>
+<li>algebraic data types</li>
+<li>destructuring assignment</li>
+<li>partial application</li>
+<li>lazy lists</li>
+<li>function composition</li>
+<li>prettier lambdas</li>
+<li>infix notation</li>
+<li>pipeline-style programming</li>
+<li>operator functions</li>
+</ul>
+
+<p>and much more!</p>
+
+<p>Installing Coconut is as easy as</p>
+
+<ol>
+<li>installing <a href="https://www.python.org/downloads/">Python</a>,</li>
+<li>opening a command-line prompt,</li>
+<li>and entering:</li>
+</ol>
+
 <div class="code-block">python -m pip install coconut</div>
-<p>If you&#8217;re new to Coconut, a <strong>straightforward, easy-to-follow tutorial</strong> of the Coconut Programming Language is provided in the Coconut <a href="http://coconut.readthedocs.org/en/master/HELP.html">Help</a>.</p>
-<p>If you&#8217;re looking for info about a specific feature, Coconut&#8217;s <strong>complete documentation</strong> can be accessed through the Coconut <a href="http://coconut.readthedocs.org/en/master/DOCS.html">Docs</a>.</p>
-<p>If you&#8217;re having a problem with Coconut, please <a href="https://github.com/evhub/coconut/issues/new">create a new issue</a> detailing the problem, and it will be addressed as soon as possible.</p>
-<p>Coconut is completely open-source, and new contributors are always welcome. Contributing to Coconut is as simple as forking Coconut on <a href="https://github.com/evhub/coconut">GitHub</a>, making your changes, and proposing a pull request.</p>
 
-<div class="section" id="coconut-command-line-interpreter">
-<h3><a id="coconut-command-line-interpreter" class="anchor" href="#coconut-command-line-interpreter" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Coconut Command-Line Interpeter</h3>
-<img alt="http://i.imgur.com/zMQaGmi.png" src="http://i.imgur.com/zMQaGmi.png" />
-</div>
-<br>
-<div class="section" id="coconut-ipython-notebook">
-<h3><a id="coconut-ipython-notebook" class="anchor" href="#coconut-ipython-notebook" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Coconut IPython Notebook</h3>
-<img alt="http://i.imgur.com/g1PkjJJ.png" src="http://i.imgur.com/g1PkjJJ.png" />
-</div>
-<br>
-<div class="section" id="full-coconut-programs">
-<h3><a id="full-coconut-programs" class="anchor" href="#full-coconut-programs" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Full Coconut Programs</h3>
-<img alt="http://i.imgur.com/YQ0o7bs.png" src="http://i.imgur.com/YQ0o7bs.png" />
-</div>
+<p>which will give you access to all the features of the Coconut command-line utility, including</p>
 
-      <footer class="site-footer">
-        <span class="site-footer-owner"><a href="https://github.com/evhub/coconut">Coconut</a> was created by <a href="https://github.com/evhub">Evan Hubinger</a> and is licensed under <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache 2.0</a>.</span>
-        <span class="site-footer-credits">The formatting of this page is based on the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> for <a href="https://pages.github.com">GitHub Pages</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
-      </footer>
-    </section>
-          <script type="text/javascript">
-            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
-            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
-          </script>
-          <script type="text/javascript">
-            try {
-              var pageTracker = _gat._getTracker("UA-16028750-7");
-            pageTracker._trackPageview();
-            } catch(err) {}
-          </script>
-  </body>
+<ul>
+<li>
+<strong>compiling</strong> single Coconut files or entire Coconut projects,</li>
+<li>
+<strong>interpreting</strong> Coconut code on-the-fly, and</li>
+<li>hooking into existing Python applications like <strong>IPython / Jupyter</strong>.</li>
+</ul>
+
+<p>Ready to get started? Head over to the Coconut <strong><a href="http://coconut.readthedocs.org/en/master/HELP.html">tutorial</a></strong> to start enhancing your Python now.</p>
+
+<p>Looking for information on a specific feature? Coconut's extensive <strong><a href="http://coconut.readthedocs.org/en/master/DOCS.html">documentation</a></strong> has you covered.</p>
+
+<p>Having trouble? <a href="https://github.com/evhub/coconut/issues/new">Create a new issue</a> detailing the problem and it will be addressed as soon as possible.</p>
+
+<p>Want to help contribute to Coconut development? Head over to Coconut's <a href="https://github.com/evhub/coconut">GitHub</a> for more information.</p>
+
+<footer class="site-footer">
+  <span class="site-footer-owner"><a href="https://github.com/evhub/coconut">Coconut</a> was created by <a href="https://github.com/evhub">Evan Hubinger</a> and is licensed under <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache 2.0</a>.</span>
+  <span class="site-footer-credits">The formatting of this page is based on the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> for <a href="https://pages.github.com">GitHub Pages</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+</footer>
+</section>
+  <script type="text/javascript">
+    var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+    document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+  </script>
+  <script type="text/javascript">
+    try {
+      var pageTracker = _gat._getTracker("UA-16028750-7");
+    pageTracker._trackPageview();
+    } catch(err) {}
+  </script>
+</body>
 </html>
