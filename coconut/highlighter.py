@@ -60,7 +60,7 @@ class coclexer(Python3Lexer):
         (r"`.*?`", String.Backtick)
     ]
     tokens["name"] = tokens["name"] + [
-        (r"\$|::", Operator)
+        (r">>>|\$|::", Operator)
     ]
     tokens["builtins"] = tokens["builtins"] + [
         (words((
