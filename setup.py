@@ -124,8 +124,8 @@ setuptools.setup(
             "coconut = coconut.__main__:main"
             ],
         "pygments.lexers": [
-            "force_python = coconut.highlighter:pylexer",
-            "force_pycon = coconut.highlighter:pyconlexer",
+            "coc_python = coconut.highlighter:pylexer",
+            "coc_pycon = coconut.highlighter:pyconlexer",
             "coconut = coconut.highlighter:coclexer"
             ]
         }

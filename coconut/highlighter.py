@@ -26,37 +26,29 @@ from pygments.lexer import words
 #-----------------------------------------------------------------------------------------------------------------------
 
 class pylexer(Python3Lexer):
-    """Lenient Python syntax highlighter."""
-    name = "force_python"
-    aliases = ["force_python", "force_py", "force_python3", "force_py3"]
+    """Coconut-style Python syntax highlighter."""
+    name = "coc_python"
+    aliases = ["coc_python", "coc_py", "coc_python3", "coc_py3"]
     filenames = []
 
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tablen, encoding=encoding):
         """Initialize the Python syntax highlighter."""
         super(pylexer, self).__init__(stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=encoding)
-    def add_filter(self, *args, **kwargs):
-        """Disables the raiseonerror filter."""
-        if len(args) >= 1 and args[0] != "raiseonerror":
-            super(pylexer, self).add_filter(*args, **kwargs)
 
 class pyconlexer(PythonConsoleLexer):
-    """Lenient Python console syntax highlighter."""
-    name = "force_pycon"
-    aliases = ["force_pycon", "force_pycon3"]
+    """Coconut-style Python console syntax highlighter."""
+    name = "coc_pycon"
+    aliases = ["coc_pycon", "coc_pycon3"]
     filenames = []
 
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tablen, encoding=encoding, python3=True):
         """Initialize the Python console syntax highlighter."""
         super(pyconlexer, self).__init__(stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=encoding, python3=python3)
-    def add_filter(self, *args, **kwargs):
-        """Disables the raiseonerror filter."""
-        if len(args) >= 1 and args[0] != "raiseonerror":
-            super(pyconlexer, self).add_filter(*args, **kwargs)
 
 class coclexer(Python3Lexer):
     """Coconut syntax highlighter."""
     name = "coconut"
-    aliases = ["coconut", "force_coconut", "coc", "force_coc", "coconutcon", "force_coconutcon"]
+    aliases = ["coconut", "coc", "coconutcon"]
     filenames = ["*"+code_ext]
 
     tokens = Python3Lexer.tokens.copy()

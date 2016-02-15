@@ -95,7 +95,7 @@ In case you missed it earlier, _all valid Python 3 is valid Coconut_ (with one v
 
 That means that if you're familiar with Python, you're already familiar with a good deal of Coconut's core syntax and Coconut's entire standard library. To show that, let's try entering some basic Python into the Coconut interpreter.
 
-```pycon3
+```coc_pycon
 >>> print("hello, world!")
 hello, world!
 >>> 1 + 1
@@ -114,7 +114,7 @@ First, we're going to need to create a file to put our code into. The file exten
 _Note: in Sublime Text, this is done by opening the `.coc` file, clicking on "Plain Text" at the bottom right, selecting "Open all with current extension as...", and then choosing "Python"._
 
 Now let's put some code in our `hello_world.coc` file. Unlike in Python, where headers like
-```python3
+```coc_python
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 from __future__ import print_function, absolute_import, unicode_literals, division
@@ -122,7 +122,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 are common and often very necessary, the Coconut compiler will automatically take care of all of that for you, so all you need to worry about is your own code. To that end, let's add the code for our "hello, world!" program.
 
 In pure Python 3, "hello, world!" is
-```python3
+```coc_python
 print("hello, world!")
 ```
 and while that will work in Coconut, equally as valid is to use a pipeline-style approach, which is what we'll do, and write
