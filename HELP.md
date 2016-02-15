@@ -63,12 +63,12 @@ Installing Coconut, including all the features above, is drop-dead simple. Just
 1. install [Python](https://www.python.org/downloads/),
 2. open a command-line prompt,
 3. and enter:
-```bash
+```
 python -m pip install coconut
 ```
 
 To check that your installation is functioning properly, try entering into the command-line
-```bash
+```
 coconut -h
 ```
 which should display Coconut's command-line help.
@@ -80,7 +80,7 @@ _Note: if you're having trouble installing Coconut, or if anything else mentione
 ### Using the Interpreter
 
 Now that you've got Coconut installed, the obvious first thing to do is to play around with it. To launch the Coconut interpreter, just go to the command-line and type
-```bash
+```
 coconut
 ```
 and you should see something like
@@ -132,16 +132,16 @@ and while that will work in Coconut, equally as valid is to use a pipeline-style
 which should let you see very clearly how Coconut's `|>` operator enables pipeline-style programming: it allows an object to be passed along from function to function, with a different operation performed at each step. In this case, we are piping the object `"hello, world!"` into the operation `print`. Now let's save our simple "hello, world!" program, and try to run it.
 
 Compiling Coconut files and projects with the Coconut command-line utility is incredibly simple. Just type
-```bash
+```
 coconut /directory/to/hello_world.coc
 ```
 where `/directory/to/` is the path from the current working directory to `hello_world.coc`. Running this command should yield the output
-```bash
+```
 Coconut: Compiling       /directory/to/hello_world.coc ...
 Coconut: Compiled to     /directory/to/hello_world.py .
 ```
 which should deposit a new `hello_world.py` file in the same directory as the `hello_world.coc` file. You should then be able to run that file with
-```bash
+```
 python /directory/to/hello_world.py
 ```
 which should produce `hello, world!` as the output.
@@ -157,11 +157,11 @@ Although all different types of programming can benefit from using more function
 That means supporting IPython / Jupyter, as modern Python programming, particularly in the sciences, has gravitated towards the use of [IPython](http://ipython.org/) (the python kernel for the [Jupyter](http://jupyter.org/) framework) instead of the classic Python shell. Coconut supports being used both as a kernel for Jupyter notebooks and consoles, and as an extension inside of the IPython kernel.
 
 To launch a Jupyter notebook with Coconut as the kernel, use the command
-```bash
+```
 coconut --jupyter notebook
 ```
 and to launch a Jupyter console, use the command
-```bash
+```
 coconut --jupyter console
 ```
 or equivalently, `--ipython` can be substituted for `--jupyter` in either command.

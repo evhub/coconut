@@ -82,13 +82,13 @@ While most of Coconut gets its inspiration simply from trying to make functional
 ### Installation
 
 Since Coconut is hosted on the [Python Package Index](https://pypi.python.org/pypi/coconut), it can be installed easily using `pip`. Simply install [Python](https://www.python.org/downloads/), open up a command-line prompt, and enter:
-```bash
+```
 python -m pip install coconut
 ```
 
 ### Usage
 
-```bash
+```
 coconut [-h] [-v] [source] [dest] [-t version] [-s] [-p] [-a] [-f] [-d] [-r] [-n] [-i] [-q] [-c code] [--jupyter ...] [--autopep8 ...] [--color color] [--debug]
 ```
 
