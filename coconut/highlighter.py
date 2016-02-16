@@ -83,12 +83,12 @@ class coclexer(Python3Lexer):
         tokens["magicfuncs"] = tokens["magicfuncs"] + magicvars
     else:
         tokens["builtins"] = tokens["builtins"] + magicvars
-    tokens["numbers"] = tokens["numbers"] + [
-        (r"\d[\d_]*(\.\d[\d_]*)?(i|I|j|J)?", Number.Integer),
-        (r"0b[\d_]*", Number.Integer),
-        (r"0o[\d_]*", Number.Integer),
-        (r"0x[\d_]*", Number.Integer)
-    ]
+    tokens["numbers"] = [
+        (r"\d[\d_]*(\.\d[\d_]*)?", Number.Integer),
+        (r"0b[01_]+", Number.Integer),
+        (r"0o[0-7_]+", Number.Integer),
+        (r"0x[\da-fA-F_]+", Number.Integer)
+    ] + tokens["numbers"]
 
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tablen, encoding=encoding):
         """Initialize the Python syntax highlighter."""
