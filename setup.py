@@ -117,7 +117,7 @@ setuptools.setup(
         ],
     packages = setuptools.find_packages(),
     install_requires = [
-        "pyparsing==2.1.0"
+        "pyparsing==2.0.7"
         ],
     entry_points = {
         "console_scripts": [
