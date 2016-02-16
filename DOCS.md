@@ -1298,13 +1298,14 @@ Coconut provides a `recursive` decorator to perform tail recursion optimization 
 ###### Coconut
 ```coconut
 @recursive
-def collatz(n):
-    if n == 1:
-        return True
-    elif n%2 == 0:
-        return collatz(n/2)
+def factorial(n, acc=1):
+    case n:
+        match 0:
+            return acc
+        match _ is int if n > 0:
+            return factorial(n-1, acc*n)
     else:
-        return collatz(3*n+1)
+        raise TypeError("the argument to factorial must be an integer >= 0")
 ```
 
 ###### Python

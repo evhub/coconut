@@ -22,6 +22,49 @@ from pygments.token import Text, Comment, Operator, Keyword, Name, String, Numbe
 from pygments.lexer import words
 
 #-----------------------------------------------------------------------------------------------------------------------
+# CONSTANTS:
+#-----------------------------------------------------------------------------------------------------------------------
+
+builtins = (
+    "reduce",
+    "takewhile",
+    "dropwhile",
+    "tee",
+    "recursive",
+    "datamaker",
+    "consume"
+    )
+
+operators = (
+    r"@",
+    r"\$",
+    r"::",
+    r"\u2192",
+    r"\u21a6",
+    r"\u21a4",
+    r"\u22c5",
+    r"\u2191",
+    r"\xf7",
+    r"\u2212",
+    r"\u207b",
+    r"\xac",
+    r"\xac=",
+    r"\u2260",
+    r"\u2264",
+    r"\u2265",
+    r"\u2227",
+    r"\u2229",
+    r"\u2228",
+    r"\u222a",
+    r"\u22bb",
+    r"\u2295",
+    r"\xab",
+    r"\xbb",
+    r"\xd7",
+    r"\u2026"
+    )
+
+#-----------------------------------------------------------------------------------------------------------------------
 # LEXERS:
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -60,18 +103,10 @@ class coclexer(Python3Lexer):
         (r"`.*?`", String.Backtick)
     ]
     tokens["root"] = [
-        (r"\$|::", Operator)
+        (r"|".join(operators), Operator)
     ] + tokens["root"]
     tokens["builtins"] = tokens["builtins"] + [
-        (words((
-            "reduce",
-            "takewhile",
-            "dropwhile",
-            "tee",
-            "recursive",
-            "datamaker",
-            "consume"
-            ), prefix=r"(?<!\.)", suffix=r"\b"), Name.Builtin),
+        (words(builtins, prefix=r"(?<!\.)", suffix=r"\b"), Name.Builtin),
         (r"(?<!\.)MatchError\b", Name.Exception)
     ]
     magicvars = [
