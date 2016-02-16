@@ -84,7 +84,10 @@ class coclexer(Python3Lexer):
     else:
         tokens["builtins"] = tokens["builtins"] + magicvars
     tokens["numbers"] = tokens["numbers"] + [
-        (r"\d+_[A-Za-z0-9]+", Number.Integer)
+        (r"\d[\d_]*(\.\d[\d_]*)?(i|I|j|J)?", Number.Integer),
+        (r"0b[\d_]*", Number.Integer),
+        (r"0o[\d_]*", Number.Integer),
+        (r"0x[\d_]*", Number.Integer)
     ]
 
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tablen, encoding=encoding):

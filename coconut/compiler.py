@@ -291,7 +291,7 @@ else:
     import collections.abc as abc
 '''
             header += r'''
-object, int, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii = object, int, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii
+object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii = object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii
 
 def recursive(func):
     """Returns tail-call-optimized function."""
@@ -352,7 +352,7 @@ class __coconut__(object):
     else:
         import collections.abc as abc'''
                 header += r'''
-    object, int, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii = object, int, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii
+    object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii = object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii
     @staticmethod
     def recursive(func):
         """Returns tail-call-optimized function."""
@@ -524,14 +524,6 @@ class tracer(object):
 #-----------------------------------------------------------------------------------------------------------------------
 # PROCESSORS:
 #-----------------------------------------------------------------------------------------------------------------------
-
-def anyint_proc(tokens):
-    """Replaces underscored integers."""
-    if len(tokens) == 1:
-        base, item = tokens[0].split("_")
-        return '__coconut__.int("'+item+'", '+base+")"
-    else:
-        raise CoconutException("invalid anyint tokens", tokens)
 
 def list_proc(tokens):
     """Properly formats lists."""
@@ -2042,25 +2034,21 @@ class processor(object):
         name |= fixto(backslash + Keyword(k), k)
     dotted_name = condense(name + ZeroOrMore(dot + name))
 
-    integer = Word(nums)
-    binint = Word("01")
-    octint = Word("01234567")
-    hexint = Word(hexnums)
-    anyint = Word(nums, alphanums)
+    integer = Combine(Word(nums) + ZeroOrMore(underscore.suppress() + Word(nums)))
+    binint = Combine(Word("01") + ZeroOrMore(underscore.suppress() + Word("01")))
+    octint = Combine(Word("01234567") + ZeroOrMore(underscore.suppress() + Word("01234567")))
+    hexint = Combine(Word(hexnums) + ZeroOrMore(underscore.suppress() + Word(hexnums)))
 
     basenum = Combine(integer + dot + Optional(integer) | Optional(integer) + dot + integer) | integer
     sci_e = Combine(CaselessLiteral("e") + Optional(plus | neg_minus))
     numitem = Combine(basenum + sci_e + integer) | basenum
     complex_i = CaselessLiteral("j") | fixto(CaselessLiteral("i"), "j")
     complex_num = Combine(numitem + complex_i)
+    bin_num = Combine(CaselessLiteral("0b") + Optional(underscore.suppress()) + binint)
+    oct_num = Combine(CaselessLiteral("0o") + Optional(underscore.suppress()) + octint)
+    hex_num = Combine(CaselessLiteral("0x") + Optional(underscore.suppress()) + hexint)
 
-    number = (attach(Combine(integer + underscore + anyint), anyint_proc)
-              | Combine(CaselessLiteral("0b") + binint)
-              | Combine(CaselessLiteral("0o") + octint)
-              | Combine(CaselessLiteral("0x") + hexint)
-              | complex_num
-              | numitem
-              )
+    number = bin_num | oct_num | hex_num | complex_num | numitem
 
     string_ref = Forward()
     moduledoc_ref = Forward()

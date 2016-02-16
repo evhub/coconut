@@ -34,7 +34,7 @@
     2. [Implicit Partial Application](#implicit-partial-application)
     3. [Set Literals](#set-literals)
     4. [Imaginary Literals](#imaginary-literals)
-    5. [Non-Decimal Integers](#non-decimal-integers)
+    5. [Underscore Seperators](#underscore-seperators)
 5. [Function Notation](#function-notation)
     1. [Operator Functions](#operator-functions)
     2. [Shorthand Functions](#shorthand-functions)
@@ -787,24 +787,20 @@ An imaginary literal yields a complex number with a real part of 0.0. Complex nu
 abs(3 + 4j)
 ```
 
-### Non-Decimal Integers
+### Underscore Seperators
 
-In addition to Python's binary, octal, and hexadecimal integer syntax, Coconut also supports its own universal non-decimal integer syntax `base_num`. This allows support for all bases and improves readability over Python's C-style notation.
-
-##### Python Docs
-
-A base-n literal consists of the digits 0 to n-1, with `a` to `z` (or `A` to `Z`) having values 10 to 35. The default base is 10. The allowed values are 0 and 2-36. Base 0 means to interpret exactly as a code literal, so that the actual base is 2, 8, 10, or 16, and so that `010`, `0_0o10`, and `8_010` are 8, while `10`, `0_10`, and `10_010` are 10.
+Coconut allows for one underscore between digits and after base specifiers in numeric literals. These underscores are ignored and should only be used to increase code readability.
 
 ##### Example
 
 ###### Coconut
 ```coconut
-12_10A == 154
+10_000_000.0
 ```
 
 ###### Python
 ```
-int("10A", 12) == 154
+10000000.0
 ```
 
 ## Function Notation
