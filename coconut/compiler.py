@@ -27,7 +27,7 @@ import traceback
 from zlib import crc32 as checksum
 
 encoding = "UTF-8"
-hash_prefix = '# __coconut_hash__ = '
+hash_prefix = "# __coconut_hash__ = "
 hash_sep = "\x00"
 openindent = "\u204b"
 closeindent = "\xb6"
