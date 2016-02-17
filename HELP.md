@@ -529,7 +529,7 @@ The last method we'll implement is multiplication. This one is a little bit tric
         else:
             return self.pts |> map$((*)$(other)) |*> vector # scalar multiple
     def __rmul__(self, other):
-        """Necessary to make vector multiplication commutative."""
+        """Necessary to make scalar multiplication commutative."""
         return self * other
 ```
 
@@ -575,7 +575,7 @@ data vector(pts):
         else:
             return self.pts |> map$((*)$(other)) |*> vector # scalar multiplication
     def __rmul__(self, other):
-        """Necessary to make vector multiplication commutative."""
+        """Necessary to make scalar multiplication commutative."""
         return self * other
 
 # Test cases:
@@ -796,7 +796,7 @@ data vector(pts):
         else:
             return self.pts |> map$((*)$(other)) |*> vector # scalar multiplication
     def __rmul__(self, other):
-        """Necessary to make vector multiplication commutative."""
+        """Necessary to make scalar multiplication commutative."""
         return self * other
 
 def diagonal_line(n) = range(n+1) |> map$((i) -> (i, n-i))
