@@ -996,7 +996,7 @@ class matcher(object):
             out += other.out()
         return out
 
-def match_proc(tokens):
+def match_proc(o, l, tokens, top=True):
     """Processes match blocks."""
     if len(tokens) == 3:
         matches, item, stmts = tokens
@@ -1010,7 +1010,9 @@ def match_proc(tokens):
     if cond:
         matching.increment(True)
         matching.add_check(cond)
-    out = match_check_var + " = False\n"
+    out = ""
+    if top:
+        out += match_check_var + " = False\n"
     out += match_to_var + " = " + item + "\n"
     out += matching.out()
     if stmts is not None:
@@ -1030,7 +1032,7 @@ def pattern_error(original, loc):
 def match_assign_proc(original, loc, tokens):
     """Processes match assign blocks."""
     matches, item = tokens
-    out = match_proc((matches, item, None))
+    out = match_proc(original, loc, (matches, item, None))
     out += pattern_error(original, loc)
     return out
 
@@ -1045,7 +1047,7 @@ def case_to_match(tokens, item):
     else:
         raise CoconutException("invalid case match tokens", tokens)
 
-def case_proc(tokens):
+def case_proc(o, l, tokens):
     """Processes case blocks."""
     if len(tokens) == 2:
         item, cases = tokens
@@ -1054,10 +1056,10 @@ def case_proc(tokens):
         item, cases, default = tokens
     else:
         raise CoconutException("invalid top-level case tokens", tokens)
-    out = match_proc(case_to_match(cases[0], item))
+    out = match_proc(o, l, case_to_match(cases[0], item))
     for case in cases[1:]:
         out += ("if not "+match_check_var+":\n" + openindent
-            + match_proc(case_to_match(case, item)) + closeindent)
+            + match_proc(o, l, case_to_match(case, item), top=False) + closeindent)
     if default is not None:
         out += "if not "+match_check_var+default
     return out
