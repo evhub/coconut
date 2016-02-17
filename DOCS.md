@@ -1268,7 +1268,7 @@ Coconut provides the `datamaker` function to allow direct access to the base con
 ```coconut
 def datamaker(data_type):
     """Returns base data constructor of data_type."""
-    return super(data, data_type).__new__$(data_type)
+    return super(data_type, data_type).__new__$(data_type)
 ```
 
 ##### Example
