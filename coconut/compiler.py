@@ -2046,9 +2046,9 @@ class processor(object):
     numitem = Combine(basenum + sci_e + integer) | basenum
     complex_i = CaselessLiteral("j") | fixto(CaselessLiteral("i"), "j")
     complex_num = Combine(numitem + complex_i)
-    bin_num = Combine(CaselessLiteral("0b") + Optional(underscore.suppress()) - binint)
-    oct_num = Combine(CaselessLiteral("0o") + Optional(underscore.suppress()) - octint)
-    hex_num = Combine(CaselessLiteral("0x") + Optional(underscore.suppress()) - hexint)
+    bin_num = Combine(CaselessLiteral("0b") + Optional(underscore.suppress()) + binint)
+    oct_num = Combine(CaselessLiteral("0o") + Optional(underscore.suppress()) + octint)
+    hex_num = Combine(CaselessLiteral("0x") + Optional(underscore.suppress()) + hexint)
 
     number = bin_num | oct_num | hex_num | complex_num | numitem
 
@@ -2131,8 +2131,8 @@ class processor(object):
     multi_testlist = addspace(OneOrMore(condense(test + comma)) + Optional(test))
 
     dict_comp_ref = Forward()
-    yield_classic = addspace(Keyword("yield") - testlist)
-    yield_from = attach(Keyword("yield").suppress() + Keyword("from").suppress() - test, yield_from_proc)
+    yield_classic = addspace(Keyword("yield") + testlist)
+    yield_from = attach(Keyword("yield").suppress() + Keyword("from").suppress() + test, yield_from_proc)
     yield_expr = yield_from | yield_classic
     dict_comp = addspace(condense(test + colon) + test + comp_for)
     dict_item = addspace(itemlist(addspace(condense(test + colon) + test), comma))
@@ -2227,7 +2227,7 @@ class processor(object):
     known_subscriptgroup = Group(known_atom)
     simple_trailer = condense(lbrack + subscriptlist + rbrack) | condense(dot + name)
     trailer = (
-        Group(condense(dollar + lparen) - callargslist - rparen.suppress())
+        Group(condense(dollar + lparen) + callargslist + rparen.suppress())
         | condense(lparen + callargslist + rparen)
         | Group(dotdot + func_atom)
         | Group(fixto(dollar + lbrack, "$[=") + known_subscriptgroup + rbrack.suppress())
@@ -2290,16 +2290,16 @@ class processor(object):
     new_lambdef_params = lparen.suppress() + varargslist + rparen.suppress()
 
     classic_lambdef_ref = Forward()
-    classic_lambdef = addspace(Keyword("lambda") - condense(classic_lambdef_params - colon) - test)
-    new_lambdef = attach(new_lambdef_params + arrow.suppress() - test, lambdef_proc)
+    classic_lambdef = addspace(Keyword("lambda") + condense(classic_lambdef_params + colon) + test)
+    new_lambdef = attach(new_lambdef_params + arrow.suppress() + test, lambdef_proc)
     lambdef = trace(classic_lambdef_ref | new_lambdef, "lambdef")
 
     classic_lambdef_nocond_ref = Forward()
-    classic_lambdef_nocond = addspace(Keyword("lambda") - condense(classic_lambdef_params - colon) - test_nocond)
-    new_lambdef_nocond = attach(new_lambdef_params + arrow.suppress() - test_nocond, lambdef_proc)
+    classic_lambdef_nocond = addspace(Keyword("lambda") + condense(classic_lambdef_params + colon) + test_nocond)
+    new_lambdef_nocond = attach(new_lambdef_params + arrow.suppress() + test_nocond, lambdef_proc)
     lambdef_nocond = trace(classic_lambdef_nocond_ref | new_lambdef_nocond, "lambdef_nocond")
 
-    test <<= lambdef | trace(addspace(test_item + Optional(Keyword("if") - test_item - Keyword("else") - test)), "test")
+    test <<= lambdef | trace(addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test)), "test")
     test_nocond <<= lambdef_nocond | trace(test_item, "test_item")
 
     simple_stmt = Forward()
@@ -2313,8 +2313,8 @@ class processor(object):
     classlist = Optional(lparen.suppress() + Optional(Group(itemlist(name, comma)("names") ^ varargslist_req("args"))) + rparen.suppress())
     classdef = condense(addspace(Keyword("class") - name) + classlist_ref + suite)
     comp_iter = Forward()
-    comp_for <<= addspace(Keyword("for") - assignlist - Keyword("in") - test_item + Optional(comp_iter))
-    comp_if = addspace(Keyword("if") - test_nocond + Optional(comp_iter))
+    comp_for <<= addspace(Keyword("for") + assignlist + Keyword("in") + test_item + Optional(comp_iter))
+    comp_if = addspace(Keyword("if") + test_nocond + Optional(comp_iter))
     comp_iter <<= comp_for | comp_if
 
     complex_raise_stmt_ref = Forward()
@@ -2501,7 +2501,7 @@ class processor(object):
     nonlocal_stmt_ref = Forward()
     keyword_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt_ref | global_stmt | nonlocal_stmt_ref | assert_stmt
     small_stmt = trace(keyword_stmt | expr_stmt, "small_stmt")
-    simple_stmt <<= trace(condense(itemlist(small_stmt, semicolon) - newline), "simple_stmt")
+    simple_stmt <<= trace(condense(itemlist(small_stmt, semicolon) + newline), "simple_stmt")
     stmt <<= trace(compound_stmt | simple_stmt, "stmt")
     base_suite <<= condense(newline - indent - OneOrMore(stmt) - dedent)
     suite <<= trace(condense(colon + base_suite) | addspace(colon + simple_stmt), "suite")
