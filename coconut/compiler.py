@@ -445,7 +445,7 @@ def addskip(skips, skip):
 def count_end(teststr, testchar):
     """Counts instances of testchar at end of teststr."""
     count = 0
-    x = len(teststr) - 1
+    x = len(teststr)-1
     while x >= 0 and teststr[x] == testchar:
         count += 1
         x -= 1
@@ -863,7 +863,7 @@ class matcher(object):
         else:
             raise CoconutException("invalid series match type", series_type)
         for x in range(0, len(match)):
-            self.match(match[x], item+"["+str(x - len(match))+"]")
+            self.match(match[x], item+"["+str(x-len(match))+"]")
 
     def match_msequence(self, original, item):
         """Matches a middle sequence."""
@@ -887,7 +887,7 @@ class matcher(object):
         for x in range(0, len(head_match)):
             self.match(head_match[x], item+"["+str(x)+"]")
         for x in range(0, len(last_match)):
-            self.match(last_match[x], item+"["+str(x - len(last_match))+"]")
+            self.match(last_match[x], item+"["+str(x-len(last_match))+"]")
 
     def match_const(self, original, item):
         """Matches a constant."""
@@ -1488,7 +1488,7 @@ class processor(object):
             elif inputstring[x] == "\t":
                 if self.indchar is None:
                     self.indchar = "\t"
-                count += tablen - x % tablen
+                count += tablen-x%tablen
             else:
                 break
             if self.indchar != inputstring[x]:
@@ -2373,9 +2373,9 @@ class processor(object):
     matchlist_name = name | lparen.suppress() + itemlist(name, comma) + rparen.suppress()
     matchlist_is = base_match + Keyword("is").suppress() - matchlist_name
     is_match = Group(matchlist_is("is")) | base_match
-    matchlist_and = is_match - OneOrMore(Keyword("and").suppress() - is_match)
+    matchlist_and = is_match + OneOrMore(Keyword("and").suppress() - is_match)
     and_match = Group(matchlist_and("and")) | is_match
-    matchlist_or = and_match - OneOrMore(Keyword("or").suppress() - and_match)
+    matchlist_or = and_match + OneOrMore(Keyword("or").suppress() - and_match)
     or_match = Group(matchlist_or("or")) | and_match
     match <<= trace(or_match, "match")
 
@@ -2384,12 +2384,12 @@ class processor(object):
 
     full_suite = colon.suppress() + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
     full_match = trace(attach(
-        Keyword("match").suppress() - match - Keyword("in").suppress() - test - Optional(Keyword("if").suppress() - test) - full_suite
+        Keyword("match").suppress() + match + Keyword("in").suppress() - test - Optional(Keyword("if").suppress() - test) - full_suite
         , match_proc), "full_match")
     match_stmt = condense(full_match - Optional(else_stmt))
 
     match_assign_stmt = trace(attach(
-        (Keyword("match").suppress() | ~(assignlist+equals)) + match + equals.suppress() + test_expr + newline.suppress()
+        (Keyword("match").suppress() | ~(assignlist+equals)) + match + equals.suppress() - test_expr - newline.suppress()
         , match_assign_proc), "match_assign_stmt")
 
     case_match = trace(Group(
