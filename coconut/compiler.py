@@ -2367,7 +2367,7 @@ class processor(object):
         | ((match_list | match_tuple) + Optional(plus.suppress() - name))("series")
         | (name + plus.suppress() - (match_list | match_tuple))("rseries")
         | (name + equals.suppress() - match)("assign")
-        | (name + lparen.suppress() - matchlist_list - rparen.suppress())("data")
+        | (name + lparen.suppress() + matchlist_list + rparen.suppress())("data")
         | name("var")
         )
     matchlist_name = name | lparen.suppress() + itemlist(name, comma) + rparen.suppress()
