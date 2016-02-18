@@ -2503,7 +2503,7 @@ class processor(object):
     small_stmt = trace(keyword_stmt | expr_stmt, "small_stmt")
     simple_stmt <<= trace(condense(itemlist(small_stmt, semicolon) + newline), "simple_stmt")
     stmt <<= trace(compound_stmt | simple_stmt, "stmt")
-    base_suite <<= condense(newline - indent - OneOrMore(stmt) - dedent)
+    base_suite <<= condense(newline + indent + OneOrMore(stmt) + dedent)
     suite <<= trace(condense(colon + base_suite) | addspace(colon + simple_stmt), "suite")
     line = trace(newline | stmt, "line")
 
