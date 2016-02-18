@@ -1985,7 +1985,7 @@ class processor(object):
     rbrack = Literal("]")
     lbrace = Literal("{")
     rbrace = Literal("}")
-    lbanana = Literal("(|")
+    lbanana = ~Literal("(|)")+~Literal("(|>)")+~Literal("(|*>)")+Literal("(|")
     rbanana = Literal("|)")
     lparen = ~lbanana+Literal("(")
     rparen = ~rbanana+Literal(")")
@@ -2210,11 +2210,11 @@ class processor(object):
         | set_letter_literal_ref
         | lazy_list
         )
-    atom = (
+    atom = trace(
         known_atom
         | passthrough_atom
         | func_atom
-        )
+        , "atom")
 
     slicetest = Optional(test)
     sliceop = condense(colon + slicetest)
@@ -2502,7 +2502,7 @@ class processor(object):
     small_stmt = trace(keyword_stmt | expr_stmt, "small_stmt")
     simple_stmt <<= trace(condense(itemlist(small_stmt, semicolon) + newline), "simple_stmt")
     stmt <<= trace(compound_stmt | simple_stmt, "stmt")
-    base_suite <<= condense(newline + indent + OneOrMore(stmt) + dedent)
+    base_suite <<= condense(newline + indent - OneOrMore(stmt) - dedent)
     suite <<= trace(condense(colon + base_suite) | addspace(colon + simple_stmt), "suite")
     line = trace(newline | stmt, "line")
 
