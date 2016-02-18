@@ -2046,9 +2046,9 @@ class processor(object):
     numitem = Combine(basenum + sci_e + integer) | basenum
     complex_i = CaselessLiteral("j") | fixto(CaselessLiteral("i"), "j")
     complex_num = Combine(numitem + complex_i)
-    bin_num = Combine(CaselessLiteral("0b") + Optional(underscore.suppress()) + binint)
-    oct_num = Combine(CaselessLiteral("0o") + Optional(underscore.suppress()) + octint)
-    hex_num = Combine(CaselessLiteral("0x") + Optional(underscore.suppress()) + hexint)
+    bin_num = Combine(CaselessLiteral("0b") + Optional(underscore.suppress()) - binint)
+    oct_num = Combine(CaselessLiteral("0o") + Optional(underscore.suppress()) - octint)
+    hex_num = Combine(CaselessLiteral("0x") + Optional(underscore.suppress()) - hexint)
 
     number = bin_num | oct_num | hex_num | complex_num | numitem
 
@@ -2131,8 +2131,8 @@ class processor(object):
     multi_testlist = addspace(OneOrMore(condense(test + comma)) + Optional(test))
 
     dict_comp_ref = Forward()
-    yield_classic = addspace(Keyword("yield") + testlist)
-    yield_from = attach(Keyword("yield").suppress() + Keyword("from").suppress() + test, yield_from_proc)
+    yield_classic = addspace(Keyword("yield") - testlist)
+    yield_from = attach(Keyword("yield").suppress() + Keyword("from").suppress() - test, yield_from_proc)
     yield_expr = yield_from | yield_classic
     dict_comp = addspace(condense(test + colon) + test + comp_for)
     dict_item = addspace(itemlist(addspace(condense(test + colon) + test), comma))
@@ -2195,7 +2195,7 @@ class processor(object):
     set_literal = lbrace.suppress() + setmaker + rbrace.suppress()
     set_letter_literal = set_letter + lbrace.suppress() + Optional(setmaker) + rbrace.suppress()
     lazy_items = Optional(test + ZeroOrMore(comma.suppress() + test) + Optional(comma.suppress()))
-    lazy_list = attach(lbanana.suppress() + lazy_items + rbanana.suppress(), lazy_list_proc)
+    lazy_list = attach(lbanana.suppress() - lazy_items - rbanana.suppress(), lazy_list_proc)
     const_atom = (
         keyword_atom
         | number
@@ -2227,7 +2227,7 @@ class processor(object):
     known_subscriptgroup = Group(known_atom)
     simple_trailer = condense(lbrack + subscriptlist + rbrack) | condense(dot + name)
     trailer = (
-        Group(condense(dollar + lparen) + callargslist + rparen.suppress())
+        Group(condense(dollar + lparen) - callargslist - rparen.suppress())
         | condense(lparen + callargslist + rparen)
         | Group(dotdot + func_atom)
         | Group(fixto(dollar + lbrack, "$[=") + known_subscriptgroup + rbrack.suppress())
@@ -2242,64 +2242,63 @@ class processor(object):
     assignlist = Forward()
     star_assign_item_ref = Forward()
     simple_assign = condense(name + ZeroOrMore(simple_trailer))
-    base_assign_item = condense(simple_assign | lparen + assignlist + rparen | lbrack + assignlist + rbrack)
-    star_assign_item = condense(star + base_assign_item)
+    base_assign_item = condense(simple_assign | lparen - assignlist - rparen | lbrack - assignlist - rbrack)
+    star_assign_item = condense(star - base_assign_item)
     assign_item = star_assign_item_ref | base_assign_item
     assignlist <<= itemlist(assign_item, comma)
 
     atom_item_ref = Forward()
     atom_item = atom + ZeroOrMore(trailer)
 
-    factor = Forward()
     await_keyword_ref = Forward()
     await_keyword = Keyword("await")
-    power = trace(condense(addspace(Optional(await_keyword_ref) + atom_item_ref) + Optional(exp_dubstar + factor)), "power")
+    power = trace(condense(addspace(Optional(await_keyword_ref) + atom_item_ref) + Optional(exp_dubstar - factor)), "power")
     unary = plus | neg_minus | tilde
 
-    factor <<= trace(condense(unary + factor) | power, "factor")
+    factor = trace(ZeroOrMore(unary) + power, "factor")
 
     mulop = mul_star | div_dubslash | div_slash | percent | matrix_at_ref
-    term = addspace(factor + ZeroOrMore(mulop + factor))
+    term = addspace(factor + ZeroOrMore(mulop - factor))
     arith = plus | sub_minus
-    arith_expr = addspace(term + ZeroOrMore(arith + term))
+    arith_expr = addspace(term + ZeroOrMore(arith - term))
 
     shift = lshift | rshift
-    shift_expr = addspace(arith_expr + ZeroOrMore(shift + arith_expr))
-    and_expr = addspace(shift_expr + ZeroOrMore(amp + shift_expr))
-    xor_expr = addspace(and_expr + ZeroOrMore(caret + and_expr))
-    or_expr = addspace(xor_expr + ZeroOrMore(bar + xor_expr))
+    shift_expr = addspace(arith_expr + ZeroOrMore(shift - arith_expr))
+    and_expr = addspace(shift_expr + ZeroOrMore(amp - shift_expr))
+    xor_expr = addspace(and_expr + ZeroOrMore(caret - and_expr))
+    or_expr = addspace(xor_expr + ZeroOrMore(bar - xor_expr))
 
-    chain_expr = attach(or_expr + ZeroOrMore(dubcolon.suppress() + or_expr), chain_proc)
+    chain_expr = attach(or_expr + ZeroOrMore(dubcolon.suppress() - or_expr), chain_proc)
 
     infix_expr = Forward()
-    infix_op = condense(backtick.suppress() + chain_expr + backtick.suppress())
+    infix_op = condense(backtick.suppress() - chain_expr - backtick.suppress())
     infix_item = attach(Group(Optional(chain_expr)) + infix_op + Group(Optional(infix_expr)), infix_proc)
     infix_expr <<= infix_item | chain_expr
 
     pipe_op = pipeline | starpipe | backpipe | backstarpipe
-    pipe_expr = attach(infix_expr + ZeroOrMore(pipe_op + infix_expr), pipe_proc)
+    pipe_expr = attach(infix_expr + ZeroOrMore(pipe_op - infix_expr), pipe_proc)
 
     expr <<= trace(pipe_expr, "expr")
-    comparison = addspace(expr + ZeroOrMore(comp_op + expr))
+    comparison = addspace(expr + ZeroOrMore(comp_op - expr))
     not_test = addspace(ZeroOrMore(Keyword("not")) + comparison)
-    and_test = addspace(not_test + ZeroOrMore(Keyword("and") + not_test))
-    or_test = addspace(and_test + ZeroOrMore(Keyword("or") + and_test))
+    and_test = addspace(not_test + ZeroOrMore(Keyword("and") - not_test))
+    or_test = addspace(and_test + ZeroOrMore(Keyword("or") - and_test))
     test_item = or_test
     test_nocond = Forward()
     classic_lambdef_params = parenwrap(lparen, varargslist, rparen)
     new_lambdef_params = lparen.suppress() + varargslist + rparen.suppress()
 
     classic_lambdef_ref = Forward()
-    classic_lambdef = addspace(Keyword("lambda") + condense(classic_lambdef_params + colon) + test)
-    new_lambdef = attach(new_lambdef_params + arrow.suppress() + test, lambdef_proc)
+    classic_lambdef = addspace(Keyword("lambda") - condense(classic_lambdef_params - colon) - test)
+    new_lambdef = attach(new_lambdef_params + arrow.suppress() - test, lambdef_proc)
     lambdef = trace(classic_lambdef_ref | new_lambdef, "lambdef")
 
     classic_lambdef_nocond_ref = Forward()
-    classic_lambdef_nocond = addspace(Keyword("lambda") + condense(classic_lambdef_params + colon) + test_nocond)
-    new_lambdef_nocond = attach(new_lambdef_params + arrow.suppress() + test_nocond, lambdef_proc)
+    classic_lambdef_nocond = addspace(Keyword("lambda") - condense(classic_lambdef_params - colon) - test_nocond)
+    new_lambdef_nocond = attach(new_lambdef_params + arrow.suppress() - test_nocond, lambdef_proc)
     lambdef_nocond = trace(classic_lambdef_nocond_ref | new_lambdef_nocond, "lambdef_nocond")
 
-    test <<= lambdef | trace(addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test)), "test")
+    test <<= lambdef | trace(addspace(test_item + Optional(Keyword("if") - test_item - Keyword("else") - test)), "test")
     test_nocond <<= lambdef_nocond | trace(test_item, "test_item")
 
     simple_stmt = Forward()
@@ -2311,10 +2310,10 @@ class processor(object):
 
     argument = condense(name + equals + test) | addspace(name + Optional(comp_for))
     classlist = Optional(lparen.suppress() + Optional(Group(itemlist(name, comma)("names") ^ varargslist_req("args"))) + rparen.suppress())
-    classdef = condense(addspace(Keyword("class") + name) + classlist_ref + suite)
+    classdef = condense(addspace(Keyword("class") - name) + classlist_ref + suite)
     comp_iter = Forward()
-    comp_for <<= addspace(Keyword("for") + assignlist + Keyword("in") + test_item + Optional(comp_iter))
-    comp_if = addspace(Keyword("if") + test_nocond + Optional(comp_iter))
+    comp_for <<= addspace(Keyword("for") - assignlist - Keyword("in") - test_item + Optional(comp_iter))
+    comp_if = addspace(Keyword("if") - test_nocond + Optional(comp_iter))
     comp_iter <<= comp_for | comp_if
 
     complex_raise_stmt_ref = Forward()
@@ -2323,27 +2322,27 @@ class processor(object):
     continue_stmt = Keyword("continue")
     return_stmt = addspace(Keyword("return") + Optional(testlist))
     simple_raise_stmt = addspace(Keyword("raise") + Optional(test))
-    complex_raise_stmt = Keyword("raise").suppress() + Optional(test) + Keyword("from").suppress() + test
+    complex_raise_stmt = Keyword("raise").suppress() + Optional(test) + Keyword("from").suppress() - test
     raise_stmt = complex_raise_stmt_ref | simple_raise_stmt
     flow_stmt = break_stmt | continue_stmt | return_stmt | raise_stmt | yield_expr
 
-    dotted_as_name = Group(dotted_name + Optional(Keyword("as").suppress() + name))
-    import_as_name = Group(name + Optional(Keyword("as").suppress() + name))
+    dotted_as_name = Group(dotted_name + Optional(Keyword("as").suppress() - name))
+    import_as_name = Group(name + Optional(Keyword("as").suppress() - name))
     import_names = Group(parenwrap(lparen, tokenlist(dotted_as_name, comma), rparen, tokens=True))
     import_from_names = Group(parenwrap(lparen, tokenlist(import_as_name, comma), rparen, tokens=True))
-    import_name = Keyword("import").suppress() + import_names
+    import_name = Keyword("import").suppress() - import_names
     import_from = (Keyword("from").suppress()
-        + condense(ZeroOrMore(Literal(".")) + dotted_name | OneOrMore(Literal(".")))
-        + Keyword("import").suppress() + (Group(star) | import_from_names))
+        - condense(ZeroOrMore(Literal(".")) + dotted_name | OneOrMore(Literal(".")))
+        - Keyword("import").suppress() - (Group(star) | import_from_names))
     import_stmt_ref = Forward()
     import_stmt = import_from | import_name
 
     namelist = parenwrap(lparen, itemlist(name, comma), rparen)
-    global_stmt = addspace(Keyword("global") + namelist)
-    nonlocal_stmt = addspace(Keyword("nonlocal") + namelist)
+    global_stmt = addspace(Keyword("global") - namelist)
+    nonlocal_stmt = addspace(Keyword("nonlocal") - namelist)
     simple_assignlist = parenwrap(lparen, itemlist(simple_assign, comma), rparen)
-    del_stmt = addspace(Keyword("del") + simple_assignlist)
-    with_item = addspace(test + Optional(Keyword("as") + name))
+    del_stmt = addspace(Keyword("del") - simple_assignlist)
+    with_item = addspace(test + Optional(Keyword("as") - name))
 
     match = Forward()
     matchlist_list = Group(Optional(tokenlist(match, comma)))
@@ -2360,31 +2359,31 @@ class processor(object):
         | (lparen.suppress() + match + rparen.suppress())("paren")
         | (lbrace.suppress() + matchlist_dict + rbrace.suppress())("dict")
         | (Optional(set_s.suppress()) + lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
-        | ((match_list | match_tuple | match_lazy) + dubcolon.suppress() + name)("iter")
+        | ((match_list | match_tuple | match_lazy) + dubcolon.suppress() - name)("iter")
         | match_lazy("iter")
-        | (match_list + plus.suppress() + name + plus.suppress() + match_list)("mseries")
-        | (match_tuple + plus.suppress() + name + plus.suppress() + match_tuple)("mseries")
-        | ((match_list | match_tuple) + Optional(plus.suppress() + name))("series")
-        | (name + plus.suppress() + (match_list | match_tuple))("rseries")
-        | (name + equals.suppress() + match)("assign")
-        | (name + lparen.suppress() + matchlist_list + rparen.suppress())("data")
+        | (match_list + plus.suppress() + name + plus.suppress() - match_list)("mseries")
+        | (match_tuple + plus.suppress() + name + plus.suppress() - match_tuple)("mseries")
+        | ((match_list | match_tuple) + Optional(plus.suppress() - name))("series")
+        | (name + plus.suppress() - (match_list | match_tuple))("rseries")
+        | (name + equals.suppress() - match)("assign")
+        | (name + lparen.suppress() - matchlist_list - rparen.suppress())("data")
         | name("var")
         )
     matchlist_name = name | lparen.suppress() + itemlist(name, comma) + rparen.suppress()
-    matchlist_is = base_match + Keyword("is").suppress() + matchlist_name
+    matchlist_is = base_match + Keyword("is").suppress() - matchlist_name
     is_match = Group(matchlist_is("is")) | base_match
-    matchlist_and = is_match + OneOrMore(Keyword("and").suppress() + is_match)
+    matchlist_and = is_match + OneOrMore(Keyword("and").suppress() - is_match)
     and_match = Group(matchlist_and("and")) | is_match
-    matchlist_or = and_match + OneOrMore(Keyword("or").suppress() + and_match)
+    matchlist_or = and_match + OneOrMore(Keyword("or").suppress() - and_match)
     or_match = Group(matchlist_or("or")) | and_match
     match <<= trace(or_match, "match")
 
     else_suite = condense(suite | colon + trace(attach(simple_compound_stmt, else_proc), "else_suite"))
-    else_stmt = condense(Keyword("else") + else_suite)
+    else_stmt = condense(Keyword("else") - else_suite)
 
     full_suite = colon.suppress() + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
     full_match = trace(attach(
-        Keyword("match").suppress() + match + Keyword("in").suppress() + test + Optional(Keyword("if").suppress() + test) + full_suite
+        Keyword("match").suppress() - match - Keyword("in").suppress() - test + Optional(Keyword("if").suppress() - test) - full_suite
         , match_proc), "full_match")
     match_stmt = condense(full_match + Optional(else_stmt))
 
@@ -2393,44 +2392,44 @@ class processor(object):
         , match_assign_proc), "match_assign_stmt")
 
     case_match = trace(Group(
-        Keyword("match").suppress() + match + Optional(Keyword("if").suppress() + test) + full_suite
+        Keyword("match").suppress() - match + Optional(Keyword("if").suppress() - test) - full_suite
         ), "case_match")
     case_stmt = attach(
-        Keyword("case").suppress() + test + colon.suppress() + newline.suppress()
-        + indent.suppress() + Group(OneOrMore(case_match))
-        + dedent.suppress() + Optional(Keyword("else").suppress() + else_suite)
+        Keyword("case").suppress() - test - colon.suppress() - newline.suppress()
+        - indent.suppress() - Group(OneOrMore(case_match))
+        - dedent.suppress() + Optional(Keyword("else").suppress() - else_suite)
         , case_proc)
 
-    assert_stmt = addspace(Keyword("assert") + testlist)
-    if_stmt = condense(addspace(Keyword("if") + condense(test + suite))
-                       + ZeroOrMore(addspace(Keyword("elif") + condense(test + suite)))
+    assert_stmt = addspace(Keyword("assert") - testlist)
+    if_stmt = condense(addspace(Keyword("if") - condense(test - suite))
+                       + ZeroOrMore(addspace(Keyword("elif") - condense(test - suite)))
                        + Optional(else_stmt)
                        )
-    while_stmt = addspace(Keyword("while") + condense(test + suite + Optional(else_stmt)))
-    for_stmt = addspace(Keyword("for") + assignlist + Keyword("in") + condense(testlist + suite + Optional(else_stmt)))
-    except_clause = attach(Keyword("except").suppress() + testlist + Optional(Keyword("as").suppress() + name), except_proc)
-    try_stmt = condense(Keyword("try") + suite + (
-        Keyword("finally") + suite
+    while_stmt = addspace(Keyword("while") - condense(test - suite + Optional(else_stmt)))
+    for_stmt = addspace(Keyword("for") - assignlist - Keyword("in") - condense(testlist - suite + Optional(else_stmt)))
+    except_clause = attach(Keyword("except").suppress() + testlist + Optional(Keyword("as").suppress() - name), except_proc)
+    try_stmt = condense(Keyword("try") - suite + (
+        Keyword("finally") - suite
         | (
-            OneOrMore(except_clause + suite) + Optional(Keyword("except") + suite)
-            | Keyword("except") + suite
-          ) + Optional(else_stmt) + Optional(Keyword("finally") + suite)
+            OneOrMore(except_clause - suite) + Optional(Keyword("except") - suite)
+            | Keyword("except") - suite
+          ) + Optional(else_stmt) + Optional(Keyword("finally") - suite)
         ))
-    with_stmt = addspace(Keyword("with") + condense(itemlist(with_item, comma) + suite))
+    with_stmt = addspace(Keyword("with") - condense(itemlist(with_item, comma) - suite))
 
     return_typedef_ref = Forward()
     async_funcdef_ref = Forward()
     async_block_ref = Forward()
     name_funcdef = condense(name + parameters)
     op_funcdef_arg = condense(lparen.suppress() + tfpdef + Optional(default) + rparen.suppress())
-    op_funcdef_name = backtick.suppress() + name + backtick.suppress()
+    op_funcdef_name = backtick.suppress() - name - backtick.suppress()
     op_funcdef = attach(Group(Optional(op_funcdef_arg)) + op_funcdef_name + Group(Optional(op_funcdef_arg)), op_funcdef_proc)
-    return_typedef = addspace(arrow + test)
+    return_typedef = addspace(arrow - test)
     base_funcdef = addspace((op_funcdef | name_funcdef) + Optional(return_typedef_ref))
     funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
-    math_funcdef = attach(Keyword("def").suppress() + base_funcdef + equals.suppress() + test_expr, func_proc) + newline
-    async_funcdef = addspace(Keyword("async") + (funcdef | math_funcdef))
-    async_block = addspace(Keyword("async") + (with_stmt | for_stmt))
+    math_funcdef = attach(Keyword("def").suppress() + base_funcdef + equals.suppress() - test_expr, func_proc) - newline
+    async_funcdef = addspace(Keyword("async") - (funcdef | math_funcdef))
+    async_block = addspace(Keyword("async") - (with_stmt | for_stmt))
 
     async_match_funcdef_ref = Forward()
     op_match_funcdef_arg = lparen.suppress() + match + rparen.suppress()
@@ -2440,7 +2439,7 @@ class processor(object):
     full_match_funcdef = trace(attach(base_match_funcdef + full_suite, full_match_funcdef_proc), "base_match_funcdef")
     math_match_funcdef = attach(
         Optional(Keyword("match").suppress()) + base_match_funcdef + equals.suppress() + test_expr
-        , match_func_proc) + newline
+        , match_func_proc) - newline
     match_funcdef = Optional(Keyword("match").suppress()) + full_match_funcdef
     async_match_funcdef = addspace(
         (Optional(Keyword("match")).suppress() + Keyword("async") | Keyword("async") + Optional(Keyword("match")).suppress())
@@ -2448,14 +2447,14 @@ class processor(object):
     async_stmt = async_block_ref | async_funcdef_ref | async_match_funcdef
 
     data_args = Optional(lparen.suppress() + Optional(itemlist(~underscore + name, comma)) + rparen.suppress())
-    data_suite = colon.suppress() + Group(
+    data_suite = colon.suppress() - Group(
         (newline.suppress() + indent.suppress() + Optional(docstring) + Group(OneOrMore(stmt)) + dedent.suppress())("complex")
         | docstring("docstring") | simple_stmt("simple"))
-    datadef = condense(attach(Keyword("data").suppress() + name + data_args + data_suite, data_proc))
+    datadef = condense(attach(Keyword("data").suppress() - name - data_args - data_suite, data_proc))
 
     simple_decorator = condense(dotted_name + Optional(lparen + callargslist + rparen))("simple")
     complex_decorator = test("complex")
-    decorators = attach(OneOrMore(at.suppress() + Group(simple_decorator | complex_decorator) + newline.suppress()), decorator_proc)
+    decorators = attach(OneOrMore(at.suppress() - Group(simple_decorator | complex_decorator) - newline.suppress()), decorator_proc)
     decorated = condense(decorators + (
         classdef
         | datadef
@@ -2501,9 +2500,9 @@ class processor(object):
     nonlocal_stmt_ref = Forward()
     keyword_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt_ref | global_stmt | nonlocal_stmt_ref | assert_stmt
     small_stmt = trace(keyword_stmt | expr_stmt, "small_stmt")
-    simple_stmt <<= trace(condense(itemlist(small_stmt, semicolon) + newline), "simple_stmt")
+    simple_stmt <<= trace(condense(itemlist(small_stmt, semicolon) - newline), "simple_stmt")
     stmt <<= trace(compound_stmt | simple_stmt, "stmt")
-    base_suite <<= condense(newline + indent + OneOrMore(stmt) + dedent)
+    base_suite <<= condense(newline - indent - OneOrMore(stmt) - dedent)
     suite <<= trace(condense(colon + base_suite) | addspace(colon + simple_stmt), "suite")
     line = trace(newline | stmt, "line")
 
@@ -2511,9 +2510,9 @@ class processor(object):
     file_input = trace(condense(ZeroOrMore(line)), "file_input")
     eval_input = trace(condense(testlist + ZeroOrMore(newline)), "eval_input")
 
-    single_parser = condense(startmarker + single_input + endmarker)
-    file_parser = condense(startmarker + file_input + endmarker)
-    eval_parser = condense(startmarker + eval_input + endmarker)
+    single_parser = condense(startmarker - single_input - endmarker)
+    file_parser = condense(startmarker - file_input - endmarker)
+    eval_parser = condense(startmarker - eval_input - endmarker)
 
     def parse_single(self, inputstring):
         """Parses console input."""
