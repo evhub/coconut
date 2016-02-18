@@ -198,7 +198,7 @@ class cli(object):
     commandline.add_argument("--jupyter", "--ipython", type=str, nargs=argparse.REMAINDER, default=None, help="run Jupyter/IPython with Coconut as the kernel (remaining args passed to Jupyter)")
     commandline.add_argument("--autopep8", type=str, nargs=argparse.REMAINDER, default=None, help="use autopep8 to format compiled code (remaining args passed to autopep8)")
     commandline.add_argument("--color", metavar="color", type=str, nargs=1, default=[None], help="show all Coconut messages in the given color")
-    commandline.add_argument("--debug", action="store_const", const=True, default=False, help="print verbose debug output")
+    commandline.add_argument("--verbose", action="store_const", const=True, default=False, help="print verbose debug output")
     proc = None
     show = False
     running = False
@@ -243,7 +243,7 @@ class cli(object):
         """Parses command-line arguments."""
         try:
             self.setup(args.strict, args.target[0], args.color[0])
-            if args.debug:
+            if args.verbose:
                 self.proc.debug(True)
             if args.quiet:
                 self.quiet(True)
