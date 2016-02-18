@@ -2250,12 +2250,13 @@ class processor(object):
     atom_item_ref = Forward()
     atom_item = atom + ZeroOrMore(trailer)
 
+    factor = Forward()
     await_keyword_ref = Forward()
     await_keyword = Keyword("await")
     power = trace(condense(addspace(Optional(await_keyword_ref) + atom_item_ref) + Optional(exp_dubstar - factor)), "power")
     unary = plus | neg_minus | tilde
 
-    factor = trace(ZeroOrMore(unary) + power, "factor")
+    factor <<= trace(condense(ZeroOrMore(unary) + power), "factor")
 
     mulop = mul_star | div_dubslash | div_slash | percent | matrix_at_ref
     term = addspace(factor + ZeroOrMore(mulop - factor))
