@@ -2350,11 +2350,11 @@ class processor(object):
     matchlist_tuple = Group(Optional(match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress()) | match + comma.suppress()))
     match_const = const_atom | condense(equals.suppress() + simple_assign)
     matchlist_set = Group(Optional(tokenlist(match_const, comma)))
-    match_pair = Group(match_const + colon.suppress() + match)
+    match_pair = Group(match_const + colon.suppress() - match)
     matchlist_dict = Group(Optional(tokenlist(match_pair, comma)))
-    match_list = lbrack + matchlist_list + rbrack.suppress()
-    match_tuple = lparen + matchlist_tuple + rparen.suppress()
-    match_lazy = lbanana + matchlist_list + rbanana.suppress()
+    match_list = lbrack - matchlist_list + rbrack.suppress()
+    match_tuple = lparen - matchlist_tuple + rparen.suppress()
+    match_lazy = lbanana - matchlist_list - rbanana.suppress()
     base_match = Group(
         match_const("const")
         | (lparen.suppress() + match + rparen.suppress())("paren")
@@ -2373,9 +2373,9 @@ class processor(object):
     matchlist_name = name | lparen.suppress() + itemlist(name, comma) + rparen.suppress()
     matchlist_is = base_match + Keyword("is").suppress() - matchlist_name
     is_match = Group(matchlist_is("is")) | base_match
-    matchlist_and = is_match + OneOrMore(Keyword("and").suppress() - is_match)
+    matchlist_and = is_match - OneOrMore(Keyword("and").suppress() - is_match)
     and_match = Group(matchlist_and("and")) | is_match
-    matchlist_or = and_match + OneOrMore(Keyword("or").suppress() - and_match)
+    matchlist_or = and_match - OneOrMore(Keyword("or").suppress() - and_match)
     or_match = Group(matchlist_or("or")) | and_match
     match <<= trace(or_match, "match")
 
@@ -2439,7 +2439,7 @@ class processor(object):
     base_match_funcdef = Keyword("def").suppress() + (op_match_funcdef | name_match_funcdef)
     full_match_funcdef = trace(attach(base_match_funcdef + full_suite, full_match_funcdef_proc), "base_match_funcdef")
     math_match_funcdef = attach(
-        Optional(Keyword("match").suppress()) + base_match_funcdef + equals.suppress() + test_expr
+        Optional(Keyword("match").suppress()) + base_match_funcdef + equals.suppress() - test_expr
         , match_func_proc) - newline
     match_funcdef = Optional(Keyword("match").suppress()) + full_match_funcdef
     async_match_funcdef = addspace(
