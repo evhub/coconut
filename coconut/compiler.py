@@ -555,7 +555,7 @@ def attr_proc(tokens):
 def lazy_list_proc(tokens):
     """Processes lazy lists."""
     if len(tokens) == 0:
-        return "__coconut__.iter()"
+        return "__coconut__.iter(())"
     else:
         return ("(" + lazy_item_var + "() for " + lazy_item_var + " in ("
             + "lambda: " + ", lambda: ".join(tokens) + ("," if len(tokens) == 1 else "") + "))")
