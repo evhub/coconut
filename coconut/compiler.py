@@ -2195,7 +2195,7 @@ class processor(object):
     set_literal = lbrace.suppress() + setmaker + rbrace.suppress()
     set_letter_literal = set_letter + lbrace.suppress() + Optional(setmaker) + rbrace.suppress()
     lazy_items = Optional(test + ZeroOrMore(comma.suppress() + test) + Optional(comma.suppress()))
-    lazy_list = attach(lbanana.suppress() - lazy_items - rbanana.suppress(), lazy_list_proc)
+    lazy_list = attach(lbanana.suppress() + lazy_items + rbanana.suppress(), lazy_list_proc)
     const_atom = (
         keyword_atom
         | number
@@ -2253,37 +2253,37 @@ class processor(object):
     factor = Forward()
     await_keyword_ref = Forward()
     await_keyword = Keyword("await")
-    power = trace(condense(addspace(Optional(await_keyword_ref) + atom_item_ref) + Optional(exp_dubstar - factor)), "power")
+    power = trace(condense(addspace(Optional(await_keyword_ref) + atom_item_ref) + Optional(exp_dubstar + factor)), "power")
     unary = plus | neg_minus | tilde
 
     factor <<= trace(condense(ZeroOrMore(unary) + power), "factor")
 
     mulop = mul_star | div_dubslash | div_slash | percent | matrix_at_ref
-    term = addspace(factor + ZeroOrMore(mulop - factor))
+    term = addspace(factor + ZeroOrMore(mulop + factor))
     arith = plus | sub_minus
-    arith_expr = addspace(term + ZeroOrMore(arith - term))
+    arith_expr = addspace(term + ZeroOrMore(arith + term))
 
     shift = lshift | rshift
-    shift_expr = addspace(arith_expr + ZeroOrMore(shift - arith_expr))
-    and_expr = addspace(shift_expr + ZeroOrMore(amp - shift_expr))
-    xor_expr = addspace(and_expr + ZeroOrMore(caret - and_expr))
-    or_expr = addspace(xor_expr + ZeroOrMore(bar - xor_expr))
+    shift_expr = addspace(arith_expr + ZeroOrMore(shift + arith_expr))
+    and_expr = addspace(shift_expr + ZeroOrMore(amp + shift_expr))
+    xor_expr = addspace(and_expr + ZeroOrMore(caret + and_expr))
+    or_expr = addspace(xor_expr + ZeroOrMore(bar + xor_expr))
 
-    chain_expr = attach(or_expr + ZeroOrMore(dubcolon.suppress() - or_expr), chain_proc)
+    chain_expr = attach(or_expr + ZeroOrMore(dubcolon.suppress() + or_expr), chain_proc)
 
     infix_expr = Forward()
-    infix_op = condense(backtick.suppress() - chain_expr - backtick.suppress())
+    infix_op = condense(backtick.suppress() + chain_expr + backtick.suppress())
     infix_item = attach(Group(Optional(chain_expr)) + infix_op + Group(Optional(infix_expr)), infix_proc)
     infix_expr <<= infix_item | chain_expr
 
     pipe_op = pipeline | starpipe | backpipe | backstarpipe
-    pipe_expr = attach(infix_expr + ZeroOrMore(pipe_op - infix_expr), pipe_proc)
+    pipe_expr = attach(infix_expr + ZeroOrMore(pipe_op + infix_expr), pipe_proc)
 
     expr <<= trace(pipe_expr, "expr")
-    comparison = addspace(expr + ZeroOrMore(comp_op - expr))
+    comparison = addspace(expr + ZeroOrMore(comp_op + expr))
     not_test = addspace(ZeroOrMore(Keyword("not")) + comparison)
-    and_test = addspace(not_test + ZeroOrMore(Keyword("and") - not_test))
-    or_test = addspace(and_test + ZeroOrMore(Keyword("or") - and_test))
+    and_test = addspace(not_test + ZeroOrMore(Keyword("and") + not_test))
+    or_test = addspace(and_test + ZeroOrMore(Keyword("or") + and_test))
     test_item = or_test
     test_nocond = Forward()
     classic_lambdef_params = parenwrap(lparen, varargslist, rparen)
