@@ -554,12 +554,11 @@ def attr_proc(tokens):
 
 def lazy_list_proc(tokens):
     """Processes lazy lists."""
-    return (
-        "(" + lazy_item_var + "() for " + lazy_item_var + " in ("
-            + ("lambda: " if len(tokens) != 0 else "")
-            + ", lambda: ".join(tokens) + ("," if len(tokens) == 1 else "")
-        + "))"
-    )
+    if len(tokens) == 0:
+        return "__coconut__.iter()"
+    else:
+        return ("(" + lazy_item_var + "() for " + lazy_item_var + " in ("
+            + "lambda: " + ", lambda: ".join(tokens) + ("," if len(tokens) == 1 else "") + "))")
 
 def chain_proc(tokens):
     """Processes chain calls."""
