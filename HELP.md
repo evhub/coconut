@@ -9,21 +9,22 @@
     2. [Using the Compiler](#using-the-compiler)
     3. [Using IPython / Jupyter](#using-ipython--jupyter)
     4. [Case Studies](#case-studies)
-3. [Case Study 1: Factorial](#case-study-1-factorial)
+3. [Case Study 1: `factorial`](#case-study-1-factorial)
     1. [Imperative Method](#imperative-method)
     2. [Recursive Method](#recursive-method)
     3. [Iterative Method](#iterative-method)
-4. [Case Study 2: Quick Sort](#case-study-2-quick-sort)
-5. [Case Study 3: Vectors](#case-study-3-vectors)
+4. [Case Study 2: `quick_sort`](#case-study-2-quick_sort)
+5. [Case Study 3: `vector` Part I](#case-study-3-vector-part-i)
     1. [2-Vector](#2-vector)
     2. [n-Vector Constructor](#n-vector-constructor)
     3. [n-Vector Methods](#n-vector-methods)
-6. [Case Study 4: Vector Fields](#case-study-4-vector-fields)
+6. [Case Study 4: `vector_field`](#case-study-4-vector_field)
     1. [`diagonal_line`](#diagonal_line)
     2. [`linearized_plane`](#linearized_plane)
     3. [`vector_field`](#vector_field)
     4. [Applications](#applications)
-7. [Filling in the Gaps](#filling-in-the-gaps)
+7. [Case Study 5: `vector` Part II](#case-study-5-vector-part-ii)
+8. [Filling in the Gaps](#filling-in-the-gaps)
     1. [Lazy Lists](#lazy-lists)
     2. [Function Composition](#function-composition)
     3. [Implicit Partials](#implicit-partials)
@@ -186,7 +187,7 @@ Because Coconut is built to be fundamentally _useful_, the best way to demo it i
 
 These case studies are not intended to provide a complete picture of all of Coconut's features. For that, see Coconut's comprehensive [documentation](http://coconut.readthedocs.org/en/master/DOCS.html). Instead, they are intended to show how Coconut can actually be used to solve practical programming problems.
 
-## Case Study 1: Factorial
+## Case Study 1: `factorial`
 
 In the first case study we will be defining a `factorial` function, that is, a function that computes `n!` where `n` is an integer `>= 0`. This is somewhat of a toy example, since Python can fairly easily do this, but it will serve as a good showcase of some of the basic features of Coconut and how they can be used to great effect.
 
@@ -347,7 +348,7 @@ range(1, n+1) |> reduce$((*))
 ```
 is able to compute the proper factorial, without using any state or loops, only higher-order functions, in true functional style. By supplying the tools we use here like partial application (`$`), pipeline-style programming (`|>`), higher-order functions (`reduce`), and operator functions (`(*)`), Coconut enables this sort of functional programming to be done cleanly, neatly, and easily.
 
-## Case Study 2: Quick Sort
+## Case Study 2: `quick_sort`
 
 In the second case study, we will be implementing the quick sort algorithm. Our `quick_sort` function will take in an iterator, and output an iterator that is the sorted version of that iterator.
 
@@ -412,7 +413,7 @@ The advantages of the basic approach used here, heavy use of iterators and recur
 
 And Coconut makes programming in such an advantageous functional approach significantly easier. In this example, Coconut's pattern-matching lets us easily split the given iterator, and Coconut's `::` iterator joining operator lets us easily put it back together again in sorted order.
 
-## Case Study 3: Vectors
+## Case Study 3: `vector` Part I
 
 In the next case study, we'll be doing something slightly different—instead of defining a function, we'll be creating an object. Specifically, we're going to try to implement an immutable n-vector that supports all the basic vector operations.
 
@@ -594,7 +595,7 @@ vector(1, 2) * vector(1, 3) |> print # 7
 
 Copy, paste! Now that was a lot of code. But looking it over, it looks clean, readable, and concise, and it does precisely what we intended it to do: create an algebraic data type for an immutable n-vector that supports the basic vector operations. And we did the whole thing without needing any imperative constructs like state or loops—pure functional programming.
 
-## Case Study 4: Vector Fields
+## Case Study 4: `vector_field`
 
 For the final case study, instead of me writing the code, and you looking at it, you'll be writing the code—of course, I won't be looking at it, but I will show you how I would have done it after you give it a shot by yourself.
 
@@ -820,6 +821,19 @@ With that in mind, now that we've built our vector field, it's time to use itera
 - combine entire vector fields together with `map` and the vector addition and multiplication methods we wrote earlier
 
 then use iterator slicing to take out portions and examine them.
+
+## Case Study 5: `vector` Part II
+
+For the some of the applications you might want to use your `vector_field` for, it might be desirable to add some useful methods to our `vector`. In this case study, we're going to be focusing on one in particular: `.angle`.
+
+`.angle` will take one argument, another vector, and compute the angle between the two vectors. Mathematically, the formula for the angle between two vectors is the dot product of the vectors' respective unit vectors. Thus, before we can implement `.angle`, we're going to need `.unit`. Mathematically, the formula for the unit vector of a given vector is that vector divided by its magnitude. Thus, before we can implement `.unit`, and by extension `.angle`, we'll need to start by implementing division.
+
+Let's give it a shot:
+```
+    def __div__(self, other) = self.pts |> map$((/)$(other)) |*> vector
+    def unit(self) = self / abs(self)
+    def angle(self, other is vector) = math.acos(self * other)
+```
 
 ## Filling in the Gaps
 
