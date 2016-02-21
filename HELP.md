@@ -107,7 +107,7 @@ hello, world!
 2
 ```
 
-One thing you probably noticed here is that unlike the Python interpreter, the Coconut interpreter will not automatically print the result of a naked expression. This is a good thing, because it means your code will do exactly the same thing in the interpreter as it would anywhere else, but it might take some getting used to.
+One thing you probably noticed here is that unlike the Python interpreter, the Coconut interpreter will not automatically print the result of a naked expression. This is a good thing, because it means your code will do exactly the same thing in the interpreter as it would anywhere else, with the exception of totally blank lines terminating the current entry, but it might take some getting used to.
 
 ### Using the Compiler
 
@@ -837,8 +837,8 @@ Vector division is just scalar division, so we're going to write a `__truediv__`
 
 Tests:
 ```coconut
-vector(3, 4) / 1 |> print # vector(pts=(3, 4))
-vector(2, 4) / 2 |> print # vector(pts=(1, 2))
+vector(3, 4) / 1 |> print # vector(pts=(3.0, 4.0))
+vector(2, 4) / 2 |> print # vector(pts=(1.0, 2.0))
 ```
 
 _Hint: Look back at how we implemented scalar multiplication._
@@ -875,8 +875,8 @@ Next up, `.unit`. We're going to write a `unit` method that takes just `self` as
 
 Tests:
 ```coconut
-vector(0, 1).unit() |> print # vector(pts=(0, 1))
-vector(5, 0).unit() |> print # vector(pts=(1, 0))
+vector(0, 1).unit() |> print # vector(pts=(0.0, 1.0))
+vector(5, 0).unit() |> print # vector(pts=(1.0, 0.0))
 ```
 
 <br>
@@ -912,9 +912,9 @@ This one is going to be a little bit more complicated. For starters, let's recal
 Tests:
 ```coconut
 import math
-vector(2, 0).angle(vector(3, 0)) |> print # 0
+vector(2, 0).angle(vector(3, 0)) |> print # 0.0
 print(vector(1, 0).angle(vector(0, 2)), math.pi/2) # should be the same
-vector(1, 2).angle() # MatchError
+vector(1, 2).angle(5) # MatchError
 ```
 
 _Hint: Look back at how we checked whether the argument to `factorial` was an integer using destructuring assignment._
@@ -997,13 +997,13 @@ data vector(pts):
     def angle(self, other is vector) = math.acos(self.unit() * other.unit())
 
 # Test cases:
-vector(3, 4) / 1 |> print # vector(pts=(3, 4))
-vector(2, 4) / 2 |> print # vector(pts=(1, 2))
-vector(0, 1).unit() |> print # vector(pts=(0, 1))
-vector(5, 0).unit() |> print # vector(pts=(1, 0))
-vector(2, 0).angle(vector(3, 0)) |> print # 0
+vector(3, 4) / 1 |> print # vector(pts=(3.0, 4.0))
+vector(2, 4) / 2 |> print # vector(pts=(1.0, 2.0))
+vector(0, 1).unit() |> print # vector(pts=(0.0, 1.0))
+vector(5, 0).unit() |> print # vector(pts=(1.0, 0.0))
+vector(2, 0).angle(vector(3, 0)) |> print # 0.0
 print(vector(1, 0).angle(vector(0, 2)), math.pi/2) # should be the same
-vector(1, 2).angle() # MatchError
+vector(1, 2).angle(5) # MatchError
 ```
 
 Copy, paste! If everything is working, I'd recommend going back to playing around with `vector_field` [applications](#applications) using our new methods.
