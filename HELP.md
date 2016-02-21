@@ -24,6 +24,9 @@
     3. [`vector_field`](#vector_field)
     4. [Applications](#applications)
 7. [Case Study 5: `vector` Part II](#case-study-5-vector-part-ii)
+    1. [`__truediv__`](#__truediv__)
+    2. [`.unit`](#unit)
+    3. [`.angle`](#angle)
 8. [Filling in the Gaps](#filling-in-the-gaps)
     1. [Lazy Lists](#lazy-lists)
     2. [Function Composition](#function-composition)
@@ -828,12 +831,182 @@ For the some of the applications you might want to use your `vector_field` for, 
 
 `.angle` will take one argument, another vector, and compute the angle between the two vectors. Mathematically, the formula for the angle between two vectors is the dot product of the vectors' respective unit vectors. Thus, before we can implement `.angle`, we're going to need `.unit`. Mathematically, the formula for the unit vector of a given vector is that vector divided by its magnitude. Thus, before we can implement `.unit`, and by extension `.angle`, we'll need to start by implementing division.
 
-Let's give it a shot:
+### `__truediv__`
+
+Vector division is just scalar division, so we're going to write a `__truediv__` method that takes `self` as the first argument and `other` as the second argument, and returns a new vector the same size as `self` with every element divided by `other`. For an extra challenge, try writing this one in one line using shorthand function notation.
+
+Tests:
+```coconut
+vector(3, 4) / 1 |> print # vector(pts=(3, 4))
+vector(2, 4) / 2 |> print # vector(pts=(1, 2))
 ```
-    def __div__(self, other) = self.pts |> map$((/)$(other)) |*> vector
+
+_Hint: Look back at how we implemented scalar multiplication._
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+
+Here's my solution for you to check against:
+```coconut
+    def __truediv__(self, other) = self.pts |> map$((x) -> x/other) |*> vector
+```
+
+### `.unit`
+
+Next up, `.unit`. We're going to write a `unit` method that takes just `self` as its argument and returns a new vector the same size as `self` with each element divided by the magnitude of `self`, which we can retrieve with `abs`. This should be a very simple one-line function.
+
+Tests:
+```coconut
+vector(0, 1).unit() |> print # vector(pts=(0, 1))
+vector(5, 0).unit() |> print # vector(pts=(1, 0))
+```
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+
+Here's my solution:
+```coconut
     def unit(self) = self / abs(self)
-    def angle(self, other is vector) = math.acos(self * other)
 ```
+
+### `.angle`
+
+This one is going to be a little bit more complicated. For starters, let's recall that the mathematical formula for the angle between two vectors is the `math.acos` of the dot product of those vectors' respective unit vectors, and recall that we already implemented the dot product of two vectors when we wrote `__mul__`. So, `.angle` should take `self` as the first argument and `other` as the second argument, and if `other` is a vector, use that formula to compute the angle between `self` and `other`, or if `other` is not a vector, `.angle` should raise a `MatchError`. To accomplish this, we're going to want to use destructuring assignment to check that `other` is indeed a `vector`.
+
+Tests:
+```coconut
+import math
+vector(2, 0).angle(vector(3, 0)) |> print # 0
+print(vector(1, 0).angle(vector(0, 2)), math.pi/2) # should be the same
+vector(1, 2).angle() # MatchError
+```
+
+_Hint: Look back at how we checked whether the argument to `factorial` was an integer using destructuring assignment._
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+
+Here's my solution, although I cheated a little bit and used a construct I haven't introduced yet—pattern-matching function definition. Take a look:
+```coconut
+    def angle(self, other is vector) = math.acos(self.unit() * other.unit())
+```
+
+Pattern-matching function definition does exactly that—it pattern-matches against all the arguments that are passed to the function. In this case, pattern-matching function definition is incredibly handy, as it lets us write this whole function in just one line. There are a couple of things to watch out for when using pattern-matching function definition, however. First, that keyword arguments aren't allowed, and second, that instead of raising a `TypeError` if the wrong number of arguments are passed, your function will raise a `MatchError`. Finally, like destructuring assignment, if you want to be more explicit about using pattern-matching function definition, you can add a `match` before the `def`.
+
+And now it's time to put it all together. Feel free to subsitute in your own versions of the functions we just defined.
+```coconut
+import math # necessary for math.acos in .angle
+
+data vector(pts):
+    """Immutable n-vector."""
+    def __new__(cls, *pts):
+        """Create a new vector from the given pts."""
+        if len(pts) == 1 and pts[0] `isinstance` vector:
+            return pts[0] # vector(v) where v is a vector should return v
+        else:
+            return pts |> tuple |> datamaker(cls) # accesses base constructor
+    def __abs__(self):
+        """Return the magnitude of the vector."""
+        return self.pts |> map$((x) -> x**2) |> sum |> ((s) -> s**0.5)
+    def __add__(self, other):
+        """Add two vectors together."""
+        vector(other_pts) = other
+        assert len(other_pts) == len(self.pts)
+        return map((+), self.pts, other_pts) |*> vector
+    def __sub__(self, other):
+        """Subtract one vector from another."""
+        vector(other_pts) = other
+        assert len(other_pts) == len(self.pts)
+        return map((-), self.pts, other_pts) |*> vector
+    def __neg__(self):
+        """Retrieve the negative of the vector."""
+        return self.pts |> map$((-)) |*> vector
+    def __eq__(self, other):
+        """Compare whether two vectors are equal."""
+        match vector(=self.pts) in other:
+            return True
+        else:
+            return False
+    def __mul__(self, other):
+        """Scalar multiplication and dot product."""
+        match vector(other_pts) in other:
+            assert len(other_pts) == len(self.pts)
+            return map((*), self.pts, other_pts) |> sum # dot product
+        else:
+            return self.pts |> map$((*)$(other)) |*> vector # scalar multiplication
+    def __rmul__(self, other):
+        """Necessary to make scalar multiplication commutative."""
+        return self * other
+    # New one-line functions necessary for finding the angle between vectors:
+    def __truediv__(self, other) = self.pts |> map$((x) -> x/other) |*> vector
+    def unit(self) = self / abs(self)
+    def angle(self, other is vector) = math.acos(self.unit() * other.unit())
+
+# Test cases:
+vector(3, 4) / 1 |> print # vector(pts=(3, 4))
+vector(2, 4) / 2 |> print # vector(pts=(1, 2))
+vector(0, 1).unit() |> print # vector(pts=(0, 1))
+vector(5, 0).unit() |> print # vector(pts=(1, 0))
+vector(2, 0).angle(vector(3, 0)) |> print # 0
+print(vector(1, 0).angle(vector(0, 2)), math.pi/2) # should be the same
+vector(1, 2).angle() # MatchError
+```
+
+Copy, paste! If everything is working, I'd recommend going back to playing around with `vector_field` [applications](#applications) using our new methods.
 
 ## Filling in the Gaps
 

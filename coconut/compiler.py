@@ -176,7 +176,7 @@ class CoconutSyntaxError(CoconutException):
         if source is not None:
             if point is None:
                 self.value += "\n" + " "*tablen + clean(source)
-            else:
+            elif source:
                 if point >= len(source):
                     point = len(source)-1
                 part = clean(source.splitlines()[lineno(point, source)-1])
@@ -2448,7 +2448,8 @@ class processor(object):
     data_args = Optional(lparen.suppress() + Optional(itemlist(~underscore + name, comma)) + rparen.suppress())
     data_suite = colon.suppress() - Group(
         (newline.suppress() + indent.suppress() + Optional(docstring) + Group(OneOrMore(stmt)) + dedent.suppress())("complex")
-        | docstring("docstring") | simple_stmt("simple"))
+        | (newline.suppress() + indent.suppress() + docstring + dedent.suppress() | docstring)("docstring")
+        | simple_stmt("simple"))
     datadef = condense(attach(Keyword("data").suppress() - name - data_args - data_suite, data_proc))
 
     simple_decorator = condense(dotted_name + Optional(lparen + callargslist + rparen))("simple")
