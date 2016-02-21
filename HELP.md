@@ -118,7 +118,7 @@ First, we're going to need to create a file to put our code into. The file exten
 _Note: in Sublime Text, this is done by opening the `.coc` file, clicking on "Plain Text" at the bottom right, selecting "Open all with current extension as...", and then choosing "Python"._
 
 Now let's put some code in our `hello_world.coc` file. Unlike in Python, where headers like
-```
+```coc_python
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 from __future__ import print_function, absolute_import, unicode_literals, division
@@ -126,7 +126,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 are common and often very necessary, the Coconut compiler will automatically take care of all of that for you, so all you need to worry about is your own code. To that end, let's add the code for our "hello, world!" program.
 
 In pure Python 3, "hello, world!" is
-```
+```coc_python
 print("hello, world!")
 ```
 and while that will work in Coconut, equally as valid is to use a pipeline-style approach, which is what we'll do, and write
