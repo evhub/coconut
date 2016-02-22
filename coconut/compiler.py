@@ -1733,10 +1733,7 @@ class processor(object):
                         if len(args) == 1:
                             out += ", " + args[0]
                         else:
-                            out += ", __coconut__.slice("
-                            for arg in args:
-                                out += ", "+arg
-                            out += ")"
+                            out += ", __coconut__.slice(" + ", ".join(args) + ")"
                         out += ")"
                     else:
                         raise CoconutException("invalid iterator slice args", trailer[1])
