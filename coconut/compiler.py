@@ -1736,7 +1736,8 @@ class processor(object):
                             out += ", __coconut__.slice("
                             for arg in args:
                                 out += ", "+arg
-                        out += "))"
+                            out += ")"
+                        out += ")"
                     else:
                         raise CoconutException("invalid iterator slice args", trailer[1])
                 elif trailer[0] == "..":
