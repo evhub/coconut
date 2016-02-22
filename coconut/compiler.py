@@ -1793,6 +1793,13 @@ class processor(object):
         else:
             raise CoconutException("invalid classlist tokens", tokens)
 
+    def version_tuple(self):
+        """Returns the target information as a version tuple."""
+        if self.version is None:
+            return ()
+        else:
+            return (int(self.version),)
+
     def import_repl(self, original, location, tokens):
         """Universalizes imports."""
         if len(tokens) == 1:
@@ -1830,7 +1837,7 @@ class processor(object):
                             old_imp += ".".join(exts)
                         break
                 paths = [imp if old_imp is None else old_imp]
-                if version_check is not None and (self.version is None or (int(self.version),) < version_check):
+                if version_check is not None and self.version_tuple() < version_check:
                     paths.extend((imp, version_check))
             importmap.append((paths, impas))
         stmts = []
