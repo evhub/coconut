@@ -361,7 +361,7 @@ class __coconut__(object):
                 header += r'''
     object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii = object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii
     @staticmethod
-    def igetitem(iterable, *args):
+    def igetitem(iterable, index):
         """Performs slicing on any iterable."""
         if isinstance(index, __coconut__.slice):
             return __coconut__.itertools.islice(iterable, index.start, index.stop, index.step)
