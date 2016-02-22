@@ -93,45 +93,46 @@ reserved_vars = (
     "await"
     )
 new_to_old_stdlib = {
-    "builtins": "__builtin__",
-    "configparser": "ConfigParser",
-    "copyreg": "copy_reg",
-    "dbm.gnu": "gdbm",
-    "_dummy_thread": "dummy_thread",
-    "queue": "Queue",
-    "reprlib": "repr",
-    "socketserver": "SocketServer",
-    "_thread": "thread",
-    "tkinter": "Tkinter",
-    "http.cookiejar": "cookielib",
-    "http.cookies": "Cookie",
-    "html.entites": "htmlentitydefs",
-    "html.parser": "HTMLParser",
-    "http.client": "httplib",
-    "email.mime.multipart": "email.MIMEMultipart",
-    "email.mime.nonmultipart": "email.MIMENonMultipart",
-    "email.mime.text": "email.MIMEText",
-    "email.mime.base": "email.MIMEBase",
-    "tkinter.dialog": "Dialog",
-    "tkinter.filedialog": "FileDialog",
-    "tkinter.scrolledtext": "ScrolledText",
-    "tkinter.simpledialog": "SimpleDialog",
-    "tkinter.tix": "Tix",
-    "tkinter.ttk": "ttk",
-    "tkinter.constants": "Tkconstants",
-    "tkinter.dnd": "Tkdnd",
-    "tkinter.colorchooser": "tkColorChooser",
-    "tkinter.commondialog": "tkCommonDialog",
-    "tkinter.filedialog": "tkFileDialog",
-    "tkinter.font": "tkFont",
-    "tkinter.messagebox": "tkMessageBox",
-    "tkinter.simpledialog": "tkSimpleDialog",
-    "urllib.robotparser": "robotparser",
-    "xmlrpc.client": "xmlrpclib",
-    "xmlrpc.server": "SimpleXMLRPCServer",
-    "urllib.request": "urllib2",
-    "urllib.parse": "urllib2",
-    "urllib.error": "urllib2"
+    "builtins": ("__builtin__", "(3,)"),
+    "configparser": ("ConfigParser", "(3,)"),
+    "copyreg": ("copy_reg", "(3,)"),
+    "dbm.gnu": ("gdbm", "(3,)"),
+    "_dummy_thread": ("dummy_thread", "(3,)"),
+    "queue": ("Queue", "(3,)"),
+    "reprlib": ("repr", "(3,)"),
+    "socketserver": ("SocketServer", "(3,)"),
+    "_thread": ("thread", "(3,)"),
+    "tkinter": ("Tkinter", "(3,)"),
+    "http.cookiejar": ("cookielib", "(3,)"),
+    "http.cookies": ("Cookie", "(3,)"),
+    "html.entites": ("htmlentitydefs", "(3,)"),
+    "html.parser": ("HTMLParser", "(3,)"),
+    "http.client": ("httplib", "(3,)"),
+    "email.mime.multipart": ("email.MIMEMultipart", "(3,)"),
+    "email.mime.nonmultipart": ("email.MIMENonMultipart", "(3,)"),
+    "email.mime.text": ("email.MIMEText", "(3,)"),
+    "email.mime.base": ("email.MIMEBase", "(3,)"),
+    "tkinter.dialog": ("Dialog", "(3,)"),
+    "tkinter.filedialog": ("FileDialog", "(3,)"),
+    "tkinter.scrolledtext": ("ScrolledText", "(3,)"),
+    "tkinter.simpledialog": ("SimpleDialog", "(3,)"),
+    "tkinter.tix": ("Tix", "(3,)"),
+    "tkinter.ttk": ("ttk", "(3,)"),
+    "tkinter.constants": ("Tkconstants", "(3,)"),
+    "tkinter.dnd": ("Tkdnd", "(3,)"),
+    "tkinter.colorchooser": ("tkColorChooser", "(3,)"),
+    "tkinter.commondialog": ("tkCommonDialog", "(3,)"),
+    "tkinter.filedialog": ("tkFileDialog", "(3,)"),
+    "tkinter.font": ("tkFont", "(3,)"),
+    "tkinter.messagebox": ("tkMessageBox", "(3,)"),
+    "tkinter.simpledialog": ("tkSimpleDialog", "(3,)"),
+    "urllib.robotparser": ("robotparser", "(3,)"),
+    "xmlrpc.client": ("xmlrpclib", "(3,)"),
+    "xmlrpc.server": ("SimpleXMLRPCServer", "(3,)"),
+    "urllib.request": ("urllib2", "(3,)"),
+    "urllib.parse": ("urllib2", "(3,)"),
+    "urllib.error": ("urllib2", "(3,)"),
+    "collections.abc": ("abc", "(3, 3)")
 }
 
 ParserElement.enablePackrat()
@@ -285,7 +286,7 @@ import imp, functools, operator, itertools, collections
                 header += r'''abc = collections
 '''
             else:
-                header += r'''if _coconut_sys.version_info < (3,3):
+                header += r'''if _coconut_sys.version_info < (3, 3):
     abc = collections
 else:
     import collections.abc as abc
@@ -1803,7 +1804,7 @@ class processor(object):
                                          original, location, self.adjust(lineno(location, original)))
         else:
             raise CoconutException("invalid import tokens", tokens)
-        importmap = [] # [([imps], impas), ...]
+        importmap = [] # [([imp | old_imp, imp, version_check], impas), ...]
         for imps in imports:
             if len(imps) == 1:
                 imp, impas = imps[0], imps[0]
@@ -1820,7 +1821,7 @@ class processor(object):
                     base, exts = ".".join(path[:i]), path[i:]
                     clean_base = base.replace("/", "")
                     if clean_base in new_to_old_stdlib:
-                        old_imp = new_to_old_stdlib[clean_base]
+                        old_imp, version_check = new_to_old_stdlib[clean_base]
                         if exts:
                             if "/" in base:
                                 old_imp += "./"
@@ -1830,7 +1831,7 @@ class processor(object):
                         break
                 paths = [imp if old_imp is None else old_imp]
                 if self.version is None and old_imp is not None:
-                    paths.append(imp)
+                    paths.extend((imp, version_check))
             importmap.append((paths, impas))
         stmts = []
         for paths, impas in importmap:
@@ -1840,11 +1841,11 @@ class processor(object):
                     more_stmts[0] = stmts.pop() + more_stmts[0]
                 stmts.extend(more_stmts)
             else:
-                first, second = paths
+                first, second, version_check = paths
                 if stmts and stmts[-1] == closeindent:
-                    stmts[-1] += r"if _coconut_sys.version_info < (3,):"
+                    stmts[-1] += "if _coconut_sys.version_info < " + version_check + ":"
                 else:
-                    stmts.append(r"if _coconut_sys.version_info < (3,):")
+                    stmts.append("if _coconut_sys.version_info < " + version_check + ":")
                 more_stmts = gen_imports(first, impas)
                 more_stmts[0] = openindent + more_stmts[0]
                 stmts.extend(more_stmts)
