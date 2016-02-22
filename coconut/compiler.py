@@ -291,7 +291,7 @@ else:
     import collections.abc as abc
 '''
             header += r'''
-object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii = object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii
+object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next = object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next
 
 def igetitem(iterable, index):
     """Performs slicing on any iterable."""
@@ -359,14 +359,14 @@ class __coconut__(object):
     else:
         import collections.abc as abc'''
                 header += r'''
-    object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii = object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii
+    object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next = object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next
     @staticmethod
     def igetitem(iterable, index):
         """Performs slicing on any iterable."""
         if isinstance(index, __coconut__.slice):
             return __coconut__.itertools.islice(iterable, index.start, index.stop, index.step)
         else:
-            return next(__coconut__.itertools.islice(iterable, index, index+1))
+            return __coconut__.next(__coconut__.itertools.islice(iterable, index, index+1))
     @staticmethod
     def recursive(func):
         """Returns tail-call-optimized function."""
