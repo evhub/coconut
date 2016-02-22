@@ -293,6 +293,13 @@ else:
             header += r'''
 object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii = object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii
 
+def igetitem(iterable, index):
+    """Performs slicing on any iterable."""
+    if isinstance(index, slice):
+        return itertools.islice(iterable, index.start, index.stop, index.step)
+    else:
+        return next(itertools.islice(iterable, index, index+1))
+
 def recursive(func):
     """Returns tail-call-optimized function."""
     state = [True, None] # toplevel, (args, kwargs)
@@ -353,6 +360,13 @@ class __coconut__(object):
         import collections.abc as abc'''
                 header += r'''
     object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii = object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii
+    @staticmethod
+    def igetitem(iterable, *args):
+        """Performs slicing on any iterable."""
+        if isinstance(index, __coconut__.slice):
+            return __coconut__.itertools.islice(iterable, index.start, index.stop, index.step)
+        else:
+            return next(__coconut__.itertools.islice(iterable, index, index+1))
     @staticmethod
     def recursive(func):
         """Returns tail-call-optimized function."""
@@ -839,7 +853,7 @@ class matcher(object):
             self.defs.append(itervar+" = __coconut__.tuple("+item+")")
         else:
             self.defs.append(tail+" = __coconut__.iter("+item+")")
-            self.defs.append(itervar+" = __coconut__.tuple(__coconut__.itertools.islice("+tail+", 0, "+str(len(match))+"))")
+            self.defs.append(itervar+" = __coconut__.tuple(__coconut__.igetitem("+tail+", __coconut__.slice(0, "+str(len(match))+")))")
         self.increment()
         self.checks.append("__coconut__.len("+itervar+") == "+str(len(match)))
         for x in range(0, len(match)):
@@ -1097,11 +1111,6 @@ def set_to_tuple(tokens):
         return "(" + tokens[0] + ",)"
     else:
         raise CoconutException("invalid set maker item", tokens[0])
-
-def islice_lambda(out):
-    """Constructs a function that behaves like slicing for islice."""
-    return ("(lambda i: __coconut__.itertools.islice("+out+", i.start, i.stop, i.step) if isinstance(i, __coconut__.slice)"
-            " else next(__coconut__.itertools.islice("+out+", i, i + 1)))")
 
 def gen_imports(path, impas):
     """Generates import statements."""
@@ -1694,7 +1703,7 @@ class processor(object):
                 out += trailer
             elif len(trailer) == 1:
                 if trailer[0] == "$[]":
-                    out = islice_lambda(out)
+                    out = "__coconut__.functools.partial(__coconut__.igetitem, "+out+")"
                 elif trailer[0] == "$":
                     out = "__coconut__.functools.partial(__coconut__.functools.partial, "+out+")"
                 elif trailer[0] == "[]":
@@ -1709,7 +1718,7 @@ class processor(object):
             elif len(trailer) == 2:
                 if trailer[0] == "$(":
                     out = "__coconut__.functools.partial("+out+", "+trailer[1]+")"
-                elif trailer[0] == "$[" or trailer[0] == "$[=":
+                elif trailer[0] == "$[":
                     if 0 < len(trailer[1]) <= 3:
                         args = []
                         for x in range(0, len(trailer[1])):
@@ -1720,15 +1729,14 @@ class processor(object):
                                 else:
                                     arg = "None"
                             args.append(arg)
-                        if len(args) != 1:
-                            out = "__coconut__.itertools.islice(" + out
+                        out = "__coconut__.igetitem(" + out
+                        if len(args) == 1:
+                            out += ", " + args[0]
+                        else:
+                            out += ", __coconut__.slice("
                             for arg in args:
                                 out += ", "+arg
-                            out += ")"
-                        elif trailer[0] == "$[=":
-                            out = "next(__coconut__.itertools.islice("+out+", "+args[0]+", "+args[0]+" + 1))"
-                        else:
-                            out = islice_lambda(out) + "(" + args[0] + ")"
+                        out += "))"
                     else:
                         raise CoconutException("invalid iterator slice args", trailer[1])
                 elif trailer[0] == "..":
@@ -2222,13 +2230,11 @@ class processor(object):
     slicetestgroup = Optional(test, default="")
     sliceopgroup = colon.suppress() + slicetestgroup
     subscriptgroup = Group(slicetestgroup + sliceopgroup + Optional(sliceopgroup) | test)
-    known_subscriptgroup = Group(known_atom)
     simple_trailer = condense(lbrack + subscriptlist + rbrack) | condense(dot + name)
     trailer = (
         Group(condense(dollar + lparen) + callargslist + rparen.suppress())
         | condense(lparen + callargslist + rparen)
         | Group(dotdot + func_atom)
-        | Group(fixto(dollar + lbrack, "$[=") + known_subscriptgroup + rbrack.suppress())
         | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())
         | Group(condense(dollar + lbrack + rbrack))
         | Group(dollar)
