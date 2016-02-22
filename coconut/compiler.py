@@ -93,46 +93,46 @@ reserved_vars = (
     "await"
     )
 new_to_old_stdlib = {
-    "builtins": ("__builtin__", "(3,)"),
-    "configparser": ("ConfigParser", "(3,)"),
-    "copyreg": ("copy_reg", "(3,)"),
-    "dbm.gnu": ("gdbm", "(3,)"),
-    "_dummy_thread": ("dummy_thread", "(3,)"),
-    "queue": ("Queue", "(3,)"),
-    "reprlib": ("repr", "(3,)"),
-    "socketserver": ("SocketServer", "(3,)"),
-    "_thread": ("thread", "(3,)"),
-    "tkinter": ("Tkinter", "(3,)"),
-    "http.cookiejar": ("cookielib", "(3,)"),
-    "http.cookies": ("Cookie", "(3,)"),
-    "html.entites": ("htmlentitydefs", "(3,)"),
-    "html.parser": ("HTMLParser", "(3,)"),
-    "http.client": ("httplib", "(3,)"),
-    "email.mime.multipart": ("email.MIMEMultipart", "(3,)"),
-    "email.mime.nonmultipart": ("email.MIMENonMultipart", "(3,)"),
-    "email.mime.text": ("email.MIMEText", "(3,)"),
-    "email.mime.base": ("email.MIMEBase", "(3,)"),
-    "tkinter.dialog": ("Dialog", "(3,)"),
-    "tkinter.filedialog": ("FileDialog", "(3,)"),
-    "tkinter.scrolledtext": ("ScrolledText", "(3,)"),
-    "tkinter.simpledialog": ("SimpleDialog", "(3,)"),
-    "tkinter.tix": ("Tix", "(3,)"),
-    "tkinter.ttk": ("ttk", "(3,)"),
-    "tkinter.constants": ("Tkconstants", "(3,)"),
-    "tkinter.dnd": ("Tkdnd", "(3,)"),
-    "tkinter.colorchooser": ("tkColorChooser", "(3,)"),
-    "tkinter.commondialog": ("tkCommonDialog", "(3,)"),
-    "tkinter.filedialog": ("tkFileDialog", "(3,)"),
-    "tkinter.font": ("tkFont", "(3,)"),
-    "tkinter.messagebox": ("tkMessageBox", "(3,)"),
-    "tkinter.simpledialog": ("tkSimpleDialog", "(3,)"),
-    "urllib.robotparser": ("robotparser", "(3,)"),
-    "xmlrpc.client": ("xmlrpclib", "(3,)"),
-    "xmlrpc.server": ("SimpleXMLRPCServer", "(3,)"),
-    "urllib.request": ("urllib2", "(3,)"),
-    "urllib.parse": ("urllib2", "(3,)"),
-    "urllib.error": ("urllib2", "(3,)"),
-    "collections.abc": ("abc", "(3, 3)")
+    "builtins": ("__builtin__", (3,)),
+    "configparser": ("ConfigParser", (3,)),
+    "copyreg": ("copy_reg", (3,)),
+    "dbm.gnu": ("gdbm", (3,)),
+    "_dummy_thread": ("dummy_thread", (3,)),
+    "queue": ("Queue", (3,)),
+    "reprlib": ("repr", (3,)),
+    "socketserver": ("SocketServer", (3,)),
+    "_thread": ("thread", (3,)),
+    "tkinter": ("Tkinter", (3,)),
+    "http.cookiejar": ("cookielib", (3,)),
+    "http.cookies": ("Cookie", (3,)),
+    "html.entites": ("htmlentitydefs", (3,)),
+    "html.parser": ("HTMLParser", (3,)),
+    "http.client": ("httplib", (3,)),
+    "email.mime.multipart": ("email.MIMEMultipart", (3,)),
+    "email.mime.nonmultipart": ("email.MIMENonMultipart", (3,)),
+    "email.mime.text": ("email.MIMEText", (3,)),
+    "email.mime.base": ("email.MIMEBase", (3,)),
+    "tkinter.dialog": ("Dialog", (3,)),
+    "tkinter.filedialog": ("FileDialog", (3,)),
+    "tkinter.scrolledtext": ("ScrolledText", (3,)),
+    "tkinter.simpledialog": ("SimpleDialog", (3,)),
+    "tkinter.tix": ("Tix", (3,)),
+    "tkinter.ttk": ("ttk", (3,)),
+    "tkinter.constants": ("Tkconstants", (3,)),
+    "tkinter.dnd": ("Tkdnd", (3,)),
+    "tkinter.colorchooser": ("tkColorChooser", (3,)),
+    "tkinter.commondialog": ("tkCommonDialog", (3,)),
+    "tkinter.filedialog": ("tkFileDialog", (3,)),
+    "tkinter.font": ("tkFont", (3,)),
+    "tkinter.messagebox": ("tkMessageBox", (3,)),
+    "tkinter.simpledialog": ("tkSimpleDialog", (3,)),
+    "urllib.robotparser": ("robotparser", (3,)),
+    "xmlrpc.client": ("xmlrpclib", (3,)),
+    "xmlrpc.server": ("SimpleXMLRPCServer", (3,)),
+    "urllib.request": ("urllib2", (3,)),
+    "urllib.parse": ("urllib2", (3,)),
+    "urllib.error": ("urllib2", (3,)),
+    "collections.abc": ("abc", (3, 3))
 }
 
 ParserElement.enablePackrat()
@@ -1815,7 +1815,7 @@ class processor(object):
             if self.version == "3":
                 paths = [imp]
             else:
-                old_imp = None
+                old_imp, version_check = None, None
                 path = imp.split(".")
                 for i in reversed(range(1, len(path)+1)):
                     base, exts = ".".join(path[:i]), path[i:]
@@ -1830,7 +1830,7 @@ class processor(object):
                             old_imp += ".".join(exts)
                         break
                 paths = [imp if old_imp is None else old_imp]
-                if self.version is None and old_imp is not None:
+                if version_check is not None and (self.version is None or (int(self.version),) < version_check):
                     paths.extend((imp, version_check))
             importmap.append((paths, impas))
         stmts = []
