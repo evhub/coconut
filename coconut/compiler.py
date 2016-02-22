@@ -1850,9 +1850,9 @@ class processor(object):
             else:
                 first, second, version_check = paths
                 if stmts and stmts[-1] == closeindent:
-                    stmts[-1] += "if _coconut_sys.version_info < " + version_check + ":"
+                    stmts[-1] += "if _coconut_sys.version_info < " + str(version_check) + ":"
                 else:
-                    stmts.append("if _coconut_sys.version_info < " + version_check + ":")
+                    stmts.append("if _coconut_sys.version_info < " + str(version_check) + ":")
                 more_stmts = gen_imports(first, impas)
                 more_stmts[0] = openindent + more_stmts[0]
                 stmts.extend(more_stmts)
