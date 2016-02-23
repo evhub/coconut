@@ -1126,18 +1126,16 @@ def gen_imports(path, impas):
         else:
             fake_mods = impas.split(".")
             out.append("import " + imp + " as " + import_as_var)
-            base_name = fake_mods[0]
             for i in range(1, len(fake_mods)):
                 mod_name = ".".join(fake_mods[:i])
                 out.append("try:")
-                out.append(openindent + base_name)
+                out.append(openindent + mod_name)
                 out.append(closeindent + "except __coconut__.NameError:")
                 out.append(openindent + mod_name + ' = __coconut__.imp.new_module("' + mod_name + '")')
                 out.append(closeindent + "else:")
-                out.append(openindent + "if not __coconut__.isinstance(" + base_name + ", __coconut__.types.ModuleType):")
+                out.append(openindent + "if not __coconut__.isinstance(" + mod_name + ", __coconut__.types.ModuleType):")
                 out.append(openindent + mod_name + ' = __coconut__.imp.new_module("' + mod_name + '")')
                 out.append(closeindent * 2)
-                base_name = mod_name
             if out[-1].endswith(closeindent):
                 out[-1] += ".".join(fake_mods) + " = " + import_as_var
             else:
