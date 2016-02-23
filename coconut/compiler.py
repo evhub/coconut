@@ -280,7 +280,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
             header += r'''
 version = "'''+VERSION+r'''"
 
-import imp, functools, operator, itertools, collections
+import imp, types, operator, functools, itertools, collections
 '''
             if version == "2":
                 header += r'''abc = collections
@@ -292,7 +292,7 @@ else:
     import collections.abc as abc
 '''
             header += r'''
-object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next = object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next
+NameError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next = NameError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next
 
 def igetitem(iterable, index):
     """Performs slicing on any iterable."""
@@ -350,7 +350,7 @@ _coconut_sys.path.remove(_coconut_file_path)
 class __coconut__(object):
     """Built-in Coconut functions."""
     version = "'''+VERSION+r'''"
-    import imp, functools, operator, itertools, collections
+    import imp, types, operator, functools, itertools, collections
 '''
                 if version == "2":
                     header += r'''    abc = collections'''
@@ -360,7 +360,7 @@ class __coconut__(object):
     else:
         import collections.abc as abc'''
                 header += r'''
-    object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next = object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next
+    NameError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next = NameError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next
     @staticmethod
     def igetitem(iterable, index):
         """Performs slicing on any iterable."""
@@ -1126,10 +1126,22 @@ def gen_imports(path, impas):
         else:
             fake_mods = impas.split(".")
             out.append("import " + imp + " as " + import_as_var)
+            base_name = fake_mods[0]
             for i in range(1, len(fake_mods)):
                 mod_name = ".".join(fake_mods[:i])
-                out.append(mod_name + ' = __coconut__.imp.new_module("' + mod_name + '")')
-            out.append(".".join(fake_mods) + " = " + import_as_var)
+                out.append("try:")
+                out.append(openindent + base_name)
+                out.append(closeindent + "except __coconut__.NameError:")
+                out.append(openindent + mod_name + ' = __coconut__.imp.new_module("' + mod_name + '")')
+                out.append(closeindent + "else:")
+                out.append(openindent + "if not __coconut__.isinstance(" + base_name + ", __coconut__.types.ModuleType):")
+                out.append(openindent + mod_name + ' = __coconut__.imp.new_module("' + mod_name + '")')
+                out.append(closeindent * 2)
+                base_name = mod_name
+            if out[-1].endswith(closeindent):
+                out[-1] += ".".join(fake_mods) + " = " + import_as_var
+            else:
+                out.append(".".join(fake_mods) + " = " + import_as_var)
     else:
         imp_from, imp = parts
         if impas == imp:
@@ -1811,7 +1823,7 @@ class processor(object):
                                          original, location, self.adjust(lineno(location, original)))
         else:
             raise CoconutException("invalid import tokens", tokens)
-        importmap = [] # [([imp | old_imp, imp, version_check], impas), ...]
+        importmap = [] # [((imp | old_imp, imp, version_check), impas), ...]
         for imps in imports:
             if len(imps) == 1:
                 imp, impas = imps[0], imps[0]
@@ -1819,26 +1831,28 @@ class processor(object):
                 imp, impas = imps
             if imp_from is not None:
                 imp = imp_from + "./" + imp # marker for from ... import ...
-            if self.version == "3":
-                paths = [imp]
+            old_imp = None
+            path = imp.split(".")
+            for i in reversed(range(1, len(path)+1)):
+                base, exts = ".".join(path[:i]), path[i:]
+                clean_base = base.replace("/", "")
+                if clean_base in new_to_old_stdlib:
+                    old_imp, version_check = new_to_old_stdlib[clean_base]
+                    if exts:
+                        if "/" in base:
+                            old_imp += "./"
+                        else:
+                            old_imp += "."
+                        old_imp += ".".join(exts)
+                    break
+            if old_imp is None:
+                paths = (imp,)
+            elif self.version == "2":
+                paths = (old_imp,)
+            elif self.version is None or self.version_tuple() < version_check:
+                paths = (old_imp, imp, version_check)
             else:
-                old_imp, version_check = None, None
-                path = imp.split(".")
-                for i in reversed(range(1, len(path)+1)):
-                    base, exts = ".".join(path[:i]), path[i:]
-                    clean_base = base.replace("/", "")
-                    if clean_base in new_to_old_stdlib:
-                        old_imp, version_check = new_to_old_stdlib[clean_base]
-                        if exts:
-                            if "/" in base:
-                                old_imp += "./"
-                            else:
-                                old_imp += "."
-                            old_imp += ".".join(exts)
-                        break
-                paths = [imp if old_imp is None else old_imp]
-                if version_check is not None and self.version_tuple() < version_check:
-                    paths.extend((imp, version_check))
+                paths = (imp,)
             importmap.append((paths, impas))
         stmts = []
         for paths, impas in importmap:
