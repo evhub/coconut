@@ -292,7 +292,7 @@ else:
     import collections.abc as abc
 '''
             header += r'''
-NameError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next = NameError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next
+object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next = object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next
 
 def igetitem(iterable, index):
     """Performs slicing on any iterable."""
@@ -360,7 +360,7 @@ class __coconut__(object):
     else:
         import collections.abc as abc'''
                 header += r'''
-    NameError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next = NameError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next
+    object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next = object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next
     @staticmethod
     def igetitem(iterable, index):
         """Performs slicing on any iterable."""
@@ -1130,7 +1130,7 @@ def gen_imports(path, impas):
                 mod_name = ".".join(fake_mods[:i])
                 out.append("try:")
                 out.append(openindent + mod_name)
-                out.append(closeindent + "except __coconut__.NameError:")
+                out.append(closeindent + "except:")
                 out.append(openindent + mod_name + ' = __coconut__.imp.new_module("' + mod_name + '")')
                 out.append(closeindent + "else:")
                 out.append(openindent + "if not __coconut__.isinstance(" + mod_name + ", __coconut__.types.ModuleType):")
