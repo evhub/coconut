@@ -320,7 +320,7 @@ def igetitem(iterable, index):
         elif index >= 0:
             return start + index * step
         else:
-            raise IndexError("count indices must be greater than 0")
+            raise IndexError("count indices must be positive")
     elif isinstance(iterable, imap):
         if isinstance(index, slice):
             return imap(iterable._func, *(igetitem(i, index) for i in iterable._iters))
@@ -433,7 +433,7 @@ class __coconut__(object):
             elif index >= 0:
                 return start + index * step
             else:
-                raise __coconut__.IndexError("count indices must be greater than 0")
+                raise __coconut__.IndexError("count indices must be positive")
         elif __coconut__.isinstance(iterable, __coconut__.imap):
             if __coconut__.isinstance(index, __coconut__.slice):
                 return __coconut__.imap(iterable._func, *(__coconut__.igetitem(i, index) for i in iterable._iters))
