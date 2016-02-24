@@ -271,7 +271,7 @@ def getheader(which, version=None, usehash=None):
 from __future__ import print_function, absolute_import, unicode_literals, division
 '''
         if which == "module":
-            header += r'''import sys, os.path as _coconut_sys, _coconut_os_path
+            header += r'''import sys as _coconut_sys, os.path as _coconut_os_path
 _coconut_file_path = _coconut_os_path.dirname(_coconut_os_path.abspath(__file__))
 _coconut_sys.path.insert(0, _coconut_file_path)'''
             if version is None:
