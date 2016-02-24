@@ -310,22 +310,15 @@ class izip(zip):
         z._iters = iterables
         return z
 
-class icount(itertools.count):
-    """Optimized count iterator."""
-    __slots__ = ("_start", "_step")
-    def __new__(cls, start=0, step=1):
-        c = super(cls, cls).__new__(cls, start, step)
-        c._start = start
-        c._step = step
-        return c
-
 def igetitem(iterable, index):
     """Performs slicing on any iterable."""
     if isinstance(iterable, itertools.count):
+        start = next(iterable)
+        step = next(iterable) - start
         if isinstance(index, slice) and (index.start is None or index.start >= 0) and (index.stop is not None and index.stop >= 0):
-            return imap(lambda x: iterable._start + x * iterable._step, range(index.start if index.start is not None else 0, index.stop, index.step if index.step is not None else 1))
+            return imap(lambda x: start + x * step, range(index.start if index.start is not None else 0, index.stop, index.step if index.step is not None else 1))
         elif index >= 0:
-            return iterable._start + index * iterable._step
+            return start + index * step
         else:
             raise IndexError("count indices must be greater than 0")
     elif isinstance(iterable, imap):
@@ -426,22 +419,16 @@ class __coconut__(object):
             z = super(cls, cls).__new__(cls, *iterables)
             z._iters = iterables
             return z
-    class icount(itertools.count):
-        """Optimized count iterator."""
-        __slots__ = ("_start", "_step")
-        def __new__(cls, start=0, step=1):
-            c = super(cls, cls).__new__(cls, start, step)
-            c._start = start
-            c._step = step
-            return c
     @staticmethod
     def igetitem(iterable, index):
         """Performs slicing on any iterable."""
         if __coconut__.isinstance(iterable, __coconut__.itertools.count):
+            start = __coconut__.next(iterable)
+            step = __coconut__.next(iterable) - start
             if __coconut__.isinstance(index, __coconut__.slice) and (index.start is None or index.start >= 0) and (index.stop is not None and index.stop >= 0):
-                return __coconut__.imap(lambda x: iterable._start + x * iterable._step, __coconut__.range(index.start if index.start is not None else 0, index.stop, index.step if index.step is not None else 1))
+                return __coconut__.imap(lambda x: start + x * step, __coconut__.range(index.start if index.start is not None else 0, index.stop, index.step if index.step is not None else 1))
             elif index >= 0:
-                return iterable._start + index * iterable._step
+                return start + index * step
             else:
                 raise __coconut__.IndexError("count indices must be greater than 0")
         elif __coconut__.isinstance(iterable, __coconut__.imap):
@@ -508,11 +495,11 @@ class __coconut__(object):
 __coconut_version__ = __coconut__.version
 map = __coconut__.imap
 zip = __coconut__.izip
-count = __coconut__.icount
 reduce = __coconut__.functools.reduce
 takewhile = __coconut__.itertools.takewhile
 dropwhile = __coconut__.itertools.dropwhile
 tee = __coconut__.itertools.tee
+count = __coconut__.itertools.count
 recursive = __coconut__.recursive
 datamaker = __coconut__.datamaker
 consume = __coconut__.consume
