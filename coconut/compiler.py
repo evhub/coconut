@@ -292,7 +292,7 @@ else:
     import collections.abc as abc
 '''
             header += r'''
-IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map, range = IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map, range
+IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map, zip, range = IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map, zip, range
 
 class imap(map):
     """Optimized iterator map."""
@@ -301,6 +301,14 @@ class imap(map):
         m = super(cls, cls).__new__(cls, function, *iterables)
         m._func, m._iters = function, iterables
         return m
+
+class izip(zip):
+    """Optimized iterator zip."""
+    __slots__ = ("_iters",)
+    def __new__(cls, *iterables):
+        z = super(cls, cls).__new__(cls, *iterables)
+        z._iters = iterables
+        return z
 
 def igetitem(iterable, index):
     """Performs slicing on any iterable."""
@@ -314,6 +322,11 @@ def igetitem(iterable, index):
             return imap(iterable._func, *(igetitem(i, index) for i in iterable._iters))
         else:
             return iterable._func(*(igetitem(i, index) for i in iterable._iters))
+    elif isinstance(iterable, izip):
+        if isinstance(index, slice):
+            return izip(*(igetitem(i, index) for i in iterable._iters))
+        else:
+            return (igetitem(i, index) for i in iterable._iters)
     elif isinstance(iterable, range):
         return iterable[index]
     elif isinstance(index, slice):
@@ -385,7 +398,7 @@ class __coconut__(object):
     else:
         import collections.abc as abc'''
                 header += r'''
-    IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map, range = IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map, range
+    IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map, zip, range = IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map, zip, range
     class imap(map):
         """Optimized iterator map."""
         __slots__ = ("_func", "_iters")
@@ -393,6 +406,13 @@ class __coconut__(object):
             m = super(cls, cls).__new__(cls, function, *iterables)
             m._func, m._iters = function, iterables
             return m
+    class izip(zip):
+        """Optimized iterator zip."""
+        __slots__ = ("_iters",)
+        def __new__(cls, *iterables):
+            z = super(cls, cls).__new__(cls, *iterables)
+            z._iters = iterables
+            return z
     @staticmethod
     def igetitem(iterable, index):
         """Performs slicing on any iterable."""
@@ -408,6 +428,11 @@ class __coconut__(object):
                 return __coconut__.imap(iterable._func, *(__coconut__.igetitem(i, index) for i in iterable._iters))
             else:
                 return iterable._func(*(__coconut__.igetitem(i, index) for i in iterable._iters))
+        elif __coconut__.isinstance(iterable, __coconut__.izip):
+            if __coconut__.isinstance(index, __coconut__.slice):
+                return __coconut__.izip(*(__coconut__.igetitem(i, index) for i in iterable._iters))
+            else:
+                return (__coconut__.igetitem(i, index) for i in iterable._iters)
         elif __coconut__.isinstance(iterable, __coconut__.range):
             return iterable[index]
         elif __coconut__.isinstance(index, __coconut__.slice):
@@ -459,6 +484,7 @@ class __coconut__(object):
             header += r'''
 __coconut_version__ = __coconut__.version
 map = __coconut__.imap
+zip = __coconut__.izip
 reduce = __coconut__.functools.reduce
 takewhile = __coconut__.itertools.takewhile
 dropwhile = __coconut__.itertools.dropwhile
