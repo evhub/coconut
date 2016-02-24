@@ -304,14 +304,19 @@ class imap(map):
 
 def igetitem(iterable, index):
     """Performs slicing on any iterable."""
-    if isinstance(iterable, imap):
-        return imap(iterable._func, igetitem(iterable._iters, index))
-    elif hasattr(iterable, "__getitem__"):
-        return iterable[index]
-    elif isinstance(index, slice):
-        return itertools.islice(iterable, index.start, index.stop, index.step)
-    else:
-        return next(itertools.islice(iterable, index, index + 1))
+        if isinstance(iterable, imap):
+            return imap(iterable._func, igetitem(iterable._iters, index))
+        elif hasattr(iterable, "__getitem__"):
+            return iterable[index]
+        elif isinstance(index, slice):
+            if index.start < 0:
+                return (x for x in collections.deque(iterable, maxlen=-index.start)[slice(None, index.stop, index.step)])
+            else:
+                return itertools.islice(iterable, index.start, index.stop, index.step)
+        elif index < 0:
+            return collections.deque(iterable, maxlen=-index)[0]
+        else:
+            return next(itertools.islice(iterable, index, index + 1))
 
 def recursive(func):
     """Returns tail-call-optimized function."""
@@ -388,7 +393,12 @@ class __coconut__(object):
         elif __coconut__.hasattr(iterable, "__getitem__"):
             return iterable[index]
         elif __coconut__.isinstance(index, __coconut__.slice):
-            return __coconut__.itertools.islice(iterable, index.start, index.stop, index.step)
+            if index.start < 0:
+                return (x for x in __coconut__.collections.deque(iterable, maxlen=-index.start)[__coconut__.slice(None, index.stop, index.step)])
+            else:
+                return __coconut__.itertools.islice(iterable, index.start, index.stop, index.step)
+        elif index < 0:
+            return __coconut__.collections.deque(iterable, maxlen=-index)[0]
         else:
             return __coconut__.next(__coconut__.itertools.islice(iterable, index, index + 1))
     @staticmethod
