@@ -388,7 +388,7 @@ class __coconut__(object):
     @staticmethod
     def igetitem(iterable, index):
         """Performs slicing on any iterable."""
-        if __coconut__.isinstance(iterable, imap):
+        if __coconut__.isinstance(iterable, __coconut__.imap):
             return __coconut__.imap(iterable._func, __coconut__.igetitem(iterable._iters, index))
         elif __coconut__.hasattr(iterable, "__getitem__"):
             return iterable[index]
