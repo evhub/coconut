@@ -334,7 +334,10 @@ def igetitem(iterable, index):
     elif isinstance(iterable, range):
         return iterable[index]
     elif hasattr(iterable, "__getitem__"):
-        return (x for x in iterable[index])
+        if isinstance(index, slice):
+            return (x for x in iterable[index])
+        else:
+            return iterable[index]
     elif isinstance(index, slice):
         if (index.start is not None and index.start < 0) or (index.stop is not None and index.stop < 0):
             return (x for x in tuple(iterable)[index])
@@ -444,7 +447,10 @@ class __coconut__(object):
         elif __coconut__.isinstance(iterable, __coconut__.range):
             return iterable[index]
         elif __coconut__.hasattr(iterable, "__getitem__"):
-            return (x for x in iterable[index])
+            if __coconut__.isinstance(index, __coconut__.slice):
+                return (x for x in iterable[index])
+            else:
+                return iterable[index]
         elif __coconut__.isinstance(index, __coconut__.slice):
             if (index.start is not None and index.start < 0) or (index.stop is not None and index.stop < 0):
                 return (x for x in __coconut__.tuple(iterable)[index])
