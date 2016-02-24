@@ -147,6 +147,7 @@ As part of Coconut's cross-compatibility efforts, Coconut adds in new Python 3 b
 - `py2_oct`
 - `py2_zip`
 - `py2_range`
+- `py2_xrange`
 - `py2_int`
 - `py2_chr`
 - `py2_str`

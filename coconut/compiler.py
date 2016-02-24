@@ -270,129 +270,29 @@ def getheader(which, version=None, usehash=None):
             header += r'''
 from __future__ import print_function, absolute_import, unicode_literals, division
 '''
-        if version == "3":
-            header += PY3_HEADER
-        elif version == "2":
-            header += PY2_HEADER
-        else:
-            header += PY2_HEADER_CHECK
-        if which == "package":
-            header += r'''
-version = "'''+VERSION+r'''"
-
-import imp, types, operator, functools, itertools, collections
-'''
-            if version == "2":
-                header += r'''abc = collections
-'''
-            else:
-                header += r'''if _coconut_sys.version_info < (3, 3):
-    abc = collections
-else:
-    import collections.abc as abc
-'''
-            header += r'''
-IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map, zip, range, hasattr = IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map, zip, range, hasattr
-
-class imap(map):
-    """Optimized iterator map."""
-    __slots__ = ("_func", "_iters")
-    def __new__(cls, function, *iterables):
-        m = super(cls, cls).__new__(cls, function, *iterables)
-        m._func, m._iters = function, iterables
-        return m
-
-class izip(zip):
-    """Optimized iterator zip."""
-    __slots__ = ("_iters",)
-    def __new__(cls, *iterables):
-        z = super(cls, cls).__new__(cls, *iterables)
-        z._iters = iterables
-        return z
-
-def igetitem(iterable, index):
-    """Performs slicing on any iterable."""
-    if isinstance(iterable, itertools.count):
-        start = next(iterable)
-        step = next(iterable) - start
-        if isinstance(index, slice) and (index.start is None or index.start >= 0) and (index.stop is not None and index.stop >= 0):
-            return imap(lambda x: start + x * step, range(index.start if index.start is not None else 0, index.stop, index.step if index.step is not None else 1))
-        elif index >= 0:
-            return start + index * step
-        else:
-            raise IndexError("count indices must be positive")
-    elif isinstance(iterable, imap):
-        if isinstance(index, slice):
-            return imap(iterable._func, *(igetitem(i, index) for i in iterable._iters))
-        else:
-            return iterable._func(*(igetitem(i, index) for i in iterable._iters))
-    elif isinstance(iterable, izip):
-        if isinstance(index, slice):
-            return izip(*(igetitem(i, index) for i in iterable._iters))
-        else:
-            return (igetitem(i, index) for i in iterable._iters)
-    elif isinstance(iterable, range):
-        return iterable[index]
-    elif hasattr(iterable, "__getitem__"):
-        if isinstance(index, slice):
-            return (x for x in iterable[index])
-        else:
-            return iterable[index]
-    elif isinstance(index, slice):
-        if (index.start is not None and index.start < 0) or (index.stop is not None and index.stop < 0):
-            return (x for x in tuple(iterable)[index])
-        else:
-            return itertools.islice(iterable, index.start, index.stop, index.step)
-    elif index < 0:
-        return collections.deque(iterable, maxlen=-index)[0]
-    else:
-        return next(itertools.islice(iterable, index, index + 1))
-
-def recursive(func):
-    """Returns tail-call-optimized function."""
-    state = [True, None] # toplevel, (args, kwargs)
-    recurse = object()
-    @functools.wraps(func)
-    def tailed_func(*args, **kwargs):
-        """Tail Recursion Wrapper."""
-        if state[0]:
-            state[0] = False
-            try:
-                while True:
-                    result = func(*args, **kwargs)
-                    if result is recurse:
-                        args, kwargs = state[1]
-                        state[1] = None
-                    else:
-                        return result
-            finally:
-                state[0] = True
-        else:
-            state[1] = args, kwargs
-            return recurse
-    return tailed_func
-
-def datamaker(data_type):
-    """Returns base data constructor of data_type."""
-    return functools.partial(super(data_type, data_type).__new__, data_type)
-
-def consume(iterable, keep_last=0):
-    """Fully exhaust iterable and return the last keep_last elements."""
-    return collections.deque(iterable, maxlen=keep_last)
-
-class MatchError(Exception):
-    """Pattern-matching error."""
-'''
-        else:
-            if which == "module":
-                header += r'''
-import os.path as _coconut_os_path
+        if which == "module":
+            header += r'''import sys, os.path as _coconut_sys, _coconut_os_path
 _coconut_file_path = _coconut_os_path.dirname(_coconut_os_path.abspath(__file__))
-_coconut_sys.path.insert(0, _coconut_file_path)
-import __coconut__
+_coconut_sys.path.insert(0, _coconut_file_path)'''
+            if version is None:
+                header += r'''
+if _coconut_sys.version_info() < (3,):
+    from __coconut__ import py2_filter, py2_hex, py2_map, py2_oct, py2_zip, py2_open, py2_range, py2_xrange, py2_int, py2_chr, py2_str, py2_print, py2_input, py2_raw_input, filter, hex, oct, open, range, int, chr, str, print, input, bytes'''
+            elif version == "2":
+                header += r'''
+from __coconut__ import py2_filter, py2_hex, py2_map, py2_oct, py2_zip, py2_open, py2_range, py2_xrange, py2_int, py2_chr, py2_str, py2_print, py2_input, py2_raw_input, filter, hex, oct, open, range, int, chr, str, print, input, bytes'''
+            header += r'''
+from __coconut__ import __coconut__, __coconut_version__, map, zip, reduce, takewhile, dropwhile, tee, count, recursive, datamaker, consume, MatchError
 _coconut_sys.path.remove(_coconut_file_path)
 '''
-            elif which == "code" or which == "file":
+        else:
+            if version == "3":
+                header += PY3_HEADER
+            elif version == "2":
+                header += PY2_HEADER
+            else:
+                header += PY2_HEADER_CHECK
+            if which == "package" or which == "code" or which == "file":
                 header += r'''
 class __coconut__(object):
     """Built-in Coconut functions."""
@@ -434,12 +334,12 @@ class __coconut__(object):
                 return start + index * step
             else:
                 raise __coconut__.IndexError("count indices must be positive")
-        elif __coconut__.isinstance(iterable, __coconut__.imap):
+        elif __coconut__.isinstance(iterable, __coconut__.map):
             if __coconut__.isinstance(index, __coconut__.slice):
                 return __coconut__.imap(iterable._func, *(__coconut__.igetitem(i, index) for i in iterable._iters))
             else:
                 return iterable._func(*(__coconut__.igetitem(i, index) for i in iterable._iters))
-        elif __coconut__.isinstance(iterable, __coconut__.izip):
+        elif __coconut__.isinstance(iterable, __coconut__.zip):
             if __coconut__.isinstance(index, __coconut__.slice):
                 return __coconut__.izip(*(__coconut__.igetitem(i, index) for i in iterable._iters))
             else:
@@ -511,8 +411,8 @@ datamaker = __coconut__.datamaker
 consume = __coconut__.consume
 MatchError = __coconut__.MatchError
 '''
-            if which != "code":
-                header += r'''
+        if which == "file" or which == "module":
+            header += r'''
 # Compiled Coconut: ------------------------------------------------------------
 
 '''
