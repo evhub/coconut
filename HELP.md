@@ -71,7 +71,7 @@ Installing Coconut, including all the features above, is drop-dead simple. Just
 python -m pip install coconut
 ```
 
-To check that your installation is functioning properly, try entering into the command-line
+To check that your installation is functioning properly, try entering into the command line
 ```
 coconut -h
 ```
@@ -83,7 +83,7 @@ _Note: if you're having trouble installing Coconut, or if anything else mentione
 
 ### Using the Interpreter
 
-Now that you've got Coconut installed, the obvious first thing to do is to play around with it. To launch the Coconut interpreter, just go to the command-line and type
+Now that you've got Coconut installed, the obvious first thing to do is to play around with it. To launch the Coconut interpreter, just go to the command line and type
 ```
 coconut
 ```
@@ -152,7 +152,7 @@ which should produce `hello, world!` as the output.
 
 Compiling single files is not the only way to use the Coconut command-line utility, however. We can also compile all the Coconut files in a given directory simply by passing that directory as the first argument, which will get rid of the need to run the same Coconut header code in each file by storing it in a `__coconut__.py` file in the same directory.
 
-The Coconut  compiler supports a large variety of different compilation options, the help for which can always be accessed by entering `coconut -h` into the command-line. One of the most useful of these is `--strict` (or `-s` for short), which will force you to make your source code obey certain cleanliness standards.
+The Coconut  compiler supports a large variety of different compilation options, the help for which can always be accessed by entering `coconut -h` into the command line. One of the most useful of these is `--strict` (or `-s` for short), which will force you to make your source code obey certain cleanliness standards.
 
 ### Using IPython / Jupyter
 
@@ -947,7 +947,8 @@ Here's my solution, although I cheated a little bit and used a construct I haven
 
 Pattern-matching function definition does exactly that—it pattern-matches against all the arguments that are passed to the function. In this case, pattern-matching function definition is incredibly handy, as it lets us write this whole function in just one line. There are a couple of things to watch out for when using pattern-matching function definition, however. First, that keyword arguments aren't allowed, and second, that instead of raising a `TypeError` if the wrong number of arguments are passed, your function will raise a `MatchError`. Finally, like destructuring assignment, if you want to be more explicit about using pattern-matching function definition, you can add a `match` before the `def`.
 
-And now it's time to put it all together. Feel free to subsitute in your own versions of the functions we just defined.
+And now it's time to put it all together. Feel free to subsitute in your own versions of the methods we just defined.
+
 ```coconut
 import math # necessary for math.acos in .angle
 
@@ -1005,6 +1006,7 @@ vector(2, 0).angle(vector(3, 0)) |> print # 0.0
 print(vector(1, 0).angle(vector(0, 2)), math.pi/2) # should be the same
 vector(1, 2).angle(5) # MatchError
 ```
+_One note of warning here: be careful not to leave a blank line when substituting in your methods, or the interpreter will cut off the code for the `vector` there. This isn't a problem in normal Coconut code, only here because we're copy-and-pasting into the command line._
 
 Copy, paste! If everything is working, I'd recommend going back to playing around with `vector_field` [applications](#applications) using our new methods.
 
