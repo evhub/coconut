@@ -285,24 +285,23 @@ from __coconut__ import py2_filter, py2_hex, py2_map, py2_oct, py2_zip, py2_open
 from __coconut__ import __coconut__, __coconut_version__, map, zip, reduce, takewhile, dropwhile, tee, count, recursive, datamaker, consume, MatchError
 _coconut_sys.path.remove(_coconut_file_path)
 '''
-        else:
+        elif which == "package" or which == "code" or which == "file":
             if version == "3":
                 header += PY3_HEADER
             elif version == "2":
                 header += PY2_HEADER
             else:
                 header += PY2_HEADER_CHECK
-            if which == "package" or which == "code" or which == "file":
-                header += r'''
+            header += r'''
 class __coconut__(object):
     """Built-in Coconut utilities."""
     version = "'''+VERSION+r'''"
     import imp, types, operator, functools, itertools, collections
 '''
-                if version == "2":
-                    header += r'''    abc = collections'''
-                else:
-                    header += r'''    if _coconut_sys.version_info < (3, 3):
+            if version == "2":
+                header += r'''    abc = collections'''
+            else:
+                header += r'''    if _coconut_sys.version_info < (3, 3):
         abc = collections
     else:
         import collections.abc as abc'''
@@ -395,8 +394,6 @@ class __coconut__(object):
     class MatchError(Exception):
         """Pattern-matching error."""
 '''
-            else:
-                raise CoconutException("invalid header type", which)
             header += r'''
 __coconut_version__ = __coconut__.version
 map = __coconut__.imap
@@ -411,6 +408,8 @@ datamaker = __coconut__.datamaker
 consume = __coconut__.consume
 MatchError = __coconut__.MatchError
 '''
+        else:
+            raise CoconutException("invalid header type", which)
         if which == "file" or which == "module":
             header += r'''
 # Compiled Coconut: ------------------------------------------------------------
