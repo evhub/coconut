@@ -338,9 +338,9 @@ _Can't be done without a complicated iterator comprehension in place of the lazy
 
 Coconut uses a `$` sign right after an iterator before a slice to perform iterator slicing. Coconut's iterator slicing works much the same as Python's sequence slicing, and looks much the same as Coconut's partial application, but with brackets instead of parentheses. It has the same precedence as subscription.
 
-Iterator slicing works just like sequence slicing, including support for negative indices and slices, and support for `slice` objects in the same way as can be done with normal slicing. If, however, a generic iterator is passed, that is, not a sequence type, `map`, or `range`, then no guarantee is made that the generic iterator be preserved (to preserve the iterator, use Coconut's [`tee` function](#tee)).
+Iterator slicing works just like sequence slicing, including support for negative indices and slices, and support for `slice` objects in the same way as can be done with normal slicing. If, however, a generic iterator is passed (not a sequence type, `map`, or `range`), then no guarantee is made that the generic iterator be preserved (to preserve the iterator, use Coconut's [`tee` function](#tee)).
 
-Coconut's iterator slicing is very similar to Python's `itertools.islice`, but unlike `itertools.islice`, Coconut's iterator slicing is optimized to play nicely with Python's `range` and `map` objects, only computing the elements of each that are actually necessary to extract the desired slice.
+Coconut's iterator slicing is very similar to Python's `itertools.islice`, but unlike `itertools.islice`, Coconut's iterator slicing supports negative indices, and is optimized to play nicely with Coconut's `range` and `map` objects, only computing the elements of each that are actually necessary to extract the desired slice.
 
 ##### Example
 
