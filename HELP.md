@@ -638,7 +638,7 @@ But since we want to be able to iterate over that plane, we're going to need to 
 
 ### `diagonal_line`
 
-Thus, our first function `diagonal_line(n)` should construct an iterator of all the points, represented as coordinate tuples, in the `n`th diagonal, starting with `(0, 0)` as the `0`th diagonal. Like we said at the start of this case study, this is where we I let go and you take over. Using all the tools of functional programming that Coconut provides, give `diagonal_line` a shot. One extra constaint just for this problem: try not to use a generator comprehension. In this case, a generator comprehension would work fine, but there are a lot of cases you will find where it won't, so you should try to get in the habit of using higher-order functions instead. When you're ready to move on, scroll down.
+Thus, our first function `diagonal_line(n)` should construct an iterator of all the points, represented as coordinate tuples, in the `n`th diagonal, starting with `(0, 0)` as the `0`th diagonal. Like we said at the start of this case study, this is where we I let go and you take over. Using all the tools of functional programming that Coconut provides, give `diagonal_line` a shot. One extra constaint just for this problem: try not to use a comprehension. Comprehensions are very useful tools, but they're not as powerful as higher-order functions, and Coconut can't optimize them as well. When you're ready to move on, scroll down.
 
 Here are some tests that you can use:
 ```coconut

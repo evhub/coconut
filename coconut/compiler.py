@@ -292,7 +292,7 @@ else:
     import collections.abc as abc
 '''
             header += r'''
-object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, ne, hasattrxt, map = object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map, hasattr
+object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map, range = object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map, range
 
 class imap(map):
     """Optimized iterator map."""
@@ -306,7 +306,7 @@ def igetitem(iterable, index):
     """Performs slicing on any iterable."""
         if isinstance(iterable, imap):
             return imap(iterable._func, igetitem(iterable._iters, index))
-        elif hasattr(iterable, "__getitem__"):
+        elif isinstance(iterable, range):
             return iterable[index]
         elif isinstance(index, slice):
             if index.start < 0:
@@ -377,7 +377,7 @@ class __coconut__(object):
     else:
         import collections.abc as abc'''
                 header += r'''
-    object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map, hasattr = object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map, hasattr
+    object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map, range = object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map, range
     class imap(map):
         """Optimized iterator map."""
         __slots__ = ("_func", "_iters")
@@ -390,11 +390,11 @@ class __coconut__(object):
         """Performs slicing on any iterable."""
         if __coconut__.isinstance(iterable, __coconut__.imap):
             return __coconut__.imap(iterable._func, __coconut__.igetitem(iterable._iters, index))
-        elif __coconut__.hasattr(iterable, "__getitem__"):
+        elif __coconut__.isinstance(iterable, __coconut__.range):
             return iterable[index]
         elif __coconut__.isinstance(index, __coconut__.slice):
             if index.start < 0:
-                return (x for x in __coconut__.collections.deque(iterable, maxlen=-index.start)[__coconut__.slice(None, index.stop, index.step)])
+                return (x for x in __coconut__.list(__coconut__.collections.deque(iterable, maxlen=-index.start))[__coconut__.slice(None, index.stop, index.step)])
             else:
                 return __coconut__.itertools.islice(iterable, index.start, index.stop, index.step)
         elif index < 0:

@@ -336,30 +336,11 @@ _Can't be done without a complicated iterator comprehension in place of the lazy
 
 ### Iterator Slice
 
-Coconut uses a `$` sign right after an iterator before a slice to perform iterator slicing. Coconut's iterator slicing works much the same as Python's sequence slicing, and looks much the same as Coconut's partial application, but with brackets instead of parentheses.
+Coconut uses a `$` sign right after an iterator before a slice to perform iterator slicing. Coconut's iterator slicing works much the same as Python's sequence slicing, and looks much the same as Coconut's partial application, but with brackets instead of parentheses. It has the same precedence as subscription.
 
-Iterator slicing works just like sequence slicing, with two exceptions: negative indices are not allowed (use [`consume`](#consume)'s optional argument to get the effect of negative indices) and no guarantee is made that the original iterator be preserved (to preserve the original iterator, use Coconut's [`tee` function](#tee)).
+Iterator slicing works just like sequence slicing, including support for negative indices and slices, and support for `slice` objects in the same way as can be done with normal slicing. If, however, a generic iterator is passed, that is, not a sequence type, `map`, or `range`, then no guarantee is made that the generic iterator be preserved (to preserve the iterator, use Coconut's [`tee` function](#tee)).
 
-For dynamically determining the slice parameters, iterator slicing supports slicing with a `slice` object in the same way as can be done with normal slicing. It has the same precedence as subscription.
-
-##### Python Docs
-
-Make an iterator that returns selected elements from the _iterable_. If _start_ is non-zero, then elements from the _iterable_ are skipped until _start_ is reached. Afterward, elements are returned consecutively unless _step_ is set higher than one which results in items being skipped. If _stop_ is `None`, then iteration continues until the iterator is exhausted, if at all; otherwise, it stops at the specified position. Unlike regular slicing, iterator slicing does not support negative values for _start_, _stop_, or _step_. Can be used to extract related fields from data where the internal structure has been flattened (for example, a multi-line report may list a name field on every third line). Equivalent to:
-```coc_python
-def islice(iterable, *args):
-    # islice('ABCDEFG', 2) --> A B
-    # islice('ABCDEFG', 2, 4) --> C D
-    # islice('ABCDEFG', 2, None) --> C D E F G
-    # islice('ABCDEFG', 0, None, 2) --> A C E G
-    s = slice(*args)
-    it = iter(range(s.start or 0, s.stop or sys.maxsize, s.step or 1))
-    nexti = next(it)
-    for i, element in enumerate(iterable):
-        if i == nexti:
-            yield element
-            nexti = next(it)
-```
-If _start_ is `None`, then iteration starts at zero. If _step_ is `None`, then the step defaults to one.
+Coconut's iterator slicing is very similar to Python's `itertools.islice`, but unlike `itertools.islice`, Coconut's iterator slicing is optimized to play nicely with Python's `range` and `map` objects, only computing the elements of each that are actually necessary to extract the desired slice.
 
 ##### Example
 
