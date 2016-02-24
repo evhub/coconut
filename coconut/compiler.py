@@ -402,7 +402,7 @@ class __coconut__(object):
                 if version == "2":
                     header += r'''    abc = collections'''
                 else:
-                    header += r'''    if _coconut_sys.version_info < (3,3):
+                    header += r'''    if _coconut_sys.version_info < (3, 3):
         abc = collections
     else:
         import collections.abc as abc'''
