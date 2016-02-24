@@ -307,6 +307,8 @@ class __coconut__(object):
         import collections.abc as abc'''
             header += r'''
     IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map, zip, range, hasattr = IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map, zip, range, hasattr
+    class MatchError(Exception):
+        """Pattern-matching error."""
     class imap(map):
         """Optimized iterator map."""
         __slots__ = ("_func", "_iters")
@@ -360,6 +362,10 @@ class __coconut__(object):
         else:
             return __coconut__.next(__coconut__.itertools.islice(iterable, index, index + 1))
     @staticmethod
+    def consume(iterable, keep_last=0):
+        """Fully exhaust iterable and return the last keep_last elements."""
+        return __coconut__.collections.deque(iterable, maxlen=keep_last)
+    @staticmethod
     def recursive(func):
         """Returns tail-call-optimized function."""
         state = [True, None] # toplevel, (args, kwargs)
@@ -387,25 +393,8 @@ class __coconut__(object):
     def datamaker(data_type):
         """Returns base data constructor of data_type."""
         return __coconut__.functools.partial(super(data_type, data_type).__new__, data_type)
-    @staticmethod
-    def consume(iterable, keep_last=0):
-        """Fully exhaust iterable and return the last keep_last elements."""
-        return __coconut__.collections.deque(iterable, maxlen=keep_last)
-    class MatchError(Exception):
-        """Pattern-matching error."""
 
-__coconut_version__ = __coconut__.version
-map = __coconut__.imap
-zip = __coconut__.izip
-reduce = __coconut__.functools.reduce
-takewhile = __coconut__.itertools.takewhile
-dropwhile = __coconut__.itertools.dropwhile
-tee = __coconut__.itertools.tee
-count = __coconut__.itertools.count
-recursive = __coconut__.recursive
-datamaker = __coconut__.datamaker
-consume = __coconut__.consume
-MatchError = __coconut__.MatchError
+__coconut_version__, MatchError, map, zip, reduce, takewhile, dropwhile, tee, count, consume, recursive, datamaker = __coconut__.version, __coconut__.MatchError, __coconut__.imap, __coconut__.izip, __coconut__.functools.reduce, __coconut__.itertools.takewhile, __coconut__.itertools.dropwhile, __coconut__.itertools.tee, __coconut__.itertools.count, __coconut__.consume, __coconut__.recursive, __coconut__.datamaker
 '''
         else:
             raise CoconutException("invalid header type", which)
