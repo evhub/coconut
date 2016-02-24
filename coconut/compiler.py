@@ -277,10 +277,10 @@ _coconut_sys.path.insert(0, _coconut_file_path)'''
             if version is None:
                 header += r'''
 if _coconut_sys.version_info() < (3,):
-    from __coconut__ import py2_filter, py2_hex, py2_map, py2_oct, py2_zip, py2_open, py2_range, py2_xrange, py2_int, py2_chr, py2_str, py2_print, py2_input, py2_raw_input, filter, hex, oct, open, range, int, chr, str, print, input, bytes'''
+    from __coconut__ import py2_filter, py2_hex, py2_map, py2_oct, py2_zip, py2_open, py2_range, py2_xrange, py2_int, py2_chr, py2_str, py2_print, py2_input, py2_raw_input, ascii, filter, hex, oct, open, range, int, chr, str, print, input, bytes'''
             elif version == "2":
                 header += r'''
-from __coconut__ import py2_filter, py2_hex, py2_map, py2_oct, py2_zip, py2_open, py2_range, py2_xrange, py2_int, py2_chr, py2_str, py2_print, py2_input, py2_raw_input, filter, hex, oct, open, range, int, chr, str, print, input, bytes'''
+from __coconut__ import py2_filter, py2_hex, py2_map, py2_oct, py2_zip, py2_open, py2_range, py2_xrange, py2_int, py2_chr, py2_str, py2_print, py2_input, py2_raw_input, ascii, filter, hex, oct, open, range, int, chr, str, print, input, bytes'''
             header += r'''
 from __coconut__ import __coconut__, __coconut_version__, map, zip, reduce, takewhile, dropwhile, tee, count, recursive, datamaker, consume, MatchError
 _coconut_sys.path.remove(_coconut_file_path)
@@ -295,7 +295,7 @@ _coconut_sys.path.remove(_coconut_file_path)
             if which == "package" or which == "code" or which == "file":
                 header += r'''
 class __coconut__(object):
-    """Built-in Coconut functions."""
+    """Built-in Coconut utilities."""
     version = "'''+VERSION+r'''"
     import imp, types, operator, functools, itertools, collections
 '''
@@ -334,12 +334,12 @@ class __coconut__(object):
                 return start + index * step
             else:
                 raise __coconut__.IndexError("count indices must be positive")
-        elif __coconut__.isinstance(iterable, __coconut__.map):
+        elif __coconut__.isinstance(iterable, __coconut__.imap):
             if __coconut__.isinstance(index, __coconut__.slice):
                 return __coconut__.imap(iterable._func, *(__coconut__.igetitem(i, index) for i in iterable._iters))
             else:
                 return iterable._func(*(__coconut__.igetitem(i, index) for i in iterable._iters))
-        elif __coconut__.isinstance(iterable, __coconut__.zip):
+        elif __coconut__.isinstance(iterable, __coconut__.izip):
             if __coconut__.isinstance(index, __coconut__.slice):
                 return __coconut__.izip(*(__coconut__.igetitem(i, index) for i in iterable._iters))
             else:
