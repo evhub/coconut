@@ -305,7 +305,7 @@ class __coconut__(object):
         abc = collections
     else:
         import collections.abc as abc'''
-                header += r'''
+            header += r'''
     IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map, zip, range, hasattr = IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map, zip, range, hasattr
     class imap(map):
         """Optimized iterator map."""
@@ -393,8 +393,7 @@ class __coconut__(object):
         return __coconut__.collections.deque(iterable, maxlen=keep_last)
     class MatchError(Exception):
         """Pattern-matching error."""
-'''
-            header += r'''
+
 __coconut_version__ = __coconut__.version
 map = __coconut__.imap
 zip = __coconut__.izip
