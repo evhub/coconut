@@ -292,11 +292,21 @@ else:
     import collections.abc as abc
 '''
             header += r'''
-object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next = object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next
+object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map = object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map
+
+class imap(map):
+    """Optimized iterator map."""
+    __slots__ = ("_func", "_iters")
+    def __new__(cls, function, *iterables):
+        m = super(cls, cls).__new__(cls, function, *iterables)
+        m._func, m._iters = function, iterables
+        return m
 
 def igetitem(iterable, index):
     """Performs slicing on any iterable."""
-    if isinstance(index, slice):
+    if isinstance(iterable, imap):
+        return imap(iterable._func, igetitem(iterable._iters, index))
+    elif isinstance(index, slice):
         return itertools.islice(iterable, index.start, index.stop, index.step)
     else:
         return next(itertools.islice(iterable, index, index+1))
@@ -360,11 +370,20 @@ class __coconut__(object):
     else:
         import collections.abc as abc'''
                 header += r'''
-    object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next = object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next
+    object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map = object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map
+    class imap(__coconut__.map):
+        """Optimized iterator map."""
+        __slots__ = ("_func", "_iters")
+        def __new__(cls, function, *iterables):
+            m = super(cls, cls).__new__(cls, function, *iterables)
+            m._func, m._iters = function, iterables
+            return m
     @staticmethod
     def igetitem(iterable, index):
         """Performs slicing on any iterable."""
-        if isinstance(index, __coconut__.slice):
+        if __coconut__.isinstance(iterable, imap):
+            return __coconut__.imap(iterable._func, __coconut__.igetitem(iterable._iters, index))
+        elif __coconut__.isinstance(index, __coconut__.slice):
             return __coconut__.itertools.islice(iterable, index.start, index.stop, index.step)
         else:
             return __coconut__.next(__coconut__.itertools.islice(iterable, index, index+1))
@@ -407,6 +426,7 @@ class __coconut__(object):
                 raise CoconutException("invalid header type", which)
             header += r'''
 __coconut_version__ = __coconut__.version
+map = __coconut__.imap
 reduce = __coconut__.functools.reduce
 takewhile = __coconut__.itertools.takewhile
 dropwhile = __coconut__.itertools.dropwhile
