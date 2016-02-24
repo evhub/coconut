@@ -30,6 +30,7 @@ builtins = (
     "takewhile",
     "dropwhile",
     "tee",
+    "count",
     "recursive",
     "datamaker",
     "consume"

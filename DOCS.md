@@ -53,9 +53,10 @@
     3. [`dropwhile`](#dropwhile)
     4. [`tee`](#tee)
     5. [`consume`](#consume)
-    6. [`datamaker`](#datamaker)
-    7. [`recursive`](#recursive)
-    8. [`__coconut_version__`](#__coconut_version__)
+    6. [`count`](#count)
+    7. [`datamaker`](#datamaker)
+    8. [`recursive`](#recursive)
+    9. [`__coconut_version__`](#__coconut_version__)
 8. [Coconut Utilities](#coconut-utilities)
     1. [Syntax Highlighting](#syntax-highlighting)
     2. [`coconut.convenience`](#coconutconvenience)
@@ -338,35 +339,19 @@ _Can't be done without a complicated iterator comprehension in place of the lazy
 
 Coconut uses a `$` sign right after an iterator before a slice to perform iterator slicing. Coconut's iterator slicing works much the same as Python's sequence slicing, and looks much the same as Coconut's partial application, but with brackets instead of parentheses. It has the same precedence as subscription.
 
-Iterator slicing works just like sequence slicing, including support for negative indices and slices, and support for `slice` objects in the same way as can be done with normal slicing. If, however, a generic iterator is passed (not a sequence type, `map`, or `range`), then no guarantee is made that the generic iterator be preserved (to preserve the iterator, use Coconut's [`tee` function](#tee)).
+Iterator slicing works just like sequence slicing, including support for negative indices and slices, and support for `slice` objects in the same way as can be done with normal slicing. If, however, a generic iterator is passed (not a sequence type, `map`, `zip`, `range`, or `count`), then no guarantee is made that the generic iterator be preserved (to preserve the iterator, use Coconut's [`tee` function](#tee)).
 
-Coconut's iterator slicing is very similar to Python's `itertools.islice`, but unlike `itertools.islice`, Coconut's iterator slicing supports negative indices, and is optimized to play nicely with Coconut's `range` and `map` objects, only computing the elements of each that are actually necessary to extract the desired slice.
+Coconut's iterator slicing is very similar to Python's `itertools.islice`, but unlike `itertools.islice`, Coconut's iterator slicing supports negative indices, and is optimized to play nicely with Coconut's `map`, `zip`, `range`, and `count` objects, only computing the elements of each that are actually necessary to extract the desired slice.
 
 ##### Example
 
 ###### Coconut
 ```coconut
-def N():
-    x = 0
-    while True:
-        yield x
-        x += 1
-
-N()$[10:15] |> list |> print
+map((x)->x*2, range(10**100))$[-1] |> print
 ```
 
 ###### Python
-```coc_python
-import itertools
-
-def N():
-    x = 0
-    while True:
-        yield x
-        x += 1
-
-print(list(itertools.islice(N(), 10, 15)))
-```
+_Can't be done without a complicated iterator slicing function and inspection of custom objects. The necessary definitions in Python can be found in the Coconut header._
 
 ### Unicode Alternatives
 
@@ -1242,6 +1227,35 @@ range(10) |> map$((x) -> x**2) |> map$(print) |> consume
 ```coc_python
 collections.deque(map(print, map(lambda x: x**2, range(10))), maxlen=0)
 ```
+
+### `count`
+
+Coconut provides `itertools.count` as a built-in under the name `count`, with slight modifications to allow optimization by iterator slicing.
+
+##### Python Docs
+
+**count**(_start=0, step=1_)
+
+Make an iterator that returns evenly spaced values starting with number _start_. Often used as an argument to `map()` to generate consecutive data points. Also, used with `zip()` to add sequence numbers. Equivalent to:
+```coc_python
+def count(start=0, step=1):
+    # count(10) --> 10 11 12 13 14 ...
+    # count(2.5, 0.5) -> 2.5 3.0 3.5 ...
+    n = start
+    while True:
+        yield n
+        n += step
+```
+
+##### Example
+
+###### Coconut
+```coconut
+count()$[10**100] |> print
+```
+
+###### Python
+_Can't be done quickly without Coconut's iterator slicing, which requires many complicated pieces. The necessary definitions in Python can be found in the Coconut header._
 
 ### `datamaker`
 
