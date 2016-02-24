@@ -305,7 +305,7 @@ class imap(map):
 def igetitem(iterable, index):
     """Performs slicing on any iterable."""
     if isinstance(iterable, imap):
-        return imap(iterable._func, igetitem(iterable._iters, index))
+        return imap(iterable._func, *(igetitem(i, index) for i in iterable._iters))
     elif isinstance(iterable, range):
         return iterable[index]
     elif isinstance(index, slice):
