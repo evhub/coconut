@@ -39,26 +39,52 @@ VERSION_TAG = "v" + VERSION_STR
 PY2 = sys.version_info < (3,)
 PY2_HEADER_BASE = r'''
 py2_filter, py2_hex, py2_map, py2_oct, py2_zip, py2_open, py2_range, py2_int, py2_chr, py2_str, py2_print, py2_input, py2_raw_input = filter, hex, map, oct, zip, open, range, int, chr, str, print, input, raw_input
-_coconut_int, _coconut_long, _coconut_str, _coconut_bytearray, _coconut_print, _coconut_unicode, _coconut_raw_input = int, long, str, bytearray, print, unicode, raw_input
-range, chr, str = xrange, unichr, unicode
+_coconut_isinstance, _coconut_int, _coconut_long, _coconut_str, _coconut_bytearray, _coconut_print, _coconut_unicode, _coconut_raw_input, _coconut_xrange, _coconut_slice = isinstance, int, long, str, bytearray, print, unicode, raw_input, xrange, slice
+chr, str = unichr, unicode
 from future_builtins import *
 from io import open
+class range(object):
+    """Python 3 range."""
+    def __init__(self, *args):
+        self._xrange = _coconut_xrange(*args)
+    def __iter__(self):
+        return self._xrange
+    def __len__(self):
+        return len(self._xrange)
+    def _slice(self, index):
+        start, stop, step = index.start, index.stop, index.step
+        if start is None:
+            start = 0
+        elif start < 0:
+            start += len(self._xrange)
+        if stop is None:
+            stop = len(self._xrange)
+        elif stop is not None and stop < 0:
+            stop += len(self._xrange)
+        if step is None:
+            step = 1
+        for i in _coconut_xrange(start, stop, step):
+            yield self._xrange[i]
+    def __getitem__(self, index):
+        if _coconut_isinstance(index, _coconut_slice):
+            return self._slice(index)
+        else:
+            return self._xrange[index]
 class _coconut_metaint(type):
     def __instancecheck__(cls, inst):
-        return isinstance(inst, (_coconut_int, _coconut_long))
+        return _coconut_isinstance(inst, (_coconut_int, _coconut_long))
 class int(_coconut_int):
     """Python 3 int."""
     __metaclass__ = _coconut_metaint
     __slots__ = ()
 class _coconut_metabytes(type):
     def __instancecheck__(cls, inst):
-        return isinstance(inst, _coconut_str)
+        return _coconut_isinstance(inst, _coconut_str)
 class bytes(_coconut_str):
     """Python 3 bytes."""
     __metaclass__ = _coconut_metabytes
     __slots__ = ()
     def __new__(cls, *args, **kwargs):
-        """Python 3 bytes constructor."""
         return _coconut_str.__new__(cls, _coconut_bytearray(*args, **kwargs))
 def print(*args, **kwargs):
     """Python 3 print."""

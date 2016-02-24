@@ -304,19 +304,19 @@ class imap(map):
 
 def igetitem(iterable, index):
     """Performs slicing on any iterable."""
-        if isinstance(iterable, imap):
-            return imap(iterable._func, igetitem(iterable._iters, index))
-        elif isinstance(iterable, range):
-            return iterable[index]
-        elif isinstance(index, slice):
-            if index.start < 0:
-                return (x for x in collections.deque(iterable, maxlen=-index.start)[slice(None, index.stop, index.step)])
-            else:
-                return itertools.islice(iterable, index.start, index.stop, index.step)
-        elif index < 0:
-            return collections.deque(iterable, maxlen=-index)[0]
+    if isinstance(iterable, imap):
+        return imap(iterable._func, igetitem(iterable._iters, index))
+    elif isinstance(iterable, range):
+        return iterable[index]
+    elif isinstance(index, slice):
+        if index.start < 0:
+            return (x for x in collections.deque(iterable, maxlen=-index.start)[slice(None, index.stop, index.step)])
         else:
-            return next(itertools.islice(iterable, index, index + 1))
+            return itertools.islice(iterable, index.start, index.stop, index.step)
+    elif index < 0:
+        return collections.deque(iterable, maxlen=-index)[0]
+    else:
+        return next(itertools.islice(iterable, index, index + 1))
 
 def recursive(func):
     """Returns tail-call-optimized function."""
