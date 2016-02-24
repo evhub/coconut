@@ -96,7 +96,7 @@ def input(*args, **kwargs):
 def raw_input(*args):
     """Raises NameError."""
     raise NameError('Coconut uses Python 3 "input" instead of Python 2 "raw_input"')'''
-PY2_HEADER = r'import sys as _coconut_sys, os as _coconut_os\n' + PY2_HEADER_BASE + "\n"
+PY2_HEADER = "import sys as _coconut_sys, os as _coconut_os\n" + PY2_HEADER_BASE + "\n"
 PY2_HEADER_CHECK = r'''import sys as _coconut_sys
 if _coconut_sys.version_info < (3,):
     import os as _coconut_os
