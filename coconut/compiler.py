@@ -309,7 +309,7 @@ def igetitem(iterable, index):
     elif isinstance(iterable, range):
         return iterable[index]
     elif isinstance(index, slice):
-        if index.start < 0:
+        if index.start is not None and index.start < 0:
             return (x for x in collections.deque(iterable, maxlen=-index.start)[slice(None, index.stop, index.step)])
         else:
             return itertools.islice(iterable, index.start, index.stop, index.step)
@@ -393,7 +393,7 @@ class __coconut__(object):
         elif __coconut__.isinstance(iterable, __coconut__.range):
             return iterable[index]
         elif __coconut__.isinstance(index, __coconut__.slice):
-            if index.start < 0:
+            if index.start is not None and index.start < 0:
                 return (x for x in __coconut__.list(__coconut__.collections.deque(iterable, maxlen=-index.start))[__coconut__.slice(None, index.stop, index.step)])
             else:
                 return __coconut__.itertools.islice(iterable, index.start, index.stop, index.step)
