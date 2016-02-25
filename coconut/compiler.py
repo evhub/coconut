@@ -135,7 +135,7 @@ new_to_old_stdlib = {
     "collections.abc": ("collections", (3, 3))
 }
 
-ParserElement.enablePackrat()
+#ParserElement.enablePackrat()
 ParserElement.setDefaultWhitespaceChars(white)
 
 #-----------------------------------------------------------------------------------------------------------------------
