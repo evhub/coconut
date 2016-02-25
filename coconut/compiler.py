@@ -323,7 +323,7 @@ class __coconut__(object):
             z._iters = iterables
             return z
     class count(object):
-        __doc__ = itertools.count.__doc__
+        """count(start, step) returns an infinite iterator starting at start and increasing by step."""
         __slots__ = ("_start", "_step")
         def __init__(self, start=0, step=1):
             self._start, self._step = start, step
@@ -331,18 +331,20 @@ class __coconut__(object):
             while True:
                 yield self._start
                 self._start += self._step
-        def __repr__(self):
-            return "count(" + str(self._start) + ", " + str(self._step) + ")"
-    @staticmethod
-    def igetitem(iterable, index):
-        if __coconut__.isinstance(iterable, __coconut__.count):
+        def __getitem__(self, index):
             if __coconut__.isinstance(index, __coconut__.slice) and (index.start is None or index.start >= 0) and (index.stop is not None and index.stop >= 0):
-                return __coconut__.map(lambda x: iterable._start + x * iterable._step, __coconut__.range(index.start if index.start is not None else 0, index.stop, index.step if index.step is not None else 1))
+                return __coconut__.map(lambda x: self._start + x * self._step, __coconut__.range(index.start if index.start is not None else 0, index.stop, index.step if index.step is not None else 1))
             elif index >= 0:
-                return iterable._start + index * iterable._step
+                return self._start + index * self._step
             else:
                 raise __coconut__.IndexError("count indices must be positive")
-        elif __coconut__.isinstance(iterable, __coconut__.map):
+        def __repr__(self):
+            return "count(" + str(self._start) + ", " + str(self._step) + ")"
+        def __reduce__(self):
+            return (count, (self._start, self._step))
+    @staticmethod
+    def igetitem(iterable, index):
+        if __coconut__.isinstance(iterable, __coconut__.map):
             if __coconut__.isinstance(index, __coconut__.slice):
                 return __coconut__.map(iterable._func, *(__coconut__.igetitem(i, index) for i in iterable._iters))
             else:
@@ -352,7 +354,7 @@ class __coconut__(object):
                 return __coconut__.zip(*(__coconut__.igetitem(i, index) for i in iterable._iters))
             else:
                 return (__coconut__.igetitem(i, index) for i in iterable._iters)
-        elif __coconut__.isinstance(iterable, __coconut__.range):
+        elif __coconut__.isinstance(iterable, (__coconut__.range, __coconut__.count)):
             return iterable[index]
         elif __coconut__.hasattr(iterable, "__getitem__"):
             if __coconut__.isinstance(index, __coconut__.slice):

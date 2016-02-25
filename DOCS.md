@@ -1231,13 +1231,13 @@ collections.deque(map(print, map(lambda x: x**2, range(10))), maxlen=0)
 
 ### `count`
 
-Coconut provides `itertools.count` as a built-in under the name `count`, with slight modifications to allow optimization by iterator slicing.
+Coconut provides a modified version of `itertools.count` that supports optimized slicing and iterator slicing as a built-in under the name `count`.
 
 ##### Python Docs
 
 **count**(_start=0, step=1_)
 
-Make an iterator that returns evenly spaced values starting with number _start_. Often used as an argument to `map()` to generate consecutive data points. Also, used with `zip()` to add sequence numbers. Equivalent to:
+Make an iterator that returns evenly spaced values starting with number _start_. Often used as an argument to `map()` to generate consecutive data points. Also, used with `zip()` to add sequence numbers. Roughly equivalent to:
 ```coc_python
 def count(start=0, step=1):
     # count(10) --> 10 11 12 13 14 ...
