@@ -157,22 +157,22 @@ As part of Coconut's cross-compatibility efforts, Coconut adds in new Python 3 b
 - `py2_raw_input`
 
 Finally, while Coconut will try to compile Python-3-specific syntax to its universal equivalent, the follow constructs have no equivalent in Python 2, and require `--target 3` to be specified to be used:
-- destructuring assignment with `*`s (use Coconut pattern-matching instead)
-- dictionary comprehension
-- function type annotation
-- the `nonlocal` keyword
-- keyword class definition
-- `@` as matrix multiplication (new in Python 3.5)
-- `async` and `await` statements (new in Python 3.5)
+- destructuring assignment with `*`s (use Coconut pattern-matching instead),
+- dictionary comprehension,
+- function type annotation,
+- the `nonlocal` keyword,
+- keyword class definition,
+- `@` as matrix multiplication (new in Python 3.5), and
+- `async` and `await` statements (new in Python 3.5).
 
 ### `--strict` Mode
 
-If the `--strict` or `-s` flag is enabled, Coconut will throw errors on various style problems. These are:
-- Mixing of tabs and spaces (otherwise would show a warning)
-- Use of the Python-style `lambda` statement
-- Use of `u` to denote Unicode strings
-- Use of backslash continuations (implicit continuations are preferred)
-- Trailing whitespace at the end of lines
+If the `--strict` or `-s` flag is enabled, Coconut will throw errors on various style problems. These are
+- mixing of tabs and spaces (otherwise would show a warning),
+- use of the Python-style `lambda` statement,
+- use of `u` to denote Unicode strings,
+- use of backslash continuations (implicit continuations are preferred), and
+- trailing whitespace at the end of lines.
 
 It is recommended that you use the `--strict` or `-s` flag if you are starting a new Coconut project, as it will help you write cleaner code.
 
@@ -660,9 +660,10 @@ print(data)
 
 ### Reserved Variables
 
-The Coconut compiler will modify and reference certain variables with the assumption that the code being compiled does not modify them in any way. If your code does modify any of these variables, your code is unlikely to work properly. These reserved variables are:
-- the single variable name `__coconut__`
-- all variable names of the form `_coconut_name`
+The Coconut compiler will modify and reference certain variables with the assumption that the code being compiled does not modify them in any way. If your code does modify any of these variables, your code is unlikely to work properly. These reserved variables are
+- the single variable name `__coconut__`,
+- all variable names of the form `_coconut_name`, and
+- all attribute or method names of the form `__coconut_name__`.
 
 ## Expressions
 
