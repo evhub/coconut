@@ -1811,7 +1811,7 @@ class processor(object):
         elif len(tokens) == 2:
             imp_from, imports = tokens
             if imp_from == "__future__":
-                raise CoconutSyntaxError("illegal __future__ statement (Coconut does these automatically)",
+                raise CoconutSyntaxError("illegal from __future__ import (Coconut does these automatically)",
                                          original, location, self.adjust(lineno(location, original)))
         else:
             raise CoconutException("invalid import tokens", tokens)
@@ -1931,7 +1931,7 @@ class processor(object):
         return self.check_py3("Python 3.5 async statement", original, location, tokens)
 
     def await_keyword_check(self, original, location, tokens):
-        """Checks for Python 3.5 await statement."""
+        """Checks for Python 3.5 await expression."""
         return self.check_py3("Python 3.5 await expression", original, location, tokens)
 
     def set_literal_convert(self, tokens):
