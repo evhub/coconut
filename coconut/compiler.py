@@ -294,7 +294,6 @@ _coconut_sys.path.remove(_coconut_file_path)
                 header += PY2_HEADER_CHECK
             header += r'''
 class __coconut__(object):
-    """Built-in Coconut utilities."""
     version = "'''+VERSION+r'''"
     import imp, types, operator, functools, itertools, collections
 '''
@@ -306,43 +305,51 @@ class __coconut__(object):
     else:
         import collections.abc as abc'''
             header += r'''
-    IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map, zip, range, hasattr = IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, map, zip, range, hasattr
+    IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, range, hasattr = IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, range, hasattr
     class MatchError(Exception):
         """Pattern-matching error."""
-    class imap(map):
-        """Optimized iterator map."""
+    class map(map):
+        __doc__ = map.__doc__
         __slots__ = ("_func", "_iters")
         def __new__(cls, function, *iterables):
             m = super(cls, cls).__new__(cls, function, *iterables)
             m._func, m._iters = function, iterables
             return m
-    class izip(zip):
-        """Optimized iterator zip."""
+    class zip(zip):
+        __doc__ = zip.__doc__
         __slots__ = ("_iters",)
         def __new__(cls, *iterables):
             z = super(cls, cls).__new__(cls, *iterables)
             z._iters = iterables
             return z
+    class count(object):
+        __doc__ = itertools.count.__doc__
+        __slots__ = ("_start", "_step")
+        def __init__(self, start=0, step=1):
+            self._start, self._step = start, step
+        def __iter__(self):
+            while True:
+                yield self._start
+                self._start += self._step
+        def __repr__(self):
+            return "count(" + str(self._start) + ", " + str(self._step) + ")"
     @staticmethod
     def igetitem(iterable, index):
-        """Performs slicing on any iterable."""
-        if __coconut__.isinstance(iterable, __coconut__.itertools.count):
-            start = __coconut__.next(iterable)
-            step = __coconut__.next(iterable) - start
+        if __coconut__.isinstance(iterable, __coconut__.count):
             if __coconut__.isinstance(index, __coconut__.slice) and (index.start is None or index.start >= 0) and (index.stop is not None and index.stop >= 0):
-                return __coconut__.imap(lambda x: start + x * step, __coconut__.range(index.start if index.start is not None else 0, index.stop, index.step if index.step is not None else 1))
+                return __coconut__.map(lambda x: iterable._start + x * iterable._step, __coconut__.range(index.start if index.start is not None else 0, index.stop, index.step if index.step is not None else 1))
             elif index >= 0:
-                return start + index * step
+                return iterable._start + index * iterable._step
             else:
                 raise __coconut__.IndexError("count indices must be positive")
-        elif __coconut__.isinstance(iterable, __coconut__.imap):
+        elif __coconut__.isinstance(iterable, __coconut__.map):
             if __coconut__.isinstance(index, __coconut__.slice):
-                return __coconut__.imap(iterable._func, *(__coconut__.igetitem(i, index) for i in iterable._iters))
+                return __coconut__.map(iterable._func, *(__coconut__.igetitem(i, index) for i in iterable._iters))
             else:
                 return iterable._func(*(__coconut__.igetitem(i, index) for i in iterable._iters))
-        elif __coconut__.isinstance(iterable, __coconut__.izip):
+        elif __coconut__.isinstance(iterable, __coconut__.zip):
             if __coconut__.isinstance(index, __coconut__.slice):
-                return __coconut__.izip(*(__coconut__.igetitem(i, index) for i in iterable._iters))
+                return __coconut__.zip(*(__coconut__.igetitem(i, index) for i in iterable._iters))
             else:
                 return (__coconut__.igetitem(i, index) for i in iterable._iters)
         elif __coconut__.isinstance(iterable, __coconut__.range):
@@ -367,7 +374,7 @@ class __coconut__(object):
         return __coconut__.collections.deque(iterable, maxlen=keep_last)
     @staticmethod
     def recursive(func):
-        """Returns tail-call-optimized function."""
+        """Decorates a function by optimizing it for tail recursion."""
         state = [True, None] # toplevel, (args, kwargs)
         recurse = object()
         @__coconut__.functools.wraps(func)
@@ -391,10 +398,10 @@ class __coconut__(object):
         return tailed_func
     @staticmethod
     def datamaker(data_type):
-        """Returns base data constructor of data_type."""
+        """Returns base data constructor of passed data type."""
         return __coconut__.functools.partial(super(data_type, data_type).__new__, data_type)
 
-__coconut_version__, MatchError, map, zip, reduce, takewhile, dropwhile, tee, count, consume, recursive, datamaker = __coconut__.version, __coconut__.MatchError, __coconut__.imap, __coconut__.izip, __coconut__.functools.reduce, __coconut__.itertools.takewhile, __coconut__.itertools.dropwhile, __coconut__.itertools.tee, __coconut__.itertools.count, __coconut__.consume, __coconut__.recursive, __coconut__.datamaker
+__coconut_version__, MatchError, map, zip, reduce, takewhile, dropwhile, tee, count, consume, recursive, datamaker = __coconut__.version, __coconut__.MatchError, __coconut__.map, __coconut__.zip, __coconut__.functools.reduce, __coconut__.itertools.takewhile, __coconut__.itertools.dropwhile, __coconut__.itertools.tee, __coconut__.count, __coconut__.consume, __coconut__.recursive, __coconut__.datamaker
 '''
         else:
             raise CoconutException("invalid header type", which)
