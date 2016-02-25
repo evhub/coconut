@@ -39,6 +39,7 @@ builtins = (
 operators = (
     r"@",
     r"\$",
+    r"`",
     r"::",
     r"\u2192",
     r"\u21a6",
@@ -96,16 +97,13 @@ class coclexer(Python3Lexer):
     filenames = ["*"+code_ext]
 
     tokens = Python3Lexer.tokens.copy()
+    tokens["root"] = [
+        (r"|".join(operators), Operator)
+    ] + tokens["root"]
     tokens["keywords"] = [
         (words(keywords + reserved_vars, suffix=r"\b"), Keyword),
         (words(const_vars, suffix=r"\b"), Keyword.Constant)
     ]
-    tokens["backtick"] = [
-        (r"`.*?`", String.Backtick)
-    ]
-    tokens["root"] = [
-        (r"|".join(operators), Operator)
-    ] + tokens["root"]
     tokens["builtins"] = tokens["builtins"] + [
         (words(builtins, prefix=r"(?<!\.)", suffix=r"\b"), Name.Builtin),
         (r"(?<!\.)MatchError\b", Name.Exception)

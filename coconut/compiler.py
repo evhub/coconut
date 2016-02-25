@@ -174,10 +174,10 @@ class CoconutSyntaxError(CoconutException):
         self.value = message
         if ln is not None:
             self.value += " (line " + str(ln) + ")"
-        if source is not None:
+        if source:
             if point is None:
                 self.value += "\n" + " "*tablen + clean(source)
-            elif source:
+            else:
                 if point >= len(source):
                     point = len(source)-1
                 part = clean(source.splitlines()[lineno(point, source)-1])
