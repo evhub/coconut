@@ -277,12 +277,12 @@ _coconut_sys.path.insert(0, _coconut_file_path)'''
             if version is None:
                 header += r'''
 if _coconut_sys.version_info < (3,):
-    from __coconut__ import py2_filter, py2_hex, py2_map, py2_oct, py2_zip, py2_open, py2_range, py2_xrange, py2_int, py2_chr, py2_str, py2_print, py2_input, py2_raw_input, ascii, filter, hex, oct, open, int, chr, str, print, input, bytes'''
+    from __coconut__ import py2_filter, py2_hex, py2_map, py2_oct, py2_zip, py2_open, py2_range, py2_xrange, py2_int, py2_chr, py2_str, py2_print, py2_input, py2_raw_input, ascii, filter, hex, oct, open, range, int, chr, str, print, input, bytes'''
             elif version == "2":
                 header += r'''
-from __coconut__ import py2_filter, py2_hex, py2_map, py2_oct, py2_zip, py2_open, py2_range, py2_xrange, py2_int, py2_chr, py2_str, py2_print, py2_input, py2_raw_input, ascii, filter, hex, oct, open, int, chr, str, print, input, bytes'''
+from __coconut__ import py2_filter, py2_hex, py2_map, py2_oct, py2_zip, py2_open, py2_range, py2_xrange, py2_int, py2_chr, py2_str, py2_print, py2_input, py2_raw_input, ascii, filter, hex, oct, open, range, int, chr, str, print, input, bytes'''
             header += r'''
-from __coconut__ import __coconut__, __coconut_version__, map, zip, range, reduce, takewhile, dropwhile, tee, count, recursive, datamaker, consume, MatchError
+from __coconut__ import __coconut__, __coconut_version__, map, zip, reduce, takewhile, dropwhile, tee, count, recursive, datamaker, consume, MatchError
 _coconut_sys.path.remove(_coconut_file_path)
 '''
         elif which == "package" or which == "code" or which == "file":
@@ -306,7 +306,6 @@ class __coconut__(object):
         import collections.abc as abc'''
             header += r'''
     IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, range, hasattr = IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, range, hasattr
-    range.__coconut_igetitem__ = range.__getitem__
     class MatchError(Exception):
         """Pattern-matching error."""
     class map(map):
@@ -328,6 +327,7 @@ class __coconut__(object):
     class count(object):
         """count(start, step) returns an infinite iterator starting at start and increasing by step."""
         __slots__ = ("_start", "_step")
+        __coconut_is_sliceable_iter__ = True
         def __init__(self, start=0, step=1):
             self._start, self._step = start, step
         def __iter__(self):
@@ -341,7 +341,6 @@ class __coconut__(object):
                 return self._start + index * self._step
             else:
                 raise __coconut__.IndexError("count indices must be positive")
-        __coconut_igetitem__ = __getitem__
         def __repr__(self):
             return "count(" + str(self._start) + ", " + str(self._step) + ")"
         def __reduce__(self):
@@ -358,8 +357,8 @@ class __coconut__(object):
                 return __coconut__.zip(*(__coconut__.igetitem(i, index) for i in iterable._iters))
             else:
                 return (__coconut__.igetitem(i, index) for i in iterable._iters)
-        elif __coconut__.hasattr(iterable, "__coconut_igetitem__"):
-            return iterable.__coconut_igetitem__(index)
+        elif isinstance(iterable, __coconut__.range) or (__coconut__.hasattr(iterable, "__coconut_is_sliceable_iter__") and iterable.__coconut_is_sliceable_iter__):
+            return iterable[index]
         elif __coconut__.hasattr(iterable, "__getitem__"):
             if __coconut__.isinstance(index, __coconut__.slice):
                 return (x for x in iterable[index])
@@ -407,7 +406,7 @@ class __coconut__(object):
         """Returns base data constructor of passed data type."""
         return __coconut__.functools.partial(super(data_type, data_type).__new__, data_type)
 
-__coconut_version__, MatchError, map, zip, range, reduce, takewhile, dropwhile, tee, count, consume, recursive, datamaker = __coconut__.version, __coconut__.MatchError, __coconut__.map, __coconut__.zip, __coconut__.range, __coconut__.functools.reduce, __coconut__.itertools.takewhile, __coconut__.itertools.dropwhile, __coconut__.itertools.tee, __coconut__.count, __coconut__.consume, __coconut__.recursive, __coconut__.datamaker
+__coconut_version__, MatchError, map, zip, reduce, takewhile, dropwhile, tee, count, consume, recursive, datamaker = __coconut__.version, __coconut__.MatchError, __coconut__.map, __coconut__.zip, __coconut__.functools.reduce, __coconut__.itertools.takewhile, __coconut__.itertools.dropwhile, __coconut__.itertools.tee, __coconut__.count, __coconut__.consume, __coconut__.recursive, __coconut__.datamaker
 '''
         else:
             raise CoconutException("invalid header type", which)

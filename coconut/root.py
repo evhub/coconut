@@ -45,6 +45,7 @@ from io import open
 class range(object):
     __doc__ = _coconut_xrange.__doc__
     __slots__ = ("_xrange",)
+    __coconut_is_sliceable_iter__ = True
     def __init__(self, *args):
         self._xrange = _coconut_xrange(*args)
     def __iter__(self):
