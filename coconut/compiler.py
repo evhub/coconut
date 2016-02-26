@@ -1224,11 +1224,11 @@ class processor(object):
     def adjust(self, ln):
         """Adjusts a line number."""
         adj_ln = 0
-        ind = 0
-        while ind < ln:
+        i = 0
+        while i < ln:
             adj_ln += 1
             if adj_ln not in self.skips:
-                ind += 1
+                i += 1
         return adj_ln
 
     def wrap_str(self, text, strchar, multiline):
