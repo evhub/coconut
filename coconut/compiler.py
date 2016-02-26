@@ -20,6 +20,10 @@ from pyparsing import *
 from .root import *
 import traceback
 
+import platform
+if platform.python_implementation() != "PyPy":
+    ParserElement.enablePackrat()
+
 #-----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -135,7 +139,6 @@ new_to_old_stdlib = {
     "collections.abc": ("collections", (3, 3))
 }
 
-#ParserElement.enablePackrat()
 ParserElement.setDefaultWhitespaceChars(white)
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -163,9 +166,6 @@ class CoconutException(Exception):
     def __repr__(self):
         """Displays the Coconut exception."""
         return self.value
-    def __str__(self):
-        """Wraps repr."""
-        return repr(self)
 
 class CoconutSyntaxError(CoconutException):
     """Coconut SyntaxError."""
@@ -217,9 +217,6 @@ class CoconutWarning(Warning):
     def __repr__(self):
         """Displays the Coconut warning."""
         return self.value
-    def __str__(self):
-        """Wraps repr."""
-        return repr(self)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # HEADERS:
