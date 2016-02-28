@@ -302,7 +302,7 @@ class __coconut__(object):
     else:
         import collections.abc as abc'''
             header += r'''
-    IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, range, hasattr = IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, range, hasattr
+    IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, range, hasattr, super = IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, range, hasattr, super
     class MatchError(Exception):
         """Pattern-matching error."""
     class map(map):
@@ -310,7 +310,7 @@ class __coconut__(object):
         __slots__ = ("_func", "_iters")
         __coconut_is_map__ = True
         def __new__(cls, function, *iterables):
-            m = super(cls, cls).__new__(cls, function, *iterables)
+            m = __coconut__.super(cls, cls).__new__(cls, function, *iterables)
             m._func, m._iters = function, iterables
             return m
     class zip(zip):
@@ -318,7 +318,7 @@ class __coconut__(object):
         __slots__ = ("_iters",)
         __coconut_is_zip__ = True
         def __new__(cls, *iterables):
-            z = super(cls, cls).__new__(cls, *iterables)
+            z = __coconut__.super(cls, cls).__new__(cls, *iterables)
             z._iters = iterables
             return z
     class count(object):
