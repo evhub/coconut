@@ -31,12 +31,14 @@ which will give you access to all the features of the Coconut command-line utili
 - **interpreting** Coconut code on-the-fly, and
 - hooking into existing Python applications like **IPython / Jupyter**.
 
-Ready to get started? Head over to the Coconut **[tutorial](http://coconut.readthedocs.org/en/master/HELP.html)** to start enhancing your Python now.
+_Ready to get started?_ Head over to the Coconut **[tutorial](http://coconut.readthedocs.org/en/master/HELP.html)** to start enhancing your Python now.
 
-Looking for information on a specific feature? Coconut's extensive **[documentation](http://coconut.readthedocs.org/en/master/DOCS.html)** has you covered.
+_Looking for information on a specific feature?_ Coconut's extensive **[documentation](http://coconut.readthedocs.org/en/master/DOCS.html)** has you covered.
 
-Having trouble? [Create a new issue](https://github.com/evhub/coconut/issues/new) detailing the problem and it will be addressed as soon as possible.
+_Having trouble?_ [Create a new issue](https://github.com/evhub/coconut/issues/new) detailing the problem and it will be addressed as soon as possible.
 
-Want to help contribute to Coconut development? Head over to Coconut's [GitHub](https://github.com/evhub/coconut) for more information.
+_General questions, concerns, or comments?_ Ask around at Coconut's [Gitter](https://gitter.im/evhub/coconut), a GitHub-integrated chatroom for Coconut developers.
+
+_Want to help contribute to Coconut development?_ Head over to Coconut's [GitHub](https://github.com/evhub/coconut) for more information.
 
 
