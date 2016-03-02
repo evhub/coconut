@@ -14,15 +14,13 @@ Coconut is hosted on PyPI_, where it has been downloaded `over 30,000 times <htt
 
     python -m pip install coconut
 
-If you're new to Coconut, a **straightforward, easy-to-follow tutorial** of the Coconut Programming Language is provided in the Coconut Help_.
+Once you've done that, check out these links for resources to help you get started:
 
-If you're looking for info about a specific feature, Coconut's **complete documentation** can be accessed through the Coconut Docs_.
-
-If you're having a problem with Coconut, please `create a new issue <https://github.com/evhub/coconut/issues/new>`_ detailing the problem, and it will be addressed as soon as possible.
-
-Coconut is completely open-source, and new contributors are always welcome. Contributing to Coconut is as simple as forking Coconut on GitHub_, making your changes, and proposing a pull request.
-
-For all general questions, concerns, or comments about anything Coconut-related, ask around at Coconut's Gitter_, a GitHub-integrated chatroom for Coconut developers.
+- Help_: If you're new to Coconut, Coconut's Help provides a **straightforward, easy-to-follow tutorial** of the Coconut Programming Language.
+- Docs_: If you're looking for info about a specific feature, Coconut's Docs provide a **complete documentation** of the language.
+- `Create a New Issue <https://github.com/evhub/coconut/issues/new>`_: If you're having a problem with Coconut, creating a new issue detailing the problem will allow it to be addressed as soon as possible.
+- Gitter_: For all general questions, concerns, or comments about anything Coconut-related, ask around at Coconut's Gitter, a GitHub-integrated chatroom for Coconut developers.
+- GitHub_: Coconut is completely open-source, and new contributors are always welcome. Contributing to Coconut is as simple as forking Coconut on GitHub, making your changes, and proposing a pull request.
 
 .. _Coconut: http://evhub.github.io/coconut/
 .. _Python: https://www.python.org/
