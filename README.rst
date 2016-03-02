@@ -1,10 +1,6 @@
 Coconut_
 =======
 
-.. image:: https://badges.gitter.im/evhub/coconut.svg
-   :alt: Join the chat at https://gitter.im/evhub/coconut
-   :target: https://gitter.im/evhub/coconut?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
-
 .. toctree::
    :maxdepth: 3
 
@@ -26,9 +22,12 @@ If you're having a problem with Coconut, please `create a new issue <https://git
 
 Coconut is completely open-source, and new contributors are always welcome. Contributing to Coconut is as simple as forking Coconut on GitHub_, making your changes, and proposing a pull request.
 
+For all general questions, concerns, or comments about anything Coconut-related, ask around at Coconut's Gitter_, a GitHub-integrated chatroom for Coconut developers.
+
 .. _Coconut: http://evhub.github.io/coconut/
 .. _Python: https://www.python.org/
 .. _PyPI: https://pypi.python.org/pypi/coconut
 .. _Help: http://coconut.readthedocs.org/en/master/HELP.html
 .. _Docs: http://coconut.readthedocs.org/en/master/DOCS.html
 .. _GitHub: https://github.com/evhub/coconut
+.. _Gitter: https://gitter.im/evhub/coconut
