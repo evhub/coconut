@@ -1,6 +1,10 @@
 Coconut
 =======
 
+.. image:: https://badges.gitter.im/evhub/coconut.svg
+   :alt: Join the chat at https://gitter.im/evhub/coconut
+   :target: https://gitter.im/evhub/coconut?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
+
 *Coconut is a variant of Python built for simple, elegant, Pythonic functional programming.*
 
 Coconut can be found on GitHub_ and PyPI_, where it has been downloaded `over 20,000 times <http://pypi-ranking.info/module/coconut>`_.
