@@ -1,6 +1,10 @@
 Coconut_
 =======
 
+.. image:: https://badges.gitter.im/evhub/coconut.svg
+   :alt: Join the chat at https://gitter.im/evhub/coconut
+   :target: https://gitter.im/evhub/coconut?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
+
 .. toctree::
    :maxdepth: 3
 
