@@ -302,23 +302,23 @@ class __coconut__(object):
     else:
         import collections.abc as abc'''
             header += r'''
-    IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, range, hasattr, super = IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, range, hasattr, super
+    IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, range, hasattr, super, _map, _zip = IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, range, hasattr, super, map, zip
     class MatchError(Exception):
         """Pattern-matching error."""
-    class map(map):
+    class map(_map):
         __doc__ = map.__doc__
         __slots__ = ("_func", "_iters")
         __coconut_is_map__ = True
         def __new__(cls, function, *iterables):
-            m = __coconut__.super(cls, cls).__new__(cls, function, *iterables)
+            m = __coconut__._map.__new__(cls, function, *iterables)
             m._func, m._iters = function, iterables
             return m
-    class zip(zip):
+    class zip(_zip):
         __doc__ = zip.__doc__
         __slots__ = ("_iters",)
         __coconut_is_zip__ = True
         def __new__(cls, *iterables):
-            z = __coconut__.super(cls, cls).__new__(cls, *iterables)
+            z = __coconut__._zip.__new__(cls, *iterables)
             z._iters = iterables
             return z
     class count(object):
@@ -401,7 +401,7 @@ class __coconut__(object):
     @staticmethod
     def datamaker(data_type):
         """Returns base data constructor of passed data type."""
-        return __coconut__.functools.partial(super(data_type, data_type).__new__, data_type)
+        return __coconut__.functools.partial(__coconut__.super(data_type, data_type).__new__, data_type)
 
 __coconut_version__, MatchError, map, zip, reduce, takewhile, dropwhile, tee, count, consume, recursive, datamaker = __coconut__.version, __coconut__.MatchError, __coconut__.map, __coconut__.zip, __coconut__.functools.reduce, __coconut__.itertools.takewhile, __coconut__.itertools.dropwhile, __coconut__.itertools.tee, __coconut__.count, __coconut__.consume, __coconut__.recursive, __coconut__.datamaker
 '''
