@@ -1434,6 +1434,8 @@ class processor(object):
                         raise CoconutException("invalid string start code", line)
                 elif c in holds:
                     found = c
+                elif c == "#":
+                    break
             if found is not None:
                 raise CoconutException("invalid unclosed string code", line)
             if hold is None:
