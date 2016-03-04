@@ -642,7 +642,7 @@ _Can't be done without a long series of checks for each `match` statement. See t
 
 ### Backslash-Escaping
 
-The requirement that Coconut keywords be backslash-escaped to make them variables in Coconut is the one exception to the rule of all Python 3 being valid Coconut. To allow access to the valid Python variable names `data`, `match`, `case`, `async` (keyword in Python 3.5), `await` (keyword in Python 3.5), and `nonlocal` (keyword in Python 3) in Coconut, those keywords must be backslash-escaped to turn them into the variables instead.
+The requirement that Coconut keywords be backslash-escaped to make them variables in Coconut is the one exception to the rule of all Python 3 being valid Coconut. To allow access to the valid Python variable names `data`, `match`, `case`, `async` (keyword in Python 3.5), and `await` (keyword in Python 3.5) in Coconut, those keywords may sometimes need to be backslash-escaped to turn them into the variables instead. In many cases, Coconut will know you want a variable name, but it is always safer to backslash-escape than to not.
 
 ##### Example
 
