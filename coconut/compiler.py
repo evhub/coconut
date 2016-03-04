@@ -166,6 +166,9 @@ class CoconutException(Exception):
     def __repr__(self):
         """Displays the Coconut exception."""
         return self.value
+    def __str__(self):
+        """Wraps __repr__."""
+        return repr(self)
 
 class CoconutSyntaxError(CoconutException):
     """Coconut SyntaxError."""
@@ -181,9 +184,12 @@ class CoconutSyntaxError(CoconutException):
                 if point >= len(source):
                     point = len(source)-1
                 part = clean(source.splitlines()[lineno(point, source)-1])
+                point -= len(source)-len(part)
+                if point < 0:
+                    point = 0
                 self.value += "\n" + " "*tablen + part + "\n" + " "*tablen
-                for x in range(0, col(point, source)-1):
-                    if x < len(part) and part[x] in white:
+                for x in range(0, point):
+                    if part[x] in white:
                         self.value += part[x]
                     else:
                         self.value += " "
