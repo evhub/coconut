@@ -559,6 +559,13 @@ def itemlist(item, sep):
     """Creates a list of an item."""
     return attach(tokenlist(item, sep, suppress=False), list_proc)
 
+def add_paren_proc(tokens):
+    """Adds parentheses."""
+    if len(tokens) == 0:
+        return "(" + tokens[0] + ")"
+    else:
+        raise CoconutException("invalid tokens for parentheses adding", tokens)
+
 def attr_proc(tokens):
     """Processes attrgetter literals."""
     if len(tokens) == 1:
@@ -2150,7 +2157,7 @@ class processor(object):
     argslist = Optional(itemlist(condense(dubstar + tfpdef | star + tfpdef | tfpdef + default), comma))
     varargslist_req = itemlist(condense(dubstar + any_name | star + any_name | any_name + default), comma)
     varargslist = Optional(varargslist_req)
-    callargslist = Optional(itemlist(condense(dubstar + callarg | star + callarg | callarg + default), comma))
+    callargslist = Optional(attach(addspace(test + comp_for), add_paren_proc) | itemlist(condense(dubstar + callarg | star + callarg | callarg + default), comma))
 
     parameters = condense(lparen + argslist + rparen)
 
@@ -2334,7 +2341,6 @@ class processor(object):
     base_suite = Forward()
     classlist = Forward()
 
-    argument = condense(any_name + equals + test) | addspace(any_name + Optional(comp_for))
     classlist_ref = Optional(lparen.suppress() + Optional(Group(itemlist(any_name, comma)("names") ^ varargslist_req("args"))) + rparen.suppress())
     classdef = condense(addspace(Keyword("class") - any_name) + classlist + suite)
     comp_iter = Forward()
