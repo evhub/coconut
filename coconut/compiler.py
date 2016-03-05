@@ -308,7 +308,7 @@ class __coconut__(object):
     else:
         import collections.abc as abc'''
             header += r'''
-    IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, range, hasattr, super, _map, _zip = IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, range, hasattr, super, map, zip
+    IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, range, hasattr, super, reversed, _map, _zip = IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, range, hasattr, super, reversed, map, zip
     class MatchError(Exception):
         """Pattern-matching error."""
     class map(_map):
@@ -370,6 +370,8 @@ class __coconut__(object):
         elif __coconut__.isinstance(index, __coconut__.slice):
             if (index.start is not None and index.start < 0) or (index.stop is not None and index.stop < 0):
                 return (x for x in __coconut__.tuple(iterable)[index])
+            elif index.step is not None and index.step < 0:
+                return __coconut__.reversed(__coconut__.itertools.islice(iterable, index.start, index.stop, -index.step))
             else:
                 return __coconut__.itertools.islice(iterable, index.start, index.stop, index.step)
         elif index < 0:
@@ -2001,7 +2003,8 @@ class processor(object):
     at = Literal("@")
     arrow = fixto(Literal("->") | Literal("\u2192"), "->")
     dubcolon = Literal("::")
-    colon = ~dubcolon+Literal(":")
+    unsafe_colon = Literal("::")
+    colon = ~dubcolon+unsafe_colon
     semicolon = Literal(";")
     eq = Literal("==")
     equals = ~eq+Literal("=")
@@ -2242,11 +2245,11 @@ class processor(object):
         , "atom")
 
     slicetest = Optional(test)
-    sliceop = condense(colon + slicetest)
+    sliceop = condense(unsafe_colon + slicetest)
     subscript = condense(slicetest + sliceop + Optional(sliceop)) | test
     subscriptlist = itemlist(subscript, comma)
     slicetestgroup = Optional(test, default="")
-    sliceopgroup = colon.suppress() + slicetestgroup
+    sliceopgroup = unsafe_colon.suppress() + slicetestgroup
     subscriptgroup = Group(slicetestgroup + sliceopgroup + Optional(sliceopgroup) | test)
     simple_trailer = condense(lbrack + subscriptlist + rbrack) | condense(dot + any_name)
     trailer = (
