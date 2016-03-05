@@ -308,7 +308,7 @@ class __coconut__(object):
     else:
         import collections.abc as abc'''
             header += r'''
-    IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, range, hasattr, super, reversed, _map, _zip = IndexError, object, set, frozenset, tuple, list, slice, len, iter, isinstance, getattr, ascii, next, range, hasattr, super, reversed, map, zip
+    IndexError, object, set, frozenset, tuple, list, dict, slice, len, iter, isinstance, getattr, ascii, next, range, hasattr, super, reversed, _map, _zip = IndexError, object, set, frozenset, tuple, list, dict, slice, len, iter, isinstance, getattr, ascii, next, range, hasattr, super, reversed, map, zip
     class MatchError(Exception):
         """Pattern-matching error."""
     class map(_map):
@@ -1051,10 +1051,13 @@ def pattern_error(original, loc):
 
 def match_assign_proc(original, loc, tokens):
     """Processes match assign blocks."""
-    matches, item = tokens
-    out = match_proc(original, loc, (matches, item, None))
-    out += pattern_error(original, loc)
-    return out
+    if len(tokens) == 2:
+        matches, item = tokens
+        out = match_proc(original, loc, (matches, item, None))
+        out += pattern_error(original, loc)
+        return out
+    else:
+        raise CoconutException("invalid destructuring assignment tokens", tokens)
 
 def case_to_match(tokens, item):
     """Converts case tokens to match tokens."""
@@ -1086,14 +1089,17 @@ def case_proc(o, l, tokens):
 
 def name_match_funcdef_proc(original, loc, tokens):
     """Processes match defs."""
-    func, matches = tokens
-    matching = matcher()
-    matching.match_sequence(("(", matches), match_to_var)
-    out = "def " + func + " (*" + match_to_var + "):\n" + openindent
-    out += match_check_var + " = False\n"
-    out += matching.out()
-    out += pattern_error(original, loc)
-    return out
+    if len(tokens) == 2:
+        func, matches = tokens
+        matching = matcher()
+        matching.match_sequence(("(", matches), match_to_var)
+        out = "def " + func + " (*" + match_to_var + "):\n" + openindent
+        out += match_check_var + " = False\n"
+        out += matching.out()
+        out += pattern_error(original, loc)
+        return out
+    else:
+        raise CoconutException("invalid match function definition tokens", tokens)
 
 def op_match_funcdef_proc(original, loc, tokens):
     """Processes infix match defs."""
@@ -1209,12 +1215,12 @@ class processor(object):
         self.import_stmt <<= self.trace(attach(self.import_stmt_ref, self.import_repl), "import_stmt")
         self.complex_raise_stmt <<= self.trace(attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_repl), "complex_raise_stmt")
         self.augassign_stmt <<= self.trace(attach(self.augassign_stmt_ref, self.augassign_repl), "augassign_stmt")
+        self.dict_comp <<= self.trace(attach(self.dict_comp_ref, self.dict_comp_repl), "dict_comp")
         self.u_string <<= attach(self.u_string_ref, self.u_string_check)
         self.typedef <<= attach(self.typedef_ref, self.typedef_check)
         self.return_typedef <<= attach(self.return_typedef_ref, self.typedef_check)
         self.matrix_at <<= attach(self.matrix_at_ref, self.matrix_at_check)
         self.nonlocal_stmt <<= attach(self.nonlocal_stmt_ref, self.nonlocal_check)
-        self.dict_comp <<= attach(self.dict_comp_ref, self.dict_comp_check)
         self.star_assign_item <<= attach(self.star_assign_item_ref, self.star_assign_item_check)
         self.classic_lambdef <<= attach(self.classic_lambdef_ref, self.lambdef_check)
         self.classic_lambdef_nocond <<= attach(self.classic_lambdef_nocond_ref, self.lambdef_check)
@@ -1885,7 +1891,7 @@ class processor(object):
         return "\n".join(stmts)
 
     def complex_raise_stmt_repl(self, tokens):
-        """Checks for Python 3 raise from statement."""
+        """Processes Python 3 raise from statement."""
         if len(tokens) != 2:
             raise CoconutException("invalid raise from tokens", tokens)
         elif self.version == "3":
@@ -1894,6 +1900,18 @@ class processor(object):
             return (raise_from_var + " = " + tokens[0] + "\n"
                     + raise_from_var + ".__cause__ = " + tokens[1] + "\n"
                     + "raise " + raise_from_var)
+
+
+    def dict_comp_repl(self, original, location, tokens):
+        """Processes Python 2.7 dictionary comprehension."""
+        if len(tokens) != 3:
+            raise CoconutException("invalid dictionary comprehension tokens", tokens)
+        elif self.version == "3":
+            key, val, comp = tokens
+            return "{" + key + ": " + val + " " + comp + "}"
+        else:
+            key, val, comp = tokens
+            return "dict(((" + key + "), (" + val + ")) " + comp + ")"
 
     def check_strict(self, name, original, location, tokens):
         """Checks that syntax meets --strict requirements."""
@@ -1932,10 +1950,6 @@ class processor(object):
     def nonlocal_check(self, original, location, tokens):
         """Checks for Python 3 nonlocal statement."""
         return self.check_py3("Python 3 nonlocal statement", original, location, tokens)
-
-    def dict_comp_check(self, original, location, tokens):
-        """Checks for Python 3 dictionary comprehension."""
-        return self.check_py3("Python 3 dictionary comprehension", original, location, tokens)
 
     def star_assign_item_check(self, original, location, tokens):
         """Checks for Python 3 starred assignment."""
@@ -2172,9 +2186,8 @@ class processor(object):
     yield_classic = addspace(Keyword("yield") + testlist)
     yield_from = attach(Keyword("yield").suppress() + Keyword("from").suppress() + test, yield_from_proc)
     yield_expr = yield_from | yield_classic
-    dict_comp_ref = addspace(condense(test + colon) + test + comp_for)
-    dict_item = addspace(itemlist(addspace(condense(test + colon) + test), comma))
-    dictmaker = dict_comp | dict_item
+    dict_comp_ref = lbrace.suppress() + test + colon.suppress() + test + comp_for + rbrace.suppress()
+    dict_item = condense(lbrace + Optional(itemlist(addspace(condense(test + colon) + test), comma)) + rbrace)
     test_expr = yield_expr | testlist
 
     op_atom = condense(
@@ -2217,6 +2230,7 @@ class processor(object):
     )
 
     testlist_comp = addspace(test + comp_for) | testlist
+    list_comp = condense(lbrack + Optional(testlist_comp) + rbrack)
     func_atom = name | op_atom | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
     keyword_atom = Keyword(const_vars[0])
     for x in range(1, len(const_vars)):
@@ -2243,8 +2257,9 @@ class processor(object):
         const_atom
         | ellipses
         | attr_atom
-        | condense(lbrack + Optional(testlist_comp) + rbrack)
-        | condense(lbrace + Optional(dictmaker) + rbrace)
+        | list_comp
+        | dict_comp
+        | dict_item
         | set_literal
         | set_letter_literal
         | lazy_list

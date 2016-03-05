@@ -159,7 +159,6 @@ As part of Coconut's cross-compatibility efforts, Coconut adds in new Python 3 b
 
 Finally, while Coconut will try to compile Python-3-specific syntax to its universal equivalent, the follow constructs have no equivalent in Python 2, and require `--target 3` to be specified to be used:
 - destructuring assignment with `*`s (use Coconut pattern-matching instead),
-- dictionary comprehension,
 - function type annotation,
 - the `nonlocal` keyword,
 - keyword class definition,
