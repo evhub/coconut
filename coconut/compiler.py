@@ -1202,12 +1202,13 @@ class processor(object):
         self.passthrough <<= self.trace(attach(self.passthrough_marker, self.passthrough_repl), "passthrough")
         self.passthrough_block <<= self.trace(attach(self.passthrough_block_marker, self.passthrough_repl), "passthrough_block")
         self.atom_item <<= self.trace(attach(self.atom_item_ref, self.item_repl), "atom_item")
+        self.simple_assign <<= self.trace(attach(self.simple_assign_ref, self.item_repl), "simple_assign")
         self.set_literal <<= self.trace(attach(self.set_literal_ref, self.set_literal_convert), "set_literal")
         self.set_letter_literal <<= self.trace(attach(self.set_letter_literal_ref, self.set_letter_literal_convert), "set_letter_literal")
         self.classlist <<= self.trace(attach(self.classlist_ref, self.classlist_repl), "classlist")
         self.import_stmt <<= self.trace(attach(self.import_stmt_ref, self.import_repl), "import_stmt")
         self.complex_raise_stmt <<= self.trace(attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_repl), "complex_raise_stmt")
-        self.augassign_stmt <<= attach(self.augassign_stmt_ref, self.augassign_repl)
+        self.augassign_stmt <<= self.trace(attach(self.augassign_stmt_ref, self.augassign_repl), "augassign_stmt")
         self.u_string <<= attach(self.u_string_ref, self.u_string_check)
         self.typedef <<= attach(self.typedef_ref, self.typedef_check)
         self.return_typedef <<= attach(self.return_typedef_ref, self.typedef_check)
@@ -2004,7 +2005,8 @@ class processor(object):
 #-----------------------------------------------------------------------------------------------------------------------
 
     comma = Literal(",")
-    dot = ~Literal("..")+Literal(".")
+    unsafe_dot = Literal(".")
+    dot = ~Literal("..")+unsafe_dot
     dubstar = Literal("**")
     star = ~dubstar+Literal("*")
     at = Literal("@")
@@ -2259,28 +2261,30 @@ class processor(object):
     sliceopgroup = unsafe_colon.suppress() + slicetestgroup
     subscriptgroup = Group(slicetestgroup + sliceopgroup + Optional(sliceopgroup) | test)
     simple_trailer = condense(lbrack + subscriptlist + rbrack) | condense(dot + any_name)
-    trailer = (
+    complex_trailer = (
         Group(condense(dollar + lparen) + callargslist + rparen.suppress())
         | condense(lparen + callargslist + rparen)
         | Group(dotdot + func_atom)
         | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())
         | Group(condense(dollar + lbrack + rbrack))
         | Group(dollar)
-        | simple_trailer
         | Group(condense(lbrack + rbrack))
         | Group(dot)
         )
+    trailer = simple_trailer | complex_trailer
+
+    atom_item = Forward()
+    atom_item_ref = atom + ZeroOrMore(trailer)
+    simple_assign = Forward()
+    simple_assign_ref = (name | passthrough_atom) + ZeroOrMore(ZeroOrMore(~simple_trailer+complex_trailer) + OneOrMore(simple_trailer))
 
     assignlist = Forward()
     star_assign_item = Forward()
-    simple_assign = condense(name + ZeroOrMore(simple_trailer))
+    simple_assignlist = parenwrap(lparen, itemlist(simple_assign, comma), rparen)
     base_assign_item = condense(simple_assign | lparen + assignlist + rparen | lbrack + assignlist + rbrack)
     star_assign_item_ref = condense(star + base_assign_item)
     assign_item = star_assign_item | base_assign_item
     assignlist <<= itemlist(assign_item, comma)
-
-    atom_item = Forward()
-    atom_item_ref = atom + ZeroOrMore(trailer)
 
     factor = Forward()
     await_keyword = Forward()
@@ -2364,7 +2368,7 @@ class processor(object):
     import_from_names = Group(parenwrap(lparen, tokenlist(import_as_name, comma), rparen, tokens=True))
     import_name = Keyword("import").suppress() - import_names
     import_from = (Keyword("from").suppress()
-        - condense(ZeroOrMore(Literal(".")) + dotted_name | OneOrMore(Literal(".")))
+        - condense(ZeroOrMore(unsafe_dot) + dotted_name | OneOrMore(unsafe_dot))
         - Keyword("import").suppress() - (Group(star) | import_from_names))
     import_stmt = Forward()
     import_stmt_ref = import_from | import_name
@@ -2372,14 +2376,13 @@ class processor(object):
     namelist = parenwrap(lparen, itemlist(any_name, comma), rparen)
     global_stmt = addspace(Keyword("global") - namelist)
     nonlocal_stmt_ref = addspace(Keyword("nonlocal") - namelist)
-    simple_assignlist = parenwrap(lparen, itemlist(simple_assign, comma), rparen)
     del_stmt = addspace(Keyword("del") - simple_assignlist)
     with_item = addspace(test - Optional(Keyword("as") - any_name))
 
     match = Forward()
     matchlist_list = Group(Optional(tokenlist(match, comma)))
     matchlist_tuple = Group(Optional(match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress()) | match + comma.suppress()))
-    match_const = const_atom | condense(equals.suppress() + simple_assign)
+    match_const = const_atom | condense(equals.suppress() + atom_item)
     matchlist_set = Group(Optional(tokenlist(match_const, comma)))
     match_pair = Group(match_const + colon.suppress() + match)
     matchlist_dict = Group(Optional(tokenlist(match_pair, comma)))
