@@ -1996,6 +1996,8 @@ class processor(object):
             out = self.post(parser.parseString(self.pre(inputstring, **preargs)), **postargs)
         except ParseBaseException as err:
             raise CoconutParseError(err.line, err.col, self.adjust(err.lineno))
+        except RuntimeError:
+            raise CoconutException("maximum recursion depth exceeded (try again with a larger --recursionlimit)")
         finally:
             self.clean()
         return out

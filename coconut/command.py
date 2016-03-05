@@ -197,6 +197,7 @@ class cli(object):
     commandline.add_argument("-c", "--code", metavar="code", type=str, nargs=1, default=None, help="run a line of Coconut passed in as a string (can also be accomplished with a pipe)")
     commandline.add_argument("--jupyter", "--ipython", type=str, nargs=argparse.REMAINDER, default=None, help="run Jupyter/IPython with Coconut as the kernel (remaining args passed to Jupyter)")
     commandline.add_argument("--autopep8", type=str, nargs=argparse.REMAINDER, default=None, help="use autopep8 to format compiled code (remaining args passed to autopep8)")
+    commandline.add_argument("--recursionlimit", metavar="limit", type=int, nargs=1, default=[None], help="set maximum recursion depth (defaults to "+str(sys.getrecursionlimit())+")")
     commandline.add_argument("--color", metavar="color", type=str, nargs=1, default=[None], help="show all Coconut messages in the given color")
     commandline.add_argument("--verbose", action="store_const", const=True, default=False, help="print verbose debug output")
     proc = None
@@ -242,6 +243,8 @@ class cli(object):
     def cmd(self, args, interact=True):
         """Parses command-line arguments."""
         try:
+            if args.recursionlimit[0] is not None:
+                sys.setrecursionlimit(args.recursionlimit[0])
             self.setup(args.strict, args.target[0], args.color[0])
             if args.verbose:
                 self.proc.debug(True)
