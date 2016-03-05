@@ -561,7 +561,7 @@ def itemlist(item, sep):
 
 def add_paren_proc(tokens):
     """Adds parentheses."""
-    if len(tokens) == 0:
+    if len(tokens) == 1:
         return "(" + tokens[0] + ")"
     else:
         raise CoconutException("invalid tokens for parentheses adding", tokens)
