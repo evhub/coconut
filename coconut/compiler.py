@@ -2003,7 +2003,7 @@ class processor(object):
     at = Literal("@")
     arrow = fixto(Literal("->") | Literal("\u2192"), "->")
     dubcolon = Literal("::")
-    unsafe_colon = Literal("::")
+    unsafe_colon = Literal(":")
     colon = ~dubcolon+unsafe_colon
     semicolon = Literal(";")
     eq = Literal("==")
