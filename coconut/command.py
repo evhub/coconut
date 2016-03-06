@@ -285,7 +285,7 @@ class cli(object):
                     package = False
                 else:
                     package = None # auto-decide package
-                self.compile_path(args.source, dest, package, run=args.run, force=args.force)
+                self.compile_path(args.source, dest, package, args.run, args.force)
             elif args.run or args.nowrite or args.force or args.package or args.standalone:
                 raise CoconutException("a source file/folder must be specified when options that depend on the source are enabled")
             if args.jupyter is not None:
@@ -344,7 +344,10 @@ class cli(object):
             if not ext:
                 ext = comp_ext
             destpath = fixpath(base + ext)
-        self.compile(filepath, destpath, package, run, force)
+        if filepath == destpath:
+            raise CoconutException("cannot compile "+os.path.split(filepath)[1]+" to itself (use a different file extension or try a different destination directory)")
+        else:
+            self.compile(filepath, destpath, package, run, force)
 
     def compile(self, codepath, destpath=None, package=False, run=False, force=False):
         """Compiles a source Coconut file to a destination Python file."""
