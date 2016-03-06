@@ -55,6 +55,17 @@ def fixpath(path):
     """Properly formats a path."""
     return os.path.normpath(os.path.realpath(path))
 
+def rem_encoding(code):
+    """Removes encoding declarations from Python code."""
+    old_lines = code.splitlines()
+    new_lines = []
+    for i in range(min(2, len(old_lines))):
+        line = old_lines[i]
+        if not (line.startswith("#") and "coding" in line):
+            new_lines.append(line)
+    new_lines += old_lines[2:]
+    return "\n".join(new_lines)
+
 class executor(object):
     """Compiled Python executor."""
     def __init__(self, header=None, extras=None, exit=None):
@@ -450,7 +461,7 @@ class cli(object):
         if compiled is not None:
             if self.show:
                 print(compiled)
-            self.runner.run(compiled, error)
+            self.runner.run(rem_encoding(compiled), error)
 
     def check_runner(self, path=None):
         """Makes sure there is a runner."""
