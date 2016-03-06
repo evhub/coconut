@@ -118,7 +118,7 @@ dest                  destination directory for compiled files (defaults to the 
 -c, --code              run a line of Coconut passed in as a string (can also be passed into stdin)
 --jupyter, --ipython    run Jupyter/IPython with Coconut as the kernel (remaining args passed to Jupyter)
 --autopep8              use autopep8 to format compiled code (remaining args passed to autopep8)
---recursionlimit        set maximum recursion depth (defaults to 1000)
+--recursionlimit        set maximum recursion depth (default is version-dependent)
 --color                 show all Coconut messages in the given color
 --verbose               print verbose debug output
 ```
