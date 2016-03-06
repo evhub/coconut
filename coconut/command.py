@@ -461,7 +461,9 @@ class cli(object):
         if compiled is not None:
             if self.show:
                 print(compiled)
-            self.runner.run(rem_encoding(compiled), error)
+            if isolate:
+                compiled = rem_encoding(compiled)
+            self.runner.run(compiled, error)
 
     def check_runner(self, path=None, isolate=False):
         """Makes sure there is a runner."""
