@@ -347,7 +347,7 @@ class __coconut__(object):
         def __repr__(self):
             return "count(" + str(self._start) + ", " + str(self._step) + ")"
         def __reduce__(self):
-            return (count, (self._start, self._step))
+            return (__coconut__.count, (self._start, self._step))
     @staticmethod
     def igetitem(iterable, index):
         if __coconut__.hasattr(iterable, "__coconut_is_map__") and iterable.__coconut_is_map__:
@@ -858,7 +858,7 @@ class matcher(object):
             self.defs.append(itervar+" = __coconut__.tuple("+item+")")
         else:
             self.defs.append(tail+" = __coconut__.iter("+item+")")
-            self.defs.append(itervar+" = __coconut__.tuple(__coconut__.igetitem("+tail+", __coconut__.slice(0, "+str(len(match))+")))")
+            self.defs.append(itervar+" = __coconut__.tuple(__coconut__.igetitem("+tail+", __coconut__.slice(None, "+str(len(match))+")))")
         self.increment()
         self.checks.append("__coconut__.len("+itervar+") == "+str(len(match)))
         for x in range(0, len(match)):
@@ -1748,10 +1748,7 @@ class processor(object):
                         for x in range(0, len(trailer[1])):
                             arg = trailer[1][x]
                             if not arg:
-                                if x == 0:
-                                    arg = "0"
-                                else:
-                                    arg = "None"
+                                arg = "None"
                             args.append(arg)
                         out = "__coconut__.igetitem(" + out
                         if len(args) == 1:

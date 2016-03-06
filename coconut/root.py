@@ -72,6 +72,8 @@ class range(object):
             return self._xrange[index]
     def __repr__(self):
         return _coconut_repr(self._xrange)[1:]
+    def __reduce__(self):
+        return (range, self._xrange.__reduce__()[1])
 class _coconut_metaint(type):
     def __instancecheck__(cls, inst):
         return _coconut_isinstance(inst, (_coconut_int, _coconut_long))
