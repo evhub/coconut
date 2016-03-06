@@ -267,8 +267,6 @@ class cli(object):
                 if args.dest is None:
                     if not args.nowrite:
                         dest = True # auto-generate dest
-                    elif args.package or args.standalone:
-                        raise CoconutException("cannot specify --package or --standalone when --nowrite is enabled")
                     else:
                         dest = None
                 elif args.nowrite:
@@ -278,7 +276,7 @@ class cli(object):
                 else:
                     dest = args.dest
                 if args.package and args.standalone:
-                    raise CoconutException("cannot compile both as --package and as --standalone")
+                    raise CoconutException("cannot compile as both --package and --standalone")
                 elif args.package:
                     package = True
                 elif args.standalone:
@@ -299,14 +297,12 @@ class cli(object):
     def compile_path(self, path, write=True, package=None, run=False, force=False):
         """Compiles a path."""
         if os.path.isfile(path):
-            if package is None and write is not None:
+            if package is None:
                 package = False
-            # if package is still None, it means write is None, and compile neither as package nor standalone
             self.compile_file(path, write, package, run, force)
         elif os.path.isdir(path):
-            if package is None and write is not None:
+            if package is None:
                 package = True
-            # passes package unchanged to compile_file, so see above for meaning
             self.compile_folder(path, write, package, run, force)
         else:
             raise CoconutException("could not find source path "+path)

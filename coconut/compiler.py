@@ -268,10 +268,10 @@ def getheader(which, version=None, usehash=None):
         header = ""
     if which != "initial":
         header += r'''# Coconut Header: --------------------------------------------------------------
+
 '''
         if version != "3":
-            header += r'''
-from __future__ import print_function, absolute_import, unicode_literals, division
+            header += r'''from __future__ import print_function, absolute_import, unicode_literals, division
 '''
         if which == "module":
             header += r'''import sys as _coconut_sys, os.path as _coconut_os_path
