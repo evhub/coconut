@@ -352,7 +352,7 @@ class cli(object):
                 ext = comp_ext
             destpath = fixpath(base + ext)
         if filepath == destpath:
-            raise CoconutException("cannot compile "+os.path.split(filepath)[1]+" to itself (use a different file extension or try a different destination directory)")
+            raise CoconutException("cannot compile "+os.path.split(filepath)[1]+" to itself (incorrect file extension)")
         else:
             self.compile(filepath, destpath, package, run, force)
 
