@@ -308,7 +308,7 @@ class __coconut__(object):
     else:
         import collections.abc as abc'''
             header += r'''
-    IndexError, object, set, frozenset, tuple, list, dict, slice, len, iter, isinstance, getattr, ascii, next, range, hasattr, super, reversed, _map, _zip = IndexError, object, set, frozenset, tuple, list, dict, slice, len, iter, isinstance, getattr, ascii, next, range, hasattr, super, reversed, map, zip
+    IndexError, object, set, frozenset, tuple, list, dict, slice, len, iter, isinstance, getattr, ascii, next, range, hasattr, super, _map, _zip = IndexError, object, set, frozenset, tuple, list, dict, slice, len, iter, isinstance, getattr, ascii, next, range, hasattr, super, map, zip
     class MatchError(Exception):
         """Pattern-matching error."""
     class map(_map):
@@ -368,10 +368,8 @@ class __coconut__(object):
             else:
                 return iterable[index]
         elif __coconut__.isinstance(index, __coconut__.slice):
-            if (index.start is not None and index.start < 0) or (index.stop is not None and index.stop < 0):
+            if (index.start is not None and index.start < 0) or (index.stop is not None and index.stop < 0) or (index.step is not None and index.step < 0):
                 return (x for x in __coconut__.tuple(iterable)[index])
-            elif index.step is not None and index.step < 0:
-                return __coconut__.reversed(__coconut__.itertools.islice(iterable, index.start, index.stop, -index.step))
             else:
                 return __coconut__.itertools.islice(iterable, index.start, index.stop, index.step)
         elif index < 0:
