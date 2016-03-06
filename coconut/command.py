@@ -267,11 +267,6 @@ class cli(object):
                 self.console.show(self.version)
             if args.autopep8 is not None:
                 self.proc.autopep8(args.autopep8)
-            if args.code is not None:
-                self.execute(self.proc.parse_block(args.code[0]))
-            stdin = not sys.stdin.isatty()
-            if stdin:
-                self.execute(self.proc.parse_block(sys.stdin.read()))
             if args.source is not None:
                 if args.run and os.path.isdir(args.source):
                     raise CoconutException("source path must point to file not directory when --run is enabled")
@@ -297,6 +292,11 @@ class cli(object):
                 self.compile_path(args.source, dest, package, args.run, args.force)
             elif args.run or args.nowrite or args.force or args.package or args.standalone:
                 raise CoconutException("a source file/folder must be specified when options that depend on the source are enabled")
+            if args.code is not None:
+                self.execute(self.proc.parse_block(args.code[0]))
+            stdin = not sys.stdin.isatty()
+            if stdin:
+                self.execute(self.proc.parse_block(sys.stdin.read()))
             if args.jupyter is not None:
                 self.start_jupyter(args.jupyter)
             if args.interact or (interact and not (stdin or args.source or args.version or args.code or args.jupyter is not None)):
@@ -364,7 +364,7 @@ class cli(object):
         foundhash = None if force else self.hashashof(destpath, code, package)
         if foundhash:
             if run:
-                self.execute(foundhash, path=destpath)
+                self.execute(foundhash, path=destpath, isolate=True)
             elif self.show:
                 print(foundhash)
             self.console.show("Left unchanged  "+destpath+" (pass --force to overwrite).")
@@ -387,7 +387,7 @@ class cli(object):
                     writefile(opened, compiled)
                 self.console.show("Compiled to     "+destpath+" .")
             if run:
-                self.execute(compiled, path=(destpath if destpath is not None else codepath))
+                self.execute(compiled, path=(destpath if destpath is not None else codepath), isolate=True)
             elif self.show:
                 print(compiled)
 
@@ -455,25 +455,28 @@ class cli(object):
                 return None
         return compiled
 
-    def execute(self, compiled=None, error=True, path=None):
+    def execute(self, compiled=None, error=True, path=None, isolate=False):
         """Executes compiled code."""
-        self.check_runner(path)
+        self.check_runner(path, isolate)
         if compiled is not None:
             if self.show:
                 print(compiled)
             self.runner.run(rem_encoding(compiled), error)
 
-    def check_runner(self, path=None):
+    def check_runner(self, path=None, isolate=False):
         """Makes sure there is a runner."""
-        if self.runner is None:
-            self.start_runner()
+        if isolate or self.runner is None:
+            self.start_runner(isolate)
         if path is not None:
             self.runner.setfile(path)
 
-    def start_runner(self):
+    def start_runner(self, isolate=False):
         """Starts the runner."""
         sys.path.insert(0, os.getcwd())
-        self.runner = executor(self.proc.headers("code"), exit=self.exit)
+        if isolate:
+            self.runner = executor(exit=self.exit)
+        else:
+            self.runner = executor(self.proc.headers("code"), exit=self.exit)
 
     def start_jupyter(self, args):
         """Starts Jupyter with the Coconut kernel."""
