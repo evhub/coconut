@@ -29,6 +29,8 @@ from ipykernel.kernelbase import Kernel
 
 class fakefile(StringIO):
     """A file-like object wrapper around a messaging function."""
+    encoding = encoding
+
     def __init__(self, send):
         """Initialize with a messaging function."""
         super(fakefile, self).__init__()
