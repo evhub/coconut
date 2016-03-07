@@ -2089,10 +2089,9 @@ class processor(object):
     name = Regex(r"(?![0-9])\w+")
     for k in keywords + const_vars:
         name = ~Keyword(k) + name
-    any_name = name.copy()
     for k in reserved_vars:
-        name = ~Keyword(k) + name | fixto(backslash + Keyword(k), k)
-        any_name |= fixto(backslash + Keyword(k), k)
+        name |= fixto(backslash + Keyword(k), k)
+    any_name = name
     dotted_name = condense(any_name + ZeroOrMore(dot + any_name))
 
     integer = Combine(Word(nums) + ZeroOrMore(underscore.suppress() + Word(nums)))
@@ -2453,7 +2452,7 @@ class processor(object):
         Keyword("match").suppress() - match - Optional(Keyword("if").suppress() - test) - full_suite
         ), "case_match")
     case_stmt = attach(
-        Keyword("case").suppress() - test - colon.suppress() - newline.suppress()
+        Keyword("case").suppress() + test - colon.suppress() - newline.suppress()
         - indent.suppress() - Group(OneOrMore(case_match))
         - dedent.suppress() - Optional(Keyword("else").suppress() - else_suite)
         , case_proc)
@@ -2486,8 +2485,8 @@ class processor(object):
     base_funcdef = addspace((op_funcdef | name_funcdef) + Optional(return_typedef))
     funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
     math_funcdef = attach(Keyword("def").suppress() + base_funcdef + equals.suppress() - test_expr, func_proc) - newline
-    async_funcdef_ref = addspace(Keyword("async") - (funcdef | math_funcdef))
-    async_block_ref = addspace(Keyword("async") - (with_stmt | for_stmt))
+    async_funcdef_ref = addspace(Keyword("async") + (funcdef | math_funcdef))
+    async_block_ref = addspace(Keyword("async") + (with_stmt | for_stmt))
 
     async_match_funcdef = Forward()
     op_match_funcdef_arg = lparen.suppress() + match + rparen.suppress()
@@ -2509,7 +2508,7 @@ class processor(object):
         (newline.suppress() + indent.suppress() + Optional(docstring) + Group(OneOrMore(stmt)) + dedent.suppress())("complex")
         | (newline.suppress() + indent.suppress() + docstring + dedent.suppress() | docstring)("docstring")
         | simple_stmt("simple"))
-    datadef = condense(attach(Keyword("data").suppress() - any_name - data_args - data_suite, data_proc))
+    datadef = condense(attach(Keyword("data").suppress() + any_name - data_args - data_suite, data_proc))
 
     simple_decorator = condense(dotted_name + Optional(lparen + callargslist + rparen))("simple")
     complex_decorator = test("complex")
