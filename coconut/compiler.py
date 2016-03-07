@@ -1414,12 +1414,14 @@ class processor(object):
                     line = " "*tablen*level + line
             for c in line + "\n":
                 if hold is not None:
-                    if hold[_stop] is not None:
+                    if c == "\n" and len(hold[_start]) == 1:
+                        raise CoconutException("invalid linebreak in string code", line)
+                    elif hold[_stop] is not None:
                         if c == "\\":
-                            hold[_escape] = (hold[_escape] + 1) % 2
+                            hold[_escape] = not hold[_escape]
                             hold[_stop] = None
                         elif c == hold[_start][0]:
-                            hold[_escape] = 0
+                            hold[_escape] = False
                             hold[_stop] += c
                         elif len(hold[_stop]) > len(hold[_start]):
                             raise CoconutException("invalid close in string code", line)
@@ -1428,31 +1430,34 @@ class processor(object):
                         elif c == "\n" and len(hold[_start]) == 1:
                             raise CoconutException("invalid linebreak in string code", line)
                         else:
-                            hold[_escape] = 0
+                            hold[_escape] = False
                             hold[_stop] = None
                     elif c == "\\":
-                        hold[_escape] = (hold[_escape] + 1) % 2
-                    elif hold[_escape] == 0:
-                        if c == hold[_start]:
-                            hold = None
-                        elif c == hold[_start][0]:
-                            hold[_stop] = c
-                    elif c == "\n" and len(hold[_start]) == 1:
-                        raise CoconutException("invalid linebreak in string code", line)
-                    else:
-                        hold[_escape] = 0
+                        hold[_escape] = not hold[_escape]
+                    elif hold[_escape]:
+                        hold[_escape] = False
+                    elif c == hold[_start]:
+                        hold = None
+                    elif c == hold[_start][0]:
+                        hold[_stop] = c
                 elif found is not None:
                     if c == found[0]:
                         found += c
                     elif len(found) == 1: # found == "_"
                         if c == "\n":
                             raise CoconutException("invalid linebreak in string code", line)
-                        hold = [0, found, None] # [_escape, _start, _stop]
+                        elif c == "\\":
+                            hold = [True, found, None] # [_escape, _start, _stop]
+                        else:
+                            hold = [False, found, None] # [_escape, _start, _stop]
                         found = None
                     elif len(found) == 2: # found == "___"
                         found = None
                     elif len(found) == 3: # found == "____"
-                        hold = [0, found, None] # [_escape, _start, _stop]
+                        if c == "\\":
+                            hold = [True, found, None] # [_escape, _start, _stop]
+                        else:
+                            hold = [False, found, None] # [_escape, _start, _stop]
                         found = None
                     else:
                         raise CoconutException("invalid string start code", line)
