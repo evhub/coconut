@@ -72,7 +72,7 @@
 
 This documentation covers all the technical details of the [Coconut Programming Language](http://evhub.github.io/coconut/), and is intended as a reference specification, not a tutorialized introduction. For a full introduction and tutorial of Coconut, see [HELP](http://coconut.readthedocs.org/en/master/HELP.html).
 
-Coconut is a variant of [Python](https://www.python.org/) built for **simple, elegant, Pythonic functional programming**. With only [one exception](#backslash-escaping), Coconut syntax is a strict superset of Python 3 syntax. That means users familiar with Python will already be familiar with most of Coconut.
+Coconut is a variant of [Python](https://www.python.org/) built for **simple, elegant, Pythonic functional programming**. Coconut syntax is a strict superset of Python 3 syntax. That means users familiar with Python will already be familiar with most of Coconut.
 
 The Coconut compiler turns Coconut code into Python code. The primary method of accessing the Coconut compiler is through the Coconut command-line utility, which also features an interpreter for real-time compilation. In addition to the command-line utility, Coconut also supports the use of IPython / Jupyter notebooks.
 
@@ -642,7 +642,7 @@ _Can't be done without a long series of checks for each `match` statement. See t
 
 ### Backslash-Escaping
 
-The requirement that Coconut keywords be backslash-escaped to make them variables in Coconut is the one exception to the rule of all Python 3 being valid Coconut. To allow access to the valid Python variable names `data`, `match`, `case`, `async` (keyword in Python 3.5), and `await` (keyword in Python 3.5) in Coconut, those keywords may sometimes need to be backslash-escaped to turn them into the variables instead. In many cases, Coconut will know you want a variable name, but it is always safer to backslash-escape than to not.
+In Coconut, the keywords `data`, `match`, `case`, `async` (keyword in Python 3.5), and `await` (keyword in Python 3.5) are also valid variable names. While Coconut can disambiguate these two use cases, when using one of these keywords as a variable name, a backslash is allowed in front to be explicit about using a keyword as a variable name.
 
 ##### Example
 

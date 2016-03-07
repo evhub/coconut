@@ -95,7 +95,7 @@ Coconut Interpreter:
 ```
 which is Coconut's way of telling you you're ready to start entering code for it to evaluate. So let's do that!
 
-In case you missed it earlier, _all valid Python 3 is valid Coconut_ (with one very minor [exception](http://coconut.readthedocs.org/en/master/DOCS.html#backslash-escaping)). That doesn't mean compiled Coconut will only run on Python 3—in fact, compiled Coconut will run the same on any Python version—but it does mean that only Python 3 code is guaranteed to compile as Coconut code.
+In case you missed it earlier, _all valid Python 3 is valid Coconut_. That doesn't mean compiled Coconut will only run on Python 3—in fact, compiled Coconut will run the same on any Python version—but it does mean that only Python 3 code is guaranteed to compile as Coconut code.
 
 That means that if you're familiar with Python, you're already familiar with a good deal of Coconut's core syntax and Coconut's entire standard library. To show that, let's try entering some basic Python into the Coconut interpreter.
 

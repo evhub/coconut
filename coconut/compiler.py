@@ -2091,8 +2091,7 @@ class processor(object):
         name = ~Keyword(k) + name
     for k in reserved_vars:
         name |= fixto(backslash + Keyword(k), k)
-    any_name = name
-    dotted_name = condense(any_name + ZeroOrMore(dot + any_name))
+    dotted_name = condense(name + ZeroOrMore(dot + name))
 
     integer = Combine(Word(nums) + ZeroOrMore(underscore.suppress() + Word(nums)))
     binint = Combine(Word("01") + ZeroOrMore(underscore.suppress() + Word("01")))
@@ -2171,14 +2170,14 @@ class processor(object):
     expr = Forward()
     comp_for = Forward()
 
-    typedef_ref = condense(any_name + colon + test)
+    typedef_ref = condense(name + colon + test)
     typedef = Forward()
-    tfpdef = typedef | any_name
+    tfpdef = typedef | name
     callarg = test
     default = Optional(condense(equals + test))
 
     argslist = Optional(itemlist(condense(dubstar + tfpdef | star + tfpdef | tfpdef + default), comma))
-    varargslist_req = itemlist(condense(dubstar + any_name | star + any_name | any_name + default), comma)
+    varargslist_req = itemlist(condense(dubstar + name | star + name | name + default), comma)
     varargslist = Optional(varargslist_req)
     callargslist = Optional(attach(addspace(test + comp_for), add_paren_proc) | itemlist(condense(dubstar + callarg | star + callarg | callarg + default), comma))
 
@@ -2242,7 +2241,7 @@ class processor(object):
         keyword_atom |= Keyword(const_vars[x])
     string_atom = addspace(OneOrMore(string))
     passthrough_atom = addspace(OneOrMore(passthrough))
-    attr_atom = attach(condense(dot.suppress() + any_name), attr_proc)
+    attr_atom = attach(condense(dot.suppress() + name), attr_proc)
     set_literal = Forward()
     set_letter_literal = Forward()
     set_s = fixto(CaselessLiteral("s"), "s")
@@ -2282,7 +2281,7 @@ class processor(object):
     slicetestgroup = Optional(test, default="")
     sliceopgroup = unsafe_colon.suppress() + slicetestgroup
     subscriptgroup = Group(slicetestgroup + sliceopgroup + Optional(sliceopgroup) | test)
-    simple_trailer = condense(lbrack + subscriptlist + rbrack) | condense(dot + any_name)
+    simple_trailer = condense(lbrack + subscriptlist + rbrack) | condense(dot + name)
     complex_trailer = (
         Group(condense(dollar + lparen) + callargslist + rparen.suppress())
         | condense(lparen + callargslist + rparen)
@@ -2367,8 +2366,8 @@ class processor(object):
     base_suite = Forward()
     classlist = Forward()
 
-    classlist_ref = Optional(lparen.suppress() + Optional(Group(itemlist(any_name, comma)("names") ^ varargslist_req("args"))) + rparen.suppress())
-    classdef = condense(addspace(Keyword("class") - any_name) + classlist + suite)
+    classlist_ref = Optional(lparen.suppress() + Optional(Group(itemlist(name, comma)("names") ^ varargslist_req("args"))) + rparen.suppress())
+    classdef = condense(addspace(Keyword("class") - name) + classlist + suite)
     comp_iter = Forward()
     comp_for <<= addspace(Keyword("for") + assignlist + Keyword("in") + test_item + Optional(comp_iter))
     comp_if = addspace(Keyword("if") + test_nocond + Optional(comp_iter))
@@ -2384,8 +2383,8 @@ class processor(object):
     raise_stmt = complex_raise_stmt | simple_raise_stmt
     flow_stmt = break_stmt | continue_stmt | return_stmt | raise_stmt | yield_expr
 
-    dotted_as_name = Group(dotted_name - Optional(Keyword("as").suppress() - any_name))
-    import_as_name = Group(any_name - Optional(Keyword("as").suppress() - any_name))
+    dotted_as_name = Group(dotted_name - Optional(Keyword("as").suppress() - name))
+    import_as_name = Group(name - Optional(Keyword("as").suppress() - name))
     import_names = Group(parenwrap(lparen, tokenlist(dotted_as_name, comma), rparen, tokens=True))
     import_from_names = Group(parenwrap(lparen, tokenlist(import_as_name, comma), rparen, tokens=True))
     import_name = Keyword("import").suppress() - import_names
@@ -2395,11 +2394,11 @@ class processor(object):
     import_stmt = Forward()
     import_stmt_ref = import_from | import_name
 
-    namelist = parenwrap(lparen, itemlist(any_name, comma), rparen)
+    namelist = parenwrap(lparen, itemlist(name, comma), rparen)
     global_stmt = addspace(Keyword("global") - namelist)
     nonlocal_stmt_ref = addspace(Keyword("nonlocal") - namelist)
     del_stmt = addspace(Keyword("del") - simple_assignlist)
-    with_item = addspace(test - Optional(Keyword("as") - any_name))
+    with_item = addspace(test - Optional(Keyword("as") - name))
 
     match = Forward()
     matchlist_list = Group(Optional(tokenlist(match, comma)))
@@ -2416,17 +2415,17 @@ class processor(object):
         | (lparen.suppress() + match + rparen.suppress())("paren")
         | (lbrace.suppress() + matchlist_dict + rbrace.suppress())("dict")
         | (Optional(set_s.suppress()) + lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
-        | ((match_list | match_tuple | match_lazy) + dubcolon.suppress() + any_name)("iter")
+        | ((match_list | match_tuple | match_lazy) + dubcolon.suppress() + name)("iter")
         | match_lazy("iter")
-        | (match_list + plus.suppress() + any_name + plus.suppress() + match_list)("mseries")
-        | (match_tuple + plus.suppress() + any_name + plus.suppress() + match_tuple)("mseries")
-        | ((match_list | match_tuple) + Optional(plus.suppress() + any_name))("series")
+        | (match_list + plus.suppress() + name + plus.suppress() + match_list)("mseries")
+        | (match_tuple + plus.suppress() + name + plus.suppress() + match_tuple)("mseries")
+        | ((match_list | match_tuple) + Optional(plus.suppress() + name))("series")
         | (name + plus.suppress() + (match_list | match_tuple))("rseries")
         | (name + equals.suppress() + match)("assign")
         | (name + lparen.suppress() + matchlist_list + rparen.suppress())("data")
         | name("var")
         )
-    matchlist_name = name | lparen.suppress() + itemlist(any_name, comma) + rparen.suppress()
+    matchlist_name = name | lparen.suppress() + itemlist(name, comma) + rparen.suppress()
     matchlist_is = base_match + Keyword("is").suppress() + matchlist_name
     is_match = Group(matchlist_is("is")) | base_match
     matchlist_and = is_match + OneOrMore(Keyword("and").suppress() + is_match)
@@ -2464,7 +2463,7 @@ class processor(object):
                        )
     while_stmt = addspace(Keyword("while") - condense(test - suite - Optional(else_stmt)))
     for_stmt = addspace(Keyword("for") - assignlist - Keyword("in") - condense(testlist - suite - Optional(else_stmt)))
-    except_clause = attach(Keyword("except").suppress() + testlist - Optional(Keyword("as").suppress() - any_name), except_proc)
+    except_clause = attach(Keyword("except").suppress() + testlist - Optional(Keyword("as").suppress() - name), except_proc)
     try_stmt = condense(Keyword("try") - suite + (
         Keyword("finally") - suite
         | (
@@ -2477,9 +2476,9 @@ class processor(object):
     return_typedef = Forward()
     async_funcdef = Forward()
     async_block = Forward()
-    name_funcdef = condense(any_name + parameters)
+    name_funcdef = condense(name + parameters)
     op_funcdef_arg = condense(lparen.suppress() + tfpdef + Optional(default) + rparen.suppress())
-    op_funcdef_name = backtick.suppress() + any_name + backtick.suppress()
+    op_funcdef_name = backtick.suppress() + name + backtick.suppress()
     op_funcdef = attach(Group(Optional(op_funcdef_arg)) + op_funcdef_name + Group(Optional(op_funcdef_arg)), op_funcdef_proc)
     return_typedef_ref = addspace(arrow + test)
     base_funcdef = addspace((op_funcdef | name_funcdef) + Optional(return_typedef))
@@ -2491,7 +2490,7 @@ class processor(object):
     async_match_funcdef = Forward()
     op_match_funcdef_arg = lparen.suppress() + match + rparen.suppress()
     op_match_funcdef = attach(Group(Optional(op_match_funcdef_arg)) + op_funcdef_name + Group(Optional(op_match_funcdef_arg)), op_match_funcdef_proc)
-    name_match_funcdef = attach(any_name + lparen.suppress() + matchlist_list + rparen.suppress(), name_match_funcdef_proc)
+    name_match_funcdef = attach(name + lparen.suppress() + matchlist_list + rparen.suppress(), name_match_funcdef_proc)
     base_match_funcdef = Keyword("def").suppress() + (op_match_funcdef | name_match_funcdef)
     full_match_funcdef = trace(attach(base_match_funcdef + full_suite, full_match_funcdef_proc), "base_match_funcdef")
     math_match_funcdef = attach(
@@ -2503,12 +2502,12 @@ class processor(object):
         + (full_match_funcdef | math_match_funcdef))
     async_stmt = async_block | async_funcdef | async_match_funcdef_ref
 
-    data_args = Optional(lparen.suppress() + Optional(itemlist(~underscore + any_name, comma)) + rparen.suppress())
+    data_args = Optional(lparen.suppress() + Optional(itemlist(~underscore + name, comma)) + rparen.suppress())
     data_suite = colon.suppress() - Group(
         (newline.suppress() + indent.suppress() + Optional(docstring) + Group(OneOrMore(stmt)) + dedent.suppress())("complex")
         | (newline.suppress() + indent.suppress() + docstring + dedent.suppress() | docstring)("docstring")
         | simple_stmt("simple"))
-    datadef = condense(attach(Keyword("data").suppress() + any_name - data_args - data_suite, data_proc))
+    datadef = condense(attach(Keyword("data").suppress() + name - data_args - data_suite, data_proc))
 
     simple_decorator = condense(dotted_name + Optional(lparen + callargslist + rparen))("simple")
     complex_decorator = test("complex")
