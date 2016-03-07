@@ -1430,13 +1430,17 @@ class processor(object):
                         else:
                             hold[_escape] = 0
                             hold[_stop] = None
-                    elif hold[_escape] != 1:
+                    elif c == "\\":
+                        hold[_escape] = (hold[_escape] + 1) % 2
+                    elif hold[_escape] == 0:
                         if c == hold[_start]:
                             hold = None
                         elif c == hold[_start][0]:
                             hold[_stop] = c
                     elif c == "\n" and len(hold[_start]) == 1:
                         raise CoconutException("invalid linebreak in string code", line)
+                    else:
+                        hold[_escape] = 0
                 elif found is not None:
                     if c == found[0]:
                         found += c
