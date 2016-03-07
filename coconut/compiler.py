@@ -2444,7 +2444,7 @@ class processor(object):
     match_stmt = condense(full_match - Optional(else_stmt))
 
     match_assign_stmt = trace(attach(
-        (Keyword("match").suppress() | ~(assignlist+equals)) + match + equals.suppress() - test_expr - newline.suppress()
+        Optional(Keyword("match").suppress()) + match + equals.suppress() - test_expr - newline.suppress()
         , match_assign_proc), "match_assign_stmt")
 
     case_match = trace(Group(
@@ -2545,7 +2545,6 @@ class processor(object):
         | async_stmt
         | math_funcdef
         | math_match_funcdef
-        | match_assign_stmt
         , "compound_stmt")
     augassign_stmt = Forward()
     augassign_stmt_ref = simple_assign + augassign + test_expr
@@ -2558,7 +2557,7 @@ class processor(object):
     keyword_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt | assert_stmt
     small_stmt = trace(keyword_stmt | expr_stmt, "small_stmt")
     simple_stmt <<= trace(condense(itemlist(small_stmt, semicolon) + newline), "simple_stmt")
-    stmt <<= trace(compound_stmt | simple_stmt, "stmt")
+    stmt <<= trace(compound_stmt | simple_stmt | match_assign_stmt, "stmt")
     base_suite <<= condense(newline + indent - OneOrMore(stmt) - dedent)
     suite <<= trace(condense(colon + base_suite) | addspace(colon + simple_stmt), "suite")
     line = trace(newline | stmt, "line")
