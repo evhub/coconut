@@ -33,7 +33,7 @@ class fakefile(StringIO):
 
     def __init__(self, send):
         """Initialize with a messaging function."""
-        super(fakefile, self).__init__()
+        StringIO.__init__(self)
         self._send = send
 
     def _refresh(self):
@@ -44,17 +44,17 @@ class fakefile(StringIO):
 
     def flush(self, *args, **kwargs):
         """Flush to the messaging function."""
-        super(fakefile, self).flush(*args, **kwargs)
+        StringIO.flush(self, *args, **kwargs)
         self._refresh()
 
     def write(self, *args, **kwargs):
         """Write to the messaging function."""
-        super(fakefile, self).write(*args, **kwargs)
+        StringIO.write(self, *args, **kwargs)
         self._refresh()
 
     def writelines(self, *args, **kwargs):
         """Write lines to the messaging function."""
-        super(fakefile, self).writelines(*args, **kwargs)
+        StringIO.writelines(self, *args, **kwargs)
         self._refresh()
 
 #-----------------------------------------------------------------------------------------------------------------------

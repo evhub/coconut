@@ -201,21 +201,21 @@ class CoconutParseError(CoconutSyntaxError):
     """Coconut ParseError."""
     def __init__(self, line, col, ln):
         """Creates The Coconut ParseError."""
-        super(CoconutParseError, self).__init__("parsing failed", line, col-1, ln)
+        CoconutSyntaxError.__init__(self, "parsing failed", line, col-1, ln)
 
 class CoconutStyleError(CoconutSyntaxError):
     """Coconut --strict error."""
     def __init__(self, message, source=None, point=None, ln=None):
         """Creates the --strict Coconut error."""
         message += " (disable --strict to dismiss)"
-        super(CoconutStyleError, self).__init__(message, source, point, ln)
+        CoconutSyntaxError.__init__(self, message, source, point, ln)
 
 class CoconutTargetError(CoconutSyntaxError):
     """Coconut --target error."""
     def __init__(self, message, source=None, point=None, ln=None):
         """Creates the --target Coconut error."""
         message += " (enable --target 3 to dismiss)"
-        super(CoconutTargetError, self).__init__(message, source, point, ln)
+        CoconutSyntaxError.__init__(self, message, source, point, ln)
 
 class CoconutWarning(Warning):
     """Base Coconut warning."""
