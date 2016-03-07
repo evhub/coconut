@@ -15,3 +15,4 @@ Description: The Coconut IPython kernel module.
 #-----------------------------------------------------------------------------------------------------------------------
 
 from __future__ import print_function, absolute_import, unicode_literals, division
+from .root import *
