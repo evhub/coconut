@@ -136,6 +136,8 @@ new_to_old_stdlib = {
     "urllib.request": ("urllib2", (3,)),
     "urllib.parse": ("urllib2", (3,)),
     "urllib.error": ("urllib2", (3,)),
+    "io.StringIO": ("StringIO", (3,)),
+    "io.BytesIO": ("BytesIO", (3,)),
     "collections.abc": ("collections", (3, 3))
 }
 
