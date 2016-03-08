@@ -917,12 +917,6 @@ class matcher(object):
         else:
             self.checks.append(item+" == "+match)
 
-    def match_typedef(self, original, item):
-        """Matches a typedef."""
-        match, type_check = original
-        self.checks.append("__coconut__.isinstance("+item+", ("+type_check+"))")
-        self.match(match, item)
-
     def match_var(self, original, item):
         """Matches a variable."""
         (setvar,) = original
@@ -957,15 +951,25 @@ class matcher(object):
         (match,) = original
         self.match(match, item)
 
-    def match_as(self, original, item):
-        """Matches as patterns."""
-        match, setvar = original
-        if setvar in self.names:
-            self.checks.append(self.names[setvar]+" == "+item)
-        elif setvar != wildcard:
-            self.defs.append(setvar+" = "+item)
-            self.names[setvar] = item
-        self.match(match, item)
+    def match_trailer(self, original, item):
+        """Matches typedefs and as patterns."""
+        if len(original) <= 1 or len(original) % 2 != 1:
+            raise CoconutException("invalid trailer match tokens", original)
+        else:
+            match, trailers = original[0], original[1:]
+            for i in range(0, len(trailers), 2):
+                op, arg = trailers[i], trailers[i+1]
+                if op == "is":
+                    self.checks.append("__coconut__.isinstance("+item+", "+arg+")")
+                elif op == "as":
+                    if arg in self.names:
+                        self.checks.append(self.names[arg]+" == "+item)
+                    elif arg != wildcard:
+                        self.defs.append(arg+" = "+item)
+                        self.names[arg] = item
+                else:
+                    raise CoconutException("invalid trailer match operation", op)
+            self.match(match, item)
 
     def match_and(self, original, item):
         """Matches and."""
@@ -985,12 +989,11 @@ class matcher(object):
         "rseries": lambda self: self.match_rsequence,
         "mseries": lambda self: self.match_msequence,
         "const": lambda self: self.match_const,
-        "is": lambda self: self.match_typedef,
         "var": lambda self: self.match_var,
         "set": lambda self: self.match_set,
         "data": lambda self: self.match_data,
         "paren": lambda self: self.match_paren,
-        "as": lambda self: self.match_as,
+        "trailer": lambda self: self.match_trailer,
         "and": lambda self: self.match_and,
         "or": lambda self: self.match_or
     }
@@ -2424,11 +2427,8 @@ class processor(object):
         | (name + lparen.suppress() + matchlist_list + rparen.suppress())("data")
         | name("var")
         )
-    matchlist_name = name | lparen.suppress() + testlist + rparen.suppress()
-    matchlist_is = base_match + Keyword("is").suppress() + matchlist_name
-    is_match = Group(matchlist_is("is")) | base_match
-    matchlist_as = is_match + Keyword("as").suppress() + name
-    as_match = Group(matchlist_as("as")) | is_match
+    matchlist_trailer = base_match + OneOrMore(Keyword("as") + name | Keyword("is") + atom_item)
+    as_match = Group(matchlist_trailer("trailer")) | base_match
     matchlist_and = as_match + OneOrMore(Keyword("and").suppress() + as_match)
     and_match = Group(matchlist_and("and")) | as_match
     matchlist_or = and_match + OneOrMore(Keyword("or").suppress() + and_match)
