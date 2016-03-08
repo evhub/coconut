@@ -957,9 +957,9 @@ class matcher(object):
         (match,) = original
         self.match(match, item)
 
-    def match_assign(self, original, item):
-        """Matches assignment."""
-        setvar, match = original
+    def match_as(self, original, item):
+        """Matches as patterns."""
+        match, setvar = original
         if setvar in self.names:
             self.checks.append(self.names[setvar]+" == "+item)
         elif setvar != wildcard:
@@ -990,7 +990,7 @@ class matcher(object):
         "set": lambda self: self.match_set,
         "data": lambda self: self.match_data,
         "paren": lambda self: self.match_paren,
-        "assign": lambda self: self.match_assign,
+        "as": lambda self: self.match_as,
         "and": lambda self: self.match_and,
         "or": lambda self: self.match_or
     }
@@ -1677,7 +1677,7 @@ class processor(object):
     def autopep8(self, arglist=[]):
         """Enables autopep8 integration."""
         import autopep8
-        args = autopep8.parse_args([""]+arglist)
+        args = autopep8.parse_args(["autopep8"]+arglist)
         def pep8_fixer(code, **kwargs):
             """Automatic PEP8 fixer."""
             return autopep8.fix_code(code, options=args)
@@ -2421,15 +2421,16 @@ class processor(object):
         | (match_tuple + plus.suppress() + name + plus.suppress() + match_tuple)("mseries")
         | ((match_list | match_tuple) + Optional(plus.suppress() + name))("series")
         | (name + plus.suppress() + (match_list | match_tuple))("rseries")
-        | (name + equals.suppress() + match)("assign")
         | (name + lparen.suppress() + matchlist_list + rparen.suppress())("data")
         | name("var")
         )
-    matchlist_name = name | lparen.suppress() + itemlist(name, comma) + rparen.suppress()
+    matchlist_name = name | lparen.suppress() + testlist + rparen.suppress()
     matchlist_is = base_match + Keyword("is").suppress() + matchlist_name
     is_match = Group(matchlist_is("is")) | base_match
-    matchlist_and = is_match + OneOrMore(Keyword("and").suppress() + is_match)
-    and_match = Group(matchlist_and("and")) | is_match
+    matchlist_as = is_match + Keyword("as").suppress() + name
+    as_match = Group(matchlist_as("as")) | is_match
+    matchlist_and = as_match + OneOrMore(Keyword("and").suppress() + as_match)
+    and_match = Group(matchlist_and("and")) | as_match
     matchlist_or = and_match + OneOrMore(Keyword("or").suppress() + and_match)
     or_match = Group(matchlist_or("or")) | and_match
     match <<= trace(or_match, "match")

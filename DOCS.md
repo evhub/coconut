@@ -470,7 +470,7 @@ pattern ::= (
     | "=" NAME                      # check
     | NUMBER                        # numbers
     | STRING                        # strings
-    | NAME ["=" pattern]            # capture
+    | [pattern "as"] NAME           # capture
     | NAME "(" patterns ")"         # data types
     | "(" patterns ")"              # sequences can be in tuple form
     | "[" patterns "]"              #  or in list form
@@ -497,7 +497,7 @@ pattern ::= (
         | "[" patterns "]"
         | "(|" patterns "|)"            # lazy lists
       ) "::" pattern
-    | pattern "is" names            # type-checking
+    | pattern "is" exprs            # type-checking
     | pattern "and" pattern         # match all
     | pattern "or" pattern          # match any
     )
@@ -510,7 +510,7 @@ pattern ::= (
 - Variables: will match to anything, and will be bound to whatever they match to, with some exceptions:
   * If the same variable is used multiple times, a check will be performed that each use match to the same value.
   * If the variable name `_` is used, nothing will be bound and everything will always match to it.
-- Explicit Bindings (`<var>=<pattern>`): will bind `<var>` to `<pattern>`.
+- Explicit Bindings (`<pattern> as <var>`): will bind `<var>` to `<pattern>`.
 - Checks (`=<var>`): will check that whatever is in that position is equal to the previously defined variable `<var>`.
 - Type Checks (`<var> is <types>`): will check that whatever is in that position is of type(s) `<types>` before binding the `<var>`.
 - Data Types (`<name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`.
@@ -577,7 +577,7 @@ node(leaf(2), node(empty(), leaf(3))) |> depth |> print
 _Showcases how the combination of data types and match statements can be used to powerful effect to replicate the usage of algebraic data types in other functional programming languages._
 ```coconut
 def duplicate_first(value):
-    match l=([x] + xs) in value:
+    match [x] + xs as l in value:
         return [x] + l
     else:
         raise TypeError()
