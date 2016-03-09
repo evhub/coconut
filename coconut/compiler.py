@@ -2344,23 +2344,23 @@ class processor(object):
     not_test = addspace(ZeroOrMore(Keyword("not")) + comparison)
     and_test = addspace(not_test + ZeroOrMore(Keyword("and") + not_test))
     or_test = addspace(and_test + ZeroOrMore(Keyword("or") + and_test))
-    test_item = or_test
-    test_nocond = Forward()
-    classic_lambdef_params = parenwrap(lparen, varargslist, rparen)
-    new_lambdef_params = lparen.suppress() + varargslist + rparen.suppress()
+    test_item = trace(or_test, "test_item")
 
     classic_lambdef = Forward()
+    classic_lambdef_params = parenwrap(lparen, varargslist, rparen)
+    new_lambdef_params = lparen.suppress() + varargslist + rparen.suppress()
     classic_lambdef_ref = addspace(Keyword("lambda") + condense(classic_lambdef_params + colon) + test)
     new_lambdef = attach(new_lambdef_params + arrow.suppress() + test, lambdef_proc)
     lambdef = trace(classic_lambdef | new_lambdef, "lambdef")
 
+    test_nocond = Forward()
     classic_lambdef_nocond = Forward()
     classic_lambdef_nocond_ref = addspace(Keyword("lambda") + condense(classic_lambdef_params + colon) + test_nocond)
     new_lambdef_nocond = attach(new_lambdef_params + arrow.suppress() + test_nocond, lambdef_proc)
     lambdef_nocond = trace(classic_lambdef_nocond | new_lambdef_nocond, "lambdef_nocond")
 
-    test <<= lambdef | trace(addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test)), "test")
-    test_nocond <<= lambdef_nocond | trace(test_item, "test_item")
+    test <<= lambdef | addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test))
+    test_nocond <<= lambdef_nocond | test_item
 
     simple_stmt = Forward()
     simple_compound_stmt = Forward()
