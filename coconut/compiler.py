@@ -40,6 +40,7 @@ downs = "([{"
 ups = ")]}"
 holds = "'\""
 tablen = 4
+tabworth = 8
 decorator_var = "_coconut_decorator"
 match_to_var = "_coconut_match_to"
 match_check_var = "_coconut_match_check"
@@ -1532,7 +1533,7 @@ class processor(object):
             elif inputstring[x] == "\t":
                 if self.indchar is None:
                     self.indchar = "\t"
-                count += tablen-x%tablen
+                count += tabworth-x%tabworth
             else:
                 break
             if self.indchar != inputstring[x]:
