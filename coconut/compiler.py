@@ -2182,7 +2182,8 @@ class processor(object):
     argslist = Optional(itemlist(condense(dubstar + tfpdef | star + tfpdef | tfpdef + default), comma))
     varargslist_req = itemlist(condense(dubstar + name | star + name | name + default), comma)
     varargslist = Optional(varargslist_req)
-    callargslist = Optional(attach(addspace(test + comp_for), add_paren_proc) | itemlist(condense(dubstar + callarg | star + callarg | callarg + default), comma))
+    callargslist = Optional(attach(addspace(test + comp_for), add_paren_proc)
+        | itemlist(condense(dubstar + callarg | star + callarg | callarg + default), comma))
 
     parameters = condense(lparen + argslist + rparen)
 
