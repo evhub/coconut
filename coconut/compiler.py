@@ -2174,7 +2174,7 @@ class processor(object):
     comp_for = Forward()
 
     typedef = Forward()
-    typedef_ref = condense(addspace(name + colon) + test)
+    typedef_ref = addspace(condense(name + colon) + test)
     tfpdef = typedef | name
     callarg = test
     default = Optional(condense(equals + test))
