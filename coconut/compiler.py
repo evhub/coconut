@@ -147,16 +147,13 @@ ParserElement.setDefaultWhitespaceChars(white)
 # EXCEPTIONS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def clean(line):
+def clean(line, strip=True):
     """Cleans and strips a line."""
     stdout_encoding = encoding if sys.stdout.encoding is None else sys.stdout.encoding
-    return (line
-        .replace(openindent, "")
-        .replace(closeindent, "")
-        .strip()
-        .encode(stdout_encoding, "replace")
-        .decode(stdout_encoding)
-        )
+    line = line.replace(openindent, "").replace(closeindent, "")
+    if strip:
+        line = line.strip()
+    return line.encode(stdout_encoding, "replace").decode(stdout_encoding)
 
 class CoconutException(Exception):
     """Base Coconut exception."""
@@ -183,12 +180,13 @@ class CoconutSyntaxError(CoconutException):
             if point is None:
                 self.value += "\n" + " "*tablen + clean(source)
             else:
-                if point >= len(source):
-                    point = len(source)-1
-                part = clean(source.splitlines()[lineno(point, source)-1])
-                point -= len(source)-len(part)
+                part = clean(source.splitlines()[lineno(point, source)-1], False).lstrip()
+                point -= len(source)-len(part) # adjust all points based on lstrip
+                part = part.rstrip() # adjust only points that are too large based on rstrip
                 if point < 0:
                     point = 0
+                elif point >= len(part):
+                    point = len(part)-1
                 self.value += "\n" + " "*tablen + part + "\n" + " "*tablen
                 for x in range(0, point):
                     if part[x] in white:
