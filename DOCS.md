@@ -681,7 +681,7 @@ Lazy lists, where sequences are only evaluated when their contents are requested
 
 ###### Coconut
 ```coconut
-(| print("hello,"), print("world!") |) |> print
+(| print("hello,"), print("world!") |) |> consume
 ```
 
 ###### Python
@@ -736,7 +736,7 @@ In addition to Python's `<num>j` or `<num>J` notation for imaginary literals, Co
 
 Imaginary literals are described by the following lexical definitions:
 ```coconut
-imagnumber ::=  (floatnumber | intpart) ("j" | "J" | "i" | "I")
+imagnumber ::= (floatnumber | intpart) ("j" | "J" | "i" | "I")
 ```
 An imaginary literal yields a complex number with a real part of 0.0. Complex numbers are represented as a pair of floating point numbers and have the same restrictions on their range. To create a complex number with a nonzero real part, add a floating point number to it, e.g., `(3+4i)`. Some examples of imaginary literals:
 ```coconut
