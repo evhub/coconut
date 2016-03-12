@@ -2279,7 +2279,7 @@ class processor(object):
     sliceop = condense(unsafe_colon + slicetest)
     subscript = condense(slicetest + sliceop + Optional(sliceop)) | test
     subscriptlist = itemlist(subscript, comma)
-    slicetestgroup = Optional(test_noochain, default="")
+    slicetestgroup = Optional(test_nochain, default="")
     sliceopgroup = unsafe_colon.suppress() + slicetestgroup
     subscriptgroup = Group(slicetestgroup + sliceopgroup + Optional(sliceopgroup) | test)
     simple_trailer = condense(lbrack + subscriptlist + rbrack) | condense(dot + name)
