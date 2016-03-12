@@ -2352,7 +2352,7 @@ class processor(object):
     nochain_not_test = addspace(ZeroOrMore(Keyword("not")) + nochain_comparison)
     nochain_and_test = addspace(nochain_not_test + ZeroOrMore(Keyword("and") + nochain_not_test))
     nochain_or_test = addspace(nochain_and_test + ZeroOrMore(Keyword("or") + nochain_and_test))
-    nochain_test_item = trace(nochain_or_test, "test_item")
+    nochain_test_item = trace(nochain_or_test, "nochain_test_item")
 
     classic_lambdef = Forward()
     classic_lambdef_params = parenwrap(lparen, varargslist, rparen)
@@ -2361,11 +2361,11 @@ class processor(object):
     new_lambdef = attach(new_lambdef_params + arrow.suppress(), lambdef_proc)
     lambdef = trace(addspace((classic_lambdef | new_lambdef) + test), "lambdef")
     lambdef_nocond = trace(addspace((classic_lambdef | new_lambdef) + test_nocond), "lambdef_nocond")
-    lambdef_nocond = trace(addspace((classic_lambdef | new_lambdef) + test_nochain), "lambdef_nocond")
+    lambdef_nochain = trace(addspace((classic_lambdef | new_lambdef) + test_nochain), "lambdef_nochain")
 
     test <<= lambdef | addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test))
     test_nocond <<= lambdef_nocond | test_item
-    test_nochain <<= nochain_lambdef | addspace(nochain_test_item + Optional(Keyword("if") + nochain_test_item + Keyword("else") + test_nochain))
+    test_nochain <<= lambdef_nochain | addspace(nochain_test_item + Optional(Keyword("if") + nochain_test_item + Keyword("else") + test_nochain))
 
     simple_stmt = Forward()
     simple_compound_stmt = Forward()
