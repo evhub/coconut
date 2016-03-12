@@ -182,12 +182,12 @@ class CoconutSyntaxError(CoconutException):
                 self.value += "\n" + " "*tablen + clean(source)
             else:
                 part = clean(source.splitlines()[lineno(point, source)-1], False).lstrip()
-                point -= len(source)-len(part) # adjust all points based on lstrip
+                point -= len(source) - len(part) # adjust all points based on lstrip
                 part = part.rstrip() # adjust only points that are too large based on rstrip
                 if point < 0:
                     point = 0
                 elif point >= len(part):
-                    point = len(part)-1
+                    point = len(part) - 1
                 self.value += "\n" + " "*tablen + part + "\n" + " "*tablen
                 for x in range(0, point):
                     if part[x] in white:
@@ -458,7 +458,7 @@ def addskip(skips, skip):
 def count_end(teststr, testchar):
     """Counts instances of testchar at end of teststr."""
     count = 0
-    x = len(teststr)-1
+    x = len(teststr) - 1
     while x >= 0 and teststr[x] == testchar:
         count += 1
         x -= 1
@@ -639,10 +639,10 @@ def pipe_proc(tokens):
 
 def lambdef_proc(tokens):
     """Processes lambda calls."""
-    if len(tokens) == 1:
-        return "lambda: " + tokens[0]
-    elif len(tokens) == 2:
-        return "lambda " + tokens[0] + ": " + tokens[1]
+    if len(tokens) == 0:
+        return "lambda:"
+    elif len(tokens) == 1:
+        return "lambda " + tokens[0] + ":"
     else:
         raise CoconutException("invalid lambda tokens", tokens)
 
@@ -1225,7 +1225,6 @@ class processor(object):
         self.nonlocal_stmt <<= attach(self.nonlocal_stmt_ref, self.nonlocal_check)
         self.star_assign_item <<= attach(self.star_assign_item_ref, self.star_assign_item_check)
         self.classic_lambdef <<= attach(self.classic_lambdef_ref, self.lambdef_check)
-        self.classic_lambdef_nocond <<= attach(self.classic_lambdef_nocond_ref, self.lambdef_check)
         self.async_funcdef <<= attach(self.async_funcdef_ref, self.async_stmt_check)
         self.async_match_funcdef <<= attach(self.async_match_funcdef_ref, self.async_stmt_check)
         self.async_block <<= attach(self.async_block_ref, self.async_stmt_check)
@@ -1255,10 +1254,14 @@ class processor(object):
                 i += 1
         return adj_ln
 
+    def add_ref(self, refs):
+        """Adds a reference and returns the identifier."""
+        self.refs.append(ref)
+        return str(len(self.refs)-1)
+
     def wrap_str(self, text, strchar, multiline):
         """Wraps a string."""
-        self.refs.append((text, strchar, multiline))
-        return '"' + str(len(self.refs)-1) + '"'
+        return '"' + self.add_ref((text, strchar, multiline)) + '"'
 
     def expand(self, text):
         """Expands strings in text."""
@@ -1281,20 +1284,18 @@ class processor(object):
         """Wraps a passthrough."""
         if not multiline:
             text = text.lstrip()
-        self.refs.append(self.expand(text))
         if multiline:
             out = "\\"
         else:
             out = "\\\\"
-        out += str(len(self.refs)-1)
+        out += self.add_ref(self.expand(text))
         if not multiline:
             out += "\n"
         return out
 
     def wrap_comment(self, text):
         """Wraps a comment."""
-        self.refs.append(text)
-        return "#"+str(len(self.refs)-1)
+        return "#" + self.add_ref(text)
 
     def prepare(self, inputstring, strip=False, **kwargs):
         """Prepares a string for processing."""
@@ -1450,18 +1451,13 @@ class processor(object):
                     elif len(found) == 1: # found == "_"
                         if c == "\n":
                             raise CoconutException("invalid linebreak in string code", line)
-                        elif c == "\\":
-                            hold = [True, found, None] # [_escape, _start, _stop]
                         else:
-                            hold = [False, found, None] # [_escape, _start, _stop]
+                            hold = [c == "\\", found, None] # [_escape, _start, _stop]
                         found = None
                     elif len(found) == 2: # found == "___"
                         found = None
                     elif len(found) == 3: # found == "____"
-                        if c == "\\":
-                            hold = [True, found, None] # [_escape, _start, _stop]
-                        else:
-                            hold = [False, found, None] # [_escape, _start, _stop]
+                        hold = [c == "\\", found, None] # [_escape, _start, _stop]
                         found = None
                     else:
                         raise CoconutException("invalid string start code", line)
@@ -1533,7 +1529,7 @@ class processor(object):
             elif inputstring[x] == "\t":
                 if self.indchar is None:
                     self.indchar = "\t"
-                count += tabworth-x%tabworth
+                count += tabworth - x%tabworth
             else:
                 break
             if self.indchar != inputstring[x]:
@@ -1717,7 +1713,7 @@ class processor(object):
             if isinstance(ref, tuple):
                 raise CoconutException("comment marker points to string")
             else:
-                return " #"+ref
+                return " #" + ref
         else:
             raise CoconutException("invalid comment marker", tokens)
 
@@ -2277,11 +2273,11 @@ class processor(object):
         | func_atom
         , "atom")
 
-    slicetest = Optional(test)
+    slicetest = Optional(test_nochain)
     sliceop = condense(unsafe_colon + slicetest)
     subscript = condense(slicetest + sliceop + Optional(sliceop)) | test
     subscriptlist = itemlist(subscript, comma)
-    slicetestgroup = Optional(test, default="")
+    slicetestgroup = Optional(test_noochain, default="")
     sliceopgroup = unsafe_colon.suppress() + slicetestgroup
     subscriptgroup = Group(slicetestgroup + sliceopgroup + Optional(sliceopgroup) | test)
     simple_trailer = condense(lbrack + subscriptlist + rbrack) | condense(dot + name)
@@ -2335,9 +2331,13 @@ class processor(object):
     infix_op = condense(backtick.suppress() + chain_expr + backtick.suppress())
     infix_item = attach(Group(Optional(chain_expr)) + infix_op + Group(Optional(infix_expr)), infix_proc)
     infix_expr <<= infix_item | chain_expr
+    nochain_infix_expr = Forward()
+    nochain_infix_item = attach(Group(Optional(or_expr)) + infix_op + Group(Optional(nochain_infix_expr)), infix_proc)
+    nochain_infix_expr <<= nochain_infix_item | or_expr
 
     pipe_op = pipeline | starpipe | backpipe | backstarpipe
     pipe_expr = attach(infix_expr + ZeroOrMore(pipe_op + infix_expr), pipe_proc)
+    nochain_pipe_expr = attach(nochain_infix_expr + ZeroOrMore(pipe_op + nochain_infix_expr), pipe_proc)
 
     expr <<= trace(pipe_expr, "expr")
     comparison = addspace(expr + ZeroOrMore(comp_op + expr))
@@ -2345,22 +2345,28 @@ class processor(object):
     and_test = addspace(not_test + ZeroOrMore(Keyword("and") + not_test))
     or_test = addspace(and_test + ZeroOrMore(Keyword("or") + and_test))
     test_item = trace(or_test, "test_item")
+    nochain_expr = trace(nochain_pipe_expr, "nochain_expr")
+    nochain_comparison = addspace(nochain_expr + ZeroOrMore(comp_op + nochain_expr))
+    nochain_not_test = addspace(ZeroOrMore(Keyword("not")) + nochain_comparison)
+    nochain_and_test = addspace(nochain_not_test + ZeroOrMore(Keyword("and") + nochain_not_test))
+    nochain_or_test = addspace(nochain_and_test + ZeroOrMore(Keyword("or") + nochain_and_test))
+    nochain_test_item = trace(nochain_or_test, "test_item")
 
     classic_lambdef = Forward()
     classic_lambdef_params = parenwrap(lparen, varargslist, rparen)
     new_lambdef_params = lparen.suppress() + varargslist + rparen.suppress()
-    classic_lambdef_ref = addspace(Keyword("lambda") + condense(classic_lambdef_params + colon) + test)
-    new_lambdef = attach(new_lambdef_params + arrow.suppress() + test, lambdef_proc)
-    lambdef = trace(classic_lambdef | new_lambdef, "lambdef")
+    classic_lambdef_ref = addspace(Keyword("lambda") + condense(classic_lambdef_params + colon))
+    new_lambdef = attach(new_lambdef_params + arrow.suppress(), lambdef_proc)
+    lambdef = trace(addspace((classic_lambdef | new_lambdef) + test), "lambdef")
 
     test_nocond = Forward()
-    classic_lambdef_nocond = Forward()
-    classic_lambdef_nocond_ref = addspace(Keyword("lambda") + condense(classic_lambdef_params + colon) + test_nocond)
-    new_lambdef_nocond = attach(new_lambdef_params + arrow.suppress() + test_nocond, lambdef_proc)
-    lambdef_nocond = trace(classic_lambdef_nocond | new_lambdef_nocond, "lambdef_nocond")
+    lambdef_nocond = trace(addspace((classic_lambdef | new_lambdef) + test_nocond), "lambdef_nocond")
+    test_nochain = Forward()
+    lambdef_nocond = trace(addspace((classic_lambdef | new_lambdef) + test_nochain), "lambdef_nocond")
 
     test <<= lambdef | addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test))
     test_nocond <<= lambdef_nocond | test_item
+    test_nochain <<= nochain_lambdef | addspace(nochain_test_item + Optional(Keyword("if") + nochain_test_item + Keyword("else") + test_nochain))
 
     simple_stmt = Forward()
     simple_compound_stmt = Forward()
