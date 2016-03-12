@@ -1254,7 +1254,7 @@ class processor(object):
                 i += 1
         return adj_ln
 
-    def add_ref(self, refs):
+    def add_ref(self, ref):
         """Adds a reference and returns the identifier."""
         self.refs.append(ref)
         return str(len(self.refs)-1)
