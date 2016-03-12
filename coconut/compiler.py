@@ -2167,6 +2167,8 @@ class processor(object):
     test = Forward()
     expr = Forward()
     comp_for = Forward()
+    test_nochain = Forward()
+    test_nocond = Forward()
 
     typedef = Forward()
     typedef_ref = addspace(condense(name + colon) + test)
@@ -2358,10 +2360,7 @@ class processor(object):
     classic_lambdef_ref = addspace(Keyword("lambda") + condense(classic_lambdef_params + colon))
     new_lambdef = attach(new_lambdef_params + arrow.suppress(), lambdef_proc)
     lambdef = trace(addspace((classic_lambdef | new_lambdef) + test), "lambdef")
-
-    test_nocond = Forward()
     lambdef_nocond = trace(addspace((classic_lambdef | new_lambdef) + test_nocond), "lambdef_nocond")
-    test_nochain = Forward()
     lambdef_nocond = trace(addspace((classic_lambdef | new_lambdef) + test_nochain), "lambdef_nocond")
 
     test <<= lambdef | addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test))
