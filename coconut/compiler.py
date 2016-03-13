@@ -1211,6 +1211,7 @@ class processor(object):
 
     def bind(self):
         """Binds reference objects to the proper parse actions."""
+        self.name <<= self.trace(attach(self.name_ref, self.name_repl), "name")
         self.string_item <<= self.trace(attach(self.string_marker, self.string_repl), "string_item")
         self.moduledoc_item <<= self.trace(attach(self.moduledoc, self.set_docstring), "moduledoc_item")
         self.comment <<= self.trace(attach(self.comment_marker, self.comment_repl), "comment")
@@ -1917,6 +1918,17 @@ class processor(object):
             key, val, comp = tokens
             return "dict(((" + key + "), (" + val + ")) " + comp + ")"
 
+    def name_repl(self, original, location, tokens):
+        """Handles backslash-escaped variable names."""
+        if len(tokens) != 1:
+            raise CoconutException("invalid name tokens", tokens)
+        elif self.strict and tokens[0] in reserved_vars:
+            raise CoconutStyleError("found unescaped keyword variable", original, location, self.adjust(lineno(location, original)))
+        elif tokens[0].startswith("\\"):
+            return tokens[0][1:]
+        else:
+            return tokens[0]
+
     def check_strict(self, name, original, location, tokens):
         """Checks that syntax meets --strict requirements."""
         if len(tokens) != 1:
@@ -2084,11 +2096,12 @@ class processor(object):
     matrix_at_ref = at | Literal("\xd7")
     matrix_at = Forward()
 
-    name = Regex(r"(?![0-9])\w+")
+    name = Forward()
+    name_ref = Regex(r"(?![0-9])\w+")
     for k in keywords + const_vars:
-        name = ~Keyword(k) + name
+        name_ref = ~Keyword(k) + name_ref
     for k in reserved_vars:
-        name |= fixto(backslash + Keyword(k), k)
+        name_ref |= condense(backslash + Keyword(k))
     dotted_name = condense(name + ZeroOrMore(dot + name))
 
     integer = Combine(Word(nums) + ZeroOrMore(underscore.suppress() + Word(nums)))

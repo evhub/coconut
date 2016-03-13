@@ -170,6 +170,7 @@ Finally, while Coconut will try to compile Python-3-specific syntax to its unive
 If the `--strict` or `-s` flag is enabled, Coconut will throw errors on various style problems. These are
 - mixing of tabs and spaces (otherwise would show a warning),
 - use of the Python-style `lambda` statement,
+- lack of backslashes before keywords used as variable names,
 - use of `u` to denote Unicode strings,
 - use of backslash continuations (implicit continuations are preferred), and
 - trailing whitespace at the end of lines.
