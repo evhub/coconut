@@ -1211,7 +1211,7 @@ class processor(object):
 
     def bind(self):
         """Binds reference objects to the proper parse actions."""
-        self.name <<= self.trace(self.name_ref, "name")
+        self.name <<= self.trace(attach(self.name_ref, self.name_repl), "name")
         self.string_item <<= self.trace(attach(self.string_marker, self.string_repl), "string_item")
         self.moduledoc_item <<= self.trace(attach(self.moduledoc, self.set_docstring), "moduledoc_item")
         self.comment <<= self.trace(attach(self.comment_marker, self.comment_repl), "comment")
