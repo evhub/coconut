@@ -38,7 +38,7 @@ VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
 VERSION_TAG = "v" + VERSION_STR
 PY2 = sys.version_info < (3,)
 PY2_HEADER_BASE = r'''py2_filter, py2_hex, py2_map, py2_oct, py2_zip, py2_open, py2_range, py2_xrange, py2_int, py2_chr, py2_str, py2_print, py2_input, py2_raw_input = filter, hex, map, oct, zip, open, range, xrange, int, chr, str, print, input, raw_input
-_coconut_NameError, _coconut_int, _coconut_long, _coconut_str, _coconut_unicode, _coconut_bytearray, _coconut_slice, _coconut_reversed, _coconut_isinstance, _coconut_iter, _coconut_len, _coconut_repr, _coconut_print, _coconut_xrange, _coconut_raw_input = NameError, int, long, str, unicode, bytearray, slice, reversed, isinstance, iter, len, repr, print, xrange, raw_input
+_coconut_NameError, _coconut_int, _coconut_long, _coconut_str, _coconut_unicode, _coconut_bytearray, _coconut_slice, _coconut_reversed, _coconut_isinstance, _coconut_iter, _coconut_len, _coconut_repr, _coconut_print, _coconut_xrange, _coconut_raw_input, _coconut_hasattr = NameError, int, long, str, unicode, bytearray, slice, reversed, isinstance, iter, len, repr, print, xrange, raw_input, hasattr
 chr, str = unichr, unicode
 from future_builtins import *
 from io import open
@@ -91,9 +91,15 @@ class bytes(_coconut_str):
     def __new__(cls, *args, **kwargs):
         return _coconut_str.__new__(cls, _coconut_bytearray(*args, **kwargs))
 def print(*args, **kwargs):
-    return _coconut_print(*(_coconut_unicode(x).encode(_coconut_sys.stdout.encoding) for x in args), **kwargs)
+    if _coconut_hasattr(_coconut_sys.stdout, "encoding") and _coconut_sys.stdout.encoding is not None:
+        return _coconut_print(*(_coconut_unicode(x).encode(_coconut_sys.stdout.encoding) for x in args), **kwargs)
+    else:
+        return _coconut_print(*(_coconut_unicode(x).encode() for x in args), **kwargs)
 def input(*args, **kwargs):
-    return _coconut_raw_input(*args, **kwargs).decode(_coconut_sys.stdout.encoding)
+    if _coconut_hasattr(_coconut_sys.stdout, "encoding") and _coconut_sys.stdout.encoding is not None:
+        return _coconut_raw_input(*args, **kwargs).decode(_coconut_sys.stdout.encoding)
+    else:
+        return _coconut_raw_input(*args, **kwargs).decode()
 print.__doc__, input.__doc__ = _coconut_print.__doc__, _coconut_raw_input.__doc__
 def raw_input(*args):
     """Raises NameError."""
