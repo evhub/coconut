@@ -1211,7 +1211,7 @@ class processor(object):
 
     def bind(self):
         """Binds reference objects to the proper parse actions."""
-        self.name <<= self.trace(attach(self.name_ref, self.name_repl), "name")
+        self.name <<= self.trace(self.name_ref, "name")
         self.string_item <<= self.trace(attach(self.string_marker, self.string_repl), "string_item")
         self.moduledoc_item <<= self.trace(attach(self.moduledoc, self.set_docstring), "moduledoc_item")
         self.comment <<= self.trace(attach(self.comment_marker, self.comment_repl), "comment")
@@ -2101,7 +2101,8 @@ class processor(object):
     for k in keywords + const_vars:
         name_ref = ~Keyword(k) + name_ref
     for k in reserved_vars:
-        name_ref |= condense(backslash + Keyword(k))
+        name_ref |= backslash + Keyword(k)
+    name_ref = condense(name_ref)
     dotted_name = condense(name + ZeroOrMore(dot + name))
 
     integer = Combine(Word(nums) + ZeroOrMore(underscore.suppress() + Word(nums)))
@@ -2462,9 +2463,9 @@ class processor(object):
         , match_proc), "full_match")
     match_stmt = condense(full_match - Optional(else_stmt))
 
-    match_assign_stmt = trace(attach(
-        Optional(Keyword("match").suppress()) + match + equals.suppress() - test_expr - newline.suppress()
-        , match_assign_proc), "match_assign_stmt")
+    match_assign_base = attach(match + equals.suppress() - test_expr - newline.suppress(), match_assign_proc)
+    match_assign_stmt = trace(Keyword("match").suppress() + match_assign_base, "match_assign_stmt")
+    destructuring_stmt = trace(match_assign_base, "destructuring_stmt")
 
     case_match = trace(Group(
         Keyword("match").suppress() - match - Optional(Keyword("if").suppress() - test) - full_suite
@@ -2564,6 +2565,7 @@ class processor(object):
         | async_stmt
         | math_funcdef
         | math_match_funcdef
+        | match_assign_stmt
         , "compound_stmt")
     augassign_stmt = Forward()
     augassign_stmt_ref = simple_assign + augassign + test_expr
@@ -2576,7 +2578,7 @@ class processor(object):
     keyword_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt | assert_stmt
     small_stmt = trace(keyword_stmt | expr_stmt, "small_stmt")
     simple_stmt <<= trace(condense(itemlist(small_stmt, semicolon) + newline), "simple_stmt")
-    stmt <<= trace(compound_stmt | simple_stmt | match_assign_stmt, "stmt")
+    stmt <<= trace(compound_stmt | simple_stmt | destructuring_stmt, "stmt")
     base_suite <<= condense(newline + indent - OneOrMore(stmt) - dedent)
     suite <<= trace(condense(colon + base_suite) | addspace(colon + simple_stmt), "suite")
     line = trace(newline | stmt, "line")
