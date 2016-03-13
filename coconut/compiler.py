@@ -2454,7 +2454,7 @@ class processor(object):
     or_match = Group(matchlist_or("or")) | and_match
     match <<= trace(or_match, "match")
 
-    else_suite = condense(suite | colon + trace(attach(simple_compound_stmt, else_proc), "else_suite"))
+    else_suite = condense(colon + trace(attach(simple_compound_stmt, else_proc), "else_suite")) | suite
     else_stmt = condense(Keyword("else") - else_suite)
 
     full_suite = colon.suppress() + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
