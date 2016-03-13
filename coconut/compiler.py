@@ -445,6 +445,13 @@ def get_error(verbose=False):
         err_trace = None
     return format_error(err_type, err_value, err_trace)
 
+def warn(warning):
+    """Displays a warning."""
+    try:
+        raise warning
+    except CoconutWarning as err:
+        printerr(format_error(CoconutWarning, err))
+
 def addskip(skips, skip):
     """Adds a line skip to the skips."""
     if skip < 1:
@@ -1537,7 +1544,7 @@ class processor(object):
                 if self.strict:
                     raise CoconutStyleError(*errargs)
                 else:
-                    self.warn(CoconutWarning(*errargs))
+                    warn(CoconutWarning(*errargs))
         return count
 
     def change(self, inputstring):
@@ -1622,13 +1629,6 @@ class processor(object):
         """If debugging, prints a debug message."""
         if self.indebug():
             self.tracing.show("["+str(tag)+"] "+ascii(code))
-
-    def warn(self, warning):
-        """Displays a warning."""
-        try:
-            raise warning
-        except CoconutWarning as err:
-            printerr(format_error(CoconutWarning, err))
 
     def pre(self, inputstring, **kwargs):
         """Performs pre-processing."""

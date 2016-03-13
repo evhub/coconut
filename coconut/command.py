@@ -502,7 +502,7 @@ class cli(object):
             except subprocess.CalledProcessError:
                 errmsg = 'unable to install Jupyter kernel specification file (failed command "'+" ".join(install_args)+'")'
                 if args:
-                    self.processor.warn(CoconutWarning(errmsg))
+                    warn(CoconutWarning(errmsg))
                 else:
                     raise CoconutException(errmsg)
         if args:
