@@ -1856,7 +1856,7 @@ class processor(object):
         err_text = "pattern-matching failed for " + match_line + " in "
         return ("if not " + match_check_var + ":\n" + openindent
             + match_err_var + " = __coconut__.MatchError("
-            + self.wrap_str(err_text) + " + __coconut__.ascii(__coconut__.ascii("" + match_to_var + ")))\n"
+            + self.wrap_str(err_text) + " + __coconut__.ascii(__coconut__.ascii(" + match_to_var + ")))\n"
             + match_err_var + ".pattern = " + match_line + "\n"
             + match_err_var + ".value = " + match_to_var
             + "\nraise " + match_err_var + "\n" + closeindent)
