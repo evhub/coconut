@@ -150,6 +150,26 @@ ParserElement.setDefaultWhitespaceChars(white)
 # EXCEPTIONS:
 #-----------------------------------------------------------------------------------------------------------------------
 
+def printerr(*args):
+    """Prints to standard error."""
+    print(*args, file=sys.stderr)
+
+def format_error(err_type, err_value, err_trace=None):
+    """Properly formats the specified error."""
+    if err_trace is None:
+        err_name, err_msg = "".join(traceback.format_exception_only(err_type, err_value)).strip().split(": ", 1)
+        err_name = err_name.split(".")[-1]
+        return err_name + ": " + err_msg
+    else:
+        return "".join(traceback.format_exception(err_type, err_value, err_trace)).strip()
+
+def get_error(verbose=False):
+    """Displays a formatted error."""
+    err_type, err_value, err_trace = sys.exc_info()
+    if not verbose:
+        err_trace = None
+    return format_error(err_type, err_value, err_trace)
+
 def clean(inputline, strip=True):
     """Cleans and strips a line."""
     stdout_encoding = encoding if sys.stdout.encoding is None else sys.stdout.encoding
@@ -226,6 +246,13 @@ class CoconutWarning(Warning):
     def __repr__(self):
         """Displays the Coconut warning."""
         return self.value
+
+def warn(warning):
+    """Displays a warning."""
+    try:
+        raise warning
+    except CoconutWarning as err:
+        printerr(format_error(CoconutWarning, err))
 
 #-----------------------------------------------------------------------------------------------------------------------
 # HEADERS:
@@ -427,33 +454,6 @@ __coconut_version__, MatchError, map, zip, reduce, takewhile, dropwhile, tee, co
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def printerr(*args):
-    """Prints to standard error."""
-    print(*args, file=sys.stderr)
-
-def format_error(err_type, err_value, err_trace=None):
-    """Properly formats the specified error."""
-    if err_trace is None:
-        err_name, err_msg = "".join(traceback.format_exception_only(err_type, err_value)).strip().split(": ", 1)
-        err_name = err_name.split(".")[-1]
-        return err_name + ": " + err_msg
-    else:
-        return "".join(traceback.format_exception(err_type, err_value, err_trace)).strip()
-
-def get_error(verbose=False):
-    """Displays a formatted error."""
-    err_type, err_value, err_trace = sys.exc_info()
-    if not verbose:
-        err_trace = None
-    return format_error(err_type, err_value, err_trace)
-
-def warn(warning):
-    """Displays a warning."""
-    try:
-        raise warning
-    except CoconutWarning as err:
-        printerr(format_error(CoconutWarning, err))
-
 def addskip(skips, skip):
     """Adds a line skip to the skips."""
     if skip < 1:
@@ -544,7 +544,7 @@ class tracer(object):
         return bound
 
 #-----------------------------------------------------------------------------------------------------------------------
-# PROCESSORS:
+# HANDLERS:
 #-----------------------------------------------------------------------------------------------------------------------
 
 def list_handle(tokens):
@@ -1652,6 +1652,33 @@ class processor(object):
         else:
             raise CoconutException("invalid docstring tokens", tokens)
 
+    def version_tuple(self):
+        """Returns the target information as a version tuple."""
+        if self.version is None:
+            return ()
+        else:
+            return (int(self.version),)
+
+    def should_indent(self, code):
+        """Determines whether the next line should be indented."""
+        return code.split("#", 1)[0].rstrip().endswith(":")
+
+    def parse(self, inputstring, parser, preargs, postargs):
+        """Uses the parser to parse the inputstring."""
+        try:
+            out = self.post(parser.parseString(self.pre(inputstring, **preargs)), **postargs)
+        except ParseBaseException as err:
+            raise CoconutParseError(err.line, err.col, self.adjust(err.lineno))
+        except RuntimeError:
+            raise CoconutException("maximum recursion depth exceeded (try again with a larger --recursionlimit)")
+        finally:
+            self.clean()
+        return out
+
+#-----------------------------------------------------------------------------------------------------------------------
+# PARSER HANDLERs:
+#-----------------------------------------------------------------------------------------------------------------------
+
     def item_handle(self, original, location, tokens):
         """Processes items."""
         out = tokens.pop(0)
@@ -1745,13 +1772,6 @@ class processor(object):
                 raise CoconutException("invalid inner classlist token", tokens[0])
         else:
             raise CoconutException("invalid classlist tokens", tokens)
-
-    def version_tuple(self):
-        """Returns the target information as a version tuple."""
-        if self.version is None:
-            return ()
-        else:
-            return (int(self.version),)
 
     def import_handle(self, original, location, tokens):
         """Universalizes imports."""
@@ -1855,13 +1875,13 @@ class processor(object):
     def pattern_error(self, original, loc):
         """Constructs a pattern-matching error message."""
         base_line = ascii(clean(self.repl_proc(line(loc, original))))
-        base_wrap = self.wrap_str(base_line[1:-1], base_line[0])
+        line_wrap = self.wrap_str(base_line[1:-1], base_line[0])
         repr_line = ascii(base_line)
         repr_wrap = self.wrap_str(repr_line[1:-1], repr_line[0])
         return ("if not " + match_check_var + ":\n" + openindent
             + match_err_var + ' = __coconut__.MatchError("pattern-matching failed for " '
             + repr_wrap + ' " in " + __coconut__.ascii(__coconut__.ascii(' + match_to_var + ")))\n"
-            + match_err_var + ".pattern = " + base_wrap + "\n"
+            + match_err_var + ".pattern = " + line_wrap + "\n"
             + match_err_var + ".value = " + match_to_var
             + "\nraise " + match_err_var + "\n" + closeindent)
 
@@ -1979,22 +1999,6 @@ class processor(object):
                 raise CoconutException("invalid set type", set_type)
         else:
             raise CoconutException("invalid set literal tokens", tokens)
-
-    def should_indent(self, code):
-        """Determines whether the next line should be indented."""
-        return code.split("#", 1)[0].rstrip().endswith(":")
-
-    def parse(self, inputstring, parser, preargs, postargs):
-        """Uses the parser to parse the inputstring."""
-        try:
-            out = self.post(parser.parseString(self.pre(inputstring, **preargs)), **postargs)
-        except ParseBaseException as err:
-            raise CoconutParseError(err.line, err.col, self.adjust(err.lineno))
-        except RuntimeError:
-            raise CoconutException("maximum recursion depth exceeded (try again with a larger --recursionlimit)")
-        finally:
-            self.clean()
-        return out
 
 #-----------------------------------------------------------------------------------------------------------------------
 # GRAMMAR:
@@ -2552,6 +2556,10 @@ class processor(object):
     single_parser = condense(startmarker - single_input - endmarker)
     file_parser = condense(startmarker - file_input - endmarker)
     eval_parser = condense(startmarker - eval_input - endmarker)
+
+#-----------------------------------------------------------------------------------------------------------------------
+# ENDPOINTS:
+#-----------------------------------------------------------------------------------------------------------------------
 
     def parse_single(self, inputstring):
         """Parses console input."""
