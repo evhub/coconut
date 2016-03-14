@@ -114,7 +114,7 @@ if _coconut_sys.version_info < (3,):
 '''
 for _line in PY2_HEADER_BASE.splitlines():
     PY2_HEADER_CHECK += "    " + _line + "\n"
-PY2_HEADER += r'''else:
+PY2_HEADER_CHECK += r'''else:
     py3_map, py3_zip = map, zip
 '''
 PY3_HEADER = r'''import sys as _coconut_sys
