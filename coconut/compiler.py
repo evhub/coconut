@@ -35,7 +35,8 @@ hash_prefix = "# __coconut_hash__ = "
 hash_sep = "\x00"
 openindent = "\u204b"
 closeindent = "\xb6"
-unwrapper = "'" # only possible to use ' because all added strings use "
+strwrapper = "'" # only possible to use ' because all added strings use "
+unwrapper = "\23f9"
 white = " \t\f"
 downs = "([{"
 ups = ")]}"
@@ -1233,14 +1234,11 @@ class processor(object):
             index = len(self.refs) - 1
         return str(index)
 
-    def wrap_str(self, text, strchar='"', multiline=False, unwrap=True):
+    def wrap_str(self, text, strchar='"', multiline=False):
         """Wraps a string."""
-        out = unwrapper + self.add_ref((text, strchar, multiline))
-        if unwrap:
-            out += unwrapper
-        return out
+        return strwrapper + self.add_ref((text, strchar, multiline)) + unwrapper
 
-    def wrap_passthrough(self, text, multiline=True, unwrap=True):
+    def wrap_passthrough(self, text, multiline=True):
         """Wraps a passthrough."""
         if not multiline:
             text = text.lstrip()
@@ -1248,19 +1246,14 @@ class processor(object):
             out = "\\"
         else:
             out = "\\\\"
-        out += self.add_ref(text)
-        if unwrap:
-            out += unwrapper
+        out += self.add_ref(text) + unwrapper
         if not multiline:
             out += "\n"
         return out
 
-    def wrap_comment(self, text, unwrap=True):
+    def wrap_comment(self, text):
         """Wraps a comment."""
-        out = "#" + self.add_ref(text)
-        if unwrap:
-            out += unwrapper
-        return out
+        return "#" + self.add_ref(text) + unwrapper
 
     def prepare(self, inputstring, strip=False, **kwargs):
         """Prepares a string for processing."""
@@ -1549,14 +1542,13 @@ class processor(object):
             if index is not None:
                 if c is not None and c in nums:
                     index += c
-                elif index:
+                elif c == unwrapper and index:
                     ref = self.refs[int(index)]
                     if isinstance(ref, tuple):
                         raise CoconutException("passthrough marker points to string", ref)
                     else:
                         out += ref
                         index = None
-                        x -= 1
                 else:
                     raise CoconutException("invalid passthrough marker in", line(x, inputstring))
             elif c is not None:
@@ -1575,11 +1567,10 @@ class processor(object):
         x = 0
         while x <= len(inputstring):
             c = inputstring[x] if x != len(inputstring) else None
-            print(x, c, out)
             if comment is not None:
                 if c is not None and c in nums:
                     comment += c
-                elif comment:
+                elif c == unwrapper and comment:
                     ref = self.refs[int(comment)]
                     if isinstance(ref, tuple):
                         raise CoconutException("comment marker points to string", ref)
@@ -1588,13 +1579,12 @@ class processor(object):
                             out += " "
                         out += "#" + ref
                         comment = None
-                        x -= 1
                 else:
                     raise CoconutException("invalid comment marker in", line(x, inputstring))
             elif string is not None:
                 if c is not None and c in nums:
                     string += c
-                elif string:
+                elif c == unwrapper and string:
                     ref = self.refs[int(string)]
                     if isinstance(ref, tuple):
                         text, strchar, multiline = ref
@@ -1603,7 +1593,6 @@ class processor(object):
                         else:
                             out += strchar + text + strchar
                         string = None
-                        x -= 1
                     else:
                         raise CoconutException("string marker points to comment/passthrough", ref)
                 else:
@@ -1611,7 +1600,7 @@ class processor(object):
             elif c is not None:
                 if c == "#":
                     comment = ""
-                elif c == unwrapper:
+                elif c == strwrapper:
                     string = ""
                 else:
                     out += c
@@ -1869,8 +1858,8 @@ class processor(object):
         match_err_text = "pattern-matching failed for " + match_line + " in "
         return ("if not " + match_check_var + ":\n" + openindent
             + match_err_var + " = __coconut__.MatchError("
-            + self.wrap_str(match_err_text, unwrap=False) + " + __coconut__.ascii(__coconut__.ascii(" + match_to_var + ")))\n"
-            + match_err_var + ".pattern = " + self.wrap_str(match_line, unwrap=False) + "\n"
+            + self.wrap_str(match_err_text) + " + __coconut__.ascii(__coconut__.ascii(" + match_to_var + ")))\n"
+            + match_err_var + ".pattern = " + self.wrap_str(match_line) + "\n"
             + match_err_var + ".value = " + match_to_var
             + "\nraise " + match_err_var + "\n" + closeindent)
 
@@ -2095,8 +2084,8 @@ class processor(object):
     number = bin_num | oct_num | hex_num | complex_num | numitem
 
     moduledoc_item = Forward()
-    unwrap = Literal(unwrapper).suppress()
-    string_item = Combine(Literal(unwrapper) + integer + unwrap)
+    unwrap = Literal(unwrapper)
+    string_item = Combine(Literal(strwrapper) + integer + unwrap)
     comment = Combine(pound + integer + unwrap)
     passthrough = Combine(backslash + integer + unwrap)
     passthrough_block = Combine(fixto(dubbackslash, "\\") + integer + unwrap)
