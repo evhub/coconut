@@ -1532,8 +1532,8 @@ class processor(object):
         out = ""
         index = None
         x = 0
-        while x < len(inputstring):
-            c = inputstring[x]
+        while x <= len(inputstring):
+            c = inputstring[x] if x != len(inputstring) else None
             if index is not None:
                 if c in nums:
                     index += c
@@ -1545,10 +1545,11 @@ class processor(object):
                         out += ref
                         index = None
                         x -= 1
-            elif c == "\\":
-                index = ""
-            else:
-                out += c
+            elif c is not None:
+                if c == "\\":
+                    index = ""
+                else:
+                    out += c
             x += 1
         return out
 
@@ -1558,8 +1559,9 @@ class processor(object):
         comment = None
         string = None
         x = 0
-        while x < len(inputstring):
-            c = inputstring[x]
+        while x <= len(inputstring):
+            c = inputstring[x] if x != len(inputstring) else None
+            print(x, c, out)
             if comment is not None:
                 if c in nums:
                     comment += c
@@ -1568,7 +1570,9 @@ class processor(object):
                     if isinstance(ref, tuple):
                         raise CoconutException("comment marker points to string")
                     else:
-                        out += " #" + ref
+                        if out and not out.endswith("\n"):
+                            out += " "
+                        out += "#" + ref
                         comment = None
                         x -= 1
             elif string is not None:
@@ -1586,12 +1590,13 @@ class processor(object):
                         x -= 1
                     else:
                         raise CoconutException("string marker points to comment/passthrough")
-            elif c == "#":
-                comment = ""
-            elif c == '"':
-                string = ""
-            else:
-                out += c
+            elif c is not None:
+                if c == "#":
+                    comment = ""
+                elif c == '"':
+                    string = ""
+                else:
+                    out += c
             x += 1
         return out
 
@@ -1635,7 +1640,7 @@ class processor(object):
     def set_docstring(self, tokens):
         """Sets the docstring."""
         if len(tokens) == 2:
-            self.docstring = tokens[0] + "\n\n"
+            self.docstring = self.repl_proc(tokens[0]) + "\n\n"
             return tokens[1]
         else:
             raise CoconutException("invalid docstring tokens", tokens)
