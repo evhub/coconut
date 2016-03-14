@@ -1554,7 +1554,7 @@ class processor(object):
                     else:
                         out += ref
                         index = None
-                else:
+                elif c != "\\" or index:
                     raise CoconutException("invalid passthrough marker in", line(x, inputstring))
             elif c is not None:
                 if c == "\\":
