@@ -150,13 +150,13 @@ ParserElement.setDefaultWhitespaceChars(white)
 # EXCEPTIONS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def clean(line, strip=True):
+def clean(inputline, strip=True):
     """Cleans and strips a line."""
     stdout_encoding = encoding if sys.stdout.encoding is None else sys.stdout.encoding
-    line = line.replace(openindent, "").replace(closeindent, "")
+    inputline = inputline.replace(openindent, "").replace(closeindent, "")
     if strip:
-        line = line.strip()
-    return line.encode(stdout_encoding, "replace").decode(stdout_encoding)
+        inputline = inputline.strip()
+    return inputline.encode(stdout_encoding, "replace").decode(stdout_encoding)
 
 class CoconutException(Exception):
     """Base Coconut exception."""
@@ -200,23 +200,23 @@ class CoconutSyntaxError(CoconutException):
 
 class CoconutParseError(CoconutSyntaxError):
     """Coconut ParseError."""
-    def __init__(self, line, col, ln):
+    def __init__(self, line, col, lineno):
         """Creates The Coconut ParseError."""
-        CoconutSyntaxError.__init__(self, "parsing failed", line, col-1, ln)
+        CoconutSyntaxError.__init__(self, "parsing failed", line, col-1, lineno)
 
 class CoconutStyleError(CoconutSyntaxError):
     """Coconut --strict error."""
-    def __init__(self, message, source=None, point=None, ln=None):
+    def __init__(self, message, source=None, point=None, lineno=None):
         """Creates the --strict Coconut error."""
         message += " (disable --strict to dismiss)"
-        CoconutSyntaxError.__init__(self, message, source, point, ln)
+        CoconutSyntaxError.__init__(self, message, source, point, lineno)
 
 class CoconutTargetError(CoconutSyntaxError):
     """Coconut --target error."""
-    def __init__(self, message, source=None, point=None, ln=None):
+    def __init__(self, message, source=None, point=None, lineno=None):
         """Creates the --target Coconut error."""
         message += " (enable --target 3 to dismiss)"
-        CoconutSyntaxError.__init__(self, message, source, point, ln)
+        CoconutSyntaxError.__init__(self, message, source, point, lineno)
 
 class CoconutWarning(Warning):
     """Base Coconut warning."""
@@ -1854,12 +1854,14 @@ class processor(object):
 
     def pattern_error(self, original, loc):
         """Constructs a pattern-matching error message."""
-        match_line = ascii(clean(self.repl_proc(line(loc, original))))
-        match_err_text = "pattern-matching failed for " + match_line + " in "
+        base_line = ascii(clean(self.repl_proc(line(loc, original))))
+        base_wrap = self.wrap_str(base_line[1:-1], base_line[0])
+        repr_line = ascii(base_line)
+        repr_wrap = self.wrap_str(repr_line[1:-1], repr_line[0])
         return ("if not " + match_check_var + ":\n" + openindent
-            + match_err_var + " = __coconut__.MatchError("
-            + self.wrap_str(match_err_text) + " + __coconut__.ascii(__coconut__.ascii(" + match_to_var + ")))\n"
-            + match_err_var + ".pattern = " + self.wrap_str(match_line) + "\n"
+            + match_err_var + ' = __coconut__.MatchError("pattern-matching failed for " '
+            + repr_wrap + ' " in " + __coconut__.ascii(__coconut__.ascii(' + match_to_var + ")))\n"
+            + match_err_var + ".pattern = " + base_wrap + "\n"
             + match_err_var + ".value = " + match_to_var
             + "\nraise " + match_err_var + "\n" + closeindent)
 
