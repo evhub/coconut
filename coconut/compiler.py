@@ -1226,8 +1226,12 @@ class processor(object):
 
     def add_ref(self, ref):
         """Adds a reference and returns the identifier."""
-        self.refs.append(ref)
-        return str(len(self.refs)-1)
+        try:
+            index = self.refs.index(ref)
+        except ValueError:
+            self.refs.append(ref)
+            index = len(self.refs) - 1
+        return str(index)
 
     def wrap_str(self, text, strchar='"', multiline=False):
         """Wraps a string."""
@@ -1853,11 +1857,11 @@ class processor(object):
     def pattern_error(self, original, loc):
         """Constructs a pattern-matching error message."""
         match_line = ascii(clean(self.repl_proc(line(loc, original))))
-        err_text = "pattern-matching failed for " + match_line + " in "
+        match_err = "pattern-matching failed for " + match_line + " in "
         return ("if not " + match_check_var + ":\n" + openindent
             + match_err_var + " = __coconut__.MatchError("
-            + self.wrap_str(err_text) + " + __coconut__.ascii(__coconut__.ascii(" + match_to_var + ")))\n"
-            + match_err_var + ".pattern = " + match_line + "\n"
+            + self.wrap_str(match_err) + " + __coconut__.ascii(__coconut__.ascii(" + match_to_var + ")))\n"
+            + match_err_var + ".pattern = " + self.wrap_str(match_line) + "\n"
             + match_err_var + ".value = " + match_to_var
             + "\nraise " + match_err_var + "\n" + closeindent)
 
