@@ -400,12 +400,12 @@ class __coconut__(object):
     def igetitem(iterable, index):
         if __coconut__.hasattr(iterable, "__coconut_is_map__") and iterable.__coconut_is_map__:
             if __coconut__.isinstance(index, __coconut__.slice):
-                return __coconut__.map(iterable._func, *(__coconut__.igetitem(i, index) for i in iterable._iters))
+                return iterable.__class__(iterable._func, *(__coconut__.igetitem(i, index) for i in iterable._iters))
             else:
                 return iterable._func(*(__coconut__.igetitem(i, index) for i in iterable._iters))
         elif __coconut__.hasattr(iterable, "__coconut_is_zip__") and iterable.__coconut_is_zip__:
             if __coconut__.isinstance(index, __coconut__.slice):
-                return __coconut__.zip(*(__coconut__.igetitem(i, index) for i in iterable._iters))
+                return iterable.__class__(*(__coconut__.igetitem(i, index) for i in iterable._iters))
             else:
                 return (__coconut__.igetitem(i, index) for i in iterable._iters)
         elif isinstance(iterable, __coconut__.range) or (__coconut__.hasattr(iterable, "__coconut_is_sliceable_iter__") and iterable.__coconut_is_sliceable_iter__):
