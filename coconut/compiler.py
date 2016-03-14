@@ -18,6 +18,7 @@ Description: Compiles Coconut code into Python code.
 #   - Utilities
 #   - Handlers
 #   - Parser
+#   - Processors
 #   - Parser Handlers
 #   - Grammar
 #   - Endpoints
@@ -350,7 +351,7 @@ class __coconut__(object):
     else:
         import collections.abc as abc'''
             header += r'''
-    IndexError, object, set, frozenset, tuple, list, dict, slice, len, iter, isinstance, getattr, ascii, next, range, hasattr, super, _map, _zip = IndexError, object, set, frozenset, tuple, list, dict, slice, len, iter, isinstance, getattr, ascii, next, range, hasattr, super, map, zip
+    IndexError, NameError, _map, _zip, ascii, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, next, object, range, reversed, set, slice, super, tuple = IndexError, NameError, map, zip, ascii, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, next, object, range, reversed, set, slice, super, tuple
     class MatchError(Exception):
         """Pattern-matching error."""
     class map(_map):
@@ -1244,6 +1245,15 @@ class processor(object):
         else:
             return self.repl_proc(snip), len(self.repl_proc(snip[:index]))
 
+    def make_err(self, errtype, message, original, location, ln=None, reformat=True):
+        """Generates an error of the specified type."""
+        if ln is None:
+            ln = self.adjust(lineno(location, original))
+        errstr, index = line(location, original), col(location, original)-1
+        if reformat:
+            errstr, index = self.reformat(errstr, index)
+        return errtype(message, errstr, index, ln)
+
     def add_ref(self, ref):
         """Adds a reference and returns the identifier."""
         try:
@@ -1278,6 +1288,75 @@ class processor(object):
     def wrap_comment(self, text):
         """Wraps a comment."""
         return "#" + self.add_ref(text) + unwrapper
+
+    def indebug(self):
+        """Checks whether debug mode is active."""
+        return self.tracing.on
+
+    def todebug(self, tag, code):
+        """If debugging, prints a debug message."""
+        if self.indebug():
+            self.tracing.show("["+str(tag)+"] "+ascii(code))
+
+    def pre(self, inputstring, **kwargs):
+        """Performs pre-processing."""
+        out = str(inputstring)
+        for proc in self.preprocs:
+            out = proc(out, **kwargs)
+            self.todebug(proc.__name__, out)
+        self.todebug("skips", list(sorted(self.skips)))
+        return out
+
+    def post(self, tokens, **kwargs):
+        """Performs post-processing."""
+        if len(tokens) == 1:
+            out = tokens[0]
+            for proc in self.postprocs:
+                out = proc(out, **kwargs)
+                self.todebug(proc.__name__, out)
+            return out
+        else:
+            raise CoconutException("multiple tokens leftover", tokens)
+
+    def headers(self, header, usehash=None):
+        """Gets a polished header."""
+        return self.polish(getheader(header, self.version, usehash))
+
+    def set_docstring(self, tokens):
+        """Sets the docstring."""
+        if len(tokens) == 2:
+            self.docstring = self.reformat(tokens[0]) + "\n\n"
+            return tokens[1]
+        else:
+            raise CoconutException("invalid docstring tokens", tokens)
+
+    def version_tuple(self):
+        """Returns the target information as a version tuple."""
+        if self.version is None:
+            return ()
+        else:
+            return (int(self.version),)
+
+    def should_indent(self, code):
+        """Determines whether the next line should be indented."""
+        return code.split("#", 1)[0].rstrip().endswith(":")
+
+    def parse(self, inputstring, parser, preargs, postargs):
+        """Uses the parser to parse the inputstring."""
+        try:
+            out = self.post(parser.parseString(self.pre(inputstring, **preargs)), **postargs)
+        except ParseBaseException as err:
+            err_line, err_index = self.reformat(err.line, err.col-1)
+            raise CoconutParseError(err_line, err_index, self.adjust(err.lineno))
+        except RuntimeError:
+            raise CoconutException("maximum recursion depth exceeded (try again with a larger --recursionlimit)")
+        finally:
+            self.clean()
+        return out
+
+#-----------------------------------------------------------------------------------------------------------------------
+# PROCESSORS:
+#-----------------------------------------------------------------------------------------------------------------------
 
     def prepare(self, inputstring, strip=False, **kwargs):
         """Prepares a string for processing."""
@@ -1520,24 +1599,6 @@ class processor(object):
         new.append(closeindent*len(levels))
         return "\n".join(new)
 
-    def indebug(self):
-        """Checks whether debug mode is active."""
-        return self.tracing.on
-
-    def todebug(self, tag, code):
-        """If debugging, prints a debug message."""
-        if self.indebug():
-            self.tracing.show("["+str(tag)+"] "+ascii(code))
-
-    def pre(self, inputstring, **kwargs):
-        """Performs pre-processing."""
-        out = str(inputstring)
-        for proc in self.preprocs:
-            out = proc(out, **kwargs)
-            self.todebug(proc.__name__, out)
-        self.todebug("skips", list(sorted(self.skips)))
-        return out
-
     def reind_proc(self, inputstring, **kwargs):
         """Adds back indentation."""
         out = []
@@ -1634,24 +1695,9 @@ class processor(object):
         """Adds the header."""
         return getheader(initial, self.version, usehash) + self.docstring + getheader(header, self.version) + inputstring
 
-    def headers(self, header, usehash=None):
-        """Gets a polished header."""
-        return self.polish(getheader(header, self.version, usehash))
-
     def polish(self, inputstring, **kwargs):
         """Does final polishing touches."""
         return "\n".join(inputstring.rstrip().splitlines()) + "\n"
-
-    def post(self, tokens, **kwargs):
-        """Performs post-processing."""
-        if len(tokens) == 1:
-            out = tokens[0]
-            for proc in self.postprocs:
-                out = proc(out, **kwargs)
-                self.todebug(proc.__name__, out)
-            return out
-        else:
-            raise CoconutException("multiple tokens leftover", tokens)
 
     def autopep8(self, arglist=[]):
         """Enables autopep8 integration."""
@@ -1663,49 +1709,8 @@ class processor(object):
         self.postprocs.append(pep8_fixer)
         self.using_autopep8 = True
 
-    def set_docstring(self, tokens):
-        """Sets the docstring."""
-        if len(tokens) == 2:
-            self.docstring = self.reformat(tokens[0]) + "\n\n"
-            return tokens[1]
-        else:
-            raise CoconutException("invalid docstring tokens", tokens)
-
-    def make_err(self, errtype, message, original, location, ln=None, reformat=True):
-        """Generates an error of the specified type."""
-        if ln is None:
-            ln = self.adjust(lineno(location, original))
-        errstr, index = line(location, original), col(location, original)-1
-        if reformat:
-            errstr, index = self.reformat(errstr, index)
-        return errtype(message, errstr, index, ln)
-
-    def version_tuple(self):
-        """Returns the target information as a version tuple."""
-        if self.version is None:
-            return ()
-        else:
-            return (int(self.version),)
-
-    def should_indent(self, code):
-        """Determines whether the next line should be indented."""
-        return code.split("#", 1)[0].rstrip().endswith(":")
-
-    def parse(self, inputstring, parser, preargs, postargs):
-        """Uses the parser to parse the inputstring."""
-        try:
-            out = self.post(parser.parseString(self.pre(inputstring, **preargs)), **postargs)
-        except ParseBaseException as err:
-            err_line, err_index = self.reformat(err.line, err.col-1)
-            raise CoconutParseError(err_line, err_index, self.adjust(err.lineno))
-        except RuntimeError:
-            raise CoconutException("maximum recursion depth exceeded (try again with a larger --recursionlimit)")
-        finally:
-            self.clean()
-        return out
-
 #-----------------------------------------------------------------------------------------------------------------------
-# PARSER HANDLERs:
+# PARSER HANDLERS:
 #-----------------------------------------------------------------------------------------------------------------------
 
     def item_handle(self, original, location, tokens):

@@ -142,20 +142,23 @@ _Note: The tested against implementations are [CPython](https://www.python.org/)
 If the version of Python that the compiled code will be running on is known ahead of time, one of `2` (for the `2.x` branch) or `3` (for the `3.x` branch) should be specified as the `--target`. The given target will only affect the compiled code and whether or not certain Python-3-specific syntax is allowed, detailed below. Where Python 3 and Python 2 syntax standards differ, Coconut syntax will always follow Python 3 accross all targets.
 
 As part of Coconut's cross-compatibility efforts, Coconut adds in new Python 3 built-ins and overwrites Python 2 built-ins to use the Python 3 versions where possible. If access to the Python 2 versions is desired, the old builtins can be retrieved by prefixing them with `py2_`. The old built-ins available are:
+- `py2_chr`
 - `py2_filter`
 - `py2_hex`
+- `py2_input`
+- `py2_int`
 - `py2_map`
 - `py2_oct`
-- `py2_zip`
-- `py2_range`
-- `py2_xrange`
-- `py2_int`
-- `py2_chr`
-- `py2_str`
 - `py2_open`
 - `py2_print`
-- `py2_input`
+- `py2_range`
 - `py2_raw_input`
+- `py2_str`
+- `py2_xrange`
+- `py2_zip`
+Additionally, since Coconut also overrides some Python 3 builtins for optimization purposes, those can be retrieved by prefixing them with `py3_`. The overwritten built-ins available are:
+- `py3_map`
+- `py3_zip`
 
 Finally, while Coconut will try to compile Python-3-specific syntax to its universal equivalent, the follow constructs have no equivalent in Python 2, and require `--target 3` to be specified to be used:
 - destructuring assignment with `*`s (use Coconut pattern-matching instead),
