@@ -1239,13 +1239,10 @@ class processor(object):
 
     def reformat(self, snip, index=None):
         """Post processes a preprocessed snippet."""
-        try:
-            if index is None:
-                return self.repl_proc(snip)
-            else:
-                return self.repl_proc(snip), len(self.repl_proc(snip[:index]))
-        except CoconutException:
-            return snip, index
+        if index is None:
+            return self.repl_proc(snip)
+        else:
+            return self.repl_proc(snip), len(self.repl_proc(snip[:index]))
 
     def add_ref(self, ref):
         """Adds a reference and returns the identifier."""
@@ -1320,7 +1317,7 @@ class processor(object):
                     elif c == hold[_start][0]:
                         hold[_stop] += c
                     elif len(hold[_stop]) > len(hold[_start]):
-                        raise self.make_err(CoconutSyntaxError, "invalid number of string closes", inputstring, x)
+                        raise self.make_err(CoconutSyntaxError, "invalid number of string closes", inputstring, x, reformat=False)
                     elif hold[_stop] == hold[_start]:
                         out.append(self.wrap_str(hold[_contents], hold[_start][0], True))
                         hold = None
@@ -1328,7 +1325,7 @@ class processor(object):
                     else:
                         if c == "\n":
                             if len(hold[_start]) == 1:
-                                raise self.make_err(CoconutSyntaxError, "linebreak in non-multiline string", inputstring, x)
+                                raise self.make_err(CoconutSyntaxError, "linebreak in non-multiline string", inputstring, x, reformat=False)
                             else:
                                 skips = addskip(skips, self.adjust(lineno(x, inputstring)))
                         hold[_contents] += hold[_stop]+c
@@ -1345,7 +1342,7 @@ class processor(object):
                 else:
                     if c == "\n":
                         if len(hold[_start]) == 1:
-                            raise self.make_err(CoconutSyntaxError, "linebreak in non-multiline string", inputstring, x)
+                            raise self.make_err(CoconutSyntaxError, "linebreak in non-multiline string", inputstring, x, reformat=False)
                         else:
                             skips = addskip(skips, self.adjust(lineno(x, inputstring)))
                     hold[_contents] += c
@@ -1354,7 +1351,7 @@ class processor(object):
                     found += c
                 elif len(found) == 1: # found == "_"
                     if c == "\n":
-                        raise self.make_err(CoconutSyntaxError, "linebreak in non-multiline string", inputstring, x)
+                        raise self.make_err(CoconutSyntaxError, "linebreak in non-multiline string", inputstring, x, reformat=False)
                     else:
                         hold = [c, found, None] # [_contents, _start, _stop]
                         found = None
@@ -1368,7 +1365,7 @@ class processor(object):
                     hold = [c, found, None] # [_contents, _start, _stop]
                     found = None
                 else:
-                    raise self.make_err(CoconutSyntaxError, "invalid number of string starts", inputstring, x)
+                    raise self.make_err(CoconutSyntaxError, "invalid number of string starts", inputstring, x, reformat=False)
             elif c == "#":
                 hold = [""] # [_comment]
             elif c in holds:
@@ -1377,7 +1374,7 @@ class processor(object):
                 out.append(c)
             x += 1
         if hold is not None or found is not None:
-            raise self.make_err(CoconutSyntaxError, "unclosed string", inputstring, x)
+            raise self.make_err(CoconutSyntaxError, "unclosed string", inputstring, x, reformat=False)
         else:
             self.skips = skips
             return "".join(out)
@@ -1674,11 +1671,13 @@ class processor(object):
         else:
             raise CoconutException("invalid docstring tokens", tokens)
 
-    def make_err(self, errtype, message, original, location, ln=None):
+    def make_err(self, errtype, message, original, location, ln=None, reformat=True):
         """Generates an error of the specified type."""
         if ln is None:
             ln = self.adjust(lineno(location, original))
-        errstr, index = self.reformat(line(location, original), col(location, original)-1)
+        errstr, index = line(location, original), col(location, original)-1
+        if reformat:
+            errstr, index = self.reformat(errstr, index)
         return errtype(message, errstr, index, ln)
 
     def version_tuple(self):
