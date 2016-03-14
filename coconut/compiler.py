@@ -545,7 +545,7 @@ class tracer(object):
 # PROCESSORS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def list_proc(tokens):
+def list_handle(tokens):
     """Properly formats lists."""
     out = []
     for x in range(0, len(tokens)):
@@ -563,23 +563,23 @@ def tokenlist(item, sep, suppress=True):
 
 def itemlist(item, sep):
     """Creates a list of an item."""
-    return attach(tokenlist(item, sep, suppress=False), list_proc)
+    return attach(tokenlist(item, sep, suppress=False), list_handle)
 
-def add_paren_proc(tokens):
+def add_paren_handle(tokens):
     """Adds parentheses."""
     if len(tokens) == 1:
         return "(" + tokens[0] + ")"
     else:
         raise CoconutException("invalid tokens for parentheses adding", tokens)
 
-def attr_proc(tokens):
+def attr_handle(tokens):
     """Processes attrgetter literals."""
     if len(tokens) == 1:
         return '__coconut__.operator.attrgetter("'+tokens[0]+'")'
     else:
         raise CoconutException("invalid attrgetter literal tokens", tokens)
 
-def lazy_list_proc(tokens):
+def lazy_list_handle(tokens):
     """Processes lazy lists."""
     if len(tokens) == 0:
         return "__coconut__.iter(())"
@@ -587,12 +587,12 @@ def lazy_list_proc(tokens):
         return ("(" + lazy_item_var + "() for " + lazy_item_var + " in ("
             + "lambda: " + ", lambda: ".join(tokens) + ("," if len(tokens) == 1 else "") + "))")
 
-def chain_proc(tokens):
+def chain_handle(tokens):
     """Processes chain calls."""
     if len(tokens) == 1:
         return tokens[0]
     else:
-        return "__coconut__.itertools.chain.from_iterable(" + lazy_list_proc(tokens) + ")"
+        return "__coconut__.itertools.chain.from_iterable(" + lazy_list_handle(tokens) + ")"
 
 def infix_error(tokens):
     """Raises inner infix error."""
@@ -616,17 +616,17 @@ def get_infix_items(tokens, callback=infix_error):
                 args.append(arg)
         return tokens[1], args
 
-def infix_proc(tokens):
+def infix_handle(tokens):
     """Processes infix calls."""
-    func, args = get_infix_items(tokens, infix_proc)
+    func, args = get_infix_items(tokens, infix_handle)
     return "(" + func + ")(" + ", ".join(args) + ")"
 
-def op_funcdef_proc(tokens):
+def op_funcdef_handle(tokens):
     """Processes infix defs."""
     func, args = get_infix_items(tokens)
     return func + "(" + ", ".join(args) + ")"
 
-def pipe_proc(tokens):
+def pipe_handle(tokens):
     """Processes pipe calls."""
     if len(tokens) == 1:
         return tokens[0]
@@ -634,17 +634,17 @@ def pipe_proc(tokens):
         func = tokens.pop()
         op = tokens.pop()
         if op == "|>":
-            return "(" + func + ")(" + pipe_proc(tokens) + ")"
+            return "(" + func + ")(" + pipe_handle(tokens) + ")"
         elif op == "|*>":
-            return "(" + func + ")(*" + pipe_proc(tokens) + ")"
+            return "(" + func + ")(*" + pipe_handle(tokens) + ")"
         elif op == "<|":
-            return "(" + pipe_proc(tokens) + ")(" + func + ")"
+            return "(" + pipe_handle(tokens) + ")(" + func + ")"
         elif op == "<*|":
-            return "(" + pipe_proc(tokens) + ")(*" + func + ")"
+            return "(" + pipe_handle(tokens) + ")(*" + func + ")"
         else:
             raise CoconutException("invalid pipe operator", op)
 
-def lambdef_proc(tokens):
+def lambdef_handle(tokens):
     """Processes lambda calls."""
     if len(tokens) == 0:
         return "lambda:"
@@ -653,28 +653,28 @@ def lambdef_proc(tokens):
     else:
         raise CoconutException("invalid lambda tokens", tokens)
 
-def func_proc(tokens):
+def func_handle(tokens):
     """Processes mathematical function definitons."""
     if len(tokens) == 2:
         return "def " + tokens[0] + ": return " + tokens[1]
     else:
         raise CoconutException("invalid mathematical function definition tokens", tokens)
 
-def match_func_proc(tokens):
+def match_func_handle(tokens):
     """Processes match mathematical function definitions."""
     if len(tokens) == 2:
         return tokens[0] + "return " + tokens[1] + "\n" + closeindent
     else:
         raise CoconutException("invalid pattern-matching mathematical function definition tokens", tokens)
 
-def full_match_funcdef_proc(tokens):
+def full_match_funcdef_handle(tokens):
     """Processes full match function definition."""
     if len(tokens) == 2:
         return tokens[0] + "".join(tokens[1]) + closeindent
     else:
         raise CoconutException("invalid pattern-matching function definition tokens", tokens)
 
-def data_proc(tokens):
+def data_handle(tokens):
     """Processes data blocks."""
     if len(tokens) == 2:
         name, stmts = tokens
@@ -703,7 +703,7 @@ def data_proc(tokens):
     out += closeindent
     return out
 
-def decorator_proc(tokens):
+def decorator_handle(tokens):
     """Processes decorators."""
     defs = []
     decorates = []
@@ -718,7 +718,7 @@ def decorator_proc(tokens):
             raise CoconutException("invalid decorator tokens", tokens[x])
     return "\n".join(defs + decorates) + "\n"
 
-def else_proc(tokens):
+def else_handle(tokens):
     """Processes compound else statements."""
     if len(tokens) == 1:
         return "\n" + openindent + tokens[0] + closeindent
@@ -1025,7 +1025,7 @@ class matcher(object):
             out += other.out()
         return out
 
-def match_proc(o, l, tokens, top=True):
+def match_handle(o, l, tokens, top=True):
     """Processes match blocks."""
     if len(tokens) == 3:
         matches, item, stmts = tokens
@@ -1048,26 +1048,6 @@ def match_proc(o, l, tokens, top=True):
         out += "if "+match_check_var+":" + "\n" + openindent + "".join(stmts) + closeindent
     return out
 
-def pattern_error(original, loc):
-    """Constructs a pattern-matching error message."""
-    match_line = ascii(clean(line(loc, original)))
-    return ("if not " + match_check_var + ":\n" + openindent
-        + match_err_var + ' = __coconut__.MatchError("pattern-matching failed for " '
-        + ascii(match_line) + ' " in " + __coconut__.ascii(__coconut__.ascii(' + match_to_var + ")))\n"
-        + match_err_var + ".pattern = " + match_line + "\n"
-        + match_err_var + ".value = " + match_to_var
-        + "\nraise " + match_err_var + "\n" + closeindent)
-
-def match_assign_proc(original, loc, tokens):
-    """Processes match assign blocks."""
-    if len(tokens) == 2:
-        matches, item = tokens
-        out = match_proc(original, loc, (matches, item, None))
-        out += pattern_error(original, loc)
-        return out
-    else:
-        raise CoconutException("invalid destructuring assignment tokens", tokens)
-
 def case_to_match(tokens, item):
     """Converts case tokens to match tokens."""
     if len(tokens) == 2:
@@ -1079,7 +1059,7 @@ def case_to_match(tokens, item):
     else:
         raise CoconutException("invalid case match tokens", tokens)
 
-def case_proc(o, l, tokens):
+def case_handle(o, l, tokens):
     """Processes case blocks."""
     if len(tokens) == 2:
         item, cases = tokens
@@ -1088,33 +1068,15 @@ def case_proc(o, l, tokens):
         item, cases, default = tokens
     else:
         raise CoconutException("invalid top-level case tokens", tokens)
-    out = match_proc(o, l, case_to_match(cases[0], item))
+    out = match_handle(o, l, case_to_match(cases[0], item))
     for case in cases[1:]:
         out += ("if not "+match_check_var+":\n" + openindent
-            + match_proc(o, l, case_to_match(case, item), top=False) + closeindent)
+            + match_handle(o, l, case_to_match(case, item), top=False) + closeindent)
     if default is not None:
         out += "if not "+match_check_var+default
     return out
 
-def name_match_funcdef_proc(original, loc, tokens):
-    """Processes match defs."""
-    if len(tokens) == 2:
-        func, matches = tokens
-        matching = matcher()
-        matching.match_sequence(("(", matches), match_to_var)
-        out = "def " + func + " (*" + match_to_var + "):\n" + openindent
-        out += match_check_var + " = False\n"
-        out += matching.out()
-        out += pattern_error(original, loc)
-        return out
-    else:
-        raise CoconutException("invalid match function definition tokens", tokens)
-
-def op_match_funcdef_proc(original, loc, tokens):
-    """Processes infix match defs."""
-    return name_match_funcdef_proc(original, loc, get_infix_items(tokens))
-
-def except_proc(tokens):
+def except_handle(tokens):
     """Processes except statements."""
     if len(tokens) == 1:
         return "except ("+tokens[0]+")"
@@ -1169,7 +1131,7 @@ def gen_imports(path, impas):
             out.append("from " + imp_from + " import " + imp + " as " + impas)
     return out
 
-def yield_from_proc(tokens):
+def yield_from_handle(tokens):
     """Processes Python 3.3 yield from."""
     if len(tokens) == 1:
         yield_from = tokens[0]
@@ -1196,7 +1158,7 @@ class processor(object):
         self.tracing.show = debugger
         self.setup(strict, version)
         self.preprocs = [self.prepare, self.str_proc, self.passthrough_proc, self.ind_proc]
-        self.postprocs = [self.reind_proc, self.header_proc, self.polish]
+        self.postprocs = [self.re_ind_proc, self.repl_proc, self.header_proc, self.polish]
         self.bind()
         self.clean()
 
@@ -1211,21 +1173,20 @@ class processor(object):
 
     def bind(self):
         """Binds reference objects to the proper parse actions."""
-        self.name <<= self.trace(attach(self.name_ref, self.name_repl), "name")
-        self.string_item <<= self.trace(attach(self.string_marker, self.string_repl), "string_item")
+        self.name <<= self.trace(attach(self.name_ref, self.name_handle), "name")
         self.moduledoc_item <<= self.trace(attach(self.moduledoc, self.set_docstring), "moduledoc_item")
-        self.comment <<= self.trace(attach(self.comment_marker, self.comment_repl), "comment")
-        self.passthrough <<= self.trace(attach(self.passthrough_marker, self.passthrough_repl), "passthrough")
-        self.passthrough_block <<= self.trace(attach(self.passthrough_block_marker, self.passthrough_repl), "passthrough_block")
-        self.atom_item <<= self.trace(attach(self.atom_item_ref, self.item_repl), "atom_item")
-        self.simple_assign <<= self.trace(attach(self.simple_assign_ref, self.item_repl), "simple_assign")
+        self.atom_item <<= self.trace(attach(self.atom_item_ref, self.item_handle), "atom_item")
+        self.simple_assign <<= self.trace(attach(self.simple_assign_ref, self.item_handle), "simple_assign")
         self.set_literal <<= self.trace(attach(self.set_literal_ref, self.set_literal_convert), "set_literal")
         self.set_letter_literal <<= self.trace(attach(self.set_letter_literal_ref, self.set_letter_literal_convert), "set_letter_literal")
-        self.classlist <<= self.trace(attach(self.classlist_ref, self.classlist_repl), "classlist")
-        self.import_stmt <<= self.trace(attach(self.import_stmt_ref, self.import_repl), "import_stmt")
-        self.complex_raise_stmt <<= self.trace(attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_repl), "complex_raise_stmt")
-        self.augassign_stmt <<= self.trace(attach(self.augassign_stmt_ref, self.augassign_repl), "augassign_stmt")
-        self.dict_comp <<= self.trace(attach(self.dict_comp_ref, self.dict_comp_repl), "dict_comp")
+        self.classlist <<= self.trace(attach(self.classlist_ref, self.classlist_handle), "classlist")
+        self.import_stmt <<= self.trace(attach(self.import_stmt_ref, self.import_handle), "import_stmt")
+        self.complex_raise_stmt <<= self.trace(attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_handle), "complex_raise_stmt")
+        self.augassign_stmt <<= self.trace(attach(self.augassign_stmt_ref, self.augassign_handle), "augassign_stmt")
+        self.dict_comp <<= self.trace(attach(self.dict_comp_ref, self.dict_comp_handle), "dict_comp")
+        self.destructuring_stmt <<= self.trace(attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle), "destructuring_stmt")
+        self.name_match_funcdef <<= self.trace(attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle), "name_match_funcdef")
+        self.op_match_funcdef <<= self.trace(attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle), "op_match_funcdef")
         self.u_string <<= attach(self.u_string_ref, self.u_string_check)
         self.typedef <<= attach(self.typedef_ref, self.typedef_check)
         self.return_typedef <<= attach(self.return_typedef_ref, self.typedef_check)
@@ -1271,23 +1232,6 @@ class processor(object):
         """Wraps a string."""
         return '"' + self.add_ref((text, strchar, multiline)) + '"'
 
-    def expand(self, text):
-        """Expands strings in text."""
-        fulltext = ""
-        found = None
-        for c in text:
-            if found is not None:
-                if c == '"':
-                    fulltext += self.string_repl([found])
-                    found = None
-                else:
-                    found += c
-            elif c == '"':
-                found = ""
-            else:
-                fulltext += c
-        return fulltext
-
     def wrap_passthrough(self, text, multiline):
         """Wraps a passthrough."""
         if not multiline:
@@ -1296,7 +1240,7 @@ class processor(object):
             out = "\\"
         else:
             out = "\\\\"
-        out += self.add_ref(self.expand(text))
+        out += self.add_ref(text) + "\\"
         if not multiline:
             out += "\n"
         return out
@@ -1312,7 +1256,7 @@ class processor(object):
         return "\n".join(inputstring.splitlines())
 
     def str_proc(self, inputstring, **kwargs):
-        """Processes strings."""
+        """Processes strings and comments."""
         out = []
         found = None # store of characters that might be the start of a string
         hold = None
@@ -1404,81 +1348,6 @@ class processor(object):
         else:
             self.skips = skips
             return "".join(out)
-
-    def reindent(self, inputstring):
-        """Reconverts indent tokens into indentation."""
-        out = []
-        level = 0 # current indentation level
-        found = None # store of characters that might be the start of a string
-        hold = None # [_escape, _start, _stop]
-        _escape = 0 # whether an escape was just encountered in the string
-        _start = 1 # the string of characters that started the string
-        _stop = 2 # store of characters that might be the end of the string
-        for line in inputstring.splitlines():
-            if hold is None:
-                line = line.lstrip()
-                if not line.startswith("#"):
-                    while line.startswith(openindent) or line.startswith(closeindent):
-                        if line[0] == openindent:
-                            level += 1
-                        elif line[0] == closeindent:
-                            level -= 1
-                        line = line[1:]
-                    line = " "*tablen*level + line
-            for c in line + "\n":
-                if hold is not None:
-                    if c == "\n" and len(hold[_start]) == 1:
-                        raise CoconutException("invalid linebreak in string code", line)
-                    elif hold[_stop] is not None:
-                        if c == "\\":
-                            hold[_escape] = not hold[_escape]
-                            hold[_stop] = None
-                        elif c == hold[_start][0]:
-                            hold[_escape] = False
-                            hold[_stop] += c
-                        elif len(hold[_stop]) > len(hold[_start]):
-                            raise CoconutException("invalid close in string code", line)
-                        elif hold[_stop] == hold[_start]:
-                            hold = None
-                        elif c == "\n" and len(hold[_start]) == 1:
-                            raise CoconutException("invalid linebreak in string code", line)
-                        else:
-                            hold[_escape] = False
-                            hold[_stop] = None
-                    elif c == "\\":
-                        hold[_escape] = not hold[_escape]
-                    elif hold[_escape]:
-                        hold[_escape] = False
-                    elif c == hold[_start]:
-                        hold = None
-                    elif c == hold[_start][0]:
-                        hold[_stop] = c
-                elif found is not None:
-                    if c == found[0]:
-                        found += c
-                    elif len(found) == 1: # found == "_"
-                        if c == "\n":
-                            raise CoconutException("invalid linebreak in string code", line)
-                        else:
-                            hold = [c == "\\", found, None] # [_escape, _start, _stop]
-                        found = None
-                    elif len(found) == 2: # found == "___"
-                        found = None
-                    elif len(found) == 3: # found == "____"
-                        hold = [c == "\\", found, None] # [_escape, _start, _stop]
-                        found = None
-                    else:
-                        raise CoconutException("invalid string start code", line)
-                elif c in holds:
-                    found = c
-                elif c == "#":
-                    break
-            if found is not None:
-                raise CoconutException("invalid unclosed string code", line)
-            if hold is None:
-                line = line.rstrip()
-            out.append(line)
-        return "\n".join(out)
 
     def passthrough_proc(self, inputstring, **kwargs):
         """Processes python passthroughs."""
@@ -1640,15 +1509,94 @@ class processor(object):
         self.todebug("skips", list(sorted(self.skips)))
         return out
 
-    def reind_proc(self, inputstring, strip=True, **kwargs):
-        """Reformats indentation."""
-        out = inputstring
-        if strip:
-            out = out.strip()
-        out = self.reindent(out)
-        if strip:
-            out = out.strip()
+    def re_ind_proc(self, inputstring, **kwargs):
+        """Adds back indentation."""
+        out = []
+        level = 0
+        for line in inputstring.splitlines():
+            line = line.strip()
+            if not line.startswith("#"):
+                while line.startswith(openindent) or line.startswith(closeindent):
+                    if line[0] == openindent:
+                        level += 1
+                    elif line[0] == closeindent:
+                        level -= 1
+                    line = line[1:]
+                line = " "*tablen*level + line
+            out.append(line)
+        return "\n".join(out)
+
+    def passthrough_repl(self, inputstring):
+        """Adds back passthroughs."""
+        out = ""
+        index = None
+        x = 0
+        while x < len(inputstring):
+            c = inputstring[x]
+            if index is not None:
+                if c in nums:
+                    index += c
+                else:
+                    ref = self.refs[int(index)]
+                    if isinstance(ref, tuple):
+                        raise CoconutException("passthrough marker points to string")
+                    else:
+                        out += ref
+                        index = None
+                        x -= 1
+            elif c == "\\":
+                index = ""
+            else:
+                out += c
+            x += 1
         return out
+
+    def str_repl(self, inputstring):
+        """Adds back strings."""
+        out = ""
+        comment = None
+        string = None
+        x = 0
+        while x < len(inputstring):
+            c = inputstring[x]
+            if comment is not None:
+                if c in nums:
+                    comment += c
+                else:
+                    ref = self.refs[int(comment)]
+                    if isinstance(ref, tuple):
+                        raise CoconutException("comment marker points to string")
+                    else:
+                        out += " #" + ref
+                        comment = None
+                        x -= 1
+            elif string is not None:
+                if c in nums:
+                    string += c
+                else:
+                    ref = self.refs[int(string)]
+                    if isinstance(ref, tuple):
+                        text, strchar, multiline = ref
+                        if multiline:
+                            out += strchar*3 + text + strchar*3
+                        else:
+                            out += strchar + text + strchar
+                        string = None
+                        x -= 1
+                    else:
+                        raise CoconutException("string marker points to comment/passthrough")
+            elif c == "#":
+                comment = ""
+            elif c == '"':
+                string = ""
+            else:
+                out += c
+            x += 1
+        return out
+
+    def repl_proc(self, inputstring, **kwargs):
+        """Replaces passthroughs, strings, and comments."""
+        return self.str_repl(self.passthrough_repl(inputstring))
 
     def header_proc(self, inputstring, header="file", initial="initial", usehash=None, **kwargs):
         """Adds the header."""
@@ -1683,22 +1631,6 @@ class processor(object):
         self.postprocs.append(pep8_fixer)
         self.using_autopep8 = True
 
-    def string_repl(self, tokens):
-        """Replaces string references."""
-        if len(tokens) == 1:
-            ref = self.refs[int(tokens[0])]
-            if isinstance(ref, tuple):
-                string, strchar, multiline = ref
-                if multiline:
-                    string = strchar*3+string+strchar*3
-                else:
-                    string = strchar+string+strchar
-                return string
-            else:
-                raise CoconutException("string marker points to comment/passthrough")
-        else:
-            raise CoconutException("invalid string marker", tokens)
-
     def set_docstring(self, tokens):
         """Sets the docstring."""
         if len(tokens) == 2:
@@ -1707,29 +1639,7 @@ class processor(object):
         else:
             raise CoconutException("invalid docstring tokens", tokens)
 
-    def comment_repl(self, tokens):
-        """Replaces comment references."""
-        if len(tokens) == 1:
-            ref = self.refs[int(tokens[0])]
-            if isinstance(ref, tuple):
-                raise CoconutException("comment marker points to string")
-            else:
-                return " #" + ref
-        else:
-            raise CoconutException("invalid comment marker", tokens)
-
-    def passthrough_repl(self, tokens):
-        """Replaces passthrough references."""
-        if len(tokens) == 1:
-            ref = self.refs[int(tokens[0])]
-            if isinstance(ref, tuple):
-                raise CoconutException("passthrough marker points to string")
-            else:
-                return ref
-        else:
-            raise CoconutException("invalid passthrough marker", tokens)
-
-    def item_repl(self, original, location, tokens):
+    def item_handle(self, original, location, tokens):
         """Processes items."""
         out = tokens.pop(0)
         for trailer in tokens:
@@ -1776,7 +1686,7 @@ class processor(object):
                 raise CoconutException("invalid trailer tokens", trailer)
         return out
 
-    def augassign_repl(self, tokens):
+    def augassign_handle(self, tokens):
         """Processes assignments."""
         if len(tokens) == 3:
             name, op, item = tokens
@@ -1794,7 +1704,7 @@ class processor(object):
             elif op == "::=":
                 ichain_var = lazy_chain_var+"_"+str(self.ichain_count)
                 out += ichain_var+" = "+name+"\n"
-                out += name+" = __coconut__.itertools.chain.from_iterable("+lazy_list_proc([ichain_var, "("+item+")"])+")"
+                out += name+" = __coconut__.itertools.chain.from_iterable("+lazy_list_handle([ichain_var, "("+item+")"])+")"
                 self.ichain_count += 1
             else:
                 out += name+" "+op+" "+item
@@ -1802,7 +1712,7 @@ class processor(object):
         else:
             raise CoconutException("invalid assignment tokens", tokens)
 
-    def classlist_repl(self, original, location, tokens):
+    def classlist_handle(self, original, location, tokens):
         """Processes class inheritance lists."""
         if len(tokens) == 0:
             if self.version == "3":
@@ -1830,7 +1740,7 @@ class processor(object):
         else:
             return (int(self.version),)
 
-    def import_repl(self, original, location, tokens):
+    def import_handle(self, original, location, tokens):
         """Universalizes imports."""
         if len(tokens) == 1:
             imp_from, imports = None, tokens[0]
@@ -1895,7 +1805,7 @@ class processor(object):
                 stmts.append(closeindent)
         return "\n".join(stmts)
 
-    def complex_raise_stmt_repl(self, tokens):
+    def complex_raise_stmt_handle(self, tokens):
         """Processes Python 3 raise from statement."""
         if len(tokens) != 2:
             raise CoconutException("invalid raise from tokens", tokens)
@@ -1907,7 +1817,7 @@ class processor(object):
                     + "raise " + raise_from_var)
 
 
-    def dict_comp_repl(self, original, location, tokens):
+    def dict_comp_handle(self, original, location, tokens):
         """Processes Python 2.7 dictionary comprehension."""
         if len(tokens) != 3:
             raise CoconutException("invalid dictionary comprehension tokens", tokens)
@@ -1918,7 +1828,7 @@ class processor(object):
             key, val, comp = tokens
             return "dict(((" + key + "), (" + val + ")) " + comp + ")"
 
-    def name_repl(self, original, location, tokens):
+    def name_handle(self, original, location, tokens):
         """Handles backslash-escaped variable names."""
         if len(tokens) != 1:
             raise CoconutException("invalid name tokens", tokens)
@@ -1928,6 +1838,44 @@ class processor(object):
             return tokens[0][1:]
         else:
             return tokens[0]
+
+    def pattern_error(self, original, loc):
+        """Constructs a pattern-matching error message."""
+        match_line = ascii(clean(self.repl_proc(line(loc, original))))
+        return ("if not " + match_check_var + ":\n" + openindent
+            + match_err_var + ' = __coconut__.MatchError("pattern-matching failed for " '
+            + ascii(match_line) + ' " in " + __coconut__.ascii(__coconut__.ascii(' + match_to_var + ")))\n"
+            + match_err_var + ".pattern = " + match_line + "\n"
+            + match_err_var + ".value = " + match_to_var
+            + "\nraise " + match_err_var + "\n" + closeindent)
+
+    def destructuring_stmt_handle(self, original, loc, tokens):
+        """Processes match assign blocks."""
+        if len(tokens) == 2:
+            matches, item = tokens
+            out = match_handle(original, loc, (matches, item, None))
+            out += self.pattern_error(original, loc)
+            return out
+        else:
+            raise CoconutException("invalid destructuring assignment tokens", tokens)
+
+    def name_match_funcdef_handle(self, original, loc, tokens):
+        """Processes match defs."""
+        if len(tokens) == 2:
+            func, matches = tokens
+            matching = matcher()
+            matching.match_sequence(("(", matches), match_to_var)
+            out = "def " + func + " (*" + match_to_var + "):\n" + openindent
+            out += match_check_var + " = False\n"
+            out += matching.out()
+            out += self.pattern_error(original, loc)
+            return out
+        else:
+            raise CoconutException("invalid match function definition tokens", tokens)
+
+    def op_match_funcdef_handle(self, original, loc, tokens):
+        """Processes infix match defs."""
+        return self.name_match_funcdef_handle(original, loc, get_infix_items(tokens))
 
     def check_strict(self, name, original, location, tokens):
         """Checks that syntax meets --strict requirements."""
@@ -2121,11 +2069,11 @@ class processor(object):
 
     number = bin_num | oct_num | hex_num | complex_num | numitem
 
-    string_item = Forward()
     moduledoc_item = Forward()
-    comment = Forward()
-    passthrough = Forward()
-    passthrough_block = Forward()
+    string_item = Combine(Literal('"') + integer + Literal('"').suppress())
+    comment = Combine(pound + integer)
+    passthrough = Combine(backslash + integer + backslash.suppress())
+    passthrough_block = Combine(fixto(dubbackslash, "\\") + integer + backslash.suppress())
 
     lineitem = Combine(Optional(comment) + Literal("\n"))
     newline = condense(OneOrMore(lineitem))
@@ -2133,11 +2081,6 @@ class processor(object):
     endmarker = StringEnd()
     indent = Literal(openindent)
     dedent = Literal(closeindent)
-
-    string_marker = Combine(Literal('"').suppress() + integer + Literal('"').suppress())
-    comment_marker = Combine(pound.suppress() + integer)
-    passthrough_marker = Combine(backslash.suppress() + integer)
-    passthrough_block_marker = Combine(dubbackslash.suppress() + integer)
 
     bit_b = Optional(CaselessLiteral("b"))
     raw_r = Optional(CaselessLiteral("r"))
@@ -2193,7 +2136,7 @@ class processor(object):
     argslist = Optional(itemlist(condense(dubstar + tfpdef | star + tfpdef | tfpdef + default), comma))
     varargslist_req = itemlist(condense(dubstar + name | star + name | name + default), comma)
     varargslist = Optional(varargslist_req)
-    callargslist = Optional(attach(addspace(test + comp_for), add_paren_proc)
+    callargslist = Optional(attach(addspace(test + comp_for), add_paren_handle)
         | itemlist(condense(dubstar + callarg | star + callarg | callarg + default), comma))
 
     parameters = condense(lparen + argslist + rparen)
@@ -2203,7 +2146,7 @@ class processor(object):
 
     dict_comp = Forward()
     yield_classic = addspace(Keyword("yield") + testlist)
-    yield_from = attach(Keyword("yield").suppress() + Keyword("from").suppress() + test, yield_from_proc)
+    yield_from = attach(Keyword("yield").suppress() + Keyword("from").suppress() + test, yield_from_handle)
     yield_expr = yield_from | yield_classic
     dict_comp_ref = lbrace.suppress() + test + colon.suppress() + test + comp_for + rbrace.suppress()
     dict_item = condense(lbrace + Optional(itemlist(addspace(condense(test + colon) + test), comma)) + rbrace)
@@ -2256,7 +2199,7 @@ class processor(object):
         keyword_atom |= Keyword(const_vars[x])
     string_atom = addspace(OneOrMore(string))
     passthrough_atom = addspace(OneOrMore(passthrough))
-    attr_atom = attach(condense(dot.suppress() + name), attr_proc)
+    attr_atom = attach(condense(dot.suppress() + name), attr_handle)
     set_literal = Forward()
     set_letter_literal = Forward()
     set_s = fixto(CaselessLiteral("s"), "s")
@@ -2266,7 +2209,7 @@ class processor(object):
     set_literal_ref = lbrace.suppress() + setmaker + rbrace.suppress()
     set_letter_literal_ref = set_letter + lbrace.suppress() + Optional(setmaker) + rbrace.suppress()
     lazy_items = Optional(test + ZeroOrMore(comma.suppress() + test) + Optional(comma.suppress()))
-    lazy_list = attach(lbanana.suppress() + lazy_items + rbanana.suppress(), lazy_list_proc)
+    lazy_list = attach(lbanana.suppress() + lazy_items + rbanana.suppress(), lazy_list_handle)
     const_atom = (
         keyword_atom
         | number
@@ -2341,19 +2284,19 @@ class processor(object):
     xor_expr = addspace(and_expr + ZeroOrMore(caret + and_expr))
     or_expr = addspace(xor_expr + ZeroOrMore(bar + xor_expr))
 
-    chain_expr = attach(or_expr + ZeroOrMore(dubcolon.suppress() + or_expr), chain_proc)
+    chain_expr = attach(or_expr + ZeroOrMore(dubcolon.suppress() + or_expr), chain_handle)
 
     infix_expr = Forward()
     infix_op = condense(backtick.suppress() + chain_expr + backtick.suppress())
-    infix_item = attach(Group(Optional(chain_expr)) + infix_op + Group(Optional(infix_expr)), infix_proc)
+    infix_item = attach(Group(Optional(chain_expr)) + infix_op + Group(Optional(infix_expr)), infix_handle)
     infix_expr <<= infix_item | chain_expr
     nochain_infix_expr = Forward()
-    nochain_infix_item = attach(Group(Optional(or_expr)) + infix_op + Group(Optional(nochain_infix_expr)), infix_proc)
+    nochain_infix_item = attach(Group(Optional(or_expr)) + infix_op + Group(Optional(nochain_infix_expr)), infix_handle)
     nochain_infix_expr <<= nochain_infix_item | or_expr
 
     pipe_op = pipeline | starpipe | backpipe | backstarpipe
-    pipe_expr = attach(infix_expr + ZeroOrMore(pipe_op + infix_expr), pipe_proc)
-    nochain_pipe_expr = attach(nochain_infix_expr + ZeroOrMore(pipe_op + nochain_infix_expr), pipe_proc)
+    pipe_expr = attach(infix_expr + ZeroOrMore(pipe_op + infix_expr), pipe_handle)
+    nochain_pipe_expr = attach(nochain_infix_expr + ZeroOrMore(pipe_op + nochain_infix_expr), pipe_handle)
 
     expr <<= trace(pipe_expr, "expr")
     comparison = addspace(expr + ZeroOrMore(comp_op + expr))
@@ -2372,7 +2315,7 @@ class processor(object):
     classic_lambdef_params = parenwrap(lparen, varargslist, rparen)
     new_lambdef_params = lparen.suppress() + varargslist + rparen.suppress()
     classic_lambdef_ref = addspace(Keyword("lambda") + condense(classic_lambdef_params + colon))
-    new_lambdef = attach(new_lambdef_params + arrow.suppress(), lambdef_proc)
+    new_lambdef = attach(new_lambdef_params + arrow.suppress(), lambdef_handle)
     lambdef = trace(addspace((classic_lambdef | new_lambdef) + test), "lambdef")
     lambdef_nocond = trace(addspace((classic_lambdef | new_lambdef) + test_nocond), "lambdef_nocond")
     lambdef_nochain = trace(addspace((classic_lambdef | new_lambdef) + test_nochain), "lambdef_nochain")
@@ -2454,18 +2397,18 @@ class processor(object):
     or_match = Group(matchlist_or("or")) | and_match
     match <<= trace(or_match, "match")
 
-    else_suite = condense(colon + trace(attach(simple_compound_stmt, else_proc), "else_suite")) | suite
+    else_suite = condense(colon + trace(attach(simple_compound_stmt, else_handle), "else_suite")) | suite
     else_stmt = condense(Keyword("else") - else_suite)
 
     full_suite = colon.suppress() + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
     full_match = trace(attach(
         Keyword("match").suppress() + match + Keyword("in").suppress() - test - Optional(Keyword("if").suppress() - test) - full_suite
-        , match_proc), "full_match")
+        , match_handle), "full_match")
     match_stmt = condense(full_match - Optional(else_stmt))
 
-    match_assign_base = attach(match + equals.suppress() - test_expr - newline.suppress(), match_assign_proc)
-    match_assign_stmt = trace(Keyword("match").suppress() + match_assign_base, "match_assign_stmt")
-    destructuring_stmt = trace(match_assign_base, "destructuring_stmt")
+    destructuring_stmt = Forward()
+    destructuring_stmt_ref = match + equals.suppress() - test_expr - newline.suppress()
+    match_assign_stmt = Keyword("match").suppress() + destructuring_stmt
 
     case_match = trace(Group(
         Keyword("match").suppress() - match - Optional(Keyword("if").suppress() - test) - full_suite
@@ -2474,7 +2417,7 @@ class processor(object):
         Keyword("case").suppress() + test - colon.suppress() - newline.suppress()
         - indent.suppress() - Group(OneOrMore(case_match))
         - dedent.suppress() - Optional(Keyword("else").suppress() - else_suite)
-        , case_proc)
+        , case_handle)
 
     assert_stmt = addspace(Keyword("assert") - testlist)
     if_stmt = condense(addspace(Keyword("if") - condense(test - suite))
@@ -2483,7 +2426,7 @@ class processor(object):
                        )
     while_stmt = addspace(Keyword("while") - condense(test - suite - Optional(else_stmt)))
     for_stmt = addspace(Keyword("for") - assignlist - Keyword("in") - condense(testlist - suite - Optional(else_stmt)))
-    except_clause = attach(Keyword("except").suppress() + testlist - Optional(Keyword("as").suppress() - name), except_proc)
+    except_clause = attach(Keyword("except").suppress() + testlist - Optional(Keyword("as").suppress() - name), except_handle)
     try_stmt = condense(Keyword("try") - suite + (
         Keyword("finally") - suite
         | (
@@ -2499,23 +2442,25 @@ class processor(object):
     name_funcdef = condense(name + parameters)
     op_funcdef_arg = condense(lparen.suppress() + tfpdef + Optional(default) + rparen.suppress())
     op_funcdef_name = backtick.suppress() + name + backtick.suppress()
-    op_funcdef = attach(Group(Optional(op_funcdef_arg)) + op_funcdef_name + Group(Optional(op_funcdef_arg)), op_funcdef_proc)
+    op_funcdef = attach(Group(Optional(op_funcdef_arg)) + op_funcdef_name + Group(Optional(op_funcdef_arg)), op_funcdef_handle)
     return_typedef_ref = addspace(arrow + test)
     base_funcdef = addspace((op_funcdef | name_funcdef) + Optional(return_typedef))
     funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
-    math_funcdef = attach(Keyword("def").suppress() + base_funcdef + equals.suppress() - test_expr, func_proc) - newline
+    math_funcdef = attach(Keyword("def").suppress() + base_funcdef + equals.suppress() - test_expr, func_handle) - newline
     async_funcdef_ref = addspace(Keyword("async") + (funcdef | math_funcdef))
     async_block_ref = addspace(Keyword("async") + (with_stmt | for_stmt))
 
+    name_match_funcdef = Forward()
+    op_match_funcdef = Forward()
     async_match_funcdef = Forward()
+    name_match_funcdef_ref = name + lparen.suppress() + matchlist_list + rparen.suppress()
     op_match_funcdef_arg = lparen.suppress() + match + rparen.suppress()
-    op_match_funcdef = attach(Group(Optional(op_match_funcdef_arg)) + op_funcdef_name + Group(Optional(op_match_funcdef_arg)), op_match_funcdef_proc)
-    name_match_funcdef = attach(name + lparen.suppress() + matchlist_list + rparen.suppress(), name_match_funcdef_proc)
+    op_match_funcdef_ref = Group(Optional(op_match_funcdef_arg)) + op_funcdef_name + Group(Optional(op_match_funcdef_arg))
     base_match_funcdef = Keyword("def").suppress() + (op_match_funcdef | name_match_funcdef)
-    full_match_funcdef = trace(attach(base_match_funcdef + full_suite, full_match_funcdef_proc), "base_match_funcdef")
+    full_match_funcdef = trace(attach(base_match_funcdef + full_suite, full_match_funcdef_handle), "base_match_funcdef")
     math_match_funcdef = attach(
         Optional(Keyword("match").suppress()) + base_match_funcdef + equals.suppress() - test_expr
-        , match_func_proc) - newline
+        , match_func_handle) - newline
     match_funcdef = Optional(Keyword("match").suppress()) + full_match_funcdef
     async_match_funcdef_ref = addspace(
         (Optional(Keyword("match")).suppress() + Keyword("async") | Keyword("async") + Optional(Keyword("match")).suppress())
@@ -2527,11 +2472,11 @@ class processor(object):
         (newline.suppress() + indent.suppress() + Optional(docstring) + Group(OneOrMore(stmt)) + dedent.suppress())("complex")
         | (newline.suppress() + indent.suppress() + docstring + dedent.suppress() | docstring)("docstring")
         | simple_stmt("simple"))
-    datadef = condense(attach(Keyword("data").suppress() + name - data_args - data_suite, data_proc))
+    datadef = condense(attach(Keyword("data").suppress() + name - data_args - data_suite, data_handle))
 
     simple_decorator = condense(dotted_name + Optional(lparen + callargslist + rparen))("simple")
     complex_decorator = test("complex")
-    decorators = attach(OneOrMore(at.suppress() - Group(simple_decorator | complex_decorator) - newline.suppress()), decorator_proc)
+    decorators = attach(OneOrMore(at.suppress() - Group(simple_decorator | complex_decorator) - newline.suppress()), decorator_handle)
     decorated = condense(decorators + (
         classdef
         | datadef
