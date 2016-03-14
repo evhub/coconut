@@ -35,6 +35,7 @@ hash_prefix = "# __coconut_hash__ = "
 hash_sep = "\x00"
 openindent = "\u204b"
 closeindent = "\xb6"
+unwrapper = "'"
 white = " \t\f"
 downs = "([{"
 ups = ")]}"
@@ -1230,7 +1231,7 @@ class processor(object):
 
     def wrap_str(self, text, strchar, multiline):
         """Wraps a string."""
-        return '"' + self.add_ref((text, strchar, multiline)) + '"'
+        return '"' + self.add_ref((text, strchar, multiline)) + unwrapper
 
     def wrap_passthrough(self, text, multiline):
         """Wraps a passthrough."""
@@ -1240,14 +1241,14 @@ class processor(object):
             out = "\\"
         else:
             out = "\\\\"
-        out += self.add_ref(text) + "\\"
+        out += self.add_ref(text) + unwrapper
         if not multiline:
             out += "\n"
         return out
 
     def wrap_comment(self, text):
         """Wraps a comment."""
-        return "#" + self.add_ref(text)
+        return "#" + self.add_ref(text) + unwrapper
 
     def prepare(self, inputstring, strip=False, **kwargs):
         """Prepares a string for processing."""
@@ -2070,10 +2071,11 @@ class processor(object):
     number = bin_num | oct_num | hex_num | complex_num | numitem
 
     moduledoc_item = Forward()
-    string_item = Combine(Literal('"') + integer + Literal('"').suppress())
-    comment = Combine(pound + integer)
-    passthrough = Combine(backslash + integer + backslash.suppress())
-    passthrough_block = Combine(fixto(dubbackslash, "\\") + integer + backslash.suppress())
+    unwrap = Literal(unwrapper).suppress()
+    string_item = Combine(Literal('"') + integer + unwrap)
+    comment = Combine(pound + integer + unwrap)
+    passthrough = Combine(backslash + integer + unwrap)
+    passthrough_block = Combine(fixto(dubbackslash, "\\") + integer + unwrap)
 
     lineitem = Combine(Optional(comment) + Literal("\n"))
     newline = condense(OneOrMore(lineitem))
