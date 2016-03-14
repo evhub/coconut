@@ -1234,9 +1234,14 @@ class processor(object):
             index = len(self.refs) - 1
         return str(index)
 
-    def wrap_str(self, text, strchar='"', multiline=False):
+    def wrap_str(self, text, strchar, multiline=False):
         """Wraps a string."""
         return strwrapper + self.add_ref((text, strchar, multiline)) + unwrapper
+
+    def wrap_str_of(self, text):
+        """Wraps a string of a string."""
+        text_repr = ascii(text).lstrip("u")
+        return self.wrap_str(text_repr[1:-1], text_repr[-1])
 
     def wrap_passthrough(self, text, multiline=True):
         """Wraps a passthrough."""
@@ -1874,9 +1879,9 @@ class processor(object):
 
     def pattern_error(self, original, loc):
         """Constructs a pattern-matching error message."""
-        base_line = ascii(clean(self.repl_proc(line(loc, original))))
-        line_wrap = self.wrap_passthrough(base_line)
-        repr_wrap = self.wrap_passthrough(ascii(base_line))
+        base_line = clean(self.repl_proc(line(loc, original)))
+        line_wrap = self.wrap_str_of(base_line)
+        repr_wrap = self.wrap_str_of(ascii(base_line))
         return ("if not " + match_check_var + ":\n" + openindent
             + match_err_var + ' = __coconut__.MatchError("pattern-matching failed for " '
             + repr_wrap + ' " in " + __coconut__.ascii(__coconut__.ascii(' + match_to_var + ")))\n"
