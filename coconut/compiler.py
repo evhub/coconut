@@ -1535,9 +1535,9 @@ class processor(object):
         while x <= len(inputstring):
             c = inputstring[x] if x != len(inputstring) else None
             if index is not None:
-                if c in nums:
+                if c is not None and c in nums:
                     index += c
-                else:
+                elif index:
                     ref = self.refs[int(index)]
                     if isinstance(ref, tuple):
                         raise CoconutException("passthrough marker points to string")
@@ -1545,6 +1545,8 @@ class processor(object):
                         out += ref
                         index = None
                         x -= 1
+                else:
+                    raise CoconutException("invalid passthrough marker")
             elif c is not None:
                 if c == "\\":
                     index = ""
@@ -1561,11 +1563,10 @@ class processor(object):
         x = 0
         while x <= len(inputstring):
             c = inputstring[x] if x != len(inputstring) else None
-            print(x, c, out)
             if comment is not None:
-                if c in nums:
+                if c is not None and c in nums:
                     comment += c
-                else:
+                elif comment:
                     ref = self.refs[int(comment)]
                     if isinstance(ref, tuple):
                         raise CoconutException("comment marker points to string")
@@ -1575,10 +1576,12 @@ class processor(object):
                         out += "#" + ref
                         comment = None
                         x -= 1
-            elif string is not None:
-                if c in nums:
-                    string += c
                 else:
+                    raise CoconutException("invalid comment marker")
+            elif string is not None:
+                if c is not None and c in nums:
+                    string += c
+                elif string:
                     ref = self.refs[int(string)]
                     if isinstance(ref, tuple):
                         text, strchar, multiline = ref
@@ -1590,6 +1593,8 @@ class processor(object):
                         x -= 1
                     else:
                         raise CoconutException("string marker points to comment/passthrough")
+                else:
+                    raise CoconutException("invalid string marker")
             elif c is not None:
                 if c == "#":
                     comment = ""
