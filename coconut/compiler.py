@@ -1233,11 +1233,14 @@ class processor(object):
             index = len(self.refs) - 1
         return str(index)
 
-    def wrap_str(self, text, strchar='"', multiline=False):
+    def wrap_str(self, text, strchar='"', multiline=False, unwrap=True):
         """Wraps a string."""
-        return unwrapper + self.add_ref((text, strchar, multiline)) + unwrapper
+        out = unwrapper + self.add_ref((text, strchar, multiline))
+        if unwrap:
+            out += unwrapper
+        return out
 
-    def wrap_passthrough(self, text, multiline=True):
+    def wrap_passthrough(self, text, multiline=True, unwrap=True):
         """Wraps a passthrough."""
         if not multiline:
             text = text.lstrip()
@@ -1245,14 +1248,19 @@ class processor(object):
             out = "\\"
         else:
             out = "\\\\"
-        out += self.add_ref(text) + unwrapper
+        out += self.add_ref(text)
+        if unwrap:
+            out += unwrapper
         if not multiline:
             out += "\n"
         return out
 
-    def wrap_comment(self, text):
+    def wrap_comment(self, text, unwrap=True):
         """Wraps a comment."""
-        return "#" + self.add_ref(text) + unwrapper
+        out = "#" + self.add_ref(text)
+        if unwrap:
+            out += unwrapper
+        return out
 
     def prepare(self, inputstring, strip=False, **kwargs):
         """Prepares a string for processing."""
@@ -1550,7 +1558,7 @@ class processor(object):
                         index = None
                         x -= 1
                 else:
-                    raise CoconutException("invalid passthrough marker", line(x, inputstring))
+                    raise CoconutException("invalid passthrough marker in", line(x, inputstring))
             elif c is not None:
                 if c == "\\":
                     index = ""
@@ -1567,6 +1575,7 @@ class processor(object):
         x = 0
         while x <= len(inputstring):
             c = inputstring[x] if x != len(inputstring) else None
+            print(x, c, out)
             if comment is not None:
                 if c is not None and c in nums:
                     comment += c
@@ -1581,7 +1590,7 @@ class processor(object):
                         comment = None
                         x -= 1
                 else:
-                    raise CoconutException("invalid comment marker", line(x, inputstring))
+                    raise CoconutException("invalid comment marker in", line(x, inputstring))
             elif string is not None:
                 if c is not None and c in nums:
                     string += c
@@ -1598,7 +1607,7 @@ class processor(object):
                     else:
                         raise CoconutException("string marker points to comment/passthrough", ref)
                 else:
-                    raise CoconutException("invalid string marker", line(x, inputstring))
+                    raise CoconutException("invalid string marker in", line(x, inputstring))
             elif c is not None:
                 if c == "#":
                     comment = ""
@@ -1857,11 +1866,11 @@ class processor(object):
     def pattern_error(self, original, loc):
         """Constructs a pattern-matching error message."""
         match_line = ascii(clean(self.repl_proc(line(loc, original))))
-        match_err = "pattern-matching failed for " + match_line + " in "
+        match_err_text = "pattern-matching failed for " + match_line + " in "
         return ("if not " + match_check_var + ":\n" + openindent
             + match_err_var + " = __coconut__.MatchError("
-            + self.wrap_str(match_err) + " + __coconut__.ascii(__coconut__.ascii(" + match_to_var + ")))\n"
-            + match_err_var + ".pattern = " + self.wrap_str(match_line) + "\n"
+            + self.wrap_str(match_err_text, unwrap=False) + " + __coconut__.ascii(__coconut__.ascii(" + match_to_var + ")))\n"
+            + match_err_var + ".pattern = " + self.wrap_str(match_line, unwrap=False) + "\n"
             + match_err_var + ".value = " + match_to_var
             + "\nraise " + match_err_var + "\n" + closeindent)
 
