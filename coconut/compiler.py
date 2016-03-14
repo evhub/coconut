@@ -1160,7 +1160,7 @@ class processor(object):
         self.tracing.show = debugger
         self.setup(strict, version)
         self.preprocs = [self.prepare, self.str_proc, self.passthrough_proc, self.ind_proc]
-        self.postprocs = [self.re_ind_proc, self.repl_proc, self.header_proc, self.polish]
+        self.postprocs = [self.reind_proc, self.repl_proc, self.header_proc, self.polish]
         self.bind()
         self.clean()
 
@@ -1515,19 +1515,19 @@ class processor(object):
         self.todebug("skips", list(sorted(self.skips)))
         return out
 
-    def re_ind_proc(self, inputstring, **kwargs):
+    def reind_proc(self, inputstring, **kwargs):
         """Adds back indentation."""
         out = []
         level = 0
         for line in inputstring.splitlines():
             line = line.strip()
-            if not line.startswith("#"):
-                while line.startswith(openindent) or line.startswith(closeindent):
-                    if line[0] == openindent:
-                        level += 1
-                    elif line[0] == closeindent:
-                        level -= 1
-                    line = line[1:]
+            while line.startswith(openindent) or line.startswith(closeindent):
+                if line[0] == openindent:
+                    level += 1
+                elif line[0] == closeindent:
+                    level -= 1
+                line = line[1:]
+            if line and not line.startswith("#"):
                 line = " "*tablen*level + line
             out.append(line)
         return "\n".join(out)
