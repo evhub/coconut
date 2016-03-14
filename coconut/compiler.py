@@ -1875,9 +1875,8 @@ class processor(object):
     def pattern_error(self, original, loc):
         """Constructs a pattern-matching error message."""
         base_line = ascii(clean(self.repl_proc(line(loc, original))))
-        line_wrap = self.wrap_str(base_line[1:-1], base_line[0])
-        repr_line = ascii(base_line)
-        repr_wrap = self.wrap_str(repr_line[1:-1], repr_line[0])
+        line_wrap = self.wrap_passthrough(base_line)
+        repr_wrap = self.wrap_passthrough(ascii(base_line))
         return ("if not " + match_check_var + ":\n" + openindent
             + match_err_var + ' = __coconut__.MatchError("pattern-matching failed for " '
             + repr_wrap + ' " in " + __coconut__.ascii(__coconut__.ascii(' + match_to_var + ")))\n"
