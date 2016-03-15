@@ -92,6 +92,7 @@ class kernel(Kernel):
         """Binds to the runner."""
         if self._runner is None or force:
             self._runner = executor(proc.headers("code"))
+            self._runner.fixpickle()
 
     def _execute(self, code, evaluate=False):
         """Compiles and runs code."""
