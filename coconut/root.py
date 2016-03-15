@@ -43,9 +43,9 @@ chr, str = unichr, unicode
 from future_builtins import *
 from io import open
 class range(object):
-    __doc__ = _coconut_xrange.__doc__
     __slots__ = ("_xrange",)
-    __coconut_is_sliceable_iter__ = True
+    __doc__ = _coconut_xrange.__doc__
+    __coconut_is_lazy__ = True
     def __init__(self, *args):
         self._xrange = _coconut_xrange(*args)
     def __iter__(self):
@@ -67,13 +67,13 @@ class range(object):
                 stop += __coconut__.len(self._xrange)
             if step is None:
                 step = 1
-            return __coconut__.map(self._xrange.__getitem__, __coconut__.range(start, stop, step))
+            return __coconut__.map(self._xrange.__getitem__, self.__class__(start, stop, step))
         else:
             return self._xrange[index]
     def __repr__(self):
-        return __coconut__.ascii(self._xrange)[1:]
+        return __coconut__.repr(self._xrange)[1:]
     def __reduce__(self):
-        return (__coconut__.range, self._xrange.__reduce__()[1])
+        return (self.__class__, self._xrange.__reduce__()[1])
 class int(_coconut_int):
     __slots__ = ()
     __doc__ = _coconut_int.__doc__

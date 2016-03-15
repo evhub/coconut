@@ -356,29 +356,55 @@ class __coconut__(object):
     else:
         import collections.abc as abc'''
             header += r'''
-    IndexError, NameError, _map, _zip, ascii, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, next, object, range, reversed, set, slice, super, tuple = IndexError, NameError, map, zip, ascii, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, next, object, range, reversed, set, slice, super, tuple
+    IndexError, NameError, _map, _zip, ascii, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, repr, reversed, set, slice, super, tuple = IndexError, NameError, map, zip, ascii, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, repr, reversed, set, slice, super, tuple
     class MatchError(Exception):
         """Pattern-matching error."""
     class map(_map):
         __doc__ = map.__doc__
         __slots__ = ("_func", "_iters")
-        __coconut_is_map__ = True
+        __coconut_is_lazy__ = True
         def __new__(cls, function, *iterables):
             m = __coconut__._map.__new__(cls, function, *iterables)
             m._func, m._iters = function, iterables
             return m
+        def __getitem__(self, index):
+            if __coconut__.isinstance(index, __coconut__.slice):
+                return self.__class__(self._func, *(__coconut__.igetitem(i, index) for i in self._iters))
+            else:
+                return self._func(*(__coconut__.igetitem(i, index) for i in self._iters))
+        def __reversed__(self):
+            return self.__class__(self._func, *(__coconut__.reversed(i) for i in self._iters))
+        def __len__(self):
+            return __coconut__.min(*(__coconut__.len(i) for i in self._iters))
+        def __repr__(self):
+            return "map(" + __coconut__.repr(self._func) + ", " + ", ".join((__coconut__.repr(i) for i in self._iters)) + ")"
+        def __reduce__(self):
+            return (self.__class__, __coconut__._map.__reduce__(self)[1])
     class zip(_zip):
         __doc__ = zip.__doc__
         __slots__ = ("_iters",)
-        __coconut_is_zip__ = True
+        __coconut_is_lazy__ = True
         def __new__(cls, *iterables):
             z = __coconut__._zip.__new__(cls, *iterables)
             z._iters = iterables
             return z
+        def __getitem__(self, index):
+            if __coconut__.isinstance(index, __coconut__.slice):
+                return self.__class__(*(__coconut__.igetitem(i, index) for i in self._iters))
+            else:
+                return (__coconut__.igetitem(i, index) for i in self._iters)
+        def __reversed__(self):
+            return self.__class__(*(__coconut__.reversed(i) for i in self._iters))
+        def __len__(self):
+            return __coconut__.min(*(__coconut__.len(i) for i in self._iters))
+        def __repr__(self):
+            return "zip(" + ", ".join((__coconut__.repr(i) for i in self._iters)) + ")"
+        def __reduce__(self):
+            return (self.__class__, __coconut__._zip.__reduce__(self)[1])
     class count(object):
         """count(start, step) returns an infinite iterator starting at start and increasing by step."""
         __slots__ = ("_start", "_step")
-        __coconut_is_sliceable_iter__ = True
+        __coconut_is_lazy__ = True
         def __init__(self, start=0, step=1):
             self._start, self._step = start, step
         def __iter__(self):
@@ -398,17 +424,7 @@ class __coconut__(object):
             return (__coconut__.count, (self._start, self._step))
     @staticmethod
     def igetitem(iterable, index):
-        if __coconut__.hasattr(iterable, "__coconut_is_map__") and iterable.__coconut_is_map__:
-            if __coconut__.isinstance(index, __coconut__.slice):
-                return iterable.__class__(iterable._func, *(__coconut__.igetitem(i, index) for i in iterable._iters))
-            else:
-                return iterable._func(*(__coconut__.igetitem(i, index) for i in iterable._iters))
-        elif __coconut__.hasattr(iterable, "__coconut_is_zip__") and iterable.__coconut_is_zip__:
-            if __coconut__.isinstance(index, __coconut__.slice):
-                return iterable.__class__(*(__coconut__.igetitem(i, index) for i in iterable._iters))
-            else:
-                return (__coconut__.igetitem(i, index) for i in iterable._iters)
-        elif isinstance(iterable, __coconut__.range) or (__coconut__.hasattr(iterable, "__coconut_is_sliceable_iter__") and iterable.__coconut_is_sliceable_iter__):
+        if isinstance(iterable, __coconut__.range) or (__coconut__.hasattr(iterable, "__coconut_is_lazy__") and iterable.__coconut_is_lazy__):
             return iterable[index]
         elif __coconut__.hasattr(iterable, "__getitem__"):
             if __coconut__.isinstance(index, __coconut__.slice):

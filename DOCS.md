@@ -21,7 +21,7 @@
     11. [Pipeline](#pipeline)
     12. [Compose](#compose)
     13. [Chain](#chain)
-    14. [Iterator Slice](#iterator-slice)
+    14. [Iterator Slicing](#iterator-slicing)
     15. [Unicode Alternatives](#unicode-alternatives)
 3. [Keywords](#keywords)
     1. [`data`](#data)
@@ -342,13 +342,13 @@ def N(n=0):
 
 _Can't be done without a complicated iterator comprehension in place of the lazy chaining. See the compiled code for the Python syntax._
 
-### Iterator Slice
+### Iterator Slicing
 
 Coconut uses a `$` sign right after an iterator before a slice to perform iterator slicing. Coconut's iterator slicing works much the same as Python's sequence slicing, and looks much the same as Coconut's partial application, but with brackets instead of parentheses. It has the same precedence as subscription.
 
 Iterator slicing works just like sequence slicing, including support for negative indices and slices, and support for `slice` objects in the same way as can be done with normal slicing. Iterator slicing makes no guarantee, however, that the original iterator passed to it be preserved (to preserve the iterator, use Coconut's [`tee` function](#tee)).
 
-Coconut's iterator slicing is very similar to Python's `itertools.islice`, but unlike `itertools.islice`, Coconut's iterator slicing supports negative indices, and is optimized to play nicely with custom or built-in sequence types as well as Coconut's `map`, `zip`, `range`, and `count` objects, only computing the elements of each that are actually necessary to extract the desired slice.
+Coconut's iterator slicing is very similar to Python's `itertools.islice`, but unlike `itertools.islice`, Coconut's iterator slicing supports negative indices, and is optimized to play nicely with custom or built-in sequence types as well as Coconut's `map`, `zip`, `range`, and `count` objects, only computing the elements of each that are actually necessary to extract the desired slice. This behavior can also be extended to custom objects if they define their `__getitem__` method lazily and set `__coconut_is_lazy__` to `True`.
 
 ##### Example
 
@@ -1238,7 +1238,7 @@ collections.deque(map(print, map(lambda x: x**2, range(10))), maxlen=0)
 
 ### `count`
 
-Coconut provides a modified version of `itertools.count` that supports optimized slicing and iterator slicing as a built-in under the name `count`.
+Coconut provides a modified version of `itertools.count` that supports normal slicing, optimized iterator slicing, `repr`, and `_start` and `_step` attributes as a built-in under the name `count`.
 
 ##### Python Docs
 
@@ -1317,13 +1317,7 @@ _Can't be done without a long decorator definition. The full definition of the d
 
 ### `map`, `zip`, and `range`
 
-Coconut's iterator slicing is optimized to only compute the necessary portions of `map`, `zip`, and `range` objects when slicing them. This same behavior can be added to custom objects if the necessary attributes are defined.
-
-For `map`-like objects, `__coconut_is_map__` must be set to `True` on the class, and `_func` and `_iters` attributes must be defined on the instance. If subclassing `map`, this will be done automatically.
-
-For `zip`-like objects, `__coconut_is_zip__` must be set to `True` on the class, and the `_iters` attribute must be defined on the instance. If subclassing `zip`, this will be done automatically.
-
-For `range`-like objects, `__coconut_is_sliceable_iter__` must be set to `True` on the class or the class must inherit from `range`, and the `__getitem__` method should be defined lazily.
+Coconut's `map`, `zip`, and `range` objects are enhanced versions of their Python equivalents that support normal slicing, optimized iterator slicing (through `__coconut_is_lazy__`), `reversed`, `len`, and `repr`. Additionally, `map` and `zip` objects have added attributes which subclasses can make use of to get at the original arguments to the object—`map` supports `_func` and `_iters` attributes, and `zip` supports the `_iters` attribute.
 
 ### `__coconut_version__`
 
