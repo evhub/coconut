@@ -15,6 +15,8 @@ Specifically, Coconut adds to Python **built-in, syntactical support** for:
 - infix notation
 - pipeline-style programming
 - operator functions
+- tail recursion optimization
+- parallel programming
 
 and much more!
 
@@ -45,5 +47,3 @@ _General questions, concerns, or comments?_
 
 _Want to help contribute to Coconut development?_
     Head over to Coconut's [GitHub](https://github.com/evhub/coconut) for more information.
-
-
