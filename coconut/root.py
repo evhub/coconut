@@ -74,20 +74,18 @@ class range(object):
         return __coconut__.ascii(self._xrange)[1:]
     def __reduce__(self):
         return (__coconut__.range, self._xrange.__reduce__()[1])
-class _coconut_metaint(type):
-    def __instancecheck__(cls, inst):
-        return __coconut__.isinstance(inst, (_coconut_int, _coconut_long))
 class int(_coconut_int):
+    __slots__ = ()
     __doc__ = _coconut_int.__doc__
-    __metaclass__ = _coconut_metaint
-    __slots__ = ()
-class _coconut_metabytes(type):
-    def __instancecheck__(cls, inst):
-        return __coconut__.isinstance(inst, _coconut_str)
+    class __metaclass__(type):
+        def __instancecheck__(cls, inst):
+            return __coconut__.isinstance(inst, (_coconut_int, _coconut_long))
 class bytes(_coconut_str):
-    __doc__ = _coconut_str.__doc__
-    __metaclass__ = _coconut_metabytes
     __slots__ = ()
+    __doc__ = _coconut_str.__doc__
+    class __metaclass__(type):
+        def __instancecheck__(cls, inst):
+            return __coconut__.isinstance(inst, _coconut_str)
     def __new__(cls, *args, **kwargs):
         return _coconut_str.__new__(cls, __coconut__.bytearray(*args, **kwargs))
 def print(*args, **kwargs):

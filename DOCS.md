@@ -56,7 +56,8 @@
     6. [`count`](#count)
     7. [`datamaker`](#datamaker)
     8. [`recursive`](#recursive)
-    9. [`__coconut_version__`](#__coconut_version__)
+    9. [`map`, `zip`, and `range`](#map-zip-and-range)
+    10. [`__coconut_version__`](#__coconut_version__)
 8. [Coconut Utilities](#coconut-utilities)
     1. [Syntax Highlighting](#syntax-highlighting)
     2. [`coconut.convenience`](#coconutconvenience)
@@ -1313,6 +1314,16 @@ def factorial(n, acc=1):
 ###### Python
 
 _Can't be done without a long decorator definition. The full definition of the decorator in Python can be found in the Coconut header._
+
+### `map`, `zip`, and `range`
+
+Coconut's iterator slicing is optimized to only compute the necessary portions of `map`, `zip`, and `range` objects when slicing them. This same behavior can be added to custom objects if the necessary attributes are defined.
+
+For `map`-like objects, `__coconut_is_map__` must be set to `True` on the class, and `_func` and `_iters` attributes must be defined on the instance. If subclassing `map`, this will be done automatically.
+
+For `zip`-like objects, `__coconut_is_zip__` must be set to `True` on the class, and the `_iters` attribute must be defined on the instance. If subclassing `zip`, this will be done automatically.
+
+For `range`-like objects, `__coconut_is_sliceable_iter__` must be set to `True` on the class or the class must inherit from `range`, and the `__getitem__` method should be defined lazily.
 
 ### `__coconut_version__`
 
