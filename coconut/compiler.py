@@ -410,7 +410,7 @@ class __coconut__(object):
                 for item in executor.map(self._func, *self._iters):
                     yield item
         def __repr__(self):
-            return "parallel_" + __coconut__.map.repr(self)
+            return "parallel_" + __coconut__.map.__repr__(self)
     class count(object):
         """count(start, step) returns an infinite iterator starting at start and increasing by step."""
         __slots__ = ("_start", "_step")

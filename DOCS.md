@@ -1334,6 +1334,8 @@ _Can't be done without a long decorator definition. The full definition of the d
 
 Coconut provides a parallel version of `map` under the name `parallel_map`. `parallel_map` makes use of multiple processes, and is therefore often much faster than `map`. Use of `parallel_map` requires `concurrent.futures`, which exits in the Python 3 standard library, but under Python 2 will require `python -m pip install futures` to function. Because `parallel_map` uses multiple processes for its execution, it is necessary that all of its arguments be pickleable.
 
+_Note: Only objects defined at the module level, and not objects defined in the interpreter, are pickleable._
+
 ##### Python Docs
 
 **parallel_map**(_func, *iterables_)
