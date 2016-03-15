@@ -54,9 +54,9 @@
     4. [`tee`](#tee)
     5. [`consume`](#consume)
     6. [`count`](#count)
-    7. [`datamaker`](#datamaker)
-    8. [`recursive`](#recursive)
-    9. [`map`, `zip`, and `range`](#map-zip-and-range)
+    7. [`map` and `zip`](#map-and-zip)
+    8. [`datamaker`](#datamaker)
+    9. [`recursive`](#recursive)
     10. [`__coconut_version__`](#__coconut_version__)
 8. [Coconut Utilities](#coconut-utilities)
     1. [Syntax Highlighting](#syntax-highlighting)
@@ -1265,6 +1265,20 @@ count()$[10**100] |> print
 ###### Python
 _Can't be done quickly without Coconut's iterator slicing, which requires many complicated pieces. The necessary definitions in Python can be found in the Coconut header._
 
+### `map` and `zip`
+
+Coconut's `map` and `zip` objects are enhanced versions of their Python equivalents that support normal slicing, optimized iterator slicing (through `__coconut_is_lazy__`), `reversed`, `len`, `repr`, and have added attributes which subclasses can make use of to get at the original arguments to the object (`map` supports `_func` and `_iters` attributes and `zip` supports the `_iters` attribute).
+
+##### Example
+
+###### Coconut
+```coconut
+len(map((+), range(5), range(6))) == 5
+```
+
+###### Python
+_Can't be done without defining a custom `map` type. The full definition of `map` can be found in the Coconut header._
+
 ### `datamaker`
 
 Coconut provides the `datamaker` function to allow direct access to the base constructor of data types created with the Coconut `data` statement. This is particularly useful when writing alternative constructors for data types by overwriting `__new__`. Equivalent to:
@@ -1314,10 +1328,6 @@ def factorial(n, acc=1):
 ###### Python
 
 _Can't be done without a long decorator definition. The full definition of the decorator in Python can be found in the Coconut header._
-
-### `map`, `zip`, and `range`
-
-Coconut's `map`, `zip`, and `range` objects are enhanced versions of their Python equivalents that support normal slicing, optimized iterator slicing (through `__coconut_is_lazy__`), `reversed`, `len`, and `repr`. Additionally, `map` and `zip` objects have added attributes which subclasses can make use of to get at the original arguments to the object—`map` supports `_func` and `_iters` attributes, and `zip` supports the `_iters` attribute.
 
 ### `__coconut_version__`
 
