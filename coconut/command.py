@@ -79,11 +79,9 @@ class executor(object):
 
     def fixpickle(self):
         """Fixes __coconut__ pickling."""
-        if sys.version_info < (3,):
-            import __builtin__ as builtins
-        else:
-            import builtins
-        builtins.__coconut__ = self.vars["__coconut__"]
+        if sys.version_info >= (3,): # otherwise already done in root
+            import builtins as __coconut__
+        __coconut__.__coconut__ = self.vars["__coconut__"]
 
     def bindvars(self, extras):
         """Adds extra variable bindings."""
