@@ -638,7 +638,9 @@ But since we want to be able to iterate over that plane, we're going to need to 
 
 ### `diagonal_line`
 
-Thus, our first function `diagonal_line(n)` should construct an iterator of all the points, represented as coordinate tuples, in the `n`th diagonal, starting with `(0, 0)` as the `0`th diagonal. Like we said at the start of this case study, this is where we I let go and you take over. Using all the tools of functional programming that Coconut provides, give `diagonal_line` a shot. One extra constaint just for this problem: try not to use a comprehension. Comprehensions are very useful tools, but they're not as powerful as higher-order functions, and Coconut can't optimize them as well. When you're ready to move on, scroll down.
+Thus, our first function `diagonal_line(n)` should construct an iterator of all the points, represented as coordinate tuples, in the `n`th diagonal, starting with `(0, 0)` as the `0`th diagonal. Like we said at the start of this case study, this is where we I let go and you take over. Using all the tools of functional programming that Coconut provides, give `diagonal_line` a shot. When you're ready to move on, scroll down.
+
+One extra challenge here would be to use Coconut's `parallel_map` function, a parallel version of `map` that, thanks to the fact that it uses multiple processes, is often much faster. `parallel_map` requires `concurrent.futures`, which comes by default in Python 3 but not in Python 2, so using `parallel_map` under Python 2 will require running the command `python -m pip install futures`.
 
 Here are some tests that you can use:
 ```coconut
@@ -672,9 +674,9 @@ _Hint: the `n`th diagonal should contain `n+1` elements, so try starting with `r
 
 That wasn't so bad, now was it? Now, let's take a look at my solution:
 ```coconut
-def diagonal_line(n) = range(n+1) |> map$((i) -> (i, n-i))
+def diagonal_line(n) = range(n+1) |> parallel_map$((i) -> (i, n-i))
 ```
-Pretty simple, huh? We take `range(n+1)`, and use `map` to transform it into the right sequence of tuples.
+Pretty simple, huh? We take `range(n+1)`, and use `parallel_map` to transform it into the right sequence of tuples.
 
 ### `linearized_plane`
 
@@ -720,7 +722,7 @@ As you can see, it's a very fundamentally simple solution: just use `::` and rec
 
 ### `vector_field`
 
-Now that we have a function that builds up all the points we need, it's time to turn them into vectors, and to do that we'll define the new function `vector_field()`, which should turn all the tuples in `linearized_plane` into vectors, using the n-vector class we defined earlier.
+Now that we have a function that builds up all the points we need, it's time to turn them into vectors, and to do that we'll define the new function `vector_field()`, which should turn all the tuples in `linearized_plane` into vectors, using the n-vector class we defined earlier. Try making use of `parallel_map` again here.
 
 Tests:
 ```coconut
@@ -754,7 +756,7 @@ _Hint: Remember, the way we defined vector it takes the components as separate a
 
 We're making good progress! Before we move on, check your solution against mine:
 ```coconut
-def vector_field() = linearized_plane() |> map$((xy) -> vector(*xy))
+def vector_field() = linearized_plane() |> parallel_map$((xy) -> vector(*xy))
 ```
 All we're doing is taking our `linearized_plane` and mapping `vector` over it, but making sure to call vector with each element of the tuple as a separate argument.
 
@@ -803,9 +805,9 @@ data vector(pts):
         """Necessary to make scalar multiplication commutative."""
         return self * other
 
-def diagonal_line(n) = range(n+1) |> map$((i) -> (i, n-i))
+def diagonal_line(n) = range(n+1) |> parallel_map$((i) -> (i, n-i))
 def linearized_plane(n=0) = diagonal_line(n) :: linearized_plane(n+1)
-def vector_field() = linearized_plane() |> map$((xy) -> vector(*xy))
+def vector_field() = linearized_plane() |> parallel_map$((xy) -> vector(*xy))
 
 # Test cases:
 diagonal_line(0) `isinstance` (list, tuple) |> print # False (should be an iterator)

@@ -33,7 +33,8 @@ builtins = (
     "count",
     "recursive",
     "datamaker",
-    "consume"
+    "consume",
+    "parallel_map"
     )
 
 operators = (

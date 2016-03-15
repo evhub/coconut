@@ -333,7 +333,7 @@ if _coconut_sys.version_info < (3,):
 else:
     from __coconut__ import py3_map, py3_zip'''
             header += r'''
-from __coconut__ import __coconut__, __coconut_version__, map, zip, reduce, takewhile, dropwhile, tee, count, recursive, datamaker, consume, MatchError
+from __coconut__ import __coconut__, __coconut_version__, map, parallel_map, zip, reduce, takewhile, dropwhile, tee, count, recursive, datamaker, consume, MatchError
 _coconut_sys.path.remove(_coconut_file_path)
 '''
         elif which == "package" or which == "code" or which == "file":
@@ -359,27 +359,6 @@ class __coconut__(object):
     IndexError, NameError, _map, _zip, ascii, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, repr, reversed, set, slice, super, tuple = IndexError, NameError, map, zip, ascii, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, repr, reversed, set, slice, super, tuple
     class MatchError(Exception):
         """Pattern-matching error."""
-    class map(_map):
-        __doc__ = map.__doc__
-        __slots__ = ("_func", "_iters")
-        __coconut_is_lazy__ = True
-        def __new__(cls, function, *iterables):
-            m = __coconut__._map.__new__(cls, function, *iterables)
-            m._func, m._iters = function, iterables
-            return m
-        def __getitem__(self, index):
-            if __coconut__.isinstance(index, __coconut__.slice):
-                return self.__class__(self._func, *(__coconut__.igetitem(i, index) for i in self._iters))
-            else:
-                return self._func(*(__coconut__.igetitem(i, index) for i in self._iters))
-        def __reversed__(self):
-            return self.__class__(self._func, *(__coconut__.reversed(i) for i in self._iters))
-        def __len__(self):
-            return __coconut__.min(*(__coconut__.len(i) for i in self._iters))
-        def __repr__(self):
-            return "map(" + __coconut__.repr(self._func) + ", " + ", ".join((__coconut__.repr(i) for i in self._iters)) + ")"
-        def __reduce__(self):
-            return (self.__class__, __coconut__._map.__reduce__(self)[1])
     class zip(_zip):
         __doc__ = zip.__doc__
         __slots__ = ("_iters",)
@@ -401,6 +380,35 @@ class __coconut__(object):
             return "zip(" + ", ".join((__coconut__.repr(i) for i in self._iters)) + ")"
         def __reduce__(self):
             return (self.__class__, __coconut__._zip.__reduce__(self)[1])
+    class map(_map):
+        __doc__ = map.__doc__
+        __slots__ = ("_func", "_iters")
+        __coconut_is_lazy__ = True
+        def __new__(cls, function, *iterables):
+            m = __coconut__._map.__new__(cls, function, *iterables)
+            m._func, m._iters = function, iterables
+            return m
+        def __getitem__(self, index):
+            if __coconut__.isinstance(index, __coconut__.slice):
+                return self.__class__(self._func, *(__coconut__.igetitem(i, index) for i in self._iters))
+            else:
+                return self._func(*(__coconut__.igetitem(i, index) for i in self._iters))
+        def __reversed__(self):
+            return self.__class__(self._func, *(__coconut__.reversed(i) for i in self._iters))
+        def __len__(self):
+            return __coconut__.min(*(__coconut__.len(i) for i in self._iters))
+        def __repr__(self):
+            return "map(" + __coconut__.repr(self._func) + ", " + ", ".join((__coconut__.repr(i) for i in self._iters)) + ")"
+        def __reduce__(self):
+            return (self.__class__, __coconut__._map.__reduce__(self)[1])
+    class parallel_map(map):
+        """Parallel implementation of map using concurrent.futures; requires arguments to be pickleable."""
+        __slots__ = ()
+        def __iter__(self):
+            from concurrent.futures import ProcessPoolExecutor
+            with ProcessPoolExecutor() as executor:
+                for item in executor.map(self._func, *self._iters):
+                    yield item
     class count(object):
         """count(start, step) returns an infinite iterator starting at start and increasing by step."""
         __slots__ = ("_start", "_step")
@@ -473,7 +481,7 @@ class __coconut__(object):
         """Returns base data constructor of passed data type."""
         return __coconut__.functools.partial(__coconut__.super(data_type, data_type).__new__, data_type)
 
-__coconut_version__, MatchError, map, zip, reduce, takewhile, dropwhile, tee, count, consume, recursive, datamaker = __coconut__.version, __coconut__.MatchError, __coconut__.map, __coconut__.zip, __coconut__.functools.reduce, __coconut__.itertools.takewhile, __coconut__.itertools.dropwhile, __coconut__.itertools.tee, __coconut__.count, __coconut__.consume, __coconut__.recursive, __coconut__.datamaker
+__coconut_version__, MatchError, map, parallel_map, zip, reduce, takewhile, dropwhile, tee, count, consume, recursive, datamaker = __coconut__.version, __coconut__.MatchError, __coconut__.map, __coconut__.parallel_map, __coconut__.zip, __coconut__.functools.reduce, __coconut__.itertools.takewhile, __coconut__.itertools.dropwhile, __coconut__.itertools.tee, __coconut__.count, __coconut__.consume, __coconut__.recursive, __coconut__.datamaker
 '''
         else:
             raise CoconutException("invalid header type", which)

@@ -57,7 +57,8 @@
     7. [`map` and `zip`](#map-and-zip)
     8. [`datamaker`](#datamaker)
     9. [`recursive`](#recursive)
-    10. [`__coconut_version__`](#__coconut_version__)
+    10. [`parallel_map`](#parallel_map)
+    11. [`__coconut_version__`](#__coconut_version__)
 8. [Coconut Utilities](#coconut-utilities)
     1. [Syntax Highlighting](#syntax-highlighting)
     2. [`coconut.convenience`](#coconutconvenience)
@@ -1328,6 +1329,30 @@ def factorial(n, acc=1):
 ###### Python
 
 _Can't be done without a long decorator definition. The full definition of the decorator in Python can be found in the Coconut header._
+
+### `parallel_map`
+
+Coconut provides a parallel version of `map` under the name `parallel_map`. `parallel_map` makes use of multiple processes, and is therefore often much faster than `map`. Use of `parallel_map` requires `concurrent.futures`, which exits in the Python 3 standard library, but under Python 2 will require `python -m pip install futures` to function. Because `parallel_map` uses multiple processes for its execution, it is necessary that all of its arguments be pickleable.
+
+##### Python Docs
+
+**parallel_map**(_func, *iterables_)
+
+Equivalent to `map(func, *iterables)` except _func_ is executed asynchronously and several calls to _func_ may be made concurrently. If a call raises an exception, then that exception will be raised when its value is retrieved from the iterator.
+
+##### Example
+
+###### Coconut
+```coconut
+parallel_map(pow$(2), range(100)) |> tuple |> print
+```
+
+###### Python
+```coc_python
+import concurrent.futures
+with concurrent.futures.ProcessPoolExecutor() as executor:
+    print(tuple(executor.map(pow$(2), range(100))))
+```
 
 ### `__coconut_version__`
 
