@@ -77,6 +77,14 @@ class executor(object):
         if extras is not None:
             self.bindvars(extras)
 
+    def fixpickle(self):
+        """Fixes __coconut__ pickling."""
+        if sys.version_info < (3,):
+            import __builtin__ as builtins
+        else:
+            import builtins
+        builtins.__coconut__ = self.vars["__coconut__"]
+
     def bindvars(self, extras):
         """Adds extra variable bindings."""
         self.vars.update(extras)
@@ -476,9 +484,12 @@ class cli(object):
         """Starts the runner."""
         sys.path.insert(0, os.getcwd())
         if isolate:
+            if self.runner is None:
+                executor(self.proc.headers("code")).fixpickle()
             self.runner = executor(exit=self.exit)
         else:
             self.runner = executor(self.proc.headers("code"), exit=self.exit)
+            self.runner.fixpickle()
 
     def start_jupyter(self, args):
         """Starts Jupyter with the Coconut kernel."""
