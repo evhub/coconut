@@ -325,15 +325,15 @@ _coconut_sys.path.insert(0, _coconut_file_path)'''
 from __coconut__ import py3_map, py3_zip'''
             elif version == "2":
                 header += r'''
-from __coconut__ import py2_chr, py2_filter, py2_hex, py2_input, py2_int, py2_map, py2_oct, py2_open, py2_print, py2_range, py2_raw_input, py2_str, py2_xrange, py2_zip, bytes, chr, filter, hex, input, int, oct, open, print, range, raw_input, str, xrange'''
+from __coconut__ import py2_chr, py2_filter, py2_hex, py2_input, py2_int, py2_map, py2_oct, py2_open, py2_print, py2_range, py2_raw_input, py2_str, py2_xrange, py2_zip, ascii, bytes, chr, filter, hex, input, int, oct, open, print, range, raw_input, str, xrange'''
             else:
                 header += r'''
 if _coconut_sys.version_info < (3,):
-    from __coconut__ import py2_chr, py2_filter, py2_hex, py2_input, py2_int, py2_map, py2_oct, py2_open, py2_print, py2_range, py2_raw_input, py2_str, py2_xrange, py2_zip, bytes, chr, filter, hex, input, int, oct, open, print, range, raw_input, str, xrange
+    from __coconut__ import py2_chr, py2_filter, py2_hex, py2_input, py2_int, py2_map, py2_oct, py2_open, py2_print, py2_range, py2_raw_input, py2_str, py2_xrange, py2_zip, ascii, bytes, chr, filter, hex, input, int, oct, open, print, range, raw_input, str, xrange
 else:
     from __coconut__ import py3_map, py3_zip'''
             header += r'''
-from __coconut__ import __coconut__, __coconut_version__, map, parallel_map, zip, reduce, takewhile, dropwhile, tee, count, recursive, datamaker, consume, MatchError
+from __coconut__ import __coconut__, __coconut_version__, MatchError, map, parallel_map, zip, reduce, takewhile, dropwhile, tee, count, recursive, datamaker, consume
 _coconut_sys.path.remove(_coconut_file_path)
 '''
         elif which == "package" or which == "code" or which == "file":
@@ -483,7 +483,7 @@ class __coconut__(object):
         """Returns base data constructor of passed data type."""
         return __coconut__.functools.partial(__coconut__.super(data_type, data_type).__new__, data_type)
 
-__coconut_version__, MatchError, map, parallel_map, zip, reduce, takewhile, dropwhile, tee, count, consume, recursive, datamaker = __coconut__.version, __coconut__.MatchError, __coconut__.map, __coconut__.parallel_map, __coconut__.zip, __coconut__.functools.reduce, __coconut__.itertools.takewhile, __coconut__.itertools.dropwhile, __coconut__.itertools.tee, __coconut__.count, __coconut__.consume, __coconut__.recursive, __coconut__.datamaker
+__coconut_version__, MatchError, map, parallel_map, zip, reduce, takewhile, dropwhile, tee, count, recursive, datamaker, consume = __coconut__.version, __coconut__.MatchError, __coconut__.map, __coconut__.parallel_map, __coconut__.zip, __coconut__.functools.reduce, __coconut__.itertools.takewhile, __coconut__.itertools.dropwhile, __coconut__.itertools.tee, __coconut__.count, __coconut__.recursive, __coconut__.datamaker, __coconut__.consume
 '''
         else:
             raise CoconutException("invalid header type", which)
