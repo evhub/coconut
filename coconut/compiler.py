@@ -2413,12 +2413,11 @@ class processor(object):
     base_suite = Forward()
     classlist = Forward()
 
-    classargslist = addspace(OneOrMore(condense(test + default + comma)) + Optional(test + default))
     classlist_ref = Optional(
         lparen.suppress() + rparen.suppress()
         | Group(
             lparen.suppress() + testlist("tests") + rparen.suppress()
-            | lparen.suppress() + classargslist("args") + rparen.suppress()
+            | lparen.suppress() + itemlist(test + default, comma)("args") + rparen.suppress()
             )
         )
     classdef = condense(addspace(Keyword("class") - name) + classlist + suite)
