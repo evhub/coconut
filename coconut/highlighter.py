@@ -111,7 +111,8 @@ class coclexer(Python3Lexer):
         (r"(?<!\.)MatchError\b", Name.Exception)
     ]
     magicvars = [
-        (r"(?<!\.)__coconut_version__\b", Name.Variable.Magic)
+        (r"(?<!\.)__coconut_version__\b", Name.Variable.Magic),
+        (r"__coconut_is_lazy__\b", Name.Variable.Magic)
     ]
     if "magicvars" in tokens:
         tokens["magicvars"] = tokens["magicvars"] + magicvars
