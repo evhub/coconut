@@ -33,17 +33,9 @@ which will give you access to all the features of the Coconut command-line utili
 - **interpreting** Coconut code on-the-fly, and
 - hooking into existing Python applications like **IPython / Jupyter**.
 
-_Ready to get started?_
-    Head over to the Coconut **[tutorial](http://coconut.readthedocs.org/en/master/HELP.html)** to start enhancing your Python now.
-
-_Looking for information on a specific feature?_
-    Coconut's extensive **[documentation](http://coconut.readthedocs.org/en/master/DOCS.html)** has you covered.
-
-_Having trouble?_
-    [Create a new issue](https://github.com/evhub/coconut/issues/new) detailing the problem and it will be addressed as soon as possible.
-
-_General questions, concerns, or comments?_
-    Ask around at Coconut's [Gitter](https://gitter.im/evhub/coconut), a GitHub-integrated chatroom for Coconut developers.
-
-_Want to help contribute to Coconut development?_
-    Head over to Coconut's [GitHub](https://github.com/evhub/coconut) for more information.
+Ready to get started? Here are some links to help you out:
+- [Coconut's **tutorial**](http://coconut.readthedocs.org/en/master/HELP.html) will guide you through the process of starting to enhance your Python with Coconut in a straightforward, easy-to-follow way.
+- [Coconut's **documentation**](http://coconut.readthedocs.org/en/master/DOCS.html) is an extensive catalog of information on all of Coconut's features for whenever you see something that you want more information about.
+- [The Coconut FAQ](http://coconut.readthedocs.org/en/master/FAQ.html) should hopefully answer any questions you might have about who Coconut is built for and whether or not you should use it.
+- [Creating a new issue](https://github.com/evhub/coconut/issues/new) is the best way for you to get help if you're having a problem with Coconut—just detail the problem in the issue and it will be addressed as soon as possible.
+- [Coconut's chatroom](https://gitter.im/evhub/coconut) is a great place if you want to pose any general questions, concerns, or comments you have about Coconut to other Coconut developers.
