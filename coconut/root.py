@@ -108,7 +108,7 @@ def xrange(*args):
 if _coconut_sys.version_info < (2, 7):
     import functools as _coconut_functools, copy_reg as _coconut_copy_reg
     def _coconut_new_partial(func, args, keywords):
-        return _coconut_functools.partial(func, *args, **keywords)
+        return _coconut_functools.partial(func, *(args if args is not None else ()), **(keywords if keywords is not None else {}))
     _coconut_copy_reg.constructor(_coconut_new_partial)
     def _coconut_reduce_partial(self):
         return (_coconut_new_partial, (self.func, self.args, self.keywords))
