@@ -39,9 +39,7 @@ author = "Evan Hubinger"
 version = VERSION_TAG
 
 master_doc = 'README'
-htmlhelp_basename = "coconutdoc"
-
+source_suffix = [".rst", ".md"]
 source_parsers = {
     ".md": CommonMarkParser
 }
-source_suffix = [".rst", ".md"]
