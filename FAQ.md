@@ -4,12 +4,13 @@
 
 1. [If I'm already perfectly happy with Python, why should I learn Coconut?](#if-im-already-perfectly-happy-with-python-why-should-i-learn-coconut)
 2. [I don't like functional programming, should I still use Coconut?](#i-dont-like-functional-programming-should-i-still-use-coconut)
-3. [I don't know Python very well, should I try to learn Coconut?](#i-dont-know-python-very-well-should-i-try-to-learn-coconut)
-4. [Why isn't Coconut purely functional?](#why-isnt-coconut-purely-functional)
-5. [Won't a spin-off language like Coconut be bad for the Python community?](#wont-a-spin-off-language-like-coconut-be-bad-for-the-python-community)
-6. [I want to contribute to Coconut, how do I get started?](#i-want-to-contribute-to-coconut-how-do-i-get-started)
-7. [Why the name Coconut?](#why-the-name-coconut)
-8. [Who developed Coconut?](#who-developed-coconut)
+3. [I've never done functional programming before, should I still try to learn Coconut?](#ive-never-done-functional-programming-before-should-i-still-try-to-learn-coconut)
+4. [I don't know Python very well, should I still try to learn Coconut?](#i-dont-know-python-very-well-should-i-still-try-to-learn-coconut)
+5. [Why isn't Coconut purely functional?](#why-isnt-coconut-purely-functional)
+6. [Won't a spin-off language like Coconut be bad for the Python community?](#wont-a-spin-off-language-like-coconut-be-bad-for-the-python-community)
+7. [I want to contribute to Coconut, how do I get started?](#i-want-to-contribute-to-coconut-how-do-i-get-started)
+8. [Why the name Coconut?](#why-the-name-coconut)
+9. [Who developed Coconut?](#who-developed-coconut)
 
 <!-- /MarkdownTOC -->
 
@@ -19,15 +20,19 @@ You're exactly the person Coconut was built for! Coconut lets you keep doing the
 
 ### I don't like functional programming, should I still use Coconut?
 
-Yes, absolutely! While Coconut is great for functional programming, it also has a bunch of other awesome features as well, including the ability to compile Python 3 code into universal Python code that will run the same on _any version_. And that's not even mentioning all of the features like pattern-matching and destructuring assignment with utility extending far beyond just functional programming.
+Definitely! While Coconut is great for functional programming, it also has a bunch of other awesome features as well, including the ability to compile Python 3 code into universal Python code that will run the same on _any version_. And that's not even mentioning all of the features like pattern-matching and destructuring assignment with utility extending far beyond just functional programming. That being said, I'd highly recommend you give functional programming a shot, and since Coconut isn't purely functional, it's a great introduction to the functional style.
 
-### I don't know Python very well, should I try to learn Coconut?
+### I've never done functional programming before, should I still try to learn Coconut?
+
+Yes, absolutely! Coconut's [tutorial](http://coconut.readthedocs.org/en/master/HELP.html) assumes absolutely no prior knowledge of functional programming, only Python. Because Coconut is not a purely functional programming language, and all valid Python is valid Coconut, Coconut is a great introduction to functional programming. If you learn Coconut, you'll be able to try out a new functional style of programming without having to abandon all the Python you already know and love.
+
+### I don't know Python very well, should I still try to learn Coconut?
 
 Maybe. If you only know the very basics of Python, but are also very familiar with functional programming, then definitely—Coconut will let you continue to use all your favorite tools of functional programming while you make your way through learning Python. If you're not very familiar either with Python, or with functional programming, then you may be better making your way through a Python tutorial before you try learning Coconut. That being said, using Coconut to compile your pure Python code might still be very helpful for you, since it will alleviate having to worry about version incompatibility.
 
 ### Why isn't Coconut purely functional?
 
-Coconut isn't purely functional for the same reason Python was never purely imperative—different problems demand different approaches. Coconut is built to be fundamentally useful, and that means not imposing constraints about what style the programmer should be using. That being said, Coconut is built specifically to work really well when programming in a functional style, which means if you want to write all your code purely functionally, Coconut will make it a smooth experience, and allow you to have good-looking code to show for it.
+The short answer is that Python isn't purely functional, and all valid Python is valid Coconut. The long answer is that Coconut isn't purely functional for the same reason Python was never purely imperative—different problems demand different approaches. Coconut is built to be _useful_, and that means not imposing constraints about what style the programmer is allowed to use. That being said, Coconut is built specifically to work nicely when programming in a functional style, which means if you want to write all your code purely functionally, Coconut will make it a smooth experience, and allow you to have good-looking code to show for it.
 
 ### Won't a spin-off language like Coconut be bad for the Python community?
 
