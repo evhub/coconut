@@ -2529,7 +2529,7 @@ class processor(object):
     async_funcdef = Forward()
     async_block = Forward()
     name_funcdef = condense(name + parameters)
-    op_funcdef_arg = condense(lparen.suppress() + tfpdef + Optional(default) + rparen.suppress())
+    op_funcdef_arg = name | condense(lparen.suppress() + tfpdef + Optional(default) + rparen.suppress())
     op_funcdef_name = backtick.suppress() + name + backtick.suppress()
     op_funcdef = attach(Group(Optional(op_funcdef_arg)) + op_funcdef_name + Group(Optional(op_funcdef_arg)), op_funcdef_handle)
     return_typedef_ref = addspace(arrow + test)

@@ -871,10 +871,10 @@ Coconut allows for infix function calling, where a function is surrounded by bac
 
 Coconut also supports infix function definition to make definining functions that are intended for infix usage simpler. The syntax for infix function definition is
 ```coconut
-def (<arg>) `<name>` (<arg>):
+def <arg> `<name>` <arg>:
     <body>
 ```
-where `<name>` is the name of the function, the `<arg>`s are the function arguments, and `<body>` is the body of the function.
+where `<name>` is the name of the function, the `<arg>`s are the function arguments, and `<body>` is the body of the function. If an `<arg>` includes a default, the `<arg>` must be surrounded in parentheses.
 
 _Note: Infix function definition can be combined with shorthand and pattern-matching function definition._
 
@@ -886,7 +886,7 @@ A common idiom in functional programming is to write functions that are intended
 
 ###### Coconut
 ```coconut
-def (a) `mod` (b) = a % b
+def a `mod` b = a % b
 (x `mod` 2) `print`
 ```
 
