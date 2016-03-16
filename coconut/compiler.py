@@ -325,11 +325,11 @@ _coconut_sys.path.insert(0, _coconut_file_path)'''
 from __coconut__ import py3_map, py3_zip'''
             elif version == "2":
                 header += r'''
-from __coconut__ import py2_chr, py2_filter, py2_hex, py2_input, py2_int, py2_map, py2_oct, py2_open, py2_print, py2_range, py2_raw_input, py2_str, py2_xrange, py2_zip, ascii, bytes, chr, filter, hex, input, int, oct, open, print, range, raw_input, str, xrange'''
+from __coconut__ import py2_chr, py2_filter, py2_hex, py2_input, py2_int, py2_map, py2_oct, py2_open, py2_print, py2_range, py2_raw_input, py2_str, py2_xrange, py2_zip, bytes, chr, filter, hex, input, int, oct, open, print, range, raw_input, str, xrange'''
             else:
                 header += r'''
 if _coconut_sys.version_info < (3,):
-    from __coconut__ import py2_chr, py2_filter, py2_hex, py2_input, py2_int, py2_map, py2_oct, py2_open, py2_print, py2_range, py2_raw_input, py2_str, py2_xrange, py2_zip, ascii, bytes, chr, filter, hex, input, int, oct, open, print, range, raw_input, str, xrange
+    from __coconut__ import py2_chr, py2_filter, py2_hex, py2_input, py2_int, py2_map, py2_oct, py2_open, py2_print, py2_range, py2_raw_input, py2_str, py2_xrange, py2_zip, bytes, chr, filter, hex, input, int, oct, open, print, range, raw_input, str, xrange
 else:
     from __coconut__ import py3_map, py3_zip'''
             header += r'''
@@ -356,7 +356,7 @@ class __coconut__(object):
     else:
         import collections.abc as abc'''
             header += r'''
-    IndexError, NameError, _map, _zip, ascii, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, repr, reversed, set, slice, super, tuple = IndexError, NameError, map, zip, ascii, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, repr, reversed, set, slice, super, tuple
+    IndexError, NameError, _map, _zip, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, repr, reversed, set, slice, super, tuple = IndexError, NameError, map, zip, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, repr, reversed, set, slice, super, tuple
     class MatchError(Exception):
         """Pattern-matching error."""
     class zip(_zip):
@@ -1942,7 +1942,7 @@ class processor(object):
         repr_wrap = self.wrap_str_of(ascii(base_line))
         return ("if not " + match_check_var + ":\n" + openindent
             + match_err_var + ' = __coconut__.MatchError("pattern-matching failed for " '
-            + repr_wrap + ' " in " + __coconut__.ascii(__coconut__.ascii(' + match_to_var + ")))\n"
+            + repr_wrap + ' " in " + __coconut__.repr(__coconut__.repr(' + match_to_var + ")))\n"
             + match_err_var + ".pattern = " + line_wrap + "\n"
             + match_err_var + ".value = " + match_to_var
             + "\nraise " + match_err_var + "\n" + closeindent)
