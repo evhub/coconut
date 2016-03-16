@@ -517,6 +517,16 @@ def count_end(teststr, testchar):
         x -= 1
     return count
 
+def change(inputstring):
+    """Determines the parenthetical change of level."""
+    count = 0
+    for c in inputstring:
+        if c in downs:
+            count -= 1
+        elif c in ups:
+            count += 1
+    return count
+
 def attach(item, action):
     """Attaches a parse action to an item."""
     return item.copy().addParseAction(action)
@@ -1370,7 +1380,8 @@ class processor(object):
 
     def should_indent(self, code):
         """Determines whether the next line should be indented."""
-        return code.split("#", 1)[0].rstrip().endswith(":")
+        last = code.splitlines()[-1].split("#", 1)[0].rstrip()
+        return last.endswith(":") or change(last) < 0
 
     def parse(self, inputstring, parser, preargs, postargs):
         """Uses the parser to parse the inputstring."""
@@ -1500,7 +1511,7 @@ class processor(object):
         for x in range(0, len(inputstring)):
             c = inputstring[x]
             if hold is not None:
-                count += self.change(c)
+                count += change(c)
                 if count >= 0 and c == hold:
                     out.append(self.wrap_passthrough(found, multiline))
                     found = None
@@ -1556,16 +1567,6 @@ class processor(object):
                     warn(self.make_err(CoconutWarning, "found mixing of tabs and spaces", inputstring, x))
         return count
 
-    def change(self, inputstring):
-        """Determines the parenthetical change of level."""
-        count = 0
-        for c in inputstring:
-            if c in downs:
-                count -= 1
-            elif c in ups:
-                count += 1
-        return count
-
     def ind_proc(self, inputstring, **kwargs):
         """Processes indentation."""
         lines = inputstring.splitlines()
@@ -1619,7 +1620,7 @@ class processor(object):
                 elif current != check:
                     raise self.make_err(CoconutSyntaxError, "illegal dedent to unused indentation level", line, 0, self.adjust(ln))
                 new.append(line)
-            count += self.change(line)
+            count += change(line)
         self.skips = skips
         if new:
             last = new[-1].split("#", 1)[0].rstrip()
@@ -1824,7 +1825,7 @@ class processor(object):
             else:
                 return "(__coconut__.object)"
         elif len(tokens) == 1 and len(tokens[0]) == 1:
-            if "names" in tokens[0]:
+            if "tests" in tokens[0]:
                 return "(" + tokens[0][0] + ")"
             elif "args" in tokens[0]:
                 if self.version == "3":
@@ -2209,20 +2210,6 @@ class processor(object):
     test_nochain = Forward()
     test_nocond = Forward()
 
-    typedef = Forward()
-    typedef_ref = addspace(condense(name + colon) + test)
-    tfpdef = typedef | name
-    callarg = test
-    default = Optional(condense(equals + test))
-
-    argslist = Optional(itemlist(condense(dubstar + tfpdef | star + tfpdef | tfpdef + default), comma))
-    varargslist_req = itemlist(condense(dubstar + name | star + name | name + default), comma)
-    varargslist = Optional(varargslist_req)
-    callargslist = Optional(attach(addspace(test + comp_for), add_paren_handle)
-        | itemlist(condense(dubstar + callarg | star + callarg | callarg + default), comma))
-
-    parameters = condense(lparen + argslist + rparen)
-
     testlist = itemlist(test, comma)
     multi_testlist = addspace(OneOrMore(condense(test + comma)) + Optional(test))
 
@@ -2234,44 +2221,57 @@ class processor(object):
     dict_item = condense(lbrace + Optional(itemlist(addspace(condense(test + colon) + test), comma)) + rbrace)
     test_expr = yield_expr | testlist
 
-    op_atom = condense(
-        lparen + (
-            fixto(pipeline, "lambda x, f: f(x)")
-            | fixto(starpipe, "lambda xs, f: f(*xs)")
-            | fixto(backpipe, "lambda f, x: f(x)")
-            | fixto(backstarpipe, "lambda f, xs: f(*xs)")
-            | fixto(dotdot, "lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs))")
-            | fixto(Keyword("and"), "lambda a, b: a and b")
-            | fixto(Keyword("or"), "lambda a, b: a or b")
-            | fixto(minus, "lambda *args: __coconut__.operator.__neg__(*args) if len(args) < 2 else __coconut__.operator.__sub__(*args)")
-        ) + rparen | lparen.suppress() + (
-            fixto(dot, "__coconut__.getattr")
-            | fixto(dubcolon, "__coconut__.itertools.chain")
-            | fixto(dollar, "__coconut__.functools.partial")
-            | fixto(exp_dubstar, "__coconut__.operator.__pow__")
-            | fixto(mul_star, "__coconut__.operator.__mul__")
-            | fixto(div_dubslash, "__coconut__.operator.__floordiv__")
-            | fixto(div_slash, "__coconut__.operator.__truediv__")
-            | fixto(percent, "__coconut__.operator.__mod__")
-            | fixto(plus, "__coconut__.operator.__add__")
-            | fixto(amp, "__coconut__.operator.__and__")
-            | fixto(caret, "__coconut__.operator.__xor__")
-            | fixto(bar, "__coconut__.operator.__or__")
-            | fixto(lshift, "__coconut__.operator.__lshift__")
-            | fixto(rshift, "__coconut__.operator.__rshift__")
-            | fixto(lt, "__coconut__.operator.__lt__")
-            | fixto(gt, "__coconut__.operator.__gt__")
-            | fixto(eq, "__coconut__.operator.__eq__")
-            | fixto(le, "__coconut__.operator.__le__")
-            | fixto(ge, "__coconut__.operator.__ge__")
-            | fixto(ne, "__coconut__.operator.__ne__")
-            | fixto(tilde, "__coconut__.operator.__inv__")
-            | fixto(matrix_at, "__coconut__.operator.__matmul__")
-            | fixto(Keyword("not"), "__coconut__.operator.__not__")
-            | fixto(Keyword("is"), "__coconut__.operator.is_")
-            | fixto(Keyword("in"), "__coconut__.operator.__contains__")
-        ) + rparen.suppress()
+    op_item = (
+        fixto(pipeline, "(lambda x, f: f(x))")
+        | fixto(starpipe, "(lambda xs, f: f(*xs))")
+        | fixto(backpipe, "(lambda f, x: f(x))")
+        | fixto(backstarpipe, "(lambda f, xs: f(*xs))")
+        | fixto(dotdot, "(lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)))")
+        | fixto(Keyword("and"), "(lambda a, b: a and b)")
+        | fixto(Keyword("or"), "(lambda a, b: a or b)")
+        | fixto(minus, "(lambda *args: __coconut__.operator.__neg__(*args) if len(args) < 2 else __coconut__.operator.__sub__(*args))")
+        | fixto(dot, "__coconut__.getattr")
+        | fixto(dubcolon, "__coconut__.itertools.chain")
+        | fixto(dollar, "__coconut__.functools.partial")
+        | fixto(exp_dubstar, "__coconut__.operator.__pow__")
+        | fixto(mul_star, "__coconut__.operator.__mul__")
+        | fixto(div_dubslash, "__coconut__.operator.__floordiv__")
+        | fixto(div_slash, "__coconut__.operator.__truediv__")
+        | fixto(percent, "__coconut__.operator.__mod__")
+        | fixto(plus, "__coconut__.operator.__add__")
+        | fixto(amp, "__coconut__.operator.__and__")
+        | fixto(caret, "__coconut__.operator.__xor__")
+        | fixto(bar, "__coconut__.operator.__or__")
+        | fixto(lshift, "__coconut__.operator.__lshift__")
+        | fixto(rshift, "__coconut__.operator.__rshift__")
+        | fixto(lt, "__coconut__.operator.__lt__")
+        | fixto(gt, "__coconut__.operator.__gt__")
+        | fixto(eq, "__coconut__.operator.__eq__")
+        | fixto(le, "__coconut__.operator.__le__")
+        | fixto(ge, "__coconut__.operator.__ge__")
+        | fixto(ne, "__coconut__.operator.__ne__")
+        | fixto(tilde, "__coconut__.operator.__inv__")
+        | fixto(matrix_at, "__coconut__.operator.__matmul__")
+        | fixto(Keyword("not"), "__coconut__.operator.__not__")
+        | fixto(Keyword("is"), "__coconut__.operator.is_")
+        | fixto(Keyword("in"), "__coconut__.operator.__contains__")
     )
+    op_atom = lparen.suppress() + op_item + rparen.suppress()
+
+    typedef = Forward()
+    typedef_ref = addspace(condense(name + colon) + test)
+    tfpdef = typedef | name
+    callarg = test
+    default = Optional(condense(equals + test))
+
+    argslist = Optional(itemlist(condense(dubstar + tfpdef | star + tfpdef | tfpdef + default), comma))
+    varargslist = Optional(itemlist(condense(dubstar + name | star + name | name + default), comma))
+    callargslist = Optional(
+        attach(addspace(test + comp_for), add_paren_handle)
+        | itemlist(condense(dubstar + callarg | star + callarg | callarg + default), comma)
+        | op_item
+        )
+    parameters = condense(lparen + argslist + rparen)
 
     testlist_comp = addspace(test + comp_for) | testlist
     list_comp = condense(lbrack + Optional(testlist_comp) + rbrack)
@@ -2413,7 +2413,14 @@ class processor(object):
     base_suite = Forward()
     classlist = Forward()
 
-    classlist_ref = Optional(lparen.suppress() + Optional(Group(itemlist(name, comma)("names") ^ varargslist_req("args"))) + rparen.suppress())
+    classargslist = addspace(OneOrMore(condense(test + default + comma)) + Optional(test + default))
+    classlist_ref = Optional(
+        lparen.suppress() + rparen.suppress()
+        | Group(
+            lparen.suppress() + testlist("tests") + rparen.suppress()
+            | lparen.suppress() + classargslist("args") + rparen.suppress()
+            )
+        )
     classdef = condense(addspace(Keyword("class") - name) + classlist + suite)
     comp_iter = Forward()
     comp_for <<= addspace(Keyword("for") + assignlist + Keyword("in") + test_item + Optional(comp_iter))
@@ -2558,7 +2565,7 @@ class processor(object):
 
     simple_decorator = condense(dotted_name + Optional(lparen + callargslist + rparen))("simple")
     complex_decorator = test("complex")
-    decorators = attach(OneOrMore(at.suppress() - Group(simple_decorator | complex_decorator) - newline.suppress()), decorator_handle)
+    decorators = attach(OneOrMore(at.suppress() - Group(simple_decorator ^ complex_decorator) - newline.suppress()), decorator_handle)
     decorated = condense(decorators + (
         classdef
         | datadef

@@ -437,9 +437,13 @@ class cli(object):
 
     def handle(self, code):
         """Compiles Coconut interpreter input."""
-        try:
-            compiled = self.proc.parse_block(code)
-        except CoconutException:
+        compiled = None
+        if not self.proc.should_indent(code):
+            try:
+                compiled = self.proc.parse_block(code)
+            except CoconutException:
+                pass
+        if compiled is None:
             while True:
                 line = self.prompt_with(self.moreprompt)
                 if line is None:
@@ -452,7 +456,6 @@ class cli(object):
                 compiled = self.proc.parse_block(code)
             except CoconutException:
                 printerr(get_error(self.indebug()))
-                return None
         return compiled
 
     def execute(self, compiled=None, error=True, path=None, isolate=False):

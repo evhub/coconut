@@ -218,15 +218,13 @@ Note that functions created with lambda forms cannot contain statements or annot
 
 ###### Coconut
 ```coconut
-pairs = zip(range(0, 10), range(10, 20))
-dubsums = map((x, y) -> 2*(x+y), pairs)
+dubsums = map((x, y) -> 2*(x+y), range(0, 10), range(10, 20))
 dubsums |> list |> print
 ```
 
 ###### Python
 ```coc_python
-pairs = zip(range(0, 10), range(10, 20))
-dubsums = map(lambda x, y: 2*(x+y), pairs)
+dubsums = map(lambda x, y: 2*(x+y), range(0, 10), range(10, 20))
 print(list(dubsums))
 ```
 
@@ -266,7 +264,7 @@ expnums |> list |> print
 ```coc_python
 import functools
 expnums = map(functools.partial(pow, 2), range(5))
-expnums |> list |> print
+print(list(expnums))
 ```
 
 ### Pipeline
@@ -448,7 +446,7 @@ class vector(collections.namedtuple("vector", "x, y")):
 v = vector(3, 4)
 print(v)
 print(abs(v))
-v.x = 2 # throws an AttributeError
+v.x = 2
 ```
 
 ### `match`
@@ -754,12 +752,12 @@ An imaginary literal yields a complex number with a real part of 0.0. Complex nu
 
 ###### Coconut
 ```coconut
-3 + 4i |> abs
+3 + 4i |> abs |> print
 ```
 
 ###### Python
 ```coc_python
-abs(3 + 4j)
+print(abs(3 + 4j))
 ```
 
 ### Underscore Seperators
@@ -782,7 +780,7 @@ Coconut allows for one underscore between digits and after base specifiers in nu
 
 ### Operator Functions
 
-Coconut uses a simple operator function short-hand: surround an operator with parentheses to retrieve its function.
+Coconut uses a simple operator function short-hand: surround an operator with parentheses to retrieve its function. Similarly to iterator comprehensions, if the operator function is the only argument to a function, the parentheses of the function call can also serve as the parentheses for the operator function.
 
 ##### Rationale
 
@@ -830,15 +828,13 @@ A very common thing to do in functional programming is to make use of function v
 
 ###### Coconut
 ```coconut
-pairs = zip(range(0, 10), range(10, 20))
-map((+), pairs) |> print
+(range(0, 5), range(5, 10)) |*> map$(+) |> list |> print
 ```
 
 ###### Python
 ```coc_python
 import operator
-pairs = zip(range(0, 10), range(10, 20))
-print(map(operator.__add__, pairs))
+print(list(map(operator.__add__, range(0, 5), range(5, 10))))
 ```
 
 ### Shorthand Functions
@@ -875,7 +871,7 @@ Coconut allows for infix function calling, where a function is surrounded by bac
 
 Coconut also supports infix function definition to make definining functions that are intended for infix usage simpler. The syntax for infix function definition is
 ```coconut
-def <arg> `<name>` <arg>:
+def (<arg>) `<name>` (<arg>):
     <body>
 ```
 where `<name>` is the name of the function, the `<arg>`s are the function arguments, and `<body>` is the body of the function.
@@ -890,7 +886,7 @@ A common idiom in functional programming is to write functions that are intended
 
 ###### Coconut
 ```coconut
-def a `mod` b = a % b
+def (a) `mod` (b) = a % b
 (x `mod` 2) `print`
 ```
 
@@ -961,6 +957,8 @@ If a destructuring assignment statement fails, then instead of continuing on as 
 def last_two(l):
     _ + [a, b] = l
     return a, b
+
+[0,1,2,3] |> last_two |> print
 ```
 
 ###### Python
@@ -1093,8 +1091,8 @@ Apply _function_ of two arguments cumulatively to the items of _sequence_, from 
 
 ###### Coconut
 ```coconut
-prod = reduce$((*))
-range(10) |> prod |> list |> print
+prod = reduce$(*)
+range(1, 10) |> prod |> print
 ```
 
 ###### Python
@@ -1102,12 +1100,12 @@ range(10) |> prod |> list |> print
 import operator
 import functools
 prod = functools.partial(functools.reduce, operator.__mul__)
-print(list(prod(range(10))))
+print(prod(range(1, 10)))
 ```
 
 ### `takewhile`
 
-Coconut provides `functools.takewhile` as a built-in under the name `takewhile`.
+Coconut provides `itertools.takewhile` as a built-in under the name `takewhile`.
 
 ##### Python Docs
 
@@ -1133,13 +1131,13 @@ negatives = takewhile(numiter, (x) -> x<0)
 
 ###### Python
 ```coc_python
-import functools
-negatives = functools.takewhile(numiter, lambda x: x<0)
+import itertools
+negatives = itertools.takewhile(numiter, lambda x: x<0)
 ```
 
 ### `dropwhile`
 
-Coconut provides `functools.dropwhile` as a built-in under the name `dropwhile`.
+Coconut provides `itertools.dropwhile` as a built-in under the name `dropwhile`.
 
 ##### Python Docs
 
@@ -1167,8 +1165,8 @@ positives = dropwhile(numiter, (x) -> x<0)
 
 ###### Python
 ```coc_python
-import functools
-positives = functools.dropwhile(numiter, lambda x: x<0)
+import itertools
+positives = itertools.dropwhile(numiter, lambda x: x<0)
 ```
 
 ### `tee`
@@ -1274,7 +1272,7 @@ Coconut's `map` and `zip` objects are enhanced versions of their Python equivale
 
 ###### Coconut
 ```coconut
-len(map((+), range(5), range(6))) == 5
+map((+), range(5), range(6)) |> len |> print
 ```
 
 ###### Python
@@ -1346,14 +1344,14 @@ Equivalent to `map(func, *iterables)` except _func_ is executed asynchronously a
 
 ###### Coconut
 ```coconut
-parallel_map(pow$(2), range(100)) |> tuple |> print
+parallel_map(pow$(2), range(100)) |> list |> print
 ```
 
 ###### Python
 ```coc_python
 import concurrent.futures
 with concurrent.futures.ProcessPoolExecutor() as executor:
-    print(tuple(executor.map(pow$(2), range(100))))
+    print(list(executor.map(pow$(2), range(100))))
 ```
 
 ### `__coconut_version__`
