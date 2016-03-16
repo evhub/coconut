@@ -4,6 +4,7 @@ Coconut_
 .. toctree::
    :maxdepth: 3
 
+   FAQ
    HELP
    DOCS
 
