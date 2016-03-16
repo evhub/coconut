@@ -61,6 +61,8 @@
     11. [`__coconut_version__`](#__coconut_version__)
 8. [Coconut Utilities](#coconut-utilities)
     1. [Syntax Highlighting](#syntax-highlighting)
+        1. [SublimeText](#sublimetext)
+        2. [Pygments](#pygments)
     2. [`coconut.convenience`](#coconutconvenience)
         1. [`parse`](#parse)
         2. [`setup`](#setup)
@@ -1362,7 +1364,25 @@ Coconut provides the built-in double-underscore constant variable `__coconut_ver
 
 ### Syntax Highlighting
 
-When Coconut is installed, it will automatically add the `coconut` [pygments](http://pygments.org/) lexer, which this documentation uses for its syntax highlighting. This means that if your text editor supports pygments, you should be able to tell it to highlight all `.coc` files using that lexer. It is recommended, if your text editor doesn't have pygments support, that you set it up so it interprets all `.coc` files as Python code, as this should highlight most of your code well enough. Additionally, a syntax highlighting package for Sublime Text is under development, and will likely be released with the next version of Coconut.
+There are currently three options for Coconut syntax highlighting:
+
+1. use [SublimeText](https://www.sublimetext.com/),
+2. use an editor that supports [Pygments](http://pygments.org/), or
+3. just treat Coconut as Python.
+
+Instructions on how to set up syntax highlighting for SublimeText and Pygments are included below. If you don't like SublimeText and your chosen alternative text editor doesn't have pygments support, however, it should be sufficient to set up your editor so it interprets all `.coc` files as Python code, as this should highlight most of your code well enough.
+
+#### SublimeText
+
+Coconut syntax highlighting for SublimeText requires that [Package Control](https://packagecontrol.io/installation), the standard package manager for SublimeText, be installed. Once that is done, simply open the SublimeText command palette by entering `Ctrl+Shift+P`, enter `Package Control: Install Package`, and then `Coconut`. To make sure everything is working properly, open a `.coc` file, and make sure `Coconut` appears in the bottom right-hand corner. If something else appears, like `Plain Text`, click on it, select `Open all with current extension as...` at the top of the resulting menu, and then select `Coconut`.
+
+#### Pygments
+
+The same `pip install coconut` command that installs the Coconut command-line utility will also install the `coconut` Pygments lexer. How to use this lexer depends on the Pygments-enabled application being used, but in general simply enter `coconut` as the language being highlighted and/or use the file extension `.coc` and Pygments should be able to figure it out. For example, this documentation is generated with [Sphinx](http://www.sphinx-doc.org/en/stable/), with the syntax highlighting you see created by adding the line
+```
+highlight_language = "coconut"
+```
+to Coconut's `conf.py`.
 
 ### `coconut.convenience`
 
