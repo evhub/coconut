@@ -2417,7 +2417,7 @@ class processor(object):
         lparen.suppress() + rparen.suppress()
         | Group(
             lparen.suppress() + testlist("tests") + rparen.suppress()
-            | lparen.suppress() + itemlist(test + default, comma)("args") + rparen.suppress()
+            | lparen.suppress() + callargslist("args") + rparen.suppress()
             )
         )
     classdef = condense(addspace(Keyword("class") - name) + classlist + suite)
