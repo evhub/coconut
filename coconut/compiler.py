@@ -527,27 +527,23 @@ def change(inputstring):
             count += 1
     return count
 
-def attach(item, action):
+def attach(item, action, copy=False):
     """Attaches a parse action to an item."""
-    return item.copy().addParseAction(action)
+    if copy:
+        item = item.copy()
+    return item.addParseAction(action)
 
-def fixto(item, output):
+def fixto(item, output, copy=False):
     """Forces an item to result in a specific output."""
-    return attach(item, replaceWith(output))
+    return attach(item, replaceWith(output), copy)
 
-def addspace(item):
+def addspace(item, copy=False):
     """Condenses and adds space to the tokenized output."""
-    def callback(tokens):
-        """Callback function constructed by addspace."""
-        return " ".join(tokens)
-    return attach(item, callback)
+    return attach(item, " ".join, copy)
 
-def condense(item):
+def condense(item, copy=False):
     """Condenses the tokenized output."""
-    def callback(tokens):
-        """Callback function constructed by condense."""
-        return "".join(tokens)
-    return attach(item, callback)
+    return attach(item, "".join, copy)
 
 def parenwrap(lparen, item, rparen, tokens=False):
     """Wraps an item in optional parentheses."""
@@ -568,33 +564,27 @@ class tracer(object):
         """Changes the tracer's state."""
         self.on = on
 
-    def trace(self, original, location, tokens, message=None):
+    def trace(self, tag, original, location, tokens):
         """Tracer parse action."""
-        if self.on:
-            original = str(original)
-            location = int(location)
-            out = ""
-            if message is not None:
-                out += "["+message+"] "
-            if len(tokens) == 1 and isinstance(tokens[0], str):
-                out += ascii(tokens[0])
-            else:
-                out += str(tokens)
-            out += " (line "+str(lineno(location, original))+", col "+str(col(location, original))+")"
-            self.show(out)
-        return tokens
-
-    def bind(self, item, message=None):
-        """Traces a parse element."""
-        if message is None:
-            callback = self.trace
+        original = str(original)
+        location = int(location)
+        out = "[" + tag + "] "
+        if len(tokens) == 1 and isinstance(tokens[0], str):
+            out += ascii(tokens[0])
         else:
-            def callback(original, location, tokens):
-                """Callback function constructed by tracer."""
-                return self.trace(original, location, tokens, message)
+            out += str(tokens)
+        out += " (line "+str(lineno(location, original))+", col "+str(col(location, original))+")"
+        self.show(out)
+
+    def bind(self, item, tag):
+        """Traces a parse element."""
+        def callback(original, location, tokens):
+            """Callback function constructed by tracer."""
+            if self.on:
+                self.trace(tag, original, location, tokens)
+            return tokens
         bound = attach(item, callback)
-        if message is not None:
-            bound.setName(message)
+        bound.setName(tag)
         return bound
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -604,11 +594,10 @@ class tracer(object):
 def list_handle(tokens):
     """Properly formats lists."""
     out = []
-    for x in range(0, len(tokens)):
-        if x%2 == 0:
-            out.append(tokens[x])
-        else:
-            out[-1] += tokens[x]
+    for x in range(0, len(tokens)-1, 2):
+        out.append(tokens[x] + tokens[x+1])
+    if len(tokens) % 2 == 1:
+        out.append(tokens[-1])
     return " ".join(out)
 
 def tokenlist(item, sep, suppress=True):
@@ -2156,7 +2145,7 @@ class processor(object):
     string_item = Combine(Literal(strwrapper) + integer + unwrap)
     comment = Combine(pound + integer + unwrap)
     passthrough = Combine(backslash + integer + unwrap)
-    passthrough_block = Combine(fixto(dubbackslash, "\\") + integer + unwrap)
+    passthrough_block = Combine(fixto(dubbackslash, "\\", copy=True) + integer + unwrap)
 
     lineitem = Combine(Optional(comment) + Literal("\n"))
     newline = condense(OneOrMore(lineitem))
@@ -2173,7 +2162,7 @@ class processor(object):
     u_string = Forward()
     string = b_string | u_string
     moduledoc = string + newline
-    docstring = condense(moduledoc)
+    docstring = condense(moduledoc, copy=True)
 
     augassign = (
         Combine(pipeline + equals)
@@ -2222,39 +2211,39 @@ class processor(object):
     test_expr = yield_expr | testlist
 
     op_item = (
-        fixto(pipeline, "(lambda x, f: f(x))")
-        | fixto(starpipe, "(lambda xs, f: f(*xs))")
-        | fixto(backpipe, "(lambda f, x: f(x))")
-        | fixto(backstarpipe, "(lambda f, xs: f(*xs))")
-        | fixto(dotdot, "(lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)))")
-        | fixto(Keyword("and"), "(lambda a, b: a and b)")
-        | fixto(Keyword("or"), "(lambda a, b: a or b)")
-        | fixto(minus, "(lambda *args: __coconut__.operator.__neg__(*args) if len(args) < 2 else __coconut__.operator.__sub__(*args))")
-        | fixto(dot, "__coconut__.getattr")
-        | fixto(dubcolon, "__coconut__.itertools.chain")
-        | fixto(dollar, "__coconut__.functools.partial")
-        | fixto(exp_dubstar, "__coconut__.operator.__pow__")
-        | fixto(mul_star, "__coconut__.operator.__mul__")
-        | fixto(div_dubslash, "__coconut__.operator.__floordiv__")
-        | fixto(div_slash, "__coconut__.operator.__truediv__")
-        | fixto(percent, "__coconut__.operator.__mod__")
-        | fixto(plus, "__coconut__.operator.__add__")
-        | fixto(amp, "__coconut__.operator.__and__")
-        | fixto(caret, "__coconut__.operator.__xor__")
-        | fixto(bar, "__coconut__.operator.__or__")
-        | fixto(lshift, "__coconut__.operator.__lshift__")
-        | fixto(rshift, "__coconut__.operator.__rshift__")
-        | fixto(lt, "__coconut__.operator.__lt__")
-        | fixto(gt, "__coconut__.operator.__gt__")
-        | fixto(eq, "__coconut__.operator.__eq__")
-        | fixto(le, "__coconut__.operator.__le__")
-        | fixto(ge, "__coconut__.operator.__ge__")
-        | fixto(ne, "__coconut__.operator.__ne__")
-        | fixto(tilde, "__coconut__.operator.__inv__")
-        | fixto(matrix_at, "__coconut__.operator.__matmul__")
-        | fixto(Keyword("not"), "__coconut__.operator.__not__")
-        | fixto(Keyword("is"), "__coconut__.operator.is_")
-        | fixto(Keyword("in"), "__coconut__.operator.__contains__")
+        fixto(pipeline, "(lambda x, f: f(x))", copy=True)
+        | fixto(starpipe, "(lambda xs, f: f(*xs))", copy=True)
+        | fixto(backpipe, "(lambda f, x: f(x))", copy=True)
+        | fixto(backstarpipe, "(lambda f, xs: f(*xs))", copy=True)
+        | fixto(dotdot, "(lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)))", copy=True)
+        | fixto(Keyword("and"), "(lambda a, b: a and b)", copy=True)
+        | fixto(Keyword("or"), "(lambda a, b: a or b)", copy=True)
+        | fixto(minus, "(lambda *args: __coconut__.operator.__neg__(*args) if len(args) < 2 else __coconut__.operator.__sub__(*args))", copy=True)
+        | fixto(dot, "__coconut__.getattr", copy=True)
+        | fixto(dubcolon, "__coconut__.itertools.chain", copy=True)
+        | fixto(dollar, "__coconut__.functools.partial", copy=True)
+        | fixto(exp_dubstar, "__coconut__.operator.__pow__", copy=True)
+        | fixto(mul_star, "__coconut__.operator.__mul__", copy=True)
+        | fixto(div_dubslash, "__coconut__.operator.__floordiv__", copy=True)
+        | fixto(div_slash, "__coconut__.operator.__truediv__", copy=True)
+        | fixto(percent, "__coconut__.operator.__mod__", copy=True)
+        | fixto(plus, "__coconut__.operator.__add__", copy=True)
+        | fixto(amp, "__coconut__.operator.__and__", copy=True)
+        | fixto(caret, "__coconut__.operator.__xor__", copy=True)
+        | fixto(bar, "__coconut__.operator.__or__", copy=True)
+        | fixto(lshift, "__coconut__.operator.__lshift__", copy=True)
+        | fixto(rshift, "__coconut__.operator.__rshift__", copy=True)
+        | fixto(lt, "__coconut__.operator.__lt__", copy=True)
+        | fixto(gt, "__coconut__.operator.__gt__", copy=True)
+        | fixto(eq, "__coconut__.operator.__eq__", copy=True)
+        | fixto(le, "__coconut__.operator.__le__", copy=True)
+        | fixto(ge, "__coconut__.operator.__ge__", copy=True)
+        | fixto(ne, "__coconut__.operator.__ne__", copy=True)
+        | fixto(tilde, "__coconut__.operator.__inv__", copy=True)
+        | fixto(matrix_at, "__coconut__.operator.__matmul__", copy=True)
+        | fixto(Keyword("not"), "__coconut__.operator.__not__", copy=True)
+        | fixto(Keyword("is"), "__coconut__.operator.is_", copy=True)
+        | fixto(Keyword("in"), "__coconut__.operator.__contains__", copy=True)
     )
     op_atom = lparen.suppress() + op_item + rparen.suppress()
 
@@ -2485,7 +2474,7 @@ class processor(object):
     or_match = Group(matchlist_or("or")) | and_match
     match <<= trace(or_match, "match")
 
-    else_suite = condense(colon + trace(attach(simple_compound_stmt, else_handle), "else_suite")) | suite
+    else_suite = condense(colon + trace(attach(simple_compound_stmt, else_handle, copy=True), "else_suite")) | suite
     else_stmt = condense(Keyword("else") - else_suite)
 
     full_suite = colon.suppress() + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
