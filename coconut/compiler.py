@@ -565,7 +565,7 @@ class tracer(object):
         self.on = on
 
     def trace(self, tag, original, location, tokens):
-        """Tracer parse action."""
+        """Formats and displays a trace."""
         original = str(original)
         location = int(location)
         out = "[" + tag + "] "
