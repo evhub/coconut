@@ -256,16 +256,19 @@ class cli(object):
             if args.recursionlimit[0] is not None:
                 sys.setrecursionlimit(args.recursionlimit[0])
             self.setup(args.strict, args.target[0], args.color[0])
-            if args.verbose and args.quiet:
-                raise CoconutException("cannot pass both --quiet and --verbose")
-            elif args.quiet:
-                self.quiet(True)
-            elif args.verbose:
-                self.proc.debug(True)
-            if args.display:
-                self.show = True
+            if args.quiet:
+                if args.version:
+                    raise CoconutException("cannot pass both --quiet and --version")
+                elif args. verbose:
+                    raise CoconutException("cannot pass both --quiet and --verbose")
+                else:
+                    self.quiet(True)
             if args.version:
                 self.console.show(self.version)
+            if args.display:
+                self.show = True
+            if args.verbose:
+                self.proc.debug(True)
             if args.autopep8 is not None:
                 self.proc.autopep8(args.autopep8)
             if args.source is not None:
