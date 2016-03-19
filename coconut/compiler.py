@@ -251,17 +251,8 @@ class CoconutTargetError(CoconutSyntaxError):
         message += " (enable --target 3 to dismiss)"
         CoconutSyntaxError.__init__(self, message, source, point, lineno)
 
-class CoconutWarning(Warning):
+class CoconutWarning(CoconutSyntaxError):
     """Base Coconut warning."""
-    def __init__(self, *args, **kwargs):
-        """Creates the Coconut warning from a Coconut exception."""
-        CoconutSyntaxError.__init__(self, *args, **kwargs)
-    def __repr__(self):
-        """Displays the Coconut warning."""
-        return self.value
-    def __str__(self):
-        """Wraps __repr__."""
-        return repr(self)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # HEADERS:
