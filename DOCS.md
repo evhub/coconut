@@ -178,8 +178,9 @@ Finally, while Coconut will try to compile Python-3-specific syntax to its unive
 If the `--strict` or `-s` flag is enabled, Coconut will throw errors on various style problems. These are
 - mixing of tabs and spaces (without `--strict` Coconut just shows a Warning),
 - use of the Python-style `lambda` statement,
-- lack of backslashes before keywords used as variable names,
 - use of `u` to denote Unicode strings,
+- lack of backslashes before keywords used as variable names,
+- use of [reserved variables](reserved-variables) (without `--strict` Coconut just shows a Warning),
 - use of backslash continuations (implicit continuations are preferred), and
 - trailing whitespace at the end of lines.
 
@@ -668,9 +669,8 @@ print(data)
 ### Reserved Variables
 
 The Coconut compiler will modify and reference certain variables with the assumption that the code being compiled does not modify them in any way. If your code does modify any of these variables, your code is unlikely to work properly. These reserved variables are
-- the single variable name `__coconut__`,
-- all variable names of the form `_coconut_name`, and
-- all attribute or method names of the form `__coconut_name__`.
+- the single variable name `__coconut__`, and
+- all variable names of the form `_coconut_name`.
 
 ## Expressions
 

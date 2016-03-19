@@ -162,23 +162,22 @@ class terminal(object):
 
     def display(self, messages, color=None, sig="", debug=False):
         """Prints messages."""
-        message = " ".join(str(msg) for msg in messages)
-        for line in message.splitlines():
-            msg = self.addcolor(sig+line, color)
-            if debug is True:
-                printerr(msg)
-            else:
-                print(msg)
+        if self.on:
+            message = " ".join(str(msg) for msg in messages)
+            for line in message.splitlines():
+                msg = self.addcolor(sig+line, color)
+                if debug is True:
+                    printerr(msg)
+                else:
+                    print(msg)
 
     def print(self, *messages):
         """Prints messages with color."""
-        if self.on:
-            self.display(messages, color=self.color)
+        self.display(messages, color=self.color)
 
     def show(self, *messages):
         """Prints messages with color and main signature."""
-        if self.on:
-            self.display(messages, self.color, self.main_sig)
+        self.display(messages, self.color, self.main_sig)
 
     def debug(self, *messages):
         """Prints messages with color and debug signature."""
@@ -257,10 +256,12 @@ class cli(object):
             if args.recursionlimit[0] is not None:
                 sys.setrecursionlimit(args.recursionlimit[0])
             self.setup(args.strict, args.target[0], args.color[0])
-            if args.verbose:
-                self.proc.debug(True)
-            if args.quiet:
+            if args.verbose and args.quiet:
+                raise CoconutException("cannot pass both --quiet and --verbose")
+            elif args.quiet:
                 self.quiet(True)
+            elif args.verbose:
+                self.proc.debug(True)
             if args.display:
                 self.show = True
             if args.version:
@@ -505,7 +506,7 @@ class cli(object):
             except subprocess.CalledProcessError:
                 errmsg = 'unable to install Jupyter kernel specification file (failed command "'+" ".join(install_args)+'")'
                 if args:
-                    warn(CoconutWarning(errmsg))
+                    self.proc.warn(CoconutWarning(errmsg))
                 else:
                     raise CoconutException(errmsg)
         if args:

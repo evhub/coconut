@@ -259,13 +259,9 @@ class CoconutWarning(Warning):
     def __repr__(self):
         """Displays the Coconut warning."""
         return self.value
-
-def warn(warning):
-    """Displays a warning."""
-    try:
-        raise warning
-    except CoconutWarning as err:
-        printerr(format_error(CoconutWarning, err))
+    def __str__(self):
+        """Wraps __repr__."""
+        return repr(self)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # HEADERS:
@@ -1328,6 +1324,13 @@ class processor(object):
         if self.indebug():
             self.tracing.show("["+str(tag)+"] "+ascii(code))
 
+    def warn(self, warning):
+        """Displays a warning."""
+        try:
+            raise warning
+        except CoconutWarning as err:
+            self.tracing.show(format_error(CoconutWarning, err))
+
     def pre(self, inputstring, **kwargs):
         """Performs pre-processing."""
         out = str(inputstring)
@@ -1553,7 +1556,7 @@ class processor(object):
                 if self.strict:
                     raise self.make_err(CoconutStyleError, "found mixing of tabs and spaces", inputstring, x)
                 else:
-                    warn(self.make_err(CoconutWarning, "found mixing of tabs and spaces", inputstring, x))
+                    self.warn(self.make_err(CoconutWarning, "found mixing of tabs and spaces", inputstring, x))
         return count
 
     def ind_proc(self, inputstring, **kwargs):
@@ -1917,10 +1920,16 @@ class processor(object):
         """Handles backslash-escaped variable names."""
         if len(tokens) != 1:
             raise CoconutException("invalid name tokens", tokens)
-        elif self.strict and tokens[0] in reserved_vars:
-            raise self.make_err(CoconutStyleError, "found unescaped keyword variable", original, location)
         elif tokens[0].startswith("\\"):
             return tokens[0][1:]
+        elif self.strict and tokens[0] in reserved_vars:
+            raise self.make_err(CoconutStyleError, "found unescaped keyword variable", original, location)
+        elif tokens[0] == "__coconut__" or tokens[0].startswith("_coconut_"):
+            if self.strict:
+                raise self.make_err(CoconutStyleError, "found use of a reserved variable", original, location)
+            else:
+                self.warn(self.make_err(CoconutWarning, "found use of a reserved variable", original, location))
+            return tokens[0]
         else:
             return tokens[0]
 
