@@ -369,7 +369,9 @@ def minify(compiled):
             while line.startswith(" "):
                 line = line[1:]
                 ind += 1
-            out.append(" "*(ind/tabideal) + line)
+            if ind % tabideal != 0:
+                raise CoconutException("invalid indentation in", line)
+            out.append(" "*(ind//tabideal) + line)
     return "\n".join(out)
 
 def getheader(which, target=None, usehash=None):
