@@ -94,7 +94,7 @@ python -m pip install coconut
 ### Usage
 
 ```
-coconut [-h] [-v] [source] [dest] [-t version] [-s] [-p] [-a] [-f] [-d] [-r] [-n] [-i] [-q] [-c code] [--jupyter ...] [--autopep8 ...] [--recursionlimit limit] [--color color] [--verbose]
+coconut [-h] [-v] [source] [dest] [-t version] [-s] [-p] [-a] [-f] [-d] [-r] [-n] [-m] [-i] [-q] [-c code] [--jupyter ...] [--autopep8 ...] [--recursionlimit limit] [--color color] [--verbose]
 ```
 
 #### Positional Arguments
@@ -115,8 +115,9 @@ dest                  destination directory for compiled files (defaults to the 
 -a, --standalone        compile source as standalone files (defaults to only if source is a single file)
 -f, --force             force overwriting of compiled Python (otherwise only overwrites when the source changes)
 -d, --display           print compiled Python
--r, --run               run the compiled Python
--n, --nowrite           disable writing the compiled Python
+-r, --run               run compiled Python
+-n, --nowrite           disable writing compiled Python
+-m, --minify            compress compiled Python
 -i, --interact          force the interpreter to start (otherwise starts if no other command is given)
 -q, --quiet             suppress all informational output (combine with --display to write runnable code to stdout)
 -c, --code              run a line of Coconut passed in as a string (can also be passed into stdin)
