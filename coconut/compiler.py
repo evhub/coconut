@@ -372,7 +372,7 @@ def minify(compiled):
             if ind % tabideal != 0:
                 raise CoconutException("invalid indentation in", line)
             out.append(" "*(ind//tabideal) + line)
-    return "\n".join(out)
+    return "\n".join(out) + "\n"
 
 def getheader(which, target=None, usehash=None):
     """Generates the specified header."""
