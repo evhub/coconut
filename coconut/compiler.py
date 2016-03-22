@@ -2623,11 +2623,11 @@ class processor(object):
 #-----------------------------------------------------------------------------------------------------------------------
 
     def parse_single(self, inputstring):
-        """Parses console input."""
+        """Parses line code."""
         return self.parse(inputstring, self.single_parser, {}, {"header": "none", "initial": "none"})
 
     def parse_file(self, inputstring, addhash=True):
-        """Parses file input."""
+        """Parses file code."""
         if addhash:
             usehash = self.genhash(False, inputstring)
         else:
@@ -2635,11 +2635,11 @@ class processor(object):
         return self.parse(inputstring, self.file_parser, {}, {"header": "file", "usehash": usehash})
 
     def parse_exec(self, inputstring):
-        """Parses exec input."""
+        """Parses exec code."""
         return self.parse(inputstring, self.file_parser, {}, {"header": "file", "initial": "none"})
 
     def parse_module(self, inputstring, addhash=True):
-        """Parses module input."""
+        """Parses module code."""
         if addhash:
             usehash = self.genhash(True, inputstring)
         else:
@@ -2647,13 +2647,13 @@ class processor(object):
         return self.parse(inputstring, self.file_parser, {}, {"header": "module", "usehash": usehash})
 
     def parse_block(self, inputstring):
-        """Parses block text."""
+        """Parses block code."""
         return self.parse(inputstring, self.file_parser, {}, {"header": "none", "initial": "none"})
 
     def parse_eval(self, inputstring):
-        """Parses eval input."""
+        """Parses eval code."""
         return self.parse(inputstring, self.eval_parser, {"strip": True}, {"header": "none", "initial": "none"})
 
     def parse_debug(self, inputstring):
-        """Parses debug input."""
+        """Parses debug code."""
         return self.parse(inputstring, self.file_parser, {"strip": True}, {"header": "none", "initial": "none"})
