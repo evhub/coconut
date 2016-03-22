@@ -491,7 +491,7 @@ def addskip(skips, skip):
     elif skip in skips:
         raise CoconutException("duplicate skip of line " + str(skip))
     else:
-        skips |= set((skip,))
+        skips.add(skip)
         return skips
 
 def count_end(teststr, testchar):
