@@ -360,7 +360,7 @@ def gethash(compiled):
         return lines[2][len(hash_prefix):]
 
 def minify(compiled):
-    """Performs basic minifications (fails with multiline strings or non-tabideal indentation)."""
+    """Performs basic minifications (fails with strings or non-tabideal indentation)."""
     out = []
     for line in compiled.splitlines():
         line = line.split("#", 1)[0].rstrip()
