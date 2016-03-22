@@ -235,7 +235,7 @@ class CoconutParseError(CoconutSyntaxError):
     """Coconut ParseError."""
     def __init__(self, source, point, lineno):
         """Creates The Coconut ParseError."""
-        CoconutSyntaxError.__init__(self, "parsing failed", souce, point, lineno)
+        CoconutSyntaxError.__init__(self, "parsing failed", source, point, lineno)
 
 class CoconutStyleError(CoconutSyntaxError):
     """Coconut --strict error."""

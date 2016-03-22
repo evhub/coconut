@@ -264,6 +264,8 @@ class cli(object):
                     raise CoconutException("cannot pass both --quiet and --verbose")
                 else:
                     self.quiet(True)
+            else:
+                self.quiet(False)
             if args.version:
                 self.console.show(self.version)
             if args.display:
