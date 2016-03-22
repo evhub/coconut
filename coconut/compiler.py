@@ -1254,12 +1254,12 @@ class processor(object):
                 i += 1
         return adj_ln
 
-    def reformat(self, snip, index=None):
+    def reformat(self, snip, index=None, err=True):
         """Post processes a preprocessed snippet."""
         if index is None:
-            return self.repl_proc(snip)
+            return self.repl_proc(snip, err=err)
         else:
-            return self.repl_proc(snip), len(self.repl_proc(snip[:index]))
+            return self.repl_proc(snip, err=err), len(self.repl_proc(snip[:index], err=err))
 
     def make_err(self, errtype, message, original, location, ln=None, reformat=True):
         """Generates an error of the specified type."""
@@ -1267,7 +1267,7 @@ class processor(object):
             ln = self.adjust(lineno(location, original))
         errstr, index = line(location, original), col(location, original)-1
         if reformat:
-            errstr, index = self.reformat(errstr, index)
+            errstr, index = self.reformat(errstr, index, False)
         return errtype(message, errstr, index, ln)
 
     def add_ref(self, ref):
@@ -1373,7 +1373,10 @@ class processor(object):
             err_line, err_index = self.reformat(err.line, err.col-1)
             raise CoconutParseError(err_line, err_index, self.adjust(err.lineno))
         except RuntimeError:
-            raise CoconutException("maximum recursion depth exceeded (try again with a larger --recursionlimit)")
+            if self.indebug():
+                raise
+            else:
+                raise CoconutException("maximum recursion depth exceeded (try again with a larger --recursionlimit)")
         finally:
             self.clean()
         return out
@@ -1630,7 +1633,7 @@ class processor(object):
             out.append(line)
         return "\n".join(out)
 
-    def passthrough_repl(self, inputstring):
+    def passthrough_repl(self, inputstring, err=True):
         """Adds back passthroughs."""
         out = ""
         index = None
@@ -1647,7 +1650,13 @@ class processor(object):
                         out += ref
                         index = None
                 elif c != "\\" or index:
-                    raise CoconutException("invalid passthrough marker in", line(x, inputstring))
+                    if err:
+                        raise self.make_err(CoconutSyntaxError, "invalid or misplaced backslash", inputstring, x-1)
+                    else:
+                        out += "\\" + index
+                        if c is not None:
+                            out += c
+                        index = None
             elif c is not None:
                 if c == "\\":
                     index = ""
@@ -1655,7 +1664,7 @@ class processor(object):
                     out += c
         return out
 
-    def str_repl(self, inputstring, err=True):
+    def str_repl(self, inputstring):
         """Adds back strings."""
         out = ""
         comment = None
@@ -1701,9 +1710,9 @@ class processor(object):
                     out += c
         return out
 
-    def repl_proc(self, inputstring, **kwargs):
+    def repl_proc(self, inputstring, err=True, **kwargs):
         """Replaces passthroughs, strings, and comments."""
-        return self.str_repl(self.passthrough_repl(inputstring))
+        return self.str_repl(self.passthrough_repl(inputstring, err))
 
     def header_proc(self, inputstring, header="file", initial="initial", usehash=None, **kwargs):
         """Adds the header."""
