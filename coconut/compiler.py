@@ -14,8 +14,8 @@ Description: Compiles Coconut code into Python code.
 #   - Imports
 #   - Constants
 #   - Exceptions
-#   - Headers
 #   - Utilities
+#   - Header Utilities
 #   - Handlers
 #   - Parser
 #   - Processors
@@ -54,7 +54,7 @@ white = " \t\f"
 downs = "([{"
 ups = ")]}"
 holds = "'\""
-tablen = 4
+tabideal = 4
 tabworth = 8
 decorator_var = "_coconut_decorator"
 match_to_var = "_coconut_match_to"
@@ -214,7 +214,7 @@ class CoconutSyntaxError(CoconutException):
             self.value += " (line " + str(ln) + ")"
         if source:
             if point is None:
-                self.value += "\n" + " "*tablen + clean(source)
+                self.value += "\n" + " "*tabideal + clean(source)
             else:
                 part = clean(source.splitlines()[lineno(point, source)-1], False).lstrip()
                 point -= len(source) - len(part) # adjust all points based on lstrip
@@ -223,7 +223,7 @@ class CoconutSyntaxError(CoconutException):
                     point = 0
                 elif point >= len(part):
                     point = len(part) - 1
-                self.value += "\n" + " "*tablen + part + "\n" + " "*tablen
+                self.value += "\n" + " "*tabideal + part + "\n" + " "*tabideal
                 for x in range(0, point):
                     if part[x] in white:
                         self.value += part[x]
@@ -255,7 +255,100 @@ class CoconutWarning(CoconutSyntaxError):
     """Base Coconut warning."""
 
 #-----------------------------------------------------------------------------------------------------------------------
-# HEADERS:
+# UTILITIES:
+#-----------------------------------------------------------------------------------------------------------------------
+
+def addskip(skips, skip):
+    """Adds a line skip to the skips."""
+    if skip < 1:
+        raise CoconutException("invalid skip of line " + str(skip))
+    elif skip in skips:
+        raise CoconutException("duplicate skip of line " + str(skip))
+    else:
+        skips.add(skip)
+        return skips
+
+def count_end(teststr, testchar):
+    """Counts instances of testchar at end of teststr."""
+    count = 0
+    x = len(teststr) - 1
+    while x >= 0 and teststr[x] == testchar:
+        count += 1
+        x -= 1
+    return count
+
+def change(inputstring):
+    """Determines the parenthetical change of level."""
+    count = 0
+    for c in inputstring:
+        if c in downs:
+            count -= 1
+        elif c in ups:
+            count += 1
+    return count
+
+def attach(item, action, copy=False):
+    """Attaches a parse action to an item."""
+    if copy:
+        item = item.copy()
+    return item.addParseAction(action)
+
+def fixto(item, output, copy=False):
+    """Forces an item to result in a specific output."""
+    return attach(item, replaceWith(output), copy)
+
+def addspace(item, copy=False):
+    """Condenses and adds space to the tokenized output."""
+    return attach(item, " ".join, copy)
+
+def condense(item, copy=False):
+    """Condenses the tokenized output."""
+    return attach(item, "".join, copy)
+
+def parenwrap(lparen, item, rparen, tokens=False):
+    """Wraps an item in optional parentheses."""
+    wrap = lparen.suppress() + item + rparen.suppress() | item
+    if not tokens:
+        wrap = condense(wrap)
+    return wrap
+
+class tracer(object):
+    """Debug tracer."""
+
+    def __init__(self, show=printerr, on=False):
+        """Creates the tracer."""
+        self.show = show
+        self.debug(on)
+
+    def debug(self, on=True):
+        """Changes the tracer's state."""
+        self.on = on
+
+    def trace(self, tag, original, location, tokens):
+        """Formats and displays a trace."""
+        original = str(original)
+        location = int(location)
+        out = "[" + tag + "] "
+        if len(tokens) == 1 and isinstance(tokens[0], str):
+            out += ascii(tokens[0])
+        else:
+            out += str(tokens)
+        out += " (line "+str(lineno(location, original))+", col "+str(col(location, original))+")"
+        self.show(out)
+
+    def bind(self, item, tag):
+        """Traces a parse element."""
+        def callback(original, location, tokens):
+            """Callback function constructed by tracer."""
+            if self.on:
+                self.trace(tag, original, location, tokens)
+            return tokens
+        bound = attach(item, callback)
+        bound.setName(tag)
+        return bound
+
+#-----------------------------------------------------------------------------------------------------------------------
+# HEADER UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
 
 def gethash(compiled):
@@ -266,19 +359,32 @@ def gethash(compiled):
     else:
         return lines[2][len(hash_prefix):]
 
-def getheader(which, version=None, usehash=None):
+def minify(compiled):
+    """Performs basic minifications (fails with multiline strings or non-tabideal indentation)."""
+    out = []
+    for line in compiled.splitlines():
+        line = line.split("#", 1)[0].rstrip()
+        if line:
+            ind = 0
+            while line.startswith(" "):
+                line = line[1:]
+                ind += 1
+            out.append(" "*(ind/tabideal) + line)
+    return "\n".join(out)
+
+def getheader(which, target=None, usehash=None):
     """Generates the specified header."""
     if which == "none":
         return ""
     elif which == "initial" or which == "package":
-        if version is None:
+        if target is None:
             header = "#!/usr/bin/env python"
-        elif version == "2":
+        elif target == "2":
             header = "#!/usr/bin/env python2"
-        elif version == "3":
+        elif target == "3":
             header = "#!/usr/bin/env python3"
         else:
-            raise CoconutException("invalid Python version", version)
+            raise CoconutException("invalid Python target", target)
         header += '''
 # -*- coding: '''+encoding+''' -*-
 '''
@@ -300,17 +406,17 @@ def getheader(which, version=None, usehash=None):
         header += r'''# Coconut Header: --------------------------------------------------------------
 
 '''
-        if version != "3":
+        if target != "3":
             header += r'''from __future__ import print_function, absolute_import, unicode_literals, division
 '''
         if which == "module":
             header += r'''import sys as _coconut_sys, os.path as _coconut_os_path
 _coconut_file_path = _coconut_os_path.dirname(_coconut_os_path.abspath(__file__))
 _coconut_sys.path.insert(0, _coconut_file_path)'''
-            if version == "3":
+            if target == "3":
                 header += r'''
 from __coconut__ import __coconut__, __coconut_version__, MatchError, map, parallel_map, zip, reduce, takewhile, dropwhile, tee, count, recursive, datamaker, consume, py3_map, py3_zip'''
-            elif version == "2":
+            elif target == "2":
                 header += r'''
 from __coconut__ import __coconut__, __coconut_version__, MatchError, map, parallel_map, zip, reduce, takewhile, dropwhile, tee, count, recursive, datamaker, consume, py2_chr, py2_filter, py2_hex, py2_input, py2_int, py2_map, py2_oct, py2_open, py2_print, py2_range, py2_raw_input, py2_str, py2_xrange, py2_zip, ascii, bytes, chr, filter, hex, input, int, oct, open, print, range, raw_input, str, xrange'''
             else:
@@ -323,9 +429,9 @@ else:
 _coconut_sys.path.remove(_coconut_file_path)
 '''
         elif which == "package" or which == "code" or which == "file":
-            if version == "3":
+            if target == "3":
                 header += PY3_HEADER
-            elif version == "2":
+            elif target == "2":
                 header += PY2_HEADER
             else:
                 header += PY2_HEADER_CHECK
@@ -334,7 +440,7 @@ class __coconut__(object):
     version = "'''+VERSION+r'''"
     import collections, functools, imp, itertools, operator, types
 '''
-            if version == "2":
+            if target == "2":
                 header += r'''    abc = collections'''
             else:
                 header += r'''    if _coconut_sys.version_info < (3, 3):
@@ -479,99 +585,6 @@ __coconut_version__, MatchError, map, parallel_map, zip, reduce, takewhile, drop
 
 '''
     return header
-
-#-----------------------------------------------------------------------------------------------------------------------
-# UTILITIES:
-#-----------------------------------------------------------------------------------------------------------------------
-
-def addskip(skips, skip):
-    """Adds a line skip to the skips."""
-    if skip < 1:
-        raise CoconutException("invalid skip of line " + str(skip))
-    elif skip in skips:
-        raise CoconutException("duplicate skip of line " + str(skip))
-    else:
-        skips.add(skip)
-        return skips
-
-def count_end(teststr, testchar):
-    """Counts instances of testchar at end of teststr."""
-    count = 0
-    x = len(teststr) - 1
-    while x >= 0 and teststr[x] == testchar:
-        count += 1
-        x -= 1
-    return count
-
-def change(inputstring):
-    """Determines the parenthetical change of level."""
-    count = 0
-    for c in inputstring:
-        if c in downs:
-            count -= 1
-        elif c in ups:
-            count += 1
-    return count
-
-def attach(item, action, copy=False):
-    """Attaches a parse action to an item."""
-    if copy:
-        item = item.copy()
-    return item.addParseAction(action)
-
-def fixto(item, output, copy=False):
-    """Forces an item to result in a specific output."""
-    return attach(item, replaceWith(output), copy)
-
-def addspace(item, copy=False):
-    """Condenses and adds space to the tokenized output."""
-    return attach(item, " ".join, copy)
-
-def condense(item, copy=False):
-    """Condenses the tokenized output."""
-    return attach(item, "".join, copy)
-
-def parenwrap(lparen, item, rparen, tokens=False):
-    """Wraps an item in optional parentheses."""
-    wrap = lparen.suppress() + item + rparen.suppress() | item
-    if not tokens:
-        wrap = condense(wrap)
-    return wrap
-
-class tracer(object):
-    """Debug tracer."""
-
-    def __init__(self, show=printerr, on=False):
-        """Creates the tracer."""
-        self.show = show
-        self.debug(on)
-
-    def debug(self, on=True):
-        """Changes the tracer's state."""
-        self.on = on
-
-    def trace(self, tag, original, location, tokens):
-        """Formats and displays a trace."""
-        original = str(original)
-        location = int(location)
-        out = "[" + tag + "] "
-        if len(tokens) == 1 and isinstance(tokens[0], str):
-            out += ascii(tokens[0])
-        else:
-            out += str(tokens)
-        out += " (line "+str(lineno(location, original))+", col "+str(col(location, original))+")"
-        self.show(out)
-
-    def bind(self, item, tag):
-        """Traces a parse element."""
-        def callback(original, location, tokens):
-            """Callback function constructed by tracer."""
-            if self.on:
-                self.trace(tag, original, location, tokens)
-            return tokens
-        bound = attach(item, callback)
-        bound.setName(tag)
-        return bound
 
 #-----------------------------------------------------------------------------------------------------------------------
 # HANDLERS:
@@ -1177,26 +1190,30 @@ class processor(object):
     tracing = tracer()
     trace = tracing.bind
     debug = tracing.debug
-    versions = (None, "2", "3")
+    targets = (None, "2", "3")
     using_autopep8 = False
 
-    def __init__(self, strict=False, version=None, debugger=printerr):
+    def __init__(self, target=None, strict=False, minify=False, debugger=printerr):
         """Creates a new processor."""
         self.tracing.show = debugger
-        self.setup(strict, version)
+        self.setup(target, strict, minify)
         self.preprocs = [self.prepare, self.str_proc, self.passthrough_proc, self.ind_proc]
         self.postprocs = [self.reind_proc, self.repl_proc, self.header_proc, self.polish]
         self.bind()
         self.clean()
 
-    def setup(self, strict=False, version=None):
-        """Initializes strict and version."""
-        if version in self.versions:
-            self.version = version
+    def setup(self, target=None, strict=False, minify=False):
+        """Initializes target, strict, and minify."""
+        if target in self.targets:
+            self.target = target
         else:
-            raise CoconutException("unsupported target Python version " + ascii(version)
+            raise CoconutException("unsupported target Python version " + ascii(target)
                 + " (supported targets are '2', '3', or leave blank for universal)")
-        self.strict = strict
+        self.strict, self.minify = strict, minify
+        if self.minify:
+            self.tablen = 1
+        else:
+            self.tablen = tabideal
 
     def bind(self):
         """Binds reference objects to the proper parse actions."""
@@ -1237,7 +1254,7 @@ class processor(object):
     def genhash(self, package, code):
         """Generates a hash from code."""
         return hex(checksum(
-                hash_sep.join(str(item) for item in (VERSION_STR, self.version, self.using_autopep8, package, code)).encode(encoding)
+                hash_sep.join(str(item) for item in (VERSION_STR, self.target, self.minify, self.using_autopep8, package, code)).encode(encoding)
             ) & 0xffffffff) # necessary for cross-compatibility
 
     def adjust(self, ln):
@@ -1339,7 +1356,7 @@ class processor(object):
 
     def headers(self, header, usehash=None):
         """Gets a polished header."""
-        return self.polish(getheader(header, self.version, usehash))
+        return self.polish(getheader(header, self.target, usehash))
 
     def set_docstring(self, tokens):
         """Sets the docstring."""
@@ -1349,12 +1366,12 @@ class processor(object):
         else:
             raise CoconutException("invalid docstring tokens", tokens)
 
-    def version_tuple(self):
+    def target_tuple(self):
         """Returns the target information as a version tuple."""
-        if self.version is None:
+        if self.target is None:
             return ()
         else:
-            return (int(self.version),)
+            return (int(self.target),)
 
     def should_indent(self, code):
         """Determines whether the next line should be indented."""
@@ -1622,7 +1639,7 @@ class processor(object):
                     level -= 1
                 line = line[1:]
             if line and not line.startswith("#"):
-                line = " "*tablen*level + line
+                line = " "*self.tablen*level + line
             while line.endswith(openindent) or line.endswith(closeindent):
                 if line[-1] == openindent:
                     level += 1
@@ -1645,9 +1662,8 @@ class processor(object):
                     ref = self.refs[int(index)]
                     if isinstance(ref, tuple):
                         raise CoconutException("passthrough marker points to string", ref)
-                    else:
-                        out += ref
-                        index = None
+                    out += ref
+                    index = None
                 elif c != "\\" or index:
                     out += "\\" + index
                     if c is not None:
@@ -1674,11 +1690,11 @@ class processor(object):
                     ref = self.refs[int(comment)]
                     if isinstance(ref, tuple):
                         raise CoconutException("comment marker points to string", ref)
-                    else:
+                    if not self.minify:
                         if out and not out.endswith("\n"):
                             out += " "
                         out += "#" + ref
-                        comment = None
+                    comment = None
                 else:
                     raise CoconutException("invalid comment marker in", line(x, inputstring))
             elif string is not None:
@@ -1686,15 +1702,14 @@ class processor(object):
                     string += c
                 elif c == unwrapper and string:
                     ref = self.refs[int(string)]
-                    if isinstance(ref, tuple):
-                        text, strchar, multiline = ref
-                        if multiline:
-                            out += strchar*3 + text + strchar*3
-                        else:
-                            out += strchar + text + strchar
-                        string = None
-                    else:
+                    if not isinstance(ref, tuple):
                         raise CoconutException("string marker points to comment/passthrough", ref)
+                    text, strchar, multiline = ref
+                    if multiline:
+                        out += strchar*3 + text + strchar*3
+                    else:
+                        out += strchar + text + strchar
+                    string = None
                 else:
                     raise CoconutException("invalid string marker in", line(x, inputstring))
             elif c is not None:
@@ -1712,7 +1727,11 @@ class processor(object):
 
     def header_proc(self, inputstring, header="file", initial="initial", usehash=None, **kwargs):
         """Adds the header."""
-        return getheader(initial, self.version, usehash) + self.docstring + getheader(header, self.version) + inputstring
+        pre_header = getheader(initial, self.target, usehash)
+        main_header = getheader(header, self.target)
+        if self.minify:
+            main_header = minify(main_header)
+        return pre_header + self.docstring + main_header + inputstring
 
     def polish(self, inputstring, **kwargs):
         """Does final polishing touches."""
@@ -1807,7 +1826,7 @@ class processor(object):
     def classlist_handle(self, original, location, tokens):
         """Processes class inheritance lists."""
         if len(tokens) == 0:
-            if self.version == "3":
+            if self.target == "3":
                 return ""
             else:
                 return "(__coconut__.object)"
@@ -1815,7 +1834,7 @@ class processor(object):
             if "tests" in tokens[0]:
                 return "(" + tokens[0][0] + ")"
             elif "args" in tokens[0]:
-                if self.version == "3":
+                if self.target == "3":
                     return "(" + tokens[0][0] + ")"
                 else:
                     raise self.make_err(CoconutTargetError, "found Python 3 keyword class definition", original, location)
@@ -1858,9 +1877,9 @@ class processor(object):
                     break
             if old_imp is None:
                 paths = (imp,)
-            elif self.version == "2":
+            elif self.target == "2":
                 paths = (old_imp,)
-            elif self.version is None or self.version_tuple() < version_check:
+            elif self.target is None or self.target_tuple() < version_check:
                 paths = (old_imp, imp, version_check)
             else:
                 paths = (imp,)
@@ -1888,7 +1907,7 @@ class processor(object):
         """Processes Python 3 raise from statement."""
         if len(tokens) != 2:
             raise CoconutException("invalid raise from tokens", tokens)
-        elif self.version == "3":
+        elif self.target == "3":
             return "raise " + tokens[0] + " from " + tokens[1]
         else:
             return (raise_from_var + " = " + tokens[0] + "\n"
@@ -1900,7 +1919,7 @@ class processor(object):
         """Processes Python 2.7 dictionary comprehension."""
         if len(tokens) != 3:
             raise CoconutException("invalid dictionary comprehension tokens", tokens)
-        elif self.version == "3":
+        elif self.target == "3":
             key, val, comp = tokens
             return "{" + key + ": " + val + " " + comp + "}"
         else:
@@ -1985,7 +2004,7 @@ class processor(object):
         """Checks for Python 3 syntax."""
         if len(tokens) != 1:
             raise CoconutException("invalid "+name+" tokens", tokens)
-        elif self.version != "3":
+        elif self.target != "3":
             raise self.make_err(CoconutTargetError, "found "+name, original, location)
         else:
             return tokens[0]
@@ -2020,7 +2039,7 @@ class processor(object):
             raise CoconutException("invalid set literal tokens", tokens)
         elif len(tokens[0]) != 1:
             raise CoconutException("invalid set literal item", tokens[0])
-        elif self.version == "3":
+        elif self.target == "3":
             return "{" + tokens[0][0] + "}"
         else:
             return "__coconut__.set(" + set_to_tuple(tokens[0]) + ")"
@@ -2040,7 +2059,7 @@ class processor(object):
             if len(set_items) != 1:
                 raise CoconutException("invalid set literal item", tokens[0])
             elif set_type == "s":
-                if self.version == "3":
+                if self.target == "3":
                     return "{" + set_items[0] + "}"
                 else:
                     return "__coconut__.set(" + set_to_tuple(set_items) + ")"

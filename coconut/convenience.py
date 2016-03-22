@@ -49,9 +49,9 @@ def version(which="num"):
 # PARSING:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def setup(target=None, strict=False, quiet=False):
+def setup(target=None, strict=False, minify=False, quiet=False):
     """Gets CLI.proc."""
-    CLI.setup(strict, target)
+    CLI.setup(target, strict, minify)
     CLI.quiet(quiet)
 
 def parse(code, mode="exec"):

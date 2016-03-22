@@ -202,6 +202,7 @@ class cli(object):
     commandline.add_argument("-d", "--display", action="store_const", const=True, default=False, help="print compiled Python")
     commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run the compiled Python")
     commandline.add_argument("-n", "--nowrite", action="store_const", const=True, default=False, help="disable writing the compiled Python")
+    commandline.add_argument("-m", "--minify", action="store_const", const=True, default=False, help="compress the compiled Python")
     commandline.add_argument("-i", "--interact", action="store_const", const=True, default=False, help="force the interpreter to start (otherwise starts if no other command is given)")
     commandline.add_argument("-q", "--quiet", action="store_const", const=True, default=False, help="suppress all informational output (combine with --display to write runnable code to stdout)")
     commandline.add_argument("-c", "--code", metavar="code", type=str, nargs=1, default=None, help="run a line of Coconut passed in as a string (can also be passed into stdin)")
@@ -226,16 +227,16 @@ class cli(object):
         """Processes command-line arguments."""
         self.cmd(self.commandline.parse_args())
 
-    def setup(self, strict=False, target=None, color=None):
+    def setup(self, target=None, strict=False, minify=False, color=None):
         """Creates the processor."""
         if color is not None:
             self.console.setcolor(color)
             self.prompt = self.console.addcolor(self.prompt, color)
             self.moreprompt = self.console.addcolor(self.moreprompt, color)
         if self.proc is None:
-            self.proc = processor(strict, target, self.console.debug)
+            self.proc = processor(target, strict, minify, self.console.debug)
         else:
-            self.proc.setup(strict, target)
+            self.proc.setup(target, strict, minify)
 
     def quiet(self, state=None):
         """Quiets output."""
@@ -255,7 +256,7 @@ class cli(object):
         try:
             if args.recursionlimit[0] is not None:
                 sys.setrecursionlimit(args.recursionlimit[0])
-            self.setup(args.strict, args.target[0], args.color[0])
+            self.setup(args.target[0], args.strict, args.minify, args.color[0])
             if args.quiet:
                 if args.version:
                     raise CoconutException("cannot pass both --quiet and --version")
