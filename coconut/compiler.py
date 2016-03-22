@@ -233,9 +233,9 @@ class CoconutSyntaxError(CoconutException):
 
 class CoconutParseError(CoconutSyntaxError):
     """Coconut ParseError."""
-    def __init__(self, line, index, lineno):
+    def __init__(self, source, point, lineno):
         """Creates The Coconut ParseError."""
-        CoconutSyntaxError.__init__(self, "parsing failed", line, index, lineno)
+        CoconutSyntaxError.__init__(self, "parsing failed", souce, point, lineno)
 
 class CoconutStyleError(CoconutSyntaxError):
     """Coconut --strict error."""
@@ -388,7 +388,7 @@ class __coconut__(object):
         def __reduce_ex__(self, _):
             return (self.__class__, (self._func,) + self._iters)
     class parallel_map(map):
-        """Parallel implementation of map using concurrent.futures; requires arguments to be pickleable."""
+        """Multiprocessing implementation of map using concurrent.futures; requires arguments to be pickleable."""
         __slots__ = ()
         def __iter__(self):
             from concurrent.futures import ProcessPoolExecutor
@@ -1148,12 +1148,8 @@ def gen_imports(path, impas):
                 out.append(openindent + mod_name + ' = __coconut__.imp.new_module("' + mod_name + '")')
                 out.append(closeindent + "else:")
                 out.append(openindent + "if not __coconut__.isinstance(" + mod_name + ", __coconut__.types.ModuleType):")
-                out.append(openindent + mod_name + ' = __coconut__.imp.new_module("' + mod_name + '")')
-                out.append(closeindent * 2)
-            if out[-1].endswith(closeindent):
-                out[-1] += ".".join(fake_mods) + " = " + import_as_var
-            else:
-                out.append(".".join(fake_mods) + " = " + import_as_var)
+                out.append(openindent + mod_name + ' = __coconut__.imp.new_module("' + mod_name + '")' + closeindent * 2)
+            out.append(".".join(fake_mods) + " = " + import_as_var)
     else:
         imp_from, imp = parts
         if impas == imp:
@@ -1372,11 +1368,8 @@ class processor(object):
         except ParseBaseException as err:
             err_line, err_index = self.reformat(err.line, err.col-1)
             raise CoconutParseError(err_line, err_index, self.adjust(err.lineno))
-        except RuntimeError:
-            if self.indebug():
-                raise
-            else:
-                raise CoconutException("maximum recursion depth exceeded (try again with a larger --recursionlimit)")
+        except RuntimeError as old_err:
+            raise CoconutException("maximum recursion depth exceeded (try again with a larger --recursionlimit)")
         finally:
             self.clean()
         return out
@@ -1630,6 +1623,12 @@ class processor(object):
                 line = line[1:]
             if line and not line.startswith("#"):
                 line = " "*tablen*level + line
+            while line.endswith(openindent) or line.endswith(closeindent):
+                if line[-1] == openindent:
+                    level += 1
+                elif line[-1] == closeindent:
+                    level -= 1
+                line = line[:-1]
             out.append(line)
         return "\n".join(out)
 
@@ -1870,23 +1869,19 @@ class processor(object):
         for paths, impas in importmap:
             if len(paths) == 1:
                 more_stmts = gen_imports(paths[0], impas)
-                if stmts and stmts[-1] == closeindent:
-                    more_stmts[0] = stmts.pop() + more_stmts[0]
                 stmts.extend(more_stmts)
             else:
                 first, second, version_check = paths
-                if stmts and stmts[-1] == closeindent:
-                    stmts[-1] += "if _coconut_sys.version_info < " + str(version_check) + ":"
-                else:
-                    stmts.append("if _coconut_sys.version_info < " + str(version_check) + ":")
-                more_stmts = gen_imports(first, impas)
-                more_stmts[0] = openindent + more_stmts[0]
-                stmts.extend(more_stmts)
-                stmts.append(closeindent + "else:")
-                more_stmts = gen_imports(second, impas)
-                more_stmts[0] = openindent + more_stmts[0]
-                stmts.extend(more_stmts)
-                stmts.append(closeindent)
+                stmts.append("if _coconut_sys.version_info < " + str(version_check) + ":")
+                first_stmts = gen_imports(first, impas)
+                first_stmts[0] = openindent + first_stmts[0]
+                first_stmts[-1] += closeindent
+                stmts.extend(first_stmts)
+                stmts.append("else:")
+                second_stmts = gen_imports(second, impas)
+                second_stmts[0] = openindent + second_stmts[0]
+                second_stmts[-1] += closeindent
+                stmts.extend(second_stmts)
         return "\n".join(stmts)
 
     def complex_raise_stmt_handle(self, tokens):
