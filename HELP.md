@@ -150,7 +150,7 @@ which should produce `hello, world!` as the output.
 
 Compiling single files is not the only way to use the Coconut command-line utility, however. We can also compile all the Coconut files in a given directory simply by passing that directory as the first argument, which will get rid of the need to run the same Coconut header code in each file by storing it in a `__coconut__.py` file in the same directory.
 
-The Coconut  compiler supports a large variety of different compilation options, the help for which can always be accessed by entering `coconut -h` into the command line. One of the most useful of these is `--strict` (or `-s` for short), which will force you to make your source code obey certain cleanliness standards.
+The Coconut  compiler supports a large variety of different compilation options, the help for which can always be accessed by entering `coconut -h` into the command line. Two of the most useful of these are `--strict` (or `-s` for short) and and `--linenumbers` (or `-l` for short). Using `--strict` will force your source code to obey certain cleanliness standards, and using `--linenumbers` will add the line numbers of your source code as comments in the compiled code, allowing you to see what line in your source code corresponds to a line in the compiled code where an error is occurring, for ease of debugging.
 
 ### Using IPython / Jupyter
 
