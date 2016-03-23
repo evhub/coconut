@@ -1667,13 +1667,18 @@ class processor(object):
                 line = line[1:].lstrip()
             if line and not line.startswith("#"):
                 line = " "*self.tablen*level + line
+            if "#" in line:
+                line, comment = line.split("#", 1)
+                line = line.rstrip()
+            else:
+                comment = ""
             while line.endswith(openindent) or line.endswith(closeindent):
                 if line[-1] == openindent:
                     level += 1
                 elif line[-1] == closeindent:
                     level -= 1
                 line = line[:-1].rstrip()
-            out.append(line)
+            out.append(line + comment)
         return "\n".join(out)
 
     def linenumber_repl(self, inputstring):
@@ -1681,24 +1686,19 @@ class processor(object):
         if not self.linenumbers:
             return inputstring
         out = []
-        ln = 1
+        ln = None
         for line in inputstring.splitlines():
-            line = line.strip()
-            indents = ""
-            while line.endswith(closeindent) or line.endswith(openindent):
-                indents += line[-1]
-                line = line[:-1].rstrip()
             if line.endswith(lnwrapper):
                 line, index = line[:-1].rsplit(unwrapper, 1)
                 ln = self.refs[int(index)]
                 if not isinstance(ln, int):
                     raise CoconutException("invalid reference for a linenumber", ln)
-            if clean(line):
+            if ln is not None and line:
                 if self.minify:
                     line += self.wrap_comment(str(ln))
                 else:
                     line += self.wrap_comment("line "+str(ln))
-            out.append(line + indents)
+            out.append(line)
         return "\n".join(out)
 
     def passthrough_repl(self, inputstring):
@@ -1742,7 +1742,7 @@ class processor(object):
                     ref = self.refs[int(comment)]
                     if not isinstance(ref, str):
                         raise CoconutException("invalid reference for a comment", ref)
-                    if not self.minify and out and not out[-1].endswith("\n"):
+                    if out and not out[-1].endswith("\n"):
                         out.append(" ")
                     out.append("#" + ref)
                     comment = None
