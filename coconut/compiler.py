@@ -49,6 +49,7 @@ hash_sep = "\x00"
 openindent = "\u204b"
 closeindent = "\xb6"
 strwrapper = "'" # only possible to use ' because all added strings use "
+lnwrapper = "\u23f4"
 unwrapper = "\u23f9"
 white = " \t\f"
 downs = "([{"
@@ -1204,8 +1205,9 @@ class processor(object):
         self.setup(target, strict, minify, linenumbers)
         self.preprocs = [self.prepare, self.str_proc, self.passthrough_proc, self.ind_proc]
         self.postprocs = [self.reind_proc, self.repl_proc, self.header_proc, self.polish]
+        self.replprocs = [self.linenumber_repl, self.passthrough_repl, self.str_repl]
         self.bind()
-        self.clean()
+        self.reset()
 
     def setup(self, target=None, strict=False, minify=False, linenumbers=False):
         """Initializes target, strict, and minify."""
@@ -1249,7 +1251,7 @@ class processor(object):
         self.async_block <<= attach(self.async_block_ref, self.async_stmt_check)
         self.await_keyword <<= attach(self.await_keyword_ref, self.await_keyword_check)
 
-    def clean(self):
+    def reset(self):
         """Resets references."""
         self.indchar = None
         self.refs = []
@@ -1332,6 +1334,10 @@ class processor(object):
         """Wraps a comment."""
         return "#" + self.add_ref(text) + unwrapper
 
+    def wrap_linenumber(self, ln):
+        """Wraps a linenumber."""
+        return unwrapper + self.add_ref(ln) + lnwrapper
+
     def indebug(self):
         """Checks whether debug mode is active."""
         return self.tracing.on
@@ -1402,7 +1408,7 @@ class processor(object):
         except RuntimeError as old_err:
             raise CoconutException("maximum recursion depth exceeded (try again with a larger --recursionlimit)")
         finally:
-            self.clean()
+            self.reset()
         return out
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1654,7 +1660,7 @@ class processor(object):
                     level += 1
                 elif line[0] == closeindent:
                     level -= 1
-                line = line[1:]
+                line = line[1:].lstrip()
             if line and not line.startswith("#"):
                 line = " "*self.tablen*level + line
             while line.endswith(openindent) or line.endswith(closeindent):
@@ -1662,7 +1668,27 @@ class processor(object):
                     level += 1
                 elif line[-1] == closeindent:
                     level -= 1
-                line = line[:-1]
+                line = line[:-1].rstrip()
+            out.append(line)
+        return "\n".join(out)
+
+    def linenumber_repl(self, inputstring):
+        """Adds back linenumbers."""
+        if not self.linenumbers:
+            return inputstring
+        out = []
+        ln = 1
+        for line in inputstring.splitlines():
+            if line.endswith(lnwrapper):
+                line, index = line[:-1].rsplit(unwrapper, 1)
+                ln = self.refs[int(index)]
+                if not isinstance(ln, int):
+                    raise CoconutException("invalid reference for a linenumber", ln)
+            if clean(line):
+                if self.minify:
+                    line += self.wrap_comment(str(ln))
+                else:
+                    line += self.wrap_comment("line "+str(ln))
             out.append(line)
         return "\n".join(out)
 
@@ -1677,8 +1703,8 @@ class processor(object):
                     index += c
                 elif c == unwrapper and index:
                     ref = self.refs[int(index)]
-                    if isinstance(ref, tuple):
-                        raise CoconutException("passthrough marker points to string", ref)
+                    if not isinstance(ref, str):
+                        raise CoconutException("invalid reference for a passthrough", ref)
                     out.append(ref)
                     index = None
                 elif c != "\\" or index:
@@ -1705,11 +1731,9 @@ class processor(object):
                     comment += c
                 elif c == unwrapper and comment:
                     ref = self.refs[int(comment)]
-                    if isinstance(ref, tuple):
-                        raise CoconutException("comment marker points to string", ref)
-                    if not self.minify and out and not out[-1].endswith("\n"):
-                        out += " "
-                    out.append("#" + ref)
+                    if not isinstance(ref, str):
+                        raise CoconutException("invalid reference for a comment", ref)
+                    out.append(" #" + ref)
                     comment = None
                 else:
                     raise CoconutException("invalid comment marker in", line(x, inputstring))
@@ -1719,7 +1743,7 @@ class processor(object):
                 elif c == unwrapper and string:
                     ref = self.refs[int(string)]
                     if not isinstance(ref, tuple):
-                        raise CoconutException("string marker points to comment/passthrough", ref)
+                        raise CoconutException("invalid reference for a str", ref)
                     text, strchar, multiline = ref
                     if multiline:
                         out.append(strchar*3 + text + strchar*3)
@@ -1738,8 +1762,10 @@ class processor(object):
         return "".join(out)
 
     def repl_proc(self, inputstring, **kwargs):
-        """Replaces passthroughs, strings, and comments."""
-        return self.str_repl(self.passthrough_repl(inputstring))
+        """Processes using replprocs."""
+        for repl in self.replprocs:
+            inputstring = repl(inputstring)
+        return inputstring
 
     def header_proc(self, inputstring, header="file", initial="initial", usehash=None, **kwargs):
         """Adds the header."""
@@ -1773,10 +1799,8 @@ class processor(object):
             raise CoconutException("invalid endline tokens", tokens)
         elif not self.linenumbers:
             return tokens[0]
-        elif self.minify:
-            return self.wrap_comment(str(self.adjust(lineno(location, original)))) + tokens[0]
         else:
-            return self.wrap_comment("line "+str(self.adjust(lineno(location, original)))) + tokens[0]
+            return self.wrap_linenumber(self.adjust(lineno(location, original))) + tokens[0]
 
     def item_handle(self, original, location, tokens):
         """Processes items."""
