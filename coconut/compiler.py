@@ -1677,12 +1677,17 @@ class processor(object):
         return "\n".join(out)
 
     def linenumber_repl(self, inputstring):
-        """Adds back linenumbers."""
+        """Adds in linenumbers."""
         if not self.linenumbers:
             return inputstring
         out = []
         ln = 1
         for line in inputstring.splitlines():
+            line = line.strip()
+            indents = ""
+            while line.endswith(closeindent) or line.endswith(openindent):
+                indents += line[-1]
+                line = line[:-1].rstrip()
             if line.endswith(lnwrapper):
                 line, index = line[:-1].rsplit(unwrapper, 1)
                 ln = self.refs[int(index)]
@@ -1693,7 +1698,7 @@ class processor(object):
                     line += self.wrap_comment(str(ln))
                 else:
                     line += self.wrap_comment("line "+str(ln))
-            out.append(line)
+            out.append(line + indents)
         return "\n".join(out)
 
     def passthrough_repl(self, inputstring):
