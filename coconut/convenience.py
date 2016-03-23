@@ -50,9 +50,8 @@ def version(which="num"):
 #-----------------------------------------------------------------------------------------------------------------------
 
 def setup(target=None, strict=False, minify=False, quiet=False):
-    """Gets CLI.proc."""
-    CLI.setup(target, strict, minify)
-    CLI.quiet(quiet)
+    """Sets up the Coconut parser."""
+    CLI.setup(target, strict, minify, quiet)
 
 def parse(code, mode="exec"):
     """Parses Coconut code."""

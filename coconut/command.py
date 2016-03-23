@@ -227,22 +227,17 @@ class cli(object):
         """Processes command-line arguments."""
         self.cmd(self.commandline.parse_args())
 
-    def setup(self, target=None, strict=False, minify=False, color=None):
+    def setup(self, target=None, strict=False, minify=False, quiet=False, color=None):
         """Creates the processor."""
         if color is not None:
             self.console.setcolor(color)
             self.prompt = self.console.addcolor(self.prompt, color)
             self.moreprompt = self.console.addcolor(self.moreprompt, color)
+        self.console.on = not quiet
         if self.proc is None:
             self.proc = processor(target, strict, minify, self.console.debug)
         else:
             self.proc.setup(target, strict, minify)
-
-    def quiet(self, state=None):
-        """Quiets output."""
-        if state is None:
-            state = self.console.on
-        self.console.on = not state
 
     def indebug(self):
         """Determines whether the processor is in debug mode."""
@@ -256,16 +251,7 @@ class cli(object):
         try:
             if args.recursionlimit[0] is not None:
                 sys.setrecursionlimit(args.recursionlimit[0])
-            self.setup(args.target[0], args.strict, args.minify, args.color[0])
-            if args.quiet:
-                if args.version:
-                    raise CoconutException("cannot pass both --quiet and --version")
-                elif args. verbose:
-                    raise CoconutException("cannot pass both --quiet and --verbose")
-                else:
-                    self.quiet(True)
-            else:
-                self.quiet(False)
+            self.setup(args.target[0], args.strict, args.minify, args.quiet, args.color[0])
             if args.version:
                 self.console.show(self.version)
             if args.display:
