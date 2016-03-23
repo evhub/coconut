@@ -1670,6 +1670,7 @@ class processor(object):
             if "#" in line:
                 line, comment = line.split("#", 1)
                 line = line.rstrip()
+                comment = "#" + comment
             else:
                 comment = ""
             while line.endswith(openindent) or line.endswith(closeindent):
