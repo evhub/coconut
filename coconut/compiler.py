@@ -1198,23 +1198,23 @@ class processor(object):
     targets = (None, "2", "3")
     using_autopep8 = False
 
-    def __init__(self, target=None, strict=False, minify=False, debugger=printerr):
+    def __init__(self, target=None, strict=False, minify=False, linenumbers=False, debugger=printerr):
         """Creates a new processor."""
         self.tracing.show = debugger
-        self.setup(target, strict, minify)
+        self.setup(target, strict, minify, linenumbers)
         self.preprocs = [self.prepare, self.str_proc, self.passthrough_proc, self.ind_proc]
         self.postprocs = [self.reind_proc, self.repl_proc, self.header_proc, self.polish]
         self.bind()
         self.clean()
 
-    def setup(self, target=None, strict=False, minify=False):
+    def setup(self, target=None, strict=False, minify=False, linenumbers=False):
         """Initializes target, strict, and minify."""
         if target in self.targets:
             self.target = target
         else:
             raise CoconutException("unsupported target Python version " + ascii(target)
                 + " (supported targets are '2', '3', or leave blank for universal)")
-        self.strict, self.minify = strict, minify
+        self.strict, self.minify, self.linenumbers = strict, minify, linenumbers
         if self.minify:
             self.tablen = 1
         else:
@@ -1236,6 +1236,7 @@ class processor(object):
         self.destructuring_stmt <<= self.trace(attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle), "destructuring_stmt")
         self.name_match_funcdef <<= self.trace(attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle), "name_match_funcdef")
         self.op_match_funcdef <<= self.trace(attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle), "op_match_funcdef")
+        self.endline <<= self.trace(attach(self.endline_ref, self.endline_handle), "endline")
         self.u_string <<= attach(self.u_string_ref, self.u_string_check)
         self.typedef <<= attach(self.typedef_ref, self.typedef_check)
         self.return_typedef <<= attach(self.return_typedef_ref, self.typedef_check)
@@ -1259,7 +1260,15 @@ class processor(object):
     def genhash(self, package, code):
         """Generates a hash from code."""
         return hex(checksum(
-                hash_sep.join(str(item) for item in (VERSION_STR, self.target, self.minify, self.using_autopep8, package, code)).encode(encoding)
+                hash_sep.join(str(item) for item in (
+                    VERSION_STR,
+                    self.target,
+                    self.minify,
+                    self.linenumbers,
+                    self.using_autopep8,
+                    package,
+                    code
+                )).encode(encoding)
             ) & 0xffffffff) # necessary for cross-compatibility
 
     def adjust(self, ln):
@@ -1404,7 +1413,7 @@ class processor(object):
         """Prepares a string for processing."""
         if strip:
             inputstring = inputstring.strip()
-        return "\n".join(inputstring.splitlines())
+        return "\n".join(inputstring.splitlines()) + "\n"
 
     def str_proc(self, inputstring, **kwargs):
         """Processes strings and comments."""
@@ -1427,7 +1436,10 @@ class processor(object):
             if hold is not None:
                 if len(hold) == 1: # hold == [_comment]
                     if c == "\n":
-                        out.append(self.wrap_comment(hold[_comment])+c)
+                        if self.minify:
+                            out.append(c)
+                        else:
+                            out.append(self.wrap_comment(hold[_comment])+c)
                         hold = None
                     else:
                         hold[_comment] += c
@@ -1656,7 +1668,7 @@ class processor(object):
 
     def passthrough_repl(self, inputstring):
         """Adds back passthroughs."""
-        out = ""
+        out = []
         index = None
         for x in range(len(inputstring)+1):
             c = inputstring[x] if x != len(inputstring) else None
@@ -1667,23 +1679,23 @@ class processor(object):
                     ref = self.refs[int(index)]
                     if isinstance(ref, tuple):
                         raise CoconutException("passthrough marker points to string", ref)
-                    out += ref
+                    out.append(ref)
                     index = None
                 elif c != "\\" or index:
-                    out += "\\" + index
+                    out.append("\\" + index)
                     if c is not None:
-                        out += c
+                        out.append(c)
                     index = None
             elif c is not None:
                 if c == "\\":
                     index = ""
                 else:
-                    out += c
-        return out
+                    out.append(c)
+        return "".join(out)
 
     def str_repl(self, inputstring):
         """Adds back strings."""
-        out = ""
+        out = []
         comment = None
         string = None
         for x in range(len(inputstring)+1):
@@ -1695,10 +1707,9 @@ class processor(object):
                     ref = self.refs[int(comment)]
                     if isinstance(ref, tuple):
                         raise CoconutException("comment marker points to string", ref)
-                    if not self.minify:
-                        if out and not out.endswith("\n"):
-                            out += " "
-                        out += "#" + ref
+                    if not self.minify and out and not out[-1].endswith("\n"):
+                        out += " "
+                    out.append("#" + ref)
                     comment = None
                 else:
                     raise CoconutException("invalid comment marker in", line(x, inputstring))
@@ -1711,9 +1722,9 @@ class processor(object):
                         raise CoconutException("string marker points to comment/passthrough", ref)
                     text, strchar, multiline = ref
                     if multiline:
-                        out += strchar*3 + text + strchar*3
+                        out.append(strchar*3 + text + strchar*3)
                     else:
-                        out += strchar + text + strchar
+                        out.append(strchar + text + strchar)
                     string = None
                 else:
                     raise CoconutException("invalid string marker in", line(x, inputstring))
@@ -1723,8 +1734,8 @@ class processor(object):
                 elif c == strwrapper:
                     string = ""
                 else:
-                    out += c
-        return out
+                    out.append(c)
+        return "".join(out)
 
     def repl_proc(self, inputstring, **kwargs):
         """Replaces passthroughs, strings, and comments."""
@@ -1755,6 +1766,17 @@ class processor(object):
 #-----------------------------------------------------------------------------------------------------------------------
 # PARSER HANDLERS:
 #-----------------------------------------------------------------------------------------------------------------------
+
+    def endline_handle(self, original, location, tokens):
+        """Inserts line number comments when in linenumbers mode."""
+        if len(tokens) != 1:
+            raise CoconutException("invalid endline tokens", tokens)
+        elif not self.linenumbers:
+            return tokens[0]
+        elif self.minify:
+            return self.wrap_comment(str(self.adjust(lineno(location, original)))) + tokens[0]
+        else:
+            return self.wrap_comment("line "+str(self.adjust(lineno(location, original)))) + tokens[0]
 
     def item_handle(self, original, location, tokens):
         """Processes items."""
@@ -2171,7 +2193,9 @@ class processor(object):
     passthrough = Combine(backslash + integer + unwrap)
     passthrough_block = Combine(fixto(dubbackslash, "\\", copy=True) + integer + unwrap)
 
-    lineitem = Combine(Optional(comment) + Literal("\n"))
+    endline = Forward()
+    endline_ref = Literal("\n")
+    lineitem = Combine(Optional(comment) + endline)
     newline = condense(OneOrMore(lineitem))
     startmarker = StringStart() - condense(ZeroOrMore(lineitem) - Optional(moduledoc_item))
     endmarker = StringEnd()

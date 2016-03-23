@@ -94,7 +94,7 @@ python -m pip install coconut
 ### Usage
 
 ```
-coconut [-h] [-v] [source] [dest] [-t version] [-s] [-p] [-a] [-f] [-d] [-r] [-n] [-m] [-i] [-q] [-c code] [--jupyter ...] [--autopep8 ...] [--recursionlimit limit] [--color color] [--verbose]
+coconut [-h] [-v] [source] [dest] [-t version] [-s] [-l] [-p] [-a] [-f] [-d] [-r] [-n] [-m] [-i] [-q] [-c code] [--jupyter ...] [--autopep8 ...] [--recursionlimit limit] [--color color] [--verbose]
 ```
 
 #### Positional Arguments
@@ -111,6 +111,7 @@ dest                  destination directory for compiled files (defaults to the 
 -v, --version           print Coconut and Python version information
 -t, --target            specify target Python version (defaults to universal)
 -s, --strict            enforce code cleanliness standards
+-l, --linenumbers     add line number comments for ease of debugging
 -p, --package           compile source as part of a package (defaults to only if source is a directory)
 -a, --standalone        compile source as standalone files (defaults to only if source is a single file)
 -f, --force             force overwriting of compiled Python (otherwise only overwrites when the source changes)
@@ -1405,14 +1406,16 @@ Likely the most useful of the convenience functions, `parse` takes Coconut code 
 
 #### `setup`
 
-**coconut.convenience.setup**(**[[[[**_target_**]**_, strict_**]**_, minify_**]**_, quiet_**]**)
+**coconut.convenience.setup**(**_target, strict, minify, linenumbers, quiet, color_**)**
 
-If `--target`, `--strict`, `--minify`, or `--quiet` are desired for `parse`, the four arguments to `setup`, _target_, _strict_, _minify_, and _quiet_, will each set the value of the corresponding flag. The possible values for each flag are:
+If `--target`, `--strict`, `--minify`, `--linenumbers`, `--quiet`, or `--color` are desired for `parse`, the arguments to `setup` will each set the value of the corresponding flag. The possible values for each flag are:
 
 - _target_: `None` (default), `"2"`, or `"3"`
 - _strict_: `False` (default) or `True`
 - _minify_: `False` (default) or `True`
+- _linenumbers_: `False` (default) or `True`
 - _quiet_: `False` (default) or `True`
+- _color_: `None` (default) or `str`
 
 #### `cmd`
 

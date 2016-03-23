@@ -196,6 +196,7 @@ class cli(object):
     commandline.add_argument("-v", "--version", action="store_const", const=True, default=False, help="print Coconut and Python version information")
     commandline.add_argument("-t", "--target", metavar="version", type=str, nargs=1, default=[None], help="specify target Python version (defaults to universal)")
     commandline.add_argument("-s", "--strict", action="store_const", const=True, default=False, help="enforce code cleanliness standards")
+    commandline.add_argument("-l", "--linenumbers", action="store_const", const=True, default=False, help="add line number comments for ease of debugging")
     commandline.add_argument("-p", "--package", action="store_const", const=True, default=False, help="compile source as part of a package (defaults to only if source is a directory)")
     commandline.add_argument("-a", "--standalone", action="store_const", const=True, default=False, help="compile source as standalone files (defaults to only if source is a single file)")
     commandline.add_argument("-f", "--force", action="store_const", const=True, default=False, help="force overwriting of compiled Python (otherwise only overwrites when the source changes)")
@@ -227,17 +228,17 @@ class cli(object):
         """Processes command-line arguments."""
         self.cmd(self.commandline.parse_args())
 
-    def setup(self, target=None, strict=False, minify=False, quiet=False, color=None):
-        """Creates the processor."""
+    def setup(self, target=None, strict=False, minify=False, linenumbers=False, quiet=False, color=None):
+        """Sets parameters for the processor."""
         if color is not None:
             self.console.setcolor(color)
             self.prompt = self.console.addcolor(self.prompt, color)
             self.moreprompt = self.console.addcolor(self.moreprompt, color)
         self.console.on = not quiet
         if self.proc is None:
-            self.proc = processor(target, strict, minify, self.console.debug)
+            self.proc = processor(target, strict, minify, linenumbers, self.console.debug)
         else:
-            self.proc.setup(target, strict, minify)
+            self.proc.setup(target, strict, minify, linenumbers)
 
     def indebug(self):
         """Determines whether the processor is in debug mode."""
@@ -251,7 +252,7 @@ class cli(object):
         try:
             if args.recursionlimit[0] is not None:
                 sys.setrecursionlimit(args.recursionlimit[0])
-            self.setup(args.target[0], args.strict, args.minify, args.quiet, args.color[0])
+            self.setup(args.target[0], args.strict, args.minify, args.linenumbers, args.quiet, args.color[0])
             if args.version:
                 self.console.show(self.version)
             if args.display:
