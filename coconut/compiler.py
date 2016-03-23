@@ -1419,7 +1419,7 @@ class processor(object):
         """Prepares a string for processing."""
         if strip:
             inputstring = inputstring.strip()
-        return "\n".join(inputstring.splitlines()) + "\n"
+        return "\n".join(inputstring.splitlines())
 
     def str_proc(self, inputstring, **kwargs):
         """Processes strings and comments."""
@@ -1590,7 +1590,7 @@ class processor(object):
         return count
 
     def ind_proc(self, inputstring, **kwargs):
-        """Processes indentation."""
+        """Processes indentation and fixes line/file endings."""
         lines = inputstring.splitlines()
         new = []
         levels = []
