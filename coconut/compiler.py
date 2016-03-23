@@ -1443,9 +1443,11 @@ class processor(object):
                 if len(hold) == 1: # hold == [_comment]
                     if c == "\n":
                         if self.minify:
-                            lines = "".join(out).splitlines()
-                            lines[-1] = lines[-1].rstrip()
-                            out = ["\n".join(lines), c]
+                            if out:
+                                lines = "".join(out).splitlines()
+                                lines[-1] = lines[-1].rstrip()
+                                out = ["\n".join(lines)]
+                            out.append(c)
                         else:
                             out.append(self.wrap_comment(hold[_comment])+c)
                         hold = None
