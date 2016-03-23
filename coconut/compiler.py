@@ -1733,7 +1733,9 @@ class processor(object):
                     ref = self.refs[int(comment)]
                     if not isinstance(ref, str):
                         raise CoconutException("invalid reference for a comment", ref)
-                    out.append(" #" + ref)
+                    if not self.minify and out and not out[-1].endswith("\n"):
+                        out.append(" ")
+                    out.append("#" + ref)
                     comment = None
                 else:
                     raise CoconutException("invalid comment marker in", line(x, inputstring))
