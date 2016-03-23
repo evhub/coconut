@@ -1694,6 +1694,7 @@ class processor(object):
                 ln = self.refs[int(index)]
                 if not isinstance(ln, int):
                     raise CoconutException("invalid reference for a linenumber", ln)
+                line = line.rstrip()
             if ln is not None and line:
                 if self.minify:
                     line += self.wrap_comment(str(ln))
