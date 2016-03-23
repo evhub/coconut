@@ -361,18 +361,21 @@ def gethash(compiled):
 
 def minify(compiled):
     """Performs basic minifications (fails with strings or non-tabideal indentation)."""
-    out = []
-    for line in compiled.splitlines():
-        line = line.split("#", 1)[0].rstrip()
-        if line:
-            ind = 0
-            while line.startswith(" "):
-                line = line[1:]
-                ind += 1
-            if ind % tabideal != 0:
-                raise CoconutException("invalid indentation in", line)
-            out.append(" "*(ind//tabideal) + line)
-    return "\n".join(out) + "\n"
+    compiled = compiled.strip()
+    if compiled:
+        out = []
+        for line in compiled.splitlines():
+            line = line.split("#", 1)[0].rstrip()
+            if line:
+                ind = 0
+                while line.startswith(" "):
+                    line = line[1:]
+                    ind += 1
+                if ind % tabideal != 0:
+                    raise CoconutException("invalid indentation in", line)
+                out.append(" "*(ind//tabideal) + line)
+        compiled = "\n".join(out) + "\n"
+    return compiled
 
 def getheader(which, target=None, usehash=None):
     """Generates the specified header."""
