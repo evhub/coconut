@@ -4,13 +4,14 @@
 
 1. [If I'm already perfectly happy with Python, why should I learn Coconut?](#if-im-already-perfectly-happy-with-python-why-should-i-learn-coconut)
 2. [I don't like functional programming, should I still use Coconut?](#i-dont-like-functional-programming-should-i-still-use-coconut)
-3. [I've never done functional programming before, should I still try to learn Coconut?](#ive-never-done-functional-programming-before-should-i-still-try-to-learn-coconut)
-4. [I don't know Python very well, should I still try to learn Coconut?](#i-dont-know-python-very-well-should-i-still-try-to-learn-coconut)
-5. [Why isn't Coconut purely functional?](#why-isnt-coconut-purely-functional)
-6. [Won't a spin-off language like Coconut be bad for the Python community?](#wont-a-spin-off-language-like-coconut-be-bad-for-the-python-community)
-7. [I want to contribute to Coconut, how do I get started?](#i-want-to-contribute-to-coconut-how-do-i-get-started)
-8. [Why the name Coconut?](#why-the-name-coconut)
-9. [Who developed Coconut?](#who-developed-coconut)
+3. [How will I be able to debug my Python if I'm not the one writing it?](#how-will-i-be-able-to-debug-my-python-if-im-not-the-one-writing-it)
+4. [I've never done functional programming before, should I still try to learn Coconut?](#ive-never-done-functional-programming-before-should-i-still-try-to-learn-coconut)
+5. [I don't know Python very well, should I still try to learn Coconut?](#i-dont-know-python-very-well-should-i-still-try-to-learn-coconut)
+6. [Why isn't Coconut purely functional?](#why-isnt-coconut-purely-functional)
+7. [Won't a spin-off language like Coconut be bad for the Python community?](#wont-a-spin-off-language-like-coconut-be-bad-for-the-python-community)
+8. [I want to contribute to Coconut, how do I get started?](#i-want-to-contribute-to-coconut-how-do-i-get-started)
+9. [Why the name Coconut?](#why-the-name-coconut)
+10. [Who developed Coconut?](#who-developed-coconut)
 
 <!-- /MarkdownTOC -->
 
@@ -21,6 +22,10 @@ You're exactly the person Coconut was built for! Coconut lets you keep doing the
 ### I don't like functional programming, should I still use Coconut?
 
 Definitely! While Coconut is great for functional programming, it also has a bunch of other awesome features as well, including the ability to compile Python 3 code into universal Python code that will run the same on _any version_. And that's not even mentioning all of the features like pattern-matching and destructuring assignment with utility extending far beyond just functional programming. That being said, I'd highly recommend you give functional programming a shot, and since Coconut isn't purely functional, it's a great introduction to the functional style.
+
+### How will I be able to debug my Python if I'm not the one writing it?
+
+Ease of debugging has long been a problem for all compiled languages, including languages like `C` and `C++` that these days we think of as very low-level languages. The solution to this problem has always been the same: line number maps. If you know what line in the compiled code corresponds to what line in the source code, you can easily debug just from the source code, without ever needing to deal with the compiled code at all. In Coconut, this can easily be accomplished by passing the `--linenumbers` or `-l` flag, which will add a comment to every line in the compiled code with the number of the corresponding line in the source code. Then, if Python raises an error, you'll be able to see from the snippet of the compiled code that it shows you a comment telling you what line in your source code you need to look at to debug the error.
 
 ### I've never done functional programming before, should I still try to learn Coconut?
 
