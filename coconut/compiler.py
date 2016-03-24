@@ -1218,8 +1218,8 @@ class processor(object):
     def setup(self, target=None, strict=False, minify=False, linenumbers=False):
         """Initializes target, strict, and minify."""
         if target not in targets:
-            raise CoconutException("unsupported target Python version " + ascii(target)
-                + " (supported targets are '2', '3', or leave blank for universal)")
+            raise CoconutException('unsupported target Python version "' + str(target)
+                + '" (supported targets are "2", "3", or leave blank for universal)')
         self.target, self.strict, self.minify, self.linenumbers = target, strict, minify, linenumbers
         if self.minify:
             self.tablen = 1
@@ -1985,13 +1985,22 @@ class processor(object):
 
     def complex_raise_stmt_handle(self, tokens):
         """Processes Python 3 raise from statement."""
-        if len(tokens) != 2:
-            raise CoconutException("invalid raise from tokens", tokens)
-        elif self.target == "3":
-            return "raise " + tokens[0] + " from " + tokens[1]
+        if len(tokens) == 1:
+            new_exc, old_exc = None, tokens[0]
+        elif len(tokens) == 2:
+            new_exc, old_exc = tokens
         else:
-            return (raise_from_var + " = " + tokens[0] + "\n"
-                    + raise_from_var + ".__cause__ = " + tokens[1] + "\n"
+            raise CoconutException("invalid raise from tokens", tokens)
+        if self.target == "3":
+            if new_exc is None:
+                return "raise from " + old_exc
+            else:
+                return "raise " + new_exc + " from " + old_exc
+        else:
+            if new_exc is None:
+                new_exc = "_coconut_sys.exc_info()[1]"
+            return (raise_from_var + " = " + new_exc + "\n"
+                    + raise_from_var + ".__cause__ = " + old_exc + "\n"
                     + "raise " + raise_from_var)
 
 
