@@ -549,12 +549,15 @@ matrix:
         - python minify_build/runner.py
         - coconut src linenumbers_build --strict --linenumbers
         - coconut src_target/cocotest/py3_test.coc linenumbers_build/cocotest --strict --package --target 3 --linenumbers
+        - coconut src_target/cocotest/py35_test.coc linenumbers_build/cocotest --strict --package --target 3 --linenumbers
         - python linenumbers_build/runner.py
         - coconut src lns_min_build --strict --linenumbers --minify
         - coconut src_target/cocotest/py3_test.coc lns_min_build/cocotest --strict --package --target 3 --linenumbers --minify
+        - coconut src_target/cocotest/py35_test.coc lns_min_build/cocotest --strict --package --target 3 --linenumbers --minify
         - python lns_min_build/runner.py
         - coconut src autopep8_build --strict --autopep8
         - coconut src_target/cocotest/py3_test.coc autopep8_build/cocotest --strict --package --target 3 --autopep8
+        - coconut src_target/cocotest/py35_test.coc autopep8_build/cocotest --strict --package --target 3 --autopep8
         - python autopep8_build/runner.py
         - coconut src_target target_build --strict --display --target 3
         - python target_build/runner.py
