@@ -2003,7 +2003,6 @@ class processor(object):
                     + raise_from_var + ".__cause__ = " + old_exc + "\n"
                     + "raise " + raise_from_var)
 
-
     def dict_comp_handle(self, original, location, tokens):
         """Processes Python 2.7 dictionary comprehension."""
         if len(tokens) != 3:
