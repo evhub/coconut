@@ -1887,7 +1887,7 @@ class processor(object):
             elif op == "..=":
                 out += name+" = (lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)))("+name+", ("+item+"))"
             elif op == "::=":
-                ichain_var = lazy_chain_var+"_"+str(self.ichain_count)
+                ichain_var = lazy_chain_var+"_"+str(self.ichain_count) # necessary to prevent a segfault caused by self-reference
                 out += ichain_var+" = "+name+"\n"
                 out += name+" = __coconut__.itertools.chain.from_iterable("+lazy_list_handle([ichain_var, "("+item+")"])+")"
                 self.ichain_count += 1
@@ -2230,7 +2230,6 @@ class processor(object):
     bin_num = Combine(CaselessLiteral("0b") + Optional(underscore.suppress()) + binint)
     oct_num = Combine(CaselessLiteral("0o") + Optional(underscore.suppress()) + octint)
     hex_num = Combine(CaselessLiteral("0x") + Optional(underscore.suppress()) + hexint)
-
     number = bin_num | oct_num | hex_num | complex_num | numitem
 
     moduledoc_item = Forward()
