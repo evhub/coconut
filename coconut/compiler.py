@@ -1211,12 +1211,10 @@ class processor(object):
 
     def setup(self, target=None, strict=False, minify=False, linenumbers=False):
         """Initializes target, strict, and minify."""
-        if target in self.targets:
-            self.target = target
-        else:
+        if target not in self.targets:
             raise CoconutException("unsupported target Python version " + ascii(target)
                 + " (supported targets are '2', '3', or leave blank for universal)")
-        self.strict, self.minify, self.linenumbers = strict, minify, linenumbers
+        self.target, self.strict, self.minify, self.linenumbers = target, strict, minify, linenumbers
         if self.minify:
             self.tablen = 1
         else:
@@ -1695,7 +1693,7 @@ class processor(object):
                 if not isinstance(ln, int):
                     raise CoconutException("invalid reference for a linenumber", ln)
                 line = line.rstrip()
-            if ln is not None and line:
+            if ln is not None and line and not line.lstrip().startswith("#"):
                 if self.minify:
                     line += self.wrap_comment(str(ln))
                 else:
