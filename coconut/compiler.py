@@ -1810,10 +1810,12 @@ class processor(object):
         """Inserts line number comments when in linenumbers mode."""
         if len(tokens) != 1:
             raise CoconutException("invalid endline tokens", tokens)
-        elif not self.linenumbers:
-            return tokens[0]
-        else:
-            return self.wrap_linenumber(self.adjust(lineno(location, original))) + tokens[0]
+        out = tokens[0]
+        if self.minify:
+            out = out[0]
+        if self.linenumbers:
+            out = self.wrap_linenumber(self.adjust(lineno(location, original))) + out
+        return out
 
     def item_handle(self, original, location, tokens):
         """Processes items."""
@@ -2231,7 +2233,7 @@ class processor(object):
     passthrough_block = Combine(fixto(dubbackslash, "\\", copy=True) + integer + unwrap)
 
     endline = Forward()
-    endline_ref = Literal("\n")
+    endline_ref = condense(OneOrMore(Literal("\n")))
     lineitem = Combine(Optional(comment) + endline)
     newline = condense(OneOrMore(lineitem))
     startmarker = StringStart() - condense(ZeroOrMore(lineitem) - Optional(moduledoc_item))
