@@ -1336,7 +1336,7 @@ class processor(object):
 
     def wrap_linenumber(self, ln):
         """Wraps a linenumber."""
-        return unwrapper + self.add_ref(ln) + lnwrapper
+        return "#" + self.add_ref(ln) + lnwrapper
 
     def indebug(self):
         """Checks whether debug mode is active."""
@@ -1659,6 +1659,12 @@ class processor(object):
         level = 0
         for line in inputstring.splitlines():
             line = line.strip()
+            if "#" in line:
+                line, comment = line.split("#", 1)
+                line = line.rstrip()
+                comment = "#" + comment
+            else:
+                comment = ""
             while line.startswith(openindent) or line.startswith(closeindent):
                 if line[0] == openindent:
                     level += 1
@@ -1667,12 +1673,6 @@ class processor(object):
                 line = line[1:].lstrip()
             if line and not line.startswith("#"):
                 line = " "*self.tablen*level + line
-            if "#" in line:
-                line, comment = line.split("#", 1)
-                line = line.rstrip()
-                comment = "#" + comment
-            else:
-                comment = ""
             while line.endswith(openindent) or line.endswith(closeindent):
                 if line[-1] == openindent:
                     level += 1
@@ -1690,7 +1690,7 @@ class processor(object):
         ln = None
         for line in inputstring.splitlines():
             if line.endswith(lnwrapper):
-                line, index = line[:-1].rsplit(unwrapper, 1)
+                line, index = line[:-1].rsplit("#", 1)
                 ln = self.refs[int(index)]
                 if not isinstance(ln, int):
                     raise CoconutException("invalid reference for a linenumber", ln)
