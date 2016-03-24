@@ -760,7 +760,7 @@ def decorator_handle(tokens):
     for x in range(0, len(tokens)):
         if "simple" in tokens[x].keys() and len(tokens[x]) == 1:
             decorates.append("@"+tokens[x][0])
-        elif "complex" in tokens[x].keys() and len(tokens[x]) == 1:
+        elif "test" in tokens[x].keys() and len(tokens[x]) == 1:
             varname = decorator_var + "_" + str(x)
             defs.append(varname+" = "+tokens[x][0])
             decorates.append("@"+varname)
@@ -1129,11 +1129,19 @@ def case_handle(o, l, tokens):
 def except_handle(tokens):
     """Processes except statements."""
     if len(tokens) == 1:
-        return "except ("+tokens[0]+")"
+        errs, asname = tokens[0], None
     elif len(tokens) == 2:
-        return "except ("+tokens[0]+") as "+tokens[1]
+        errs, asname = tokens
     else:
         raise CoconutException("invalid except tokens", tokens)
+    out = "except "
+    if "list" in tokens.keys():
+        out += "(" + errs + ")"
+    else:
+        out += errs
+    if asname is not None:
+        out += " as " + asname
+    return out
 
 def set_to_tuple(tokens):
     """Converts set literal tokens to tuples."""
@@ -1141,7 +1149,7 @@ def set_to_tuple(tokens):
         raise CoconutException("invalid set maker tokens", tokens)
     elif "comp" in tokens.keys() or "list" in tokens.keys():
         return "(" + tokens[0] + ")"
-    elif "single" in tokens.keys():
+    elif "test" in tokens.keys():
         return "(" + tokens[0] + ",)"
     else:
         raise CoconutException("invalid set maker item", tokens[0])
@@ -2370,7 +2378,7 @@ class processor(object):
     set_s = fixto(CaselessLiteral("s"), "s")
     set_f = fixto(CaselessLiteral("f"), "f")
     set_letter = set_s | set_f
-    setmaker = Group(addspace(test + comp_for)("comp") | multi_testlist("list") | test("single"))
+    setmaker = Group(addspace(test + comp_for)("comp") | multi_testlist("list") | test("test"))
     set_literal_ref = lbrace.suppress() + setmaker + rbrace.suppress()
     set_letter_literal_ref = set_letter + lbrace.suppress() + Optional(setmaker) + rbrace.suppress()
     lazy_items = Optional(test + ZeroOrMore(comma.suppress() + test) + Optional(comma.suppress()))
@@ -2597,7 +2605,9 @@ class processor(object):
                        )
     while_stmt = addspace(Keyword("while") - condense(test - suite - Optional(else_stmt)))
     for_stmt = addspace(Keyword("for") - assignlist - Keyword("in") - condense(testlist - suite - Optional(else_stmt)))
-    except_clause = attach(Keyword("except").suppress() + testlist - Optional(Keyword("as").suppress() - name), except_handle)
+    except_clause = attach(Keyword("except").suppress() + (
+            multi_testlist("list") | test("test")
+        ) - Optional(Keyword("as").suppress() - name), except_handle)
     try_stmt = condense(Keyword("try") - suite + (
         Keyword("finally") - suite
         | (
@@ -2646,7 +2656,7 @@ class processor(object):
     datadef = condense(attach(Keyword("data").suppress() + name - data_args - data_suite, data_handle))
 
     simple_decorator = condense(dotted_name + Optional(lparen + callargslist + rparen))("simple")
-    complex_decorator = test("complex")
+    complex_decorator = test("test")
     decorators = attach(OneOrMore(at.suppress() - Group(simple_decorator ^ complex_decorator) - newline.suppress()), decorator_handle)
     decorated = condense(decorators + (
         classdef
