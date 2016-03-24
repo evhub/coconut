@@ -1985,23 +1985,14 @@ class processor(object):
 
     def complex_raise_stmt_handle(self, tokens):
         """Processes Python 3 raise from statement."""
-        if len(tokens) == 1:
-            new_exc, old_exc = None, tokens[0]
-        elif len(tokens) == 2:
-            new_exc, old_exc = tokens
-        else:
+        if len(tokens) != 2:
             raise CoconutException("invalid raise from tokens", tokens)
-        if self.target == "3":
-            if new_exc is None:
-                return "raise from " + old_exc
-            else:
-                return "raise " + new_exc + " from " + old_exc
+        elif self.target == "3":
+            return "raise " + tokens[0] + " from " + tokens[1]
         else:
-            if new_exc is None:
-                new_exc = "_coconut_sys.exc_info()[1]"
-            return (raise_from_var + " = " + new_exc + "\n"
-                    + raise_from_var + ".__cause__ = " + old_exc + "\n"
-                    + "raise " + raise_from_var)
+            return (raise_from_var + " = " + tokens[0] + "\n"
+                + raise_from_var + ".__cause__ = " + tokens[1] + "\n"
+                + "raise " + raise_from_var)
 
     def dict_comp_handle(self, original, location, tokens):
         """Processes Python 2.7 dictionary comprehension."""
@@ -2529,7 +2520,7 @@ class processor(object):
     continue_stmt = Keyword("continue")
     return_stmt = addspace(Keyword("return") - Optional(testlist))
     simple_raise_stmt = addspace(Keyword("raise") + Optional(test))
-    complex_raise_stmt_ref = Keyword("raise").suppress() + Optional(test) + Keyword("from").suppress() - test
+    complex_raise_stmt_ref = Keyword("raise").suppress() + test + Keyword("from").suppress() - test
     raise_stmt = complex_raise_stmt | simple_raise_stmt
     flow_stmt = break_stmt | continue_stmt | return_stmt | raise_stmt | yield_expr
 
