@@ -1284,9 +1284,9 @@ class processor(object):
     def reformat(self, snip, index=None):
         """Post processes a preprocessed snippet."""
         if index is None:
-            return self.repl_proc(snip)
+            return self.repl_proc(snip, linenumbers=False)
         else:
-            return self.repl_proc(snip), len(self.repl_proc(snip[:index]))
+            return self.repl_proc(snip, linenumbers=False), len(self.repl_proc(snip[:index], linenumbers=False))
 
     def make_err(self, errtype, message, original, location, ln=None, reformat=True):
         """Generates an error of the specified type."""
@@ -1680,33 +1680,38 @@ class processor(object):
             out.append(line + comment)
         return "\n".join(out)
 
-    def linenumber_repl(self, inputstring):
+    def linenumber_repl(self, inputstring, linenumbers=None, **kwargs):
         """Adds in linenumbers."""
-        if not self.linenumbers:
+        if self.linenumbers:
+            if linenumbers is None:
+                linenumbers = True
+            out = []
+            ln = 1
+            fix = False
+            for line in inputstring.splitlines():
+                if line.endswith(lnwrapper):
+                    line, index = line[:-1].rsplit("#", 1)
+                    ln = self.refs[int(index)]
+                    if not isinstance(ln, int):
+                        raise CoconutException("invalid reference for a linenumber", ln)
+                    line = line.rstrip()
+                    fix = True
+                elif fix:
+                    ln += 1
+                    fix = False
+                if linenumbers and line and not line.lstrip().startswith("#"):
+                    if self.minify:
+                        line += self.wrap_comment(str(ln))
+                    else:
+                        line += self.wrap_comment("line "+str(ln))
+                out.append(line)
+            return "\n".join(out)
+        elif linenumbers:
+            raise CoconutException("linenumbers must be enabled on the parser to pass it as an argument")
+        else:
             return inputstring
-        out = []
-        ln = None
-        fix = False
-        for line in inputstring.splitlines():
-            if line.endswith(lnwrapper):
-                line, index = line[:-1].rsplit("#", 1)
-                ln = self.refs[int(index)]
-                if not isinstance(ln, int):
-                    raise CoconutException("invalid reference for a linenumber", ln)
-                line = line.rstrip()
-                fix = True
-            elif fix:
-                ln += 1
-                fix = False
-            if ln is not None and line and not line.lstrip().startswith("#"):
-                if self.minify:
-                    line += self.wrap_comment(str(ln))
-                else:
-                    line += self.wrap_comment("line "+str(ln))
-            out.append(line)
-        return "\n".join(out)
 
-    def passthrough_repl(self, inputstring):
+    def passthrough_repl(self, inputstring, **kwargs):
         """Adds back passthroughs."""
         out = []
         index = None
@@ -1733,7 +1738,7 @@ class processor(object):
                     out.append(c)
         return "".join(out)
 
-    def str_repl(self, inputstring):
+    def str_repl(self, inputstring, **kwargs):
         """Adds back strings."""
         out = []
         comment = None
@@ -1780,7 +1785,7 @@ class processor(object):
     def repl_proc(self, inputstring, **kwargs):
         """Processes using replprocs."""
         for repl in self.replprocs:
-            inputstring = repl(inputstring)
+            inputstring = repl(inputstring, **kwargs)
         return inputstring
 
     def header_proc(self, inputstring, header="file", initial="initial", usehash=None, **kwargs):
