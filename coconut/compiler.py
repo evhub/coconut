@@ -43,6 +43,7 @@ if platform.python_implementation() != "PyPy":
 
 from zlib import crc32 as checksum
 
+targets = (None, "2", "3")
 encoding = "UTF-8"
 hash_prefix = "# __coconut_hash__ = "
 hash_sep = "\x00"
@@ -383,14 +384,12 @@ def getheader(which, target=None, usehash=None):
     if which == "none":
         return ""
     elif which == "initial" or which == "package":
-        if target is None:
-            header = "#!/usr/bin/env python"
-        elif target == "2":
+        if target == "2":
             header = "#!/usr/bin/env python2"
         elif target == "3":
             header = "#!/usr/bin/env python3"
         else:
-            raise CoconutException("invalid Python target", target)
+            header = "#!/usr/bin/env python"
         header += '''
 # -*- coding: '''+encoding+''' -*-
 '''
@@ -1204,7 +1203,6 @@ class processor(object):
     tracing = tracer()
     trace = tracing.bind
     debug = tracing.debug
-    targets = (None, "2", "3")
     using_autopep8 = False
 
     def __init__(self, target=None, strict=False, minify=False, linenumbers=False, debugger=printerr):
@@ -1219,7 +1217,7 @@ class processor(object):
 
     def setup(self, target=None, strict=False, minify=False, linenumbers=False):
         """Initializes target, strict, and minify."""
-        if target not in self.targets:
+        if target not in targets:
             raise CoconutException("unsupported target Python version " + ascii(target)
                 + " (supported targets are '2', '3', or leave blank for universal)")
         self.target, self.strict, self.minify, self.linenumbers = target, strict, minify, linenumbers
