@@ -1686,6 +1686,7 @@ class processor(object):
             return inputstring
         out = []
         ln = None
+        fix = False
         for line in inputstring.splitlines():
             if line.endswith(lnwrapper):
                 line, index = line[:-1].rsplit("#", 1)
@@ -1693,6 +1694,10 @@ class processor(object):
                 if not isinstance(ln, int):
                     raise CoconutException("invalid reference for a linenumber", ln)
                 line = line.rstrip()
+                fix = True
+            elif fix:
+                ln += 1
+                fix = False
             if ln is not None and line and not line.lstrip().startswith("#"):
                 if self.minify:
                     line += self.wrap_comment(str(ln))
