@@ -37,7 +37,7 @@ __version__ = VERSION
 VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
 VERSION_TAG = "v" + VERSION_STR
 PY2 = sys.version_info < (3,)
-PY2_HEADER_BASE = r'''py2_chr, py2_filter, py2_hex, py2_input, py2_int, py2_map, py2_oct, py2_open, py2_print, py2_range, py2_raw_input, py2_str, py2_xrange, py2_zip = chr, filter, hex, input, int, map, oct, open, print, range, raw_input, str, xrange, zip
+PY27_HEADER_BASE = r'''py2_chr, py2_filter, py2_hex, py2_input, py2_int, py2_map, py2_oct, py2_open, py2_print, py2_range, py2_raw_input, py2_str, py2_xrange, py2_zip = chr, filter, hex, input, int, map, oct, open, print, range, raw_input, str, xrange, zip
 _coconut_int, _coconut_long, _coconut_print, _coconut_raw_input, _coconut_str, _coconut_unicode, _coconut_xrange = int, long, print, raw_input, str, unicode, xrange
 from future_builtins import *
 chr, str = unichr, unicode
@@ -104,8 +104,8 @@ def raw_input(*args):
     raise __coconut__.NameError('Coconut uses Python 3 "input" instead of Python 2 "raw_input"')
 def xrange(*args):
     """Raises NameError."""
-    raise __coconut__.NameError('Coconut uses Python 3 "range" instead of Python 2 "xrange"')
-if _coconut_sys.version_info < (2, 7):
+    raise __coconut__.NameError('Coconut uses Python 3 "range" instead of Python 2 "xrange"')'''
+PY2_HEADER_BASE = PY27_HEADER_BASE + '''if _coconut_sys.version_info < (2, 7):
     import functools as _coconut_functools, copy_reg as _coconut_copy_reg
     def _coconut_new_partial(func, args, keywords):
         return _coconut_functools.partial(func, *(args if args is not None else ()), **(keywords if keywords is not None else {}))
@@ -114,6 +114,7 @@ if _coconut_sys.version_info < (2, 7):
         return (_coconut_new_partial, (self.func, self.args, self.keywords))
     _coconut_copy_reg.pickle(_coconut_functools.partial, _coconut_reduce_partial)'''
 PY2_HEADER = "import sys as _coconut_sys, os as _coconut_os\n" + PY2_HEADER_BASE + "\n"
+PY27_HEADER = "import sys as _coconut_sys, os as _coconut_os\n" + PY27_HEADER_BASE + "\n"
 PY2_HEADER_CHECK = r'''import sys as _coconut_sys
 if _coconut_sys.version_info < (3,):
     import os as _coconut_os

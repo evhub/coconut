@@ -221,7 +221,7 @@ class CoconutException(Exception):
 
 class CoconutSyntaxError(CoconutException):
     """Coconut SyntaxError."""
-    def __init__(self, message, source=None, point=None, ln=None):
+    def __init__(self, message, source, point, ln):
         """Creates the Coconut SyntaxError."""
         self.value = message
         if ln is not None:
@@ -253,16 +253,17 @@ class CoconutParseError(CoconutSyntaxError):
 
 class CoconutStyleError(CoconutSyntaxError):
     """Coconut --strict error."""
-    def __init__(self, message, source=None, point=None, lineno=None):
+    def __init__(self, message, source, point, lineno):
         """Creates the --strict Coconut error."""
         message += " (disable --strict to dismiss)"
         CoconutSyntaxError.__init__(self, message, source, point, lineno)
 
 class CoconutTargetError(CoconutSyntaxError):
     """Coconut --target error."""
-    def __init__(self, message, source=None, point=None, lineno=None):
+    def __init__(self, message, source, point, lineno):
         """Creates the --target Coconut error."""
-        message += " (enable --target 3 to dismiss)"
+        message, target = message
+        message += " (enable --target "+target+" to dismiss)"
         CoconutSyntaxError.__init__(self, message, source, point, lineno)
 
 class CoconutWarning(CoconutSyntaxError):
@@ -271,6 +272,10 @@ class CoconutWarning(CoconutSyntaxError):
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
+
+def target_info(target):
+    """Returns target information as a version tuple."""
+    return tuple(int(x) for x in target)
 
 def addskip(skips, skip):
     """Adds a line skip to the skips."""
@@ -426,6 +431,9 @@ def getheader(which, target="", usehash=None):
         if not target.startswith("3"):
             header += r'''from __future__ import print_function, absolute_import, unicode_literals, division
 '''
+        elif target_info(target) >= (3, 5):
+            header += r'''from __future__ import generator_stop
+'''
         if which == "module":
             header += r'''import sys as _coconut_sys, os.path as _coconut_os_path
 _coconut_file_path = _coconut_os_path.dirname(_coconut_os_path.abspath(__file__))
@@ -448,6 +456,8 @@ _coconut_sys.path.remove(_coconut_file_path)
         elif which == "package" or which == "code" or which == "file":
             if target.startswith("3"):
                 header += PY3_HEADER
+            elif target_info(target) >= (2, 7):
+                header += PY27_HEADER
             elif target.startswith("2"):
                 header += PY2_HEADER
             else:
@@ -1196,16 +1206,6 @@ def gen_imports(path, impas):
             out.append("from " + imp_from + " import " + imp + " as " + impas)
     return out
 
-def yield_from_handle(tokens):
-    """Processes Python 3.3 yield from."""
-    if len(tokens) == 1:
-        yield_from = tokens[0]
-        return (yield_from_var + " = " + yield_from
-            + "\nfor " + yield_item_var + " in " + yield_from_var + ":\n"
-            + openindent + "yield " + yield_item_var + "\n" + closeindent)
-    else:
-        raise CoconutException("invalid yield from tokens", tokens)
-
 #-----------------------------------------------------------------------------------------------------------------------
 # PARSER:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1261,6 +1261,7 @@ class processor(object):
         self.name_match_funcdef <<= self.trace(attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle), "name_match_funcdef")
         self.op_match_funcdef <<= self.trace(attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle), "op_match_funcdef")
         self.endline <<= self.trace(attach(self.endline_ref, self.endline_handle), "endline")
+        self.yield_from <<= self.trace(attach(self.yield_from_ref, self.yield_from_handle), "yield_from")
         self.u_string <<= attach(self.u_string_ref, self.u_string_check)
         self.typedef <<= attach(self.typedef_ref, self.typedef_check)
         self.return_typedef <<= attach(self.return_typedef_ref, self.typedef_check)
@@ -1409,8 +1410,8 @@ class processor(object):
             raise CoconutException("invalid docstring tokens", tokens)
 
     def target_info(self):
-        """Returns the target information as a version tuple."""
-        return tuple(int(x) for x in self.target)
+        """Returns information on the current target as a version tuple."""
+        return target_info(self.target)
 
     def should_indent(self, code):
         """Determines whether the next line should be indented."""
@@ -1835,6 +1836,17 @@ class processor(object):
 # PARSER HANDLERS:
 #-----------------------------------------------------------------------------------------------------------------------
 
+    def yield_from_handle(self, tokens):
+        """Processes Python 3.3 yield from."""
+        if len(tokens) != 1:
+            raise CoconutException("invalid yield from tokens", tokens)
+        elif self.target_info() < (3, 3):
+            return (yield_from_var + " = " + tokens[0]
+                + "\nfor " + yield_item_var + " in " + yield_from_var + ":\n"
+                + openindent + "yield " + yield_item_var + "\n" + closeindent)
+        else:
+            return "yield from " + tokens[0]
+
     def endline_handle(self, original, location, tokens):
         """Inserts line number comments when in linenumbers mode."""
         if len(tokens) != 1:
@@ -1932,7 +1944,7 @@ class processor(object):
                 if self.target.startswith("3"):
                     return "(" + tokens[0][0] + ")"
                 else:
-                    raise self.make_err(CoconutTargetError, "found Python 3 keyword class definition", original, location)
+                    raise self.make_err(CoconutTargetError, ("found Python 3 keyword class definition", "3"), original, location)
             else:
                 raise CoconutException("invalid inner classlist token", tokens[0])
         else:
@@ -2026,8 +2038,6 @@ class processor(object):
             raise CoconutException("invalid name tokens", tokens)
         elif tokens[0].startswith("\\"):
             return tokens[0][1:]
-        elif self.strict and tokens[0] in reserved_vars:
-            raise self.make_err(CoconutStyleError, "found unescaped keyword variable", original, location)
         elif tokens[0] == "__coconut__" or tokens[0].startswith("_coconut_"):
             if self.strict:
                 raise self.make_err(CoconutStyleError, "found use of a reserved variable", original, location)
@@ -2099,33 +2109,42 @@ class processor(object):
         if len(tokens) != 1:
             raise CoconutException("invalid "+name+" tokens", tokens)
         elif not self.target.startswith("3"):
-            raise self.make_err(CoconutTargetError, "found "+name, original, location)
+            raise self.make_err(CoconutTargetError, ("found Python 3 " + name, "3"), original, location)
         else:
             return tokens[0]
 
     def typedef_check(self, original, location, tokens):
         """Checks for Python 3 type defs."""
-        return self.check_py3("Python 3 type annotation", original, location, tokens)
-
-    def matrix_at_check(self, original, location, tokens):
-        """Checks for Python 3.5 matrix multiplication."""
-        return self.check_py3("Python 3.5 matrix multiplication", original, location, tokens)
+        return self.check_py3("type annotation", original, location, tokens)
 
     def nonlocal_check(self, original, location, tokens):
         """Checks for Python 3 nonlocal statement."""
-        return self.check_py3("Python 3 nonlocal statement", original, location, tokens)
+        return self.check_py3("nonlocal statement", original, location, tokens)
 
     def star_assign_item_check(self, original, location, tokens):
         """Checks for Python 3 starred assignment."""
-        return self.check_py3("Python 3 starred assignment", original, location, tokens)
+        return self.check_py3("starred assignment", original, location, tokens)
+
+    def check_py35(self, name, original, location, tokens):
+        """Checks for Python 3.5 syntax."""
+        if len(tokens) != 1:
+            raise CoconutException("invalid "+name+" tokens", tokens)
+        elif self.target_info() < (3, 5):
+            raise self.make_err(CoconutTargetError, ("found Python 3.5 " + name, "3.5"), original, location)
+        else:
+            return tokens[0]
+
+    def matrix_at_check(self, original, location, tokens):
+        """Checks for Python 3.5 matrix multiplication."""
+        return self.check_py35("matrix multiplication", original, location, tokens)
 
     def async_stmt_check(self, original, location, tokens):
         """Checks for Python 3.5 async statement."""
-        return self.check_py3("Python 3.5 async statement", original, location, tokens)
+        return self.check_py35("async statement", original, location, tokens)
 
     def await_keyword_check(self, original, location, tokens):
         """Checks for Python 3.5 await expression."""
-        return self.check_py3("Python 3.5 await expression", original, location, tokens)
+        return self.check_py35("await expression", original, location, tokens)
 
     def set_literal_handle(self, tokens):
         """Converts set literals to the right form for the target Python."""
@@ -2133,10 +2152,10 @@ class processor(object):
             raise CoconutException("invalid set literal tokens", tokens)
         elif len(tokens[0]) != 1:
             raise CoconutException("invalid set literal item", tokens[0])
-        elif self.target.startswith("3"):
-            return "{" + tokens[0][0] + "}"
-        else:
+        elif self.target_info() < (2, 7):
             return "__coconut__.set(" + set_to_tuple(tokens[0]) + ")"
+        else:
+            return "{" + tokens[0][0] + "}"
 
     def set_letter_literal_handle(self, tokens):
         """Processes set literals."""
@@ -2316,9 +2335,10 @@ class processor(object):
     testlist = itemlist(test, comma)
     multi_testlist = addspace(OneOrMore(condense(test + comma)) + Optional(test))
 
+    yield_from = Forward()
     dict_comp = Forward()
     yield_classic = addspace(Keyword("yield") + testlist)
-    yield_from = attach(Keyword("yield").suppress() + Keyword("from").suppress() + test, yield_from_handle)
+    yield_from_ref = Keyword("yield").suppress() + Keyword("from").suppress() + test
     yield_expr = yield_from | yield_classic
     dict_comp_ref = lbrace.suppress() + test + colon.suppress() + test + comp_for + rbrace.suppress()
     dict_item = condense(lbrace + Optional(itemlist(addspace(condense(test + colon) + test), comma)) + rbrace)
