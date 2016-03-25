@@ -43,7 +43,19 @@ if platform.python_implementation() != "PyPy":
 
 from zlib import crc32 as checksum
 
-targets = (None, "2", "3")
+specific_targets = ("2", "27", "3", "33", "35")
+targets = ("",) + specific_targets
+pseudo_targets = {
+    "26": "2",
+    "32": "3",
+    "34": "33",
+    "2.6": "2",
+    "2.7": "27",
+    "3.2": "3",
+    "3.3": "33",
+    "3.4": "33",
+    "3.5": "35"
+}
 encoding = "UTF-8"
 hash_prefix = "# __coconut_hash__ = "
 hash_sep = "\x00"
@@ -379,14 +391,14 @@ def minify(compiled):
         compiled = "\n".join(out) + "\n"
     return compiled
 
-def getheader(which, target=None, usehash=None):
+def getheader(which, target="", usehash=None):
     """Generates the specified header."""
     if which == "none":
         return ""
     elif which == "initial" or which == "package":
-        if target == "2":
+        if target.startswith("2"):
             header = "#!/usr/bin/env python2"
-        elif target == "3":
+        elif target.startswith("3"):
             header = "#!/usr/bin/env python3"
         else:
             header = "#!/usr/bin/env python"
@@ -418,10 +430,10 @@ def getheader(which, target=None, usehash=None):
             header += r'''import sys as _coconut_sys, os.path as _coconut_os_path
 _coconut_file_path = _coconut_os_path.dirname(_coconut_os_path.abspath(__file__))
 _coconut_sys.path.insert(0, _coconut_file_path)'''
-            if target == "3":
+            if target.startswith("3"):
                 header += r'''
 from __coconut__ import __coconut__, __coconut_version__, MatchError, map, parallel_map, zip, reduce, takewhile, dropwhile, tee, count, recursive, datamaker, consume, py3_map, py3_zip'''
-            elif target == "2":
+            elif target.startswith("2"):
                 header += r'''
 from __coconut__ import __coconut__, __coconut_version__, MatchError, map, parallel_map, zip, reduce, takewhile, dropwhile, tee, count, recursive, datamaker, consume, py2_chr, py2_filter, py2_hex, py2_input, py2_int, py2_map, py2_oct, py2_open, py2_print, py2_range, py2_raw_input, py2_str, py2_xrange, py2_zip, ascii, bytes, chr, filter, hex, input, int, oct, open, print, range, raw_input, str, xrange'''
             else:
@@ -434,9 +446,9 @@ else:
 _coconut_sys.path.remove(_coconut_file_path)
 '''
         elif which == "package" or which == "code" or which == "file":
-            if target == "3":
+            if target.startswith("3"):
                 header += PY3_HEADER
-            elif target == "2":
+            elif target.startswith("2"):
                 header += PY2_HEADER
             else:
                 header += PY2_HEADER_CHECK
@@ -445,7 +457,7 @@ class __coconut__(object):
     version = "'''+VERSION+r'''"
     import collections, functools, imp, itertools, operator, types
 '''
-            if target == "2":
+            if target.startswith("2"):
                 header += r'''    abc = collections'''
             else:
                 header += r'''    if _coconut_sys.version_info < (3, 3):
@@ -1217,9 +1229,15 @@ class processor(object):
 
     def setup(self, target=None, strict=False, minify=False, linenumbers=False):
         """Initializes target, strict, and minify."""
+        if target is None:
+            target = ""
+        else:
+            target = str(target)
+        if target in pseudo_targets:
+            target = pseudo_targets[target]
         if target not in targets:
-            raise CoconutException('unsupported target Python version "' + str(target)
-                + '" (supported targets are "2", "3", or leave blank for universal)')
+            raise CoconutException('unsupported target Python version "' + target
+                + '" (supported targets are "' + '", "'.join(specific_targets) + '", or leave blank for universal)')
         self.target, self.strict, self.minify, self.linenumbers = target, strict, minify, linenumbers
         if self.minify:
             self.tablen = 1
@@ -1390,12 +1408,9 @@ class processor(object):
         else:
             raise CoconutException("invalid docstring tokens", tokens)
 
-    def target_tuple(self):
+    def target_info(self):
         """Returns the target information as a version tuple."""
-        if self.target is None:
-            return ()
-        else:
-            return (int(self.target),)
+        return tuple(int(x) for x in self.target)
 
     def should_indent(self, code):
         """Determines whether the next line should be indented."""
@@ -1906,7 +1921,7 @@ class processor(object):
     def classlist_handle(self, original, location, tokens):
         """Processes class inheritance lists."""
         if len(tokens) == 0:
-            if self.target == "3":
+            if self.target.startswith("3"):
                 return ""
             else:
                 return "(__coconut__.object)"
@@ -1914,7 +1929,7 @@ class processor(object):
             if "tests" in tokens[0]:
                 return "(" + tokens[0][0] + ")"
             elif "args" in tokens[0]:
-                if self.target == "3":
+                if self.target.startswith("3"):
                     return "(" + tokens[0][0] + ")"
                 else:
                     raise self.make_err(CoconutTargetError, "found Python 3 keyword class definition", original, location)
@@ -1957,9 +1972,9 @@ class processor(object):
                     break
             if old_imp is None:
                 paths = (imp,)
-            elif self.target == "2":
+            elif self.target.startswith("2"):
                 paths = (old_imp,)
-            elif self.target is None or self.target_tuple() < version_check:
+            elif not self.target or self.target_info() < version_check:
                 paths = (old_imp, imp, version_check)
             else:
                 paths = (imp,)
@@ -1987,7 +2002,7 @@ class processor(object):
         """Processes Python 3 raise from statement."""
         if len(tokens) != 2:
             raise CoconutException("invalid raise from tokens", tokens)
-        elif self.target == "3":
+        elif self.target.startswith("3"):
             return "raise " + tokens[0] + " from " + tokens[1]
         else:
             return (raise_from_var + " = " + tokens[0] + "\n"
@@ -1998,7 +2013,7 @@ class processor(object):
         """Processes Python 2.7 dictionary comprehension."""
         if len(tokens) != 3:
             raise CoconutException("invalid dictionary comprehension tokens", tokens)
-        elif self.target == "3":
+        elif self.target.startswith("3"):
             key, val, comp = tokens
             return "{" + key + ": " + val + " " + comp + "}"
         else:
@@ -2118,7 +2133,7 @@ class processor(object):
             raise CoconutException("invalid set literal tokens", tokens)
         elif len(tokens[0]) != 1:
             raise CoconutException("invalid set literal item", tokens[0])
-        elif self.target == "3":
+        elif self.target.startswith("3"):
             return "{" + tokens[0][0] + "}"
         else:
             return "__coconut__.set(" + set_to_tuple(tokens[0]) + ")"
@@ -2138,7 +2153,7 @@ class processor(object):
             if len(set_items) != 1:
                 raise CoconutException("invalid set literal item", tokens[0])
             elif set_type == "s":
-                if self.target == "3":
+                if self.target.startswith("3"):
                     return "{" + set_items[0] + "}"
                 else:
                     return "__coconut__.set(" + set_to_tuple(set_items) + ")"
@@ -2655,16 +2670,17 @@ class processor(object):
     simple_decorator = condense(dotted_name + Optional(lparen + callargslist + rparen))("simple")
     complex_decorator = test("test")
     decorators = attach(OneOrMore(at.suppress() - Group(simple_decorator ^ complex_decorator) - newline.suppress()), decorator_handle)
-    decorated = condense(decorators + (
+    decoratable_stmt = (
         classdef
         | datadef
         | funcdef
-        | match_funcdef
         | async_funcdef
         | async_match_funcdef
+        | match_funcdef
         | math_funcdef
         | math_match_funcdef
-        ))
+        )
+    decorated = condense(decorators + decoratable_stmt)
 
     passthrough_stmt = condense(passthrough_block - (base_suite | newline))
 
@@ -2676,18 +2692,13 @@ class processor(object):
         | passthrough_stmt
         )
     compound_stmt = trace(
-        simple_compound_stmt
+        decoratable_stmt
         | with_stmt
         | while_stmt
         | for_stmt
-        | funcdef
-        | match_funcdef
-        | classdef
-        | datadef
-        | decorated
         | async_stmt
-        | math_funcdef
-        | math_match_funcdef
+        | simple_compound_stmt
+        | decorated
         | match_assign_stmt
         , "compound_stmt")
     augassign_stmt = Forward()
