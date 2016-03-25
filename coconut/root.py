@@ -105,7 +105,8 @@ def raw_input(*args):
 def xrange(*args):
     """Raises NameError."""
     raise __coconut__.NameError('Coconut uses Python 3 "range" instead of Python 2 "xrange"')'''
-PY2_HEADER_BASE = PY27_HEADER_BASE + '''if _coconut_sys.version_info < (2, 7):
+PY2_HEADER_BASE = PY27_HEADER_BASE + '''
+if _coconut_sys.version_info < (2, 7):
     import functools as _coconut_functools, copy_reg as _coconut_copy_reg
     def _coconut_new_partial(func, args, keywords):
         return _coconut_functools.partial(func, *(args if args is not None else ()), **(keywords if keywords is not None else {}))
@@ -134,4 +135,7 @@ py3_map, py3_zip = map, zip
 
 if PY2:
     import __builtin__ as __coconut__
-    exec(PY2_HEADER)
+    if sys.version_info < (2, 7):
+        exec(PY2_HEADER)
+    else:
+        exec(PY27_HEADER)
