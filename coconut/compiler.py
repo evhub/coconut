@@ -423,7 +423,7 @@ def getheader(which, target="", usehash=None):
         header += r'''# Coconut Header: --------------------------------------------------------------
 
 '''
-        if target != "3":
+        if not target.startswith("3"):
             header += r'''from __future__ import print_function, absolute_import, unicode_literals, division
 '''
         if which == "module":
@@ -2098,7 +2098,7 @@ class processor(object):
         """Checks for Python 3 syntax."""
         if len(tokens) != 1:
             raise CoconutException("invalid "+name+" tokens", tokens)
-        elif self.target != "3":
+        elif not self.target.startswith("3"):
             raise self.make_err(CoconutTargetError, "found "+name, original, location)
         else:
             return tokens[0]
