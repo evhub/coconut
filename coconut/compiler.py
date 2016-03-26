@@ -2033,11 +2033,9 @@ class processor(object):
             return "dict(((" + key + "), (" + val + ")) " + comp + ")"
 
     def name_handle(self, original, location, tokens):
-        """Handles backslash-escaped variable names."""
+        """Handles variable names."""
         if len(tokens) != 1:
             raise CoconutException("invalid name tokens", tokens)
-        elif tokens[0].startswith("\\"):
-            return tokens[0][1:]
         elif tokens[0] == "__coconut__" or tokens[0].startswith("_coconut_"):
             if self.strict:
                 raise self.make_err(CoconutStyleError, "found use of a reserved variable", original, location)
@@ -2252,7 +2250,7 @@ class processor(object):
     for k in keywords + const_vars:
         name_ref = ~Keyword(k) + name_ref
     for k in reserved_vars:
-        name_ref |= backslash + Keyword(k)
+        name_ref |= backslash.suppress() + Keyword(k)
     name_ref = condense(name_ref)
     dotted_name = condense(name + ZeroOrMore(dot + name))
 
