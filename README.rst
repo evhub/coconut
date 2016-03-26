@@ -10,8 +10,8 @@ Coconut_
 
 Coconut is a variant of Python_ built for **simple, elegant, Pythonic functional programming**.
 
-Coconut is developed on GitHub_ and hosted on PyPI_, where it has been downloaded `over 30,000 times <http://pypi-ranking.info/module/coconut>`_. Installing Coconut is as easy as opening a command prompt and entering
-::
+Coconut is developed on GitHub_ and hosted on PyPI_, where it has been downloaded `over 30,000 times <http://pypi-ranking.info/module/coconut>`_. Installing Coconut is as easy as opening a command prompt and entering::
+
     python -m pip install coconut
 
 after which the entire world of Coconut will be at your disposal. To help you get started, check out these links for more information about Coconut:
