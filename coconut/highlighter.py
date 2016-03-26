@@ -76,7 +76,7 @@ class pylexer(Python3Lexer):
     aliases = ["coc_python", "coc_py", "coc_python3", "coc_py3"]
     filenames = []
 
-    def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tablen, encoding=encoding):
+    def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tabideal, encoding=encoding):
         """Initialize the Python syntax highlighter."""
         super(pylexer, self).__init__(stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=encoding)
 
@@ -86,7 +86,7 @@ class pyconlexer(PythonConsoleLexer):
     aliases = ["coc_pycon", "coc_pycon3"]
     filenames = []
 
-    def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tablen, encoding=encoding, python3=True):
+    def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tabideal, encoding=encoding, python3=True):
         """Initialize the Python console syntax highlighter."""
         super(pyconlexer, self).__init__(stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=encoding, python3=python3)
 
@@ -126,6 +126,6 @@ class coclexer(Python3Lexer):
         (r"0x[\da-fA-F_]+", Number.Integer)
     ] + tokens["numbers"]
 
-    def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tablen, encoding=encoding):
+    def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tabideal, encoding=encoding):
         """Initialize the Python syntax highlighter."""
         super(coclexer, self).__init__(stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=encoding)

@@ -148,7 +148,7 @@ class kernel(Kernel):
             elif proc.should_indent(code):
                 return {
                     "status": "incomplete",
-                    "indent": " "*tablen
+                    "indent": " "*tabideal
                 }
             else:
                 return {
