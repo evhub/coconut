@@ -90,7 +90,7 @@ class kernel(Kernel):
 
     def _setup(self, force=False):
         """Binds to the runner."""
-        if self._runner is None or force:
+        if force or self._runner is None:
             self._runner = executor(proc.headers("code"))
 
     def _execute(self, code, evaluate=False):

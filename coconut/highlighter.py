@@ -38,6 +38,7 @@ builtins = (
     )
 
 operators = (
+    r">>>",
     r"@",
     r"\$",
     r"`",
@@ -78,7 +79,7 @@ class pylexer(Python3Lexer):
 
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tabideal, encoding=encoding):
         """Initialize the Python syntax highlighter."""
-        super(pylexer, self).__init__(stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=encoding)
+        Python3Lexer.__init__(self, stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=encoding)
 
 class pyconlexer(PythonConsoleLexer):
     """Coconut-style Python console syntax highlighter."""
@@ -88,7 +89,7 @@ class pyconlexer(PythonConsoleLexer):
 
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tabideal, encoding=encoding, python3=True):
         """Initialize the Python console syntax highlighter."""
-        super(pyconlexer, self).__init__(stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=encoding, python3=python3)
+        PythonConsoleLexer.__init__(self, stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=encoding, python3=python3)
 
 class coclexer(Python3Lexer):
     """Coconut syntax highlighter."""
@@ -128,4 +129,4 @@ class coclexer(Python3Lexer):
 
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tabideal, encoding=encoding):
         """Initialize the Python syntax highlighter."""
-        super(coclexer, self).__init__(stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=encoding)
+        Python3Lexer.__init__(self, stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=encoding)
