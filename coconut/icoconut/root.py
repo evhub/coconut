@@ -61,7 +61,7 @@ class fakefile(StringIO):
 # KERNEL:
 #-----------------------------------------------------------------------------------------------------------------------
 
-proc = processor(version="2" if PY2 else "3")
+proc = processor(target="2" if PY2 else "3")
 
 class kernel(Kernel):
     """Jupyter kernel for Coconut."""
