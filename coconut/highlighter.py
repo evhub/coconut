@@ -19,7 +19,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from .command import *
 from pygments.lexers import Python3Lexer, PythonConsoleLexer
 from pygments.token import Text, Comment, Operator, Keyword, Name, String, Number, Punctuation, Generic, Other, Error
-from pygments.lexer import words
+from pygments.lexer import words, bygroups
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
@@ -106,7 +106,8 @@ class coclexer(Python3Lexer):
 
     tokens = Python3Lexer.tokens.copy()
     tokens["root"] = [
-        (r"|".join(operators), Operator)
+        (r"|".join(operators), Operator),
+        (r'(data))((?:\s|\\\s)+)', bygroups(Keyword, Text), 'classname')
     ] + tokens["root"]
     tokens["keywords"] = [
         (words(keywords, suffix="r\b"), Keyword),
