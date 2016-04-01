@@ -71,6 +71,11 @@ operators = (
 # LEXERS:
 #-----------------------------------------------------------------------------------------------------------------------
 
+def lenient_add_filter(self, *args, **kwargs):
+    """Disables the raiseonerror filter."""
+    if len(args) >= 1 and args[0] != "raiseonerror":
+        self.original_add_filter(*args, **kwargs)
+
 class pylexer(Python3Lexer):
     """Coconut-style Python syntax highlighter."""
     name = "coc_python"
@@ -80,6 +85,7 @@ class pylexer(Python3Lexer):
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tabideal, encoding=encoding):
         """Initialize the Python syntax highlighter."""
         Python3Lexer.__init__(self, stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=encoding)
+        self.original_add_filter, self.add_filter = self.add_filter, lenient_add_filter
 
 class pyconlexer(PythonConsoleLexer):
     """Coconut-style Python console syntax highlighter."""
@@ -90,6 +96,7 @@ class pyconlexer(PythonConsoleLexer):
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tabideal, encoding=encoding, python3=True):
         """Initialize the Python console syntax highlighter."""
         PythonConsoleLexer.__init__(self, stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=encoding, python3=python3)
+        self.original_add_filter, self.add_filter = self.add_filter, lenient_add_filter
 
 class coclexer(Python3Lexer):
     """Coconut syntax highlighter."""
@@ -130,3 +137,4 @@ class coclexer(Python3Lexer):
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tabideal, encoding=encoding):
         """Initialize the Python syntax highlighter."""
         Python3Lexer.__init__(self, stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=encoding)
+        self.original_add_filter, self.add_filter = self.add_filter, lenient_add_filter
