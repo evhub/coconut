@@ -188,7 +188,7 @@ If the `--strict` or `-s` flag is enabled, Coconut will throw errors on various 
 - mixing of tabs and spaces (without `--strict` Coconut just shows a Warning),
 - use of the Python-style `lambda` statement,
 - use of `u` to denote Unicode strings,
-- use of [reserved variables](reserved-variables) (without `--strict` Coconut just shows a Warning),
+- use of [reserved variables](#reserved-variables) (without `--strict` Coconut just shows a Warning),
 - use of backslash continuations (implicit continuations are preferred), and
 - trailing whitespace at the end of lines.
 
