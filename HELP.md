@@ -101,7 +101,7 @@ In case you missed it earlier, _all valid Python 3 is valid Coconut_. That doesn
 
 That means that if you're familiar with Python, you're already familiar with a good deal of Coconut's core syntax and Coconut's entire standard library. To show that, let's try entering some basic Python into the Coconut interpreter.
 
-```coconut
+```coc_pycon
 >>> print("hello, world!")
 hello, world!
 >>> 1 + 1
