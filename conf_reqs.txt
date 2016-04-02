@@ -1,4 +1,4 @@
 sphinx
-pygments==2.1.1
-recommonmark==0.4.0
-sphinx_bootstrap_theme==0.4.8
+pygments
+recommonmark
+sphinx_bootstrap_theme
