@@ -37,9 +37,9 @@
 
 ## Introduction
 
-Welcome to the tutorial for the [Coconut Programming Language](http://evhub.github.io/coconut/)! If you're here, you've probably already seen Coconut's tagline: **simple, elegant, Pythonic functional programming**. But those are just words; what they mean in practice is that _all valid Python 3 is valid Coconut_ but Coconut builds on top of Python a suite of _simple, elegant utilities for functional programming_.
+Welcome to the tutorial for the [Coconut Programming Language](http://evhub.github.io/coconut/)! If you're here, you've probably already seen Coconut's tag line: **simple, elegant, Pythonic functional programming**. But those are just words; what they mean in practice is that _all valid Python 3 is valid Coconut_ but Coconut builds on top of Python a suite of _simple, elegant utilities for functional programming_.
 
-Why use Coconut? Coconut is built to be fundamentally _useful_. Coconut enhances the repetoire of Python programmers to include the tools of modern functional programming, in such a way that those tools are _easy_ to use and immensly _powerful_; that is, _Coconut does to functional programming what Python did to imperative programming_. And Coconut code runs the same on _any Python version_, making the Python 2/3 split a thing of the past.
+Why use Coconut? Coconut is built to be fundamentally _useful_. Coconut enhances the repertoire of Python programmers to include the tools of modern functional programming, in such a way that those tools are _easy_ to use and immensely _powerful_; that is, _Coconut does to functional programming what Python did to imperative programming_. And Coconut code runs the same on _any Python version_, making the Python 2/3 split a thing of the past.
 
 Specifically, Coconut adds to Python _built-in, syntactical support_ for:
 - pattern-matching
@@ -241,9 +241,9 @@ def factorial(n):
 3 |> factorial |> print # 6
 ```
 
-Copy and paste the code and tests into the interpreter. You should get the same test results as you got for the imperative version—but you can probably tell there's quite a lot more going on here than there. That's intentional: Coconut is intended for functional programming, not imperative programminng, and so its new features are built to be most useful when programming in a functional style.
+Copy and paste the code and tests into the interpreter. You should get the same test results as you got for the imperative version—but you can probably tell there's quite a lot more going on here than there. That's intentional: Coconut is intended for functional programming, not imperative programming, and so its new features are built to be most useful when programming in a functional style.
 
-Let's take a look at the specifics of the syntax in this example. The first thing we see is `case n`. This statement starts a `case` block, in which only `match` statements can occur. Each `match` statement will attempt to match its given pattern against the value in the `case` block. Only the first successful match inside of any given `case` block will be executed. When a match is successful, any variable bindings in that match will also be performed. Additionally, as is true in this case, `match` statements can also have `if` guards that will check the given condition before the match is considered final. Finally, after the `case` block, an `else` statement is allowed, which will only be excectued if no `match` statement is.
+Let's take a look at the specifics of the syntax in this example. The first thing we see is `case n`. This statement starts a `case` block, in which only `match` statements can occur. Each `match` statement will attempt to match its given pattern against the value in the `case` block. Only the first successful match inside of any given `case` block will be executed. When a match is successful, any variable bindings in that match will also be performed. Additionally, as is true in this case, `match` statements can also have `if` guards that will check the given condition before the match is considered final. Finally, after the `case` block, an `else` statement is allowed, which will only be executed if no `match` statement is.
 
 Specifically, in this example, the first `match` statement checks whether `n` matches to `0`. If it does, it executes `return 1`. Then the second `match` statement checks whether `n` matches to `_ is int`, which performs an `isinstance` check on `n` against `int`, then checks whether `n > 0`, and if those are true, executes `return n * factorial(n-1)`. If neither of those two statements are executed, the `else` statement triggers and executes `raise TypeError("the argument to factorial must be an integer >= 0")`.
 
@@ -424,7 +424,7 @@ In functional programming, it is often very desirable to define _immutable_ obje
 - they're easier to reason about, since you can be guaranteed they won't change,
 - they're hashable and pickleable, so they can be used as keys and serialized,
 - they're significantly more efficient since they require much less overhead,
-- and when combined with pattern-matching, they can be used as what are called _algebraic data types_ to build up and then deconstruct large, complicated data structures very easily.
+- and when combined with pattern-matching, they can be used as what are called _algebraic data types_ to build up and then match against large, complicated data structures very easily.
 
 ### 2-Vector
 
@@ -493,7 +493,7 @@ Next up is vector addition. The goal here is to add two vectors of equal length 
 
 There are a couple of new constructs here, but the main notable one is the destructuring assignment statement `vector(other_pts) = other` which showcases the syntax for pattern-matching against data types: it mimics exactly the original `data` declaration of that data type. In this case, `vector(other_pts) = other` will only match a vector, raising a `MatchError` otherwise, and if it does match a vector, will assign the vector's `pts` attribute to the variable `other_pts`.
 
-The other new construct used here is the `|*>`, or star-pipe, operator, which functions exactly like the normal pipe, except that instead of calling the function with one argument, it calls it with as many arguments as there are elements in the sequence passed into it. The difference between `|*>` and `|>` is exactly analagous to the difference between `f(args)` and `f(*args)`.
+The other new construct used here is the `|*>`, or star-pipe, operator, which functions exactly like the normal pipe, except that instead of calling the function with one argument, it calls it with as many arguments as there are elements in the sequence passed into it. The difference between `|*>` and `|>` is exactly analogous to the difference between `f(args)` and `f(*args)`.
 
 Next is vector subtraction, which is just like vector addition, but with `(-)` instead of `(+)`:
 ```coconut
@@ -947,7 +947,7 @@ Here's my solution, although I cheated a little bit and used a construct I haven
 
 Pattern-matching function definition does exactly that—it pattern-matches against all the arguments that are passed to the function. In this case, pattern-matching function definition is incredibly handy, as it lets us write this whole function in just one line. There are a couple of things to watch out for when using pattern-matching function definition, however. First, that keyword arguments aren't allowed, and second, that instead of raising a `TypeError` if the wrong number of arguments are passed, your function will raise a `MatchError`. Finally, like destructuring assignment, if you want to be more explicit about using pattern-matching function definition, you can add a `match` before the `def`.
 
-And now it's time to put it all together. Feel free to subsitute in your own versions of the methods we just defined.
+And now it's time to put it all together. Feel free to substitute in your own versions of the methods we just defined.
 
 ```coconut
 import math # necessary for math.acos in .angle
@@ -1023,7 +1023,7 @@ abc = (| a, b, c |)
 
 ### Function Composition
 
-Next is function composition. In Coconut, this is accomplished through the `..` operator, which takes two functions and composes them, creating a new function equivalent to `(*args, **kwargs) -> f1(f2(*args, **kwargs))`. This can be useful in combination with partial application for pieceing together multiple higher-order functions, like so:
+Next is function composition. In Coconut, this is accomplished through the `..` operator, which takes two functions and composes them, creating a new function equivalent to `(*args, **kwargs) -> f1(f2(*args, **kwargs))`. This can be useful in combination with partial application for piecing together multiple higher-order functions, like so:
 ```coconut
 zipsum = map$(sum)..zip
 ```

@@ -34,7 +34,7 @@
     2. [Implicit Partial Application](#implicit-partial-application)
     3. [Set Literals](#set-literals)
     4. [Imaginary Literals](#imaginary-literals)
-    5. [Underscore Seperators](#underscore-seperators)
+    5. [Underscore Separators](#underscore-separators)
 5. [Function Notation](#function-notation)
     1. [Operator Functions](#operator-functions)
     2. [Shorthand Functions](#shorthand-functions)
@@ -154,7 +154,7 @@ If the version of Python that the compiled code will be running on is known ahea
 - `33`, `3.3`, `34`, `3.4` (will work on any Python `>= 3.3`),
 - `35`, `3.5` (will work on any Python `>= 3.5`).
 
-As part of Coconut's cross-compatibility efforts, Coconut adds in new Python 3 built-ins and overwrites Python 2 built-ins to use the Python 3 versions where possible. If access to the Python 2 versions is desired, the old builtins can be retrieved by prefixing them with `py2_`. The old built-ins available are:
+As part of Coconut's cross-compatibility efforts, Coconut adds in new Python 3 built-ins and overwrites Python 2 built-ins to use the Python 3 versions where possible. If access to the Python 2 versions is desired, the old built-ins can be retrieved by prefixing them with `py2_`. The old built-ins available are:
 - `py2_chr`
 - `py2_filter`
 - `py2_hex`
@@ -170,7 +170,7 @@ As part of Coconut's cross-compatibility efforts, Coconut adds in new Python 3 b
 - `py2_xrange`
 - `py2_zip`
 
-Additionally, since Coconut also overrides some Python 3 builtins for optimization purposes, those can be retrieved by prefixing them with `py3_`. The overwritten built-ins available are:
+Additionally, since Coconut also overrides some Python 3 built-ins for optimization purposes, those can be retrieved by prefixing them with `py3_`. The overwritten built-ins available are:
 - `py3_map`
 - `py3_zip`
 
@@ -261,7 +261,7 @@ def partial(func, *args, **keywords):
     newfunc.keywords = keywords
     return newfunc
 ```
-The `partial` object is used for partial function application which “freezes” some portion of a function’s arguments and/or keywords resulting in a new object with a simplified signature.
+The `partial` object is used for partial function application which “freezes” some portion of a function's arguments and/or keywords resulting in a new object with a simplified signature.
 
 ##### Example
 
@@ -372,7 +372,7 @@ _Can't be done without a complicated iterator slicing function and inspection of
 
 ### Unicode Alternatives
 
-Coconut supports unicode alternatives to many different operator symbols. The unicode alternatives are relatively straightforward, and chosen to reflect the look and/or meaning of the original symbol.
+Coconut supports Unicode alternatives to many different operator symbols. The Unicode alternatives are relatively straightforward, and chosen to reflect the look and/or meaning of the original symbol.
 
 ##### Full List
 
@@ -770,7 +770,7 @@ An imaginary literal yields a complex number with a real part of 0.0. Complex nu
 print(abs(3 + 4j))
 ```
 
-### Underscore Seperators
+### Underscore Separators
 
 Coconut allows for one underscore between digits and after base specifiers in numeric literals. These underscores are ignored and should only be used to increase code readability.
 
@@ -879,7 +879,7 @@ print(binexp(5))
 
 Coconut allows for infix function calling, where a function is surrounded by backticks and then can have arguments placed in front of or behind it. Backtick calling has a precedence in-between chaining and piping.
 
-Coconut also supports infix function definition to make definining functions that are intended for infix usage simpler. The syntax for infix function definition is
+Coconut also supports infix function definition to make defining functions that are intended for infix usage simpler. The syntax for infix function definition is
 ```coconut
 def <arg> `<name>` <arg>:
     <body>
@@ -1069,7 +1069,7 @@ global really_long_global_variable_name_the_first_one, \
 
 ### Code Passthrough
 
-Coconut supports the ability to pass arbitrary code through the compiler without being touched, for compatibility with other variants of Python, such as [Cython](http://cython.org/) or [Mython](http://mython.org/). Anything placed between `\(` and the corresponding close paren will be passed through, as well as any line starting with `\\`, which will have the additional effect of allowing indentation under it.
+Coconut supports the ability to pass arbitrary code through the compiler without being touched, for compatibility with other variants of Python, such as [Cython](http://cython.org/) or [Mython](http://mython.org/). Anything placed between `\(` and the corresponding close parenthesis will be passed through, as well as any line starting with `\\`, which will have the additional effect of allowing indentation under it.
 
 ##### Example
 

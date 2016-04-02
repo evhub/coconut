@@ -45,7 +45,7 @@ I certainly hope not! Unlike the sort of spin-off language you might be thinking
 
 ### I want to contribute to Coconut, how do I get started?
 
-That's great! Coconut is completely open-source, and new contributors are always welcome. Contributing to Coconut is as simple as forking Coconut's [`develop` branch](https://github.com/evhub/coconut/tree/develop) on GitHub, making your changes, and proposing a pull request. If you have any questions at all about contributing, including understanding the source code, figuring out how to implement a specific change, or just trying to figure out what needs to be done, try asking around at Coconut's [Gitter](https://gitter.im/evhub/coconut), a GitHub-integrated chatroom for Coconut developers.
+That's great! Coconut is completely open-source, and new contributors are always welcome. Contributing to Coconut is as simple as forking Coconut's [`develop` branch](https://github.com/evhub/coconut/tree/develop) on GitHub, making your changes, and proposing a pull request. If you have any questions at all about contributing, including understanding the source code, figuring out how to implement a specific change, or just trying to figure out what needs to be done, try asking around at Coconut's [Gitter](https://gitter.im/evhub/coconut), a GitHub-integrated chat room for Coconut developers.
 
 ### Why the name Coconut?
 
