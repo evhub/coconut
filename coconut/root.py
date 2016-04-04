@@ -49,29 +49,29 @@ class range(object):
     def __init__(self, *args):
         self._xrange = _coconut_xrange(*args)
     def __iter__(self):
-        return __coconut__.iter(self._xrange)
+        return _coconut.iter(self._xrange)
     def __reversed__(self):
-        return __coconut__.reversed(self._xrange)
+        return _coconut.reversed(self._xrange)
     def __len__(self):
-        return __coconut__.len(self._xrange)
+        return _coconut.len(self._xrange)
     def __getitem__(self, index):
-        if __coconut__.isinstance(index, __coconut__.slice):
+        if _coconut.isinstance(index, _coconut.slice):
             start, stop, step = index.start, index.stop, index.step
             if start is None:
                 start = 0
             elif start < 0:
-                start += __coconut__.len(self._xrange)
+                start += _coconut.len(self._xrange)
             if stop is None:
-                stop = __coconut__.len(self._xrange)
+                stop = _coconut.len(self._xrange)
             elif stop is not None and stop < 0:
-                stop += __coconut__.len(self._xrange)
+                stop += _coconut.len(self._xrange)
             if step is None:
                 step = 1
             return _coconut_map(self._xrange.__getitem__, self.__class__(start, stop, step))
         else:
             return self._xrange[index]
     def __repr__(self):
-        return __coconut__.repr(self._xrange)[1:]
+        return _coconut.repr(self._xrange)[1:]
     def __reduce_ex__(self, protocol):
         return (self.__class__,) + self._xrange.__reduce_ex__(protocol)[1:]
 class int(_coconut_int):
@@ -79,32 +79,32 @@ class int(_coconut_int):
     __doc__ = _coconut_int.__doc__
     class __metaclass__(type):
         def __instancecheck__(cls, inst):
-            return __coconut__.isinstance(inst, (_coconut_int, _coconut_long))
+            return _coconut.isinstance(inst, (_coconut_int, _coconut_long))
 class bytes(_coconut_str):
     __slots__ = ()
     __doc__ = _coconut_str.__doc__
     class __metaclass__(type):
         def __instancecheck__(cls, inst):
-            return __coconut__.isinstance(inst, _coconut_str)
+            return _coconut.isinstance(inst, _coconut_str)
     def __new__(cls, *args, **kwargs):
-        return _coconut_str.__new__(cls, __coconut__.bytearray(*args, **kwargs))
+        return _coconut_str.__new__(cls, _coconut.bytearray(*args, **kwargs))
 def print(*args, **kwargs):
-    if __coconut__.hasattr(_coconut_sys.stdout, "encoding") and _coconut_sys.stdout.encoding is not None:
+    if _coconut.hasattr(_coconut_sys.stdout, "encoding") and _coconut_sys.stdout.encoding is not None:
         return _coconut_print(*(_coconut_unicode(x).encode(_coconut_sys.stdout.encoding) for x in args), **kwargs)
     else:
         return _coconut_print(*(_coconut_unicode(x).encode() for x in args), **kwargs)
 def input(*args, **kwargs):
-    if __coconut__.hasattr(_coconut_sys.stdout, "encoding") and _coconut_sys.stdout.encoding is not None:
+    if _coconut.hasattr(_coconut_sys.stdout, "encoding") and _coconut_sys.stdout.encoding is not None:
         return _coconut_raw_input(*args, **kwargs).decode(_coconut_sys.stdout.encoding)
     else:
         return _coconut_raw_input(*args, **kwargs).decode()
 print.__doc__, input.__doc__ = _coconut_print.__doc__, _coconut_raw_input.__doc__
 def raw_input(*args):
     """Raises NameError."""
-    raise __coconut__.NameError('Coconut uses Python 3 "input" instead of Python 2 "raw_input"')
+    raise _coconut.NameError('Coconut uses Python 3 "input" instead of Python 2 "raw_input"')
 def xrange(*args):
     """Raises NameError."""
-    raise __coconut__.NameError('Coconut uses Python 3 "range" instead of Python 2 "xrange"')'''
+    raise _coconut.NameError('Coconut uses Python 3 "range" instead of Python 2 "xrange"')'''
 PY2_HEADER_BASE = PY27_HEADER_BASE + '''
 if _coconut_sys.version_info < (2, 7):
     import functools as _coconut_functools, copy_reg as _coconut_copy_reg
@@ -134,7 +134,7 @@ py3_map, py3_zip = map, zip
 #-----------------------------------------------------------------------------------------------------------------------
 
 if PY2:
-    import __builtin__ as __coconut__
+    import __builtin__ as _coconut
     _coconut_map = map
     if sys.version_info < (2, 7):
         exec(PY2_HEADER)

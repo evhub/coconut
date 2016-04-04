@@ -417,7 +417,7 @@ def getheader(which, target="", usehash=None):
 
 '''
         if which == "package":
-            header += r'''"""Built-in Coconut functions."""
+            header += r'''"""Built-in Coconut utilities."""
 
 '''
     elif usehash is not None:
@@ -438,8 +438,11 @@ def getheader(which, target="", usehash=None):
             header += r'''import sys as _coconut_sys, os.path as _coconut_os_path
 _coconut_file_path = _coconut_os_path.dirname(_coconut_os_path.abspath(__file__))
 _coconut_sys.path.insert(0, _coconut_file_path)
-from __coconut__ import *
+import __coconut__
 _coconut_sys.path.remove(_coconut_file_path)
+for name in dir(__coconut__):
+    if not name.startswith("__"):
+        globals()[name] = getattr(__coconut__, name)
 '''
         elif which == "package" or which == "code" or which == "file":
             if target.startswith("3"):
@@ -454,10 +457,10 @@ _coconut_sys.path.remove(_coconut_file_path)
 __coconut_version__ = "'''+VERSION+r'"'
             if target.startswith("3"):
                 header += r'''
-class __coconut__:'''
+class _coconut:'''
             else:
                 header += r'''
-class __coconut__(object):'''
+class _coconut(object):'''
             header += r'''
     import collections, functools, imp, itertools, operator, types
 '''
@@ -473,46 +476,46 @@ class __coconut__(object):'''
 class _coconut_MatchError(Exception):
     """Pattern-matching error."""
     __slots__ = ("pattern", "value")
-class _coconut_zip(__coconut__.zip):
+class _coconut_zip(_coconut.zip):
     __doc__ = zip.__doc__
     __slots__ = ("_iters",)
     __coconut_is_lazy__ = True
     def __new__(cls, *iterables):
-        new_zip = __coconut__.zip.__new__(cls, *iterables)
+        new_zip = _coconut.zip.__new__(cls, *iterables)
         new_zip._iters = iterables
         return new_zip
     def __getitem__(self, index):
-        if __coconut__.isinstance(index, __coconut__.slice):
+        if _coconut.isinstance(index, _coconut.slice):
             return self.__class__(*(_coconut_igetitem(i, index) for i in self._iters))
         else:
             return (_coconut_igetitem(i, index) for i in self._iters)
     def __reversed__(self):
-        return self.__class__(*(__coconut__.reversed(i) for i in self._iters))
+        return self.__class__(*(_coconut.reversed(i) for i in self._iters))
     def __len__(self):
-        return __coconut__.min(*(__coconut__.len(i) for i in self._iters))
+        return _coconut.min(*(_coconut.len(i) for i in self._iters))
     def __repr__(self):
-        return "zip(" + ", ".join((__coconut__.repr(i) for i in self._iters)) + ")"
+        return "zip(" + ", ".join((_coconut.repr(i) for i in self._iters)) + ")"
     def __reduce_ex__(self, _):
         return (self.__class__, self._iters)
-class _coconut_map(__coconut__.map):
+class _coconut_map(_coconut.map):
     __doc__ = map.__doc__
     __slots__ = ("_func", "_iters")
     __coconut_is_lazy__ = True
     def __new__(cls, function, *iterables):
-        new_map = __coconut__.map.__new__(cls, function, *iterables)
+        new_map = _coconut.map.__new__(cls, function, *iterables)
         new_map._func, new_map._iters = function, iterables
         return new_map
     def __getitem__(self, index):
-        if __coconut__.isinstance(index, __coconut__.slice):
+        if _coconut.isinstance(index, _coconut.slice):
             return self.__class__(self._func, *(_coconut_igetitem(i, index) for i in self._iters))
         else:
             return self._func(*(_coconut_igetitem(i, index) for i in self._iters))
     def __reversed__(self):
-        return self.__class__(self._func, *(__coconut__.reversed(i) for i in self._iters))
+        return self.__class__(self._func, *(_coconut.reversed(i) for i in self._iters))
     def __len__(self):
-        return __coconut__.min(*(__coconut__.len(i) for i in self._iters))
+        return _coconut.min(*(_coconut.len(i) for i in self._iters))
     def __repr__(self):
-        return "map(" + __coconut__.repr(self._func) + ", " + ", ".join((__coconut__.repr(i) for i in self._iters)) + ")"
+        return "map(" + _coconut.repr(self._func) + ", " + ", ".join((_coconut.repr(i) for i in self._iters)) + ")"
     def __reduce_ex__(self, _):
         return (self.__class__, (self._func,) + self._iters)
 class _coconut_parallel_map(_coconut_map):
@@ -541,33 +544,33 @@ class _coconut_parallel_map(_coconut_map):
             yield self._start
             self._start += self._step
     def __getitem__(self, index):
-        if __coconut__.isinstance(index, __coconut__.slice) and (index.start is None or index.start >= 0) and (index.stop is not None and index.stop >= 0):
-            return _coconut_map(lambda x: self._start + x * self._step, __coconut__.range(index.start if index.start is not None else 0, index.stop, index.step if index.step is not None else 1))
+        if _coconut.isinstance(index, _coconut.slice) and (index.start is None or index.start >= 0) and (index.stop is not None and index.stop >= 0):
+            return _coconut_map(lambda x: self._start + x * self._step, _coconut.range(index.start if index.start is not None else 0, index.stop, index.step if index.step is not None else 1))
         elif index >= 0:
             return self._start + index * self._step
         else:
-            raise __coconut__.IndexError("count indices must be positive")
+            raise _coconut.IndexError("count indices must be positive")
     def __repr__(self):
         return "count(" + str(self._start) + ", " + str(self._step) + ")"
     def __reduce__(self):
         return (self.__class__, (self._start, self._step))
 def _coconut_igetitem(iterable, index):
-    if isinstance(iterable, __coconut__.range) or (__coconut__.hasattr(iterable, "__coconut_is_lazy__") and iterable.__coconut_is_lazy__):
+    if isinstance(iterable, _coconut.range) or (_coconut.hasattr(iterable, "__coconut_is_lazy__") and iterable.__coconut_is_lazy__):
         return iterable[index]
-    elif __coconut__.hasattr(iterable, "__getitem__"):
-        if __coconut__.isinstance(index, __coconut__.slice):
+    elif _coconut.hasattr(iterable, "__getitem__"):
+        if _coconut.isinstance(index, _coconut.slice):
             return (x for x in iterable[index])
         else:
             return iterable[index]
-    elif __coconut__.isinstance(index, __coconut__.slice):
+    elif _coconut.isinstance(index, _coconut.slice):
         if (index.start is not None and index.start < 0) or (index.stop is not None and index.stop < 0) or (index.step is not None and index.step < 0):
-            return (x for x in __coconut__.tuple(iterable)[index])
+            return (x for x in _coconut.tuple(iterable)[index])
         else:
-            return __coconut__.itertools.islice(iterable, index.start, index.stop, index.step)
+            return _coconut.itertools.islice(iterable, index.start, index.stop, index.step)
     elif index < 0:
-        return __coconut__.collections.deque(iterable, maxlen=-index)[0]
+        return _coconut.collections.deque(iterable, maxlen=-index)[0]
     else:
-        return __coconut__.next(__coconut__.itertools.islice(iterable, index, index + 1))
+        return _coconut.next(_coconut.itertools.islice(iterable, index, index + 1))
 '''
             if target.startswith("3"):
                 header += r'''class _coconut_compose:'''
@@ -580,7 +583,7 @@ def _coconut_igetitem(iterable, index):
     def __call__(self, *args, **kwargs):
         return self.f(self.g(*args, **kwargs))
     def __repr__(self):
-        return __coconut__.repr(self.f) + ".." + __coconut__.repr(self.g)
+        return _coconut.repr(self.f) + ".." + _coconut.repr(self.g)
     def __reduce__(self):
         return (_coconut_compose, (self.f, self.g))
 def _coconut_pipe(x, f): return f(x)
@@ -589,12 +592,12 @@ def _coconut_backpipe(f, x): return f(x)
 def _coconut_backstarpipe(f, xs): return f(*xs)
 def _coconut_bool_and(a, b): return a and b
 def _coconut_bool_or(a, b): return a or b
-def _coconut_minus(*args): return __coconut__.operator.__neg__(*args) if len(args) < 2 else __coconut__.operator.__sub__(*args)
+def _coconut_minus(*args): return _coconut.operator.__neg__(*args) if len(args) < 2 else _coconut.operator.__sub__(*args)
 def recursive(func):
     """Decorates a function by optimizing it for tail recursion."""
     state = [True, None] # toplevel, (args, kwargs)
     recurse = object()
-    @__coconut__.functools.wraps(func)
+    @_coconut.functools.wraps(func)
     def tailed_func(*args, **kwargs):
         """Tail Recursion Wrapper."""
         if state[0]:
@@ -615,11 +618,11 @@ def recursive(func):
     return tailed_func
 def datamaker(data_type):
     """Returns base data constructor of passed data type."""
-    return __coconut__.functools.partial(__coconut__.super(data_type, data_type).__new__, data_type)
+    return _coconut.functools.partial(_coconut.super(data_type, data_type).__new__, data_type)
 def consume(iterable, keep_last=0):
     """Fully exhaust iterable and return the last keep_last elements."""
-    return __coconut__.collections.deque(iterable, maxlen=keep_last)
-MatchError, map, parallel_map, zip, count, reduce, takewhile, dropwhile, tee = _coconut_MatchError, _coconut_map, _coconut_parallel_map, _coconut_zip, _coconut_count, __coconut__.functools.reduce, __coconut__.itertools.takewhile, __coconut__.itertools.dropwhile, __coconut__.itertools.tee
+    return _coconut.collections.deque(iterable, maxlen=keep_last)
+MatchError, map, parallel_map, zip, count, reduce, takewhile, dropwhile, tee = _coconut_MatchError, _coconut_map, _coconut_parallel_map, _coconut_zip, _coconut_count, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile, _coconut.itertools.tee
 '''
         else:
             raise CoconutException("invalid header type", which)
@@ -663,14 +666,14 @@ def add_paren_handle(tokens):
 def attr_handle(tokens):
     """Processes attrgetter literals."""
     if len(tokens) == 1:
-        return '__coconut__.operator.attrgetter("'+tokens[0]+'")'
+        return '_coconut.operator.attrgetter("'+tokens[0]+'")'
     else:
         raise CoconutException("invalid attrgetter literal tokens", tokens)
 
 def lazy_list_handle(tokens):
     """Processes lazy lists."""
     if len(tokens) == 0:
-        return "__coconut__.iter(())"
+        return "_coconut.iter(())"
     else:
         return ("(" + lazy_item_var + "() for " + lazy_item_var + " in ("
             + "lambda: " + ", lambda: ".join(tokens) + ("," if len(tokens) == 1 else "") + "))")
@@ -680,7 +683,7 @@ def chain_handle(tokens):
     if len(tokens) == 1:
         return tokens[0]
     else:
-        return "__coconut__.itertools.chain.from_iterable(" + lazy_list_handle(tokens) + ")"
+        return "_coconut.itertools.chain.from_iterable(" + lazy_list_handle(tokens) + ")"
 
 def infix_error(tokens):
     """Raises inner infix error."""
@@ -771,7 +774,7 @@ def data_handle(tokens):
         name, attrs, stmts = tokens
     else:
         raise CoconutException("invalid data tokens", tokens)
-    out = "class " + name + '(__coconut__.collections.namedtuple("' + name + '", "' + attrs + '")):\n' + openindent
+    out = "class " + name + '(_coconut.collections.namedtuple("' + name + '", "' + attrs + '")):\n' + openindent
     rest = None
     if "simple" in stmts.keys() and len(stmts) == 1:
         out += "__slots__ = ()\n"
@@ -908,8 +911,8 @@ class matcher(object):
             match = original[0]
         else:
             raise CoconutException("invalid dict match tokens", original)
-        self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Mapping)")
-        self.checks.append("__coconut__.len("+item+") == "+str(len(match)))
+        self.checks.append("_coconut.isinstance("+item+", _coconut.abc.Mapping)")
+        self.checks.append("_coconut.len("+item+") == "+str(len(match)))
         for x in range(0, len(match)):
             k,v = match[x]
             self.checks.append(k+" in "+item)
@@ -922,19 +925,19 @@ class matcher(object):
             series_type, match = original
         else:
             series_type, match, tail = original
-        self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Sequence)")
+        self.checks.append("_coconut.isinstance("+item+", _coconut.abc.Sequence)")
         if tail is None:
-            self.checks.append("__coconut__.len("+item+") == "+str(len(match)))
+            self.checks.append("_coconut.len("+item+") == "+str(len(match)))
         else:
-            self.checks.append("__coconut__.len("+item+") >= "+str(len(match)))
+            self.checks.append("_coconut.len("+item+") >= "+str(len(match)))
             if len(match):
                 splice = "["+str(len(match))+":]"
             else:
                 splice = ""
             if series_type == "(":
-                self.defs.append(tail+" = __coconut__.tuple("+item+splice+")")
+                self.defs.append(tail+" = _coconut.tuple("+item+splice+")")
             elif series_type == "[":
-                self.defs.append(tail+" = __coconut__.list("+item+splice+")")
+                self.defs.append(tail+" = _coconut.list("+item+splice+")")
             else:
                 raise CoconutException("invalid series match type", series_type)
         for x in range(0, len(match)):
@@ -947,16 +950,16 @@ class matcher(object):
             _, match = original
         else:
             _, match, tail = original
-        self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Iterable)")
+        self.checks.append("_coconut.isinstance("+item+", _coconut.abc.Iterable)")
         itervar = match_iter_var + "_" + str(self.iter_index)
         self.iter_index += 1
         if tail is None:
-            self.defs.append(itervar+" = __coconut__.tuple("+item+")")
+            self.defs.append(itervar+" = _coconut.tuple("+item+")")
         else:
-            self.defs.append(tail+" = __coconut__.iter("+item+")")
-            self.defs.append(itervar+" = __coconut__.tuple(_coconut_igetitem("+tail+", __coconut__.slice(None, "+str(len(match))+")))")
+            self.defs.append(tail+" = _coconut.iter("+item+")")
+            self.defs.append(itervar+" = _coconut.tuple(_coconut_igetitem("+tail+", _coconut.slice(None, "+str(len(match))+")))")
         self.increment()
-        self.checks.append("__coconut__.len("+itervar+") == "+str(len(match)))
+        self.checks.append("_coconut.len("+itervar+") == "+str(len(match)))
         for x in range(0, len(match)):
             self.match(match[x], itervar+"["+str(x)+"]")
         self.decrement()
@@ -964,16 +967,16 @@ class matcher(object):
     def match_rsequence(self, original, item):
         """Matches a reverse sequence."""
         front, series_type, match = original
-        self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Sequence)")
-        self.checks.append("__coconut__.len("+item+") >= "+str(len(match)))
+        self.checks.append("_coconut.isinstance("+item+", _coconut.abc.Sequence)")
+        self.checks.append("_coconut.len("+item+") >= "+str(len(match)))
         if len(match):
             splice = "[:"+str(-len(match))+"]"
         else:
             splice = ""
         if series_type == "(":
-            self.defs.append(front+" = __coconut__.tuple("+item+splice+")")
+            self.defs.append(front+" = _coconut.tuple("+item+splice+")")
         elif series_type == "[":
-            self.defs.append(front+" = __coconut__.list("+item+splice+")")
+            self.defs.append(front+" = _coconut.list("+item+splice+")")
         else:
             raise CoconutException("invalid series match type", series_type)
         for x in range(0, len(match)):
@@ -982,8 +985,8 @@ class matcher(object):
     def match_msequence(self, original, item):
         """Matches a middle sequence."""
         series_type, head_match, middle, _, last_match = original
-        self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Sequence)")
-        self.checks.append("__coconut__.len("+item+") >= "+str(len(head_match) + len(last_match)))
+        self.checks.append("_coconut.isinstance("+item+", _coconut.abc.Sequence)")
+        self.checks.append("_coconut.len("+item+") >= "+str(len(head_match) + len(last_match)))
         if len(head_match) and len(last_match):
             splice = "["+str(len(head_match))+":"+str(-len(last_match))+"]"
         elif len(head_match):
@@ -993,9 +996,9 @@ class matcher(object):
         else:
             splice = ""
         if series_type == "(":
-            self.defs.append(middle+" = __coconut__.tuple("+item+splice+")")
+            self.defs.append(middle+" = _coconut.tuple("+item+splice+")")
         elif series_type == "[":
-            self.defs.append(middle+" = __coconut__.list("+item+splice+")")
+            self.defs.append(middle+" = _coconut.list("+item+splice+")")
         else:
             raise CoconutException("invalid series match type", series_type)
         for x in range(0, len(head_match)):
@@ -1027,16 +1030,16 @@ class matcher(object):
             match = original[0]
         else:
             raise CoconutException("invalid set match tokens", original)
-        self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Set)")
-        self.checks.append("__coconut__.len("+item+") == "+str(len(match)))
+        self.checks.append("_coconut.isinstance("+item+", _coconut.abc.Set)")
+        self.checks.append("_coconut.len("+item+") == "+str(len(match)))
         for const in match:
             self.checks.append(const+" in "+item)
 
     def match_data(self, original, item):
         """Matches a data type."""
         data_type, match = original
-        self.checks.append("__coconut__.isinstance("+item+", "+data_type+")")
-        self.checks.append("__coconut__.len("+item+") == "+str(len(match)))
+        self.checks.append("_coconut.isinstance("+item+", "+data_type+")")
+        self.checks.append("_coconut.len("+item+") == "+str(len(match)))
         for x in range(0, len(match)):
             self.match(match[x], item+"["+str(x)+"]")
 
@@ -1054,7 +1057,7 @@ class matcher(object):
             for i in range(0, len(trailers), 2):
                 op, arg = trailers[i], trailers[i+1]
                 if op == "is":
-                    self.checks.append("__coconut__.isinstance("+item+", "+arg+")")
+                    self.checks.append("_coconut.isinstance("+item+", "+arg+")")
                 elif op == "as":
                     if arg in self.names:
                         self.checks.append(self.names[arg]+" == "+item)
@@ -1210,10 +1213,10 @@ def gen_imports(path, impas):
                 out.append("try:")
                 out.append(openindent + mod_name)
                 out.append(closeindent + "except:")
-                out.append(openindent + mod_name + ' = __coconut__.imp.new_module("' + mod_name + '")')
+                out.append(openindent + mod_name + ' = _coconut.imp.new_module("' + mod_name + '")')
                 out.append(closeindent + "else:")
-                out.append(openindent + "if not __coconut__.isinstance(" + mod_name + ", __coconut__.types.ModuleType):")
-                out.append(openindent + mod_name + ' = __coconut__.imp.new_module("' + mod_name + '")' + closeindent * 2)
+                out.append(openindent + "if not _coconut.isinstance(" + mod_name + ", _coconut.types.ModuleType):")
+                out.append(openindent + mod_name + ' = _coconut.imp.new_module("' + mod_name + '")' + closeindent * 2)
             out.append(".".join(fake_mods) + " = " + import_as_var)
     else:
         imp_from, imp = parts
@@ -1883,20 +1886,20 @@ class processor(object):
                 out += trailer
             elif len(trailer) == 1:
                 if trailer[0] == "$[]":
-                    out = "__coconut__.functools.partial(_coconut_igetitem, "+out+")"
+                    out = "_coconut.functools.partial(_coconut_igetitem, "+out+")"
                 elif trailer[0] == "$":
-                    out = "__coconut__.functools.partial(__coconut__.functools.partial, "+out+")"
+                    out = "_coconut.functools.partial(_coconut.functools.partial, "+out+")"
                 elif trailer[0] == "[]":
-                    out = "__coconut__.functools.partial(__coconut__.operator.__getitem__, "+out+")"
+                    out = "_coconut.functools.partial(_coconut.operator.__getitem__, "+out+")"
                 elif trailer[0] == ".":
-                    out = "__coconut__.functools.partial(__coconut__.getattr, "+out+")"
+                    out = "_coconut.functools.partial(_coconut.getattr, "+out+")"
                 elif trailer[0] == "$(":
                     raise self.make_err(CoconutSyntaxError, "a partial application argument is required", original, location)
                 else:
                     raise CoconutException("invalid trailer symbol", trailer[0])
             elif len(trailer) == 2:
                 if trailer[0] == "$(":
-                    out = "__coconut__.functools.partial("+out+", "+trailer[1]+")"
+                    out = "_coconut.functools.partial("+out+", "+trailer[1]+")"
                 elif trailer[0] == "$[":
                     if 0 < len(trailer[1]) <= 3:
                         args = []
@@ -1909,7 +1912,7 @@ class processor(object):
                         if len(args) == 1:
                             out += ", " + args[0]
                         else:
-                            out += ", __coconut__.slice(" + ", ".join(args) + ")"
+                            out += ", _coconut.slice(" + ", ".join(args) + ")"
                         out += ")"
                     else:
                         raise CoconutException("invalid iterator slice args", trailer[1])
@@ -1939,7 +1942,7 @@ class processor(object):
             elif op == "::=":
                 ichain_var = lazy_chain_var+"_"+str(self.ichain_count) # necessary to prevent a segfault caused by self-reference
                 out += ichain_var+" = "+name+"\n"
-                out += name+" = __coconut__.itertools.chain.from_iterable("+lazy_list_handle([ichain_var, "("+item+")"])+")"
+                out += name+" = _coconut.itertools.chain.from_iterable("+lazy_list_handle([ichain_var, "("+item+")"])+")"
                 self.ichain_count += 1
             else:
                 out += name+" "+op+" "+item
@@ -1953,7 +1956,7 @@ class processor(object):
             if self.target.startswith("3"):
                 return ""
             else:
-                return "(__coconut__.object)"
+                return "(_coconut.object)"
         elif len(tokens) == 1 and len(tokens[0]) == 1:
             if "tests" in tokens[0]:
                 return "(" + tokens[0][0] + ")"
@@ -2053,7 +2056,7 @@ class processor(object):
         """Handles variable names."""
         if len(tokens) != 1:
             raise CoconutException("invalid name tokens", tokens)
-        elif tokens[0] == "__coconut__" or tokens[0].startswith("_coconut_"):
+        elif tokens[0].startswith("_coconut"):
             if self.strict:
                 raise self.make_err(CoconutStyleError, "found use of a reserved variable", original, location)
             else:
@@ -2069,7 +2072,7 @@ class processor(object):
         repr_wrap = self.wrap_str_of(ascii(base_line))
         return ("if not " + match_check_var + ":\n" + openindent
             + match_err_var + ' = _coconut_MatchError("pattern-matching failed for " '
-            + repr_wrap + ' " in " + __coconut__.repr(__coconut__.repr(' + match_to_var + ")))\n"
+            + repr_wrap + ' " in " + _coconut.repr(_coconut.repr(' + match_to_var + ")))\n"
             + match_err_var + ".pattern = " + line_wrap + "\n"
             + match_err_var + ".value = " + match_to_var
             + "\nraise " + match_err_var + "\n" + closeindent)
@@ -2168,7 +2171,7 @@ class processor(object):
         elif len(tokens[0]) != 1:
             raise CoconutException("invalid set literal item", tokens[0])
         elif self.target_info() < (2, 7):
-            return "__coconut__.set(" + set_to_tuple(tokens[0]) + ")"
+            return "_coconut.set(" + set_to_tuple(tokens[0]) + ")"
         else:
             return "{" + tokens[0][0] + "}"
 
@@ -2177,9 +2180,9 @@ class processor(object):
         if len(tokens) == 1:
             set_type = tokens[0]
             if set_type == "s":
-                return "__coconut__.set()"
+                return "_coconut.set()"
             elif set_type == "f":
-                return "__coconut__.frozenset()"
+                return "_coconut.frozenset()"
             else:
                 raise CoconutException("invalid set type", set_type)
         elif len(tokens) == 2:
@@ -2190,9 +2193,9 @@ class processor(object):
                 if self.target.startswith("3"):
                     return "{" + set_items[0] + "}"
                 else:
-                    return "__coconut__.set(" + set_to_tuple(set_items) + ")"
+                    return "_coconut.set(" + set_to_tuple(set_items) + ")"
             elif set_type == "f":
-                return "__coconut__.frozenset(" + set_to_tuple(set_items) + ")"
+                return "_coconut.frozenset(" + set_to_tuple(set_items) + ")"
             else:
                 raise CoconutException("invalid set type", set_type)
         else:
@@ -2368,31 +2371,31 @@ class processor(object):
         | fixto(Keyword("and"), "_coconut_bool_and", copy=True)
         | fixto(Keyword("or"), "_coconut_bool_or", copy=True)
         | fixto(minus, "_coconut_minus", copy=True)
-        | fixto(dot, "__coconut__.getattr", copy=True)
-        | fixto(dubcolon, "__coconut__.itertools.chain", copy=True)
-        | fixto(dollar, "__coconut__.functools.partial", copy=True)
-        | fixto(exp_dubstar, "__coconut__.operator.__pow__", copy=True)
-        | fixto(mul_star, "__coconut__.operator.__mul__", copy=True)
-        | fixto(div_dubslash, "__coconut__.operator.__floordiv__", copy=True)
-        | fixto(div_slash, "__coconut__.operator.__truediv__", copy=True)
-        | fixto(percent, "__coconut__.operator.__mod__", copy=True)
-        | fixto(plus, "__coconut__.operator.__add__", copy=True)
-        | fixto(amp, "__coconut__.operator.__and__", copy=True)
-        | fixto(caret, "__coconut__.operator.__xor__", copy=True)
-        | fixto(bar, "__coconut__.operator.__or__", copy=True)
-        | fixto(lshift, "__coconut__.operator.__lshift__", copy=True)
-        | fixto(rshift, "__coconut__.operator.__rshift__", copy=True)
-        | fixto(lt, "__coconut__.operator.__lt__", copy=True)
-        | fixto(gt, "__coconut__.operator.__gt__", copy=True)
-        | fixto(eq, "__coconut__.operator.__eq__", copy=True)
-        | fixto(le, "__coconut__.operator.__le__", copy=True)
-        | fixto(ge, "__coconut__.operator.__ge__", copy=True)
-        | fixto(ne, "__coconut__.operator.__ne__", copy=True)
-        | fixto(tilde, "__coconut__.operator.__inv__", copy=True)
-        | fixto(matrix_at, "__coconut__.operator.__matmul__", copy=True)
-        | fixto(Keyword("not"), "__coconut__.operator.__not__", copy=True)
-        | fixto(Keyword("is"), "__coconut__.operator.is_", copy=True)
-        | fixto(Keyword("in"), "__coconut__.operator.__contains__", copy=True)
+        | fixto(dot, "_coconut.getattr", copy=True)
+        | fixto(dubcolon, "_coconut.itertools.chain", copy=True)
+        | fixto(dollar, "_coconut.functools.partial", copy=True)
+        | fixto(exp_dubstar, "_coconut.operator.__pow__", copy=True)
+        | fixto(mul_star, "_coconut.operator.__mul__", copy=True)
+        | fixto(div_dubslash, "_coconut.operator.__floordiv__", copy=True)
+        | fixto(div_slash, "_coconut.operator.__truediv__", copy=True)
+        | fixto(percent, "_coconut.operator.__mod__", copy=True)
+        | fixto(plus, "_coconut.operator.__add__", copy=True)
+        | fixto(amp, "_coconut.operator.__and__", copy=True)
+        | fixto(caret, "_coconut.operator.__xor__", copy=True)
+        | fixto(bar, "_coconut.operator.__or__", copy=True)
+        | fixto(lshift, "_coconut.operator.__lshift__", copy=True)
+        | fixto(rshift, "_coconut.operator.__rshift__", copy=True)
+        | fixto(lt, "_coconut.operator.__lt__", copy=True)
+        | fixto(gt, "_coconut.operator.__gt__", copy=True)
+        | fixto(eq, "_coconut.operator.__eq__", copy=True)
+        | fixto(le, "_coconut.operator.__le__", copy=True)
+        | fixto(ge, "_coconut.operator.__ge__", copy=True)
+        | fixto(ne, "_coconut.operator.__ne__", copy=True)
+        | fixto(tilde, "_coconut.operator.__inv__", copy=True)
+        | fixto(matrix_at, "_coconut.operator.__matmul__", copy=True)
+        | fixto(Keyword("not"), "_coconut.operator.__not__", copy=True)
+        | fixto(Keyword("is"), "_coconut.operator.is_", copy=True)
+        | fixto(Keyword("in"), "_coconut.operator.__contains__", copy=True)
     )
     op_atom = lparen.suppress() + op_item + rparen.suppress()
 

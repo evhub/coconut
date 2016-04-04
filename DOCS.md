@@ -676,9 +676,7 @@ print(data)
 
 ### Reserved Variables
 
-The Coconut compiler will modify and reference certain variables with the assumption that the code being compiled does not modify them in any way. If your code does modify any of these variables, your code is unlikely to work properly. These reserved variables are
-- the single variable name `__coconut__`, and
-- all variable names of the form `_coconut_name`.
+In Coconut, all variable names starting with `_coconut` are reserved. The Coconut compiler will modify and reference these variables with the assumption that the code being compiled does not modify them in any way. If your code does modify any such variables, your code is unlikely to work properly.
 
 ## Expressions
 
