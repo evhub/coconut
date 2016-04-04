@@ -470,9 +470,9 @@ class __coconut__(object):'''
         import collections.abc as abc'''
             header += r'''
     IndexError, NameError, map, zip, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, repr, reversed, set, slice, super, tuple = IndexError, NameError, map, zip, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, repr, reversed, set, slice, super, tuple
-
 class _coconut_MatchError(Exception):
     """Pattern-matching error."""
+    __slots__ = ("pattern", "value")
 class _coconut_zip(__coconut__.zip):
     __doc__ = zip.__doc__
     __slots__ = ("_iters",)
@@ -568,23 +568,28 @@ def _coconut_igetitem(iterable, index):
         return __coconut__.collections.deque(iterable, maxlen=-index)[0]
     else:
         return __coconut__.next(__coconut__.itertools.islice(iterable, index, index + 1))
-def _coconut_pipe(x, f):
-    return f(x)
-def _coconut_starpipe(xs, f):
-    return f(*xs)
-def _coconut_backpipe(f, x):
-    return f(x)
-def _coconut_backstarpipe(f, xs):
-    return f(*xs)
-def _coconut_compose(f, g):
-    return lambda *args, **kwargs: f(g(*args, **kwargs))
-def _coconut_bool_and(a, b):
-    return a and b
-def _coconut_bool_or(a, b):
-    return a or b
-def _coconut_minus(*args):
-    return __coconut__.operator.__neg__(*args) if len(args) < 2 else __coconut__.operator.__sub__(*args)
-
+'''
+            if target.startswith("3"):
+                header += r'''class _coconut_compose:'''
+            else:
+                header += r'''class _coconut_compose(object):'''
+            header += r'''
+    __slots__ = ("f", "g")
+    def __init__(self, f, g):
+        self.f, self.g = f, g
+    def __call__(self, *args, **kwargs):
+        return self.f(self.g(*args, **kwargs))
+    def __repr__(self):
+        return __coconut__.repr(self.f) + ".." + __coconut__.repr(self.g)
+    def __reduce__(self):
+        return (_coconut_compose, (self.f, self.g))
+def _coconut_pipe(x, f): return f(x)
+def _coconut_starpipe(xs, f): return f(*xs)
+def _coconut_backpipe(f, x): return f(x)
+def _coconut_backstarpipe(f, xs): return f(*xs)
+def _coconut_bool_and(a, b): return a and b
+def _coconut_bool_or(a, b): return a or b
+def _coconut_minus(*args): return __coconut__.operator.__neg__(*args) if len(args) < 2 else __coconut__.operator.__sub__(*args)
 def recursive(func):
     """Decorates a function by optimizing it for tail recursion."""
     state = [True, None] # toplevel, (args, kwargs)
@@ -1909,7 +1914,7 @@ class processor(object):
                     else:
                         raise CoconutException("invalid iterator slice args", trailer[1])
                 elif trailer[0] == "..":
-                    out = "(lambda *args, **kwargs: "+out+"(("+trailer[1]+")(*args, **kwargs)))"
+                    out = "_coconut_compose("+out+", "+trailer[1]+")"
                 else:
                     raise CoconutException("invalid special trailer", trailer[0])
             else:
