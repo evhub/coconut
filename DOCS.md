@@ -1359,9 +1359,10 @@ parallel_map(pow$(2), range(100)) |> list |> print
 
 ###### Python
 ```coc_python
+import functools
 import concurrent.futures
 with concurrent.futures.ProcessPoolExecutor() as executor:
-    print(list(executor.map(pow$(2), range(100))))
+    print(list(executor.map(functools.partial(pow, 2), range(100))))
 ```
 
 ### `__coconut_version__`
