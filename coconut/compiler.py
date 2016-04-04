@@ -552,6 +552,30 @@ class __coconut__(object):
         def __reduce__(self):
             return (self.__class__, (self._start, self._step))
     @staticmethod
+    def pipe(x, f):
+        return f(x)
+    @staticmethod
+    def starpipe(xs, f):
+        return f(*xs)
+    @staticmethod
+    def backpipe(f, x):
+        return f(x)
+    @staticmethod
+    def backstarpipe(f, xs):
+        return f(*xs)
+    @staticmethod
+    def compose(f, g):
+        return lambda *args, **kwargs: f(g(*args, **kwargs)))
+    @staticmethod
+    def bool_and(a, b):
+        return a and b
+    @staticmethod
+    def bool_or(a, b):
+        return a or b
+    @staticmethod
+    def minus(*args):
+        return __coconut__.operator.__neg__(*args) if len(args) < 2 else __coconut__.operator.__sub__(*args)
+    @staticmethod
     def igetitem(iterable, index):
         if isinstance(iterable, __coconut__.range) or (__coconut__.hasattr(iterable, "__coconut_is_lazy__") and iterable.__coconut_is_lazy__):
             return iterable[index]
@@ -2343,14 +2367,14 @@ class processor(object):
     test_expr = yield_expr | testlist
 
     op_item = (
-        fixto(pipeline, "(lambda x, f: f(x))", copy=True)
-        | fixto(starpipe, "(lambda xs, f: f(*xs))", copy=True)
-        | fixto(backpipe, "(lambda f, x: f(x))", copy=True)
-        | fixto(backstarpipe, "(lambda f, xs: f(*xs))", copy=True)
-        | fixto(dotdot, "(lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)))", copy=True)
-        | fixto(Keyword("and"), "(lambda a, b: a and b)", copy=True)
-        | fixto(Keyword("or"), "(lambda a, b: a or b)", copy=True)
-        | fixto(minus, "(lambda *args: __coconut__.operator.__neg__(*args) if len(args) < 2 else __coconut__.operator.__sub__(*args))", copy=True)
+        fixto(pipeline, "__coconut__.pipe", copy=True)
+        | fixto(starpipe, "__coconut__.starpipe", copy=True)
+        | fixto(backpipe, "__coconut__.backpipe", copy=True)
+        | fixto(backstarpipe, "__coconut__.backstarpipe", copy=True)
+        | fixto(dotdot, "__coconut__.compose", copy=True)
+        | fixto(Keyword("and"), "__coconut__.bool_and", copy=True)
+        | fixto(Keyword("or"), "__coconut__.bool_or", copy=True)
+        | fixto(minus, "__coconut__.minus", copy=True)
         | fixto(dot, "__coconut__.getattr", copy=True)
         | fixto(dubcolon, "__coconut__.itertools.chain", copy=True)
         | fixto(dollar, "__coconut__.functools.partial", copy=True)

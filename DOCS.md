@@ -710,7 +710,7 @@ Coconut supports a number of different syntactical aliases for common partial ap
 obj.        =>      getattr$(obj)
 func$       =>      ($)$(func)
 seq[]       =>      operator.__getitem__$(seq)
-iter$[]     =>      <lambda> # the equivalent of seq[] for iterators
+iter$[]     =>      # the equivalent of seq[] for iterators
 ```
 
 ##### Example
@@ -799,16 +799,16 @@ A very common thing to do in functional programming is to make use of function v
 ##### Full List
 
 ```coconut
-(|>)        => (<lambda>) # pipe forward
-(|*>)       => (<lambda>) # multi-arg pipe forward
-(<|)        => (<lambda>) # pipe backward
-(|*>)       => (<lambda>) # multi-arg pipe backward
-(..)        => (<lambda>) # function composition
+(|>)        => # pipe forward
+(|*>)       => # multi-arg pipe forward
+(<|)        => # pipe backward
+(|*>)       => # multi-arg pipe backward
+(..)        => # function composition
 (.)         => (getattr)
 (::)        => (itertools.chain) # will not evaluate its arguments lazily
 ($)         => (functools.partial)
 (+)         => (operator.__add__)
-(-)         => (<lambda>) # 1 arg: operator.__neg__, 2 args: operator.__sub__
+(-)         => # 1 arg: operator.__neg__, 2 args: operator.__sub__
 (*)         => (operator.__mul__)
 (**)        => (operator.__pow__)
 (/)         => (operator.__truediv__)
@@ -828,8 +828,8 @@ A very common thing to do in functional programming is to make use of function v
 (~)         => (operator.__inv__)
 (@)         => (operator.__matmul__)
 (not)       => (operator.__not__)
-(and)       => (<lambda>) # boolean and
-(or)        => (<lambda>) # boolean or
+(and)       => # boolean and
+(or)        => # boolean or
 (is)        => (operator.is_)
 (in)        => (operator.__contains__)
 ```
