@@ -462,8 +462,13 @@ _coconut_sys.path.remove(_coconut_file_path)
                 header += PY2_HEADER
             else:
                 header += PY2_HEADER_CHECK
+            if target.startswith("3"):
+                header += r'''
+class __coconut__:'''
+            else:
+                header += r'''
+class __coconut__(object):'''
             header += r'''
-class __coconut__(object):
     version = "'''+VERSION+r'''"
     import collections, functools, imp, itertools, operator, types
 '''
