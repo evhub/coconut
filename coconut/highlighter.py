@@ -109,10 +109,8 @@ class coclexer(Python3Lexer):
         (r"|".join(operators), Operator),
         (r'(?<!\\)(data)((?:\s|\\\s)+)?', bygroups(Keyword, Text), 'classname')
     ] + tokens["root"]
-    tokens["keywords"] = [
-        (words(keywords, suffix="r\b"), Keyword),
-        (words(reserved_vars, prefix=r"(?<!\\)", suffix=r"\b"), Keyword),
-        (words(const_vars, suffix=r"\b"), Keyword.Constant)
+    tokens["keywords"] = tokens["keywords"] + [
+        (words(reserved_vars, prefix=r"(?<!\\)", suffix=r"\b"), Keyword)
     ]
     tokens["builtins"] = tokens["builtins"] + [
         (words(builtins, prefix=r"(?<!\.)", suffix=r"\b"), Name.Builtin),
