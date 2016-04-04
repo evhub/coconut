@@ -565,7 +565,7 @@ class __coconut__(object):
         return f(*xs)
     @staticmethod
     def compose(f, g):
-        return lambda *args, **kwargs: f(g(*args, **kwargs)))
+        return lambda *args, **kwargs: f(g(*args, **kwargs))
     @staticmethod
     def bool_and(a, b):
         return a and b
