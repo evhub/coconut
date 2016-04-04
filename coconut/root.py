@@ -67,7 +67,7 @@ class range(object):
                 stop += __coconut__.len(self._xrange)
             if step is None:
                 step = 1
-            return __coconut__.map(self._xrange.__getitem__, self.__class__(start, stop, step))
+            return _coconut_map(self._xrange.__getitem__, self.__class__(start, stop, step))
         else:
             return self._xrange[index]
     def __repr__(self):
