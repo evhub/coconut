@@ -440,6 +440,7 @@ _coconut_file_path = _coconut_os_path.dirname(_coconut_os_path.abspath(__file__)
 _coconut_sys.path.insert(0, _coconut_file_path)
 import __coconut__
 _coconut_sys.path.remove(_coconut_file_path)
+__coconut_version__ = __coconut__.__coconut_version__
 for name in dir(__coconut__):
     if not name.startswith("__"):
         globals()[name] = getattr(__coconut__, name)
