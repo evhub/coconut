@@ -478,7 +478,7 @@ class _coconut_MatchError(Exception):
     """Pattern-matching error."""
     __slots__ = ("pattern", "value")
 class _coconut_zip(_coconut.zip):
-    __doc__ = zip.__doc__
+    __doc__ = _coconut.zip.__doc__
     __slots__ = ("_iters",)
     __coconut_is_lazy__ = True
     def __new__(cls, *iterables):
@@ -499,7 +499,7 @@ class _coconut_zip(_coconut.zip):
     def __reduce_ex__(self, _):
         return (self.__class__, self._iters)
 class _coconut_map(_coconut.map):
-    __doc__ = map.__doc__
+    __doc__ = _coconut.map.__doc__
     __slots__ = ("_func", "_iters")
     __coconut_is_lazy__ = True
     def __new__(cls, function, *iterables):
@@ -528,12 +528,13 @@ class _coconut_parallel_map(_coconut_map):
             for x in executor.map(self._func, *self._iters):
                 yield x
     def __repr__(self):
-        return "parallel_" + _coconut_map.__repr__(self)
-'''
+        return "parallel_" + _coconut_map.__repr__(self)'''
             if target.startswith("3"):
-                header += r'''class _coconut_count:'''
+                header += r'''
+class _coconut_count:'''
             else:
-                header += r'''class _coconut_count(object):'''
+                header += r'''
+class _coconut_count(object):'''
             header += r'''
     """count(start, step) returns an infinite iterator starting at start and increasing by step."""
     __slots__ = ("_start", "_step")
@@ -571,12 +572,13 @@ def _coconut_igetitem(iterable, index):
     elif index < 0:
         return _coconut.collections.deque(iterable, maxlen=-index)[0]
     else:
-        return _coconut.next(_coconut.itertools.islice(iterable, index, index + 1))
-'''
+        return _coconut.next(_coconut.itertools.islice(iterable, index, index + 1))'''
             if target.startswith("3"):
-                header += r'''class _coconut_compose:'''
+                header += r'''
+class _coconut_compose:'''
             else:
-                header += r'''class _coconut_compose(object):'''
+                header += r'''
+class _coconut_compose(object):'''
             header += r'''
     __slots__ = ("f", "g")
     def __init__(self, f, g):
