@@ -116,13 +116,13 @@ if _coconut_sys.version_info < (2, 7):
     _coconut_copy_reg.pickle(_coconut_functools.partial, _coconut_reduce_partial)'''
 PY2_HEADER = "import sys as _coconut_sys, os as _coconut_os\n" + PY2_HEADER_BASE + "\n"
 PY27_HEADER = "import sys as _coconut_sys, os as _coconut_os\n" + PY27_HEADER_BASE + "\n"
-PY2_HEADER_CHECK = r'''import sys as _coconut_sys
+PYCHECK_HEADER = r'''import sys as _coconut_sys
 if _coconut_sys.version_info < (3,):
     import os as _coconut_os
 '''
 for _line in PY2_HEADER_BASE.splitlines():
-    PY2_HEADER_CHECK += "    " + _line + "\n"
-PY2_HEADER_CHECK += r'''else:
+    PYCHECK_HEADER += "    " + _line + "\n"
+PYCHECK_HEADER += r'''else:
     py3_map, py3_zip = map, zip
 '''
 PY3_HEADER = r'''import sys as _coconut_sys

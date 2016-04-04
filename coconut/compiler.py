@@ -437,20 +437,8 @@ def getheader(which, target="", usehash=None):
         if which == "module":
             header += r'''import sys as _coconut_sys, os.path as _coconut_os_path
 _coconut_file_path = _coconut_os_path.dirname(_coconut_os_path.abspath(__file__))
-_coconut_sys.path.insert(0, _coconut_file_path)'''
-            if target.startswith("3"):
-                header += r'''
-from __coconut__ import __coconut__, __coconut_version__, MatchError, map, parallel_map, zip, reduce, takewhile, dropwhile, tee, count, recursive, datamaker, consume, py3_map, py3_zip'''
-            elif target.startswith("2"):
-                header += r'''
-from __coconut__ import __coconut__, __coconut_version__, MatchError, map, parallel_map, zip, reduce, takewhile, dropwhile, tee, count, recursive, datamaker, consume, py2_chr, py2_filter, py2_hex, py2_input, py2_int, py2_map, py2_oct, py2_open, py2_print, py2_range, py2_raw_input, py2_str, py2_xrange, py2_zip, ascii, bytes, chr, filter, hex, input, int, oct, open, print, range, raw_input, str, xrange'''
-            else:
-                header += r'''
-if _coconut_sys.version_info < (3,):
-    from __coconut__ import __coconut__, __coconut_version__, MatchError, map, parallel_map, zip, reduce, takewhile, dropwhile, tee, count, recursive, datamaker, consume, py2_chr, py2_filter, py2_hex, py2_input, py2_int, py2_map, py2_oct, py2_open, py2_print, py2_range, py2_raw_input, py2_str, py2_xrange, py2_zip, ascii, bytes, chr, filter, hex, input, int, oct, open, print, range, raw_input, str, xrange
-else:
-    from __coconut__ import __coconut__, __coconut_version__, MatchError, map, parallel_map, zip, reduce, takewhile, dropwhile, tee, count, recursive, datamaker, consume, py3_map, py3_zip'''
-            header += r'''
+_coconut_sys.path.insert(0, _coconut_file_path)
+from __coconut__ import *
 _coconut_sys.path.remove(_coconut_file_path)
 '''
         elif which == "package" or which == "code" or which == "file":
@@ -461,7 +449,9 @@ _coconut_sys.path.remove(_coconut_file_path)
             elif target.startswith("2"):
                 header += PY2_HEADER
             else:
-                header += PY2_HEADER_CHECK
+                header += PYCHECK_HEADER
+            header += r'''
+__coconut_version__ = "'''+VERSION+r'"'
             if target.startswith("3"):
                 header += r'''
 class __coconut__:'''
@@ -469,7 +459,6 @@ class __coconut__:'''
                 header += r'''
 class __coconut__(object):'''
             header += r'''
-    version = "'''+VERSION+r'''"
     import collections, functools, imp, itertools, operator, types
 '''
             if target.startswith("2"):
@@ -480,158 +469,152 @@ class __coconut__(object):'''
     else:
         import collections.abc as abc'''
             header += r'''
-    IndexError, NameError, _map, _zip, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, repr, reversed, set, slice, super, tuple = IndexError, NameError, map, zip, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, repr, reversed, set, slice, super, tuple
-    class MatchError(Exception):
-        """Pattern-matching error."""
-    class zip(_zip):
-        __doc__ = zip.__doc__
-        __slots__ = ("_iters",)
-        __coconut_is_lazy__ = True
-        def __new__(cls, *iterables):
-            new_zip = __coconut__._zip.__new__(cls, *iterables)
-            new_zip._iters = iterables
-            return new_zip
-        def __getitem__(self, index):
-            if __coconut__.isinstance(index, __coconut__.slice):
-                return self.__class__(*(__coconut__.igetitem(i, index) for i in self._iters))
-            else:
-                return (__coconut__.igetitem(i, index) for i in self._iters)
-        def __reversed__(self):
-            return self.__class__(*(__coconut__.reversed(i) for i in self._iters))
-        def __len__(self):
-            return __coconut__.min(*(__coconut__.len(i) for i in self._iters))
-        def __repr__(self):
-            return "zip(" + ", ".join((__coconut__.repr(i) for i in self._iters)) + ")"
-        def __reduce_ex__(self, _):
-            return (self.__class__, self._iters)
-    class map(_map):
-        __doc__ = map.__doc__
-        __slots__ = ("_func", "_iters")
-        __coconut_is_lazy__ = True
-        def __new__(cls, function, *iterables):
-            new_map = __coconut__._map.__new__(cls, function, *iterables)
-            new_map._func, new_map._iters = function, iterables
-            return new_map
-        def __getitem__(self, index):
-            if __coconut__.isinstance(index, __coconut__.slice):
-                return self.__class__(self._func, *(__coconut__.igetitem(i, index) for i in self._iters))
-            else:
-                return self._func(*(__coconut__.igetitem(i, index) for i in self._iters))
-        def __reversed__(self):
-            return self.__class__(self._func, *(__coconut__.reversed(i) for i in self._iters))
-        def __len__(self):
-            return __coconut__.min(*(__coconut__.len(i) for i in self._iters))
-        def __repr__(self):
-            return "map(" + __coconut__.repr(self._func) + ", " + ", ".join((__coconut__.repr(i) for i in self._iters)) + ")"
-        def __reduce_ex__(self, _):
-            return (self.__class__, (self._func,) + self._iters)
-    class parallel_map(map):
-        """Multiprocessing implementation of map using concurrent.futures; requires arguments to be pickleable."""
-        __slots__ = ()
-        def __iter__(self):
-            from concurrent.futures import ProcessPoolExecutor
-            with ProcessPoolExecutor() as executor:
-                for x in executor.map(self._func, *self._iters):
-                    yield x
-        def __repr__(self):
-            return "parallel_" + __coconut__.map.__repr__(self)
-    class count(object):
-        """count(start, step) returns an infinite iterator starting at start and increasing by step."""
-        __slots__ = ("_start", "_step")
-        __coconut_is_lazy__ = True
-        def __init__(self, start=0, step=1):
-            self._start, self._step = start, step
-        def __iter__(self):
-            while True:
-                yield self._start
-                self._start += self._step
-        def __getitem__(self, index):
-            if __coconut__.isinstance(index, __coconut__.slice) and (index.start is None or index.start >= 0) and (index.stop is not None and index.stop >= 0):
-                return __coconut__.map(lambda x: self._start + x * self._step, __coconut__.range(index.start if index.start is not None else 0, index.stop, index.step if index.step is not None else 1))
-            elif index >= 0:
-                return self._start + index * self._step
-            else:
-                raise __coconut__.IndexError("count indices must be positive")
-        def __repr__(self):
-            return "count(" + str(self._start) + ", " + str(self._step) + ")"
-        def __reduce__(self):
-            return (self.__class__, (self._start, self._step))
-    @staticmethod
-    def pipe(x, f):
-        return f(x)
-    @staticmethod
-    def starpipe(xs, f):
-        return f(*xs)
-    @staticmethod
-    def backpipe(f, x):
-        return f(x)
-    @staticmethod
-    def backstarpipe(f, xs):
-        return f(*xs)
-    @staticmethod
-    def compose(f, g):
-        return lambda *args, **kwargs: f(g(*args, **kwargs))
-    @staticmethod
-    def bool_and(a, b):
-        return a and b
-    @staticmethod
-    def bool_or(a, b):
-        return a or b
-    @staticmethod
-    def minus(*args):
-        return __coconut__.operator.__neg__(*args) if len(args) < 2 else __coconut__.operator.__sub__(*args)
-    @staticmethod
-    def igetitem(iterable, index):
-        if isinstance(iterable, __coconut__.range) or (__coconut__.hasattr(iterable, "__coconut_is_lazy__") and iterable.__coconut_is_lazy__):
-            return iterable[index]
-        elif __coconut__.hasattr(iterable, "__getitem__"):
-            if __coconut__.isinstance(index, __coconut__.slice):
-                return (x for x in iterable[index])
-            else:
-                return iterable[index]
-        elif __coconut__.isinstance(index, __coconut__.slice):
-            if (index.start is not None and index.start < 0) or (index.stop is not None and index.stop < 0) or (index.step is not None and index.step < 0):
-                return (x for x in __coconut__.tuple(iterable)[index])
-            else:
-                return __coconut__.itertools.islice(iterable, index.start, index.stop, index.step)
-        elif index < 0:
-            return __coconut__.collections.deque(iterable, maxlen=-index)[0]
-        else:
-            return __coconut__.next(__coconut__.itertools.islice(iterable, index, index + 1))
-    @staticmethod
-    def consume(iterable, keep_last=0):
-        """Fully exhaust iterable and return the last keep_last elements."""
-        return __coconut__.collections.deque(iterable, maxlen=keep_last)
-    @staticmethod
-    def recursive(func):
-        """Decorates a function by optimizing it for tail recursion."""
-        state = [True, None] # toplevel, (args, kwargs)
-        recurse = object()
-        @__coconut__.functools.wraps(func)
-        def tailed_func(*args, **kwargs):
-            """Tail Recursion Wrapper."""
-            if state[0]:
-                state[0] = False
-                try:
-                    while True:
-                        result = func(*args, **kwargs)
-                        if result is recurse:
-                            args, kwargs = state[1]
-                            state[1] = None
-                        else:
-                            return result
-                finally:
-                    state[0] = True
-            else:
-                state[1] = args, kwargs
-                return recurse
-        return tailed_func
-    @staticmethod
-    def datamaker(data_type):
-        """Returns base data constructor of passed data type."""
-        return __coconut__.functools.partial(__coconut__.super(data_type, data_type).__new__, data_type)
+    IndexError, NameError, map, zip, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, repr, reversed, set, slice, super, tuple = IndexError, NameError, map, zip, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, repr, reversed, set, slice, super, tuple
 
-__coconut_version__, MatchError, map, parallel_map, zip, reduce, takewhile, dropwhile, tee, count, recursive, datamaker, consume = __coconut__.version, __coconut__.MatchError, __coconut__.map, __coconut__.parallel_map, __coconut__.zip, __coconut__.functools.reduce, __coconut__.itertools.takewhile, __coconut__.itertools.dropwhile, __coconut__.itertools.tee, __coconut__.count, __coconut__.recursive, __coconut__.datamaker, __coconut__.consume
+class _coconut_MatchError(Exception):
+    """Pattern-matching error."""
+class _coconut_zip(__coconut__.zip):
+    __doc__ = zip.__doc__
+    __slots__ = ("_iters",)
+    __coconut_is_lazy__ = True
+    def __new__(cls, *iterables):
+        new_zip = __coconut__.zip.__new__(cls, *iterables)
+        new_zip._iters = iterables
+        return new_zip
+    def __getitem__(self, index):
+        if __coconut__.isinstance(index, __coconut__.slice):
+            return self.__class__(*(_coconut_igetitem(i, index) for i in self._iters))
+        else:
+            return (_coconut_igetitem(i, index) for i in self._iters)
+    def __reversed__(self):
+        return self.__class__(*(__coconut__.reversed(i) for i in self._iters))
+    def __len__(self):
+        return __coconut__.min(*(__coconut__.len(i) for i in self._iters))
+    def __repr__(self):
+        return "zip(" + ", ".join((__coconut__.repr(i) for i in self._iters)) + ")"
+    def __reduce_ex__(self, _):
+        return (self.__class__, self._iters)
+class _coconut_map(__coconut__.map):
+    __doc__ = map.__doc__
+    __slots__ = ("_func", "_iters")
+    __coconut_is_lazy__ = True
+    def __new__(cls, function, *iterables):
+        new_map = __coconut__.map.__new__(cls, function, *iterables)
+        new_map._func, new_map._iters = function, iterables
+        return new_map
+    def __getitem__(self, index):
+        if __coconut__.isinstance(index, __coconut__.slice):
+            return self.__class__(self._func, *(_coconut_igetitem(i, index) for i in self._iters))
+        else:
+            return self._func(*(_coconut_igetitem(i, index) for i in self._iters))
+    def __reversed__(self):
+        return self.__class__(self._func, *(__coconut__.reversed(i) for i in self._iters))
+    def __len__(self):
+        return __coconut__.min(*(__coconut__.len(i) for i in self._iters))
+    def __repr__(self):
+        return "map(" + __coconut__.repr(self._func) + ", " + ", ".join((__coconut__.repr(i) for i in self._iters)) + ")"
+    def __reduce_ex__(self, _):
+        return (self.__class__, (self._func,) + self._iters)
+class _coconut_parallel_map(_coconut_map):
+    """Multiprocessing implementation of map using concurrent.futures; requires arguments to be pickleable."""
+    __slots__ = ()
+    def __iter__(self):
+        from concurrent.futures import ProcessPoolExecutor
+        with ProcessPoolExecutor() as executor:
+            for x in executor.map(self._func, *self._iters):
+                yield x
+    def __repr__(self):
+        return "parallel_" + _coconut_map.__repr__(self)
+'''
+            if target.startswith("3"):
+                header += r'''class _coconut_count:'''
+            else:
+                header += r'''class _coconut_count(object):'''
+            header += r'''
+    """count(start, step) returns an infinite iterator starting at start and increasing by step."""
+    __slots__ = ("_start", "_step")
+    __coconut_is_lazy__ = True
+    def __init__(self, start=0, step=1):
+        self._start, self._step = start, step
+    def __iter__(self):
+        while True:
+            yield self._start
+            self._start += self._step
+    def __getitem__(self, index):
+        if __coconut__.isinstance(index, __coconut__.slice) and (index.start is None or index.start >= 0) and (index.stop is not None and index.stop >= 0):
+            return _coconut_map(lambda x: self._start + x * self._step, __coconut__.range(index.start if index.start is not None else 0, index.stop, index.step if index.step is not None else 1))
+        elif index >= 0:
+            return self._start + index * self._step
+        else:
+            raise __coconut__.IndexError("count indices must be positive")
+    def __repr__(self):
+        return "count(" + str(self._start) + ", " + str(self._step) + ")"
+    def __reduce__(self):
+        return (self.__class__, (self._start, self._step))
+def _coconut_igetitem(iterable, index):
+    if isinstance(iterable, __coconut__.range) or (__coconut__.hasattr(iterable, "__coconut_is_lazy__") and iterable.__coconut_is_lazy__):
+        return iterable[index]
+    elif __coconut__.hasattr(iterable, "__getitem__"):
+        if __coconut__.isinstance(index, __coconut__.slice):
+            return (x for x in iterable[index])
+        else:
+            return iterable[index]
+    elif __coconut__.isinstance(index, __coconut__.slice):
+        if (index.start is not None and index.start < 0) or (index.stop is not None and index.stop < 0) or (index.step is not None and index.step < 0):
+            return (x for x in __coconut__.tuple(iterable)[index])
+        else:
+            return __coconut__.itertools.islice(iterable, index.start, index.stop, index.step)
+    elif index < 0:
+        return __coconut__.collections.deque(iterable, maxlen=-index)[0]
+    else:
+        return __coconut__.next(__coconut__.itertools.islice(iterable, index, index + 1))
+def _coconut_pipe(x, f):
+    return f(x)
+def _coconut_starpipe(xs, f):
+    return f(*xs)
+def _coconut_backpipe(f, x):
+    return f(x)
+def _coconut_backstarpipe(f, xs):
+    return f(*xs)
+def _coconut_compose(f, g):
+    return lambda *args, **kwargs: f(g(*args, **kwargs))
+def _coconut_bool_and(a, b):
+    return a and b
+def _coconut_bool_or(a, b):
+    return a or b
+def _coconut_minus(*args):
+    return __coconut__.operator.__neg__(*args) if len(args) < 2 else __coconut__.operator.__sub__(*args)
+
+def recursive(func):
+    """Decorates a function by optimizing it for tail recursion."""
+    state = [True, None] # toplevel, (args, kwargs)
+    recurse = object()
+    @__coconut__.functools.wraps(func)
+    def tailed_func(*args, **kwargs):
+        """Tail Recursion Wrapper."""
+        if state[0]:
+            state[0] = False
+            try:
+                while True:
+                    result = func(*args, **kwargs)
+                    if result is recurse:
+                        args, kwargs = state[1]
+                        state[1] = None
+                    else:
+                        return result
+            finally:
+                state[0] = True
+        else:
+            state[1] = args, kwargs
+            return recurse
+    return tailed_func
+def datamaker(data_type):
+    """Returns base data constructor of passed data type."""
+    return __coconut__.functools.partial(__coconut__.super(data_type, data_type).__new__, data_type)
+def consume(iterable, keep_last=0):
+    """Fully exhaust iterable and return the last keep_last elements."""
+    return __coconut__.collections.deque(iterable, maxlen=keep_last)
+MatchError, map, parallel_map, zip, count, reduce, takewhile, dropwhile, tee = _coconut_MatchError, _coconut_map, _coconut_parallel_map, _coconut_zip, _coconut_count, __coconut__.functools.reduce, __coconut__.itertools.takewhile, __coconut__.itertools.dropwhile, __coconut__.itertools.tee
 '''
         else:
             raise CoconutException("invalid header type", which)
@@ -966,7 +949,7 @@ class matcher(object):
             self.defs.append(itervar+" = __coconut__.tuple("+item+")")
         else:
             self.defs.append(tail+" = __coconut__.iter("+item+")")
-            self.defs.append(itervar+" = __coconut__.tuple(__coconut__.igetitem("+tail+", __coconut__.slice(None, "+str(len(match))+")))")
+            self.defs.append(itervar+" = __coconut__.tuple(_coconut_igetitem("+tail+", __coconut__.slice(None, "+str(len(match))+")))")
         self.increment()
         self.checks.append("__coconut__.len("+itervar+") == "+str(len(match)))
         for x in range(0, len(match)):
@@ -1895,7 +1878,7 @@ class processor(object):
                 out += trailer
             elif len(trailer) == 1:
                 if trailer[0] == "$[]":
-                    out = "__coconut__.functools.partial(__coconut__.igetitem, "+out+")"
+                    out = "__coconut__.functools.partial(_coconut_igetitem, "+out+")"
                 elif trailer[0] == "$":
                     out = "__coconut__.functools.partial(__coconut__.functools.partial, "+out+")"
                 elif trailer[0] == "[]":
@@ -1917,7 +1900,7 @@ class processor(object):
                             if not arg:
                                 arg = "None"
                             args.append(arg)
-                        out = "__coconut__.igetitem(" + out
+                        out = "_coconut_igetitem(" + out
                         if len(args) == 1:
                             out += ", " + args[0]
                         else:
@@ -2080,7 +2063,7 @@ class processor(object):
         line_wrap = self.wrap_str_of(base_line)
         repr_wrap = self.wrap_str_of(ascii(base_line))
         return ("if not " + match_check_var + ":\n" + openindent
-            + match_err_var + ' = __coconut__.MatchError("pattern-matching failed for " '
+            + match_err_var + ' = _coconut_MatchError("pattern-matching failed for " '
             + repr_wrap + ' " in " + __coconut__.repr(__coconut__.repr(' + match_to_var + ")))\n"
             + match_err_var + ".pattern = " + line_wrap + "\n"
             + match_err_var + ".value = " + match_to_var
@@ -2372,14 +2355,14 @@ class processor(object):
     test_expr = yield_expr | testlist
 
     op_item = (
-        fixto(pipeline, "__coconut__.pipe", copy=True)
-        | fixto(starpipe, "__coconut__.starpipe", copy=True)
-        | fixto(backpipe, "__coconut__.backpipe", copy=True)
-        | fixto(backstarpipe, "__coconut__.backstarpipe", copy=True)
-        | fixto(dotdot, "__coconut__.compose", copy=True)
-        | fixto(Keyword("and"), "__coconut__.bool_and", copy=True)
-        | fixto(Keyword("or"), "__coconut__.bool_or", copy=True)
-        | fixto(minus, "__coconut__.minus", copy=True)
+        fixto(pipeline, "_coconut_pipe", copy=True)
+        | fixto(starpipe, "_coconut_starpipe", copy=True)
+        | fixto(backpipe, "_coconut_backpipe", copy=True)
+        | fixto(backstarpipe, "_coconut_backstarpipe", copy=True)
+        | fixto(dotdot, "_coconut_compose", copy=True)
+        | fixto(Keyword("and"), "_coconut_bool_and", copy=True)
+        | fixto(Keyword("or"), "_coconut_bool_or", copy=True)
+        | fixto(minus, "_coconut_minus", copy=True)
         | fixto(dot, "__coconut__.getattr", copy=True)
         | fixto(dubcolon, "__coconut__.itertools.chain", copy=True)
         | fixto(dollar, "__coconut__.functools.partial", copy=True)
