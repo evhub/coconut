@@ -135,6 +135,7 @@ py3_map, py3_zip = map, zip
 
 if PY2:
     import __builtin__ as __coconut__
+    _coconut_map = map
     if sys.version_info < (2, 7):
         exec(PY2_HEADER)
     else:
