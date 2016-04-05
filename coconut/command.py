@@ -71,7 +71,7 @@ class executor(object):
     def __init__(self, header=None, extras=None, exit=None):
         """Creates the executor."""
         self.exit = exit
-        self.vars = {}
+        self.vars = {"__name__": "__main__"}
         if header is not None:
             self.run(header)
         if extras is not None:
@@ -357,11 +357,11 @@ class cli(object):
             code = readfile(opened)
         foundhash = None if force else self.hashashof(destpath, code, package)
         if foundhash:
+            self.console.show("Left unchanged  "+destpath+" (pass --force to overwrite).")
             if run:
                 self.execute(foundhash, path=destpath, isolate=True)
             elif self.show:
                 print(foundhash)
-            self.console.show("Left unchanged  "+destpath+" (pass --force to overwrite).")
         else:
             if package is True:
                 compiled = self.proc.parse_module(code)
