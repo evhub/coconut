@@ -317,6 +317,7 @@ fog = f..g
 ###### Python
 ```coc_python
 fog = lambda *args, **kwargs: f(g(*args, **kwargs))
+# unlike this simple lambda, .. produces a pickleable object
 ```
 
 ### Chain
@@ -1338,9 +1339,9 @@ _Can't be done without a long decorator definition. The full definition of the d
 
 ### `parallel_map`
 
-Coconut provides a parallel version of `map` under the name `parallel_map`. `parallel_map` makes use of multiple processes, and is therefore often much faster than `map`. Use of `parallel_map` requires `concurrent.futures`, which exits in the Python 3 standard library, but under Python 2 will require `python -m pip install futures` to function. Because `parallel_map` uses multiple processes for its execution, it is necessary that all of its arguments be pickleable.
+Coconut provides a parallel version of `map` under the name `parallel_map`. `parallel_map` makes use of multiple processes, and is therefore often much faster than `map`. Use of `parallel_map` requires `concurrent.futures`, which exits in the Python 3 standard library, but under Python 2 will require `python -m pip install futures` to function. Because `parallel_map` uses multiple processes for its execution, it is necessary that all of its arguments be pickleable. Furthermore, on Windows, it is necessary that all calls to `parallel_map` occur inside of an `if __name__ == "__main__"` guard.
 
-_Note: Only objects defined at the module level (outside of an `if __name__ == "__main__"` guard), and not objects defined in the interpreter, are pickleable._
+_Note: Only objects defined at the module level, and not objects defined inside of a function, or in the interpreter, are pickleable._
 
 ##### Python Docs
 
