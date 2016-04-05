@@ -152,7 +152,8 @@ If the version of Python that the compiled code will be running on is known ahea
 - `27`, `2.7` (will work on any Python `>= 2.7` but `< 3`),
 - `3`, `32`, `3.2` (will work on any Python `>= 3.2`),
 - `33`, `3.3`, `34`, `3.4` (will work on any Python `>= 3.3`),
-- `35`, `3.5` (will work on any Python `>= 3.5`).
+- `35`, `3.5` (will work on any Python `>= 3.5`),
+- `sys` (chooses the specific target corresponding to the current version).
 
 As part of Coconut's cross-compatibility efforts, Coconut adds in new Python 3 built-ins and overwrites Python 2 built-ins to use the Python 3 versions where possible. If access to the Python 2 versions is desired, the old built-ins can be retrieved by prefixing them with `py2_`. The old built-ins available are:
 - `py2_chr`
@@ -1416,7 +1417,7 @@ Likely the most useful of the convenience functions, `parse` takes Coconut code 
 
 If `--target`, `--strict`, `--minify`, `--linenumbers`, `--quiet`, or `--color` are desired for `parse`, the arguments to `setup` will each set the value of the corresponding flag. The possible values for each flag are:
 
-- _target_: `None` (default), `"2"`, or `"3"`
+- _target_: `None` (default), or any [valid target](#compatible-python-versions)
 - _strict_: `False` (default) or `True`
 - _minify_: `False` (default) or `True`
 - _linenumbers_: `False` (default) or `True`

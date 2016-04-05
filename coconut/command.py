@@ -68,14 +68,12 @@ def rem_encoding(code):
 
 class executor(object):
     """Compiled Python executor."""
-    def __init__(self, header=None, extras=None, exit=None):
+    def __init__(self, proc=None, exit=None):
         """Creates the executor."""
         self.exit = exit
         self.vars = {"__name__": "__main__"}
-        if header is not None:
-            self.run(header)
-        if extras is not None:
-            self.bindvars(extras)
+        if proc is not None:
+            self.run(proc.headers("code"))
 
     def bindvars(self, extras):
         """Adds extra variable bindings."""
@@ -473,9 +471,9 @@ class cli(object):
         """Starts the runner."""
         sys.path.insert(0, os.getcwd())
         if isolate:
-            self.runner = executor(exit=self.exit)
+            self.runner = executor(None, self.exit)
         else:
-            self.runner = executor(self.proc.headers("code"), exit=self.exit)
+            self.runner = executor(self.proc, self.exit)
 
     def start_jupyter(self, args):
         """Starts Jupyter with the Coconut kernel."""

@@ -56,6 +56,11 @@ pseudo_targets = {
     "3.4": "33",
     "3.5": "35"
 }
+sys_target = str(sys.version_info[0]) + str(sys.version_info[1])
+if sys_target in targets:
+    pseudo_targets["sys"] = sys_target
+else:
+    pseudo_targets["sys"] = str(sys.version_info[0])
 encoding = "UTF-8"
 hash_prefix = "# __coconut_hash__ = "
 hash_sep = "\x00"
@@ -1752,7 +1757,7 @@ class processor(object):
                 out.append(line)
             return "\n".join(out)
         elif linenumbers:
-            raise CoconutException("linenumbers must be enabled on the parser to pass it as an argument")
+            raise CoconutException("linenumbers must be enabled to pass it as an argument")
         else:
             return inputstring
 

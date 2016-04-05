@@ -61,7 +61,7 @@ class fakefile(StringIO):
 # KERNEL:
 #-----------------------------------------------------------------------------------------------------------------------
 
-proc = processor(target="2" if PY2 else "3")
+proc = processor(target="sys")
 
 class kernel(Kernel):
     """Jupyter kernel for Coconut."""
@@ -91,7 +91,7 @@ class kernel(Kernel):
     def _setup(self, force=False):
         """Binds to the runner."""
         if force or self._runner is None:
-            self._runner = executor(proc.headers("code"))
+            self._runner = executor(proc)
 
     def _execute(self, code, evaluate=False):
         """Compiles and runs code."""
