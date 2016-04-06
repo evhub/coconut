@@ -59,7 +59,6 @@
     9. [`recursive`](#recursive)
     10. [`parallel_map`](#parallel_map)
     11. [`MatchError`](#matcherror)
-    12. [`__coconut_version__`](#__coconut_version__)
 8. [Coconut Utilities](#coconut-utilities)
     1. [Syntax Highlighting](#syntax-highlighting)
         1. [SublimeText](#sublimetext)
@@ -1371,10 +1370,6 @@ with concurrent.futures.ProcessPoolExecutor() as executor:
 
 A `MatchError` is raised when a [destructuring assignment](#destructuring-assignment) statement fails, and thus `MatchError` is provided as a built-in for catching those errors. `MatchError` objects support two attributes, `pattern`, which is a string describing the failed pattern, and `value`, which is the object that failed to match that pattern.
 
-### `__coconut_version__`
-
-Coconut provides the built-in double-underscore constant variable `__coconut_version__` to allow direct access to the version of Coconut that the code was compiled in.
-
 ## Coconut Utilities
 
 ### Syntax Highlighting
@@ -1401,7 +1396,7 @@ to Coconut's `conf.py`.
 
 ### `coconut.convenience`
 
-The recommended way to use Coconut as a module is to use `from coconut.convenience import` and import whatever convenience functions you'll be using. Specifications of the different convenience functions are as follows.
+It is sometimes useful to be able to use the Coconut compiler from code, instead of from the command line. The recommended way to do this is to use `from coconut.convenience import` and import whatever convenience functions you'll be using. Specifications of the different convenience functions are as follows.
 
 #### `parse`
 

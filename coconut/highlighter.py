@@ -114,11 +114,10 @@ class coclexer(Python3Lexer):
         (words(reserved_vars, prefix=r"(?<!\\)", suffix=r"\b"), Keyword)
     ]
     tokens["builtins"] = tokens["builtins"] + [
-        (words(builtins, prefix=r"(?<!\.)", suffix=r"\b"), Name.Builtin),
-        (r"(?<!\.)MatchError\b", Name.Exception)
+        (words(builtins, suffix=r"\b"), Name.Builtin),
+        (r"MatchError\b", Name.Exception)
     ]
     magicvars = [
-        (r"(?<!\.)__coconut_version__\b", Name.Variable.Magic),
         (r"__coconut_is_lazy__\b", Name.Variable.Magic)
     ]
     if "magicvars" in tokens:
