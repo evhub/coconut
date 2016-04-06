@@ -59,8 +59,8 @@ pseudo_targets = {
 sys_target = str(sys.version_info[0]) + str(sys.version_info[1])
 if sys_target in targets:
     pseudo_targets["sys"] = sys_target
-else:
-    pseudo_targets["sys"] = str(sys.version_info[0])
+elif sys_target in pseudo_targets:
+    pseudo_targets["sys"] = pseudo_targets[sys_target]
 encoding = "UTF-8"
 hash_prefix = "# __coconut_hash__ = "
 hash_sep = "\x00"
