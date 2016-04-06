@@ -71,13 +71,18 @@ class executor(object):
     def __init__(self, proc=None, exit=None):
         """Creates the executor."""
         self.exit = exit
-        self.vars = {"__name__": "__main__"}
+        try:
+            exit
+        except NameError:
+            exit = sys.exit
+        self.vars = {
+            "__name__": "__main__",
+            "exit": exit,
+            "quit": exit
+        }
         if proc is not None:
             self.run(proc.headers("code"))
 
-    def bindvars(self, extras):
-        """Adds extra variable bindings."""
-        self.vars.update(extras)
 
     def setfile(self, path):
         """Sets __file__."""
@@ -471,7 +476,7 @@ class cli(object):
         """Starts the runner."""
         sys.path.insert(0, os.getcwd())
         if isolate:
-            self.runner = executor(None, self.exit)
+            self.runner = executor(exit=self.exit)
         else:
             self.runner = executor(self.proc, self.exit)
 

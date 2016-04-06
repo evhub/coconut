@@ -226,7 +226,7 @@ class CoconutException(Exception):
 
 class CoconutSyntaxError(CoconutException):
     """Coconut SyntaxError."""
-    def __init__(self, message, source, point, ln):
+    def __init__(self, message, source=None, point=None, ln=None):
         """Creates the Coconut SyntaxError."""
         self.value = message
         if ln is not None:
@@ -238,17 +238,17 @@ class CoconutSyntaxError(CoconutException):
                 part = clean(source.splitlines()[lineno(point, source)-1], False).lstrip()
                 point -= len(source) - len(part) # adjust all points based on lstrip
                 part = part.rstrip() # adjust only points that are too large based on rstrip
-                if point < 0:
-                    point = 0
-                elif point >= len(part):
-                    point = len(part) - 1
-                self.value += "\n" + " "*tabideal + part + "\n" + " "*tabideal
-                for x in range(0, point):
-                    if part[x] in white:
-                        self.value += part[x]
-                    else:
-                        self.value += " "
-                self.value += "^"
+                self.value += "\n" + " "*tabideal + part
+                if point > 0:
+                    if point >= len(part):
+                        point = len(part) - 1
+                    self.value += "\n" + " "*tabideal
+                    for x in range(0, point):
+                        if part[x] in white:
+                            self.value += part[x]
+                        else:
+                            self.value += " "
+                    self.value += "^"
 
 class CoconutParseError(CoconutSyntaxError):
     """Coconut ParseError."""
@@ -693,11 +693,7 @@ def chain_handle(tokens):
     else:
         return "_coconut.itertools.chain.from_iterable(" + lazy_list_handle(tokens) + ")"
 
-def infix_error(tokens):
-    """Raises inner infix error."""
-    raise CoconutException("invalid inner infix tokens", tokens)
-
-def get_infix_items(tokens, callback=infix_error):
+def get_infix_items(tokens, callback):
     """Performs infix token processing."""
     if len(tokens) < 3:
         raise CoconutException("invalid infix tokens", tokens)
@@ -715,6 +711,10 @@ def get_infix_items(tokens, callback=infix_error):
                 args.append(arg)
         return tokens[1], args
 
+def infix_error(tokens):
+    """Raises inner infix error."""
+    raise CoconutException("invalid inner infix tokens", tokens)
+
 def infix_handle(tokens):
     """Processes infix calls."""
     func, args = get_infix_items(tokens, infix_handle)
@@ -722,7 +722,7 @@ def infix_handle(tokens):
 
 def op_funcdef_handle(tokens):
     """Processes infix defs."""
-    func, args = get_infix_items(tokens)
+    func, args = get_infix_items(tokens, infix_error)
     return func + "(" + ", ".join(args) + ")"
 
 def pipe_handle(tokens):
@@ -2111,7 +2111,7 @@ class processor(object):
 
     def op_match_funcdef_handle(self, original, loc, tokens):
         """Processes infix match defs."""
-        return self.name_match_funcdef_handle(original, loc, get_infix_items(tokens))
+        return self.name_match_funcdef_handle(original, loc, get_infix_items(tokens, infix_error))
 
     def check_strict(self, name, original, location, tokens):
         """Checks that syntax meets --strict requirements."""
