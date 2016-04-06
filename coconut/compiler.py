@@ -1429,7 +1429,7 @@ class processor(object):
         """Gets a polished header."""
         return self.polish(getheader(header, self.target, usehash))
 
-    def set_docstring(self, tokens):
+    def set_docstring(self, original, location, tokens):
         """Sets the docstring."""
         if len(tokens) == 1:
             return tokens[0]
@@ -2310,8 +2310,9 @@ class processor(object):
     endline_ref = condense(OneOrMore(Literal("\n")))
     lineitem = Combine(Optional(comment) + endline)
     newline = condense(OneOrMore(lineitem))
-    startmarker = StringStart() - condense(ZeroOrMore(lineitem) - Optional(moduledoc_item))
-    endmarker = StringEnd()
+    start_marker = StringStart()
+    moduledoc_marker = condense(ZeroOrMore(lineitem) - Optional(moduledoc_item))
+    end_marker = StringEnd()
     indent = Literal(openindent)
     dedent = Literal(closeindent)
 
@@ -2766,12 +2767,12 @@ class processor(object):
     line = trace(newline | stmt, "line")
 
     single_input = trace(condense(Optional(line) - ZeroOrMore(newline)), "single_input")
-    file_input = trace(condense(ZeroOrMore(line)), "file_input")
+    file_input = trace(condense(moduledoc_marker - ZeroOrMore(line)), "file_input")
     eval_input = trace(condense(testlist - ZeroOrMore(newline)), "eval_input")
 
-    single_parser = condense(startmarker - single_input - endmarker)
-    file_parser = condense(startmarker - file_input - endmarker)
-    eval_parser = condense(startmarker - eval_input - endmarker)
+    single_parser = condense(start_marker - single_input - end_marker)
+    file_parser = condense(start_marker - file_input - end_marker)
+    eval_parser = condense(start_marker - eval_input - end_marker)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # ENDPOINTS:
