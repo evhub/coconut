@@ -1275,7 +1275,7 @@ class processor(object):
     def bind(self):
         """Binds reference objects to the proper parse actions."""
         self.name <<= self.trace(attach(self.name_ref, self.name_handle), "name")
-        self.moduledoc_item <<= self.trace(attach(self.moduledoc, self.set_docstring), "moduledoc_item")
+        self.moduledoc_item <<= attach(self.moduledoc, self.set_docstring)
         self.atom_item <<= self.trace(attach(self.atom_item_ref, self.item_handle), "atom_item")
         self.simple_assign <<= self.trace(attach(self.simple_assign_ref, self.item_handle), "simple_assign")
         self.set_literal <<= self.trace(attach(self.set_literal_ref, self.set_literal_handle), "set_literal")
@@ -1288,7 +1288,7 @@ class processor(object):
         self.destructuring_stmt <<= self.trace(attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle), "destructuring_stmt")
         self.name_match_funcdef <<= self.trace(attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle), "name_match_funcdef")
         self.op_match_funcdef <<= self.trace(attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle), "op_match_funcdef")
-        self.endline <<= self.trace(attach(self.endline_ref, self.endline_handle), "endline")
+        self.endline <<= attach(self.endline_ref, self.endline_handle)
         self.yield_from <<= self.trace(attach(self.yield_from_ref, self.yield_from_handle), "yield_from")
         self.u_string <<= attach(self.u_string_ref, self.u_string_check)
         self.typedef <<= attach(self.typedef_ref, self.typedef_check)
@@ -1431,7 +1431,9 @@ class processor(object):
 
     def set_docstring(self, tokens):
         """Sets the docstring."""
-        if len(tokens) == 2:
+        if len(tokens) == 1:
+            return tokens[0]
+        elif len(tokens) == 2:
             self.docstring = self.reformat(tokens[0]) + "\n\n"
             return tokens[1]
         else:
@@ -2319,7 +2321,7 @@ class processor(object):
     unicode_u = CaselessLiteral("u").suppress()
     u_string_ref = Combine((unicode_u + raw_r | raw_r + unicode_u) + string_item)
     u_string = Forward()
-    string = b_string | u_string
+    string = trace(b_string | u_string, "string")
     moduledoc = string + newline
     docstring = condense(moduledoc, copy=True)
 
