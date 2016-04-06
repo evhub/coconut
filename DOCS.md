@@ -58,7 +58,8 @@
     8. [`datamaker`](#datamaker)
     9. [`recursive`](#recursive)
     10. [`parallel_map`](#parallel_map)
-    11. [`__coconut_version__`](#__coconut_version__)
+    11. [`MatchError`](#matcherror)
+    12. [`__coconut_version__`](#__coconut_version__)
 8. [Coconut Utilities](#coconut-utilities)
     1. [Syntax Highlighting](#syntax-highlighting)
         1. [SublimeText](#sublimetext)
@@ -69,6 +70,7 @@
         3. [`cmd`](#cmd)
         4. [`version`](#version)
         5. [`CoconutException`](#coconutexception)
+    3. [`coconut.__coconut__`](#coconut__coconut__)
 
 <!-- /MarkdownTOC -->
 
@@ -919,7 +921,7 @@ def <name>(*args):
     match [<match>, <match>, ...] = args
     <body>
 ```
-If pattern-matching function definition fails, it will raise a `MatchError` object just like destructuring assignment.
+If pattern-matching function definition fails, it will raise a [`MatchError`]((#matcherror) object just like destructuring assignment.
 
 _Note: Pattern-matching function definition can be combined with shorthand and infix function definition._
 
@@ -958,7 +960,7 @@ else:
     err.value = <value>
     raise err
 ```
-If a destructuring assignment statement fails, then instead of continuing on as if a `match` block had failed, a `MatchError` object will be raised describing the failure.
+If a destructuring assignment statement fails, then instead of continuing on as if a `match` block had failed, a [`MatchError`](#matcherror) object will be raised describing the failure.
 
 ##### Example
 
@@ -1365,6 +1367,10 @@ with concurrent.futures.ProcessPoolExecutor() as executor:
     print(list(executor.map(functools.partial(pow, 2), range(100))))
 ```
 
+### `MatchError`
+
+A `MatchError` is raised when a [destructuring assignment](#destructuring-assignment) statement fails, and thus `MatchError` is provided as a built-in for catching those errors. `MatchError` objects support two attributes, `pattern`, which is a string describing the failed pattern, and `value`, which is the object that failed to match that pattern.
+
 ### `__coconut_version__`
 
 Coconut provides the built-in double-underscore constant variable `__coconut_version__` to allow direct access to the version of Coconut that the code was compiled in.
@@ -1388,7 +1394,7 @@ Coconut syntax highlighting for SublimeText requires that [Package Control](http
 #### Pygments
 
 The same `pip install coconut` command that installs the Coconut command-line utility will also install the `coconut` Pygments lexer. How to use this lexer depends on the Pygments-enabled application being used, but in general simply enter `coconut` as the language being highlighted and/or use the file extension `.coc` and Pygments should be able to figure it out. For example, this documentation is generated with [Sphinx](http://www.sphinx-doc.org/en/stable/), with the syntax highlighting you see created by adding the line
-```
+```coc_python
 highlight_language = "coconut"
 ```
 to Coconut's `conf.py`.
@@ -1444,3 +1450,20 @@ Retrieves a string containing information about the Coconut version. The optiona
 #### `CoconutException`
 
 If an error is encountered in a convenience function, a `CoconutException` instance may be raised. `coconut.convenience.CoconutException` is provided to allow catching such errors.
+
+### `coconut.__coconut__`
+
+It is sometimes useful to be able to access Coconut built-ins from pure Python. To accomplish this, Coconut provides `coconut.__coconut__`, which behaves exactly like the `__coconut__.py` header file included when Coconut is compiled in package mode.
+
+All Coconut built-ins are accessible from `coconut.__coconut__`. The recommended way to import them is to use `from coconut.__coconut__ import` and import whatever built-ins you'll be using.
+
+##### Example
+
+###### Python
+```coc_python
+from coconut.__coconut__ import recursive
+
+@recursive
+def recursive_func(args):
+    ...
+```
