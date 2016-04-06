@@ -68,25 +68,22 @@ def rem_encoding(code):
 
 class executor(object):
     """Compiled Python executor."""
-    def __init__(self, proc=None, exit=None):
+    def __init__(self, proc=None, exit=None, path=None):
         """Creates the executor."""
         self.exit = exit
-        try:
-            exit
-        except NameError:
-            exit = sys.exit
-        self.vars = {
-            "__name__": "__main__",
-            "exit": exit,
-            "quit": exit
-        }
+        self.vars = {"__name__": "__main__"}
+        if path is not None:
+            self.vars["__file__"] = path
         if proc is not None:
             self.run(proc.headers("code"))
+            self.fixpickle()
 
-
-    def setfile(self, path):
-        """Sets __file__."""
-        self.vars["__file__"] = path
+    def fixpickle(self):
+        """Fixes pickling of Coconut header objects."""
+        from . import __coconut__
+        for var in self.vars:
+            if not var.startswith("__") and var in dir(__coconut__):
+                self.vars[var] = getattr(__coconut__, var)
 
     def run(self, code, err=False, dorun=None):
         """Executes Python code."""
@@ -467,18 +464,17 @@ class cli(object):
 
     def check_runner(self, path=None, isolate=False):
         """Makes sure there is a runner."""
-        if isolate or self.runner is None:
-            self.start_runner(isolate)
-        if path is not None:
-            self.runner.setfile(path)
+        if isolate or path is not None or self.runner is None:
+            self.start_runner(path, isolate)
 
-    def start_runner(self, isolate=False):
+    def start_runner(self, path=None, isolate=False):
         """Starts the runner."""
         sys.path.insert(0, os.getcwd())
         if isolate:
-            self.runner = executor(exit=self.exit)
+            proc = None
         else:
-            self.runner = executor(self.proc, self.exit)
+            proc = self.proc
+        self.runner = executor(proc, self.exit, path)
 
     def start_jupyter(self, args):
         """Starts Jupyter with the Coconut kernel."""
