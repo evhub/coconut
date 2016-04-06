@@ -1274,8 +1274,9 @@ class processor(object):
 
     def bind(self):
         """Binds reference objects to the proper parse actions."""
-        self.name <<= self.trace(attach(self.name_ref, self.name_handle), "name")
+        self.endline <<= attach(self.endline_ref, self.endline_handle)
         self.moduledoc_item <<= attach(self.moduledoc, self.set_docstring)
+        self.name <<= self.trace(attach(self.name_ref, self.name_handle), "name")
         self.atom_item <<= self.trace(attach(self.atom_item_ref, self.item_handle), "atom_item")
         self.simple_assign <<= self.trace(attach(self.simple_assign_ref, self.item_handle), "simple_assign")
         self.set_literal <<= self.trace(attach(self.set_literal_ref, self.set_literal_handle), "set_literal")
@@ -1288,7 +1289,6 @@ class processor(object):
         self.destructuring_stmt <<= self.trace(attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle), "destructuring_stmt")
         self.name_match_funcdef <<= self.trace(attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle), "name_match_funcdef")
         self.op_match_funcdef <<= self.trace(attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle), "op_match_funcdef")
-        self.endline <<= attach(self.endline_ref, self.endline_handle)
         self.yield_from <<= self.trace(attach(self.yield_from_ref, self.yield_from_handle), "yield_from")
         self.u_string <<= attach(self.u_string_ref, self.u_string_check)
         self.typedef <<= attach(self.typedef_ref, self.typedef_check)
@@ -2315,12 +2315,12 @@ class processor(object):
     indent = Literal(openindent)
     dedent = Literal(closeindent)
 
+    u_string = Forward()
     bit_b = Optional(CaselessLiteral("b"))
     raw_r = Optional(CaselessLiteral("r"))
     b_string = Combine((bit_b + raw_r | raw_r + bit_b) + string_item)
     unicode_u = CaselessLiteral("u").suppress()
     u_string_ref = Combine((unicode_u + raw_r | raw_r + unicode_u) + string_item)
-    u_string = Forward()
     string = trace(b_string | u_string, "string")
     moduledoc = string + newline
     docstring = condense(moduledoc, copy=True)
