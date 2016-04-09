@@ -1336,9 +1336,10 @@ class processor(object):
     def reformat(self, snip, index=None):
         """Post processes a preprocessed snippet."""
         if index is None:
-            return self.repl_proc(snip, careful=False)
+            return self.repl_proc(snip, careful=False, linenumbers=False)
         else:
-            return self.repl_proc(snip, careful=False), len(self.repl_proc(snip[:index], careful=False))
+            return (self.repl_proc(snip, careful=False, linenumbers=False),
+                    len(self.repl_proc(snip[:index], careful=False, linenumbers=False)))
 
     def make_err(self, errtype, message, original, location, ln=None, reformat=True):
         """Generates an error of the specified type."""
@@ -1734,30 +1735,39 @@ class processor(object):
             out.append(line + comment)
         return "\n".join(out)
 
-    def linenumber_repl(self, inputstring, careful=True, **kwargs):
+    def linenumber_repl(self, inputstring, linenumbers=None, careful=True, **kwargs):
         """Adds in linenumbers."""
-        if self.linenumbers and not careful:
+        if self.linenumbers:
+            if linenumbers is None:
+                linenumbers = True
             out = []
             ln = 1
             fix = False
             for line in inputstring.splitlines():
-                if line.endswith(lnwrapper):
-                    line, index = line[:-1].rsplit("#", 1)
-                    ln = self.get_ref(index)
-                    if not isinstance(ln, int):
-                        raise CoconutException("invalid reference for a linenumber", ln)
-                    line = line.rstrip()
-                    fix = True
-                elif fix:
-                    ln += 1
+                try:
+                    if line.endswith(lnwrapper):
+                        line, index = line[:-1].rsplit("#", 1)
+                        ln = self.get_ref(index)
+                        if not isinstance(ln, int):
+                            raise CoconutException("invalid reference for a linenumber", ln)
+                        line = line.rstrip()
+                        fix = True
+                    elif fix:
+                        ln += 1
+                        fix = False
+                    if linenumbers and line and not line.lstrip().startswith("#"):
+                        if self.minify:
+                            line += self.wrap_comment(str(ln))
+                        else:
+                            line += self.wrap_comment("line "+str(ln))
+                except CoconutException:
+                    if careful:
+                        raise
                     fix = False
-                if linenumbers and line and not line.lstrip().startswith("#"):
-                    if self.minify:
-                        line += self.wrap_comment(str(ln))
-                    else:
-                        line += self.wrap_comment("line "+str(ln))
                 out.append(line)
             return "\n".join(out)
+        elif linenumbers:
+            raise CoconutException("linenumbers must be enabled to pass it as an argument")
         else:
             return inputstring
 
