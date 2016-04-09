@@ -30,7 +30,7 @@ matrix:
         - coconut --strict --display --code "assert '_coconut' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - echo "assert '_coconut' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --display
         - python -c "from coconut.convenience import parse; exec(parse('assert \'_coconut\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()'))"
-        - coconut pyston --recursionlimit 1100
+        - coconut pyston --recursionlimit 1200
         - coconut prisoner --strict
         - coconut extras.coc --run --strict
         - python extras.py
@@ -111,7 +111,7 @@ matrix:
         - python -c "from coconut.convenience import parse; exec(parse('assert \'_coconut\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()'))"
         - ipython --ext coconut -c "%coconut assert '_coconut' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - coconut --jupyter
-        - coconut pyston --recursionlimit 1100
+        - coconut pyston --recursionlimit 1200
         - coconut prisoner --strict
         - coconut extras.coc --run --strict
         - python extras.py
@@ -272,7 +272,7 @@ matrix:
         - coconut --strict --display --code "assert '_coconut' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - echo "assert '_coconut' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --display
         - python -c "from coconut.convenience import parse; exec(parse('assert \'_coconut\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()'))"
-        - coconut pyston --recursionlimit 1100
+        - coconut pyston --recursionlimit 1200
         - coconut prisoner --strict
         - coconut extras.coc --run --strict
         - python extras.py
@@ -352,7 +352,7 @@ matrix:
         - python -c "from coconut.convenience import parse; exec(parse('assert \'_coconut\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()'))"
         - ipython --ext coconut -c "%coconut assert '_coconut' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - coconut --jupyter
-        - coconut pyston --recursionlimit 1100
+        - coconut pyston --recursionlimit 1200
         - coconut prisoner --strict
         - coconut extras.coc --run --strict
         - python extras.py
@@ -432,7 +432,7 @@ matrix:
         - python -c "from coconut.convenience import parse; exec(parse('assert \'_coconut\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()'))"
         - ipython --ext coconut -c "%coconut assert '_coconut' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - coconut --jupyter
-        - coconut pyston --recursionlimit 1100
+        - coconut pyston --recursionlimit 1200
         - coconut prisoner --strict
         - coconut extras.coc --run --strict
         - python extras.py
@@ -512,7 +512,7 @@ matrix:
         - python -c "from coconut.convenience import parse; exec(parse('assert \'_coconut\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()'))"
         - ipython --ext coconut -c "%coconut assert '_coconut' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - coconut --jupyter
-        - coconut pyston --recursionlimit 1100
+        - coconut pyston --recursionlimit 1200
         - coconut prisoner --strict
         - coconut extras.coc --run --strict
         - python extras.py
