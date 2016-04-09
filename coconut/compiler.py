@@ -43,7 +43,7 @@ if platform.python_implementation() != "PyPy":
 
 from zlib import crc32 as checksum
 
-specific_targets = ("2", "27", "3", "33", "35")
+specific_targets = ("2", "27", "3", "33", "35", "36")
 targets = ("",) + specific_targets
 pseudo_targets = {
     "26": "2",
@@ -54,7 +54,8 @@ pseudo_targets = {
     "3.2": "3",
     "3.3": "33",
     "3.4": "33",
-    "3.5": "35"
+    "3.5": "35",
+    "3.6": "36"
 }
 sys_target = str(sys.version_info[0]) + str(sys.version_info[1])
 if sys_target in pseudo_targets:
@@ -252,20 +253,20 @@ class CoconutSyntaxError(CoconutException):
 
 class CoconutParseError(CoconutSyntaxError):
     """Coconut ParseError."""
-    def __init__(self, source, point, lineno):
+    def __init__(self, source=None, point=None, lineno=None):
         """Creates The Coconut ParseError."""
         CoconutSyntaxError.__init__(self, "parsing failed", source, point, lineno)
 
 class CoconutStyleError(CoconutSyntaxError):
     """Coconut --strict error."""
-    def __init__(self, message, source, point, lineno):
+    def __init__(self, message, source=None, point=None, lineno=None):
         """Creates the --strict Coconut error."""
         message += " (disable --strict to dismiss)"
         CoconutSyntaxError.__init__(self, message, source, point, lineno)
 
 class CoconutTargetError(CoconutSyntaxError):
     """Coconut --target error."""
-    def __init__(self, message, source, point, lineno):
+    def __init__(self, message, source=None, point=None, lineno=None):
         """Creates the --target Coconut error."""
         message, target = message
         message += " (enable --target "+target+" to dismiss)"
@@ -1249,7 +1250,6 @@ class processor(object):
         self.preprocs = [self.prepare, self.str_proc, self.passthrough_proc, self.ind_proc]
         self.postprocs = [self.reind_proc, self.repl_proc, self.header_proc, self.polish]
         self.replprocs = [self.linenumber_repl, self.passthrough_repl, self.str_repl]
-        self.bind()
         self.reset()
 
     def setup(self, target=None, strict=False, minify=False, linenumbers=False):
@@ -1271,36 +1271,38 @@ class processor(object):
 
     def bind(self):
         """Binds reference objects to the proper parse actions."""
-        self.endline <<= attach(self.endline_ref, self.endline_handle)
-        self.moduledoc_item <<= attach(self.moduledoc, self.set_docstring)
-        self.name <<= self.trace(attach(self.name_ref, self.name_handle), "name")
-        self.atom_item <<= self.trace(attach(self.atom_item_ref, self.item_handle), "atom_item")
-        self.simple_assign <<= self.trace(attach(self.simple_assign_ref, self.item_handle), "simple_assign")
-        self.set_literal <<= self.trace(attach(self.set_literal_ref, self.set_literal_handle), "set_literal")
-        self.set_letter_literal <<= self.trace(attach(self.set_letter_literal_ref, self.set_letter_literal_handle), "set_letter_literal")
-        self.classlist <<= self.trace(attach(self.classlist_ref, self.classlist_handle), "classlist")
-        self.import_stmt <<= self.trace(attach(self.import_stmt_ref, self.import_handle), "import_stmt")
-        self.complex_raise_stmt <<= self.trace(attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_handle), "complex_raise_stmt")
-        self.augassign_stmt <<= self.trace(attach(self.augassign_stmt_ref, self.augassign_handle), "augassign_stmt")
-        self.dict_comp <<= self.trace(attach(self.dict_comp_ref, self.dict_comp_handle), "dict_comp")
-        self.destructuring_stmt <<= self.trace(attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle), "destructuring_stmt")
-        self.name_match_funcdef <<= self.trace(attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle), "name_match_funcdef")
-        self.op_match_funcdef <<= self.trace(attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle), "op_match_funcdef")
-        self.yield_from <<= self.trace(attach(self.yield_from_ref, self.yield_from_handle), "yield_from")
-        self.u_string <<= attach(self.u_string_ref, self.u_string_check)
-        self.typedef <<= attach(self.typedef_ref, self.typedef_check)
-        self.return_typedef <<= attach(self.return_typedef_ref, self.typedef_check)
-        self.matrix_at <<= attach(self.matrix_at_ref, self.matrix_at_check)
-        self.nonlocal_stmt <<= attach(self.nonlocal_stmt_ref, self.nonlocal_check)
-        self.star_assign_item <<= attach(self.star_assign_item_ref, self.star_assign_item_check)
-        self.classic_lambdef <<= attach(self.classic_lambdef_ref, self.lambdef_check)
-        self.async_funcdef <<= attach(self.async_funcdef_ref, self.async_stmt_check)
-        self.async_match_funcdef <<= attach(self.async_match_funcdef_ref, self.async_stmt_check)
-        self.async_block <<= attach(self.async_block_ref, self.async_stmt_check)
-        self.await_keyword <<= attach(self.await_keyword_ref, self.await_keyword_check)
+        self.endline <<= attach(self.endline_ref, self.endline_handle, copy=True)
+        self.moduledoc_item <<= attach(self.moduledoc, self.set_docstring, copy=True)
+        self.name <<= self.trace(attach(self.name_ref, self.name_handle, copy=True), "name")
+        self.atom_item <<= self.trace(attach(self.atom_item_ref, self.item_handle, copy=True), "atom_item")
+        self.simple_assign <<= self.trace(attach(self.simple_assign_ref, self.item_handle, copy=True), "simple_assign")
+        self.set_literal <<= self.trace(attach(self.set_literal_ref, self.set_literal_handle, copy=True), "set_literal")
+        self.set_letter_literal <<= self.trace(attach(self.set_letter_literal_ref, self.set_letter_literal_handle, copy=True), "set_letter_literal")
+        self.classlist <<= self.trace(attach(self.classlist_ref, self.classlist_handle, copy=True), "classlist")
+        self.import_stmt <<= self.trace(attach(self.import_stmt_ref, self.import_handle, copy=True), "import_stmt")
+        self.complex_raise_stmt <<= self.trace(attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_handle, copy=True), "complex_raise_stmt")
+        self.augassign_stmt <<= self.trace(attach(self.augassign_stmt_ref, self.augassign_handle, copy=True), "augassign_stmt")
+        self.dict_comp <<= self.trace(attach(self.dict_comp_ref, self.dict_comp_handle, copy=True), "dict_comp")
+        self.destructuring_stmt <<= self.trace(attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle, copy=True), "destructuring_stmt")
+        self.name_match_funcdef <<= self.trace(attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle, copy=True), "name_match_funcdef")
+        self.op_match_funcdef <<= self.trace(attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle, copy=True), "op_match_funcdef")
+        self.yield_from <<= self.trace(attach(self.yield_from_ref, self.yield_from_handle, copy=True), "yield_from")
+        self.u_string <<= attach(self.u_string_ref, self.u_string_check, copy=True)
+        self.f_string <<= attach(self.f_string_ref, self.f_string_check, copy=True)
+        self.typedef <<= attach(self.typedef_ref, self.typedef_check, copy=True)
+        self.return_typedef <<= attach(self.return_typedef_ref, self.typedef_check, copy=True)
+        self.matrix_at <<= attach(self.matrix_at_ref, self.matrix_at_check, copy=True)
+        self.nonlocal_stmt <<= attach(self.nonlocal_stmt_ref, self.nonlocal_check, copy=True)
+        self.star_assign_item <<= attach(self.star_assign_item_ref, self.star_assign_item_check, copy=True)
+        self.classic_lambdef <<= attach(self.classic_lambdef_ref, self.lambdef_check, copy=True)
+        self.async_funcdef <<= attach(self.async_funcdef_ref, self.async_stmt_check, copy=True)
+        self.async_match_funcdef <<= attach(self.async_match_funcdef_ref, self.async_stmt_check, copy=True)
+        self.async_block <<= attach(self.async_block_ref, self.async_stmt_check, copy=True)
+        self.await_keyword <<= attach(self.await_keyword_ref, self.await_keyword_check, copy=True)
 
     def reset(self):
         """Resets references."""
+        self.bind()
         self.indchar = None
         self.refs = []
         self.docstring = ""
@@ -1334,9 +1336,9 @@ class processor(object):
     def reformat(self, snip, index=None):
         """Post processes a preprocessed snippet."""
         if index is None:
-            return self.repl_proc(snip, linenumbers=False)
+            return self.repl_proc(snip, careful=False)
         else:
-            return self.repl_proc(snip, linenumbers=False), len(self.repl_proc(snip[:index], linenumbers=False))
+            return self.repl_proc(snip, careful=False), len(self.repl_proc(snip[:index], careful=False))
 
     def make_err(self, errtype, message, original, location, ln=None, reformat=True):
         """Generates an error of the specified type."""
@@ -1355,6 +1357,12 @@ class processor(object):
             self.refs.append(ref)
             index = len(self.refs) - 1
         return str(index)
+
+    def get_ref(self, index):
+        try:
+            return self.refs[int(index)]
+        except (IndexError, ValueError):
+            raise CoconutException("invalid reference", index)
 
     def wrap_str(self, text, strchar, multiline=False):
         """Wraps a string."""
@@ -1428,9 +1436,7 @@ class processor(object):
 
     def set_docstring(self, original, location, tokens):
         """Sets the docstring."""
-        if len(tokens) == 1:
-            return tokens[0]
-        elif len(tokens) == 2:
+        if len(tokens) == 2:
             self.docstring = self.reformat(tokens[0]) + "\n\n"
             return tokens[1]
         else:
@@ -1447,15 +1453,14 @@ class processor(object):
 
     def parse(self, inputstring, parser, preargs, postargs):
         """Uses the parser to parse the inputstring."""
+        self.reset()
         try:
             out = self.post(parser.parseString(self.pre(inputstring, **preargs)), **postargs)
         except ParseBaseException as err:
             err_line, err_index = self.reformat(err.line, err.col-1)
             raise CoconutParseError(err_line, err_index, self.adjust(err.lineno))
-        except RuntimeError as old_err:
+        except RuntimeError:
             raise CoconutException("maximum recursion depth exceeded (try again with a larger --recursionlimit)")
-        finally:
-            self.reset()
         return out
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1729,18 +1734,16 @@ class processor(object):
             out.append(line + comment)
         return "\n".join(out)
 
-    def linenumber_repl(self, inputstring, linenumbers=None, **kwargs):
+    def linenumber_repl(self, inputstring, careful=True, **kwargs):
         """Adds in linenumbers."""
-        if self.linenumbers:
-            if linenumbers is None:
-                linenumbers = True
+        if self.linenumbers and not careful:
             out = []
             ln = 1
             fix = False
             for line in inputstring.splitlines():
                 if line.endswith(lnwrapper):
                     line, index = line[:-1].rsplit("#", 1)
-                    ln = self.refs[int(index)]
+                    ln = self.get_ref(index)
                     if not isinstance(ln, int):
                         raise CoconutException("invalid reference for a linenumber", ln)
                     line = line.rstrip()
@@ -1755,80 +1758,97 @@ class processor(object):
                         line += self.wrap_comment("line "+str(ln))
                 out.append(line)
             return "\n".join(out)
-        elif linenumbers:
-            raise CoconutException("linenumbers must be enabled to pass it as an argument")
         else:
             return inputstring
 
-    def passthrough_repl(self, inputstring, **kwargs):
+    def passthrough_repl(self, inputstring, careful=True, **kwargs):
         """Adds back passthroughs."""
         out = []
         index = None
         for x in range(len(inputstring)+1):
             c = inputstring[x] if x != len(inputstring) else None
-            if index is not None:
-                if c is not None and c in nums:
-                    index += c
-                elif c == unwrapper and index:
-                    ref = self.refs[int(index)]
-                    if not isinstance(ref, str):
-                        raise CoconutException("invalid reference for a passthrough", ref)
-                    out.append(ref)
-                    index = None
-                elif c != "\\" or index:
-                    out.append("\\" + index)
-                    if c is not None:
+            try:
+                if index is not None:
+                    if c is not None and c in nums:
+                        index += c
+                    elif c == unwrapper and index:
+                        ref = self.get_ref(index)
+                        if not isinstance(ref, str):
+                            raise CoconutException("invalid reference for a passthrough", ref)
+                        out.append(ref)
+                        index = None
+                    elif c != "\\" or index:
+                        out.append("\\" + index)
+                        if c is not None:
+                            out.append(c)
+                        index = None
+                elif c is not None:
+                    if c == "\\":
+                        index = ""
+                    else:
                         out.append(c)
+            except CoconutException:
+                if careful:
+                    raise
+                if index is not None:
+                    out.append(index)
                     index = None
-            elif c is not None:
-                if c == "\\":
-                    index = ""
-                else:
-                    out.append(c)
+                out.append(c)
         return "".join(out)
 
-    def str_repl(self, inputstring, **kwargs):
+    def str_repl(self, inputstring, careful=True, **kwargs):
         """Adds back strings."""
         out = []
         comment = None
         string = None
         for x in range(len(inputstring)+1):
             c = inputstring[x] if x != len(inputstring) else None
-            if comment is not None:
-                if c is not None and c in nums:
-                    comment += c
-                elif c == unwrapper and comment:
-                    ref = self.refs[int(comment)]
-                    if not isinstance(ref, str):
-                        raise CoconutException("invalid reference for a comment", ref)
-                    if out and not out[-1].endswith("\n"):
-                        out.append(" ")
-                    out.append("#" + ref)
-                    comment = None
-                else:
-                    raise CoconutException("invalid comment marker in", line(x, inputstring))
-            elif string is not None:
-                if c is not None and c in nums:
-                    string += c
-                elif c == unwrapper and string:
-                    ref = self.refs[int(string)]
-                    if not isinstance(ref, tuple):
-                        raise CoconutException("invalid reference for a str", ref)
-                    text, strchar, multiline = ref
-                    if multiline:
-                        out.append(strchar*3 + text + strchar*3)
+            try:
+                if comment is not None:
+                    if c is not None and c in nums:
+                        comment += c
+                    elif c == unwrapper and comment:
+                        ref = self.get_ref(comment)
+                        if not isinstance(ref, str):
+                            raise CoconutException("invalid reference for a comment", ref)
+                        if out and not out[-1].endswith("\n"):
+                            out.append(" ")
+                        out.append("#" + ref)
+                        comment = None
                     else:
-                        out.append(strchar + text + strchar)
+                        raise CoconutException("invalid comment marker in", line(x, inputstring))
+                elif string is not None:
+                    if c is not None and c in nums:
+                        string += c
+                    elif c == unwrapper and string:
+                        ref = self.get_ref(string)
+                        if not isinstance(ref, tuple):
+                            raise CoconutException("invalid reference for a str", ref)
+                        text, strchar, multiline = ref
+                        if multiline:
+                            out.append(strchar*3 + text + strchar*3)
+                        else:
+                            out.append(strchar + text + strchar)
+                        string = None
+                    else:
+                        raise CoconutException("invalid string marker in", line(x, inputstring))
+                elif c is not None:
+                    if c == "#":
+                        comment = ""
+                    elif c == strwrapper:
+                        string = ""
+                    else:
+                        out.append(c)
+            except CoconutException:
+                if careful:
+                    raise
+                if comment is not None:
+                    out.append(comment)
+                    comment = None
+                if string is not None:
+                    out.append(string)
                     string = None
-                else:
-                    raise CoconutException("invalid string marker in", line(x, inputstring))
-            elif c is not None:
-                if c == "#":
-                    comment = ""
-                elif c == strwrapper:
-                    string = ""
-                else:
-                    out.append(c)
+                out.append(c)
         return "".join(out)
 
     def repl_proc(self, inputstring, **kwargs):
@@ -2129,47 +2149,42 @@ class processor(object):
         """Checks for Python2-style unicode strings."""
         return self.check_strict("Python-2-style unicode string", original, location, tokens)
 
-    def check_py3(self, name, original, location, tokens):
-        """Checks for Python 3 syntax."""
+    def check_py(self, version, name, original, location, tokens):
+        """Checks for Python-version-specific syntax."""
         if len(tokens) != 1:
             raise CoconutException("invalid "+name+" tokens", tokens)
-        elif not self.target.startswith("3"):
-            raise self.make_err(CoconutTargetError, ("found Python 3 " + name, "3"), original, location)
+        elif self.target_info() < target_info(version):
+            raise self.make_err(CoconutTargetError, ("found Python "+version+" " + name, version), original, location)
         else:
             return tokens[0]
 
     def typedef_check(self, original, location, tokens):
         """Checks for Python 3 type defs."""
-        return self.check_py3("type annotation", original, location, tokens)
+        return self.check_py("3", "type annotation", original, location, tokens)
 
     def nonlocal_check(self, original, location, tokens):
         """Checks for Python 3 nonlocal statement."""
-        return self.check_py3("nonlocal statement", original, location, tokens)
+        return self.check_py("3", "nonlocal statement", original, location, tokens)
 
     def star_assign_item_check(self, original, location, tokens):
         """Checks for Python 3 starred assignment."""
-        return self.check_py3("starred assignment", original, location, tokens)
-
-    def check_py35(self, name, original, location, tokens):
-        """Checks for Python 3.5 syntax."""
-        if len(tokens) != 1:
-            raise CoconutException("invalid "+name+" tokens", tokens)
-        elif self.target_info() < (3, 5):
-            raise self.make_err(CoconutTargetError, ("found Python 3.5 " + name, "3.5"), original, location)
-        else:
-            return tokens[0]
+        return self.check_py("3", "starred assignment", original, location, tokens)
 
     def matrix_at_check(self, original, location, tokens):
         """Checks for Python 3.5 matrix multiplication."""
-        return self.check_py35("matrix multiplication", original, location, tokens)
+        return self.check_py("35", "matrix multiplication", original, location, tokens)
 
     def async_stmt_check(self, original, location, tokens):
         """Checks for Python 3.5 async statement."""
-        return self.check_py35("async statement", original, location, tokens)
+        return self.check_py("35", "async statement", original, location, tokens)
 
     def await_keyword_check(self, original, location, tokens):
         """Checks for Python 3.5 await expression."""
-        return self.check_py35("await expression", original, location, tokens)
+        return self.check_py("35", "await expression", original, location, tokens)
+
+    def f_string_check(self, original, location, tokens):
+        """Checks for Python 3.5 format strings."""
+        return self.check_py("36", "format string", original, location, tokens)
 
     def set_literal_handle(self, tokens):
         """Converts set literals to the right form for the target Python."""
@@ -2314,12 +2329,15 @@ class processor(object):
     dedent = Literal(closeindent)
 
     u_string = Forward()
+    f_string = Forward()
     bit_b = Optional(CaselessLiteral("b"))
     raw_r = Optional(CaselessLiteral("r"))
     b_string = Combine((bit_b + raw_r | raw_r + bit_b) + string_item)
     unicode_u = CaselessLiteral("u").suppress()
     u_string_ref = Combine((unicode_u + raw_r | raw_r + unicode_u) + string_item)
-    string = trace(b_string | u_string, "string")
+    format_f = CaselessLiteral("f")
+    f_string_ref = Combine((format_f + raw_r | raw_r + format_f) + string_item)
+    string = trace(b_string | u_string | f_string, "string")
     moduledoc = string + newline
     docstring = condense(moduledoc, copy=True)
 

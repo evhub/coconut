@@ -154,6 +154,7 @@ If the version of Python that the compiled code will be running on is known ahea
 - `3`, `32`, `3.2` (will work on any Python `>= 3.2`),
 - `33`, `3.3`, `34`, `3.4` (will work on any Python `>= 3.3`),
 - `35`, `3.5` (will work on any Python `>= 3.5`),
+- `36`, `3.6` (will work on any Python `>= 3.6`),
 - `sys` (chooses the specific target corresponding to the current version).
 
 As part of Coconut's cross-compatibility efforts, Coconut adds in new Python 3 built-ins and overwrites Python 2 built-ins to use the Python 3 versions where possible. If access to the Python 2 versions is desired, the old built-ins can be retrieved by prefixing them with `py2_`. The old built-ins available are:
