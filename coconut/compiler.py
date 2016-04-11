@@ -1241,7 +1241,7 @@ class processor(object):
 
     def __init__(self, target=None, strict=False, minify=False, linenumbers=False, debugger=printerr):
         """Creates a new processor."""
-        self.tracing.show = debugger
+        self.debugger = debugger
         self.setup(target, strict, minify, linenumbers)
         self.preprocs = [self.prepare, self.str_proc, self.passthrough_proc, self.ind_proc]
         self.postprocs = [self.reind_proc, self.repl_proc, self.header_proc, self.polish]
@@ -1298,12 +1298,13 @@ class processor(object):
 
     def reset(self):
         """Resets references."""
-        self.bind()
+        self.tracing.show = self.debugger
         self.indchar = None
         self.refs = []
         self.docstring = ""
         self.ichain_count = 0
         self.skips = set()
+        self.bind()
 
     def genhash(self, package, code):
         """Generates a hash from code."""

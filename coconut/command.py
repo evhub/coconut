@@ -185,10 +185,10 @@ class terminal(object):
 
     def addcolor(self, inputstring):
         """Adds the specified color to the string."""
-        if self.color_code is not None:
-            return escape_color(self.color_code) + inputstring + escape_color(end_color_code)
-        else:
+        if self.color_code is None:
             return inputstring
+        else:
+            return escape_color(self.color_code) + inputstring + escape_color(end_color_code)
 
     def display(self, messages, sig="", debug=False):
         """Prints messages."""
@@ -205,13 +205,13 @@ class terminal(object):
         """Prints messages with color."""
         self.display(messages)
 
+    def printerr(self, *messages):
+        """Prints error messages with color and debug signature."""
+        self.display(messages, self.debug_sig, True)
+
     def show(self, *messages):
         """Prints messages with color and main signature."""
         self.display(messages, self.main_sig)
-
-    def debug(self, *messages):
-        """Prints messages with color and debug signature."""
-        self.display(messages, self.debug_sig, True)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
@@ -265,7 +265,7 @@ class cli(object):
             self.moreprompt = self.console.addcolor(self.moreprompt)
         self.console.on = not quiet
         if self.proc is None:
-            self.proc = processor(target, strict, minify, linenumbers, self.console.debug)
+            self.proc = processor(target, strict, minify, linenumbers, self.console.printerr)
         else:
             self.proc.setup(target, strict, minify, linenumbers)
 
@@ -325,7 +325,7 @@ class cli(object):
             if args.interact or (interact and not (stdin or args.source or args.version or args.code or args.jupyter is not None)):
                 self.start_prompt()
         except CoconutException:
-            printerr(get_error(self.indebug()))
+            self.console.printerr(get_error(self.indebug()))
             sys.exit(1)
 
     def compile_path(self, path, write=True, package=None, run=False, force=False):
@@ -437,7 +437,7 @@ class cli(object):
         try:
             return input(prompt) # using input from .root
         except KeyboardInterrupt:
-            printerr("\nKeyboardInterrupt")
+            self.console.printerr("\nKeyboardInterrupt")
         except EOFError:
             print()
             self.exit()
@@ -480,7 +480,7 @@ class cli(object):
             try:
                 compiled = self.proc.parse_block(code)
             except CoconutException:
-                printerr(get_error(self.indebug()))
+                self.console.printerr(get_error(self.indebug()))
         return compiled
 
     def execute(self, compiled=None, error=True, path=None, isolate=False):
