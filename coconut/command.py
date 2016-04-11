@@ -303,7 +303,7 @@ class cli(object):
                 elif os.path.isfile(args.dest):
                     raise CoconutException("destination path must point to directory not file")
                 else:
-                    dest = args.dest
+                    dest = fixpath(args.dest)
                 if args.package and args.standalone:
                     raise CoconutException("cannot compile as both --package and --standalone")
                 elif args.package:
@@ -330,6 +330,7 @@ class cli(object):
 
     def compile_path(self, path, write=True, package=None, run=False, force=False):
         """Compiles a path."""
+        path = fixpath(path)
         if os.path.isfile(path):
             if package is None:
                 package = False
@@ -372,7 +373,7 @@ class cli(object):
             base, ext = os.path.splitext(os.path.splitext(destpath)[0])
             if not ext:
                 ext = comp_ext
-            destpath = base + ext
+            destpath = fixpath(base + ext)
         if filepath == destpath:
             raise CoconutException("cannot compile "+showpath(filepath)+" to itself (incorrect file extension)")
         else:
