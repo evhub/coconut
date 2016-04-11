@@ -82,7 +82,7 @@ end_color_code = 0
 
 def openfile(filename, opentype="r+"):
     """Returns an open file object."""
-    return open(filename, opentype, encoding=encoding) # using io.open from .root and encoding from .compiler
+    return open(filename, opentype, encoding=default_encoding) # using open from .root
 
 def writefile(openedfile, newcontents):
     """Sets the contents of a file."""

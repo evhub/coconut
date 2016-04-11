@@ -83,9 +83,9 @@ class pylexer(Python3Lexer):
     aliases = ["coc_python", "coc_py", "coc_python3", "coc_py3"]
     filenames = []
 
-    def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tabideal, encoding=encoding):
+    def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tabideal, encoding=default_encoding):
         """Initialize the Python syntax highlighter."""
-        Python3Lexer.__init__(self, stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=encoding)
+        Python3Lexer.__init__(self, stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=default_encoding)
         self.original_add_filter, self.add_filter = self.add_filter, lenient_add_filter
 
 class pyconlexer(PythonConsoleLexer):
@@ -94,9 +94,9 @@ class pyconlexer(PythonConsoleLexer):
     aliases = ["coc_pycon", "coc_pycon3"]
     filenames = []
 
-    def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tabideal, encoding=encoding, python3=True):
+    def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tabideal, encoding=default_encoding, python3=True):
         """Initialize the Python console syntax highlighter."""
-        PythonConsoleLexer.__init__(self, stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=encoding, python3=python3)
+        PythonConsoleLexer.__init__(self, stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=default_encoding, python3=python3)
         self.original_add_filter, self.add_filter = self.add_filter, lenient_add_filter
 
 class coclexer(Python3Lexer):
@@ -133,7 +133,7 @@ class coclexer(Python3Lexer):
         (r"0x[\da-fA-F_]+", Number.Integer)
     ] + tokens["numbers"]
 
-    def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tabideal, encoding=encoding):
+    def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tabideal, encoding=default_encoding):
         """Initialize the Python syntax highlighter."""
-        Python3Lexer.__init__(self, stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=encoding)
+        Python3Lexer.__init__(self, stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=default_encoding)
         self.original_add_filter, self.add_filter = self.add_filter, lenient_add_filter

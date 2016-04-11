@@ -55,7 +55,7 @@ if sys_target in pseudo_targets:
     pseudo_targets["sys"] = pseudo_targets[sys_target]
 else:
     pseudo_targets["sys"] = sys_target
-encoding = "UTF-8"
+default_encoding = "UTF-8"
 hash_prefix = "# __coconut_hash__ = "
 hash_sep = "\x00"
 openindent = "\u204b" # reverse pilcrow
@@ -125,7 +125,7 @@ reserved_vars = ( # can be backslash-escaped
     "async",
     "await"
     )
-new_to_old_stdlib = { # old_nane: (new_name, new_version_info)
+new_to_old_stdlib = { # old_name: (new_name, new_version_info)
     "builtins": ("__builtin__", (3,)),
     "configparser": ("ConfigParser", (3,)),
     "copyreg": ("copy_reg", (3,)),
@@ -190,7 +190,7 @@ def format_error(err_type, err_value, err_trace=None):
         return "".join(traceback.format_exception(err_type, err_value, err_trace)).strip()
 
 def get_error(verbose=False):
-    """Displays a formatted error."""
+    """Properly formats the current error."""
     err_type, err_value, err_trace = sys.exc_info()
     if not verbose:
         err_trace = None
@@ -198,7 +198,10 @@ def get_error(verbose=False):
 
 def clean(inputline, strip=True):
     """Cleans and strips a line."""
-    stdout_encoding = encoding if sys.stdout.encoding is None else sys.stdout.encoding
+    if hasattr(sys.stdout, "encoding") and sys.stdout.encoding is not None:
+        stdout_encoding = sys.stdout.encoding
+    else:
+        stdout_encoding = default_encoding
     inputline = inputline.replace(openindent, "").replace(closeindent, "")
     if strip:
         inputline = inputline.strip()
@@ -407,7 +410,7 @@ def getheader(which, target="", usehash=None):
         else:
             header = "#!/usr/bin/env python"
         header += '''
-# -*- coding: '''+encoding+''' -*-
+# -*- coding: '''+default_encoding+''' -*-
 '''
         if usehash is not None:
             header += hash_prefix + usehash + "\n"
@@ -1313,7 +1316,7 @@ class processor(object):
                     self.using_autopep8,
                     package,
                     code
-                )).encode(encoding)
+                )).encode(default_encoding)
             ) & 0xffffffff) # necessary for cross-compatibility
 
     def adjust(self, ln):
@@ -1401,8 +1404,8 @@ class processor(object):
         """Displays a warning."""
         try:
             raise warning
-        except CoconutWarning as err:
-            self.tracing.show(format_error(CoconutWarning, err))
+        except CoconutWarning:
+            self.tracing.show(get_error())
 
     def pre(self, inputstring, **kwargs):
         """Performs pre-processing."""
