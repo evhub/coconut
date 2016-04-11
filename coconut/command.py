@@ -28,9 +28,53 @@ import argparse
 code_ext = ".coc"
 comp_ext = ".py"
 
+main_sig = "Coconut: "
+debug_sig = ""
+
 default_prompt = ">>> "
 default_moreprompt = "    "
-default_sig = "Coconut: "
+
+color_codes = { # unix/ansii color codes, underscores in names removed
+    "bold": 1,
+    "dim": 2,
+    "underlined": 4,
+    "blink": 5,
+    "reverse": 7,
+    "default": 39,
+    "black": 30,
+    "red": 31,
+    "yellow": 33,
+    "blue": 34,
+    "magenta": 35,
+    "cyan": 36,
+    "lightgray": 37,
+    "darkgray": 90,
+    "lightred": 91,
+    "lightgreen": 92,
+    "lightyellow": 93,
+    "lightblue": 94,
+    "lightmagenta": 95,
+    "lightcyan": 96,
+    "white": 97,
+    "defaultbackground": 49,
+    "blackbackground": 40,
+    "redbackground": 41,
+    "greenbackground": 42,
+    "yellowbackground": 43,
+    "bluebackground": 44,
+    "magentabackground": 45,
+    "cyanbackground": 46,
+    "lightgraybackground": 47,
+    "darkgraybackground": 100,
+    "lightredbackground": 101,
+    "lightgreenbackground": 102,
+    "lightyellowbackground": 103,
+    "lightbluebackground": 104,
+    "lightmagentabackground": 105,
+    "lightcyanbackground": 106,
+    "whitebackground": 107
+    }
+end_color_code = 0
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -51,12 +95,16 @@ def readfile(openedfile):
     openedfile.seek(0)
     return str(openedfile.read())
 
+def showpath(path):
+    """Formats a path for displaying."""
+    return os.path.split(path)[1]
+
 def fixpath(path):
-    """Properly formats a path."""
+    """Uniformly formats a path."""
     return os.path.normpath(os.path.realpath(path))
 
 def rem_encoding(code):
-    """Removes encoding declarations from Python code."""
+    """Removes encoding declarations from Python code so it can be passed to exec."""
     old_lines = code.splitlines()
     new_lines = []
     for i in range(min(2, len(old_lines))):
@@ -73,7 +121,7 @@ class executor(object):
         self.exit = exit
         self.vars = {"__name__": "__main__"}
         if path is not None:
-            self.vars["__file__"] = path
+            self.vars["__file__"] = fixpath(path)
         if proc is not None:
             self.run(proc.headers("code"))
             self.fixpickle()
@@ -85,13 +133,13 @@ class executor(object):
             if not var.startswith("__") and var in dir(__coconut__):
                 self.vars[var] = getattr(__coconut__, var)
 
-    def run(self, code, err=False, dorun=None):
+    def run(self, code, err=False, run_func=None):
         """Executes Python code."""
         try:
-            if dorun is None:
+            if run_func is None:
                 exec(code, self.vars)
             else:
-                return dorun(code, self.vars)
+                return run_func(code, self.vars)
         except (Exception, KeyboardInterrupt):
             if err:
                 raise
@@ -103,69 +151,51 @@ class executor(object):
             else:
                 self.exit()
 
+def escape_color(code):
+    """Generates an ANSII color code."""
+    return "\033[" + str(code) + "m"
+
 class terminal(object):
     """Manages printing and reading data to the console."""
-    endcolor = "\033[0m"
-    colors = {
-        "bold": "\033[1m",
-        "blink": "\033[5m",
-        "black": "\033[30m",
-        "red": "\033[31m",
-        "green": "\033[32m",
-        "yellow": "\033[33m",
-        "blue": "\033[34m",
-        "magenta": "\033[35m",
-        "cyan": "\033[36m",
-        "white": "\033[37m",
-        "blackhighlight": "\033[40m",
-        "redhighlight": "\033[41m",
-        "greenhighlight": "\033[42m",
-        "yellowhighlight": "\033[43m",
-        "bluehighlight": "\033[44m",
-        "magentahighlight": "\033[45m",
-        "cyanhighlight": "\033[46m",
-        "whitehighlight": "\033[47m",
-        "pink": "\033[95m",
-        "purple": "\033[94m",
-        "lightgreen": "\033[92m",
-        "lightyellow": "\033[93m",
-        "lightred": "\033[91m"
-        }
-    color = None
+    color_code = None
     on = True
 
     def __init__(self, main_sig="", debug_sig=""):
         """Creates the terminal."""
-        self.main_sig = main_sig
-        self.debug_sig = debug_sig
+        self.main_sig, self.debug_sig = main_sig, debug_sig
 
     def setcolor(self, color=None):
         """Set output color."""
-        if color is None or color in self.colors:
-            self.color = color
+        if color:
+            color = color.replace("_", "")
+            if color in color_codes:
+                self.color_code = color_codes[color]
+            else:
+                try:
+                    color = int(color)
+                except ValueError:
+                    raise CoconutException('unrecognized color "'+color+'" (enter a valid color name or code)')
+                else:
+                    if 0 < color <= 256:
+                        self.color_code = color
+                    else:
+                        raise CoconutException('color code '+str(color)+' out of range (must obey 0 < color code <= 256)')
         else:
-            raise CoconutException('unrecognized color "'+color+'" (enter a color name like "cyan")')
+            self.color_code = None
 
-    def addcolor(self, inputstring, color):
+    def addcolor(self, inputstring):
         """Adds the specified color to the string."""
-        if color is not None:
-            return self.colors[color] + inputstring + self.endcolor
+        if self.color_code is not None:
+            return escape_color(self.color_code) + inputstring + escape_color(end_color_code)
         else:
             return inputstring
 
-    def delcolor(self, inputstring):
-        """Removes recognized colors from a string."""
-        inputstring = str(inputstring)
-        for x in self.colors:
-            inputstring = inputstring.replace(x, "")
-        return inputstring
-
-    def display(self, messages, color=None, sig="", debug=False):
+    def display(self, messages, sig="", debug=False):
         """Prints messages."""
         if self.on:
             message = " ".join(str(msg) for msg in messages)
             for line in message.splitlines():
-                msg = self.addcolor(sig+line, color)
+                msg = self.addcolor(sig + line)
                 if debug is True:
                     printerr(msg)
                 else:
@@ -173,15 +203,15 @@ class terminal(object):
 
     def print(self, *messages):
         """Prints messages with color."""
-        self.display(messages, color=self.color)
+        self.display(messages)
 
     def show(self, *messages):
         """Prints messages with color and main signature."""
-        self.display(messages, self.color, self.main_sig)
+        self.display(messages, self.main_sig)
 
     def debug(self, *messages):
         """Prints messages with color and debug signature."""
-        self.display(messages, self.color, self.debug_sig, True)
+        self.display(messages, self.debug_sig, True)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
@@ -212,17 +242,16 @@ class cli(object):
     commandline.add_argument("--recursionlimit", metavar="limit", type=int, nargs=1, default=[None], help="set maximum recursion depth (defaults to "+str(sys.getrecursionlimit())+")")
     commandline.add_argument("--color", metavar="color", type=str, nargs=1, default=[None], help="show all Coconut messages in the given color")
     commandline.add_argument("--verbose", action="store_const", const=True, default=False, help="print verbose debug output")
-    proc = None
-    show = False
-    running = False
-    runner = None
-    target = None
+    proc = None # current .compiler.processor
+    show = False # corresponds to --display flag
+    running = False # whether the interpreter is currently active
+    runner = None # the current executor
+    target = None # corresponds to --target flag
 
-    def __init__(self, prompt=default_prompt, moreprompt=default_moreprompt, main_sig=default_sig, debug_sig=""):
+    def __init__(self, prompt=default_prompt, moreprompt=default_moreprompt):
         """Creates the CLI."""
         self.console = terminal(main_sig, debug_sig)
-        self.prompt = prompt
-        self.moreprompt = moreprompt
+        self.prompt, self.moreprompt = prompt, moreprompt
 
     def start(self):
         """Processes command-line arguments."""
@@ -232,8 +261,8 @@ class cli(object):
         """Sets parameters for the processor."""
         if color is not None:
             self.console.setcolor(color)
-            self.prompt = self.console.addcolor(self.prompt, color)
-            self.moreprompt = self.console.addcolor(self.moreprompt, color)
+            self.prompt = self.console.addcolor(self.prompt)
+            self.moreprompt = self.console.addcolor(self.moreprompt)
         self.console.on = not quiet
         if self.proc is None:
             self.proc = processor(target, strict, minify, linenumbers, self.console.debug)
@@ -265,10 +294,10 @@ class cli(object):
                 if args.run and os.path.isdir(args.source):
                     raise CoconutException("source path must point to file not directory when --run is enabled")
                 if args.dest is None:
-                    if not args.nowrite:
-                        dest = True # auto-generate dest
+                    if args.nowrite:
+                        dest = None # no dest
                     else:
-                        dest = None
+                        dest = True # auto-generate dest
                 elif args.nowrite:
                     raise CoconutException("destination path cannot be given when --nowrite is enabled")
                 elif os.path.isfile(args.dest):
@@ -288,7 +317,7 @@ class cli(object):
                 raise CoconutException("a source file/folder must be specified when options that depend on the source are enabled")
             if args.code is not None:
                 self.execute(self.proc.parse_block(args.code[0]))
-            stdin = not sys.stdin.isatty()
+            stdin = not sys.stdin.isatty() # check if input was piped in
             if stdin:
                 self.execute(self.proc.parse_block(sys.stdin.read()))
             if args.jupyter is not None:
@@ -317,23 +346,22 @@ class cli(object):
         for dirpath, dirnames, filenames in os.walk(directory):
             writedir = write
             if writedir is None:
-                tocreate = None
+                headerdir = None
             elif writedir is True:
-                tocreate = dirpath
+                headerdir = dirpath
             else:
                 writedir = os.path.join(writedir, os.path.relpath(dirpath, directory))
-                tocreate = writedir
+                headerdir = writedir
             wrote = False
             for filename in filenames:
                 if os.path.splitext(filename)[1] == code_ext:
                     self.compile_file(os.path.join(dirpath, filename), writedir, package, run, force)
                     wrote = True
-            if wrote and package and tocreate is not None:
-                self.create_package(tocreate)
+            if wrote and package and headerdir is not None:
+                self.create_package(headerdir)
 
     def compile_file(self, filepath, write=True, package=False, run=False, force=False):
         """Compiles a file."""
-        filepath = fixpath(filepath)
         if write is None:
             destpath = None
         elif write is True:
@@ -344,20 +372,20 @@ class cli(object):
             base, ext = os.path.splitext(os.path.splitext(destpath)[0])
             if not ext:
                 ext = comp_ext
-            destpath = fixpath(base + ext)
+            destpath = base + ext
         if filepath == destpath:
-            raise CoconutException("cannot compile "+os.path.split(filepath)[1]+" to itself (incorrect file extension)")
+            raise CoconutException("cannot compile "+showpath(filepath)+" to itself (incorrect file extension)")
         else:
             self.compile(filepath, destpath, package, run, force)
 
     def compile(self, codepath, destpath=None, package=False, run=False, force=False):
         """Compiles a source Coconut file to a destination Python file."""
-        self.console.show("Compiling       "+codepath+" ...")
+        self.console.show("Compiling       "+showpath(codepath)+" ...")
         with openfile(codepath, "r") as opened:
             code = readfile(opened)
         foundhash = None if force else self.hashashof(destpath, code, package)
         if foundhash:
-            self.console.show("Left unchanged  "+destpath+" (pass --force to overwrite).")
+            self.console.show("Left unchanged    "+showpath(destpath)+" (pass --force to overwrite).")
             if run:
                 self.execute(foundhash, path=destpath, isolate=True)
             elif self.show:
@@ -367,8 +395,6 @@ class cli(object):
                 compiled = self.proc.parse_module(code)
             elif package is False:
                 compiled = self.proc.parse_file(code)
-            elif package is None:
-                compiled = self.proc.parse_block(code)
             else:
                 raise CoconutException("invalid value for package", package)
             if destpath is None:
@@ -379,7 +405,7 @@ class cli(object):
                     os.makedirs(destdir)
                 with openfile(destpath, "w") as opened:
                     writefile(opened, compiled)
-                self.console.show("Compiled to     "+destpath+" .")
+                self.console.show("Compiled to       "+showpath(destpath)+" .")
             if run:
                 self.execute(compiled, path=(destpath if destpath is not None else codepath), isolate=True)
             elif self.show:
@@ -458,7 +484,7 @@ class cli(object):
         if compiled is not None:
             if self.show:
                 print(compiled)
-            if isolate:
+            if isolate: # isolate means header is included, and thus encoding must be removed
                 compiled = rem_encoding(compiled)
             self.runner.run(compiled, error)
 

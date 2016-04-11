@@ -137,16 +137,16 @@ which should let you see very clearly how Coconut's `|>` operator enables pipeli
 
 Compiling Coconut files and projects with the Coconut command-line utility is incredibly simple. Just type
 ```
-coconut /directory/to/hello_world.coc
+coconut hello_world.coc
 ```
-where `/directory/to/` is the path from the current working directory to `hello_world.coc`. Running this command should yield the output
+which should give the output
 ```
-Coconut: Compiling       /directory/to/hello_world.coc ...
-Coconut: Compiled to     /directory/to/hello_world.py .
+Coconut: Compiling       hello_world.coc ...
+Coconut: Compiled to       hello_world.py .
 ```
-which should deposit a new `hello_world.py` file in the same directory as the `hello_world.coc` file. You should then be able to run that file with
+and deposit a new `hello_world.py` file in the same directory as the `hello_world.coc` file. You should then be able to run that file with
 ```
-python /directory/to/hello_world.py
+python hello_world.py
 ```
 which should produce `hello, world!` as the output.
 

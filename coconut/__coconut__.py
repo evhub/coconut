@@ -22,4 +22,4 @@ from .compiler import processor as __proc
 # HEADER:
 #-----------------------------------------------------------------------------------------------------------------------
 
-exec(__proc(target="sys").headers("code"))
+exec(__proc(target="sys").headers("code")) # executes the __coconut__.py header for the current Python version

@@ -41,21 +41,14 @@ if platform.python_implementation() != "PyPy":
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-from zlib import crc32 as checksum
+from zlib import crc32 as checksum # used for generating __coconut_hash__
 
 specific_targets = ("2", "27", "3", "33", "35", "36")
 targets = ("",) + specific_targets
 pseudo_targets = {
     "26": "2",
     "32": "3",
-    "34": "33",
-    "2.6": "2",
-    "2.7": "27",
-    "3.2": "3",
-    "3.3": "33",
-    "3.4": "33",
-    "3.5": "35",
-    "3.6": "36"
+    "34": "33"
 }
 sys_target = str(sys.version_info[0]) + str(sys.version_info[1])
 if sys_target in pseudo_targets:
@@ -65,17 +58,17 @@ else:
 encoding = "UTF-8"
 hash_prefix = "# __coconut_hash__ = "
 hash_sep = "\x00"
-openindent = "\u204b"
-closeindent = "\xb6"
-strwrapper = "'" # only possible to use ' because all added strings use "
-lnwrapper = "\u23f4"
-unwrapper = "\u23f9"
+openindent = "\u204b" # reverse pilcrow
+closeindent = "\xb6" # pilcrow
+strwrapper = "\u25b6" # right-pointing triangle
+lnwrapper = "\u23f4" # left-pointing triangle
+unwrapper = "\u23f9" # stop square
 white = " \t\f"
-downs = "([{"
-ups = ")]}"
+downs = "([{" # opens parenthetical
+ups = ")]}" # closes parenthetical
 holds = "'\""
-tabideal = 4
-tabworth = 8
+tabideal = 4 # worth of tabs in spaces for displaying
+tabworth = 8 # worth of tabs in spaces for parsing (8 = Python standard)
 decorator_var = "_coconut_decorator"
 match_to_var = "_coconut_match_to"
 match_check_var = "_coconut_match_check"
@@ -87,7 +80,7 @@ import_as_var = "_coconut_import"
 yield_from_var = "_coconut_yield_from"
 yield_item_var = "_coconut_yield_item"
 raise_from_var = "_coconut_raise_from"
-wildcard = "_"
+wildcard = "_" # for pattern-matching
 keywords = (
     "and",
     "as",
@@ -125,14 +118,14 @@ const_vars = (
     "False",
     "None"
     )
-reserved_vars = (
+reserved_vars = ( # can be backslash-escaped
     "data",
     "match",
     "case",
     "async",
     "await"
     )
-new_to_old_stdlib = {
+new_to_old_stdlib = { # old_nane: (new_name, new_version_info)
     "builtins": ("__builtin__", (3,)),
     "configparser": ("ConfigParser", (3,)),
     "copyreg": ("copy_reg", (3,)),
@@ -483,7 +476,7 @@ class _coconut_MatchError(Exception):
 class _coconut_zip(_coconut.zip):
     __doc__ = _coconut.zip.__doc__
     __slots__ = ("_iters",)
-    __coconut_is_lazy__ = True
+    __coconut_is_lazy__ = True # tells $[] to use .__getitem__
     def __new__(cls, *iterables):
         new_zip = _coconut.zip.__new__(cls, *iterables)
         new_zip._iters = iterables
@@ -504,7 +497,7 @@ class _coconut_zip(_coconut.zip):
 class _coconut_map(_coconut.map):
     __doc__ = _coconut.map.__doc__
     __slots__ = ("_func", "_iters")
-    __coconut_is_lazy__ = True
+    __coconut_is_lazy__ = True # tells $[] to use .__getitem__
     def __new__(cls, function, *iterables):
         new_map = _coconut.map.__new__(cls, function, *iterables)
         new_map._func, new_map._iters = function, iterables
@@ -541,7 +534,7 @@ class _coconut_count(object):'''
             header += r'''
     """count(start, step) returns an infinite iterator starting at start and increasing by step."""
     __slots__ = ("_start", "_step")
-    __coconut_is_lazy__ = True
+    __coconut_is_lazy__ = True # tells $[] to use .__getitem__
     def __init__(self, start=0, step=1):
         self._start, self._step = start, step
     def __iter__(self):
@@ -601,7 +594,7 @@ def _coconut_bool_or(a, b): return a or b
 def _coconut_minus(*args): return _coconut.operator.__neg__(*args) if len(args) < 2 else _coconut.operator.__sub__(*args)
 def recursive(func):
     """Decorates a function by optimizing it for tail recursion."""
-    state = [True, None] # toplevel, (args, kwargs)
+    state = [True, None] # state = [is_top_level, (args, kwargs)]
     recurse = object()
     @_coconut.functools.wraps(func)
     def tailed_func(*args, **kwargs):
@@ -1257,7 +1250,7 @@ class processor(object):
         if target is None:
             target = ""
         else:
-            target = str(target)
+            target = str(target).replace(".", "")
         if target in pseudo_targets:
             target = pseudo_targets[target]
         if target not in targets:

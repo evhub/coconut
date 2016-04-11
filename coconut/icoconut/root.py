@@ -29,7 +29,7 @@ from ipykernel.kernelbase import Kernel
 
 class fakefile(StringIO):
     """A file-like object wrapper around a messaging function."""
-    encoding = encoding
+    encoding = encoding # from ..compiler
 
     def __init__(self, send):
         """Initialize with a messaging function."""
@@ -61,11 +61,11 @@ class fakefile(StringIO):
 # KERNEL:
 #-----------------------------------------------------------------------------------------------------------------------
 
-proc = processor(target="sys")
+proc = processor(target="sys") # from ..compiler
 
 class kernel(Kernel):
     """Jupyter kernel for Coconut."""
-    _runner = None
+    _runner = None # current ..command.executor
     implementation = "icoconut"
     implementation_version = VERSION
     language = "coconut"
@@ -106,7 +106,7 @@ class kernel(Kernel):
             return None
         else:
             if evaluate:
-                return self._runner.run(compiled, dorun=eval)
+                return self._runner.run(compiled, run_func=eval)
             else:
                 return self._runner.run(compiled)
 

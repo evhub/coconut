@@ -17,7 +17,7 @@ Description: Basic Coconut constants and compatibility handling.
 from __future__ import print_function, absolute_import, unicode_literals, division
 
 try:
-    import readline
+    import readline # improves input function
 except ImportError:
     readline = None
 
@@ -45,7 +45,7 @@ from io import open
 class range(object):
     __slots__ = ("_xrange",)
     __doc__ = _coconut_xrange.__doc__
-    __coconut_is_lazy__ = True
+    __coconut_is_lazy__ = True # tells $[] to use .__getitem__
     def __init__(self, *args):
         self._xrange = _coconut_xrange(*args)
     def __iter__(self):

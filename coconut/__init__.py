@@ -30,7 +30,7 @@ def load_ipython_extension(ipython):
         if cell is None:
             code = line
         else:
-            cmd(line)
+            cmd(line) # first line in block is cmd
             code = cell
         compiled = parse(code)
         ipython.run_cell(compiled, shell_futures=False)
