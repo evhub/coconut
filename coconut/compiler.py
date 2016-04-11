@@ -10,6 +10,19 @@ License: Apache 2.0
 Description: Compiles Coconut code into Python code.
 """
 
+# Table of Contents:
+#   - Imports
+#   - Constants
+#   - Exceptions
+#   - Utilities
+#   - Header Utilities
+#   - Handlers
+#   - Parser
+#   - Processors
+#   - Parser Handlers
+#   - Grammar
+#   - Endpoints
+
 #-----------------------------------------------------------------------------------------------------------------------
 # IMPORTS:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -20,22 +33,42 @@ from pyparsing import *
 from .root import *
 import traceback
 
+import platform
+if platform.python_implementation() != "PyPy":
+    ParserElement.enablePackrat() # huge speedup in CPython, but can cause errors in PyPy
+
 #-----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-from zlib import crc32 as checksum
+from zlib import crc32 as checksum # used for generating __coconut_hash__
 
-hash_prefix = '# __coconut_hash__ = '
+specific_targets = ("2", "27", "3", "33", "35", "36")
+targets = ("",) + specific_targets
+pseudo_targets = {
+    "26": "2",
+    "32": "3",
+    "34": "33"
+}
+sys_target = str(sys.version_info[0]) + str(sys.version_info[1])
+if sys_target in pseudo_targets:
+    pseudo_targets["sys"] = pseudo_targets[sys_target]
+else:
+    pseudo_targets["sys"] = sys_target
+default_encoding = "UTF-8"
+hash_prefix = "# __coconut_hash__ = "
 hash_sep = "\x00"
-openindent = "\u204b"
-closeindent = "\xb6"
-linebreak = "\n"
+openindent = "\u204b" # reverse pilcrow
+closeindent = "\xb6" # pilcrow
+strwrapper = "\u25b6" # right-pointing triangle
+lnwrapper = "\u23f4" # left-pointing triangle
+unwrapper = "\u23f9" # stop square
 white = " \t\f"
-downs = "([{"
-ups = ")]}"
+downs = "([{" # opens parenthetical
+ups = ")]}" # closes parenthetical
 holds = "'\""
-tablen = 4
+tabideal = 4 # worth of tabs in spaces for displaying
+tabworth = 8 # worth of tabs in spaces for parsing (8 = Python standard)
 decorator_var = "_coconut_decorator"
 match_to_var = "_coconut_match_to"
 match_check_var = "_coconut_match_check"
@@ -43,7 +76,11 @@ match_iter_var = "_coconut_match_iter"
 match_err_var = "_coconut_match_err"
 lazy_item_var = "_coconut_lazy_item"
 lazy_chain_var = "_coconut_lazy_chain"
-wildcard = "_"
+import_as_var = "_coconut_import"
+yield_from_var = "_coconut_yield_from"
+yield_item_var = "_coconut_yield_item"
+raise_from_var = "_coconut_raise_from"
+wildcard = "_" # for pattern-matching
 keywords = (
     "and",
     "as",
@@ -73,32 +110,102 @@ keywords = (
     "try",
     "while",
     "with",
-    "yield"
+    "yield",
+    "nonlocal"
     )
 const_vars = (
     "True",
     "False",
     "None"
     )
-reserved_vars = (
-    "nonlocal",
+reserved_vars = ( # can be backslash-escaped
     "data",
     "match",
     "case",
     "async",
     "await"
     )
+new_to_old_stdlib = { # old_name: (new_name, new_version_info)
+    "builtins": ("__builtin__", (3,)),
+    "configparser": ("ConfigParser", (3,)),
+    "copyreg": ("copy_reg", (3,)),
+    "dbm.gnu": ("gdbm", (3,)),
+    "_dummy_thread": ("dummy_thread", (3,)),
+    "queue": ("Queue", (3,)),
+    "reprlib": ("repr", (3,)),
+    "socketserver": ("SocketServer", (3,)),
+    "_thread": ("thread", (3,)),
+    "tkinter": ("Tkinter", (3,)),
+    "http.cookiejar": ("cookielib", (3,)),
+    "http.cookies": ("Cookie", (3,)),
+    "html.entites": ("htmlentitydefs", (3,)),
+    "html.parser": ("HTMLParser", (3,)),
+    "http.client": ("httplib", (3,)),
+    "email.mime.multipart": ("email.MIMEMultipart", (3,)),
+    "email.mime.nonmultipart": ("email.MIMENonMultipart", (3,)),
+    "email.mime.text": ("email.MIMEText", (3,)),
+    "email.mime.base": ("email.MIMEBase", (3,)),
+    "tkinter.dialog": ("Dialog", (3,)),
+    "tkinter.filedialog": ("FileDialog", (3,)),
+    "tkinter.scrolledtext": ("ScrolledText", (3,)),
+    "tkinter.simpledialog": ("SimpleDialog", (3,)),
+    "tkinter.tix": ("Tix", (3,)),
+    "tkinter.ttk": ("ttk", (3,)),
+    "tkinter.constants": ("Tkconstants", (3,)),
+    "tkinter.dnd": ("Tkdnd", (3,)),
+    "tkinter.colorchooser": ("tkColorChooser", (3,)),
+    "tkinter.commondialog": ("tkCommonDialog", (3,)),
+    "tkinter.filedialog": ("tkFileDialog", (3,)),
+    "tkinter.font": ("tkFont", (3,)),
+    "tkinter.messagebox": ("tkMessageBox", (3,)),
+    "tkinter.simpledialog": ("tkSimpleDialog", (3,)),
+    "urllib.robotparser": ("robotparser", (3,)),
+    "xmlrpc.client": ("xmlrpclib", (3,)),
+    "xmlrpc.server": ("SimpleXMLRPCServer", (3,)),
+    "urllib.request": ("urllib2", (3,)),
+    "urllib.parse": ("urllib2", (3,)),
+    "urllib.error": ("urllib2", (3,)),
+    "io.StringIO": ("StringIO", (3,)),
+    "io.BytesIO": ("BytesIO", (3,)),
+    "collections.abc": ("collections", (3, 3))
+}
 
-ParserElement.enablePackrat()
 ParserElement.setDefaultWhitespaceChars(white)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # EXCEPTIONS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def clean(line):
-    """Cleans a line."""
-    return line.replace(openindent, "").replace(closeindent, "").strip()
+def printerr(*args):
+    """Prints to standard error."""
+    print(*args, file=sys.stderr)
+
+def format_error(err_type, err_value, err_trace=None):
+    """Properly formats the specified error."""
+    if err_trace is None:
+        err_name, err_msg = "".join(traceback.format_exception_only(err_type, err_value)).strip().split(": ", 1)
+        err_name = err_name.split(".")[-1]
+        return err_name + ": " + err_msg
+    else:
+        return "".join(traceback.format_exception(err_type, err_value, err_trace)).strip()
+
+def get_error(verbose=False):
+    """Properly formats the current error."""
+    err_type, err_value, err_trace = sys.exc_info()
+    if not verbose:
+        err_trace = None
+    return format_error(err_type, err_value, err_trace)
+
+def clean(inputline, strip=True):
+    """Cleans and strips a line."""
+    if hasattr(sys.stdout, "encoding") and sys.stdout.encoding is not None:
+        stdout_encoding = sys.stdout.encoding
+    else:
+        stdout_encoding = default_encoding
+    inputline = inputline.replace(openindent, "").replace(closeindent, "")
+    if strip:
+        inputline = inputline.strip()
+    return inputline.encode(stdout_encoding, "replace").decode(stdout_encoding)
 
 class CoconutException(Exception):
     """Base Coconut exception."""
@@ -111,64 +218,158 @@ class CoconutException(Exception):
         """Displays the Coconut exception."""
         return self.value
     def __str__(self):
-        """Wraps repr."""
+        """Wraps __repr__."""
         return repr(self)
 
 class CoconutSyntaxError(CoconutException):
     """Coconut SyntaxError."""
-    def __init__(self, message, source, point=None, ln=None):
+    def __init__(self, message, source=None, point=None, ln=None):
         """Creates the Coconut SyntaxError."""
         self.value = message
         if ln is not None:
             self.value += " (line " + str(ln) + ")"
-        if point is None:
-            self.value += linebreak + "  " + clean(source)
-        else:
-            if point >= len(source):
-                point = len(source)-1
-            part = clean(source.splitlines()[lineno(point, source)-1])
-            self.value += linebreak + "  " + part + linebreak + "  "
-            for x in range(0, col(point, source)-1):
-                if x < len(part) and part[x] in white:
-                    self.value += part[x]
-                else:
-                    self.value += " "
-            self.value += "^"
+        if source:
+            if point is None:
+                self.value += "\n" + " "*tabideal + clean(source)
+            else:
+                part = clean(source.splitlines()[lineno(point, source)-1], False).lstrip()
+                point -= len(source) - len(part) # adjust all points based on lstrip
+                part = part.rstrip() # adjust only points that are too large based on rstrip
+                self.value += "\n" + " "*tabideal + part
+                if point > 0:
+                    if point >= len(part):
+                        point = len(part) - 1
+                    self.value += "\n" + " "*tabideal
+                    for x in range(0, point):
+                        if part[x] in white:
+                            self.value += part[x]
+                        else:
+                            self.value += " "
+                    self.value += "^"
 
 class CoconutParseError(CoconutSyntaxError):
     """Coconut ParseError."""
-    def __init__(self, line, col, ln):
+    def __init__(self, source=None, point=None, lineno=None):
         """Creates The Coconut ParseError."""
-        super(CoconutParseError, self).__init__("parsing failed", line, col-1, ln)
+        CoconutSyntaxError.__init__(self, "parsing failed", source, point, lineno)
 
 class CoconutStyleError(CoconutSyntaxError):
     """Coconut --strict error."""
-    def __init__(self, message, source, point=None, ln=None):
+    def __init__(self, message, source=None, point=None, lineno=None):
         """Creates the --strict Coconut error."""
         message += " (disable --strict to dismiss)"
-        super(CoconutStyleError, self).__init__(message, source, point, ln)
+        CoconutSyntaxError.__init__(self, message, source, point, lineno)
 
 class CoconutTargetError(CoconutSyntaxError):
     """Coconut --target error."""
-    def __init__(self, message, source, point=None, ln=None):
+    def __init__(self, message, source=None, point=None, lineno=None):
         """Creates the --target Coconut error."""
-        message += " (enable --target 3 to dismiss)"
-        super(CoconutTargetError, self).__init__(message, source, point, ln)
+        message, target = message
+        message += " (enable --target "+target+" to dismiss)"
+        CoconutSyntaxError.__init__(self, message, source, point, lineno)
 
-class CoconutWarning(Warning):
+class CoconutWarning(CoconutSyntaxError):
     """Base Coconut warning."""
-    def __init__(self, *args, **kwargs):
-        """Creates the Coconut warning from a Coconut exception."""
-        CoconutSyntaxError.__init__(self, *args, **kwargs)
-    def __repr__(self):
-        """Displays the Coconut warning."""
-        return self.value
-    def __str__(self):
-        """Wraps repr."""
-        return repr(self)
 
 #-----------------------------------------------------------------------------------------------------------------------
-# HEADERS:
+# UTILITIES:
+#-----------------------------------------------------------------------------------------------------------------------
+
+def target_info(target):
+    """Returns target information as a version tuple."""
+    return tuple(int(x) for x in target)
+
+def addskip(skips, skip):
+    """Adds a line skip to the skips."""
+    if skip < 1:
+        raise CoconutException("invalid skip of line " + str(skip))
+    elif skip in skips:
+        raise CoconutException("duplicate skip of line " + str(skip))
+    else:
+        skips.add(skip)
+        return skips
+
+def count_end(teststr, testchar):
+    """Counts instances of testchar at end of teststr."""
+    count = 0
+    x = len(teststr) - 1
+    while x >= 0 and teststr[x] == testchar:
+        count += 1
+        x -= 1
+    return count
+
+def change(inputstring):
+    """Determines the parenthetical change of level."""
+    count = 0
+    for c in inputstring:
+        if c in downs:
+            count -= 1
+        elif c in ups:
+            count += 1
+    return count
+
+def attach(item, action, copy=False):
+    """Attaches a parse action to an item."""
+    if copy:
+        item = item.copy()
+    return item.addParseAction(action)
+
+def fixto(item, output, copy=False):
+    """Forces an item to result in a specific output."""
+    return attach(item, replaceWith(output), copy)
+
+def addspace(item, copy=False):
+    """Condenses and adds space to the tokenized output."""
+    return attach(item, " ".join, copy)
+
+def condense(item, copy=False):
+    """Condenses the tokenized output."""
+    return attach(item, "".join, copy)
+
+def parenwrap(lparen, item, rparen, tokens=False):
+    """Wraps an item in optional parentheses."""
+    wrap = lparen.suppress() + item + rparen.suppress() | item
+    if not tokens:
+        wrap = condense(wrap)
+    return wrap
+
+class tracer(object):
+    """Debug tracer."""
+
+    def __init__(self, show=printerr, on=False):
+        """Creates the tracer."""
+        self.show = show
+        self.debug(on)
+
+    def debug(self, on=True):
+        """Changes the tracer's state."""
+        self.on = on
+
+    def trace(self, tag, original, location, tokens):
+        """Formats and displays a trace."""
+        original = str(original)
+        location = int(location)
+        out = "[" + tag + "] "
+        if len(tokens) == 1 and isinstance(tokens[0], str):
+            out += ascii(tokens[0])
+        else:
+            out += str(tokens)
+        out += " (line "+str(lineno(location, original))+", col "+str(col(location, original))+")"
+        self.show(out)
+
+    def bind(self, item, tag):
+        """Traces a parse element."""
+        def callback(original, location, tokens):
+            """Callback function constructed by tracer."""
+            if self.on:
+                self.trace(tag, original, location, tokens)
+            return tokens
+        bound = attach(item, callback)
+        bound.setName(tag)
+        return bound
+
+#-----------------------------------------------------------------------------------------------------------------------
+# HEADER UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
 
 def gethash(compiled):
@@ -179,31 +380,46 @@ def gethash(compiled):
     else:
         return lines[2][len(hash_prefix):]
 
-def getheader(which, version=None, usehash=None):
+def minify(compiled):
+    """Performs basic minifications (fails with strings or non-tabideal indentation)."""
+    compiled = compiled.strip()
+    if compiled:
+        out = []
+        for line in compiled.splitlines():
+            line = line.split("#", 1)[0].rstrip()
+            if line:
+                ind = 0
+                while line.startswith(" "):
+                    line = line[1:]
+                    ind += 1
+                if ind % tabideal != 0:
+                    raise CoconutException("invalid indentation in", line)
+                out.append(" "*(ind//tabideal) + line)
+        compiled = "\n".join(out) + "\n"
+    return compiled
+
+def getheader(which, target="", usehash=None):
     """Generates the specified header."""
     if which == "none":
         return ""
     elif which == "initial" or which == "package":
-        if version is None:
-            header = "#!/usr/bin/env python"
-        elif version == "2":
+        if target.startswith("2"):
             header = "#!/usr/bin/env python2"
-        elif version == "3":
+        elif target.startswith("3"):
             header = "#!/usr/bin/env python3"
         else:
-            raise CoconutException("invalid Python version", version)
+            header = "#!/usr/bin/env python"
         header += '''
-# -*- coding: '''+ENCODING+''' -*-
+# -*- coding: '''+default_encoding+''' -*-
 '''
         if usehash is not None:
-            header += hash_prefix + usehash + '''
-'''
+            header += hash_prefix + usehash + "\n"
         header += '''
 # Compiled with Coconut version '''+VERSION_STR+'''
 
 '''
         if which == "package":
-            header += r'''"""Built-in Coconut functions."""
+            header += r'''"""Built-in Coconut utilities."""
 
 '''
     elif usehash is not None:
@@ -212,64 +428,178 @@ def getheader(which, version=None, usehash=None):
         header = ""
     if which != "initial":
         header += r'''# Coconut Header: --------------------------------------------------------------
-'''
-        if version == "2":
-            header += r'''
-from __future__ import print_function, absolute_import, unicode_literals, division
-'''+PY2_HEADER+r'''
-'''
-        elif version is None:
-            header += r'''
-from __future__ import print_function, absolute_import, unicode_literals, division
-import sys as _coconut_sys
-if _coconut_sys.version_info < (3,):
-'''
-            for line in PY2_HEADER.splitlines():
-                if line:
-                    header += "    " + line + '''
-'''
-                else:
-                    header += line + '''
-'''
-        if which == "package":
-            header += r'''
-version = "'''+VERSION+r'''"
 
-import functools
-import operator
-import itertools
-import collections
 '''
-            if version == "2":
-                header += r'''abc = collections
+        if not target.startswith("3"):
+            header += r'''from __future__ import print_function, absolute_import, unicode_literals, division
 '''
-            elif version == "3":
-                header += r'''import collections.abc as abc
+        elif target_info(target) >= (3, 5):
+            header += r'''from __future__ import generator_stop
 '''
+        if which == "module":
+            header += r'''import sys as _coconut_sys, os.path as _coconut_os_path
+_coconut_file_path = _coconut_os_path.dirname(_coconut_os_path.abspath(__file__))
+_coconut_sys.path.insert(0, _coconut_file_path)
+import __coconut__
+_coconut_sys.path.remove(_coconut_file_path)
+for name in dir(__coconut__):
+    if not name.startswith("__"):
+        globals()[name] = getattr(__coconut__, name)
+'''
+        elif which == "package" or which == "code" or which == "file":
+            if target.startswith("3"):
+                header += PY3_HEADER
+            elif target_info(target) >= (2, 7):
+                header += PY27_HEADER
+            elif target.startswith("2"):
+                header += PY2_HEADER
             else:
-                header += r'''try:
-    import collections.abc as abc
-except ImportError:
-    abc = collections
-'''
+                header += PYCHECK_HEADER
+            if target.startswith("3"):
+                header += r'''
+class _coconut:'''
+            else:
+                header += r'''
+class _coconut(object):'''
             header += r'''
-object = object
-int = int
-set = set
-frozenset = frozenset
-tuple = tuple
-list = list
-slice = slice
-len = len
-isinstance = isinstance
-getattr = getattr
-ascii = ascii
-
+    import collections, functools, imp, itertools, operator, types
+'''
+            if target.startswith("2"):
+                header += r'''    abc = collections'''
+            else:
+                header += r'''    if _coconut_sys.version_info < (3, 3):
+        abc = collections
+    else:
+        import collections.abc as abc'''
+            header += r'''
+    IndexError, NameError, map, zip, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, repr, reversed, set, slice, super, tuple = IndexError, NameError, map, zip, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, repr, reversed, set, slice, super, tuple
+class _coconut_MatchError(Exception):
+    """Pattern-matching error."""
+    __slots__ = ("pattern", "value")
+class _coconut_zip(_coconut.zip):
+    __doc__ = _coconut.zip.__doc__
+    __slots__ = ("_iters",)
+    __coconut_is_lazy__ = True # tells $[] to use .__getitem__
+    def __new__(cls, *iterables):
+        new_zip = _coconut.zip.__new__(cls, *iterables)
+        new_zip._iters = iterables
+        return new_zip
+    def __getitem__(self, index):
+        if _coconut.isinstance(index, _coconut.slice):
+            return self.__class__(*(_coconut_igetitem(i, index) for i in self._iters))
+        else:
+            return (_coconut_igetitem(i, index) for i in self._iters)
+    def __reversed__(self):
+        return self.__class__(*(_coconut.reversed(i) for i in self._iters))
+    def __len__(self):
+        return _coconut.min(*(_coconut.len(i) for i in self._iters))
+    def __repr__(self):
+        return "zip(" + ", ".join((_coconut.repr(i) for i in self._iters)) + ")"
+    def __reduce_ex__(self, _):
+        return (self.__class__, self._iters)
+class _coconut_map(_coconut.map):
+    __doc__ = _coconut.map.__doc__
+    __slots__ = ("_func", "_iters")
+    __coconut_is_lazy__ = True # tells $[] to use .__getitem__
+    def __new__(cls, function, *iterables):
+        new_map = _coconut.map.__new__(cls, function, *iterables)
+        new_map._func, new_map._iters = function, iterables
+        return new_map
+    def __getitem__(self, index):
+        if _coconut.isinstance(index, _coconut.slice):
+            return self.__class__(self._func, *(_coconut_igetitem(i, index) for i in self._iters))
+        else:
+            return self._func(*(_coconut_igetitem(i, index) for i in self._iters))
+    def __reversed__(self):
+        return self.__class__(self._func, *(_coconut.reversed(i) for i in self._iters))
+    def __len__(self):
+        return _coconut.min(*(_coconut.len(i) for i in self._iters))
+    def __repr__(self):
+        return "map(" + _coconut.repr(self._func) + ", " + ", ".join((_coconut.repr(i) for i in self._iters)) + ")"
+    def __reduce_ex__(self, _):
+        return (self.__class__, (self._func,) + self._iters)
+class _coconut_parallel_map(_coconut_map):
+    """Multiprocessing implementation of map using concurrent.futures; requires arguments to be pickleable."""
+    __slots__ = ()
+    def __iter__(self):
+        from concurrent.futures import ProcessPoolExecutor
+        with ProcessPoolExecutor() as executor:
+            for x in executor.map(self._func, *self._iters):
+                yield x
+    def __repr__(self):
+        return "parallel_" + _coconut_map.__repr__(self)'''
+            if target.startswith("3"):
+                header += r'''
+class _coconut_count:'''
+            else:
+                header += r'''
+class _coconut_count(object):'''
+            header += r'''
+    """count(start, step) returns an infinite iterator starting at start and increasing by step."""
+    __slots__ = ("_start", "_step")
+    __coconut_is_lazy__ = True # tells $[] to use .__getitem__
+    def __init__(self, start=0, step=1):
+        self._start, self._step = start, step
+    def __iter__(self):
+        while True:
+            yield self._start
+            self._start += self._step
+    def __getitem__(self, index):
+        if _coconut.isinstance(index, _coconut.slice) and (index.start is None or index.start >= 0) and (index.stop is not None and index.stop >= 0):
+            return _coconut_map(lambda x: self._start + x * self._step, _coconut.range(index.start if index.start is not None else 0, index.stop, index.step if index.step is not None else 1))
+        elif index >= 0:
+            return self._start + index * self._step
+        else:
+            raise _coconut.IndexError("count indices must be positive")
+    def __repr__(self):
+        return "count(" + str(self._start) + ", " + str(self._step) + ")"
+    def __reduce__(self):
+        return (self.__class__, (self._start, self._step))
+def _coconut_igetitem(iterable, index):
+    if isinstance(iterable, _coconut.range) or (_coconut.hasattr(iterable, "__coconut_is_lazy__") and iterable.__coconut_is_lazy__):
+        return iterable[index]
+    elif _coconut.hasattr(iterable, "__getitem__"):
+        if _coconut.isinstance(index, _coconut.slice):
+            return (x for x in iterable[index])
+        else:
+            return iterable[index]
+    elif _coconut.isinstance(index, _coconut.slice):
+        if (index.start is not None and index.start < 0) or (index.stop is not None and index.stop < 0) or (index.step is not None and index.step < 0):
+            return (x for x in _coconut.tuple(iterable)[index])
+        else:
+            return _coconut.itertools.islice(iterable, index.start, index.stop, index.step)
+    elif index < 0:
+        return _coconut.collections.deque(iterable, maxlen=-index)[0]
+    else:
+        return _coconut.next(_coconut.itertools.islice(iterable, index, index + 1))'''
+            if target.startswith("3"):
+                header += r'''
+class _coconut_compose:'''
+            else:
+                header += r'''
+class _coconut_compose(object):'''
+            header += r'''
+    __slots__ = ("f", "g")
+    def __init__(self, f, g):
+        self.f, self.g = f, g
+    def __call__(self, *args, **kwargs):
+        return self.f(self.g(*args, **kwargs))
+    def __repr__(self):
+        return _coconut.repr(self.f) + ".." + _coconut.repr(self.g)
+    def __reduce__(self):
+        return (_coconut_compose, (self.f, self.g))
+def _coconut_pipe(x, f): return f(x)
+def _coconut_starpipe(xs, f): return f(*xs)
+def _coconut_backpipe(f, x): return f(x)
+def _coconut_backstarpipe(f, xs): return f(*xs)
+def _coconut_bool_and(a, b): return a and b
+def _coconut_bool_or(a, b): return a or b
+def _coconut_minus(*args): return _coconut.operator.__neg__(*args) if len(args) < 2 else _coconut.operator.__sub__(*args)
 def recursive(func):
-    """Returns tail-call-optimized function."""
-    state = [True, None] # toplevel, (args, kwargs)
+    """Decorates a function by optimizing it for tail recursion."""
+    state = [True, None] # state = [is_top_level, (args, kwargs)]
     recurse = object()
-    @functools.wraps(func)
+    @_coconut.functools.wraps(func)
     def tailed_func(*args, **kwargs):
         """Tail Recursion Wrapper."""
         if state[0]:
@@ -288,245 +618,34 @@ def recursive(func):
             state[1] = args, kwargs
             return recurse
     return tailed_func
-
 def datamaker(data_type):
-    """Returns base data constructor of data_type."""
-    return functools.partial(super(data_type, data_type).__new__, data_type)
-
+    """Returns base data constructor of passed data type."""
+    return _coconut.functools.partial(_coconut.super(data_type, data_type).__new__, data_type)
 def consume(iterable, keep_last=0):
     """Fully exhaust iterable and return the last keep_last elements."""
-    return collections.deque(iterable, maxlen=keep_last)
-
-class MatchError(Exception):
-    """Pattern-matching error."""
+    return _coconut.collections.deque(iterable, maxlen=keep_last)
+MatchError, map, parallel_map, zip, count, reduce, takewhile, dropwhile, tee = _coconut_MatchError, _coconut_map, _coconut_parallel_map, _coconut_zip, _coconut_count, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile, _coconut.itertools.tee
 '''
         else:
-            if which == "module":
-                if version is not None:
-                    header += r'''
-import sys as _coconut_sys'''
-                header += r'''
-import os.path as _coconut_os_path
-_coconut_sys.path.append(_coconut_os_path.dirname(_coconut_os_path.abspath(__file__)))
-import __coconut__
-_coconut_sys.path.pop()
-'''
-            elif which == "code" or which == "file":
-                header += r'''
-class __coconut__(object):
-    """Built-in Coconut functions."""
-    version = "'''+VERSION+r'''"
-    import functools
-    import operator
-    import itertools
-    import collections
-'''
-                if version == "2":
-                    header += r'''    abc = collections'''
-                elif version == "3":
-                    header += r'''    import collections.abc as abc'''
-                else:
-                    header += r'''    try:
-        import collections.abc as abc
-    except ImportError:
-        abc = collections'''
-                header += r'''
-    object = object
-    int = int
-    set = set
-    frozenset = frozenset
-    tuple = tuple
-    list = list
-    slice = slice
-    len = len
-    isinstance = isinstance
-    getattr = getattr
-    ascii = ascii
-    @staticmethod
-    def recursive(func):
-        """Returns tail-call-optimized function."""
-        state = [True, None] # toplevel, (args, kwargs)
-        recurse = object()
-        @__coconut__.functools.wraps(func)
-        def tailed_func(*args, **kwargs):
-            """Tail Recursion Wrapper."""
-            if state[0]:
-                state[0] = False
-                try:
-                    while True:
-                        result = func(*args, **kwargs)
-                        if result is recurse:
-                            args, kwargs = state[1]
-                            state[1] = None
-                        else:
-                            return result
-                finally:
-                    state[0] = True
-            else:
-                state[1] = args, kwargs
-                return recurse
-        return tailed_func
-    @staticmethod
-    def datamaker(data_type):
-        """Returns base data constructor of data_type."""
-        return __coconut__.functools.partial(super(data_type, data_type).__new__, data_type)
-    @staticmethod
-    def consume(iterable, keep_last=0):
-        """Fully exhaust iterable and return the last keep_last elements."""
-        return __coconut__.collections.deque(iterable, maxlen=keep_last)
-    class MatchError(Exception):
-        """Pattern-matching error."""
-'''
-            else:
-                raise CoconutException("invalid header type", which)
+            raise CoconutException("invalid header type", which)
+        if which == "file" or which == "module":
             header += r'''
-__coconut_version__ = __coconut__.version
-reduce = __coconut__.functools.reduce
-takewhile = __coconut__.itertools.takewhile
-dropwhile = __coconut__.itertools.dropwhile
-tee = __coconut__.itertools.tee
-recursive = __coconut__.recursive
-datamaker = __coconut__.datamaker
-consume = __coconut__.consume
-MatchError = __coconut__.MatchError
-'''
-            if which != "code":
-                header += r'''
 # Compiled Coconut: ------------------------------------------------------------
 
 '''
     return header
 
 #-----------------------------------------------------------------------------------------------------------------------
-# UTILITIES:
+# HANDLERS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def printerr(*args):
-    """Prints to standard error."""
-    print(*args, file=sys.stderr)
-
-def format_error(err_type, err_value, err_trace=None):
-    """Properly formats the specified error."""
-    if err_trace is None:
-        err_name, err_msg = "".join(traceback.format_exception_only(err_type, err_value)).strip().split(": ", 1)
-        err_name = err_name.split(".")[-1]
-        return err_name + ": " + err_msg
-    else:
-        return "".join(traceback.format_exception(err_type, err_value, err_trace)).strip()
-
-def get_error(verbose=False):
-    """Displays a formatted error."""
-    err_type, err_value, err_trace = sys.exc_info()
-    if not verbose:
-        err_trace = None
-    return format_error(err_type, err_value, err_trace)
-
-def addskip(skips, skip):
-    """Adds a line skip to the skips."""
-    if skip < 1:
-        raise CoconutException("invalid skip of line " + str(skip))
-    elif skip in skips:
-        raise CoconutException("duplicate skip of line " + str(skip))
-    else:
-        skips |= set((skip,))
-        return skips
-
-def count_end(teststr, testchar):
-    """Counts instances of testchar at end of teststr."""
-    count = 0
-    x = len(teststr) - 1
-    while x >= 0 and teststr[x] == testchar:
-        count += 1
-        x -= 1
-    return count
-
-def attach(item, action):
-    """Attaches a parse action to an item."""
-    return item.copy().addParseAction(action)
-
-def fixto(item, output):
-    """Forces an item to result in a specific output."""
-    return attach(item, replaceWith(output))
-
-def addspace(item):
-    """Condenses and adds space to the tokenized output."""
-    def callback(tokens):
-        """Callback function constructed by addspace."""
-        return " ".join(tokens)
-    return attach(item, callback)
-
-def condense(item):
-    """Condenses the tokenized output."""
-    def callback(tokens):
-        """Callback function constructed by condense."""
-        return "".join(tokens)
-    return attach(item, callback)
-
-def parenwrap(lparen, item, rparen):
-    """Wraps an item in optional parentheses."""
-    return condense(lparen.suppress() + item + rparen.suppress() | item)
-
-class tracer(object):
-    """Debug tracer."""
-
-    def __init__(self, show=printerr, on=False):
-        """Creates the tracer."""
-        self.show = show
-        self.debug(on)
-
-    def debug(self, on=True):
-        """Changes the tracer's state."""
-        self.on = on
-
-    def trace(self, original, location, tokens, message=None):
-        """Tracer parse action."""
-        if self.on:
-            original = str(original)
-            location = int(location)
-            out = ""
-            if message is not None:
-                out += "["+message+"] "
-            if len(tokens) == 1 and isinstance(tokens[0], str):
-                out += ascii(tokens[0])
-            else:
-                out += str(tokens)
-            out += " (line "+str(lineno(location, original))+", col "+str(col(location, original))+")"
-            self.show(out)
-        return tokens
-
-    def bind(self, item, message=None):
-        """Traces a parse element."""
-        if message is None:
-            callback = self.trace
-        else:
-            def callback(original, location, tokens):
-                """Callback function constructed by tracer."""
-                return self.trace(original, location, tokens, message)
-        bound = attach(item, callback)
-        if message is not None:
-            bound.setName(message)
-        return bound
-
-#-----------------------------------------------------------------------------------------------------------------------
-# PROCESSORS:
-#-----------------------------------------------------------------------------------------------------------------------
-
-def anyint_proc(tokens):
-    """Replaces underscored integers."""
-    if len(tokens) == 1:
-        base, item = tokens[0].split("_")
-        return '__coconut__.int("'+item+'", '+base+")"
-    else:
-        raise CoconutException("invalid anyint tokens", tokens)
-
-def list_proc(tokens):
+def list_handle(tokens):
     """Properly formats lists."""
     out = []
-    for x in range(0, len(tokens)):
-        if x%2 == 0:
-            out.append(tokens[x])
-        else:
-            out[-1] += tokens[x]
+    for x in range(0, len(tokens)-1, 2):
+        out.append(tokens[x] + tokens[x+1])
+    if len(tokens) % 2 == 1:
+        out.append(tokens[-1])
     return " ".join(out)
 
 def tokenlist(item, sep, suppress=True):
@@ -537,36 +656,38 @@ def tokenlist(item, sep, suppress=True):
 
 def itemlist(item, sep):
     """Creates a list of an item."""
-    return attach(tokenlist(item, sep, False), list_proc)
+    return attach(tokenlist(item, sep, suppress=False), list_handle)
 
-def attr_proc(tokens):
+def add_paren_handle(tokens):
+    """Adds parentheses."""
+    if len(tokens) == 1:
+        return "(" + tokens[0] + ")"
+    else:
+        raise CoconutException("invalid tokens for parentheses adding", tokens)
+
+def attr_handle(tokens):
     """Processes attrgetter literals."""
     if len(tokens) == 1:
-        return '__coconut__.operator.attrgetter("'+tokens[0]+'")'
+        return '_coconut.operator.attrgetter("'+tokens[0]+'")'
     else:
         raise CoconutException("invalid attrgetter literal tokens", tokens)
 
-def lazy_list_proc(tokens):
+def lazy_list_handle(tokens):
     """Processes lazy lists."""
-    return (
-        "(" + lazy_item_var + "() for " + lazy_item_var + " in ("
-            + ("lambda: " if len(tokens) != 0 else "")
-            + ", lambda: ".join(tokens) + ("," if len(tokens) == 1 else "")
-        + "))"
-    )
+    if len(tokens) == 0:
+        return "_coconut.iter(())"
+    else:
+        return ("(" + lazy_item_var + "() for " + lazy_item_var + " in ("
+            + "lambda: " + ", lambda: ".join(tokens) + ("," if len(tokens) == 1 else "") + "))")
 
-def chain_proc(tokens):
+def chain_handle(tokens):
     """Processes chain calls."""
     if len(tokens) == 1:
         return tokens[0]
     else:
-        return "__coconut__.itertools.chain.from_iterable(" + lazy_list_proc(tokens) + ")"
+        return "_coconut.itertools.chain.from_iterable(" + lazy_list_handle(tokens) + ")"
 
-def infix_error(tokens):
-    """Raises inner infix error."""
-    raise CoconutException("invalid inner infix tokens", tokens)
-
-def get_infix_items(tokens, callback=infix_error):
+def get_infix_items(tokens, callback):
     """Performs infix token processing."""
     if len(tokens) < 3:
         raise CoconutException("invalid infix tokens", tokens)
@@ -584,17 +705,21 @@ def get_infix_items(tokens, callback=infix_error):
                 args.append(arg)
         return tokens[1], args
 
-def infix_proc(tokens):
+def infix_error(tokens):
+    """Raises inner infix error."""
+    raise CoconutException("invalid inner infix tokens", tokens)
+
+def infix_handle(tokens):
     """Processes infix calls."""
-    func, args = get_infix_items(tokens, infix_proc)
-    return "("+func+")("+", ".join(args)+")"
+    func, args = get_infix_items(tokens, infix_handle)
+    return "(" + func + ")(" + ", ".join(args) + ")"
 
-def op_funcdef_proc(tokens):
+def op_funcdef_handle(tokens):
     """Processes infix defs."""
-    func, args = get_infix_items(tokens)
-    return func+"("+", ".join(args)+")"
+    func, args = get_infix_items(tokens, infix_error)
+    return func + "(" + ", ".join(args) + ")"
 
-def pipe_proc(tokens):
+def pipe_handle(tokens):
     """Processes pipe calls."""
     if len(tokens) == 1:
         return tokens[0]
@@ -602,47 +727,47 @@ def pipe_proc(tokens):
         func = tokens.pop()
         op = tokens.pop()
         if op == "|>":
-            return "("+func+")("+pipe_proc(tokens)+")"
+            return "(" + func + ")(" + pipe_handle(tokens) + ")"
         elif op == "|*>":
-            return "("+func+")(*"+pipe_proc(tokens)+")"
+            return "(" + func + ")(*" + pipe_handle(tokens) + ")"
         elif op == "<|":
-            return "("+pipe_proc(tokens)+")("+func+")"
+            return "(" + pipe_handle(tokens) + ")(" + func + ")"
         elif op == "<*|":
-            return "("+pipe_proc(tokens)+")(*"+func+")"
+            return "(" + pipe_handle(tokens) + ")(*" + func + ")"
         else:
             raise CoconutException("invalid pipe operator", op)
 
-def lambdef_proc(tokens):
+def lambdef_handle(tokens):
     """Processes lambda calls."""
-    if len(tokens) == 1:
-        return "lambda: "+tokens[0]
-    elif len(tokens) == 2:
-        return "lambda "+tokens[0]+": "+tokens[1]
+    if len(tokens) == 0:
+        return "lambda:"
+    elif len(tokens) == 1:
+        return "lambda " + tokens[0] + ":"
     else:
         raise CoconutException("invalid lambda tokens", tokens)
 
-def func_proc(tokens):
+def func_handle(tokens):
     """Processes mathematical function definitons."""
     if len(tokens) == 2:
         return "def " + tokens[0] + ": return " + tokens[1]
     else:
         raise CoconutException("invalid mathematical function definition tokens", tokens)
 
-def match_func_proc(tokens):
+def match_func_handle(tokens):
     """Processes match mathematical function definitions."""
     if len(tokens) == 2:
-        return tokens[0] + "return " + tokens[1] + linebreak + closeindent
+        return tokens[0] + "return " + tokens[1] + "\n" + closeindent
     else:
         raise CoconutException("invalid pattern-matching mathematical function definition tokens", tokens)
 
-def full_match_funcdef_proc(tokens):
+def full_match_funcdef_handle(tokens):
     """Processes full match function definition."""
     if len(tokens) == 2:
         return tokens[0] + "".join(tokens[1]) + closeindent
     else:
         raise CoconutException("invalid pattern-matching function definition tokens", tokens)
 
-def data_proc(tokens):
+def data_handle(tokens):
     """Processes data blocks."""
     if len(tokens) == 2:
         name, stmts = tokens
@@ -651,23 +776,45 @@ def data_proc(tokens):
         name, attrs, stmts = tokens
     else:
         raise CoconutException("invalid data tokens", tokens)
-    return ("class " + name + '(__coconut__.collections.namedtuple("' + name + '", "' + attrs + '")):'
-            + linebreak + openindent + "__slots__ = ()" + linebreak + "".join(stmts) + closeindent)
+    out = "class " + name + '(_coconut.collections.namedtuple("' + name + '", "' + attrs + '")):\n' + openindent
+    rest = None
+    if "simple" in stmts.keys() and len(stmts) == 1:
+        out += "__slots__ = ()\n"
+        rest = stmts[0]
+    elif "docstring" in stmts.keys() and len(stmts) == 1:
+        out += stmts[0] + "__slots__ = ()\n"
+    elif "complex" in stmts.keys() and len(stmts) == 1:
+        out += "__slots__ = ()\n"
+        rest = "".join(stmts[0])
+    elif "complex" in stmts.keys() and len(stmts) == 2:
+        out += stmts[0] + "__slots__ = ()\n"
+        rest = "".join(stmts[1])
+    else:
+        raise CoconutException("invalid inner data tokens", stmts)
+    if rest is not None and rest != "pass\n":
+        out += rest
+    out += closeindent
+    return out
 
-def decorator_proc(tokens):
+def decorator_handle(tokens):
     """Processes decorators."""
     defs = []
     decorates = []
     for x in range(0, len(tokens)):
-        varname = decorator_var + "_" + str(x)
-        defs.append(varname+" = "+tokens[x])
-        decorates.append("@"+varname)
-    return linebreak.join(defs + decorates) + linebreak
+        if "simple" in tokens[x].keys() and len(tokens[x]) == 1:
+            decorates.append("@"+tokens[x][0])
+        elif "test" in tokens[x].keys() and len(tokens[x]) == 1:
+            varname = decorator_var + "_" + str(x)
+            defs.append(varname+" = "+tokens[x][0])
+            decorates.append("@"+varname)
+        else:
+            raise CoconutException("invalid decorator tokens", tokens[x])
+    return "\n".join(defs + decorates) + "\n"
 
-def else_proc(tokens):
+def else_handle(tokens):
     """Processes compound else statements."""
     if len(tokens) == 1:
-        return linebreak + openindent + tokens[0] + closeindent
+        return "\n" + openindent + tokens[0] + closeindent
     else:
         raise CoconutException("invalid compound else statement tokens", tokens)
 
@@ -766,8 +913,8 @@ class matcher(object):
             match = original[0]
         else:
             raise CoconutException("invalid dict match tokens", original)
-        self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Mapping)")
-        self.checks.append("__coconut__.len("+item+") == "+str(len(match)))
+        self.checks.append("_coconut.isinstance("+item+", _coconut.abc.Mapping)")
+        self.checks.append("_coconut.len("+item+") == "+str(len(match)))
         for x in range(0, len(match)):
             k,v = match[x]
             self.checks.append(k+" in "+item)
@@ -780,19 +927,19 @@ class matcher(object):
             series_type, match = original
         else:
             series_type, match, tail = original
-        self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Sequence)")
+        self.checks.append("_coconut.isinstance("+item+", _coconut.abc.Sequence)")
         if tail is None:
-            self.checks.append("__coconut__.len("+item+") == "+str(len(match)))
+            self.checks.append("_coconut.len("+item+") == "+str(len(match)))
         else:
-            self.checks.append("__coconut__.len("+item+") >= "+str(len(match)))
+            self.checks.append("_coconut.len("+item+") >= "+str(len(match)))
             if len(match):
                 splice = "["+str(len(match))+":]"
             else:
                 splice = ""
             if series_type == "(":
-                self.defs.append(tail+" = __coconut__.tuple("+item+splice+")")
+                self.defs.append(tail+" = _coconut.tuple("+item+splice+")")
             elif series_type == "[":
-                self.defs.append(tail+" = __coconut__.list("+item+splice+")")
+                self.defs.append(tail+" = _coconut.list("+item+splice+")")
             else:
                 raise CoconutException("invalid series match type", series_type)
         for x in range(0, len(match)):
@@ -805,19 +952,16 @@ class matcher(object):
             _, match = original
         else:
             _, match, tail = original
-        self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Iterable)")
+        self.checks.append("_coconut.isinstance("+item+", _coconut.abc.Iterable)")
         itervar = match_iter_var + "_" + str(self.iter_index)
         self.iter_index += 1
         if tail is None:
-            self.defs.append(itervar+" = __coconut__.tuple("+item+")")
+            self.defs.append(itervar+" = _coconut.tuple("+item+")")
         else:
-            self.defs.append(itervar+" = __coconut__.tuple(__coconut__.itertools.islice("+item+", 0, "+str(len(match))+"))")
-            self.defs.append(tail+" = "+item)
+            self.defs.append(tail+" = _coconut.iter("+item+")")
+            self.defs.append(itervar+" = _coconut.tuple(_coconut_igetitem("+tail+", _coconut.slice(None, "+str(len(match))+")))")
         self.increment()
-        if tail is None:
-            self.checks.append("__coconut__.len("+itervar+") == "+str(len(match)))
-        else:
-            self.checks.append("__coconut__.len("+itervar+") >= "+str(len(match)))
+        self.checks.append("_coconut.len("+itervar+") == "+str(len(match)))
         for x in range(0, len(match)):
             self.match(match[x], itervar+"["+str(x)+"]")
         self.decrement()
@@ -825,26 +969,26 @@ class matcher(object):
     def match_rsequence(self, original, item):
         """Matches a reverse sequence."""
         front, series_type, match = original
-        self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Sequence)")
-        self.checks.append("__coconut__.len("+item+") >= "+str(len(match)))
+        self.checks.append("_coconut.isinstance("+item+", _coconut.abc.Sequence)")
+        self.checks.append("_coconut.len("+item+") >= "+str(len(match)))
         if len(match):
             splice = "[:"+str(-len(match))+"]"
         else:
             splice = ""
         if series_type == "(":
-            self.defs.append(front+" = __coconut__.tuple("+item+splice+")")
+            self.defs.append(front+" = _coconut.tuple("+item+splice+")")
         elif series_type == "[":
-            self.defs.append(front+" = __coconut__.list("+item+splice+")")
+            self.defs.append(front+" = _coconut.list("+item+splice+")")
         else:
             raise CoconutException("invalid series match type", series_type)
         for x in range(0, len(match)):
-            self.match(match[x], item+"["+str(x - len(match))+"]")
+            self.match(match[x], item+"["+str(x-len(match))+"]")
 
     def match_msequence(self, original, item):
         """Matches a middle sequence."""
         series_type, head_match, middle, _, last_match = original
-        self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Sequence)")
-        self.checks.append("__coconut__.len("+item+") >= "+str(len(head_match) + len(last_match)))
+        self.checks.append("_coconut.isinstance("+item+", _coconut.abc.Sequence)")
+        self.checks.append("_coconut.len("+item+") >= "+str(len(head_match) + len(last_match)))
         if len(head_match) and len(last_match):
             splice = "["+str(len(head_match))+":"+str(-len(last_match))+"]"
         elif len(head_match):
@@ -854,15 +998,15 @@ class matcher(object):
         else:
             splice = ""
         if series_type == "(":
-            self.defs.append(middle+" = __coconut__.tuple("+item+splice+")")
+            self.defs.append(middle+" = _coconut.tuple("+item+splice+")")
         elif series_type == "[":
-            self.defs.append(middle+" = __coconut__.list("+item+splice+")")
+            self.defs.append(middle+" = _coconut.list("+item+splice+")")
         else:
             raise CoconutException("invalid series match type", series_type)
         for x in range(0, len(head_match)):
             self.match(head_match[x], item+"["+str(x)+"]")
         for x in range(0, len(last_match)):
-            self.match(last_match[x], item+"["+str(x - len(last_match))+"]")
+            self.match(last_match[x], item+"["+str(x-len(last_match))+"]")
 
     def match_const(self, original, item):
         """Matches a constant."""
@@ -871,12 +1015,6 @@ class matcher(object):
             self.checks.append(item+" is "+match)
         else:
             self.checks.append(item+" == "+match)
-
-    def match_typedef(self, original, item):
-        """Matches a typedef."""
-        match, type_check = original
-        self.checks.append("__coconut__.isinstance("+item+", ("+type_check+"))")
-        self.match(match, item)
 
     def match_var(self, original, item):
         """Matches a variable."""
@@ -894,16 +1032,16 @@ class matcher(object):
             match = original[0]
         else:
             raise CoconutException("invalid set match tokens", original)
-        self.checks.append("__coconut__.isinstance("+item+", __coconut__.abc.Set)")
-        self.checks.append("__coconut__.len("+item+") == "+str(len(match)))
+        self.checks.append("_coconut.isinstance("+item+", _coconut.abc.Set)")
+        self.checks.append("_coconut.len("+item+") == "+str(len(match)))
         for const in match:
             self.checks.append(const+" in "+item)
 
     def match_data(self, original, item):
         """Matches a data type."""
         data_type, match = original
-        self.checks.append("__coconut__.isinstance("+item+", "+data_type+")")
-        self.checks.append("__coconut__.len("+item+") == "+str(len(match)))
+        self.checks.append("_coconut.isinstance("+item+", "+data_type+")")
+        self.checks.append("_coconut.len("+item+") == "+str(len(match)))
         for x in range(0, len(match)):
             self.match(match[x], item+"["+str(x)+"]")
 
@@ -912,15 +1050,25 @@ class matcher(object):
         (match,) = original
         self.match(match, item)
 
-    def match_assign(self, original, item):
-        """Matches assignment."""
-        setvar, match = original
-        if setvar in self.names:
-            self.checks.append(self.names[setvar]+" == "+item)
-        elif setvar != wildcard:
-            self.defs.append(setvar+" = "+item)
-            self.names[setvar] = item
-        self.match(match, item)
+    def match_trailer(self, original, item):
+        """Matches typedefs and as patterns."""
+        if len(original) <= 1 or len(original) % 2 != 1:
+            raise CoconutException("invalid trailer match tokens", original)
+        else:
+            match, trailers = original[0], original[1:]
+            for i in range(0, len(trailers), 2):
+                op, arg = trailers[i], trailers[i+1]
+                if op == "is":
+                    self.checks.append("_coconut.isinstance("+item+", "+arg+")")
+                elif op == "as":
+                    if arg in self.names:
+                        self.checks.append(self.names[arg]+" == "+item)
+                    elif arg != wildcard:
+                        self.defs.append(arg+" = "+item)
+                        self.names[arg] = item
+                else:
+                    raise CoconutException("invalid trailer match operation", op)
+            self.match(match, item)
 
     def match_and(self, original, item):
         """Matches and."""
@@ -933,27 +1081,26 @@ class matcher(object):
             self.duplicate().match(original[x], item)
         self.match(original[0], item)
 
+    matchers = {
+        "dict": lambda self: self.match_dict,
+        "iter": lambda self: self.match_iterator,
+        "series": lambda self: self.match_sequence,
+        "rseries": lambda self: self.match_rsequence,
+        "mseries": lambda self: self.match_msequence,
+        "const": lambda self: self.match_const,
+        "var": lambda self: self.match_var,
+        "set": lambda self: self.match_set,
+        "data": lambda self: self.match_data,
+        "paren": lambda self: self.match_paren,
+        "trailer": lambda self: self.match_trailer,
+        "and": lambda self: self.match_and,
+        "or": lambda self: self.match_or
+    }
     def match(self, original, item):
         """Performs pattern-matching processing."""
-        matchers = (
-            ("dict", self.match_dict),
-            ("iter", self.match_iterator),
-            ("series", self.match_sequence),
-            ("rseries", self.match_rsequence),
-            ("mseries", self.match_msequence),
-            ("const", self.match_const),
-            ("is", self.match_typedef),
-            ("var", self.match_var),
-            ("set", self.match_set),
-            ("data", self.match_data),
-            ("paren", self.match_paren),
-            ("assign", self.match_assign),
-            ("and", self.match_and),
-            ("or", self.match_or)
-        )
-        for flag, handler in matchers:
+        for flag, handler in self.matchers.items():
             if flag in original.keys():
-                return handler(original, item)
+                return handler(self)(original, item)
         raise CoconutException("invalid inner match tokens", original)
 
     def out(self):
@@ -961,17 +1108,17 @@ class matcher(object):
         closes = 0
         for checks, defs in self.checkdefs:
             if checks:
-                out += "if (" + ") and (".join(checks) + "):" + linebreak + openindent
+                out += "if (" + ") and (".join(checks) + "):\n" + openindent
                 closes += 1
             if defs:
-                out += linebreak.join(defs) + linebreak
-        out += match_check_var + " = True" + linebreak
+                out += "\n".join(defs) + "\n"
+        out += match_check_var + " = True\n"
         out += closeindent * closes
         for other in self.others:
             out += other.out()
         return out
 
-def match_proc(tokens):
+def match_handle(o, l, tokens, top=True):
     """Processes match blocks."""
     if len(tokens) == 3:
         matches, item, stmts = tokens
@@ -985,29 +1132,13 @@ def match_proc(tokens):
     if cond:
         matching.increment(True)
         matching.add_check(cond)
-    out = match_check_var + " = False" + linebreak
-    out += match_to_var + " = " + item + linebreak
+    out = ""
+    if top:
+        out += match_check_var + " = False\n"
+    out += match_to_var + " = " + item + "\n"
     out += matching.out()
     if stmts is not None:
-        out += "if "+match_check_var+":" + linebreak + openindent + "".join(stmts) + closeindent
-    return out
-
-def pattern_error(original, loc):
-    """Constructs a pattern-matching error message."""
-    match_line = ascii(clean(line(loc, original)))
-    return ("if not " + match_check_var + ":" + linebreak + openindent
-        + match_err_var + ' = __coconut__.MatchError("pattern-matching failed for " '
-        + ascii(match_line) + ' " in " + __coconut__.ascii(__coconut__.ascii(' + match_to_var + ")))"
-        + linebreak + match_err_var + ".pattern = " + match_line
-        + linebreak + match_err_var + ".value = " + match_to_var
-        + linebreak + "raise " + match_err_var
-        + linebreak + closeindent)
-
-def match_assign_proc(original, loc, tokens):
-    """Processes match assign blocks."""
-    matches, item = tokens
-    out = match_proc((matches, item, None))
-    out += pattern_error(original, loc)
+        out += "if "+match_check_var+":" + "\n" + openindent + "".join(stmts) + closeindent
     return out
 
 def case_to_match(tokens, item):
@@ -1021,7 +1152,7 @@ def case_to_match(tokens, item):
     else:
         raise CoconutException("invalid case match tokens", tokens)
 
-def case_proc(tokens):
+def case_handle(o, l, tokens):
     """Processes case blocks."""
     if len(tokens) == 2:
         item, cases = tokens
@@ -1030,37 +1161,30 @@ def case_proc(tokens):
         item, cases, default = tokens
     else:
         raise CoconutException("invalid top-level case tokens", tokens)
-    out = match_proc(case_to_match(cases[0], item))
+    out = match_handle(o, l, case_to_match(cases[0], item))
     for case in cases[1:]:
-        out += ("if not "+match_check_var+":" + linebreak + openindent
-            + match_proc(case_to_match(case, item)) + closeindent)
+        out += ("if not "+match_check_var+":\n" + openindent
+            + match_handle(o, l, case_to_match(case, item), top=False) + closeindent)
     if default is not None:
         out += "if not "+match_check_var+default
     return out
 
-def name_match_funcdef_proc(original, loc, tokens):
-    """Processes match defs."""
-    func, matches = tokens
-    matching = matcher()
-    matching.match_sequence(("(", matches), match_to_var)
-    out = "def " + func + " (*" + match_to_var + "):" + linebreak + openindent
-    out += match_check_var + " = False" + linebreak
-    out += matching.out()
-    out += pattern_error(original, loc)
-    return out
-
-def op_match_funcdef_proc(original, loc, tokens):
-    """Processes infix match defs."""
-    return name_match_funcdef_proc(original, loc, get_infix_items(tokens))
-
-def except_proc(tokens):
+def except_handle(tokens):
     """Processes except statements."""
     if len(tokens) == 1:
-        return "except ("+tokens[0]+")"
+        errs, asname = tokens[0], None
     elif len(tokens) == 2:
-        return "except ("+tokens[0]+") as "+tokens[1]
+        errs, asname = tokens
     else:
         raise CoconutException("invalid except tokens", tokens)
+    out = "except "
+    if "list" in tokens.keys():
+        out += "(" + errs + ")"
+    else:
+        out += errs
+    if asname is not None:
+        out += " as " + asname
+    return out
 
 def set_to_tuple(tokens):
     """Converts set literal tokens to tuples."""
@@ -1068,15 +1192,41 @@ def set_to_tuple(tokens):
         raise CoconutException("invalid set maker tokens", tokens)
     elif "comp" in tokens.keys() or "list" in tokens.keys():
         return "(" + tokens[0] + ")"
-    elif "single" in tokens.keys():
+    elif "test" in tokens.keys():
         return "(" + tokens[0] + ",)"
     else:
         raise CoconutException("invalid set maker item", tokens[0])
 
-def islice_lambda(out):
-    """Constructs a function that behaves like slicing for islice."""
-    return ("(lambda i: __coconut__.itertools.islice("+out+", i.start, i.stop, i.step) if isinstance(i, __coconut__.slice)"
-            " else next(__coconut__.itertools.islice("+out+", i, i + 1)))")
+def gen_imports(path, impas):
+    """Generates import statements."""
+    out = []
+    parts = path.split("./") # denotes from ... import ...
+    if len(parts) == 1:
+        imp, = parts
+        if impas == imp:
+            out.append("import " + imp)
+        elif "." not in impas:
+            out.append("import " + imp + " as " + impas)
+        else:
+            fake_mods = impas.split(".")
+            out.append("import " + imp + " as " + import_as_var)
+            for i in range(1, len(fake_mods)):
+                mod_name = ".".join(fake_mods[:i])
+                out.append("try:")
+                out.append(openindent + mod_name)
+                out.append(closeindent + "except:")
+                out.append(openindent + mod_name + ' = _coconut.imp.new_module("' + mod_name + '")')
+                out.append(closeindent + "else:")
+                out.append(openindent + "if not _coconut.isinstance(" + mod_name + ", _coconut.types.ModuleType):")
+                out.append(openindent + mod_name + ' = _coconut.imp.new_module("' + mod_name + '")' + closeindent * 2)
+            out.append(".".join(fake_mods) + " = " + import_as_var)
+    else:
+        imp_from, imp = parts
+        if impas == imp:
+            out.append("from " + imp_from + " import " + imp)
+        else:
+            out.append("from " + imp_from + " import " + imp + " as " + impas)
+    return out
 
 #-----------------------------------------------------------------------------------------------------------------------
 # PARSER:
@@ -1087,128 +1237,242 @@ class processor(object):
     tracing = tracer()
     trace = tracing.bind
     debug = tracing.debug
-    versions = (None, "2", "3")
     using_autopep8 = False
 
-    def __init__(self, strict=False, version=None, debugger=printerr):
+    def __init__(self, target=None, strict=False, minify=False, linenumbers=False, debugger=printerr):
         """Creates a new processor."""
-        self.tracing.show = debugger
-        self.setup(strict, version)
+        self.debugger = debugger
+        self.setup(target, strict, minify, linenumbers)
         self.preprocs = [self.prepare, self.str_proc, self.passthrough_proc, self.ind_proc]
-        self.postprocs = [self.reind_proc, self.header_proc, self.polish]
-        self.bind()
-        self.clean()
+        self.postprocs = [self.reind_proc, self.repl_proc, self.header_proc, self.polish]
+        self.replprocs = [self.linenumber_repl, self.passthrough_repl, self.str_repl]
+        self.reset()
 
-    def setup(self, strict=False, version=None):
-        """Initializes strict and version."""
-        if version in self.versions:
-            self.version = version
+    def setup(self, target=None, strict=False, minify=False, linenumbers=False):
+        """Initializes target, strict, and minify."""
+        if target is None:
+            target = ""
         else:
-            raise CoconutException("unsupported target Python version " + ascii(version)
-                + " (supported targets are '2', '3', or leave blank for universal)")
-        self.strict = strict
+            target = str(target).replace(".", "")
+        if target in pseudo_targets:
+            target = pseudo_targets[target]
+        if target not in targets:
+            raise CoconutException('unsupported target Python version "' + target
+                + '" (supported targets are "' + '", "'.join(specific_targets) + '", or leave blank for universal)')
+        self.target, self.strict, self.minify, self.linenumbers = target, strict, minify, linenumbers
+        if self.minify:
+            self.tablen = 1
+        else:
+            self.tablen = tabideal
 
     def bind(self):
         """Binds reference objects to the proper parse actions."""
-        self.string_ref <<= self.trace(attach(self.string_marker, self.string_repl), "string_ref")
-        self.moduledoc <<= self.trace(attach(self.string_marker + self.newline, self.set_docstring), "moduledoc")
-        self.comment <<= self.trace(attach(self.comment_marker, self.comment_repl), "comment")
-        self.passthrough <<= self.trace(attach(self.passthrough_marker, self.passthrough_repl), "passthrough")
-        self.passthrough_block <<= self.trace(attach(self.passthrough_block_marker, self.passthrough_repl), "passthrough_block")
-        self.atom_item_ref <<= self.trace(attach(self.atom_item, self.item_repl), "atom_item")
-        self.set_literal_ref <<= self.trace(attach(self.set_literal, self.set_literal_convert), "set_literal")
-        self.set_letter_literal_ref <<= self.trace(attach(self.set_letter_literal, self.set_letter_literal_convert), "set_letter_literal")
-        self.classlist_ref <<= self.trace(attach(self.classlist, self.classlist_repl), "classlist")
-        self.augassign_stmt_ref <<= attach(self.augassign_stmt, self.augassign_repl)
-        self.u_string_ref <<= attach(self.u_string, self.u_string_check)
-        self.typedef_ref <<= attach(self.typedef, self.typedef_check)
-        self.return_typedef_ref <<= attach(self.return_typedef, self.typedef_check)
-        self.yield_from_ref <<= attach(self.yield_from, self.yield_from_check)
-        self.matrix_at_ref <<= attach(self.matrix_at, self.matrix_at_check)
-        self.nonlocal_stmt_ref <<= attach(self.nonlocal_stmt, self.nonlocal_check)
-        self.dict_comp_ref <<= attach(self.dict_comp, self.dict_comp_check)
-        self.star_assign_item_ref <<= attach(self.star_assign_item, self.star_assign_item_check)
-        self.classic_lambdef_ref <<= attach(self.classic_lambdef, self.lambdef_check)
-        self.classic_lambdef_nocond_ref <<= attach(self.classic_lambdef_nocond, self.lambdef_check)
-        self.async_funcdef_ref <<= attach(self.async_funcdef, self.async_stmt_check)
-        self.async_match_funcdef_ref <<= attach(self.async_match_funcdef, self.async_stmt_check)
-        self.async_block_ref <<= attach(self.async_block, self.async_stmt_check)
-        self.await_keyword_ref <<= attach(self.await_keyword, self.await_keyword_check)
-        self.complex_raise_stmt_ref <<= attach(self.complex_raise_stmt, self.complex_raise_stmt_check)
+        self.endline <<= attach(self.endline_ref, self.endline_handle, copy=True)
+        self.moduledoc_item <<= attach(self.moduledoc, self.set_docstring, copy=True)
+        self.name <<= self.trace(attach(self.name_ref, self.name_handle, copy=True), "name")
+        self.atom_item <<= self.trace(attach(self.atom_item_ref, self.item_handle, copy=True), "atom_item")
+        self.simple_assign <<= self.trace(attach(self.simple_assign_ref, self.item_handle, copy=True), "simple_assign")
+        self.set_literal <<= self.trace(attach(self.set_literal_ref, self.set_literal_handle, copy=True), "set_literal")
+        self.set_letter_literal <<= self.trace(attach(self.set_letter_literal_ref, self.set_letter_literal_handle, copy=True), "set_letter_literal")
+        self.classlist <<= self.trace(attach(self.classlist_ref, self.classlist_handle, copy=True), "classlist")
+        self.import_stmt <<= self.trace(attach(self.import_stmt_ref, self.import_handle, copy=True), "import_stmt")
+        self.complex_raise_stmt <<= self.trace(attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_handle, copy=True), "complex_raise_stmt")
+        self.augassign_stmt <<= self.trace(attach(self.augassign_stmt_ref, self.augassign_handle, copy=True), "augassign_stmt")
+        self.dict_comp <<= self.trace(attach(self.dict_comp_ref, self.dict_comp_handle, copy=True), "dict_comp")
+        self.destructuring_stmt <<= self.trace(attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle, copy=True), "destructuring_stmt")
+        self.name_match_funcdef <<= self.trace(attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle, copy=True), "name_match_funcdef")
+        self.op_match_funcdef <<= self.trace(attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle, copy=True), "op_match_funcdef")
+        self.yield_from <<= self.trace(attach(self.yield_from_ref, self.yield_from_handle, copy=True), "yield_from")
+        self.u_string <<= attach(self.u_string_ref, self.u_string_check, copy=True)
+        self.f_string <<= attach(self.f_string_ref, self.f_string_check, copy=True)
+        self.typedef <<= attach(self.typedef_ref, self.typedef_check, copy=True)
+        self.return_typedef <<= attach(self.return_typedef_ref, self.typedef_check, copy=True)
+        self.matrix_at <<= attach(self.matrix_at_ref, self.matrix_at_check, copy=True)
+        self.nonlocal_stmt <<= attach(self.nonlocal_stmt_ref, self.nonlocal_check, copy=True)
+        self.star_assign_item <<= attach(self.star_assign_item_ref, self.star_assign_item_check, copy=True)
+        self.classic_lambdef <<= attach(self.classic_lambdef_ref, self.lambdef_check, copy=True)
+        self.async_funcdef <<= attach(self.async_funcdef_ref, self.async_stmt_check, copy=True)
+        self.async_match_funcdef <<= attach(self.async_match_funcdef_ref, self.async_stmt_check, copy=True)
+        self.async_block <<= attach(self.async_block_ref, self.async_stmt_check, copy=True)
+        self.await_keyword <<= attach(self.await_keyword_ref, self.await_keyword_check, copy=True)
 
-    def clean(self):
+    def reset(self):
         """Resets references."""
+        self.tracing.show = self.debugger
         self.indchar = None
         self.refs = []
         self.docstring = ""
         self.ichain_count = 0
         self.skips = set()
+        self.bind()
 
     def genhash(self, package, code):
         """Generates a hash from code."""
         return hex(checksum(
-                hash_sep.join(str(item) for item in (VERSION_STR, self.version, self.using_autopep8, package, code)).encode(ENCODING)
+                hash_sep.join(str(item) for item in (
+                    VERSION_STR,
+                    self.target,
+                    self.minify,
+                    self.linenumbers,
+                    self.using_autopep8,
+                    package,
+                    code
+                )).encode(default_encoding)
             ) & 0xffffffff) # necessary for cross-compatibility
 
     def adjust(self, ln):
         """Adjusts a line number."""
         adj_ln = 0
-        ind = 0
-        while ind < ln:
+        i = 0
+        while i < ln:
             adj_ln += 1
             if adj_ln not in self.skips:
-                ind += 1
+                i += 1
         return adj_ln
 
-    def wrap_str(self, text, strchar, multiline):
+    def reformat(self, snip, index=None):
+        """Post processes a preprocessed snippet."""
+        if index is None:
+            return self.repl_proc(snip, careful=False, linenumbers=False)
+        else:
+            return (self.repl_proc(snip, careful=False, linenumbers=False),
+                    len(self.repl_proc(snip[:index], careful=False, linenumbers=False)))
+
+    def make_err(self, errtype, message, original, location, ln=None, reformat=True):
+        """Generates an error of the specified type."""
+        if ln is None:
+            ln = self.adjust(lineno(location, original))
+        errstr, index = line(location, original), col(location, original)-1
+        if reformat:
+            errstr, index = self.reformat(errstr, index)
+        return errtype(message, errstr, index, ln)
+
+    def add_ref(self, ref):
+        """Adds a reference and returns the identifier."""
+        try:
+            index = self.refs.index(ref)
+        except ValueError:
+            self.refs.append(ref)
+            index = len(self.refs) - 1
+        return str(index)
+
+    def get_ref(self, index):
+        try:
+            return self.refs[int(index)]
+        except (IndexError, ValueError):
+            raise CoconutException("invalid reference", index)
+
+    def wrap_str(self, text, strchar, multiline=False):
         """Wraps a string."""
-        self.refs.append((text, strchar, multiline))
-        return '"' + str(len(self.refs)-1) + '"'
+        return strwrapper + self.add_ref((text, strchar, multiline)) + unwrapper
 
-    def expand(self, text):
-        """Expands strings in text."""
-        fulltext = ""
-        found = None
-        for c in text:
-            if found is not None:
-                if c == '"':
-                    fulltext += self.string_repl([found])
-                    found = None
-                else:
-                    found += c
-            elif c == '"':
-                found = ""
-            else:
-                fulltext += c
-        return fulltext
+    def wrap_str_of(self, text):
+        """Wraps a string of a string."""
+        text_repr = ascii(text).lstrip("u")
+        return self.wrap_str(text_repr[1:-1], text_repr[-1])
 
-    def wrap_passthrough(self, text, multiline):
+    def wrap_passthrough(self, text, multiline=True):
         """Wraps a passthrough."""
         if not multiline:
             text = text.lstrip()
-        self.refs.append(self.expand(text))
         if multiline:
             out = "\\"
         else:
             out = "\\\\"
-        out += str(len(self.refs)-1)
+        out += self.add_ref(text) + unwrapper
         if not multiline:
-            out += linebreak
+            out += "\n"
         return out
 
     def wrap_comment(self, text):
         """Wraps a comment."""
-        self.refs.append(text)
-        return "#"+str(len(self.refs)-1)
+        return "#" + self.add_ref(text) + unwrapper
+
+    def wrap_linenumber(self, ln):
+        """Wraps a linenumber."""
+        return "#" + self.add_ref(ln) + lnwrapper
+
+    def indebug(self):
+        """Checks whether debug mode is active."""
+        return self.tracing.on
+
+    def todebug(self, tag, code):
+        """If debugging, prints a debug message."""
+        if self.indebug():
+            self.tracing.show("["+str(tag)+"] "+ascii(code))
+
+    def warn(self, warning):
+        """Displays a warning."""
+        try:
+            raise warning
+        except CoconutWarning:
+            self.tracing.show(get_error())
+
+    def pre(self, inputstring, **kwargs):
+        """Performs pre-processing."""
+        out = str(inputstring)
+        for proc in self.preprocs:
+            out = proc(out, **kwargs)
+            self.todebug(proc.__name__, out)
+        self.todebug("skips", list(sorted(self.skips)))
+        return out
+
+    def post(self, tokens, **kwargs):
+        """Performs post-processing."""
+        if len(tokens) == 1:
+            out = tokens[0]
+            for proc in self.postprocs:
+                out = proc(out, **kwargs)
+                self.todebug(proc.__name__, out)
+            return out
+        else:
+            raise CoconutException("multiple tokens leftover", tokens)
+
+    def headers(self, header, usehash=None):
+        """Gets a polished header."""
+        return self.polish(getheader(header, self.target, usehash))
+
+    def set_docstring(self, original, location, tokens):
+        """Sets the docstring."""
+        if len(tokens) == 2:
+            self.docstring = self.reformat(tokens[0]) + "\n\n"
+            return tokens[1]
+        else:
+            raise CoconutException("invalid docstring tokens", tokens)
+
+    def target_info(self):
+        """Returns information on the current target as a version tuple."""
+        return target_info(self.target)
+
+    def should_indent(self, code):
+        """Determines whether the next line should be indented."""
+        last = code.splitlines()[-1].split("#", 1)[0].rstrip()
+        return last.endswith(":") or change(last) < 0
+
+    def parse(self, inputstring, parser, preargs, postargs):
+        """Uses the parser to parse the inputstring."""
+        self.reset()
+        try:
+            out = self.post(parser.parseString(self.pre(inputstring, **preargs)), **postargs)
+        except ParseBaseException as err:
+            err_line, err_index = self.reformat(err.line, err.col-1)
+            raise CoconutParseError(err_line, err_index, self.adjust(err.lineno))
+        except RuntimeError:
+            raise CoconutException("maximum recursion depth exceeded (try again with a larger --recursionlimit)")
+        return out
+
+#-----------------------------------------------------------------------------------------------------------------------
+# PROCESSORS:
+#-----------------------------------------------------------------------------------------------------------------------
 
     def prepare(self, inputstring, strip=False, **kwargs):
         """Prepares a string for processing."""
         if strip:
             inputstring = inputstring.strip()
-        return linebreak.join(inputstring.splitlines())
+        return "\n".join(inputstring.splitlines())
 
     def str_proc(self, inputstring, **kwargs):
-        """Processes strings."""
+        """Processes strings and comments."""
         out = []
         found = None # store of characters that might be the start of a string
         hold = None
@@ -1222,13 +1486,20 @@ class processor(object):
         skips = self.skips.copy()
         while x <= len(inputstring):
             if x == len(inputstring):
-                c = linebreak
+                c = "\n"
             else:
                 c = inputstring[x]
             if hold is not None:
                 if len(hold) == 1: # hold == [_comment]
-                    if c == linebreak:
-                        out.append(self.wrap_comment(hold[_comment])+c)
+                    if c == "\n":
+                        if self.minify:
+                            if out:
+                                lines = "".join(out).splitlines()
+                                lines[-1] = lines[-1].rstrip()
+                                out = ["\n".join(lines)]
+                            out.append(c)
+                        else:
+                            out.append(self.wrap_comment(hold[_comment])+c)
                         hold = None
                     else:
                         hold[_comment] += c
@@ -1239,21 +1510,21 @@ class processor(object):
                     elif c == hold[_start][0]:
                         hold[_stop] += c
                     elif len(hold[_stop]) > len(hold[_start]):
-                        raise CoconutSyntaxError("invalid number of string closes", inputstring, x, self.adjust(lineno(x, inputstring)))
+                        raise self.make_err(CoconutSyntaxError, "invalid number of string closes", inputstring, x, reformat=False)
                     elif hold[_stop] == hold[_start]:
                         out.append(self.wrap_str(hold[_contents], hold[_start][0], True))
                         hold = None
                         x -= 1
                     else:
-                        if c == linebreak:
+                        if c == "\n":
                             if len(hold[_start]) == 1:
-                                raise CoconutSyntaxError("linebreak in non-multiline string", inputstring, x, self.adjust(lineno(x, inputstring)))
+                                raise self.make_err(CoconutSyntaxError, "linebreak in non-multiline string", inputstring, x, reformat=False)
                             else:
                                 skips = addskip(skips, self.adjust(lineno(x, inputstring)))
                         hold[_contents] += hold[_stop]+c
                         hold[_stop] = None
                 elif count_end(hold[_contents], "\\") % 2 == 1:
-                    if c == linebreak:
+                    if c == "\n":
                         skips = addskip(skips, self.adjust(lineno(x, inputstring)))
                     hold[_contents] += c
                 elif c == hold[_start]:
@@ -1262,9 +1533,9 @@ class processor(object):
                 elif c == hold[_start][0]:
                     hold[_stop] = c
                 else:
-                    if c == linebreak:
+                    if c == "\n":
                         if len(hold[_start]) == 1:
-                            raise CoconutSyntaxError("linebreak in non-multiline string", inputstring, x, self.adjust(lineno(x, inputstring)))
+                            raise self.make_err(CoconutSyntaxError, "linebreak in non-multiline string", inputstring, x, reformat=False)
                         else:
                             skips = addskip(skips, self.adjust(lineno(x, inputstring)))
                     hold[_contents] += c
@@ -1272,8 +1543,8 @@ class processor(object):
                 if c == found[0]:
                     found += c
                 elif len(found) == 1: # found == "_"
-                    if c == linebreak:
-                        raise CoconutSyntaxError("linebreak in non-multiline string", inputstring, x, self.adjust(lineno(x, inputstring)))
+                    if c == "\n":
+                        raise self.make_err(CoconutSyntaxError, "linebreak in non-multiline string", inputstring, x, reformat=False)
                     else:
                         hold = [c, found, None] # [_contents, _start, _stop]
                         found = None
@@ -1282,12 +1553,12 @@ class processor(object):
                     found = None
                     x -= 1
                 elif len(found) == 3: # found == "___"
-                    if c == linebreak:
+                    if c == "\n":
                         skips = addskip(skips, self.adjust(lineno(x, inputstring)))
                     hold = [c, found, None] # [_contents, _start, _stop]
                     found = None
                 else:
-                    raise CoconutSyntaxError("invalid number of string starts", inputstring, x, self.adjust(lineno(x, inputstring)))
+                    raise self.make_err(CoconutSyntaxError, "invalid number of string starts", inputstring, x, reformat=False)
             elif c == "#":
                 hold = [""] # [_comment]
             elif c in holds:
@@ -1296,79 +1567,10 @@ class processor(object):
                 out.append(c)
             x += 1
         if hold is not None or found is not None:
-            raise CoconutSyntaxError("unclosed string", inputstring, x, self.adjust(lineno(x, inputstring)))
+            raise self.make_err(CoconutSyntaxError, "unclosed string", inputstring, x, reformat=False)
         else:
             self.skips = skips
             return "".join(out)
-
-    def reindent(self, inputstring):
-        """Reconverts indent tokens into indentation."""
-        out = []
-        level = 0 # current indentation level
-        found = None # store of characters that might be the start of a string
-        hold = None # [_escape, _start, _stop]
-        _escape = 0 # whether an escape was just encountered in the string
-        _start = 1 # the string of characters that started the string
-        _stop = 2 # store of characters that might be the end of the string
-        for line in inputstring.splitlines():
-            if hold is None:
-                line = line.lstrip()
-                if not line.startswith("#"):
-                    while line.startswith(openindent) or line.startswith(closeindent):
-                        if line[0] == openindent:
-                            level += 1
-                        elif line[0] == closeindent:
-                            level -= 1
-                        line = line[1:]
-                    line = " "*tablen*level + line
-            for c in line + linebreak:
-                if hold is not None:
-                    if hold[_stop] is not None:
-                        if c == "\\":
-                            hold[_escape] = (hold[_escape] + 1) % 2
-                            hold[_stop] = None
-                        elif c == hold[_start][0]:
-                            hold[_escape] = 0
-                            hold[_stop] += c
-                        elif len(hold[_stop]) > len(hold[_start]):
-                            raise CoconutException("invalid close in string code", line)
-                        elif hold[_stop] == hold[_start]:
-                            hold = None
-                        elif c == linebreak and len(hold[_start]) == 1:
-                            raise CoconutException("invalid linebreak in string code", line)
-                        else:
-                            hold[_escape] = 0
-                            hold[_stop] = None
-                    elif hold[_escape] != 1:
-                        if c == hold[_start]:
-                            hold = None
-                        elif c == hold[_start][0]:
-                            hold[_stop] = c
-                    elif c == linebreak and len(hold[_start]) == 1:
-                        raise CoconutException("invalid linebreak in string code", line)
-                elif found is not None:
-                    if c == found[0]:
-                        found += c
-                    elif len(found) == 1: # found == "_"
-                        if c == linebreak:
-                            raise CoconutException("invalid linebreak in string code", line)
-                        hold = [0, found, None] # [_escape, _start, _stop]
-                        found = None
-                    elif len(found) == 2: # found == "___"
-                        found = None
-                    elif len(found) == 3: # found == "____"
-                        hold = [0, found, None] # [_escape, _start, _stop]
-                        found = None
-                    else:
-                        raise CoconutException("invalid string start code", line)
-                elif c in holds:
-                    found = c
-            if found is not None:
-                raise CoconutException("invalid unclosed string code", line)
-            if hold is None:
-                line = line.rstrip()
-            out.append(line)
-        return linebreak.join(out)
 
     def passthrough_proc(self, inputstring, **kwargs):
         """Processes python passthroughs."""
@@ -1381,7 +1583,7 @@ class processor(object):
         for x in range(0, len(inputstring)):
             c = inputstring[x]
             if hold is not None:
-                count += self.change(c)
+                count += change(c)
                 if count >= 0 and c == hold:
                     out.append(self.wrap_passthrough(found, multiline))
                     found = None
@@ -1389,13 +1591,13 @@ class processor(object):
                     count = None
                     multiline = None
                 else:
-                    if c == linebreak:
+                    if c == "\n":
                         skips = addskip(skips, self.adjust(lineno(x, inputstring)))
                     found += c
             elif found:
                 if c == "\\":
                     found = ""
-                    hold = linebreak
+                    hold = "\n"
                     count = 0
                     multiline = False
                 elif c == "(":
@@ -1411,7 +1613,7 @@ class processor(object):
             else:
                 out.append(c)
         if hold is not None or found is not None:
-            raise CoconutSyntaxError("unclosed passthrough", inputstring, x, self.adjust(lineno(x, inputstring)))
+            raise self.make_err(CoconutSyntaxError, "unclosed passthrough", inputstring, x)
         else:
             self.skips = skips
             return "".join(out)
@@ -1427,29 +1629,18 @@ class processor(object):
             elif inputstring[x] == "\t":
                 if self.indchar is None:
                     self.indchar = "\t"
-                count += tablen - x % tablen
+                count += tabworth - x % tabworth
             else:
                 break
             if self.indchar != inputstring[x]:
-                errargs = "found mixing of tabs and spaces", inputstring, x, self.adjust(lineno(x, inputstring))
                 if self.strict:
-                    raise CoconutStyleError(*errargs)
+                    raise self.make_err(CoconutStyleError, "found mixing of tabs and spaces", inputstring, x)
                 else:
-                    self.warn(CoconutWarning(*errargs))
-        return count
-
-    def change(self, inputstring):
-        """Determines the parenthetical change of level."""
-        count = 0
-        for c in inputstring:
-            if c in downs:
-                count -= 1
-            elif c in ups:
-                count += 1
+                    self.warn(self.make_err(CoconutWarning, "found mixing of tabs and spaces", inputstring, x))
         return count
 
     def ind_proc(self, inputstring, **kwargs):
-        """Processes indentation."""
+        """Processes indentation and fixes line/file endings."""
         lines = inputstring.splitlines()
         new = []
         levels = []
@@ -1461,7 +1652,7 @@ class processor(object):
             ln += 1
             if line and line[-1] in white:
                 if self.strict:
-                    raise CoconutStyleError("found trailing whitespace", line, len(line), self.adjust(ln))
+                    raise self.make_err(CoconutStyleError, "found trailing whitespace", line, len(line), self.adjust(ln))
                 else:
                     line = line.rstrip()
             if new:
@@ -1475,7 +1666,7 @@ class processor(object):
                     skips = addskip(skips, self.adjust(ln))
             elif last is not None and last.endswith("\\"):
                 if self.strict:
-                    raise CoconutStyleError("found backslash continuation", last, len(last), self.adjust(ln-1))
+                    raise self.make_err(CoconutStyleError, "found backslash continuation", last, len(last), self.adjust(ln-1))
                 else:
                     skips = addskip(skips, self.adjust(ln))
                     new[-1] = last[:-1]+" "+line
@@ -1486,7 +1677,7 @@ class processor(object):
                 check = self.leading(line)
                 if current is None:
                     if check:
-                        raise CoconutSyntaxError("illegal initial indent", line, 0, self.adjust(ln))
+                        raise self.make_err(CoconutSyntaxError, "illegal initial indent", line, 0, self.adjust(ln))
                     else:
                         current = 0
                 elif check > current:
@@ -1499,134 +1690,229 @@ class processor(object):
                     levels = levels[:point]
                     current = levels.pop()
                 elif current != check:
-                    raise CoconutSyntaxError("illegal dedent to unused indentation level", line, 0, self.adjust(ln))
+                    raise self.make_err(CoconutSyntaxError, "illegal dedent to unused indentation level", line, 0, self.adjust(ln))
                 new.append(line)
-            count += self.change(line)
+            count += change(line)
         self.skips = skips
         if new:
             last = new[-1].split("#", 1)[0].rstrip()
             if last.endswith("\\"):
-                raise CoconutSyntaxError("illegal final backslash continuation", last, len(last), self.adjust(len(new)))
+                raise self.make_err(CoconutSyntaxError, "illegal final backslash continuation", last, len(last), self.adjust(len(new)))
             if count != 0:
-                raise CoconutSyntaxError("unclosed parenthetical", new[-1], len(new[-1]), self.adjust(len(new)))
+                raise self.make_err(CoconutSyntaxError, "unclosed parenthetical", new[-1], len(new[-1]), self.adjust(len(new)))
         new.append(closeindent*len(levels))
-        return linebreak.join(new)
+        return "\n".join(new)
 
-    def indebug(self):
-        """Checks whether debug mode is active."""
-        return self.tracing.on
+    def reind_proc(self, inputstring, **kwargs):
+        """Adds back indentation."""
+        out = []
+        level = 0
+        for line in inputstring.splitlines():
+            line = line.strip()
+            if "#" in line:
+                line, comment = line.split("#", 1)
+                line = line.rstrip()
+                comment = "#" + comment
+            else:
+                comment = ""
+            while line.startswith(openindent) or line.startswith(closeindent):
+                if line[0] == openindent:
+                    level += 1
+                elif line[0] == closeindent:
+                    level -= 1
+                line = line[1:].lstrip()
+            if line and not line.startswith("#"):
+                line = " "*self.tablen*level + line
+            while line.endswith(openindent) or line.endswith(closeindent):
+                if line[-1] == openindent:
+                    level += 1
+                elif line[-1] == closeindent:
+                    level -= 1
+                line = line[:-1].rstrip()
+            out.append(line + comment)
+        return "\n".join(out)
 
-    def todebug(self, tag, code):
-        """If debugging, prints a debug message."""
-        if self.indebug():
-            self.tracing.show("["+str(tag)+"] "+ascii(code))
+    def linenumber_repl(self, inputstring, linenumbers=None, careful=True, **kwargs):
+        """Adds in linenumbers."""
+        if self.linenumbers:
+            if linenumbers is None:
+                linenumbers = True
+            out = []
+            ln = 1
+            fix = False
+            for line in inputstring.splitlines():
+                try:
+                    if line.endswith(lnwrapper):
+                        line, index = line[:-1].rsplit("#", 1)
+                        ln = self.get_ref(index)
+                        if not isinstance(ln, int):
+                            raise CoconutException("invalid reference for a linenumber", ln)
+                        line = line.rstrip()
+                        fix = True
+                    elif fix:
+                        ln += 1
+                        fix = False
+                    if linenumbers and line and not line.lstrip().startswith("#"):
+                        if self.minify:
+                            line += self.wrap_comment(str(ln))
+                        else:
+                            line += self.wrap_comment("line "+str(ln))
+                except CoconutException:
+                    if careful:
+                        raise
+                    fix = False
+                out.append(line)
+            return "\n".join(out)
+        elif linenumbers:
+            raise CoconutException("linenumbers must be enabled to pass it as an argument")
+        else:
+            return inputstring
 
-    def warn(self, warning):
-        """Displays a warning."""
-        try:
-            raise warning
-        except CoconutWarning as err:
-            printerr(format_error(CoconutWarning, err))
+    def passthrough_repl(self, inputstring, careful=True, **kwargs):
+        """Adds back passthroughs."""
+        out = []
+        index = None
+        for x in range(len(inputstring)+1):
+            c = inputstring[x] if x != len(inputstring) else None
+            try:
+                if index is not None:
+                    if c is not None and c in nums:
+                        index += c
+                    elif c == unwrapper and index:
+                        ref = self.get_ref(index)
+                        if not isinstance(ref, str):
+                            raise CoconutException("invalid reference for a passthrough", ref)
+                        out.append(ref)
+                        index = None
+                    elif c != "\\" or index:
+                        out.append("\\" + index)
+                        if c is not None:
+                            out.append(c)
+                        index = None
+                elif c is not None:
+                    if c == "\\":
+                        index = ""
+                    else:
+                        out.append(c)
+            except CoconutException:
+                if careful:
+                    raise
+                if index is not None:
+                    out.append(index)
+                    index = None
+                out.append(c)
+        return "".join(out)
 
-    def pre(self, inputstring, **kwargs):
-        """Performs pre-processing."""
-        out = str(inputstring)
-        for proc in self.preprocs:
-            out = proc(out, **kwargs)
-            self.todebug(proc.__name__, out)
-        self.todebug("skips", list(sorted(self.skips)))
-        return out
+    def str_repl(self, inputstring, careful=True, **kwargs):
+        """Adds back strings."""
+        out = []
+        comment = None
+        string = None
+        for x in range(len(inputstring)+1):
+            c = inputstring[x] if x != len(inputstring) else None
+            try:
+                if comment is not None:
+                    if c is not None and c in nums:
+                        comment += c
+                    elif c == unwrapper and comment:
+                        ref = self.get_ref(comment)
+                        if not isinstance(ref, str):
+                            raise CoconutException("invalid reference for a comment", ref)
+                        if out and not out[-1].endswith("\n"):
+                            out.append(" ")
+                        out.append("#" + ref)
+                        comment = None
+                    else:
+                        raise CoconutException("invalid comment marker in", line(x, inputstring))
+                elif string is not None:
+                    if c is not None and c in nums:
+                        string += c
+                    elif c == unwrapper and string:
+                        ref = self.get_ref(string)
+                        if not isinstance(ref, tuple):
+                            raise CoconutException("invalid reference for a str", ref)
+                        text, strchar, multiline = ref
+                        if multiline:
+                            out.append(strchar*3 + text + strchar*3)
+                        else:
+                            out.append(strchar + text + strchar)
+                        string = None
+                    else:
+                        raise CoconutException("invalid string marker in", line(x, inputstring))
+                elif c is not None:
+                    if c == "#":
+                        comment = ""
+                    elif c == strwrapper:
+                        string = ""
+                    else:
+                        out.append(c)
+            except CoconutException:
+                if careful:
+                    raise
+                if comment is not None:
+                    out.append(comment)
+                    comment = None
+                if string is not None:
+                    out.append(string)
+                    string = None
+                out.append(c)
+        return "".join(out)
 
-    def reind_proc(self, inputstring, strip=True, **kwargs):
-        """Reformats indentation."""
-        out = inputstring
-        if strip:
-            out = out.strip()
-        out = self.reindent(out)
-        if strip:
-            out = out.strip()
-        return out
+    def repl_proc(self, inputstring, **kwargs):
+        """Processes using replprocs."""
+        for repl in self.replprocs:
+            inputstring = repl(inputstring, **kwargs)
+        return inputstring
 
     def header_proc(self, inputstring, header="file", initial="initial", usehash=None, **kwargs):
         """Adds the header."""
-        return getheader(initial, self.version, usehash) + self.docstring + getheader(header, self.version) + inputstring
-
-    def headers(self, header, usehash=None):
-        """Gets a polished header."""
-        return self.polish(getheader(header, self.version, usehash))
+        pre_header = getheader(initial, self.target, usehash)
+        main_header = getheader(header, self.target)
+        if self.minify:
+            main_header = minify(main_header)
+        return pre_header + self.docstring + main_header + inputstring
 
     def polish(self, inputstring, **kwargs):
         """Does final polishing touches."""
-        return linebreak.join(inputstring.rstrip().splitlines()) + linebreak
-
-    def post(self, tokens, **kwargs):
-        """Performs post-processing."""
-        if len(tokens) == 1:
-            out = tokens[0]
-            for proc in self.postprocs:
-                out = proc(out, **kwargs)
-                self.todebug(proc.__name__, out)
-            return out
-        else:
-            raise CoconutException("multiple tokens leftover", tokens)
+        return "\n".join(inputstring.rstrip().splitlines()) + "\n"
 
     def autopep8(self, arglist=[]):
         """Enables autopep8 integration."""
         import autopep8
-        args = autopep8.parse_args([""]+arglist)
+        args = autopep8.parse_args(["autopep8"]+arglist)
         def pep8_fixer(code, **kwargs):
             """Automatic PEP8 fixer."""
             return autopep8.fix_code(code, options=args)
         self.postprocs.append(pep8_fixer)
         self.using_autopep8 = True
 
-    def string_repl(self, tokens):
-        """Replaces string references."""
-        if len(tokens) == 1:
-            ref = self.refs[int(tokens[0])]
-            if isinstance(ref, tuple):
-                string, strchar, multiline = ref
-                if multiline:
-                    string = strchar*3+string+strchar*3
-                else:
-                    string = strchar+string+strchar
-                return string
-            else:
-                raise CoconutException("string marker points to comment/passthrough")
-        else:
-            raise CoconutException("invalid string marker", tokens)
+#-----------------------------------------------------------------------------------------------------------------------
+# PARSER HANDLERS:
+#-----------------------------------------------------------------------------------------------------------------------
 
-    def set_docstring(self, tokens):
-        """Sets the docstring."""
-        if len(tokens) == 2:
-            self.docstring = self.string_repl([tokens[0]]) + linebreak*2
-            return tokens[1]
+    def yield_from_handle(self, tokens):
+        """Processes Python 3.3 yield from."""
+        if len(tokens) != 1:
+            raise CoconutException("invalid yield from tokens", tokens)
+        elif self.target_info() < (3, 3):
+            return (yield_from_var + " = " + tokens[0]
+                + "\nfor " + yield_item_var + " in " + yield_from_var + ":\n"
+                + openindent + "yield " + yield_item_var + "\n" + closeindent)
         else:
-            raise CoconutException("invalid docstring tokens", tokens)
+            return "yield from " + tokens[0]
 
-    def comment_repl(self, tokens):
-        """Replaces comment references."""
-        if len(tokens) == 1:
-            ref = self.refs[int(tokens[0])]
-            if isinstance(ref, tuple):
-                raise CoconutException("comment marker points to string")
-            else:
-                return " #"+ref
-        else:
-            raise CoconutException("invalid comment marker", tokens)
+    def endline_handle(self, original, location, tokens):
+        """Inserts line number comments when in linenumbers mode."""
+        if len(tokens) != 1:
+            raise CoconutException("invalid endline tokens", tokens)
+        out = tokens[0]
+        if self.minify:
+            out = out[0]
+        if self.linenumbers:
+            out = self.wrap_linenumber(self.adjust(lineno(location, original))) + out
+        return out
 
-    def passthrough_repl(self, tokens):
-        """Replaces passthrough references."""
-        if len(tokens) == 1:
-            ref = self.refs[int(tokens[0])]
-            if isinstance(ref, tuple):
-                raise CoconutException("passthrough marker points to string")
-            else:
-                return ref
-        else:
-            raise CoconutException("invalid passthrough marker", tokens)
-
-    def item_repl(self, original, location, tokens):
+    def item_handle(self, original, location, tokens):
         """Processes items."""
         out = tokens.pop(0)
         for trailer in tokens:
@@ -1634,52 +1920,45 @@ class processor(object):
                 out += trailer
             elif len(trailer) == 1:
                 if trailer[0] == "$[]":
-                    out = islice_lambda(out)
+                    out = "_coconut.functools.partial(_coconut_igetitem, "+out+")"
                 elif trailer[0] == "$":
-                    out = "__coconut__.functools.partial(__coconut__.functools.partial, "+out+")"
+                    out = "_coconut.functools.partial(_coconut.functools.partial, "+out+")"
                 elif trailer[0] == "[]":
-                    out = "__coconut__.functools.partial(__coconut__.operator.__getitem__, "+out+")"
+                    out = "_coconut.functools.partial(_coconut.operator.__getitem__, "+out+")"
                 elif trailer[0] == ".":
-                    out = "__coconut__.functools.partial(__coconut__.getattr, "+out+")"
+                    out = "_coconut.functools.partial(_coconut.getattr, "+out+")"
                 elif trailer[0] == "$(":
-                    raise CoconutSyntaxError("a partial application argument is required",
-                                             original, location, self.adjust(lineno(location, original)))
+                    raise self.make_err(CoconutSyntaxError, "a partial application argument is required", original, location)
                 else:
                     raise CoconutException("invalid trailer symbol", trailer[0])
             elif len(trailer) == 2:
                 if trailer[0] == "$(":
-                    out = "__coconut__.functools.partial("+out+", "+trailer[1]+")"
-                elif trailer[0] == "$[" or trailer[0] == "$[=":
+                    out = "_coconut.functools.partial("+out+", "+trailer[1]+")"
+                elif trailer[0] == "$[":
                     if 0 < len(trailer[1]) <= 3:
                         args = []
                         for x in range(0, len(trailer[1])):
                             arg = trailer[1][x]
                             if not arg:
-                                if x == 0:
-                                    arg = "0"
-                                else:
-                                    arg = "None"
+                                arg = "None"
                             args.append(arg)
-                        if len(args) != 1:
-                            out = "__coconut__.itertools.islice(" + out
-                            for arg in args:
-                                out += ", "+arg
-                            out += ")"
-                        elif trailer[0] == "$[=":
-                            out = "next(__coconut__.itertools.islice("+out+", "+args[0]+", "+args[0]+" + 1))"
+                        out = "_coconut_igetitem(" + out
+                        if len(args) == 1:
+                            out += ", " + args[0]
                         else:
-                            out = islice_lambda(out) + "(" + args[0] + ")"
+                            out += ", _coconut.slice(" + ", ".join(args) + ")"
+                        out += ")"
                     else:
                         raise CoconutException("invalid iterator slice args", trailer[1])
                 elif trailer[0] == "..":
-                    out = "(lambda *args, **kwargs: "+out+"(("+trailer[1]+")(*args, **kwargs)))"
+                    out = "_coconut_compose("+out+", "+trailer[1]+")"
                 else:
                     raise CoconutException("invalid special trailer", trailer[0])
             else:
                 raise CoconutException("invalid trailer tokens", trailer)
         return out
 
-    def augassign_repl(self, tokens):
+    def augassign_handle(self, tokens):
         """Processes assignments."""
         if len(tokens) == 3:
             name, op, item = tokens
@@ -1695,9 +1974,9 @@ class processor(object):
             elif op == "..=":
                 out += name+" = (lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)))("+name+", ("+item+"))"
             elif op == "::=":
-                ichain_var = lazy_chain_var+"_"+str(self.ichain_count)
-                out += ichain_var+" = "+name+linebreak
-                out += name+" = __coconut__.itertools.chain.from_iterable("+lazy_list_proc([ichain_var, "("+item+")"])+")"
+                ichain_var = lazy_chain_var+"_"+str(self.ichain_count) # necessary to prevent a segfault caused by self-reference
+                out += ichain_var+" = "+name+"\n"
+                out += name+" = _coconut.itertools.chain.from_iterable("+lazy_list_handle([ichain_var, "("+item+")"])+")"
                 self.ichain_count += 1
             else:
                 out += name+" "+op+" "+item
@@ -1705,33 +1984,167 @@ class processor(object):
         else:
             raise CoconutException("invalid assignment tokens", tokens)
 
-    def classlist_repl(self, original, location, tokens):
+    def classlist_handle(self, original, location, tokens):
         """Processes class inheritance lists."""
         if len(tokens) == 0:
-            if self.version == "3":
+            if self.target.startswith("3"):
                 return ""
             else:
-                return "(__coconut__.object)"
+                return "(_coconut.object)"
         elif len(tokens) == 1 and len(tokens[0]) == 1:
-            if "names" in tokens[0]:
+            if "tests" in tokens[0]:
                 return "(" + tokens[0][0] + ")"
             elif "args" in tokens[0]:
-                if self.version == "3":
+                if self.target.startswith("3"):
                     return "(" + tokens[0][0] + ")"
                 else:
-                    raise CoconutTargetError("found Python 3 keyword class definition",
-                                             original, location, self.adjust(lineno(location, original)))
+                    raise self.make_err(CoconutTargetError, ("found Python 3 keyword class definition", "3"), original, location)
             else:
                 raise CoconutException("invalid inner classlist token", tokens[0])
         else:
             raise CoconutException("invalid classlist tokens", tokens)
+
+    def import_handle(self, original, location, tokens):
+        """Universalizes imports."""
+        if len(tokens) == 1:
+            imp_from, imports = None, tokens[0]
+        elif len(tokens) == 2:
+            imp_from, imports = tokens
+            if imp_from == "__future__":
+                raise self.make_err(CoconutSyntaxError, "illegal from __future__ import (Coconut does these automatically)", original, location)
+        else:
+            raise CoconutException("invalid import tokens", tokens)
+        importmap = [] # [((imp | old_imp, imp, version_check), impas), ...]
+        for imps in imports:
+            if len(imps) == 1:
+                imp, impas = imps[0], imps[0]
+            else:
+                imp, impas = imps
+            if imp_from is not None:
+                imp = imp_from + "./" + imp # marker for from ... import ...
+            old_imp = None
+            path = imp.split(".")
+            for i in reversed(range(1, len(path)+1)):
+                base, exts = ".".join(path[:i]), path[i:]
+                clean_base = base.replace("/", "")
+                if clean_base in new_to_old_stdlib:
+                    old_imp, version_check = new_to_old_stdlib[clean_base]
+                    if exts:
+                        if "/" in base:
+                            old_imp += "./"
+                        else:
+                            old_imp += "."
+                        old_imp += ".".join(exts)
+                    break
+            if old_imp is None:
+                paths = (imp,)
+            elif self.target.startswith("2"):
+                paths = (old_imp,)
+            elif not self.target or self.target_info() < version_check:
+                paths = (old_imp, imp, version_check)
+            else:
+                paths = (imp,)
+            importmap.append((paths, impas))
+        stmts = []
+        for paths, impas in importmap:
+            if len(paths) == 1:
+                more_stmts = gen_imports(paths[0], impas)
+                stmts.extend(more_stmts)
+            else:
+                first, second, version_check = paths
+                stmts.append("if _coconut_sys.version_info < " + str(version_check) + ":")
+                first_stmts = gen_imports(first, impas)
+                first_stmts[0] = openindent + first_stmts[0]
+                first_stmts[-1] += closeindent
+                stmts.extend(first_stmts)
+                stmts.append("else:")
+                second_stmts = gen_imports(second, impas)
+                second_stmts[0] = openindent + second_stmts[0]
+                second_stmts[-1] += closeindent
+                stmts.extend(second_stmts)
+        return "\n".join(stmts)
+
+    def complex_raise_stmt_handle(self, tokens):
+        """Processes Python 3 raise from statement."""
+        if len(tokens) != 2:
+            raise CoconutException("invalid raise from tokens", tokens)
+        elif self.target.startswith("3"):
+            return "raise " + tokens[0] + " from " + tokens[1]
+        else:
+            return (raise_from_var + " = " + tokens[0] + "\n"
+                + raise_from_var + ".__cause__ = " + tokens[1] + "\n"
+                + "raise " + raise_from_var)
+
+    def dict_comp_handle(self, original, location, tokens):
+        """Processes Python 2.7 dictionary comprehension."""
+        if len(tokens) != 3:
+            raise CoconutException("invalid dictionary comprehension tokens", tokens)
+        elif self.target.startswith("3"):
+            key, val, comp = tokens
+            return "{" + key + ": " + val + " " + comp + "}"
+        else:
+            key, val, comp = tokens
+            return "dict(((" + key + "), (" + val + ")) " + comp + ")"
+
+    def name_handle(self, original, location, tokens):
+        """Handles variable names."""
+        if len(tokens) != 1:
+            raise CoconutException("invalid name tokens", tokens)
+        elif tokens[0].startswith("_coconut"):
+            if self.strict:
+                raise self.make_err(CoconutStyleError, "found use of a reserved variable", original, location)
+            else:
+                self.warn(self.make_err(CoconutWarning, "found use of a reserved variable", original, location))
+            return tokens[0]
+        else:
+            return tokens[0]
+
+    def pattern_error(self, original, loc):
+        """Constructs a pattern-matching error message."""
+        base_line = clean(self.reformat(line(loc, original)))
+        line_wrap = self.wrap_str_of(base_line)
+        repr_wrap = self.wrap_str_of(ascii(base_line))
+        return ("if not " + match_check_var + ":\n" + openindent
+            + match_err_var + ' = _coconut_MatchError("pattern-matching failed for " '
+            + repr_wrap + ' " in " + _coconut.repr(_coconut.repr(' + match_to_var + ")))\n"
+            + match_err_var + ".pattern = " + line_wrap + "\n"
+            + match_err_var + ".value = " + match_to_var
+            + "\nraise " + match_err_var + "\n" + closeindent)
+
+    def destructuring_stmt_handle(self, original, loc, tokens):
+        """Processes match assign blocks."""
+        if len(tokens) == 2:
+            matches, item = tokens
+            out = match_handle(original, loc, (matches, item, None))
+            out += self.pattern_error(original, loc)
+            return out
+        else:
+            raise CoconutException("invalid destructuring assignment tokens", tokens)
+
+    def name_match_funcdef_handle(self, original, loc, tokens):
+        """Processes match defs."""
+        if len(tokens) == 2:
+            func, matches = tokens
+            matching = matcher()
+            matching.match_sequence(("(", matches), match_to_var)
+            out = "def " + func + " (*" + match_to_var + "):\n" + openindent
+            out += match_check_var + " = False\n"
+            out += matching.out()
+            out += self.pattern_error(original, loc)
+            return out
+        else:
+            raise CoconutException("invalid match function definition tokens", tokens)
+
+    def op_match_funcdef_handle(self, original, loc, tokens):
+        """Processes infix match defs."""
+        return self.name_match_funcdef_handle(original, loc, get_infix_items(tokens, infix_error))
 
     def check_strict(self, name, original, location, tokens):
         """Checks that syntax meets --strict requirements."""
         if len(tokens) != 1:
             raise CoconutException("invalid "+name+" tokens", tokens)
         elif self.strict:
-            raise CoconutStyleError("found "+name, original, location, self.adjust(lineno(location, original)))
+            raise self.make_err(CoconutStyleError, "found "+name, original, location)
         else:
             return tokens[0]
 
@@ -1743,70 +2156,62 @@ class processor(object):
         """Checks for Python2-style unicode strings."""
         return self.check_strict("Python-2-style unicode string", original, location, tokens)
 
-    def check_py3(self, name, original, location, tokens):
-        """Checks for Python 3 syntax."""
+    def check_py(self, version, name, original, location, tokens):
+        """Checks for Python-version-specific syntax."""
         if len(tokens) != 1:
             raise CoconutException("invalid "+name+" tokens", tokens)
-        elif self.version != "3":
-            raise CoconutTargetError("found "+name, original, location, self.adjust(lineno(location, original)))
+        elif self.target_info() < target_info(version):
+            raise self.make_err(CoconutTargetError, ("found Python "+version+" " + name, version), original, location)
         else:
             return tokens[0]
 
     def typedef_check(self, original, location, tokens):
         """Checks for Python 3 type defs."""
-        return self.check_py3("Python 3 type annotation", original, location, tokens)
-
-    def yield_from_check(self, original, location, tokens):
-        """Checks for Python 3.3 yield from."""
-        return self.check_py3("Python 3.3 yield from", original, location, tokens)
-
-    def matrix_at_check(self, original, location, tokens):
-        """Checks for Python 3.5 matrix multiplication."""
-        return self.check_py3("Python 3.5 matrix multiplication", original, location, tokens)
+        return self.check_py("3", "type annotation", original, location, tokens)
 
     def nonlocal_check(self, original, location, tokens):
         """Checks for Python 3 nonlocal statement."""
-        return self.check_py3("Python 3 nonlocal statement", original, location, tokens)
-
-    def dict_comp_check(self, original, location, tokens):
-        """Checks for Python 3 dictionary comprehension."""
-        return self.check_py3("Python 3 dictionary comprehension", original, location, tokens)
+        return self.check_py("3", "nonlocal statement", original, location, tokens)
 
     def star_assign_item_check(self, original, location, tokens):
         """Checks for Python 3 starred assignment."""
-        return self.check_py3("Python 3 starred assignment", original, location, tokens)
+        return self.check_py("3", "starred assignment", original, location, tokens)
+
+    def matrix_at_check(self, original, location, tokens):
+        """Checks for Python 3.5 matrix multiplication."""
+        return self.check_py("35", "matrix multiplication", original, location, tokens)
 
     def async_stmt_check(self, original, location, tokens):
         """Checks for Python 3.5 async statement."""
-        return self.check_py3("Python 3.5 async statement", original, location, tokens)
+        return self.check_py("35", "async statement", original, location, tokens)
 
     def await_keyword_check(self, original, location, tokens):
-        """Checks for Python 3.5 await statement."""
-        return self.check_py3("Python 3.5 await expression", original, location, tokens)
+        """Checks for Python 3.5 await expression."""
+        return self.check_py("35", "await expression", original, location, tokens)
 
-    def complex_raise_stmt_check(self, original, location, tokens):
-        """Checks for Python 3 raise from statement."""
-        return self.check_py3("Python 3 raise from statement", original, location, tokens)
+    def f_string_check(self, original, location, tokens):
+        """Checks for Python 3.5 format strings."""
+        return self.check_py("36", "format string", original, location, tokens)
 
-    def set_literal_convert(self, tokens):
+    def set_literal_handle(self, tokens):
         """Converts set literals to the right form for the target Python."""
         if len(tokens) != 1:
             raise CoconutException("invalid set literal tokens", tokens)
         elif len(tokens[0]) != 1:
             raise CoconutException("invalid set literal item", tokens[0])
-        elif self.version == "3":
-            return "{" + tokens[0][0] + "}"
+        elif self.target_info() < (2, 7):
+            return "_coconut.set(" + set_to_tuple(tokens[0]) + ")"
         else:
-            return "__coconut__.set(" + set_to_tuple(tokens[0]) + ")"
+            return "{" + tokens[0][0] + "}"
 
-    def set_letter_literal_convert(self, tokens):
+    def set_letter_literal_handle(self, tokens):
         """Processes set literals."""
         if len(tokens) == 1:
             set_type = tokens[0]
             if set_type == "s":
-                return "__coconut__.set()"
+                return "_coconut.set()"
             elif set_type == "f":
-                return "__coconut__.frozenset()"
+                return "_coconut.frozenset()"
             else:
                 raise CoconutException("invalid set type", set_type)
         elif len(tokens) == 2:
@@ -1814,41 +2219,31 @@ class processor(object):
             if len(set_items) != 1:
                 raise CoconutException("invalid set literal item", tokens[0])
             elif set_type == "s":
-                if self.version == "3":
+                if self.target.startswith("3"):
                     return "{" + set_items[0] + "}"
                 else:
-                    return "__coconut__.set(" + set_to_tuple(set_items) + ")"
+                    return "_coconut.set(" + set_to_tuple(set_items) + ")"
             elif set_type == "f":
-                return "__coconut__.frozenset(" + set_to_tuple(set_items) + ")"
+                return "_coconut.frozenset(" + set_to_tuple(set_items) + ")"
             else:
                 raise CoconutException("invalid set type", set_type)
         else:
             raise CoconutException("invalid set literal tokens", tokens)
-
-    def parse(self, inputstring, parser, preargs, postargs):
-        """Uses the parser to parse the inputstring."""
-        try:
-            out = self.post(parser.parseString(self.pre(inputstring, **preargs)), **postargs)
-        except ParseBaseException as err:
-            raise CoconutParseError(err.line, err.col, self.adjust(err.lineno))
-        finally:
-            self.clean()
-        return out
 
 #-----------------------------------------------------------------------------------------------------------------------
 # GRAMMAR:
 #-----------------------------------------------------------------------------------------------------------------------
 
     comma = Literal(",")
-    dot = ~Literal("..")+Literal(".")
+    unsafe_dot = Literal(".")
+    dot = ~Literal("..")+unsafe_dot
     dubstar = Literal("**")
     star = ~dubstar+Literal("*")
-    lparen = Literal("(")
-    rparen = Literal(")")
     at = Literal("@")
     arrow = fixto(Literal("->") | Literal("\u2192"), "->")
     dubcolon = Literal("::")
-    colon = ~dubcolon+Literal(":")
+    unsafe_colon = Literal(":")
+    colon = ~dubcolon+unsafe_colon
     semicolon = Literal(";")
     eq = Literal("==")
     equals = ~eq+Literal("=")
@@ -1856,11 +2251,12 @@ class processor(object):
     rbrack = Literal("]")
     lbrace = Literal("{")
     rbrace = Literal("}")
-    lbanana = Literal("(|")
+    lbanana = ~Literal("(|)")+~Literal("(|>)")+~Literal("(|*>)")+Literal("(|")
     rbanana = Literal("|)")
+    lparen = ~lbanana+Literal("(")
+    rparen = ~rbanana+Literal(")")
     plus = Literal("+")
-    minus = Literal("-")
-    bang = fixto(Literal("!") | Literal("\xac"), "!")
+    minus = ~Literal("->")+Literal("-")
     dubslash = Literal("//")
     slash = ~dubslash+Literal("/")
     pipeline = fixto(Literal("|>") | Literal("\u21a6"), "|>")
@@ -1869,14 +2265,14 @@ class processor(object):
     backstarpipe = fixto(Literal("<*|") | Literal("\u21a4*"), "<*|")
     amp = fixto(Literal("&") | Literal("\u2227") | Literal("\u2229"), "&")
     caret = fixto(Literal("^") | Literal("\u22bb") | Literal("\u2295"), "^")
-    bar = fixto(Literal("|") | Literal("\u2228") | Literal("\u222a"), "|")
+    bar = fixto(~Literal("|>")+~Literal("|*>")+Literal("|") | Literal("\u2228") | Literal("\u222a"), "|")
     percent = Literal("%")
     dotdot = ~Literal("...")+Literal("..")
     dollar = Literal("$")
     ellipses = fixto(Literal("...") | Literal("\u2026"), "...")
     lshift = fixto(Literal("<<") | Literal("\xab"), "<<")
     rshift = fixto(Literal(">>") | Literal("\xbb"), ">>")
-    tilde = fixto(Literal("~") | Literal("\xac"), "~")
+    tilde = fixto(Literal("~") | ~Literal("\xac=")+Literal("\xac"), "~")
     underscore = Literal("_")
     pound = Literal("#")
     backtick = Literal("`")
@@ -1887,7 +2283,7 @@ class processor(object):
     gt = ~Literal(">>")+~Literal(">=")+Literal(">")
     le = fixto(Literal("<=") | Literal("\u2264"), "<=")
     ge = fixto(Literal(">=") | Literal("\u2265"), ">=")
-    ne = fixto(Literal("!=") | Literal("\u2260"), "!=")
+    ne = fixto(Literal("!=") | Literal("\xac=") | Literal("\u2260"), "!=")
 
     mul_star = fixto(star | Literal("\u22c5"), "*")
     exp_dubstar = fixto(dubstar | Literal("\u2191"), "**")
@@ -1895,61 +2291,62 @@ class processor(object):
     sub_minus = fixto(minus | Literal("\u2212"), "-")
     div_slash = fixto(slash | Literal("\xf7")+~slash, "/")
     div_dubslash = fixto(dubslash | Combine(Literal("\xf7")+slash), "//")
-    matrix_at = at | Literal("\xd7")
-    matrix_at_ref = Forward()
+    matrix_at_ref = at | Literal("\xd7")
+    matrix_at = Forward()
 
-    name = Regex(r"(?![0-9])\w+")
-    for k in keywords + const_vars + reserved_vars:
-        name = ~Keyword(k) + name
+    name = Forward()
+    name_ref = Regex(r"(?![0-9])\w+")
+    for k in keywords + const_vars:
+        name_ref = ~Keyword(k) + name_ref
     for k in reserved_vars:
-        name |= fixto(backslash + Keyword(k), k)
+        name_ref |= backslash.suppress() + Keyword(k)
+    name_ref = condense(name_ref)
     dotted_name = condense(name + ZeroOrMore(dot + name))
 
-    integer = Word(nums)
-    binint = Word("01")
-    octint = Word("01234567")
-    hexint = Word(hexnums)
-    anyint = Word(nums, alphanums)
+    integer = Combine(Word(nums) + ZeroOrMore(underscore.suppress() + Word(nums)))
+    binint = Combine(Word("01") + ZeroOrMore(underscore.suppress() + Word("01")))
+    octint = Combine(Word("01234567") + ZeroOrMore(underscore.suppress() + Word("01234567")))
+    hexint = Combine(Word(hexnums) + ZeroOrMore(underscore.suppress() + Word(hexnums)))
 
     basenum = Combine(integer + dot + Optional(integer) | Optional(integer) + dot + integer) | integer
     sci_e = Combine(CaselessLiteral("e") + Optional(plus | neg_minus))
     numitem = Combine(basenum + sci_e + integer) | basenum
     complex_i = CaselessLiteral("j") | fixto(CaselessLiteral("i"), "j")
     complex_num = Combine(numitem + complex_i)
+    bin_num = Combine(CaselessLiteral("0b") + Optional(underscore.suppress()) + binint)
+    oct_num = Combine(CaselessLiteral("0o") + Optional(underscore.suppress()) + octint)
+    hex_num = Combine(CaselessLiteral("0x") + Optional(underscore.suppress()) + hexint)
+    number = bin_num | oct_num | hex_num | complex_num | numitem
 
-    number = (attach(Combine(integer + underscore + anyint), anyint_proc)
-              | Combine(CaselessLiteral("0b") + binint)
-              | Combine(CaselessLiteral("0o") + octint)
-              | Combine(CaselessLiteral("0x") + hexint)
-              | complex_num
-              | numitem
-              )
+    moduledoc_item = Forward()
+    unwrap = Literal(unwrapper)
+    string_item = Combine(Literal(strwrapper) + integer + unwrap)
+    comment = Combine(pound + integer + unwrap)
+    passthrough = Combine(backslash + integer + unwrap)
+    passthrough_block = Combine(fixto(dubbackslash, "\\", copy=True) + integer + unwrap)
 
-    string_ref = Forward()
-    moduledoc = Forward()
-    comment = Forward()
-    passthrough = Forward()
-    passthrough_block = Forward()
-
-    string_marker = Combine(Literal('"').suppress() + integer + Literal('"').suppress())
-    comment_marker = Combine(pound.suppress() + integer)
-    passthrough_marker = Combine(backslash.suppress() + integer)
-    passthrough_block_marker = Combine(dubbackslash.suppress() + integer)
-
-    bit_b = Optional(CaselessLiteral("b"))
-    raw_r = Optional(CaselessLiteral("r"))
-    b_string = Combine((bit_b + raw_r | raw_r + bit_b) + string_ref)
-    unicode_u = CaselessLiteral("u").suppress()
-    u_string = Combine((unicode_u + raw_r | raw_r + unicode_u) + string_ref)
-    u_string_ref = Forward()
-    string = b_string | u_string_ref
-
-    lineitem = Combine(Optional(comment) + Literal(linebreak))
+    endline = Forward()
+    endline_ref = condense(OneOrMore(Literal("\n")))
+    lineitem = Combine(Optional(comment) + endline)
     newline = condense(OneOrMore(lineitem))
-    startmarker = StringStart() + condense(ZeroOrMore(lineitem) + Optional(moduledoc))
-    endmarker = StringEnd()
+    start_marker = StringStart()
+    moduledoc_marker = condense(ZeroOrMore(lineitem) - Optional(moduledoc_item))
+    end_marker = StringEnd()
     indent = Literal(openindent)
     dedent = Literal(closeindent)
+
+    u_string = Forward()
+    f_string = Forward()
+    bit_b = Optional(CaselessLiteral("b"))
+    raw_r = Optional(CaselessLiteral("r"))
+    b_string = Combine((bit_b + raw_r | raw_r + bit_b) + string_item)
+    unicode_u = CaselessLiteral("u").suppress()
+    u_string_ref = Combine((unicode_u + raw_r | raw_r + unicode_u) + string_item)
+    format_f = CaselessLiteral("f")
+    f_string_ref = Combine((format_f + raw_r | raw_r + format_f) + string_item)
+    string = trace(b_string | u_string | f_string, "string")
+    moduledoc = string + newline
+    docstring = condense(moduledoc, copy=True)
 
     augassign = (
         Combine(pipeline + equals)
@@ -1970,7 +2367,7 @@ class processor(object):
         | Combine(caret + equals)
         | Combine(lshift + equals)
         | Combine(rshift + equals)
-        | Combine(matrix_at_ref + equals)
+        | Combine(matrix_at + equals)
         )
 
     comp_op = (le | ge | ne | lt | gt | eq
@@ -1983,91 +2380,92 @@ class processor(object):
     test = Forward()
     expr = Forward()
     comp_for = Forward()
-
-    vardef = name
-    typedef = condense(vardef + colon + test)
-    typedef_ref = Forward()
-    tfpdef = typedef_ref | vardef
-    callarg = test
-    default = Optional(condense(equals + test))
-
-    argslist = Optional(itemlist(condense(dubstar + tfpdef | star + tfpdef | tfpdef + default), comma))
-    varargslist_req = itemlist(condense(dubstar + vardef | star + vardef | vardef + default), comma)
-    varargslist = Optional(varargslist_req)
-    callargslist = Optional(itemlist(condense(dubstar + callarg | star + callarg | callarg + default), comma))
-
-    parameters = condense(lparen + argslist + rparen)
+    test_nochain = Forward()
+    test_nocond = Forward()
 
     testlist = itemlist(test, comma)
     multi_testlist = addspace(OneOrMore(condense(test + comma)) + Optional(test))
 
-    dict_comp_ref = Forward()
-    yield_from = addspace(Keyword("from") + test)
-    yield_from_ref = Forward()
-    yield_arg = yield_from_ref | testlist
-    yield_expr = addspace(Keyword("yield") + Optional(yield_arg))
-    dict_comp = addspace(condense(test + colon) + test + comp_for)
-    dict_item = addspace(itemlist(addspace(condense(test + colon) + test), comma))
-    dictmaker = dict_comp_ref | dict_item
+    yield_from = Forward()
+    dict_comp = Forward()
+    yield_classic = addspace(Keyword("yield") + testlist)
+    yield_from_ref = Keyword("yield").suppress() + Keyword("from").suppress() + test
+    yield_expr = yield_from | yield_classic
+    dict_comp_ref = lbrace.suppress() + test + colon.suppress() + test + comp_for + rbrace.suppress()
+    dict_item = condense(lbrace + Optional(itemlist(addspace(condense(test + colon) + test), comma)) + rbrace)
     test_expr = yield_expr | testlist
 
-    op_atom = condense(
-        lparen + (
-            fixto(pipeline, "lambda x, f: f(x)")
-            | fixto(starpipe, "lambda xs, f: f(*xs)")
-            | fixto(backpipe, "lambda f, x: f(x)")
-            | fixto(backstarpipe, "lambda f, xs: f(*xs)")
-            | fixto(dotdot, "lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs))")
-            | fixto(Keyword("and"), "lambda a, b: a and b")
-            | fixto(Keyword("or"), "lambda a, b: a or b")
-            | fixto(minus, "lambda *args: __coconut__.operator.__neg__(*args) if len(args) < 2 else __coconut__.operator.__sub__(*args)")
-        ) + rparen | lparen.suppress() + (
-            fixto(dot, "__coconut__.getattr")
-            | fixto(dubcolon, "__coconut__.itertools.chain")
-            | fixto(dollar, "__coconut__.functools.partial")
-            | fixto(exp_dubstar, "__coconut__.operator.__pow__")
-            | fixto(mul_star, "__coconut__.operator.__mul__")
-            | fixto(div_dubslash, "__coconut__.operator.__floordiv__")
-            | fixto(div_slash, "__coconut__.operator.__truediv__")
-            | fixto(percent, "__coconut__.operator.__mod__")
-            | fixto(plus, "__coconut__.operator.__add__")
-            | fixto(amp, "__coconut__.operator.__and__")
-            | fixto(caret, "__coconut__.operator.__xor__")
-            | fixto(bar, "__coconut__.operator.__or__")
-            | fixto(lshift, "__coconut__.operator.__lshift__")
-            | fixto(rshift, "__coconut__.operator.__rshift__")
-            | fixto(lt, "__coconut__.operator.__lt__")
-            | fixto(gt, "__coconut__.operator.__gt__")
-            | fixto(eq, "__coconut__.operator.__eq__")
-            | fixto(le, "__coconut__.operator.__le__")
-            | fixto(ge, "__coconut__.operator.__ge__")
-            | fixto(ne, "__coconut__.operator.__ne__")
-            | fixto(tilde, "__coconut__.operator.__inv__")
-            | fixto(matrix_at_ref, "__coconut__.operator.__matmul__")
-            | fixto(Keyword("not"), "__coconut__.operator.__not__")
-            | fixto(Keyword("is"), "__coconut__.operator.is_")
-            | fixto(Keyword("in"), "__coconut__.operator.__contains__")
-        ) + rparen.suppress()
+    op_item = (
+        fixto(pipeline, "_coconut_pipe", copy=True)
+        | fixto(starpipe, "_coconut_starpipe", copy=True)
+        | fixto(backpipe, "_coconut_backpipe", copy=True)
+        | fixto(backstarpipe, "_coconut_backstarpipe", copy=True)
+        | fixto(dotdot, "_coconut_compose", copy=True)
+        | fixto(Keyword("and"), "_coconut_bool_and", copy=True)
+        | fixto(Keyword("or"), "_coconut_bool_or", copy=True)
+        | fixto(minus, "_coconut_minus", copy=True)
+        | fixto(dot, "_coconut.getattr", copy=True)
+        | fixto(dubcolon, "_coconut.itertools.chain", copy=True)
+        | fixto(dollar, "_coconut.functools.partial", copy=True)
+        | fixto(exp_dubstar, "_coconut.operator.__pow__", copy=True)
+        | fixto(mul_star, "_coconut.operator.__mul__", copy=True)
+        | fixto(div_dubslash, "_coconut.operator.__floordiv__", copy=True)
+        | fixto(div_slash, "_coconut.operator.__truediv__", copy=True)
+        | fixto(percent, "_coconut.operator.__mod__", copy=True)
+        | fixto(plus, "_coconut.operator.__add__", copy=True)
+        | fixto(amp, "_coconut.operator.__and__", copy=True)
+        | fixto(caret, "_coconut.operator.__xor__", copy=True)
+        | fixto(bar, "_coconut.operator.__or__", copy=True)
+        | fixto(lshift, "_coconut.operator.__lshift__", copy=True)
+        | fixto(rshift, "_coconut.operator.__rshift__", copy=True)
+        | fixto(lt, "_coconut.operator.__lt__", copy=True)
+        | fixto(gt, "_coconut.operator.__gt__", copy=True)
+        | fixto(eq, "_coconut.operator.__eq__", copy=True)
+        | fixto(le, "_coconut.operator.__le__", copy=True)
+        | fixto(ge, "_coconut.operator.__ge__", copy=True)
+        | fixto(ne, "_coconut.operator.__ne__", copy=True)
+        | fixto(tilde, "_coconut.operator.__inv__", copy=True)
+        | fixto(matrix_at, "_coconut.operator.__matmul__", copy=True)
+        | fixto(Keyword("not"), "_coconut.operator.__not__", copy=True)
+        | fixto(Keyword("is"), "_coconut.operator.is_", copy=True)
+        | fixto(Keyword("in"), "_coconut.operator.__contains__", copy=True)
     )
+    op_atom = lparen.suppress() + op_item + rparen.suppress()
+
+    typedef = Forward()
+    typedef_ref = addspace(condense(name + colon) + test)
+    tfpdef = typedef | name
+    callarg = test
+    default = Optional(condense(equals + test))
+
+    argslist = Optional(itemlist(condense(dubstar + tfpdef | star + tfpdef | tfpdef + default), comma))
+    varargslist = Optional(itemlist(condense(dubstar + name | star + name | name + default), comma))
+    callargslist = Optional(
+        attach(addspace(test + comp_for), add_paren_handle)
+        | itemlist(condense(dubstar + callarg | star + callarg | callarg + default), comma)
+        | op_item
+        )
+    parameters = condense(lparen + argslist + rparen)
 
     testlist_comp = addspace(test + comp_for) | testlist
+    list_comp = condense(lbrack + Optional(testlist_comp) + rbrack)
     func_atom = name | op_atom | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
     keyword_atom = Keyword(const_vars[0])
     for x in range(1, len(const_vars)):
         keyword_atom |= Keyword(const_vars[x])
     string_atom = addspace(OneOrMore(string))
     passthrough_atom = addspace(OneOrMore(passthrough))
-    attr_atom = attach(condense(dot.suppress() + name), attr_proc)
-    set_literal_ref = Forward()
-    set_letter_literal_ref = Forward()
+    attr_atom = attach(condense(dot.suppress() + name), attr_handle)
+    set_literal = Forward()
+    set_letter_literal = Forward()
     set_s = fixto(CaselessLiteral("s"), "s")
     set_f = fixto(CaselessLiteral("f"), "f")
     set_letter = set_s | set_f
-    setmaker = Group(addspace(test + comp_for)("comp") | multi_testlist("list") | test("single"))
-    set_literal = lbrace.suppress() + setmaker + rbrace.suppress()
-    set_letter_literal = set_letter + lbrace.suppress() + Optional(setmaker) + rbrace.suppress()
+    setmaker = Group(addspace(test + comp_for)("comp") | multi_testlist("list") | test("test"))
+    set_literal_ref = lbrace.suppress() + setmaker + rbrace.suppress()
+    set_letter_literal_ref = set_letter + lbrace.suppress() + Optional(setmaker) + rbrace.suppress()
     lazy_items = Optional(test + ZeroOrMore(comma.suppress() + test) + Optional(comma.suppress()))
-    lazy_list = attach(lbanana.suppress() + lazy_items + rbanana.suppress(), lazy_list_proc)
+    lazy_list = attach(lbanana.suppress() + lazy_items + rbanana.suppress(), lazy_list_handle)
     const_atom = (
         keyword_atom
         | number
@@ -2077,60 +2475,61 @@ class processor(object):
         const_atom
         | ellipses
         | attr_atom
-        | condense(lbrack + Optional(testlist_comp) + rbrack)
-        | condense(lbrace + Optional(dictmaker) + rbrace)
-        | set_literal_ref
-        | set_letter_literal_ref
+        | list_comp
+        | dict_comp
+        | dict_item
+        | set_literal
+        | set_letter_literal
         | lazy_list
         )
-    atom = (
+    atom = trace(
         known_atom
         | passthrough_atom
         | func_atom
-        )
+        , "atom")
 
-    slicetest = Optional(test)
-    sliceop = condense(colon + slicetest)
+    slicetest = Optional(test_nochain)
+    sliceop = condense(unsafe_colon + slicetest)
     subscript = condense(slicetest + sliceop + Optional(sliceop)) | test
     subscriptlist = itemlist(subscript, comma)
-    slicetestgroup = Optional(test, default="")
-    sliceopgroup = colon.suppress() + slicetestgroup
+    slicetestgroup = Optional(test_nochain, default="")
+    sliceopgroup = unsafe_colon.suppress() + slicetestgroup
     subscriptgroup = Group(slicetestgroup + sliceopgroup + Optional(sliceopgroup) | test)
-    known_subscriptgroup = Group(known_atom)
     simple_trailer = condense(lbrack + subscriptlist + rbrack) | condense(dot + name)
-    trailer = (
+    complex_trailer = (
         Group(condense(dollar + lparen) + callargslist + rparen.suppress())
         | condense(lparen + callargslist + rparen)
         | Group(dotdot + func_atom)
-        | Group(fixto(dollar + lbrack, "$[=") + known_subscriptgroup + rbrack.suppress())
         | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())
         | Group(condense(dollar + lbrack + rbrack))
         | Group(dollar)
-        | simple_trailer
         | Group(condense(lbrack + rbrack))
         | Group(dot)
         )
+    trailer = simple_trailer | complex_trailer
+
+    atom_item = Forward()
+    atom_item_ref = atom + ZeroOrMore(trailer)
+    simple_assign = Forward()
+    simple_assign_ref = (name | passthrough_atom) + ZeroOrMore(ZeroOrMore(~simple_trailer+complex_trailer) + OneOrMore(simple_trailer))
 
     assignlist = Forward()
-    star_assign_item_ref = Forward()
-    simple_assign = condense(name + ZeroOrMore(simple_trailer))
+    star_assign_item = Forward()
+    simple_assignlist = parenwrap(lparen, itemlist(simple_assign, comma), rparen)
     base_assign_item = condense(simple_assign | lparen + assignlist + rparen | lbrack + assignlist + rbrack)
-    star_assign_item = condense(star + base_assign_item)
-    assign_item = star_assign_item_ref | base_assign_item
+    star_assign_item_ref = condense(star + base_assign_item)
+    assign_item = star_assign_item | base_assign_item
     assignlist <<= itemlist(assign_item, comma)
 
-    atom_item_ref = Forward()
-    atom_item = atom + ZeroOrMore(trailer)
-
     factor = Forward()
-    await_keyword_ref = Forward()
-    await_keyword = Keyword("await")
-    power = trace(condense(addspace(Optional(await_keyword_ref) + atom_item_ref) + Optional(exp_dubstar + factor)), "power")
+    await_keyword = Forward()
+    await_keyword_ref = Keyword("await")
+    power = trace(condense(addspace(Optional(await_keyword) + atom_item) + Optional(exp_dubstar + factor)), "power")
     unary = plus | neg_minus | tilde
 
-    factor <<= trace(condense(unary + factor) | power, "factor")
+    factor <<= trace(condense(ZeroOrMore(unary) + power), "factor")
 
-    mulop = mul_star | div_dubslash | div_slash | percent | matrix_at_ref
+    mulop = mul_star | div_dubslash | div_slash | percent | matrix_at
     term = addspace(factor + ZeroOrMore(mulop + factor))
     arith = plus | sub_minus
     arith_expr = addspace(term + ZeroOrMore(arith + term))
@@ -2141,84 +2540,97 @@ class processor(object):
     xor_expr = addspace(and_expr + ZeroOrMore(caret + and_expr))
     or_expr = addspace(xor_expr + ZeroOrMore(bar + xor_expr))
 
-    chain_expr = attach(or_expr + ZeroOrMore(dubcolon.suppress() + or_expr), chain_proc)
+    chain_expr = attach(or_expr + ZeroOrMore(dubcolon.suppress() + or_expr), chain_handle)
 
     infix_expr = Forward()
     infix_op = condense(backtick.suppress() + chain_expr + backtick.suppress())
-    infix_item = attach(Group(Optional(chain_expr)) + infix_op + Group(Optional(infix_expr)), infix_proc)
+    infix_item = attach(Group(Optional(chain_expr)) + infix_op + Group(Optional(infix_expr)), infix_handle)
     infix_expr <<= infix_item | chain_expr
+    nochain_infix_expr = Forward()
+    nochain_infix_item = attach(Group(Optional(or_expr)) + infix_op + Group(Optional(nochain_infix_expr)), infix_handle)
+    nochain_infix_expr <<= nochain_infix_item | or_expr
 
     pipe_op = pipeline | starpipe | backpipe | backstarpipe
-    pipe_expr = attach(infix_expr + ZeroOrMore(pipe_op + infix_expr), pipe_proc)
+    pipe_expr = attach(infix_expr + ZeroOrMore(pipe_op + infix_expr), pipe_handle)
+    nochain_pipe_expr = attach(nochain_infix_expr + ZeroOrMore(pipe_op + nochain_infix_expr), pipe_handle)
 
     expr <<= trace(pipe_expr, "expr")
     comparison = addspace(expr + ZeroOrMore(comp_op + expr))
     not_test = addspace(ZeroOrMore(Keyword("not")) + comparison)
     and_test = addspace(not_test + ZeroOrMore(Keyword("and") + not_test))
     or_test = addspace(and_test + ZeroOrMore(Keyword("or") + and_test))
-    test_item = or_test
-    test_nocond = Forward()
+    test_item = trace(or_test, "test_item")
+    nochain_expr = trace(nochain_pipe_expr, "nochain_expr")
+    nochain_comparison = addspace(nochain_expr + ZeroOrMore(comp_op + nochain_expr))
+    nochain_not_test = addspace(ZeroOrMore(Keyword("not")) + nochain_comparison)
+    nochain_and_test = addspace(nochain_not_test + ZeroOrMore(Keyword("and") + nochain_not_test))
+    nochain_or_test = addspace(nochain_and_test + ZeroOrMore(Keyword("or") + nochain_and_test))
+    nochain_test_item = trace(nochain_or_test, "nochain_test_item")
+
+    classic_lambdef = Forward()
     classic_lambdef_params = parenwrap(lparen, varargslist, rparen)
     new_lambdef_params = lparen.suppress() + varargslist + rparen.suppress()
+    classic_lambdef_ref = addspace(Keyword("lambda") + condense(classic_lambdef_params + colon))
+    new_lambdef = attach(new_lambdef_params + arrow.suppress(), lambdef_handle)
+    lambdef = trace(addspace((classic_lambdef | new_lambdef) + test), "lambdef")
+    lambdef_nocond = trace(addspace((classic_lambdef | new_lambdef) + test_nocond), "lambdef_nocond")
+    lambdef_nochain = trace(addspace((classic_lambdef | new_lambdef) + test_nochain), "lambdef_nochain")
 
-    classic_lambdef_ref = Forward()
-    classic_lambdef = addspace(Keyword("lambda") + condense(classic_lambdef_params + colon) + test)
-    new_lambdef = attach(new_lambdef_params + arrow.suppress() + test, lambdef_proc)
-    lambdef = trace(classic_lambdef_ref | new_lambdef, "lambdef")
-
-    classic_lambdef_nocond_ref = Forward()
-    classic_lambdef_nocond = addspace(Keyword("lambda") + condense(classic_lambdef_params + colon) + test_nocond)
-    new_lambdef_nocond = attach(new_lambdef_params + arrow.suppress() + test_nocond, lambdef_proc)
-    lambdef_nocond = trace(classic_lambdef_nocond_ref | new_lambdef_nocond, "lambdef_nocond")
-
-    test <<= lambdef | trace(addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test)), "test")
-    test_nocond <<= lambdef_nocond | trace(test_item, "test_item")
+    test <<= lambdef | addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test))
+    test_nocond <<= lambdef_nocond | test_item
+    test_nochain <<= lambdef_nochain | addspace(nochain_test_item + Optional(Keyword("if") + nochain_test_item + Keyword("else") + test_nochain))
 
     simple_stmt = Forward()
     simple_compound_stmt = Forward()
     stmt = Forward()
     suite = Forward()
     base_suite = Forward()
-    classlist_ref = Forward()
+    classlist = Forward()
 
-    argument = condense(name + equals + test) | addspace(name + Optional(comp_for))
-    classlist = Optional(lparen.suppress() + Optional(Group(itemlist(name, comma)("names") ^ varargslist_req("args"))) + rparen.suppress())
-    classdef = condense(addspace(Keyword("class") + name) + classlist_ref + suite)
+    classlist_ref = Optional(
+        lparen.suppress() + rparen.suppress()
+        | Group(
+            lparen.suppress() + testlist("tests") + rparen.suppress()
+            | lparen.suppress() + callargslist("args") + rparen.suppress()
+            )
+        )
+    classdef = condense(addspace(Keyword("class") - name) + classlist + suite)
     comp_iter = Forward()
     comp_for <<= addspace(Keyword("for") + assignlist + Keyword("in") + test_item + Optional(comp_iter))
     comp_if = addspace(Keyword("if") + test_nocond + Optional(comp_iter))
     comp_iter <<= comp_for | comp_if
 
-    complex_raise_stmt_ref = Forward()
+    complex_raise_stmt = Forward()
     pass_stmt = Keyword("pass")
     break_stmt = Keyword("break")
     continue_stmt = Keyword("continue")
-    return_stmt = addspace(Keyword("return") + Optional(testlist))
+    return_stmt = addspace(Keyword("return") - Optional(testlist))
     simple_raise_stmt = addspace(Keyword("raise") + Optional(test))
-    complex_raise_stmt = addspace(simple_raise_stmt + Keyword("from") + test)
-    raise_stmt = simple_raise_stmt | complex_raise_stmt_ref
+    complex_raise_stmt_ref = Keyword("raise").suppress() + test + Keyword("from").suppress() - test
+    raise_stmt = complex_raise_stmt | simple_raise_stmt
     flow_stmt = break_stmt | continue_stmt | return_stmt | raise_stmt | yield_expr
 
-    dotted_as_name = addspace(dotted_name + Optional(Keyword("as") + name))
-    import_as_name = addspace(name + Optional(Keyword("as") + name))
-    import_as_names = itemlist(import_as_name, comma)
-    dotted_as_names = itemlist(dotted_as_name, comma)
-    import_name = addspace(Keyword("import") + parenwrap(lparen, dotted_as_names, rparen))
-    import_from = addspace(Keyword("from") + condense(ZeroOrMore(Literal(".")) + dotted_name | OneOrMore(Literal(".")))
-                   + Keyword("import") + (star | parenwrap(lparen, import_as_names, rparen)))
-    import_stmt = import_from | import_name
+    dotted_as_name = Group(dotted_name - Optional(Keyword("as").suppress() - name))
+    import_as_name = Group(name - Optional(Keyword("as").suppress() - name))
+    import_names = Group(parenwrap(lparen, tokenlist(dotted_as_name, comma), rparen, tokens=True))
+    import_from_names = Group(parenwrap(lparen, tokenlist(import_as_name, comma), rparen, tokens=True))
+    import_name = Keyword("import").suppress() - import_names
+    import_from = (Keyword("from").suppress()
+        - condense(ZeroOrMore(unsafe_dot) + dotted_name | OneOrMore(unsafe_dot))
+        - Keyword("import").suppress() - (Group(star) | import_from_names))
+    import_stmt = Forward()
+    import_stmt_ref = import_from | import_name
 
     namelist = parenwrap(lparen, itemlist(name, comma), rparen)
-    global_stmt = addspace(Keyword("global") + namelist)
-    nonlocal_stmt = addspace(Keyword("nonlocal") + namelist)
-    simple_assignlist = parenwrap(lparen, itemlist(simple_assign, comma), rparen)
-    del_stmt = addspace(Keyword("del") + simple_assignlist)
-    with_item = addspace(test + Optional(Keyword("as") + name))
+    global_stmt = addspace(Keyword("global") - namelist)
+    nonlocal_stmt_ref = addspace(Keyword("nonlocal") - namelist)
+    del_stmt = addspace(Keyword("del") - simple_assignlist)
+    with_item = addspace(test - Optional(Keyword("as") - name))
 
     match = Forward()
     matchlist_list = Group(Optional(tokenlist(match, comma)))
     matchlist_tuple = Group(Optional(match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress()) | match + comma.suppress()))
-    match_const = const_atom | condense(equals.suppress() + simple_assign)
+    match_const = const_atom | condense(equals.suppress() + atom_item)
     matchlist_set = Group(Optional(tokenlist(match_const, comma)))
     match_pair = Group(match_const + colon.suppress() + match)
     matchlist_dict = Group(Optional(tokenlist(match_pair, comma)))
@@ -2236,103 +2648,112 @@ class processor(object):
         | (match_tuple + plus.suppress() + name + plus.suppress() + match_tuple)("mseries")
         | ((match_list | match_tuple) + Optional(plus.suppress() + name))("series")
         | (name + plus.suppress() + (match_list | match_tuple))("rseries")
-        | (name + equals.suppress() + match)("assign")
         | (name + lparen.suppress() + matchlist_list + rparen.suppress())("data")
         | name("var")
         )
-    matchlist_name = name | lparen.suppress() + itemlist(name, comma) + rparen.suppress()
-    matchlist_is = base_match + Keyword("is").suppress() + matchlist_name
-    is_match = Group(matchlist_is("is")) | base_match
-    matchlist_and = is_match + OneOrMore(Keyword("and").suppress() + is_match)
-    and_match = Group(matchlist_and("and")) | is_match
+    matchlist_trailer = base_match + OneOrMore(Keyword("as") + name | Keyword("is") + atom_item)
+    as_match = Group(matchlist_trailer("trailer")) | base_match
+    matchlist_and = as_match + OneOrMore(Keyword("and").suppress() + as_match)
+    and_match = Group(matchlist_and("and")) | as_match
     matchlist_or = and_match + OneOrMore(Keyword("or").suppress() + and_match)
     or_match = Group(matchlist_or("or")) | and_match
     match <<= trace(or_match, "match")
 
-    else_suite = condense(suite | colon + trace(attach(simple_compound_stmt, else_proc), "else_suite"))
-    else_stmt = condense(Keyword("else") + else_suite)
+    else_suite = condense(colon + trace(attach(simple_compound_stmt, else_handle, copy=True), "else_suite")) | suite
+    else_stmt = condense(Keyword("else") - else_suite)
 
     full_suite = colon.suppress() + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
     full_match = trace(attach(
-        Keyword("match").suppress() + match + Keyword("in").suppress() + test + Optional(Keyword("if").suppress() + test) + full_suite
-        , match_proc), "full_match")
-    match_stmt = condense(full_match + Optional(else_stmt))
+        Keyword("match").suppress() + match + Keyword("in").suppress() - test - Optional(Keyword("if").suppress() - test) - full_suite
+        , match_handle), "full_match")
+    match_stmt = condense(full_match - Optional(else_stmt))
 
-    match_assign_stmt = trace(attach(
-        (Keyword("match").suppress() | ~(assignlist+equals)) + match + equals.suppress() + test_expr + newline.suppress()
-        , match_assign_proc), "match_assign_stmt")
+    destructuring_stmt = Forward()
+    destructuring_stmt_ref = match + equals.suppress() - test_expr - newline.suppress()
+    match_assign_stmt = Keyword("match").suppress() + destructuring_stmt
 
     case_match = trace(Group(
-        Keyword("match").suppress() + match + Optional(Keyword("if").suppress() + test) + full_suite
+        Keyword("match").suppress() - match - Optional(Keyword("if").suppress() - test) - full_suite
         ), "case_match")
     case_stmt = attach(
-        Keyword("case").suppress() + test + colon.suppress() + newline.suppress()
-        + indent.suppress() + Group(OneOrMore(case_match))
-        + dedent.suppress() + Optional(Keyword("else").suppress() + else_suite)
-        , case_proc)
+        Keyword("case").suppress() + test - colon.suppress() - newline.suppress()
+        - indent.suppress() - Group(OneOrMore(case_match))
+        - dedent.suppress() - Optional(Keyword("else").suppress() - else_suite)
+        , case_handle)
 
-    assert_stmt = addspace(Keyword("assert") + testlist)
-    if_stmt = condense(addspace(Keyword("if") + condense(test + suite))
-                       + ZeroOrMore(addspace(Keyword("elif") + condense(test + suite)))
-                       + Optional(else_stmt)
+    assert_stmt = addspace(Keyword("assert") - testlist)
+    if_stmt = condense(addspace(Keyword("if") - condense(test - suite))
+                       - ZeroOrMore(addspace(Keyword("elif") - condense(test - suite)))
+                       - Optional(else_stmt)
                        )
-    while_stmt = addspace(Keyword("while") + condense(test + suite + Optional(else_stmt)))
-    for_stmt = addspace(Keyword("for") + assignlist + Keyword("in") + condense(testlist + suite + Optional(else_stmt)))
-    except_clause = attach(Keyword("except").suppress() + testlist + Optional(Keyword("as").suppress() + name), except_proc)
-    try_stmt = condense(Keyword("try") + suite + (
-        Keyword("finally") + suite
+    while_stmt = addspace(Keyword("while") - condense(test - suite - Optional(else_stmt)))
+    for_stmt = addspace(Keyword("for") - assignlist - Keyword("in") - condense(testlist - suite - Optional(else_stmt)))
+    except_clause = attach(Keyword("except").suppress() + (
+            multi_testlist("list") | test("test")
+        ) - Optional(Keyword("as").suppress() - name), except_handle)
+    try_stmt = condense(Keyword("try") - suite + (
+        Keyword("finally") - suite
         | (
-            OneOrMore(except_clause + suite) + Optional(Keyword("except") + suite)
-            | Keyword("except") + suite
-          ) + Optional(else_stmt) + Optional(Keyword("finally") + suite)
+            OneOrMore(except_clause - suite) - Optional(Keyword("except") - suite)
+            | Keyword("except") - suite
+          ) - Optional(else_stmt) - Optional(Keyword("finally") - suite)
         ))
-    with_stmt = addspace(Keyword("with") + condense(itemlist(with_item, comma) + suite))
+    with_stmt = addspace(Keyword("with") - condense(itemlist(with_item, comma) - suite))
 
-    return_typedef_ref = Forward()
-    async_funcdef_ref = Forward()
-    async_block_ref = Forward()
+    return_typedef = Forward()
+    async_funcdef = Forward()
+    async_block = Forward()
     name_funcdef = condense(name + parameters)
-    op_funcdef_arg = condense(lparen.suppress() + tfpdef + Optional(default) + rparen.suppress())
+    op_funcdef_arg = name | condense(lparen.suppress() + tfpdef + Optional(default) + rparen.suppress())
     op_funcdef_name = backtick.suppress() + name + backtick.suppress()
-    op_funcdef = attach(Group(Optional(op_funcdef_arg)) + op_funcdef_name + Group(Optional(op_funcdef_arg)), op_funcdef_proc)
-    return_typedef = addspace(arrow + test)
-    base_funcdef = addspace((op_funcdef | name_funcdef) + Optional(return_typedef_ref))
+    op_funcdef = attach(Group(Optional(op_funcdef_arg)) + op_funcdef_name + Group(Optional(op_funcdef_arg)), op_funcdef_handle)
+    return_typedef_ref = addspace(arrow + test)
+    base_funcdef = addspace((op_funcdef | name_funcdef) + Optional(return_typedef))
     funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
-    math_funcdef = attach(Keyword("def").suppress() + base_funcdef + equals.suppress() + test_expr, func_proc) + newline
-    async_funcdef = addspace(Keyword("async") + (funcdef | math_funcdef))
-    async_block = addspace(Keyword("async") + (with_stmt | for_stmt))
+    math_funcdef = attach(Keyword("def").suppress() + base_funcdef + equals.suppress() - test_expr, func_handle) - newline
+    async_funcdef_ref = addspace(Keyword("async") + (funcdef | math_funcdef))
+    async_block_ref = addspace(Keyword("async") + (with_stmt | for_stmt))
 
-    async_match_funcdef_ref = Forward()
+    name_match_funcdef = Forward()
+    op_match_funcdef = Forward()
+    async_match_funcdef = Forward()
+    name_match_funcdef_ref = name + lparen.suppress() + matchlist_list + rparen.suppress()
     op_match_funcdef_arg = lparen.suppress() + match + rparen.suppress()
-    op_match_funcdef = attach(Group(Optional(op_match_funcdef_arg)) + op_funcdef_name + Group(Optional(op_match_funcdef_arg)), op_match_funcdef_proc)
-    name_match_funcdef = attach(name + lparen.suppress() + matchlist_list + rparen.suppress(), name_match_funcdef_proc)
+    op_match_funcdef_ref = Group(Optional(op_match_funcdef_arg)) + op_funcdef_name + Group(Optional(op_match_funcdef_arg))
     base_match_funcdef = Keyword("def").suppress() + (op_match_funcdef | name_match_funcdef)
-    full_match_funcdef = trace(attach(base_match_funcdef + full_suite, full_match_funcdef_proc), "base_match_funcdef")
+    full_match_funcdef = trace(attach(base_match_funcdef + full_suite, full_match_funcdef_handle), "base_match_funcdef")
     math_match_funcdef = attach(
-        Optional(Keyword("match").suppress()) + base_match_funcdef + equals.suppress() + test_expr
-        , match_func_proc) + newline
+        Optional(Keyword("match").suppress()) + base_match_funcdef + equals.suppress() - test_expr
+        , match_func_handle) - newline
     match_funcdef = Optional(Keyword("match").suppress()) + full_match_funcdef
-    async_match_funcdef = addspace(
+    async_match_funcdef_ref = addspace(
         (Optional(Keyword("match")).suppress() + Keyword("async") | Keyword("async") + Optional(Keyword("match")).suppress())
         + (full_match_funcdef | math_match_funcdef))
-    async_stmt = async_block_ref | async_funcdef_ref | async_match_funcdef
+    async_stmt = async_block | async_funcdef | async_match_funcdef_ref
 
     data_args = Optional(lparen.suppress() + Optional(itemlist(~underscore + name, comma)) + rparen.suppress())
-    datadef = condense(attach(Keyword("data").suppress() + name + data_args + full_suite, data_proc))
+    data_suite = colon.suppress() - Group(
+        (newline.suppress() + indent.suppress() + Optional(docstring) + Group(OneOrMore(stmt)) + dedent.suppress())("complex")
+        | (newline.suppress() + indent.suppress() + docstring + dedent.suppress() | docstring)("docstring")
+        | simple_stmt("simple"))
+    datadef = condense(attach(Keyword("data").suppress() + name - data_args - data_suite, data_handle))
 
-    decorators = attach(OneOrMore(at.suppress() + test + newline.suppress()), decorator_proc)
-    decorated = condense(decorators + (
+    simple_decorator = condense(dotted_name + Optional(lparen + callargslist + rparen))("simple")
+    complex_decorator = test("test")
+    decorators = attach(OneOrMore(at.suppress() - Group(simple_decorator ^ complex_decorator) - newline.suppress()), decorator_handle)
+    decoratable_stmt = (
         classdef
         | datadef
         | funcdef
+        | async_funcdef
+        | async_match_funcdef
         | match_funcdef
-        | async_funcdef_ref
-        | async_match_funcdef_ref
         | math_funcdef
         | math_match_funcdef
-        ))
+        )
+    decorated = condense(decorators + decoratable_stmt)
 
-    passthrough_stmt = condense(passthrough_block + (base_suite | newline))
+    passthrough_stmt = condense(passthrough_block - (base_suite | newline))
 
     simple_compound_stmt <<= (
         if_stmt
@@ -2342,50 +2763,49 @@ class processor(object):
         | passthrough_stmt
         )
     compound_stmt = trace(
-        simple_compound_stmt
+        decoratable_stmt
         | with_stmt
         | while_stmt
         | for_stmt
-        | funcdef
-        | match_funcdef
-        | classdef
-        | datadef
-        | decorated
         | async_stmt
-        | math_funcdef
-        | math_match_funcdef
+        | simple_compound_stmt
+        | decorated
         | match_assign_stmt
         , "compound_stmt")
-    augassign_stmt_ref = Forward()
-    augassign_stmt = simple_assign + augassign + test_expr
+    augassign_stmt = Forward()
+    augassign_stmt_ref = simple_assign + augassign + test_expr
     expr_stmt = trace(addspace(
-                      augassign_stmt_ref
+                      augassign_stmt
                       | ZeroOrMore(assignlist + equals) + test_expr
                       ), "expr_stmt")
 
-    nonlocal_stmt_ref = Forward()
-    keyword_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt_ref | assert_stmt
+    nonlocal_stmt = Forward()
+    keyword_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt | assert_stmt
     small_stmt = trace(keyword_stmt | expr_stmt, "small_stmt")
     simple_stmt <<= trace(condense(itemlist(small_stmt, semicolon) + newline), "simple_stmt")
-    stmt <<= trace(compound_stmt | simple_stmt, "stmt")
-    base_suite <<= condense(newline + indent + OneOrMore(stmt) + dedent)
+    stmt <<= trace(compound_stmt | simple_stmt | destructuring_stmt, "stmt")
+    base_suite <<= condense(newline + indent - OneOrMore(stmt) - dedent)
     suite <<= trace(condense(colon + base_suite) | addspace(colon + simple_stmt), "suite")
     line = trace(newline | stmt, "line")
 
-    single_input = trace(condense(Optional(line) + ZeroOrMore(newline)), "single_input")
-    file_input = trace(condense(ZeroOrMore(line)), "file_input")
-    eval_input = trace(condense(testlist + ZeroOrMore(newline)), "eval_input")
+    single_input = trace(condense(Optional(line) - ZeroOrMore(newline)), "single_input")
+    file_input = trace(condense(moduledoc_marker - ZeroOrMore(line)), "file_input")
+    eval_input = trace(condense(testlist - ZeroOrMore(newline)), "eval_input")
 
-    single_parser = condense(startmarker + single_input + endmarker)
-    file_parser = condense(startmarker + file_input + endmarker)
-    eval_parser = condense(startmarker + eval_input + endmarker)
+    single_parser = condense(start_marker - single_input - end_marker)
+    file_parser = condense(start_marker - file_input - end_marker)
+    eval_parser = condense(start_marker - eval_input - end_marker)
+
+#-----------------------------------------------------------------------------------------------------------------------
+# ENDPOINTS:
+#-----------------------------------------------------------------------------------------------------------------------
 
     def parse_single(self, inputstring):
-        """Parses console input."""
+        """Parses line code."""
         return self.parse(inputstring, self.single_parser, {}, {"header": "none", "initial": "none"})
 
     def parse_file(self, inputstring, addhash=True):
-        """Parses file input."""
+        """Parses file code."""
         if addhash:
             usehash = self.genhash(False, inputstring)
         else:
@@ -2393,11 +2813,11 @@ class processor(object):
         return self.parse(inputstring, self.file_parser, {}, {"header": "file", "usehash": usehash})
 
     def parse_exec(self, inputstring):
-        """Parses exec input."""
+        """Parses exec code."""
         return self.parse(inputstring, self.file_parser, {}, {"header": "file", "initial": "none"})
 
     def parse_module(self, inputstring, addhash=True):
-        """Parses module input."""
+        """Parses module code."""
         if addhash:
             usehash = self.genhash(True, inputstring)
         else:
@@ -2405,13 +2825,13 @@ class processor(object):
         return self.parse(inputstring, self.file_parser, {}, {"header": "module", "usehash": usehash})
 
     def parse_block(self, inputstring):
-        """Parses block text."""
+        """Parses block code."""
         return self.parse(inputstring, self.file_parser, {}, {"header": "none", "initial": "none"})
 
     def parse_eval(self, inputstring):
-        """Parses eval input."""
+        """Parses eval code."""
         return self.parse(inputstring, self.eval_parser, {"strip": True}, {"header": "none", "initial": "none"})
 
     def parse_debug(self, inputstring):
-        """Parses debug input."""
+        """Parses debug code."""
         return self.parse(inputstring, self.file_parser, {"strip": True}, {"header": "none", "initial": "none"})

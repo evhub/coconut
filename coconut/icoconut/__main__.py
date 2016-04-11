@@ -7,7 +7,7 @@
 """
 Author: Evan Hubinger
 License: Apache 2.0
-Description: Starts the Coconut command line utility.
+Description: Launch the Coconut IPython kernel.
 """
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -18,18 +18,14 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 import sys
 import os.path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from coconut.root import *
-from coconut.command import cli
+from coconut.icoconut.root import *
+from ipykernel.kernelapp import IPKernelApp
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def main():
-    """Runs the Coconut CLI."""
-    cli().start()
-
 if __name__ == "__main__":
-    main()
+    IPKernelApp.launch_instance(kernel_class=kernel)

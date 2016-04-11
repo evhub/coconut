@@ -20,7 +20,7 @@ from .root import *
 from .command import CoconutException, cli
 
 #-----------------------------------------------------------------------------------------------------------------------
-# COMPILING:
+# COMMAND:
 #-----------------------------------------------------------------------------------------------------------------------
 
 CLI = cli()
@@ -46,32 +46,29 @@ def version(which="num"):
                                + "; valid versions are 'num', 'name', 'spec', and '-v'")
 
 #-----------------------------------------------------------------------------------------------------------------------
-# PARSING:
+# COMPILER:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def setup(target=None, strict=False, quiet=False):
-    """Gets CLI.processor."""
-    CLI.setup(strict, target)
-    CLI.quiet(quiet)
+setup = CLI.setup
 
 def parse(code, mode="exec"):
     """Parses Coconut code."""
-    if CLI.processor is None:
+    if CLI.proc is None:
         setup()
     if mode == "single":
-        return CLI.processor.parse_single(code)
+        return CLI.proc.parse_single(code)
     elif mode == "file":
-        return CLI.processor.parse_file(code)
+        return CLI.proc.parse_file(code)
     elif mode == "exec":
-        return CLI.processor.parse_exec(code)
+        return CLI.proc.parse_exec(code)
     elif mode == "module":
-        return CLI.processor.parse_module(code)
+        return CLI.proc.parse_module(code)
     elif mode == "block":
-        return CLI.processor.parse_block(code)
+        return CLI.proc.parse_block(code)
     elif mode == "eval":
-        return CLI.processor.parse_eval(code)
+        return CLI.proc.parse_eval(code)
     elif mode == "debug":
-        return CLI.processor.parse_debug(code)
+        return CLI.proc.parse_debug(code)
     else:
         raise CoconutException("invalid parse mode " + ascii(mode)
             + "; valid modes are 'exec', 'file', 'single', 'module', 'block', 'eval', and 'debug'")

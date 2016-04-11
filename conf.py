@@ -7,7 +7,7 @@
 """
 Author: Evan Hubinger
 License: Apache 2.0
-Description: Starts the Coconut command line utility.
+Description: Sphinx configuration file for the Coconut Programming Language.
 """
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -18,18 +18,28 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 import sys
 import os.path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "coconut"))
 
-from coconut.root import *
-from coconut.command import cli
+from root import *
+from recommonmark.parser import CommonMarkParser
+from sphinx_bootstrap_theme import get_html_theme_path
 
 #-----------------------------------------------------------------------------------------------------------------------
-# MAIN:
+# DEFINITIONS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def main():
-    """Runs the Coconut CLI."""
-    cli().start()
+html_theme = "bootstrap"
+html_theme_path = get_html_theme_path()
 
-if __name__ == "__main__":
-    main()
+highlight_language = "coconut"
+
+project = "Coconut"
+copyright = "2015, Evan Hubinger, licensed under Apache 2.0"
+author = "Evan Hubinger"
+version = VERSION_TAG
+
+master_doc = 'README'
+source_suffix = [".rst", ".md"]
+source_parsers = {
+    ".md": CommonMarkParser
+}

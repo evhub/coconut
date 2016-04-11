@@ -22,12 +22,67 @@ import os.path
 import argparse
 
 #-----------------------------------------------------------------------------------------------------------------------
+# CONSTANTS:
+#-----------------------------------------------------------------------------------------------------------------------
+
+code_ext = ".coc"
+comp_ext = ".py"
+
+main_sig = "Coconut: "
+debug_sig = ""
+
+default_prompt = ">>> "
+default_moreprompt = "    "
+
+color_codes = { # unix/ansii color codes, underscores in names removed
+    "bold": 1,
+    "dim": 2,
+    "underlined": 4,
+    "blink": 5,
+    "reverse": 7,
+    "default": 39,
+    "black": 30,
+    "red": 31,
+    "yellow": 33,
+    "blue": 34,
+    "magenta": 35,
+    "cyan": 36,
+    "lightgray": 37,
+    "darkgray": 90,
+    "lightred": 91,
+    "lightgreen": 92,
+    "lightyellow": 93,
+    "lightblue": 94,
+    "lightmagenta": 95,
+    "lightcyan": 96,
+    "white": 97,
+    "defaultbackground": 49,
+    "blackbackground": 40,
+    "redbackground": 41,
+    "greenbackground": 42,
+    "yellowbackground": 43,
+    "bluebackground": 44,
+    "magentabackground": 45,
+    "cyanbackground": 46,
+    "lightgraybackground": 47,
+    "darkgraybackground": 100,
+    "lightredbackground": 101,
+    "lightgreenbackground": 102,
+    "lightyellowbackground": 103,
+    "lightbluebackground": 104,
+    "lightmagentabackground": 105,
+    "lightcyanbackground": 106,
+    "whitebackground": 107
+    }
+end_color_code = 0
+
+#-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
 
 def openfile(filename, opentype="r+"):
     """Returns an open file object."""
-    return open(filename, opentype, encoding=ENCODING) # uses io.open from .root
+    return open(filename, opentype, encoding=default_encoding) # using open from .root
 
 def writefile(openedfile, newcontents):
     """Sets the contents of a file."""
@@ -40,107 +95,123 @@ def readfile(openedfile):
     openedfile.seek(0)
     return str(openedfile.read())
 
+def showpath(path):
+    """Formats a path for displaying."""
+    return os.path.split(path)[1]
+
 def fixpath(path):
-    """Properly formats a path."""
+    """Uniformly formats a path."""
     return os.path.normpath(os.path.realpath(path))
+
+def rem_encoding(code):
+    """Removes encoding declarations from Python code so it can be passed to exec."""
+    old_lines = code.splitlines()
+    new_lines = []
+    for i in range(min(2, len(old_lines))):
+        line = old_lines[i]
+        if not (line.startswith("#") and "coding" in line):
+            new_lines.append(line)
+    new_lines += old_lines[2:]
+    return "\n".join(new_lines)
 
 class executor(object):
     """Compiled Python executor."""
-    def __init__(self, extras=None, exit=sys.exit):
+    def __init__(self, proc=None, exit=None, path=None):
         """Creates the executor."""
         self.exit = exit
-        self.vars = {}
-        if extras is not None:
-            self.vars.update(extras)
-    def setfile(self, path):
-        """Sets __file__."""
-        self.vars["__file__"] = path
-    def run(self, code, err=False):
+        self.vars = {"__name__": "__main__"}
+        if path is not None:
+            self.vars["__file__"] = fixpath(path)
+        if proc is not None:
+            self.run(proc.headers("code"))
+            self.fixpickle()
+
+    def fixpickle(self):
+        """Fixes pickling of Coconut header objects."""
+        from . import __coconut__
+        for var in self.vars:
+            if not var.startswith("__") and var in dir(__coconut__):
+                self.vars[var] = getattr(__coconut__, var)
+
+    def run(self, code, err=False, run_func=None):
         """Executes Python code."""
         try:
-            exec(code, self.vars)
-        except Exception:
+            if run_func is None:
+                exec(code, self.vars)
+            else:
+                return run_func(code, self.vars)
+        except (Exception, KeyboardInterrupt):
             if err:
                 raise
             else:
                 traceback.print_exc()
         except SystemExit:
-            self.exit()
+            if self.exit is None:
+                raise
+            else:
+                self.exit()
+
+def escape_color(code):
+    """Generates an ANSII color code."""
+    return "\033[" + str(code) + "m"
 
 class terminal(object):
     """Manages printing and reading data to the console."""
-    colors = {
-        "end": "\033[0m",
-        "bold": "\033[1m",
-        "blink": "\033[5m",
-        "black": "\033[30m",
-        "red": "\033[31m",
-        "green": "\033[32m",
-        "yellow": "\033[33m",
-        "blue": "\033[34m",
-        "magenta": "\033[35m",
-        "cyan": "\033[36m",
-        "white": "\033[37m",
-        "blackhighlight": "\033[40m",
-        "redhighlight": "\033[41m",
-        "greenhighlight": "\033[42m",
-        "yellowhighlight": "\033[43m",
-        "bluehighlight": "\033[44m",
-        "magentahighlight": "\033[45m",
-        "cyanhighlight": "\033[46m",
-        "whitehighlight": "\033[47m",
-        "pink": "\033[95m",
-        "purple": "\033[94m",
-        "lightgreen": "\033[92m",
-        "lightyellow": "\033[93m",
-        "lightred": "\033[91m"
-        }
+    color_code = None
     on = True
 
-    def __init__(self, main_color=None, debug_color=None, main_sig="", debug_sig=""):
+    def __init__(self, main_sig="", debug_sig=""):
         """Creates the terminal."""
-        self.main_color = main_color
-        self.debug_color = debug_color
-        self.main_sig = main_sig
-        self.debug_sig = debug_sig
+        self.main_sig, self.debug_sig = main_sig, debug_sig
 
-    def addcolor(self, inputstring, color):
-        """Adds the specified color to the string."""
-        if color is not None:
-            return self.colors[color] + inputstring + self.colors["end"]
-        else:
-            return inputstring
-
-    def delcolor(self, inputstring):
-        """Removes recognized colors from a string."""
-        inputstring = str(inputstring)
-        for x in self.colors:
-            inputstring = inputstring.replace(x, "")
-        return inputstring
-
-    def display(self, messages, color=None, sig="", debug=False):
-        """Prints messages."""
-        message = " ".join(str(msg) for msg in messages)
-        for line in message.splitlines():
-            msg = self.addcolor(sig+line, color)
-            if debug is True:
-                printerr(msg)
+    def setcolor(self, color=None):
+        """Set output color."""
+        if color:
+            color = color.replace("_", "")
+            if color in color_codes:
+                self.color_code = color_codes[color]
             else:
-                print(msg)
+                try:
+                    color = int(color)
+                except ValueError:
+                    raise CoconutException('unrecognized color "'+color+'" (enter a valid color name or code)')
+                else:
+                    if 0 < color <= 256:
+                        self.color_code = color
+                    else:
+                        raise CoconutException('color code '+str(color)+' out of range (must obey 0 < color code <= 256)')
+        else:
+            self.color_code = None
 
-    def show(self, *messages):
-        """Prints messages with main color without a signature."""
+    def addcolor(self, inputstring):
+        """Adds the specified color to the string."""
+        if self.color_code is None:
+            return inputstring
+        else:
+            return escape_color(self.color_code) + inputstring + escape_color(end_color_code)
+
+    def display(self, messages, sig="", debug=False):
+        """Prints messages."""
         if self.on:
-            self.display(messages, color=self.main_color)
+            message = " ".join(str(msg) for msg in messages)
+            for line in message.splitlines():
+                msg = self.addcolor(sig + line)
+                if debug is True:
+                    printerr(msg)
+                else:
+                    print(msg)
 
     def print(self, *messages):
-        """Prints messages with main color."""
-        if self.on:
-            self.display(messages, self.main_color, self.main_sig)
+        """Prints messages with color."""
+        self.display(messages)
 
-    def debug(self, *messages):
-        """Prints messages with debug color."""
-        self.display(messages, self.debug_color, self.debug_sig, True)
+    def printerr(self, *messages):
+        """Prints error messages with color and debug signature."""
+        self.display(messages, self.debug_sig, True)
+
+    def show(self, *messages):
+        """Prints messages with color and main signature."""
+        self.display(messages, self.main_sig)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
@@ -149,84 +220,84 @@ class terminal(object):
 class cli(object):
     """The Coconut command-line interface."""
     version = "Version "+VERSION_STR+" running on Python "+" ".join(sys.version.splitlines())
-    code_ext = ".coc"
-    comp_ext = ".py"
     commandline = argparse.ArgumentParser(description="The Coconut Programming Language.")
     commandline.add_argument("source", metavar="source", type=str, nargs="?", default=None, help="path to the Coconut file/folder to compile")
     commandline.add_argument("dest", metavar="dest", type=str, nargs="?", default=None, help="destination directory for compiled files (defaults to the source directory)")
     commandline.add_argument("-v", "--version", action="store_const", const=True, default=False, help="print Coconut and Python version information")
-    commandline.add_argument("-t", "--target", metavar="version", type=str, nargs=1, default=[None], help="specify target Python version")
+    commandline.add_argument("-t", "--target", metavar="version", type=str, nargs=1, default=[None], help="specify target Python version (defaults to universal)")
     commandline.add_argument("-s", "--strict", action="store_const", const=True, default=False, help="enforce code cleanliness standards")
+    commandline.add_argument("-l", "--linenumbers", action="store_const", const=True, default=False, help="add line number comments for ease of debugging")
     commandline.add_argument("-p", "--package", action="store_const", const=True, default=False, help="compile source as part of a package (defaults to only if source is a directory)")
     commandline.add_argument("-a", "--standalone", action="store_const", const=True, default=False, help="compile source as standalone files (defaults to only if source is a single file)")
     commandline.add_argument("-f", "--force", action="store_const", const=True, default=False, help="force overwriting of compiled Python (otherwise only overwrites when the source changes)")
     commandline.add_argument("-d", "--display", action="store_const", const=True, default=False, help="print compiled Python")
-    commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run the compiled Python")
-    commandline.add_argument("-n", "--nowrite", action="store_const", const=True, default=False, help="disable writing the compiled Python")
+    commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run compiled Python")
+    commandline.add_argument("-n", "--nowrite", action="store_const", const=True, default=False, help="disable writing compiled Python")
+    commandline.add_argument("-m", "--minify", action="store_const", const=True, default=False, help="compress compiled Python")
     commandline.add_argument("-i", "--interact", action="store_const", const=True, default=False, help="force the interpreter to start (otherwise starts if no other command is given)")
-    commandline.add_argument("-q", "--quiet", action="store_const", const=True, default=False, help="suppress all informational output")
-    commandline.add_argument("-c", "--code", metavar="code", type=str, nargs=1, default=None, help="run a line of Coconut passed in as a string (can also be accomplished with a pipe)")
-    commandline.add_argument("--debug", action="store_const", const=True, default=False, help="print verbose debug output")
+    commandline.add_argument("-q", "--quiet", action="store_const", const=True, default=False, help="suppress all informational output (combine with --display to write runnable code to stdout)")
+    commandline.add_argument("-c", "--code", metavar="code", type=str, nargs=1, default=None, help="run a line of Coconut passed in as a string (can also be passed into stdin)")
+    commandline.add_argument("--jupyter", "--ipython", type=str, nargs=argparse.REMAINDER, default=None, help="run Jupyter/IPython with Coconut as the kernel (remaining args passed to Jupyter)")
     commandline.add_argument("--autopep8", type=str, nargs=argparse.REMAINDER, default=None, help="use autopep8 to format compiled code (remaining args passed to autopep8)")
-    processor = None
-    show = False
-    running = False
-    runner = None
-    target = None
+    commandline.add_argument("--recursionlimit", metavar="limit", type=int, nargs=1, default=[None], help="set maximum recursion depth (defaults to "+str(sys.getrecursionlimit())+")")
+    commandline.add_argument("--color", metavar="color", type=str, nargs=1, default=[None], help="show all Coconut messages in the given color")
+    commandline.add_argument("--verbose", action="store_const", const=True, default=False, help="print verbose debug output")
+    proc = None # current .compiler.processor
+    show = False # corresponds to --display flag
+    running = False # whether the interpreter is currently active
+    runner = None # the current executor
+    target = None # corresponds to --target flag
 
-    def __init__(self, main_color=None, debug_color=None, prompt=">>> ", moreprompt="    ", main_sig="Coconut: ", debug_sig=""):
+    def __init__(self, prompt=default_prompt, moreprompt=default_moreprompt):
         """Creates the CLI."""
-        self.console = terminal(main_color, debug_color, main_sig, debug_sig)
-        self.prompt = self.console.addcolor(prompt, main_color)
-        self.moreprompt = self.console.addcolor(moreprompt, main_color)
+        self.console = terminal(main_sig, debug_sig)
+        self.prompt, self.moreprompt = prompt, moreprompt
 
     def start(self):
         """Processes command-line arguments."""
         self.cmd(self.commandline.parse_args())
 
-    def setup(self, strict=False, target=None):
-        """Creates the processor."""
-        if self.processor is None:
-            self.processor = processor(strict, target, self.console.debug)
+    def setup(self, target=None, strict=False, minify=False, linenumbers=False, quiet=False, color=None):
+        """Sets parameters for the processor."""
+        if color is not None:
+            self.console.setcolor(color)
+            self.prompt = self.console.addcolor(self.prompt)
+            self.moreprompt = self.console.addcolor(self.moreprompt)
+        self.console.on = not quiet
+        if self.proc is None:
+            self.proc = processor(target, strict, minify, linenumbers, self.console.printerr)
         else:
-            self.processor.setup(strict, target)
-
-    def quiet(self, state=None):
-        """Quiets output."""
-        if state is None:
-            state = self.console.on
-        self.console.on = not state
+            self.proc.setup(target, strict, minify, linenumbers)
 
     def indebug(self):
         """Determines whether the processor is in debug mode."""
-        return self.processor.indebug()
+        if self.proc is None:
+            return False
+        else:
+            return self.proc.indebug()
 
     def cmd(self, args, interact=True):
         """Parses command-line arguments."""
         try:
-            self.setup(args.strict, args.target[0])
-            if args.debug:
-                self.processor.debug(True)
-            if args.quiet:
-                self.quiet(True)
+            if args.recursionlimit[0] is not None:
+                sys.setrecursionlimit(args.recursionlimit[0])
+            self.setup(args.target[0], args.strict, args.minify, args.linenumbers, args.quiet, args.color[0])
+            if args.version:
+                self.console.show(self.version)
             if args.display:
                 self.show = True
-            if args.version:
-                self.console.print(self.version)
+            if args.verbose:
+                self.proc.debug(True)
             if args.autopep8 is not None:
-                self.processor.autopep8(args.autopep8)
-            if args.code is not None:
-                self.execute(self.processor.parse_single(args.code[0]))
+                self.proc.autopep8(args.autopep8)
             if args.source is not None:
                 if args.run and os.path.isdir(args.source):
                     raise CoconutException("source path must point to file not directory when --run is enabled")
                 if args.dest is None:
-                    if not args.nowrite:
-                        dest = True # auto-generate dest
-                    elif args.package or args.standalone:
-                        raise CoconutException("cannot specify --package or --standalone when --nowrite is enabled")
+                    if args.nowrite:
+                        dest = None # no dest
                     else:
-                        dest = None
+                        dest = True # auto-generate dest
                 elif args.nowrite:
                     raise CoconutException("destination path cannot be given when --nowrite is enabled")
                 elif os.path.isfile(args.dest):
@@ -234,36 +305,41 @@ class cli(object):
                 else:
                     dest = args.dest
                 if args.package and args.standalone:
-                    raise CoconutException("cannot compile both as --package and as --standalone")
+                    raise CoconutException("cannot compile as both --package and --standalone")
                 elif args.package:
                     package = True
                 elif args.standalone:
                     package = False
                 else:
                     package = None # auto-decide package
-                self.compile_path(args.source, dest, package, run=args.run, force=args.force)
+                self.compile_path(args.source, dest, package, args.run, args.force)
             elif args.run or args.nowrite or args.force or args.package or args.standalone:
                 raise CoconutException("a source file/folder must be specified when options that depend on the source are enabled")
-            stdin = not sys.stdin.isatty()
+            if args.code is not None:
+                self.execute(self.proc.parse_block(args.code[0]))
+            stdin = not sys.stdin.isatty() # check if input was piped in
             if stdin:
-                self.execute(self.processor.parse_block(sys.stdin.read()))
-            if args.interact or (interact and not (stdin or args.source or args.version or args.code)):
+                self.execute(self.proc.parse_block(sys.stdin.read()))
+            if args.jupyter is not None:
+                self.start_jupyter(args.jupyter)
+            if args.interact or (interact and not (stdin or args.source or args.version or args.code or args.jupyter is not None)):
                 self.start_prompt()
         except CoconutException:
-            printerr(get_error(self.indebug()))
+            self.console.printerr(get_error(self.indebug()))
             sys.exit(1)
 
     def compile_path(self, path, write=True, package=None, run=False, force=False):
         """Compiles a path."""
+        path = fixpath(path)
+        if write is not None and write is not True:
+            write = fixpath(write)
         if os.path.isfile(path):
-            if package is None and write is not None:
+            if package is None:
                 package = False
-            # if package is still None, it means write is None, and compile neither as package nor standalone
             self.compile_file(path, write, package, run, force)
         elif os.path.isdir(path):
-            if package is None and write is not None:
+            if package is None:
                 package = True
-            # passes package unchanged to compile_file, so see above for meaning
             self.compile_folder(path, write, package, run, force)
         else:
             raise CoconutException("could not find source path "+path)
@@ -273,23 +349,24 @@ class cli(object):
         for dirpath, dirnames, filenames in os.walk(directory):
             writedir = write
             if writedir is None:
-                tocreate = None
+                headerdir = None
             elif writedir is True:
-                tocreate = dirpath
+                headerdir = dirpath
             else:
                 writedir = os.path.join(writedir, os.path.relpath(dirpath, directory))
-                tocreate = writedir
+                headerdir = writedir
             wrote = False
-            for filename in filenames:
-                if os.path.splitext(filename)[1] == self.code_ext:
-                    self.compile_file(os.path.join(dirpath, filename), writedir, package, run, force)
-                    wrote = True
-            if wrote and package and tocreate is not None:
-                self.create_package(tocreate)
+            try:
+                for filename in filenames:
+                    if os.path.splitext(filename)[1] == code_ext:
+                        self.compile_file(os.path.join(dirpath, filename), writedir, package, run, force)
+                        wrote = True
+            finally: # if we wrote anything in package mode, we should always add a header file
+                if wrote and package and headerdir is not None:
+                    self.create_package(headerdir)
 
     def compile_file(self, filepath, write=True, package=False, run=False, force=False):
         """Compiles a file."""
-        filepath = fixpath(filepath)
         if write is None:
             destpath = None
         elif write is True:
@@ -299,42 +376,43 @@ class cli(object):
         if destpath is not None:
             base, ext = os.path.splitext(os.path.splitext(destpath)[0])
             if not ext:
-                ext = self.comp_ext
-            destpath = fixpath(base + ext)
-        self.compile(filepath, destpath, package, run, force)
+                ext = comp_ext
+            destpath = base + ext
+        if filepath == destpath:
+            raise CoconutException("cannot compile "+showpath(filepath)+" to itself (incorrect file extension)")
+        else:
+            self.compile(filepath, destpath, package, run, force)
 
     def compile(self, codepath, destpath=None, package=False, run=False, force=False):
         """Compiles a source Coconut file to a destination Python file."""
-        self.console.print("Compiling       "+codepath+" ...")
+        self.console.show("Compiling       "+showpath(codepath)+" ...")
         with openfile(codepath, "r") as opened:
             code = readfile(opened)
         foundhash = None if force else self.hashashof(destpath, code, package)
         if foundhash:
+            self.console.show("Left unchanged    "+showpath(destpath)+" (pass --force to overwrite).")
             if run:
-                self.execute(foundhash, path=destpath)
+                self.execute(foundhash, path=destpath, isolate=True)
             elif self.show:
                 print(foundhash)
-            self.console.print("Left unchanged  "+destpath+" (pass --force to overwrite).")
         else:
             if package is True:
-                compiled = self.processor.parse_module(code)
+                compiled = self.proc.parse_module(code)
             elif package is False:
-                compiled = self.processor.parse_file(code)
-            elif package is None:
-                compiled = self.processor.parse_block(code)
+                compiled = self.proc.parse_file(code)
             else:
                 raise CoconutException("invalid value for package", package)
             if destpath is None:
-                self.console.print("Compiled without writing to file.")
+                self.console.show("Compiled without writing to file.")
             else:
                 destdir = os.path.dirname(destpath)
                 if not os.path.exists(destdir):
                     os.makedirs(destdir)
                 with openfile(destpath, "w") as opened:
                     writefile(opened, compiled)
-                self.console.print("Compiled to     "+destpath+" .")
+                self.console.show("Compiled to       "+showpath(destpath)+" .")
             if run:
-                self.execute(compiled, path=(destpath if destpath is not None else codepath))
+                self.execute(compiled, path=(destpath if destpath is not None else codepath), isolate=True)
             elif self.show:
                 print(compiled)
 
@@ -342,7 +420,7 @@ class cli(object):
         """Sets up a package directory."""
         filepath = os.path.join(dirpath, "__coconut__.py")
         with openfile(filepath, "w") as opened:
-            writefile(opened, self.processor.headers("package"))
+            writefile(opened, self.proc.headers("package"))
 
     def hashashof(self, destpath, code, package):
         """Determines if a file has the hash of the code."""
@@ -350,7 +428,7 @@ class cli(object):
             with openfile(destpath, "r") as opened:
                 compiled = readfile(opened)
                 hashash = gethash(compiled)
-                if hashash is not None and hashash == self.processor.genhash(package, code):
+                if hashash is not None and hashash == self.proc.genhash(package, code):
                     return compiled
         return None
 
@@ -359,7 +437,7 @@ class cli(object):
         try:
             return input(prompt) # using input from .root
         except KeyboardInterrupt:
-            printerr(linebreak + "KeyboardInterrupt")
+            self.console.printerr("\nKeyboardInterrupt")
         except EOFError:
             print()
             self.exit()
@@ -368,8 +446,8 @@ class cli(object):
     def start_prompt(self):
         """Starts the interpreter."""
         self.check_runner()
-        self.console.show("Coconut Interpreter:")
-        self.console.show('(type "exit()" or press Ctrl-D to end)')
+        self.console.print("Coconut Interpreter:")
+        self.console.print('(type "exit()" or press Ctrl-D to end)')
         self.running = True
         while self.running:
             code = self.prompt_with(self.prompt)
@@ -384,41 +462,82 @@ class cli(object):
 
     def handle(self, code):
         """Compiles Coconut interpreter input."""
-        try:
-            compiled = self.processor.parse_single(code)
-        except CoconutException:
+        compiled = None
+        if not self.proc.should_indent(code):
+            try:
+                compiled = self.proc.parse_block(code)
+            except CoconutException:
+                pass
+        if compiled is None:
             while True:
                 line = self.prompt_with(self.moreprompt)
-                if line:
-                    code += linebreak + line
-                elif line is None:
+                if line is None:
                     return None
+                elif line.strip():
+                    code += "\n" + line
                 else:
                     break
             try:
-                compiled = self.processor.parse_single(code)
+                compiled = self.proc.parse_block(code)
             except CoconutException:
-                printerr(get_error(self.indebug()))
-                return None
+                self.console.printerr(get_error(self.indebug()))
         return compiled
 
-    def execute(self, compiled=None, error=True, path=None):
+    def execute(self, compiled=None, error=True, path=None, isolate=False):
         """Executes compiled code."""
-        self.check_runner(path)
+        self.check_runner(path, isolate)
         if compiled is not None:
             if self.show:
                 print(compiled)
+            if isolate: # isolate means header is included, and thus encoding must be removed
+                compiled = rem_encoding(compiled)
             self.runner.run(compiled, error)
 
-    def check_runner(self, path=None):
+    def check_runner(self, path=None, isolate=False):
         """Makes sure there is a runner."""
-        if self.runner is None:
-            self.start_runner()
-        if path is not None:
-            self.runner.setfile(path)
+        if isolate or path is not None or self.runner is None:
+            self.start_runner(path, isolate)
 
-    def start_runner(self):
+    def start_runner(self, path=None, isolate=False):
         """Starts the runner."""
-        sys.path.append(os.getcwd())
-        self.runner = executor(exit=self.exit)
-        self.runner.run(self.processor.headers("code"))
+        sys.path.insert(0, os.getcwd())
+        if isolate:
+            proc = None
+        else:
+            proc = self.proc
+        self.runner = executor(proc, self.exit, path)
+
+    def start_jupyter(self, args):
+        """Starts Jupyter with the Coconut kernel."""
+        import subprocess
+        if args:
+            install_func = lambda args: subprocess.check_output(args, stderr=subprocess.STDOUT)
+        else:
+            install_func = lambda args: subprocess.check_call(args)
+        try:
+            install_func(["jupyter", "--version"])
+        except subprocess.CalledProcessError:
+            jupyter = "ipython"
+        else:
+            jupyter = "jupyter"
+        install_args = [jupyter, "kernelspec", "install", os.path.join(os.path.dirname(os.path.abspath(__file__)), "icoconut")]
+        try:
+            install_func(install_args)
+        except subprocess.CalledProcessError:
+            try:
+                install_func(install_args + ["--user"])
+            except subprocess.CalledProcessError:
+                errmsg = 'unable to install Jupyter kernel specification file (failed command "'+" ".join(install_args)+'")'
+                if args:
+                    self.proc.warn(CoconutWarning(errmsg))
+                else:
+                    raise CoconutException(errmsg)
+        if args:
+            if args[0] == "console":
+                self.console.print("Coconut Kernel "+VERSION)
+                run_args = [jupyter, "console", "--kernel", "icoconut"] + args[1:]
+            elif args[0] == "notebook":
+                run_args = [jupyter, "notebook"] + args[1:]
+            else:
+                raise CoconutException('first argument after --jupyter must be either "console" or "notebook"')
+            subprocess.call(run_args)

@@ -18,7 +18,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 import sys
 import os.path
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "coconut"))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "coconut"))
 
 from root import *
 import setuptools
@@ -35,13 +35,15 @@ setuptools.setup(
     version = VERSION,
     description = "Simple, elegant, Pythonic functional programming.",
     long_description = readme,
-    url = "https://github.com/evhub/coconut",
+    url = "http://evhub.github.io/coconut/",
     author = "Evan Hubinger",
     author_email = "evanjhub@gmail.com",
     classifiers = [
+        "Development Status :: 4 - Beta",
         "License :: OSI Approved :: Apache Software License",
         "Intended Audience :: Developers",
         "Intended Audience :: Information Technology",
+        "Topic :: Software Development",
         "Topic :: Software Development :: Code Generators",
         "Topic :: Software Development :: Compilers",
         "Topic :: Software Development :: Interpreters",
@@ -54,21 +56,30 @@ setuptools.setup(
         "Programming Language :: Python :: 2.6",
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.2",
         "Programming Language :: Python :: 3.3",
         "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Other",
         "Programming Language :: Other Scripting Engines",
-        "Framework :: IPython",
-        "Development Status :: 3 - Alpha"
+        "Programming Language :: Python :: Implementation :: CPython",
+        "Programming Language :: Python :: Implementation :: PyPy",
+        "Framework :: IPython"
         ],
     keywords = [
         "functional programming language",
         "functional programming",
         "functional",
         "programming language",
+        "compiler",
+        "match",
+        "matches",
+        "matching",
         "pattern-matching",
         "pattern matching",
+        "algebraic data type",
+        "algebraic data types",
+        "data",
         "data type",
         "data types",
         "lambda",
@@ -85,13 +96,37 @@ setuptools.setup(
         "function composition",
         "partial application",
         "currying",
-        "curry"
+        "curry",
+        "pipeline",
+        "pipe",
+        "unicode operator",
+        "unicode operators",
+        "frozenset literal",
+        "frozenset literals",
+        "destructuring",
+        "destructuring assignment",
+        "reduce",
+        "takewhile",
+        "dropwhile",
+        "tee",
+        "consume",
+        "datamaker",
+        "data keyword",
+        "match keyword",
+        "case keyword"
         ],
     packages = setuptools.find_packages(),
     install_requires = [
-        "pyparsing==2.0.5"
+        "pyparsing==2.1.1"
         ],
-    entry_points = {"console_scripts":[
-        "coconut = coconut.__main__:main"
-        ]}
+    entry_points = {
+        "console_scripts": [
+            "coconut = coconut.__main__:main"
+            ],
+        "pygments.lexers": [
+            "coc_python = coconut.highlighter:pylexer",
+            "coc_pycon = coconut.highlighter:pyconlexer",
+            "coconut = coconut.highlighter:coclexer"
+            ]
+        }
     )

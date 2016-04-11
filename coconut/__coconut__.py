@@ -7,7 +7,7 @@
 """
 Author: Evan Hubinger
 License: Apache 2.0
-Description: Starts the Coconut command line utility.
+Description: Mimics what a compiled __coconut__.py would do.
 """
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -16,20 +16,10 @@ Description: Starts the Coconut command line utility.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-import sys
-import os.path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from coconut.root import *
-from coconut.command import cli
+from .compiler import processor as __proc
 
 #-----------------------------------------------------------------------------------------------------------------------
-# MAIN:
+# HEADER:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def main():
-    """Runs the Coconut CLI."""
-    cli().start()
-
-if __name__ == "__main__":
-    main()
+exec(__proc(target="sys").headers("code")) # executes the __coconut__.py header for the current Python version

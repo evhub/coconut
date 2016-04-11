@@ -1,6 +1,13 @@
+# Macintosh desktop services store files
+.DS_Store
+
+# Windows thumbs database file
+Thumbs.db
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+*$py.class
 
 # C extensions
 *.so
@@ -8,11 +15,12 @@ __pycache__/
 # Distribution / packaging
 .Python
 env/
-bin/
 build/
 develop-eggs/
 dist/
+downloads/
 eggs/
+.eggs/
 lib/
 lib64/
 parts/
@@ -22,6 +30,10 @@ var/
 .installed.cfg
 *.egg
 
+# PyInstaller
+*.manifest
+*.spec
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
@@ -30,30 +42,26 @@ pip-delete-this-directory.txt
 htmlcov/
 .tox/
 .coverage
+.coverage.*
 .cache
 nosetests.xml
 coverage.xml
+*,cover
+.hypothesis/
 
 # Translations
 *.mo
-
-# Mr Developer
-.mr.developer.cfg
-.project
-.pydevproject
-
-# Rope
-.ropeproject
+*.pot
 
 # Django stuff
 *.log
-*.pot
 
 # Sphinx documentation
-docs/_build/
+_build/
+_docs/
 
-# Macintosh Desktop Services Store files
-.DS_Store
+# PyBuilder
+target/
 
-# Windows thumbs database file
-Thumbs.db
+# Ipython notebook
+.ipynb_checkpoints
