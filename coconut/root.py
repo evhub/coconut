@@ -27,9 +27,9 @@ import sys
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-VERSION = "0.3.6"
-VERSION_NAME = "Odisha"
-DEVELOP = True
+VERSION = "0.4.0"
+VERSION_NAME = "Pinnate"
+DEVELOP = False
 
 if DEVELOP:
     VERSION += "-post_dev"
