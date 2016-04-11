@@ -22,7 +22,7 @@ after which the entire world of Coconut will be at your disposal. To help you ge
 - `Create a New Issue <https://github.com/evhub/coconut/issues/new>`_: If you're having a problem with Coconut, creating a new issue detailing the problem will allow it to be addressed as soon as possible.
 - Gitter_: For all general questions, concerns, or comments about anything Coconut-related, ask around at Coconut's Gitter, a GitHub-integrated chat room for Coconut developers.
 
-*Note: If the above documentation links are not working, try the* |mirror|_ *.*
+*Note: If the above documentation links are not working, try the* |mirror|_*.*
 
 .. _Coconut: http://evhub.github.io/coconut/
 .. _Python: https://www.python.org/
