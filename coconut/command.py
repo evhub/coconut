@@ -354,12 +354,14 @@ class cli(object):
                 writedir = os.path.join(writedir, os.path.relpath(dirpath, directory))
                 headerdir = writedir
             wrote = False
-            for filename in filenames:
-                if os.path.splitext(filename)[1] == code_ext:
-                    self.compile_file(os.path.join(dirpath, filename), writedir, package, run, force)
-                    wrote = True
-            if wrote and package and headerdir is not None:
-                self.create_package(headerdir)
+            try:
+                for filename in filenames:
+                    if os.path.splitext(filename)[1] == code_ext:
+                        self.compile_file(os.path.join(dirpath, filename), writedir, package, run, force)
+                        wrote = True
+            finally: # if we wrote anything in package mode, we should always add a header file
+                if wrote and package and headerdir is not None:
+                    self.create_package(headerdir)
 
     def compile_file(self, filepath, write=True, package=False, run=False, force=False):
         """Compiles a file."""
