@@ -2619,6 +2619,7 @@ class processor(object):
     import_stmt = Forward()
     import_stmt_ref = import_from | import_name
 
+    nonlocal_stmt = Forward()
     namelist = parenwrap(lparen, itemlist(name, comma), rparen)
     global_stmt = addspace(Keyword("global") - namelist)
     nonlocal_stmt_ref = addspace(Keyword("nonlocal") - namelist)
@@ -2786,7 +2787,6 @@ class processor(object):
                       | ZeroOrMore(assignlist + equals) + test_expr
                       ), "expr_stmt")
 
-    nonlocal_stmt = Forward()
     small_stmt = trace(keyword_stmt | expr_stmt, "small_stmt")
     simple_stmt <<= trace(condense(itemlist(small_stmt, semicolon) + newline), "simple_stmt")
     stmt <<= trace(compound_stmt | simple_stmt | destructuring_stmt, "stmt")
