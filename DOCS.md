@@ -11,18 +11,19 @@
     3. [Naming Source Files](#naming-source-files)
     4. [Compilation Modes](#compilation-modes)
     5. [Compatible Python Versions](#compatible-python-versions)
-    6. [`--strict` Mode](#--strict-mode)
-    7. [IPython / Jupyter Support](#ipython--jupyter-support)
+    6. [Allowable Targets](#allowable-targets)
+    7. [`--strict` Mode](#--strict-mode)
+    8. [IPython / Jupyter Support](#ipython--jupyter-support)
         1. [Extension](#extension)
         2. [Kernel](#kernel)
-8. [Operators](#operators)
-    9. [Lambdas](#lambdas)
-    10. [Partial Application](#partial-application)
-    11. [Pipeline](#pipeline)
-    12. [Compose](#compose)
-    13. [Chain](#chain)
-    14. [Iterator Slicing](#iterator-slicing)
-    15. [Unicode Alternatives](#unicode-alternatives)
+9. [Operators](#operators)
+    10. [Lambdas](#lambdas)
+    11. [Partial Application](#partial-application)
+    12. [Pipeline](#pipeline)
+    13. [Compose](#compose)
+    14. [Chain](#chain)
+    15. [Iterator Slicing](#iterator-slicing)
+    16. [Unicode Alternatives](#unicode-alternatives)
 3. [Keywords](#keywords)
     1. [`data`](#data)
     2. [`match`](#match)
@@ -146,19 +147,6 @@ While Coconut syntax is based off of Python 3, Coconut code compiled in universa
 
 _Note: The tested against implementations are [CPython](https://www.python.org/) `2.6, 2.7, 3.2, 3.3, 3.4, 3.5` and [PyPy](http://pypy.org/) `2.7, 3.2`._
 
-If the version of Python that the compiled code will be running on is known ahead of time, a target should be specified with `--target`. The given target will only affect the compiled code and whether or not certain Python-3-specific syntax is allowed, detailed below. Where Python 3 and Python 2 syntax standards differ, Coconut syntax will always follow Python 3 across all targets. The supported targets are:
-
-- universal (default) (will work on _any_ of the below),
-- `2`, `26` (will work on any Python `>= 2.6` but `< 3`),
-- `27` (will work on any Python `>= 2.7` but `< 3`),
-- `3`, `32` (will work on any Python `>= 3.2`),
-- `33`, `34` (will work on any Python `>= 3.3`),
-- `35` (will work on any Python `>= 3.5`),
-- `36` (will work on any Python `>= 3.6`),
-- `sys` (chooses the specific target corresponding to the current version).
-
-_Note: Periods are ignored in target specifications, such that the target `2.7` is equivalent to the target `27`._
-
 As part of Coconut's cross-compatibility efforts, Coconut adds in new Python 3 built-ins and overwrites Python 2 built-ins to use the Python 3 versions where possible. If access to the Python 2 versions is desired, the old built-ins can be retrieved by prefixing them with `py2_`. The old built-ins available are:
 - `py2_chr`
 - `py2_filter`
@@ -184,8 +172,24 @@ Finally, while Coconut will try to compile Python-3-specific syntax to its unive
 - function type annotation,
 - the `nonlocal` keyword,
 - keyword class definition,
-- `@` as matrix multiplication (requires `--target 3.5`), and
-- `async` and `await` statements (requires `--target 3.5`).
+- `@` as matrix multiplication (requires `--target 3.5`),
+- `async` and `await` statements (requires `--target 3.5`), and
+- formatting `f` strings (requires `--target 3.6`).
+
+### Allowable Targets
+
+If the version of Python that the compiled code will be running on is known ahead of time, a target should be specified with `--target`. The given target will only affect the compiled code and whether or not certain Python-3-specific syntax is allowed, detailed below. Where Python 3 and Python 2 syntax standards differ, Coconut syntax will always follow Python 3 across all targets. The supported targets are:
+
+- universal (default) (will work on _any_ of the below),
+- `2`, `26` (will work on any Python `>= 2.6` but `< 3`),
+- `27` (will work on any Python `>= 2.7` but `< 3`),
+- `3`, `32` (will work on any Python `>= 3.2`),
+- `33`, `34` (will work on any Python `>= 3.3`),
+- `35` (will work on any Python `>= 3.5`),
+- `36` (will work on any Python `>= 3.6`),
+- `sys` (chooses the specific target corresponding to the current version).
+
+_Note: Periods are ignored in target specifications, such that the target `2.7` is equivalent to the target `27`._
 
 ### `--strict` Mode
 
@@ -1421,7 +1425,7 @@ Likely the most useful of the convenience functions, `parse` takes Coconut code 
 
 If `--target`, `--strict`, `--minify`, `--linenumbers`, `--quiet`, or `--color` are desired for `parse`, the arguments to `setup` will each set the value of the corresponding flag. The possible values for each flag are:
 
-- _target_: `None` (default), or any [valid target](#compatible-python-versions)
+- _target_: `None` (default), or any [allowable target](##allowable-targets)
 - _strict_: `False` (default) or `True`
 - _minify_: `False` (default) or `True`
 - _linenumbers_: `False` (default) or `True`
