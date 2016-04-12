@@ -73,7 +73,13 @@ class range(object):
         else:
             return self._xrange[index]
     def count(self, elem):
+        """Count the number of times elem appears in the range."""
         return int(elem in self._xrange)
+    def index(self, elem):
+        """Find the index of elem in the range."""
+        if elem not in self._xrange: raise _coconut.ValueError(_coconut.repr(elem) + " is not in range")
+        start, _, step = self._xrange.__reduce__()[1]
+        return (elem - start) // step
     def __repr__(self):
         return _coconut.repr(self._xrange)[1:]
     def __reduce_ex__(self, protocol):
