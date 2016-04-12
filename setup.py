@@ -28,7 +28,17 @@ import setuptools
 #-----------------------------------------------------------------------------------------------------------------------
 
 with open("README.rst", "r") as opened:
-    readme = opened.read()
+    readme_raw = opened.read()
+readme_lines = []
+in_toc = False
+for line in readme_raw.splitlines():
+    if in_toc and not line.startswith(" "):
+        in_toc = False
+    elif line == ".. toctree::":
+        in_toc = True
+    if not in_toc:
+        readme_lines.append(line)
+readme = "\n".join(readme_lines)
 
 setuptools.setup(
     name = "coconut",
