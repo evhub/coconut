@@ -32,7 +32,7 @@ with open("README.rst", "r") as opened:
 readme_lines = []
 in_toc = False
 for line in readme_raw.splitlines():
-    if in_toc and not line.startswith(" "):
+    if in_toc and line and not line.startswith(" "):
         in_toc = False
     elif line == ".. toctree::":
         in_toc = True
