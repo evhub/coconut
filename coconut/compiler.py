@@ -482,7 +482,7 @@ class _coconut_zip(_coconut.zip):
     __coconut_is_lazy__ = True # tells $[] to use .__getitem__
     @property
     def _iters(self):
-        return _coconut.zip.__reduce__(self)[1]
+        return _coconut.zip.__reduce_ex__(self, 2)[1]
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
             return self.__class__(*(_coconut_igetitem(i, index) for i in self._iters))
@@ -502,10 +502,10 @@ class _coconut_map(_coconut.map):
     __coconut_is_lazy__ = True # tells $[] to use .__getitem__
     @property
     def _func(self):
-        return _coconut.map.__reduce__(self)[1][0]
+        return _coconut.map.__reduce_ex__(self, 2)[1][0]
     @property
     def _iters(self):
-        return _coconut.map.__reduce__(self)[1][1:]
+        return _coconut.map.__reduce_ex__(self, 2)[1][1:]
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
             return self.__class__(self._func, *(_coconut_igetitem(i, index) for i in self._iters))

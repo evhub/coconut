@@ -78,7 +78,7 @@ class range(object):
     def index(self, elem):
         """Find the index of elem in the range."""
         if elem not in self._xrange: raise _coconut.ValueError(_coconut.repr(elem) + " is not in range")
-        start, _, step = self._xrange.__reduce__()[1]
+        start, _, step = self._xrange.__reduce_ex__(2)[1]
         return (elem - start) // step
     def __repr__(self):
         return _coconut.repr(self._xrange)[1:]
