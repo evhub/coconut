@@ -546,7 +546,7 @@ class _coconut_count(object):'''
             yield self._start
             self._start += self._step
     def __contains__(self, elem):
-        return elem > self._start and (elem - self._start) % self._step == 0
+        return elem >= self._start and (elem - self._start) % self._step == 0
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice) and (index.start is None or index.start >= 0) and (index.stop is not None and index.stop >= 0):
             return _coconut_map(lambda x: self._start + x * self._step, _coconut.range(index.start if index.start is not None else 0, index.stop, index.step if index.step is not None else 1))
