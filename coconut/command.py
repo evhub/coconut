@@ -437,9 +437,13 @@ class cli(object):
         try:
             return input(prompt) # using input from .root
         except KeyboardInterrupt:
-            self.console.printerr("\nKeyboardInterrupt")
+            print()
+            self.console.printerr("KeyboardInterrupt")
         except EOFError:
             print()
+            self.exit()
+        except ValueError:
+            self.console.printerr(get_error(self.indebug()))
             self.exit()
         return None
 

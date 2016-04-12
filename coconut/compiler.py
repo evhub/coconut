@@ -1406,7 +1406,7 @@ class processor(object):
         try:
             raise warning
         except CoconutWarning:
-            self.tracing.show(get_error())
+            self.tracing.show(get_error(self.indebug()))
 
     def pre(self, inputstring, **kwargs):
         """Performs pre-processing."""
