@@ -29,7 +29,7 @@ import sys
 
 VERSION = "0.4.1"
 VERSION_NAME = "Pinnate"
-DEVELOP = False
+DEVELOP = True
 
 if DEVELOP:
     VERSION += "-post_dev"
