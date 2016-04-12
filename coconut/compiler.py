@@ -1260,10 +1260,7 @@ class processor(object):
             raise CoconutException('unsupported target Python version "' + target
                 + '" (supported targets are "' + '", "'.join(specific_targets) + '", or leave blank for universal)')
         self.target, self.strict, self.minify, self.linenumbers = target, strict, minify, linenumbers
-        if self.minify:
-            self.tablen = 1
-        else:
-            self.tablen = tabideal
+        self.tablen = 1 if self.minify else tabideal
 
     def bind(self):
         """Binds reference objects to the proper parse actions."""
@@ -1357,6 +1354,7 @@ class processor(object):
         return str(index)
 
     def get_ref(self, index):
+        """Retrieves a reference."""
         try:
             return self.refs[int(index)]
         except (IndexError, ValueError):
@@ -2751,7 +2749,7 @@ class processor(object):
         | math_funcdef
         | math_match_funcdef
         )
-    decorated = condense(decorators + decoratable_stmt)
+    decorated = condense(decorators - decoratable_stmt)
 
     passthrough_stmt = condense(passthrough_block - (base_suite | newline))
 
@@ -2772,6 +2770,15 @@ class processor(object):
         | decorated
         | match_assign_stmt
         , "compound_stmt")
+    keyword_stmt = (
+        del_stmt
+        | pass_stmt
+        | flow_stmt
+        | import_stmt
+        | global_stmt
+        | nonlocal_stmt
+        | assert_stmt
+        )
     augassign_stmt = Forward()
     augassign_stmt_ref = simple_assign + augassign + test_expr
     expr_stmt = trace(addspace(
@@ -2780,7 +2787,6 @@ class processor(object):
                       ), "expr_stmt")
 
     nonlocal_stmt = Forward()
-    keyword_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt | assert_stmt
     small_stmt = trace(keyword_stmt | expr_stmt, "small_stmt")
     simple_stmt <<= trace(condense(itemlist(small_stmt, semicolon) + newline), "simple_stmt")
     stmt <<= trace(compound_stmt | simple_stmt | destructuring_stmt, "stmt")
