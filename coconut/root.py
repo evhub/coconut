@@ -54,6 +54,8 @@ class range(object):
         return _coconut.reversed(self._xrange)
     def __len__(self):
         return _coconut.len(self._xrange)
+    def __contains__(self, elem):
+        return elem in self._xrange
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
             start, stop, step = index.start, index.stop, index.step
@@ -70,6 +72,8 @@ class range(object):
             return _coconut_map(self._xrange.__getitem__, self.__class__(start, stop, step))
         else:
             return self._xrange[index]
+    def count(self, elem):
+        return int(elem in self._xrange)
     def __repr__(self):
         return _coconut.repr(self._xrange)[1:]
     def __reduce_ex__(self, protocol):

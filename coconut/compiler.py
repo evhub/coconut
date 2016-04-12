@@ -1430,14 +1430,6 @@ class processor(object):
         """Gets a polished header."""
         return self.polish(getheader(header, self.target, usehash))
 
-    def set_docstring(self, original, location, tokens):
-        """Sets the docstring."""
-        if len(tokens) == 2:
-            self.docstring = self.reformat(tokens[0]) + "\n\n"
-            return tokens[1]
-        else:
-            raise CoconutException("invalid docstring tokens", tokens)
-
     def target_info(self):
         """Returns information on the current target as a version tuple."""
         return target_info(self.target)
@@ -1887,6 +1879,14 @@ class processor(object):
 #-----------------------------------------------------------------------------------------------------------------------
 # PARSER HANDLERS:
 #-----------------------------------------------------------------------------------------------------------------------
+
+    def set_docstring(self, original, location, tokens):
+        """Sets the docstring."""
+        if len(tokens) == 2:
+            self.docstring = self.reformat(tokens[0]) + "\n\n"
+            return tokens[1]
+        else:
+            raise CoconutException("invalid docstring tokens", tokens)
 
     def yield_from_handle(self, tokens):
         """Processes Python 3.3 yield from."""
