@@ -219,7 +219,11 @@ class terminal(object):
 
 class cli(object):
     """The Coconut command-line interface."""
-    version = "Version "+VERSION_STR+" running on Python "+" ".join(sys.version.splitlines())
+    version_str = "Version "+VERSION_STR+" running on Python "+" ".join(sys.version.splitlines())
+    if DEVELOP:
+        version_tag = "develop"
+    else:
+        version_tag = "v" + VERSION
     commandline = argparse.ArgumentParser(description="The Coconut Programming Language.")
     commandline.add_argument("source", metavar="source", type=str, nargs="?", default=None, help="path to the Coconut file/folder to compile")
     commandline.add_argument("dest", metavar="dest", type=str, nargs="?", default=None, help="destination directory for compiled files (defaults to the source directory)")
@@ -285,7 +289,7 @@ class cli(object):
                 sys.setrecursionlimit(args.recursionlimit[0])
             self.setup(args.target[0], args.strict, args.minify, args.linenumbers, args.quiet, args.color[0])
             if args.version:
-                self.console.show(self.version)
+                self.console.show(self.version_str)
             if args.tutorial:
                 self.launch_tutorial()
             if args.documentation:
@@ -528,12 +532,12 @@ class cli(object):
     def launch_tutorial(self):
         """Opens the Coconut tutorial."""
         import webbrowser
-        webbrowser.open("http://coconut.readthedocs.org/en/master/HELP.html", 2)
+        webbrowser.open("http://coconut.readthedocs.org/en/"+self.version_tag+"/HELP.html", 2)
 
     def launch_documentation(self):
         """Opens the Coconut documentation."""
         import webbrowser
-        webbrowser.open("http://coconut.readthedocs.org/en/master/DOCS.html", 2)
+        webbrowser.open("http://coconut.readthedocs.org/en/"+self.version_tag+"/DOCS.html", 2)
 
     def start_jupyter(self, args):
         """Starts Jupyter with the Coconut kernel."""

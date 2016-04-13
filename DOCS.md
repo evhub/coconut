@@ -1449,6 +1449,7 @@ Retrieves a string containing information about the Coconut version. The optiona
 - `"num"`: the numerical version (the default)
 - `"name"`: the version codename
 - `"spec"`: the numerical version with the codename attached
+- `"tag"`: the version tag used in GitHub and documentation URLs
 - `"-v"`: the full string printed by `coconut -v`
 
 #### `CoconutException`

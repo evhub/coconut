@@ -39,11 +39,13 @@ def version(which="num"):
         return VERSION_NAME
     elif which == "spec":
         return VERSION_STR
+    elif which == "tag":
+        return CLI.version_tag
     elif which == "-v":
-        return CLI.version
+        return CLI.version_str
     else:
         raise CoconutException("invalid version type " + ascii(which)
-                               + "; valid versions are 'num', 'name', 'spec', and '-v'")
+                               + "; valid versions are 'num', 'name', 'spec', 'tag', and '-v'")
 
 #-----------------------------------------------------------------------------------------------------------------------
 # COMPILER:
