@@ -127,6 +127,8 @@ dest                  destination directory for compiled files (defaults to the 
 --jupyter, --ipython    run Jupyter/IPython with Coconut as the kernel (remaining args passed to Jupyter)
 --autopep8              use autopep8 to format compiled code (remaining args passed to autopep8)
 --recursionlimit        set maximum recursion depth (default is version-dependent)
+--tutorial              open the Coconut tutorial in the default web browser
+--documentation         open the Coconut documentation in the default web browser
 --color                 show all Coconut messages in the given color
 --verbose               print verbose debug output
 ```

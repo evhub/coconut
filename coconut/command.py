@@ -240,6 +240,8 @@ class cli(object):
     commandline.add_argument("--jupyter", "--ipython", type=str, nargs=argparse.REMAINDER, default=None, help="run Jupyter/IPython with Coconut as the kernel (remaining args passed to Jupyter)")
     commandline.add_argument("--autopep8", type=str, nargs=argparse.REMAINDER, default=None, help="use autopep8 to format compiled code (remaining args passed to autopep8)")
     commandline.add_argument("--recursionlimit", metavar="limit", type=int, nargs=1, default=[None], help="set maximum recursion depth (defaults to "+str(sys.getrecursionlimit())+")")
+    commandline.add_argument("--tutorial", action="store_const", const=True, default=False, help="open the Coconut tutorial in the default web browser")
+    commandline.add_argument("--documentation", action="store_const", const=True, default=False, help="open the Coconut documentation in the default web browser")
     commandline.add_argument("--color", metavar="color", type=str, nargs=1, default=[None], help="show all Coconut messages in the given color")
     commandline.add_argument("--verbose", action="store_const", const=True, default=False, help="print verbose debug output")
     proc = None # current .compiler.processor
@@ -284,6 +286,10 @@ class cli(object):
             self.setup(args.target[0], args.strict, args.minify, args.linenumbers, args.quiet, args.color[0])
             if args.version:
                 self.console.show(self.version)
+            if args.tutorial:
+                self.launch_tutorial()
+            if args.documentation:
+                self.launch_documentation()
             if args.display:
                 self.show = True
             if args.verbose:
@@ -322,7 +328,15 @@ class cli(object):
                 self.execute(self.proc.parse_block(sys.stdin.read()))
             if args.jupyter is not None:
                 self.start_jupyter(args.jupyter)
-            if args.interact or (interact and not (stdin or args.source or args.version or args.code or args.jupyter is not None)):
+            if args.interact or (interact and not (
+                    stdin
+                    or args.source
+                    or args.version
+                    or args.code
+                    or args.tutorial
+                    or args.documentation
+                    or args.jupyter is not None
+                    )):
                 self.start_prompt()
         except CoconutException:
             self.console.printerr(get_error(self.indebug()))
@@ -510,6 +524,16 @@ class cli(object):
         else:
             proc = self.proc
         self.runner = executor(proc, self.exit, path)
+
+    def launch_tutorial(self):
+        """Opens the Coconut tutorial."""
+        import webbrowser
+        webbrowser.open("http://coconut.readthedocs.org/en/master/HELP.html", 2)
+
+    def launch_documentation(self):
+        """Opens the Coconut documentation."""
+        import webbrowser
+        webbrowser.open("http://coconut.readthedocs.org/en/master/DOCS.html", 2)
 
     def start_jupyter(self, args):
         """Starts Jupyter with the Coconut kernel."""
