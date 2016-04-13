@@ -632,7 +632,7 @@ def datamaker(data_type):
     return _coconut.functools.partial(_coconut.super(data_type, data_type).__new__, data_type)
 def consume(iterable, keep_last=0):
     """Fully exhaust iterable and return the last keep_last elements."""
-    return _coconut.collections.deque(iterable, maxlen=keep_last)
+    return _coconut.collections.deque(iterable, maxlen=keep_last) # fastest way to exhaust an iterator
 MatchError, map, parallel_map, zip, count, reduce, takewhile, dropwhile, tee = _coconut_MatchError, _coconut_map, _coconut_parallel_map, _coconut_zip, _coconut_count, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile, _coconut.itertools.tee
 '''
         else:

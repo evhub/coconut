@@ -1236,7 +1236,7 @@ Coconut provides the `consume` function to efficiently exhaust an iterator and t
 ```coconut
 def consume(iterable, keep_last=0):
     """Fully exhaust iterable and return the last keep_last elements."""
-    return collections.deque(iterable, maxlen=keep_last)
+    return collections.deque(iterable, maxlen=keep_last) # fastest way to exhaust an iterator
 ```
 
 ##### Rationale
