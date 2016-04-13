@@ -496,7 +496,7 @@ class _coconut_zip(_coconut.zip):
     def __repr__(self):
         return "zip(" + ", ".join((_coconut.repr(i) for i in self._iters)) + ")"
     def __reduce_ex__(self, protocol):
-        return (self.__class__,) + _coconut.zip.__reduce_ex__(self, protocol)[1:]
+        return (self.__class__, self._iters)
 class _coconut_map(_coconut.map):
     __slots__ = ("_iters",)
     __doc__ = _coconut.map.__doc__
@@ -520,7 +520,7 @@ class _coconut_map(_coconut.map):
     def __repr__(self):
         return "map(" + _coconut.repr(self._func) + ", " + ", ".join((_coconut.repr(i) for i in self._iters)) + ")"
     def __reduce_ex__(self, protocol):
-        return (self.__class__,) + _coconut.map.__reduce_ex__(self, protocol)[1:]
+        return (self.__class__, (self._func,) + self._iters)
 class _coconut_parallel_map(_coconut_map):
     """Multiprocessing implementation of map using concurrent.futures; requires arguments to be pickleable."""
     __slots__ = ()

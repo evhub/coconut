@@ -83,7 +83,7 @@ class range(object):
     def __repr__(self):
         return _coconut.repr(self._xrange)[1:]
     def __reduce_ex__(self, protocol):
-        return (self.__class__,) + self._xrange.__reduce_ex__(protocol)[1:]
+        return (self.__class__, self._xrange.__reduce_ex__(protocol)[1])
 class int(_coconut_int):
     __slots__ = ()
     __doc__ = _coconut_int.__doc__
