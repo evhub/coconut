@@ -477,12 +477,13 @@ class _coconut_MatchError(Exception):
     """Pattern-matching error."""
     __slots__ = ("pattern", "value")
 class _coconut_zip(_coconut.zip):
-    __slots__ = ()
+    __slots__ = ("_iters",)
     __doc__ = _coconut.zip.__doc__
     __coconut_is_lazy__ = True # tells $[] to use .__getitem__
-    @property
-    def _iters(self):
-        return _coconut.zip.__reduce_ex__(self, 2)[1]
+    def __new__(cls, *iterables):
+        new_zip = _coconut.zip.__new__(cls, *iterables)
+        new_zip._iters = iterables
+        return new_zip
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
             return self.__class__(*(_coconut_igetitem(i, index) for i in self._iters))
@@ -497,15 +498,16 @@ class _coconut_zip(_coconut.zip):
     def __reduce_ex__(self, protocol):
         return (self.__class__,) + _coconut.zip.__reduce_ex__(self, protocol)[1:]
 class _coconut_map(_coconut.map):
-    __slots__ = ()
+    __slots__ = ("_iters",)
     __doc__ = _coconut.map.__doc__
     __coconut_is_lazy__ = True # tells $[] to use .__getitem__
+    def __new__(cls, function, *iterables):
+        new_map = _coconut.map.__new__(cls, function, *iterables)
+        new_map._iters = iterables
+        return new_map
     @property
     def _func(self):
         return _coconut.map.__reduce_ex__(self, 2)[1][0]
-    @property
-    def _iters(self):
-        return _coconut.map.__reduce_ex__(self, 2)[1][1:]
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
             return self.__class__(self._func, *(_coconut_igetitem(i, index) for i in self._iters))
