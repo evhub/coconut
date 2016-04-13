@@ -84,7 +84,7 @@ class range(object):
         return _coconut.repr(self._xrange)[1:]
     def __reduce_ex__(self, protocol):
         return (self.__class__, self._xrange.__reduce_ex__(protocol)[1])
-from collections.abc import Sequence as _coconut_Sequence
+from collections import Sequence as _coconut_Sequence
 _coconut_Sequence.register(range)
 class int(_coconut_int):
     __slots__ = ()
