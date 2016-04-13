@@ -2226,10 +2226,7 @@ class processor(object):
             if len(set_items) != 1:
                 raise CoconutException("invalid set literal item", tokens[0])
             elif set_type == "s":
-                if self.target.startswith("3"):
-                    return "{" + set_items[0] + "}"
-                else:
-                    return "_coconut.set(" + set_to_tuple(set_items) + ")"
+                return self.set_literal_handle([set_items])
             elif set_type == "f":
                 return "_coconut.frozenset(" + set_to_tuple(set_items) + ")"
             else:
