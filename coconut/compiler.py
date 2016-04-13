@@ -498,7 +498,7 @@ class _coconut_zip(_coconut.zip):
     def __reduce_ex__(self, protocol):
         return (self.__class__, self._iters)
 class _coconut_map(_coconut.map):
-    __slots__ = ("func_", "_iters")
+    __slots__ = ("_func", "_iters")
     __doc__ = _coconut.map.__doc__
     __coconut_is_lazy__ = True # tells $[] to use .__getitem__
     def __new__(cls, function, *iterables):
