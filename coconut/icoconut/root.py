@@ -76,7 +76,17 @@ class kernel(Kernel):
         "mimetype": "text/x-python3",
         "file_extension": code_ext,
         "codemirror_mode": "python",
-        "pygments_lexer": "coconut"
+        "pygments_lexer": "coconut",
+        "help_links": [
+            {
+                "text": "Coconut Tutorial",
+                "url": tutorial_url
+            },
+            {
+                "text": "Coconut Documentation",
+                "url": documentation_url
+            }
+        ]
     }
 
     def _send(self, silent, text, debug=False):
