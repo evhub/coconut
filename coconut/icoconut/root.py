@@ -187,7 +187,7 @@ class kernel(Kernel):
                 obj_name += c
             else:
                 break
-        if obj_name in self._runner.vars and hasattr(self._runner.vars[obj_name], "__doc__"):
+        if self._runner is not None and obj_name in self._runner.vars and hasattr(self._runner.vars[obj_name], "__doc__"):
             return {
                 "status": "ok",
                 "found": True,
