@@ -113,23 +113,23 @@ dest                  destination directory for compiled files (defaults to the 
 -v, --version           print Coconut and Python version information
 -t, --target            specify target Python version (defaults to universal)
 -s, --strict            enforce code cleanliness standards
--l, --linenumbers     add line number comments for ease of debugging
+-l, --linenumbers       add line number comments for ease of debugging
 -p, --package           compile source as part of a package (defaults to only if source is a directory)
 -a, --standalone        compile source as standalone files (defaults to only if source is a single file)
--f, --force             force overwriting of compiled Python (otherwise only overwrites when the source changes)
+-f, --force             force overwriting of compiled Python (otherwise only overwrites when source code or compilation parameters change)
 -d, --display           print compiled Python
--r, --run               run compiled Python
+-r, --run               run compiled Python (often used with --nowrite)
 -n, --nowrite           disable writing compiled Python
 -m, --minify            compress compiled Python
 -i, --interact          force the interpreter to start (otherwise starts if no other command is given)
 -q, --quiet             suppress all informational output (combine with --display to write runnable code to stdout)
--c, --code              run a line of Coconut passed in as a string (can also be passed into stdin)
+-c code, --code code    run a line of Coconut passed in as a string (can also be passed into stdin)
 --jupyter, --ipython    run Jupyter/IPython with Coconut as the kernel (remaining args passed to Jupyter)
---autopep8              use autopep8 to format compiled code (remaining args passed to autopep8)
---recursionlimit        set maximum recursion depth (default is version-dependent)
+--autopep8 ...          use autopep8 to format compiled code (remaining args passed to autopep8)
+--recursionlimit        set maximum recursion depth (default is system dependent)
 --tutorial              open the Coconut tutorial in the default web browser
 --documentation         open the Coconut documentation in the default web browser
---color                 show all Coconut messages in the given color
+--color color           show all Coconut messages in the given color
 --verbose               print verbose debug output
 ```
 
