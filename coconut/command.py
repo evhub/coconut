@@ -77,6 +77,7 @@ color_codes = { # unix/ansii color codes, underscores in names removed
 end_color_code = 0
 
 version_long = "Version " + VERSION_STR + " running on Python " + " ".join(sys.version.splitlines())
+version_banner = "Coconut " + VERSION_STR
 if DEVELOP:
     version_tag = "develop"
 else:
@@ -569,7 +570,7 @@ class cli(object):
                     raise CoconutException(errmsg)
         if args:
             if args[0] == "console":
-                self.console.print("Coconut Kernel "+VERSION)
+                self.console.print(version_banner)
                 run_args = [jupyter, "console", "--kernel", "icoconut"] + args[1:]
             elif args[0] == "notebook":
                 run_args = [jupyter, "notebook"] + args[1:]

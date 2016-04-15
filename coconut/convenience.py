@@ -17,7 +17,7 @@ Description: Convenience functions for using Coconut as a module.
 from __future__ import print_function, absolute_import, unicode_literals, division
 
 from .root import *
-from .command import CoconutException, cli, version_tag, version_long
+from .command import CoconutException, cli, version_tag, version_long, main_sig
 
 #-----------------------------------------------------------------------------------------------------------------------
 # COMMAND:
@@ -42,7 +42,7 @@ def version(which="num"):
     elif which == "tag":
         return version_tag
     elif which == "-v":
-        return version_long
+        return main_sig + version_long
     else:
         raise CoconutException("invalid version type " + ascii(which)
                                + "; valid versions are 'num', 'name', 'spec', 'tag', and '-v'")
