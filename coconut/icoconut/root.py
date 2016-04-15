@@ -70,12 +70,15 @@ class kernel(Kernel):
     implementation_version = VERSION
     language = "coconut"
     language_version = VERSION
-    banner = "Coconut"
+    banner = "Coconut " + VERSION_STR
     language_info = {
         "name": "coconut",
         "mimetype": "text/x-python3",
         "file_extension": code_ext,
-        "codemirror_mode": "python",
+        "codemirror_mode": {
+            "name": "python",
+            "version": 3.6
+        },
         "pygments_lexer": "coconut",
         "help_links": [
             {
@@ -167,4 +170,34 @@ class kernel(Kernel):
         else:
             return {
                 "status": "complete"
+            }
+
+    def do_inspect(self, code, cursor_pos, detail_level=0):
+        """Gets information on an object."""
+        obj_name = ""
+        for i in reversed(range(cursor_pos)):
+            c = code[i]
+            if c in alphanums:
+                obj_name = c + obj_name
+            else:
+                break
+        for i in range(cursor_pos, len(code)):
+            c = code[i]
+            if c in alphanums:
+                obj_name += c
+            else:
+                break
+        if obj_name in self._runner.vars and hasattr(self._runner.vars[obj_name], "__doc__"):
+            return {
+                "status": "ok",
+                "found": True,
+                "data": {
+                    "text/plain": str(self._runner.vars[obj_name].__doc__)
+                }
+            }
+        else:
+            return {
+                "status": "aborted",
+                "found": False,
+                "data": {}
             }

@@ -555,7 +555,7 @@ class cli(object):
             jupyter = "ipython"
         else:
             jupyter = "jupyter"
-        install_args = [jupyter, "kernelspec", "install", os.path.join(os.path.dirname(os.path.abspath(__file__)), "icoconut")]
+        install_args = [jupyter, "kernelspec", "install", os.path.join(os.path.dirname(os.path.abspath(__file__)), "icoconut"), "--replace"]
         try:
             install_func(install_args)
         except subprocess.CalledProcessError:
