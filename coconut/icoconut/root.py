@@ -149,7 +149,7 @@ class kernel(Kernel):
             else:
                 return self._runner.run(compiled)
 
-    def do_execute(self, code, silent, store_history=True, user_expressions=None, allow_stdin=False):
+    def do_execute(self, code, silent=False, store_history=True, user_expressions=None, allow_stdin=False):
         """Execute Coconut code."""
         if silent:
             store_history = False
