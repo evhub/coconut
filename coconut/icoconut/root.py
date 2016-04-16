@@ -57,6 +57,32 @@ class fakefile(StringIO):
         StringIO.writelines(self, *args, **kwargs)
         self._refresh()
 
+def get_name(code, cursor_pos, get_bounds=False):
+    """Extract the name of the object in code at cursor_pos."""
+    name, left, right = "", cursor_pos, cursor_pos + 1
+    for i in reversed(range(cursor_pos)):
+        c = code[i]
+        if c in alphanums:
+            name = c + name
+        else:
+            left = i + 1
+            break
+    if i == 0:
+        left = 0
+    for i in range(cursor_pos, len(code)):
+        c = code[i]
+        if c in alphanums:
+            name += c
+        else:
+            right = i
+            break
+    if i == len(code) - 1:
+        right = len(code)
+    if get_bounds:
+        return name, left, right
+    else:
+        return name
+
 #-----------------------------------------------------------------------------------------------------------------------
 # KERNEL:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -174,25 +200,13 @@ class kernel(Kernel):
 
     def do_inspect(self, code, cursor_pos, detail_level=0):
         """Gets information on an object."""
-        obj_name = ""
-        for i in reversed(range(cursor_pos)):
-            c = code[i]
-            if c in alphanums:
-                obj_name = c + obj_name
-            else:
-                break
-        for i in range(cursor_pos, len(code)):
-            c = code[i]
-            if c in alphanums:
-                obj_name += c
-            else:
-                break
-        if self._runner is not None and obj_name in self._runner.vars and hasattr(self._runner.vars[obj_name], "__doc__"):
+        test_name = get_name(code, cursor_pos)
+        if self._runner is not None and test_name in self._runner.vars and hasattr(self._runner.vars[test_name], "__doc__"):
             return {
                 "status": "ok",
                 "found": True,
                 "data": {
-                    "text/plain": str(self._runner.vars[obj_name].__doc__)
+                    "text/plain": str(self._runner.vars[test_name].__doc__)
                 }
             }
         else:
@@ -201,3 +215,19 @@ class kernel(Kernel):
                 "found": False,
                 "data": {}
             }
+
+    def do_complete(self, code, cursor_pos):
+        """Completes code at position."""
+        test_name, cursor_start, cursor_end = get_name(code, cursor_pos, True)
+        matches = []
+        if self._runner is not None:
+            for var_name in self._runner.vars:
+                if var_name.startswith(test_name):
+                    matches.append(var_name)
+        return {
+            "status": "ok",
+            "matches": list(sorted(matches)),
+            "cursor_start": cursor_start,
+            "cursor_end": cursor_end,
+            "metadata": {}
+        }
