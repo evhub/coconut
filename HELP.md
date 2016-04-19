@@ -14,6 +14,7 @@
     2. [Recursive Method](#recursive-method)
     3. [Iterative Method](#iterative-method)
 4. [Case Study 2: `quick_sort`](#case-study-2-quick_sort)
+    1. [Pattern-Matching Function Definition](#pattern-matching-function-definition)
 5. [Case Study 3: `vector` Part I](#case-study-3-vector-part-i)
     1. [2-Vector](#2-vector)
     2. [n-Vector Constructor](#n-vector-constructor)
@@ -415,6 +416,29 @@ The function first attempts to split `l` into an initial element and a remaining
 The advantages of the basic approach used here, heavy use of iterators and recursion, as opposed to the classical imperative approach, are numerous. First, our approach is more clear and more readable, since it is describing _what_ `quick_sort` is instead of _how_ `quick_sort` could be implemented. Second, our approach is _lazy_ in that our `quick_sort` won't evaluate any data until it needs it. Finally, and although this isn't relevant for `quick_sort` it is relevant in many other cases, an example of which we'll see later in this tutorial, our approach allows for working with _infinite_ series just like they were finite.
 
 And Coconut makes programming in such an advantageous functional approach significantly easier. In this example, Coconut's pattern-matching lets us easily split the given iterator, and Coconut's `::` iterator joining operator lets us easily put it back together again in sorted order.
+
+### Pattern-Matching Function Definition
+
+If we want to be even more concise, Coconut will allow us to fold our match statement into our function definition statement, like so:
+```coconut
+def quick_sort([head] :: tail):
+    """Return a sorted iterator of l, using the quick sort algorithm, and without using any data until necessary."""
+    tail, tail_ = tee(tail)
+    yield from (quick_sort((x for x in tail if x <= head))
+        :: (head,)
+        :: quick_sort((x for x in tail_ if x > head))
+        )
+
+# Test cases:
+[] |> quick_sort |> list |> print # []
+[3] |> quick_sort |> list |> print # [3]
+[0,1,2,3,4] |> quick_sort |> list |> print # [0,1,2,3,4]
+[4,3,2,1,0] |> quick_sort |> list |> print # [0,1,2,3,4]
+[3,0,4,2,1] |> quick_sort |> list |> print # [0,1,2,3,4]
+```
+Copy, paste! As you can see, this version works exactly the same as the previous version.
+
+Pattern-matching function definition does exactly that—it pattern-matches against all the arguments that are passed to the function. In this case, pattern-matching function definition is incredibly handy, as it lets us write this whole function in just one line. There are a couple of things to watch out for when using pattern-matching function definition, however. First, that keyword arguments aren't allowed, and second, that instead of raising a `TypeError` if the wrong number of arguments are passed, your function will raise a `MatchError`. Finally, like destructuring assignment, if you want to be more explicit about using pattern-matching function definition, you can add a `match` before the `def`.
 
 ## Case Study 3: `vector` Part I
 
@@ -940,12 +964,10 @@ _Hint: Look back at how we checked whether the argument to `factorial` was an in
 <br>
 <br>
 
-Here's my solution, although I cheated a little bit and used a construct I haven't introduced yet—pattern-matching function definition. Take a look:
+Here's my solution, using pattern-matching function definition:
 ```coconut
     def angle(self, other is vector) = math.acos(self.unit() * other.unit())
 ```
-
-Pattern-matching function definition does exactly that—it pattern-matches against all the arguments that are passed to the function. In this case, pattern-matching function definition is incredibly handy, as it lets us write this whole function in just one line. There are a couple of things to watch out for when using pattern-matching function definition, however. First, that keyword arguments aren't allowed, and second, that instead of raising a `TypeError` if the wrong number of arguments are passed, your function will raise a `MatchError`. Finally, like destructuring assignment, if you want to be more explicit about using pattern-matching function definition, you can add a `match` before the `def`.
 
 And now it's time to put it all together. Feel free to substitute in your own versions of the methods we just defined.
 
