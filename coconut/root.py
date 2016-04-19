@@ -112,10 +112,10 @@ def input(*args, **kwargs):
         return _coconut_raw_input(*args, **kwargs).decode()
 print.__doc__, input.__doc__ = _coconut_print.__doc__, _coconut_raw_input.__doc__
 def raw_input(*args):
-    """Raises NameError."""
+    """Coconut uses Python 3 "input" instead of Python 2 "raw_input"."""
     raise _coconut.NameError('Coconut uses Python 3 "input" instead of Python 2 "raw_input"')
 def xrange(*args):
-    """Raises NameError."""
+    """Coconut uses Python 3 "range" instead of Python 2 "xrange"."""
     raise _coconut.NameError('Coconut uses Python 3 "range" instead of Python 2 "xrange"')'''
 PY2_HEADER_BASE = PY27_HEADER_BASE + '''
 if _coconut_sys.version_info < (2, 7):
