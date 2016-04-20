@@ -105,18 +105,18 @@ class kernel(Kernel):
             "name": "python",
             "version": 3.6
         },
-        "pygments_lexer": "coconut",
-        "help_links": [
-            {
-                "text": "Coconut Tutorial",
-                "url": tutorial_url
-            },
-            {
-                "text": "Coconut Documentation",
-                "url": documentation_url
-            }
-        ]
+        "pygments_lexer": "coconut"
     }
+    help_links = [
+        {
+            "text": "Coconut Tutorial",
+            "url": tutorial_url
+        },
+        {
+            "text": "Coconut Documentation",
+            "url": documentation_url
+        }
+    ]
 
     def _send(self, silent, text, debug=False):
         """Send message to console."""
