@@ -24,6 +24,12 @@ except ImportError:
 from ipykernel.kernelbase import Kernel
 
 #-----------------------------------------------------------------------------------------------------------------------
+# CONSTANTS:
+#-----------------------------------------------------------------------------------------------------------------------
+
+varchars = alphanums + "_"
+
+#-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -60,18 +66,20 @@ class fakefile(StringIO):
 def get_name(code, cursor_pos, get_bounds=False):
     """Extract the name of the object in code at cursor_pos."""
     name, left, right = "", cursor_pos, cursor_pos + 1
+    i = None
     for i in reversed(range(cursor_pos)):
         c = code[i]
-        if c in alphanums:
+        if c in varchars:
             name = c + name
         else:
             left = i + 1
             break
     if i == 0:
         left = 0
+    i = None
     for i in range(cursor_pos, len(code)):
         c = code[i]
-        if c in alphanums:
+        if c in varchars:
             name += c
         else:
             right = i
@@ -180,7 +188,7 @@ class kernel(Kernel):
         try:
             proc.parse_block(code)
         except CoconutException:
-            if code.endswith("\n\n"):
+            if code.endswith("\n"):
                 return {
                     "status": "complete"
                 }
