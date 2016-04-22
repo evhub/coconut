@@ -492,7 +492,7 @@ class _coconut_zip(_coconut.zip):
     def __reversed__(self):
         return self.__class__(*(_coconut.reversed(i) for i in self._iters))
     def __len__(self):
-        return _coconut.min(*(_coconut.len(i) for i in self._iters))
+        return _coconut.min(_coconut.len(i) for i in self._iters)
     def __repr__(self):
         return "zip(" + ", ".join((_coconut.repr(i) for i in self._iters)) + ")"
     def __reduce_ex__(self, _):
@@ -513,7 +513,7 @@ class _coconut_map(_coconut.map):
     def __reversed__(self):
         return self.__class__(self._func, *(_coconut.reversed(i) for i in self._iters))
     def __len__(self):
-        return _coconut.min(*(_coconut.len(i) for i in self._iters))
+        return _coconut.min(_coconut.len(i) for i in self._iters)
     def __repr__(self):
         return "map(" + _coconut.repr(self._func) + ", " + ", ".join((_coconut.repr(i) for i in self._iters)) + ")"
     def __reduce_ex__(self, _):
