@@ -28,6 +28,8 @@ from ipykernel.kernelbase import Kernel
 #-----------------------------------------------------------------------------------------------------------------------
 
 varchars = alphanums + "_"
+mimetype = "text/x-python3"
+py_syntax_version = 3.6
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -107,11 +109,11 @@ class kernel(Kernel):
     banner = version_banner
     language_info = {
         "name": "coconut",
-        "mimetype": "text/x-python3",
+        "mimetype": mimetype,
         "file_extension": code_ext,
         "codemirror_mode": {
             "name": "python",
-            "version": 3.6
+            "version": py_syntax_version
         },
         "pygments_lexer": "coconut"
     }
