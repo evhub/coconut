@@ -1683,8 +1683,8 @@ class processor(object):
                     levels.append(current)
                     current = check
                     line = openindent + line
-                    point = levels.index(check) + 1
                 elif check in levels:
+                    point = levels.index(check) + 1
                     line = closeindent*(len(levels[point:]) + 1) + line
                     levels = levels[:point]
                     current = levels.pop()
