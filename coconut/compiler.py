@@ -1475,9 +1475,9 @@ class processor(object):
         out = []
         found = None # store of characters that might be the start of a string
         hold = None
-        # hold = [_comment]
+        # hold = [_comment]:
         _comment = 0 # the contents of the comment so far
-        # hold = [_contents, _start, _stop]
+        # hold = [_contents, _start, _stop]:
         _contents = 0 # the contents of the string so far
         _start = 1 # the string of characters that started the string
         _stop = 2 # store of characters that might be the end of the string
@@ -1498,13 +1498,13 @@ class processor(object):
                                 out = ["\n".join(lines)]
                             out.append(c)
                         else:
-                            out.append(self.wrap_comment(hold[_comment])+c)
+                            out.append(self.wrap_comment(hold[_comment]) + c)
                         hold = None
                     else:
                         hold[_comment] += c
                 elif hold[_stop] is not None:
                     if c == "\\":
-                        hold[_contents] += hold[_stop]+c
+                        hold[_contents] += hold[_stop] + c
                         hold[_stop] = None
                     elif c == hold[_start][0]:
                         hold[_stop] += c
@@ -1682,10 +1682,10 @@ class processor(object):
                 elif check > current:
                     levels.append(current)
                     current = check
-                    line = openindent+line
+                    line = openindent + lin
+                    point = levels.index(check)+1e
                 elif check in levels:
-                    point = levels.index(check)+1
-                    line = closeindent*(len(levels[point:])+1)+line
+                    line = closeindent*(len(levels[point:])+1) + line
                     levels = levels[:point]
                     current = levels.pop()
                 elif current != check:
@@ -1877,13 +1877,16 @@ class processor(object):
 
     def autopep8(self, arglist=[]):
         """Enables autopep8 integration."""
+        if self.using_autopep8:
+            self.postprocs.pop()
+        else:
+            self.using_autopep8 = True
         import autopep8
-        args = autopep8.parse_args(["autopep8"]+arglist)
+        args = autopep8.parse_args(["autopep8"] + arglist)
         def pep8_fixer(code, **kwargs):
             """Automatic PEP8 fixer."""
             return autopep8.fix_code(code, options=args)
         self.postprocs.append(pep8_fixer)
-        self.using_autopep8 = True
 
 #-----------------------------------------------------------------------------------------------------------------------
 # PARSER HANDLERS:
