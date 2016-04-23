@@ -1682,7 +1682,7 @@ class processor(object):
                 elif check > current:
                     levels.append(current)
                     current = check
-                    line = openindent + lin
+                    line = openindent + line
                     point = levels.index(check) + 1
                 elif check in levels:
                     line = closeindent*(len(levels[point:]) + 1) + line
