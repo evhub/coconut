@@ -1683,9 +1683,9 @@ class processor(object):
                     levels.append(current)
                     current = check
                     line = openindent + lin
-                    point = levels.index(check)+1e
+                    point = levels.index(check) + 1
                 elif check in levels:
-                    line = closeindent*(len(levels[point:])+1) + line
+                    line = closeindent*(len(levels[point:]) + 1) + line
                     levels = levels[:point]
                     current = levels.pop()
                 elif current != check:
