@@ -38,7 +38,7 @@ VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
 VERSION_TAG = "v" + VERSION_STR
 PY2 = sys.version_info < (3,)
 PY27_HEADER_BASE = r'''py2_chr, py2_filter, py2_hex, py2_input, py2_int, py2_map, py2_oct, py2_open, py2_print, py2_range, py2_raw_input, py2_str, py2_xrange, py2_zip = chr, filter, hex, input, int, map, oct, open, print, range, raw_input, str, xrange, zip
-_coconut_int, _coconut_long, _coconut_print, _coconut_raw_input, _coconut_str, _coconut_unicode, _coconut_xrange = int, long, print, raw_input, str, unicode, xrange
+_coconut_int, _coconut_long, _coconut_print, _coconut_raw_input, _coconut_str, _coconut_unicode, _coconut_xrange, _coconut_repr = int, long, print, raw_input, str, unicode, xrange, repr
 from future_builtins import *
 chr, str = unichr, unicode
 from io import open
@@ -110,7 +110,13 @@ def input(*args, **kwargs):
         return _coconut_raw_input(*args, **kwargs).decode(_coconut_sys.stdout.encoding)
     else:
         return _coconut_raw_input(*args, **kwargs).decode()
-print.__doc__, input.__doc__ = _coconut_print.__doc__, _coconut_raw_input.__doc__
+def repr(obj):
+    if isinstance(obj, str):
+        return _coconut_repr(obj)[1:]
+    else:
+        return _coconut_repr(obj)
+ascii = repr
+print.__doc__, input.__doc__, repr.__doc__ = _coconut_print.__doc__, _coconut_raw_input.__doc__, _coconut_repr.__doc__
 def raw_input(*args):
     """Coconut uses Python 3 "input" instead of Python 2 "raw_input"."""
     raise _coconut.NameError('Coconut uses Python 3 "input" instead of Python 2 "raw_input"')
