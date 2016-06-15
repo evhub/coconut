@@ -111,7 +111,7 @@ def input(*args, **kwargs):
     else:
         return _coconut_raw_input(*args, **kwargs).decode()
 def repr(obj):
-    if isinstance(obj, str):
+    if isinstance(obj, _coconut_unicode):
         return _coconut_repr(obj)[1:]
     else:
         return _coconut_repr(obj)
