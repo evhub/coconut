@@ -28,7 +28,7 @@ import sys
 #-----------------------------------------------------------------------------------------------------------------------
 
 VERSION = "1.0.0"
-VERSION_NAME = "Pinnate"
+VERSION_NAME = "Albatross"
 DEVELOP = True
 
 if DEVELOP:
