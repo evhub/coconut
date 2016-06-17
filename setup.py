@@ -49,7 +49,7 @@ setuptools.setup(
     author = "Evan Hubinger",
     author_email = "evanjhub@gmail.com",
     classifiers = [
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
         "License :: OSI Approved :: Apache Software License",
         "Intended Audience :: Developers",
         "Intended Audience :: Information Technology",
