@@ -4,34 +4,34 @@
 
 1. [Introduction](#introduction)
     1. [Installation](#installation)
-2. [Starting Out](#starting-out)
+1. [Starting Out](#starting-out)
     1. [Using the Interpreter](#using-the-interpreter)
-    2. [Using the Compiler](#using-the-compiler)
-    3. [Using IPython / Jupyter](#using-ipython--jupyter)
-    4. [Case Studies](#case-studies)
-3. [Case Study 1: `factorial`](#case-study-1-factorial)
+    1. [Using the Compiler](#using-the-compiler)
+    1. [Using IPython / Jupyter](#using-ipython--jupyter)
+    1. [Case Studies](#case-studies)
+1. [Case Study 1: `factorial`](#case-study-1-factorial)
     1. [Imperative Method](#imperative-method)
-    2. [Recursive Method](#recursive-method)
-    3. [Iterative Method](#iterative-method)
-4. [Case Study 2: `quick_sort`](#case-study-2-quick_sort)
-5. [Case Study 3: `vector` Part I](#case-study-3-vector-part-i)
+    1. [Recursive Method](#recursive-method)
+    1. [Iterative Method](#iterative-method)
+1. [Case Study 2: `quick_sort`](#case-study-2-quick_sort)
+1. [Case Study 3: `vector` Part I](#case-study-3-vector-part-i)
     1. [2-Vector](#2-vector)
-    2. [n-Vector Constructor](#n-vector-constructor)
-    3. [n-Vector Methods](#n-vector-methods)
-6. [Case Study 4: `vector_field`](#case-study-4-vector_field)
+    1. [n-Vector Constructor](#n-vector-constructor)
+    1. [n-Vector Methods](#n-vector-methods)
+1. [Case Study 4: `vector_field`](#case-study-4-vector_field)
     1. [`diagonal_line`](#diagonal_line)
-    2. [`linearized_plane`](#linearized_plane)
-    3. [`vector_field`](#vector_field)
-    4. [Applications](#applications)
-7. [Case Study 5: `vector` Part II](#case-study-5-vector-part-ii)
+    1. [`linearized_plane`](#linearized_plane)
+    1. [`vector_field`](#vector_field)
+    1. [Applications](#applications)
+1. [Case Study 5: `vector` Part II](#case-study-5-vector-part-ii)
     1. [`__truediv__`](#__truediv__)
-    2. [`.unit`](#unit)
-    3. [`.angle`](#angle)
-8. [Filling in the Gaps](#filling-in-the-gaps)
+    1. [`.unit`](#unit)
+    1. [`.angle`](#angle)
+1. [Filling in the Gaps](#filling-in-the-gaps)
     1. [Lazy Lists](#lazy-lists)
-    2. [Function Composition](#function-composition)
-    3. [Implicit Partials](#implicit-partials)
-    4. [Further Reading](#further-reading)
+    1. [Function Composition](#function-composition)
+    1. [Implicit Partials](#implicit-partials)
+    1. [Further Reading](#further-reading)
 
 <!-- /MarkdownTOC -->
 
@@ -1047,5 +1047,7 @@ iter$[]
 ### Further Reading
 
 And that's it for this tutorial! But that's hardly it for Coconut. All of the features examined in this tutorial, as well as a bunch of others, are documented in detail in Coconut's comprehensive [documentation](http://coconut.readthedocs.org/en/master/DOCS.html).
+
+Also, if you have any other questions not covered in this tutorial, feel free to ask around at Coconut's [Gitter](https://gitter.im/evhub/coconut), a GitHub-integrated chat room for Coconut developers.
 
 Finally, Coconut is a new, growing language, and if you'd like to get involved in the development of Coconut, all the code is available completely open-source on Coconut's [GitHub](https://github.com/evhub/coconut). Contributing is a simple as forking the code, making your changes, and proposing a pull request.
