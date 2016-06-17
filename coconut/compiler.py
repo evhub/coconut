@@ -471,14 +471,21 @@ class _coconut(object):'''
         abc = collections
     else:
         import collections.abc as abc'''
+            if target.startswith("3"):
+                header += r'''
+    IndexError, NameError, ValueError, map, zip, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, reversed, set, slice, super, tuple, repr = IndexError, NameError, ValueError, map, zip, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, reversed, set, slice, super, tuple, repr
+'''
+            else:
+                header += r'''
+    IndexError, NameError, ValueError, map, zip, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, reversed, set, slice, super, tuple, repr = IndexError, NameError, ValueError, map, zip, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, reversed, set, slice, super, tuple, staticmethod(repr)
+'''
             header += r'''
-    IndexError, NameError, map, zip, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, repr, reversed, set, slice, super, tuple = IndexError, NameError, map, zip, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, repr, reversed, set, slice, super, tuple
 class _coconut_MatchError(Exception):
     """Pattern-matching error."""
     __slots__ = ("pattern", "value")
 class _coconut_zip(_coconut.zip):
-    __doc__ = _coconut.zip.__doc__
     __slots__ = ("_iters",)
+    __doc__ = _coconut.zip.__doc__
     __coconut_is_lazy__ = True # tells $[] to use .__getitem__
     def __new__(cls, *iterables):
         new_zip = _coconut.zip.__new__(cls, *iterables)
@@ -492,14 +499,14 @@ class _coconut_zip(_coconut.zip):
     def __reversed__(self):
         return self.__class__(*(_coconut.reversed(i) for i in self._iters))
     def __len__(self):
-        return _coconut.min(*(_coconut.len(i) for i in self._iters))
+        return _coconut.min(_coconut.len(i) for i in self._iters)
     def __repr__(self):
         return "zip(" + ", ".join((_coconut.repr(i) for i in self._iters)) + ")"
     def __reduce_ex__(self, _):
         return (self.__class__, self._iters)
 class _coconut_map(_coconut.map):
-    __doc__ = _coconut.map.__doc__
     __slots__ = ("_func", "_iters")
+    __doc__ = _coconut.map.__doc__
     __coconut_is_lazy__ = True # tells $[] to use .__getitem__
     def __new__(cls, function, *iterables):
         new_map = _coconut.map.__new__(cls, function, *iterables)
@@ -513,7 +520,7 @@ class _coconut_map(_coconut.map):
     def __reversed__(self):
         return self.__class__(self._func, *(_coconut.reversed(i) for i in self._iters))
     def __len__(self):
-        return _coconut.min(*(_coconut.len(i) for i in self._iters))
+        return _coconut.min(_coconut.len(i) for i in self._iters)
     def __repr__(self):
         return "map(" + _coconut.repr(self._func) + ", " + ", ".join((_coconut.repr(i) for i in self._iters)) + ")"
     def __reduce_ex__(self, _):
@@ -544,6 +551,8 @@ class _coconut_count(object):'''
         while True:
             yield self._start
             self._start += self._step
+    def __contains__(self, elem):
+        return elem >= self._start and (elem - self._start) % self._step == 0
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice) and (index.start is None or index.start >= 0) and (index.stop is not None and index.stop >= 0):
             return _coconut_map(lambda x: self._start + x * self._step, _coconut.range(index.start if index.start is not None else 0, index.stop, index.step if index.step is not None else 1))
@@ -551,6 +560,13 @@ class _coconut_count(object):'''
             return self._start + index * self._step
         else:
             raise _coconut.IndexError("count indices must be positive")
+    def count(self, elem):
+        """Count the number of times elem appears in the count."""
+        return int(elem in self)
+    def index(self, elem):
+        """Find the index of elem in the count."""
+        if elem not in self: raise _coconut.ValueError(_coconut.repr(elem) + " is not in count")
+        return (elem - self._start) // self._step
     def __repr__(self):
         return "count(" + str(self._start) + ", " + str(self._step) + ")"
     def __reduce__(self):
@@ -623,7 +639,7 @@ def datamaker(data_type):
     return _coconut.functools.partial(_coconut.super(data_type, data_type).__new__, data_type)
 def consume(iterable, keep_last=0):
     """Fully exhaust iterable and return the last keep_last elements."""
-    return _coconut.collections.deque(iterable, maxlen=keep_last)
+    return _coconut.collections.deque(iterable, maxlen=keep_last) # fastest way to exhaust an iterator
 MatchError, map, parallel_map, zip, count, reduce, takewhile, dropwhile, tee = _coconut_MatchError, _coconut_map, _coconut_parallel_map, _coconut_zip, _coconut_count, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile, _coconut.itertools.tee
 '''
         else:
@@ -1260,10 +1276,7 @@ class processor(object):
             raise CoconutException('unsupported target Python version "' + target
                 + '" (supported targets are "' + '", "'.join(specific_targets) + '", or leave blank for universal)')
         self.target, self.strict, self.minify, self.linenumbers = target, strict, minify, linenumbers
-        if self.minify:
-            self.tablen = 1
-        else:
-            self.tablen = tabideal
+        self.tablen = 1 if self.minify else tabideal
 
     def bind(self):
         """Binds reference objects to the proper parse actions."""
@@ -1357,6 +1370,7 @@ class processor(object):
         return str(index)
 
     def get_ref(self, index):
+        """Retrieves a reference."""
         try:
             return self.refs[int(index)]
         except (IndexError, ValueError):
@@ -1406,7 +1420,7 @@ class processor(object):
         try:
             raise warning
         except CoconutWarning:
-            self.tracing.show(get_error())
+            self.tracing.show(get_error(self.indebug()))
 
     def pre(self, inputstring, **kwargs):
         """Performs pre-processing."""
@@ -1431,14 +1445,6 @@ class processor(object):
     def headers(self, header, usehash=None):
         """Gets a polished header."""
         return self.polish(getheader(header, self.target, usehash))
-
-    def set_docstring(self, original, location, tokens):
-        """Sets the docstring."""
-        if len(tokens) == 2:
-            self.docstring = self.reformat(tokens[0]) + "\n\n"
-            return tokens[1]
-        else:
-            raise CoconutException("invalid docstring tokens", tokens)
 
     def target_info(self):
         """Returns information on the current target as a version tuple."""
@@ -1476,9 +1482,9 @@ class processor(object):
         out = []
         found = None # store of characters that might be the start of a string
         hold = None
-        # hold = [_comment]
+        # hold = [_comment]:
         _comment = 0 # the contents of the comment so far
-        # hold = [_contents, _start, _stop]
+        # hold = [_contents, _start, _stop]:
         _contents = 0 # the contents of the string so far
         _start = 1 # the string of characters that started the string
         _stop = 2 # store of characters that might be the end of the string
@@ -1499,13 +1505,13 @@ class processor(object):
                                 out = ["\n".join(lines)]
                             out.append(c)
                         else:
-                            out.append(self.wrap_comment(hold[_comment])+c)
+                            out.append(self.wrap_comment(hold[_comment]) + c)
                         hold = None
                     else:
                         hold[_comment] += c
                 elif hold[_stop] is not None:
                     if c == "\\":
-                        hold[_contents] += hold[_stop]+c
+                        hold[_contents] += hold[_stop] + c
                         hold[_stop] = None
                     elif c == hold[_start][0]:
                         hold[_stop] += c
@@ -1683,10 +1689,10 @@ class processor(object):
                 elif check > current:
                     levels.append(current)
                     current = check
-                    line = openindent+line
+                    line = openindent + line
                 elif check in levels:
-                    point = levels.index(check)+1
-                    line = closeindent*(len(levels[point:])+1)+line
+                    point = levels.index(check) + 1
+                    line = closeindent*(len(levels[point:]) + 1) + line
                     levels = levels[:point]
                     current = levels.pop()
                 elif current != check:
@@ -1878,17 +1884,28 @@ class processor(object):
 
     def autopep8(self, arglist=[]):
         """Enables autopep8 integration."""
+        if self.using_autopep8:
+            self.postprocs.pop()
+        else:
+            self.using_autopep8 = True
         import autopep8
-        args = autopep8.parse_args(["autopep8"]+arglist)
+        args = autopep8.parse_args(["autopep8"] + arglist)
         def pep8_fixer(code, **kwargs):
             """Automatic PEP8 fixer."""
             return autopep8.fix_code(code, options=args)
         self.postprocs.append(pep8_fixer)
-        self.using_autopep8 = True
 
 #-----------------------------------------------------------------------------------------------------------------------
 # PARSER HANDLERS:
 #-----------------------------------------------------------------------------------------------------------------------
+
+    def set_docstring(self, original, location, tokens):
+        """Sets the docstring."""
+        if len(tokens) == 2:
+            self.docstring = self.reformat(tokens[0]) + "\n\n"
+            return tokens[1]
+        else:
+            raise CoconutException("invalid docstring tokens", tokens)
 
     def yield_from_handle(self, tokens):
         """Processes Python 3.3 yield from."""
@@ -2219,10 +2236,7 @@ class processor(object):
             if len(set_items) != 1:
                 raise CoconutException("invalid set literal item", tokens[0])
             elif set_type == "s":
-                if self.target.startswith("3"):
-                    return "{" + set_items[0] + "}"
-                else:
-                    return "_coconut.set(" + set_to_tuple(set_items) + ")"
+                return self.set_literal_handle([set_items])
             elif set_type == "f":
                 return "_coconut.frozenset(" + set_to_tuple(set_items) + ")"
             else:
@@ -2621,6 +2635,7 @@ class processor(object):
     import_stmt = Forward()
     import_stmt_ref = import_from | import_name
 
+    nonlocal_stmt = Forward()
     namelist = parenwrap(lparen, itemlist(name, comma), rparen)
     global_stmt = addspace(Keyword("global") - namelist)
     nonlocal_stmt_ref = addspace(Keyword("nonlocal") - namelist)
@@ -2751,7 +2766,7 @@ class processor(object):
         | math_funcdef
         | math_match_funcdef
         )
-    decorated = condense(decorators + decoratable_stmt)
+    decorated = condense(decorators - decoratable_stmt)
 
     passthrough_stmt = condense(passthrough_block - (base_suite | newline))
 
@@ -2772,6 +2787,15 @@ class processor(object):
         | decorated
         | match_assign_stmt
         , "compound_stmt")
+    keyword_stmt = (
+        del_stmt
+        | pass_stmt
+        | flow_stmt
+        | import_stmt
+        | global_stmt
+        | nonlocal_stmt
+        | assert_stmt
+        )
     augassign_stmt = Forward()
     augassign_stmt_ref = simple_assign + augassign + test_expr
     expr_stmt = trace(addspace(
@@ -2779,8 +2803,6 @@ class processor(object):
                       | ZeroOrMore(assignlist + equals) + test_expr
                       ), "expr_stmt")
 
-    nonlocal_stmt = Forward()
-    keyword_stmt = del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt | assert_stmt
     small_stmt = trace(keyword_stmt | expr_stmt, "small_stmt")
     simple_stmt <<= trace(condense(itemlist(small_stmt, semicolon) + newline), "simple_stmt")
     stmt <<= trace(compound_stmt | simple_stmt | destructuring_stmt, "stmt")

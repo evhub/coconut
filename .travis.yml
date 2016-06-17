@@ -12,9 +12,9 @@ matrix:
 
       install:
         - pip install .
-        - pip install autopep8
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
+        - pip install autopep8
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
         - pip install futures
@@ -90,9 +90,9 @@ matrix:
 
       install:
         - pip install .
-        - pip install autopep8
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
+        - pip install autopep8
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
         - pip install futures
@@ -171,9 +171,9 @@ matrix:
 
       install:
         - pip install .
-        - pip install autopep8
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
+        - pip install autopep8
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
         - pip install futures
@@ -255,9 +255,9 @@ matrix:
 
       install:
         - pip install .
-        - pip install autopep8
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
+        - pip install autopep8
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
         - rm src/cocotest/py35_test.coc
@@ -332,9 +332,9 @@ matrix:
 
       install:
         - pip install .
-        - pip install autopep8
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
+        - pip install autopep8
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
         - pip install jupyter
@@ -412,9 +412,9 @@ matrix:
 
       install:
         - pip install .
-        - pip install autopep8
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
+        - pip install autopep8
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
         - pip install jupyter
@@ -492,9 +492,9 @@ matrix:
 
       install:
         - pip install .
-        - pip install autopep8
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
+        - pip install autopep8
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
         - pip install jupyter
@@ -580,9 +580,9 @@ matrix:
 
       install:
         - pip install .
-        - pip install autopep8
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
+        - pip install autopep8
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
         - rm src/cocotest/py35_test.coc

@@ -11,18 +11,19 @@
     3. [Naming Source Files](#naming-source-files)
     4. [Compilation Modes](#compilation-modes)
     5. [Compatible Python Versions](#compatible-python-versions)
-    6. [`--strict` Mode](#--strict-mode)
-    7. [IPython / Jupyter Support](#ipython--jupyter-support)
+    6. [Allowable Targets](#allowable-targets)
+    7. [`--strict` Mode](#--strict-mode)
+    8. [IPython / Jupyter Support](#ipython--jupyter-support)
         1. [Extension](#extension)
         2. [Kernel](#kernel)
-8. [Operators](#operators)
-    9. [Lambdas](#lambdas)
-    10. [Partial Application](#partial-application)
-    11. [Pipeline](#pipeline)
-    12. [Compose](#compose)
-    13. [Chain](#chain)
-    14. [Iterator Slicing](#iterator-slicing)
-    15. [Unicode Alternatives](#unicode-alternatives)
+9. [Operators](#operators)
+    10. [Lambdas](#lambdas)
+    11. [Partial Application](#partial-application)
+    12. [Pipeline](#pipeline)
+    13. [Compose](#compose)
+    14. [Chain](#chain)
+    15. [Iterator Slicing](#iterator-slicing)
+    16. [Unicode Alternatives](#unicode-alternatives)
 3. [Keywords](#keywords)
     1. [`data`](#data)
     2. [`match`](#match)
@@ -112,21 +113,23 @@ dest                  destination directory for compiled files (defaults to the 
 -v, --version           print Coconut and Python version information
 -t, --target            specify target Python version (defaults to universal)
 -s, --strict            enforce code cleanliness standards
--l, --linenumbers     add line number comments for ease of debugging
+-l, --linenumbers       add line number comments for ease of debugging
 -p, --package           compile source as part of a package (defaults to only if source is a directory)
 -a, --standalone        compile source as standalone files (defaults to only if source is a single file)
--f, --force             force overwriting of compiled Python (otherwise only overwrites when the source changes)
+-f, --force             force overwriting of compiled Python (otherwise only overwrites when source code or compilation parameters change)
 -d, --display           print compiled Python
--r, --run               run compiled Python
+-r, --run               run compiled Python (often used with --nowrite)
 -n, --nowrite           disable writing compiled Python
 -m, --minify            compress compiled Python
 -i, --interact          force the interpreter to start (otherwise starts if no other command is given)
 -q, --quiet             suppress all informational output (combine with --display to write runnable code to stdout)
--c, --code              run a line of Coconut passed in as a string (can also be passed into stdin)
+-c code, --code code    run a line of Coconut passed in as a string (can also be passed into stdin)
 --jupyter, --ipython    run Jupyter/IPython with Coconut as the kernel (remaining args passed to Jupyter)
---autopep8              use autopep8 to format compiled code (remaining args passed to autopep8)
---recursionlimit        set maximum recursion depth (default is version-dependent)
---color                 show all Coconut messages in the given color
+--autopep8 ...          use autopep8 to format compiled code (remaining args passed to autopep8)
+--recursionlimit        set maximum recursion depth (default is system dependent)
+--tutorial              open the Coconut tutorial in the default web browser
+--documentation         open the Coconut documentation in the default web browser
+--color color           show all Coconut messages in the given color
 --verbose               print verbose debug output
 ```
 
@@ -145,19 +148,6 @@ By default, if the `source` argument to the command-line utility is a file, it w
 While Coconut syntax is based off of Python 3, Coconut code compiled in universal mode (the default `--target`), and the Coconut compiler, should run on any Python version `>= 2.6` on the `2.x` branch or `>= 3.2` on the `3.x` branch.
 
 _Note: The tested against implementations are [CPython](https://www.python.org/) `2.6, 2.7, 3.2, 3.3, 3.4, 3.5` and [PyPy](http://pypy.org/) `2.7, 3.2`._
-
-If the version of Python that the compiled code will be running on is known ahead of time, a target should be specified with `--target`. The given target will only affect the compiled code and whether or not certain Python-3-specific syntax is allowed, detailed below. Where Python 3 and Python 2 syntax standards differ, Coconut syntax will always follow Python 3 across all targets. The supported targets are:
-
-- universal (default) (will work on _any_ of the below),
-- `2`, `26` (will work on any Python `>= 2.6` but `< 3`),
-- `27` (will work on any Python `>= 2.7` but `< 3`),
-- `3`, `32` (will work on any Python `>= 3.2`),
-- `33`, `34` (will work on any Python `>= 3.3`),
-- `35` (will work on any Python `>= 3.5`),
-- `36` (will work on any Python `>= 3.6`),
-- `sys` (chooses the specific target corresponding to the current version).
-
-_Note: Periods are ignored in target specifications, such that the target `2.7` is equivalent to the target `27`._
 
 As part of Coconut's cross-compatibility efforts, Coconut adds in new Python 3 built-ins and overwrites Python 2 built-ins to use the Python 3 versions where possible. If access to the Python 2 versions is desired, the old built-ins can be retrieved by prefixing them with `py2_`. The old built-ins available are:
 - `py2_chr`
@@ -184,8 +174,24 @@ Finally, while Coconut will try to compile Python-3-specific syntax to its unive
 - function type annotation,
 - the `nonlocal` keyword,
 - keyword class definition,
-- `@` as matrix multiplication (requires `--target 3.5`), and
-- `async` and `await` statements (requires `--target 3.5`).
+- `@` as matrix multiplication (requires `--target 3.5`),
+- `async` and `await` statements (requires `--target 3.5`), and
+- formatting `f` strings (requires `--target 3.6`).
+
+### Allowable Targets
+
+If the version of Python that the compiled code will be running on is known ahead of time, a target should be specified with `--target`. The given target will only affect the compiled code and whether or not certain Python-3-specific syntax is allowed, detailed below. Where Python 3 and Python 2 syntax standards differ, Coconut syntax will always follow Python 3 across all targets. The supported targets are:
+
+- universal (default) (will work on _any_ of the below),
+- `2`, `26` (will work on any Python `>= 2.6` but `< 3`),
+- `27` (will work on any Python `>= 2.7` but `< 3`),
+- `3`, `32` (will work on any Python `>= 3.2`),
+- `33`, `34` (will work on any Python `>= 3.3`),
+- `35` (will work on any Python `>= 3.5`),
+- `36` (will work on any Python `>= 3.6`),
+- `sys` (chooses the specific target corresponding to the current version).
+
+_Note: Periods are ignored in target specifications, such that the target `2.7` is equivalent to the target `27`._
 
 ### `--strict` Mode
 
@@ -1230,7 +1236,7 @@ Coconut provides the `consume` function to efficiently exhaust an iterator and t
 ```coconut
 def consume(iterable, keep_last=0):
     """Fully exhaust iterable and return the last keep_last elements."""
-    return collections.deque(iterable, maxlen=keep_last)
+    return collections.deque(iterable, maxlen=keep_last) # fastest way to exhaust an iterator
 ```
 
 ##### Rationale
@@ -1251,7 +1257,7 @@ collections.deque(map(print, map(lambda x: x**2, range(10))), maxlen=0)
 
 ### `count`
 
-Coconut provides a modified version of `itertools.count` that supports normal slicing, optimized iterator slicing, `repr`, and `_start` and `_step` attributes as a built-in under the name `count`.
+Coconut provides a modified version of `itertools.count` that supports `in`, normal slicing, optimized iterator slicing, `count` and `index` sequence methods, `repr`, and `_start` and `_step` attributes as a built-in under the name `count`.
 
 ##### Python Docs
 
@@ -1421,7 +1427,7 @@ Likely the most useful of the convenience functions, `parse` takes Coconut code 
 
 If `--target`, `--strict`, `--minify`, `--linenumbers`, `--quiet`, or `--color` are desired for `parse`, the arguments to `setup` will each set the value of the corresponding flag. The possible values for each flag are:
 
-- _target_: `None` (default), or any [valid target](#compatible-python-versions)
+- _target_: `None` (default), or any [allowable target](##allowable-targets)
 - _strict_: `False` (default) or `True`
 - _minify_: `False` (default) or `True`
 - _linenumbers_: `False` (default) or `True`
@@ -1443,6 +1449,7 @@ Retrieves a string containing information about the Coconut version. The optiona
 - `"num"`: the numerical version (the default)
 - `"name"`: the version codename
 - `"spec"`: the numerical version with the codename attached
+- `"tag"`: the version tag used in GitHub and documentation URLs
 - `"-v"`: the full string printed by `coconut -v`
 
 #### `CoconutException`

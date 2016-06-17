@@ -34,7 +34,7 @@ in_toc = False
 for line in readme_raw.splitlines():
     if in_toc and line and not line.startswith(" "):
         in_toc = False
-    elif line == ".. toctree::":
+    if line == ".. toctree::":
         in_toc = True
     if not in_toc:
         readme_lines.append(line)
@@ -120,6 +120,9 @@ setuptools.setup(
         "dropwhile",
         "tee",
         "consume",
+        "count",
+        "parallel_map",
+        "MatchError",
         "datamaker",
         "data keyword",
         "match keyword",

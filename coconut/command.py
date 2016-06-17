@@ -76,6 +76,15 @@ color_codes = { # unix/ansii color codes, underscores in names removed
     }
 end_color_code = 0
 
+version_long = "Version " + VERSION_STR + " running on Python " + " ".join(sys.version.splitlines())
+version_banner = "Coconut " + VERSION_STR
+if DEVELOP:
+    version_tag = "develop"
+else:
+    version_tag = "v" + VERSION
+tutorial_url = "http://coconut.readthedocs.org/en/" + version_tag + "/HELP.html"
+documentation_url = "http://coconut.readthedocs.org/en/" + version_tag + "/DOCS.html"
+
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -219,7 +228,6 @@ class terminal(object):
 
 class cli(object):
     """The Coconut command-line interface."""
-    version = "Version "+VERSION_STR+" running on Python "+" ".join(sys.version.splitlines())
     commandline = argparse.ArgumentParser(description="The Coconut Programming Language.")
     commandline.add_argument("source", metavar="source", type=str, nargs="?", default=None, help="path to the Coconut file/folder to compile")
     commandline.add_argument("dest", metavar="dest", type=str, nargs="?", default=None, help="destination directory for compiled files (defaults to the source directory)")
@@ -229,9 +237,9 @@ class cli(object):
     commandline.add_argument("-l", "--linenumbers", action="store_const", const=True, default=False, help="add line number comments for ease of debugging")
     commandline.add_argument("-p", "--package", action="store_const", const=True, default=False, help="compile source as part of a package (defaults to only if source is a directory)")
     commandline.add_argument("-a", "--standalone", action="store_const", const=True, default=False, help="compile source as standalone files (defaults to only if source is a single file)")
-    commandline.add_argument("-f", "--force", action="store_const", const=True, default=False, help="force overwriting of compiled Python (otherwise only overwrites when the source changes)")
+    commandline.add_argument("-f", "--force", action="store_const", const=True, default=False, help="force overwriting of compiled Python (otherwise only overwrites when source code or compilation parameters change)")
     commandline.add_argument("-d", "--display", action="store_const", const=True, default=False, help="print compiled Python")
-    commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run compiled Python")
+    commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run compiled Python (often used with --nowrite)")
     commandline.add_argument("-n", "--nowrite", action="store_const", const=True, default=False, help="disable writing compiled Python")
     commandline.add_argument("-m", "--minify", action="store_const", const=True, default=False, help="compress compiled Python")
     commandline.add_argument("-i", "--interact", action="store_const", const=True, default=False, help="force the interpreter to start (otherwise starts if no other command is given)")
@@ -240,6 +248,8 @@ class cli(object):
     commandline.add_argument("--jupyter", "--ipython", type=str, nargs=argparse.REMAINDER, default=None, help="run Jupyter/IPython with Coconut as the kernel (remaining args passed to Jupyter)")
     commandline.add_argument("--autopep8", type=str, nargs=argparse.REMAINDER, default=None, help="use autopep8 to format compiled code (remaining args passed to autopep8)")
     commandline.add_argument("--recursionlimit", metavar="limit", type=int, nargs=1, default=[None], help="set maximum recursion depth (defaults to "+str(sys.getrecursionlimit())+")")
+    commandline.add_argument("--tutorial", action="store_const", const=True, default=False, help="open the Coconut tutorial in the default web browser")
+    commandline.add_argument("--documentation", action="store_const", const=True, default=False, help="open the Coconut documentation in the default web browser")
     commandline.add_argument("--color", metavar="color", type=str, nargs=1, default=[None], help="show all Coconut messages in the given color")
     commandline.add_argument("--verbose", action="store_const", const=True, default=False, help="print verbose debug output")
     proc = None # current .compiler.processor
@@ -283,7 +293,11 @@ class cli(object):
                 sys.setrecursionlimit(args.recursionlimit[0])
             self.setup(args.target[0], args.strict, args.minify, args.linenumbers, args.quiet, args.color[0])
             if args.version:
-                self.console.show(self.version)
+                self.console.show(version_long)
+            if args.tutorial:
+                self.launch_tutorial()
+            if args.documentation:
+                self.launch_documentation()
             if args.display:
                 self.show = True
             if args.verbose:
@@ -322,7 +336,15 @@ class cli(object):
                 self.execute(self.proc.parse_block(sys.stdin.read()))
             if args.jupyter is not None:
                 self.start_jupyter(args.jupyter)
-            if args.interact or (interact and not (stdin or args.source or args.version or args.code or args.jupyter is not None)):
+            if args.interact or (interact and not (
+                    stdin
+                    or args.source
+                    or args.version
+                    or args.code
+                    or args.tutorial
+                    or args.documentation
+                    or args.jupyter is not None
+                    )):
                 self.start_prompt()
         except CoconutException:
             self.console.printerr(get_error(self.indebug()))
@@ -437,9 +459,13 @@ class cli(object):
         try:
             return input(prompt) # using input from .root
         except KeyboardInterrupt:
-            self.console.printerr("\nKeyboardInterrupt")
+            print()
+            self.console.printerr("KeyboardInterrupt")
         except EOFError:
             print()
+            self.exit()
+        except ValueError:
+            self.console.printerr(get_error(self.indebug()))
             self.exit()
         return None
 
@@ -507,6 +533,16 @@ class cli(object):
             proc = self.proc
         self.runner = executor(proc, self.exit, path)
 
+    def launch_tutorial(self):
+        """Opens the Coconut tutorial."""
+        import webbrowser
+        webbrowser.open(tutorial_url, 2)
+
+    def launch_documentation(self):
+        """Opens the Coconut documentation."""
+        import webbrowser
+        webbrowser.open(documentation_url, 2)
+
     def start_jupyter(self, args):
         """Starts Jupyter with the Coconut kernel."""
         import subprocess
@@ -520,7 +556,7 @@ class cli(object):
             jupyter = "ipython"
         else:
             jupyter = "jupyter"
-        install_args = [jupyter, "kernelspec", "install", os.path.join(os.path.dirname(os.path.abspath(__file__)), "icoconut")]
+        install_args = [jupyter, "kernelspec", "install", os.path.join(os.path.dirname(os.path.abspath(__file__)), "icoconut"), "--replace"]
         try:
             install_func(install_args)
         except subprocess.CalledProcessError:
@@ -534,7 +570,7 @@ class cli(object):
                     raise CoconutException(errmsg)
         if args:
             if args[0] == "console":
-                self.console.print("Coconut Kernel "+VERSION)
+                self.console.print(version_banner)
                 run_args = [jupyter, "console", "--kernel", "icoconut"] + args[1:]
             elif args[0] == "notebook":
                 run_args = [jupyter, "notebook"] + args[1:]

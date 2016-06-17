@@ -8,7 +8,7 @@
 4. [I've never done functional programming before, should I still try to learn Coconut?](#ive-never-done-functional-programming-before-should-i-still-try-to-learn-coconut)
 5. [I don't know Python very well, should I still try to learn Coconut?](#i-dont-know-python-very-well-should-i-still-try-to-learn-coconut)
 6. [Why isn't Coconut purely functional?](#why-isnt-coconut-purely-functional)
-7. [Won't a spin-off language like Coconut be bad for the Python community?](#wont-a-spin-off-language-like-coconut-be-bad-for-the-python-community)
+7. [Won't a transpiled language like Coconut be bad for the Python community?](#wont-a-transpiled-language-like-coconut-be-bad-for-the-python-community)
 8. [I want to contribute to Coconut, how do I get started?](#i-want-to-contribute-to-coconut-how-do-i-get-started)
 9. [Why the name Coconut?](#why-the-name-coconut)
 10. [Who developed Coconut?](#who-developed-coconut)
@@ -39,9 +39,9 @@ Maybe. If you know the very basics of Python, and are also very familiar with fu
 
 The short answer is that Python isn't purely functional, and all valid Python is valid Coconut. The long answer is that Coconut isn't purely functional for the same reason Python was never purely imperative—different problems demand different approaches. Coconut is built to be _useful_, and that means not imposing constraints about what style the programmer is allowed to use. That being said, Coconut is built specifically to work nicely when programming in a functional style, which means if you want to write all your code purely functionally, Coconut will make it a smooth experience, and allow you to have good-looking code to show for it.
 
-### Won't a spin-off language like Coconut be bad for the Python community?
+### Won't a transpiled language like Coconut be bad for the Python community?
 
-I certainly hope not! Unlike the sort of spin-off language you might be thinking about, all valid Python is valid Coconut. Coconut's goal isn't to replace Python, but to _extend_ it. If a newbie learns Coconut, it won't mean they have a harder time learning Python, it'll mean they _already know_ Python. And not just any Python, the newest and greatest—Python 3. And of course, Coconut is perfectly interoperable with Python, and uses all the same libraries—thus, Coconut can't split the Python community, because the Coconut community _is_ the Python community.
+I certainly hope not! Unlike most transpiled languages, all valid Python is valid Coconut. Coconut's goal isn't to replace Python, but to _extend_ it. If a newbie learns Coconut, it won't mean they have a harder time learning Python, it'll mean they _already know_ Python. And not just any Python, the newest and greatest—Python 3. And of course, Coconut is perfectly interoperable with Python, and uses all the same libraries—thus, Coconut can't split the Python community, because the Coconut community _is_ the Python community.
 
 ### I want to contribute to Coconut, how do I get started?
 

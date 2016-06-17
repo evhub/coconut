@@ -24,6 +24,14 @@ except ImportError:
 from ipykernel.kernelbase import Kernel
 
 #-----------------------------------------------------------------------------------------------------------------------
+# CONSTANTS:
+#-----------------------------------------------------------------------------------------------------------------------
+
+varchars = alphanums + "_"
+mimetype = "text/x-python3"
+py_syntax_version = 3.6
+
+#-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -57,6 +65,34 @@ class fakefile(StringIO):
         StringIO.writelines(self, *args, **kwargs)
         self._refresh()
 
+def get_name(code, cursor_pos, get_bounds=False):
+    """Extract the name of the object in code at cursor_pos."""
+    name, left, right = "", cursor_pos, cursor_pos + 1
+    i = None
+    for i in reversed(range(cursor_pos)):
+        c = code[i]
+        if c in varchars:
+            name = c + name
+        else:
+            left = i + 1
+            break
+    if i == 0:
+        left = 0
+    i = None
+    for i in range(cursor_pos, len(code)):
+        c = code[i]
+        if c in varchars:
+            name += c
+        else:
+            right = i
+            break
+    if i == len(code) - 1:
+        right = len(code)
+    if get_bounds:
+        return name, left, right
+    else:
+        return name
+
 #-----------------------------------------------------------------------------------------------------------------------
 # KERNEL:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -70,14 +106,27 @@ class kernel(Kernel):
     implementation_version = VERSION
     language = "coconut"
     language_version = VERSION
-    banner = "Coconut"
+    banner = version_banner
     language_info = {
         "name": "coconut",
-        "mimetype": "text/x-python3",
+        "mimetype": mimetype,
         "file_extension": code_ext,
-        "codemirror_mode": "python",
+        "codemirror_mode": {
+            "name": "python",
+            "version": py_syntax_version
+        },
         "pygments_lexer": "coconut"
     }
+    help_links = [
+        {
+            "text": "Coconut Tutorial",
+            "url": tutorial_url
+        },
+        {
+            "text": "Coconut Documentation",
+            "url": documentation_url
+        }
+    ]
 
     def _send(self, silent, text, debug=False):
         """Send message to console."""
@@ -110,7 +159,7 @@ class kernel(Kernel):
             else:
                 return self._runner.run(compiled)
 
-    def do_execute(self, code, silent, store_history=True, user_expressions=None, allow_stdin=False):
+    def do_execute(self, code, silent=False, store_history=True, user_expressions=None, allow_stdin=False):
         """Execute Coconut code."""
         if silent:
             store_history = False
@@ -141,7 +190,7 @@ class kernel(Kernel):
         try:
             proc.parse_block(code)
         except CoconutException:
-            if code.endswith("\n\n"):
+            if code.endswith("\n"):
                 return {
                     "status": "complete"
                 }
@@ -158,3 +207,37 @@ class kernel(Kernel):
             return {
                 "status": "complete"
             }
+
+    def do_inspect(self, code, cursor_pos, detail_level=0):
+        """Gets information on an object."""
+        test_name = get_name(code, cursor_pos)
+        if self._runner is not None and test_name in self._runner.vars and hasattr(self._runner.vars[test_name], "__doc__"):
+            return {
+                "status": "ok",
+                "found": True,
+                "data": {
+                    "text/plain": str(self._runner.vars[test_name].__doc__)
+                }
+            }
+        else:
+            return {
+                "status": "aborted",
+                "found": False,
+                "data": {}
+            }
+
+    def do_complete(self, code, cursor_pos):
+        """Completes code at position."""
+        test_name, cursor_start, cursor_end = get_name(code, cursor_pos, True)
+        matches = []
+        if self._runner is not None:
+            for var_name in self._runner.vars:
+                if var_name.startswith(test_name):
+                    matches.append(var_name)
+        return {
+            "status": "ok",
+            "matches": list(sorted(matches)),
+            "cursor_start": cursor_start,
+            "cursor_end": cursor_end,
+            "metadata": {}
+        }
