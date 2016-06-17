@@ -45,7 +45,7 @@ setuptools.setup(
     version = VERSION,
     description = "Simple, elegant, Pythonic functional programming.",
     long_description = readme,
-    url = "http://evhub.github.io/coconut/",
+    url = "http://coconut-lang.org",
     author = "Evan Hubinger",
     author_email = "evanjhub@gmail.com",
     classifiers = [
