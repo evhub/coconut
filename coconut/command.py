@@ -151,7 +151,8 @@ class executor(object):
                 except SyntaxError:
                     exec(code,self.vars)
             else:
-                return run_func(code, self.vars)
+                #return run_func(code, self.vars)
+                run_func(code, self.vars)
         except (Exception, KeyboardInterrupt):
             if err:
                 raise
