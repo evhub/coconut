@@ -8,7 +8,7 @@ Coconut
    HELP
    DOCS
 
-Coconut_ is a variant of Python_ built for **simple, elegant, Pythonic functional programming**.
+Coconut (`coconut-lang.org`__) is a variant of Python_ built for **simple, elegant, Pythonic functional programming**.
 
 Coconut is developed on GitHub_ and hosted on PyPI_, where it has been downloaded `over 30,000 times <http://pypi-ranking.info/module/coconut>`_. Installing Coconut is as easy as opening a command prompt and entering::
 
@@ -24,7 +24,8 @@ after which the entire world of Coconut will be at your disposal. To help you ge
 
 *Note: If the above documentation links are not working, try the* |mirror|_ *.*
 
-.. _Coconut: http://evhub.github.io/coconut/
+__ Coconut_
+.. _Coconut: http://coconut-lang.org/
 .. _Python: https://www.python.org/
 .. _PyPI: https://pypi.python.org/pypi/coconut
 .. _Help: http://coconut.readthedocs.org/en/master/HELP.html
