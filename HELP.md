@@ -37,7 +37,7 @@
 
 ## Introduction
 
-Welcome to the tutorial for the [Coconut Programming Language](http://evhub.github.io/coconut/)! If you're here, you've probably already seen Coconut's tag line: **simple, elegant, Pythonic functional programming**. But those are just words; what they mean in practice is that _all valid Python 3 is valid Coconut_ but Coconut builds on top of Python a suite of _simple, elegant utilities for functional programming_.
+Welcome to the tutorial for the [Coconut Programming Language](http://evhub.github.io/coconut/)! Coconut is a variant of [Python](https://www.python.org/) built for **simple, elegant, Pythonic functional programming**. But those are just words; what they mean in practice is that _all valid Python 3 is valid Coconut_ but Coconut builds on top of Python a suite of _simple, elegant utilities for functional programming_.
 
 Why use Coconut? Coconut is built to be fundamentally _useful_. Coconut enhances the repertoire of Python programmers to include the tools of modern functional programming, in such a way that those tools are _easy_ to use and immensely _powerful_; that is, _Coconut does to functional programming what Python did to imperative programming_. And Coconut code runs the same on _any Python version_, making the Python 2/3 split a thing of the past.
 
