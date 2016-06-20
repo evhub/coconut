@@ -13,7 +13,7 @@
     1. [Compatible Python Versions](#compatible-python-versions)
     1. [Allowable Targets](#allowable-targets)
     1. [`--strict` Mode](#--strict-mode)
-    1. [IPython / Jupyter Support](#ipython--jupyter-support)
+    1. [IPython/Jupyter Support](#ipythonjupyter-support)
         1. [Extension](#extension)
         1. [Kernel](#kernel)
 1. [Operators](#operators)
@@ -80,7 +80,7 @@ This documentation covers all the technical details of the [Coconut Programming 
 
 Coconut is a variant of [Python](https://www.python.org/) built for **simple, elegant, Pythonic functional programming**. Coconut syntax is a strict superset of Python 3 syntax. That means users familiar with Python will already be familiar with most of Coconut.
 
-The Coconut compiler turns Coconut code into Python code. The primary method of accessing the Coconut compiler is through the Coconut command-line utility, which also features an interpreter for real-time compilation. In addition to the command-line utility, Coconut also supports the use of IPython / Jupyter notebooks.
+The Coconut compiler turns Coconut code into Python code. The primary method of accessing the Coconut compiler is through the Coconut command-line utility, which also features an interpreter for real-time compilation. In addition to the command-line utility, Coconut also supports the use of IPython/Jupyter notebooks.
 
 While most of Coconut gets its inspiration simply from trying to make functional programming work in Python, additional inspiration came from [Haskell](https://www.haskell.org/), [CoffeeScript](http://coffeescript.org/), [F#](http://fsharp.org/), and [patterns.py](https://github.com/Suor/patterns).
 
@@ -205,7 +205,7 @@ If the `--strict` or `-s` flag is enabled, Coconut will throw errors on various 
 
 It is recommended that you use the `--strict` or `-s` flag if you are starting a new Coconut project, as it will help you write cleaner code.
 
-### IPython / Jupyter Support
+### IPython/Jupyter Support
 
 If you prefer [IPython](http://ipython.org/) (the python kernel for the [Jupyter](http://jupyter.org/) framework) to the normal Python shell, Coconut can be used as an IPython extension or Jupyter kernel.
 
@@ -215,7 +215,7 @@ If Coconut is used as an extension, a special magic command will send snippets o
 
 #### Kernel
 
-If Coconut is used as a kernel, all code in the console or notebook will be sent directly to Coconut instead of Python to be evaluated. The command `coconut --jupyter notebook` (or `coconut --ipython notebook`) will launch an IPython / Jupyter notebook using Coconut as the kernel and the command `coconut --jupyter console` (or `coconut --ipython console`) will launch an IPython / Jupyter console using Coconut as the kernel. Additionally, the command `coconut --jupyter` (or `coconut --ipython`) will add Coconut as a language option inside of all IPython / Jupyter notebooks, even those not launched with Coconut. This command may need to be re-run when a new version of Coconut is installed.
+If Coconut is used as a kernel, all code in the console or notebook will be sent directly to Coconut instead of Python to be evaluated. The command `coconut --jupyter notebook` (or `coconut --ipython notebook`) will launch an IPython/Jupyter notebook using Coconut as the kernel and the command `coconut --jupyter console` (or `coconut --ipython console`) will launch an IPython/Jupyter console using Coconut as the kernel. Additionally, the command `coconut --jupyter` (or `coconut --ipython`) will add Coconut as a language option inside of all IPython/Jupyter notebooks, even those not launched with Coconut. This command may need to be re-run when a new version of Coconut is installed.
 
 ## Operators
 
