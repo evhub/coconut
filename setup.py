@@ -45,11 +45,11 @@ setuptools.setup(
     version = VERSION,
     description = "Simple, elegant, Pythonic functional programming.",
     long_description = readme,
-    url = "http://evhub.github.io/coconut/",
+    url = "http://coconut-lang.org",
     author = "Evan Hubinger",
     author_email = "evanjhub@gmail.com",
     classifiers = [
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
         "License :: OSI Approved :: Apache Software License",
         "Intended Audience :: Developers",
         "Intended Audience :: Information Technology",
@@ -130,7 +130,7 @@ setuptools.setup(
         ],
     packages = setuptools.find_packages(),
     install_requires = [
-        "pyparsing==2.1.1"
+        "pyparsing==2.1.5"
         ],
     entry_points = {
         "console_scripts": [
