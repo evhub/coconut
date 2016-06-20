@@ -25,7 +25,7 @@ import argparse
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-code_ext = ".coc"
+code_exts = [".coco", ".coc", ".coconut"] # in order of preference
 comp_ext = ".py"
 
 main_sig = "Coconut: "
@@ -385,7 +385,7 @@ class cli(object):
             wrote = False
             try:
                 for filename in filenames:
-                    if os.path.splitext(filename)[1] == code_ext:
+                    if os.path.splitext(filename)[1] in code_exts:
                         self.compile_file(os.path.join(dirpath, filename), writedir, package, run, force)
                         wrote = True
             finally: # if we wrote anything in package mode, we should always add a header file

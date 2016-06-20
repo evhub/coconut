@@ -115,9 +115,9 @@ One thing you probably noticed here is that unlike the Python interpreter, the C
 
 Of course, while being able to interpret Coconut code on-the-fly is a great thing, it wouldn't be very useful without the ability to write and compile larger programs. To that end, it's time to write our first Coconut program: "hello, world!" Coconut-style.
 
-First, we're going to need to create a file to put our code into. The file extension for Coconut source files is `.coc`, so let's create the new file `hello_world.coc`. After you do that, you should take the time now to set up your text editor to properly highlight Coconut code. For instructions on how to do that, see the documentation on [Coconut syntax highlighting](http://coconut.readthedocs.org/en/master/DOCS.html#syntax-highlighting).
+First, we're going to need to create a file to put our code into. The file extension for Coconut source files is `.coco`, so let's create the new file `hello_world.coco`. After you do that, you should take the time now to set up your text editor to properly highlight Coconut code. For instructions on how to do that, see the documentation on [Coconut syntax highlighting](http://coconut.readthedocs.org/en/master/DOCS.html#syntax-highlighting).
 
-Now let's put some code in our `hello_world.coc` file. Unlike in Python, where headers like
+Now let's put some code in our `hello_world.coco` file. Unlike in Python, where headers like
 ```coc_python
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
@@ -137,14 +137,14 @@ which should let you see very clearly how Coconut's `|>` operator enables pipeli
 
 Compiling Coconut files and projects with the Coconut command-line utility is incredibly simple. Just type
 ```
-coconut hello_world.coc
+coconut hello_world.coco
 ```
 which should give the output
 ```
-Coconut: Compiling       hello_world.coc ...
+Coconut: Compiling       hello_world.coco ...
 Coconut: Compiled to       hello_world.py .
 ```
-and deposit a new `hello_world.py` file in the same directory as the `hello_world.coc` file. You should then be able to run that file with
+and deposit a new `hello_world.py` file in the same directory as the `hello_world.coco` file. You should then be able to run that file with
 ```
 python hello_world.py
 ```
