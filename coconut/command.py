@@ -146,14 +146,19 @@ class executor(object):
         """Executes Python code."""
         try:
             if run_func is None:
-                exec(code, self.vars)
+                try:
+                    return eval(code, self.vars)
+                except SyntaxError:
+                    exec(code,self.vars)
             else:
-                return run_func(code, self.vars)
+                #return run_func(code, self.vars)
+                run_func(code, self.vars)
         except (Exception, KeyboardInterrupt):
             if err:
                 raise
             else:
                 traceback.print_exc()
+                return None
         except SystemExit:
             if self.exit is None:
                 raise
@@ -480,7 +485,9 @@ class cli(object):
             if code:
                 compiled = self.handle(code)
                 if compiled:
-                    self.execute(compiled, False)
+                    resp = self.execute(compiled, False)
+                    if resp != None:
+                        self.console.print(resp)
 
     def exit(self):
         """Exits the interpreter."""
@@ -517,7 +524,7 @@ class cli(object):
                 print(compiled)
             if isolate: # isolate means header is included, and thus encoding must be removed
                 compiled = rem_encoding(compiled)
-            self.runner.run(compiled, error)
+            return self.runner.run(compiled, error)
 
     def check_runner(self, path=None, isolate=False):
         """Makes sure there is a runner."""
