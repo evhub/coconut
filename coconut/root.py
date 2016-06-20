@@ -29,7 +29,7 @@ import sys
 
 VERSION = "1.0.0"
 VERSION_NAME = "Albatross"
-DEVELOP = True
+DEVELOP = False
 
 if DEVELOP:
     VERSION += "-post_dev"
