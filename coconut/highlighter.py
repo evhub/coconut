@@ -103,7 +103,7 @@ class coclexer(Python3Lexer):
     """Coconut syntax highlighter."""
     name = "coconut"
     aliases = ["coconut", "coc", "coconutcon"]
-    filenames = ["*"+code_ext]
+    filenames = ["*"+ext for ext in code_exts]
 
     tokens = Python3Lexer.tokens.copy()
     tokens["root"] = [
