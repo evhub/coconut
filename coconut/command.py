@@ -543,6 +543,11 @@ class cli(object):
         import webbrowser
         webbrowser.open(documentation_url, 2)
 
+    def log_cmd(self, args):
+        """Logs a console command if indebug."""
+        if self.indebug():
+            self.console.printerr("> " + " ".join(args))
+
     def start_jupyter(self, args):
         """Starts Jupyter with the Coconut kernel."""
         import subprocess
@@ -550,18 +555,23 @@ class cli(object):
             install_func = lambda args: subprocess.check_output(args, stderr=subprocess.STDOUT) # stdout is returned and ignored
         else:
             install_func = lambda args: subprocess.check_call(args)
+        check_args = ["jupyter", "--version"]
+        self.log_cmd(check_args)
         try:
-            install_func(["jupyter", "--version"])
+            install_func(check_args)
         except subprocess.CalledProcessError:
             jupyter = "ipython"
         else:
             jupyter = "jupyter"
         install_args = [jupyter, "kernelspec", "install", os.path.join(os.path.dirname(os.path.abspath(__file__)), "icoconut"), "--replace"]
+        self.log_cmd(install_args)
         try:
             install_func(install_args)
         except subprocess.CalledProcessError:
+            user_install_args = install_args + ["--user"]
+            self.log_cmd(user_install_args)
             try:
-                install_func(install_args + ["--user"])
+                install_func(user_install_args)
             except subprocess.CalledProcessError:
                 errmsg = 'unable to install Jupyter kernel specification file (failed command "'+" ".join(install_args)+'")'
                 if args:
@@ -576,4 +586,5 @@ class cli(object):
                 run_args = [jupyter, "notebook"] + args[1:]
             else:
                 raise CoconutException('first argument after --jupyter must be either "console" or "notebook"')
+            self.log_cmd(run_args)
             subprocess.call(run_args)
