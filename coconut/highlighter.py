@@ -108,7 +108,7 @@ class coclexer(Python3Lexer):
     tokens = Python3Lexer.tokens.copy()
     tokens["root"] = [
         (r"|".join(operators), Operator),
-        (r'(?<!\\)(data)((?:\s|\\\s)+)?', bygroups(Keyword, Text), 'classname')
+        (r'(?<!\\)(data)((?:\s|\\\s)+)', bygroups(Keyword, Text), 'classname')
     ] + tokens["root"]
     tokens["keywords"] = tokens["keywords"] + [
         (words(reserved_vars, prefix=r"(?<!\\)", suffix=r"\b"), Keyword)
