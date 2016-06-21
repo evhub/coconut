@@ -102,14 +102,11 @@ In case you missed it earlier, _all valid Python 3 is valid Coconut_. That doesn
 That means that if you're familiar with Python, you're already familiar with a good deal of Coconut's core syntax and Coconut's entire standard library. To show that, let's try entering some basic Python into the Coconut interpreter.
 
 ```coc_pycon
->>> print("hello, world!")
+>>> "hello, world!"
 hello, world!
 >>> 1 + 1
->>> print(1 + 1)
 2
 ```
-
-One thing you probably noticed here is that unlike the Python interpreter, the Coconut interpreter will not automatically print the result of a naked expression. This is a good thing, because it means your code will do exactly the same thing in the interpreter as it would anywhere else, with the exception of totally blank lines terminating the current entry, but it might take some getting used to.
 
 ### Using the Compiler
 
