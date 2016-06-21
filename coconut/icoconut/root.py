@@ -110,7 +110,7 @@ class kernel(Kernel):
     language_info = {
         "name": "coconut",
         "mimetype": mimetype,
-        "file_extension": code_ext[0],
+        "file_extension": code_exts[0],
         "codemirror_mode": {
             "name": "python",
             "version": py_syntax_version
