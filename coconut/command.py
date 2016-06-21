@@ -517,7 +517,15 @@ class cli(object):
                 print(compiled)
             if isolate: # isolate means header is included, and thus encoding must be removed
                 compiled = rem_encoding(compiled)
-            self.runner.run(compiled, error)
+                
+            try:
+                result = self.runner.run(compiled, True, run_func = eval)
+                if result != None:
+                    self.console.print(result)
+            except SyntaxError:
+                self.runner.run(compiled,error)
+            except:
+                traceback.print_exc()
 
     def check_runner(self, path=None, isolate=False):
         """Makes sure there is a runner."""
