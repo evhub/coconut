@@ -327,8 +327,8 @@ fog = f..g
 
 ###### Python
 ```coc_python
-fog = lambda *args, **kwargs: f(g(*args, **kwargs))
 # unlike this simple lambda, .. produces a pickleable object
+fog = lambda *args, **kwargs: f(g(*args, **kwargs))
 ```
 
 ### Chain
@@ -696,7 +696,7 @@ In Coconut, all variable names starting with `_coconut` are reserved. The Coconu
 
 Coconut supports the creation of lazy lists, where the contents in the list will be treated as an iterator and not evaluated until they are needed. Lazy lists can be created in Coconut simply by simply surrounding a comma-seperated list of items with `(|` and `|)` (so-called "banana brackets") instead of `[` and `]` for a list or `(` and `)` for a tuple.
 
-Lazy lists use the same machinery as iterator chaining to make themselves lazy, and thus the lazy list `(| x, y |)` is equivalent to the iterator chaining expression `(x,) :: (y,)`, although the lazy list won't construct any intermediate tuples.
+Lazy lists use the same machinery as iterator chaining to make themselves lazy, and thus the lazy list `(| x, y |)` is equivalent to the iterator chaining expression `(x,) :: (y,)`, although the lazy list won't construct the intermediate tuples.
 
 ##### Rationale
 
