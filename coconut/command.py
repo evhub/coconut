@@ -546,8 +546,8 @@ class cli(object):
     def start_jupyter(self, args):
         """Starts Jupyter with the Coconut kernel."""
         import subprocess
-        if args:
-            install_func = lambda args: subprocess.check_output(args, stderr=subprocess.STDOUT)
+        if args and not self.indebug():
+            install_func = lambda args: subprocess.check_output(args, stderr=subprocess.STDOUT) # stdout is returned and ignored
         else:
             install_func = lambda args: subprocess.check_call(args)
         try:
