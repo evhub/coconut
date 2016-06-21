@@ -519,12 +519,15 @@ class cli(object):
                 compiled = rem_encoding(compiled)
                 
             try:
+                #If the input is and expression, we should print it,
                 result = self.runner.run(compiled, True, run_func = eval)
                 if result != None:
                     self.console.print(result)
             except SyntaxError:
+                #and if it is not and expression is will raise a syntax error! We don't print it.
                 self.runner.run(compiled,error)
             except:
+                #and if the user Goofed, we tell them
                 traceback.print_exc()
 
     def check_runner(self, path=None, isolate=False):
