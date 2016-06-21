@@ -48,6 +48,21 @@ setuptools.setup(
     url = "http://coconut-lang.org",
     author = "Evan Hubinger",
     author_email = "evanjhub@gmail.com",
+    install_requires = [
+        "pyparsing==2.1.5"
+        ],
+    packages = setuptools.find_packages(),
+    include_package_data = True,
+    entry_points = {
+        "console_scripts": [
+            "coconut = coconut.__main__:main"
+            ],
+        "pygments.lexers": [
+            "coconut_python = coconut.highlighter:pylexer",
+            "coconut_pycon = coconut.highlighter:pyconlexer",
+            "coconut = coconut.highlighter:coclexer"
+            ]
+        },
     classifiers = [
         "Development Status :: 5 - Production/Stable",
         "License :: OSI Approved :: Apache Software License",
@@ -127,19 +142,5 @@ setuptools.setup(
         "data keyword",
         "match keyword",
         "case keyword"
-        ],
-    packages = setuptools.find_packages(),
-    install_requires = [
-        "pyparsing==2.1.5"
-        ],
-    entry_points = {
-        "console_scripts": [
-            "coconut = coconut.__main__:main"
-            ],
-        "pygments.lexers": [
-            "coc_python = coconut.highlighter:pylexer",
-            "coc_pycon = coconut.highlighter:pyconlexer",
-            "coconut = coconut.highlighter:coclexer"
-            ]
-        }
+        ]
     )

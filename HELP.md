@@ -101,7 +101,7 @@ In case you missed it earlier, _all valid Python 3 is valid Coconut_. That doesn
 
 That means that if you're familiar with Python, you're already familiar with a good deal of Coconut's core syntax and Coconut's entire standard library. To show that, let's try entering some basic Python into the Coconut interpreter.
 
-```coc_pycon
+```coconut_pycon
 >>> "hello, world!"
 hello, world!
 >>> 1 + 1
@@ -115,7 +115,7 @@ Of course, while being able to interpret Coconut code on-the-fly is a great thin
 First, we're going to need to create a file to put our code into. The file extension for Coconut source files is `.coco`, so let's create the new file `hello_world.coco`. After you do that, you should take the time now to set up your text editor to properly highlight Coconut code. For instructions on how to do that, see the documentation on [Coconut syntax highlighting](http://coconut.readthedocs.org/en/master/DOCS.html#syntax-highlighting).
 
 Now let's put some code in our `hello_world.coco` file. Unlike in Python, where headers like
-```coc_python
+```coconut_python
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 from __future__ import print_function, absolute_import, unicode_literals, division
@@ -123,7 +123,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 are common and often very necessary, the Coconut compiler will automatically take care of all of that for you, so all you need to worry about is your own code. To that end, let's add the code for our "hello, world!" program.
 
 In pure Python 3, "hello, world!" is
-```coc_python
+```coconut_python
 print("hello, world!")
 ```
 and while that will work in Coconut, equally as valid is to use a pipeline-style approach, which is what we'll do, and write

@@ -245,7 +245,7 @@ dubsums |> list |> print
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 dubsums = map(lambda x, y: 2*(x+y), range(0, 10), range(10, 20))
 print(list(dubsums))
 ```
@@ -261,7 +261,7 @@ Partial application, or currying, is a mainstay of functional programming, and f
 ##### Python Docs
 
 Return a new `partial` object which when called will behave like _func_ called with the positional arguments _args_ and keyword arguments _keywords_. If more arguments are supplied to the call, they are appended to _args_. If additional keyword arguments are supplied, they extend and override _keywords_. Roughly equivalent to:
-```coc_python
+```coconut_python
 def partial(func, *args, **keywords):
     def newfunc(*fargs, **fkeywords):
         newkeywords = keywords.copy()
@@ -283,7 +283,7 @@ expnums |> list |> print
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 import functools
 expnums = map(functools.partial(pow, 2), range(5))
 print(list(expnums))
@@ -308,7 +308,7 @@ def sq(x) = x**2
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 import operator
 def sq(x): return x**2
 print(sq(operator.__add__(1, 2)))
@@ -326,7 +326,7 @@ fog = f..g
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 # unlike this simple lambda, .. produces a pickleable object
 fog = lambda *args, **kwargs: f(g(*args, **kwargs))
 ```
@@ -342,7 +342,7 @@ A useful tool to make working with iterators as easy as working with sequences i
 ##### Python Docs
 
 Make an iterator that returns elements from the first iterable until it is exhausted, then proceeds to the next iterable, until all of the iterables are exhausted. Used for treating consecutive sequences as a single sequence. Chained inputs are evaluated lazily. Roughly equivalent to:
-```coc_python
+```coconut_python
 def chain(*iterables):
     # chain('ABC', 'DEF') --> A B C D E F
     for it in iterables:
@@ -459,7 +459,7 @@ v.x = 2 # this will fail because data objects are immutable
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 import collections
 class vector(collections.namedtuple("vector", "x, y")):
     __slots__ = ()
@@ -681,7 +681,7 @@ print(\data)
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 data = 5
 print(data)
 ```
@@ -732,7 +732,7 @@ mod$ <| 5 <| 3
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 "123"[1]
 mod(5, 3)
 ```
@@ -749,7 +749,7 @@ empty_frozen_set = f{}
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 empty_frozen_set = frozenset()
 ```
 
@@ -776,7 +776,7 @@ An imaginary literal yields a complex number with a real part of 0.0. Complex nu
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 print(abs(3 + 4j))
 ```
 
@@ -792,7 +792,7 @@ Coconut allows for one underscore between digits and after base specifiers in nu
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 10000000.0
 ```
 
@@ -852,7 +852,7 @@ A very common thing to do in functional programming is to make use of function v
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 import operator
 print(list(map(operator.__add__, range(0, 5), range(5, 10))))
 ```
@@ -880,7 +880,7 @@ def binexp(x) = 2**x
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 def binexp(x): return 2**x
 print(binexp(5))
 ```
@@ -911,7 +911,7 @@ def a `mod` b = a % b
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 def mod(a, b): return a % b
 print(mod(x, 2))
 ```
@@ -998,7 +998,7 @@ def func(x) = x**2
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 def wrapper(func):
     return wrapper1(wrapper2(arg, func))
 @wrapper
@@ -1025,7 +1025,7 @@ except MyError:
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 try:
     unsafe_1()
 except MyError:
@@ -1052,7 +1052,7 @@ except SyntaxError, ValueError as err:
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 try:
     unsafe_func(arg)
 except (SyntaxError, ValueError) as err:
@@ -1072,7 +1072,7 @@ global (really_long_global_variable_name_the_first_one,
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 global really_long_global_variable_name_the_first_one, \
         really_long_global_variable_name_the_second_one
 ```
@@ -1090,7 +1090,7 @@ Coconut supports the ability to pass arbitrary code through the compiler without
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 cdef f(x):
     return g(x)
 ```
@@ -1116,7 +1116,7 @@ range(1, 10) |> prod |> print
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 import operator
 import functools
 prod = functools.partial(functools.reduce, operator.__mul__)
@@ -1132,7 +1132,7 @@ Coconut provides `itertools.takewhile` as a built-in under the name `takewhile`.
 **takewhile**(_predicate, iterable_)
 
 Make an iterator that returns elements from the _iterable_ as long as the _predicate_ is true. Equivalent to:
-```coc_python
+```coconut_python
 def takewhile(predicate, iterable):
     # takewhile(lambda x: x<5, [1,4,6,4,1]) --> 1 4
     for x in iterable:
@@ -1150,7 +1150,7 @@ negatives = takewhile(numiter, (x) -> x<0)
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 import itertools
 negatives = itertools.takewhile(numiter, lambda x: x<0)
 ```
@@ -1164,7 +1164,7 @@ Coconut provides `itertools.dropwhile` as a built-in under the name `dropwhile`.
 **dropwhile**(_predicate, iterable_)
 
 Make an iterator that drops elements from the _iterable_ as long as the _predicate_ is true; afterwards, returns every element. Note: the iterator does not produce any output until the predicate first becomes false, so it may have a lengthy start-up time. Equivalent to:
-```coc_python
+```coconut_python
 def dropwhile(predicate, iterable):
     # dropwhile(lambda x: x<5, [1,4,6,4,1]) --> 6 4 1
     iterable = iter(iterable)
@@ -1184,7 +1184,7 @@ positives = dropwhile(numiter, (x) -> x<0)
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 import itertools
 positives = itertools.dropwhile(numiter, lambda x: x<0)
 ```
@@ -1198,7 +1198,7 @@ Coconut provides `itertools.tee` as a built-in under the name `tee`.
 **tee**(_iterable, n=2_)
 
 Return _n_ independent iterators from a single iterable. Equivalent to:
-```coc_python
+```coconut_python
 def tee(iterable, n=2):
     it = iter(iterable)
     deques = [collections.deque() for i in range(n)]
@@ -1224,7 +1224,7 @@ sliced = temp$[5:]
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 import itertools
 original, temp = itertools.tee(original)
 sliced = itertools.islice(temp, 5, None)
@@ -1251,7 +1251,7 @@ range(10) |> map$((x) -> x**2) |> map$(print) |> consume
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 collections.deque(map(print, map(lambda x: x**2, range(10))), maxlen=0)
 ```
 
@@ -1264,7 +1264,7 @@ Coconut provides a modified version of `itertools.count` that supports `in`, nor
 **count**(_start=0, step=1_)
 
 Make an iterator that returns evenly spaced values starting with number _start_. Often used as an argument to `map()` to generate consecutive data points. Also, used with `zip()` to add sequence numbers. Roughly equivalent to:
-```coc_python
+```coconut_python
 def count(start=0, step=1):
     # count(10) --> 10 11 12 13 14 ...
     # count(2.5, 0.5) -> 2.5 3.0 3.5 ...
@@ -1317,7 +1317,7 @@ data trilen(h):
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 import collections
 class trilen(collections.namedtuple("trilen", "h")):
     __slots__ = ()
@@ -1368,7 +1368,7 @@ parallel_map(pow$(2), range(100)) |> list |> print
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 import functools
 import concurrent.futures
 with concurrent.futures.ProcessPoolExecutor() as executor:
@@ -1398,7 +1398,7 @@ Coconut syntax highlighting for SublimeText requires that [Package Control](http
 #### Pygments
 
 The same `pip install coconut` command that installs the Coconut command-line utility will also install the `coconut` Pygments lexer. How to use this lexer depends on the Pygments-enabled application being used, but in general simply enter `coconut` as the language being highlighted and/or use the file extension `.coco` and Pygments should be able to figure it out. For example, this documentation is generated with [Sphinx](http://www.sphinx-doc.org/en/stable/), with the syntax highlighting you see created by adding the line
-```coc_python
+```coconut_python
 highlight_language = "coconut"
 ```
 to Coconut's `conf.py`.
@@ -1465,7 +1465,7 @@ All Coconut built-ins are accessible from `coconut.__coconut__`. The recommended
 ##### Example
 
 ###### Python
-```coc_python
+```coconut_python
 from coconut.__coconut__ import recursive
 
 @recursive
