@@ -123,6 +123,13 @@ def rem_encoding(code):
     new_lines += old_lines[2:]
     return "\n".join(new_lines)
 
+def try_eval(code, vars):
+    """Try to evaluate the given code, otherwise execute it."""
+    try:
+        return eval(code, vars)
+    except SyntaxError:
+        exec(code, vars)
+
 class executor(object):
     """Compiled Python executor."""
     def __init__(self, proc=None, exit=None, path=None):
@@ -286,6 +293,10 @@ class cli(object):
         else:
             return self.proc.indebug()
 
+    def print_exc(self):
+        """Properly prints an exception in the exception context."""
+        self.console.printerr(get_error(self.indebug()))
+
     def cmd(self, args, interact=True):
         """Parses command-line arguments."""
         try:
@@ -347,7 +358,7 @@ class cli(object):
                     )):
                 self.start_prompt()
         except CoconutException:
-            self.console.printerr(get_error(self.indebug()))
+            self.print_exc()
             sys.exit(1)
 
     def compile_path(self, path, write=True, package=None, run=False, force=False):
@@ -465,7 +476,7 @@ class cli(object):
             print()
             self.exit()
         except ValueError:
-            self.console.printerr(get_error(self.indebug()))
+            self.print_exc()
             self.exit()
         return None
 
@@ -480,7 +491,7 @@ class cli(object):
             if code:
                 compiled = self.handle(code)
                 if compiled:
-                    self.execute(compiled, False)
+                    self.execute(compiled, error=False, print_expr=True)
 
     def exit(self):
         """Exits the interpreter."""
@@ -506,10 +517,10 @@ class cli(object):
             try:
                 compiled = self.proc.parse_block(code)
             except CoconutException:
-                self.console.printerr(get_error(self.indebug()))
+                self.print_exc()
         return compiled
 
-    def execute(self, compiled=None, error=True, path=None, isolate=False):
+    def execute(self, compiled=None, error=True, path=None, isolate=False, print_expr=False):
         """Executes compiled code."""
         self.check_runner(path, isolate)
         if compiled is not None:
@@ -517,18 +528,12 @@ class cli(object):
                 print(compiled)
             if isolate: # isolate means header is included, and thus encoding must be removed
                 compiled = rem_encoding(compiled)
-                
-            try:
-                #If the input is and expression, we should print it,
-                result = self.runner.run(compiled, True, run_func = eval)
-                if result != None:
-                    self.console.print(result)
-            except SyntaxError:
-                #and if it is not and expression is will raise a syntax error! We don't print it.
-                self.runner.run(compiled,error)
-            except:
-                #and if the user Goofed, we tell them
-                traceback.print_exc()
+            if print_expr:
+                result = self.runner.run(compiled, error, run_func=try_eval)
+                if result is not None: # if the input was an expression, we should print it
+                    print(result)
+            else:
+                self.runner.run(compiled, error)
 
     def check_runner(self, path=None, isolate=False):
         """Makes sure there is a runner."""
