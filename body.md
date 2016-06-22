@@ -27,7 +27,7 @@ range(10) |> map$((x) -> x ** 2) |> list
 ```
 - pattern-matching
 ```coconut
-match [head] + tail in seq:
+match [head] + tail in [0, 1, 2, 3]:
     print(head, tail)
 ```
 - destructuring assignment
