@@ -611,10 +611,12 @@ class cli(object):
             subprocess.call(run_args)
 
     def watch(self,source):
-        #make this less infanat
+        """Watches a file, and recompiles on change"""
         lastTime = 0
         while True:
             newTime = os.stat(source).st_mtime
+            #If the file has changed
             if lastTime != newTime:
                 lastTime = newTime
+                #Recompile it
                 self.compile_path(source)
