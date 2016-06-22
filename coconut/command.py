@@ -128,7 +128,8 @@ def try_eval(code, vars):
     try:
         return eval(code, vars)
     except SyntaxError:
-        exec(code, vars)
+        pass # exit the exception context before doing anything else
+    exec(code, vars)
 
 class executor(object):
     """Compiled Python executor."""

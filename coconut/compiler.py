@@ -616,7 +616,7 @@ def recursive(func):
     state = [True, None] # state = [is_top_level, (args, kwargs)]
     recurse = object()
     @_coconut.functools.wraps(func)
-    def tailed_func(*args, **kwargs):
+    def recursive_func(*args, **kwargs):
         """Tail Recursion Wrapper."""
         if state[0]:
             state[0] = False
@@ -633,7 +633,29 @@ def recursive(func):
         else:
             state[1] = args, kwargs
             return recurse
-    return tailed_func
+    return recursive_func
+def append_case(base_func):
+    """Decorator to add a new case to a pattern-matching function, where the new case is checked last."""
+    def case_appender(func):
+        @_coconut.functools.wraps(func)
+        def append_case_func(*args, **kwargs):
+            try:
+                return base_func(*args, **kwargs)
+            except _coconut_MatchError:
+                return func(*args, **kwargs)
+        return append_case_func
+    return case_appender
+def prepend_case(base_func):
+    """Decorator to add a new case to a pattern-matching function, where the new case is checked first."""
+    def case_prepender(func):
+        @_coconut.functools.wraps(func)
+        def prepend_case_func(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except _coconut_MatchError:
+                return base_func(*args, **kwargs)
+        return prepend_case_func
+    return case_prepender
 def datamaker(data_type):
     """Returns base data constructor of passed data type."""
     return _coconut.functools.partial(_coconut.super(data_type, data_type).__new__, data_type)
