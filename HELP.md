@@ -13,7 +13,10 @@
     1. [Imperative Method](#imperative-method)
     1. [Recursive Method](#recursive-method)
     1. [Iterative Method](#iterative-method)
+    1. [`addpattern` Method](#addpattern-method)
 1. [Case Study 2: `quick_sort`](#case-study-2-quick_sort)
+    1. [Sorting a Sequence](#sorting-a-sequence)
+    1. [Sorting an Iterator](#sorting-an-iterator)
 1. [Case Study 3: `vector` Part I](#case-study-3-vector-part-i)
     1. [2-Vector](#2-vector)
     1. [n-Vector Constructor](#n-vector-constructor)
@@ -191,7 +194,7 @@ These case studies are not intended to provide a complete picture of all of Coco
 
 In the first case study we will be defining a `factorial` function, that is, a function that computes `n!` where `n` is an integer `>= 0`. This is somewhat of a toy example, since Python can fairly easily do this, but it will serve as a good showcase of some of the basic features of Coconut and how they can be used to great effect.
 
-To start off with, we're going to have to decide what sort of an implementation of `factorial` we want. There are many different ways to tackle this problem, but for the sake of concision we'll split them into three major categories: imperative, recursive, and iterative.
+To start off with, we're going to have to decide what sort of an implementation of `factorial` we want. There are many different ways to tackle this problem, but for the sake of concision we'll split them into four major categories: imperative, recursive, iterative, and `addpattern`.
 
 ### Imperative Method
 
@@ -244,7 +247,7 @@ Let's take a look at the specifics of the syntax in this example. The first thin
 
 Specifically, in this example, the first `match` statement checks whether `n` matches to `0`. If it does, it executes `return 1`. Then the second `match` statement checks whether `n` matches to `_ is int`, which performs an `isinstance` check on `n` against `int`, then checks whether `n > 0`, and if those are true, executes `return n * factorial(n-1)`. If neither of those two statements are executed, the `else` statement triggers and executes `raise TypeError("the argument to factorial must be an integer >= 0")`.
 
-Although this example is very basic, pattern-matching is both one of Coconut's most powerful and most complicated features. As a general intuitive guide, it is helpful to think _assignment_ whenever you see the keyword `match`. A good way to showcase this is that all `match` statements can be converted into equivalent destructuring assignment statements, which are also valid Coconut. In this case, the destructuring assignment equivalent to the `factorial` function above, in Coconut, would be:
+Although this example is very basic, pattern-matching is both one of Coconut's most powerful and most complicated features. As a general intuitive guide, it is helpful to think _assignment_ whenever you see the keyword `match`. A good way to showcase this is that all `match` statements can be converted into equivalent destructuring assignment statements, which are also valid Coconut. In this case, the destructuring assignment equivalent to the `factorial` function above would be:
 ```coconut
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
@@ -296,7 +299,7 @@ Copy, paste! This version is exactly equivalent to the original version, with th
 
 ### Iterative Method
 
-The final, and other functional, approach, is the iterative one. Iterative approaches avoid the need for state change and loops by using higher-order functions, those that take other functions as their arguments, like `map` and `reduce`, to abstract out the basic operations being performed. In Coconut, the iterative appraoch to the `factorial` problem is:
+The final, and other functional, approach, is the iterative one. Iterative approaches avoid the need for state change and loops by using higher-order functions, those that take other functions as their arguments, like `map` and `reduce`, to abstract out the basic operations being performed. In Coconut, the iterative approach to the `factorial` problem is:
 ```coconut
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
@@ -348,19 +351,98 @@ range(1, n+1) |> reduce$((*))
 ```
 is able to compute the proper factorial, without using any state or loops, only higher-order functions, in true functional style. By supplying the tools we use here like partial application (`$`), pipeline-style programming (`|>`), higher-order functions (`reduce`), and operator functions (`(*)`), Coconut enables this sort of functional programming to be done cleanly, neatly, and easily.
 
+### `addpattern` Method
+
+While the iterative approach is very clean, there are still some bulky pieces—looking at the iterative version below, you can see that it takes three entire indentation levels to get from the function definition to the actual objects being returned:
+```coconut
+def factorial(n):
+    """Compute n! where n is an integer >= 0."""
+    case n:
+        match 0:
+            return 1
+        match _ is int if n > 0:
+            return range(1, n+1) |> reduce$((*))
+    else:
+        raise TypeError("the argument to factorial must be an integer >= 0")
+```
+
+By making use of the built-in Coconut function `addpattern`, we can take that from three indentation levels down to one. Take a look:
+```
+def factorial(0):
+    return 1
+
+@addpattern(factorial)
+def factorial(n is int if n > 0):
+    """Compute n! where n is an integer >= 0."""
+    return range(1, n+1) |> reduce$((*))
+
+# Test cases:
+-1 |> factorial |> print # MatchError
+0.5 |> factorial |> print # MatchError
+0 |> factorial |> print # 1
+3 |> factorial |> print # 6
+```
+Copy, paste! This should work exactly like before, except now it raises `MatchError` as a fall through instead of `TypeError`. There are two major new concepts to talk about here: `addpattern`, of course, and pattern-matching function definition—how both of the functions above are defined.
+
+First, pattern-matching function definition. Pattern-matching function definition does exactly that—pattern-matches against all the arguments that are passed to the function. There are a couple of things to watch out for when using pattern-matching function definition, however. First, that if the pattern doesn't match (if for example the wrong number of arguments are passed), your function will raise a `MatchError`, and second, that keyword arguments aren't allowed. Finally, like destructuring assignment, if you want to be more explicit about using pattern-matching function definition, you can add a `match` before the `def`.
+
+Second, `addpattern`. `addpattern` takes one argument, a previously-defined pattern-matching function, and returns a decorator that decorates a new pattern-matching function by adding the new pattern as an additional case to the old patterns. Thus, `addpattern` can be thought of as doing exactly what it says—it adds a new pattern to an existing pattern-matching function.
+
+Finally, not only can we rewrite the imperative approach using `addpattern`, as we did above, we can also rewrite the recursive approach using `addpattern`, like so:
+```coconut
+def factorial(0) = 1
+
+@addpattern(factorial)
+def factorial(n is int if n > 0):
+    """Compute n! where n is an integer >= 0."""
+    return n * factorial(n - 1)
+
+# Test cases:
+-1 |> factorial |> print # MatchError
+0.5 |> factorial |> print # MatchError
+0 |> factorial |> print # 1
+3 |> factorial |> print # 6
+```
+Copy, paste! It should work exactly like before, except, as above, with `TypeError` replaced by `MatchError`.
+
 ## Case Study 2: `quick_sort`
 
-In the second case study, we will be implementing the quick sort algorithm. Our `quick_sort` function will take in an iterator, and output an iterator that is the sorted version of that iterator.
+In the second case study, we will be implementing the [quick sort algorithm](https://en.wikipedia.org/wiki/Quicksort). We will implement two versions: first, a `quick_sort` function that takes in a list and outputs a list, and second, a `quick_sort` function that takes in an iterator and outputs an iterator.
 
-Our method for tackling this problem is going to be a combination of the recursive and iterative approaches we used for the `factorial` problem, in that we're going to be lazily building up an iterator, and we're going to be doing it recursively. Here's the code, in Coconut:
+### Sorting a Sequence
+
+First up is `quick_sort` for lists. We're going to use a recursive `addpattern`-based approach to tackle this problem—a similar approach to the very last `factorial` function we wrote. That's because since we're not going to write `quick_sort` in a tail-recursive style, we can't use `recursive`, and thus there's no reason to write the whole thing as one function and we might as well use `addpattern` to reduce the amount of indentation we're going to need. Without further ado, here's our implementation of `quick_sort` for lists:
+```coconut
+def quick_sort([]):
+    return []
+
+@addpattern(quick_sort)
+def quick_sort([head] + tail):
+    """Sort the input sequence using the quick sort algorithm."""
+    return (quick_sort([x for x in tail if x < head])
+        + [head]
+        + quick_sort([x for x in tail if x >= head]))
+
+# Test cases:
+[] |> quick_sort |> print # []
+[3] |> quick_sort |> print # [3]
+[0,1,2,3,4] |> quick_sort |> print # [0,1,2,3,4]
+[4,3,2,1,0] |> quick_sort |> print # [0,1,2,3,4]
+[3,0,4,2,1] |> quick_sort |> print # [0,1,2,3,4]
+```
+Copy, paste! Only one new feature here: head-tail pattern-matching. Here, we see the head-tail pattern `[head] + tail`, which more generally just follow the form of a list or tuple added to a variable. When this appears in any pattern-matching context, the value being matched against will be treated as a sequence, the list or tuple matched against the beginning of that sequence, and the rest of it bound to the variable. In this case, we use the head-tail pattern to remove the head so we can use it as the pivot for splitting the rest of the list.
+
+### Sorting an Iterator
+
+Now it's time to try `quick_sort` for iterators. Our method for tackling this problem is going to be a combination of the recursive and iterative approaches we used for the `factorial` problem, in that we're going to be lazily building up an iterator, and we're going to be doing it recursively. Here's the code:
 ```coconut
 def quick_sort(l):
-    """Return a sorted iterator of l, using the quick sort algorithm, and without using any data until necessary."""
+    """Sort the input iterator, using the quick sort algorithm, and without using any data until necessary."""
     match [head] :: tail in l:
         tail, tail_ = tee(tail)
-        yield from (quick_sort((x for x in tail if x <= head))
+        yield from (quick_sort((x for x in tail if x < head))
             :: (head,)
-            :: quick_sort((x for x in tail_ if x > head))
+            :: quick_sort((x for x in tail_ if x >= head))
             )
 
 # Test cases:
@@ -398,12 +480,12 @@ Finally, although it's not a new construct, since it exists in Python 3, the use
 Putting it all together, here's our `quick_sort` function again:
 ```coconut
 def quick_sort(l):
-    """Return a sorted iterator of l, using the quick sort algorithm, and without using any data until necessary."""
+    """Sort the input iterator, using the quick sort algorithm, and without using any data until necessary."""
     match [head] :: tail in l:
         tail, tail_ = tee(tail)
-        yield from (quick_sort((x for x in tail if x <= head))
+        yield from (quick_sort((x for x in tail if x < head))
             :: (head,)
-            :: quick_sort((x for x in tail_ if x > head))
+            :: quick_sort((x for x in tail_ if x >= head))
             )
 ```
 
@@ -937,12 +1019,10 @@ _Hint: Look back at how we checked whether the argument to `factorial` was an in
 <br>
 <br>
 
-Here's my solution, although I cheated a little bit and used a construct I haven't introduced yet—pattern-matching function definition. Take a look:
+Here's my solution—take a look:
 ```coconut
     def angle(self, other is vector) = math.acos(self.unit() * other.unit())
 ```
-
-Pattern-matching function definition does exactly that—it pattern-matches against all the arguments that are passed to the function. In this case, pattern-matching function definition is incredibly handy, as it lets us write this whole function in just one line. There are a couple of things to watch out for when using pattern-matching function definition, however. First, that keyword arguments aren't allowed, and second, that instead of raising a `TypeError` if the wrong number of arguments are passed, your function will raise a `MatchError`. Finally, like destructuring assignment, if you want to be more explicit about using pattern-matching function definition, you can add a `match` before the `def`.
 
 And now it's time to put it all together. Feel free to substitute in your own versions of the methods we just defined.
 
