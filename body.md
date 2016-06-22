@@ -4,22 +4,6 @@ Coconut is a **simple, elegant, Pythonic functional programming language** that 
 
 Why use Coconut? Coconut is built to be fundamentally **useful**. Coconut enhances the repertoire of Python programmers to include the tools of modern functional programming, in such a way that those tools are **easy** to use and immensely **powerful**; that is, **Coconut does to functional programming what Python did to imperative programming**. And Coconut code runs the same on **any Python version**, making the Python 2/3 split a thing of the past.
 
-Specifically, Coconut adds to Python **built-in, syntactical support** for:
-- pattern-matching
-- algebraic data types
-- destructuring assignment
-- partial application
-- lazy lists
-- function composition
-- prettier lambdas
-- infix notation
-- pipeline-style programming
-- operator functions
-- tail recursion optimization
-- parallel programming
-
-and much more!
-
 Installing Coconut is as easy as
 
 1. installing [Python](https://www.python.org/downloads/),
@@ -28,10 +12,69 @@ Installing Coconut is as easy as
 
 <div class="code-block">python -m pip install coconut</div>
 
-which will give you access to all the features of the Coconut command-line utility, including
-- **compiling** single Coconut files or entire Coconut projects,
-- **interpreting** Coconut code on-the-fly, and
-- hooking into existing Python applications like **IPython / Jupyter**.
+which will give you access to all the features of Coconut, which adds to Python **built-in, syntactical support** for:
+- pipeline-style programming
+```coconut
+"hello, world!" |> print
+```
+- prettier lambdas
+```coconut
+(x) -> x ** 2
+```
+- partial application
+```coconut
+range(10) |> map$((x) -> x ** 2) |> list
+```
+- pattern-matching
+```coconut
+match [head] + tail in seq:
+    print(head, tail)
+```
+- destructuring assignment
+```coconut
+{"list": [0] + rest} = {"list": [0, 1, 2, 3]}
+```
+- infix notation
+```coconut
+5 `mod` 3 == 2
+```
+- algebraic data types
+```coconut
+data vec2(x, y):
+    def __eq__(self, other):
+        match vec2(=self.x, =self.y) in other:
+            return True
+        else:
+            return False
+```
+- operator functions
+```coconut
+range(15) |> map$((*)$(2)) |> list
+```
+- function composition
+```coconut
+f .. g .. h (x, y, z)
+```
+- lazy lists
+```coconut
+(| first_elem() |) :: rest_elems()
+```
+- parallel programming
+```coconut
+range(100) |> parallel_map$((**)$(2)) |> list
+```
+- tail recursion optimization
+```coconut
+@recursive
+def factorial(n):
+    case n:
+        match 0:
+            return 1
+        match _ is int if n > 0:
+            return n * factorial(n - 1)
+```
+
+and much more!
 
 Ready to get started? Here are some links to help you out:
 - [Coconut's **tutorial**](http://coconut.readthedocs.org/en/master/HELP.html) will guide you through the process of starting to enhance your Python with Coconut in a straightforward, easy-to-follow way.
