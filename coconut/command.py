@@ -258,6 +258,7 @@ class cli(object):
     commandline.add_argument("--recursionlimit", metavar="limit", type=int, nargs=1, default=[None], help="set maximum recursion depth (defaults to "+str(sys.getrecursionlimit())+")")
     commandline.add_argument("--tutorial", action="store_const", const=True, default=False, help="open the Coconut tutorial in the default web browser")
     commandline.add_argument("--documentation", action="store_const", const=True, default=False, help="open the Coconut documentation in the default web browser")
+    commandline.add_argument("--watch", action="store_const", const=True, default=False, help="Watch file for changes, and compile when they happen")
     commandline.add_argument("--color", metavar="color", type=str, nargs=1, default=[None], help="show all Coconut messages in the given color")
     commandline.add_argument("--verbose", action="store_const", const=True, default=False, help="print verbose debug output")
     proc = None # current .compiler.processor
@@ -316,7 +317,7 @@ class cli(object):
                 self.proc.debug(True)
             if args.autopep8 is not None:
                 self.proc.autopep8(args.autopep8)
-            if args.source is not None:
+            if args.source is not None and not args.watch:
                 if args.run and os.path.isdir(args.source):
                     raise CoconutException("source path must point to file not directory when --run is enabled")
                 if args.dest is None:
@@ -348,6 +349,8 @@ class cli(object):
                 self.execute(self.proc.parse_block(sys.stdin.read()))
             if args.jupyter is not None:
                 self.start_jupyter(args.jupyter)
+            if args.watch:
+                self.watch(args.source)
             if args.interact or (interact and not (
                     stdin
                     or args.source
@@ -355,6 +358,7 @@ class cli(object):
                     or args.code
                     or args.tutorial
                     or args.documentation
+                    or args.watch
                     or args.jupyter is not None
                     )):
                 self.start_prompt()
@@ -605,3 +609,12 @@ class cli(object):
                 raise CoconutException('first argument after --jupyter must be either "console" or "notebook"')
             self.log_cmd(run_args)
             subprocess.call(run_args)
+
+    def watch(self,source):
+        #make this less infanat
+        lastTime = 0
+        while True:
+            newTime = os.stat(source).st_mtime
+            if lastTime != newTime:
+                lastTime = newTime
+                self.compile_path(source)
