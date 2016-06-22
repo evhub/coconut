@@ -634,28 +634,28 @@ def recursive(func):
             state[1] = args, kwargs
             return recurse
     return recursive_func
-def append_case(base_func):
+def addpattern(base_func):
     """Decorator to add a new case to a pattern-matching function, where the new case is checked last."""
-    def case_appender(func):
+    def pattern_adder(func):
         @_coconut.functools.wraps(func)
-        def append_case_func(*args, **kwargs):
+        def add_pattern_func(*args, **kwargs):
             try:
                 return base_func(*args, **kwargs)
             except _coconut_MatchError:
                 return func(*args, **kwargs)
-        return append_case_func
-    return case_appender
-def prepend_case(base_func):
+        return add_pattern_func
+    return pattern_adder
+def prepattern(base_func):
     """Decorator to add a new case to a pattern-matching function, where the new case is checked first."""
-    def case_prepender(func):
+    def pattern_prepender(func):
         @_coconut.functools.wraps(func)
-        def prepend_case_func(*args, **kwargs):
+        def pre_pattern_func(*args, **kwargs):
             try:
                 return func(*args, **kwargs)
             except _coconut_MatchError:
                 return base_func(*args, **kwargs)
-        return prepend_case_func
-    return case_prepender
+        return pre_pattern_func
+    return pattern_prepender
 def datamaker(data_type):
     """Returns base data constructor of passed data type."""
     return _coconut.functools.partial(_coconut.super(data_type, data_type).__new__, data_type)
