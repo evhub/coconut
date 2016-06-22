@@ -109,7 +109,7 @@ hello, world!
 2
 ```
 
-One thing you probably noticed here is that unlike the Python interpreter, the Coconut interpreter will not automatically print the result of a naked expression. This is a good thing, because it means your code will do exactly the same thing in the interpreter as it would anywhere else, with the exception of totally blank lines terminating the current entry, but it might take some getting used to.
+One thing you probably noticed here is that unlike the Python interpreter, the Coconut interpreter will not automatically print the result of a naked expression. This is a good thing, because it means your code will do exactly the same thing in the interpreter as it would anywhere else, with the exception of totally blank lines terminating the current entry, but it might take some time getting used to.
 
 ### Using the Compiler
 
