@@ -7,6 +7,7 @@
   <meta name="keywords" content="Python, Functional, Programming, Language">
   <meta name="author" content="Evan Hubinger">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" type="text/css" href="stylesheets/pygments.css" />
   <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
   <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
   <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
@@ -30,25 +31,6 @@
 
 <p>Why use Coconut? Coconut is built to be fundamentally <strong>useful</strong>. Coconut enhances the repertoire of Python programmers to include the tools of modern functional programming, in such a way that those tools are <strong>easy</strong> to use and immensely <strong>powerful</strong>; that is, <strong>Coconut does to functional programming what Python did to imperative programming</strong>. And Coconut code runs the same on <strong>any Python version</strong>, making the Python 2/3 split a thing of the past.</p>
 
-<p>Specifically, Coconut adds to Python <strong>built-in, syntactical support</strong> for:</p>
-
-<ul>
-<li>pattern-matching</li>
-<li>algebraic data types</li>
-<li>destructuring assignment</li>
-<li>partial application</li>
-<li>lazy lists</li>
-<li>function composition</li>
-<li>prettier lambdas</li>
-<li>infix notation</li>
-<li>pipeline-style programming</li>
-<li>operator functions</li>
-<li>tail recursion optimization</li>
-<li>parallel programming</li>
-</ul>
-
-<p>and much more!</p>
-
 <p>Installing Coconut is as easy as</p>
 
 <ol>
@@ -57,17 +39,97 @@
 <li>and entering:</li>
 </ol>
 
-<div class="code-block">python -m pip install coconut</div>
+<div>python -m pip install coconut</div>
 
-<p>which will give you access to all the features of the Coconut command-line utility, including</p>
+<p>which will give you access to all the features of Coconut, which adds to Python <strong>built-in, syntactical support</strong> for:</p>
 
 <ul>
-<li>
-<strong>compiling</strong> single Coconut files or entire Coconut projects,</li>
-<li>
-<strong>interpreting</strong> Coconut code on-the-fly, and</li>
-<li>hooking into existing Python applications like <strong>IPython / Jupyter</strong>.</li>
+<li>pipeline-style programming</li>
 </ul>
+<div class="highlight-coconut"><div class="highlight"><pre><span></span><span class="s2">&quot;hello, world!&quot;</span> <span class="o">|&gt;</span> <span class="nb">print</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li>prettier lambdas</li>
+</ul>
+<div class="highlight-coconut"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="o">**</span> <span class="mi">2</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li>partial application</li>
+</ul>
+<div class="highlight-coconut"><div class="highlight"><pre><span></span><span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="nb">map</span><span class="o">$</span><span class="p">((</span><span class="n">x</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="nb">list</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li>pattern-matching</li>
+</ul>
+<div class="highlight-coconut"><div class="highlight"><pre><span></span><span class="k">match</span> <span class="p">[</span><span class="n">head</span><span class="p">]</span> <span class="o">+</span> <span class="n">tail</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">head</span><span class="p">,</span> <span class="n">tail</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li>destructuring assignment</li>
+</ul>
+<div class="highlight-coconut"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">&quot;list&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">rest</span><span class="p">}</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;list&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]}</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li>infix notation</li>
+</ul>
+<div class="highlight-coconut"><div class="highlight"><pre><span></span><span class="mi">5</span> <span class="o">`</span><span class="n">mod</span><span class="o">`</span> <span class="mi">3</span> <span class="o">==</span> <span class="mi">2</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li>algebraic data types</li>
+</ul>
+<div class="highlight-coconut"><div class="highlight"><pre><span></span><span class="k">data</span> <span class="nc">vec2</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">match</span> <span class="n">vec2</span><span class="p">(</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">)</span> <span class="ow">in</span> <span class="n">other</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li>operator functions</li>
+</ul>
+<div class="highlight-coconut"><div class="highlight"><pre><span></span><span class="nb">range</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="nb">map</span><span class="o">$</span><span class="p">((</span><span class="o">*</span><span class="p">)</span><span class="o">$</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span> <span class="o">|&gt;</span> <span class="nb">list</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li>function composition</li>
+</ul>
+<div class="highlight-coconut"><div class="highlight"><pre><span></span><span class="n">f</span> <span class="o">..</span> <span class="n">g</span> <span class="o">..</span> <span class="n">h</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li>lazy lists</li>
+</ul>
+<div class="highlight-coconut"><div class="highlight"><pre><span></span><span class="p">(</span><span class="o">|</span> <span class="n">first_elem</span><span class="p">()</span> <span class="o">|</span><span class="p">)</span> <span class="o">::</span> <span class="n">rest_elems</span><span class="p">()</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li>parallel programming</li>
+</ul>
+<div class="highlight-coconut"><div class="highlight"><pre><span></span><span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="nb">parallel_map</span><span class="o">$</span><span class="p">((</span><span class="o">**</span><span class="p">)</span><span class="o">$</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span> <span class="o">|&gt;</span> <span class="nb">list</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li>tail recursion optimization</li>
+</ul>
+<div class="highlight-coconut"><div class="highlight"><pre><span></span><span class="o">@</span><span class="nb">recursive</span>
+<span class="k">def</span> <span class="nf">factorial</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="k">case</span> <span class="n">n</span><span class="p">:</span>
+        <span class="k">match</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">1</span>
+        <span class="k">match</span> <span class="n">_</span> <span class="ow">is</span> <span class="nb">int</span> <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">n</span> <span class="o">*</span> <span class="n">factorial</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</ul>
+
+<p>and much more!</p>
 
 <p>Ready to get started? Here are some links to help you out:</p>
 
