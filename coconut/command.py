@@ -632,8 +632,10 @@ class cli(object):
                 for path, subdirs, files in os.walk(source):
                     for name in files:
                         fullPath = os.path.join(path,name)
-                        newTime = os.stat(fullPath).st_mtime
-                        newTimes.append(newTime)
+                        ext = os.path.splitext(fullPath)[-1]
+                        if ext in code_exts:
+                            newTime = os.stat(fullPath).st_mtime
+                            newTimes.append(newTime)
                 if set(lastTimes) != set(newTimes):
                     lastTimes = newTimes
                     self.compile_path(source,write,package,run,force)
