@@ -123,13 +123,13 @@ def rem_encoding(code):
     new_lines += old_lines[2:]
     return "\n".join(new_lines)
 
-def try_eval(code, vars):
+def try_eval(code, in_vars):
     """Try to evaluate the given code, otherwise execute it."""
     try:
-        return eval(code, vars)
+        return eval(code, in_vars)
     except SyntaxError:
-        pass # exit the exception context before doing anything else
-    exec(code, vars)
+        pass # exit the exception context before executing code
+    exec(code, in_vars)
 
 class executor(object):
     """Compiled Python executor."""

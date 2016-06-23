@@ -49,6 +49,8 @@
     1. [Variable Lists](#variable-lists)
     1. [Code Passthrough](#code-passthrough)
 1. [Built-Ins](#built-ins)
+    1. [`addpattern`](#addpattern)
+    1. [`prepattern`](#prepattern)
     1. [`reduce`](#reduce)
     1. [`takewhile`](#takewhile)
     1. [`dropwhile`](#dropwhile)
@@ -920,16 +922,21 @@ print(mod(x, 2))
 
 Coconut supports pattern-matching / destructuring assignment syntax inside of function definition. The syntax for pattern-matching function definition is
 ```coconut
-[match] def <name>(<match>, <match>, ...):
+[match] def <name>(<pattern>, <pattern>, ... [if <cond>]):
     <body>
 ```
-where `<name>` is the name of the function, `<body>` is the body of the function, and `<pattern>` is defined by Coconut's [`match` statement](#match). The `match` keyword at the beginning is optional, but is sometimes necessary to disambiguate pattern-matching function definition from normal function definition, which will always take precedence. Coconut's pattern-matching function definition is equivalent to a [destructuring assignment](#destructuring-assignment) that looks like:
+where `<name>` is the name of the function, `<cond>` is an optional additional check, `<body>` is the body of the function, and `<pattern>` is defined by Coconut's [`match` statement](#match). The `match` keyword at the beginning is optional, but is sometimes necessary to disambiguate pattern-matching function definition from normal function definition, which will always take precedence. Coconut's pattern-matching function definition is equivalent to a [`match` statement](#match) that looks like:
 ```coconut
 def <name>(*args):
-    match [<match>, <match>, ...] = args
-    <body>
+    match (<pattern>, <pattern>, ...) in args:
+        <body>
+    else:
+        err = MatchError(<error message>)
+        err.pattern = "def <name>(<pattern>, <pattern>, ...):"
+        err.value = args
+        raise err
 ```
-If pattern-matching function definition fails, it will raise a [`MatchError`]((#matcherror) object just like destructuring assignment.
+If pattern-matching function definition fails, it will raise a [`MatchError`]((#matcherror) object just like [destructuring assignment](#destructuring-assignment).
 
 _Note: Pattern-matching function definition can be combined with shorthand and infix function definition._
 
@@ -1096,6 +1103,64 @@ cdef f(x):
 ```
 
 ## Built-Ins
+
+### `addpattern`
+
+Takes one argument that is a [pattern-matching function](pattern-matching-functions), and returns a decorator that adds the patterns in the existing function to the new function being decorated, where the existing patterns are checked first, then the new. Equivalent to:
+```
+def addpattern(base_func):
+    """Decorator to add a new case to a pattern-matching function, where the new case is checked last."""
+    def pattern_adder(func):
+        def add_pattern_func(*args, **kwargs):
+            try:
+                return base_func(*args, **kwargs)
+            except MatchError:
+                return func(*args, **kwargs)
+        return add_pattern_func
+    return pattern_adder
+```
+
+##### Example
+
+###### Coconut
+```
+def factorial(0) = 1
+
+@addpattern(factorial)
+def factorial(n) = n * factorial(n - 1)
+```
+
+###### Python
+_Can't be done without a complicated decorator definition and a long series of checks for each pattern-matching. See the compiled code for the Python syntax._
+
+### `prepattern`
+
+Takes one argument that is a [pattern-matching function](pattern-matching-functions), and returns a decorator that adds the patterns in the existing function to the new function being decorated, where the new patterns are checked first, then the existing. Equivalent to:
+```
+def prepattern(base_func):
+    """Decorator to add a new case to a pattern-matching function, where the new case is checked first."""
+    def pattern_prepender(func):
+        def pre_pattern_func(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except MatchError:
+                return base_func(*args, **kwargs)
+        return pre_pattern_func
+    return pattern_prepender
+```
+
+##### Example
+
+###### Coconut
+```
+def factorial(n) = n * factorial(n - 1)
+
+@prepattern(factorial)
+def factorial(0) = 1
+```
+
+###### Python
+_Can't be done without a complicated decorator definition and a long series of checks for each pattern-matching. See the compiled code for the Python syntax._
 
 ### `reduce`
 
