@@ -18,6 +18,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from .compiler import *
 import os
+import time
 import os.path
 import argparse
 
@@ -621,6 +622,8 @@ class cli(object):
                     lastTime = newTime
                     #Recompile it
                     self.compile_path(source)
+
+                time.sleep(1)
         else:
             lastTimes = []
             while True:
@@ -633,3 +636,5 @@ class cli(object):
                 if set(lastTimes) != set(newTimes):
                     lastTimes = newTimes
                     self.compile_path(source)
+
+            time.sleep(1)
