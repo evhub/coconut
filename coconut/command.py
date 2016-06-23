@@ -318,7 +318,7 @@ class cli(object):
                 self.proc.debug(True)
             if args.autopep8 is not None:
                 self.proc.autopep8(args.autopep8)
-            if args.source is not None and not args.watch:
+            if args.source is not None:
                 if args.run and os.path.isdir(args.source):
                     raise CoconutException("source path must point to file not directory when --run is enabled")
                 if args.dest is None:
@@ -340,6 +340,9 @@ class cli(object):
                     package = False
                 else:
                     package = None # auto-decide package
+
+                if args.watch:
+                    self.watch(args.source,dest,package,args.run,args.force)
                 self.compile_path(args.source, dest, package, args.run, args.force)
             elif args.run or args.nowrite or args.force or args.package or args.standalone:
                 raise CoconutException("a source file/folder must be specified when options that depend on the source are enabled")
@@ -350,8 +353,6 @@ class cli(object):
                 self.execute(self.proc.parse_block(sys.stdin.read()))
             if args.jupyter is not None:
                 self.start_jupyter(args.jupyter)
-            if args.watch:
-                self.watch(args.source)
             if args.interact or (interact and not (
                     stdin
                     or args.source
@@ -611,7 +612,7 @@ class cli(object):
             self.log_cmd(run_args)
             subprocess.call(run_args)
 
-    def watch(self,source):
+    def watch(self, source, write=True, package=None, run=False, force=False):
         """Watches a file, and recompiles on change"""
         if os.path.isfile(source):
             lastTime = 0
@@ -621,7 +622,7 @@ class cli(object):
                 if lastTime != newTime:
                     lastTime = newTime
                     #Recompile it
-                    self.compile_path(source)
+                    self.compile_path(source,write,package,run,force)
 
                 time.sleep(1)
         else:
@@ -635,6 +636,6 @@ class cli(object):
                         newTimes.append(newTime)
                 if set(lastTimes) != set(newTimes):
                     lastTimes = newTimes
-                    self.compile_path(source)
+                    self.compile_path(source,write,package,run,force)
 
             time.sleep(1)
