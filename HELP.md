@@ -115,7 +115,7 @@ hello, world!
 
 Of course, while being able to interpret Coconut code on-the-fly is a great thing, it wouldn't be very useful without the ability to write and compile larger programs. To that end, it's time to write our first Coconut program: "hello, world!" Coconut-style.
 
-First, we're going to need to create a file to put our code into. The file extension for Coconut source files is `.coco`, so let's create the new file `hello_world.coco`. After you do that, you should take the time now to set up your text editor to properly highlight Coconut code. For instructions on how to do that, see the documentation on [Coconut syntax highlighting](http://coconut.readthedocs.org/en/master/DOCS.html#syntax-highlighting).
+First, we're going to need to create a file to put our code into. The recommended file extension for Coconut source files is `.coco`, so let's create the new file `hello_world.coco`. After you do that, you should take the time now to set up your text editor to properly highlight Coconut code. For instructions on how to do that, see the documentation on [Coconut syntax highlighting](http://coconut.readthedocs.org/en/master/DOCS.html#syntax-highlighting).
 
 Now let's put some code in our `hello_world.coco` file. Unlike in Python, where headers like
 ```coconut_python
