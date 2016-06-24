@@ -7,7 +7,7 @@
 1. [Starting Out](#starting-out)
     1. [Using the Interpreter](#using-the-interpreter)
     1. [Using the Compiler](#using-the-compiler)
-    1. [Using IPython / Jupyter](#using-ipython--jupyter)
+    1. [Using IPython/ Jupyter](#using-ipython-jupyter)
     1. [Case Studies](#case-studies)
 1. [Case Study 1: `factorial`](#case-study-1-factorial)
     1. [Imperative Method](#imperative-method)
@@ -65,7 +65,7 @@ and much more!
 At its very core, Coconut is a compiler that turns Coconut code into Python code. That means that anywhere where you can use a Python script, you can also use a compiled Coconut script. To access that core compiler, Coconut comes with a command-line utility, which can
 - compile single Coconut files or entire Coconut projects,
 - interpret Coconut code on-the-fly, and
-- hook into existing Python applications like IPython / Jupyter.
+- hook into existing Python applications like IPython/ Jupyter.
 
 Installing Coconut, including all the features above, is drop-dead simple. Just
 
@@ -154,11 +154,11 @@ Compiling single files is not the only way to use the Coconut command-line utili
 
 The Coconut  compiler supports a large variety of different compilation options, the help for which can always be accessed by entering `coconut -h` into the command line. One of the most useful of these is `--linenumbers` (or `-l` for short). Using `--linenumbers` will add the line numbers of your source code as comments in the compiled code, allowing you to see what line in your source code corresponds to a line in the compiled code where an error is occurring, for ease of debugging.
 
-### Using IPython / Jupyter
+### Using IPython/ Jupyter
 
 Although all different types of programming can benefit from using more functional techniques, scientific computing, perhaps more than any other field, lends itself very well to functional programming, an observation the case studies in this tutorial are very good examples of. To that end, Coconut aims to provide extensive support for the established tools of scientific computing in Python.
 
-That means supporting IPython / Jupyter, as modern Python programming, particularly in the sciences, has gravitated towards the use of [IPython](http://ipython.org/) (the python kernel for the [Jupyter](http://jupyter.org/) framework) instead of the classic Python shell. Coconut supports being used both as a kernel for Jupyter notebooks and consoles, and as an extension inside of the IPython kernel.
+That means supporting IPython/ Jupyter, as modern Python programming, particularly in the sciences, has gravitated towards the use of [IPython](http://ipython.org/) (the python kernel for the [Jupyter](http://jupyter.org/) framework) instead of the classic Python shell. Coconut supports being used both as a kernel for Jupyter notebooks and consoles, and as an extension inside of the IPython kernel.
 
 To launch a Jupyter notebook with Coconut as the kernel, use the command
 ```
