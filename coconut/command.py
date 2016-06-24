@@ -85,6 +85,13 @@ else:
 tutorial_url = "http://coconut.readthedocs.org/en/" + version_tag + "/HELP.html"
 documentation_url = "http://coconut.readthedocs.org/en/" + version_tag + "/DOCS.html"
 
+icoconut_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icoconut")
+icoconut_kernel_dirs = [
+    os.path.join(icoconut_dir, "coconut"),
+    os.path.join(icoconut_dir, "coconut2"),
+    os.path.join(icoconut_dir, "coconut3")
+]
+
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -580,25 +587,35 @@ class cli(object):
             jupyter = "ipython"
         else:
             jupyter = "jupyter"
-        install_args = [jupyter, "kernelspec", "install", os.path.join(os.path.dirname(os.path.abspath(__file__)), "icoconut"), "--replace"]
-        self.log_cmd(install_args)
-        try:
-            install_func(install_args)
-        except subprocess.CalledProcessError:
-            user_install_args = install_args + ["--user"]
-            self.log_cmd(user_install_args)
+        for icoconut_kernel_dir in icoconut_kernel_dirs:
+            install_args = [jupyter, "kernelspec", "install", icoconut_kernel_dir, "--replace"]
+            self.log_cmd(install_args)
             try:
-                install_func(user_install_args)
+                install_func(install_args)
             except subprocess.CalledProcessError:
-                errmsg = 'unable to install Jupyter kernel specification file (failed command "'+" ".join(install_args)+'")'
-                if args:
-                    self.proc.warn(CoconutWarning(errmsg))
-                else:
-                    raise CoconutException(errmsg)
+                user_install_args = install_args + ["--user"]
+                self.log_cmd(user_install_args)
+                try:
+                    install_func(user_install_args)
+                except subprocess.CalledProcessError:
+                    errmsg = 'unable to install Jupyter kernel specification file (failed command "'+" ".join(install_args)+'")'
+                    if args:
+                        self.proc.warn(CoconutWarning(errmsg))
+                    else:
+                        raise CoconutException(errmsg)
         if args:
             if args[0] == "console":
+                ver = "2" if PY2 else "3"
+                check_args = ["python"+ver, "-m", "coconut", "--version"]
+                self.log_cmd(check_args)
+                try:
+                    install_func(check_args)
+                except subprocess.CalledProcessError:
+                    kernel_name = "coconut"
+                else:
+                    kernel_name = "coconut"+ver
                 self.console.print(version_banner)
-                run_args = [jupyter, "console", "--kernel", "icoconut"] + args[1:]
+                run_args = [jupyter, "console", "--kernel", kernel_name] + args[1:]
             elif args[0] == "notebook":
                 run_args = [jupyter, "notebook"] + args[1:]
             else:
