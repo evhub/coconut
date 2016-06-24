@@ -814,7 +814,7 @@ A very common thing to do in functional programming is to make use of function v
 (|>)        => # pipe forward
 (|*>)       => # multi-arg pipe forward
 (<|)        => # pipe backward
-(|*>)       => # multi-arg pipe backward
+(<*|)       => # multi-arg pipe backward
 (..)        => # function composition
 (.)         => (getattr)
 (::)        => (itertools.chain) # will not evaluate its arguments lazily
