@@ -27,9 +27,9 @@ import sys
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-VERSION = "1.0.0"
-VERSION_NAME = "Albatross"
-DEVELOP = True
+VERSION = "1.1.0"
+VERSION_NAME = "Brontosaurus"
+DEVELOP = False
 
 if DEVELOP:
     VERSION += "-post_dev"
