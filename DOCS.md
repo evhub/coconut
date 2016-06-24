@@ -12,7 +12,7 @@
     1. [Compilation Modes](#compilation-modes)
     1. [Compatible Python Versions](#compatible-python-versions)
     1. [Allowable Targets](#allowable-targets)
-    1. [`--strict` Mode](#--strict-mode)
+    1. [`strict` Mode](#strict-mode)
     1. [IPython/ Jupyter Support](#ipython-jupyter-support)
         1. [Extension](#extension)
         1. [Kernel](#kernel)
@@ -195,7 +195,7 @@ If the version of Python that the compiled code will be running on is known ahea
 
 _Note: Periods are ignored in target specifications, such that the target `2.7` is equivalent to the target `27`._
 
-### `--strict` Mode
+### `strict` Mode
 
 If the `--strict` or `-s` flag is enabled, Coconut will throw errors on various style problems. These are
 - mixing of tabs and spaces (without `--strict` Coconut just shows a Warning),
