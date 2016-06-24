@@ -614,30 +614,8 @@ class cli(object):
 
     def watch(self, source, write=True, package=None, run=False, force=False):
         """Watches a file, and recompiles on change"""
-        if os.path.isfile(source):
-            lastTime = 0
-            while True:
-                newTime = os.stat(source).st_mtime
-                #If the file has changed
-                if lastTime != newTime:
-                    lastTime = newTime
-                    #Recompile it
-                    self.compile_path(source,write,package,run,force)
+        #self.compile_path(source,write,package,run,force)
+        from .watch import realWatch
+        realWatch(self,source,write,package,run,force)
 
-                time.sleep(1)
-        else:
-            lastTimes = []
-            while True:
-                newTimes = []
-                for path, subdirs, files in os.walk(source):
-                    for name in files:
-                        fullPath = os.path.join(path,name)
-                        ext = os.path.splitext(fullPath)[-1]
-                        if ext in code_exts:
-                            newTime = os.stat(fullPath).st_mtime
-                            newTimes.append(newTime)
-                if set(lastTimes) != set(newTimes):
-                    lastTimes = newTimes
-                    self.compile_path(source,write,package,run,force)
-
-            time.sleep(1)
+        
