@@ -446,7 +446,7 @@ Any valid Python identifier may be used for a field name except for names starti
 
 Named tuple instances do not have per-instance dictionaries, so they are lightweight and require no more memory than regular tuples.
 
-##### Example
+##### Examples
 
 ###### Coconut
 ```coconut
@@ -459,6 +459,23 @@ v |> print # all data types come with a built-in __repr__
 v |> abs |> print
 v.x = 2 # this will fail because data objects are immutable
 ```
+_Showcases the syntax and immutable nature of `data` types._
+```coconut
+data Empty(): pass
+data Leaf(n): pass
+data Node(l, r): pass
+
+def size(Empty()) = 0
+
+@addpattern(size)
+def size(Leaf(_)) = 1
+
+@addpattern(size)
+def size(Node(left, right)) = size(left) + size(right)
+
+size(Node(Empty(), Leaf(10))) == 1
+```
+_Showcases the algebraic nature of `data` types when combined with pattern-matching._
 
 ###### Python
 ```coconut_python
