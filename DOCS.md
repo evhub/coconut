@@ -459,7 +459,7 @@ v |> print # all data types come with a built-in __repr__
 v |> abs |> print
 v.x = 2 # this will fail because data objects are immutable
 ```
-_Showcases the syntax and immutable nature of `data` types._
+_Showcases the syntax, features, and immutable nature of `data` types._
 ```coconut
 data Empty(): pass
 data Leaf(n): pass
@@ -489,6 +489,27 @@ v = vector(3, 4)
 print(v)
 print(abs(v))
 v.x = 2
+```
+```coconut
+import collections
+class Empty(collections.namedtuple("Empty", "")):
+    __slots__ = ()
+class Leaf(collections.namedtuple("Leaf", "n")):
+    __slots__ = ()
+class Node(collections.namedtuple("Node", "l, r")):
+    __slots__ = ()
+
+def size(tree):
+    if isinstance(tree, Empty):
+        return 0
+    elif isinstance(tree, Leaf):
+        return 1
+    elif isinstance(tree, Node):
+        return size(tree[0]) + size(tree[1])
+    else:
+        raise MatchError()
+
+size(Node(Empty(), Leaf(10))) == 1
 ```
 
 ### `match`
