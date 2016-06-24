@@ -27,7 +27,7 @@
 <h1>
 <a id="user-content-coconut" href="#coconut" aria-hidden="true"><span aria-hidden="true"></span></a>Coconut</h1>
 
-<p>Coconut is a <strong>simple, elegant, Pythonic functional programming language</strong> that compiles to <a href="https://www.python.org/">Python</a>. Since <strong>all valid Python is valid Coconut</strong>, joining the <a href="http://pypi-ranking.info/module/coconut">over 30,000 people</a> already using Coconut will only extend and enhance what you're already capable of in Python.</p>
+<p>Coconut is a <strong>simple, elegant, Pythonic functional programming language</strong> that compiles to <a href="https://www.python.org/">Python</a>. Since <strong>all valid Python is valid Coconut</strong>, using Coconut will only extend and enhance what you're already capable of in Python.</p>
 
 <p>Why use Coconut? Coconut is built to be fundamentally <strong>useful</strong>. Coconut enhances the repertoire of Python programmers to include the tools of modern functional programming, in such a way that those tools are <strong>easy</strong> to use and immensely <strong>powerful</strong>; that is, <strong>Coconut does to functional programming what Python did to imperative programming</strong>. And Coconut code runs the same on <strong>any Python version</strong>, making the Python 2/3 split a thing of the past.</p>
 
@@ -119,12 +119,14 @@
 <li>tail recursion optimization</li>
 </ul>
 <div class="highlight-coconut"><div class="highlight"><pre><span></span><span class="o">@</span><span class="nb">recursive</span>
-<span class="k">def</span> <span class="nf">factorial</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">factorial</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">acc</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
     <span class="k">case</span> <span class="n">n</span><span class="p">:</span>
         <span class="k">match</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">return</span> <span class="mi">1</span>
+            <span class="k">return</span> <span class="n">acc</span>
         <span class="k">match</span> <span class="n">_</span> <span class="ow">is</span> <span class="nb">int</span> <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">n</span> <span class="o">*</span> <span class="n">factorial</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">factorial</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">acc</span><span class="o">*</span><span class="n">n</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;the argument to factorial must be an integer &gt;= 0&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </ul>

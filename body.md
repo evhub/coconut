@@ -1,6 +1,6 @@
 # Coconut
 
-Coconut is a **simple, elegant, Pythonic functional programming language** that compiles to [Python](https://www.python.org/). Since **all valid Python is valid Coconut**, joining the [over 30,000 people](http://pypi-ranking.info/module/coconut) already using Coconut will only extend and enhance what you're already capable of in Python.
+Coconut is a **simple, elegant, Pythonic functional programming language** that compiles to [Python](https://www.python.org/). Since **all valid Python is valid Coconut**, using Coconut will only extend and enhance what you're already capable of in Python.
 
 Why use Coconut? Coconut is built to be fundamentally **useful**. Coconut enhances the repertoire of Python programmers to include the tools of modern functional programming, in such a way that those tools are **easy** to use and immensely **powerful**; that is, **Coconut does to functional programming what Python did to imperative programming**. And Coconut code runs the same on **any Python version**, making the Python 2/3 split a thing of the past.
 
@@ -66,12 +66,12 @@ range(100) |> parallel_map$((**)$(2)) |> list
 - tail recursion optimization
 ```coconut
 @recursive
-def factorial(n):
+def factorial(n, acc=1):
     case n:
         match 0:
-            return 1
+            return acc
         match _ is int if n > 0:
-            return n * factorial(n - 1)
+            return factorial(n-1, acc*n)
 ```
 
 and much more!
