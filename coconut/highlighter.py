@@ -34,7 +34,9 @@ builtins = (
     "recursive",
     "datamaker",
     "consume",
-    "parallel_map"
+    "parallel_map",
+    "addpattern",
+    "prepattern"
     )
 
 operators = (
