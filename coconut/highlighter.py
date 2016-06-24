@@ -34,7 +34,9 @@ builtins = (
     "recursive",
     "datamaker",
     "consume",
-    "parallel_map"
+    "parallel_map",
+    "addpattern",
+    "prepattern"
     )
 
 operators = (
@@ -79,8 +81,8 @@ def lenient_add_filter(self, *args, **kwargs):
 
 class pylexer(Python3Lexer):
     """Coconut-style Python syntax highlighter."""
-    name = "coc_python"
-    aliases = ["coc_python", "coc_py", "coc_python3", "coc_py3"]
+    name = "coconut_python"
+    aliases = ["coconut_python", "coconut_py", "coconut_python3", "coconut_py3"]
     filenames = []
 
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tabideal, encoding=default_encoding):
@@ -90,8 +92,8 @@ class pylexer(Python3Lexer):
 
 class pyconlexer(PythonConsoleLexer):
     """Coconut-style Python console syntax highlighter."""
-    name = "coc_pycon"
-    aliases = ["coc_pycon", "coc_pycon3"]
+    name = "coconut_pycon"
+    aliases = ["coconut_pycon", "coconut_pycon3"]
     filenames = []
 
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tabideal, encoding=default_encoding, python3=True):
@@ -102,13 +104,13 @@ class pyconlexer(PythonConsoleLexer):
 class coclexer(Python3Lexer):
     """Coconut syntax highlighter."""
     name = "coconut"
-    aliases = ["coconut", "coc", "coconutcon"]
-    filenames = ["*"+code_ext]
+    aliases = ["coconut", "coco", "coconutcon", "cococon"]
+    filenames = ["*"+ext for ext in code_exts]
 
     tokens = Python3Lexer.tokens.copy()
     tokens["root"] = [
         (r"|".join(operators), Operator),
-        (r'(?<!\\)(data)((?:\s|\\\s)+)?', bygroups(Keyword, Text), 'classname')
+        (r'(?<!\\)(data)((?:\s|\\\s)+)', bygroups(Keyword, Text), 'classname')
     ] + tokens["root"]
     tokens["keywords"] = tokens["keywords"] + [
         (words(reserved_vars, prefix=r"(?<!\\)", suffix=r"\b"), Keyword)

@@ -1,0 +1,4 @@
+global-include *.txt
+global-include *.rst
+global-include *.md
+global-include *.json

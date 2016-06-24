@@ -616,7 +616,7 @@ def recursive(func):
     state = [True, None] # state = [is_top_level, (args, kwargs)]
     recurse = object()
     @_coconut.functools.wraps(func)
-    def tailed_func(*args, **kwargs):
+    def recursive_func(*args, **kwargs):
         """Tail Recursion Wrapper."""
         if state[0]:
             state[0] = False
@@ -633,7 +633,29 @@ def recursive(func):
         else:
             state[1] = args, kwargs
             return recurse
-    return tailed_func
+    return recursive_func
+def addpattern(base_func):
+    """Decorator to add a new case to a pattern-matching function, where the new case is checked last."""
+    def pattern_adder(func):
+        @_coconut.functools.wraps(func)
+        def add_pattern_func(*args, **kwargs):
+            try:
+                return base_func(*args, **kwargs)
+            except _coconut_MatchError:
+                return func(*args, **kwargs)
+        return add_pattern_func
+    return pattern_adder
+def prepattern(base_func):
+    """Decorator to add a new case to a pattern-matching function, where the new case is checked first."""
+    def pattern_prepender(func):
+        @_coconut.functools.wraps(func)
+        def pre_pattern_func(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except _coconut_MatchError:
+                return base_func(*args, **kwargs)
+        return pre_pattern_func
+    return pattern_prepender
 def datamaker(data_type):
     """Returns base data constructor of passed data type."""
     return _coconut.functools.partial(_coconut.super(data_type, data_type).__new__, data_type)
@@ -703,7 +725,16 @@ def chain_handle(tokens):
     else:
         return "_coconut.itertools.chain.from_iterable(" + lazy_list_handle(tokens) + ")"
 
-def get_infix_items(tokens, callback):
+def infix_error(tokens):
+    """Raises inner infix error."""
+    raise CoconutException("invalid inner infix tokens", tokens)
+
+def infix_handle(tokens):
+    """Processes infix calls."""
+    func, args = get_infix_items(tokens, infix_handle)
+    return "(" + func + ")(" + ", ".join(args) + ")"
+
+def get_infix_items(tokens, callback=infix_error):
     """Performs infix token processing."""
     if len(tokens) < 3:
         raise CoconutException("invalid infix tokens", tokens)
@@ -721,18 +752,9 @@ def get_infix_items(tokens, callback):
                 args.append(arg)
         return tokens[1], args
 
-def infix_error(tokens):
-    """Raises inner infix error."""
-    raise CoconutException("invalid inner infix tokens", tokens)
-
-def infix_handle(tokens):
-    """Processes infix calls."""
-    func, args = get_infix_items(tokens, infix_handle)
-    return "(" + func + ")(" + ", ".join(args) + ")"
-
 def op_funcdef_handle(tokens):
     """Processes infix defs."""
-    func, args = get_infix_items(tokens, infix_error)
+    func, args = get_infix_items(tokens)
     return func + "(" + ", ".join(args) + ")"
 
 def pipe_handle(tokens):
@@ -922,6 +944,11 @@ class matcher(object):
         if forall:
             for other in self.others:
                 other.decrement(True)
+
+    def add_guard(self, cond):
+        """Adds cond as a guard."""
+        self.increment(True)
+        self.add_check(cond)
 
     def match_dict(self, original, item):
         """Matches a dictionary."""
@@ -1146,8 +1173,7 @@ def match_handle(o, l, tokens, top=True):
     matching = matcher()
     matching.match(matches, match_to_var)
     if cond:
-        matching.increment(True)
-        matching.add_check(cond)
+        matching.add_guard(cond)
     out = ""
     if top:
         out += match_check_var + " = False\n"
@@ -2142,19 +2168,30 @@ class processor(object):
         """Processes match defs."""
         if len(tokens) == 2:
             func, matches = tokens
-            matching = matcher()
-            matching.match_sequence(("(", matches), match_to_var)
-            out = "def " + func + " (*" + match_to_var + "):\n" + openindent
-            out += match_check_var + " = False\n"
-            out += matching.out()
-            out += self.pattern_error(original, loc)
-            return out
+            cond = None
+        elif len(tokens) == 3:
+            func, matches, cond = tokens
         else:
             raise CoconutException("invalid match function definition tokens", tokens)
+        matching = matcher()
+        matching.match_sequence(("(", matches), match_to_var)
+        if cond is not None:
+            matching.add_guard(cond)
+        out = "def " + func + " (*" + match_to_var + "):\n" + openindent
+        out += match_check_var + " = False\n"
+        out += matching.out()
+        out += self.pattern_error(original, loc)
+        return out
 
     def op_match_funcdef_handle(self, original, loc, tokens):
         """Processes infix match defs."""
-        return self.name_match_funcdef_handle(original, loc, get_infix_items(tokens, infix_error))
+        if len(tokens) == 3:
+            name_tokens = get_infix_items(tokens)
+        elif len(tokens) == 4:
+            name_tokens = get_infix_items(tokens[:-1]) + tuple(tokens[-1:])
+        else:
+            raise CoconutException("invalid infix match function definition tokens", tokens)
+        return self.name_match_funcdef_handle(original, loc, name_tokens)
 
     def check_strict(self, name, original, location, tokens):
         """Checks that syntax meets --strict requirements."""
@@ -2677,9 +2714,10 @@ class processor(object):
     else_suite = condense(colon + trace(attach(simple_compound_stmt, else_handle, copy=True), "else_suite")) | suite
     else_stmt = condense(Keyword("else") - else_suite)
 
+    match_guard = Optional(Keyword("if").suppress() + test)
     full_suite = colon.suppress() + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
     full_match = trace(attach(
-        Keyword("match").suppress() + match + Keyword("in").suppress() - test - Optional(Keyword("if").suppress() - test) - full_suite
+        Keyword("match").suppress() + match + Keyword("in").suppress() - test - match_guard - full_suite
         , match_handle), "full_match")
     match_stmt = condense(full_match - Optional(else_stmt))
 
@@ -2732,9 +2770,9 @@ class processor(object):
     name_match_funcdef = Forward()
     op_match_funcdef = Forward()
     async_match_funcdef = Forward()
-    name_match_funcdef_ref = name + lparen.suppress() + matchlist_list + rparen.suppress()
+    name_match_funcdef_ref = name + lparen.suppress() + matchlist_list + match_guard + rparen.suppress()
     op_match_funcdef_arg = lparen.suppress() + match + rparen.suppress()
-    op_match_funcdef_ref = Group(Optional(op_match_funcdef_arg)) + op_funcdef_name + Group(Optional(op_match_funcdef_arg))
+    op_match_funcdef_ref = Group(Optional(op_match_funcdef_arg)) + op_funcdef_name + Group(Optional(op_match_funcdef_arg)) + match_guard
     base_match_funcdef = Keyword("def").suppress() + (op_match_funcdef | name_match_funcdef)
     full_match_funcdef = trace(attach(base_match_funcdef + full_suite, full_match_funcdef_handle), "base_match_funcdef")
     math_match_funcdef = attach(

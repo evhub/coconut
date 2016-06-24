@@ -25,7 +25,7 @@ import argparse
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-code_ext = ".coc"
+code_exts = [".coco", ".coc", ".coconut"] # in order of preference
 comp_ext = ".py"
 
 main_sig = "Coconut: "
@@ -85,6 +85,13 @@ else:
 tutorial_url = "http://coconut.readthedocs.org/en/" + version_tag + "/HELP.html"
 documentation_url = "http://coconut.readthedocs.org/en/" + version_tag + "/DOCS.html"
 
+icoconut_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icoconut")
+icoconut_kernel_dirs = [
+    os.path.join(icoconut_dir, "coconut"),
+    os.path.join(icoconut_dir, "coconut2"),
+    os.path.join(icoconut_dir, "coconut3")
+]
+
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -122,6 +129,14 @@ def rem_encoding(code):
             new_lines.append(line)
     new_lines += old_lines[2:]
     return "\n".join(new_lines)
+
+def try_eval(code, in_vars):
+    """Try to evaluate the given code, otherwise execute it."""
+    try:
+        return eval(code, in_vars)
+    except SyntaxError:
+        pass # exit the exception context before executing code
+    exec(code, in_vars)
 
 class executor(object):
     """Compiled Python executor."""
@@ -286,6 +301,10 @@ class cli(object):
         else:
             return self.proc.indebug()
 
+    def print_exc(self):
+        """Properly prints an exception in the exception context."""
+        self.console.printerr(get_error(self.indebug()))
+
     def cmd(self, args, interact=True):
         """Parses command-line arguments."""
         try:
@@ -347,7 +366,7 @@ class cli(object):
                     )):
                 self.start_prompt()
         except CoconutException:
-            self.console.printerr(get_error(self.indebug()))
+            self.print_exc()
             sys.exit(1)
 
     def compile_path(self, path, write=True, package=None, run=False, force=False):
@@ -380,7 +399,7 @@ class cli(object):
             wrote = False
             try:
                 for filename in filenames:
-                    if os.path.splitext(filename)[1] == code_ext:
+                    if os.path.splitext(filename)[1] in code_exts:
                         self.compile_file(os.path.join(dirpath, filename), writedir, package, run, force)
                         wrote = True
             finally: # if we wrote anything in package mode, we should always add a header file
@@ -465,7 +484,7 @@ class cli(object):
             print()
             self.exit()
         except ValueError:
-            self.console.printerr(get_error(self.indebug()))
+            self.print_exc()
             self.exit()
         return None
 
@@ -480,7 +499,7 @@ class cli(object):
             if code:
                 compiled = self.handle(code)
                 if compiled:
-                    self.execute(compiled, False)
+                    self.execute(compiled, error=False, print_expr=True)
 
     def exit(self):
         """Exits the interpreter."""
@@ -506,10 +525,10 @@ class cli(object):
             try:
                 compiled = self.proc.parse_block(code)
             except CoconutException:
-                self.console.printerr(get_error(self.indebug()))
+                self.print_exc()
         return compiled
 
-    def execute(self, compiled=None, error=True, path=None, isolate=False):
+    def execute(self, compiled=None, error=True, path=None, isolate=False, print_expr=False):
         """Executes compiled code."""
         self.check_runner(path, isolate)
         if compiled is not None:
@@ -517,7 +536,12 @@ class cli(object):
                 print(compiled)
             if isolate: # isolate means header is included, and thus encoding must be removed
                 compiled = rem_encoding(compiled)
-            self.runner.run(compiled, error)
+            if print_expr:
+                result = self.runner.run(compiled, error, run_func=try_eval)
+                if result is not None: # if the input was an expression, we should print it
+                    print(result)
+            else:
+                self.runner.run(compiled, error)
 
     def check_runner(self, path=None, isolate=False):
         """Makes sure there is a runner."""
@@ -543,37 +567,58 @@ class cli(object):
         import webbrowser
         webbrowser.open(documentation_url, 2)
 
+    def log_cmd(self, args):
+        """Logs a console command if indebug."""
+        if self.indebug():
+            self.console.printerr("> " + " ".join(args))
+
     def start_jupyter(self, args):
         """Starts Jupyter with the Coconut kernel."""
         import subprocess
-        if args:
-            install_func = lambda args: subprocess.check_output(args, stderr=subprocess.STDOUT)
+        if args and not self.indebug():
+            install_func = lambda args: subprocess.check_output(args, stderr=subprocess.STDOUT) # stdout is returned and ignored
         else:
             install_func = lambda args: subprocess.check_call(args)
+        check_args = ["jupyter", "--version"]
+        self.log_cmd(check_args)
         try:
-            install_func(["jupyter", "--version"])
+            install_func(check_args)
         except subprocess.CalledProcessError:
             jupyter = "ipython"
         else:
             jupyter = "jupyter"
-        install_args = [jupyter, "kernelspec", "install", os.path.join(os.path.dirname(os.path.abspath(__file__)), "icoconut"), "--replace"]
-        try:
-            install_func(install_args)
-        except subprocess.CalledProcessError:
+        for icoconut_kernel_dir in icoconut_kernel_dirs:
+            install_args = [jupyter, "kernelspec", "install", icoconut_kernel_dir, "--replace"]
+            self.log_cmd(install_args)
             try:
-                install_func(install_args + ["--user"])
+                install_func(install_args)
             except subprocess.CalledProcessError:
-                errmsg = 'unable to install Jupyter kernel specification file (failed command "'+" ".join(install_args)+'")'
-                if args:
-                    self.proc.warn(CoconutWarning(errmsg))
-                else:
-                    raise CoconutException(errmsg)
+                user_install_args = install_args + ["--user"]
+                self.log_cmd(user_install_args)
+                try:
+                    install_func(user_install_args)
+                except subprocess.CalledProcessError:
+                    errmsg = 'unable to install Jupyter kernel specification file (failed command "'+" ".join(install_args)+'")'
+                    if args:
+                        self.proc.warn(CoconutWarning(errmsg))
+                    else:
+                        raise CoconutException(errmsg)
         if args:
             if args[0] == "console":
+                ver = "2" if PY2 else "3"
+                check_args = ["python"+ver, "-m", "coconut", "--version"]
+                self.log_cmd(check_args)
+                try:
+                    install_func(check_args)
+                except subprocess.CalledProcessError:
+                    kernel_name = "coconut"
+                else:
+                    kernel_name = "coconut"+ver
                 self.console.print(version_banner)
-                run_args = [jupyter, "console", "--kernel", "icoconut"] + args[1:]
+                run_args = [jupyter, "console", "--kernel", kernel_name] + args[1:]
             elif args[0] == "notebook":
                 run_args = [jupyter, "notebook"] + args[1:]
             else:
                 raise CoconutException('first argument after --jupyter must be either "console" or "notebook"')
+            self.log_cmd(run_args)
             subprocess.call(run_args)

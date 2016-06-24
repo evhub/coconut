@@ -13,7 +13,7 @@
     1. [Compatible Python Versions](#compatible-python-versions)
     1. [Allowable Targets](#allowable-targets)
     1. [`--strict` Mode](#--strict-mode)
-    1. [IPython / Jupyter Support](#ipython--jupyter-support)
+    1. [IPython/Jupyter Support](#ipythonjupyter-support)
         1. [Extension](#extension)
         1. [Kernel](#kernel)
 1. [Operators](#operators)
@@ -49,6 +49,8 @@
     1. [Variable Lists](#variable-lists)
     1. [Code Passthrough](#code-passthrough)
 1. [Built-Ins](#built-ins)
+    1. [`addpattern`](#addpattern)
+    1. [`prepattern`](#prepattern)
     1. [`reduce`](#reduce)
     1. [`takewhile`](#takewhile)
     1. [`dropwhile`](#dropwhile)
@@ -80,7 +82,7 @@ This documentation covers all the technical details of the [Coconut Programming 
 
 Coconut is a variant of [Python](https://www.python.org/) built for **simple, elegant, Pythonic functional programming**. Coconut syntax is a strict superset of Python 3 syntax. That means users familiar with Python will already be familiar with most of Coconut.
 
-The Coconut compiler turns Coconut code into Python code. The primary method of accessing the Coconut compiler is through the Coconut command-line utility, which also features an interpreter for real-time compilation. In addition to the command-line utility, Coconut also supports the use of IPython / Jupyter notebooks.
+The Coconut compiler turns Coconut code into Python code. The primary method of accessing the Coconut compiler is through the Coconut command-line utility, which also features an interpreter for real-time compilation. In addition to the command-line utility, Coconut also supports the use of IPython/Jupyter notebooks.
 
 While most of Coconut gets its inspiration simply from trying to make functional programming work in Python, additional inspiration came from [Haskell](https://www.haskell.org/), [CoffeeScript](http://coffeescript.org/), [F#](http://fsharp.org/), and [patterns.py](https://github.com/Suor/patterns).
 
@@ -135,13 +137,13 @@ dest                  destination directory for compiled files (defaults to the 
 
 ### Naming Source Files
 
-Coconut source files should, so the compiler can recognize them, use the extension `.coc`. When Coconut compiles a `.coc` file, it will compile to another file with the same name, except with `.py` instead of `.coc`, which will hold the compiled code. If an extension other than `.py` is desired for the compiled files, such as `.pyde` for [Python Processing](http://py.processing.org/), then that extension can be put before `.coc` in the source file name, and it will be used instead of `.py` for the compiled files. For example, `name.coc` will compile to `name.py`, whereas `name.pyde.coc` will compile to `name.pyde`.
+Coconut source files should, so the compiler can recognize them, use the extension `.coco` (preferred), `.coc`, or `.coconut`. When Coconut compiles a `.coco` (or `.coc` / `.coconut`) file, it will compile to another file with the same name, except with `.py` instead of `.coco`, which will hold the compiled code. If an extension other than `.py` is desired for the compiled files, such as `.pyde` for [Python Processing](http://py.processing.org/), then that extension can be put before `.coco` in the source file name, and it will be used instead of `.py` for the compiled files. For example, `name.coco` will compile to `name.py`, whereas `name.pyde.coco` will compile to `name.pyde`.
 
 ### Compilation Modes
 
-Files compiled by the `coconut` command-line utility will vary based on compilation parameters. If an entire directory of files is compiled (which the compiler will search recursively for any folders containing `.coc` files), a `__coconut__.py` file will be created to house necessary functions (package mode), whereas if only a single file is compiled, that information will be stored within a header inside the file (standalone mode). Standalone mode is better for single files because it gets rid of the overhead involved in importing `__coconut__.py`, but package mode is better for large packages because it gets rid of the need to run the same Coconut header code again in every file, since it can just be imported from `__coconut__.py`.
+Files compiled by the `coconut` command-line utility will vary based on compilation parameters. If an entire directory of files is compiled (which the compiler will search recursively for any folders containing `.coco`, `.coc`, or `.coconut` files), a `__coconut__.py` file will be created to house necessary functions (package mode), whereas if only a single file is compiled, that information will be stored within a header inside the file (standalone mode). Standalone mode is better for single files because it gets rid of the overhead involved in importing `__coconut__.py`, but package mode is better for large packages because it gets rid of the need to run the same Coconut header code again in every file, since it can just be imported from `__coconut__.py`.
 
-By default, if the `source` argument to the command-line utility is a file, it will perform standalone compilation on it, whereas if it is a directory, it will recursively search for all `.coc` files and perform package compilation on them. Thus, in most cases, the mode chosen by Coconut automatically will be the right one. But if it is very important that no additional files like `__coconut__.py` be created, for example, then the command-line utility can also be forced to use a specific mode with the `--package` (`-p`) and `--standalone` (`-a`) flags.
+By default, if the `source` argument to the command-line utility is a file, it will perform standalone compilation on it, whereas if it is a directory, it will recursively search for all `.coco` (or `.coc` / `.coconut`) files and perform package compilation on them. Thus, in most cases, the mode chosen by Coconut automatically will be the right one. But if it is very important that no additional files like `__coconut__.py` be created, for example, then the command-line utility can also be forced to use a specific mode with the `--package` (`-p`) and `--standalone` (`-a`) flags.
 
 ### Compatible Python Versions
 
@@ -205,7 +207,7 @@ If the `--strict` or `-s` flag is enabled, Coconut will throw errors on various 
 
 It is recommended that you use the `--strict` or `-s` flag if you are starting a new Coconut project, as it will help you write cleaner code.
 
-### IPython / Jupyter Support
+### IPython/Jupyter Support
 
 If you prefer [IPython](http://ipython.org/) (the python kernel for the [Jupyter](http://jupyter.org/) framework) to the normal Python shell, Coconut can be used as an IPython extension or Jupyter kernel.
 
@@ -215,7 +217,7 @@ If Coconut is used as an extension, a special magic command will send snippets o
 
 #### Kernel
 
-If Coconut is used as a kernel, all code in the console or notebook will be sent directly to Coconut instead of Python to be evaluated. The command `coconut --jupyter notebook` (or `coconut --ipython notebook`) will launch an IPython / Jupyter notebook using Coconut as the kernel and the command `coconut --jupyter console` (or `coconut --ipython console`) will launch an IPython / Jupyter console using Coconut as the kernel. Additionally, the command `coconut --jupyter` (or `coconut --ipython`) will add Coconut as a language option inside of all IPython / Jupyter notebooks, even those not launched with Coconut. This command may need to be re-run when a new version of Coconut is installed.
+If Coconut is used as a kernel, all code in the console or notebook will be sent directly to Coconut instead of Python to be evaluated. The command `coconut --jupyter notebook` (or `coconut --ipython notebook`) will launch an IPython/Jupyter notebook using Coconut as the kernel and the command `coconut --jupyter console` (or `coconut --ipython console`) will launch an IPython/Jupyter console using Coconut as the kernel. Additionally, the command `coconut --jupyter` (or `coconut --ipython`) will add Coconut as a language option inside of all IPython/Jupyter notebooks, even those not launched with Coconut. This command may need to be re-run when a new version of Coconut is installed.
 
 ## Operators
 
@@ -245,7 +247,7 @@ dubsums |> list |> print
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 dubsums = map(lambda x, y: 2*(x+y), range(0, 10), range(10, 20))
 print(list(dubsums))
 ```
@@ -261,7 +263,7 @@ Partial application, or currying, is a mainstay of functional programming, and f
 ##### Python Docs
 
 Return a new `partial` object which when called will behave like _func_ called with the positional arguments _args_ and keyword arguments _keywords_. If more arguments are supplied to the call, they are appended to _args_. If additional keyword arguments are supplied, they extend and override _keywords_. Roughly equivalent to:
-```coc_python
+```coconut_python
 def partial(func, *args, **keywords):
     def newfunc(*fargs, **fkeywords):
         newkeywords = keywords.copy()
@@ -283,7 +285,7 @@ expnums |> list |> print
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 import functools
 expnums = map(functools.partial(pow, 2), range(5))
 print(list(expnums))
@@ -308,7 +310,7 @@ def sq(x) = x**2
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 import operator
 def sq(x): return x**2
 print(sq(operator.__add__(1, 2)))
@@ -326,9 +328,9 @@ fog = f..g
 ```
 
 ###### Python
-```coc_python
-fog = lambda *args, **kwargs: f(g(*args, **kwargs))
+```coconut_python
 # unlike this simple lambda, .. produces a pickleable object
+fog = lambda *args, **kwargs: f(g(*args, **kwargs))
 ```
 
 ### Chain
@@ -342,7 +344,7 @@ A useful tool to make working with iterators as easy as working with sequences i
 ##### Python Docs
 
 Make an iterator that returns elements from the first iterable until it is exhausted, then proceeds to the next iterable, until all of the iterables are exhausted. Used for treating consecutive sequences as a single sequence. Chained inputs are evaluated lazily. Roughly equivalent to:
-```coc_python
+```coconut_python
 def chain(*iterables):
     # chain('ABC', 'DEF') --> A B C D E F
     for it in iterables:
@@ -459,7 +461,7 @@ v.x = 2 # this will fail because data objects are immutable
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 import collections
 class vector(collections.namedtuple("vector", "x, y")):
     __slots__ = ()
@@ -681,7 +683,7 @@ print(\data)
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 data = 5
 print(data)
 ```
@@ -696,7 +698,7 @@ In Coconut, all variable names starting with `_coconut` are reserved. The Coconu
 
 Coconut supports the creation of lazy lists, where the contents in the list will be treated as an iterator and not evaluated until they are needed. Lazy lists can be created in Coconut simply by simply surrounding a comma-seperated list of items with `(|` and `|)` (so-called "banana brackets") instead of `[` and `]` for a list or `(` and `)` for a tuple.
 
-Lazy lists use the same machinery as iterator chaining to make themselves lazy, and thus the lazy list `(| x, y |)` is equivalent to the iterator chaining expression `(x,) :: (y,)`, although the lazy list won't construct any intermediate tuples.
+Lazy lists use the same machinery as iterator chaining to make themselves lazy, and thus the lazy list `(| x, y |)` is equivalent to the iterator chaining expression `(x,) :: (y,)`, although the lazy list won't construct the intermediate tuples.
 
 ##### Rationale
 
@@ -732,7 +734,7 @@ mod$ <| 5 <| 3
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 "123"[1]
 mod(5, 3)
 ```
@@ -749,7 +751,7 @@ empty_frozen_set = f{}
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 empty_frozen_set = frozenset()
 ```
 
@@ -776,7 +778,7 @@ An imaginary literal yields a complex number with a real part of 0.0. Complex nu
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 print(abs(3 + 4j))
 ```
 
@@ -792,7 +794,7 @@ Coconut allows for one underscore between digits and after base specifiers in nu
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 10000000.0
 ```
 
@@ -852,7 +854,7 @@ A very common thing to do in functional programming is to make use of function v
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 import operator
 print(list(map(operator.__add__, range(0, 5), range(5, 10))))
 ```
@@ -880,7 +882,7 @@ def binexp(x) = 2**x
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 def binexp(x): return 2**x
 print(binexp(5))
 ```
@@ -911,7 +913,7 @@ def a `mod` b = a % b
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 def mod(a, b): return a % b
 print(mod(x, 2))
 ```
@@ -920,16 +922,21 @@ print(mod(x, 2))
 
 Coconut supports pattern-matching / destructuring assignment syntax inside of function definition. The syntax for pattern-matching function definition is
 ```coconut
-[match] def <name>(<match>, <match>, ...):
+[match] def <name>(<pattern>, <pattern>, ... [if <cond>]):
     <body>
 ```
-where `<name>` is the name of the function, `<body>` is the body of the function, and `<pattern>` is defined by Coconut's [`match` statement](#match). The `match` keyword at the beginning is optional, but is sometimes necessary to disambiguate pattern-matching function definition from normal function definition, which will always take precedence. Coconut's pattern-matching function definition is equivalent to a [destructuring assignment](#destructuring-assignment) that looks like:
+where `<name>` is the name of the function, `<cond>` is an optional additional check, `<body>` is the body of the function, and `<pattern>` is defined by Coconut's [`match` statement](#match). The `match` keyword at the beginning is optional, but is sometimes necessary to disambiguate pattern-matching function definition from normal function definition, which will always take precedence. Coconut's pattern-matching function definition is equivalent to a [`match` statement](#match) that looks like:
 ```coconut
 def <name>(*args):
-    match [<match>, <match>, ...] = args
-    <body>
+    match (<pattern>, <pattern>, ...) in args:
+        <body>
+    else:
+        err = MatchError(<error message>)
+        err.pattern = "def <name>(<pattern>, <pattern>, ...):"
+        err.value = args
+        raise err
 ```
-If pattern-matching function definition fails, it will raise a [`MatchError`]((#matcherror) object just like destructuring assignment.
+If pattern-matching function definition fails, it will raise a [`MatchError`]((#matcherror) object just like [destructuring assignment](#destructuring-assignment).
 
 _Note: Pattern-matching function definition can be combined with shorthand and infix function definition._
 
@@ -998,7 +1005,7 @@ def func(x) = x**2
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 def wrapper(func):
     return wrapper1(wrapper2(arg, func))
 @wrapper
@@ -1025,7 +1032,7 @@ except MyError:
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 try:
     unsafe_1()
 except MyError:
@@ -1052,7 +1059,7 @@ except SyntaxError, ValueError as err:
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 try:
     unsafe_func(arg)
 except (SyntaxError, ValueError) as err:
@@ -1072,7 +1079,7 @@ global (really_long_global_variable_name_the_first_one,
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 global really_long_global_variable_name_the_first_one, \
         really_long_global_variable_name_the_second_one
 ```
@@ -1090,12 +1097,70 @@ Coconut supports the ability to pass arbitrary code through the compiler without
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 cdef f(x):
     return g(x)
 ```
 
 ## Built-Ins
+
+### `addpattern`
+
+Takes one argument that is a [pattern-matching function](pattern-matching-functions), and returns a decorator that adds the patterns in the existing function to the new function being decorated, where the existing patterns are checked first, then the new. Equivalent to:
+```
+def addpattern(base_func):
+    """Decorator to add a new case to a pattern-matching function, where the new case is checked last."""
+    def pattern_adder(func):
+        def add_pattern_func(*args, **kwargs):
+            try:
+                return base_func(*args, **kwargs)
+            except MatchError:
+                return func(*args, **kwargs)
+        return add_pattern_func
+    return pattern_adder
+```
+
+##### Example
+
+###### Coconut
+```
+def factorial(0) = 1
+
+@addpattern(factorial)
+def factorial(n) = n * factorial(n - 1)
+```
+
+###### Python
+_Can't be done without a complicated decorator definition and a long series of checks for each pattern-matching. See the compiled code for the Python syntax._
+
+### `prepattern`
+
+Takes one argument that is a [pattern-matching function](pattern-matching-functions), and returns a decorator that adds the patterns in the existing function to the new function being decorated, where the new patterns are checked first, then the existing. Equivalent to:
+```
+def prepattern(base_func):
+    """Decorator to add a new case to a pattern-matching function, where the new case is checked first."""
+    def pattern_prepender(func):
+        def pre_pattern_func(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except MatchError:
+                return base_func(*args, **kwargs)
+        return pre_pattern_func
+    return pattern_prepender
+```
+
+##### Example
+
+###### Coconut
+```
+def factorial(n) = n * factorial(n - 1)
+
+@prepattern(factorial)
+def factorial(0) = 1
+```
+
+###### Python
+_Can't be done without a complicated decorator definition and a long series of checks for each pattern-matching. See the compiled code for the Python syntax._
 
 ### `reduce`
 
@@ -1116,7 +1181,7 @@ range(1, 10) |> prod |> print
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 import operator
 import functools
 prod = functools.partial(functools.reduce, operator.__mul__)
@@ -1132,7 +1197,7 @@ Coconut provides `itertools.takewhile` as a built-in under the name `takewhile`.
 **takewhile**(_predicate, iterable_)
 
 Make an iterator that returns elements from the _iterable_ as long as the _predicate_ is true. Equivalent to:
-```coc_python
+```coconut_python
 def takewhile(predicate, iterable):
     # takewhile(lambda x: x<5, [1,4,6,4,1]) --> 1 4
     for x in iterable:
@@ -1150,7 +1215,7 @@ negatives = takewhile(numiter, (x) -> x<0)
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 import itertools
 negatives = itertools.takewhile(numiter, lambda x: x<0)
 ```
@@ -1164,7 +1229,7 @@ Coconut provides `itertools.dropwhile` as a built-in under the name `dropwhile`.
 **dropwhile**(_predicate, iterable_)
 
 Make an iterator that drops elements from the _iterable_ as long as the _predicate_ is true; afterwards, returns every element. Note: the iterator does not produce any output until the predicate first becomes false, so it may have a lengthy start-up time. Equivalent to:
-```coc_python
+```coconut_python
 def dropwhile(predicate, iterable):
     # dropwhile(lambda x: x<5, [1,4,6,4,1]) --> 6 4 1
     iterable = iter(iterable)
@@ -1184,7 +1249,7 @@ positives = dropwhile(numiter, (x) -> x<0)
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 import itertools
 positives = itertools.dropwhile(numiter, lambda x: x<0)
 ```
@@ -1198,7 +1263,7 @@ Coconut provides `itertools.tee` as a built-in under the name `tee`.
 **tee**(_iterable, n=2_)
 
 Return _n_ independent iterators from a single iterable. Equivalent to:
-```coc_python
+```coconut_python
 def tee(iterable, n=2):
     it = iter(iterable)
     deques = [collections.deque() for i in range(n)]
@@ -1224,7 +1289,7 @@ sliced = temp$[5:]
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 import itertools
 original, temp = itertools.tee(original)
 sliced = itertools.islice(temp, 5, None)
@@ -1251,7 +1316,7 @@ range(10) |> map$((x) -> x**2) |> map$(print) |> consume
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 collections.deque(map(print, map(lambda x: x**2, range(10))), maxlen=0)
 ```
 
@@ -1264,7 +1329,7 @@ Coconut provides a modified version of `itertools.count` that supports `in`, nor
 **count**(_start=0, step=1_)
 
 Make an iterator that returns evenly spaced values starting with number _start_. Often used as an argument to `map()` to generate consecutive data points. Also, used with `zip()` to add sequence numbers. Roughly equivalent to:
-```coc_python
+```coconut_python
 def count(start=0, step=1):
     # count(10) --> 10 11 12 13 14 ...
     # count(2.5, 0.5) -> 2.5 3.0 3.5 ...
@@ -1317,7 +1382,7 @@ data trilen(h):
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 import collections
 class trilen(collections.namedtuple("trilen", "h")):
     __slots__ = ()
@@ -1368,7 +1433,7 @@ parallel_map(pow$(2), range(100)) |> list |> print
 ```
 
 ###### Python
-```coc_python
+```coconut_python
 import functools
 import concurrent.futures
 with concurrent.futures.ProcessPoolExecutor() as executor:
@@ -1389,16 +1454,16 @@ There are currently three options for Coconut syntax highlighting:
 2. use an editor that supports [Pygments](http://pygments.org/), or
 3. just treat Coconut as Python.
 
-Instructions on how to set up syntax highlighting for SublimeText and Pygments are included below. If you don't like SublimeText and your chosen alternative text editor doesn't have pygments support, however, it should be sufficient to set up your editor so it interprets all `.coc` files as Python code, as this should highlight most of your code well enough.
+Instructions on how to set up syntax highlighting for SublimeText and Pygments are included below. If you don't like SublimeText and your chosen alternative text editor doesn't have pygments support, however, it should be sufficient to set up your editor so it interprets all `.coco` (also `.coc` and `.coconut`, although `.coco` is the preferred extension) files as Python code, as this should highlight most of your code well enough.
 
 #### SublimeText
 
-Coconut syntax highlighting for SublimeText requires that [Package Control](https://packagecontrol.io/installation), the standard package manager for SublimeText, be installed. Once that is done, simply open the SublimeText command palette by entering `Ctrl+Shift+P`, enter `Package Control: Install Package`, and then `Coconut`. To make sure everything is working properly, open a `.coc` file, and make sure `Coconut` appears in the bottom right-hand corner. If something else appears, like `Plain Text`, click on it, select `Open all with current extension as...` at the top of the resulting menu, and then select `Coconut`.
+Coconut syntax highlighting for SublimeText requires that [Package Control](https://packagecontrol.io/installation), the standard package manager for SublimeText, be installed. Once that is done, simply open the SublimeText command palette by entering `Ctrl+Shift+P`, enter `Package Control: Install Package`, and then `Coconut`. To make sure everything is working properly, open a `.coco` file, and make sure `Coconut` appears in the bottom right-hand corner. If something else appears, like `Plain Text`, click on it, select `Open all with current extension as...` at the top of the resulting menu, and then select `Coconut`.
 
 #### Pygments
 
-The same `pip install coconut` command that installs the Coconut command-line utility will also install the `coconut` Pygments lexer. How to use this lexer depends on the Pygments-enabled application being used, but in general simply enter `coconut` as the language being highlighted and/or use the file extension `.coc` and Pygments should be able to figure it out. For example, this documentation is generated with [Sphinx](http://www.sphinx-doc.org/en/stable/), with the syntax highlighting you see created by adding the line
-```coc_python
+The same `pip install coconut` command that installs the Coconut command-line utility will also install the `coconut` Pygments lexer. How to use this lexer depends on the Pygments-enabled application being used, but in general simply enter `coconut` as the language being highlighted and/or use a valid Coconut file extension (`.coco`, `.coc`, or `.coconut`) and Pygments should be able to figure it out. For example, this documentation is generated with [Sphinx](http://www.sphinx-doc.org/en/stable/), with the syntax highlighting you see created by adding the line
+```coconut_python
 highlight_language = "coconut"
 ```
 to Coconut's `conf.py`.
@@ -1465,7 +1530,7 @@ All Coconut built-ins are accessible from `coconut.__coconut__`. The recommended
 ##### Example
 
 ###### Python
-```coc_python
+```coconut_python
 from coconut.__coconut__ import recursive
 
 @recursive

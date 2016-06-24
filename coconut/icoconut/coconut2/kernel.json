@@ -1,0 +1,5 @@
+{
+    "argv": ["python2", "-m", "coconut.icoconut", "-f", "{connection_file}"],
+    "display_name": "Coconut2",
+    "language": "coconut"
+}

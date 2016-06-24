@@ -99,7 +99,7 @@ def get_name(code, cursor_pos, get_bounds=False):
 
 proc = processor(target="sys") # from ..compiler
 
-class kernel(Kernel):
+class CoconutKernel(Kernel):
     """Jupyter kernel for Coconut."""
     _runner = None # current ..command.executor
     implementation = "icoconut"
@@ -110,7 +110,7 @@ class kernel(Kernel):
     language_info = {
         "name": "coconut",
         "mimetype": mimetype,
-        "file_extension": code_ext,
+        "file_extension": code_exts[0],
         "codemirror_mode": {
             "name": "python",
             "version": py_syntax_version

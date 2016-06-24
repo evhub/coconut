@@ -27,8 +27,8 @@ import sys
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-VERSION = "1.0.0"
-VERSION_NAME = "Albatross"
+VERSION = "1.1.0"
+VERSION_NAME = "Brontosaurus"
 DEVELOP = False
 
 if DEVELOP:
