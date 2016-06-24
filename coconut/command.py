@@ -259,7 +259,7 @@ class cli(object):
     commandline.add_argument("--recursionlimit", metavar="limit", type=int, nargs=1, default=[None], help="set maximum recursion depth (defaults to "+str(sys.getrecursionlimit())+")")
     commandline.add_argument("--tutorial", action="store_const", const=True, default=False, help="open the Coconut tutorial in the default web browser")
     commandline.add_argument("--documentation", action="store_const", const=True, default=False, help="open the Coconut documentation in the default web browser")
-    commandline.add_argument("--watch", action="store_const", const=True, default=False, help="Watch file for changes, and compile when they happen")
+    commandline.add_argument("--watch", action="store_const", const=True, default=False, help="Watch a directory for changes, and compile when they happen")
     commandline.add_argument("--color", metavar="color", type=str, nargs=1, default=[None], help="show all Coconut messages in the given color")
     commandline.add_argument("--verbose", action="store_const", const=True, default=False, help="print verbose debug output")
     proc = None # current .compiler.processor
