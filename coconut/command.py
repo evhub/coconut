@@ -17,10 +17,11 @@ Description: Processes arguments to the Coconut command-line utility.
 from __future__ import print_function, absolute_import, unicode_literals, division
 
 from .compiler import *
+import sys
 import os
-import time
 import os.path
 import argparse
+import time
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
@@ -253,6 +254,7 @@ class cli(object):
     commandline.add_argument("-l", "--linenumbers", action="store_const", const=True, default=False, help="add line number comments for ease of debugging")
     commandline.add_argument("-p", "--package", action="store_const", const=True, default=False, help="compile source as part of a package (defaults to only if source is a directory)")
     commandline.add_argument("-a", "--standalone", action="store_const", const=True, default=False, help="compile source as standalone files (defaults to only if source is a single file)")
+    commandline.add_argument("-w", "--watch", action="store_const", const=True, default=False, help="watch a directory and recompile on changes")
     commandline.add_argument("-f", "--force", action="store_const", const=True, default=False, help="force overwriting of compiled Python (otherwise only overwrites when source code or compilation parameters change)")
     commandline.add_argument("-d", "--display", action="store_const", const=True, default=False, help="print compiled Python")
     commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run compiled Python (often used with --nowrite)")
@@ -266,7 +268,6 @@ class cli(object):
     commandline.add_argument("--recursionlimit", metavar="limit", type=int, nargs=1, default=[None], help="set maximum recursion depth (defaults to "+str(sys.getrecursionlimit())+")")
     commandline.add_argument("--tutorial", action="store_const", const=True, default=False, help="open the Coconut tutorial in the default web browser")
     commandline.add_argument("--documentation", action="store_const", const=True, default=False, help="open the Coconut documentation in the default web browser")
-    commandline.add_argument("--watch", action="store_const", const=True, default=False, help="Watch a directory for changes, and compile when they happen")
     commandline.add_argument("--color", metavar="color", type=str, nargs=1, default=[None], help="show all Coconut messages in the given color")
     commandline.add_argument("--verbose", action="store_const", const=True, default=False, help="print verbose debug output")
     proc = None # current .compiler.processor
@@ -328,6 +329,8 @@ class cli(object):
             if args.source is not None:
                 if args.run and os.path.isdir(args.source):
                     raise CoconutException("source path must point to file not directory when --run is enabled")
+                elif args.watch and os.path.isfile(args.source):
+                    raise CoconutException("source path must point to directory not file when --watch is enabled")
                 if args.dest is None:
                     if args.nowrite:
                         dest = None # no dest
@@ -347,11 +350,13 @@ class cli(object):
                     package = False
                 else:
                     package = None # auto-decide package
-
-                if args.watch:
-                    self.watch(args.source,dest,package,args.run,args.force)
                 self.compile_path(args.source, dest, package, args.run, args.force)
-            elif args.run or args.nowrite or args.force or args.package or args.standalone:
+            elif (args.run
+                  or args.nowrite
+                  or args.force
+                  or args.package
+                  or args.standalone
+                  or args.watch):
                 raise CoconutException("a source file/folder must be specified when options that depend on the source are enabled")
             if args.code is not None:
                 self.execute(self.proc.parse_block(args.code[0]))
@@ -371,6 +376,8 @@ class cli(object):
                     or args.jupyter is not None
                     )):
                 self.start_prompt()
+            if args.watch:
+                self.watch(args.source, dest, package, args.run, args.force)
         except CoconutException:
             self.print_exc()
             sys.exit(1)
@@ -630,9 +637,33 @@ class cli(object):
             subprocess.call(run_args)
 
     def watch(self, source, write=True, package=None, run=False, force=False):
-        """Watches a file, and recompiles on change"""
-        #self.compile_path(source,write,package,run,force)
-        from .watch import realWatch
-        realWatch(self,source,write,package,run,force)
+        """Watches a source and recompiles on change."""
+        from watchdog.events import FileSystemEventHandler
+        from watchdog.observers import Observer
 
-        
+        def recompile(path):
+            if os.path.isfile(path) and os.path.splitext(path)[1] in code_exts:
+                self.compile_path(path, write, package, run, force)
+
+        class watcher(FileSystemEventHandler):
+            def on_modified(_, event):
+                recompile(event.src_path)
+            def on_created(_, event):
+                recompile(event.src_path)
+
+        source = fixpath(source)
+
+        self.console.show("Watching        "+showpath(source)+" ...")
+        self.console.print("(press Ctrl-C to end)")
+
+        observer = Observer()
+        observer.schedule(watcher(), source, recursive=True)
+        observer.start()
+        try:
+            while True:
+                time.sleep(.1)
+        except KeyboardInterrupt:
+            pass
+        finally:
+            observer.stop()
+            observer.join()
