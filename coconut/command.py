@@ -18,6 +18,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from .compiler import *
 import os
+import time
 import os.path
 import argparse
 
@@ -265,6 +266,7 @@ class cli(object):
     commandline.add_argument("--recursionlimit", metavar="limit", type=int, nargs=1, default=[None], help="set maximum recursion depth (defaults to "+str(sys.getrecursionlimit())+")")
     commandline.add_argument("--tutorial", action="store_const", const=True, default=False, help="open the Coconut tutorial in the default web browser")
     commandline.add_argument("--documentation", action="store_const", const=True, default=False, help="open the Coconut documentation in the default web browser")
+    commandline.add_argument("--watch", action="store_const", const=True, default=False, help="Watch a directory for changes, and compile when they happen")
     commandline.add_argument("--color", metavar="color", type=str, nargs=1, default=[None], help="show all Coconut messages in the given color")
     commandline.add_argument("--verbose", action="store_const", const=True, default=False, help="print verbose debug output")
     proc = None # current .compiler.processor
@@ -345,6 +347,9 @@ class cli(object):
                     package = False
                 else:
                     package = None # auto-decide package
+
+                if args.watch:
+                    self.watch(args.source,dest,package,args.run,args.force)
                 self.compile_path(args.source, dest, package, args.run, args.force)
             elif args.run or args.nowrite or args.force or args.package or args.standalone:
                 raise CoconutException("a source file/folder must be specified when options that depend on the source are enabled")
@@ -362,6 +367,7 @@ class cli(object):
                     or args.code
                     or args.tutorial
                     or args.documentation
+                    or args.watch
                     or args.jupyter is not None
                     )):
                 self.start_prompt()
@@ -622,3 +628,11 @@ class cli(object):
                 raise CoconutException('first argument after --jupyter must be either "console" or "notebook"')
             self.log_cmd(run_args)
             subprocess.call(run_args)
+
+    def watch(self, source, write=True, package=None, run=False, force=False):
+        """Watches a file, and recompiles on change"""
+        #self.compile_path(source,write,package,run,force)
+        from .watch import realWatch
+        realWatch(self,source,write,package,run,force)
+
+        
