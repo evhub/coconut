@@ -69,6 +69,7 @@ ups = ")]}" # closes parenthetical
 holds = "'\""
 tabideal = 4 # worth of tabs in spaces for displaying
 tabworth = 8 # worth of tabs in spaces for parsing (8 = Python standard)
+reserved_prefix = "_coconut"
 decorator_var = "_coconut_decorator"
 match_to_var = "_coconut_match_to"
 match_check_var = "_coconut_match_check"
@@ -2133,7 +2134,7 @@ class processor(object):
         """Handles variable names."""
         if len(tokens) != 1:
             raise CoconutException("invalid name tokens", tokens)
-        elif tokens[0].startswith("_coconut"):
+        elif tokens[0].startswith(reserved_prefix):
             if self.strict:
                 raise self.make_err(CoconutStyleError, "found use of a reserved variable", original, location)
             else:

@@ -231,9 +231,16 @@ class CoconutKernel(Kernel):
         test_name, cursor_start, cursor_end = get_name(code, cursor_pos, True)
         matches = []
         if self._runner is not None:
-            for var_name in self._runner.vars:
-                if var_name.startswith(test_name):
-                    matches.append(var_name)
+            if cursor_start > 1 and code[cursor_start-1] == "." and code[cursor_start-2] in varchars:
+                obj_name = get_name(code, cursor_start-1)
+                if obj_name in self._runner.vars:
+                    for var_name in dir(self._runner.vars[obj_name]):
+                        if not var_name.startswith(reserved_prefix) and var_name.startswith(test_name):
+                            matches.append(var_name)
+            else:
+                for var_name in self._runner.vars:
+                    if not var_name.startswith(reserved_prefix) and var_name.startswith(test_name):
+                        matches.append(var_name)
         return {
             "status": "ok",
             "matches": list(sorted(matches)),
