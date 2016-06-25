@@ -756,11 +756,12 @@ _Can't be done without a complicated iterator comprehension in place of the lazy
 
 Coconut supports a number of different syntactical aliases for common partial application use cases. These are:
 ```coconut
-.name       =>      operator.attrgetter("name")
-obj.        =>      getattr$(obj)
-func$       =>      ($)$(func)
-seq[]       =>      operator.__getitem__$(seq)
-iter$[]     =>      # the equivalent of seq[] for iterators
+.attr           =>      operator.attrgetter("attr")
+.method(args)   =>      operator.methodcaller("method", args)
+obj.            =>      getattr$(obj)
+func$           =>      ($)$(func)
+seq[]           =>      operator.__getitem__$(seq)
+iter$[]         =>      # the equivalent of seq[] for iterators
 ```
 
 ##### Example

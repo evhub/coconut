@@ -1114,7 +1114,8 @@ plus1..square(3) == 10
 
 Last is implicit partials. Coconut supports a number of different "incomplete" expressions that will evaluate to a function that takes in the part necessary to complete them, that is, an implicit partial application function. The different allowable expressions are:
 ```coconut
-.name
+.attr
+.method(args)
 obj.
 func$
 seq[]

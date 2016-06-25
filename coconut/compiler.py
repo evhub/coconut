@@ -708,6 +708,8 @@ def attr_handle(tokens):
     """Processes attrgetter literals."""
     if len(tokens) == 1:
         return '_coconut.operator.attrgetter("'+tokens[0]+'")'
+    elif len(tokens) == 2:
+        return '_coconut.operator.methodcaller("'+tokens[0]+'", '+tokens[1]+")"
     else:
         raise CoconutException("invalid attrgetter literal tokens", tokens)
 
@@ -2507,7 +2509,8 @@ class processor(object):
         keyword_atom |= Keyword(const_vars[x])
     string_atom = addspace(OneOrMore(string))
     passthrough_atom = addspace(OneOrMore(passthrough))
-    attr_atom = attach(condense(dot.suppress() + name), attr_handle)
+    methodcaller_args = itemlist(condense(callarg + default), comma) | op_item
+    attr_atom = attach(dot.suppress() + name + Optional(lparen.suppress() + methodcaller_args + rparen.suppress()), attr_handle)
     set_literal = Forward()
     set_letter_literal = Forward()
     set_s = fixto(CaselessLiteral("s"), "s")
