@@ -2,18 +2,23 @@
 
 <!-- MarkdownTOC -->
 
+1. [What versions of Python does Coconut support?](#what-versions-of-python-does-coconut-support)
 1. [If I'm already perfectly happy with Python, why should I learn Coconut?](#if-im-already-perfectly-happy-with-python-why-should-i-learn-coconut)
-2. [How will I be able to debug my Python if I'm not the one writing it?](#how-will-i-be-able-to-debug-my-python-if-im-not-the-one-writing-it)
-3. [I don't like functional programming, should I still use Coconut?](#i-dont-like-functional-programming-should-i-still-use-coconut)
-4. [I've never done functional programming before, should I still try to learn Coconut?](#ive-never-done-functional-programming-before-should-i-still-try-to-learn-coconut)
-5. [I don't know Python very well, should I still try to learn Coconut?](#i-dont-know-python-very-well-should-i-still-try-to-learn-coconut)
-6. [Why isn't Coconut purely functional?](#why-isnt-coconut-purely-functional)
-7. [Won't a transpiled language like Coconut be bad for the Python community?](#wont-a-transpiled-language-like-coconut-be-bad-for-the-python-community)
-8. [I want to contribute to Coconut, how do I get started?](#i-want-to-contribute-to-coconut-how-do-i-get-started)
-9. [Why the name Coconut?](#why-the-name-coconut)
-10. [Who developed Coconut?](#who-developed-coconut)
+1. [How will I be able to debug my Python if I'm not the one writing it?](#how-will-i-be-able-to-debug-my-python-if-im-not-the-one-writing-it)
+1. [I don't like functional programming, should I still use Coconut?](#i-dont-like-functional-programming-should-i-still-use-coconut)
+1. [I've never done functional programming before, should I still try to learn Coconut?](#ive-never-done-functional-programming-before-should-i-still-try-to-learn-coconut)
+1. [I don't know Python very well, should I still try to learn Coconut?](#i-dont-know-python-very-well-should-i-still-try-to-learn-coconut)
+1. [Why isn't Coconut purely functional?](#why-isnt-coconut-purely-functional)
+1. [Won't a transpiled language like Coconut be bad for the Python community?](#wont-a-transpiled-language-like-coconut-be-bad-for-the-python-community)
+1. [I want to contribute to Coconut, how do I get started?](#i-want-to-contribute-to-coconut-how-do-i-get-started)
+1. [Why the name Coconut?](#why-the-name-coconut)
+1. [Who developed Coconut?](#who-developed-coconut)
 
 <!-- /MarkdownTOC -->
+
+### What versions of Python does Coconut support?
+
+Coconut supports any Python version `>= 2.6` on the `2.x` branch or `>= 3.2` on the `3.x` branch. See [compatible Python versions](http://coconut.readthedocs.io/en/master/DOCS.html#compatible-python-versions) for more information.
 
 ### If I'm already perfectly happy with Python, why should I learn Coconut?
 
