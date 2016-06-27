@@ -400,6 +400,7 @@ Coconut supports Unicode alternatives to many different operator symbols. The Un
 ↑ (\u2191)                  => "**"
 ÷ (\xf7)                    => "/"
 ÷/ (\xf7/)                  => "//"
+∘ (\u2218)                  => ".."
 − (\u2212)                  => "-" (only subtraction)
 ⁻ (\u207b)                  => "-" (only negation)
 ¬ (\xac)                    => "~"
