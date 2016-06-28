@@ -5,7 +5,7 @@
 #-----------------------------------------------------------------------------------------------------------------------
 
 """
-Author: Evan Hubinger
+Authors: Evan Hubinger, Fred Buchanan
 License: Apache 2.0
 Description: Processes arguments to the Coconut command-line utility.
 """
