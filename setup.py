@@ -51,6 +51,10 @@ setuptools.setup(
     install_requires = [
         "pyparsing==2.1.5"
         ],
+    extras_require = {
+        "autopep8": "autopep8",
+        "watch": "watchdog"
+    },
     packages = setuptools.find_packages(),
     include_package_data = True,
     entry_points = {
