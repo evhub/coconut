@@ -27,18 +27,17 @@ import setuptools
 # MAIN:
 #-----------------------------------------------------------------------------------------------------------------------
 
-with open("README.rst", "r") as opened:
-    readme_raw = opened.read()
-readme_lines = []
-in_toc = False
-for line in readme_raw.splitlines():
-    if in_toc and line and not line.startswith(" "):
-        in_toc = False
-    if line == ".. toctree::":
-        in_toc = True
-    if not in_toc:
-        readme_lines.append(line)
-readme = "\n".join(readme_lines)
+with open("README.rst", "r") as readme_file:
+    readme_lines = []
+    in_toc = False
+    for line in readme_file.readlines()():
+        if in_toc and line and not line.startswith(" "):
+            in_toc = False
+        if line == ".. toctree::":
+            in_toc = True
+        if not in_toc:
+            readme_lines.append(line)
+    readme = "\n".join(readme_lines)
 
 setuptools.setup(
     name = "coconut",
@@ -52,6 +51,10 @@ setuptools.setup(
         "pyparsing==2.1.5"
         ],
     extras_require = {
+        "all": [
+            "autopep8",
+            "watchdog"
+        ],
         "autopep8": "autopep8",
         "watch": "watchdog"
     },

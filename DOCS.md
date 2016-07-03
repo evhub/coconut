@@ -90,15 +90,20 @@ While most of Coconut gets its inspiration simply from trying to make functional
 
 ### Installation
 
-Since Coconut is hosted on the [Python Package Index](https://pypi.python.org/pypi/coconut), it can be installed easily using `pip`. Simply install [Python](https://www.python.org/downloads/), open up a command-line prompt, and enter:
+Since Coconut is hosted on the [Python Package Index](https://pypi.python.org/pypi/coconut), it can be installed easily using `pip`. Simply install [Python](https://www.python.org/downloads/), open up a command-line prompt, and enter
 ```
 python -m pip install coconut
 ```
+which will install Coconut and its required dependencies. Coconut also has some optional dependencies, which can be installed by entering
+```
+python -m pip install coconut[all]
+```
+which will enable the use of Coconut's `--autopep8` and `--watch` flags. To install the optional dependencies only for a particular flag, simply put the flag name in place of `all`.
 
 ### Usage
 
 ```
-coconut [-h] [-v] [source] [dest] [-t version] [-s] [-l] [-p] [-a] [-f] [-d] [-r] [-n] [-m] [-i] [-q] [-c code] [--jupyter ...] [--autopep8 ...] [--recursionlimit limit] [--color color] [--verbose]
+coconut [-h] [-v] [source] [dest] [-t version] [-s] [-l] [-p] [-a] [-w] [-f] [-d] [-r] [-n] [-m] [-i] [-q] [-c code] [--jupyter ...] [--autopep8 ...] [--recursionlimit limit] [--color color] [--verbose]
 ```
 
 #### Positional Arguments
@@ -118,6 +123,7 @@ dest                  destination directory for compiled files (defaults to the 
 -l, --linenumbers       add line number comments for ease of debugging
 -p, --package           compile source as part of a package (defaults to only if source is a directory)
 -a, --standalone        compile source as standalone files (defaults to only if source is a single file)
+-w, --watch           watch a directory and recompile on changes (requires watchdog)
 -f, --force             force overwriting of compiled Python (otherwise only overwrites when source code or compilation parameters change)
 -d, --display           print compiled Python
 -r, --run               run compiled Python (often used with --nowrite)
@@ -127,7 +133,7 @@ dest                  destination directory for compiled files (defaults to the 
 -q, --quiet             suppress all informational output (combine with --display to write runnable code to stdout)
 -c code, --code code    run a line of Coconut passed in as a string (can also be passed into stdin)
 --jupyter, --ipython    run Jupyter/IPython with Coconut as the kernel (remaining args passed to Jupyter)
---autopep8 ...          use autopep8 to format compiled code (remaining args passed to autopep8)
+--autopep8 ...          use autopep8 to format compiled code (remaining args passed to autopep8) (requires autopep8)
 --recursionlimit        set maximum recursion depth (default is system dependent)
 --tutorial              open the Coconut tutorial in the default web browser
 --documentation         open the Coconut documentation in the default web browser
