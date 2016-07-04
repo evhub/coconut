@@ -30,7 +30,7 @@ import setuptools
 with open("README.rst", "r") as readme_file:
     readme_lines = []
     in_toc = False
-    for line in readme_file.readlines()():
+    for line in readme_file.readlines():
         if in_toc and line and not line.startswith(" "):
             in_toc = False
         if line == ".. toctree::":
