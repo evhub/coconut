@@ -29,7 +29,7 @@ import sys
 
 VERSION = "1.1.1"
 VERSION_NAME = "Brontosaurus"
-DEVELOP = False
+DEVELOP = True
 
 if DEVELOP:
     VERSION += "-post_dev"
