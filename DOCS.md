@@ -1494,13 +1494,14 @@ A `MatchError` is raised when a [destructuring assignment](#destructuring-assign
 
 ### Syntax Highlighting
 
-There are currently three options for Coconut syntax highlighting:
+The current options for Coconut syntax highlighting are:
 
 1. use [SublimeText](https://www.sublimetext.com/),
-2. use an editor that supports [Pygments](http://pygments.org/), or
-3. just treat Coconut as Python.
+2. use an editor that supports [Pygments](http://pygments.org/),
+3. use [this 3rd party Vim highlighter](https://github.com/manicmaniac/coconut.vim) or [this 3rd party Emacs highlighter](https://github.com/NickSeagull/coconut-mode), or
+4. just treat Coconut as Python.
 
-Instructions on how to set up syntax highlighting for SublimeText and Pygments are included below. If you don't like SublimeText and your chosen alternative text editor doesn't have pygments support, however, it should be sufficient to set up your editor so it interprets all `.coco` (also `.coc` and `.coconut`, although `.coco` is the preferred extension) files as Python code, as this should highlight most of your code well enough.
+Instructions on how to set up syntax highlighting for SublimeText and Pygments are included below. If one of the actual highlighters above doesn't work, however, it should be sufficient to set up your editor so it interprets all `.coco` (also `.coc` and `.coconut`, although `.coco` is the preferred extension) files as Python code, as this should highlight most of your code well enough.
 
 #### SublimeText
 
