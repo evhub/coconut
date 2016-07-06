@@ -27,9 +27,10 @@ from ipykernel.kernelbase import Kernel
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-varchars = alphanums + "_"
 mimetype = "text/x-python3"
 py_syntax_version = 3.6
+varchars = alphanums + "_"
+all_keywords = keywords + const_vars + reserved_vars
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -210,8 +211,9 @@ class CoconutKernel(Kernel):
 
     def do_inspect(self, code, cursor_pos, detail_level=0):
         """Gets information on an object."""
+        self._setup()
         test_name = get_name(code, cursor_pos)
-        if self._runner is not None and test_name in self._runner.vars and hasattr(self._runner.vars[test_name], "__doc__"):
+        if test_name in self._runner.vars and hasattr(self._runner.vars[test_name], "__doc__"):
             return {
                 "status": "ok",
                 "found": True,
@@ -228,11 +230,18 @@ class CoconutKernel(Kernel):
 
     def do_complete(self, code, cursor_pos):
         """Completes code at position."""
+        self._setup()
         test_name, cursor_start, cursor_end = get_name(code, cursor_pos, True)
         matches = []
-        if self._runner is not None:
-            for var_name in self._runner.vars:
-                if var_name.startswith(test_name):
+        if cursor_start > 1 and code[cursor_start-1] == "." and code[cursor_start-2] in varchars:
+            obj_name = get_name(code, cursor_start-1)
+            if obj_name in self._runner.vars:
+                for var_name in dir(self._runner.vars[obj_name]):
+                    if var_name.startswith(test_name) and not var_name.startswith(reserved_prefix):
+                        matches.append(var_name)
+        else:
+            for var_name in tuple(self._runner.vars) + all_keywords:
+                if var_name.startswith(test_name) and not var_name.startswith(reserved_prefix):
                     matches.append(var_name)
         return {
             "status": "ok",

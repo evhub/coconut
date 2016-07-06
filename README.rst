@@ -20,7 +20,7 @@ after which the entire world of Coconut will be at your disposal. To help you ge
 - Docs_: If you're looking for info about a specific feature, Coconut's Docs provide a **complete documentation** of the language.
 - FAQ_: If you have questions about who Coconut is built for and whether or not you should use it, Coconut's frequently asked questions have you covered.
 - `Create a New Issue <https://github.com/evhub/coconut/issues/new>`_: If you're having a problem with Coconut, creating a new issue detailing the problem will allow it to be addressed as soon as possible.
-- Gitter_: For all general questions, concerns, or comments about anything Coconut-related, ask around at Coconut's Gitter, a GitHub-integrated chat room for Coconut developers.
+- Gitter_: For any questions, concerns, or comments about anything Coconut-related, ask around at Coconut's Gitter, a GitHub-integrated chat room for Coconut developers.
 
 *Note: If the above documentation links are not working, try the* |mirror|_ *.*
 

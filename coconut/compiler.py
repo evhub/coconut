@@ -69,6 +69,7 @@ ups = ")]}" # closes parenthetical
 holds = "'\""
 tabideal = 4 # worth of tabs in spaces for displaying
 tabworth = 8 # worth of tabs in spaces for parsing (8 = Python standard)
+reserved_prefix = "_coconut"
 decorator_var = "_coconut_decorator"
 match_to_var = "_coconut_match_to"
 match_check_var = "_coconut_match_check"
@@ -707,6 +708,8 @@ def attr_handle(tokens):
     """Processes attrgetter literals."""
     if len(tokens) == 1:
         return '_coconut.operator.attrgetter("'+tokens[0]+'")'
+    elif len(tokens) == 2:
+        return '_coconut.operator.methodcaller("'+tokens[0]+'", '+tokens[1]+")"
     else:
         raise CoconutException("invalid attrgetter literal tokens", tokens)
 
@@ -2133,7 +2136,7 @@ class processor(object):
         """Handles variable names."""
         if len(tokens) != 1:
             raise CoconutException("invalid name tokens", tokens)
-        elif tokens[0].startswith("_coconut"):
+        elif tokens[0].startswith(reserved_prefix):
             if self.strict:
                 raise self.make_err(CoconutStyleError, "found use of a reserved variable", original, location)
             else:
@@ -2291,7 +2294,7 @@ class processor(object):
     dubstar = Literal("**")
     star = ~dubstar+Literal("*")
     at = Literal("@")
-    arrow = fixto(Literal("->") | Literal("\u2192"), "->")
+    arrow = Literal("->") | fixto(Literal("\u2192"), "->")
     dubcolon = Literal("::")
     unsafe_colon = Literal(":")
     colon = ~dubcolon+unsafe_colon
@@ -2310,20 +2313,20 @@ class processor(object):
     minus = ~Literal("->")+Literal("-")
     dubslash = Literal("//")
     slash = ~dubslash+Literal("/")
-    pipeline = fixto(Literal("|>") | Literal("\u21a6"), "|>")
-    starpipe = fixto(Literal("|*>") | Literal("*\u21a6"), "|*>")
-    backpipe = fixto(Literal("<|") | Literal("\u21a4"), "<|")
-    backstarpipe = fixto(Literal("<*|") | Literal("\u21a4*"), "<*|")
-    amp = fixto(Literal("&") | Literal("\u2227") | Literal("\u2229"), "&")
-    caret = fixto(Literal("^") | Literal("\u22bb") | Literal("\u2295"), "^")
-    bar = fixto(~Literal("|>")+~Literal("|*>")+Literal("|") | Literal("\u2228") | Literal("\u222a"), "|")
+    pipeline = Literal("|>") | fixto(Literal("\u21a6"), "|>")
+    starpipe = Literal("|*>") | fixto(Literal("*\u21a6"), "|*>")
+    backpipe = Literal("<|") | fixto(Literal("\u21a4"), "<|")
+    backstarpipe = Literal("<*|") | fixto(Literal("\u21a4*"), "<*|")
+    amp = Literal("&") | fixto(Literal("\u2227") | Literal("\u2229"), "&")
+    caret = Literal("^") | fixto(Literal("\u22bb") | Literal("\u2295"), "^")
+    bar = ~Literal("|>")+~Literal("|*>")+Literal("|") | fixto(Literal("\u2228") | Literal("\u222a"), "|")
     percent = Literal("%")
-    dotdot = ~Literal("...")+Literal("..")
+    dotdot = ~Literal("...")+Literal("..") | fixto(Literal("\u2218"), "..")
     dollar = Literal("$")
     ellipses = fixto(Literal("...") | Literal("\u2026"), "...")
-    lshift = fixto(Literal("<<") | Literal("\xab"), "<<")
-    rshift = fixto(Literal(">>") | Literal("\xbb"), ">>")
-    tilde = fixto(Literal("~") | ~Literal("\xac=")+Literal("\xac"), "~")
+    lshift = Literal("<<") | fixto(Literal("\xab"), "<<")
+    rshift = Literal(">>") | fixto(Literal("\xbb"), ">>")
+    tilde = Literal("~") | fixto(~Literal("\xac=")+Literal("\xac"), "~")
     underscore = Literal("_")
     pound = Literal("#")
     backtick = Literal("`")
@@ -2332,9 +2335,9 @@ class processor(object):
 
     lt = ~Literal("<<")+~Literal("<=")+Literal("<")
     gt = ~Literal(">>")+~Literal(">=")+Literal(">")
-    le = fixto(Literal("<=") | Literal("\u2264"), "<=")
-    ge = fixto(Literal(">=") | Literal("\u2265"), ">=")
-    ne = fixto(Literal("!=") | Literal("\xac=") | Literal("\u2260"), "!=")
+    le = Literal("<=") | fixto(Literal("\u2264"), "<=")
+    ge = Literal(">=") | fixto(Literal("\u2265"), ">=")
+    ne = Literal("!=") | fixto(Literal("\xac=") | Literal("\u2260"), "!=")
 
     mul_star = fixto(star | Literal("\u22c5"), "*")
     exp_dubstar = fixto(dubstar | Literal("\u2191"), "**")
@@ -2342,7 +2345,7 @@ class processor(object):
     sub_minus = fixto(minus | Literal("\u2212"), "-")
     div_slash = fixto(slash | Literal("\xf7")+~slash, "/")
     div_dubslash = fixto(dubslash | Combine(Literal("\xf7")+slash), "//")
-    matrix_at_ref = at | Literal("\xd7")
+    matrix_at_ref = fixto(at | Literal("\xd7"), "@")
     matrix_at = Forward()
 
     name = Forward()
@@ -2506,7 +2509,8 @@ class processor(object):
         keyword_atom |= Keyword(const_vars[x])
     string_atom = addspace(OneOrMore(string))
     passthrough_atom = addspace(OneOrMore(passthrough))
-    attr_atom = attach(condense(dot.suppress() + name), attr_handle)
+    methodcaller_args = itemlist(condense(callarg + default), comma) | op_item
+    attr_atom = attach(dot.suppress() + name + Optional(lparen.suppress() + methodcaller_args + rparen.suppress()), attr_handle)
     set_literal = Forward()
     set_letter_literal = Forward()
     set_s = fixto(CaselessLiteral("s"), "s")

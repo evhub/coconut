@@ -2,6 +2,7 @@
 
 <!-- MarkdownTOC -->
 
+1. [Can I use Python modules from Coconut and Coconut modules from Python?](#can-i-use-python-modules-from-coconut-and-coconut-modules-from-python)
 1. [What versions of Python does Coconut support?](#what-versions-of-python-does-coconut-support)
 1. [If I'm already perfectly happy with Python, why should I learn Coconut?](#if-im-already-perfectly-happy-with-python-why-should-i-learn-coconut)
 1. [How will I be able to debug my Python if I'm not the one writing it?](#how-will-i-be-able-to-debug-my-python-if-im-not-the-one-writing-it)
@@ -15,6 +16,10 @@
 1. [Who developed Coconut?](#who-developed-coconut)
 
 <!-- /MarkdownTOC -->
+
+### Can I use Python modules from Coconut and Coconut modules from Python?
+
+Yes and yes! Coconut compiles to Python, so Coconut modules are accessible from Python and Python modules are accessible from Coconut, including the entire Python standard library.
 
 ### What versions of Python does Coconut support?
 

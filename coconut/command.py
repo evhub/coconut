@@ -5,7 +5,7 @@
 #-----------------------------------------------------------------------------------------------------------------------
 
 """
-Author: Evan Hubinger
+Authors: Evan Hubinger, Fred Buchanan
 License: Apache 2.0
 Description: Processes arguments to the Coconut command-line utility.
 """
@@ -17,9 +17,11 @@ Description: Processes arguments to the Coconut command-line utility.
 from __future__ import print_function, absolute_import, unicode_literals, division
 
 from .compiler import *
+import sys
 import os
 import os.path
 import argparse
+import time
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
@@ -252,6 +254,7 @@ class cli(object):
     commandline.add_argument("-l", "--linenumbers", action="store_const", const=True, default=False, help="add line number comments for ease of debugging")
     commandline.add_argument("-p", "--package", action="store_const", const=True, default=False, help="compile source as part of a package (defaults to only if source is a directory)")
     commandline.add_argument("-a", "--standalone", action="store_const", const=True, default=False, help="compile source as standalone files (defaults to only if source is a single file)")
+    commandline.add_argument("-w", "--watch", action="store_const", const=True, default=False, help="watch a directory and recompile on changes (requires watchdog)")
     commandline.add_argument("-f", "--force", action="store_const", const=True, default=False, help="force overwriting of compiled Python (otherwise only overwrites when source code or compilation parameters change)")
     commandline.add_argument("-d", "--display", action="store_const", const=True, default=False, help="print compiled Python")
     commandline.add_argument("-r", "--run", action="store_const", const=True, default=False, help="run compiled Python (often used with --nowrite)")
@@ -261,7 +264,7 @@ class cli(object):
     commandline.add_argument("-q", "--quiet", action="store_const", const=True, default=False, help="suppress all informational output (combine with --display to write runnable code to stdout)")
     commandline.add_argument("-c", "--code", metavar="code", type=str, nargs=1, default=None, help="run a line of Coconut passed in as a string (can also be passed into stdin)")
     commandline.add_argument("--jupyter", "--ipython", type=str, nargs=argparse.REMAINDER, default=None, help="run Jupyter/IPython with Coconut as the kernel (remaining args passed to Jupyter)")
-    commandline.add_argument("--autopep8", type=str, nargs=argparse.REMAINDER, default=None, help="use autopep8 to format compiled code (remaining args passed to autopep8)")
+    commandline.add_argument("--autopep8", type=str, nargs=argparse.REMAINDER, default=None, help="use autopep8 to format compiled code (remaining args passed to autopep8) (requires autopep8)")
     commandline.add_argument("--recursionlimit", metavar="limit", type=int, nargs=1, default=[None], help="set maximum recursion depth (defaults to "+str(sys.getrecursionlimit())+")")
     commandline.add_argument("--tutorial", action="store_const", const=True, default=False, help="open the Coconut tutorial in the default web browser")
     commandline.add_argument("--documentation", action="store_const", const=True, default=False, help="open the Coconut documentation in the default web browser")
@@ -326,6 +329,8 @@ class cli(object):
             if args.source is not None:
                 if args.run and os.path.isdir(args.source):
                     raise CoconutException("source path must point to file not directory when --run is enabled")
+                elif args.watch and os.path.isfile(args.source):
+                    raise CoconutException("source path must point to directory not file when --watch is enabled")
                 if args.dest is None:
                     if args.nowrite:
                         dest = None # no dest
@@ -346,7 +351,12 @@ class cli(object):
                 else:
                     package = None # auto-decide package
                 self.compile_path(args.source, dest, package, args.run, args.force)
-            elif args.run or args.nowrite or args.force or args.package or args.standalone:
+            elif (args.run
+                  or args.nowrite
+                  or args.force
+                  or args.package
+                  or args.standalone
+                  or args.watch):
                 raise CoconutException("a source file/folder must be specified when options that depend on the source are enabled")
             if args.code is not None:
                 self.execute(self.proc.parse_block(args.code[0]))
@@ -362,9 +372,12 @@ class cli(object):
                     or args.code
                     or args.tutorial
                     or args.documentation
+                    or args.watch
                     or args.jupyter is not None
                     )):
                 self.start_prompt()
+            if args.watch:
+                self.watch(args.source, dest, package, args.run, args.force)
         except CoconutException:
             self.print_exc()
             sys.exit(1)
@@ -622,3 +635,35 @@ class cli(object):
                 raise CoconutException('first argument after --jupyter must be either "console" or "notebook"')
             self.log_cmd(run_args)
             subprocess.call(run_args)
+
+    def watch(self, source, write=True, package=None, run=False, force=False):
+        """Watches a source and recompiles on change."""
+        from watchdog.events import FileSystemEventHandler
+        from watchdog.observers import Observer
+
+        def recompile(path):
+            if os.path.isfile(path) and os.path.splitext(path)[1] in code_exts:
+                self.compile_path(path, write, package, run, force)
+
+        class watcher(FileSystemEventHandler):
+            def on_modified(_, event):
+                recompile(event.src_path)
+            def on_created(_, event):
+                recompile(event.src_path)
+
+        source = fixpath(source)
+
+        self.console.show("Watching        "+showpath(source)+" ...")
+        self.console.print("(press Ctrl-C to end)")
+
+        observer = Observer()
+        observer.schedule(watcher(), source, recursive=True)
+        observer.start()
+        try:
+            while True:
+                time.sleep(.1)
+        except KeyboardInterrupt:
+            pass
+        finally:
+            observer.stop()
+            observer.join()

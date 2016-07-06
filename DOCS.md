@@ -90,15 +90,20 @@ While most of Coconut gets its inspiration simply from trying to make functional
 
 ### Installation
 
-Since Coconut is hosted on the [Python Package Index](https://pypi.python.org/pypi/coconut), it can be installed easily using `pip`. Simply install [Python](https://www.python.org/downloads/), open up a command-line prompt, and enter:
+Since Coconut is hosted on the [Python Package Index](https://pypi.python.org/pypi/coconut), it can be installed easily using `pip`. Simply install [Python](https://www.python.org/downloads/), open up a command-line prompt, and enter
 ```
 python -m pip install coconut
 ```
+which will install Coconut and its required dependencies. Coconut also has some optional dependencies, which can be installed by entering
+```
+python -m pip install coconut[all]
+```
+which will enable the use of Coconut's `--autopep8` and `--watch` flags. To install the optional dependencies only for a particular flag, simply put the flag name in place of `all`.
 
 ### Usage
 
 ```
-coconut [-h] [-v] [source] [dest] [-t version] [-s] [-l] [-p] [-a] [-f] [-d] [-r] [-n] [-m] [-i] [-q] [-c code] [--jupyter ...] [--autopep8 ...] [--recursionlimit limit] [--color color] [--verbose]
+coconut [-h] [-v] [source] [dest] [-t version] [-s] [-l] [-p] [-a] [-w] [-f] [-d] [-r] [-n] [-m] [-i] [-q] [-c code] [--jupyter ...] [--autopep8 ...] [--recursionlimit limit] [--color color] [--verbose]
 ```
 
 #### Positional Arguments
@@ -118,6 +123,7 @@ dest                  destination directory for compiled files (defaults to the 
 -l, --linenumbers       add line number comments for ease of debugging
 -p, --package           compile source as part of a package (defaults to only if source is a directory)
 -a, --standalone        compile source as standalone files (defaults to only if source is a single file)
+-w, --watch           watch a directory and recompile on changes (requires watchdog)
 -f, --force             force overwriting of compiled Python (otherwise only overwrites when source code or compilation parameters change)
 -d, --display           print compiled Python
 -r, --run               run compiled Python (often used with --nowrite)
@@ -127,7 +133,7 @@ dest                  destination directory for compiled files (defaults to the 
 -q, --quiet             suppress all informational output (combine with --display to write runnable code to stdout)
 -c code, --code code    run a line of Coconut passed in as a string (can also be passed into stdin)
 --jupyter, --ipython    run Jupyter/IPython with Coconut as the kernel (remaining args passed to Jupyter)
---autopep8 ...          use autopep8 to format compiled code (remaining args passed to autopep8)
+--autopep8 ...          use autopep8 to format compiled code (remaining args passed to autopep8) (requires autopep8)
 --recursionlimit        set maximum recursion depth (default is system dependent)
 --tutorial              open the Coconut tutorial in the default web browser
 --documentation         open the Coconut documentation in the default web browser
@@ -400,6 +406,7 @@ Coconut supports Unicode alternatives to many different operator symbols. The Un
 ↑ (\u2191)                  => "**"
 ÷ (\xf7)                    => "/"
 ÷/ (\xf7/)                  => "//"
+∘ (\u2218)                  => ".."
 − (\u2212)                  => "-" (only subtraction)
 ⁻ (\u207b)                  => "-" (only negation)
 ¬ (\xac)                    => "~"
@@ -756,11 +763,12 @@ _Can't be done without a complicated iterator comprehension in place of the lazy
 
 Coconut supports a number of different syntactical aliases for common partial application use cases. These are:
 ```coconut
-.name       =>      operator.attrgetter("name")
-obj.        =>      getattr$(obj)
-func$       =>      ($)$(func)
-seq[]       =>      operator.__getitem__$(seq)
-iter$[]     =>      # the equivalent of seq[] for iterators
+.attr           =>      operator.attrgetter("attr")
+.method(args)   =>      operator.methodcaller("method", args)
+obj.            =>      getattr$(obj)
+func$           =>      ($)$(func)
+seq[]           =>      operator.__getitem__$(seq)
+iter$[]         =>      # the equivalent of seq[] for iterators
 ```
 
 ##### Example
@@ -1486,13 +1494,14 @@ A `MatchError` is raised when a [destructuring assignment](#destructuring-assign
 
 ### Syntax Highlighting
 
-There are currently three options for Coconut syntax highlighting:
+The current options for Coconut syntax highlighting are:
 
 1. use [SublimeText](https://www.sublimetext.com/),
-2. use an editor that supports [Pygments](http://pygments.org/), or
-3. just treat Coconut as Python.
+2. use an editor that supports [Pygments](http://pygments.org/),
+3. use [this 3rd party Vim highlighter](https://github.com/manicmaniac/coconut.vim) or [this 3rd party Emacs highlighter](https://github.com/NickSeagull/coconut-mode), or
+4. just treat Coconut as Python.
 
-Instructions on how to set up syntax highlighting for SublimeText and Pygments are included below. If you don't like SublimeText and your chosen alternative text editor doesn't have pygments support, however, it should be sufficient to set up your editor so it interprets all `.coco` (also `.coc` and `.coconut`, although `.coco` is the preferred extension) files as Python code, as this should highlight most of your code well enough.
+Instructions on how to set up syntax highlighting for SublimeText and Pygments are included below. If one of the actual highlighters above doesn't work, however, it should be sufficient to set up your editor so it interprets all `.coco` (also `.coc` and `.coconut`, although `.coco` is the preferred extension) files as Python code, as this should highlight most of your code well enough.
 
 #### SublimeText
 
