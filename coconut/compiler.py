@@ -635,6 +635,19 @@ def recursive(func):
             state[1] = args, kwargs
             return recurse
     return recursive_func
+def recursive_iterator(func):
+    """Decorates a function by optimizing it for iterator recursion."""
+    tee_store = {}
+    @_coconut.functools.wraps(func)
+    def recursive_iterator_func(*args, **kwargs):
+        hashable_args_kwargs = args, _coconut.frozenset(kwargs.items())
+        if hashable_args_kwargs in tee_store:
+            return tee_store[hashable_args_kwargs].__copy__()
+        else:
+            returned_tee, saved_tee = _coconut.itertools.tee(func(*args, **kwargs))
+            tee_store[hashable_args_kwargs] = saved_tee
+            return returned_tee
+    return recursive_iterator_func
 def addpattern(base_func):
     """Decorator to add a new case to a pattern-matching function, where the new case is checked last."""
     def pattern_adder(func):

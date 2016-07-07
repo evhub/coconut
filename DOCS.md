@@ -60,6 +60,7 @@
     1. [`map` and `zip`](#map-and-zip)
     1. [`datamaker`](#datamaker)
     1. [`recursive`](#recursive)
+    1. [`recursive_iterator`](#recursive_iterator)
     1. [`parallel_map`](#parallel_map)
     1. [`MatchError`](#matcherror)
 1. [Coconut Utilities](#coconut-utilities)
@@ -1438,7 +1439,12 @@ class trilen(collections.namedtuple("trilen", "h")):
 
 ### `recursive`
 
-Coconut provides a `recursive` decorator to perform tail recursion optimization on a function written in a tail-recursive style, where it directly returns all calls to itself. Do not use this decorator on a function not written in a tail-recursive style or the function will likely break.
+Coconut provides a `recursive` decorator to perform tail recursion optimization on a function written in a tail-recursive style. To use `recursive` on a function, it must meet the following criteria:
+
+1. your function must call itself, and
+2. in all cases where your function calls itself, it must return the result of that call without modifying it (synonymous with the condition that the function must be written in a tail-recursive style).
+
+If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for `recursive`, or the corresponding criteria for [`recursive_iterator`](#recursive-iterator), since either decorator should prevent such errors.
 
 ##### Example
 
@@ -1453,6 +1459,39 @@ def factorial(n, acc=1):
             return factorial(n-1, acc*n)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
+```
+
+###### Python
+
+_Can't be done without a long decorator definition. The full definition of the decorator in Python can be found in the Coconut header._
+
+### `recursive_iterator`
+
+Coconut provides a `recursive_iterator` decorator that provides significant optimizations for any stateless recursive function that returns an iterator. To use `recursive_iterator` on a function, it must meet the following criteria:
+
+1. your function either always `return`s an iterator or always generates an iterator using `yield`,
+2. when called multiple times with the same arguments, your function produces the same iterator, and
+3. your function calls itself multiple times with the same arguments.
+
+If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for `recursive_iterator`, or the corresponding criteria for [`recursive`](#recursive), since either decorator should prevent such errors.
+
+Furthermore, `recursive_iterator` also allows the resolution of a [nasty segmentation fault in Python's iterator logic that has never been fixed](http://bugs.python.org/issue14010). Specifically, instead of writing
+```coconut
+seq = get_elem() :: seq
+```
+which will crash due to the aforementioned Python issue, write
+```coconut
+@recursive_iterator
+def seq() = get_elem() :: seq()
+```
+which will work just fine.
+
+##### Example
+
+###### Coconut
+```coconut
+@recursive_iterator
+def fib() = (1, 2) :: map((+), fib(), fib()$[1:])
 ```
 
 ###### Python

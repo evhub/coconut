@@ -4,6 +4,7 @@
 
 1. [Can I use Python modules from Coconut and Coconut modules from Python?](#can-i-use-python-modules-from-coconut-and-coconut-modules-from-python)
 1. [What versions of Python does Coconut support?](#what-versions-of-python-does-coconut-support)
+1. [Help! I tried to write a recursive iterator and my Python segfaulted!](#help-i-tried-to-write-a-recursive-iterator-and-my-python-segfaulted)
 1. [If I'm already perfectly happy with Python, why should I learn Coconut?](#if-im-already-perfectly-happy-with-python-why-should-i-learn-coconut)
 1. [How will I be able to debug my Python if I'm not the one writing it?](#how-will-i-be-able-to-debug-my-python-if-im-not-the-one-writing-it)
 1. [I don't like functional programming, should I still use Coconut?](#i-dont-like-functional-programming-should-i-still-use-coconut)
@@ -24,6 +25,10 @@ Yes and yes! Coconut compiles to Python, so Coconut modules are accessible from 
 ### What versions of Python does Coconut support?
 
 Coconut supports any Python version `>= 2.6` on the `2.x` branch or `>= 3.2` on the `3.x` branch. See [compatible Python versions](http://coconut.readthedocs.io/en/master/DOCS.html#compatible-python-versions) for more information.
+
+### Help! I tried to write a recursive iterator and my Python segfaulted!
+
+No problem—just use Coconut's [`recursive_iterator`](http://coconut.readthedocs.io/en/master/DOCS.html#recursive_iterator) decorator and you should be fine. This is a [known Python issue](http://bugs.python.org/issue14010) but `recursive_iterator` will fix it for you.
 
 ### If I'm already perfectly happy with Python, why should I learn Coconut?
 
