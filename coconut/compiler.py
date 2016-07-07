@@ -539,7 +539,17 @@ class _coconut_parallel_map(_coconut_map):
             for x in executor.map(self._func, *self._iters):
                 yield x
     def __repr__(self):
-        return "parallel_" + _coconut_map.__repr__(self)'''
+        return "parallel_" + _coconut_map.__repr__(self)
+class _coconut_concurrent_map(_coconut_map):
+    """Multithreading implementation of map using concurrent.futures."""
+    __slots__ = ()
+    def __iter__(self):
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor() as executor:
+            for x in executor.map(self._func, *self._iters):
+                yield x
+    def __repr__(self):
+        return "concurrent_" + _coconut_map.__repr__(self)'''
             if target.startswith("3"):
                 header += r'''
 class _coconut_count:'''
@@ -682,7 +692,7 @@ def datamaker(data_type):
 def consume(iterable, keep_last=0):
     """Fully exhaust iterable and return the last keep_last elements."""
     return _coconut.collections.deque(iterable, maxlen=keep_last) # fastest way to exhaust an iterator
-MatchError, map, parallel_map, zip, count, reduce, takewhile, dropwhile, tee = _coconut_MatchError, _coconut_map, _coconut_parallel_map, _coconut_zip, _coconut_count, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile, _coconut.itertools.tee
+MatchError, map, parallel_map, concurrent_map, zip, count, reduce, takewhile, dropwhile, tee = _coconut_MatchError, _coconut_map, _coconut_parallel_map, _coconut_concurrent_map, _coconut_zip, _coconut_count, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile, _coconut.itertools.tee
 '''
         else:
             raise CoconutException("invalid header type", which)

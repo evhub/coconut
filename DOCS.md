@@ -62,6 +62,7 @@
     1. [`recursive`](#recursive)
     1. [`recursive_iterator`](#recursive_iterator)
     1. [`parallel_map`](#parallel_map)
+    1. [`concurrent_map`](#concurrent_map)
     1. [`MatchError`](#matcherror)
 1. [Coconut Utilities](#coconut-utilities)
     1. [Syntax Highlighting](#syntax-highlighting)
@@ -1501,7 +1502,7 @@ _Can't be done without a long decorator definition. The full definition of the d
 
 ### `parallel_map`
 
-Coconut provides a parallel version of `map` under the name `parallel_map`. `parallel_map` makes use of multiple processes, and is therefore often much faster than `map`. Use of `parallel_map` requires `concurrent.futures`, which exists in the Python 3 standard library, but under Python 2 will require `python -m pip install futures` to function.
+Coconut provides a parallel version of `map` under the name `parallel_map`. `parallel_map` makes use of multiple processes, and is therefore much faster than `map` for CPU-bound tasks. Use of `parallel_map` requires `concurrent.futures`, which exists in the Python 3 standard library, but under Python 2 will require `python -m pip install futures` to function.
 
 Because `parallel_map` uses multiple processes for its execution, it is necessary that all of its arguments be pickleable. Only objects defined at the module level, and not lambdas, objects defined inside of a function, or objects defined inside of the interpreter, are pickleable. Furthermore, on Windows, it is necessary that all calls to `parallel_map` occur inside of an `if __name__ == "__main__"` guard.
 
@@ -1524,6 +1525,31 @@ import functools
 import concurrent.futures
 with concurrent.futures.ProcessPoolExecutor() as executor:
     print(list(executor.map(functools.partial(pow, 2), range(100))))
+```
+
+### `concurrent_map`
+
+Coconut provides a concurrent version of `map` under the name `concurrent_map`. `concurrent_map` makes use of multiple threads, and is therefore much faster than `map` for IO-bound tasks. Use of `concurrent_map` requires `concurrent.futures`, which exists in the Python 3 standard library, but under Python 2 will require `python -m pip install futures` to function.
+
+##### Python Docs
+
+**concurrent_map**(_func, *iterables_)
+
+Equivalent to `map(func, *iterables)` except _func_ is executed asynchronously and several calls to _func_ may be made concurrently. If a call raises an exception, then that exception will be raised when its value is retrieved from the iterator.
+
+##### Example
+
+###### Coconut
+```coconut
+concurrent_map(get_data_for_user, get_all_users()) |> list |> print
+```
+
+###### Python
+```coconut_python
+import functools
+import concurrent.futures
+with concurrent.futures.ThreadPoolExecutor() as executor:
+    print(list(executor.map(get_data_for_user, get_all_users())))
 ```
 
 ### `MatchError`

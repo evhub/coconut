@@ -37,7 +37,8 @@ builtins = (
     "parallel_map",
     "addpattern",
     "prepattern",
-    "recursive_iterator"
+    "recursive_iterator",
+    "concurrent_map"
     )
 
 operators = (
