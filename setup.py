@@ -145,6 +145,7 @@ setuptools.setup(
         "consume",
         "count",
         "parallel_map",
+        "concurrent_map",
         "MatchError",
         "datamaker",
         "addpattern",
