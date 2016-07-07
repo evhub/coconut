@@ -67,7 +67,7 @@ setuptools.setup(
         "pygments.lexers": [
             "coconut_python = coconut.highlighter:pylexer",
             "coconut_pycon = coconut.highlighter:pyconlexer",
-            "coconut = coconut.highlighter:coclexer"
+            "coconut = coconut.highlighter:cocolexer"
             ]
         },
     classifiers = [

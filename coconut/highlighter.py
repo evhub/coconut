@@ -103,7 +103,7 @@ class pyconlexer(PythonConsoleLexer):
         PythonConsoleLexer.__init__(self, stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=default_encoding, python3=python3)
         self.original_add_filter, self.add_filter = self.add_filter, lenient_add_filter
 
-class coclexer(Python3Lexer):
+class cocolexer(Python3Lexer):
     """Coconut syntax highlighter."""
     name = "coconut"
     aliases = ["coconut", "coco", "coconutcon", "cococon"]
