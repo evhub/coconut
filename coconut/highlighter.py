@@ -36,7 +36,8 @@ builtins = (
     "consume",
     "parallel_map",
     "addpattern",
-    "prepattern"
+    "prepattern",
+    "recursive_iterator"
     )
 
 operators = (
