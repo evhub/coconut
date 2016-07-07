@@ -1508,7 +1508,7 @@ Because `parallel_map` uses multiple processes for its execution, it is necessar
 
 ##### Python Docs
 
-**parallel_map**(_func, *iterables_)
+**parallel_map**(_func, \*iterables_)
 
 Equivalent to `map(func, *iterables)` except _func_ is executed asynchronously and several calls to _func_ may be made concurrently. If a call raises an exception, then that exception will be raised when its value is retrieved from the iterator.
 
@@ -1533,7 +1533,7 @@ Coconut provides a concurrent version of `map` under the name `concurrent_map`. 
 
 ##### Python Docs
 
-**concurrent_map**(_func, *iterables_)
+**concurrent_map**(_func, \*iterables_)
 
 Equivalent to `map(func, *iterables)` except _func_ is executed asynchronously and several calls to _func_ may be made concurrently. If a call raises an exception, then that exception will be raised when its value is retrieved from the iterator.
 
