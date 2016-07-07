@@ -68,13 +68,13 @@
     1. [Syntax Highlighting](#syntax-highlighting)
         1. [SublimeText](#sublimetext)
         1. [Pygments](#pygments)
+    1. [`coconut.__coconut__`](#coconut__coconut__)
     1. [`coconut.convenience`](#coconutconvenience)
         1. [`parse`](#parse)
         1. [`setup`](#setup)
         1. [`cmd`](#cmd)
         1. [`version`](#version)
         1. [`CoconutException`](#coconutexception)
-    1. [`coconut.__coconut__`](#coconut__coconut__)
 
 <!-- /MarkdownTOC -->
 
@@ -1571,7 +1571,13 @@ Instructions on how to set up syntax highlighting for SublimeText and Pygments a
 
 #### SublimeText
 
-Coconut syntax highlighting for SublimeText requires that [Package Control](https://packagecontrol.io/installation), the standard package manager for SublimeText, be installed. Once that is done, simply open the SublimeText command palette by entering `Ctrl+Shift+P`, enter `Package Control: Install Package`, and then `Coconut`. To make sure everything is working properly, open a `.coco` file, and make sure `Coconut` appears in the bottom right-hand corner. If something else appears, like `Plain Text`, click on it, select `Open all with current extension as...` at the top of the resulting menu, and then select `Coconut`.
+Coconut syntax highlighting for SublimeText requires that [Package Control](https://packagecontrol.io/installation), the standard package manager for SublimeText, be installed. Once that is done, simply:
+
+1. open the SublimeText command palette by pressing `Ctrl+Shift+P`,
+2. enter and select `Package Control: Install Package`, and
+3. finally enter and select `Coconut`.
+
+To make sure everything is working properly, open a `.coco` file, and make sure `Coconut` appears in the bottom right-hand corner. If something else appears, like `Plain Text`, click on it, select `Open all with current extension as...` at the top of the resulting menu, and then select `Coconut`.
 
 #### Pygments
 
@@ -1580,6 +1586,23 @@ The same `pip install coconut` command that installs the Coconut command-line ut
 highlight_language = "coconut"
 ```
 to Coconut's `conf.py`.
+
+### `coconut.__coconut__`
+
+It is sometimes useful to be able to access Coconut built-ins from pure Python. To accomplish this, Coconut provides `coconut.__coconut__`, which behaves exactly like the `__coconut__.py` header file included when Coconut is compiled in package mode.
+
+All Coconut built-ins are accessible from `coconut.__coconut__`. The recommended way to import them is to use `from coconut.__coconut__ import` and import whatever built-ins you'll be using.
+
+##### Example
+
+###### Python
+```coconut_python
+from coconut.__coconut__ import recursive
+
+@recursive
+def recursive_func(args):
+    ...
+```
 
 ### `coconut.convenience`
 
@@ -1633,20 +1656,3 @@ Retrieves a string containing information about the Coconut version. The optiona
 #### `CoconutException`
 
 If an error is encountered in a convenience function, a `CoconutException` instance may be raised. `coconut.convenience.CoconutException` is provided to allow catching such errors.
-
-### `coconut.__coconut__`
-
-It is sometimes useful to be able to access Coconut built-ins from pure Python. To accomplish this, Coconut provides `coconut.__coconut__`, which behaves exactly like the `__coconut__.py` header file included when Coconut is compiled in package mode.
-
-All Coconut built-ins are accessible from `coconut.__coconut__`. The recommended way to import them is to use `from coconut.__coconut__ import` and import whatever built-ins you'll be using.
-
-##### Example
-
-###### Python
-```coconut_python
-from coconut.__coconut__ import recursive
-
-@recursive
-def recursive_func(args):
-    ...
-```
