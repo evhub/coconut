@@ -147,6 +147,9 @@ setuptools.setup(
         "parallel_map",
         "MatchError",
         "datamaker",
+        "addpattern",
+        "prepattern",
+        "recursive_iterator",
         "data keyword",
         "match keyword",
         "case keyword"

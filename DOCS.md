@@ -1303,7 +1303,7 @@ positives = itertools.dropwhile(numiter, lambda x: x<0)
 
 ### `tee`
 
-Coconut provides `itertools.tee` as a built-in under the name `tee`.
+Coconut provides `itertools.tee` as a built-in under the name `tee`. Additionally, the Coconut built-ins `count`, `map`, `zip`, and `range` have been optimized for use with this `tee`.
 
 ##### Python Docs
 
@@ -1442,7 +1442,7 @@ class trilen(collections.namedtuple("trilen", "h")):
 Coconut provides a `recursive` decorator to perform tail recursion optimization on a function written in a tail-recursive style. To use `recursive` on a function, it must meet the following criteria:
 
 1. your function calls itself, and
-2. in all cases where your function calls itself, it returns the result of that call without modifying it (synonymous with the condition that the function must be written in a tail-recursive style).
+2. in all cases where your function calls itself, it returns the result of that call without modifying it (synonymous with the function being written in a tail-recursive style).
 
 If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for `recursive`, or the corresponding criteria for [`recursive_iterator`](#recursive-iterator), since either decorator should prevent such errors.
 
@@ -1467,11 +1467,12 @@ _Can't be done without a long decorator definition. The full definition of the d
 
 ### `recursive_iterator`
 
-Coconut provides a `recursive_iterator` decorator that provides significant optimizations for any stateless recursive function that returns an iterator. To use `recursive_iterator` on a function, it must meet the following criteria:
+Coconut provides a `recursive_iterator` decorator that provides significant optimizations for any stateless, memoizable, recursive function that returns an iterator. To use `recursive_iterator` on a function, it must meet the following criteria:
 
 1. your function either always `return`s an iterator or always generates an iterator using `yield`,
-2. when called multiple times with the same arguments, your function produces the same iterator, and
-3. your function calls itself multiple times with the same arguments.
+2. when called multiple times with the same arguments, your function produces the same iterator (synonymous with the function being stateless),
+3. all arguments passed to your function are hashable (synonymous with the function being memoizable), and
+4. your function calls itself multiple times with the same arguments.
 
 If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for `recursive_iterator`, or the corresponding criteria for [`recursive`](#recursive), since either decorator should prevent such errors.
 

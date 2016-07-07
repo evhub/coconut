@@ -505,6 +505,8 @@ class _coconut_zip(_coconut.zip):
         return "zip(" + ", ".join((_coconut.repr(i) for i in self._iters)) + ")"
     def __reduce_ex__(self, _):
         return (self.__class__, self._iters)
+    def __copy__(self):
+        return self.__class__(*self._iters)
 class _coconut_map(_coconut.map):
     __slots__ = ("_func", "_iters")
     __doc__ = _coconut.map.__doc__
@@ -526,6 +528,8 @@ class _coconut_map(_coconut.map):
         return "map(" + _coconut.repr(self._func) + ", " + ", ".join((_coconut.repr(i) for i in self._iters)) + ")"
     def __reduce_ex__(self, _):
         return (self.__class__, (self._func,) + self._iters)
+    def __copy__(self):
+        return self.__class__(self._func, *self._iters)
 class _coconut_parallel_map(_coconut_map):
     """Multiprocessing implementation of map using concurrent.futures; requires arguments to be pickleable."""
     __slots__ = ()
@@ -572,6 +576,8 @@ class _coconut_count(object):'''
         return "count(" + str(self._start) + ", " + str(self._step) + ")"
     def __reduce__(self):
         return (self.__class__, (self._start, self._step))
+    def __copy__(self):
+        return self.__class__(self._start, self._step)
 def _coconut_igetitem(iterable, index):
     if isinstance(iterable, _coconut.range) or (_coconut.hasattr(iterable, "__coconut_is_lazy__") and iterable.__coconut_is_lazy__):
         return iterable[index]
@@ -642,11 +648,11 @@ def recursive_iterator(func):
     def recursive_iterator_func(*args, **kwargs):
         hashable_args_kwargs = args, _coconut.frozenset(kwargs.items())
         if hashable_args_kwargs in tee_store:
-            return tee_store[hashable_args_kwargs].__copy__()
+            to_tee = tee_store[hashable_args_kwargs]
         else:
-            returned_tee, saved_tee = _coconut.itertools.tee(func(*args, **kwargs))
-            tee_store[hashable_args_kwargs] = saved_tee
-            return returned_tee
+            to_tee = func(*args, **kwargs)
+        tee_store[hashable_args_kwargs], to_return = _coconut.itertools.tee(to_tee)
+        return to_return
     return recursive_iterator_func
 def addpattern(base_func):
     """Decorator to add a new case to a pattern-matching function, where the new case is checked last."""
