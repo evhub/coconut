@@ -79,7 +79,7 @@
 
 ## Overview
 
-This documentation covers all the technical details of the [Coconut Programming Language](http://evhub.github.io/coconut/), and is intended as a reference specification, not a tutorialized introduction. For a full introduction and tutorial of Coconut, see [HELP](http://coconut.readthedocs.org/en/master/HELP.html).
+This documentation covers all the technical details of the [Coconut Programming Language](http://evhub.github.io/coconut/), and is intended as a reference specification, not a tutorialized introduction. For a full introduction and tutorial of Coconut, see [the tutorial](http://coconut.readthedocs.org/en/master/HELP.html).
 
 Coconut is a variant of [Python](https://www.python.org/) built for **simple, elegant, Pythonic functional programming**. Coconut syntax is a strict superset of Python 3 syntax. That means users familiar with Python will already be familiar with most of Coconut.
 
@@ -1441,8 +1441,8 @@ class trilen(collections.namedtuple("trilen", "h")):
 
 Coconut provides a `recursive` decorator to perform tail recursion optimization on a function written in a tail-recursive style. To use `recursive` on a function, it must meet the following criteria:
 
-1. your function must call itself, and
-2. in all cases where your function calls itself, it must return the result of that call without modifying it (synonymous with the condition that the function must be written in a tail-recursive style).
+1. your function calls itself, and
+2. in all cases where your function calls itself, it returns the result of that call without modifying it (synonymous with the condition that the function must be written in a tail-recursive style).
 
 If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for `recursive`, or the corresponding criteria for [`recursive_iterator`](#recursive-iterator), since either decorator should prevent such errors.
 
@@ -1500,7 +1500,7 @@ _Can't be done without a long decorator definition. The full definition of the d
 
 ### `parallel_map`
 
-Coconut provides a parallel version of `map` under the name `parallel_map`. `parallel_map` makes use of multiple processes, and is therefore often much faster than `map`. Use of `parallel_map` requires `concurrent.futures`, which exits in the Python 3 standard library, but under Python 2 will require `python -m pip install futures` to function.
+Coconut provides a parallel version of `map` under the name `parallel_map`. `parallel_map` makes use of multiple processes, and is therefore often much faster than `map`. Use of `parallel_map` requires `concurrent.futures`, which exists in the Python 3 standard library, but under Python 2 will require `python -m pip install futures` to function.
 
 Because `parallel_map` uses multiple processes for its execution, it is necessary that all of its arguments be pickleable. Only objects defined at the module level, and not lambdas, objects defined inside of a function, or objects defined inside of the interpreter, are pickleable. Furthermore, on Windows, it is necessary that all calls to `parallel_map` occur inside of an `if __name__ == "__main__"` guard.
 
@@ -1570,11 +1570,11 @@ Likely the most useful of the convenience functions, `parse` takes Coconut code 
 - `"module"`: a file in a folder or module
 - `"block"`: any number of lines of code
 - `"eval"`: a single expression
-- `"debug"`: lines of code with no header
+- `"debug"`: same as block but will not include the header
 
 #### `setup`
 
-**coconut.convenience.setup**(**_target, strict, minify, linenumbers, quiet, color_**)**
+**coconut.convenience.setup**(_target, strict, minify, linenumbers, quiet, color_**)**
 
 If `--target`, `--strict`, `--minify`, `--linenumbers`, `--quiet`, or `--color` are desired for `parse`, the arguments to `setup` will each set the value of the corresponding flag. The possible values for each flag are:
 
