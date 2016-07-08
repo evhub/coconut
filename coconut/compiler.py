@@ -2662,9 +2662,11 @@ class processor(object):
     new_lambdef_params = lparen.suppress() + varargslist + rparen.suppress()
     classic_lambdef_ref = addspace(Keyword("lambda") + condense(classic_lambdef_params + colon))
     new_lambdef = attach(new_lambdef_params + arrow.suppress(), lambdef_handle)
-    lambdef = trace(addspace((classic_lambdef | new_lambdef) + test), "lambdef")
-    lambdef_nocond = trace(addspace((classic_lambdef | new_lambdef) + test_nocond), "lambdef_nocond")
-    lambdef_nochain = trace(addspace((classic_lambdef | new_lambdef) + test_nochain), "lambdef_nochain")
+    implicit_lambdef = fixto(arrow, "lambda _=None:")
+    lambdef_base = classic_lambdef | new_lambdef | implicit_lambdef
+    lambdef = trace(addspace(lambdef_base + test), "lambdef")
+    lambdef_nocond = trace(addspace(lambdef_base + test_nocond), "lambdef_nocond")
+    lambdef_nochain = trace(addspace(lambdef_base + test_nochain), "lambdef_nochain")
 
     test <<= lambdef | addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test))
     test_nocond <<= lambdef_nocond | test_item
