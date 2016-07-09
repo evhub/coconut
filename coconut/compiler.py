@@ -628,8 +628,15 @@ class concurrent_map(_coconut_map):
     """Multithreading implementation of map using concurrent.futures."""
     __slots__ = ()
     def __iter__(self):
-        from concurrent.futures import ThreadPoolExecutor
-        with ThreadPoolExecutor() as executor:
+        from concurrent.futures import ThreadPoolExecutor'''
+            if target_info(target) >= (3, 5):
+                header += r'''
+        with ThreadPoolExecutor() as executor:'''
+            else:
+                header += r'''
+        from multiprocessing import cpu_count
+        with ThreadPoolExecutor(cpu_count() * 5) as executor:'''
+            header += r'''ThreadPoolExecutor
             for x in executor.map(self._func, *self._iters):
                 yield x
     def __repr__(self):
