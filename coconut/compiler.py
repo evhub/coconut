@@ -636,7 +636,7 @@ class concurrent_map(_coconut_map):
                 header += r'''
         from multiprocessing import cpu_count
         with ThreadPoolExecutor(cpu_count() * 5) as executor:'''
-            header += r'''ThreadPoolExecutor
+            header += r'''
             for x in executor.map(self._func, *self._iters):
                 yield x
     def __repr__(self):
