@@ -2669,7 +2669,7 @@ class processor(object):
     new_lambdef_params = lparen.suppress() + varargslist + rparen.suppress()
     classic_lambdef_ref = addspace(Keyword("lambda") + condense(classic_lambdef_params + colon))
     new_lambdef = attach(new_lambdef_params + arrow.suppress(), lambdef_handle)
-    implicit_lambdef = fixto(arrow, "lambda _=None:")
+    implicit_lambdef = fixto(arrow, "lambda _=None:", copy=True)
     lambdef_base = classic_lambdef | new_lambdef | implicit_lambdef
     lambdef = trace(addspace(lambdef_base + test), "lambdef")
     lambdef_nocond = trace(addspace(lambdef_base + test_nocond), "lambdef_nocond")
@@ -2808,7 +2808,7 @@ class processor(object):
     op_funcdef_arg = name | condense(lparen.suppress() + tfpdef + Optional(default) + rparen.suppress())
     op_funcdef_name = backtick.suppress() + name + backtick.suppress()
     op_funcdef = attach(Group(Optional(op_funcdef_arg)) + op_funcdef_name + Group(Optional(op_funcdef_arg)), op_funcdef_handle)
-    return_typedef_ref = addspace(arrow + test)
+    return_typedef_ref = addspace(arrow - test)
     base_funcdef = addspace((op_funcdef | name_funcdef) + Optional(return_typedef))
     funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
     math_funcdef = attach(Keyword("def").suppress() + base_funcdef + equals.suppress() - test_expr, func_handle) - newline
