@@ -986,7 +986,7 @@ def <name>(*args):
         err.value = args
         raise err
 ```
-If pattern-matching function definition fails, it will raise a [`MatchError`]((#matcherror) object just like [destructuring assignment](#destructuring-assignment).
+If pattern-matching function definition fails, it will raise a [`MatchError`](#matcherror) object just like [destructuring assignment](#destructuring-assignment).
 
 _Note: Pattern-matching function definition can be combined with shorthand and infix function definition._
 
