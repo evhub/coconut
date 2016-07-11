@@ -692,9 +692,13 @@ def addpattern(base_func=None):
                 return func(*args, **kwargs)
         return add_pattern_func
     return pattern_adder
-def prepattern(base_func):
+def prepattern(base_func=None):
     """Decorator to add a new case to a pattern-matching function, where the new case is checked first."""
+    params = {"base_func":base_func}    #More random dictionary stuff
     def pattern_prepender(func):
+        base_func = params["base_func"]
+        if not base_func:
+            base_func = globals()[func.__name__]
         @_coconut.functools.wraps(func)
         def pre_pattern_func(*args, **kwargs):
             try:
