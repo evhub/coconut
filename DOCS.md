@@ -1156,7 +1156,7 @@ cdef f(x):
 
 ### `addpattern`
 
-Takes one argument that is a [pattern-matching function](pattern-matching-functions), and returns a decorator that adds the patterns in the existing function to the new function being decorated, where the existing patterns are checked first, then the new. Equivalent to:
+Takes one argument that is a [pattern-matching function](#pattern-matching-functions), and returns a decorator that adds the patterns in the existing function to the new function being decorated, where the existing patterns are checked first, then the new. Equivalent to:
 ```
 def addpattern(base_func):
     """Decorator to add a new case to a pattern-matching function, where the new case is checked last."""
@@ -1185,7 +1185,7 @@ _Can't be done without a complicated decorator definition and a long series of c
 
 ### `prepattern`
 
-Takes one argument that is a [pattern-matching function](pattern-matching-functions), and returns a decorator that adds the patterns in the existing function to the new function being decorated, where the new patterns are checked first, then the existing. Equivalent to:
+Takes one argument that is a [pattern-matching function](#pattern-matching-functions), and returns a decorator that adds the patterns in the existing function to the new function being decorated, where the new patterns are checked first, then the existing. Equivalent to:
 ```
 def prepattern(base_func):
     """Decorator to add a new case to a pattern-matching function, where the new case is checked first."""
