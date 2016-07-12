@@ -529,7 +529,7 @@ def _coconut_backpipe(f, x): return f(x)
 def _coconut_backstarpipe(f, xs): return f(*xs)
 def _coconut_bool_and(a, b): return a and b
 def _coconut_bool_or(a, b): return a or b
-def _coconut_minus(*args): return _coconut.operator.__neg__(*args) if len(args) < 2 else _coconut.operator.__sub__(*args)
+def _coconut_minus(*args): return _coconut.operator.neg(*args) if len(args) < 2 else _coconut.operator.sub(*args)
 @_coconut.functools.wraps(_coconut.itertools.tee)
 def _coconut_tee(iterable, n=2):
     if _coconut.isinstance(iterable, _coconut.range) or hasattr(iterable, "__copy__"):
@@ -2052,7 +2052,7 @@ class processor(object):
                 elif trailer[0] == "$":
                     out = "_coconut.functools.partial(_coconut.functools.partial, "+out+")"
                 elif trailer[0] == "[]":
-                    out = "_coconut.functools.partial(_coconut.operator.__getitem__, "+out+")"
+                    out = "_coconut.functools.partial(_coconut.operator.getitem, "+out+")"
                 elif trailer[0] == ".":
                     out = "_coconut.functools.partial(_coconut.getattr, "+out+")"
                 elif trailer[0] == "$(":
@@ -2328,20 +2328,18 @@ class processor(object):
         """Handles multi-line lambdef statements."""
         if len(tokens) == 2:
             params, stmts = tokens
-            last_stmt = None
         elif len(tokens) == 3:
             params, stmts, last = tokens
             if "tests" in last.keys():
-                last_stmt = "return " + last
+                stmts = ["\n".join(stmts), "return " + last]
             else:
-                last_stmt = last
+                stmts = ["\n".join(stmts), last]
         else:
             raise CoconutException("invalid multiline lambda tokens", tokens)
         name = multiline_lambda_var + "_" + str(len(self.extra_stmts))
         self.extra_stmts.append(
             "def " + name + params + ":\n" + openindent
-            + "\n".join(stmts)
-            + ("\n"+last_stmt if last_stmt is not None else "") + closeindent
+            + "\n".join(stmts) + closeindent
         )
         return name
 
@@ -2583,28 +2581,28 @@ class processor(object):
         | fixto(dot, "_coconut.getattr", copy=True)
         | fixto(dubcolon, "_coconut.itertools.chain", copy=True)
         | fixto(dollar, "_coconut.functools.partial", copy=True)
-        | fixto(exp_dubstar, "_coconut.operator.__pow__", copy=True)
-        | fixto(mul_star, "_coconut.operator.__mul__", copy=True)
-        | fixto(div_dubslash, "_coconut.operator.__floordiv__", copy=True)
-        | fixto(div_slash, "_coconut.operator.__truediv__", copy=True)
-        | fixto(percent, "_coconut.operator.__mod__", copy=True)
-        | fixto(plus, "_coconut.operator.__add__", copy=True)
-        | fixto(amp, "_coconut.operator.__and__", copy=True)
-        | fixto(caret, "_coconut.operator.__xor__", copy=True)
-        | fixto(bar, "_coconut.operator.__or__", copy=True)
-        | fixto(lshift, "_coconut.operator.__lshift__", copy=True)
-        | fixto(rshift, "_coconut.operator.__rshift__", copy=True)
-        | fixto(lt, "_coconut.operator.__lt__", copy=True)
-        | fixto(gt, "_coconut.operator.__gt__", copy=True)
-        | fixto(eq, "_coconut.operator.__eq__", copy=True)
-        | fixto(le, "_coconut.operator.__le__", copy=True)
-        | fixto(ge, "_coconut.operator.__ge__", copy=True)
-        | fixto(ne, "_coconut.operator.__ne__", copy=True)
-        | fixto(tilde, "_coconut.operator.__inv__", copy=True)
-        | fixto(matrix_at, "_coconut.operator.__matmul__", copy=True)
-        | fixto(Keyword("not"), "_coconut.operator.__not__")
+        | fixto(exp_dubstar, "_coconut.operator.pow", copy=True)
+        | fixto(mul_star, "_coconut.operator.mul", copy=True)
+        | fixto(div_dubslash, "_coconut.operator.floordiv", copy=True)
+        | fixto(div_slash, "_coconut.operator.truediv", copy=True)
+        | fixto(percent, "_coconut.operator.mod", copy=True)
+        | fixto(plus, "_coconut.operator.add", copy=True)
+        | fixto(amp, "_coconut.operator.and_", copy=True)
+        | fixto(caret, "_coconut.operator.xor", copy=True)
+        | fixto(bar, "_coconut.operator.or_", copy=True)
+        | fixto(lshift, "_coconut.operator.lshift", copy=True)
+        | fixto(rshift, "_coconut.operator.rshift", copy=True)
+        | fixto(lt, "_coconut.operator.lt", copy=True)
+        | fixto(gt, "_coconut.operator.gt", copy=True)
+        | fixto(eq, "_coconut.operator.eq", copy=True)
+        | fixto(le, "_coconut.operator.le", copy=True)
+        | fixto(ge, "_coconut.operator.ge", copy=True)
+        | fixto(ne, "_coconut.operator.ne", copy=True)
+        | fixto(tilde, "_coconut.operator.inv", copy=True)
+        | fixto(matrix_at, "_coconut.operator.matmul", copy=True)
+        | fixto(Keyword("not"), "_coconut.operator.not_")
         | fixto(Keyword("is"), "_coconut.operator.is_")
-        | fixto(Keyword("in"), "_coconut.operator.__contains__")
+        | fixto(Keyword("in"), "_coconut.operator.contains")
     )
 
     typedef = Forward()
@@ -2910,8 +2908,10 @@ class processor(object):
     op_funcdef = attach(Group(Optional(op_funcdef_arg)) + op_funcdef_name + Group(Optional(op_funcdef_arg)), op_funcdef_handle)
     return_typedef_ref = addspace(arrow + test)
     base_funcdef = addspace((op_funcdef | name_funcdef) + Optional(return_typedef))
-    funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
-    math_funcdef = attach(Keyword("def").suppress() + base_funcdef + equals.suppress() - test_expr, func_handle) - newline
+    funcdef = trace(addspace(Keyword("def") + condense(base_funcdef + suite)), "funcdef")
+    math_funcdef = trace(condense(
+        attach(Keyword("def").suppress() + base_funcdef + equals.suppress() - test_expr, func_handle)
+        - newline), "math_funcdef")
     async_funcdef_ref = addspace(Keyword("async") + (funcdef | math_funcdef))
     async_block_ref = addspace(Keyword("async") + (with_stmt | for_stmt))
 
@@ -2942,16 +2942,16 @@ class processor(object):
     simple_decorator = condense(dotted_name + Optional(lparen + callargslist + rparen))("simple")
     complex_decorator = test("test")
     decorators = attach(OneOrMore(at.suppress() - Group(simple_decorator ^ complex_decorator) - newline.suppress()), decorator_handle)
-    decoratable_stmt = (
+    decoratable_stmt = trace(
         classdef
         | datadef
         | funcdef
         | async_funcdef
         | async_match_funcdef
-        | match_funcdef
         | math_funcdef
         | math_match_funcdef
-        )
+        | match_funcdef
+        , "decoratable_stmt")
     decorated = condense(decorators - decoratable_stmt)
 
     passthrough_stmt = condense(passthrough_block - (base_suite | newline))
@@ -2984,10 +2984,10 @@ class processor(object):
         )
     augassign_stmt = Forward()
     augassign_stmt_ref = simple_assign + augassign + test_expr
-    expr_stmt = addspace(
+    expr_stmt = trace(addspace(
         augassign_stmt
         | ZeroOrMore(assignlist + equals) + test_expr
-        )
+        ), "expr_stmt")
 
     small_stmt <<= trace(keyword_stmt | expr_stmt, "small_stmt")
     simple_stmt <<= trace(condense(itemlist(small_stmt, semicolon) + newline), "simple_stmt")

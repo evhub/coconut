@@ -323,7 +323,7 @@ def sq(x) = x**2
 ```coconut_python
 import operator
 def sq(x): return x**2
-print(sq(operator.__add__(1, 2)))
+print(sq(operator.add(1, 2)))
 ```
 
 ### Compose
@@ -771,7 +771,7 @@ Coconut supports a number of different syntactical aliases for common partial ap
 .method(args)   =>      operator.methodcaller("method", args)
 obj.            =>      getattr$(obj)
 func$           =>      ($)$(func)
-seq[]           =>      operator.__getitem__$(seq)
+seq[]           =>      operator.getitem$(seq)
 iter$[]         =>      # the equivalent of seq[] for iterators
 ```
 
@@ -869,31 +869,31 @@ A very common thing to do in functional programming is to make use of function v
 (.)         => (getattr)
 (::)        => (itertools.chain) # will not evaluate its arguments lazily
 ($)         => (functools.partial)
-(+)         => (operator.__add__)
-(-)         => # 1 arg: operator.__neg__, 2 args: operator.__sub__
-(*)         => (operator.__mul__)
-(**)        => (operator.__pow__)
-(/)         => (operator.__truediv__)
-(//)        => (operator.__floordiv__)
-(%)         => (operator.__mod__)
-(&)         => (operator.__and__)
-(^)         => (operator.__xor__)
-(|)         => (operator.__or__)
-(<<)        => (operator.__lshift__)
-(>>)        => (operator.__rshift__)
-(<)         => (operator.__lt__)
-(>)         => (operator.__gt__)
-(==)        => (operator.__eq__)
-(<=)        => (operator.__le__)
-(>=)        => (operator.__ge__)
-(!=)        => (operator.__ne__)
-(~)         => (operator.__inv__)
-(@)         => (operator.__matmul__)
-(not)       => (operator.__not__)
+(+)         => (operator.add)
+(-)         => # 1 arg: operator.neg, 2 args: operator.sub
+(*)         => (operator.mul)
+(**)        => (operator.pow)
+(/)         => (operator.truediv)
+(//)        => (operator.floordiv)
+(%)         => (operator.mod)
+(&)         => (operator.and_)
+(^)         => (operator.xor)
+(|)         => (operator.or_)
+(<<)        => (operator.lshift)
+(>>)        => (operator.rshift)
+(<)         => (operator.lt)
+(>)         => (operator.gt)
+(==)        => (operator.eq)
+(<=)        => (operator.le)
+(>=)        => (operator.ge)
+(!=)        => (operator.ne)
+(~)         => (operator.inv)
+(@)         => (operator.matmul)
+(not)       => (operator.not_)
 (and)       => # boolean and
 (or)        => # boolean or
 (is)        => (operator.is_)
-(in)        => (operator.__contains__)
+(in)        => (operator.contains)
 ```
 
 ##### Example
@@ -906,7 +906,7 @@ A very common thing to do in functional programming is to make use of function v
 ###### Python
 ```coconut_python
 import operator
-print(list(map(operator.__add__, range(0, 5), range(5, 10))))
+print(list(map(operator.add, range(0, 5), range(5, 10))))
 ```
 
 ### Shorthand Functions
@@ -1234,7 +1234,7 @@ range(1, 10) |> prod |> print
 ```coconut_python
 import operator
 import functools
-prod = functools.partial(functools.reduce, operator.__mul__)
+prod = functools.partial(functools.reduce, operator.mul)
 print(prod(range(1, 10)))
 ```
 
