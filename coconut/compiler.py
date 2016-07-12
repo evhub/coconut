@@ -20,6 +20,7 @@ Description: Compiles Coconut code into Python code.
 #   - Parser
 #   - Processors
 #   - Parser Handlers
+#   - Checking Handlers
 #   - Grammar
 #   - Endpoints
 
@@ -37,6 +38,7 @@ import platform
 if platform.python_implementation() != "PyPy":
     ParserElement.enablePackrat() # huge speedup in CPython, but can cause errors in PyPy
 
+# end: IMPORTS
 #-----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -173,6 +175,7 @@ new_to_old_stdlib = { # old_name: (new_name, new_version_info)
 
 ParserElement.setDefaultWhitespaceChars(white)
 
+# end: CONSTANTS
 #-----------------------------------------------------------------------------------------------------------------------
 # EXCEPTIONS:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -272,6 +275,7 @@ class CoconutTargetError(CoconutSyntaxError):
 class CoconutWarning(CoconutSyntaxError):
     """Base Coconut warning."""
 
+# end: EXCEPTIONS
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -369,6 +373,7 @@ class tracer(object):
         bound.setName(tag)
         return bound
 
+# end: UTILITIES
 #-----------------------------------------------------------------------------------------------------------------------
 # HEADER UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -716,6 +721,7 @@ MatchError, map, reduce, takewhile, dropwhile, tee = _coconut_MatchError, _cocon
 '''
     return header
 
+# end: HEADER UTILITIES
 #-----------------------------------------------------------------------------------------------------------------------
 # HANDLERS:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1315,6 +1321,7 @@ def gen_imports(path, impas):
             out.append("from " + imp_from + " import " + imp + " as " + impas)
     return out
 
+# end: HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
 # PARSER:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1324,15 +1331,30 @@ class processor(object):
     tracing = tracer()
     trace = tracing.bind
     debug = tracing.debug
-    using_autopep8 = False
 
     def __init__(self, target=None, strict=False, minify=False, linenumbers=False, debugger=printerr):
         """Creates a new processor."""
         self.debugger = debugger
         self.setup(target, strict, minify, linenumbers)
-        self.preprocs = [self.prepare, self.str_proc, self.passthrough_proc, self.ind_proc]
-        self.postprocs = [self.reind_proc, self.repl_proc, self.header_proc, self.polish]
-        self.replprocs = [self.linenumber_repl, self.passthrough_repl, self.str_repl]
+        self.preprocs = [
+            self.prepare,
+            self.str_proc,
+            self.passthrough_proc,
+            self.ind_proc
+            ]
+        self.postprocs = [
+            self.check_proc,
+            self.reind_proc,
+            self.repl_proc,
+            self.header_proc,
+            self.polish,
+            self.autopep8_proc
+            ]
+        self.replprocs = [
+            self.linenumber_repl,
+            self.passthrough_repl,
+            self.str_repl
+            ]
         self.reset()
 
     def setup(self, target=None, strict=False, minify=False, linenumbers=False):
@@ -1348,11 +1370,31 @@ class processor(object):
                 + '" (supported targets are "' + '", "'.join(specific_targets) + '", or leave blank for universal)')
         self.target, self.strict, self.minify, self.linenumbers = target, strict, minify, linenumbers
         self.tablen = 1 if self.minify else tabideal
+        self.autopep8_args = None
+
+    def autopep8(self, arglist=[]):
+        """Enables autopep8 integration."""
+        if arglist is None:
+            self.autopep8_args = None
+        else:
+            self.autopep8_args = autopep8.parse_args(["autopep8"] + arglist)
+
+    def reset(self):
+        """Resets references."""
+        self.tracing.show = self.debugger
+        self.indchar = None
+        self.refs = []
+        self.skips = set()
+        self.extra_stmts = []
+        self.docstring = ""
+        self.ichain_count = 0
+        self.bind()
 
     def bind(self):
         """Binds reference objects to the proper parse actions."""
         self.endline <<= attach(self.endline_ref, self.endline_handle, copy=True)
-        self.moduledoc_item <<= attach(self.moduledoc, self.set_docstring, copy=True)
+        self.stmt <<= self.trace(attach(self.stmt_ref, self.stmt_handle, copy=True), "stmt")
+        self.moduledoc_item <<= self.trace(attach(self.moduledoc, self.set_docstring, copy=True), "moduledoc")
         self.name <<= self.trace(attach(self.name_ref, self.name_handle, copy=True), "name")
         self.atom_item <<= self.trace(attach(self.atom_item_ref, self.item_handle, copy=True), "atom_item")
         self.simple_assign <<= self.trace(attach(self.simple_assign_ref, self.item_handle, copy=True), "simple_assign")
@@ -1380,16 +1422,6 @@ class processor(object):
         self.async_block <<= attach(self.async_block_ref, self.async_stmt_check, copy=True)
         self.await_keyword <<= attach(self.await_keyword_ref, self.await_keyword_check, copy=True)
 
-    def reset(self):
-        """Resets references."""
-        self.tracing.show = self.debugger
-        self.indchar = None
-        self.refs = []
-        self.docstring = ""
-        self.ichain_count = 0
-        self.skips = set()
-        self.bind()
-
     def genhash(self, package, code):
         """Generates a hash from code."""
         return hex(checksum(
@@ -1398,7 +1430,7 @@ class processor(object):
                     self.target,
                     self.minify,
                     self.linenumbers,
-                    self.using_autopep8,
+                    self.autopep8_args,
                     package,
                     code
                 )).encode(default_encoding)
@@ -1538,6 +1570,7 @@ class processor(object):
             raise CoconutException("maximum recursion depth exceeded (try again with a larger --recursionlimit)")
         return out
 
+# end: PARSER
 #-----------------------------------------------------------------------------------------------------------------------
 # PROCESSORS:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1953,19 +1986,21 @@ class processor(object):
         """Does final polishing touches."""
         return "\n".join(inputstring.rstrip().splitlines()) + "\n"
 
-    def autopep8(self, arglist=[]):
-        """Enables autopep8 integration."""
-        if self.using_autopep8:
-            self.postprocs.pop()
+    def autopep8_proc(self, inputstring, **kwargs):
+        """Applies autopep8."""
+        if self.autopep8_args is not None:
+            import autopep8
+            return autopep8.fix_code(code, options=self.autopep8_args)
         else:
-            self.using_autopep8 = True
-        import autopep8
-        args = autopep8.parse_args(["autopep8"] + arglist)
-        def pep8_fixer(code, **kwargs):
-            """Automatic PEP8 fixer."""
-            return autopep8.fix_code(code, options=args)
-        self.postprocs.append(pep8_fixer)
+            return inputstring
 
+    def check_proc(self, inputstring, **kwargs):
+        """Check that everything is ready for post-processing."""
+        if self.extra_stmts:
+            raise self.make_err(CoconutSyntaxError, "illegal multiline expression in eval parsing", inputstring, 0)
+        return inputstring
+
+# end: PROCESSORS
 #-----------------------------------------------------------------------------------------------------------------------
 # PARSER HANDLERS:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -2238,6 +2273,57 @@ class processor(object):
             raise CoconutException("invalid infix match function definition tokens", tokens)
         return self.name_match_funcdef_handle(original, loc, name_tokens)
 
+    def set_literal_handle(self, tokens):
+        """Converts set literals to the right form for the target Python."""
+        if len(tokens) != 1:
+            raise CoconutException("invalid set literal tokens", tokens)
+        elif len(tokens[0]) != 1:
+            raise CoconutException("invalid set literal item", tokens[0])
+        elif self.target_info() < (2, 7):
+            return "_coconut.set(" + set_to_tuple(tokens[0]) + ")"
+        else:
+            return "{" + tokens[0][0] + "}"
+
+    def set_letter_literal_handle(self, tokens):
+        """Processes set literals."""
+        if len(tokens) == 1:
+            set_type = tokens[0]
+            if set_type == "s":
+                return "_coconut.set()"
+            elif set_type == "f":
+                return "_coconut.frozenset()"
+            else:
+                raise CoconutException("invalid set type", set_type)
+        elif len(tokens) == 2:
+            set_type, set_items = tokens
+            if len(set_items) != 1:
+                raise CoconutException("invalid set literal item", tokens[0])
+            elif set_type == "s":
+                return self.set_literal_handle([set_items])
+            elif set_type == "f":
+                return "_coconut.frozenset(" + set_to_tuple(set_items) + ")"
+            else:
+                raise CoconutException("invalid set type", set_type)
+        else:
+            raise CoconutException("invalid set literal tokens", tokens)
+
+    def stmt_handle(self, tokens):
+        """Handles statements by adding in extra_stmts right before."""
+        if len(tokens) != 1:
+            raise CoconutException("invalid stmt tokens", tokens)
+        elif not self.extra_stmts:
+            return tokens[0]
+        else:
+            self.extra_stmts.append(tokens[0])
+            stmts = "\n".join(self.extra_stmts)
+            self.extra_stmts = []
+            return stmts
+
+# end: PARSER HANDLERS
+#-----------------------------------------------------------------------------------------------------------------------
+# CHECKING HANDLERS:
+#-----------------------------------------------------------------------------------------------------------------------
+
     def check_strict(self, name, original, location, tokens):
         """Checks that syntax meets --strict requirements."""
         if len(tokens) != 1:
@@ -2292,40 +2378,7 @@ class processor(object):
         """Checks for Python 3.5 format strings."""
         return self.check_py("36", "format string", original, location, tokens)
 
-    def set_literal_handle(self, tokens):
-        """Converts set literals to the right form for the target Python."""
-        if len(tokens) != 1:
-            raise CoconutException("invalid set literal tokens", tokens)
-        elif len(tokens[0]) != 1:
-            raise CoconutException("invalid set literal item", tokens[0])
-        elif self.target_info() < (2, 7):
-            return "_coconut.set(" + set_to_tuple(tokens[0]) + ")"
-        else:
-            return "{" + tokens[0][0] + "}"
-
-    def set_letter_literal_handle(self, tokens):
-        """Processes set literals."""
-        if len(tokens) == 1:
-            set_type = tokens[0]
-            if set_type == "s":
-                return "_coconut.set()"
-            elif set_type == "f":
-                return "_coconut.frozenset()"
-            else:
-                raise CoconutException("invalid set type", set_type)
-        elif len(tokens) == 2:
-            set_type, set_items = tokens
-            if len(set_items) != 1:
-                raise CoconutException("invalid set literal item", tokens[0])
-            elif set_type == "s":
-                return self.set_literal_handle([set_items])
-            elif set_type == "f":
-                return "_coconut.frozenset(" + set_to_tuple(set_items) + ")"
-            else:
-                raise CoconutException("invalid set type", set_type)
-        else:
-            raise CoconutException("invalid set literal tokens", tokens)
-
+# end: CHECKING HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
 # GRAMMAR:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -2891,7 +2944,7 @@ class processor(object):
 
     small_stmt = trace(keyword_stmt | expr_stmt, "small_stmt")
     simple_stmt <<= trace(condense(itemlist(small_stmt, semicolon) + newline), "simple_stmt")
-    stmt <<= trace(compound_stmt | simple_stmt | destructuring_stmt, "stmt")
+    stmt_ref = compound_stmt | simple_stmt | destructuring_stmt
     base_suite <<= condense(newline + indent - OneOrMore(stmt) - dedent)
     suite <<= trace(condense(colon + base_suite) | addspace(colon + simple_stmt), "suite")
     line = trace(newline | stmt, "line")
@@ -2904,6 +2957,7 @@ class processor(object):
     file_parser = condense(start_marker - file_input - end_marker)
     eval_parser = condense(start_marker - eval_input - end_marker)
 
+# end: GRAMMAR
 #-----------------------------------------------------------------------------------------------------------------------
 # ENDPOINTS:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -2943,3 +2997,5 @@ class processor(object):
     def parse_debug(self, inputstring):
         """Parses debug code."""
         return self.parse(inputstring, self.file_parser, {"strip": True}, {"header": "none", "initial": "none"})
+
+# end: ENDPOINTS
