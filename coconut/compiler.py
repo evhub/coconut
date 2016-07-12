@@ -2618,21 +2618,21 @@ class processor(object):
     multiline_lambdef = Forward()
     closing_stmt = testlist("tests") | small_stmt
     multiline_lambdef_ref = (
-        parameters + arrow.suppress()
+        Optional(Keyword("def").suppress()) + parameters + arrow.suppress()
         + (
             Group(OneOrMore(small_stmt + semicolon)) + Optional(closing_stmt)
             | Group(ZeroOrMore(small_stmt + semicolon)) + closing_stmt
             )
         )
 
-    callargslist = Optional(
+    callargslist = Optional(trace(
         attach(addspace(test + comp_for), add_paren_handle)
-        | itemlist(condense(dubstar + callarg | star + callarg | name + default), comma)
+        | itemlist(condense(dubstar + callarg | star + callarg | name + default | callarg), comma)
         | op_item
         | multiline_lambdef
-        )
+        , "callargslist"))
     methodcaller_args = (
-        itemlist(condense(name + default), comma)
+        itemlist(condense(name + default | callarg), comma)
         | op_item
         | multiline_lambdef
         )
@@ -2691,21 +2691,21 @@ class processor(object):
     subscriptgroup = Group(slicetestgroup + sliceopgroup + Optional(sliceopgroup) | test)
     simple_trailer = condense(lbrack + subscriptlist + rbrack) | condense(dot + name)
     complex_trailer = (
-        Group(condense(dollar + lparen) + callargslist + rparen.suppress())
-        | condense(lparen + callargslist + rparen)
+        condense(lparen + callargslist + rparen)
+        | Group(condense(dollar + lparen) + callargslist + rparen.suppress())
         | Group(dotdot + func_atom)
         | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())
         | Group(condense(dollar + lbrack + rbrack))
         | Group(dollar)
         | Group(condense(lbrack + rbrack))
-        | Group(dot)
+        | Group(~(dot+name) + dot)
         )
     trailer = simple_trailer | complex_trailer
 
     atom_item = Forward()
     atom_item_ref = atom + ZeroOrMore(trailer)
     simple_assign = Forward()
-    simple_assign_ref = (name | passthrough_atom) + ZeroOrMore(ZeroOrMore(~simple_trailer+complex_trailer) + OneOrMore(simple_trailer))
+    simple_assign_ref = (name | passthrough_atom) + ZeroOrMore(ZeroOrMore(complex_trailer) + OneOrMore(simple_trailer))
 
     assignlist = Forward()
     star_assign_item = Forward()
@@ -2780,9 +2780,10 @@ class processor(object):
     lambdef_nocond = trace(addspace(lambdef_base + test_nocond), "lambdef_nocond")
     lambdef_nochain = trace(addspace(lambdef_base + test_nochain), "lambdef_nochain")
 
-    test <<= lambdef | addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test))
-    test_nocond <<= lambdef_nocond | test_item
-    test_nochain <<= lambdef_nochain | addspace(nochain_test_item + Optional(Keyword("if") + nochain_test_item + Keyword("else") + test_nochain))
+    test <<= trace(lambdef | addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test)), "test")
+    test_nocond <<= trace(lambdef_nocond | test_item, "test_nocond")
+    test_nochain <<= trace(lambdef_nochain
+        | addspace(nochain_test_item + Optional(Keyword("if") + nochain_test_item + Keyword("else") + test_nochain)), "test_nochain")
 
     classlist_ref = Optional(
         lparen.suppress() + rparen.suppress()
@@ -2793,7 +2794,7 @@ class processor(object):
         )
     classdef = condense(addspace(Keyword("class") - name) + classlist + suite)
     comp_iter = Forward()
-    comp_for <<= addspace(Keyword("for") + assignlist + Keyword("in") + test_item + Optional(comp_iter))
+    comp_for <<= trace(addspace(Keyword("for") + assignlist + Keyword("in") + test_item + Optional(comp_iter)), "comp_for")
     comp_if = addspace(Keyword("if") + test_nocond + Optional(comp_iter))
     comp_iter <<= comp_for | comp_if
 
@@ -2956,13 +2957,13 @@ class processor(object):
 
     passthrough_stmt = condense(passthrough_block - (base_suite | newline))
 
-    simple_compound_stmt <<= (
+    simple_compound_stmt <<= trace(
         if_stmt
         | try_stmt
         | case_stmt
         | match_stmt
         | passthrough_stmt
-        )
+        , "simple_compound_stmt")
     compound_stmt = trace(
         decoratable_stmt
         | with_stmt
@@ -2973,7 +2974,7 @@ class processor(object):
         | decorated
         | match_assign_stmt
         , "compound_stmt")
-    keyword_stmt = (
+    keyword_stmt = trace(
         del_stmt
         | pass_stmt
         | flow_stmt
@@ -2981,7 +2982,7 @@ class processor(object):
         | global_stmt
         | nonlocal_stmt
         | assert_stmt
-        )
+        , "keyword_stmt")
     augassign_stmt = Forward()
     augassign_stmt_ref = simple_assign + augassign + test_expr
     expr_stmt = trace(addspace(
