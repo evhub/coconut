@@ -677,9 +677,13 @@ def recursive_iterator(func):
         tee_store[hashable_args_kwargs], to_return = _coconut_tee(to_tee)
         return to_return
     return recursive_iterator_func
-def addpattern(base_func):
+def addpattern(base_func=None):
     """Decorator to add a new case to a pattern-matching function, where the new case is checked last."""
+    params = {"base_func":base_func}    #WE HAVE TO USE A DICTIONARY BECAUSE RESONS (https://stackoverflow.com/questions/3190706/nonlocal-keyword-in-python-2-x) (https://stackoverflow.com/questions/18864041/why-can-functions-in-python-print-variables-in-enclosing-scope-but-cannot-use-th)
     def pattern_adder(func):
+        base_func = params["base_func"]
+        if not base_func:
+            base_func = globals()[func.__name__]
         @_coconut.functools.wraps(func)
         def add_pattern_func(*args, **kwargs):
             try:
@@ -688,9 +692,13 @@ def addpattern(base_func):
                 return func(*args, **kwargs)
         return add_pattern_func
     return pattern_adder
-def prepattern(base_func):
+def prepattern(base_func=None):
     """Decorator to add a new case to a pattern-matching function, where the new case is checked first."""
+    params = {"base_func":base_func}    #More random dictionary stuff
     def pattern_prepender(func):
+        base_func = params["base_func"]
+        if not base_func:
+            base_func = globals()[func.__name__]
         @_coconut.functools.wraps(func)
         def pre_pattern_func(*args, **kwargs):
             try:
