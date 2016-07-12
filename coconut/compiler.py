@@ -63,12 +63,12 @@ closeindent = "\xb6" # pilcrow
 strwrapper = "\u25b6" # right-pointing triangle
 lnwrapper = "\u23f4" # left-pointing triangle
 unwrapper = "\u23f9" # stop square
-white = " \t\f"
+white = " \t\f" # whitespace chars
 downs = "([{" # opens parenthetical
 ups = ")]}" # closes parenthetical
-holds = "'\""
-tabideal = 4 # worth of tabs in spaces for displaying
-tabworth = 8 # worth of tabs in spaces for parsing (8 = Python standard)
+holds = "'\"" # string open/close chars
+tabideal = 4 # spaces to indent code for displaying
+tabworth = 8 # worth of \t in spaces for parsing (8 = Python standard)
 reserved_prefix = "_coconut"
 decorator_var = "_coconut_decorator"
 match_to_var = "_coconut_match_to"
@@ -533,7 +533,7 @@ def _coconut_tee(iterable, n=2):
 class _coconut_map(_coconut.map):
     __slots__ = ("_func", "_iters")
     __doc__ = _coconut.map.__doc__
-    __coconut_is_lazy__ = True # tells $[] to use .__getitem__
+    __coconut_is_lazy__ = True  # tells $[] to use .__getitem__
     def __new__(cls, function, *iterables):
         new_map = _coconut.map.__new__(cls, function, *iterables)
         new_map._func, new_map._iters = function, iterables
@@ -556,7 +556,7 @@ class _coconut_map(_coconut.map):
 class zip(_coconut.zip):
     __slots__ = ("_iters",)
     __doc__ = _coconut.zip.__doc__
-    __coconut_is_lazy__ = True # tells $[] to use .__getitem__
+    __coconut_is_lazy__ = True  # tells $[] to use .__getitem__
     def __new__(cls, *iterables):
         new_zip = _coconut.zip.__new__(cls, *iterables)
         new_zip._iters = iterables
@@ -585,7 +585,7 @@ class count(object):'''
             header += r'''
     """count(start, step) returns an infinite iterator starting at start and increasing by step."""
     __slots__ = ("_start", "_step")
-    __coconut_is_lazy__ = True # tells $[] to use .__getitem__
+    __coconut_is_lazy__ = True  # tells $[] to use .__getitem__
     def __init__(self, start=0, step=1):
         self._start, self._step = start, step
     def __iter__(self):
@@ -634,7 +634,7 @@ class concurrent_map(_coconut_map):
         with ThreadPoolExecutor() as executor:'''
             else:
                 header += r'''
-        from multiprocessing import cpu_count
+        from multiprocessing import cpu_count  # cpu_count() * 5 is the default Python 3 thread count
         with ThreadPoolExecutor(cpu_count() * 5) as executor:'''
             header += r'''
             for x in executor.map(self._func, *self._iters):
@@ -643,7 +643,7 @@ class concurrent_map(_coconut_map):
         return "concurrent_" + _coconut_map.__repr__(self)
 def recursive(func):
     """Decorates a function by optimizing it for tail recursion."""
-    state = [True, None] # state = [is_top_level, (args, kwargs)]
+    state = [True, None]  # state = [is_top_level, (args, kwargs)]
     recurse = object()
     @_coconut.functools.wraps(func)
     def recursive_func(*args, **kwargs):
@@ -704,7 +704,7 @@ def datamaker(data_type):
     return _coconut.functools.partial(_coconut.super(data_type, data_type).__new__, data_type)
 def consume(iterable, keep_last=0):
     """Fully exhaust iterable and return the last keep_last elements."""
-    return _coconut.collections.deque(iterable, maxlen=keep_last) # fastest way to exhaust an iterator
+    return _coconut.collections.deque(iterable, maxlen=keep_last)  # fastest way to exhaust an iterator
 MatchError, map, reduce, takewhile, dropwhile, tee = _coconut_MatchError, _coconut_map, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile, _coconut_tee
 '''
         else:
