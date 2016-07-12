@@ -2607,11 +2607,10 @@ class processor(object):
     typedef = Forward()
     typedef_ref = addspace(condense(name + colon) + test)
     tfpdef = typedef | name
-    callarg = test
-    default = Optional(condense(equals + test))
+    default = condense(equals + test)
 
-    argslist = Optional(itemlist(condense(dubstar + tfpdef | star + tfpdef | tfpdef + default), comma))
-    varargslist = Optional(itemlist(condense(dubstar + name | star + name | name + default), comma))
+    argslist = Optional(itemlist(condense(dubstar + tfpdef | star + tfpdef | tfpdef + Optional(default)), comma))
+    varargslist = Optional(itemlist(condense(dubstar + name | star + name | name + Optional(default)), comma))
     parameters = condense(lparen + argslist + rparen)
 
     multiline_lambdef = Forward()
@@ -2626,12 +2625,12 @@ class processor(object):
 
     callargslist = Optional(trace(
         attach(addspace(test + comp_for), add_paren_handle)
-        | itemlist(condense(dubstar + callarg | star + callarg | name + default | callarg), comma)
+        | itemlist(condense(dubstar + test | star + test | name + default | test), comma)
         | op_item
         | multiline_lambdef
         , "callargslist"))
     methodcaller_args = (
-        itemlist(condense(name + default | callarg), comma)
+        itemlist(condense(name + default | test), comma)
         | op_item
         | multiline_lambdef
         )
@@ -2903,7 +2902,7 @@ class processor(object):
     async_funcdef = Forward()
     async_block = Forward()
     name_funcdef = condense(name + parameters)
-    op_funcdef_arg = name | condense(lparen.suppress() + tfpdef + default + rparen.suppress())
+    op_funcdef_arg = name | condense(lparen.suppress() + tfpdef + Optional(default) + rparen.suppress())
     op_funcdef_name = backtick.suppress() + name + backtick.suppress()
     op_funcdef = attach(Group(Optional(op_funcdef_arg)) + op_funcdef_name + Group(Optional(op_funcdef_arg)), op_funcdef_handle)
     return_typedef_ref = addspace(arrow + test)
