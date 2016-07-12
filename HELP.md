@@ -307,7 +307,7 @@ def factorial(n):
         match 0:
             return 1
         match _ is int if n > 0:
-            return range(1, n+1) |> reduce$((*))
+            return range(1, n+1) |> reduce$(*)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
 
@@ -320,10 +320,10 @@ def factorial(n):
 
 Copy, paste! This definition differs from the recursive definition only by one line. That's intentional: because both the iterative and recursive approaches are functional approaches, Coconut can provide a great assist in making the code cleaner and more readable. The one line that differs is this one:
 ```coconut
-return range(1, n+1) |> reduce$((*))
+return range(1, n+1) |> reduce$(*)
 ```
 
-Let's break down what's happening on this line. First, the `range` function constructs an iterator of all the numbers that need to be multiplied together. Then, it is piped into the function `reduce$((*))`, which does that multiplication. But how? What is `reduce$((*))`.
+Let's break down what's happening on this line. First, the `range` function constructs an iterator of all the numbers that need to be multiplied together. Then, it is piped into the function `reduce$(*)`, which does that multiplication. But how? What is `reduce$(*)`.
 
 We'll start with the base, the `reduce` function. `reduce` used to exist as a built-in in Python 2, and Coconut brings it back. `reduce` is a higher-order function that takes a function on two arguments as its first argument, and an iterator as its second argument, and applies that function to the given iterator by starting with the first element, and calling the function on the accumulated call so far and the next element, until the iterator is exhausted. Here's a visual representation:
 ```coconut
@@ -339,15 +339,15 @@ f(f(f(a, b), c), d)
 return acc
 ```
 
-Now let's take a look at what we do to `reduce` to make it multiply all the numbers we feed into it together. The Coconut code that we saw for that was `reduce$((*))`. There are two different Coconut constructs being used here: the operator function for multiplication in the form of `(*)`, and partial application in the form of `$`.
+Now let's take a look at what we do to `reduce` to make it multiply all the numbers we feed into it together. The Coconut code that we saw for that was `reduce$(*)`. There are two different Coconut constructs being used here: the operator function for multiplication in the form of `(*)`, and partial application in the form of `$`.
 
 First, the operator function. In Coconut, a function form of any operator can be retrieved by surrounding that operator in parentheses. In this case, `(*)` is roughly equivalent to `lambda x, y: x*y`, but much cleaner and neater. In Coconut's lambda syntax, `(*)` is also equivalent to `(x, y) -> x*y`, which we will use from now on for all lambdas, even though both are legal Coconut, because Python's `lambda` statement is too ugly and bulky to use regularly. In fact, if Coconut's `--strict` mode is enabled, which will force your code to obey certain cleanliness standards, it will raise an error whenever Python `lambda` statements are used.
 
-Second, the partial application. Think of partial application as _lazy function calling_, and `$` as the _lazy-ify_ operator, where lazy just means "don't evaluate this until you need to". In Coconut, if a function call is prefixed by a `$`, like in this example, instead of actually performing the function call, a new function is returned with the given arguments already provided to it, so that when it is then called, it will be called with both the partially-applied arguments and the new arguments, in that order. In this case, `reduce$((*))` is equivalent to `(*args, **kwargs) -> reduce((*), *args, **kwargs)`.
+Second, the partial application. Think of partial application as _lazy function calling_, and `$` as the _lazy-ify_ operator, where lazy just means "don't evaluate this until you need to". In Coconut, if a function call is prefixed by a `$`, like in this example, instead of actually performing the function call, a new function is returned with the given arguments already provided to it, so that when it is then called, it will be called with both the partially-applied arguments and the new arguments, in that order. In this case, `reduce$(*)` is equivalent to `(*args, **kwargs) -> reduce((*), *args, **kwargs)`.
 
 Putting it all together, we can see how the single line of code
 ```coconut
-range(1, n+1) |> reduce$((*))
+range(1, n+1) |> reduce$(*)
 ```
 is able to compute the proper factorial, without using any state or loops, only higher-order functions, in true functional style. By supplying the tools we use here like partial application (`$`), pipeline-style programming (`|>`), higher-order functions (`reduce`), and operator functions (`(*)`), Coconut enables this sort of functional programming to be done cleanly, neatly, and easily.
 
@@ -361,7 +361,7 @@ def factorial(n):
         match 0:
             return 1
         match _ is int if n > 0:
-            return range(1, n+1) |> reduce$((*))
+            return range(1, n+1) |> reduce$(*)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
 ```
@@ -374,7 +374,7 @@ def factorial(0):
 @addpattern(factorial)
 def factorial(n is int if n > 0):
     """Compute n! where n is an integer >= 0."""
-    return range(1, n+1) |> reduce$((*))
+    return range(1, n+1) |> reduce$(*)
 
 # Test cases:
 -1 |> factorial |> print # MatchError

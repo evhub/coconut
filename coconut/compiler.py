@@ -83,6 +83,7 @@ import_as_var = "_coconut_import"
 yield_from_var = "_coconut_yield_from"
 yield_item_var = "_coconut_yield_item"
 raise_from_var = "_coconut_raise_from"
+multiline_lambda_var = "_coconut_lambda"
 wildcard = "_" # for pattern-matching
 keywords = (
     "and",
@@ -1305,13 +1306,15 @@ def gen_imports(path, impas):
             out.append("import " + imp + " as " + import_as_var)
             for i in range(1, len(fake_mods)):
                 mod_name = ".".join(fake_mods[:i])
-                out.append("try:")
-                out.append(openindent + mod_name)
-                out.append(closeindent + "except:")
-                out.append(openindent + mod_name + ' = _coconut.imp.new_module("' + mod_name + '")')
-                out.append(closeindent + "else:")
-                out.append(openindent + "if not _coconut.isinstance(" + mod_name + ", _coconut.types.ModuleType):")
-                out.append(openindent + mod_name + ' = _coconut.imp.new_module("' + mod_name + '")' + closeindent * 2)
+                out.extend((
+                    "try:",
+                    openindent + mod_name,
+                    closeindent + "except:",
+                    openindent + mod_name + ' = _coconut.imp.new_module("' + mod_name + '")',
+                    closeindent + "else:",
+                    openindent + "if not _coconut.isinstance(" + mod_name + ", _coconut.types.ModuleType):",
+                    openindent + mod_name + ' = _coconut.imp.new_module("' + mod_name + '")' + closeindent * 2
+                ))
             out.append(".".join(fake_mods) + " = " + import_as_var)
     else:
         imp_from, imp = parts
@@ -1333,7 +1336,7 @@ class processor(object):
     debug = tracing.debug
 
     def __init__(self, target=None, strict=False, minify=False, linenumbers=False, debugger=printerr):
-        """Creates a new processor."""
+        """Creates a new processor with the given parsing parameters."""
         self.debugger = debugger
         self.setup(target, strict, minify, linenumbers)
         self.preprocs = [
@@ -1341,7 +1344,7 @@ class processor(object):
             self.str_proc,
             self.passthrough_proc,
             self.ind_proc
-            ]
+        ]
         self.postprocs = [
             self.check_proc,
             self.reind_proc,
@@ -1349,16 +1352,16 @@ class processor(object):
             self.header_proc,
             self.polish,
             self.autopep8_proc
-            ]
+        ]
         self.replprocs = [
             self.linenumber_repl,
             self.passthrough_repl,
             self.str_repl
-            ]
+        ]
         self.reset()
 
     def setup(self, target=None, strict=False, minify=False, linenumbers=False):
-        """Initializes target, strict, and minify."""
+        """Initializes parsing parameters."""
         if target is None:
             target = ""
         else:
@@ -1409,6 +1412,7 @@ class processor(object):
         self.name_match_funcdef <<= self.trace(attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle, copy=True), "name_match_funcdef")
         self.op_match_funcdef <<= self.trace(attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle, copy=True), "op_match_funcdef")
         self.yield_from <<= self.trace(attach(self.yield_from_ref, self.yield_from_handle, copy=True), "yield_from")
+        self.multiline_lambdef <<= self.trace(attach(self.multiline_lambdef_ref, self.multiline_lambdef_handle, copy=True), "multiline_lambdef")
         self.u_string <<= attach(self.u_string_ref, self.u_string_check, copy=True)
         self.f_string <<= attach(self.f_string_ref, self.f_string_check, copy=True)
         self.typedef <<= attach(self.typedef_ref, self.typedef_check, copy=True)
@@ -1998,7 +2002,8 @@ class processor(object):
         """Check that everything is ready for post-processing."""
         if self.extra_stmts:
             raise self.make_err(CoconutSyntaxError, "illegal multiline expression in eval parsing", inputstring, 0)
-        return inputstring
+        else:
+            return inputstring
 
 # end: PROCESSORS
 #-----------------------------------------------------------------------------------------------------------------------
@@ -2097,9 +2102,9 @@ class processor(object):
             elif op == "..=":
                 out += name+" = (lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)))("+name+", ("+item+"))"
             elif op == "::=":
-                ichain_var = lazy_chain_var+"_"+str(self.ichain_count) # necessary to prevent a segfault caused by self-reference
-                out += ichain_var+" = "+name+"\n"
-                out += name+" = _coconut.itertools.chain.from_iterable("+lazy_list_handle([ichain_var, "("+item+")"])+")"
+                ichain_var = lazy_chain_var + "_" + str(self.ichain_count) # necessary to prevent a segfault caused by self-reference
+                out += ichain_var + " = " + name + "\n"
+                out += name + " = _coconut.itertools.chain.from_iterable(" + lazy_list_handle([ichain_var, "("+item+")"]) + ")"
                 self.ichain_count += 1
             else:
                 out += name+" "+op+" "+item
@@ -2115,9 +2120,9 @@ class processor(object):
             else:
                 return "(_coconut.object)"
         elif len(tokens) == 1 and len(tokens[0]) == 1:
-            if "tests" in tokens[0]:
+            if "tests" in tokens[0].keys():
                 return "(" + tokens[0][0] + ")"
-            elif "args" in tokens[0]:
+            elif "args" in tokens[0].keys():
                 if self.target.startswith("3"):
                     return "(" + tokens[0][0] + ")"
                 else:
@@ -2318,6 +2323,27 @@ class processor(object):
             stmts = "\n".join(self.extra_stmts)
             self.extra_stmts = []
             return stmts
+
+    def multiline_lambdef_handle(self, tokens):
+        """Handles multi-line lambdef statements."""
+        if len(tokens) == 2:
+            params, stmts = tokens
+            last_stmt = None
+        elif len(tokens) == 3:
+            params, stmts, last = tokens
+            if "tests" in last.keys():
+                last_stmt = "return " + last
+            else:
+                last_stmt = last
+        else:
+            raise CoconutException("invalid multiline lambda tokens", tokens)
+        name = multiline_lambda_var + "_" + str(len(self.extra_stmts))
+        self.extra_stmts.append(
+            "def " + name + params + ":\n" + openindent
+            + "\n".join(stmts)
+            + ("\n"+last_stmt if last_stmt is not None else "") + closeindent
+        )
+        return name
 
 # end: PARSER HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
@@ -2526,6 +2552,7 @@ class processor(object):
                | Keyword("is")
                )
 
+    small_stmt = Forward()
     test = Forward()
     expr = Forward()
     comp_for = Forward()
@@ -2575,11 +2602,10 @@ class processor(object):
         | fixto(ne, "_coconut.operator.__ne__", copy=True)
         | fixto(tilde, "_coconut.operator.__inv__", copy=True)
         | fixto(matrix_at, "_coconut.operator.__matmul__", copy=True)
-        | fixto(Keyword("not"), "_coconut.operator.__not__", copy=True)
-        | fixto(Keyword("is"), "_coconut.operator.is_", copy=True)
-        | fixto(Keyword("in"), "_coconut.operator.__contains__", copy=True)
+        | fixto(Keyword("not"), "_coconut.operator.__not__")
+        | fixto(Keyword("is"), "_coconut.operator.is_")
+        | fixto(Keyword("in"), "_coconut.operator.__contains__")
     )
-    op_atom = lparen.suppress() + op_item + rparen.suppress()
 
     typedef = Forward()
     typedef_ref = addspace(condense(name + colon) + test)
@@ -2589,22 +2615,42 @@ class processor(object):
 
     argslist = Optional(itemlist(condense(dubstar + tfpdef | star + tfpdef | tfpdef + default), comma))
     varargslist = Optional(itemlist(condense(dubstar + name | star + name | name + default), comma))
+    parameters = condense(lparen + argslist + rparen)
+
+    multiline_lambdef = Forward()
+    closing_stmt = testlist("tests") | small_stmt
+    multiline_lambdef_ref = (
+        parameters + arrow.suppress()
+        + (
+            Group(OneOrMore(small_stmt + semicolon)) + Optional(closing_stmt)
+            | Group(ZeroOrMore(small_stmt + semicolon)) + closing_stmt
+            )
+        )
+
     callargslist = Optional(
         attach(addspace(test + comp_for), add_paren_handle)
-        | itemlist(condense(dubstar + callarg | star + callarg | callarg + default), comma)
+        | itemlist(condense(dubstar + callarg | star + callarg | name + default), comma)
         | op_item
+        | multiline_lambdef
         )
-    parameters = condense(lparen + argslist + rparen)
+    methodcaller_args = (
+        itemlist(condense(name + default), comma)
+        | op_item
+        | multiline_lambdef
+        )
 
     testlist_comp = addspace(test + comp_for) | testlist
     list_comp = condense(lbrack + Optional(testlist_comp) + rbrack)
-    func_atom = name | op_atom | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
+    func_atom = (
+        name
+        | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
+        | lparen.suppress() + (op_item | multiline_lambdef) + rparen.suppress()
+        )
     keyword_atom = Keyword(const_vars[0])
     for x in range(1, len(const_vars)):
         keyword_atom |= Keyword(const_vars[x])
     string_atom = addspace(OneOrMore(string))
     passthrough_atom = addspace(OneOrMore(passthrough))
-    methodcaller_args = itemlist(condense(callarg + default), comma) | op_item
     attr_atom = attach(dot.suppress() + name + Optional(lparen.suppress() + methodcaller_args + rparen.suppress()), attr_handle)
     set_literal = Forward()
     set_letter_literal = Forward()
@@ -2717,6 +2763,13 @@ class processor(object):
     nochain_or_test = addspace(nochain_and_test + ZeroOrMore(Keyword("or") + nochain_and_test))
     nochain_test_item = trace(nochain_or_test, "nochain_test_item")
 
+    simple_stmt = Forward()
+    simple_compound_stmt = Forward()
+    stmt = Forward()
+    suite = Forward()
+    base_suite = Forward()
+    classlist = Forward()
+
     classic_lambdef = Forward()
     classic_lambdef_params = parenwrap(lparen, varargslist, rparen)
     new_lambdef_params = lparen.suppress() + varargslist + rparen.suppress()
@@ -2724,6 +2777,7 @@ class processor(object):
     new_lambdef = attach(new_lambdef_params + arrow.suppress(), lambdef_handle)
     implicit_lambdef = fixto(arrow, "lambda _=None:", copy=True)
     lambdef_base = classic_lambdef | new_lambdef | implicit_lambdef
+
     lambdef = trace(addspace(lambdef_base + test), "lambdef")
     lambdef_nocond = trace(addspace(lambdef_base + test_nocond), "lambdef_nocond")
     lambdef_nochain = trace(addspace(lambdef_base + test_nochain), "lambdef_nochain")
@@ -2731,13 +2785,6 @@ class processor(object):
     test <<= lambdef | addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test))
     test_nocond <<= lambdef_nocond | test_item
     test_nochain <<= lambdef_nochain | addspace(nochain_test_item + Optional(Keyword("if") + nochain_test_item + Keyword("else") + test_nochain))
-
-    simple_stmt = Forward()
-    simple_compound_stmt = Forward()
-    stmt = Forward()
-    suite = Forward()
-    base_suite = Forward()
-    classlist = Forward()
 
     classlist_ref = Optional(
         lparen.suppress() + rparen.suppress()
@@ -2858,10 +2905,10 @@ class processor(object):
     async_funcdef = Forward()
     async_block = Forward()
     name_funcdef = condense(name + parameters)
-    op_funcdef_arg = name | condense(lparen.suppress() + tfpdef + Optional(default) + rparen.suppress())
+    op_funcdef_arg = name | condense(lparen.suppress() + tfpdef + default + rparen.suppress())
     op_funcdef_name = backtick.suppress() + name + backtick.suppress()
     op_funcdef = attach(Group(Optional(op_funcdef_arg)) + op_funcdef_name + Group(Optional(op_funcdef_arg)), op_funcdef_handle)
-    return_typedef_ref = addspace(arrow - test)
+    return_typedef_ref = addspace(arrow + test)
     base_funcdef = addspace((op_funcdef | name_funcdef) + Optional(return_typedef))
     funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
     math_funcdef = attach(Keyword("def").suppress() + base_funcdef + equals.suppress() - test_expr, func_handle) - newline
@@ -2937,12 +2984,12 @@ class processor(object):
         )
     augassign_stmt = Forward()
     augassign_stmt_ref = simple_assign + augassign + test_expr
-    expr_stmt = trace(addspace(
-                      augassign_stmt
-                      | ZeroOrMore(assignlist + equals) + test_expr
-                      ), "expr_stmt")
+    expr_stmt = addspace(
+        augassign_stmt
+        | ZeroOrMore(assignlist + equals) + test_expr
+        )
 
-    small_stmt = trace(keyword_stmt | expr_stmt, "small_stmt")
+    small_stmt <<= trace(keyword_stmt | expr_stmt, "small_stmt")
     simple_stmt <<= trace(condense(itemlist(small_stmt, semicolon) + newline), "simple_stmt")
     stmt_ref = compound_stmt | simple_stmt | destructuring_stmt
     base_suite <<= condense(newline + indent - OneOrMore(stmt) - dedent)
