@@ -2319,8 +2319,7 @@ class processor(object):
         elif not self.extra_stmts:
             return tokens[0]
         else:
-            self.extra_stmts.append(tokens[0])
-            stmts = "\n".join(self.extra_stmts)
+            stmts = "\n".join(self.extra_stmts + [tokens[0]])
             self.extra_stmts = []
             return stmts
 
@@ -2330,7 +2329,7 @@ class processor(object):
             params, stmts = tokens
         elif len(tokens) == 3:
             params, stmts, last = tokens
-            if "tests" in last.keys():
+            if "tests" in tokens.keys():
                 stmts = ["\n".join(stmts), "return " + last]
             else:
                 stmts = ["\n".join(stmts), last]

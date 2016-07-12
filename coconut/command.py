@@ -36,6 +36,8 @@ debug_sig = ""
 default_prompt = ">>> "
 default_moreprompt = "    "
 
+watch_interval = .05 # seconds
+
 color_codes = { # unix/ansii color codes, underscores in names removed
     "bold": 1,
     "dim": 2,
@@ -611,7 +613,7 @@ class cli(object):
                 try:
                     install_func(user_install_args)
                 except subprocess.CalledProcessError:
-                    errmsg = 'unable to install Jupyter kernel specification file (failed command "'+" ".join(install_args)+'")'
+                    errmsg = 'unable to install Jupyter kernel (failed command "'+" ".join(install_args)+'")'
                     if args:
                         self.proc.warn(CoconutWarning(errmsg))
                     else:
@@ -646,6 +648,7 @@ class cli(object):
                 self.compile_path(path, write, package, run, force)
 
         class watcher(FileSystemEventHandler):
+            # uses enclosing self in methods
             def on_modified(_, event):
                 recompile(event.src_path)
             def on_created(_, event):
@@ -661,7 +664,7 @@ class cli(object):
         observer.start()
         try:
             while True:
-                time.sleep(.1)
+                time.sleep(watch_interval)
         except KeyboardInterrupt:
             pass
         finally:
