@@ -209,7 +209,6 @@ If the `--strict` or `-s` flag is enabled, Coconut will throw errors on various 
 - mixing of tabs and spaces (without `--strict` Coconut just shows a Warning),
 - use of the Python-style `lambda` statement,
 - use of `u` to denote Unicode strings,
-- use of [reserved variables](#reserved-variables) (without `--strict` Coconut just shows a Warning),
 - use of backslash continuations (implicit continuations are preferred), and
 - trailing whitespace at the end of lines.
 
@@ -739,7 +738,7 @@ print(data)
 
 ### Reserved Variables
 
-In Coconut, all variable names starting with `_coconut` are reserved. The Coconut compiler will modify and reference these variables with the assumption that the code being compiled does not modify them in any way. If your code does modify any such variables, your code is unlikely to work properly.
+It is illegal for a variable name to start with `_coconut`, as these variables are reserved for the compiler.
 
 ## Expressions
 

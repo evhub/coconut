@@ -1346,7 +1346,7 @@ class processor(object):
             self.ind_proc
         ]
         self.postprocs = [
-            self.check_proc,
+            self.multiline_lambda_proc,
             self.reind_proc,
             self.repl_proc,
             self.header_proc,
@@ -1358,7 +1358,6 @@ class processor(object):
             self.passthrough_repl,
             self.str_repl
         ]
-        self.reset()
 
     def setup(self, target=None, strict=False, minify=False, linenumbers=False):
         """Initializes parsing parameters."""
@@ -1388,17 +1387,15 @@ class processor(object):
         self.indchar = None
         self.refs = []
         self.skips = set()
-        self.extra_stmts = []
         self.docstring = ""
         self.ichain_count = 0
+        self.multiline_lambdas = []
         self.bind()
 
     def bind(self):
         """Binds reference objects to the proper parse actions."""
         self.endline <<= attach(self.endline_ref, self.endline_handle, copy=True)
-        self.stmt <<= self.trace(attach(self.stmt_ref, self.stmt_handle, copy=True), "stmt")
         self.moduledoc_item <<= self.trace(attach(self.moduledoc, self.set_docstring, copy=True), "moduledoc")
-        self.name <<= self.trace(attach(self.name_ref, self.name_handle, copy=True), "name")
         self.atom_item <<= self.trace(attach(self.atom_item_ref, self.item_handle, copy=True), "atom_item")
         self.simple_assign <<= self.trace(attach(self.simple_assign_ref, self.item_handle, copy=True), "simple_assign")
         self.set_literal <<= self.trace(attach(self.set_literal_ref, self.set_literal_handle, copy=True), "set_literal")
@@ -1549,9 +1546,9 @@ class processor(object):
         else:
             raise CoconutException("multiple tokens leftover", tokens)
 
-    def headers(self, header, usehash=None):
+    def headers(self, which, usehash=None):
         """Gets a polished header."""
-        return self.polish(getheader(header, self.target, usehash))
+        return self.polish(getheader(which, self.target, usehash))
 
     def target_info(self):
         """Returns information on the current target as a version tuple."""
@@ -1817,6 +1814,17 @@ class processor(object):
         new.append(closeindent*len(levels))
         return "\n".join(new)
 
+    def multiline_lambda_proc(self, inputstring, **kwargs):
+        """Adds multiline lambda definitions."""
+        out = []
+        for line in inputstring.splitlines():
+            for i in range(len(self.multiline_lambdas)):
+                name = self.multiline_lambda_name(i)
+                if name in line:
+                    out.append(self.multiline_lambdas[i])
+            out.append(line)
+        return "\n".join(out)
+
     def reind_proc(self, inputstring, **kwargs):
         """Adds back indentation."""
         out = []
@@ -1995,13 +2003,6 @@ class processor(object):
         if self.autopep8_args is not None:
             import autopep8
             return autopep8.fix_code(code, options=self.autopep8_args)
-        else:
-            return inputstring
-
-    def check_proc(self, inputstring, **kwargs):
-        """Check that everything is ready for post-processing."""
-        if self.extra_stmts:
-            raise self.make_err(CoconutSyntaxError, "illegal multiline expression in eval parsing", inputstring, 0)
         else:
             return inputstring
 
@@ -2214,19 +2215,6 @@ class processor(object):
             key, val, comp = tokens
             return "dict(((" + key + "), (" + val + ")) " + comp + ")"
 
-    def name_handle(self, original, location, tokens):
-        """Handles variable names."""
-        if len(tokens) != 1:
-            raise CoconutException("invalid name tokens", tokens)
-        elif tokens[0].startswith(reserved_prefix):
-            if self.strict:
-                raise self.make_err(CoconutStyleError, "found use of a reserved variable", original, location)
-            else:
-                self.warn(self.make_err(CoconutWarning, "found use of a reserved variable", original, location))
-            return tokens[0]
-        else:
-            return tokens[0]
-
     def pattern_error(self, original, loc):
         """Constructs a pattern-matching error message."""
         base_line = clean(self.reformat(line(loc, original)))
@@ -2312,16 +2300,11 @@ class processor(object):
         else:
             raise CoconutException("invalid set literal tokens", tokens)
 
-    def stmt_handle(self, tokens):
-        """Handles statements by adding in extra_stmts right before."""
-        if len(tokens) != 1:
-            raise CoconutException("invalid stmt tokens", tokens)
-        elif not self.extra_stmts:
-            return tokens[0]
-        else:
-            stmts = "\n".join(self.extra_stmts + [tokens[0]])
-            self.extra_stmts = []
-            return stmts
+    def multiline_lambda_name(self, index=None):
+        """Return the next (or specified) multiline lambda name."""
+        if index is None:
+            index = len(self.multiline_lambdas)
+        return multiline_lambda_var + "_" + str(index)
 
     def multiline_lambdef_handle(self, tokens):
         """Handles multi-line lambdef statements."""
@@ -2335,10 +2318,10 @@ class processor(object):
                 stmts = ["\n".join(stmts), last]
         else:
             raise CoconutException("invalid multiline lambda tokens", tokens)
-        name = multiline_lambda_var + "_" + str(len(self.extra_stmts))
-        self.extra_stmts.append(
-            "def " + name + params + ":\n" + openindent
-            + "\n".join(stmts) + closeindent
+        name = self.multiline_lambda_name()
+        self.multiline_lambdas.append(
+            "def " + name + params + ":\n"
+            + openindent + "\n".join(stmts) + closeindent
         )
         return name
 
@@ -2467,12 +2450,12 @@ class processor(object):
     matrix_at = Forward()
 
     name = Forward()
-    name_ref = Regex(r"(?![0-9])\w+")
+    name = ~Literal(reserved_prefix) + Regex(r"(?![0-9])\w+")
     for k in keywords + const_vars:
-        name_ref = ~Keyword(k) + name_ref
+        name = ~Keyword(k) + name
     for k in reserved_vars:
-        name_ref |= backslash.suppress() + Keyword(k)
-    name_ref = condense(name_ref)
+        name |= backslash.suppress() + Keyword(k)
+    name = trace(condense(name), "name")
     dotted_name = condense(name + ZeroOrMore(dot + name))
 
     integer = Combine(Word(nums) + ZeroOrMore(underscore.suppress() + Word(nums)))
@@ -2990,7 +2973,7 @@ class processor(object):
 
     small_stmt <<= trace(keyword_stmt | expr_stmt, "small_stmt")
     simple_stmt <<= trace(condense(itemlist(small_stmt, semicolon) + newline), "simple_stmt")
-    stmt_ref = compound_stmt | simple_stmt | destructuring_stmt
+    stmt <<= compound_stmt | simple_stmt | destructuring_stmt
     base_suite <<= condense(newline + indent - OneOrMore(stmt) - dedent)
     suite <<= trace(condense(colon + base_suite) | addspace(colon + simple_stmt), "suite")
     line = trace(newline | stmt, "line")

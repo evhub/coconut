@@ -503,12 +503,16 @@ class cli(object):
             self.exit()
         return None
 
+    def start_running(self):
+        """Starts running the executor."""
+        self.check_runner()
+        self.running = True
+
     def start_prompt(self):
         """Starts the interpreter."""
-        self.check_runner()
         self.console.print("Coconut Interpreter:")
         self.console.print('(type "exit()" or press Ctrl-D to end)')
-        self.running = True
+        self.start_running()
         while self.running:
             code = self.prompt_with(self.prompt)
             if code:
