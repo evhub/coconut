@@ -351,7 +351,7 @@ class tracer(object):
         """Changes the tracer's state."""
         self.on = on
 
-    def trace(self, tag, original, location, tokens):
+    def show_trace(self, tag, original, location, tokens):
         """Formats and displays a trace."""
         original = str(original)
         location = int(location)
@@ -363,12 +363,12 @@ class tracer(object):
         out += " (line "+str(lineno(location, original))+", col "+str(col(location, original))+")"
         self.show(out)
 
-    def bind(self, item, tag):
+    def trace(self, item, tag):
         """Traces a parse element."""
         def callback(original, location, tokens):
             """Callback function constructed by tracer."""
             if self.on:
-                self.trace(tag, original, location, tokens)
+                self.show_trace(tag, original, location, tokens)
             return tokens
         bound = attach(item, callback)
         bound.setName(tag)
@@ -1332,7 +1332,7 @@ def gen_imports(path, impas):
 class processor(object):
     """The Coconut processor."""
     tracing = tracer()
-    trace = tracing.bind
+    trace = tracing.trace
     debug = tracing.debug
     autopep8_args = None
 
@@ -2539,8 +2539,8 @@ class processor(object):
     test_nochain = Forward()
     test_nocond = Forward()
 
-    testlist = itemlist(test, comma)
-    multi_testlist = addspace(OneOrMore(condense(test + comma)) + Optional(test))
+    testlist = trace(itemlist(test, comma), "testlist")
+    multi_testlist = trace(addspace(OneOrMore(condense(test + comma)) + Optional(test)), "multi_testlist")
 
     yield_from = Forward()
     dict_comp = Forward()
@@ -2592,12 +2592,20 @@ class processor(object):
     tfpdef = typedef | name
     default = condense(equals + test)
 
-    argslist = Optional(itemlist(condense(dubstar + tfpdef | star + tfpdef | tfpdef + Optional(default)), comma))
-    varargslist = Optional(itemlist(condense(dubstar + name | star + name | name + Optional(default)), comma))
+    argslist = trace(Optional(itemlist(condense(
+        dubstar + tfpdef
+        | star + tfpdef
+        | tfpdef + Optional(default)
+        ), comma)), "argslist")
+    varargslist = trace(Optional(itemlist(condense(
+        dubstar + name
+        | star + name
+        | name + Optional(default)
+        ), comma)), "varargslist")
     parameters = condense(lparen + argslist + rparen)
 
     multiline_lambdef = Forward()
-    closing_stmt = testlist("tests") | small_stmt
+    closing_stmt = testlist("tests") ^ small_stmt
     multiline_lambdef_ref = (
         Optional(Keyword("def").suppress()) + parameters + arrow.suppress()
         + (
@@ -2620,16 +2628,16 @@ class processor(object):
 
     testlist_comp = addspace(test + comp_for) | testlist
     list_comp = condense(lbrack + Optional(testlist_comp) + rbrack)
-    func_atom = (
+    func_atom = trace(
         name
         | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
         | lparen.suppress() + (op_item | multiline_lambdef) + rparen.suppress()
-        )
+        , "func_atom")
     keyword_atom = Keyword(const_vars[0])
     for x in range(1, len(const_vars)):
         keyword_atom |= Keyword(const_vars[x])
     string_atom = addspace(OneOrMore(string))
-    passthrough_atom = addspace(OneOrMore(passthrough))
+    passthrough_atom = trace(addspace(OneOrMore(passthrough)), "passthrough_atom")
     attr_atom = attach(dot.suppress() + name + Optional(lparen.suppress() + methodcaller_args + rparen.suppress()), attr_handle)
     set_literal = Forward()
     set_letter_literal = Forward()
@@ -2646,7 +2654,7 @@ class processor(object):
         | number
         | string_atom
         )
-    known_atom = (
+    known_atom = trace(
         const_atom
         | ellipses
         | attr_atom
@@ -2656,12 +2664,12 @@ class processor(object):
         | set_literal
         | set_letter_literal
         | lazy_list
-        )
-    atom = trace(
+        , "known_atom")
+    atom = (
         known_atom
         | passthrough_atom
         | func_atom
-        , "atom")
+        )
 
     slicetest = Optional(test_nochain)
     sliceop = condense(unsafe_colon + slicetest)
