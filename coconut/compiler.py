@@ -1334,6 +1334,7 @@ class processor(object):
     tracing = tracer()
     trace = tracing.bind
     debug = tracing.debug
+    autopep8_args = None
 
     def __init__(self, target=None, strict=False, minify=False, linenumbers=False, debugger=printerr):
         """Creates a new processor with the given parsing parameters."""
@@ -1372,14 +1373,13 @@ class processor(object):
                 + '" (supported targets are "' + '", "'.join(specific_targets) + '", or leave blank for universal)')
         self.target, self.strict, self.minify, self.linenumbers = target, strict, minify, linenumbers
         self.tablen = 1 if self.minify else tabideal
-        self.autopep8_args = None
 
-    def autopep8(self, arglist=[]):
+    def autopep8(self, args=()):
         """Enables autopep8 integration."""
-        if arglist is None:
+        if args is None:
             self.autopep8_args = None
         else:
-            self.autopep8_args = autopep8.parse_args(["autopep8"] + arglist)
+            self.autopep8_args = args
 
     def reset(self):
         """Resets references."""
@@ -2002,7 +2002,7 @@ class processor(object):
         """Applies autopep8."""
         if self.autopep8_args is not None:
             import autopep8
-            return autopep8.fix_code(code, options=self.autopep8_args)
+            return autopep8.fix_code(code, options=autopep8.parse_args(("autopep8",) + self.autopep8_args))
         else:
             return inputstring
 
