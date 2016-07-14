@@ -2607,7 +2607,7 @@ class processor(object):
     multiline_lambdef = Forward()
     closing_stmt = testlist("tests") ^ small_stmt
     multiline_lambdef_ref = (
-        Optional(Keyword("def").suppress()) + parameters + arrow.suppress()
+        Keyword("def").suppress() + parameters + arrow.suppress()
         + (
             Group(OneOrMore(small_stmt + semicolon)) + Optional(closing_stmt)
             | Group(ZeroOrMore(small_stmt + semicolon)) + closing_stmt
