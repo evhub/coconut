@@ -677,13 +677,9 @@ def recursive_iterator(func):
         tee_store[hashable_args_kwargs], to_return = _coconut_tee(to_tee)
         return to_return
     return recursive_iterator_func
-def addpattern(base_func=None):
+def addpattern(base_func):
     """Decorator to add a new case to a pattern-matching function, where the new case is checked last."""
-    params = {"base_func":base_func}    #WE HAVE TO USE A DICTIONARY BECAUSE RESONS (https://stackoverflow.com/questions/3190706/nonlocal-keyword-in-python-2-x) (https://stackoverflow.com/questions/18864041/why-can-functions-in-python-print-variables-in-enclosing-scope-but-cannot-use-th)
     def pattern_adder(func):
-        base_func = params["base_func"]
-        if not base_func:
-            base_func = globals()[func.__name__]
         @_coconut.functools.wraps(func)
         def add_pattern_func(*args, **kwargs):
             try:
