@@ -1613,15 +1613,39 @@ It is sometimes useful to be able to use the Coconut compiler from code, instead
 
 **coconut.convenience.parse**(_code,_ **[**_mode_**]**)
 
-Likely the most useful of the convenience functions, `parse` takes Coconut code as input and outputs the equivalent compiled Python code. The second argument, _mode_, is used to indicate the context for the parsing. Possible values of _mode_ are:
+Likely the most useful of the convenience functions, `parse` takes Coconut code as input and outputs the equivalent compiled Python code. The second argument, _mode_, is used to indicate the context for the parsing.
 
-- `"exec"`: code for use in `exec` (the default)
-- `"file"`: a stand-alone file
-- `"single"`: a single line of code
-- `"module"`: a file in a folder or module
-- `"block"`: any number of lines of code
-- `"eval"`: a single expression
-- `"debug"`: same as block but will not include the header
+Each _mode_ has two components: what parser it uses, and what header it prepends. The parser determines what Coconut code is allowed as input, and the header determines how the compiled Python can be used. Possible values of _mode_ are:
+
+- `"exec"`: (the default)
+    + parser: file
+        The file parser can parse any Coconut code.
+    + header: exec
+        When passed to `exec` at the global level, this header will create all the necessary Coconut objects.
+- `"file"`:
+    + parser: file
+    + header: file
+        This header is meant to be written to a `--standalone` file and should not be passed to `exec`.
+- `"module"`:
+    + parser: file
+    + header: module
+        This header is meant to be written to a `--package` file and should not be passed to `exec`.
+- `"block"`:
+    + parser: file
+    + header: none
+        No header is included, thus this can only be passed to `exec` if the exec header has already been executed at the global level.
+- `"single"`:
+    + parser: single
+        Can only parse one line of Coconut code.
+    + header: none
+- `"eval"`:
+    + parser: eval
+        Can only parse a Coconut expression, not a statement.
+    + header: none
+- `"debug"`:
+    + parser: debug
+        Can parse any Coconut code and allows leading whitespace.
+    + header: none
 
 #### `setup`
 
