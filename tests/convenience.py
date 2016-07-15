@@ -1,19 +1,24 @@
 import unittest
 from coconut import convenience
 
+exec(convenience.parse(""))
+
 class Test_convenience(unittest.TestCase):
     
     def test_version(self):
         version = convenience.version()
         self.assertIsInstance(version,str)
 
-    def test_exec(self):
-        expr = 'a = 1 + 1'
+    def test_eval(self):
+        expr = '1'
 
-        code = convenience.parse(expr)
-        exec(code)
+        result_globals = {}
+        result_locals = {}
 
-        self.assert_(a == 2)
+        code = convenience.parse(expr,"block")
+        res = eval(code)
+
+        self.assert_(res == 1)
 
         
 
