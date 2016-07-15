@@ -1015,14 +1015,15 @@ class matcher(object):
             self.checks.append(k+" in "+item)
             self.match(v, item+"["+k+"]")
 
-    def match_sequence(self, original, item):
+    def match_sequence(self, original, item, typecheck=True):
         """Matches a sequence."""
         tail = None
         if len(original) == 2:
             series_type, match = original
         else:
             series_type, match, tail = original
-        self.checks.append("_coconut.isinstance("+item+", _coconut.abc.Sequence)")
+        if typecheck:
+            self.checks.append("_coconut.isinstance("+item+", _coconut.abc.Sequence)")
         if tail is None:
             self.checks.append("_coconut.len("+item+") == "+str(len(match)))
         else:
@@ -2247,7 +2248,7 @@ class processor(object):
         else:
             raise CoconutException("invalid match function definition tokens", tokens)
         matching = matcher()
-        matching.match_sequence(("(", matches), match_to_var)
+        matching.match_sequence(("(", matches), match_to_var, typecheck=False)
         if cond is not None:
             matching.add_guard(cond)
         out = "def " + func + " (*" + match_to_var + "):\n" + openindent
