@@ -463,7 +463,7 @@ class _coconut:'''
                 header += r'''
 class _coconut(object):'''
             header += r'''
-    import collections, functools, imp, itertools, operator, types
+    import collections, functools, imp, itertools, operator, types, copy
 '''
             if target.startswith("2"):
                 header += r'''    abc = collections'''
@@ -484,94 +484,6 @@ class _coconut(object):'''
 class _coconut_MatchError(Exception):
     """Pattern-matching error."""
     __slots__ = ("pattern", "value")
-class _coconut_zip(_coconut.zip):
-    __slots__ = ("_iters",)
-    __doc__ = _coconut.zip.__doc__
-    __coconut_is_lazy__ = True # tells $[] to use .__getitem__
-    def __new__(cls, *iterables):
-        new_zip = _coconut.zip.__new__(cls, *iterables)
-        new_zip._iters = iterables
-        return new_zip
-    def __getitem__(self, index):
-        if _coconut.isinstance(index, _coconut.slice):
-            return self.__class__(*(_coconut_igetitem(i, index) for i in self._iters))
-        else:
-            return (_coconut_igetitem(i, index) for i in self._iters)
-    def __reversed__(self):
-        return self.__class__(*(_coconut.reversed(i) for i in self._iters))
-    def __len__(self):
-        return _coconut.min(_coconut.len(i) for i in self._iters)
-    def __repr__(self):
-        return "zip(" + ", ".join((_coconut.repr(i) for i in self._iters)) + ")"
-    def __reduce_ex__(self, _):
-        return (self.__class__, self._iters)
-class _coconut_map(_coconut.map):
-    __slots__ = ("_func", "_iters")
-    __doc__ = _coconut.map.__doc__
-    __coconut_is_lazy__ = True # tells $[] to use .__getitem__
-    def __new__(cls, function, *iterables):
-        new_map = _coconut.map.__new__(cls, function, *iterables)
-        new_map._func, new_map._iters = function, iterables
-        return new_map
-    def __getitem__(self, index):
-        if _coconut.isinstance(index, _coconut.slice):
-            return self.__class__(self._func, *(_coconut_igetitem(i, index) for i in self._iters))
-        else:
-            return self._func(*(_coconut_igetitem(i, index) for i in self._iters))
-    def __reversed__(self):
-        return self.__class__(self._func, *(_coconut.reversed(i) for i in self._iters))
-    def __len__(self):
-        return _coconut.min(_coconut.len(i) for i in self._iters)
-    def __repr__(self):
-        return "map(" + _coconut.repr(self._func) + ", " + ", ".join((_coconut.repr(i) for i in self._iters)) + ")"
-    def __reduce_ex__(self, _):
-        return (self.__class__, (self._func,) + self._iters)
-class _coconut_parallel_map(_coconut_map):
-    """Multiprocessing implementation of map using concurrent.futures; requires arguments to be pickleable."""
-    __slots__ = ()
-    def __iter__(self):
-        from concurrent.futures import ProcessPoolExecutor
-        with ProcessPoolExecutor() as executor:
-            for x in executor.map(self._func, *self._iters):
-                yield x
-    def __repr__(self):
-        return "parallel_" + _coconut_map.__repr__(self)'''
-            if target.startswith("3"):
-                header += r'''
-class _coconut_count:'''
-            else:
-                header += r'''
-class _coconut_count(object):'''
-            header += r'''
-    """count(start, step) returns an infinite iterator starting at start and increasing by step."""
-    __slots__ = ("_start", "_step")
-    __coconut_is_lazy__ = True # tells $[] to use .__getitem__
-    def __init__(self, start=0, step=1):
-        self._start, self._step = start, step
-    def __iter__(self):
-        while True:
-            yield self._start
-            self._start += self._step
-    def __contains__(self, elem):
-        return elem >= self._start and (elem - self._start) % self._step == 0
-    def __getitem__(self, index):
-        if _coconut.isinstance(index, _coconut.slice) and (index.start is None or index.start >= 0) and (index.stop is not None and index.stop >= 0):
-            return _coconut_map(lambda x: self._start + x * self._step, _coconut.range(index.start if index.start is not None else 0, index.stop, index.step if index.step is not None else 1))
-        elif index >= 0:
-            return self._start + index * self._step
-        else:
-            raise _coconut.IndexError("count indices must be positive")
-    def count(self, elem):
-        """Count the number of times elem appears in the count."""
-        return int(elem in self)
-    def index(self, elem):
-        """Find the index of elem in the count."""
-        if elem not in self: raise _coconut.ValueError(_coconut.repr(elem) + " is not in count")
-        return (elem - self._start) // self._step
-    def __repr__(self):
-        return "count(" + str(self._start) + ", " + str(self._step) + ")"
-    def __reduce__(self):
-        return (self.__class__, (self._start, self._step))
 def _coconut_igetitem(iterable, index):
     if isinstance(iterable, _coconut.range) or (_coconut.hasattr(iterable, "__coconut_is_lazy__") and iterable.__coconut_is_lazy__):
         return iterable[index]
@@ -612,6 +524,123 @@ def _coconut_backstarpipe(f, xs): return f(*xs)
 def _coconut_bool_and(a, b): return a and b
 def _coconut_bool_or(a, b): return a or b
 def _coconut_minus(*args): return _coconut.operator.__neg__(*args) if len(args) < 2 else _coconut.operator.__sub__(*args)
+@_coconut.functools.wraps(_coconut.itertools.tee)
+def _coconut_tee(iterable, n=2):
+    if _coconut.isinstance(iterable, _coconut.range) or hasattr(iterable, "__copy__"):
+        return (iterable,) + _coconut.tuple(_coconut.copy.copy(iterable) for i in range(n - 1))
+    else:
+        return _coconut.itertools.tee(iterable, n)
+class _coconut_map(_coconut.map):
+    __slots__ = ("_func", "_iters")
+    __doc__ = _coconut.map.__doc__
+    __coconut_is_lazy__ = True # tells $[] to use .__getitem__
+    def __new__(cls, function, *iterables):
+        new_map = _coconut.map.__new__(cls, function, *iterables)
+        new_map._func, new_map._iters = function, iterables
+        return new_map
+    def __getitem__(self, index):
+        if _coconut.isinstance(index, _coconut.slice):
+            return self.__class__(self._func, *(_coconut_igetitem(i, index) for i in self._iters))
+        else:
+            return self._func(*(_coconut_igetitem(i, index) for i in self._iters))
+    def __reversed__(self):
+        return self.__class__(self._func, *(_coconut.reversed(i) for i in self._iters))
+    def __len__(self):
+        return _coconut.min(_coconut.len(i) for i in self._iters)
+    def __repr__(self):
+        return "map(" + _coconut.repr(self._func) + ", " + ", ".join((_coconut.repr(i) for i in self._iters)) + ")"
+    def __reduce_ex__(self, _):
+        return (self.__class__, (self._func,) + self._iters)
+    def __copy__(self):
+        return self.__class__(self._func, *_coconut_map(_coconut.copy.copy, self._iters))
+class zip(_coconut.zip):
+    __slots__ = ("_iters",)
+    __doc__ = _coconut.zip.__doc__
+    __coconut_is_lazy__ = True # tells $[] to use .__getitem__
+    def __new__(cls, *iterables):
+        new_zip = _coconut.zip.__new__(cls, *iterables)
+        new_zip._iters = iterables
+        return new_zip
+    def __getitem__(self, index):
+        if _coconut.isinstance(index, _coconut.slice):
+            return self.__class__(*(_coconut_igetitem(i, index) for i in self._iters))
+        else:
+            return (_coconut_igetitem(i, index) for i in self._iters)
+    def __reversed__(self):
+        return self.__class__(*(_coconut.reversed(i) for i in self._iters))
+    def __len__(self):
+        return _coconut.min(_coconut.len(i) for i in self._iters)
+    def __repr__(self):
+        return "zip(" + ", ".join((_coconut.repr(i) for i in self._iters)) + ")"
+    def __reduce_ex__(self, _):
+        return (self.__class__, self._iters)
+    def __copy__(self):
+        return self.__class__(*_coconut_map(_coconut.copy.copy, self._iters))'''
+            if target.startswith("3"):
+                header += r'''
+class count:'''
+            else:
+                header += r'''
+class count(object):'''
+            header += r'''
+    """count(start, step) returns an infinite iterator starting at start and increasing by step."""
+    __slots__ = ("_start", "_step")
+    __coconut_is_lazy__ = True # tells $[] to use .__getitem__
+    def __init__(self, start=0, step=1):
+        self._start, self._step = start, step
+    def __iter__(self):
+        while True:
+            yield self._start
+            self._start += self._step
+    def __contains__(self, elem):
+        return elem >= self._start and (elem - self._start) % self._step == 0
+    def __getitem__(self, index):
+        if _coconut.isinstance(index, _coconut.slice) and (index.start is None or index.start >= 0) and (index.stop is not None and index.stop >= 0):
+            return _coconut_map(lambda x: self._start + x * self._step, _coconut.range(index.start if index.start is not None else 0, index.stop, index.step if index.step is not None else 1))
+        elif index >= 0:
+            return self._start + index * self._step
+        else:
+            raise _coconut.IndexError("count indices must be positive")
+    def count(self, elem):
+        """Count the number of times elem appears in the count."""
+        return int(elem in self)
+    def index(self, elem):
+        """Find the index of elem in the count."""
+        if elem not in self: raise _coconut.ValueError(_coconut.repr(elem) + " is not in count")
+        return (elem - self._start) // self._step
+    def __repr__(self):
+        return "count(" + str(self._start) + ", " + str(self._step) + ")"
+    def __reduce__(self):
+        return (self.__class__, (self._start, self._step))
+    def __copy__(self):
+        return self.__class__(self._start, self._step)
+class parallel_map(_coconut_map):
+    """Multiprocessing implementation of map using concurrent.futures; requires arguments to be pickleable."""
+    __slots__ = ()
+    def __iter__(self):
+        from concurrent.futures import ProcessPoolExecutor
+        with ProcessPoolExecutor() as executor:
+            for x in executor.map(self._func, *self._iters):
+                yield x
+    def __repr__(self):
+        return "parallel_" + _coconut_map.__repr__(self)
+class concurrent_map(_coconut_map):
+    """Multithreading implementation of map using concurrent.futures."""
+    __slots__ = ()
+    def __iter__(self):
+        from concurrent.futures import ThreadPoolExecutor'''
+            if target_info(target) >= (3, 5):
+                header += r'''
+        with ThreadPoolExecutor() as executor:'''
+            else:
+                header += r'''
+        from multiprocessing import cpu_count
+        with ThreadPoolExecutor(cpu_count() * 5) as executor:'''
+            header += r'''
+            for x in executor.map(self._func, *self._iters):
+                yield x
+    def __repr__(self):
+        return "concurrent_" + _coconut_map.__repr__(self)
 def recursive(func):
     """Decorates a function by optimizing it for tail recursion."""
     state = [True, None] # state = [is_top_level, (args, kwargs)]
@@ -635,9 +664,26 @@ def recursive(func):
             state[1] = args, kwargs
             return recurse
     return recursive_func
-def addpattern(base_func):
+def recursive_iterator(func):
+    """Decorates a function by optimizing it for iterator recursion."""
+    tee_store = {}
+    @_coconut.functools.wraps(func)
+    def recursive_iterator_func(*args, **kwargs):
+        hashable_args_kwargs = args, _coconut.frozenset(kwargs.items())
+        if hashable_args_kwargs in tee_store:
+            to_tee = tee_store[hashable_args_kwargs]
+        else:
+            to_tee = func(*args, **kwargs)
+        tee_store[hashable_args_kwargs], to_return = _coconut_tee(to_tee)
+        return to_return
+    return recursive_iterator_func
+def addpattern(base_func=None):
     """Decorator to add a new case to a pattern-matching function, where the new case is checked last."""
+    params = {"base_func":base_func}    #WE HAVE TO USE A DICTIONARY BECAUSE RESONS (https://stackoverflow.com/questions/3190706/nonlocal-keyword-in-python-2-x) (https://stackoverflow.com/questions/18864041/why-can-functions-in-python-print-variables-in-enclosing-scope-but-cannot-use-th)
     def pattern_adder(func):
+        base_func = params["base_func"]
+        if not base_func:
+            base_func = globals()[func.__name__]
         @_coconut.functools.wraps(func)
         def add_pattern_func(*args, **kwargs):
             try:
@@ -646,9 +692,13 @@ def addpattern(base_func):
                 return func(*args, **kwargs)
         return add_pattern_func
     return pattern_adder
-def prepattern(base_func):
+def prepattern(base_func=None):
     """Decorator to add a new case to a pattern-matching function, where the new case is checked first."""
+    params = {"base_func":base_func}    #More random dictionary stuff
     def pattern_prepender(func):
+        base_func = params["base_func"]
+        if not base_func:
+            base_func = globals()[func.__name__]
         @_coconut.functools.wraps(func)
         def pre_pattern_func(*args, **kwargs):
             try:
@@ -663,7 +713,7 @@ def datamaker(data_type):
 def consume(iterable, keep_last=0):
     """Fully exhaust iterable and return the last keep_last elements."""
     return _coconut.collections.deque(iterable, maxlen=keep_last) # fastest way to exhaust an iterator
-MatchError, map, parallel_map, zip, count, reduce, takewhile, dropwhile, tee = _coconut_MatchError, _coconut_map, _coconut_parallel_map, _coconut_zip, _coconut_count, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile, _coconut.itertools.tee
+MatchError, map, reduce, takewhile, dropwhile, tee = _coconut_MatchError, _coconut_map, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile, _coconut_tee
 '''
         else:
             raise CoconutException("invalid header type", which)
@@ -2627,9 +2677,11 @@ class processor(object):
     new_lambdef_params = lparen.suppress() + varargslist + rparen.suppress()
     classic_lambdef_ref = addspace(Keyword("lambda") + condense(classic_lambdef_params + colon))
     new_lambdef = attach(new_lambdef_params + arrow.suppress(), lambdef_handle)
-    lambdef = trace(addspace((classic_lambdef | new_lambdef) + test), "lambdef")
-    lambdef_nocond = trace(addspace((classic_lambdef | new_lambdef) + test_nocond), "lambdef_nocond")
-    lambdef_nochain = trace(addspace((classic_lambdef | new_lambdef) + test_nochain), "lambdef_nochain")
+    implicit_lambdef = fixto(arrow, "lambda _=None:", copy=True)
+    lambdef_base = classic_lambdef | new_lambdef | implicit_lambdef
+    lambdef = trace(addspace(lambdef_base + test), "lambdef")
+    lambdef_nocond = trace(addspace(lambdef_base + test_nocond), "lambdef_nocond")
+    lambdef_nochain = trace(addspace(lambdef_base + test_nochain), "lambdef_nochain")
 
     test <<= lambdef | addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test))
     test_nocond <<= lambdef_nocond | test_item
@@ -2764,7 +2816,7 @@ class processor(object):
     op_funcdef_arg = name | condense(lparen.suppress() + tfpdef + Optional(default) + rparen.suppress())
     op_funcdef_name = backtick.suppress() + name + backtick.suppress()
     op_funcdef = attach(Group(Optional(op_funcdef_arg)) + op_funcdef_name + Group(Optional(op_funcdef_arg)), op_funcdef_handle)
-    return_typedef_ref = addspace(arrow + test)
+    return_typedef_ref = addspace(arrow - test)
     base_funcdef = addspace((op_funcdef | name_funcdef) + Optional(return_typedef))
     funcdef = addspace(Keyword("def") + condense(base_funcdef + suite))
     math_funcdef = attach(Keyword("def").suppress() + base_funcdef + equals.suppress() - test_expr, func_handle) - newline
