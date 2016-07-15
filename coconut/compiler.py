@@ -2609,8 +2609,8 @@ class processor(object):
     multiline_lambdef_ref = (
         Keyword("def").suppress() + Optional(parameters, default="(_=None)") + arrow.suppress()
         + (
-            Group(OneOrMore(small_stmt + semicolon)) + Optional(closing_stmt)
-            | Group(ZeroOrMore(small_stmt + semicolon)) + closing_stmt
+            Group(OneOrMore(small_stmt + semicolon.suppress())) + Optional(closing_stmt)
+            | Group(ZeroOrMore(small_stmt + semicolon.suppress())) + closing_stmt
             )
         )
 
