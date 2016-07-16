@@ -21,6 +21,7 @@ after which the entire world of Coconut will be at your disposal. To help you ge
 - FAQ_: If you have questions about who Coconut is built for and whether or not you should use it, Coconut's frequently asked questions have you covered.
 - `Create a New Issue <https://github.com/evhub/coconut/issues/new>`_: If you're having a problem with Coconut, creating a new issue detailing the problem will allow it to be addressed as soon as possible.
 - Gitter_: For any questions, concerns, or comments about anything Coconut-related, ask around at Coconut's Gitter, a GitHub-integrated chat room for Coconut developers.
+- Tests_: For those looking to contribute the test suite can be found here.
 
 *Note: If the above documentation links are not working, try the* |mirror|_ *.*
 
@@ -33,5 +34,6 @@ __ Coconut_
 .. _FAQ: http://coconut.readthedocs.org/en/master/FAQ.html
 .. _GitHub: https://github.com/evhub/coconut
 .. _Gitter: https://gitter.im/evhub/coconut
+.. _Tests: https://github.com/evhub/cocotest
 .. _mirror: http://pythonhosted.org/coconut/
 .. |mirror| replace:: *mirror*
