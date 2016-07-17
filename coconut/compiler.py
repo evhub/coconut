@@ -2003,7 +2003,7 @@ class processor(object):
         """Applies autopep8."""
         if self.autopep8_args is not None:
             import autopep8
-            return autopep8.fix_code(code, options=autopep8.parse_args(("autopep8",) + self.autopep8_args))
+            return autopep8.fix_code(inputstring, options=autopep8.parse_args(("autopep8",) + self.autopep8_args))
         else:
             return inputstring
 
