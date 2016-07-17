@@ -1380,7 +1380,7 @@ class processor(object):
         if args is None:
             self.autopep8_args = None
         else:
-            self.autopep8_args = args
+            self.autopep8_args = tuple(args)
 
     def reset(self):
         """Resets references."""
