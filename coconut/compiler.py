@@ -2000,9 +2000,9 @@ class processor(object):
             main_header = minify(main_header)
         return pre_header + self.docstring + main_header + inputstring
 
-    def polish(self, inputstring, **kwargs):
+    def polish(self, inputstring, final_endline=True, **kwargs):
         """Does final polishing touches."""
-        return "\n".join(inputstring.rstrip().splitlines()) + "\n"
+        return "\n".join(inputstring.rstrip().splitlines()) + ("\n" if final_endline else "")
 
     def autopep8_proc(self, inputstring, **kwargs):
         """Applies autopep8."""
@@ -2327,7 +2327,7 @@ class processor(object):
         inner_funcdef = self.post([
             "def " + inner_multiline_lambda_var + params + ":\n"
             + openindent + "\n".join(stmts) + closeindent
-        ], header="none", initial="none")
+        ], header="none", initial="none", final_endline=False)
         outer_name = self.multiline_lambda_name()
         self.multiline_lambdas.append(
             "def " + outer_name + "(closure):\n"
