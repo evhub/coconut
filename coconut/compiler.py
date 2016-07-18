@@ -83,7 +83,8 @@ import_as_var = "_coconut_import"
 yield_from_var = "_coconut_yield_from"
 yield_item_var = "_coconut_yield_item"
 raise_from_var = "_coconut_raise_from"
-multiline_lambda_var = "_coconut_lambda"
+outer_multiline_lambda_var = "_coconut_lambda"
+inner_multiline_lambda_var = "_coconut_lambda_func"
 wildcard = "_" # for pattern-matching
 keywords = (
     "and",
@@ -480,11 +481,11 @@ class _coconut(object):'''
         import collections.abc as abc'''
             if target.startswith("3"):
                 header += r'''
-    IndexError, NameError, ValueError, map, zip, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, reversed, set, slice, super, tuple, repr = IndexError, NameError, ValueError, map, zip, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, reversed, set, slice, super, tuple, repr
+    IndexError, NameError, ValueError, map, zip, bytearray, dict, frozenset, getattr, globals, hasattr, isinstance, iter, len, list, locals, min, next, object, range, reversed, set, slice, super, tuple, repr = IndexError, NameError, ValueError, map, zip, bytearray, dict, frozenset, getattr, globals, hasattr, isinstance, iter, len, list, locals, min, next, object, range, reversed, set, slice, super, tuple, repr
 '''
             else:
                 header += r'''
-    IndexError, NameError, ValueError, map, zip, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, reversed, set, slice, super, tuple, repr = IndexError, NameError, ValueError, map, zip, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, reversed, set, slice, super, tuple, staticmethod(repr)
+    IndexError, NameError, ValueError, map, zip, bytearray, dict, frozenset, getattr, globals, hasattr, isinstance, iter, len, list, locals, min, next, object, range, reversed, set, slice, super, tuple, repr = IndexError, NameError, ValueError, map, zip, bytearray, dict, frozenset, getattr, globals, hasattr, isinstance, iter, len, list, locals, min, next, object, range, reversed, set, slice, super, tuple, staticmethod(repr)
 '''
             header += r'''
 class _coconut_MatchError(Exception):
@@ -1448,8 +1449,10 @@ class processor(object):
                 i += 1
         return adj_ln
 
-    def reformat(self, snip, index=None):
+    def reformat(self, snip, index=None, multiline_lambdas=False):
         """Post processes a preprocessed snippet."""
+        if multiline_lambdas:
+            snip = self.multiline_lambda_proc(snip)
         if index is None:
             return self.repl_proc(snip, careful=False, linenumbers=False)
         else:
@@ -1487,7 +1490,7 @@ class processor(object):
 
     def wrap_str_of(self, text):
         """Wraps a string of a string."""
-        text_repr = ascii(text).lstrip("u")
+        text_repr = ascii(text)
         return self.wrap_str(text_repr[1:-1], text_repr[-1])
 
     def wrap_passthrough(self, text, multiline=True):
@@ -2305,7 +2308,7 @@ class processor(object):
         """Return the next (or specified) multiline lambda name."""
         if index is None:
             index = len(self.multiline_lambdas)
-        return multiline_lambda_var + "_" + str(index)
+        return outer_multiline_lambda_var + "_" + str(index)
 
     def multiline_lambdef_handle(self, tokens):
         """Handles multi-line lambdef statements."""
@@ -2314,17 +2317,22 @@ class processor(object):
         elif len(tokens) == 3:
             params, stmts, last = tokens
             if "tests" in tokens.keys():
-                stmts = ["\n".join(stmts), "return " + last]
+                stmts = stmts.asList() + ["return " + last]
             else:
-                stmts = ["\n".join(stmts), last]
+                stmts = stmts.asList() + [last]
         else:
             raise CoconutException("invalid multiline lambda tokens", tokens)
-        name = self.multiline_lambda_name()
-        self.multiline_lambdas.append(
-            "def " + name + params + ":\n"
-            + openindent + "\n".join(stmts) + closeindent
+        inner_funcdef = (
+            "def " + inner_multiline_lambda_var + self.reformat(params, multiline_lambdas=True) + ":\n "
+            + "\n ".join(self.reformat(stmt, multiline_lambdas=True) for stmt in stmts)
         )
-        return name
+        outer_name = self.multiline_lambda_name()
+        self.multiline_lambdas.append(
+            "def " + outer_name + "(closure):\n"
+            + openindent + "exec(" + self.wrap_str_of(inner_funcdef) + ", _coconut.globals(), closure)\n"
+            + "return " + inner_multiline_lambda_var + closeindent
+        )
+        return outer_name + "(_coconut.locals())"
 
 # end: PARSER HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
