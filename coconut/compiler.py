@@ -1449,10 +1449,8 @@ class processor(object):
                 i += 1
         return adj_ln
 
-    def reformat(self, snip, index=None, multiline_lambdas=False):
+    def reformat(self, snip, index=None):
         """Post processes a preprocessed snippet."""
-        if multiline_lambdas:
-            snip = self.multiline_lambda_proc(snip)
         if index is None:
             return self.repl_proc(snip, careful=False, linenumbers=False)
         else:
@@ -1825,7 +1823,11 @@ class processor(object):
             for i in range(len(self.multiline_lambdas)):
                 name = self.multiline_lambda_name(i)
                 if name in line:
-                    out.append(self.multiline_lambdas[i])
+                    indents = ""
+                    while line.startswith(openindent) or line.startswith(closeindent):
+                        indents += line[0]
+                        line = line[1:]
+                    out.append(indents + self.multiline_lambdas[i])
             out.append(line)
         return "\n".join(out)
 
@@ -2322,10 +2324,10 @@ class processor(object):
                 stmts = stmts.asList() + [last]
         else:
             raise CoconutException("invalid multiline lambda tokens", tokens)
-        inner_funcdef = (
-            "def " + inner_multiline_lambda_var + self.reformat(params, multiline_lambdas=True) + ":\n "
-            + "\n ".join(self.reformat(stmt, multiline_lambdas=True) for stmt in stmts)
-        )
+        inner_funcdef = self.post([
+            "def " + inner_multiline_lambda_var + params + ":\n"
+            + openindent + "\n".join(stmts) + closeindent
+        ], header="none", initial="none")
         outer_name = self.multiline_lambda_name()
         self.multiline_lambdas.append(
             "def " + outer_name + "(closure):\n"
