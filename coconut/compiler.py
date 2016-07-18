@@ -2332,7 +2332,7 @@ class processor(object):
         self.multiline_lambdas.append(
             "def " + outer_name + "(closure):\n"
             + openindent + "exec(" + self.wrap_str_of(inner_funcdef) + ", _coconut.globals(), closure)\n"
-            + "return " + inner_multiline_lambda_var + closeindent
+            + 'return closure["' + inner_multiline_lambda_var + '"]' + closeindent
         )
         return outer_name + "(_coconut.locals())"
 
