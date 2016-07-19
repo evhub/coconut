@@ -1411,7 +1411,9 @@ class processor(object):
         self.name_match_funcdef <<= self.trace(attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle, copy=True), "name_match_funcdef")
         self.op_match_funcdef <<= self.trace(attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle, copy=True), "op_match_funcdef")
         self.yield_from <<= self.trace(attach(self.yield_from_ref, self.yield_from_handle, copy=True), "yield_from")
+        self.exec_stmt <<= self.trace(attach(self.exec_stmt_ref, self.exec_stmt_handle, copy=True), "exec_stmt")
         self.multiline_lambdef <<= self.trace(attach(self.multiline_lambdef_ref, self.multiline_lambdef_handle, copy=True), "multiline_lambdef")
+        self.name <<= self.trace(attach(self.name_ref, self.name_check, copy=True), "name")
         self.u_string <<= attach(self.u_string_ref, self.u_string_check, copy=True)
         self.f_string <<= attach(self.f_string_ref, self.f_string_check, copy=True)
         self.typedef <<= attach(self.typedef_ref, self.typedef_check, copy=True)
@@ -2306,6 +2308,18 @@ class processor(object):
         else:
             raise CoconutException("invalid set literal tokens", tokens)
 
+    def exec_stmt_handle(self, tokens):
+        """Handles Python-3-style exec statements."""
+        if len(tokens) < 1 or len(tokens) > 3:
+            raise CoconutException("invalid exec statement tokens", tokens)
+        elif self.target.startswith("2"):
+            out = "exec " + tokens[0]
+            if len(tokens) > 1:
+                out += " in " + ", ".join(tokens[1:])
+            return out
+        else:
+            return "exec(" + ", ".join(tokens) + ")"
+
     def multiline_lambda_name(self, index=None):
         """Return the next (or specified) multiline lambda name."""
         if index is None:
@@ -2333,7 +2347,7 @@ class processor(object):
             "def " + outer_name + "(closure):\n"
             + openindent + "vars = _coconut.globals().copy()\n"
             + "vars.update(closure)\n"
-            + "exec(" + self.wrap_str_of(inner_funcdef) + ", vars)\n"
+            + self.exec_stmt_handle([self.wrap_str_of(inner_funcdef), "vars"]) + "\n"
             + 'return vars["' + inner_multiline_lambda_var + '"]' + closeindent
         )
         return outer_name + "(_coconut.locals())"
@@ -2366,6 +2380,15 @@ class processor(object):
             raise CoconutException("invalid "+name+" tokens", tokens)
         elif self.target_info() < target_info(version):
             raise self.make_err(CoconutTargetError, ("found Python "+version+" " + name, version), original, location)
+        else:
+            return tokens[0]
+
+    def name_check(self, original, location, tokens):
+        """Checks for Python 3 exec function."""
+        if len(tokens) != 1:
+            raise CoconutException("invalid name tokens", tokens)
+        elif tokens[0] == "exec":
+            return self.check_py("3", "exec function", original, location, tokens)
         else:
             return tokens[0]
 
@@ -2463,12 +2486,11 @@ class processor(object):
     matrix_at = Forward()
 
     name = Forward()
-    name = ~Literal(reserved_prefix) + Regex(r"(?![0-9])\w+")
+    name_ref = ~Literal(reserved_prefix) + Regex(r"(?![0-9])\w+")
     for k in keywords + const_vars:
-        name = ~Keyword(k) + name
+        name_ref = ~Keyword(k) + name_ref
     for k in reserved_vars:
-        name |= backslash.suppress() + Keyword(k)
-    name = trace(condense(name), "name")
+        name_ref |= backslash.suppress() + Keyword(k)
     dotted_name = condense(name + ZeroOrMore(dot + name))
 
     integer = Combine(Word(nums) + ZeroOrMore(underscore.suppress() + Word(nums)))
@@ -2545,7 +2567,6 @@ class processor(object):
                | Keyword("is")
                )
 
-    small_stmt = Forward()
     test = Forward()
     expr = Forward()
     comp_for = Forward()
@@ -2617,26 +2638,14 @@ class processor(object):
         ), comma)), "varargslist")
     parameters = condense(lparen + argslist + rparen)
 
-    multiline_lambdef = Forward()
-    closing_stmt = testlist("tests") ^ small_stmt
-    multiline_lambdef_ref = (
-        Keyword("def").suppress() + Optional(parameters, default="(_=None)") + arrow.suppress()
-        + (
-            Group(OneOrMore(small_stmt + semicolon.suppress())) + Optional(closing_stmt)
-            | Group(ZeroOrMore(small_stmt + semicolon.suppress())) + closing_stmt
-            )
-        )
-
     callargslist = Optional(trace(
         attach(addspace(test + comp_for), add_paren_handle)
         | itemlist(condense(dubstar + test | star + test | name + default | test), comma)
         | op_item
-        | multiline_lambdef
         , "callargslist"))
     methodcaller_args = (
         itemlist(condense(name + default | test), comma)
         | op_item
-        | multiline_lambdef
         )
 
     testlist_comp = addspace(test + comp_for) | testlist
@@ -2644,7 +2653,7 @@ class processor(object):
     func_atom = trace(
         name
         | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
-        | lparen.suppress() + (op_item | multiline_lambdef) + rparen.suppress()
+        | lparen.suppress() + op_item + rparen.suppress()
         , "func_atom")
     keyword_atom = Keyword(const_vars[0])
     for x in range(1, len(const_vars)):
@@ -2763,6 +2772,7 @@ class processor(object):
     nochain_or_test = addspace(nochain_and_test + ZeroOrMore(Keyword("or") + nochain_and_test))
     nochain_test_item = trace(nochain_or_test, "nochain_test_item")
 
+    small_stmt = Forward()
     simple_stmt = Forward()
     simple_compound_stmt = Forward()
     stmt = Forward()
@@ -2778,7 +2788,17 @@ class processor(object):
     implicit_lambdef = fixto(arrow, "lambda _=None:", copy=True)
     lambdef_base = classic_lambdef | new_lambdef | implicit_lambdef
 
-    lambdef = trace(addspace(lambdef_base + test), "lambdef")
+    multiline_lambdef = Forward()
+    closing_stmt = testlist("tests") ^ small_stmt
+    multiline_lambdef_ref = (
+        Keyword("def").suppress() + Optional(parameters, default="(_=None)") + arrow.suppress()
+        + (
+            Group(OneOrMore(small_stmt + semicolon.suppress())) + Optional(closing_stmt)
+            | Group(ZeroOrMore(small_stmt + semicolon.suppress())) + closing_stmt
+            )
+        )
+
+    lambdef = trace(addspace(lambdef_base + test) | multiline_lambdef, "lambdef")
     lambdef_nocond = trace(addspace(lambdef_base + test_nocond), "lambdef_nocond")
     lambdef_nochain = trace(addspace(lambdef_base + test_nochain), "lambdef_nochain")
 
@@ -2883,6 +2903,7 @@ class processor(object):
         - dedent.suppress() - Optional(Keyword("else").suppress() - else_suite)
         , case_handle)
 
+    exec_stmt = Forward()
     assert_stmt = addspace(Keyword("assert") - testlist)
     if_stmt = condense(addspace(Keyword("if") - condense(test - suite))
                        - ZeroOrMore(addspace(Keyword("elif") - condense(test - suite)))
@@ -2901,6 +2922,13 @@ class processor(object):
           ) - Optional(else_stmt) - Optional(Keyword("finally") - suite)
         ))
     with_stmt = addspace(Keyword("with") - condense(itemlist(with_item, comma) - suite))
+    exec_stmt_ref = Keyword("exec").suppress() + lparen.suppress() + test + Optional(
+        comma.suppress() + test + Optional(
+            comma.suppress() + test + Optional(
+                comma.suppress()
+                )
+            )
+        ) + rparen.suppress()
 
     return_typedef = Forward()
     async_funcdef = Forward()
@@ -2984,6 +3012,7 @@ class processor(object):
         | global_stmt
         | nonlocal_stmt
         | assert_stmt
+        | exec_stmt
         , "keyword_stmt")
     augassign_stmt = Forward()
     augassign_stmt_ref = simple_assign + augassign + test_expr
