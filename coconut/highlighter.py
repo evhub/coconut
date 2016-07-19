@@ -122,15 +122,6 @@ class cocolexer(Python3Lexer):
         (words(builtins, suffix=r"\b"), Name.Builtin),
         (r"MatchError\b", Name.Exception)
     ]
-    magicvars = [
-        (r"__coconut_is_lazy__\b", Name.Variable.Magic)
-    ]
-    if "magicvars" in tokens:
-        tokens["magicvars"] = tokens["magicvars"] + magicvars
-    elif "magicfuncs" in tokens:
-        tokens["magicfuncs"] = tokens["magicfuncs"] + magicvars
-    else:
-        tokens["builtins"] = tokens["builtins"] + magicvars
     tokens["numbers"] = [
         (r"\d[\d_]*(\.\d[\d_]*)?", Number.Integer),
         (r"0b[01_]+", Number.Integer),

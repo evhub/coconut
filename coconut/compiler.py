@@ -492,20 +492,15 @@ class _coconut_MatchError(Exception):
     """Pattern-matching error."""
     __slots__ = ("pattern", "value")
 def _coconut_igetitem(iterable, index):
-    if isinstance(iterable, _coconut.range) or (_coconut.hasattr(iterable, "__coconut_is_lazy__") and iterable.__coconut_is_lazy__):
+    if isinstance(iterable, _coconut.range) or _coconut.hasattr(iterable, "__getitem__"):
         return iterable[index]
-    elif _coconut.hasattr(iterable, "__getitem__"):
-        if _coconut.isinstance(index, _coconut.slice):
-            return (x for x in iterable[index])
-        else:
-            return iterable[index]
     elif not _coconut.isinstance(index, _coconut.slice):
         if index < 0:
             return _coconut.collections.deque(iterable, maxlen=-index)[0]
         else:
             return _coconut.next(_coconut.itertools.islice(iterable, index, index + 1))
     elif (index.start is not None and index.start < 0) or (index.stop is not None and index.stop < 0) or (index.step is not None and index.step < 0):
-        return (x for x in _coconut.tuple(iterable)[index])
+        return _coconut.tuple(iterable)[index]
     else:
         return _coconut.itertools.islice(iterable, index.start, index.stop, index.step)'''
             if target.startswith("3"):
@@ -540,7 +535,6 @@ def _coconut_tee(iterable, n=2):
 class _coconut_map(_coconut.map):
     __slots__ = ("_func", "_iters")
     __doc__ = _coconut.map.__doc__
-    __coconut_is_lazy__ = True  # tells $[] to use .__getitem__
     def __new__(cls, function, *iterables):
         new_map = _coconut.map.__new__(cls, function, *iterables)
         new_map._func, new_map._iters = function, iterables
@@ -563,7 +557,6 @@ class _coconut_map(_coconut.map):
 class zip(_coconut.zip):
     __slots__ = ("_iters",)
     __doc__ = _coconut.zip.__doc__
-    __coconut_is_lazy__ = True  # tells $[] to use .__getitem__
     def __new__(cls, *iterables):
         new_zip = _coconut.zip.__new__(cls, *iterables)
         new_zip._iters = iterables
@@ -592,7 +585,6 @@ class count(object):'''
             header += r'''
     """count(start, step) returns an infinite iterator starting at start and increasing by step."""
     __slots__ = ("_start", "_step")
-    __coconut_is_lazy__ = True  # tells $[] to use .__getitem__
     def __init__(self, start=0, step=1):
         self._start, self._step = start, step
     def __iter__(self):
