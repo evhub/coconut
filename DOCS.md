@@ -1341,7 +1341,7 @@ positives = itertools.dropwhile(numiter, lambda x: x<0)
 
 ### `tee`
 
-Coconut provides `itertools.tee` as a built-in under the name `tee`. Additionally, the Coconut built-ins `count`, `map`, `zip`, and `range` have been optimized for use with this `tee`.
+Coconut provides an optimized version of `itertools.tee` as a built-in under the name `tee`.
 
 ##### Python Docs
 

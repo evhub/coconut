@@ -499,15 +499,15 @@ def _coconut_igetitem(iterable, index):
             return (x for x in iterable[index])
         else:
             return iterable[index]
-    elif _coconut.isinstance(index, _coconut.slice):
-        if (index.start is not None and index.start < 0) or (index.stop is not None and index.stop < 0) or (index.step is not None and index.step < 0):
-            return (x for x in _coconut.tuple(iterable)[index])
+    elif not _coconut.isinstance(index, _coconut.slice):
+        if index < 0:
+            return _coconut.collections.deque(iterable, maxlen=-index)[0]
         else:
-            return _coconut.itertools.islice(iterable, index.start, index.stop, index.step)
-    elif index < 0:
-        return _coconut.collections.deque(iterable, maxlen=-index)[0]
+            return _coconut.next(_coconut.itertools.islice(iterable, index, index + 1))
+    elif (index.start is not None and index.start < 0) or (index.stop is not None and index.stop < 0) or (index.step is not None and index.step < 0):
+        return (x for x in _coconut.tuple(iterable)[index])
     else:
-        return _coconut.next(_coconut.itertools.islice(iterable, index, index + 1))'''
+        return _coconut.itertools.islice(iterable, index.start, index.stop, index.step)'''
             if target.startswith("3"):
                 header += r'''
 class _coconut_compose:'''
@@ -533,7 +533,7 @@ def _coconut_bool_or(a, b): return a or b
 def _coconut_minus(*args): return _coconut.operator.neg(*args) if len(args) < 2 else _coconut.operator.sub(*args)
 @_coconut.functools.wraps(_coconut.itertools.tee)
 def _coconut_tee(iterable, n=2):
-    if _coconut.isinstance(iterable, _coconut.range) or hasattr(iterable, "__copy__"):
+    if n > 0 and (_coconut.isinstance(iterable, _coconut.range) or _coconut.hasattr(iterable, "__copy__") or _coconut.isinstance(iterable, _coconut.abc.Sequence)):
         return (iterable,) + _coconut.tuple(_coconut.copy.copy(iterable) for i in range(n - 1))
     else:
         return _coconut.itertools.tee(iterable, n)
