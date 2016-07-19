@@ -83,8 +83,8 @@ import_as_var = "_coconut_import"
 yield_from_var = "_coconut_yield_from"
 yield_item_var = "_coconut_yield_item"
 raise_from_var = "_coconut_raise_from"
-outer_multiline_lambda_var = "_coconut_lambda"
-inner_multiline_lambda_var = "_coconut_lambda_func"
+outer_stmt_lambda_var = "_coconut_lambda"
+inner_stmt_lambda_var = "_coconut_lambda_func"
 wildcard = "_" # for pattern-matching
 keywords = (
     "and",
@@ -1349,7 +1349,7 @@ class processor(object):
             self.ind_proc
         ]
         self.postprocs = [
-            self.multiline_lambda_proc,
+            self.stmt_lambda_proc,
             self.reind_proc,
             self.repl_proc,
             self.header_proc,
@@ -1391,7 +1391,7 @@ class processor(object):
         self.skips = set()
         self.docstring = ""
         self.ichain_count = 0
-        self.multiline_lambdas = []
+        self.stmt_lambdas = []
         self.bind()
 
     def bind(self):
@@ -1412,7 +1412,7 @@ class processor(object):
         self.op_match_funcdef <<= self.trace(attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle, copy=True), "op_match_funcdef")
         self.yield_from <<= self.trace(attach(self.yield_from_ref, self.yield_from_handle, copy=True), "yield_from")
         self.exec_stmt <<= self.trace(attach(self.exec_stmt_ref, self.exec_stmt_handle, copy=True), "exec_stmt")
-        self.multiline_lambdef <<= self.trace(attach(self.multiline_lambdef_ref, self.multiline_lambdef_handle, copy=True), "multiline_lambdef")
+        self.stmt_lambdef <<= self.trace(attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle, copy=True), "stmt_lambdef")
         self.name <<= self.trace(attach(self.name_ref, self.name_check, copy=True), "name")
         self.u_string <<= attach(self.u_string_ref, self.u_string_check, copy=True)
         self.f_string <<= attach(self.f_string_ref, self.f_string_check, copy=True)
@@ -1426,6 +1426,8 @@ class processor(object):
         self.async_match_funcdef <<= attach(self.async_match_funcdef_ref, self.async_stmt_check, copy=True)
         self.async_block <<= attach(self.async_block_ref, self.async_stmt_check, copy=True)
         self.await_keyword <<= attach(self.await_keyword_ref, self.await_keyword_check, copy=True)
+        self.star_expr <<= attach(self.star_expr_ref, self.star_expr_check, copy=True)
+        self.dubstar_expr <<= attach(self.dubstar_expr_ref, self.star_expr_check, copy=True)
 
     def genhash(self, package, code):
         """Generates a hash from code."""
@@ -1818,18 +1820,18 @@ class processor(object):
         new.append(closeindent*len(levels))
         return "\n".join(new)
 
-    def multiline_lambda_proc(self, inputstring, **kwargs):
-        """Adds multiline lambda definitions."""
+    def stmt_lambda_proc(self, inputstring, **kwargs):
+        """Adds statement lambda definitions."""
         out = []
         for line in inputstring.splitlines():
-            for i in range(len(self.multiline_lambdas)):
-                name = self.multiline_lambda_name(i)
+            for i in range(len(self.stmt_lambdas)):
+                name = self.stmt_lambda_name(i)
                 if name in line:
                     indents = ""
                     while line.startswith(openindent) or line.startswith(closeindent):
                         indents += line[0]
                         line = line[1:]
-                    out.append(indents + self.multiline_lambdas[i])
+                    out.append(indents + self.stmt_lambdas[i])
             out.append(line)
         return "\n".join(out)
 
@@ -2006,9 +2008,9 @@ class processor(object):
         """Does final polishing touches."""
         return "\n".join(inputstring.rstrip().splitlines()) + ("\n" if final_endline else "")
 
-    def autopep8_proc(self, inputstring, **kwargs):
+    def autopep8_proc(self, inputstring, use_autopep8=True, **kwargs):
         """Applies autopep8."""
-        if self.autopep8_args is not None:
+        if use_autopep8 and self.autopep8_args is not None:
             import autopep8
             return autopep8.fix_code(inputstring, options=autopep8.parse_args(("autopep8",) + self.autopep8_args))
         else:
@@ -2320,13 +2322,13 @@ class processor(object):
         else:
             return "exec(" + ", ".join(tokens) + ")"
 
-    def multiline_lambda_name(self, index=None):
-        """Return the next (or specified) multiline lambda name."""
+    def stmt_lambda_name(self, index=None):
+        """Return the next (or specified) statement lambda name."""
         if index is None:
-            index = len(self.multiline_lambdas)
-        return outer_multiline_lambda_var + "_" + str(index)
+            index = len(self.stmt_lambdas)
+        return outer_stmt_lambda_var + "_" + str(index)
 
-    def multiline_lambdef_handle(self, tokens):
+    def stmt_lambdef_handle(self, tokens):
         """Handles multi-line lambdef statements."""
         if len(tokens) == 2:
             params, stmts = tokens
@@ -2337,18 +2339,18 @@ class processor(object):
             else:
                 stmts = stmts.asList() + [last]
         else:
-            raise CoconutException("invalid multiline lambda tokens", tokens)
+            raise CoconutException("invalid statement lambda tokens", tokens)
         inner_funcdef = self.post([
-            "def " + inner_multiline_lambda_var + params + ":\n"
+            "def " + inner_stmt_lambda_var + params + ":\n"
             + openindent + "\n".join(stmts) + closeindent
-        ], header="none", initial="none", final_endline=False)
-        outer_name = self.multiline_lambda_name()
-        self.multiline_lambdas.append(
+        ], header="none", initial="none", final_endline=False, use_autopep8=False)
+        outer_name = self.stmt_lambda_name()
+        self.stmt_lambdas.append(
             "def " + outer_name + "(closure):\n"
             + openindent + "vars = _coconut.globals().copy()\n"
             + "vars.update(closure)\n"
             + self.exec_stmt_handle([self.wrap_str_of(inner_funcdef), "vars"]) + "\n"
-            + 'return vars["' + inner_multiline_lambda_var + '"]' + closeindent
+            + 'return vars["' + inner_stmt_lambda_var + '"]' + closeindent
         )
         return outer_name + "(_coconut.locals())"
 
@@ -2415,6 +2417,10 @@ class processor(object):
     def await_keyword_check(self, original, location, tokens):
         """Checks for Python 3.5 await expression."""
         return self.check_py("35", "await expression", original, location, tokens)
+
+    def star_expr_check(self, original, location, tokens):
+        """Checks for Python 3.5 star unpacking."""
+        return self.check_py("35", "star unpacking", original, location, tokens)
 
     def f_string_check(self, original, location, tokens):
         """Checks for Python 3.5 format strings."""
@@ -2569,11 +2575,14 @@ class processor(object):
 
     test = Forward()
     expr = Forward()
+    star_expr = Forward()
+    dubstar_expr = Forward()
     comp_for = Forward()
     test_nochain = Forward()
     test_nocond = Forward()
 
     testlist = trace(itemlist(test, comma), "testlist")
+    testlist_star_expr = trace(itemlist(test | star_expr, comma), "testlist_star_expr")
     multi_testlist = trace(addspace(OneOrMore(condense(test + comma)) + Optional(test)), "multi_testlist")
 
     yield_from = Forward()
@@ -2581,9 +2590,9 @@ class processor(object):
     yield_classic = addspace(Keyword("yield") + testlist)
     yield_from_ref = Keyword("yield").suppress() + Keyword("from").suppress() + test
     yield_expr = yield_from | yield_classic
-    dict_comp_ref = lbrace.suppress() + test + colon.suppress() + test + comp_for + rbrace.suppress()
-    dict_item = condense(lbrace + Optional(itemlist(addspace(condense(test + colon) + test), comma)) + rbrace)
-    test_expr = yield_expr | testlist
+    dict_comp_ref = lbrace.suppress() + (test + colon.suppress() + test | dubstar_expr) + comp_for + rbrace.suppress()
+    dict_item = condense(lbrace + Optional(itemlist(addspace(condense(test + colon) + test) | dubstar_expr, comma)) + rbrace)
+    test_expr = yield_expr | testlist_star_expr
 
     op_item = (
         fixto(pipeline, "_coconut_pipe", copy=True)
@@ -2648,7 +2657,7 @@ class processor(object):
         | op_item
         )
 
-    testlist_comp = addspace(test + comp_for) | testlist
+    testlist_comp = addspace((test | star_expr) + comp_for) | testlist_star_expr
     list_comp = condense(lbrack + Optional(testlist_comp) + rbrack)
     func_atom = trace(
         name
@@ -2760,6 +2769,8 @@ class processor(object):
     nochain_pipe_expr = attach(nochain_infix_expr + ZeroOrMore(pipe_op + nochain_infix_expr), pipe_handle)
 
     expr <<= trace(pipe_expr, "expr")
+    star_expr_ref = condense(star + expr)
+    dubstar_expr_ref = condense(dubstar + expr)
     comparison = addspace(expr + ZeroOrMore(comp_op + expr))
     not_test = addspace(ZeroOrMore(Keyword("not")) + comparison)
     and_test = addspace(not_test + ZeroOrMore(Keyword("and") + not_test))
@@ -2788,9 +2799,9 @@ class processor(object):
     implicit_lambdef = fixto(arrow, "lambda _=None:", copy=True)
     lambdef_base = classic_lambdef | new_lambdef | implicit_lambdef
 
-    multiline_lambdef = Forward()
+    stmt_lambdef = Forward()
     closing_stmt = testlist("tests") ^ small_stmt
-    multiline_lambdef_ref = (
+    stmt_lambdef_ref = (
         Keyword("def").suppress() + Optional(parameters, default="(_=None)") + arrow.suppress()
         + (
             Group(OneOrMore(small_stmt + semicolon.suppress())) + Optional(closing_stmt)
@@ -2798,7 +2809,7 @@ class processor(object):
             )
         )
 
-    lambdef = trace(addspace(lambdef_base + test) | multiline_lambdef, "lambdef")
+    lambdef = trace(addspace(lambdef_base + test) | stmt_lambdef, "lambdef")
     lambdef_nocond = trace(addspace(lambdef_base + test_nocond), "lambdef_nocond")
     lambdef_nochain = trace(addspace(lambdef_base + test_nochain), "lambdef_nochain")
 

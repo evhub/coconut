@@ -31,6 +31,7 @@
     1. [Backslash-Escaping](#backslash-escaping)
     1. [Reserved Variables](#reserved-variables)
 1. [Expressions](#expressions)
+    1. [Statement Lambdas](#statement-lambdas)
     1. [Lazy Lists](#lazy-lists)
     1. [Implicit Partial Application](#implicit-partial-application)
     1. [Set Literals](#set-literals)
@@ -183,7 +184,9 @@ Finally, while Coconut will try to compile Python-3-specific syntax to its unive
 - destructuring assignment with `*`s (use Coconut pattern-matching instead),
 - function type annotation,
 - the `nonlocal` keyword,
+- `exec` used in a context where it must be a function,
 - keyword class definition,
+- tuples and lists with `*` unpacking or dicts with `**` unpacking (requires `--target 3.5`),
 - `@` as matrix multiplication (requires `--target 3.5`),
 - `async` and `await` statements (requires `--target 3.5`), and
 - formatting `f` strings (requires `--target 3.6`).
@@ -233,6 +236,8 @@ If Coconut is used as a kernel, all code in the console or notebook will be sent
 Coconut provides the simple, clean `->` operator as an alternative to Python's `lambda` statements. The syntax for the `->` operator is `(arguments) -> expression`. The operator has the same precedence as the old statement, which means it will often be necessary to surround the lambda in parentheses.
 
 Additionally, Coconut also supports an implicit usage of the `->` operator of the form `(-> expression)`, which is equivalent to `((_=None) -> expression)`, which allows an implicit lambda to be used both when no arguments are required, and when one argument (assigned to `_`) is required.
+
+_Note: If normal lambda syntax is insufficient, Coconut also supports an extended lambda syntax in the form of [statement lambdas](#statement-lambdas)._
 
 ##### Rationale
 
@@ -741,6 +746,37 @@ print(data)
 It is illegal for a variable name to start with `_coconut`, as these variables are reserved for the compiler.
 
 ## Expressions
+
+### Statement Lambdas
+
+The statement lambda syntax is an extension of the [normal lambda syntax](#lambdas) to support statements, not just expressions, as well as proper closure.
+
+The syntax for a statement lambda is:
+```
+def (arguments) -> statement; statement; ...
+```
+where `statement` can be an assignment statement or a keyword statement. If the last `statement` (not followed by a semicolon) is an `expression`, it will automatically be returned.
+
+Statement lambdas, unlike normal lambdas, also support proper closure. Local variables accessible to the statement lambda when it is created will be remembered and keep their original value when it is called, in exactly the same way that normal functions do.
+
+Additionally, statement lambdas also support implicit lambda syntax, where when the arguments are omitted, as in `def -> _`, `def (_=None) -> _` is assumed.
+
+##### Example
+
+###### Coconut
+```coconut
+((def () -> x) for x in range(10))
+```
+
+###### Python
+```coconut_python
+def _lambda(closure):
+    vars = globals().copy()
+    vars.update(closure)
+    exec('def _lambda_func():\n    return x', vars)
+    return vars["_lambda_func"]
+(_lambda(locals()) for x in range(10))
+```
 
 ### Lazy Lists
 
