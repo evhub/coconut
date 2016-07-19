@@ -619,7 +619,7 @@ class parallel_map(_coconut_map):
     def __iter__(self):
         from concurrent.futures import ProcessPoolExecutor
         with ProcessPoolExecutor() as executor:
-            return _coconut.tuple(executor.map(self._func, *self._iters))
+            return _coconut.iter(_coconut.tuple(executor.map(self._func, *self._iters)))
     def __repr__(self):
         return "parallel_" + _coconut_map.__repr__(self)
 class concurrent_map(_coconut_map):
@@ -635,7 +635,7 @@ class concurrent_map(_coconut_map):
         from multiprocessing import cpu_count  # cpu_count() * 5 is the default Python 3 thread count
         with ThreadPoolExecutor(cpu_count() * 5) as executor:'''
             header += r'''
-            return _coconut.tuple(executor.map(self._func, *self._iters))
+            return _coconut.iter(_coconut.tuple(executor.map(self._func, *self._iters)))
     def __repr__(self):
         return "concurrent_" + _coconut_map.__repr__(self)
 def recursive(func):
