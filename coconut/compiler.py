@@ -2331,8 +2331,10 @@ class processor(object):
         outer_name = self.multiline_lambda_name()
         self.multiline_lambdas.append(
             "def " + outer_name + "(closure):\n"
-            + openindent + "exec(" + self.wrap_str_of(inner_funcdef) + ", _coconut.globals(), closure)\n"
-            + 'return closure["' + inner_multiline_lambda_var + '"]' + closeindent
+            + openindent + "vars = _coconut.globals().copy()\n"
+            + "vars.update(closure)\n"
+            + "exec(" + self.wrap_str_of(inner_funcdef) + ", vars)\n"
+            + 'return vars["' + inner_multiline_lambda_var + '"]' + closeindent
         )
         return outer_name + "(_coconut.locals())"
 
