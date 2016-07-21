@@ -2487,7 +2487,7 @@ class processor(object):
     matrix_at = Forward()
 
     name = Forward()
-    name_ref = ~Literal(reserved_prefix) + Regex(r"(?![0-9])\w+")
+    name_ref = ~Literal(reserved_prefix) + Regex(r"\b(?![0-9])\w+\b")
     for k in keywords + const_vars:
         name_ref = ~Keyword(k) + name_ref
     for k in reserved_vars:
