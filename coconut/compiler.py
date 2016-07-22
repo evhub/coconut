@@ -173,7 +173,7 @@ new_to_old_stdlib = { # old_name: (new_name, new_version_info)
     "io.BytesIO": ("BytesIO", (3,)),
     "collections.abc": ("collections", (3, 3))
 }
-ParserElement.setDefaultWhitespaceChars(" \f\v")
+ParserElement.setDefaultWhitespaceChars(" \t\f\v")
 
 # end: CONSTANTS
 #-----------------------------------------------------------------------------------------------------------------------
