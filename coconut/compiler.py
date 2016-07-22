@@ -243,13 +243,7 @@ class CoconutSyntaxError(CoconutException):
                 if point > 0:
                     if point >= len(part):
                         point = len(part) - 1
-                    self.value += "\n" + " "*tabideal
-                    for x in range(0, point):
-                        if not part[x].strip():
-                            self.value += part[x]
-                        else:
-                            self.value += " "
-                    self.value += "^"
+                    self.value += "\n" + " "*(tabideal + point) + "^"
 
 class CoconutParseError(CoconutSyntaxError):
     """Coconut ParseError."""
