@@ -65,7 +65,6 @@ closeindent = "\xb6" # pilcrow
 strwrapper = "\u25b6" # right-pointing triangle
 lnwrapper = "\u23f4" # left-pointing triangle
 unwrapper = "\u23f9" # stop square
-white = " \t\f" # whitespace chars
 downs = "([{" # opens parenthetical
 ups = ")]}" # closes parenthetical
 holds = "'\"" # string open/close chars
@@ -174,8 +173,7 @@ new_to_old_stdlib = { # old_name: (new_name, new_version_info)
     "io.BytesIO": ("BytesIO", (3,)),
     "collections.abc": ("collections", (3, 3))
 }
-
-ParserElement.setDefaultWhitespaceChars(white)
+ParserElement.setDefaultWhitespaceChars(" \f")
 
 # end: CONSTANTS
 #-----------------------------------------------------------------------------------------------------------------------
@@ -247,7 +245,7 @@ class CoconutSyntaxError(CoconutException):
                         point = len(part) - 1
                     self.value += "\n" + " "*tabideal
                     for x in range(0, point):
-                        if part[x] in white:
+                        if not part[x].strip():
                             self.value += part[x]
                         else:
                             self.value += " "
@@ -1762,11 +1760,12 @@ class processor(object):
         for ln in range(0, len(lines)):
             line = lines[ln]
             ln += 1
-            if line and line[-1] in white:
+            line_rstrip = line.rstrip()
+            if line != line_rstrip:
                 if self.strict:
                     raise self.make_err(CoconutStyleError, "found trailing whitespace", line, len(line), self.adjust(ln))
                 else:
-                    line = line.rstrip()
+                    line = line_rstrip
             if new:
                 last = new[-1].split("#", 1)[0].rstrip()
             else:
