@@ -1556,7 +1556,7 @@ class processor(object):
         """Uses the parser to parse the inputstring."""
         self.reset()
         try:
-            out = self.post(parser.parseString(self.pre(inputstring, **preargs)), **postargs)
+            out = self.post(parser.parseWithTabs().parseString(self.pre(inputstring, **preargs)), **postargs)
         except ParseBaseException as err:
             err_line, err_index = self.reformat(err.line, err.col-1)
             raise CoconutParseError(err_line, err_index, self.adjust(err.lineno))
