@@ -247,7 +247,7 @@ class terminal(object):
 
 class cli(object):
     """The Coconut command-line interface."""
-    commandline = argparse.ArgumentParser(description="The Coconut Programming Language.")
+    commandline = argparse.ArgumentParser(prog="coconut", description=documentation_url)
     commandline.add_argument("source", metavar="source", type=str, nargs="?", default=None, help="path to the Coconut file/folder to compile")
     commandline.add_argument("dest", metavar="dest", type=str, nargs="?", default=None, help="destination directory for compiled files (defaults to the source directory)")
     commandline.add_argument("-v", "--version", action="store_const", const=True, default=False, help="print Coconut and Python version information")
