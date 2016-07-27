@@ -1573,7 +1573,9 @@ class processor(object):
         """Prepares a string for processing."""
         if strip:
             inputstring = inputstring.strip()
-        return "\n".join(inputstring.splitlines())
+        else:
+            inputstring = inputstring.rstrip()
+        return "\n".join(inputstring.splitlines()) + "\n"
 
     def str_proc(self, inputstring, **kwargs):
         """Processes strings and comments."""
@@ -1994,7 +1996,7 @@ class processor(object):
 
     def polish(self, inputstring, final_endline=True, **kwargs):
         """Does final polishing touches."""
-        return "\n".join(inputstring.rstrip().splitlines()) + ("\n" if final_endline else "")
+        return inputstring.rstrip() + ("\n" if final_endline else "")
 
     def autopep8_proc(self, inputstring, use_autopep8=True, **kwargs):
         """Applies autopep8."""
