@@ -562,7 +562,7 @@ class zip(_coconut.zip):
         if _coconut.isinstance(index, _coconut.slice):
             return self.__class__(*(_coconut_igetitem(i, index) for i in self._iters))
         else:
-            return (_coconut_igetitem(i, index) for i in self._iters)
+            return _coconut.tuple(_coconut_igetitem(i, index) for i in self._iters)
     def __reversed__(self):
         return self.__class__(*(_coconut.reversed(i) for i in self._iters))
     def __len__(self):
