@@ -1540,8 +1540,8 @@ class processor(object):
             raise CoconutException("multiple tokens leftover", tokens)
 
     def headers(self, which, usehash=None):
-        """Gets a polished header."""
-        return self.polish(getheader(which, self.target, usehash))
+        """Gets a formatted header."""
+        return self.prepare(getheader(which, self.target, usehash))
 
     def target_info(self):
         """Returns information on the current target as a version tuple."""
