@@ -1541,7 +1541,7 @@ class processor(object):
 
     def headers(self, which, usehash=None):
         """Gets a formatted header."""
-        return self.prepare(getheader(which, self.target, usehash))
+        return self.polish(getheader(which, self.target, usehash))
 
     def target_info(self):
         """Returns information on the current target as a version tuple."""
@@ -1573,8 +1573,11 @@ class processor(object):
         """Prepares a string for processing."""
         if strip:
             inputstring = inputstring.strip()
-        else:
-            inputstring = inputstring.rstrip()
+        elif strip is not None and not inputstring.endswith("\n"):
+            if self.strict:
+                raise self.make_err(CoconutStyleError, "missing new line at end of file", inputstring, len(inputstring)-1)
+            else:
+                self.warn(self.make_err(CoconutWarning, "missing new line at end of file", inputstring, len(inputstring)-1))
         return "\n".join(inputstring.splitlines()) + "\n"
 
     def str_proc(self, inputstring, **kwargs):
@@ -3056,7 +3059,7 @@ class processor(object):
 
     def parse_exec(self, inputstring):
         """Parses exec code."""
-        return self.parse(inputstring, self.file_parser, {}, {"header": "file", "initial": "none"})
+        return self.parse(inputstring, self.file_parser, {"strip": None}, {"header": "file", "initial": "none"})
 
     def parse_module(self, inputstring, addhash=True):
         """Parses module code."""
