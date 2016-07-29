@@ -47,7 +47,7 @@
     1. [Decorators](#decorators)
     1. [`else` Statements](#else-statements)
     1. [`except` Statements](#except-statements)
-    1. [Variable Lists](#variable-lists)
+    1. [Parenthetical Continuation](#parenthetical-continuation)
     1. [Code Passthrough](#code-passthrough)
 1. [Built-Ins](#built-ins)
     1. [`addpattern`](#addpattern)
@@ -1152,9 +1152,9 @@ except (SyntaxError, ValueError) as err:
     handle(err)
 ```
 
-### Variable Lists
+### Parenthetical Continuation
 
-Coconut allows for the more elegant parenthetical continuation instead of the less elegant backslash continuation in `import`, `del`, `global`, and `nonlocal` statements.
+Coconut allows for the more elegant parenthetical continuation instead of the less elegant backslash continuation in `import`, `del`, `global`, `nonlocal`, and `with` statements.
 
 ##### Example
 
