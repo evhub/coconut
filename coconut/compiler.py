@@ -531,7 +531,8 @@ def _coconut_tee(iterable, n=2):
         return _coconut.itertools.tee(iterable, n)
 class _coconut_map(_coconut.map):
     __slots__ = ("_func", "_iters")
-    __doc__ = _coconut.map.__doc__
+    if hasattr(_coconut.map, "__doc__"):
+        __doc__ = _coconut.map.__doc__
     def __new__(cls, function, *iterables):
         new_map = _coconut.map.__new__(cls, function, *iterables)
         new_map._func, new_map._iters = function, iterables
@@ -553,7 +554,8 @@ class _coconut_map(_coconut.map):
         return self.__class__(self._func, *_coconut_map(_coconut.copy.copy, self._iters))
 class zip(_coconut.zip):
     __slots__ = ("_iters",)
-    __doc__ = _coconut.zip.__doc__
+    if hasattr(_coconut.zip, "__doc__"):
+        __doc__ = _coconut.zip.__doc__
     def __new__(cls, *iterables):
         new_zip = _coconut.zip.__new__(cls, *iterables)
         new_zip._iters = iterables
