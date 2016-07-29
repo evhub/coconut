@@ -2854,7 +2854,7 @@ class processor(object):
     nonlocal_stmt_ref = addspace(Keyword("nonlocal") - namelist)
     del_stmt = addspace(Keyword("del") - simple_assignlist)
     with_item = addspace(test - Optional(Keyword("as") - name))
-    with_item_list = parenwrap(lparen, condense(itemlist(with_item, comma), rparen)
+    with_item_list = parenwrap(lparen, condense(itemlist(with_item, comma)), rparen)
 
     match = Forward()
     matchlist_list = Group(Optional(tokenlist(match, comma)))
@@ -2929,7 +2929,7 @@ class processor(object):
             | Keyword("except") - suite
           ) - Optional(else_stmt) - Optional(Keyword("finally") - suite)
         ))
-    with_stmt = addspace(Keyword("with") - with_item_list - suite))
+    with_stmt = addspace(Keyword("with") - with_item_list - suite)
     exec_stmt_ref = Keyword("exec").suppress() + lparen.suppress() + test + Optional(
         comma.suppress() + test + Optional(
             comma.suppress() + test + Optional(
