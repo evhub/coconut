@@ -1315,6 +1315,22 @@ def gen_imports(path, impas):
             out.append("from " + imp_from + " import " + imp + " as " + impas)
     return out
 
+def subscriptgroup_handle(tokens):
+    """Processes subscriptgroups."""
+    if 0 < len(tokens) <= 3:
+        args = []
+        for x in range(0, len(tokens)):
+            arg = tokens[x]
+            if not arg:
+                arg = "None"
+            args.append(arg)
+        if len(args) == 1:
+            return args[0]
+        else:
+            return "_coconut.slice(" + ", ".join(args) + ")"
+    else:
+        raise CoconutException("invalid slice args", tokens)
+
 # end: HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
 # PARSER:
@@ -2070,21 +2086,7 @@ class processor(object):
                 if trailer[0] == "$(":
                     out = "_coconut.functools.partial("+out+", "+trailer[1]+")"
                 elif trailer[0] == "$[":
-                    if 0 < len(trailer[1]) <= 3:
-                        args = []
-                        for x in range(0, len(trailer[1])):
-                            arg = trailer[1][x]
-                            if not arg:
-                                arg = "None"
-                            args.append(arg)
-                        out = "_coconut_igetitem(" + out
-                        if len(args) == 1:
-                            out += ", " + args[0]
-                        else:
-                            out += ", _coconut.slice(" + ", ".join(args) + ")"
-                        out += ")"
-                    else:
-                        raise CoconutException("invalid iterator slice args", trailer[1])
+                    out = "_coconut_igetitem("+out+", "+trailer[1]+")"
                 elif trailer[0] == "..":
                     out = "_coconut_compose("+out+", "+trailer[1]+")"
                 else:
@@ -2428,8 +2430,6 @@ class processor(object):
 #-----------------------------------------------------------------------------------------------------------------------
 
     comma = Literal(",")
-    unsafe_dot = Literal(".")
-    dot = ~Literal("..")+unsafe_dot
     dubstar = Literal("**")
     star = ~dubstar+Literal("*")
     at = Literal("@")
@@ -2448,6 +2448,8 @@ class processor(object):
     rbanana = Literal("|)")
     lparen = ~lbanana+Literal("(")
     rparen = ~rbanana+Literal(")")
+    unsafe_dot = Literal(".")
+    dot = ~Literal("..")+unsafe_dot
     plus = Literal("+")
     minus = ~Literal("->")+Literal("-")
     dubslash = Literal("//")
@@ -2702,10 +2704,15 @@ class processor(object):
     sliceop = condense(unsafe_colon + slicetest)
     subscript = condense(slicetest + sliceop + Optional(sliceop)) | test
     subscriptlist = itemlist(subscript, comma)
+
     slicetestgroup = Optional(test_nochain, default="")
     sliceopgroup = unsafe_colon.suppress() + slicetestgroup
-    subscriptgroup = Group(slicetestgroup + sliceopgroup + Optional(sliceopgroup) | test)
-    simple_trailer = condense(lbrack + subscriptlist + rbrack) | condense(dot + name)
+    subscriptgroup = attach(slicetestgroup + sliceopgroup + Optional(sliceopgroup) | test, subscriptgroup_handle)
+
+    simple_trailer = (
+        condense(lbrack + subscriptlist + rbrack)
+        | condense(dot + name)
+        )
     complex_trailer = (
         condense(lparen + callargslist + rparen)
         | Group(condense(dollar + lparen) + callargslist + rparen.suppress())
@@ -2714,7 +2721,7 @@ class processor(object):
         | Group(condense(dollar + lbrack + rbrack))
         | Group(dollar)
         | Group(condense(lbrack + rbrack))
-        | Group(~(dot+name) + dot)
+        | Group(~(dot + (name | lbrack)) + dot)
         )
     trailer = simple_trailer | complex_trailer
 
