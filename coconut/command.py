@@ -85,7 +85,7 @@ version_banner = "Coconut " + VERSION_STR
 if DEVELOP:
     version_tag = "develop"
 else:
-    version_tag = "v" + VERSION
+    version_tag = VERSION_TAG
 tutorial_url = "http://coconut.readthedocs.org/en/" + version_tag + "/HELP.html"
 documentation_url = "http://coconut.readthedocs.org/en/" + version_tag + "/DOCS.html"
 
