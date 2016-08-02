@@ -809,6 +809,8 @@ obj.            =>      getattr$(obj)
 func$           =>      ($)$(func)
 seq[]           =>      operator.getitem$(seq)
 iter$[]         =>      # the equivalent of seq[] for iterators
+.[a:b:c]        =>      operator.itemgetter(slice(a, b, c))
+.$[a:b:c]       =>      # the equivalent of .[a:b:c] for iterators
 ```
 
 ##### Example

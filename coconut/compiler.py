@@ -1331,6 +1331,19 @@ def subscriptgroup_handle(tokens):
     else:
         raise CoconutException("invalid slice args", tokens)
 
+def itemgetter_handle(tokens):
+    """Processes implicit itemgetter partials."""
+    if len(tokens) != 2:
+        raise CoconutException("invalid implicit itemgetter args", tokens)
+    else:
+        op, args = tokens
+        if op == "[":
+            return "_coconut.operator.itemgetter(" + args + ")"
+        elif op == "$[":
+            return "_coconut.functools.partial(_coconut_igetitem, index=" + args + ")"
+        else:
+            raise CoconutException("invalid implicit itemgetter type", op)
+
 # end: HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
 # PARSER:
@@ -2655,19 +2668,29 @@ class processor(object):
         | op_item
         )
 
+    slicetest = Optional(test_nochain)
+    sliceop = condense(unsafe_colon + slicetest)
+    subscript = condense(slicetest + sliceop + Optional(sliceop)) | test
+    subscriptlist = itemlist(subscript, comma)
+
+    slicetestgroup = Optional(test_nochain, default="")
+    sliceopgroup = unsafe_colon.suppress() + slicetestgroup
+    subscriptgroup = attach(slicetestgroup + sliceopgroup + Optional(sliceopgroup) | test, subscriptgroup_handle)
+
     testlist_comp = addspace((test | star_expr) + comp_for) | testlist_star_expr
     list_comp = condense(lbrack + Optional(testlist_comp) + rbrack)
-    func_atom = trace(
+    composable_atom = trace(
         name
         | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
         | lparen.suppress() + op_item + rparen.suppress()
-        , "func_atom")
+        , "composable_atom")
     keyword_atom = Keyword(const_vars[0])
     for x in range(1, len(const_vars)):
         keyword_atom |= Keyword(const_vars[x])
     string_atom = addspace(OneOrMore(string))
     passthrough_atom = trace(addspace(OneOrMore(passthrough)), "passthrough_atom")
     attr_atom = attach(dot.suppress() + name + Optional(lparen.suppress() + methodcaller_args + rparen.suppress()), attr_handle)
+    itemgetter_atom = attach(dot.suppress() + condense(Optional(dollar) + lbrack) + subscriptgroup + rbrack.suppress(), itemgetter_handle)
     set_literal = Forward()
     set_letter_literal = Forward()
     set_s = fixto(CaselessLiteral("s"), "s")
@@ -2687,6 +2710,7 @@ class processor(object):
         const_atom
         | ellipses
         | attr_atom
+        | itemgetter_atom
         | list_comp
         | dict_comp
         | dict_item
@@ -2697,17 +2721,8 @@ class processor(object):
     atom = (
         known_atom
         | passthrough_atom
-        | func_atom
+        | composable_atom
         )
-
-    slicetest = Optional(test_nochain)
-    sliceop = condense(unsafe_colon + slicetest)
-    subscript = condense(slicetest + sliceop + Optional(sliceop)) | test
-    subscriptlist = itemlist(subscript, comma)
-
-    slicetestgroup = Optional(test_nochain, default="")
-    sliceopgroup = unsafe_colon.suppress() + slicetestgroup
-    subscriptgroup = attach(slicetestgroup + sliceopgroup + Optional(sliceopgroup) | test, subscriptgroup_handle)
 
     simple_trailer = (
         condense(lbrack + subscriptlist + rbrack)
@@ -2716,7 +2731,7 @@ class processor(object):
     complex_trailer = (
         condense(lparen + callargslist + rparen)
         | Group(condense(dollar + lparen) + callargslist + rparen.suppress())
-        | Group(dotdot + func_atom)
+        | Group(dotdot + composable_atom)
         | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())
         | Group(condense(dollar + lbrack + rbrack))
         | Group(dollar)
