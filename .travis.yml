@@ -19,11 +19,11 @@ matrix:
         - git clone https://github.com/evhub/pyston.git
         - pip install futures
         - rm src/cocotest/py35_test.coco
-        - rm src/cocotest/non_py26_test.coco
         - rm src/cocotest/py3_test.coco
         - mkdir src_target
         - cp -r src/* src_target
         - rm src/cocotest/py2_test.coco
+        - rm src/cocotest/non_py26_test.coco
 
       script:
         - coconut --version --color cyan
@@ -568,8 +568,8 @@ matrix:
         - mkdir src_target
         - cp -r src/* src_target
         - rm src/cocotest/py3_test.coco
-        - rm src/cocotest/py35_test.coco
         - rm src/cocotest/non_py26_test.coco
+        - rm src/cocotest/py35_test.coco
 
       script:
         - coconut --version --color cyan
