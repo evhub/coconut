@@ -2645,7 +2645,7 @@ class processor(object):
 
     callargslist = Optional(trace(
         attach(addspace(test + comp_for), add_paren_handle)
-        | itemlist(condense(dubstar + test | star + test | name + default | test), comma)
+        | itemlist(condense(dubstar + test | star + Optional(test) | name + default | test), comma)
         | op_item
         , "callargslist"))
     methodcaller_args = (
