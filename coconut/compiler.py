@@ -2359,7 +2359,7 @@ class processor(object):
         self.stmt_lambdas.append(
             "def " + outer_name + "(closure):\n"
             + openindent + "vars = _coconut.globals().copy()\n"
-            + "vars.update(closure)\n"
+            + "vars.update(_coconut.locals())\nvars.update(closure)\n"
             + self.exec_stmt_handle([self.wrap_str_of(inner_funcdef), "vars"]) + "\n"
             + 'return vars["' + inner_stmt_lambda_var + '"]' + closeindent
         )
@@ -2648,19 +2648,19 @@ class processor(object):
 
     argslist = trace(Optional(itemlist(condense(
         dubstar + tfpdef
-        | star + tfpdef
+        | star + Optional(tfpdef)
         | tfpdef + Optional(default)
         ), comma)), "argslist")
     varargslist = trace(Optional(itemlist(condense(
         dubstar + name
-        | star + name
+        | star + Optional(name)
         | name + Optional(default)
         ), comma)), "varargslist")
     parameters = condense(lparen + argslist + rparen)
 
     callargslist = Optional(trace(
         attach(addspace(test + comp_for), add_paren_handle)
-        | itemlist(condense(dubstar + test | star + Optional(test) | name + default | test), comma)
+        | itemlist(condense(dubstar + test | star + test | name + default | test), comma)
         | op_item
         , "callargslist"))
     methodcaller_args = (
