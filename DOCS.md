@@ -758,9 +758,7 @@ def (arguments) -> statement; statement; ...
 ```
 where `statement` can be an assignment statement or a keyword statement. If the last `statement` (not followed by a semicolon) is an `expression`, it will automatically be returned.
 
-Statement lambdas, unlike normal lambdas, also support proper closure. Local variables accessible to the statement lambda when it is created will be remembered and keep their original value when it is called, in exactly the same way that normal functions do.
-
-Additionally, statement lambdas also support implicit lambda syntax, where when the arguments are omitted, as in `def -> _`, `def (_=None) -> _` is assumed.
+Statement lambdas also support implicit lambda syntax, where when the arguments are omitted, as in `def -> _`, `def (_=None) -> _` is assumed.
 
 ##### Example
 

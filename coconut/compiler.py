@@ -82,8 +82,7 @@ import_as_var = "_coconut_import"
 yield_from_var = "_coconut_yield_from"
 yield_item_var = "_coconut_yield_item"
 raise_from_var = "_coconut_raise_from"
-outer_stmt_lambda_var = "_coconut_lambda"
-inner_stmt_lambda_var = "_coconut_lambda_func"
+stmt_lambda_var = "_coconut_lambda"
 wildcard = "_" # for pattern-matching
 keywords = (
     "and",
@@ -2334,19 +2333,11 @@ class processor(object):
                 stmts = stmts.asList() + [last]
         else:
             raise CoconutException("invalid statement lambda tokens", tokens)
-        inner_funcdef = self.post([
-            "def " + inner_stmt_lambda_var + params + ":\n"
-            + openindent + "\n".join(stmts) + closeindent
-        ], header="none", initial="none", final_endline=False, use_autopep8=False)
-        outer_name = self.stmt_lambda_name()
         self.stmt_lambdas.append(
-            "def " + outer_name + "(closure):\n"
-            + openindent + "vars = _coconut.globals().copy()\n"
-            + "vars.update(closure)\n"
-            + self.exec_stmt_handle([self.wrap_str_of(inner_funcdef), "vars"]) + "\n"
-            + 'return vars["' + inner_stmt_lambda_var + '"]' + closeindent
+            "def " + name + params + ":\n"
+            + openindent + "\n".join(stmts) + closeindent
         )
-        return outer_name + "(_coconut.locals())"
+        return name + "(_coconut.locals())"
 
 # end: PARSER HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
