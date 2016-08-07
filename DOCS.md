@@ -47,6 +47,7 @@
     1. [Decorators](#decorators)
     1. [`else` Statements](#else-statements)
     1. [`except` Statements](#except-statements)
+    1. [Implicit `pass`](#implicit-pass)
     1. [Parenthetical Continuation](#parenthetical-continuation)
     1. [Code Passthrough](#code-passthrough)
 1. [Built-Ins](#built-ins)
@@ -1150,6 +1151,31 @@ try:
     unsafe_func(arg)
 except (SyntaxError, ValueError) as err:
     handle(err)
+```
+
+### Implicit `pass`
+
+Coconut supports the simple `class name(base)` and `data name(args)` as aliases for `class name(base): pass` and `data name(args): pass`.
+
+##### Example
+
+###### Coconut
+```coconut
+data Empty
+data Leaf(item)
+data Node(left, right)
+```
+
+###### Python
+```coconut_python
+import collections
+
+class Empty(collections.namedtuple("Empty", "")):
+    __slots__ = ()
+class Leaf(collections.namedtuple("Leaf", "n")):
+    __slots__ = ()
+class Node(collections.namedtuple("Node", "l, r")):
+    __slots__ = ()
 ```
 
 ### Parenthetical Continuation
