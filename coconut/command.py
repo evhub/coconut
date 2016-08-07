@@ -85,7 +85,7 @@ version_banner = "Coconut " + VERSION_STR
 if DEVELOP:
     version_tag = "develop"
 else:
-    version_tag = "v" + VERSION
+    version_tag = VERSION_TAG
 tutorial_url = "http://coconut.readthedocs.org/en/" + version_tag + "/HELP.html"
 documentation_url = "http://coconut.readthedocs.org/en/" + version_tag + "/DOCS.html"
 
@@ -420,6 +420,9 @@ class cli(object):
             finally: # if we wrote anything in package mode, we should always add a header file
                 if wrote and package and headerdir is not None:
                     self.create_package(headerdir)
+            for name in dirnames[:]:
+                if os.path.split(name)[-1].startswith("."):
+                    dirnames.remove(name) # directories removed from dirnames won't appear in further os.walk iteration
 
     def compile_file(self, filepath, write=True, package=False, run=False, force=False):
         """Compiles a file."""

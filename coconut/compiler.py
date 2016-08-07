@@ -530,7 +530,8 @@ def _coconut_tee(iterable, n=2):
         return _coconut.itertools.tee(iterable, n)
 class _coconut_map(_coconut.map):
     __slots__ = ("_func", "_iters")
-    __doc__ = _coconut.map.__doc__
+    if hasattr(_coconut.map, "__doc__"):
+        __doc__ = _coconut.map.__doc__
     def __new__(cls, function, *iterables):
         new_map = _coconut.map.__new__(cls, function, *iterables)
         new_map._func, new_map._iters = function, iterables
@@ -552,7 +553,8 @@ class _coconut_map(_coconut.map):
         return self.__class__(self._func, *_coconut_map(_coconut.copy.copy, self._iters))
 class zip(_coconut.zip):
     __slots__ = ("_iters",)
-    __doc__ = _coconut.zip.__doc__
+    if hasattr(_coconut.zip, "__doc__"):
+        __doc__ = _coconut.zip.__doc__
     def __new__(cls, *iterables):
         new_zip = _coconut.zip.__new__(cls, *iterables)
         new_zip._iters = iterables
@@ -1312,6 +1314,35 @@ def gen_imports(path, impas):
             out.append("from " + imp_from + " import " + imp + " as " + impas)
     return out
 
+def subscriptgroup_handle(tokens):
+    """Processes subscriptgroups."""
+    if 0 < len(tokens) <= 3:
+        args = []
+        for x in range(0, len(tokens)):
+            arg = tokens[x]
+            if not arg:
+                arg = "None"
+            args.append(arg)
+        if len(args) == 1:
+            return args[0]
+        else:
+            return "_coconut.slice(" + ", ".join(args) + ")"
+    else:
+        raise CoconutException("invalid slice args", tokens)
+
+def itemgetter_handle(tokens):
+    """Processes implicit itemgetter partials."""
+    if len(tokens) != 2:
+        raise CoconutException("invalid implicit itemgetter args", tokens)
+    else:
+        op, args = tokens
+        if op == "[":
+            return "_coconut.operator.itemgetter(" + args + ")"
+        elif op == "$[":
+            return "_coconut.functools.partial(_coconut_igetitem, index=" + args + ")"
+        else:
+            raise CoconutException("invalid implicit itemgetter type", op)
+
 # end: HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
 # PARSER:
@@ -2067,21 +2098,7 @@ class processor(object):
                 if trailer[0] == "$(":
                     out = "_coconut.functools.partial("+out+", "+trailer[1]+")"
                 elif trailer[0] == "$[":
-                    if 0 < len(trailer[1]) <= 3:
-                        args = []
-                        for x in range(0, len(trailer[1])):
-                            arg = trailer[1][x]
-                            if not arg:
-                                arg = "None"
-                            args.append(arg)
-                        out = "_coconut_igetitem(" + out
-                        if len(args) == 1:
-                            out += ", " + args[0]
-                        else:
-                            out += ", _coconut.slice(" + ", ".join(args) + ")"
-                        out += ")"
-                    else:
-                        raise CoconutException("invalid iterator slice args", trailer[1])
+                    out = "_coconut_igetitem("+out+", "+trailer[1]+")"
                 elif trailer[0] == "..":
                     out = "_coconut_compose("+out+", "+trailer[1]+")"
                 else:
@@ -2417,8 +2434,6 @@ class processor(object):
 #-----------------------------------------------------------------------------------------------------------------------
 
     comma = Literal(",")
-    unsafe_dot = Literal(".")
-    dot = ~Literal("..")+unsafe_dot
     dubstar = Literal("**")
     star = ~dubstar+Literal("*")
     at = Literal("@")
@@ -2437,6 +2452,8 @@ class processor(object):
     rbanana = Literal("|)")
     lparen = ~lbanana+Literal("(")
     rparen = ~rbanana+Literal(")")
+    unsafe_dot = Literal(".")
+    dot = ~Literal("..")+unsafe_dot
     plus = Literal("+")
     minus = ~Literal("->")+Literal("-")
     dubslash = Literal("//")
@@ -2622,12 +2639,12 @@ class processor(object):
 
     argslist = trace(Optional(itemlist(condense(
         dubstar + tfpdef
-        | star + tfpdef
+        | star + Optional(tfpdef)
         | tfpdef + Optional(default)
         ), comma)), "argslist")
     varargslist = trace(Optional(itemlist(condense(
         dubstar + name
-        | star + name
+        | star + Optional(name)
         | name + Optional(default)
         ), comma)), "varargslist")
     parameters = condense(lparen + argslist + rparen)
@@ -2642,19 +2659,29 @@ class processor(object):
         | op_item
         )
 
+    slicetest = Optional(test_nochain)
+    sliceop = condense(unsafe_colon + slicetest)
+    subscript = condense(slicetest + sliceop + Optional(sliceop)) | test
+    subscriptlist = itemlist(subscript, comma)
+
+    slicetestgroup = Optional(test_nochain, default="")
+    sliceopgroup = unsafe_colon.suppress() + slicetestgroup
+    subscriptgroup = attach(slicetestgroup + sliceopgroup + Optional(sliceopgroup) | test, subscriptgroup_handle)
+
     testlist_comp = addspace((test | star_expr) + comp_for) | testlist_star_expr
     list_comp = condense(lbrack + Optional(testlist_comp) + rbrack)
-    func_atom = trace(
+    composable_atom = trace(
         name
         | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
         | lparen.suppress() + op_item + rparen.suppress()
-        , "func_atom")
+        , "composable_atom")
     keyword_atom = Keyword(const_vars[0])
     for x in range(1, len(const_vars)):
         keyword_atom |= Keyword(const_vars[x])
     string_atom = addspace(OneOrMore(string))
     passthrough_atom = trace(addspace(OneOrMore(passthrough)), "passthrough_atom")
     attr_atom = attach(dot.suppress() + name + Optional(lparen.suppress() + methodcaller_args + rparen.suppress()), attr_handle)
+    itemgetter_atom = attach(dot.suppress() + condense(Optional(dollar) + lbrack) + subscriptgroup + rbrack.suppress(), itemgetter_handle)
     set_literal = Forward()
     set_letter_literal = Forward()
     set_s = fixto(CaselessLiteral("s"), "s")
@@ -2674,6 +2701,7 @@ class processor(object):
         const_atom
         | ellipses
         | attr_atom
+        | itemgetter_atom
         | list_comp
         | dict_comp
         | dict_item
@@ -2684,26 +2712,22 @@ class processor(object):
     atom = (
         known_atom
         | passthrough_atom
-        | func_atom
+        | composable_atom
         )
 
-    slicetest = Optional(test_nochain)
-    sliceop = condense(unsafe_colon + slicetest)
-    subscript = condense(slicetest + sliceop + Optional(sliceop)) | test
-    subscriptlist = itemlist(subscript, comma)
-    slicetestgroup = Optional(test_nochain, default="")
-    sliceopgroup = unsafe_colon.suppress() + slicetestgroup
-    subscriptgroup = Group(slicetestgroup + sliceopgroup + Optional(sliceopgroup) | test)
-    simple_trailer = condense(lbrack + subscriptlist + rbrack) | condense(dot + name)
+    simple_trailer = (
+        condense(lbrack + subscriptlist + rbrack)
+        | condense(dot + name)
+        )
     complex_trailer = (
         condense(lparen + callargslist + rparen)
         | Group(condense(dollar + lparen) + callargslist + rparen.suppress())
-        | Group(dotdot + func_atom)
+        | Group(dotdot + composable_atom)
         | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())
         | Group(condense(dollar + lbrack + rbrack))
         | Group(dollar)
         | Group(condense(lbrack + rbrack))
-        | Group(~(dot+name) + dot)
+        | Group(~(dot + (name | lbrack)) + dot)
         )
     trailer = simple_trailer | complex_trailer
 
@@ -2843,6 +2867,7 @@ class processor(object):
     nonlocal_stmt_ref = addspace(Keyword("nonlocal") - namelist)
     del_stmt = addspace(Keyword("del") - simple_assignlist)
     with_item = addspace(test - Optional(Keyword("as") - name))
+    with_item_list = parenwrap(lparen, condense(itemlist(with_item, comma)), rparen)
 
     match = Forward()
     matchlist_list = Group(Optional(tokenlist(match, comma)))
@@ -2917,7 +2942,7 @@ class processor(object):
             | Keyword("except") - suite
           ) - Optional(else_stmt) - Optional(Keyword("finally") - suite)
         ))
-    with_stmt = addspace(Keyword("with") - condense(itemlist(with_item, comma) - suite))
+    with_stmt = addspace(Keyword("with") - with_item_list - suite)
     exec_stmt_ref = Keyword("exec").suppress() + lparen.suppress() + test + Optional(
         comma.suppress() + test + Optional(
             comma.suppress() + test + Optional(

@@ -35,7 +35,8 @@ if DEVELOP:
     VERSION += "-post_dev"
 __version__ = VERSION
 VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
-VERSION_TAG = "v" + VERSION_STR
+VERSION_TAG = "v" + VERSION
+VERSION_STR_TAG = "v" + VERSION_STR
 PY2 = sys.version_info < (3,)
 PY27_HEADER_BASE = r'''py2_chr, py2_filter, py2_hex, py2_input, py2_int, py2_map, py2_oct, py2_open, py2_print, py2_range, py2_raw_input, py2_str, py2_xrange, py2_zip = chr, filter, hex, input, int, map, oct, open, print, range, raw_input, str, xrange, zip
 _coconut_int, _coconut_long, _coconut_print, _coconut_raw_input, _coconut_str, _coconut_unicode, _coconut_xrange, _coconut_repr = int, long, print, raw_input, str, unicode, xrange, repr
@@ -44,7 +45,8 @@ chr, str = unichr, unicode
 from io import open
 class range(object):
     __slots__ = ("_xrange",)
-    __doc__ = _coconut_xrange.__doc__
+    if hasattr(_coconut_xrange, "__doc__"):
+        __doc__ = _coconut_xrange.__doc__
     def __init__(self, *args):
         self._xrange = _coconut_xrange(*args)
     def __iter__(self):
@@ -89,35 +91,40 @@ from collections import Sequence as _coconut_Sequence
 _coconut_Sequence.register(range)
 class int(_coconut_int):
     __slots__ = ()
-    __doc__ = _coconut_int.__doc__
+    if hasattr(_coconut_int, "__doc__"):
+        __doc__ = _coconut_int.__doc__
     class __metaclass__(type):
         def __instancecheck__(cls, inst):
             return _coconut.isinstance(inst, (_coconut_int, _coconut_long))
 class bytes(_coconut_str):
     __slots__ = ()
-    __doc__ = _coconut_str.__doc__
+    if hasattr(_coconut_str, "__doc__"):
+        __doc__ = _coconut_str.__doc__
     class __metaclass__(type):
         def __instancecheck__(cls, inst):
             return _coconut.isinstance(inst, _coconut_str)
     def __new__(cls, *args, **kwargs):
         return _coconut_str.__new__(cls, _coconut.bytearray(*args, **kwargs))
+from functools import wraps as _coconut_wraps
+@_coconut_wraps(_coconut_print)
 def print(*args, **kwargs):
     if _coconut.hasattr(_coconut_sys.stdout, "encoding") and _coconut_sys.stdout.encoding is not None:
         return _coconut_print(*(_coconut_unicode(x).encode(_coconut_sys.stdout.encoding) for x in args), **kwargs)
     else:
         return _coconut_print(*(_coconut_unicode(x).encode() for x in args), **kwargs)
+@_coconut_wraps(_coconut_raw_input)
 def input(*args, **kwargs):
     if _coconut.hasattr(_coconut_sys.stdout, "encoding") and _coconut_sys.stdout.encoding is not None:
         return _coconut_raw_input(*args, **kwargs).decode(_coconut_sys.stdout.encoding)
     else:
         return _coconut_raw_input(*args, **kwargs).decode()
+@_coconut_wraps(_coconut_repr)
 def repr(obj):
     if isinstance(obj, _coconut_unicode):
         return _coconut_repr(obj)[1:]
     else:
         return _coconut_repr(obj)
 ascii = repr
-print.__doc__, input.__doc__, repr.__doc__ = _coconut_print.__doc__, _coconut_raw_input.__doc__, _coconut_repr.__doc__
 def raw_input(*args):
     """Coconut uses Python 3 "input" instead of Python 2 "raw_input"."""
     raise _coconut.NameError('Coconut uses Python 3 "input" instead of Python 2 "raw_input"')

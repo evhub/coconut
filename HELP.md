@@ -1120,6 +1120,8 @@ obj.
 func$
 seq[]
 iter$[]
+.[slice]
+.$[slice]
 ```
 
 ### Further Reading

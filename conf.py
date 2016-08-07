@@ -36,7 +36,8 @@ highlight_language = "coconut"
 project = "Coconut"
 copyright = "2015, Evan Hubinger, licensed under Apache 2.0"
 author = "Evan Hubinger"
-version = VERSION_TAG
+version = VERSION
+release = VERSION_STR_TAG
 
 master_doc = 'README'
 source_suffix = [".rst", ".md"]
