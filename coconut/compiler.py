@@ -868,6 +868,8 @@ def data_handle(tokens):
     elif "complex" in stmts.keys() and len(stmts) == 2:
         out += stmts[0] + "__slots__ = ()\n"
         rest = "".join(stmts[1])
+    elif "empty" in stmts.keys() and len(stmts) == 1:
+        out += "__slots__ = ()" + stmts[0]
     else:
         raise CoconutException("invalid inner data tokens", stmts)
     if rest is not None and rest != "pass\n":
@@ -1342,6 +1344,13 @@ def itemgetter_handle(tokens):
             return "_coconut.functools.partial(_coconut_igetitem, index=" + args + ")"
         else:
             raise CoconutException("invalid implicit itemgetter type", op)
+
+def class_suite_handle(tokens):
+    """Processes implicit pass in class suite."""
+    if len(tokens) != 1:
+        raise CoconutException("invalid implicit pass in class suite tokens", tokens)
+    else:
+        return ": pass" + tokens[0]
 
 # end: HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
@@ -2834,7 +2843,8 @@ class processor(object):
             | lparen.suppress() + callargslist("args") + rparen.suppress()
             )
         )
-    classdef = condense(addspace(Keyword("class") - name) + classlist + suite)
+    class_suite = suite | attach(newline, class_suite_handle, copy=True)
+    classdef = condense(addspace(Keyword("class") - name) + classlist + class_suite)
     comp_iter = Forward()
     comp_for <<= trace(addspace(Keyword("for") + assignlist + Keyword("in") + test_item + Optional(comp_iter)), "comp_for")
     comp_if = addspace(Keyword("if") + test_nocond + Optional(comp_iter))
@@ -2985,10 +2995,11 @@ class processor(object):
     async_stmt = async_block | async_funcdef | async_match_funcdef_ref
 
     data_args = Optional(lparen.suppress() + Optional(itemlist(~underscore + name, comma)) + rparen.suppress())
-    data_suite = colon.suppress() - Group(
+    data_suite = Group(colon.suppress() - (
         (newline.suppress() + indent.suppress() + Optional(docstring) + Group(OneOrMore(stmt)) + dedent.suppress())("complex")
         | (newline.suppress() + indent.suppress() + docstring + dedent.suppress() | docstring)("docstring")
-        | simple_stmt("simple"))
+        | simple_stmt("simple")
+        ) | newline("empty"))
     datadef = condense(attach(Keyword("data").suppress() + name - data_args - data_suite, data_handle))
 
     simple_decorator = condense(dotted_name + Optional(lparen + callargslist + rparen))("simple")
