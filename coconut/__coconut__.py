@@ -16,10 +16,10 @@ Description: Mimics what a compiled __coconut__.py would do.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from .compiler import processor as __proc
+from .compiler import Compiler as __Compiler
 
 #-----------------------------------------------------------------------------------------------------------------------
 # HEADER:
 #-----------------------------------------------------------------------------------------------------------------------
 
-exec(__proc(target="sys").headers("code")) # executes the __coconut__.py header for the current Python version
+exec(__Compiler(target="sys").headers("code")) # executes the __coconut__.py header for the current Python version

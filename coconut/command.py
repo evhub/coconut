@@ -431,7 +431,7 @@ class cli(object):
                     self.create_package(headerdir)
             for name in dirnames[:]:
                 if os.path.split(name)[-1].startswith("."):
-                    self.show_tabulated("Skipping", showpath(name), ".")
+                    self.show_tabulated("Skipping", showpath(name), "(explicitly pass as source to override).")
                     dirnames.remove(name) # directories removed from dirnames won't appear in further os.walk iteration
 
     def compile_file(self, filepath, write=True, package=False, run=False, force=False):
@@ -459,7 +459,7 @@ class cli(object):
             code = readfile(opened)
         foundhash = None if force else self.hashashof(destpath, code, package)
         if foundhash:
-            self.show_tabulated("Left unchanged", showpath(destpath), "(pass --force to overwrite).")
+            self.show_tabulated("Left unchanged", showpath(destpath), "(pass --force to override).")
             if run:
                 self.execute(foundhash, path=destpath, isolate=True)
             elif self.show:
