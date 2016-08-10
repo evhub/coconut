@@ -2345,7 +2345,7 @@ class processor(object):
         """Return the next (or specified) statement lambda name."""
         if index is None:
             index = len(self.stmt_lambdas)
-        return outer_stmt_lambda_var + "_" + str(index)
+        return stmt_lambda_var + "_" + str(index)
 
     def stmt_lambdef_handle(self, tokens):
         """Handles multi-line lambdef statements."""
