@@ -472,11 +472,11 @@ class _coconut(object):'''
         import collections.abc as abc'''
             if target.startswith("3"):
                 header += r'''
-    IndexError, NameError, ValueError, map, zip, bytearray, dict, frozenset, getattr, globals, hasattr, isinstance, iter, len, list, locals, min, next, object, range, reversed, set, slice, super, tuple, repr = IndexError, NameError, ValueError, map, zip, bytearray, dict, frozenset, getattr, globals, hasattr, isinstance, iter, len, list, locals, min, next, object, range, reversed, set, slice, super, tuple, repr
+    IndexError, NameError, ValueError, map, zip, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, reversed, set, slice, super, tuple, repr = IndexError, NameError, ValueError, map, zip, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, reversed, set, slice, super, tuple, repr
 '''
             else:
                 header += r'''
-    IndexError, NameError, ValueError, map, zip, bytearray, dict, frozenset, getattr, globals, hasattr, isinstance, iter, len, list, locals, min, next, object, range, reversed, set, slice, super, tuple, repr = IndexError, NameError, ValueError, map, zip, bytearray, dict, frozenset, getattr, globals, hasattr, isinstance, iter, len, list, locals, min, next, object, range, reversed, set, slice, super, tuple, staticmethod(repr)
+    IndexError, NameError, ValueError, map, zip, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, reversed, set, slice, super, tuple, repr = IndexError, NameError, ValueError, map, zip, bytearray, dict, frozenset, getattr, hasattr, isinstance, iter, len, list, min, next, object, range, reversed, set, slice, super, tuple, staticmethod(repr)
 '''
             header += r'''
 class _coconut_MatchError(Exception):
@@ -2364,7 +2364,7 @@ class processor(object):
             "def " + name + params + ":\n"
             + openindent + "\n".join(stmts) + closeindent
         )
-        return name + "(_coconut.locals())"
+        return name
 
 # end: PARSER HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
