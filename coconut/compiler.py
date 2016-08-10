@@ -2359,6 +2359,7 @@ class processor(object):
                 stmts = stmts.asList() + [last]
         else:
             raise CoconutException("invalid statement lambda tokens", tokens)
+        name = self.stmt_lambda_name()
         self.stmt_lambdas.append(
             "def " + name + params + ":\n"
             + openindent + "\n".join(stmts) + closeindent
