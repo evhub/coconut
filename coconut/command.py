@@ -253,7 +253,7 @@ class Command(object):
     arguments.add_argument("-v", "--version", action="store_const", const=True, default=False, help="print Coconut and Python version information")
     arguments.add_argument("-t", "--target", metavar="version", type=str, nargs=1, default=[None], help="specify target Python version (defaults to universal)")
     arguments.add_argument("-s", "--strict", action="store_const", const=True, default=False, help="enforce code cleanliness standards")
-    arguments.add_argument("-l", "--linenumbers", action="store_const", const=True, default=False, help="add line number comments for ease of debugging")
+    arguments.add_argument("-l", "--line-numbers", "--linenumbers", action="store_const", const=True, default=False, help="add line number comments for ease of debugging")
     arguments.add_argument("-p", "--package", action="store_const", const=True, default=False, help="compile source as part of a package (defaults to only if source is a directory)")
     arguments.add_argument("-a", "--standalone", action="store_const", const=True, default=False, help="compile source as standalone files (defaults to only if source is a single file)")
     arguments.add_argument("-w", "--watch", action="store_const", const=True, default=False, help="watch a directory and recompile on changes (requires watchdog)")
@@ -287,7 +287,7 @@ class Command(object):
         """Processes command-line arguments."""
         self.cmd(self.arguments.parse_args())
 
-    def setup(self, target=None, strict=False, minify=False, linenumbers=False, quiet=False, color=None):
+    def setup(self, target=None, strict=False, minify=False, line_numbers=False, quiet=False, color=None):
         """Sets parameters for the compiler."""
         if color is not None:
             self.console.set_color(color)
@@ -295,9 +295,9 @@ class Command(object):
             self.moreprompt = self.console.add_color(self.moreprompt)
         self.console.on = not quiet
         if self.proc is None:
-            self.proc = Compiler(target, strict, minify, linenumbers, self.console.printerr)
+            self.proc = Compiler(target, strict, minify, line_numbers, self.console.printerr)
         else:
-            self.proc.setup(target, strict, minify, linenumbers)
+            self.proc.setup(target, strict, minify, line_numbers)
 
     def indebug(self):
         """Determines whether the compiler is in debug mode."""
@@ -324,7 +324,7 @@ class Command(object):
         try:
             if args.recursion_limit[0] is not None:
                 sys.setrecursionlimit(args.recursion_limit[0])
-            self.setup(args.target[0], args.strict, args.minify, args.linenumbers, args.quiet, args.color[0])
+            self.setup(args.target[0], args.strict, args.minify, args.line_numbers, args.quiet, args.color[0])
             if args.version:
                 self.console.show(version_long)
             if args.tutorial:

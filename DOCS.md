@@ -124,7 +124,7 @@ dest                  destination directory for compiled files (defaults to the 
 -v, --version           print Coconut and Python version information
 -t, --target            specify target Python version (defaults to universal)
 -s, --strict            enforce code cleanliness standards
--l, --linenumbers       add line number comments for ease of debugging
+-l, --line-numbers      add line number comments for ease of debugging
 -p, --package           compile source as part of a package (defaults to only if source is a directory)
 -a, --standalone        compile source as standalone files (defaults to only if source is a single file)
 -w, --watch           watch a directory and recompile on changes (requires watchdog)
@@ -1712,14 +1712,14 @@ Each _mode_ has two components: what parser it uses, and what header it prepends
 
 #### `setup`
 
-**coconut.convenience.setup**(_target, strict, minify, linenumbers, quiet, color_**)**
+**coconut.convenience.setup**(_target, strict, minify, line\_numbers, quiet, color_**)**
 
-If `--target`, `--strict`, `--minify`, `--linenumbers`, `--quiet`, or `--color` are desired for `parse`, the arguments to `setup` will each set the value of the corresponding flag. The possible values for each flag are:
+If `--target`, `--strict`, `--minify`, `--line-numbers`, `--quiet`, or `--color` are desired for `parse`, the arguments to `setup` will each set the value of the corresponding flag. The possible values for each flag are:
 
-- _target_: `None` (default), or any [allowable target](##allowable-targets)
+- _target_: `None` (default), or any [allowable target](#allowable-targets)
 - _strict_: `False` (default) or `True`
 - _minify_: `False` (default) or `True`
-- _linenumbers_: `False` (default) or `True`
+- _line\_numbers_: `False` (default) or `True`
 - _quiet_: `False` (default) or `True`
 - _color_: `None` (default) or `str`
 

@@ -1365,10 +1365,10 @@ class Compiler(object):
     debug = tracer.debug
     autopep8_args = None
 
-    def __init__(self, target=None, strict=False, minify=False, linenumbers=False, debugger=printerr):
+    def __init__(self, target=None, strict=False, minify=False, line_numbers=False, debugger=printerr):
         """Creates a new compiler with the given parsing parameters."""
         self.debugger = debugger
-        self.setup(target, strict, minify, linenumbers)
+        self.setup(target, strict, minify, line_numbers)
         self.preprocs = [
             self.prepare,
             self.str_proc,
@@ -1389,7 +1389,7 @@ class Compiler(object):
             self.str_repl
         ]
 
-    def setup(self, target=None, strict=False, minify=False, linenumbers=False):
+    def setup(self, target=None, strict=False, minify=False, line_numbers=False):
         """Initializes parsing parameters."""
         if target is None:
             target = ""
@@ -1400,7 +1400,7 @@ class Compiler(object):
         if target not in targets:
             raise CoconutException('unsupported target Python version "' + target
                 + '" (supported targets are "' + '", "'.join(specific_targets) + '", or leave blank for universal)')
-        self.target, self.strict, self.minify, self.linenumbers = target, strict, minify, linenumbers
+        self.target, self.strict, self.minify, self.line_numbers = target, strict, minify, line_numbers
         self.tablen = 1 if self.minify else tabideal
 
     def autopep8(self, args=()):
@@ -1463,7 +1463,7 @@ class Compiler(object):
                     VERSION_STR,
                     self.target,
                     self.minify,
-                    self.linenumbers,
+                    self.line_numbers,
                     self.autopep8_args,
                     package,
                     code
@@ -1483,10 +1483,10 @@ class Compiler(object):
     def reformat(self, snip, index=None):
         """Post processes a preprocessed snippet."""
         if index is None:
-            return self.repl_proc(snip, careful=False, linenumbers=False)
+            return self.repl_proc(snip, careful=False, line_numbers=False)
         else:
-            return (self.repl_proc(snip, careful=False, linenumbers=False),
-                    len(self.repl_proc(snip[:index], careful=False, linenumbers=False)))
+            return (self.repl_proc(snip, careful=False, line_numbers=False),
+                    len(self.repl_proc(snip[:index], careful=False, line_numbers=False)))
 
     def make_err(self, errtype, message, original, location, ln=None, reformat=True):
         """Generates an error of the specified type."""
@@ -1898,11 +1898,11 @@ class Compiler(object):
             out.append(line + comment)
         return "\n".join(out)
 
-    def linenumber_repl(self, inputstring, linenumbers=None, careful=True, **kwargs):
-        """Adds in linenumbers."""
-        if self.linenumbers:
-            if linenumbers is None:
-                linenumbers = True
+    def linenumber_repl(self, inputstring, line_numbers=None, careful=True, **kwargs):
+        """Adds in line_numbers."""
+        if self.line_numbers:
+            if line_numbers is None:
+                line_numbers = True
             out = []
             ln = 1
             fix = False
@@ -1918,7 +1918,7 @@ class Compiler(object):
                     elif fix:
                         ln += 1
                         fix = False
-                    if linenumbers and line and not line.lstrip().startswith("#"):
+                    if line_numbers and line and not line.lstrip().startswith("#"):
                         if self.minify:
                             line += self.wrap_comment(str(ln))
                         else:
@@ -1929,8 +1929,8 @@ class Compiler(object):
                     fix = False
                 out.append(line)
             return "\n".join(out)
-        elif linenumbers:
-            raise CoconutException("linenumbers must be enabled to pass it as an argument")
+        elif line_numbers:
+            raise CoconutException("line_numbers must be enabled to pass it as an argument")
         else:
             return inputstring
 
@@ -2075,13 +2075,13 @@ class Compiler(object):
             return "yield from " + tokens[0]
 
     def endline_handle(self, original, location, tokens):
-        """Inserts line number comments when in linenumbers mode."""
+        """Inserts line number comments when in line_numbers mode."""
         if len(tokens) != 1:
             raise CoconutException("invalid endline tokens", tokens)
         out = tokens[0]
         if self.minify:
             out = out[0]
-        if self.linenumbers:
+        if self.line_numbers:
             out = self.wrap_linenumber(self.adjust(lineno(location, original))) + out
         return out
 
