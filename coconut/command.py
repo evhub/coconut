@@ -142,7 +142,7 @@ def try_eval(code, in_vars):
         pass # exit the exception context before executing code
     exec(code, in_vars)
 
-class executor(object):
+class Runner(object):
     """Compiled Python executor."""
     def __init__(self, proc=None, exit=None, path=None):
         """Creates the executor."""
@@ -183,16 +183,16 @@ def escape_color(code):
     """Generates an ANSII color code."""
     return "\033[" + str(code) + "m"
 
-class terminal(object):
+class Console(object):
     """Manages printing and reading data to the console."""
     color_code = None
     on = True
 
     def __init__(self, main_sig="", debug_sig=""):
-        """Creates the terminal."""
+        """Creates the console."""
         self.main_sig, self.debug_sig = main_sig, debug_sig
 
-    def setcolor(self, color=None):
+    def set_color(self, color=None):
         """Set output color."""
         if color:
             color = color.replace("_", "")
@@ -211,7 +211,7 @@ class terminal(object):
         else:
             self.color_code = None
 
-    def addcolor(self, inputstring):
+    def add_color(self, inputstring):
         """Adds the specified color to the string."""
         if self.color_code is None:
             return inputstring
@@ -223,7 +223,7 @@ class terminal(object):
         if self.on:
             message = " ".join(str(msg) for msg in messages)
             for line in message.splitlines():
-                msg = self.addcolor(sig + line)
+                msg = self.add_color(sig + line)
                 if debug is True:
                     printerr(msg)
                 else:
@@ -267,20 +267,20 @@ class cli(object):
     commandline.add_argument("-c", "--code", metavar="code", type=str, nargs=1, default=None, help="run a line of Coconut passed in as a string (can also be passed into stdin)")
     commandline.add_argument("--jupyter", "--ipython", type=str, nargs=argparse.REMAINDER, default=None, help="run Jupyter/IPython with Coconut as the kernel (remaining args passed to Jupyter)")
     commandline.add_argument("--autopep8", type=str, nargs=argparse.REMAINDER, default=None, help="use autopep8 to format compiled code (remaining args passed to autopep8) (requires autopep8)")
-    commandline.add_argument("--recursionlimit", metavar="limit", type=int, nargs=1, default=[None], help="set maximum recursion depth (defaults to "+str(sys.getrecursionlimit())+")")
+    commandline.add_argument("--recursion-limit", "--recursionlimit", metavar="limit", type=int, nargs=1, default=[None], help="set maximum recursion depth (defaults to "+str(sys.getrecursionlimit())+")")
     commandline.add_argument("--tutorial", action="store_const", const=True, default=False, help="open the Coconut tutorial in the default web browser")
     commandline.add_argument("--documentation", action="store_const", const=True, default=False, help="open the Coconut documentation in the default web browser")
     commandline.add_argument("--color", metavar="color", type=str, nargs=1, default=[None], help="show all Coconut messages in the given color")
     commandline.add_argument("--verbose", action="store_const", const=True, default=False, help="print verbose debug output")
-    proc = None # current .compiler.processor
+    proc = None # current .compiler.Compiler
     show = False # corresponds to --display flag
     running = False # whether the interpreter is currently active
-    runner = None # the current executor
+    runner = None # the current Runner
     target = None # corresponds to --target flag
 
     def __init__(self, prompt=default_prompt, moreprompt=default_moreprompt):
         """Creates the CLI."""
-        self.console = terminal(main_sig, debug_sig)
+        self.console = Console(main_sig, debug_sig)
         self.prompt, self.moreprompt = prompt, moreprompt
 
     def start(self):
@@ -288,19 +288,19 @@ class cli(object):
         self.cmd(self.commandline.parse_args())
 
     def setup(self, target=None, strict=False, minify=False, linenumbers=False, quiet=False, color=None):
-        """Sets parameters for the processor."""
+        """Sets parameters for the compiler."""
         if color is not None:
-            self.console.setcolor(color)
-            self.prompt = self.console.addcolor(self.prompt)
-            self.moreprompt = self.console.addcolor(self.moreprompt)
+            self.console.set_color(color)
+            self.prompt = self.console.add_color(self.prompt)
+            self.moreprompt = self.console.add_color(self.moreprompt)
         self.console.on = not quiet
         if self.proc is None:
-            self.proc = processor(target, strict, minify, linenumbers, self.console.printerr)
+            self.proc = Compiler(target, strict, minify, linenumbers, self.console.printerr)
         else:
             self.proc.setup(target, strict, minify, linenumbers)
 
     def indebug(self):
-        """Determines whether the processor is in debug mode."""
+        """Determines whether the compiler is in debug mode."""
         if self.proc is None:
             return False
         else:
@@ -310,11 +310,20 @@ class cli(object):
         """Properly prints an exception in the exception context."""
         self.console.printerr(get_error(self.indebug()))
 
+    def log(self, msg):
+        """Logs a debug message if indebug."""
+        if self.indebug():
+            self.console.printerr(msg)
+
+    def show_tabulated(self, begin, middle, end):
+        """Shows a tabulated message."""
+        self.console.show(begin + " "*(18 - len(begin)) + middle + " " + end)
+
     def cmd(self, args, interact=True):
         """Parses command-line arguments."""
         try:
-            if args.recursionlimit[0] is not None:
-                sys.setrecursionlimit(args.recursionlimit[0])
+            if args.recursion_limit[0] is not None:
+                sys.setrecursionlimit(args.recursion_limit[0])
             self.setup(args.target[0], args.strict, args.minify, args.linenumbers, args.quiet, args.color[0])
             if args.version:
                 self.console.show(version_long)
@@ -422,6 +431,7 @@ class cli(object):
                     self.create_package(headerdir)
             for name in dirnames[:]:
                 if os.path.split(name)[-1].startswith("."):
+                    self.show_tabulated("Skipping", showpath(name), ".")
                     dirnames.remove(name) # directories removed from dirnames won't appear in further os.walk iteration
 
     def compile_file(self, filepath, write=True, package=False, run=False, force=False):
@@ -444,12 +454,12 @@ class cli(object):
 
     def compile(self, codepath, destpath=None, package=False, run=False, force=False):
         """Compiles a source Coconut file to a destination Python file."""
-        self.console.show("Compiling       "+showpath(codepath)+" ...")
+        self.show_tabulated("Compiling", showpath(codepath), "...")
         with openfile(codepath, "r") as opened:
             code = readfile(opened)
         foundhash = None if force else self.hashashof(destpath, code, package)
         if foundhash:
-            self.console.show("Left unchanged    "+showpath(destpath)+" (pass --force to overwrite).")
+            self.show_tabulated("Left unchanged", showpath(destpath), "(pass --force to overwrite).")
             if run:
                 self.execute(foundhash, path=destpath, isolate=True)
             elif self.show:
@@ -469,7 +479,7 @@ class cli(object):
                     os.makedirs(destdir)
                 with openfile(destpath, "w") as opened:
                     writefile(opened, compiled)
-                self.console.show("Compiled to       "+showpath(destpath)+" .")
+                self.show_tabulated("Compiled to", showpath(destpath), ".")
             if run:
                 self.execute(compiled, path=(destpath if destpath is not None else codepath), isolate=True)
             elif self.show:
@@ -507,7 +517,7 @@ class cli(object):
         return None
 
     def start_running(self):
-        """Starts running the executor."""
+        """Starts running the Executor."""
         self.check_runner()
         self.running = True
 
@@ -577,7 +587,7 @@ class cli(object):
             proc = None
         else:
             proc = self.proc
-        self.runner = executor(proc, self.exit, path)
+        self.runner = Runner(proc, self.exit, path)
 
     def launch_tutorial(self):
         """Opens the Coconut tutorial."""
@@ -591,8 +601,7 @@ class cli(object):
 
     def log_cmd(self, args):
         """Logs a console command if indebug."""
-        if self.indebug():
-            self.console.printerr("> " + " ".join(args))
+        self.log("> " + " ".join(args))
 
     def start_jupyter(self, args):
         """Starts Jupyter with the Coconut kernel."""

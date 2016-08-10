@@ -98,11 +98,11 @@ def get_name(code, cursor_pos, get_bounds=False):
 # KERNEL:
 #-----------------------------------------------------------------------------------------------------------------------
 
-proc = processor(target="sys") # from ..compiler
+proc = Compiler(target="sys") # from ..compiler
 
 class CoconutKernel(Kernel):
     """Jupyter kernel for Coconut."""
-    _runner = None # current ..command.executor
+    _runner = None # current ..command.Runner
     implementation = "icoconut"
     implementation_version = VERSION
     language = "coconut"
@@ -141,7 +141,7 @@ class CoconutKernel(Kernel):
     def _setup(self, force=False):
         """Binds to the runner."""
         if force or self._runner is None:
-            self._runner = executor(proc)
+            self._runner = Runner(proc)
 
     def _execute(self, code, evaluate=False):
         """Compiles and runs code."""

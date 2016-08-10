@@ -107,7 +107,7 @@ which will enable the use of Coconut's `--autopep8` and `--watch` flags. To inst
 ### Usage
 
 ```
-coconut [-h] [-v] [source] [dest] [-t version] [-s] [-l] [-p] [-a] [-w] [-f] [-d] [-r] [-n] [-m] [-i] [-q] [-c code] [--jupyter ...] [--autopep8 ...] [--recursionlimit limit] [--color color] [--verbose]
+coconut [-h] [-v] [source] [dest] [-t version] [-s] [-l] [-p] [-a] [-w] [-f] [-d] [-r] [-n] [-m] [-i] [-q] [-c code] [--jupyter ...] [--autopep8 ...] [--recursion-limit limit] [--color color] [--verbose]
 ```
 
 #### Positional Arguments
@@ -138,7 +138,7 @@ dest                  destination directory for compiled files (defaults to the 
 -c code, --code code    run a line of Coconut passed in as a string (can also be passed into stdin)
 --jupyter, --ipython    run Jupyter/IPython with Coconut as the kernel (remaining args passed to Jupyter)
 --autopep8 ...          use autopep8 to format compiled code (remaining args passed to autopep8) (requires autopep8)
---recursionlimit        set maximum recursion depth (default is system dependent)
+--recursion-limit       set maximum recursion depth (default is system dependent)
 --tutorial              open the Coconut tutorial in the default web browser
 --documentation         open the Coconut documentation in the default web browser
 --color color           show all Coconut messages in the given color

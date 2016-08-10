@@ -331,7 +331,7 @@ def parenwrap(lparen, item, rparen, tokens=False):
         wrap = condense(wrap)
     return wrap
 
-class tracer(object):
+class Tracer(object):
     """Debug tracer."""
 
     def __init__(self, show=printerr, on=False):
@@ -426,7 +426,7 @@ def getheader(which, target="", usehash=None):
     else:
         header = ""
     if which != "initial":
-        header += r'''# Coconut Header: --------------------------------------------------------------
+        header += r'''# Coconut Header: --------------------------------------------------------
 
 '''
         if not target.startswith("3"):
@@ -603,7 +603,8 @@ class count(object):'''
         return int(elem in self)
     def index(self, elem):
         """Find the index of elem in the count."""
-        if elem not in self: raise _coconut.ValueError(_coconut.repr(elem) + " is not in count")
+        if elem not in self:
+            raise _coconut.ValueError(_coconut.repr(elem) + " is not in count")
         return (elem - self._start) // self._step
     def __repr__(self):
         return "count(" + str(self._start) + ", " + str(self._step) + ")"
@@ -706,7 +707,7 @@ MatchError, map, reduce, takewhile, dropwhile, tee = _coconut_MatchError, _cocon
             raise CoconutException("invalid header type", which)
         if which == "file" or which == "module":
             header += r'''
-# Compiled Coconut: ------------------------------------------------------------
+# Compiled Coconut: ------------------------------------------------------
 
 '''
     return header
@@ -839,7 +840,7 @@ def match_func_handle(tokens):
     else:
         raise CoconutException("invalid pattern-matching mathematical function definition tokens", tokens)
 
-def full_match_funcdef_handle(tokens):
+def def_match_funcdef_handle(tokens):
     """Processes full match function definition."""
     if len(tokens) == 2:
         return tokens[0] + "".join(tokens[1]) + closeindent
@@ -899,7 +900,7 @@ def else_handle(tokens):
     else:
         raise CoconutException("invalid compound else statement tokens", tokens)
 
-class matcher(object):
+class Matcher(object):
     """Pattern-matching processor."""
     __slots__ = (
         "position",
@@ -931,7 +932,7 @@ class matcher(object):
 
     def duplicate(self):
         """Duplicates the matcher to others."""
-        self.others.append(matcher(self.checkdefs, self.names))
+        self.others.append(Matcher(self.checkdefs, self.names))
         self.others[-1].set_checks(0, ["not "+match_check_var] + self.others[-1].get_checks(0))
         return self.others[-1]
 
@@ -1214,7 +1215,7 @@ def match_handle(o, l, tokens, top=True):
         matches, item, cond, stmts = tokens
     else:
         raise CoconutException("invalid outer match tokens", tokens)
-    matching = matcher()
+    matching = Matcher()
     matching.match(matches, match_to_var)
     if cond:
         matching.add_guard(cond)
@@ -1357,15 +1358,15 @@ def class_suite_handle(tokens):
 # PARSER:
 #-----------------------------------------------------------------------------------------------------------------------
 
-class processor(object):
-    """The Coconut processor."""
-    tracing = tracer()
-    trace = tracing.trace
-    debug = tracing.debug
+class Compiler(object):
+    """The Coconut compiler."""
+    tracer = Tracer()
+    trace = tracer.trace
+    debug = tracer.debug
     autopep8_args = None
 
     def __init__(self, target=None, strict=False, minify=False, linenumbers=False, debugger=printerr):
-        """Creates a new processor with the given parsing parameters."""
+        """Creates a new compiler with the given parsing parameters."""
         self.debugger = debugger
         self.setup(target, strict, minify, linenumbers)
         self.preprocs = [
@@ -1411,7 +1412,7 @@ class processor(object):
 
     def reset(self):
         """Resets references."""
-        self.tracing.show = self.debugger
+        self.tracer.show = self.debugger
         self.indchar = None
         self.refs = []
         self.skips = set()
@@ -1544,27 +1545,27 @@ class processor(object):
 
     def indebug(self):
         """Checks whether debug mode is active."""
-        return self.tracing.on
+        return self.tracer.on
 
-    def todebug(self, tag, code):
+    def log(self, tag, code):
         """If debugging, prints a debug message."""
         if self.indebug():
-            self.tracing.show("["+str(tag)+"] "+ascii(code))
+            self.tracer.show("["+str(tag)+"] "+ascii(code))
 
     def warn(self, warning):
         """Displays a warning."""
         try:
             raise warning
         except CoconutWarning:
-            self.tracing.show(get_error(self.indebug()))
+            self.tracer.show(get_error(self.indebug()))
 
     def pre(self, inputstring, **kwargs):
         """Performs pre-processing."""
         out = str(inputstring)
         for proc in self.preprocs:
             out = proc(out, **kwargs)
-            self.todebug(proc.__name__, out)
-        self.todebug("skips", list(sorted(self.skips)))
+            self.log(proc.__name__, out)
+        self.log("skips", list(sorted(self.skips)))
         return out
 
     def post(self, tokens, **kwargs):
@@ -1573,7 +1574,7 @@ class processor(object):
             out = tokens[0]
             for proc in self.postprocs:
                 out = proc(out, **kwargs)
-                self.todebug(proc.__name__, out)
+                self.log(proc.__name__, out)
             return out
         else:
             raise CoconutException("multiple tokens leftover", tokens)
@@ -1600,7 +1601,7 @@ class processor(object):
             err_line, err_index = self.reformat(err.line, err.col-1)
             raise CoconutParseError(err_line, err_index, self.adjust(err.lineno))
         except RuntimeError:
-            raise CoconutException("maximum recursion depth exceeded (try again with a larger --recursionlimit)")
+            raise CoconutException("maximum recursion depth exceeded (try again with a larger --recursion-limit)")
         return out
 
 # end: PARSER
@@ -1864,7 +1865,7 @@ class processor(object):
                     while line.startswith(openindent) or line.startswith(closeindent):
                         indents += line[0]
                         line = line[1:]
-                    out.append(indents + self.stmt_lambda_proc(self.stmt_lambdas[i]))
+                    out.append(indents + self.stmt_lambdas[i])
             out.append(line)
         return "\n".join(out)
 
@@ -2275,11 +2276,11 @@ class processor(object):
             func, matches, cond = tokens
         else:
             raise CoconutException("invalid match function definition tokens", tokens)
-        matching = matcher()
+        matching = Matcher()
         matching.match_sequence(("(", matches), match_to_var, typecheck=False)
         if cond is not None:
             matching.add_guard(cond)
-        out = "def " + func + " (*" + match_to_var + "):\n" + openindent
+        out = "def " + func + "(*" + match_to_var + "):\n" + openindent
         out += match_check_var + " = False\n"
         out += matching.out()
         out += self.pattern_error(original, loc)
@@ -2362,7 +2363,7 @@ class processor(object):
         name = self.stmt_lambda_name()
         self.stmt_lambdas.append(
             "def " + name + params + ":\n"
-            + openindent + "\n".join(stmts) + closeindent
+            + openindent + self.stmt_lambda_proc("\n".join(stmts)) + closeindent
         )
         return name
 
@@ -2985,14 +2986,18 @@ class processor(object):
     op_match_funcdef_arg = lparen.suppress() + match + rparen.suppress()
     op_match_funcdef_ref = Group(Optional(op_match_funcdef_arg)) + op_funcdef_name + Group(Optional(op_match_funcdef_arg)) + match_guard
     base_match_funcdef = Keyword("def").suppress() + (op_match_funcdef | name_match_funcdef)
-    full_match_funcdef = trace(attach(base_match_funcdef + full_suite, full_match_funcdef_handle), "base_match_funcdef")
+    def_match_funcdef = trace(attach(base_match_funcdef + full_suite, def_match_funcdef_handle), "base_match_funcdef")
     math_match_funcdef = attach(
         Optional(Keyword("match").suppress()) + base_match_funcdef + equals.suppress() - test_expr
         , match_func_handle) - newline
-    match_funcdef = Optional(Keyword("match").suppress()) + full_match_funcdef
+    match_funcdef = Optional(Keyword("match").suppress()) + def_match_funcdef
     async_match_funcdef_ref = addspace(
-        (Optional(Keyword("match")).suppress() + Keyword("async") | Keyword("async") + Optional(Keyword("match")).suppress())
-        + (full_match_funcdef | math_match_funcdef))
+        (
+            Optional(Keyword("match")).suppress() + Keyword("async")
+            | Keyword("async") + Optional(Keyword("match")).suppress()
+            )
+        + (def_match_funcdef | math_match_funcdef)
+        )
     async_stmt = async_block | async_funcdef | async_match_funcdef_ref
 
     data_args = Optional(lparen.suppress() + Optional(itemlist(~underscore + name, comma)) + rparen.suppress())
