@@ -29,7 +29,7 @@ def cmd(args, interact=False):
     """Processes command-line arguments."""
     if isinstance(args, (str, bytes)):
         args = args.split()
-    return CLI.cmd(CLI.command_line.parse_args(args), interact)
+    return CLI.cmd(CLI.arguments.parse_args(args), interact)
 
 def version(which="num"):
     """Gets the Coconut version."""
