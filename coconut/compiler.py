@@ -1195,7 +1195,7 @@ class matcher(object):
         closes = 0
         for checks, defs in self.checkdefs:
             if checks:
-                out += "if (" + ") and (".join(checks) + "):\n" + openindent
+                out += "if (" + (") and (").join(checks) + "):\n" + openindent
                 closes += 1
             if defs:
                 out += "\n".join(defs) + "\n"
@@ -1864,7 +1864,7 @@ class processor(object):
                     while line.startswith(openindent) or line.startswith(closeindent):
                         indents += line[0]
                         line = line[1:]
-                    out.append(indents + self.stmt_lambdas[i])
+                    out.append(indents + self.stmt_lambda_proc(self.stmt_lambdas[i]))
             out.append(line)
         return "\n".join(out)
 
