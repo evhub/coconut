@@ -424,7 +424,7 @@ class Command(object):
                 if os.path.splitext(filename)[1] in code_exts:
                     self.compile_file(os.path.join(dirpath, filename), writedir, package, run, force)
             for name in dirnames[:]:
-                if name != "." and name.startswith("."):
+                if name != "."*len(name) and name.startswith("."):
                     self.show_tabulated("Skipped directory", name, "(explicitly pass as source to override).")
                     dirnames.remove(name) # directories removed from dirnames won't appear in further os.walk iteration
 
