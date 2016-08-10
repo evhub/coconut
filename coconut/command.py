@@ -272,6 +272,7 @@ class Command(object):
     arguments.add_argument("--documentation", action="store_const", const=True, default=False, help="open the Coconut documentation in the default web browser")
     arguments.add_argument("--color", metavar="color", type=str, nargs=1, default=[None], help="show all Coconut messages in the given color")
     arguments.add_argument("--verbose", action="store_const", const=True, default=False, help="print verbose debug output")
+    tabulation = 18 # offset for tabulated info messages
     proc = None # current .compiler.Compiler
     show = False # corresponds to --display flag
     running = False # whether the interpreter is currently active
@@ -317,7 +318,10 @@ class Command(object):
 
     def show_tabulated(self, begin, middle, end):
         """Shows a tabulated message."""
-        self.console.show(begin + " "*(18 - len(begin)) + middle + " " + end)
+        if len(begin) < self.tabulation:
+            self.console.show(begin + " "*(self.tabulation - len(begin)) + middle + " " + end)
+        else:
+            raise CoconutException("info message too long", begin)
 
     def cmd(self, args, interact=True):
         """Parses command-line arguments."""
@@ -419,11 +423,10 @@ class Command(object):
             for filename in filenames:
                 if os.path.splitext(filename)[1] in code_exts:
                     self.compile_file(os.path.join(dirpath, filename), writedir, package, run, force)
-            for path in dirnames[:]:
-                name = os.path.basename(os.path.dirname(path))
+            for name in dirnames[:]:
                 if name != "." and name.startswith("."):
-                    self.show_tabulated("Skipping", showpath(path), "(explicitly pass as source to override).")
-                    dirnames.remove(path) # directories removed from dirnames won't appear in further os.walk iteration
+                    self.show_tabulated("Skipped directory", name, "(explicitly pass as source to override).")
+                    dirnames.remove(name) # directories removed from dirnames won't appear in further os.walk iteration
 
     def compile_file(self, filepath, write=True, package=False, run=False, force=False):
         """Compiles a file."""
@@ -449,7 +452,7 @@ class Command(object):
         with openfile(codepath, "r") as opened:
             code = readfile(opened)
         if package is True:
-            self.create_package(os.path.dirname(codepath))
+            self.create_package(os.path.dirname(destpath))
         foundhash = None if force else self.hashashof(destpath, code, package)
         if foundhash:
             self.show_tabulated("Left unchanged", showpath(destpath), "(pass --force to override).")
