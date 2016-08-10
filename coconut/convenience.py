@@ -17,13 +17,13 @@ Description: Convenience functions for using Coconut as a module.
 from __future__ import print_function, absolute_import, unicode_literals, division
 
 from .root import *
-from .command import CoconutException, cli, version_tag, version_long, main_sig
+from .command import CoconutException, Command, version_tag, version_long, main_sig
 
 #-----------------------------------------------------------------------------------------------------------------------
 # COMMAND:
 #-----------------------------------------------------------------------------------------------------------------------
 
-CLI = cli()
+CLI = Command()
 
 def cmd(args, interact=False):
     """Processes command-line arguments."""
