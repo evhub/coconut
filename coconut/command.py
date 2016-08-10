@@ -117,7 +117,7 @@ def readfile(openedfile):
 
 def showpath(path):
     """Formats a path for displaying."""
-    return os.path.split(path)[1]
+    return os.path.basename(path)
 
 def fixpath(path):
     """Uniformly formats a path."""
@@ -412,27 +412,18 @@ class Command(object):
     def compile_folder(self, directory, write=True, package=True, run=False, force=False):
         """Compiles a directory."""
         for dirpath, dirnames, filenames in os.walk(directory):
-            writedir = write
-            if writedir is None:
-                headerdir = None
-            elif writedir is True:
-                headerdir = dirpath
+            if write is None or write is True:
+                writedir = write
             else:
-                writedir = os.path.join(writedir, os.path.relpath(dirpath, directory))
-                headerdir = writedir
-            wrote = False
-            try:
-                for filename in filenames:
-                    if os.path.splitext(filename)[1] in code_exts:
-                        self.compile_file(os.path.join(dirpath, filename), writedir, package, run, force)
-                        wrote = True
-            finally: # if we wrote anything in package mode, we should always add a header file
-                if wrote and package and headerdir is not None:
-                    self.create_package(headerdir)
-            for name in dirnames[:]:
-                if os.path.split(name)[-1].startswith("."):
-                    self.show_tabulated("Skipping", showpath(name), "(explicitly pass as source to override).")
-                    dirnames.remove(name) # directories removed from dirnames won't appear in further os.walk iteration
+                writedir = os.path.join(write, os.path.relpath(dirpath, directory))
+            for filename in filenames:
+                if os.path.splitext(filename)[1] in code_exts:
+                    self.compile_file(os.path.join(dirpath, filename), writedir, package, run, force)
+            for path in dirnames[:]:
+                name = os.path.basename(os.path.dirname(path))
+                if name != "." and name.startswith("."):
+                    self.show_tabulated("Skipping", showpath(path), "(explicitly pass as source to override).")
+                    dirnames.remove(path) # directories removed from dirnames won't appear in further os.walk iteration
 
     def compile_file(self, filepath, write=True, package=False, run=False, force=False):
         """Compiles a file."""
@@ -457,6 +448,8 @@ class Command(object):
         self.show_tabulated("Compiling", showpath(codepath), "...")
         with openfile(codepath, "r") as opened:
             code = readfile(opened)
+        if package is True:
+            self.create_package(os.path.dirname(codepath))
         foundhash = None if force else self.hashashof(destpath, code, package)
         if foundhash:
             self.show_tabulated("Left unchanged", showpath(destpath), "(pass --force to override).")
