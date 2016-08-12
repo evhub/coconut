@@ -49,7 +49,7 @@ setuptools.setup(
     author = "Evan Hubinger",
     author_email = "evanjhub@gmail.com",
     install_requires = [
-        "pyparsing==2.1.5"
+        "pyparsing==2.1.7"
         ],
     extras_require = {
         "all": [
