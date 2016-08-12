@@ -451,8 +451,11 @@ class Command(object):
         self.show_tabulated("Compiling", showpath(codepath), "...")
         with openfile(codepath, "r") as opened:
             code = readfile(opened)
+        destdir = os.path.dirname(destpath)
+        if not os.path.exists(destdir):
+            os.makedirs(destdir)
         if package is True:
-            self.create_package(os.path.dirname(destpath))
+            self.create_package(destdir)
         foundhash = None if force else self.hashashof(destpath, code, package)
         if foundhash:
             self.show_tabulated("Left unchanged", showpath(destpath), "(pass --force to override).")
@@ -470,9 +473,6 @@ class Command(object):
             if destpath is None:
                 self.console.show("Compiled without writing to file.")
             else:
-                destdir = os.path.dirname(destpath)
-                if not os.path.exists(destdir):
-                    os.makedirs(destdir)
                 with openfile(destpath, "w") as opened:
                     writefile(opened, compiled)
                 self.show_tabulated("Compiled to", showpath(destpath), ".")
