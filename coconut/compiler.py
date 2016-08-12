@@ -34,9 +34,7 @@ from pyparsing import *
 from .root import *
 import traceback
 
-#import platform
-#if platform.python_implementation() != "PyPy":
-ParserElement.enablePackrat() # huge speedup in CPython, but can cause errors in PyPy
+ParserElement.enablePackrat()
 
 # end: IMPORTS
 #-----------------------------------------------------------------------------------------------------------------------
