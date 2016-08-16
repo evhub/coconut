@@ -16,7 +16,7 @@ Description: Utility functions for the main command module.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from coconut.const import default_encoding
+from coconut.const import default_encoding, color_codes, end_color_code
 from coconut.compiler.exceptions import printerr
 
 import os
@@ -90,7 +90,7 @@ class Runner(object):
 
     def fixpickle(self):
         """Fixes pickling of Coconut header objects."""
-        from . import __coconut__
+        from coconut import __coconut__
         for var in self.vars:
             if not var.startswith("__") and var in dir(__coconut__):
                 self.vars[var] = getattr(__coconut__, var)
