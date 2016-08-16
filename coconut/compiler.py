@@ -437,10 +437,11 @@ def getheader(which, target="", usehash=None):
             header += r'''import sys as _coconut_sys, os.path as _coconut_os_path
 _coconut_file_path = _coconut_os_path.dirname(_coconut_os_path.abspath(__file__))
 _coconut_sys.path.insert(0, _coconut_file_path)
+from __coconut__ import *
 import __coconut__
 _coconut_sys.path.remove(_coconut_file_path)
 for name in dir(__coconut__):
-    if not name.startswith("__"):
+    if name.startswith("_") and not name.startswith("__"):
         globals()[name] = getattr(__coconut__, name)
 '''
         elif which == "package" or which == "code" or which == "file":
