@@ -13,7 +13,6 @@ Description: Compiles Coconut code into Python code.
 # Table of Contents:
 #   - Imports
 #   - Constants
-#   - Utilities
 #   - Header Utilities
 #   - Handlers
 #   - Parser
