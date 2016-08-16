@@ -15,6 +15,7 @@ Description: Utilites for use in the compiler.
 
 from pyparsing import replaceWith
 
+from coconut.const import ups,downs
 from .exceptions import printerr
 
 #-----------------------------------------------------------------------------------------------------------------------
