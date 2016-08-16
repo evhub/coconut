@@ -16,7 +16,7 @@ Description: Utility functions for the main command module.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from .compiler import default_encoding
+from coconut.compiler import default_encoding
 
 import os
 
