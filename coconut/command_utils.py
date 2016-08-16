@@ -7,7 +7,7 @@
 """
 Authors: Evan Hubinger, Fred Buchanan
 License: Apache 2.0
-Description: Utility functions for the main command modual.
+Description: Utility functions for the main command module.
 """
 
 #-----------------------------------------------------------------------------------------------------------------------
