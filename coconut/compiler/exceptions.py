@@ -14,6 +14,9 @@ Description: Exceptions for use in the compiler.
 # IMPORTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
+from __future__ import print_function, absolute_import, unicode_literals, division
+
+
 import sys
 import traceback
 from pyparsing import lineno

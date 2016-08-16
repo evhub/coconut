@@ -13,6 +13,9 @@ Description: Utilites for use in the compiler.
 # IMPORTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
+from __future__ import print_function, absolute_import, unicode_literals, division
+
+
 from pyparsing import replaceWith
 
 from coconut.const import ups,downs

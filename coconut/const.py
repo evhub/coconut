@@ -13,6 +13,9 @@ Description: This file contains constants for coconut use.
 # IMPORTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
+from __future__ import print_function, absolute_import, unicode_literals, division
+
+
 import sys
 import os
 from .root import VERSION_STR, DEVELOP
