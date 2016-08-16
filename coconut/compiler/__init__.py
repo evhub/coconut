@@ -44,8 +44,12 @@ from coconut.const import specific_targets, targets, pseudo_targets, \
                             keywords, const_vars, reserved_vars, \
                             new_to_old_stdlib, default_whitespace_chars
 
+from .exceptions import CoconutException, CoconutSyntaxError, CoconutParseError, \
+                        CoconutStyleError, CoconutTargetError, CoconutWarning, \
+                        printerr, get_error, clean
+
 from zlib import crc32 as checksum
-import traceback
+
 
 
 
