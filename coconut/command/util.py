@@ -151,7 +151,7 @@ class Console(object):
             return escape_color(self.color_code) + inputstring + escape_color(end_color_code)
 
     def display(self, messages, sig="", debug=False):
-        """Prints messages."""
+        """Prints an iterator of messages with color."""
         if self.on:
             message = " ".join(str(msg) for msg in messages)
             for line in message.splitlines():
