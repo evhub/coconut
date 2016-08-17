@@ -41,6 +41,9 @@ with open("README.rst", "r") as readme_file:
             readme_lines.append(line)
     readme = "\n".join(readme_lines)
 
+with open("requirements.txt", "r") as req_file:
+    requirements = [line.strip() for line in req_file.readlines() if line]
+
 setuptools.setup(
     name = "coconut",
     version = VERSION,
@@ -49,9 +52,7 @@ setuptools.setup(
     url = "http://coconut-lang.org",
     author = "Evan Hubinger",
     author_email = "evanjhub@gmail.com",
-    install_requires = [
-        "pyparsing==2.1.8"
-        ],
+    install_requires = requirements,
     extras_require = {
         "all": [
             "autopep8",
