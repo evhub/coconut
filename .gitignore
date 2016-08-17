@@ -1,8 +1,11 @@
-# Macintosh desktop services store files
+# OS files
 .DS_Store
-
-# Windows thumbs database file
 Thumbs.db
+*~
+.#*
+._*
+\#*\#
+.cache
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -53,7 +56,7 @@ coverage.xml
 *.mo
 *.pot
 
-# Django stuff
+# Django
 *.log
 
 # Sphinx documentation
@@ -63,5 +66,12 @@ _docs/
 # PyBuilder
 target/
 
-# Ipython notebook
+# Ipython
 .ipynb_checkpoints
+
+# Vim
+*.sw[nop]
+.ropeproject
+
+# Sublime
+*.sublime-*
