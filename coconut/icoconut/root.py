@@ -35,7 +35,9 @@ from coconut.constants import \
     version_banner, \
     tutorial_url, \
     documentation_url, \
-    reserved_prefix
+    reserved_prefix, \
+    default_encoding, \
+    code_exts
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
