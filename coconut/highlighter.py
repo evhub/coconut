@@ -16,63 +16,20 @@ Description: Syntax highlighting for Coconut code.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from coconut.command import *
+from coconut.root import *
 
 from pygments.lexers import Python3Lexer, PythonConsoleLexer
 from pygments.token import Text, Comment, Operator, Keyword, Name, String, Number, Punctuation, Generic, Other, Error
 from pygments.lexer import words, bygroups
 
-#-----------------------------------------------------------------------------------------------------------------------
-# CONSTANTS:
-#-----------------------------------------------------------------------------------------------------------------------
-
-builtins = (
-    "reduce",
-    "takewhile",
-    "dropwhile",
-    "tee",
-    "count",
-    "recursive",
-    "datamaker",
-    "consume",
-    "parallel_map",
-    "addpattern",
-    "prepattern",
-    "recursive_iterator",
-    "concurrent_map"
-    )
-
-operators = (
-    r">>>",
-    r"@",
-    r"\$",
-    r"`",
-    r"::",
-    r"(?!\.\.\.)\.\.",
-    r"\u2192",
-    r"\u21a6",
-    r"\u21a4",
-    r"\u22c5",
-    r"\u2191",
-    r"\xf7",
-    r"\u2212",
-    r"\u207b",
-    r"\xac",
-    r"\u2260",
-    r"\u2264",
-    r"\u2265",
-    r"\u2227",
-    r"\u2229",
-    r"\u2228",
-    r"\u222a",
-    r"\u22bb",
-    r"\u2295",
-    r"\xab",
-    r"\xbb",
-    r"\xd7",
-    r"\u2026",
-    r"\u2218"
-    )
+from coconut.constants import \
+    builtins, \
+    operators, \
+    tabideal, \
+    default_encoding, \
+    code_exts, \
+    operators, \
+    reserved_vars
 
 #-----------------------------------------------------------------------------------------------------------------------
 # LEXERS:

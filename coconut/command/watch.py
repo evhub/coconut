@@ -5,9 +5,9 @@
 #-----------------------------------------------------------------------------------------------------------------------
 
 """
-Author: Evan Hubinger
+Authors: Evan Hubinger, Fred Buchanan
 License: Apache 2.0
-Description: Launch the Coconut IPython kernel.
+Description: Handles interfacing with watchdog to make --watch work.
 """
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -16,21 +16,21 @@ Description: Launch the Coconut IPython kernel.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-import sys
-import os.path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from coconut.root import *
 
-from coconut.icoconut.root import *
-
-from ipykernel.kernelapp import IPKernelApp
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
 
 #-----------------------------------------------------------------------------------------------------------------------
-# MAIN:
+# CLASSES:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def main():
-    """Launch the kernel app."""
-    IPKernelApp.launch_instance(kernel_class=CoconutKernel)
+class RecompilationWatcher(FileSystemEventHandler):
+    def __init__(self, recompile):
+        self.recompile = recompile
 
-if __name__ == "__main__":
-    main()
+    def on_modified(self, event):
+        self.recompile(event.src_path)
+
+    def on_created(self, event):
+        self.recompile(event.src_path)

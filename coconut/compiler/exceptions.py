@@ -22,7 +22,7 @@ import sys
 import traceback
 from pyparsing import lineno
 
-from coconut.const import openindent, closeindent, tabideal
+from coconut.constants import openindent, closeindent, tabideal
 
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:

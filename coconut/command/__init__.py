@@ -16,15 +16,16 @@ Description: The Coconut command-line utility.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from coconut.compiler import *
-
 import sys
 import os
 import os.path
 import argparse
 import time
 
-from coconut.const import \
+from coconut.compiler import \
+    Compiler, \
+    gethash
+from coconut.constants import \
     code_exts, \
     comp_ext, \
     main_sig, \
@@ -41,7 +42,7 @@ from coconut.const import \
     documentation_url, \
     icoconut_dir, \
     icoconut_kernel_dirs
-from coconut.command.utils import \
+from coconut.command.util import \
     openfile, \
     writefile, \
     readfile, \
@@ -465,27 +466,18 @@ class Command(object):
 
     def watch(self, source, write=True, package=None, run=False, force=False):
         """Watches a source and recompiles on change."""
-        from watchdog.events import FileSystemEventHandler
-        from watchdog.observers import Observer
-
-        def recompile(path):
-            if os.path.isfile(path) and os.path.splitext(path)[1] in code_exts:
-                self.compile_path(path, write, package, run, force)
-
-        class watcher(FileSystemEventHandler):
-            # does not bind to self so it can use enclosing self
-            def on_modified(_, event):
-                recompile(event.src_path)
-            def on_created(_, event):
-                recompile(event.src_path)
+        from coconut.command.watch import Observer, RecompilationWatcher
 
         source = fixpath(source)
 
         self.console.show("Watching        "+showpath(source)+" ...")
         self.console.print("(press Ctrl-C to end)")
 
-        observer = Observer()
-        observer.schedule(watcher(), source, recursive=True)
+        def recompile(path):
+            if os.path.isfile(path) and os.path.splitext(path)[1] in code_exts:
+                self.compile_path(path, write, package, run, force)
+
+        observer.schedule(RecompilationWatcher(recompile), source, recursive=True)
         observer.start()
         try:
             while True:

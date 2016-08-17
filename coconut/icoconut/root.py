@@ -16,22 +16,26 @@ Description: The Coconut IPython kernel.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from coconut.command import *
+from coconut.root import *
 
+import sys
 try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
 from ipykernel.kernelbase import Kernel
 
-#-----------------------------------------------------------------------------------------------------------------------
-# CONSTANTS:
-#-----------------------------------------------------------------------------------------------------------------------
-
-mimetype = "text/x-python3"
-py_syntax_version = 3.6
-varchars = alphanums + "_"
-all_keywords = keywords + const_vars + reserved_vars
+from coconut.compiler import Compiler, printerr
+from coconut.command import Runner
+from coconut.constants import \
+    py_syntax_version, \
+    mimetype, \
+    varchars, \
+    all_keywords, \
+    version_banner, \
+    tutorial_url, \
+    documentation_url, \
+    reserved_prefix
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:

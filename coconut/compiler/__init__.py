@@ -15,7 +15,7 @@ Description: Compiles Coconut code into Python code.
 #   - Setup
 #   - Header Utilities
 #   - Handlers
-#   - Parser
+#   - Compiler
 #   - Processors
 #   - Parser Handlers
 #   - Checking Handlers
@@ -51,7 +51,7 @@ from pyparsing import \
     lineno, \
     hexnums
 
-from coconut.const import \
+from coconut.constants import \
     specific_targets, \
     targets, \
     pseudo_targets, \
@@ -99,7 +99,7 @@ from coconut.compiler.exceptions import \
     printerr, \
     get_error, \
     clean
-from coconut.compiler.utils import \
+from coconut.compiler.util import \
     target_info, \
     addskip, \
     count_end, \
@@ -1109,7 +1109,7 @@ def class_suite_handle(tokens):
 
 # end: HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
-# PARSER:
+# COMPILER:
 #-----------------------------------------------------------------------------------------------------------------------
 
 class Compiler(object):
@@ -1365,7 +1365,7 @@ class Compiler(object):
             raise CoconutException("maximum recursion depth exceeded (try again with a larger --recursion-limit)")
         return out
 
-# end: PARSER
+# end: COMPILER
 #-----------------------------------------------------------------------------------------------------------------------
 # PROCESSORS:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1807,7 +1807,7 @@ class Compiler(object):
 
 # end: PROCESSORS
 #-----------------------------------------------------------------------------------------------------------------------
-# PARSER HANDLERS:
+# COMPILER HANDLERS:
 #-----------------------------------------------------------------------------------------------------------------------
 
     def set_docstring(self, original, location, tokens):
@@ -2123,7 +2123,7 @@ class Compiler(object):
         )
         return name
 
-# end: PARSER HANDLERS
+# end: COMPILER HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
 # CHECKING HANDLERS:
 #-----------------------------------------------------------------------------------------------------------------------

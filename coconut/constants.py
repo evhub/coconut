@@ -7,7 +7,7 @@
 """
 Authors: Evan Hubinger, Fred Buchanan
 License: Apache 2.0
-Description: This file contains the global constants used in command and compiler.
+Description: This file contains all the global constants used accross Coconut.
 """
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -238,3 +238,65 @@ icoconut_kernel_dirs = [
     os.path.join(icoconut_dir, "coconut2"),
     os.path.join(icoconut_dir, "coconut3")
 ]
+
+#-----------------------------------------------------------------------------------------------------------------------
+# HIGHLIGHTER CONSTANTS:
+#-----------------------------------------------------------------------------------------------------------------------
+
+builtins = (
+    "reduce",
+    "takewhile",
+    "dropwhile",
+    "tee",
+    "count",
+    "recursive",
+    "datamaker",
+    "consume",
+    "parallel_map",
+    "addpattern",
+    "prepattern",
+    "recursive_iterator",
+    "concurrent_map"
+    )
+
+operators = (
+    r">>>",
+    r"@",
+    r"\$",
+    r"`",
+    r"::",
+    r"(?!\.\.\.)\.\.",
+    r"\u2192",
+    r"\u21a6",
+    r"\u21a4",
+    r"\u22c5",
+    r"\u2191",
+    r"\xf7",
+    r"\u2212",
+    r"\u207b",
+    r"\xac",
+    r"\u2260",
+    r"\u2264",
+    r"\u2265",
+    r"\u2227",
+    r"\u2229",
+    r"\u2228",
+    r"\u222a",
+    r"\u22bb",
+    r"\u2295",
+    r"\xab",
+    r"\xbb",
+    r"\xd7",
+    r"\u2026",
+    r"\u2218"
+    )
+
+#-----------------------------------------------------------------------------------------------------------------------
+# ICOCONUT CONSTANTS:
+#-----------------------------------------------------------------------------------------------------------------------
+
+py_syntax_version = 3.6
+mimetype = "text/x-python3"
+
+varchars = alphanums + "_"
+all_keywords = keywords + const_vars + reserved_vars
