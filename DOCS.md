@@ -210,12 +210,13 @@ _Note: Periods are ignored in target specifications, such that the target `2.7` 
 ### `strict` Mode
 
 If the `--strict` or `-s` flag is enabled, Coconut will throw errors on various style problems. These are
-- mixing of tabs and spaces (without `--strict` will still show a Warning),
-- missing new line at end of file (without `--strict` will still show a Warning),
+- mixing of tabs and spaces (without `--strict` will show a Warning),
+- missing new line at end of file (without `--strict` will show a Warning),
+- use of `from __future__` imports (without `--strict` will show a Warning)
+- trailing whitespace at end of lines,
 - use of the Python-style `lambda` statement,
-- use of `u` to denote Unicode strings,
-- use of backslash continuations (implicit continuations are preferred), and
-- trailing whitespace at end of lines.
+- use of `u` to denote Unicode strings, and
+- use of backslash continuations (use [parenthetical continuation](#parenthetical-continuation) instead).
 
 It is recommended that you use the `--strict` or `-s` flag if you are starting a new Coconut project, as it will help you write cleaner code.
 

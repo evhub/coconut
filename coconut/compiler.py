@@ -1496,6 +1496,13 @@ class Compiler(object):
             errstr, index = self.reformat(errstr, index)
         return errtype(message, errstr, index, ln)
 
+    def strict_err_or_warn(self, *args, **kwargs):
+        """Raises an error if in strict mode, otherwise raises a warning."""
+        if self.strict:
+            raise self.make_err(CoconutStyleError, *args, **kwargs)
+        else:
+            self.warn(self.make_err(CoconutWarning, *args, **kwargs))
+
     def add_ref(self, ref):
         """Adds a reference and returns the identifier."""
         try:
@@ -1612,10 +1619,7 @@ class Compiler(object):
         """Prepares a string for processing."""
         if nl_at_eof_check and not inputstring.endswith("\n"):
             end_index = len(inputstring) - 1 if inputstring else 0
-            if self.strict:
-                raise self.make_err(CoconutStyleError, "missing new line at end of file", inputstring, end_index)
-            else:
-                self.warn(self.make_err(CoconutWarning, "missing new line at end of file", inputstring, end_index))
+            self.strict_err_or_warn("missing new line at end of file", inputstring, end_index)
         if strip:
             inputstring = inputstring.strip()
         return "\n".join(inputstring.splitlines()) + "\n"
@@ -1782,10 +1786,7 @@ class Compiler(object):
             else:
                 break
             if self.indchar != inputstring[x]:
-                if self.strict:
-                    raise self.make_err(CoconutStyleError, "found mixing of tabs and spaces", inputstring, x)
-                else:
-                    self.warn(self.make_err(CoconutWarning, "found mixing of tabs and spaces", inputstring, x))
+                self.strict_err_or_warn("found mixing of tabs and spaces", inputstring, x)
         return count
 
     def ind_proc(self, inputstring, **kwargs):
@@ -2169,7 +2170,8 @@ class Compiler(object):
         elif len(tokens) == 2:
             imp_from, imports = tokens
             if imp_from == "__future__":
-                raise self.make_err(CoconutSyntaxError, "illegal from __future__ import (Coconut does these automatically)", original, location)
+                self.strict_err_or_warn("unnecessary from __future__ import (Coconut does these automatically)", original, location)
+                return ""
         else:
             raise CoconutException("invalid import tokens", tokens)
         importmap = [] # [((imp | old_imp, imp, version_check), impas), ...]
