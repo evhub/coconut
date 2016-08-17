@@ -16,7 +16,7 @@ Description: Mimics what a compiled __coconut__.py would do.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from .compiler import Compiler as __Compiler
+from coconut.compiler import Compiler as __Compiler
 
 #-----------------------------------------------------------------------------------------------------------------------
 # HEADER:

@@ -18,9 +18,10 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 import sys
 import os.path
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "coconut"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from root import *
+from coconut.root import *
+
 import setuptools
 
 #-----------------------------------------------------------------------------------------------------------------------
