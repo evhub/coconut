@@ -20,6 +20,7 @@ from coconut.root import *
 
 import sys
 import os
+from pyparsing import alphanums
 
 #-----------------------------------------------------------------------------------------------------------------------
 # COMPILER CONSTANTS:

@@ -20,7 +20,7 @@ from coconut.root import *
 from pyparsing import replaceWith
 
 from coconut.compiler.exceptions import printerr
-from coconut.const import ups, downs
+from coconut.constants import ups, downs
 
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:

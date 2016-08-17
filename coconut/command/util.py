@@ -21,7 +21,7 @@ from coconut.root import *
 import os
 import traceback
 
-from coconut.const import default_encoding, color_codes, end_color_code
+from coconut.constants import default_encoding, color_codes, end_color_code
 from coconut.compiler.exceptions import printerr
 
 #-----------------------------------------------------------------------------------------------------------------------

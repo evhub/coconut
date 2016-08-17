@@ -49,7 +49,8 @@ from pyparsing import \
     col, \
     line, \
     lineno, \
-    hexnums
+    hexnums, \
+    nums
 
 from coconut.constants import \
     specific_targets, \

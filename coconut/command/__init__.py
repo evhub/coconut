@@ -16,6 +16,8 @@ Description: The Coconut command-line utility.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
+from coconut.root import *
+
 import sys
 import os
 import os.path
@@ -24,7 +26,8 @@ import time
 
 from coconut.compiler import \
     Compiler, \
-    gethash
+    gethash, \
+    CoconutException
 from coconut.constants import \
     code_exts, \
     comp_ext, \
