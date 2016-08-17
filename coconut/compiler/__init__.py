@@ -12,9 +12,7 @@ Description: Compiles Coconut code into Python code.
 
 # Table of Contents:
 #   - Imports
-#   - Constants
-#   - Exceptions
-#   - Utilities
+#   - Setup
 #   - Header Utilities
 #   - Handlers
 #   - Parser
@@ -30,341 +28,98 @@ Description: Compiles Coconut code into Python code.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from pyparsing import *
-from .root import *
-import traceback
+from coconut.root import *
 
-ParserElement.enablePackrat()
+from pyparsing import \
+    CaselessLiteral, \
+    Combine, \
+    Forward, \
+    Group, \
+    Keyword, \
+    Literal, \
+    OneOrMore, \
+    Optional, \
+    ParseBaseException, \
+    ParserElement, \
+    Regex, \
+    stringEnd, \
+    stringStart, \
+    Word, \
+    ZeroOrMore, \
+    col, \
+    line, \
+    lineno, \
+    hexnums
+
+from coconut.const import \
+    specific_targets, \
+    targets, \
+    pseudo_targets, \
+    sys_target, \
+    default_encoding, \
+    hash_prefix, \
+    hash_sep, \
+    openindent, \
+    closeindent, \
+    strwrapper, \
+    lnwrapper, \
+    unwrapper, \
+    downs, \
+    ups, \
+    holds, \
+    tabideal, \
+    tabworth, \
+    reserved_prefix, \
+    decorator_var, \
+    match_to_var, \
+    match_check_var, \
+    match_iter_var, \
+    match_err_var, \
+    lazy_item_var, \
+    lazy_chain_var, \
+    import_as_var, \
+    yield_from_var, \
+    yield_item_var, \
+    raise_from_var, \
+    stmt_lambda_var, \
+    wildcard, \
+    keywords, \
+    const_vars, \
+    reserved_vars, \
+    new_to_old_stdlib, \
+    default_whitespace_chars, \
+    checksum
+from coconut.compiler.exceptions import \
+    CoconutException, \
+    CoconutSyntaxError, \
+    CoconutParseError, \
+    CoconutStyleError, \
+    CoconutTargetError, \
+    CoconutWarning, \
+    printerr, \
+    get_error, \
+    clean
+from coconut.compiler.utils import \
+    target_info, \
+    addskip, \
+    count_end, \
+    change, \
+    attach, \
+    fixto, \
+    addspace, \
+    condense, \
+    parenwrap, \
+    Tracer
 
 # end: IMPORTS
 #-----------------------------------------------------------------------------------------------------------------------
-# CONSTANTS:
+# SETUP:
 #-----------------------------------------------------------------------------------------------------------------------
 
-from zlib import crc32 as checksum # used for generating __coconut_hash__
+ParserElement.enablePackrat()
+ParserElement.setDefaultWhitespaceChars(default_whitespace_chars)
 
-specific_targets = ("2", "27", "3", "33", "35", "36")
-targets = ("",) + specific_targets
-pseudo_targets = {
-    "26": "2",
-    "32": "3",
-    "34": "33"
-}
-sys_target = str(sys.version_info[0]) + str(sys.version_info[1])
-if sys_target in pseudo_targets:
-    pseudo_targets["sys"] = pseudo_targets[sys_target]
-else:
-    pseudo_targets["sys"] = sys_target
-default_encoding = "UTF-8"
-hash_prefix = "# __coconut_hash__ = "
-hash_sep = "\x00"
-openindent = "\u204b" # reverse pilcrow
-closeindent = "\xb6" # pilcrow
-strwrapper = "\u25b6" # right-pointing triangle
-lnwrapper = "\u23f4" # left-pointing triangle
-unwrapper = "\u23f9" # stop square
-downs = "([{" # opens parenthetical
-ups = ")]}" # closes parenthetical
-holds = "'\"" # string open/close chars
-tabideal = 4 # spaces to indent code for displaying
-tabworth = 8 # worth of \t in spaces for parsing (8 = Python standard)
-reserved_prefix = "_coconut"
-decorator_var = "_coconut_decorator"
-match_to_var = "_coconut_match_to"
-match_check_var = "_coconut_match_check"
-match_iter_var = "_coconut_match_iter"
-match_err_var = "_coconut_match_err"
-lazy_item_var = "_coconut_lazy_item"
-lazy_chain_var = "_coconut_lazy_chain"
-import_as_var = "_coconut_import"
-yield_from_var = "_coconut_yield_from"
-yield_item_var = "_coconut_yield_item"
-raise_from_var = "_coconut_raise_from"
-stmt_lambda_var = "_coconut_lambda"
-wildcard = "_" # for pattern-matching
-keywords = (
-    "and",
-    "as",
-    "assert",
-    "break",
-    "class",
-    "continue",
-    "def",
-    "del",
-    "elif",
-    "else",
-    "except",
-    "finally",
-    "for",
-    "from",
-    "global",
-    "if",
-    "import",
-    "in",
-    "is",
-    "lambda",
-    "not",
-    "or",
-    "pass",
-    "raise",
-    "return",
-    "try",
-    "while",
-    "with",
-    "yield",
-    "nonlocal"
-    )
-const_vars = (
-    "True",
-    "False",
-    "None"
-    )
-reserved_vars = ( # can be backslash-escaped
-    "data",
-    "match",
-    "case",
-    "async",
-    "await"
-    )
-new_to_old_stdlib = { # new_name: (old_name, new_version_info)
-    "builtins": ("__builtin__", (3,)),
-    "configparser": ("ConfigParser", (3,)),
-    "copyreg": ("copy_reg", (3,)),
-    "dbm.gnu": ("gdbm", (3,)),
-    "_dummy_thread": ("dummy_thread", (3,)),
-    "queue": ("Queue", (3,)),
-    "reprlib": ("repr", (3,)),
-    "socketserver": ("SocketServer", (3,)),
-    "_thread": ("thread", (3,)),
-    "tkinter": ("Tkinter", (3,)),
-    "http.cookiejar": ("cookielib", (3,)),
-    "http.cookies": ("Cookie", (3,)),
-    "html.entites": ("htmlentitydefs", (3,)),
-    "html.parser": ("HTMLParser", (3,)),
-    "http.client": ("httplib", (3,)),
-    "email.mime.multipart": ("email.MIMEMultipart", (3,)),
-    "email.mime.nonmultipart": ("email.MIMENonMultipart", (3,)),
-    "email.mime.text": ("email.MIMEText", (3,)),
-    "email.mime.base": ("email.MIMEBase", (3,)),
-    "tkinter.dialog": ("Dialog", (3,)),
-    "tkinter.filedialog": ("FileDialog", (3,)),
-    "tkinter.scrolledtext": ("ScrolledText", (3,)),
-    "tkinter.simpledialog": ("SimpleDialog", (3,)),
-    "tkinter.tix": ("Tix", (3,)),
-    "tkinter.ttk": ("ttk", (3,)),
-    "tkinter.constants": ("Tkconstants", (3,)),
-    "tkinter.dnd": ("Tkdnd", (3,)),
-    "tkinter.colorchooser": ("tkColorChooser", (3,)),
-    "tkinter.commondialog": ("tkCommonDialog", (3,)),
-    "tkinter.filedialog": ("tkFileDialog", (3,)),
-    "tkinter.font": ("tkFont", (3,)),
-    "tkinter.messagebox": ("tkMessageBox", (3,)),
-    "tkinter.simpledialog": ("tkSimpleDialog", (3,)),
-    "urllib.robotparser": ("robotparser", (3,)),
-    "xmlrpc.client": ("xmlrpclib", (3,)),
-    "xmlrpc.server": ("SimpleXMLRPCServer", (3,)),
-    "urllib.request": ("urllib2", (3,)),
-    "urllib.parse": ("urllib2", (3,)),
-    "urllib.error": ("urllib2", (3,)),
-    "io.StringIO": ("StringIO", (3,)),
-    "io.BytesIO": ("BytesIO", (3,)),
-    "collections.abc": ("collections", (3, 3))
-}
-ParserElement.setDefaultWhitespaceChars(" \t\f\v")
-
-# end: CONSTANTS
-#-----------------------------------------------------------------------------------------------------------------------
-# EXCEPTIONS:
-#-----------------------------------------------------------------------------------------------------------------------
-
-def printerr(*args):
-    """Prints to standard error."""
-    print(*args, file=sys.stderr)
-
-def format_error(err_type, err_value, err_trace=None):
-    """Properly formats the specified error."""
-    if err_trace is None:
-        err_name, err_msg = "".join(traceback.format_exception_only(err_type, err_value)).strip().split(": ", 1)
-        err_name = err_name.split(".")[-1]
-        return err_name + ": " + err_msg
-    else:
-        return "".join(traceback.format_exception(err_type, err_value, err_trace)).strip()
-
-def get_error(verbose=False):
-    """Properly formats the current error."""
-    err_type, err_value, err_trace = sys.exc_info()
-    if not verbose:
-        err_trace = None
-    return format_error(err_type, err_value, err_trace)
-
-def clean(inputline, strip=True):
-    """Cleans and strips a line."""
-    if hasattr(sys.stdout, "encoding") and sys.stdout.encoding is not None:
-        stdout_encoding = sys.stdout.encoding
-    else:
-        stdout_encoding = default_encoding
-    inputline = inputline.replace(openindent, "").replace(closeindent, "")
-    if strip:
-        inputline = inputline.strip()
-    return inputline.encode(stdout_encoding, "replace").decode(stdout_encoding)
-
-class CoconutException(Exception):
-    """Base Coconut exception."""
-    def __init__(self, value, item=None):
-        """Creates the Coconut exception."""
-        self.value = value
-        if item is not None:
-            self.value += ": " + ascii(item)
-    def __repr__(self):
-        """Displays the Coconut exception."""
-        return self.value
-    def __str__(self):
-        """Wraps __repr__."""
-        return repr(self)
-
-class CoconutSyntaxError(CoconutException):
-    """Coconut SyntaxError."""
-    def __init__(self, message, source=None, point=None, ln=None):
-        """Creates the Coconut SyntaxError."""
-        self.value = message
-        if ln is not None:
-            self.value += " (line " + str(ln) + ")"
-        if source:
-            if point is None:
-                self.value += "\n" + " "*tabideal + clean(source)
-            else:
-                part = clean(source.splitlines()[lineno(point, source)-1], False).lstrip()
-                point -= len(source) - len(part) # adjust all points based on lstrip
-                part = part.rstrip() # adjust only points that are too large based on rstrip
-                self.value += "\n" + " "*tabideal + part
-                if point > 0:
-                    if point >= len(part):
-                        point = len(part) - 1
-                    self.value += "\n" + " "*(tabideal + point) + "^"
-
-class CoconutParseError(CoconutSyntaxError):
-    """Coconut ParseError."""
-    def __init__(self, source=None, point=None, lineno=None):
-        """Creates The Coconut ParseError."""
-        CoconutSyntaxError.__init__(self, "parsing failed", source, point, lineno)
-
-class CoconutStyleError(CoconutSyntaxError):
-    """Coconut --strict error."""
-    def __init__(self, message, source=None, point=None, lineno=None):
-        """Creates the --strict Coconut error."""
-        message += " (disable --strict to dismiss)"
-        CoconutSyntaxError.__init__(self, message, source, point, lineno)
-
-class CoconutTargetError(CoconutSyntaxError):
-    """Coconut --target error."""
-    def __init__(self, message, source=None, point=None, lineno=None):
-        """Creates the --target Coconut error."""
-        message, target = message
-        message += " (enable --target "+target+" to dismiss)"
-        CoconutSyntaxError.__init__(self, message, source, point, lineno)
-
-class CoconutWarning(CoconutSyntaxError):
-    """Base Coconut warning."""
-
-# end: EXCEPTIONS
-#-----------------------------------------------------------------------------------------------------------------------
-# UTILITIES:
-#-----------------------------------------------------------------------------------------------------------------------
-
-def target_info(target):
-    """Returns target information as a version tuple."""
-    return tuple(int(x) for x in target)
-
-def addskip(skips, skip):
-    """Adds a line skip to the skips."""
-    if skip < 1:
-        raise CoconutException("invalid skip of line " + str(skip))
-    elif skip in skips:
-        raise CoconutException("duplicate skip of line " + str(skip))
-    else:
-        skips.add(skip)
-        return skips
-
-def count_end(teststr, testchar):
-    """Counts instances of testchar at end of teststr."""
-    count = 0
-    x = len(teststr) - 1
-    while x >= 0 and teststr[x] == testchar:
-        count += 1
-        x -= 1
-    return count
-
-def change(inputstring):
-    """Determines the parenthetical change of level."""
-    count = 0
-    for c in inputstring:
-        if c in downs:
-            count -= 1
-        elif c in ups:
-            count += 1
-    return count
-
-def attach(item, action, copy=False):
-    """Attaches a parse action to an item."""
-    if copy:
-        item = item.copy()
-    return item.addParseAction(action)
-
-def fixto(item, output, copy=False):
-    """Forces an item to result in a specific output."""
-    return attach(item, replaceWith(output), copy)
-
-def addspace(item, copy=False):
-    """Condenses and adds space to the tokenized output."""
-    return attach(item, " ".join, copy)
-
-def condense(item, copy=False):
-    """Condenses the tokenized output."""
-    return attach(item, "".join, copy)
-
-def parenwrap(lparen, item, rparen, tokens=False):
-    """Wraps an item in optional parentheses."""
-    wrap = lparen.suppress() + item + rparen.suppress() | item
-    if not tokens:
-        wrap = condense(wrap)
-    return wrap
-
-class Tracer(object):
-    """Debug tracer."""
-
-    def __init__(self, show=printerr, on=False):
-        """Creates the tracer."""
-        self.show = show
-        self.debug(on)
-
-    def debug(self, on=True):
-        """Changes the tracer's state."""
-        self.on = on
-
-    def show_trace(self, tag, original, location, tokens):
-        """Formats and displays a trace."""
-        original = str(original)
-        location = int(location)
-        out = "[" + tag + "] "
-        if len(tokens) == 1 and isinstance(tokens[0], str):
-            out += ascii(tokens[0])
-        else:
-            out += str(tokens)
-        out += " (line "+str(lineno(location, original))+", col "+str(col(location, original))+")"
-        self.show(out)
-
-    def trace(self, item, tag):
-        """Traces a parse element."""
-        def callback(original, location, tokens):
-            """Callback function constructed by tracer."""
-            if self.on:
-                self.show_trace(tag, original, location, tokens)
-            return tokens
-        bound = attach(item, callback)
-        bound.setName(tag)
-        return bound
-
-# end: UTILITIES
+# end: SETUP
 #-----------------------------------------------------------------------------------------------------------------------
 # HEADER UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -2539,9 +2294,9 @@ class Compiler(object):
     endline_ref = condense(OneOrMore(Literal("\n")))
     lineitem = Combine(Optional(comment) + endline)
     newline = condense(OneOrMore(lineitem))
-    start_marker = StringStart()
+    start_marker = stringStart
     moduledoc_marker = condense(ZeroOrMore(lineitem) - Optional(moduledoc_item))
-    end_marker = StringEnd()
+    end_marker = stringEnd
     indent = Literal(openindent)
     dedent = Literal(closeindent)
 

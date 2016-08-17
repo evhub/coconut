@@ -16,7 +16,8 @@ Description: The Coconut IPython kernel.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from ..command import *
+from coconut.command import *
+
 try:
     from StringIO import StringIO
 except ImportError:
@@ -38,7 +39,7 @@ all_keywords = keywords + const_vars + reserved_vars
 
 class fakefile(StringIO):
     """A file-like object wrapper around a messaging function."""
-    encoding = default_encoding # from ..compiler
+    encoding = default_encoding # from coconut.compiler
 
     def __init__(self, send):
         """Initialize with a messaging function."""
@@ -98,7 +99,7 @@ def get_name(code, cursor_pos, get_bounds=False):
 # KERNEL:
 #-----------------------------------------------------------------------------------------------------------------------
 
-proc = Compiler(target="sys") # from ..compiler
+proc = Compiler(target="sys") # from coconut.compiler
 
 class CoconutKernel(Kernel):
     """Jupyter kernel for Coconut."""

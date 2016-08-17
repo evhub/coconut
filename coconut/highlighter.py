@@ -16,7 +16,8 @@ Description: Syntax highlighting for Coconut code.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from .command import *
+from coconut.command import *
+
 from pygments.lexers import Python3Lexer, PythonConsoleLexer
 from pygments.token import Text, Comment, Operator, Keyword, Name, String, Number, Punctuation, Generic, Other, Error
 from pygments.lexer import words, bygroups

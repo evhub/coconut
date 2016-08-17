@@ -21,6 +21,7 @@ import os.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from coconut.icoconut.root import *
+
 from ipykernel.kernelapp import IPKernelApp
 
 #-----------------------------------------------------------------------------------------------------------------------
