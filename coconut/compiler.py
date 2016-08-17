@@ -126,7 +126,7 @@ reserved_vars = ( # can be backslash-escaped
     "async",
     "await"
     )
-new_to_old_stdlib = { # old_name: (new_name, new_version_info)
+new_to_old_stdlib = { # new_name: (old_name, new_version_info)
     "builtins": ("__builtin__", (3,)),
     "configparser": ("ConfigParser", (3,)),
     "copyreg": ("copy_reg", (3,)),
