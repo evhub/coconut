@@ -94,6 +94,13 @@ class Command(object):
         default=[None],
         help="specify target Python version (defaults to universal)")
     arguments.add_argument(
+        "-b", "--backwards",
+        metavar="coconut_version",
+        type=str,
+        nargs=1,
+        default=[VERSION],
+        help="enable backwards compatibility to specified coconut version")
+    arguments.add_argument(
         "-s", "--strict",
         action="store_const",
         const=True,
