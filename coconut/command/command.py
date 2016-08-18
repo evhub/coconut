@@ -20,7 +20,6 @@ from coconut.root import *
 
 import sys
 import os
-import os.path
 import argparse
 import time
 
