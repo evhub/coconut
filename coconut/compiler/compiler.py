@@ -29,6 +29,8 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *
 
+from distutils.version import LooseVersion
+
 from pyparsing import \
     CaselessLiteral, \
     Combine, \
@@ -827,7 +829,8 @@ class Compiler(object):
         if target not in targets:
             raise CoconutException('unsupported target Python version "' + target
                 + '" (supported targets are "' + '", "'.join(specific_targets) + '", or leave blank for universal)')
-        self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.coco_target = target, strict, minify, line_numbers, keep_lines, coco_target
+        self.coco_target = LooseVersion(coco_target)
+        self.target, self.strict, self.minify, self.line_numbers, self.keep_lines= target, strict, minify, line_numbers, keep_lines
         self.tablen = 1 if self.minify else tabideal
 
 
@@ -1017,7 +1020,7 @@ class Compiler(object):
 
     def headers(self, which, usehash=None):
         """Gets a formatted header."""
-        return self.polish(getheader(which, self.target, usehash))
+        return self.polish(getheader(which, self.target, usehash, self.coco_target))
 
     def target_info(self):
         """Returns information on the current target as a version tuple."""
