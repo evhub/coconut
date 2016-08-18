@@ -180,7 +180,7 @@ debug_sig = ""
 default_prompt = ">>> "
 default_moreprompt = "    "
 
-watch_interval = .05 # seconds
+watch_interval = .1 # seconds
 
 info_tabulation = 18 # offset for tabulated info messages
 

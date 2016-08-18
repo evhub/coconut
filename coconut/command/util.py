@@ -152,14 +152,15 @@ class Console(object):
 
     def display(self, messages, sig="", debug=False):
         """Prints an iterator of messages with color."""
-        if self.on:
-            message = " ".join(str(msg) for msg in messages)
-            for line in message.splitlines():
-                msg = self.add_color(sig + line)
-                if debug is True:
-                    printerr(msg)
-                else:
-                    print(msg)
+        message = " ".join(str(msg) for msg in messages)
+        for line in message.splitlines():
+            msg = sig + line
+            if msg:
+                msg = self.add_color(msg)
+            if debug is True:
+                printerr(msg)
+            else:
+                print(msg)
 
     def print(self, *messages):
         """Prints messages with color."""
@@ -171,4 +172,5 @@ class Console(object):
 
     def show(self, *messages):
         """Prints messages with color and main signature."""
-        self.display(messages, self.main_sig)
+        if self.on:
+            self.display(messages, self.main_sig)

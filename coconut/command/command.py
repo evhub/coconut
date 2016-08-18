@@ -374,7 +374,8 @@ class Command(object):
                     self.compile_file(os.path.join(dirpath, filename), writedir, package, run, force)
             for name in dirnames[:]:
                 if name != "."*len(name) and name.startswith("."):
-                    self.show_tabulated("Skipped directory", name, "(explicitly pass as source to override).")
+                    if self.indebug():
+                        self.show_tabulated("Skipped directory", name, "(explicitly pass as source to override).")
                     dirnames.remove(name) # directories removed from dirnames won't appear in further os.walk iteration
 
     def compile_file(self, filepath, write=True, package=False, run=False, force=False):
@@ -452,7 +453,7 @@ class Command(object):
         try:
             return input(prompt) # using input from coconut.root
         except KeyboardInterrupt:
-            print()
+            self.console.printerr()
             self.console.printerr("KeyboardInterrupt")
         except EOFError:
             print()
@@ -606,13 +607,17 @@ class Command(object):
 
         source = fixpath(source)
 
-        self.console.show("Watching        "+showpath(source)+" ...")
-        self.console.print("(press Ctrl-C to end)")
+        self.console.print()
+        self.show_tabulated("Watching", showpath(source), "(press Ctrl-C to end)...")
 
         def recompile(path):
             if os.path.isfile(path) and os.path.splitext(path)[1] in code_exts:
-                self.compile_path(path, write, package, run, force)
+                try:
+                    self.compile_path(path, write, package, run, force)
+                except CoconutException:
+                    self.print_exc()
 
+        observer = Observer()
         observer.schedule(RecompilationWatcher(recompile), source, recursive=True)
         observer.start()
         try:
