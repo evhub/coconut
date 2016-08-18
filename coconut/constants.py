@@ -260,7 +260,7 @@ builtins = (
     "concurrent_map"
     )
 
-operators = (
+new_operators = (
     r">>>",
     r"@",
     r"\$",

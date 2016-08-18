@@ -24,11 +24,10 @@ from pygments.lexer import words, bygroups
 
 from coconut.constants import \
     builtins, \
-    operators, \
+    new_operators, \
     tabideal, \
     default_encoding, \
     code_exts, \
-    operators, \
     reserved_vars
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -70,7 +69,7 @@ class cocolexer(Python3Lexer):
 
     tokens = Python3Lexer.tokens.copy()
     tokens["root"] = [
-        (r"|".join(operators), Operator),
+        (r"|".join(new_operators), Operator),
         (r'(?<!\\)(data)((?:\s|\\\s)+)', bygroups(Keyword, Text), 'classname')
     ] + tokens["root"]
     tokens["keywords"] = tokens["keywords"] + [
