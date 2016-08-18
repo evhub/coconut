@@ -40,7 +40,8 @@ from coconut.constants import \
     documentation_url, \
     reserved_prefix, \
     default_encoding, \
-    code_exts
+    code_exts, \
+    tabideal
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
