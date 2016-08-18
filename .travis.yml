@@ -84,6 +84,10 @@ matrix:
         - coconut src_target/cocotest/py2_test.coco linenumbers_build/cocotest --strict --package --target 2.6 --linenumbers
         - coconut src_target/cocotest/non_py26_test.coco linenumbers_build/cocotest --strict --package --target 2.6 --linenumbers
         - python linenumbers_build/runner.py
+        - coconut src keeplines_build --strict --keeplines
+        - coconut src_target/cocotest/py2_test.coco keeplines_build/cocotest --strict --package --target 2.6 --keeplines
+        - coconut src_target/cocotest/non_py26_test.coco keeplines_build/cocotest --strict --package --target 2.6 --keeplines
+        - python keeplines_build/runner.py
         - coconut src autopep8_build --strict --autopep8
         - coconut src_target/cocotest/py2_test.coco autopep8_build/cocotest --strict --package --target 2.6 --autopep8
         - coconut src_target/cocotest/non_py26_test.coco autopep8_build/cocotest --strict --package --target 2.6 --autopep8
@@ -172,6 +176,10 @@ matrix:
         - coconut src_target/cocotest/py2_test.coco linenumbers_build/cocotest --strict --package --target 2.7 --linenumbers
         - coconut src_target/cocotest/non_py26_test.coco linenumbers_build/cocotest --strict --package --target 2.7 --linenumbers
         - python linenumbers_build/runner.py
+        - coconut src keeplines_build --strict --keeplines
+        - coconut src_target/cocotest/py2_test.coco keeplines_build/cocotest --strict --package --target 2.7 --keeplines
+        - coconut src_target/cocotest/non_py26_test.coco keeplines_build/cocotest --strict --package --target 2.7 --keeplines
+        - python keeplines_build/runner.py
         - coconut src autopep8_build --strict --autopep8
         - coconut src_target/cocotest/py2_test.coco autopep8_build/cocotest --strict --package --target 2.7 --autopep8
         - coconut src_target/cocotest/non_py26_test.coco autopep8_build/cocotest --strict --package --target 2.7 --autopep8
@@ -263,6 +271,10 @@ matrix:
         - coconut src_target/cocotest/py2_test.coco linenumbers_build/cocotest --strict --package --target 2.7 --linenumbers
         - coconut src_target/cocotest/non_py26_test.coco linenumbers_build/cocotest --strict --package --target 2.7 --linenumbers
         - python linenumbers_build/runner.py
+        - coconut src keeplines_build --strict --keeplines
+        - coconut src_target/cocotest/py2_test.coco keeplines_build/cocotest --strict --package --target 2.7 --keeplines
+        - coconut src_target/cocotest/non_py26_test.coco keeplines_build/cocotest --strict --package --target 2.7 --keeplines
+        - python keeplines_build/runner.py
         - coconut src autopep8_build --strict --autopep8
         - coconut src_target/cocotest/py2_test.coco autopep8_build/cocotest --strict --package --target 2.7 --autopep8
         - coconut src_target/cocotest/non_py26_test.coco autopep8_build/cocotest --strict --package --target 2.7 --autopep8
@@ -347,6 +359,10 @@ matrix:
         - coconut src_target/cocotest/py3_test.coco linenumbers_build/cocotest --strict --package --target 3.2 --linenumbers
         - coconut src_target/cocotest/non_py26_test.coco linenumbers_build/cocotest --strict --package --target 3.2 --linenumbers
         - python linenumbers_build/runner.py
+        - coconut src keeplines_build --strict --keeplines
+        - coconut src_target/cocotest/py3_test.coco keeplines_build/cocotest --strict --package --target 3.2 --keeplines
+        - coconut src_target/cocotest/non_py26_test.coco keeplines_build/cocotest --strict --package --target 3.2 --keeplines
+        - python keeplines_build/runner.py
         - coconut src autopep8_build --strict --autopep8
         - coconut src_target/cocotest/py3_test.coco autopep8_build/cocotest --strict --package --target 3.2 --autopep8
         - coconut src_target/cocotest/non_py26_test.coco autopep8_build/cocotest --strict --package --target 3.2 --autopep8
@@ -434,6 +450,10 @@ matrix:
         - coconut src_target/cocotest/py3_test.coco linenumbers_build/cocotest --strict --package --target 3.3 --linenumbers
         - coconut src_target/cocotest/non_py26_test.coco linenumbers_build/cocotest --strict --package --target 3.3 --linenumbers
         - python linenumbers_build/runner.py
+        - coconut src keeplines_build --strict --keeplines
+        - coconut src_target/cocotest/py3_test.coco keeplines_build/cocotest --strict --package --target 3.3 --keeplines
+        - coconut src_target/cocotest/non_py26_test.coco keeplines_build/cocotest --strict --package --target 3.3 --keeplines
+        - python keeplines_build/runner.py
         - coconut src autopep8_build --strict --autopep8
         - coconut src_target/cocotest/py3_test.coco autopep8_build/cocotest --strict --package --target 3.3 --autopep8
         - coconut src_target/cocotest/non_py26_test.coco autopep8_build/cocotest --strict --package --target 3.3 --autopep8
@@ -521,6 +541,10 @@ matrix:
         - coconut src_target/cocotest/py3_test.coco linenumbers_build/cocotest --strict --package --target 3.4 --linenumbers
         - coconut src_target/cocotest/non_py26_test.coco linenumbers_build/cocotest --strict --package --target 3.4 --linenumbers
         - python linenumbers_build/runner.py
+        - coconut src keeplines_build --strict --keeplines
+        - coconut src_target/cocotest/py3_test.coco keeplines_build/cocotest --strict --package --target 3.4 --keeplines
+        - coconut src_target/cocotest/non_py26_test.coco keeplines_build/cocotest --strict --package --target 3.4 --keeplines
+        - python keeplines_build/runner.py
         - coconut src autopep8_build --strict --autopep8
         - coconut src_target/cocotest/py3_test.coco autopep8_build/cocotest --strict --package --target 3.4 --autopep8
         - coconut src_target/cocotest/non_py26_test.coco autopep8_build/cocotest --strict --package --target 3.4 --autopep8
@@ -614,6 +638,11 @@ matrix:
         - coconut src_target/cocotest/non_py26_test.coco linenumbers_build/cocotest --strict --package --target 3.5 --linenumbers
         - coconut src_target/cocotest/py35_test.coco linenumbers_build/cocotest --strict --package --target 3.5 --linenumbers
         - python linenumbers_build/runner.py
+        - coconut src keeplines_build --strict --keeplines
+        - coconut src_target/cocotest/py3_test.coco keeplines_build/cocotest --strict --package --target 3.5 --keeplines
+        - coconut src_target/cocotest/non_py26_test.coco keeplines_build/cocotest --strict --package --target 3.5 --keeplines
+        - coconut src_target/cocotest/py35_test.coco keeplines_build/cocotest --strict --package --target 3.5 --keeplines
+        - python keeplines_build/runner.py
         - coconut src autopep8_build --strict --autopep8
         - coconut src_target/cocotest/py3_test.coco autopep8_build/cocotest --strict --package --target 3.5 --autopep8
         - coconut src_target/cocotest/non_py26_test.coco autopep8_build/cocotest --strict --package --target 3.5 --autopep8
@@ -699,6 +728,10 @@ matrix:
         - coconut src_target/cocotest/py3_test.coco linenumbers_build/cocotest --strict --package --target 3.2 --linenumbers
         - coconut src_target/cocotest/non_py26_test.coco linenumbers_build/cocotest --strict --package --target 3.2 --linenumbers
         - python linenumbers_build/runner.py
+        - coconut src keeplines_build --strict --keeplines
+        - coconut src_target/cocotest/py3_test.coco keeplines_build/cocotest --strict --package --target 3.2 --keeplines
+        - coconut src_target/cocotest/non_py26_test.coco keeplines_build/cocotest --strict --package --target 3.2 --keeplines
+        - python keeplines_build/runner.py
         - coconut src autopep8_build --strict --autopep8
         - coconut src_target/cocotest/py3_test.coco autopep8_build/cocotest --strict --package --target 3.2 --autopep8
         - coconut src_target/cocotest/non_py26_test.coco autopep8_build/cocotest --strict --package --target 3.2 --autopep8

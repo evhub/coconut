@@ -107,6 +107,12 @@ class Command(object):
         default=False,
         help="add line number comments for ease of debugging")
     arguments.add_argument(
+        "-k", "--keep-lines", "--keeplines",
+        action="store_const",
+        const=True,
+        default=False,
+        help="include source code in comments for ease of debugging")
+    arguments.add_argument(
         "-p", "--package",
         action="store_const",
         const=True,
@@ -231,7 +237,7 @@ class Command(object):
         """Processes command-line arguments."""
         self.cmd(self.arguments.parse_args())
 
-    def setup(self, target=None, strict=False, minify=False, line_numbers=False, quiet=False, color=None):
+    def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False, quiet=False, color=None):
         """Sets parameters for the compiler."""
         if color is not None:
             self.console.set_color(color)
@@ -239,9 +245,9 @@ class Command(object):
             self.moreprompt = self.console.add_color(self.moreprompt)
         self.console.on = not quiet
         if self.proc is None:
-            self.proc = Compiler(target, strict, minify, line_numbers, self.console.printerr)
+            self.proc = Compiler(target, strict, minify, line_numbers, keep_lines, self.console.printerr)
         else:
-            self.proc.setup(target, strict, minify, line_numbers)
+            self.proc.setup(target, strict, minify, line_numbers, keep_lines)
 
     def indebug(self):
         """Determines whether the compiler is in debug mode."""
@@ -271,7 +277,7 @@ class Command(object):
         try:
             if args.recursion_limit[0] is not None:
                 sys.setrecursionlimit(args.recursion_limit[0])
-            self.setup(args.target[0], args.strict, args.minify, args.line_numbers, args.quiet, args.color[0])
+            self.setup(args.target[0], args.strict, args.minify, args.line_numbers, args.keep_lines, args.quiet, args.color[0])
             if args.version:
                 self.console.show(version_long)
             if args.tutorial:

@@ -775,10 +775,10 @@ class Compiler(object):
     debug = tracer.debug
     autopep8_args = None
 
-    def __init__(self, target=None, strict=False, minify=False, line_numbers=False, debugger=printerr):
+    def __init__(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False, debugger=printerr):
         """Creates a new compiler with the given parsing parameters."""
         self.debugger = debugger
-        self.setup(target, strict, minify, line_numbers)
+        self.setup(target, strict, minify, line_numbers, keep_lines)
         self.preprocs = [
             self.prepare,
             self.str_proc,
@@ -794,12 +794,12 @@ class Compiler(object):
             self.autopep8_proc
         ]
         self.replprocs = [
-            self.linenumber_repl,
+            self.endline_repl,
             self.passthrough_repl,
             self.str_repl
         ]
 
-    def setup(self, target=None, strict=False, minify=False, line_numbers=False):
+    def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False):
         """Initializes parsing parameters."""
         if target is None:
             target = ""
@@ -810,7 +810,7 @@ class Compiler(object):
         if target not in targets:
             raise CoconutException('unsupported target Python version "' + target
                 + '" (supported targets are "' + '", "'.join(specific_targets) + '", or leave blank for universal)')
-        self.target, self.strict, self.minify, self.line_numbers = target, strict, minify, line_numbers
+        self.target, self.strict, self.minify, self.line_numbers, self.keep_lines = target, strict, minify, line_numbers, keep_lines
         self.tablen = 1 if self.minify else tabideal
 
     def autopep8(self, args=()):
@@ -893,10 +893,10 @@ class Compiler(object):
     def reformat(self, snip, index=None):
         """Post processes a preprocessed snippet."""
         if index is None:
-            return self.repl_proc(snip, careful=False, line_numbers=False)
+            return self.repl_proc(snip, careful=False, add_to_line=False)
         else:
-            return (self.repl_proc(snip, careful=False, line_numbers=False),
-                    len(self.repl_proc(snip[:index], careful=False, line_numbers=False)))
+            return (self.repl_proc(snip, careful=False, add_to_line=False),
+                    len(self.repl_proc(snip[:index], careful=False, add_to_line=False)))
 
     def make_err(self, errtype, message, original, location, ln=None, reformat=True):
         """Generates an error of the specified type."""
@@ -956,8 +956,8 @@ class Compiler(object):
         """Wraps a comment."""
         return "#" + self.add_ref(text) + unwrapper
 
-    def wrap_linenumber(self, ln):
-        """Wraps a linenumber."""
+    def wrap_line_number(self, ln):
+        """Wraps a line number."""
         return "#" + self.add_ref(ln) + lnwrapper
 
     def indebug(self):
@@ -1031,6 +1031,8 @@ class Compiler(object):
         if nl_at_eof_check and not inputstring.endswith("\n"):
             end_index = len(inputstring) - 1 if inputstring else 0
             self.strict_err_or_warn("missing new line at end of file", inputstring, end_index)
+        if self.keep_lines:
+            self.original_lines = inputstring.splitlines()
         if strip:
             inputstring = inputstring.strip()
         return "\n".join(inputstring.splitlines()) + "\n"
@@ -1309,11 +1311,32 @@ class Compiler(object):
             out.append(line + comment)
         return "\n".join(out)
 
-    def linenumber_repl(self, inputstring, line_numbers=None, careful=True, **kwargs):
-        """Adds in line_numbers."""
-        if self.line_numbers:
-            if line_numbers is None:
-                line_numbers = True
+    def endline_comment(self, ln):
+        """Gets an end line comment."""
+        if ln < 0 or (self.keep_lines and ln > len(self.original_lines)):
+            raise CoconutException("out of bounds line number", ln)
+        elif self.line_numbers and self.keep_lines:
+            if self.minify:
+                comment = str(ln) + " " + self.original_lines[ln-1]
+            else:
+                comment = " line " + str(ln) + ": " + self.original_lines[ln-1]
+        elif self.keep_lines:
+            if self.minify:
+                comment = self.original_lines[ln-1]
+            else:
+                comment = " " + self.original_lines[ln-1]
+        elif self.line_numbers:
+            if self.minify:
+                comment = str(ln)
+            else:
+                comment = " line " + str(ln)
+        else:
+            raise CoconutException("attempted to add line number comment without --line-numbers or --keep-lines")
+        return self.wrap_comment(comment)
+
+    def endline_repl(self, inputstring, add_to_line=True, careful=True, **kwargs):
+        """Adds in end line comments."""
+        if self.line_numbers or self.keep_lines:
             out = []
             ln = 1
             fix = False
@@ -1323,25 +1346,20 @@ class Compiler(object):
                         line, index = line[:-1].rsplit("#", 1)
                         ln = self.get_ref(index)
                         if not isinstance(ln, int):
-                            raise CoconutException("invalid reference for a linenumber", ln)
+                            raise CoconutException("invalid reference for a line number", ln)
                         line = line.rstrip()
                         fix = True
                     elif fix:
                         ln += 1
                         fix = False
-                    if line_numbers and line and not line.lstrip().startswith("#"):
-                        if self.minify:
-                            line += self.wrap_comment(str(ln))
-                        else:
-                            line += self.wrap_comment("line "+str(ln))
+                    if add_to_line and line and not line.lstrip().startswith("#"):
+                        line += self.endline_comment(ln)
                 except CoconutException:
                     if careful:
                         raise
                     fix = False
                 out.append(line)
             return "\n".join(out)
-        elif line_numbers:
-            raise CoconutException("line_numbers must be enabled to pass it as an argument")
         else:
             return inputstring
 
@@ -1491,9 +1509,9 @@ class Compiler(object):
             raise CoconutException("invalid endline tokens", tokens)
         out = tokens[0]
         if self.minify:
-            out = out[0]
-        if self.line_numbers:
-            out = self.wrap_linenumber(self.adjust(lineno(location, original))) + out
+            out = out.splitlines(True)[0] # if there are multiple new lines, take only the first one
+        if self.line_numbers or self.keep_lines:
+            out = self.wrap_line_number(self.adjust(lineno(location, original))) + out
         return out
 
     def item_handle(self, original, location, tokens):

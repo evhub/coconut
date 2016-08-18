@@ -107,7 +107,7 @@ which will enable the use of Coconut's `--autopep8`, `--watch`, and `--jupyter` 
 ### Usage
 
 ```
-coconut [-h] [-v] [source] [dest] [-t version] [-s] [-l] [-p] [-a] [-w] [-f] [-d] [-r] [-n] [-m] [-i] [-q] [-c code] [--jupyter ...] [--autopep8 ...] [--recursion-limit limit] [--color color] [--verbose]
+coconut [-h] [-v] [source] [dest] [-t version] [-s] [-l] [-k] [-p] [-a] [-w] [-f] [-d] [-r] [-n] [-m] [-i] [-q] [-c code] [--jupyter ...] [--autopep8 ...] [--recursion-limit limit] [--color color] [--verbose]
 ```
 
 #### Positional Arguments
@@ -125,6 +125,7 @@ dest                  destination directory for compiled files (defaults to the 
 -t, --target            specify target Python version (defaults to universal)
 -s, --strict            enforce code cleanliness standards
 -l, --line-numbers      add line number comments for ease of debugging
+-k, --keep-lines        include source code in comments for ease of debugging
 -p, --package           compile source as part of a package (defaults to only if source is a directory)
 -a, --standalone        compile source as standalone files (defaults to only if source is a single file)
 -w, --watch           watch a directory and recompile on changes (requires watchdog)
@@ -1715,14 +1716,15 @@ Each _mode_ has two components: what parser it uses, and what header it prepends
 
 #### `setup`
 
-**coconut.convenience.setup**(_target, strict, minify, line\_numbers, quiet, color_**)**
+**coconut.convenience.setup**(_target, strict, minify, line\_numbers, keep\_lines, quiet, color_**)**
 
-If `--target`, `--strict`, `--minify`, `--line-numbers`, `--quiet`, or `--color` are desired for `parse`, the arguments to `setup` will each set the value of the corresponding flag. The possible values for each flag are:
+`setup` can be used to pass command line flags for use in `parse`. The possible values for each flag argument are:
 
 - _target_: `None` (default), or any [allowable target](#allowable-targets)
 - _strict_: `False` (default) or `True`
 - _minify_: `False` (default) or `True`
 - _line\_numbers_: `False` (default) or `True`
+- _keep\_lines_: `False` (default) or `True`
 - _quiet_: `False` (default) or `True`
 - _color_: `None` (default) or `str`
 
