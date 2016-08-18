@@ -1195,7 +1195,7 @@ class Compiler(object):
             elif inputstring[x] == "\t":
                 if self.indchar is None:
                     self.indchar = "\t"
-                count += tabworth - x % tabworth
+                count += tabworth - (x % tabworth)
             else:
                 break
             if self.indchar != inputstring[x]:
@@ -1457,6 +1457,7 @@ class Compiler(object):
         """Processes using replprocs."""
         for repl in self.replprocs:
             inputstring = repl(inputstring, **kwargs)
+            self.log(repl.__name__, inputstring)
         return inputstring
 
     def header_proc(self, inputstring, header="file", initial="initial", usehash=None, **kwargs):
