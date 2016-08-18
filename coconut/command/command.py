@@ -27,7 +27,8 @@ import time
 from coconut.compiler import \
     Compiler, \
     gethash, \
-    CoconutException
+    CoconutException, \
+    get_error
 from coconut.constants import \
     code_exts, \
     comp_ext, \
