@@ -763,6 +763,15 @@ def class_suite_handle(tokens):
     else:
         return ": pass" + tokens[0]
 
+def namelist_handle(tokens):
+    """Handles inline nonlocal and global statements."""
+    if len(tokens) == 1:
+        return tokens[0]
+    elif len(tokens) == 2:
+        return tokens[0] + "; " + tokens[0] + " = " + tokens[1]
+    else:
+        raise CoconutException("invalid in-line nonlocal / global tokens", tokens)
+
 # end: HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
 # COMPILER:
@@ -2305,7 +2314,10 @@ class Compiler(object):
     import_stmt_ref = import_from | import_name
 
     nonlocal_stmt = Forward()
-    namelist = parenwrap(lparen, itemlist(name, comma), rparen)
+    namelist = attach(
+        parenwrap(lparen, itemlist(name, comma), rparen)
+        - Optional(equals.suppress() - test_expr)
+        , namelist_handle)
     global_stmt = addspace(Keyword("global") - namelist)
     nonlocal_stmt_ref = addspace(Keyword("nonlocal") - namelist)
     del_stmt = addspace(Keyword("del") - simple_assignlist)
@@ -2314,7 +2326,8 @@ class Compiler(object):
 
     match = Forward()
     matchlist_list = Group(Optional(tokenlist(match, comma)))
-    matchlist_tuple = Group(Optional(match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress()) | match + comma.suppress()))
+    matchlist_tuple = Group(Optional(match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress())
+                                     | match + comma.suppress()))
     match_const = const_atom | condense(equals.suppress() + atom_item)
     matchlist_set = Group(Optional(tokenlist(match_const, comma)))
     match_pair = Group(match_const + colon.suppress() + match)

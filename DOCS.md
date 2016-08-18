@@ -49,6 +49,7 @@
     1. [`except` Statements](#except-statements)
     1. [Implicit `pass`](#implicit-pass)
     1. [Parenthetical Continuation](#parenthetical-continuation)
+    1. [In-line `global` And `nonlocal` Assignment](#in-line-global-and-nonlocal-assignment)
     1. [Code Passthrough](#code-passthrough)
 1. [Built-Ins](#built-ins)
     1. [`addpattern`](#addpattern)
@@ -1198,6 +1199,22 @@ global (really_long_global_variable_name_the_first_one,
 ```coconut_python
 global really_long_global_variable_name_the_first_one, \
         really_long_global_variable_name_the_second_one
+```
+
+### In-line `global` And `nonlocal` Assignment
+
+Coconut allows for `global` or `nonlocal` to precede assignment to a variable or list of variables to make that assignment `global` or `nonlocal`, respectively.
+
+##### Example
+
+###### Coconut
+```coconut
+global state_a, state_b = 10, 100
+```
+
+###### Python
+```coconut_python
+global state_a, state_b; state_a, state_b = 10, 100
 ```
 
 ### Code Passthrough
