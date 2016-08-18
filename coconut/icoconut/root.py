@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+Removes pip upgrade#!/usr/bin/env python
 
 #-----------------------------------------------------------------------------------------------------------------------
 # INFO:
@@ -25,8 +25,11 @@ except ImportError:
     from io import StringIO
 from ipykernel.kernelbase import Kernel
 
-from coconut.compiler import Compiler, printerr
 from coconut.command import Runner
+from coconut.compiler import \
+    Compiler, \
+    printerr, \
+    CoconutException
 from coconut.constants import \
     py_syntax_version, \
     mimetype, \
