@@ -56,10 +56,12 @@ setuptools.setup(
     extras_require = {
         "all": [
             "autopep8",
-            "watchdog"
+            "watchdog",
+            "jupyter"
         ],
         "autopep8": "autopep8",
-        "watch": "watchdog"
+        "watch": "watchdog",
+        "jupyter": "jupyter"
     },
     packages = setuptools.find_packages(),
     include_package_data = True,

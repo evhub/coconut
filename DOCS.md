@@ -102,7 +102,7 @@ which will install Coconut and its required dependencies. Coconut also has some 
 ```
 python -m pip install coconut[all]
 ```
-which will enable the use of Coconut's `--autopep8` and `--watch` flags. To install the optional dependencies only for a particular flag, simply put the flag name in place of `all`.
+which will enable the use of Coconut's `--autopep8`, `--watch`, and `--jupyter` flags. To install the optional dependencies only for a particular flag, simply put the flag name in place of `all`.
 
 ### Usage
 

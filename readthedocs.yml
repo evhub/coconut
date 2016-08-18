@@ -2,7 +2,7 @@ formats:
     - htmlzip
     - pdf
     - epub
-requirements_file: requirements-conf.txt
+requirements_file: requirements-docs.txt
 python:
     version: 3
     pip_install: true
