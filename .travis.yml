@@ -12,9 +12,10 @@ matrix:
 
       install:
         - pip install --upgrade pip
-        - pip install .[autopep8]
+        - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
+        - pip install autopep8
         - pip install pygments
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
@@ -102,9 +103,10 @@ matrix:
 
       install:
         - pip install --upgrade pip
-        - pip install .[autopep8]
+        - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
+        - pip install autopep8
         - pip install pygments
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
@@ -195,9 +197,10 @@ matrix:
 
       install:
         - pip install --upgrade pip
-        - pip install .[autopep8]
+        - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
+        - pip install autopep8
         - pip install pygments
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
@@ -291,9 +294,10 @@ matrix:
 
       install:
         - pip install --upgrade pip
-        - pip install .[autopep8]
+        - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
+        - pip install autopep8
         - pip install pygments
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
@@ -380,9 +384,10 @@ matrix:
 
       install:
         - pip install --upgrade pip
-        - pip install .[autopep8]
+        - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
+        - pip install autopep8
         - pip install pygments
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
@@ -472,9 +477,10 @@ matrix:
 
       install:
         - pip install --upgrade pip
-        - pip install .[autopep8]
+        - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
+        - pip install autopep8
         - pip install pygments
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
@@ -564,9 +570,10 @@ matrix:
 
       install:
         - pip install --upgrade pip
-        - pip install .[autopep8]
+        - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
+        - pip install autopep8
         - pip install pygments
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
@@ -664,9 +671,10 @@ matrix:
 
       install:
         - pip install --upgrade pip
-        - pip install .[autopep8]
+        - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
+        - pip install autopep8
         - pip install pygments
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
