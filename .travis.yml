@@ -11,7 +11,6 @@ matrix:
     - python: "2.6"
 
       install:
-        - pip install --upgrade pip
         - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
@@ -102,7 +101,6 @@ matrix:
     - python: "2.7"
 
       install:
-        - pip install --upgrade pip
         - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
@@ -196,7 +194,6 @@ matrix:
     - python: "pypy"
 
       install:
-        - pip install --upgrade pip
         - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
@@ -293,7 +290,6 @@ matrix:
     - python: "3.2"
 
       install:
-        - pip install --upgrade pip
         - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
@@ -383,7 +379,6 @@ matrix:
     - python: "3.3"
 
       install:
-        - pip install --upgrade pip
         - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
@@ -476,7 +471,6 @@ matrix:
     - python: "3.4"
 
       install:
-        - pip install --upgrade pip
         - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
@@ -569,7 +563,6 @@ matrix:
     - python: "3.5"
 
       install:
-        - pip install --upgrade pip
         - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
@@ -670,7 +663,6 @@ matrix:
     - python: "pypy3"
 
       install:
-        - pip install --upgrade pip
         - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
