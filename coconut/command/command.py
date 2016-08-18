@@ -96,6 +96,7 @@ class Command(object):
     arguments.add_argument(
         "-b", "--backwards",
         type=str,
+        metavar="version",
         nargs=1,
         default=[VERSION],
         help="enable backwards compatibility to specified coconut version")
