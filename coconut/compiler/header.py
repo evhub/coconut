@@ -210,6 +210,31 @@ class _coconut_map(_coconut.map):
         return (self.__class__, (self._func,) + self._iters)
     def __copy__(self):
         return self.__class__(self._func, *_coconut_map(_coconut.copy.copy, self._iters))
+class parallel_map(_coconut_map):
+    """Multiprocessing implementation of map using concurrent.futures; requires arguments to be pickleable."""
+    __slots__ = ()
+    def __iter__(self):
+        from concurrent.futures import ProcessPoolExecutor
+        with ProcessPoolExecutor() as executor:
+            return _coconut.iter(_coconut.tuple(executor.map(self._func, *self._iters)))
+    def __repr__(self):
+        return "parallel_" + _coconut_map.__repr__(self)
+class concurrent_map(_coconut_map):
+    """Multithreading implementation of map using concurrent.futures."""
+    __slots__ = ()
+    def __iter__(self):
+        from concurrent.futures import ThreadPoolExecutor'''
+            if target_info(target) >= (3, 5):
+                header += r'''
+        with ThreadPoolExecutor() as executor:'''
+            else:
+                header += r'''
+        from multiprocessing import cpu_count  # cpu_count() * 5 is the default Python 3 thread count
+        with ThreadPoolExecutor(cpu_count() * 5) as executor:'''
+            header += r'''
+            return _coconut.iter(_coconut.tuple(executor.map(self._func, *self._iters)))
+    def __repr__(self):
+        return "concurrent_" + _coconut_map.__repr__(self)
 class zip(_coconut.zip):
     __slots__ = ("_iters",)
     if hasattr(_coconut.zip, "__doc__"):
@@ -271,31 +296,6 @@ class count(object):'''
         return (self.__class__, (self._start, self._step))
     def __copy__(self):
         return self.__class__(self._start, self._step)
-class parallel_map(_coconut_map):
-    """Multiprocessing implementation of map using concurrent.futures; requires arguments to be pickleable."""
-    __slots__ = ()
-    def __iter__(self):
-        from concurrent.futures import ProcessPoolExecutor
-        with ProcessPoolExecutor() as executor:
-            return _coconut.iter(_coconut.tuple(executor.map(self._func, *self._iters)))
-    def __repr__(self):
-        return "parallel_" + _coconut_map.__repr__(self)
-class concurrent_map(_coconut_map):
-    """Multithreading implementation of map using concurrent.futures."""
-    __slots__ = ()
-    def __iter__(self):
-        from concurrent.futures import ThreadPoolExecutor'''
-            if target_info(target) >= (3, 5):
-                header += r'''
-        with ThreadPoolExecutor() as executor:'''
-            else:
-                header += r'''
-        from multiprocessing import cpu_count  # cpu_count() * 5 is the default Python 3 thread count
-        with ThreadPoolExecutor(cpu_count() * 5) as executor:'''
-            header += r'''
-            return _coconut.iter(_coconut.tuple(executor.map(self._func, *self._iters)))
-    def __repr__(self):
-        return "concurrent_" + _coconut_map.__repr__(self)
 def recursive(func):
     """Decorates a function by optimizing it for tail recursion."""
     state = [True, None]  # state = [is_top_level, (args, kwargs)]

@@ -182,6 +182,8 @@ default_moreprompt = "    "
 
 watch_interval = .05 # seconds
 
+info_tabulation = 18 # offset for tabulated info messages
+
 end_color_code = 0
 color_codes = { # unix/ansii color codes, underscores in names removed
     "bold": 1,
