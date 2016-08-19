@@ -236,17 +236,28 @@ def lambdef_handle(tokens):
     else:
         raise CoconutException("invalid lambda tokens", tokens)
 
-def func_handle(tokens):
-    """Processes mathematical function definitons."""
-    if len(tokens) == 2:
-        return "def " + tokens[0] + ": return " + tokens[1]
+def math_funcdef_suite_handle(original, location, tokens):
+    """Processes mathematical function definiton suites."""
+    if len(tokens) < 1:
+        raise CoconutException("invalid mathematical function definition suite tokens", tokens)
+    elif "returnable" not in tokens[-1].keys():
+        raise self.make_err(CoconutSyntaxError, "found unreturnable expression on last line of shorthand function", original, location)
     else:
-        raise CoconutException("invalid mathematical function definition tokens", tokens)
+        out = ""
+        for inner in tokens[1:-1]:
+            out += inner[0] + "\n"
+        out += "return " + tokens[-1][0]
+        return out
 
-def match_func_handle(tokens):
+def math_funcdef_handle(tokens):
+    """Processes mathematical function definition."""
+    if len(tokens) == 2:
+        return tokens[0] + ("" if tokens[1].startswith("\n") else " ") + tokens[1]
+
+def math_match_funcdef_handle(tokens):
     """Processes match mathematical function definitions."""
     if len(tokens) == 2:
-        return tokens[0] + "return " + tokens[1] + "\n" + closeindent
+        return tokens[0] + "\n" + closeindent
     else:
         raise CoconutException("invalid pattern-matching mathematical function definition tokens", tokens)
 
@@ -2417,11 +2428,6 @@ class Compiler(object):
     return_typedef_ref = addspace(arrow + test)
     base_funcdef = addspace((op_funcdef | name_funcdef) + Optional(return_typedef))
     funcdef = trace(addspace(Keyword("def") + condense(base_funcdef + suite)), "funcdef")
-    math_funcdef = trace(condense(
-        attach(Keyword("def").suppress() + base_funcdef + equals.suppress() - test_expr, func_handle)
-        - newline), "math_funcdef")
-    async_funcdef_ref = addspace(Keyword("async") + (funcdef | math_funcdef))
-    async_block_ref = addspace(Keyword("async") + (with_stmt | for_stmt))
 
     name_match_funcdef = Forward()
     op_match_funcdef = Forward()
@@ -2431,10 +2437,23 @@ class Compiler(object):
     op_match_funcdef_ref = Group(Optional(op_match_funcdef_arg)) + op_funcdef_name + Group(Optional(op_match_funcdef_arg)) + match_guard
     base_match_funcdef = Keyword("def").suppress() + (op_match_funcdef | name_match_funcdef)
     def_match_funcdef = trace(attach(base_match_funcdef + full_suite, def_match_funcdef_handle), "base_match_funcdef")
-    math_match_funcdef = attach(
-        Optional(Keyword("match").suppress()) + base_match_funcdef + equals.suppress() - test_expr
-        , match_func_handle) - newline
     match_funcdef = Optional(Keyword("match").suppress()) + def_match_funcdef
+
+    math_funcdef_suite = Forward()
+    testlist_stmt = condense(testlist + newline)
+    math_funcdef_suite_ref = attach(
+        newline - indent - OneOrMore(Group(testlist_stmt("returnable") | stmt)) - dedent
+        | Group(testlist_stmt("returnable"))
+        , math_funcdef_suite_handle)
+    math_funcdef = trace(attach(
+        condense(addspace(Keyword("def") + base_funcdef) + fixto(equals, ":", copy=True)) - math_funcdef_suite
+        , math_funcdef_handle), "math_funcdef")
+    math_match_funcdef = trace(attach(
+        Optional(Keyword("match").suppress()) + condense(base_match_funcdef + equals.suppress() - math_funcdef_suite)
+        , math_match_funcdef_handle), "math_match_funcdef")
+
+    async_funcdef_ref = addspace(Keyword("async") + (funcdef | math_funcdef))
+    async_block_ref = addspace(Keyword("async") + (with_stmt | for_stmt))
     async_match_funcdef_ref = addspace(
         (
             Optional(Keyword("match")).suppress() + Keyword("async")

@@ -554,9 +554,9 @@ class Command(object):
         """Starts Jupyter with the Coconut kernel."""
         import subprocess
         if args and not self.indebug():
-            install_func = lambda args: subprocess.check_output(args) # stdout is returned and ignored
+            install_func = subprocess.check_output # stdout is returned and ignored
         else:
-            install_func = lambda args: subprocess.check_call(args)
+            install_func = subprocess.check_call
         check_args = ["jupyter", "--version"]
         self.log_cmd(check_args)
         try:

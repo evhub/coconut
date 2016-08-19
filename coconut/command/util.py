@@ -69,6 +69,7 @@ def try_eval(code, in_vars):
     except SyntaxError:
         pass # exit the exception context before executing code
     exec(code, in_vars)
+    return None
 
 def escape_color(code):
     """Generates an ANSII color code."""
@@ -114,6 +115,7 @@ class Runner(object):
                 raise
             else:
                 self.exit()
+        return None
 
 class Console(object):
     """Manages printing and reading data to the console."""
