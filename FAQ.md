@@ -44,7 +44,7 @@ Definitely! While Coconut is great for functional programming, it also has a bun
 
 ### I don't know functional programming, should I still learn Coconut?
 
-Yes, absolutely! Coconut's [tutorial](http://coconut.readthedocs.org/en/master/HELP.html) assumes absolutely no prior knowledge of functional programming, only Python. Because Coconut is not a purely functional programming language, and all valid Python is valid Coconut, Coconut is a great introduction to functional programming. If you learn Coconut, you'll be able to try out a new functional style of programming without having to abandon all the Python you already know and love.
+Yes, absolutely! Coconut's [tutorial](http://coconut.readthedocs.io/en/master/HELP.html) assumes absolutely no prior knowledge of functional programming, only Python. Because Coconut is not a purely functional programming language, and all valid Python is valid Coconut, Coconut is a great introduction to functional programming. If you learn Coconut, you'll be able to try out a new functional style of programming without having to abandon all the Python you already know and love.
 
 ### I don't know Python very well, should I still learn Coconut?
 

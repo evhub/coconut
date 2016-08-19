@@ -228,8 +228,8 @@ if DEVELOP:
     version_tag = "develop"
 else:
     version_tag = VERSION_TAG
-tutorial_url = "http://coconut.readthedocs.org/en/" + version_tag + "/HELP.html"
-documentation_url = "http://coconut.readthedocs.org/en/" + version_tag + "/DOCS.html"
+tutorial_url = "http://coconut.readthedocs.io/en/" + version_tag + "/HELP.html"
+documentation_url = "http://coconut.readthedocs.io/en/" + version_tag + "/DOCS.html"
 
 icoconut_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icoconut")
 icoconut_kernel_dirs = [

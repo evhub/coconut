@@ -83,7 +83,7 @@
 
 ## Overview
 
-This documentation covers all the technical details of the [Coconut Programming Language](http://evhub.github.io/coconut/), and is intended as a reference specification, not a tutorialized introduction. For a full introduction and tutorial of Coconut, see [the tutorial](http://coconut.readthedocs.org/en/master/HELP.html).
+This documentation covers all the technical details of the [Coconut Programming Language](http://evhub.github.io/coconut/), and is intended as a reference specification, not a tutorialized introduction. For a full introduction and tutorial of Coconut, see [the tutorial](http://coconut.readthedocs.io/en/master/HELP.html).
 
 Coconut is a variant of [Python](https://www.python.org/) built for **simple, elegant, Pythonic functional programming**. Coconut syntax is a strict superset of Python 3 syntax. That means users familiar with Python will already be familiar with most of Coconut.
 

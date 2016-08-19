@@ -115,7 +115,7 @@ hello, world!
 
 Of course, while being able to interpret Coconut code on-the-fly is a great thing, it wouldn't be very useful without the ability to write and compile larger programs. To that end, it's time to write our first Coconut program: "hello, world!" Coconut-style.
 
-First, we're going to need to create a file to put our code into. The recommended file extension for Coconut source files is `.coco`, so let's create the new file `hello_world.coco`. After you do that, you should take the time now to set up your text editor to properly highlight Coconut code. For instructions on how to do that, see the documentation on [Coconut syntax highlighting](http://coconut.readthedocs.org/en/master/DOCS.html#syntax-highlighting).
+First, we're going to need to create a file to put our code into. The recommended file extension for Coconut source files is `.coco`, so let's create the new file `hello_world.coco`. After you do that, you should take the time now to set up your text editor to properly highlight Coconut code. For instructions on how to do that, see the documentation on [Coconut syntax highlighting](http://coconut.readthedocs.io/en/master/DOCS.html#syntax-highlighting).
 
 Now let's put some code in our `hello_world.coco` file. Unlike in Python, where headers like
 ```coconut_python
@@ -188,7 +188,7 @@ or
 
 Because Coconut is built to be fundamentally _useful_, the best way to demo it is to show it in action. To that end, the majority of this tutorial will be showing how to apply Coconut to solve particular problems, which we'll call case studies.
 
-These case studies are not intended to provide a complete picture of all of Coconut's features. For that, see Coconut's comprehensive [documentation](http://coconut.readthedocs.org/en/master/DOCS.html). Instead, they are intended to show how Coconut can actually be used to solve practical programming problems.
+These case studies are not intended to provide a complete picture of all of Coconut's features. For that, see Coconut's comprehensive [documentation](http://coconut.readthedocs.io/en/master/DOCS.html). Instead, they are intended to show how Coconut can actually be used to solve practical programming problems.
 
 ## Case Study 1: `factorial`
 
@@ -1126,7 +1126,7 @@ iter$[]
 
 ### Further Reading
 
-And that's it for this tutorial! But that's hardly it for Coconut. All of the features examined in this tutorial, as well as a bunch of others, are documented in detail in Coconut's comprehensive [documentation](http://coconut.readthedocs.org/en/master/DOCS.html).
+And that's it for this tutorial! But that's hardly it for Coconut. All of the features examined in this tutorial, as well as a bunch of others, are documented in detail in Coconut's comprehensive [documentation](http://coconut.readthedocs.io/en/master/DOCS.html).
 
 Also, if you have any other questions not covered in this tutorial, feel free to ask around at Coconut's [Gitter](https://gitter.im/evhub/coconut), a GitHub-integrated chat room for Coconut developers.
 
