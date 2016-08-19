@@ -237,29 +237,25 @@ def lambdef_handle(tokens):
         raise CoconutException("invalid lambda tokens", tokens)
 
 def math_funcdef_suite_handle(original, location, tokens):
-    """Processes mathematical function definiton suites."""
+    """Processes shorthand function definiton suites."""
     if len(tokens) < 1:
-        raise CoconutException("invalid mathematical function definition suite tokens", tokens)
-    elif "returnable" not in tokens[-1].keys():
-        raise self.make_err(CoconutSyntaxError, "found unreturnable expression on last line of shorthand function", original, location)
+        raise CoconutException("invalid shorthand function definition suite tokens", tokens)
     else:
-        out = ""
-        for inner in tokens[1:-1]:
-            out += inner[0] + "\n"
-        out += "return " + tokens[-1][0]
-        return out
+        return "".join(tokens[:-1]) + "return " + tokens[-1]
 
 def math_funcdef_handle(tokens):
-    """Processes mathematical function definition."""
+    """Processes shorthand function definition."""
     if len(tokens) == 2:
         return tokens[0] + ("" if tokens[1].startswith("\n") else " ") + tokens[1]
+    else:
+        raise CoconutException("invalid shorthand function definition tokens")
 
 def math_match_funcdef_handle(tokens):
-    """Processes match mathematical function definitions."""
+    """Processes match shorthand function definitions."""
     if len(tokens) == 2:
         return tokens[0] + "\n" + closeindent
     else:
-        raise CoconutException("invalid pattern-matching mathematical function definition tokens", tokens)
+        raise CoconutException("invalid pattern-matching shorthand function definition tokens", tokens)
 
 def def_match_funcdef_handle(tokens):
     """Processes full match function definition."""
@@ -855,6 +851,7 @@ class Compiler(object):
         """Binds reference objects to the proper parse actions."""
         self.endline <<= attach(self.endline_ref, self.endline_handle, copy=True)
         self.moduledoc_item <<= self.trace(attach(self.moduledoc, self.set_docstring, copy=True), "moduledoc")
+        self.name <<= self.trace(attach(self.name_ref, self.name_check, copy=True), "name")
         self.atom_item <<= self.trace(attach(self.atom_item_ref, self.item_handle, copy=True), "atom_item")
         self.simple_assign <<= self.trace(attach(self.simple_assign_ref, self.item_handle, copy=True), "simple_assign")
         self.set_literal <<= self.trace(attach(self.set_literal_ref, self.set_literal_handle, copy=True), "set_literal")
@@ -870,7 +867,6 @@ class Compiler(object):
         self.yield_from <<= self.trace(attach(self.yield_from_ref, self.yield_from_handle, copy=True), "yield_from")
         self.exec_stmt <<= self.trace(attach(self.exec_stmt_ref, self.exec_stmt_handle, copy=True), "exec_stmt")
         self.stmt_lambdef <<= self.trace(attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle, copy=True), "stmt_lambdef")
-        self.name <<= self.trace(attach(self.name_ref, self.name_check, copy=True), "name")
         self.u_string <<= attach(self.u_string_ref, self.u_string_check, copy=True)
         self.f_string <<= attach(self.f_string_ref, self.f_string_check, copy=True)
         self.typedef <<= attach(self.typedef_ref, self.typedef_check, copy=True)
@@ -1055,7 +1051,7 @@ class Compiler(object):
             self.original_lines = inputstring.splitlines()
         if strip:
             inputstring = inputstring.strip()
-        return "\n".join(inputstring.splitlines()) + "\n"
+        return "\n".join(inputstring.splitlines()) # str_proc will add a newline to the end
 
     def str_proc(self, inputstring, **kwargs):
         """Processes strings and comments."""
@@ -2426,7 +2422,7 @@ class Compiler(object):
     op_funcdef_name = backtick.suppress() + name + backtick.suppress()
     op_funcdef = attach(Group(Optional(op_funcdef_arg)) + op_funcdef_name + Group(Optional(op_funcdef_arg)), op_funcdef_handle)
     return_typedef_ref = addspace(arrow + test)
-    base_funcdef = addspace((op_funcdef | name_funcdef) + Optional(return_typedef))
+    base_funcdef = trace(addspace((op_funcdef | name_funcdef) + Optional(return_typedef)), "base_funcdef")
     funcdef = trace(addspace(Keyword("def") + condense(base_funcdef + suite)), "funcdef")
 
     name_match_funcdef = Forward()
@@ -2435,15 +2431,14 @@ class Compiler(object):
     name_match_funcdef_ref = name + lparen.suppress() + matchlist_list + match_guard + rparen.suppress()
     op_match_funcdef_arg = lparen.suppress() + match + rparen.suppress()
     op_match_funcdef_ref = Group(Optional(op_match_funcdef_arg)) + op_funcdef_name + Group(Optional(op_match_funcdef_arg)) + match_guard
-    base_match_funcdef = Keyword("def").suppress() + (op_match_funcdef | name_match_funcdef)
-    def_match_funcdef = trace(attach(base_match_funcdef + full_suite, def_match_funcdef_handle), "base_match_funcdef")
+    base_match_funcdef = trace(Keyword("def").suppress() + (op_match_funcdef | name_match_funcdef), "base_match_funcdef")
+    def_match_funcdef = trace(attach(base_match_funcdef + full_suite, def_match_funcdef_handle), "def_match_funcdef")
     match_funcdef = Optional(Keyword("match").suppress()) + def_match_funcdef
 
-    math_funcdef_suite = Forward()
     testlist_stmt = condense(testlist + newline)
-    math_funcdef_suite_ref = attach(
-        newline - indent - OneOrMore(Group(testlist_stmt("returnable") | stmt)) - dedent
-        | Group(testlist_stmt("returnable"))
+    math_funcdef_suite = attach(
+        testlist_stmt
+        | condense(newline - indent) - ZeroOrMore(~(testlist_stmt + dedent) + stmt) - condense(testlist_stmt - dedent)
         , math_funcdef_suite_handle)
     math_funcdef = trace(attach(
         condense(addspace(Keyword("def") + base_funcdef) + fixto(equals, ":", copy=True)) - math_funcdef_suite
