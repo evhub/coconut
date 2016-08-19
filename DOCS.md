@@ -375,8 +375,7 @@ def chain(*iterables):
 
 ###### Coconut
 ```coconut
-def N(n=0):
-    return (0,) :: N(n+1) # no infinite loop because :: is lazy
+def N(n=0) = (n,) :: N(n+1) # no infinite loop because :: is lazy
 
 (range(-10, 0) :: N())$[5:15] |> list |> print
 ```
