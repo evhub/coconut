@@ -43,10 +43,6 @@ def readfile(openedfile):
     openedfile.seek(0)
     return str(openedfile.read())
 
-def showpath(path):
-    """Formats a path for displaying."""
-    return os.path.basename(path)
-
 def fixpath(path):
     """Uniformly formats a path."""
     return os.path.normpath(os.path.realpath(path))

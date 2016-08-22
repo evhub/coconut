@@ -50,7 +50,6 @@ from coconut.command.util import \
     openfile, \
     writefile, \
     readfile, \
-    showpath, \
     fixpath, \
     rem_encoding, \
     try_eval, \
@@ -272,6 +271,13 @@ class Command(object):
         else:
             raise CoconutException("info message too long", begin)
 
+    def showpath(self, path):
+        """Formats a path for displaying."""
+        if self.indebug():
+            return os.path.abspath(path)
+        else:
+            return os.path.basename(path)
+
     def cmd(self, args, interact=True):
         """Parses command-line arguments."""
         try:
@@ -392,13 +398,13 @@ class Command(object):
                 ext = comp_ext
             destpath = base + ext
         if filepath == destpath:
-            raise CoconutException("cannot compile "+showpath(filepath)+" to itself (incorrect file extension)")
+            raise CoconutException("cannot compile "+self.showpath(filepath)+" to itself (incorrect file extension)")
         else:
             self.compile(filepath, destpath, package, run, force)
 
     def compile(self, codepath, destpath=None, package=False, run=False, force=False):
         """Compiles a source Coconut file to a destination Python file."""
-        self.show_tabulated("Compiling", showpath(codepath), "...")
+        self.show_tabulated("Compiling", self.showpath(codepath), "...")
         with openfile(codepath, "r") as opened:
             code = readfile(opened)
         if destpath is not None:
@@ -409,7 +415,7 @@ class Command(object):
                 self.create_package(destdir)
         foundhash = None if force else self.hashashof(destpath, code, package)
         if foundhash:
-            self.show_tabulated("Left unchanged", showpath(destpath), "(pass --force to override).")
+            self.show_tabulated("Left unchanged", self.showpath(destpath), "(pass --force to override).")
             if run:
                 self.execute(foundhash, path=destpath, isolate=True)
             elif self.show:
@@ -426,7 +432,7 @@ class Command(object):
             else:
                 with openfile(destpath, "w") as opened:
                     writefile(opened, compiled)
-                self.show_tabulated("Compiled to", showpath(destpath), ".")
+                self.show_tabulated("Compiled to", self.showpath(destpath), ".")
             if run:
                 self.execute(compiled, path=(destpath if destpath is not None else codepath), isolate=True)
             elif self.show:
@@ -608,7 +614,7 @@ class Command(object):
         source = fixpath(source)
 
         self.console.print()
-        self.show_tabulated("Watching", showpath(source), "(press Ctrl-C to end)...")
+        self.show_tabulated("Watching", self.showpath(source), "(press Ctrl-C to end)...")
 
         def recompile(path):
             if os.path.isfile(path) and os.path.splitext(path)[1] in code_exts:
