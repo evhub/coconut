@@ -252,7 +252,7 @@ def math_funcdef_handle(tokens):
 
 def math_match_funcdef_handle(tokens):
     """Processes match shorthand function definitions."""
-    if len(tokens) == 2:
+    if len(tokens) == 1:
         return tokens[0] + "\n" + closeindent
     else:
         raise CoconutException("invalid pattern-matching shorthand function definition tokens", tokens)
