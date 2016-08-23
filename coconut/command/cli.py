@@ -18,7 +18,10 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *
 
+import sys
 import argparse
+
+from coconut.constants import documentation_url
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
