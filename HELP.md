@@ -73,7 +73,7 @@ Installing Coconut, including all the features above, is drop-dead simple. Just
 2. open a command-line prompt,
 3. and enter:
 ```
-python -m pip install coconut
+pip install coconut
 ```
 
 To check that your installation is functioning properly, try entering into the command line
