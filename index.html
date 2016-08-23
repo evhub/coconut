@@ -81,17 +81,6 @@
 </pre></div>
 </div>
 <ul class="simple">
-<li>algebraic data types</li>
-</ul>
-<div class="highlight-coconut"><div class="highlight"><pre><span></span><span class="k">data</span> <span class="nc">vec2</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-        <span class="k">match</span> <span class="n">vec2</span><span class="p">(</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">)</span> <span class="ow">in</span> <span class="n">other</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">True</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">False</span>
-</pre></div>
-</div>
-<ul class="simple">
 <li>operator functions</li>
 </ul>
 <div class="highlight-coconut"><div class="highlight"><pre><span></span><span class="nb">range</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="nb">map</span><span class="o">$</span><span class="p">((</span><span class="o">*</span><span class="p">)</span><span class="o">$</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span> <span class="o">|&gt;</span> <span class="nb">list</span>
@@ -113,6 +102,23 @@
 <li>parallel programming</li>
 </ul>
 <div class="highlight-coconut"><div class="highlight"><pre><span></span><span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="nb">parallel_map</span><span class="o">$</span><span class="p">((</span><span class="o">**</span><span class="p">)</span><span class="o">$</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span> <span class="o">|&gt;</span> <span class="nb">list</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li>algebraic data types</li>
+</ul>
+<div class="highlight-coconut"><div class="highlight"><pre><span></span><span class="k">data</span> <span class="nc">Empty</span><span class="p">():</span> <span class="k">pass</span>
+<span class="k">data</span> <span class="nc">Leaf</span><span class="p">(</span><span class="n">n</span><span class="p">):</span> <span class="k">pass</span>
+<span class="k">data</span> <span class="nc">Node</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span> <span class="k">pass</span>
+<span class="n">Tree</span> <span class="o">=</span> <span class="p">(</span><span class="n">Empty</span><span class="p">,</span> <span class="n">Leaf</span><span class="p">,</span> <span class="n">Node</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="n">Tree</span><span class="p">())</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="o">@</span><span class="nb">addpattern</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="n">Tree</span><span class="p">(</span><span class="n">n</span><span class="p">))</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="o">@</span><span class="nb">addpattern</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="n">Tree</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">))</span> <span class="o">=</span> <span class="n">size</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">+</span> <span class="n">size</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
 </pre></div>
 </div>
 <ul class="simple">

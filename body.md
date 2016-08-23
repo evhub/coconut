@@ -38,15 +38,6 @@ match [head] + tail in [0, 1, 2, 3]:
 ```coconut
 5 `mod` 3 == 2
 ```
-- algebraic data types
-```coconut
-data vec2(x, y):
-    def __eq__(self, other):
-        match vec2(=self.x, =self.y) in other:
-            return True
-        else:
-            return False
-```
 - operator functions
 ```coconut
 range(15) |> map$((*)$(2)) |> list
@@ -62,6 +53,21 @@ f .. g .. h (x, y, z)
 - parallel programming
 ```coconut
 range(100) |> parallel_map$((**)$(2)) |> list
+```
+- algebraic data types
+```coconut
+data Empty(): pass
+data Leaf(n): pass
+data Node(l, r): pass
+Tree = (Empty, Leaf, Node)
+
+def size(Tree()) = 0
+
+@addpattern(size)
+def size(Tree(n)) = 1
+
+@addpattern(size)
+def size(Tree(l, r)) = size(l) + size(r)
 ```
 - tail recursion optimization
 ```coconut
