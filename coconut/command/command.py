@@ -332,8 +332,7 @@ class Command(object):
         try:
             return input(prompt) # using input from coconut.root
         except KeyboardInterrupt:
-            logger.printerr()
-            logger.printerr("KeyboardInterrupt")
+            logger.printerr("\nKeyboardInterrupt")
         except EOFError:
             print()
             self.exit_runner()
