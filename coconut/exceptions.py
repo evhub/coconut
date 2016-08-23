@@ -19,7 +19,6 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *
 
 import sys
-import traceback
 from pyparsing import lineno
 
 from coconut.constants import openindent, closeindent, tabideal
