@@ -34,8 +34,6 @@ from coconut.constants import \
     default_prompt, \
     default_moreprompt, \
     watch_interval, \
-    color_codes, \
-    end_color_code, \
     version_long, \
     version_banner, \
     version_tag, \
@@ -51,7 +49,6 @@ from coconut.command.util import \
     showpath, \
     rem_encoding, \
     try_eval, \
-    escape_color, \
     Runner
 from coconut.command.cli import arguments
 
