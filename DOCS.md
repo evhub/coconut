@@ -97,11 +97,11 @@ While most of Coconut gets its inspiration simply from trying to make functional
 
 Since Coconut is hosted on the [Python Package Index](https://pypi.python.org/pypi/coconut), it can be installed easily using `pip`. Simply install [Python](https://www.python.org/downloads/), open up a command-line prompt, and enter
 ```
-python -m pip install coconut
+pip install coconut
 ```
 which will install Coconut and its required dependencies. Coconut also has some optional dependencies, which can be installed by entering
 ```
-python -m pip install coconut[all]
+pip install coconut[all]
 ```
 which will enable the use of Coconut's `--autopep8`, `--watch`, and `--jupyter` flags. To install the optional dependencies only for a particular flag, simply put the flag name in place of `all`.
 
@@ -1601,7 +1601,7 @@ _Can't be done without a long decorator definition. The full definition of the d
 
 ### `parallel_map`
 
-Coconut provides a parallel version of `map` under the name `parallel_map`. `parallel_map` makes use of multiple processes, and is therefore much faster than `map` for CPU-bound tasks. Use of `parallel_map` requires `concurrent.futures`, which exists in the Python 3 standard library, but under Python 2 will require `python -m pip install futures` to function.
+Coconut provides a parallel version of `map` under the name `parallel_map`. `parallel_map` makes use of multiple processes, and is therefore much faster than `map` for CPU-bound tasks. Use of `parallel_map` requires `concurrent.futures`, which exists in the Python 3 standard library, but under Python 2 will require `pip install futures` to function.
 
 Because `parallel_map` uses multiple processes for its execution, it is necessary that all of its arguments be pickleable. Only objects defined at the module level, and not lambdas, objects defined inside of a function, or objects defined inside of the interpreter, are pickleable. Furthermore, on Windows, it is necessary that all calls to `parallel_map` occur inside of an `if __name__ == "__main__"` guard.
 
@@ -1628,7 +1628,7 @@ with concurrent.futures.ProcessPoolExecutor() as executor:
 
 ### `concurrent_map`
 
-Coconut provides a concurrent version of `map` under the name `concurrent_map`. `concurrent_map` makes use of multiple threads, and is therefore much faster than `map` for IO-bound tasks. Use of `concurrent_map` requires `concurrent.futures`, which exists in the Python 3 standard library, but under Python 2 will require `python -m pip install futures` to function.
+Coconut provides a concurrent version of `map` under the name `concurrent_map`. `concurrent_map` makes use of multiple threads, and is therefore much faster than `map` for IO-bound tasks. Use of `concurrent_map` requires `concurrent.futures`, which exists in the Python 3 standard library, but under Python 2 will require `pip install futures` to function.
 
 ##### Python Docs
 

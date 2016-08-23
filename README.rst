@@ -12,7 +12,7 @@ Coconut (`coconut-lang.org`__) is a variant of Python_ built for **simple, elega
 
 Coconut is developed on GitHub_ and hosted on PyPI_. Installing Coconut is as easy as opening a command prompt and entering::
 
-    python -m pip install coconut
+    pip install coconut
 
 after which the entire world of Coconut will be at your disposal. To help you get started, check out these links for more information about Coconut:
 
