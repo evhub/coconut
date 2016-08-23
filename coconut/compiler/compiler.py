@@ -29,6 +29,8 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *
 
+from distutils.version import LooseVersion
+
 from pyparsing import \
     CaselessLiteral, \
     Combine, \
@@ -791,10 +793,11 @@ class Compiler(object):
     debug = tracer.debug
     autopep8_args = None
 
-    def __init__(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False, debugger=printerr):
+    def __init__(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False, debugger=printerr, coco_target = VERSION):
         """Creates a new compiler with the given parsing parameters."""
+        #Note: coco_target is nolonger an array like it is in the command file, instead it is a string.
         self.debugger = debugger
-        self.setup(target, strict, minify, line_numbers, keep_lines)
+        self.setup(target, strict, minify, line_numbers, keep_lines, coco_target)
         self.preprocs = [
             self.prepare,
             self.str_proc,
@@ -815,7 +818,7 @@ class Compiler(object):
             self.str_repl
         ]
 
-    def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False):
+    def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False, coco_target = VERSION):
         """Initializes parsing parameters."""
         if target is None:
             target = ""
@@ -826,8 +829,10 @@ class Compiler(object):
         if target not in targets:
             raise CoconutException('unsupported target Python version "' + target
                 + '" (supported targets are "' + '", "'.join(specific_targets) + '", or leave blank for universal)')
-        self.target, self.strict, self.minify, self.line_numbers, self.keep_lines = target, strict, minify, line_numbers, keep_lines
+        self.coco_target = LooseVersion(coco_target)
+        self.target, self.strict, self.minify, self.line_numbers, self.keep_lines= target, strict, minify, line_numbers, keep_lines
         self.tablen = 1 if self.minify else tabideal
+
 
     def autopep8(self, args=()):
         """Enables autopep8 integration."""
@@ -835,6 +840,7 @@ class Compiler(object):
             self.autopep8_args = None
         else:
             self.autopep8_args = tuple(args)
+
 
     def reset(self):
         """Resets references."""
@@ -1014,7 +1020,7 @@ class Compiler(object):
 
     def headers(self, which, usehash=None):
         """Gets a formatted header."""
-        return self.polish(getheader(which, self.target, usehash))
+        return self.polish(getheader(which, self.target, usehash, self.coco_target))
 
     def target_info(self):
         """Returns information on the current target as a version tuple."""

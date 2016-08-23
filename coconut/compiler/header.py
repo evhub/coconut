@@ -18,10 +18,13 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *
 
+from distutils.version import LooseVersion
+
 from coconut.constants import \
     hash_prefix, \
     tabideal, \
-    default_encoding
+    default_encoding, \
+    enable_recursive_decorator
 from coconut.compiler.util import target_info
 from coconut.compiler.exceptions import CoconutException
 
@@ -55,7 +58,7 @@ def minify(compiled):
         compiled = "\n".join(out) + "\n"
     return compiled
 
-def getheader(which, target="", usehash=None):
+def getheader(which, target="", usehash=None, coco_target = VERSION):
     """Generates the specified header."""
     if which == "none":
         return ""
@@ -296,7 +299,7 @@ class count(object):'''
         return (self.__class__, (self._start, self._step))
     def __copy__(self):
         return self.__class__(self._start, self._step)
-def recursive(func):
+def tail_recursive(func):
     """Decorates a function by optimizing it for tail recursion."""
     state = [True, None]  # state = [is_top_level, (args, kwargs)]
     recurse = object()
@@ -319,6 +322,11 @@ def recursive(func):
             state[1] = args, kwargs
             return recurse
     return recursive_func
+    '''
+            if (coco_target <= LooseVersion(enable_recursive_decorator)): header += r'''
+recursive = tail_recursive
+'''
+            header += r'''
 def recursive_iterator(func):
     """Decorates a function by optimizing it for iterator recursion."""
     tee_store = {}

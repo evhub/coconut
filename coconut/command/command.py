@@ -94,6 +94,13 @@ class Command(object):
         default=[None],
         help="specify target Python version (defaults to universal)")
     arguments.add_argument(
+        "-b", "--backwards",
+        type=str,
+        metavar="version",
+        nargs=1,
+        default=[VERSION],
+        help="enable backwards compatibility to specified coconut version")
+    arguments.add_argument(
         "-s", "--strict",
         action="store_const",
         const=True,
@@ -236,7 +243,7 @@ class Command(object):
         """Processes command-line arguments."""
         self.cmd(self.arguments.parse_args())
 
-    def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False, quiet=False, color=None):
+    def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False, quiet=False, color=None, coco_target = VERSION):
         """Sets parameters for the compiler."""
         if color is not None:
             self.console.set_color(color)
@@ -244,9 +251,9 @@ class Command(object):
             self.moreprompt = self.console.add_color(self.moreprompt)
         self.console.on = not quiet
         if self.proc is None:
-            self.proc = Compiler(target, strict, minify, line_numbers, keep_lines, self.console.printerr)
+            self.proc = Compiler(target, strict, minify, line_numbers, keep_lines, self.console.printerr, coco_target)
         else:
-            self.proc.setup(target, strict, minify, line_numbers, keep_lines)
+            self.proc.setup(target, strict, minify, line_numbers, keep_lines, coco_target)
 
     def indebug(self):
         """Determines whether the compiler is in debug mode."""
@@ -283,7 +290,7 @@ class Command(object):
         try:
             if args.recursion_limit[0] is not None:
                 sys.setrecursionlimit(args.recursion_limit[0])
-            self.setup(args.target[0], args.strict, args.minify, args.line_numbers, args.keep_lines, args.quiet, args.color[0])
+            self.setup(args.target[0], args.strict, args.minify, args.line_numbers, args.keep_lines, args.quiet, args.color[0], args.backwards[0])
             if args.version:
                 self.console.show(version_long)
             if args.tutorial:
