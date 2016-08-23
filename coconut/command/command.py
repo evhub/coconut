@@ -27,7 +27,7 @@ from concurrent.futures import ProcessPoolExecutor
 
 from coconut.compiler import Compiler, gethash
 from coconut.exceptions import CoconutException
-from coconut.logger import logging
+from coconut.logging import logger
 from coconut.constants import \
     code_exts, \
     comp_ext, \
@@ -84,7 +84,7 @@ class Command(object):
             keep_lines=False,
             quiet=False):
         """Sets parameters for the compiler."""
-        logging.quiet = quiet
+        logger.quiet = quiet
         if self.proc is None:
             self.proc = Compiler(target, strict, minify, line_numbers, keep_lines)
         else:
@@ -92,9 +92,9 @@ class Command(object):
 
     def set_color(self, color):
         """Sets the color."""
-        logging.set_color(color)
-        self.prompt = logging.add_color(self.prompt)
-        self.moreprompt = logging.add_color(self.moreprompt)
+        logger.set_color(color)
+        self.prompt = logger.add_color(self.prompt)
+        self.moreprompt = logger.add_color(self.moreprompt)
 
     def cmd(self, args, interact=True):
         """Parses command-line arguments."""
@@ -112,9 +112,9 @@ class Command(object):
                 args.keep_lines,
                 args.quiet)
             if args.verbose:
-                logging.verbose = True
+                logger.verbose = True
             if args.version:
-                logging.show(version_long)
+                logger.show(version_long)
             if args.tutorial:
                 self.launch_tutorial()
             if args.documentation:
@@ -181,7 +181,7 @@ class Command(object):
                 self.watch(args.source, dest, package, args.run, args.force)
 
         except CoconutException:
-            logging.print_exc()
+            logger.print_exc()
             sys.exit(1)
 
     def compile_path(self, path, write=True, package=None, run=False, force=False):
@@ -212,8 +212,8 @@ class Command(object):
                     self.compile_file(os.path.join(dirpath, filename), writedir, package, run, force)
             for name in dirnames[:]:
                 if name != "."*len(name) and name.startswith("."):
-                    if logging.verbose:
-                        logging.show_tabulated("Skipped directory", name, "(explicitly pass as source to override).")
+                    if logger.verbose:
+                        logger.show_tabulated("Skipped directory", name, "(explicitly pass as source to override).")
                     dirnames.remove(name) # directories removed from dirnames won't appear in further os.walk iteration
 
     def compile_file(self, filepath, write=True, package=False, run=False, force=False):
@@ -236,7 +236,7 @@ class Command(object):
 
     def compile(self, codepath, destpath=None, package=False, run=False, force=False):
         """Compiles a source Coconut file to a destination Python file."""
-        logging.show_tabulated("Compiling", showpath(codepath), "...")
+        logger.show_tabulated("Compiling", showpath(codepath), "...")
 
         with openfile(codepath, "r") as opened:
             code = readfile(opened)
@@ -250,7 +250,7 @@ class Command(object):
 
         foundhash = None if force else self.hashashof(destpath, code, package)
         if foundhash:
-            logging.show_tabulated("Left unchanged", showpath(destpath), "(pass --force to override).")
+            logger.show_tabulated("Left unchanged", showpath(destpath), "(pass --force to override).")
             if run:
                 self.execute(foundhash, path=destpath, isolate=True)
             elif self.show:
@@ -266,20 +266,20 @@ class Command(object):
                 raise CoconutException("invalid value for package", package)
 
             def callback(compiled):
-                logging.path = None
+                logger.path = None
                 if destpath is None:
-                    logging.show_tabulated("Finished", showpath(codepath), "without writing to file.")
+                    logger.show_tabulated("Finished", showpath(codepath), "without writing to file.")
                 else:
                     with openfile(destpath, "w") as opened:
                         writefile(opened, compiled)
-                    logging.show_tabulated("Compiled to", showpath(destpath), ".")
+                    logger.show_tabulated("Compiled to", showpath(destpath), ".")
                 if run:
                     runpath = destpath if destpath is not None else codepath
                     self.execute(compiled, path=runpath, isolate=True)
                 elif self.show:
                     print(compiled)
 
-            logging.path = codepath
+            logger.path = codepath
             self.submit_job(callback, compile_func, code)
 
     def submit_job(self, callback, func, *args):
@@ -292,7 +292,7 @@ class Command(object):
                 try:
                     callback(completed_future.result())
                 except CoconutException:
-                    logging.print_exc()
+                    logger.print_exc()
                     sys.exit(1)
             future.add_done_callback(callback_wrapper)
 
@@ -332,13 +332,13 @@ class Command(object):
         try:
             return input(prompt) # using input from coconut.root
         except KeyboardInterrupt:
-            logging.printerr()
-            logging.printerr("KeyboardInterrupt")
+            logger.printerr()
+            logger.printerr("KeyboardInterrupt")
         except EOFError:
             print()
             self.exit_runner()
         except ValueError:
-            logging.print_exc()
+            logger.print_exc()
             self.exit_runner()
         return None
 
@@ -349,8 +349,8 @@ class Command(object):
 
     def start_prompt(self):
         """Starts the interpreter."""
-        logging.print("Coconut Interpreter:")
-        logging.print('(type "exit()" or press Ctrl-D to end)')
+        logger.print("Coconut Interpreter:")
+        logger.print('(type "exit()" or press Ctrl-D to end)')
         self.start_running()
         while self.running:
             code = self.prompt_with(self.prompt)
@@ -383,7 +383,7 @@ class Command(object):
             try:
                 compiled = self.proc.parse_block(code)
             except CoconutException:
-                logging.print_exc()
+                logger.print_exc()
         return compiled
 
     def execute(self, compiled=None, error=True, path=None, isolate=False, print_expr=False):
@@ -427,13 +427,13 @@ class Command(object):
 
     def start_jupyter(self, args):
         """Starts Jupyter with the Coconut kernel."""
-        if args and not logging.verbose:
+        if args and not logger.verbose:
             install_func = subprocess.check_output # stdout is returned and ignored
         else:
             install_func = subprocess.check_call
 
         check_args = ["jupyter", "--version"]
-        logging.log_cmd(check_args)
+        logger.log_cmd(check_args)
         try:
             install_func(check_args)
         except subprocess.CalledProcessError:
@@ -443,12 +443,12 @@ class Command(object):
 
         for icoconut_kernel_dir in icoconut_kernel_dirs:
             install_args = [jupyter, "kernelspec", "install", icoconut_kernel_dir, "--replace"]
-            logging.log_cmd(install_args)
+            logger.log_cmd(install_args)
             try:
                 install_func(install_args)
             except subprocess.CalledProcessError:
                 user_install_args = install_args + ["--user"]
-                logging.log_cmd(user_install_args)
+                logger.log_cmd(user_install_args)
                 try:
                     install_func(user_install_args)
                 except subprocess.CalledProcessError:
@@ -462,20 +462,20 @@ class Command(object):
             if args[0] == "console":
                 ver = "2" if PY2 else "3"
                 check_args = ["python"+ver, "-m", "coconut", "--version"]
-                logging.log_cmd(check_args)
+                logger.log_cmd(check_args)
                 try:
                     install_func(check_args)
                 except subprocess.CalledProcessError:
                     kernel_name = "coconut"
                 else:
                     kernel_name = "coconut"+ver
-                logging.print(version_banner)
+                logger.print(version_banner)
                 run_args = [jupyter, "console", "--kernel", kernel_name] + args[1:]
             elif args[0] == "notebook":
                 run_args = [jupyter, "notebook"] + args[1:]
             else:
                 raise CoconutException('first argument after --jupyter must be either "console" or "notebook"')
-            logging.log_cmd(run_args)
+            logger.log_cmd(run_args)
             subprocess.call(run_args)
 
     def watch(self, source, write=True, package=None, run=False, force=False):
@@ -484,15 +484,15 @@ class Command(object):
 
         source = fixpath(source)
 
-        logging.print()
-        logging.show_tabulated("Watching", showpath(source), "(press Ctrl-C to end)...")
+        logger.print()
+        logger.show_tabulated("Watching", showpath(source), "(press Ctrl-C to end)...")
 
         def recompile(path):
             if os.path.isfile(path) and os.path.splitext(path)[1] in code_exts:
                 try:
                     self.compile_path(path, write, package, run, force)
                 except CoconutException:
-                    logging.print_exc()
+                    logger.print_exc()
 
         observer = Observer()
         observer.schedule(RecompilationWatcher(recompile), source, recursive=True)

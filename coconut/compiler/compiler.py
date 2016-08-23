@@ -96,8 +96,8 @@ from coconut.exceptions import \
     CoconutTargetError, \
     CoconutWarning, \
     clean
-from coconut.logger import logging
-trace = logging.trace
+from coconut.logging import logger
+trace = logger.trace
 from coconut.compiler.util import \
     target_info, \
     addskip, \
@@ -975,15 +975,15 @@ class Compiler(object):
         try:
             raise warning
         except CoconutWarning:
-            logging.print_exc()
+            logger.print_exc()
 
     def pre(self, inputstring, **kwargs):
         """Performs pre-processing."""
         out = str(inputstring)
         for proc in self.preprocs:
             out = proc(out, **kwargs)
-            logging.log_tag(proc.__name__, out)
-        logging.log_tag("skips", list(sorted(self.skips)))
+            logger.log_tag(proc.__name__, out)
+        logger.log_tag("skips", list(sorted(self.skips)))
         return out
 
     def post(self, tokens, **kwargs):
@@ -992,7 +992,7 @@ class Compiler(object):
             out = tokens[0]
             for proc in self.postprocs:
                 out = proc(out, **kwargs)
-                logging.log_tag(proc.__name__, out)
+                logger.log_tag(proc.__name__, out)
             return out
         else:
             raise CoconutException("multiple tokens leftover", tokens)
@@ -1458,7 +1458,7 @@ class Compiler(object):
         """Processes using replprocs."""
         for repl in self.replprocs:
             inputstring = repl(inputstring, **kwargs)
-            logging.log_tag(repl.__name__, inputstring)
+            logger.log_tag(repl.__name__, inputstring)
         return inputstring
 
     def header_proc(self, inputstring, header="file", initial="initial", usehash=None, **kwargs):

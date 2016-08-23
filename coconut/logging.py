@@ -7,7 +7,7 @@
 """
 Author: Evan Hubinger
 License: Apache 2.0
-Description: Logging utilities.
+Description: logger utilities.
 """
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -48,11 +48,11 @@ def format_error(err_type, err_value, err_trace=None):
         return "".join(traceback.format_exception(err_type, err_value, err_trace)).strip()
 
 #-----------------------------------------------------------------------------------------------------------------------
-# LOGGING:
+# logger:
 #-----------------------------------------------------------------------------------------------------------------------
 
-class Logging(object):
-    """Container object for various logging functions and variables."""
+class Logger(object):
+    """Container object for various logger functions and variables."""
     verbose = False
     quiet = False
     color_code = None
@@ -150,7 +150,7 @@ class Logging(object):
 
     def log_trace(self, tag, original, location, tokens):
         """Formats and displays a trace."""
-        if logging.verbose:
+        if logger.verbose:
             original = str(original)
             location = int(location)
             out = "[" + tag + "] "
@@ -159,7 +159,7 @@ class Logging(object):
             else:
                 out += str(tokens)
             out += " (line "+str(lineno(location, original))+", col "+str(col(location, original))+")"
-            logging.printerr(out)
+            logger.printerr(out)
 
     def trace(self, item, tag):
         """Traces a parse element."""
@@ -174,4 +174,4 @@ class Logging(object):
 # MAIN:
 #-----------------------------------------------------------------------------------------------------------------------
 
-logging = Logging()
+logger = Logger()
