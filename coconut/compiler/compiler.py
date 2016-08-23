@@ -95,7 +95,6 @@ from coconut.exceptions import \
     CoconutStyleError, \
     CoconutTargetError, \
     CoconutWarning, \
-    get_error, \
     clean
 from coconut.logger import logging
 trace = logging.trace

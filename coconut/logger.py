@@ -18,6 +18,8 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *
 
+from contextlib import contextmanager
+
 from coconut.constants import \
     default_encoding, \
     color_codes, \
@@ -26,6 +28,7 @@ from coconut.constants import \
     main_sig, \
     debug_sig
 from coconut.exceptions import CoconutException
+from coconut.compiler.util import attach
 
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
@@ -34,6 +37,15 @@ from coconut.exceptions import CoconutException
 def printerr(*args):
     """Prints to standard error."""
     print(*args, file=sys.stderr)
+
+def format_error(err_type, err_value, err_trace=None):
+    """Properly formats the specified error."""
+    if err_trace is None:
+        err_name, err_msg = "".join(traceback.format_exception_only(err_type, err_value)).strip().split(": ", 1)
+        err_name = err_name.split(".")[-1]
+        return err_name + ": " + err_msg
+    else:
+        return "".join(traceback.format_exception(err_type, err_value, err_trace)).strip()
 
 #-----------------------------------------------------------------------------------------------------------------------
 # LOGGING:
@@ -44,6 +56,7 @@ class Logging(object):
     verbose = False
     quiet = False
     color_code = None
+    path = None
 
     def set_color(self, color=None):
         """Set output color."""
@@ -93,14 +106,21 @@ class Logging(object):
 
     def show(self, *messages):
         """Prints messages with color and main signature."""
-        if self.verbose:
+        if not self.quiet:
             self.display(messages, main_sig)
 
-    def print_exc(self, path=None):
+    def get_error(self):
+        """Properly formats the current error."""
+        err_type, err_value, err_trace = sys.exc_info()
+        if not self.verbose:
+            err_trace = None
+        return format_error(err_type, err_value, err_trace)
+
+    def print_exc(self):
         """Properly prints an exception in the exception context."""
-        errmsg = get_error(self.verbose)
-        if path is not None:
-            errmsg_lines = ["in " + os.path.abspath(path) + ":"]
+        errmsg = self.get_error(self.verbose)
+        if self.path is not None:
+            errmsg_lines = ["in " + os.path.abspath(self.path) + ":"]
             for line in errmsg.splitlines():
                 if line:
                     line = "  " + line

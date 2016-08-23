@@ -22,11 +22,11 @@ import sys
 import os
 import time
 import subprocess
-import contextlib
+from contextlib import contextmanager
 from concurrent.futures import ProcessPoolExecutor
 
 from coconut.compiler import Compiler, gethash
-from coconut.exceptions import CoconutException, get_error
+from coconut.exceptions import CoconutException
 from coconut.logger import logging
 from coconut.constants import \
     code_exts, \
@@ -257,7 +257,16 @@ class Command(object):
                 print(foundhash)
 
         else:
+
+            if package is True:
+                compile_func = self.proc.parse_module
+            elif package is False:
+                compile_func = self.proc.parse_file
+            else:
+                raise CoconutException("invalid value for package", package)
+
             def callback(compiled):
+                logging.path = None
                 if destpath is None:
                     logging.show_tabulated("Finished", showpath(codepath), "without writing to file.")
                 else:
@@ -270,16 +279,10 @@ class Command(object):
                 elif self.show:
                     print(compiled)
 
-            if package is True:
-                compile_func = self.proc.parse_module
-            elif package is False:
-                compile_func = self.proc.parse_file
-            else:
-                raise CoconutException("invalid value for package", package)
+            logging.path = codepath
+            self.submit_job(callback, compile_func, code)
 
-            self.submit_job(codepath, callback, compile_func, code)
-
-    def submit_job(self, path, callback, func, *args):
+    def submit_job(self, callback, func, *args):
         """Submits a job to be run in parallel."""
         if self.executor is None:
             callback(func(*args))
@@ -289,11 +292,11 @@ class Command(object):
                 try:
                     callback(completed_future.result())
                 except CoconutException:
-                    logging.print_exc(path)
+                    logging.print_exc()
                     sys.exit(1)
             future.add_done_callback(callback_wrapper)
 
-    @contextlib.contextmanager
+    @contextmanager
     def running_jobs(self, jobs):
         """Initialize multiprocessing."""
         if jobs is None or jobs >= 1:
