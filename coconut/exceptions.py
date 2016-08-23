@@ -28,10 +28,6 @@ from coconut.constants import openindent, closeindent, tabideal
 # FUNCTIONS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def printerr(*args):
-    """Prints to standard error."""
-    print(*args, file=sys.stderr)
-
 def format_error(err_type, err_value, err_trace=None):
     """Properly formats the specified error."""
     if err_trace is None:

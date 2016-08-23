@@ -26,10 +26,8 @@ except ImportError:
 from ipykernel.kernelbase import Kernel
 
 from coconut.command import Runner
-from coconut.compiler import \
-    Compiler, \
-    printerr, \
-    CoconutException
+from coconut.compiler import Compiler
+from coconut.exceptions import printerr, CoconutException
 from coconut.constants import \
     py_syntax_version, \
     mimetype, \

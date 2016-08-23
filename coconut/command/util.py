@@ -21,8 +21,8 @@ from coconut.root import *
 import os
 import traceback
 
-from coconut.constants import default_encoding, color_codes, end_color_code
-from coconut.compiler.exceptions import printerr
+from coconut.constants import default_encoding
+from coconut.logger import logging
 
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
@@ -46,6 +46,13 @@ def readfile(openedfile):
 def fixpath(path):
     """Uniformly formats a path."""
     return os.path.normpath(os.path.realpath(path))
+
+def showpath(path):
+    """Formats a path for displaying."""
+    if logging.verbose:
+        return os.path.abspath(path)
+    else:
+        return os.path.basename(path)
 
 def rem_encoding(code):
     """Removes encoding declarations from Python code so it can be passed to exec."""
@@ -112,74 +119,3 @@ class Runner(object):
             else:
                 self.exit()
         return None
-
-class Console(object):
-    """Manages printing and reading data to the console."""
-    color_code = None
-    on = True
-
-    def __init__(self, main_sig="", debug_sig=""):
-        """Creates the console."""
-        self.main_sig, self.debug_sig = main_sig, debug_sig
-
-    def set_color(self, color=None):
-        """Set output color."""
-        if color:
-            color = color.replace("_", "")
-            if color in color_codes:
-                self.color_code = color_codes[color]
-            else:
-                try:
-                    color = int(color)
-                except ValueError:
-                    raise CoconutException('unrecognized color "'+color+'" (enter a valid color name or code)')
-                else:
-                    if 0 < color <= 256:
-                        self.color_code = color
-                    else:
-                        raise CoconutException('color code '+str(color)+' out of range (must obey 0 < color code <= 256)')
-        else:
-            self.color_code = None
-
-    def add_color(self, inputstring):
-        """Adds the specified color to the string."""
-        if self.color_code is None:
-            return inputstring
-        else:
-            return escape_color(self.color_code) + inputstring + escape_color(end_color_code)
-
-    def display(self, messages, sig="", debug=False):
-        """Prints an iterator of messages with color."""
-        message = " ".join(str(msg) for msg in messages)
-        for line in message.splitlines():
-            msg = sig + line
-            if msg:
-                msg = self.add_color(msg)
-            if debug is True:
-                printerr(msg)
-            else:
-                print(msg)
-
-    def print(self, *messages):
-        """Prints messages with color."""
-        self.display(messages)
-
-    def printerr(self, *messages):
-        """Prints error messages with color and debug signature."""
-        self.display(messages, self.debug_sig, True)
-
-    def show(self, *messages):
-        """Prints messages with color and main signature."""
-        if self.on:
-            self.display(messages, self.main_sig)
-
-class pickleable_method(object):
-    """Simulates the method of a class but is pickleable."""
-
-    def __init__(self, base, method):
-        """Creates the fake method."""
-        self.base, self.method = base, method
-
-    def __call__(self, *args, **kwargs):
-        """Calls the fake method."""
-        return getattr(self.base, self.method)(*args, **kwargs)
