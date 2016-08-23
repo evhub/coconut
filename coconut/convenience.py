@@ -18,13 +18,9 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *
 
-from coconut.command import \
-    CoconutException, \
-    Command, \
-    version_tag, \
-    version_long, \
-    main_sig, \
-    arguments
+from coconut.exceptions import CoconutException
+from coconut.command import Command, arguments
+from coconut.constants import version_tag, version_long, main_sig
 
 #-----------------------------------------------------------------------------------------------------------------------
 # COMMAND:

@@ -22,8 +22,8 @@ from coconut.constants import \
     hash_prefix, \
     tabideal, \
     default_encoding
+from coconut.exceptions import CoconutException
 from coconut.compiler.util import target_info
-from coconut.compiler.exceptions import CoconutException
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
