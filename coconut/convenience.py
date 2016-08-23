@@ -18,7 +18,13 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *
 
-from coconut.command import CoconutException, Command, version_tag, version_long, main_sig
+from coconut.command import \
+    CoconutException, \
+    Command, \
+    version_tag, \
+    version_long, \
+    main_sig, \
+    arguments
 
 #-----------------------------------------------------------------------------------------------------------------------
 # COMMAND:
@@ -30,7 +36,7 @@ def cmd(args, interact=False):
     """Processes command-line arguments."""
     if isinstance(args, (str, bytes)):
         args = args.split()
-    return CLI.cmd(CLI.arguments.parse_args(args), interact)
+    return CLI.cmd(arguments.parse_args(args), interact)
 
 def version(which="num"):
     """Gets the Coconut version."""
