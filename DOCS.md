@@ -646,22 +646,22 @@ point(1,2) |> point(1,2).__eq__ |> print
 ```
 _Showcases matching to data types. Values defined by the user with the `data` statement can be matched against and their contents accessed by specifically referencing arguments to the data type's constructor._
 ```coconut
-data empty(): pass
-data leaf(n): pass
-data node(l, r): pass
-tree = (empty, leaf, node)
+data Empty(): pass
+data Leaf(n): pass
+data Node(l, r): pass
+Tree = (Empty, Leaf, Node)
 
-def depth(t):
-    match tree() in t:
-        return 0
-    match tree(n) in t:
-        return 1
-    match tree(l, r) in t:
-        return 1 + max([depth(l), depth(r)])
+def depth(Tree()) = 0
 
-empty() |> depth |> print
-leaf(5) |> depth |> print
-node(leaf(2), node(empty(), leaf(3))) |> depth |> print
+@addpattern(depth)
+def depth(Tree(n)) = 1
+
+@addpattern(depth)
+def depth(Tree(l, r)) = 1 + max([depth(l), depth(r)])
+
+Empty() |> depth |> print
+Leaf(5) |> depth |> print
+Node(Leaf(2), Node(Empty(), Leaf(3))) |> depth |> print
 ```
 _Showcases how the combination of data types and match statements can be used to powerful effect to replicate the usage of algebraic data types in other functional programming languages._
 ```coconut
