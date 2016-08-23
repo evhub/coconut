@@ -27,7 +27,7 @@ from ipykernel.kernelbase import Kernel
 
 from coconut.command import Runner
 from coconut.compiler import Compiler
-from coconut.exceptions import printerr, CoconutException
+from coconut.exceptions import CoconutException
 from coconut.logging import logger
 from coconut.constants import \
     py_syntax_version, \
