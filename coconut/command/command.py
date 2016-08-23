@@ -57,7 +57,8 @@ from coconut.command.util import \
     try_eval, \
     escape_color, \
     Runner, \
-    Console
+    Console, \
+    pickleable_method
 from coconut.command.cli import arguments
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -294,14 +295,13 @@ class Command(object):
 
         foundhash = None if force else self.hashashof(destpath, code, package)
         if foundhash:
-
             self.show_tabulated("Left unchanged", self.showpath(destpath), "(pass --force to override).")
             if run:
                 self.execute(foundhash, path=destpath, isolate=True)
             elif self.show:
                 print(foundhash)
-        else:
 
+        else:
             def callback(compiled):
                 if destpath is None:
                     self.show_tabulated("Finished", self.showpath(codepath), "without writing to file.")
@@ -316,9 +316,9 @@ class Command(object):
                     print(compiled)
 
             if package is True:
-                compile_func = self.proc.parse_module
+                compile_func = pickleable_method(self.proc, "parse_module")
             elif package is False:
-                compile_func = self.proc.parse_file
+                compile_func = pickleable_method(self.proc, "parse_file")
             else:
                 raise CoconutException("invalid value for package", package)
 
