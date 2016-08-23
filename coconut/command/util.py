@@ -22,7 +22,7 @@ import os
 import traceback
 
 from coconut.constants import default_encoding
-from coconut.logger import logging
+from coconut.logging import logger
 
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
@@ -49,7 +49,7 @@ def fixpath(path):
 
 def showpath(path):
     """Formats a path for displaying."""
-    if logging.verbose:
+    if logger.verbose:
         return os.path.abspath(path)
     else:
         return os.path.basename(path)
