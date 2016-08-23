@@ -109,9 +109,17 @@ class Command(object):
         else:
             return self.proc.indebug()
 
-    def print_exc(self):
+    def print_exc(self, path=None):
         """Properly prints an exception in the exception context."""
-        self.console.printerr(get_error(self.indebug()))
+        errmsg = get_error(self.indebug())
+        if path is not None:
+            errmsg_lines = ["in " + os.path.abspath(path) + ":"]
+            for line in errmsg.splitlines():
+                if line:
+                    line = "  " + line
+                errmsg_lines.append(line)
+            errmsg = "\n".join(errmsg_lines)
+        self.console.printerr(errmsg)
 
     def log(self, msg):
         """Logs a debug message if indebug."""
@@ -314,9 +322,9 @@ class Command(object):
             else:
                 raise CoconutException("invalid value for package", package)
 
-            self.submit_job(callback, compile_func, code)
+            self.submit_job(codepath, callback, compile_func, code)
 
-    def submit_job(self, callback, func, *args):
+    def submit_job(self, path, callback, func, *args):
         """Submits a job to be run in parallel."""
         if self.executor is None:
             callback(func(*args))
@@ -326,7 +334,7 @@ class Command(object):
                 try:
                     callback(completed_future.result())
                 except CoconutException:
-                    self.print_exc()
+                    self.print_exc(path)
                     sys.exit(1)
             future.add_done_callback(callback_wrapper)
 
