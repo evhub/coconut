@@ -266,7 +266,6 @@ class Command(object):
                 raise CoconutException("invalid value for package", package)
 
             def callback(compiled):
-                logger.path = None
                 if destpath is None:
                     logger.show_tabulated("Finished", showpath(codepath), "without writing to file.")
                 else:
@@ -281,6 +280,7 @@ class Command(object):
 
             logger.path = codepath
             self.submit_job(callback, compile_func, code)
+            logger.path = None
 
     def submit_job(self, callback, func, *args):
         """Submits a job to be run in parallel."""
