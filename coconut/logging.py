@@ -150,7 +150,7 @@ class Logger(object):
 
     def log_trace(self, tag, original, location, tokens):
         """Formats and displays a trace."""
-        if logger.verbose:
+        if self.verbose:
             original = str(original)
             location = int(location)
             out = "[" + tag + "] "
@@ -159,7 +159,7 @@ class Logger(object):
             else:
                 out += str(tokens)
             out += " (line "+str(lineno(location, original))+", col "+str(col(location, original))+")"
-            logger.printerr(out)
+            self.printerr(out)
 
     def trace(self, item, tag):
         """Traces a parse element."""
