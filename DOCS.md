@@ -674,6 +674,13 @@ def duplicate_first(value):
 [1,2,3] |> duplicate_first |> print
 ```
 _Showcases head-tail splitting, one of the most common uses of pattern-matching, where a `+ <var>` (or `:: <var>` for any iterable) at the end of a list or tuple literal can be used to match the rest of the sequence._
+```
+def sieve([head] :: tail) = [head] :: sieve(n for n in tail if n % head)
+
+@addpattern(sieve)
+def sieve((||)) = []
+```
+_Showcases how to match against iterators, namely that the empty iterator case (`(||)`) must come last, otherwise that case will exhaust the whole iterator before any other pattern has a chance to match against it._
 
 ###### Python
 
