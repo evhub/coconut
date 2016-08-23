@@ -88,7 +88,7 @@ from coconut.constants import \
     new_to_old_stdlib, \
     default_whitespace_chars, \
     checksum
-from coconut.compiler.exceptions import \
+from coconut.exceptions import \
     CoconutException, \
     CoconutSyntaxError, \
     CoconutParseError, \
@@ -98,6 +98,7 @@ from coconut.compiler.exceptions import \
     printerr, \
     get_error, \
     clean
+from coconut.logger import logging, Tracer
 from coconut.compiler.util import \
     target_info, \
     addskip, \
@@ -107,8 +108,7 @@ from coconut.compiler.util import \
     fixto, \
     addspace, \
     condense, \
-    parenwrap, \
-    Tracer
+    parenwrap
 from coconut.compiler.header import \
     gethash, \
     minify, \
@@ -788,12 +788,10 @@ class Compiler(object):
     """The Coconut compiler."""
     tracer = Tracer()
     trace = tracer.trace
-    debug = tracer.debug
     autopep8_args = None
 
-    def __init__(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False, debugger=printerr):
+    def __init__(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False):
         """Creates a new compiler with the given parsing parameters."""
-        self.debugger = debugger
         self.setup(target, strict, minify, line_numbers, keep_lines)
         self.preprocs = [
             self.prepare,
@@ -838,7 +836,6 @@ class Compiler(object):
 
     def reset(self):
         """Resets references."""
-        self.tracer.show = self.debugger
         self.indchar = None
         self.refs = []
         self.skips = set()
@@ -976,29 +973,20 @@ class Compiler(object):
         """Wraps a line number."""
         return "#" + self.add_ref(ln) + lnwrapper
 
-    def indebug(self):
-        """Checks whether debug mode is active."""
-        return self.tracer.on
-
-    def log(self, tag, code):
-        """If debugging, prints a debug message."""
-        if self.indebug():
-            self.tracer.show("["+str(tag)+"] "+ascii(code))
-
     def warn(self, warning):
         """Displays a warning."""
         try:
             raise warning
         except CoconutWarning:
-            self.tracer.show(get_error(self.indebug()))
+            logging.print_exc()
 
     def pre(self, inputstring, **kwargs):
         """Performs pre-processing."""
         out = str(inputstring)
         for proc in self.preprocs:
             out = proc(out, **kwargs)
-            self.log(proc.__name__, out)
-        self.log("skips", list(sorted(self.skips)))
+            logging.log_tag(proc.__name__, out)
+        logging.log_tag("skips", list(sorted(self.skips)))
         return out
 
     def post(self, tokens, **kwargs):
@@ -1007,7 +995,7 @@ class Compiler(object):
             out = tokens[0]
             for proc in self.postprocs:
                 out = proc(out, **kwargs)
-                self.log(proc.__name__, out)
+                logging.log_tag(proc.__name__, out)
             return out
         else:
             raise CoconutException("multiple tokens leftover", tokens)
@@ -1473,7 +1461,7 @@ class Compiler(object):
         """Processes using replprocs."""
         for repl in self.replprocs:
             inputstring = repl(inputstring, **kwargs)
-            self.log(repl.__name__, inputstring)
+            logging.log_tag(repl.__name__, inputstring)
         return inputstring
 
     def header_proc(self, inputstring, header="file", initial="initial", usehash=None, **kwargs):

@@ -19,8 +19,9 @@ from coconut.root import *
 
 from pyparsing import replaceWith, lineno, col
 
-from coconut.compiler.exceptions import printerr
 from coconut.constants import ups, downs
+from coconut.exceptions import CoconutException
+from coconut.logger import logging
 
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
@@ -83,42 +84,3 @@ def parenwrap(lparen, item, rparen, tokens=False):
     if not tokens:
         wrap = condense(wrap)
     return wrap
-
-#-----------------------------------------------------------------------------------------------------------------------
-# CLASSES:
-#-----------------------------------------------------------------------------------------------------------------------
-
-class Tracer(object):
-    """Debug tracer."""
-
-    def __init__(self, show=printerr, on=False):
-        """Creates the tracer."""
-        self.show = show
-        self.debug(on)
-
-    def debug(self, on=True):
-        """Changes the tracer's state."""
-        self.on = on
-
-    def show_trace(self, tag, original, location, tokens):
-        """Formats and displays a trace."""
-        original = str(original)
-        location = int(location)
-        out = "[" + tag + "] "
-        if len(tokens) == 1 and isinstance(tokens[0], str):
-            out += ascii(tokens[0])
-        else:
-            out += str(tokens)
-        out += " (line "+str(lineno(location, original))+", col "+str(col(location, original))+")"
-        self.show(out)
-
-    def trace(self, item, tag):
-        """Traces a parse element."""
-        def callback(original, location, tokens):
-            """Callback function constructed by tracer."""
-            if self.on:
-                self.show_trace(tag, original, location, tokens)
-            return tokens
-        bound = attach(item, callback)
-        bound.setName(tag)
-        return bound
