@@ -47,6 +47,10 @@ def format_error(err_type, err_value, err_trace=None):
     else:
         return "".join(traceback.format_exception(err_type, err_value, err_trace)).strip()
 
+def escape_color(code):
+    """Generates an ANSII color code."""
+    return "\033[" + str(code) + "m"
+
 #-----------------------------------------------------------------------------------------------------------------------
 # logger:
 #-----------------------------------------------------------------------------------------------------------------------
