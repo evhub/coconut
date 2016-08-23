@@ -18,6 +18,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *
 
+import sys
 from contextlib import contextmanager
 
 from coconut.constants import \
@@ -119,6 +120,15 @@ class Logger(object):
         if not self.verbose:
             err_trace = None
         return format_error(err_type, err_value, err_trace)
+
+    @contextmanager
+    def in_path(self, new_path, old_path=None):
+        """Temporarily enters a path."""
+        self.path = new_path
+        try:
+            yield
+        finally:
+            self.path = old_path
 
     def print_exc(self):
         """Properly prints an exception in the exception context."""

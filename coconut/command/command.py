@@ -275,9 +275,8 @@ class Command(object):
                 elif self.show:
                     print(compiled)
 
-            logger.path = codepath
-            self.submit_job(callback, compile_func, code)
-            logger.path = None
+            with logger.in_path(codepath):
+                self.submit_job(callback, compile_func, code)
 
     def submit_job(self, callback, func, *args):
         """Submits a job to be run in parallel."""
