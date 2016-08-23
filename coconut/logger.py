@@ -22,107 +22,28 @@ from coconut.constants import \
     default_encoding, \
     color_codes, \
     end_color_code, \
-    info_tabulation
+    info_tabulation, \
+    main_sig, \
+    debug_sig
 from coconut.exceptions import CoconutException
 
 #-----------------------------------------------------------------------------------------------------------------------
-# LOGGING:
+# FUNCTIONS:
 #-----------------------------------------------------------------------------------------------------------------------
 
 def printerr(*args):
     """Prints to standard error."""
     print(*args, file=sys.stderr)
 
-class logging(object):
-    """Container object for various logging functions."""
+#-----------------------------------------------------------------------------------------------------------------------
+# LOGGING:
+#-----------------------------------------------------------------------------------------------------------------------
+
+class Logging(object):
+    """Container object for various logging functions and variables."""
     verbose = False
-    print = print
-    printerr = printerr
-
-    @classmethod
-    def print_exc(logging, path=None):
-        """Properly prints an exception in the exception context."""
-        errmsg = get_error(logging.verbose)
-        if path is not None:
-            errmsg_lines = ["in " + os.path.abspath(path) + ":"]
-            for line in errmsg.splitlines():
-                if line:
-                    line = "  " + line
-                errmsg_lines.append(line)
-            errmsg = "\n".join(errmsg_lines)
-        logging.printerr(errmsg)
-
-    @classmethod
-    def log(logging, msg):
-        """Logs a debug message if in verbose mode."""
-        if logging.verbose:
-            logging.printerr(msg)
-
-    @classmethod
-    def log_tag(logging, tag, code):
-        """Logs a tagged message if in verbose mode."""
-        logging.log("["+str(tag)+"] " + ascii(code))
-
-    @classmethod
-    def log_cmd(logging, args):
-        """Logs a console command if in verbose mode."""
-        logging.log("> " + " ".join(args))
-
-    @classmethod
-    def show_tabulated(logging, begin, middle, end):
-        """Shows a tabulated message."""
-        if len(begin) < info_tabulation:
-            logging.show(begin + " "*(info_tabulation - len(begin)) + middle + " " + end)
-        else:
-            raise CoconutException("info message too long", begin)
-
-#-----------------------------------------------------------------------------------------------------------------------
-# CLASSES:
-#-----------------------------------------------------------------------------------------------------------------------
-
-class Tracer(object):
-    """Debug tracer."""
-
-    def show_trace(self, tag, original, location, tokens):
-        """Formats and displays a trace."""
-        original = str(original)
-        location = int(location)
-        out = "[" + tag + "] "
-        if len(tokens) == 1 and isinstance(tokens[0], str):
-            out += ascii(tokens[0])
-        else:
-            out += str(tokens)
-        out += " (line "+str(lineno(location, original))+", col "+str(col(location, original))+")"
-        logging.printerr(out)
-
-    def trace(self, item, tag):
-        """Traces a parse element."""
-        def callback(original, location, tokens):
-            """Callback function constructed by tracer."""
-            if logging.verbose:
-                self.show_trace(tag, original, location, tokens)
-            return tokens
-        bound = attach(item, callback)
-        bound.setName(tag)
-        return bound
-
-class Console(object):
-    """Manages printing and reading data to the console."""
+    quiet = False
     color_code = None
-    on = True
-
-    def __init__(self, main_sig="", debug_sig=""):
-        """Creates the console."""
-        self.main_sig, self.debug_sig = main_sig, debug_sig
-        self.bind_logging()
-
-    def bind_logging(self):
-        """Binds logging to use this console."""
-        logging.print, logging.printerr, logging.show = self.print, self.printerr, self.show
-
-    def quiet(self, quiet=True):
-        """Quiet the console."""
-        self.on = not quiet
 
     def set_color(self, color=None):
         """Set output color."""
@@ -152,8 +73,8 @@ class Console(object):
 
     def display(self, messages, sig="", debug=False):
         """Prints an iterator of messages with color."""
-        message = " ".join(str(msg) for msg in messages)
-        for line in message.splitlines():
+        full_message = " ".join(str(msg) for msg in messages)
+        for line in full_message.splitlines():
             msg = sig + line
             if msg:
                 msg = self.add_color(msg)
@@ -168,9 +89,69 @@ class Console(object):
 
     def printerr(self, *messages):
         """Prints error messages with color and debug signature."""
-        self.display(messages, self.debug_sig, True)
+        self.display(messages, debug_sig, True)
 
     def show(self, *messages):
         """Prints messages with color and main signature."""
-        if self.on:
-            self.display(messages, self.main_sig)
+        if self.verbose:
+            self.display(messages, main_sig)
+
+    def print_exc(self, path=None):
+        """Properly prints an exception in the exception context."""
+        errmsg = get_error(self.verbose)
+        if path is not None:
+            errmsg_lines = ["in " + os.path.abspath(path) + ":"]
+            for line in errmsg.splitlines():
+                if line:
+                    line = "  " + line
+                errmsg_lines.append(line)
+            errmsg = "\n".join(errmsg_lines)
+        self.printerr(errmsg)
+
+    def log(self, msg):
+        """Logs a debug message if in verbose mode."""
+        if self.verbose:
+            self.printerr(msg)
+
+    def log_tag(self, tag, code):
+        """Logs a tagged message if in verbose mode."""
+        self.log("["+str(tag)+"] " + ascii(code))
+
+    def log_cmd(self, args):
+        """Logs a console command if in verbose mode."""
+        self.log("> " + " ".join(args))
+
+    def show_tabulated(self, begin, middle, end):
+        """Shows a tabulated message."""
+        if len(begin) < info_tabulation:
+            self.show(begin + " "*(info_tabulation - len(begin)) + middle + " " + end)
+        else:
+            raise CoconutException("info message too long", begin)
+
+    def log_trace(self, tag, original, location, tokens):
+        """Formats and displays a trace."""
+        if logging.verbose:
+            original = str(original)
+            location = int(location)
+            out = "[" + tag + "] "
+            if len(tokens) == 1 and isinstance(tokens[0], str):
+                out += ascii(tokens[0])
+            else:
+                out += str(tokens)
+            out += " (line "+str(lineno(location, original))+", col "+str(col(location, original))+")"
+            logging.printerr(out)
+
+    def trace(self, item, tag):
+        """Traces a parse element."""
+        def trace_action(original, location, tokens):
+            """Callback function constructed by tracer."""
+            self.log_trace(tag, original, location, tokens)
+        bound = attach(item, trace_action)
+        bound.setName(tag)
+        return bound
+
+#-----------------------------------------------------------------------------------------------------------------------
+# MAIN:
+#-----------------------------------------------------------------------------------------------------------------------
+
+logging = Logging()

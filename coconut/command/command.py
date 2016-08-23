@@ -27,12 +27,10 @@ from concurrent.futures import ProcessPoolExecutor
 
 from coconut.compiler import Compiler, gethash
 from coconut.exceptions import CoconutException, get_error
-from coconut.logger import logging, Console
+from coconut.logger import logging
 from coconut.constants import \
     code_exts, \
     comp_ext, \
-    main_sig, \
-    debug_sig, \
     default_prompt, \
     default_moreprompt, \
     watch_interval, \
@@ -72,7 +70,6 @@ class Command(object):
 
     def __init__(self, prompt=default_prompt, moreprompt=default_moreprompt):
         """Creates the CLI."""
-        self.console = Console(main_sig, debug_sig)
         self.prompt, self.moreprompt = prompt, moreprompt
 
     def start(self):
@@ -87,7 +84,7 @@ class Command(object):
             keep_lines=False,
             quiet=False):
         """Sets parameters for the compiler."""
-        self.console.quiet(quiet)
+        logging.quiet = quiet
         if self.proc is None:
             self.proc = Compiler(target, strict, minify, line_numbers, keep_lines)
         else:
@@ -95,9 +92,9 @@ class Command(object):
 
     def set_color(self, color):
         """Sets the color."""
-        self.console.set_color(color)
-        self.prompt = self.console.add_color(self.prompt)
-        self.moreprompt = self.console.add_color(self.moreprompt)
+        logging.set_color(color)
+        self.prompt = logging.add_color(self.prompt)
+        self.moreprompt = logging.add_color(self.moreprompt)
 
     def cmd(self, args, interact=True):
         """Parses command-line arguments."""
