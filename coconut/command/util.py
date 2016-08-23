@@ -172,3 +172,14 @@ class Console(object):
         """Prints messages with color and main signature."""
         if self.on:
             self.display(messages, self.main_sig)
+
+class pickleable_method(object):
+    """Simulates the method of a class but is pickleable."""
+
+    def __init__(self, base, method):
+        """Creates the fake method."""
+        self.base, self.method = base, method
+
+    def __call__(self, *args, **kwargs):
+        """Calls the fake method."""
+        return getattr(self.base, self.method)(*args, **kwargs)
