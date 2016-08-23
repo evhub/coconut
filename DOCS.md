@@ -952,13 +952,19 @@ print(list(map(operator.add, range(0, 5), range(5, 10))))
 
 ### Shorthand Functions
 
-Coconut allows for shorthand in-line function definition, where the body of the function is assigned directly to the function call. The syntax for shorthand function definition is
+Coconut allows for shorthand function definition that automatically returns the last line of the function body. A shorthand function is constructed by substituting `=` for `:` after the function definition line. Thus, the syntax for shorthand function definition is either
 ```coconut
 def <name>(<args>) = <expr>
 ```
-where `<name>` is the name of the function, `<args>` are the functions arguments, and `<expr>` evaluates the value that the function should return.
+for one-liners or
+```coconut
+def <name>(<args>) =
+    <stmts>
+    <expr>
+```
+for full functions, where `<name>` is the name of the function, `<args>` are the functions arguments, `<stmts>` are any statements that the function should execute, and `<expr>` is the value that the function should return.
 
-_Note: Shorthand function definition can be combined with infix and pattern-matching function definition._
+_Note: Shorthand function definition can be combined with infix and/or pattern-matching function definition._
 
 ##### Rationale
 
@@ -989,7 +995,7 @@ def <arg> `<name>` <arg>:
 ```
 where `<name>` is the name of the function, the `<arg>`s are the function arguments, and `<body>` is the body of the function. If an `<arg>` includes a default, the `<arg>` must be surrounded in parentheses.
 
-_Note: Infix function definition can be combined with shorthand and pattern-matching function definition._
+_Note: Infix function definition can be combined with shorthand and/or pattern-matching function definition._
 
 ##### Rationale
 
@@ -1029,7 +1035,7 @@ def <name>(*args):
 ```
 If pattern-matching function definition fails, it will raise a [`MatchError`](#matcherror) object just like [destructuring assignment](#destructuring-assignment).
 
-_Note: Pattern-matching function definition can be combined with shorthand and infix function definition._
+_Note: Pattern-matching function definition can be combined with shorthand and/or infix function definition._
 
 ##### Example
 
