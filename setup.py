@@ -41,8 +41,15 @@ with open("README.rst", "r") as readme_file:
             readme_lines.append(line)
     readme = "\n".join(readme_lines)
 
+def read_requirements(req_file):
+    return [line.strip() for line in req_file.readlines() if line]
+
 with open("requirements.txt", "r") as req_file:
-    requirements = [line.strip() for line in req_file.readlines() if line]
+    requirements = read_requirements(req_file)
+
+if PY2:
+    with open("requirements-py2.txt", "r") as req_py2_file:
+        requirements += read_requirements(req_py2_file)
 
 setuptools.setup(
     name = "coconut",
