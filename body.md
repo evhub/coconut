@@ -10,7 +10,7 @@ Installing Coconut is as easy as
 2. opening a command-line prompt,
 3. and entering:
 
-<div class="code-block">python -m pip install coconut</div>
+<div class="code-block">pip install coconut</div>
 
 which will give you access to all the features of Coconut, which adds to Python **built-in, syntactical support** for:
 - pipeline-style programming
