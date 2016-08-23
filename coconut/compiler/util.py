@@ -21,7 +21,6 @@ from pyparsing import replaceWith, lineno, col
 
 from coconut.constants import ups, downs
 from coconut.exceptions import CoconutException
-from coconut.logger import logging
 
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
