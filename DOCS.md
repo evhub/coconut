@@ -483,14 +483,15 @@ _Showcases the syntax, features, and immutable nature of `data` types._
 data Empty(): pass
 data Leaf(n): pass
 data Node(l, r): pass
+Tree = (Empty, Leaf, Node)
 
-def size(Empty()) = 0
-
-@addpattern(size)
-def size(Leaf(_)) = 1
+def size(Tree()) = 0
 
 @addpattern(size)
-def size(Node(left, right)) = size(left) + size(right)
+def size(Tree(n)) = 1
+
+@addpattern(size)
+def size(Tree(l, r)) = size(l) + size(r)
 
 size(Node(Empty(), Leaf(10))) == 1
 ```
