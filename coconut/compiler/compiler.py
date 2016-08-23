@@ -95,7 +95,6 @@ from coconut.exceptions import \
     CoconutStyleError, \
     CoconutTargetError, \
     CoconutWarning, \
-    printerr, \
     get_error, \
     clean
 from coconut.logger import logging
