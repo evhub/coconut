@@ -122,7 +122,7 @@ class Logger(object):
 
     def print_exc(self):
         """Properly prints an exception in the exception context."""
-        errmsg = self.get_error(self.verbose)
+        errmsg = self.get_error()
         if self.path is not None:
             errmsg_lines = ["in " + os.path.abspath(self.path) + ":"]
             for line in errmsg.splitlines():
