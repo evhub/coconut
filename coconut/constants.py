@@ -35,7 +35,7 @@ targets = ("",) + specific_targets
 pseudo_targets = {
     "26": "2",
     "32": "3",
-    "34": "33"
+    "34": "33",
 }
 sys_target = str(sys.version_info[0]) + str(sys.version_info[1])
 if sys_target in pseudo_targets:
@@ -105,13 +105,13 @@ keywords = (
     "while",
     "with",
     "yield",
-    "nonlocal"
+    "nonlocal",
     )
 
 const_vars = (
     "True",
     "False",
-    "None"
+    "None",
     )
 
 reserved_vars = ( # can be backslash-escaped
@@ -119,7 +119,7 @@ reserved_vars = ( # can be backslash-escaped
     "match",
     "case",
     "async",
-    "await"
+    "await",
     )
 
 new_to_old_stdlib = { # new_name: (old_name, new_version_info)
@@ -160,7 +160,7 @@ new_to_old_stdlib = { # new_name: (old_name, new_version_info)
     "urllib.error": ("urllib2", (3,)),
     "io.StringIO": ("StringIO", (3,)),
     "io.BytesIO": ("BytesIO", (3,)),
-    "collections.abc": ("collections", (3, 3))
+    "collections.abc": ("collections", (3, 3)),
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -219,7 +219,7 @@ color_codes = { # unix/ansii color codes, underscores in names removed
     "lightbluebackground": 104,
     "lightmagentabackground": 105,
     "lightcyanbackground": 106,
-    "whitebackground": 107
+    "whitebackground": 107,
     }
 
 version_long = "Version " + VERSION_STR + " running on Python " + " ".join(sys.version.splitlines())
@@ -235,7 +235,7 @@ icoconut_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icoconu
 icoconut_kernel_dirs = [
     os.path.join(icoconut_dir, "coconut"),
     os.path.join(icoconut_dir, "coconut2"),
-    os.path.join(icoconut_dir, "coconut3")
+    os.path.join(icoconut_dir, "coconut3"),
 ]
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -255,7 +255,7 @@ builtins = (
     "addpattern",
     "prepattern",
     "recursive_iterator",
-    "concurrent_map"
+    "concurrent_map",
     )
 
 new_operators = (
@@ -287,7 +287,7 @@ new_operators = (
     r"\xbb",
     r"\xd7",
     r"\u2026",
-    r"\u2218"
+    r"\u2218",
     )
 
 #-----------------------------------------------------------------------------------------------------------------------
