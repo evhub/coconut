@@ -98,7 +98,8 @@ from coconut.exceptions import \
     printerr, \
     get_error, \
     clean
-from coconut.logger import logging, Tracer
+from coconut.logger import logging
+trace = logging.trace
 from coconut.compiler.util import \
     target_info, \
     addskip, \
@@ -786,8 +787,6 @@ def namelist_handle(tokens):
 
 class Compiler(object):
     """The Coconut compiler."""
-    tracer = Tracer()
-    trace = tracer.trace
     autopep8_args = None
 
     def __init__(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False):
@@ -847,23 +846,23 @@ class Compiler(object):
     def bind(self):
         """Binds reference objects to the proper parse actions."""
         self.endline <<= attach(self.endline_ref, self.endline_handle, copy=True)
-        self.moduledoc_item <<= self.trace(attach(self.moduledoc, self.set_docstring, copy=True), "moduledoc")
-        self.name <<= self.trace(attach(self.name_ref, self.name_check, copy=True), "name")
-        self.atom_item <<= self.trace(attach(self.atom_item_ref, self.item_handle, copy=True), "atom_item")
-        self.simple_assign <<= self.trace(attach(self.simple_assign_ref, self.item_handle, copy=True), "simple_assign")
-        self.set_literal <<= self.trace(attach(self.set_literal_ref, self.set_literal_handle, copy=True), "set_literal")
-        self.set_letter_literal <<= self.trace(attach(self.set_letter_literal_ref, self.set_letter_literal_handle, copy=True), "set_letter_literal")
-        self.classlist <<= self.trace(attach(self.classlist_ref, self.classlist_handle, copy=True), "classlist")
-        self.import_stmt <<= self.trace(attach(self.import_stmt_ref, self.import_handle, copy=True), "import_stmt")
-        self.complex_raise_stmt <<= self.trace(attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_handle, copy=True), "complex_raise_stmt")
-        self.augassign_stmt <<= self.trace(attach(self.augassign_stmt_ref, self.augassign_handle, copy=True), "augassign_stmt")
-        self.dict_comp <<= self.trace(attach(self.dict_comp_ref, self.dict_comp_handle, copy=True), "dict_comp")
-        self.destructuring_stmt <<= self.trace(attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle, copy=True), "destructuring_stmt")
-        self.name_match_funcdef <<= self.trace(attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle, copy=True), "name_match_funcdef")
-        self.op_match_funcdef <<= self.trace(attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle, copy=True), "op_match_funcdef")
-        self.yield_from <<= self.trace(attach(self.yield_from_ref, self.yield_from_handle, copy=True), "yield_from")
-        self.exec_stmt <<= self.trace(attach(self.exec_stmt_ref, self.exec_stmt_handle, copy=True), "exec_stmt")
-        self.stmt_lambdef <<= self.trace(attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle, copy=True), "stmt_lambdef")
+        self.moduledoc_item <<= trace(attach(self.moduledoc, self.set_docstring, copy=True), "moduledoc")
+        self.name <<= trace(attach(self.name_ref, self.name_check, copy=True), "name")
+        self.atom_item <<= trace(attach(self.atom_item_ref, self.item_handle, copy=True), "atom_item")
+        self.simple_assign <<= trace(attach(self.simple_assign_ref, self.item_handle, copy=True), "simple_assign")
+        self.set_literal <<= trace(attach(self.set_literal_ref, self.set_literal_handle, copy=True), "set_literal")
+        self.set_letter_literal <<= trace(attach(self.set_letter_literal_ref, self.set_letter_literal_handle, copy=True), "set_letter_literal")
+        self.classlist <<= trace(attach(self.classlist_ref, self.classlist_handle, copy=True), "classlist")
+        self.import_stmt <<= trace(attach(self.import_stmt_ref, self.import_handle, copy=True), "import_stmt")
+        self.complex_raise_stmt <<= trace(attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_handle, copy=True), "complex_raise_stmt")
+        self.augassign_stmt <<= trace(attach(self.augassign_stmt_ref, self.augassign_handle, copy=True), "augassign_stmt")
+        self.dict_comp <<= trace(attach(self.dict_comp_ref, self.dict_comp_handle, copy=True), "dict_comp")
+        self.destructuring_stmt <<= trace(attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle, copy=True), "destructuring_stmt")
+        self.name_match_funcdef <<= trace(attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle, copy=True), "name_match_funcdef")
+        self.op_match_funcdef <<= trace(attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle, copy=True), "op_match_funcdef")
+        self.yield_from <<= trace(attach(self.yield_from_ref, self.yield_from_handle, copy=True), "yield_from")
+        self.exec_stmt <<= trace(attach(self.exec_stmt_ref, self.exec_stmt_handle, copy=True), "exec_stmt")
+        self.stmt_lambdef <<= trace(attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle, copy=True), "stmt_lambdef")
         self.u_string <<= attach(self.u_string_ref, self.u_string_check, copy=True)
         self.f_string <<= attach(self.f_string_ref, self.f_string_check, copy=True)
         self.typedef <<= attach(self.typedef_ref, self.typedef_check, copy=True)
