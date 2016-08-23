@@ -28,6 +28,7 @@ from ipykernel.kernelbase import Kernel
 from coconut.command import Runner
 from coconut.compiler import Compiler
 from coconut.exceptions import printerr, CoconutException
+from coconut.logger import logging
 from coconut.constants import \
     py_syntax_version, \
     mimetype, \
@@ -161,7 +162,7 @@ class CoconutKernel(Kernel):
             else:
                 compiled = proc.parse_block(code)
         except CoconutException:
-            printerr(get_error())
+            logging.print_exc()
             return None
         else:
             if evaluate:

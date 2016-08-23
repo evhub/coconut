@@ -28,22 +28,6 @@ from coconut.constants import openindent, closeindent, tabideal
 # FUNCTIONS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def format_error(err_type, err_value, err_trace=None):
-    """Properly formats the specified error."""
-    if err_trace is None:
-        err_name, err_msg = "".join(traceback.format_exception_only(err_type, err_value)).strip().split(": ", 1)
-        err_name = err_name.split(".")[-1]
-        return err_name + ": " + err_msg
-    else:
-        return "".join(traceback.format_exception(err_type, err_value, err_trace)).strip()
-
-def get_error(verbose=False):
-    """Properly formats the current error."""
-    err_type, err_value, err_trace = sys.exc_info()
-    if not verbose:
-        err_trace = None
-    return format_error(err_type, err_value, err_trace)
-
 def clean(inputline, strip=True):
     """Cleans and strips a line."""
     if hasattr(sys.stdout, "encoding") and sys.stdout.encoding is not None:
