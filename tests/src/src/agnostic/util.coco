@@ -1,0 +1,517 @@
+# Imports:
+import random
+
+# Random Number Helper:
+def rand_list(n):
+    '''Generates A Random List Of Length n.'''
+    return [random.randrange(10) for x in range(0, n)]
+
+# Infix Functions:
+plus = (+)
+mod = (%)
+def a `mod_` b = a % b
+base = int
+def (a) `join_with` (b=""):
+    return b.join(a)
+
+# Basic Functions:
+prod = reduce$(*)
+def zipwith(f, *args) = map((items) -> f(*items), zip(*args))
+zipsum = map$(sum)..zip
+plus1 = plus$(1)
+ident = (x) -> x
+@ ident .. ident
+def plus1_(x) = x + 1
+def sqrt(x) = x**0.5
+def sqrt_(x) = x**0.5
+square = (x) -> x**2
+plus1sq = square..plus1
+sqplus1 = plus1..square
+plus1sq_ = (x) -> x |> plus1 |> square
+sqplus1_ = (x) -> x |> square |> plus1
+clean = (s) -> s.strip()
+add2 = (x) -> (y) -> x + y
+def swap2(f) = (x, y) -> f(y, x)
+swap2_ = (f) -> (x, y) -> f(y, x)
+def same(iter1, iter2) = map((==), iter1, iter2)
+def chain2(a, b):
+    yield from a
+    yield from b
+
+# Partial Applications:
+sum_ = reduce$((+))
+add = zipwith$((+))
+
+# Quick-Sorts:
+def qsort1(l):
+    '''Non-Functional Quick Sort.'''
+    if len(l) == 0:
+        return []
+    else:
+        l = list(l)
+        split = l.pop()
+        smalls = []
+        larges = []
+        for x in l:
+            if x <= split:
+                smalls.append(x)
+            else:
+                larges.append(x)
+        return qsort1(smalls) + [split] + qsort1(larges)
+def qsort2(l):
+    """Functional Quick Sort."""
+    if not l:
+        return []
+    else:
+        head, tail = l[0], l[1:] # Python Pattern-Matching
+        return (qsort2([x for x in tail if x <= head])
+                + [head] # The pivot is a list
+                + qsort2([x for x in tail if x > head])
+                )
+def qsort3(l):
+    """Iterator Quick Sort."""
+    try:
+        tail, tail_ = l |> iter |> tee
+        # Since only iter is ever called on l, and next on tail, l only has to be an iterator
+        head = next(tail)
+        return (qsort3((x for x in tail if x <= head))
+                :: (head,) # The pivot is a tuple
+                :: qsort3((x for x in tail_ if x > head))
+                )
+    except StopIteration:
+        return iter(())
+def qsort4(l):
+    """Match Quick Sort."""
+    match [] in l:
+        return l
+    match [head] + tail in l:
+        return (qsort4([x for x in tail if x <= head])
+                + [head] # The pivot is a list
+                + qsort4([x for x in tail if x > head])
+                )
+def qsort5(l):
+    """Iterator Match Quick Sort."""
+    match (head,) :: tail in l:
+        tail, tail_ = tee(tail)
+        return (qsort5((x for x in tail if x <= head))
+            :: (head,) # The pivot is a tuple
+            :: qsort5((x for x in tail_ if x > head))
+            )
+    else:
+        return iter(())
+
+# Infinite Iterators:
+def repeat(elem):
+    """Repeat Iterator."""
+    while True:
+        yield elem
+def repeat_(elem):
+    return (elem,) :: repeat_(elem)
+def N(n=0):
+    """Natural Numbers."""
+    while True:
+        yield n
+        n += 1
+def N_(n=0):
+    return (n,) :: N_(n+1)
+def N__(n=0):
+    it = n,
+    it ::= N__(n+1)
+    return it
+def preN(it):
+    it ::= N()
+    return it
+def map_iter(func, args):
+    match (| x |) :: xs in args:
+        return (| func(x) |) :: map_iter(func, xs)
+
+# Recursive Functions:
+@recursive
+def next_mul_of(n, x):
+    if x % n == 0:
+        return x
+    else:
+        return next_mul_of(n, x+1)
+def maybe_recursive(cond):
+    if cond:
+        return recursive
+    else:
+        return (func) -> func
+@maybe_recursive(True)
+def collatz(n):
+    if n == 1:
+        return True
+    elif n%2 == 0:
+        return collatz(n/2)
+    else:
+        return collatz(3*n+1)
+@maybe_recursive(False)
+def collatz_(n):
+    if n == 1:
+        return True
+    elif n%2 == 0:
+        return collatz(n/2)
+    else:
+        return collatz(3*n+1)
+
+# Data Blocks:
+data preop(x, y):
+    def add(self):
+        return self.x + self.y
+data vector(x, y):
+    def __new__(cls, x, y=None):
+        match vector(x, y) in x:
+            pass
+        return datamaker(cls)(x, y)
+    def __abs__(self):
+        return (self.x**2 + self.y**2)**.5
+    def transform(self, other):
+        match vector(x, y) in other:
+            return vector(self.x + x, self.y + y)
+        else:
+            raise TypeError()
+    def __eq__(self, other):
+        match vector(=self.x, =self.y) in other:
+            return True
+        else:
+            return False
+data triangle(a, b, c):
+    def is_right(self):
+        return self.a**2 + self.b**2 == self.c**2
+data null1: pass
+data null2(): pass
+null = (null1, null2)
+def is_null(item):
+    match null() in item:
+        return True
+    else:
+        return False
+
+# Match Functions:
+def factorial1(value):
+    match 0 in value: return 1
+    match n is int in value if n > 0: return n * factorial1(n-1)
+def factorial2(value):
+    match (0) in value:
+        return 1
+    else: match (n is int) in value if n > 0:
+        return n * factorial2(n-1)
+    else:
+        return None
+    raise TypeError()
+def factorial3(value):
+    match 0 in value:
+        return 1
+    match n is int in value if n > 0:
+        return n * factorial3(n-1)
+    match [] in value:
+        return []
+    match [head] + tail in value:
+        return [factorial3(head)] + factorial3(tail)
+def factorial4(value):
+    case value:
+        match 0: return 1
+        match n is int if n > 0: return n * factorial4(n-1)
+def factorial5(value):
+    case value:
+        match 0:
+            return 1
+        match n is int if n > 0:
+            return n * factorial5(n-1)
+    else:
+        return None
+    raise TypeError()
+def classify(value):
+    match _ is tuple in value:
+        match () in value:
+            return "empty tuple"
+        match (_,) in value:
+            return "singleton tuple"
+        match (x,x) in value:
+            return "duplicate pair tuple of "+str(x)
+        match (_,_) in value:
+            return "pair tuple"
+        return "tuple"
+    match _ is list in value:
+        match [] in value:
+            return "empty list"
+        match [_] in value:
+            return "singleton list"
+        match [x,x] in value:
+            return "duplicate pair list of "+str(x)
+        match [_,_] in value:
+            return "pair list"
+        return "list"
+    match _ is dict in value:
+        match {} in value:
+            return "empty dict"
+        else:
+            return "dict"
+    match _ is (set, frozenset) in value:
+        match s{} in value:
+            return "empty set"
+        match {0} in value:
+            return "set of 0"
+        return "set"
+    raise TypeError()
+def classify_sequence(value):
+    out = ""
+    case value:
+        match ():
+            out += "empty"
+        match (_,):
+            out += "singleton"
+        match (x,x):
+            out += "duplicate pair of "+str(x)
+        match (_,_):
+            out += "pair"
+        match (_,_,_) or (_,_,_,_):
+            out += "few"
+    else:
+        raise TypeError()
+    return out
+def dictpoint(value):
+    match {"x":x is int, "y":y is int} in value:
+        return (x, y)
+    else:
+        raise TypeError()
+def map_(func, args):
+    match l and (() or []) in args:
+        return l
+    match (x,) + xs in args if args `isinstance` tuple:
+        return (func(x),) + map_(func, xs)
+    match [x] + xs in args if args `isinstance` list:
+        return [func(x)] + map_(func, xs)
+def duplicate_first1(value):
+    match [x] + xs as l in value:
+        return [x] + l
+    else:
+        raise TypeError()
+def duplicate_first2(value):
+    match [x] :: xs as l is list in value:
+        return [x] :: l
+    else:
+        raise TypeError()
+def duplicate_first3(value):
+    match [x] :: xs is list as l in value:
+        return [x] :: l
+    else:
+        raise TypeError()
+def one_to_five(l):
+    match [1] + m + [5] in l:
+        return m
+    else:
+        return False
+
+# Unicode Functions:
+square_u = (x) → x ↑ 2
+def neg_u(x) = ⁻x
+neg_square_u = (x) → x ↦ square_u ↦ neg_u
+
+# In-Place Functions:
+def pipe(a, b):
+    a |>= b
+    return a
+def compose(a, b):
+    a ..= b
+    return a
+def chain(a, b):
+    a ::= b
+    return a
+
+# Algebraic Data Types:
+data empty(): pass
+data leaf(n): pass
+data node(l, r): pass
+tree = (empty, leaf, node)
+
+def depth(t):
+    match tree() in t:
+        return 0
+    match tree(n) in t:
+        return 1
+    match tree(l, r) in t:
+        return 1 + max([depth(l), depth(r)])
+
+# Monads:
+def base_maybe(x, f) = f(x) if x is not None else None
+def maybes(*fs) = reduce(base_maybe, fs)
+
+data Nothing():
+    def __call__(self, *args):
+        return Nothing()
+    def __eq__(self, other):
+        match Nothing() in other:
+            return True
+        else:
+            return False
+data Just(item):
+    def __call__(self, *args):
+        return Just <| reduce((|>), args, self.item)
+    def __eq__(self, other):
+        match Just(item) in other:
+            return self.item == item
+        else:
+            return False
+Maybe = (Nothing, Just)
+
+# Destructuring Assignment:
+def head_tail(l):
+    match [head] + tail = l
+    return head, tail
+def init_last(l):
+    init + [last] = l
+    return init, last
+def last_two(l):
+    _ + [a, b] = l
+    return a, b
+def delist2(l):
+    match list(a, b) = l
+    return a, b
+def delist2_(l):
+    list(a, b)  = l
+    return a, b
+
+# Optional Explicit Assignment:
+def expl_ident(x) = x
+def dictpoint_(value):
+    {"x":x is int, "y":y is int} = value
+    return x, y
+def dictpoint__({"x":x is int, "y":y is int}):
+    return x, y
+def `tuple1` a = a,
+def a `tuple1_` = a,
+def a `tuple2` b = a, b
+def tuple2_(a, b) = a, b
+
+# Enhanced Decorators:
+@ (f) -> f
+def dectest(x) = x
+
+# Match Function Definition:
+def last_two_(_ + [a, b]):
+    return a, b
+match def htsplit([head] + tail) = [head, tail]
+def htsplit_([head] + tail) = [head, tail]
+match def (x is int) `iadd` (y is int) = x + y
+def (x is int) `iadd_` (y is int) = x + y
+match def strmul(a is str, x is int):
+    return a * x
+def strmul_(a is str, x is int):
+    return a * x
+
+# Lazy Lists:
+class lazy:
+    done = False
+    def finish(self):
+        self.done = True
+    def list(self):
+        return (| 1, 2, 3, self.finish() |)
+def is_empty(i):
+    match (||) in i:
+        return True
+    else:
+        return False
+def is_one(i):
+    match (| 1 |) in i:
+        return True
+    else:
+        return False
+
+# Constructed Data Types:
+data trilen(h):
+    def __new__(cls, a, b):
+        return (a**2 + b**2)**0.5 |> datamaker(cls)
+
+# Inheritance:
+class A:
+    def true(self):
+        return True
+class B(A):
+    pass
+
+# Infinite Grid:
+
+data pt(x, y):
+    """Cartesian point in the x-y plane. Immutable."""
+    def __abs__(self):
+        return (self.x**2 + self.y**2)**0.5
+    def __eq__(self, other):
+        match pt(=self.x, =self.y) in other:
+            return True
+        else:
+            return False
+
+def vertical_line(x=0, y=0):
+    """Infinite iterator of pt representing a vertical line."""
+    return (pt(x, y), ) :: vertical_line(x, y+1)
+
+def grid(x=0):
+    """Infinite iterator of infinite iterators representing cartesian space."""
+    return (vertical_line(x, 0), ) :: grid(x+1)
+
+def grid_map(func, gridsample):
+    """Map a function over every point in a grid."""
+    return gridsample |> map$(map$(func))
+
+def parallel_grid_map(func, gridsample):
+    """Map a function over every point in a grid in parallel."""
+    return gridsample |> parallel_map$(parallel_map$(func))
+
+def grid_trim(gridsample, xmax, ymax):
+    """Convert a grid to a list of lists up to xmax and ymax."""
+    return gridsample$[:xmax] |> map$((l) -> l$[:ymax] |> list) |> list
+
+# Physics function:
+
+def SHOPeriodTerminate(X, t, params):
+    if X[1] > 0:
+        return -1 # passed the turning point, so go back
+    epsilon = params['epsilon'] if 'epsilon' in params else 1e-8
+    if abs(X[1]) < epsilon and X[0] < 0:
+        return 1  # we're done
+    return 0     # keep going
+
+# Multiple dispatch:
+
+def add_int_or_str_1(x is int) = x + 1
+@addpattern(add_int_or_str_1)
+def add_int_or_str_1(x is str) = x + "1"
+
+def coercive_add(a is int, b) = a + int(b)
+@addpattern(coercive_add)
+def coercive_add(a is str, b) = a + str(b)
+
+@addpattern(ident)
+def still_ident(x) = "foo"
+
+@prepattern(ident)
+def not_ident(x) = "bar"
+
+# Pattern-matching functions with guards
+
+def pattern_abs(x if x < 0) = -x
+@addpattern(pattern_abs)
+def pattern_abs(x) = x
+
+def `pattern_abs_` (x) if x < 0 = -x
+@addpattern(pattern_abs_)
+def `pattern_abs_` (x) = x
+
+# Recursive iterator
+
+@recursive_iterator
+def fib() = (1, 2) :: map((+), fib(), fib()$[1:])
+
+# Sieve Example
+
+def sieve((||)) = []
+
+@prepattern(sieve)
+def sieve([head] :: tail) = [head] :: sieve(n for n in tail if n % head)
+
+# Shorthand function definition
+
+def double_plus_one(x) =
+    x *= 2
+    x + 1

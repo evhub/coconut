@@ -1,0 +1,9 @@
+import sys
+import os.path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+import cocotest
+from cocotest.main import main
+
+if __name__ == "__main__":
+    main(cocotest.__doc__)
