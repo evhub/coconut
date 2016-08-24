@@ -158,8 +158,8 @@ new_to_old_stdlib = { # new_name: (old_name, new_version_info)
     "urllib.request": ("urllib2", (3,)),
     "urllib.parse": ("urllib2", (3,)),
     "urllib.error": ("urllib2", (3,)),
-    "io.StringIO": ("StringIO", (3,)),
-    "io.BytesIO": ("BytesIO", (3,)),
+    "io.StringIO": ("StringIO.StringIO", (3,)),
+    "io.BytesIO": ("BytesIO.BytesIO", (3,)),
     "collections.abc": ("collections", (3, 3)),
 }
 
