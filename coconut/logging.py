@@ -29,7 +29,7 @@ from coconut.constants import \
     info_tabulation, \
     main_sig, \
     debug_sig
-from coconut.exceptions import CoconutException
+from coconut.exceptions import CoconutException, CoconutWarning
 from coconut.compiler.util import attach
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -134,6 +134,13 @@ class Logger(object):
             yield
         finally:
             self.path = old_path
+
+    def warn(self, warning):
+        """Displays a warning."""
+        try:
+            raise warning
+        except CoconutWarning:
+            self.print_exc()
 
     def print_exc(self):
         """Properly prints an exception in the exception context."""
