@@ -18,6 +18,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *
 
+import sys
 import os
 import traceback
 
@@ -117,14 +118,14 @@ class Runner(object):
         return None
 
 class multiprocess_wrapper(object):
-    """Wrapper that sets logger then calls a method.
-    Should be used to wrap a method called in a new process."""
+    """Wrapper for a method that needs to be multiprocessed."""
 
     def __init__(self, base, method):
-        """Creates new object that first sets logger then calls the method."""
-        self.logger, self.base, self.method = logger, base, method
+        """Creates new multiprocessable method."""
+        self.recursion, self.logging, self.base, self.method = sys.getrecursionlimit(), logging, base, method
 
     def __call__(self, *args, **kwargs):
-        """Sets logger then calls the method."""
+        """Sets up new process then calls the method."""
+        sys.setrecursionlimit(self.recursion)
         logger.copy_from(self.logger)
         return getattr(self.base, self.method)(*args, **kwargs)
