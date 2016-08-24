@@ -107,7 +107,9 @@ from coconut.compiler.util import \
     fixto, \
     addspace, \
     condense, \
-    parenwrap
+    parenwrap, \
+    tokenlist, \
+    itemlist
 from coconut.compiler.header import \
     gethash, \
     minify, \
@@ -125,25 +127,6 @@ ParserElement.setDefaultWhitespaceChars(default_whitespace_chars)
 #-----------------------------------------------------------------------------------------------------------------------
 # HANDLERS:
 #-----------------------------------------------------------------------------------------------------------------------
-
-def list_handle(tokens):
-    """Properly formats lists."""
-    out = []
-    for x in range(0, len(tokens)-1, 2):
-        out.append(tokens[x] + tokens[x+1])
-    if len(tokens) % 2 == 1:
-        out.append(tokens[-1])
-    return " ".join(out)
-
-def tokenlist(item, sep, suppress=True):
-    """Creates a list of tokens matching the item."""
-    if suppress:
-        sep = sep.suppress()
-    return item + ZeroOrMore(sep + item) + Optional(sep)
-
-def itemlist(item, sep):
-    """Creates a list of an item."""
-    return attach(tokenlist(item, sep, suppress=False), list_handle)
 
 def add_paren_handle(tokens):
     """Adds parentheses."""
