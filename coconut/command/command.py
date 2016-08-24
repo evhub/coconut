@@ -93,89 +93,97 @@ class Command(object):
         self.moreprompt = logger.add_color(self.moreprompt)
 
     def cmd(self, args, interact=True):
-        """Parses command-line arguments."""
+        """Processes command-line arguments."""
+        self.exit_code = 0
         with self.handling_exceptions():
+            self.use_args(args, interact)
+        self.exit_on_error()
 
-            if args.recursion_limit[0] is not None:
-                sys.setrecursionlimit(args.recursion_limit[0])
-            logger.quiet, logger.verbose = args.quiet, args.verbose
-            if args.color[0] is not None:
-                self.set_color(args.color[0])
-            if args.version:
-                logger.show(version_long)
-            if args.tutorial:
-                self.launch_tutorial()
-            if args.documentation:
-                self.launch_documentation()
-            if args.display:
-                self.show = True
+    def exit_on_error(self):
+        """Exits if exit_code is abnormal."""
+        if self.exit_code:
+            sys.exit(self.exit_code)
 
-            self.setup(
-                target = args.target[0],
-                strict = args.strict,
-                minify = args.minify,
-                line_numbers = args.line_numbers,
-                keep_lines = args.keep_lines,
-                autopep8 = args.autopep8,
-                )
+    def use_args(self, args, interact=True):
+        """Handles command-line arguments."""
+        if args.recursion_limit[0] is not None:
+            sys.setrecursionlimit(args.recursion_limit[0])
+        logger.quiet, logger.verbose = args.quiet, args.verbose
+        if args.color[0] is not None:
+            self.set_color(args.color[0])
+        if args.version:
+            logger.show(version_long)
+        if args.tutorial:
+            self.launch_tutorial()
+        if args.documentation:
+            self.launch_documentation()
+        if args.display:
+            self.show = True
 
-            with self.running_jobs(args.jobs[0]):
+        self.setup(
+            target = args.target[0],
+            strict = args.strict,
+            minify = args.minify,
+            line_numbers = args.line_numbers,
+            keep_lines = args.keep_lines,
+            autopep8 = args.autopep8,
+            )
 
-                if args.source is not None:
-                    if args.run and os.path.isdir(args.source):
-                        raise CoconutException("source path must point to file not directory when --run is enabled")
-                    elif args.watch and os.path.isfile(args.source):
-                        raise CoconutException("source path must point to directory not file when --watch is enabled")
-                    if args.dest is None:
-                        if args.nowrite:
-                            dest = None # no dest
-                        else:
-                            dest = True # auto-generate dest
-                    elif args.nowrite:
-                        raise CoconutException("destination path cannot be given when --nowrite is enabled")
-                    elif os.path.isfile(args.dest):
-                        raise CoconutException("destination path must point to directory not file")
+        with self.running_jobs(args.jobs[0]):
+
+            if args.source is not None:
+                if args.run and os.path.isdir(args.source):
+                    raise CoconutException("source path must point to file not directory when --run is enabled")
+                elif args.watch and os.path.isfile(args.source):
+                    raise CoconutException("source path must point to directory not file when --watch is enabled")
+                if args.dest is None:
+                    if args.nowrite:
+                        dest = None # no dest
                     else:
-                        dest = args.dest
-                    if args.package and args.standalone:
-                        raise CoconutException("cannot compile as both --package and --standalone")
-                    elif args.package:
-                        package = True
-                    elif args.standalone:
-                        package = False
-                    else:
-                        package = None # auto-decide package
-                    self.compile_path(args.source, dest, package, args.run, args.force)
-                elif (args.run
-                      or args.nowrite
-                      or args.force
-                      or args.package
-                      or args.standalone
-                      or args.watch):
-                    raise CoconutException("a source file/folder must be specified when options that depend on the source are enabled")
+                        dest = True # auto-generate dest
+                elif args.nowrite:
+                    raise CoconutException("destination path cannot be given when --nowrite is enabled")
+                elif os.path.isfile(args.dest):
+                    raise CoconutException("destination path must point to directory not file")
+                else:
+                    dest = args.dest
+                if args.package and args.standalone:
+                    raise CoconutException("cannot compile as both --package and --standalone")
+                elif args.package:
+                    package = True
+                elif args.standalone:
+                    package = False
+                else:
+                    package = None # auto-decide package
+                self.compile_path(args.source, dest, package, args.run, args.force)
+            elif (args.run
+                  or args.nowrite
+                  or args.force
+                  or args.package
+                  or args.standalone
+                  or args.watch):
+                raise CoconutException("a source file/folder must be specified when options that depend on the source are enabled")
 
-            if args.code is not None:
-                self.execute(self.comp.parse_block(args.code[0]))
-            stdin = not sys.stdin.isatty() # check if input was piped in
-            if stdin:
-                self.execute(self.comp.parse_block(sys.stdin.read()))
-            if args.jupyter is not None:
-                self.start_jupyter(args.jupyter)
-            if args.interact or (interact and not (
-                    stdin
-                    or args.source
-                    or args.version
-                    or args.code
-                    or args.tutorial
-                    or args.documentation
-                    or args.watch
-                    or args.jupyter is not None
-                    )):
-                self.start_prompt()
-            if args.watch:
-                self.watch(args.source, dest, package, args.run, args.force)
-
-        sys.exit(self.exit_code)
+        if args.code is not None:
+            self.execute(self.comp.parse_block(args.code[0]))
+        stdin = not sys.stdin.isatty() # check if input was piped in
+        if stdin:
+            self.execute(self.comp.parse_block(sys.stdin.read()))
+        if args.jupyter is not None:
+            self.start_jupyter(args.jupyter)
+        if args.interact or (interact and not (
+                stdin
+                or args.source
+                or args.version
+                or args.code
+                or args.tutorial
+                or args.documentation
+                or args.watch
+                or args.jupyter is not None
+                )):
+            self.start_prompt()
+        if args.watch:
+            self.watch(args.source, dest, package, args.run, args.force)
 
     @contextmanager
     def handling_exceptions(self):
@@ -304,8 +312,7 @@ class Command(object):
                     yield
             finally:
                 self.executor = None
-                if self.exit_code:
-                    sys.exit(self.exit_code)
+                self.exit_on_error()
         elif jobs != 0:
             raise CoconutException("the number of processes passed to --jobs must be >= 0")
 
