@@ -59,7 +59,7 @@ from coconut.command.cli import arguments
 
 class Command(object):
     """The Coconut command-line interface."""
-    proc = None # current .compiler.Compiler
+    comp = None # current .compiler.Compiler
     show = False # corresponds to --display flag
     running = False # whether the interpreter is currently active
     runner = None # the current Runner
@@ -76,10 +76,10 @@ class Command(object):
 
     def setup(self, *args, **kwargs):
         """Sets parameters for the compiler."""
-        if self.proc is None:
-            self.proc = Compiler(*args, **kwargs)
+        if self.comp is None:
+            self.comp = Compiler(*args, **kwargs)
         else:
-            self.proc.setup(*args, **kwargs)
+            self.comp.setup(*args, **kwargs)
 
     def set_color(self, color):
         """Sets the color."""
@@ -150,10 +150,10 @@ class Command(object):
                     raise CoconutException("a source file/folder must be specified when options that depend on the source are enabled")
 
             if args.code is not None:
-                self.execute(self.proc.parse_block(args.code[0]))
+                self.execute(self.comp.parse_block(args.code[0]))
             stdin = not sys.stdin.isatty() # check if input was piped in
             if stdin:
-                self.execute(self.proc.parse_block(sys.stdin.read()))
+                self.execute(self.comp.parse_block(sys.stdin.read()))
             if args.jupyter is not None:
                 self.start_jupyter(args.jupyter)
             if args.interact or (interact and not (
@@ -269,14 +269,14 @@ class Command(object):
                     print(compiled)
 
             with logger.in_path(codepath):
-                self.submit_proc_job(callback, compile_method, code)
+                self.submit_comp_job(callback, compile_method, code)
 
-    def submit_proc_job(self, callback, method, *args, **kwargs):
-        """Submits a job on self.proc to be run in parallel."""
+    def submit_comp_job(self, callback, method, *args, **kwargs):
+        """Submits a job on self.comp to be run in parallel."""
         if self.executor is None:
-            callback(getattr(self.proc, method)(*args, **kwargs))
+            callback(getattr(self.comp, method)(*args, **kwargs))
         else:
-            future = self.executor.submit(multiprocess_wrapper(self.proc, method), *args, **kwargs)
+            future = self.executor.submit(multiprocess_wrapper(self.comp, method), *args, **kwargs)
             def callback_wrapper(completed_future):
                 try:
                     callback(completed_future.result())
@@ -299,7 +299,7 @@ class Command(object):
         """Sets up a package directory."""
         filepath = os.path.join(fixpath(dirpath), "__coconut__.py")
         with openfile(filepath, "w") as opened:
-            writefile(opened, self.proc.headers("package"))
+            writefile(opened, self.comp.headers("package"))
 
     def hashashof(self, destpath, code, package):
         """Determines if a file has the hash of the code."""
@@ -307,7 +307,7 @@ class Command(object):
             with openfile(destpath, "r") as opened:
                 compiled = readfile(opened)
                 hashash = gethash(compiled)
-                if hashash is not None and hashash == self.proc.genhash(package, code):
+                if hashash is not None and hashash == self.comp.genhash(package, code):
                     return compiled
         return None
 
@@ -349,9 +349,9 @@ class Command(object):
     def handle(self, code):
         """Compiles Coconut interpreter input."""
         compiled = None
-        if not self.proc.should_indent(code):
+        if not self.comp.should_indent(code):
             try:
-                compiled = self.proc.parse_block(code)
+                compiled = self.comp.parse_block(code)
             except CoconutException:
                 pass
         if compiled is None:
@@ -364,7 +364,7 @@ class Command(object):
                 else:
                     break
             try:
-                compiled = self.proc.parse_block(code)
+                compiled = self.comp.parse_block(code)
             except CoconutException:
                 logger.print_exc()
         return compiled
@@ -393,10 +393,10 @@ class Command(object):
         """Starts the runner."""
         sys.path.insert(0, os.getcwd())
         if isolate:
-            proc = None
+            comp = None
         else:
-            proc = self.proc
-        self.runner = Runner(proc, self.exit_runner, path)
+            comp = self.comp
+        self.runner = Runner(comp, self.exit_runner, path)
 
     def launch_tutorial(self):
         """Opens the Coconut tutorial."""
@@ -437,7 +437,7 @@ class Command(object):
                 except subprocess.CalledProcessError:
                     errmsg = 'unable to install Jupyter kernel (failed command "'+" ".join(install_args)+'")'
                     if args:
-                        self.proc.warn(CoconutWarning(errmsg))
+                        self.comp.warn(CoconutWarning(errmsg))
                     else:
                         raise CoconutException(errmsg)
 

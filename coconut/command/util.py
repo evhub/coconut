@@ -80,14 +80,14 @@ def try_eval(code, in_vars):
 
 class Runner(object):
     """Compiled Python executor."""
-    def __init__(self, proc=None, exit=None, path=None):
+    def __init__(self, comp=None, exit=None, path=None):
         """Creates the executor."""
         self.exit = exit
         self.vars = {"__name__": "__main__"}
         if path is not None:
             self.vars["__file__"] = fixpath(path)
-        if proc is not None:
-            self.run(proc.headers("code"))
+        if comp is not None:
+            self.run(comp.headers("code"))
             self.fixpickle()
 
     def fixpickle(self):
