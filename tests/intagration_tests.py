@@ -1,27 +1,49 @@
+#!/usr/bin/env python
+"""
+Authors: Fred Buchanan
+License: Apache 2.0
+Description: Intgation tests for coconut
+"""
+
+from __future__ import print_function, absolute_import, unicode_literals, division
+
 import unittest
 import sys
+import os
 import subprocess
 import shutil
 
+
 class OldCocoTest(unittest.TestCase):
 
+
     def compile_extras(self):
-        subprocess.check_call("coconut ./src/extras.coco ./bin",shell=True)
+        src = os.path.join(self.src,"extras.coco")
+        subprocess.check_call(["coconut",src,self.bin])
 
     def compile_runner(self):
-        subprocess.check_call("coconut ./src/src/runner.coco ./bin",shell=True)
+        src = os.path.join(self.src,"src","runner.coco")
+        subprocess.check_call(["coconut",src,self.bin])
 
     def compile_agnostic(self):
-        subprocess.check_call("coconut ./src/src/agnostic ./bin/cocotest",shell=True)
+        src = os.path.join(self.src,"src","agnostic")
+        bin = os.path.join(self.bin,"cocotest")
+        subprocess.check_call(["coconut",src,bin])
 
     def compile_2(self):
-        subprocess.check_call("coconut --target 2 ./src/src/python2 ./bin/cocotest",shell=True)
+        src = os.path.join(self.src,"src","python2")
+        bin = os.path.join(self.bin,"cocotest")
+        subprocess.check_call(["coconut","--target","2",src,bin])
 
     def compile_3(self):
-        subprocess.check_call("coconut --target 3 ./src/src/python3 ./bin/cocotest",shell=True)
+        src = os.path.join(self.src,"src","python3")
+        bin = os.path.join(self.bin,"cocotest")
+        subprocess.check_call(["coconut","--target","3",src,bin])
 
     def compile_35(self):
-        subprocess.check_call("coconut --target 35 ./src/src/python35 ./bin/cocotest",shell=True)
+        src = os.path.join(self.src,"src","python35")
+        bin = os.path.join(self.bin,"cocotest")
+        subprocess.check_call(["coconut","--target","35",src,bin])
 
 
     def compile_source(self):
@@ -37,9 +59,12 @@ class OldCocoTest(unittest.TestCase):
             self.compile_2()
 
     def test_compile_and_run_src(self):
+        self.src = os.path.join(os.path.abspath(os.path.dirname(__file__)),"src")
+        self.bin = os.path.join(os.path.abspath(os.path.dirname(__file__)),"bin")
+
         self.compile_source()
-        subprocess.check_call("python ./bin/runner.py")
-        shutil.rmtree("./bin")
+        subprocess.check_call(["python",os.path.join(self.bin,"runner.py")])
+        shutil.rmtree(self.bin)
 
 if __name__ == '__main__':
     unittest.main()
