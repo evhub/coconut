@@ -318,6 +318,21 @@ def else_handle(tokens):
 
 class Matcher(object):
     """Pattern-matching processor."""
+    matchers = {
+        "dict": lambda self: self.match_dict,
+        "iter": lambda self: self.match_iterator,
+        "series": lambda self: self.match_sequence,
+        "rseries": lambda self: self.match_rsequence,
+        "mseries": lambda self: self.match_msequence,
+        "const": lambda self: self.match_const,
+        "var": lambda self: self.match_var,
+        "set": lambda self: self.match_set,
+        "data": lambda self: self.match_data,
+        "paren": lambda self: self.match_paren,
+        "trailer": lambda self: self.match_trailer,
+        "and": lambda self: self.match_and,
+        "or": lambda self: self.match_or,
+    }
     __slots__ = (
         "position",
         "iter_index",
@@ -585,21 +600,6 @@ class Matcher(object):
             self.duplicate().match(original[x], item)
         self.match(original[0], item)
 
-    matchers = {
-        "dict": lambda self: self.match_dict,
-        "iter": lambda self: self.match_iterator,
-        "series": lambda self: self.match_sequence,
-        "rseries": lambda self: self.match_rsequence,
-        "mseries": lambda self: self.match_msequence,
-        "const": lambda self: self.match_const,
-        "var": lambda self: self.match_var,
-        "set": lambda self: self.match_set,
-        "data": lambda self: self.match_data,
-        "paren": lambda self: self.match_paren,
-        "trailer": lambda self: self.match_trailer,
-        "and": lambda self: self.match_and,
-        "or": lambda self: self.match_or
-    }
     def match(self, original, item):
         """Performs pattern-matching processing."""
         for flag, handler in self.matchers.items():
@@ -785,30 +785,30 @@ def namelist_handle(tokens):
 
 class Compiler(object):
     """The Coconut compiler."""
+    preprocs = [
+        lambda self: self.prepare,
+        lambda self: self.str_proc,
+        lambda self: self.passthrough_proc,
+        lambda self: self.ind_proc,
+    ]
+    postprocs = [
+        lambda self: self.stmt_lambda_proc,
+        lambda self: self.reind_proc,
+        lambda self: self.repl_proc,
+        lambda self: self.header_proc,
+        lambda self: self.polish,
+        lambda self: self.autopep8_proc,
+    ]
+    replprocs = [
+        lambda self: self.endline_repl,
+        lambda self: self.passthrough_repl,
+        lambda self: self.str_repl,
+    ]
     autopep8_args = None
 
     def __init__(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False):
         """Creates a new compiler with the given parsing parameters."""
         self.setup(target, strict, minify, line_numbers, keep_lines)
-        self.preprocs = [
-            self.prepare,
-            self.str_proc,
-            self.passthrough_proc,
-            self.ind_proc
-        ]
-        self.postprocs = [
-            self.stmt_lambda_proc,
-            self.reind_proc,
-            self.repl_proc,
-            self.header_proc,
-            self.polish,
-            self.autopep8_proc
-        ]
-        self.replprocs = [
-            self.endline_repl,
-            self.passthrough_repl,
-            self.str_repl
-        ]
 
     def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False):
         """Initializes parsing parameters."""
@@ -977,23 +977,24 @@ class Compiler(object):
         except CoconutWarning:
             logger.print_exc()
 
+    def apply_procs(self, procs, kwargs, inputstring):
+        """Applies processors to inputstring."""
+        for get_proc in procs:
+            proc = get_proc(self)
+            inputstring = proc(inputstring, **kwargs)
+            logger.log_tag(proc.__name__, inputstring)
+        return inputstring
+
     def pre(self, inputstring, **kwargs):
         """Performs pre-processing."""
-        out = str(inputstring)
-        for proc in self.preprocs:
-            out = proc(out, **kwargs)
-            logger.log_tag(proc.__name__, out)
+        out = self.apply_procs(self.preprocs, kwargs, str(inputstring))
         logger.log_tag("skips", list(sorted(self.skips)))
         return out
 
     def post(self, tokens, **kwargs):
         """Performs post-processing."""
         if len(tokens) == 1:
-            out = tokens[0]
-            for proc in self.postprocs:
-                out = proc(out, **kwargs)
-                logger.log_tag(proc.__name__, out)
-            return out
+            return self.apply_procs(self.postprocs, kwargs, tokens[0])
         else:
             raise CoconutException("multiple tokens leftover", tokens)
 
@@ -1456,10 +1457,7 @@ class Compiler(object):
 
     def repl_proc(self, inputstring, **kwargs):
         """Processes using replprocs."""
-        for repl in self.replprocs:
-            inputstring = repl(inputstring, **kwargs)
-            logger.log_tag(repl.__name__, inputstring)
-        return inputstring
+        return self.apply_procs(self.replprocs, kwargs, inputstring)
 
     def header_proc(self, inputstring, header="file", initial="initial", usehash=None, **kwargs):
         """Adds the header."""
