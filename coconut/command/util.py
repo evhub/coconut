@@ -116,15 +116,15 @@ class Runner(object):
                 self.exit()
         return None
 
-class set_logger_then_call(object):
-    """Wrapper that sets logger then calls a function.
-    Should be used to wrap the first function called in a new process."""
+class multiprocess_wrapper(object):
+    """Wrapper that sets logger then calls a method.
+    Should be used to wrap a method called in a new process."""
 
-    def __init__(self, func):
-        """Creates new function that first sets logger then calls old function."""
-        self.logger, self.func = logger, func
+    def __init__(self, base, method):
+        """Creates new object that first sets logger then calls the method."""
+        self.logger, self.base, self.method = logger, base, method
 
     def __call__(self, *args, **kwargs):
-        """Sets logger then calls the function."""
+        """Sets logger then calls the method."""
         logger.copy_from(self.logger)
-        return self.func(*args, **kwargs)
+        return getattr(self.base, self.method)(*args, **kwargs)

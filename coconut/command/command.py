@@ -50,7 +50,7 @@ from coconut.command.util import \
     rem_encoding, \
     try_eval, \
     Runner, \
-    set_logger_then_call
+    multiprocess_wrapper
 from coconut.command.cli import arguments
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -249,9 +249,9 @@ class Command(object):
         else:
 
             if package is True:
-                compile_func = self.proc.parse_module
+                compile_method = "parse_module"
             elif package is False:
-                compile_func = self.proc.parse_file
+                compile_method = "parse_file"
             else:
                 raise CoconutException("invalid value for package", package)
 
@@ -269,15 +269,14 @@ class Command(object):
                     print(compiled)
 
             with logger.in_path(codepath):
-                self.submit_job(callback, compile_func, code)
+                self.submit_proc_job(callback, compile_method, code)
 
-    def submit_job(self, callback, func, *args):
-        """Submits a job to be run in parallel."""
+    def submit_proc_job(self, callback, method, *args, **kwargs):
+        """Submits a job on self.proc to be run in parallel."""
         if self.executor is None:
-            callback(func(*args))
+            callback(getattr(self.proc, method)(*args, **kwargs))
         else:
-            func_wrapper = set_logger_then_call(func)
-            future = self.executor.submit(func_wrapper, *args)
+            future = self.executor.submit(multiprocess_wrapper(self.proc, method), *args, **kwargs)
             def callback_wrapper(completed_future):
                 try:
                     callback(completed_future.result())
@@ -290,16 +289,11 @@ class Command(object):
     def running_jobs(self, jobs):
         """Initialize multiprocessing."""
         if jobs is None or jobs >= 1:
-            self.executor = ProcessPoolExecutor(jobs)
-        elif jobs == 0:
-            return
-        else:
-            raise CoconutException("the number of processes passed to --jobs must be >= 0")
-        try:
-            yield
-        finally:
-            self.executor.shutdown()
+            with ProcessPoolExecutor(jobs) as self.executor:
+                yield
             self.executor = None
+        elif jobs != 0:
+            raise CoconutException("the number of processes passed to --jobs must be >= 0")
 
     def create_package(self, dirpath):
         """Sets up a package directory."""
