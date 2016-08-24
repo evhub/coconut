@@ -64,6 +64,10 @@ class Logger(object):
     color_code = None
     path = None
 
+    def copy_from(self, other):
+        """Copy other onto self."""
+        self.verbose, self.quiet, self.color_code, self.path = other.verbose, other.quiet, other.color_code, other.path
+
     def set_color(self, color=None):
         """Set output color."""
         if color:

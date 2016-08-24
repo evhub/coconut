@@ -804,13 +804,12 @@ class Compiler(object):
         lambda self: self.passthrough_repl,
         lambda self: self.str_repl,
     ]
-    autopep8_args = None
 
-    def __init__(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False):
+    def __init__(self, *args, **kwargs):
         """Creates a new compiler with the given parsing parameters."""
-        self.setup(target, strict, minify, line_numbers, keep_lines)
+        self.setup(*args, **kwargs)
 
-    def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False):
+    def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False, autopep8=None):
         """Initializes parsing parameters."""
         if target is None:
             target = ""
@@ -823,13 +822,13 @@ class Compiler(object):
                 + '" (supported targets are "' + '", "'.join(specific_targets) + '", or leave blank for universal)')
         self.target, self.strict, self.minify, self.line_numbers, self.keep_lines = target, strict, minify, line_numbers, keep_lines
         self.tablen = 1 if self.minify else tabideal
+        if autopep8 is not None:
+            autopep8 = tuple(autopep8)
+        self.autopep8_args = autopep8
 
-    def autopep8(self, args=()):
-        """Enables autopep8 integration."""
-        if args is None:
-            self.autopep8_args = None
-        else:
-            self.autopep8_args = tuple(args)
+    def __reduce__(self):
+        """Return pickling information."""
+        return (Compiler, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.autopep8_args))
 
     def reset(self):
         """Resets references."""

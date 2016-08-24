@@ -1747,7 +1747,7 @@ Each _mode_ has two components: what parser it uses, and what header it prepends
 
 #### `setup`
 
-**coconut.convenience.setup**(_target, strict, minify, line\_numbers, keep\_lines, quiet_**)**
+**coconut.convenience.setup**(_target, strict, minify, line\_numbers, keep\_lines, autopep8_**)**
 
 `setup` can be used to pass command line flags for use in `parse`. The possible values for each flag argument are:
 
@@ -1756,7 +1756,7 @@ Each _mode_ has two components: what parser it uses, and what header it prepends
 - _minify_: `False` (default) or `True`
 - _line\_numbers_: `False` (default) or `True`
 - _keep\_lines_: `False` (default) or `True`
-- _quiet_: `False` (default) or `True`
+- _autopep8_: `None` (default) or arguments to `autopep8`
 
 #### `cmd`
 
