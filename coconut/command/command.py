@@ -23,7 +23,11 @@ import os
 import time
 import subprocess
 from contextlib import contextmanager
+
 from concurrent.futures import ProcessPoolExecutor
+if PY2:
+    import logging as _logging
+    _logging.Logger("concurrent.futures").addHandler(_logging.NullHandler)
 
 from coconut.compiler import Compiler, gethash
 from coconut.exceptions import CoconutException
@@ -65,6 +69,7 @@ class Command(object):
     runner = None # the current Runner
     target = None # corresponds to --target flag
     executor = None # runs --jobs
+    exit_code = 0 # exit status to return
 
     def __init__(self, prompt=default_prompt, moreprompt=default_moreprompt):
         """Creates the CLI."""
@@ -89,7 +94,8 @@ class Command(object):
 
     def cmd(self, args, interact=True):
         """Parses command-line arguments."""
-        try:
+        with self.handling_exceptions():
+
             if args.recursion_limit[0] is not None:
                 sys.setrecursionlimit(args.recursion_limit[0])
             logger.quiet, logger.verbose = args.quiet, args.verbose
@@ -169,9 +175,16 @@ class Command(object):
             if args.watch:
                 self.watch(args.source, dest, package, args.run, args.force)
 
+        sys.exit(self.exit_code)
+
+    @contextmanager
+    def handling_exceptions(self):
+        """Handles CoconutExceptions."""
+        try:
+            yield
         except CoconutException:
             logger.print_exc()
-            sys.exit(1)
+            self.exit_code = 1
 
     def compile_path(self, path, write=True, package=None, run=False, force=False):
         """Compiles a path."""
@@ -273,24 +286,26 @@ class Command(object):
     def submit_comp_job(self, callback, method, *args, **kwargs):
         """Submits a job on self.comp to be run in parallel."""
         if self.executor is None:
-            callback(getattr(self.comp, method)(*args, **kwargs))
+            with self.handling_exceptions():
+                callback(getattr(self.comp, method)(*args, **kwargs))
         else:
             future = self.executor.submit(multiprocess_wrapper(self.comp, method), *args, **kwargs)
             def callback_wrapper(completed_future):
-                try:
+                with self.handling_exceptions():
                     callback(completed_future.result())
-                except CoconutException:
-                    logger.print_exc()
-                    sys.exit(1)
             future.add_done_callback(callback_wrapper)
 
     @contextmanager
     def running_jobs(self, jobs):
         """Initialize multiprocessing."""
         if jobs is None or jobs >= 1:
-            with ProcessPoolExecutor(jobs) as self.executor:
-                yield
-            self.executor = None
+            try:
+                with ProcessPoolExecutor(jobs) as self.executor:
+                    yield
+            finally:
+                self.executor = None
+                if self.exit_code:
+                    sys.exit(self.exit_code)
         elif jobs != 0:
             raise CoconutException("the number of processes passed to --jobs must be >= 0")
 
@@ -337,7 +352,7 @@ class Command(object):
         while self.running:
             code = self.prompt_with(self.prompt)
             if code:
-                compiled = self.handle(code)
+                compiled = self.handle_input(code)
                 if compiled:
                     self.execute(compiled, error=False, print_expr=True)
 
@@ -345,7 +360,7 @@ class Command(object):
         """Exits the interpreter."""
         self.running = False
 
-    def handle(self, code):
+    def handle_input(self, code):
         """Compiles Coconut interpreter input."""
         compiled = None
         if not self.comp.should_indent(code):

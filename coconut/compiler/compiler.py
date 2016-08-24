@@ -921,7 +921,7 @@ class Compiler(object):
         if self.strict:
             raise self.make_err(CoconutStyleError, *args, **kwargs)
         else:
-            self.warn(self.make_err(CoconutWarning, *args, **kwargs))
+            logger.warn(self.make_err(CoconutWarning, *args, **kwargs))
 
     def add_ref(self, ref):
         """Adds a reference and returns the identifier."""
@@ -968,13 +968,6 @@ class Compiler(object):
     def wrap_line_number(self, ln):
         """Wraps a line number."""
         return "#" + self.add_ref(ln) + lnwrapper
-
-    def warn(self, warning):
-        """Displays a warning."""
-        try:
-            raise warning
-        except CoconutWarning:
-            logger.print_exc()
 
     def apply_procs(self, procs, kwargs, inputstring):
         """Applies processors to inputstring."""
