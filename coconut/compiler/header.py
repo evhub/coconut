@@ -296,7 +296,7 @@ class count(object):'''
         return (self.__class__, (self._start, self._step))
     def __copy__(self):
         return self.__class__(self._start, self._step)
-def recursive(func):
+def tail_recursive(func):
     """Decorates a function by optimizing it for tail recursion."""
     state = [True, None]  # state = [is_top_level, (args, kwargs)]
     recurse = object()
@@ -319,6 +319,7 @@ def recursive(func):
             state[1] = args, kwargs
             return recurse
     return recursive_func
+recursive = tail_recursive
 def recursive_iterator(func):
     """Decorates a function by optimizing it for iterator recursion."""
     tee_store = {}
