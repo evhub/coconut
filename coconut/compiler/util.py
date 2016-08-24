@@ -83,3 +83,13 @@ def parenwrap(lparen, item, rparen, tokens=False):
     if not tokens:
         wrap = condense(wrap)
     return wrap
+
+def tokenlist(item, sep, suppress=True):
+    """Creates a list of tokens matching the item."""
+    if suppress:
+        sep = sep.suppress()
+    return item + ZeroOrMore(sep + item) + Optional(sep)
+
+def itemlist(item, sep):
+    """Creates a list of an item."""
+    return condense(item + ZeroOrMore(addspace(sep + item)) + Optional(sep))
