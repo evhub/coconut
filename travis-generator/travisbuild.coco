@@ -15,9 +15,13 @@ py35_versions = ["3.5"]
 def cocotravis(version):
 
     install_cmds = [
-        "pip install autopep8",
-        "pip install ."
+        "pip install .",
+        "pip install autopep8"
     ]
+
+    if version in py2_versions:
+        install_cmds += ["pip install futures"]
+
     script_commands = [
         "python -m unittest tests"
     ]
