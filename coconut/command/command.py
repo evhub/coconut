@@ -95,6 +95,14 @@ class Command(object):
             logger.quiet, logger.verbose = args.quiet, args.verbose
             if args.color[0] is not None:
                 self.set_color(args.color[0])
+            if args.version:
+                logger.show(version_long)
+            if args.tutorial:
+                self.launch_tutorial()
+            if args.documentation:
+                self.launch_documentation()
+            if args.display:
+                self.show = True
 
             self.setup(
                 target = args.target[0],
@@ -104,15 +112,6 @@ class Command(object):
                 keep_lines = args.keep_lines,
                 autopep8 = args.autopep8,
                 )
-
-            if args.version:
-                logger.show(version_long)
-            if args.tutorial:
-                self.launch_tutorial()
-            if args.documentation:
-                self.launch_documentation()
-            if args.display:
-                self.show = True
 
             with self.running_jobs(args.jobs[0]):
 
