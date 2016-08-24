@@ -27,7 +27,7 @@ from contextlib import contextmanager
 from concurrent.futures import ProcessPoolExecutor
 if PY2:
     import logging as _logging
-    _logging.Logger("concurrent.futures").addHandler(_logging.NullHandler)
+    _logging.Logger("concurrent.futures").addHandler(_logging.handlers.NullHandler)
 
 from coconut.compiler import Compiler, gethash
 from coconut.exceptions import CoconutException
