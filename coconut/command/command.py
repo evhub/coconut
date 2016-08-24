@@ -49,7 +49,8 @@ from coconut.command.util import \
     showpath, \
     rem_encoding, \
     try_eval, \
-    Runner
+    Runner, \
+    set_logger_then_call
 from coconut.command.cli import arguments
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -73,19 +74,12 @@ class Command(object):
         """Processes command-line arguments."""
         self.cmd(arguments.parse_args())
 
-    def setup(self,
-            target=None,
-            strict=False,
-            minify=False,
-            line_numbers=False,
-            keep_lines=False,
-            quiet=False):
+    def setup(self, *args, **kwargs):
         """Sets parameters for the compiler."""
-        logger.quiet = quiet
         if self.proc is None:
-            self.proc = Compiler(target, strict, minify, line_numbers, keep_lines)
+            self.proc = Compiler(*args, **kwargs)
         else:
-            self.proc.setup(target, strict, minify, line_numbers, keep_lines)
+            self.proc.setup(*args, **kwargs)
 
     def set_color(self, color):
         """Sets the color."""
@@ -98,18 +92,19 @@ class Command(object):
         try:
             if args.recursion_limit[0] is not None:
                 sys.setrecursionlimit(args.recursion_limit[0])
+            logger.quiet, logger.verbose = args.quiet, args.verbose
             if args.color[0] is not None:
                 self.set_color(args.color[0])
 
             self.setup(
-                args.target[0],
-                args.strict,
-                args.minify,
-                args.line_numbers,
-                args.keep_lines,
-                args.quiet)
-            if args.verbose:
-                logger.verbose = True
+                target = args.target[0],
+                strict = args.strict,
+                minify = args.minify,
+                line_numbers = args.line_numbers,
+                keep_lines = args.keep_lines,
+                autopep8 = args.autopep8,
+                )
+
             if args.version:
                 logger.show(version_long)
             if args.tutorial:
@@ -118,8 +113,6 @@ class Command(object):
                 self.launch_documentation()
             if args.display:
                 self.show = True
-            if args.autopep8 is not None:
-                self.proc.autopep8(args.autopep8)
 
             with self.running_jobs(args.jobs[0]):
 
@@ -283,7 +276,8 @@ class Command(object):
         if self.executor is None:
             callback(func(*args))
         else:
-            future = self.executor.submit(func, *args)
+            func_wrapper = set_logger_then_call(func)
+            future = self.executor.submit(func_wrapper, *args)
             def callback_wrapper(completed_future):
                 try:
                     callback(completed_future.result())

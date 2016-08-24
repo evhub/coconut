@@ -115,3 +115,16 @@ class Runner(object):
             else:
                 self.exit()
         return None
+
+class set_logger_then_call(object):
+    """Wrapper that sets logger then calls a function.
+    Should be used to wrap the first function called in a new process."""
+
+    def __init__(self, func):
+        """Creates new function that first sets logger then calls old function."""
+        self.logger, self.func = logger, func
+
+    def __call__(self, *args, **kwargs):
+        """Sets logger then calls the function."""
+        logger.copy_from(self.logger)
+        return self.func(*args, **kwargs)
