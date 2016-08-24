@@ -122,7 +122,7 @@ class multiprocess_wrapper(object):
 
     def __init__(self, base, method):
         """Creates new multiprocessable method."""
-        self.recursion, self.logging, self.base, self.method = sys.getrecursionlimit(), logging, base, method
+        self.recursion, self.logger, self.base, self.method = sys.getrecursionlimit(), logger, base, method
 
     def __call__(self, *args, **kwargs):
         """Sets up new process then calls the method."""
