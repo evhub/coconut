@@ -132,7 +132,7 @@ class OldCocoTest(unittest.TestCase):
         
     def test_extra(self):
         self._compile_extras()
-        call(["python",os.path.join(self.bin,"extras.py")])
+        #call(["python",os.path.join(self.bin,"extras.py")])
         self._clean()
 
 if __name__ == '__main__':
