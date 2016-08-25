@@ -62,7 +62,7 @@
     1. [`count`](#count)
     1. [`map` and `zip`](#map-and-zip)
     1. [`datamaker`](#datamaker)
-    1. [`recursive`](#recursive)
+    1. [`tail_recursive`](#tail_recursive)
     1. [`recursive_iterator`](#recursive_iterator)
     1. [`parallel_map`](#parallel_map)
     1. [`concurrent_map`](#concurrent_map)
@@ -1537,20 +1537,20 @@ class trilen(collections.namedtuple("trilen", "h")):
         return super(cls, cls).__new__(cls, (a**2 + b**2)**0.5)
 ```
 
-### `recursive`
+### `tail_recursive`
 
-Coconut provides a `recursive` decorator to perform tail recursion optimization on a function written in a tail-recursive style. To use `recursive` on a function, it must meet the following criteria:
+Coconut provides a `tail_recursive` decorator to perform tail recursion optimization on a function written in a tail-recursive style. To use `tail_recursive` on a function, it must meet the following criteria:
 
 1. your function calls itself, and
 2. in all cases where your function calls itself, it returns the result of that call without modifying it (synonymous with the function being written in a tail-recursive style).
 
-If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for `recursive`, or the corresponding criteria for [`recursive_iterator`](#recursive-iterator), since either decorator should prevent such errors.
+If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for `tail_recursive`, or the corresponding criteria for [`recursive_iterator`](#recursive-iterator), since either decorator should prevent such errors.
 
 ##### Example
 
 ###### Coconut
 ```coconut
-@recursive
+@tail_recursive
 def factorial(n, acc=1):
     case n:
         match 0:
@@ -1574,7 +1574,7 @@ Coconut provides a `recursive_iterator` decorator that provides significant opti
 3. all arguments passed to your function are hashable (synonymous with the function being memoizable), and
 4. your function calls itself multiple times with the same arguments.
 
-If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for `recursive_iterator`, or the corresponding criteria for [`recursive`](#recursive), since either decorator should prevent such errors.
+If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for `recursive_iterator`, or the corresponding criteria for [`tail_recursive`](#tail-recursive), since either decorator should prevent such errors.
 
 Furthermore, `recursive_iterator` also allows the resolution of a [nasty segmentation fault in Python's iterator logic that has never been fixed](http://bugs.python.org/issue14010). Specifically, instead of writing
 ```coconut
@@ -1696,9 +1696,9 @@ All Coconut built-ins are accessible from `coconut.__coconut__`. The recommended
 
 ###### Python
 ```coconut_python
-from coconut.__coconut__ import recursive
+from coconut.__coconut__ import tail_recursive
 
-@recursive
+@tail_recursive
 def recursive_func(args):
     ...
 ```

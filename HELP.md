@@ -275,9 +275,9 @@ First, copy and paste! While this destructuring assignment equivalent should wor
 
 It will be helpful to, as we continue to use Coconut's pattern-matching and destructuring assignment statements in further examples, think _assignment_ whenever you see the keyword `match`.
 
-Up until now, for the recursive method, we have only dealt with pattern-matching, but there's actually another way that Coconut allows us to improve our `factorial` function: by writing it in a tail-recursive style, where it directly returns all calls to itself, and using Coconut's `recursive` decorator, like so:
+Up until now, for the recursive method, we have only dealt with pattern-matching, but there's actually another way that Coconut allows us to improve our `factorial` function: by writing it in a tail-recursive style, where it directly returns all calls to itself, and using Coconut's `tail_recursive` decorator, like so:
 ```coconut
-@recursive
+@tail_recursive
 def factorial(n, acc=1):
     """Compute n! where n is an integer >= 0."""
     case n:
@@ -295,7 +295,7 @@ def factorial(n, acc=1):
 3 |> factorial |> print # 6
 ```
 
-Copy, paste! This version is exactly equivalent to the original version, with the exception that it will never raise a `MaximumRecursionDepthError`, because Coconut's `recursive` decorator will optimize away the tail recursion into a `while` loop.
+Copy, paste! This version is exactly equivalent to the original version, with the exception that it will never raise a `MaximumRecursionDepthError`, because Coconut's `tail_recursive` decorator will optimize away the tail recursion into a `while` loop.
 
 ### Iterative Method
 
@@ -411,7 +411,7 @@ In the second case study, we will be implementing the [quick sort algorithm](htt
 
 ### Sorting a Sequence
 
-First up is `quick_sort` for lists. We're going to use a recursive `addpattern`-based approach to tackle this problem—a similar approach to the very last `factorial` function we wrote. That's because since we're not going to write `quick_sort` in a tail-recursive style, we can't use `recursive`, and thus there's no reason to write the whole thing as one function and we might as well use `addpattern` to reduce the amount of indentation we're going to need. Without further ado, here's our implementation of `quick_sort` for lists:
+First up is `quick_sort` for lists. We're going to use a recursive `addpattern`-based approach to tackle this problem—a similar approach to the very last `factorial` function we wrote. That's because since we're not going to write `quick_sort` in a tail-recursive style, we can't use `tail_recursive`, and thus there's no reason to write the whole thing as one function and we might as well use `addpattern` to reduce the amount of indentation we're going to need. Without further ado, here's our implementation of `quick_sort` for lists:
 ```coconut
 def quick_sort([]):
     return []

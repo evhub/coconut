@@ -319,7 +319,6 @@ def tail_recursive(func):
             state[1] = args, kwargs
             return recurse
     return recursive_func
-recursive = tail_recursive
 def recursive_iterator(func):
     """Decorates a function by optimizing it for iterator recursion."""
     tee_store = {}
@@ -361,7 +360,7 @@ def datamaker(data_type):
 def consume(iterable, keep_last=0):
     """Fully exhaust iterable and return the last keep_last elements."""
     return _coconut.collections.deque(iterable, maxlen=keep_last)  # fastest way to exhaust an iterator
-MatchError, map, reduce, takewhile, dropwhile, tee = _coconut_MatchError, _coconut_map, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile, _coconut_tee
+MatchError, map, reduce, takewhile, dropwhile, tee, recursive = _coconut_MatchError, _coconut_map, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile, _coconut_tee, tail_recursive
 '''
         else:
             raise CoconutException("invalid header type", which)
