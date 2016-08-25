@@ -17,7 +17,12 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *
 
-from pyparsing import replaceWith, lineno, col
+from pyparsing import \
+    replaceWith, \
+    lineno, \
+    col, \
+    ZeroOrMore, \
+    Optional
 
 from coconut.constants import ups, downs
 from coconut.exceptions import CoconutException
