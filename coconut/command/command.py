@@ -25,9 +25,6 @@ import subprocess
 from contextlib import contextmanager
 
 from concurrent.futures import ProcessPoolExecutor
-if (2, 7) <= sys.version_info() < (3,):
-    import logging as _logging
-    _logging.Logger("concurrent.futures").addHandler(_logging.handlers.NullHandler)
 
 from coconut.compiler import Compiler, gethash
 from coconut.exceptions import CoconutException
