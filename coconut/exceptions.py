@@ -44,37 +44,48 @@ def clean(inputline, strip=True):
 
 class CoconutException(Exception):
     """Base Coconut exception."""
-    def __init__(self, value, item=None):
+    def __init__(self, message, item=None):
         """Creates the Coconut exception."""
-        self.value = value
+        self.message = message
         if item is not None:
-            self.value += ": " + ascii(item)
-    def __repr__(self):
-        """Displays the Coconut exception."""
-        return self.value
+            self.message += ": " + ascii(item)
+
+    @property
+    def args(self):
+        """Get the arguments to the exception."""
+        return (self.message,)
+
+    def __reduce__(self):
+        """Get pickling information."""
+        return (self.__class__, self.args)
+
     def __str__(self):
-        """Wraps __repr__."""
-        return repr(self)
+        """Get the exception message."""
+        return self.message
+
+    def __repr__(self):
+        """Get a representation of the exception."""
+        return self.__class__.__name__ + "(" + ", ".join(self.args) + ")"
 
 class CoconutSyntaxError(CoconutException):
     """Coconut SyntaxError."""
     def __init__(self, message, source=None, point=None, ln=None):
         """Creates the Coconut SyntaxError."""
-        self.value = message
+        self.message = message
         if ln is not None:
-            self.value += " (line " + str(ln) + ")"
+            self.message += " (line " + str(ln) + ")"
         if source:
             if point is None:
-                self.value += "\n" + " "*taberrfmt + clean(source)
+                self.message += "\n" + " "*taberrfmt + clean(source)
             else:
                 part = clean(source.splitlines()[lineno(point, source)-1], False).lstrip()
                 point -= len(source) - len(part) # adjust all points based on lstrip
                 part = part.rstrip() # adjust only points that are too large based on rstrip
-                self.value += "\n" + " "*taberrfmt + part
+                self.message += "\n" + " "*taberrfmt + part
                 if point > 0:
                     if point >= len(part):
                         point = len(part) - 1
-                    self.value += "\n" + " "*(taberrfmt + point) + "^"
+                    self.message += "\n" + " "*(taberrfmt + point) + "^"
 
 class CoconutParseError(CoconutSyntaxError):
     """Coconut ParseError."""
