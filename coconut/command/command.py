@@ -303,9 +303,7 @@ class Command(object):
     @contextmanager
     def running_jobs(self, jobs):
         """Initialize multiprocessing."""
-        if True:
-            yield
-        elif jobs is None or jobs >= 1:
+        if jobs is None or jobs >= 1:
             try:
                 with ProcessPoolExecutor(jobs) as self.executor:
                     yield

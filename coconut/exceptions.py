@@ -21,7 +21,7 @@ from coconut.root import *
 import sys
 from pyparsing import lineno
 
-from coconut.constants import openindent, closeindent, tabideal
+from coconut.constants import openindent, closeindent, taberrfmt
 
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
@@ -65,16 +65,16 @@ class CoconutSyntaxError(CoconutException):
             self.value += " (line " + str(ln) + ")"
         if source:
             if point is None:
-                self.value += "\n" + " "*tabideal + clean(source)
+                self.value += "\n" + " "*taberrfmt + clean(source)
             else:
                 part = clean(source.splitlines()[lineno(point, source)-1], False).lstrip()
                 point -= len(source) - len(part) # adjust all points based on lstrip
                 part = part.rstrip() # adjust only points that are too large based on rstrip
-                self.value += "\n" + " "*tabideal + part
+                self.value += "\n" + " "*taberrfmt + part
                 if point > 0:
                     if point >= len(part):
                         point = len(part) - 1
-                    self.value += "\n" + " "*(tabideal + point) + "^"
+                    self.value += "\n" + " "*(taberrfmt + point) + "^"
 
 class CoconutParseError(CoconutSyntaxError):
     """Coconut ParseError."""

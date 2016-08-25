@@ -29,7 +29,8 @@ from coconut.constants import \
     end_color_code, \
     info_tabulation, \
     main_sig, \
-    debug_sig
+    debug_sig, \
+    taberrfmt
 from coconut.exceptions import CoconutException, CoconutWarning
 from coconut.compiler.util import attach
 
@@ -150,7 +151,7 @@ class Logger(object):
             errmsg_lines = ["in " + os.path.abspath(self.path) + ":"]
             for line in errmsg.splitlines():
                 if line:
-                    line = "  " + line
+                    line = " "*taberrfmt + line
                 errmsg_lines.append(line)
             errmsg = "\n".join(errmsg_lines)
         self.printerr(errmsg)
