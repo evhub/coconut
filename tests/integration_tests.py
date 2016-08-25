@@ -73,7 +73,6 @@ class OldCocoTest(unittest.TestCase):
         if keep_lines:
             extraCommands += ["--keep-lines"]
 
-        self.compile_extras(extraCommands+agnosticCommands)
         self.compile_runner(extraCommands+agnosticCommands)
         self.compile_agnostic(extraCommands+agnosticCommands)
         
@@ -128,6 +127,11 @@ class OldCocoTest(unittest.TestCase):
         self.run_source()
         self.clean()
         
+    def test_extra(self):
+        self.compile_extras()
+        subprocess.check_call(["python",os.path.join(self.bin,"extras.py")])
+        self.clean()
 
 if __name__ == '__main__':
     unittest.main()
+
