@@ -93,7 +93,7 @@ class OldCocoTest(unittest.TestCase):
     def tearDown(self):
         try:
             self._clean()
-        except FileNotFoundError:
+        except:
             pass
 
     def test_normal(self):
