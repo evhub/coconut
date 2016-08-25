@@ -91,11 +91,42 @@ class OldCocoTest(unittest.TestCase):
         self.src = os.path.join(os.path.abspath(os.path.dirname(__file__)),"src")
         self.bin = os.path.join(os.path.abspath(os.path.dirname(__file__)),"bin")
 
-    def test_compile_and_run_src(self):
+    def tearDown(self):
+        try:
+            self.clean()
+        except FileNotFoundError:
+            pass
+
+    def test_normal(self):
         self.compile_source()
         self.run_source()
         self.clean()
+
+    def test_strict(self):
+        self.compile_source(stict = True)
+        self.run_source()
+        self.clean()
+
+    def test_minify(self):
+        self.compile_source(minify = True)
+        self.run_source()
+        self.clean()
+
+    def test_line_numbers(self):
+        self.compile_source(line_numbers = True)
+        self.run_source()
+        self.clean()
+
+    def test_keep_lines(self):
+        self.compile_source(keep_lines = True)
+        self.run_source()
+        self.clean()
         
+    def test_version_target(self):
+        version = "".join([str(sys.version_info.major),str(sys.version_info.minor)])
+        self.compile_source(agnosticTarget = version)
+        self.run_source()
+        self.clean()
         
 
 if __name__ == '__main__':
