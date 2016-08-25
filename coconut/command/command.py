@@ -25,7 +25,7 @@ import subprocess
 from contextlib import contextmanager
 
 from concurrent.futures import ProcessPoolExecutor
-if PY2:
+if (2, 7) <= sys.version_info() < (3,):
     import logging as _logging
     _logging.Logger("concurrent.futures").addHandler(_logging.handlers.NullHandler)
 

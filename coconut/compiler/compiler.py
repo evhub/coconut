@@ -96,8 +96,7 @@ from coconut.exceptions import \
     CoconutTargetError, \
     CoconutWarning, \
     clean
-from coconut.logging import logger
-trace = logger.trace
+from coconut.logging import logger, trace
 from coconut.compiler.util import \
     target_info, \
     addskip, \
