@@ -304,7 +304,7 @@ class Command(object):
     def running_jobs(self, jobs):
         """Initialize multiprocessing."""
         if True:
-            return
+            yield
         elif jobs is None or jobs >= 1:
             try:
                 with ProcessPoolExecutor(jobs) as self.executor:
@@ -312,7 +312,9 @@ class Command(object):
             finally:
                 self.executor = None
                 self.exit_on_error()
-        elif jobs != 0:
+        elif jobs == 0:
+            yield
+        else:
             raise CoconutException("the number of processes passed to --jobs must be >= 0")
 
     def create_package(self, dirpath):

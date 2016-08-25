@@ -122,7 +122,7 @@ search_terms = [
 ]
 
 #-----------------------------------------------------------------------------------------------------------------------
-# SETUP:
+# README:
 #-----------------------------------------------------------------------------------------------------------------------
 
 with open("README.rst", "r") as readme_file:
@@ -137,6 +137,10 @@ with open("README.rst", "r") as readme_file:
             readme_lines.append(line)
     readme = "\n".join(readme_lines)
 
+#-----------------------------------------------------------------------------------------------------------------------
+# REQUIREMENTS:
+#-----------------------------------------------------------------------------------------------------------------------
+
 def read_reqs(req_file):
     return [line.strip() for line in req_file.readlines() if line]
 
@@ -149,10 +153,23 @@ with open("requirements-py2.txt", "r") as req_py2_file:
 if PY2:
     reqs += py2_reqs
 
+PY26 = sys.version_info < (2, 7)
+
+with open("requirements-py26.txt", "r") as req_py26_file:
+    py26_reqs = read_reqs(req_py26_file)
+
+if PY26:
+    reqs += py26_reqs
+py26_reqs += py2_reqs
+
 extras["all"] = list(set(extras.keys()))
 
 if not PY2:
-    extras["py2"] = py2_reqs
+    extras["py2"] = py26_reqs
+    extras["py27"] = py2_reqs
+
+with open("requirements-docs.txt", "r") as req_docs_file:
+    extras["docs"] = read_reqs(req_docs_file)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
