@@ -14,53 +14,54 @@ import sys
 import os
 import subprocess
 import shutil
+import functools
 
+call = functools.partial(subprocess.check_call,stderr=sys.stdout.fileno())
 
 class OldCocoTest(unittest.TestCase):
-
 
     def _compile_extras(self,extraCommands = []):
         src = os.path.join(self.src,"extras.coco")
 
         cmd = ["coconut"] + extraCommands + [src,self.bin]
-        subprocess.check_call(cmd)
+        call(cmd)
 
     def _compile_runner(self,extraCommands = []):
         src = os.path.join(self.src,"src","runner.coco")
 
         cmd = ["coconut"] + extraCommands + [src,self.bin]
-        subprocess.check_call(cmd)
+        call(cmd)
 
     def _compile_agnostic(self,extraCommands = []):
         src = os.path.join(self.src,"src","agnostic")
         bin = os.path.join(self.bin,"cocotest")
 
         cmd = ["coconut"] + extraCommands + [src,bin]
-        subprocess.check_call(cmd)
+        call(cmd)
 
     def _compile_2(self,extraCommands = []):
         src = os.path.join(self.src,"src","python2")
         bin = os.path.join(self.bin,"cocotest")
 
         cmd = ["coconut","--target","2"] + extraCommands + [src,bin]
-        subprocess.check_call(cmd)
+        call(cmd)
 
     def _compile_3(self,extraCommands = []):
         src = os.path.join(self.src,"src","python3")
         bin = os.path.join(self.bin,"cocotest")
 
         cmd = ["coconut","--target","3"] + extraCommands + [src,bin]
-        subprocess.check_call(cmd)
+        call(cmd)
 
     def _compile_35(self,extraCommands = []):
         src = os.path.join(self.src,"src","python35")
         bin = os.path.join(self.bin,"cocotest")
 
         cmd = ["coconut","--target","35"] + extraCommands + [src,bin]
-        subprocess.check_call(cmd)
+        call(cmd)
 
     def _run_source(self):
-        subprocess.check_call(["python",os.path.join(self.bin,"runner.py")])
+        call(["python",os.path.join(self.bin,"runner.py")])
 
     def _compile_source(self,agnosticTarget = None, stict = False, minify = False, line_numbers = False, keep_lines = False):
 
@@ -131,9 +132,8 @@ class OldCocoTest(unittest.TestCase):
         
     def test_extra(self):
         self._compile_extras()
-        subprocess.check_call(["python",os.path.join(self.bin,"extras.py")])
+        call(["python",os.path.join(self.bin,"extras.py")])
         self._clean()
 
 if __name__ == '__main__':
     unittest.main()
-
