@@ -7,4 +7,6 @@ Description: Coconut test suite
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
+from coconut.root import *
+
 from tests.integration_tests import OldCocoTest
