@@ -21,6 +21,7 @@ from coconut.root import *
 import sys
 import os
 import traceback
+from copy import copy
 
 from coconut.constants import default_encoding
 from coconut.logging import logger
@@ -122,7 +123,7 @@ class multiprocess_wrapper(object):
 
     def __init__(self, base, method):
         """Creates new multiprocessable method."""
-        self.recursion, self.logger, self.base, self.method = sys.getrecursionlimit(), logger, base, method
+        self.recursion, self.logger, self.base, self.method = sys.getrecursionlimit(), copy(logger), base, method
 
     def __call__(self, *args, **kwargs):
         """Sets up new process then calls the method."""
