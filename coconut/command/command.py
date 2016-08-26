@@ -285,19 +285,23 @@ class Command(object):
                 elif self.show:
                     print(compiled)
 
-            with logger.in_path(codepath):
-                self.submit_comp_job(callback, compile_method, code)
 
-    def submit_comp_job(self, callback, method, *args, **kwargs):
+                self.submit_comp_job(codepath, callback, compile_method, code)
+
+    def submit_comp_job(self, path, callback, method, *args, **kwargs):
         """Submits a job on self.comp to be run in parallel."""
         if self.executor is None:
             with self.handling_exceptions():
                 callback(getattr(self.comp, method)(*args, **kwargs))
         else:
-            future = self.executor.submit(multiprocess_wrapper(self.comp, method), *args, **kwargs)
+            with logger.in_path(path):
+                future = self.executor.submit(multiprocess_wrapper(self.comp, method), *args, **kwargs)
             def callback_wrapper(completed_future):
+                with logger.in_path(path):
+                    with self.handling_exceptions():
+                        result = completed_future.result()
                 with self.handling_exceptions():
-                    callback(completed_future.result())
+                    callback(result)
             future.add_done_callback(callback_wrapper)
 
     @contextmanager
