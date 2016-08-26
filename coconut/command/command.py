@@ -304,14 +304,17 @@ class Command(object):
                 future = self.executor.submit(multiprocess_wrapper(self.comp, method), *args, **kwargs)
             def callback_wrapper(completed_future):
                 """Ensures that all errors are always caught, since errors raised in a callback won't be propagated."""
-                with logger.in_path(path):
-                    # for parser exceptions, handle them in the path context
+                try:
                     with self.handling_exceptions():
+                        # for parser exceptions, handle them in the path context
+                        logger.path = path
                         result = completed_future.result()
-                if not self.exit_code:
-                    # for callback exceptions, don't handle them in the path context
-                    with self.handling_exceptions():
+                        # for callback exceptions, don't handle them in the path context
+                        logger.path = None
                         callback(result)
+                finally:
+                    # make sure the path gets reset after printing any errors
+                    logger.path = None
             future.add_done_callback(callback_wrapper)
 
     @contextmanager
