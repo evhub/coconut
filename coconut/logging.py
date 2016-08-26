@@ -105,7 +105,7 @@ class Logger(object):
             if line:
                 line = self.add_color(line)
             print_lines.append(line)
-        print_message = "".join(line + "\n" for line in print_lines)
+        print_message = "\n".join(print_lines)
         if debug is True:
             printerr(print_message)
         else:
