@@ -127,6 +127,6 @@ class multiprocess_wrapper(object):
 
     def __call__(self, *args, **kwargs):
         """Sets up new process then calls the method."""
-        sys.setrecursionlimit(self.recursion)
+        sys.setrecursionlimit(max(sys.getrecursionlimit(), self.recursion))
         logger.copy_from(self.logger)
         return getattr(self.base, self.method)(*args, **kwargs)

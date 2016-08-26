@@ -99,14 +99,17 @@ class Logger(object):
     def display(self, messages, sig="", debug=False):
         """Prints an iterator of messages with color."""
         full_message = " ".join(str(msg) for msg in messages)
+        print_lines = []
         for line in full_message.splitlines():
-            msg = sig + line
-            if msg:
-                msg = self.add_color(msg)
-            if debug is True:
-                printerr(msg)
-            else:
-                print(msg)
+            line = sig + line
+            if line:
+                line = self.add_color(line)
+            print_lines.append(line)
+        print_message = "".join(line + "\n" for line in print_lines)
+        if debug is True:
+            printerr(print_message)
+        else:
+            print(print_message)
 
     def print(self, *messages):
         """Prints messages with color."""
