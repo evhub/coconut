@@ -285,8 +285,7 @@ class Command(object):
                 elif self.show:
                     print(compiled)
 
-
-                self.submit_comp_job(codepath, callback, compile_method, code)
+            self.submit_comp_job(codepath, callback, compile_method, code)
 
     def submit_comp_job(self, path, callback, method, *args, **kwargs):
         """Submits a job on self.comp to be run in parallel."""
