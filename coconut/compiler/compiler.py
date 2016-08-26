@@ -997,9 +997,9 @@ class Compiler(object):
             out = self.post(parser.parseWithTabs().parseString(self.pre(inputstring, **preargs)), **postargs)
         except ParseBaseException as err:
             err_line, err_index = self.reformat(err.line, err.col-1)
-            raise CoconutParseError(None, cerr_line, err_index, self.adjust(err.lineno))
+            raise CoconutParseError(None, err_line, err_index, self.adjust(err.lineno))
         except RuntimeError as err:
-            if err.message == "maximum recursion depth exceeded":
+            if "recursion" in str(err):
                 raise CoconutException("maximum recursion depth exceeded (try again with a larger --recursion-limit)")
             else:
                 raise
