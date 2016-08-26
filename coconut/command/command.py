@@ -42,6 +42,7 @@ from coconut.constants import (
     documentation_url,
     icoconut_dir,
     icoconut_kernel_dirs,
+    minimum_recursion_limit,
 )
 from coconut.command.util import (
     openfile,
@@ -105,11 +106,14 @@ class Command(object):
 
     def use_args(self, args, interact=True):
         """Handles command-line arguments."""
-        if args.recursion_limit[0] is not None:
-            sys.setrecursionlimit(args.recursion_limit[0])
         logger.quiet, logger.verbose = args.quiet, args.verbose
         if args.color[0] is not None:
             self.set_color(args.color[0])
+        if args.recursion_limit[0] is not None:
+            if args.recursion_limit[0] < minimum_recursion_limit:
+                raise CoconutException("--recursion-limit must be at least " + str(minimum_recursion_limit))
+            else:
+                sys.setrecursionlimit(args.recursion_limit[0])
         if args.version:
             logger.show(version_long)
         if args.tutorial:

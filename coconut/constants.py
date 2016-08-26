@@ -26,6 +26,8 @@ from pyparsing import alphanums
 # COMPILER CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
+minimum_recursion_limit = 200
+
 from zlib import crc32 as checksum # used for generating __coconut_hash__
 hash_prefix = "# __coconut_hash__ = "
 hash_sep = "\x00"

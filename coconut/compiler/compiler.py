@@ -90,6 +90,7 @@ from coconut.constants import (
     reserved_vars,
     new_to_old_stdlib,
     default_whitespace_chars,
+    minimum_recursion_limit,
     checksum,
 )
 from coconut.exceptions import (
@@ -125,6 +126,9 @@ from coconut.compiler.header import (
 #-----------------------------------------------------------------------------------------------------------------------
 # SETUP:
 #-----------------------------------------------------------------------------------------------------------------------
+
+if sys.getrecursionlimit() < minimum_recursion_limit:
+    sys.setrecursionlimit(minimum_recursion_limit)
 
 ParserElement.enablePackrat()
 ParserElement.setDefaultWhitespaceChars(default_whitespace_chars)
