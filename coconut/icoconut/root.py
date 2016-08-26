@@ -29,18 +29,19 @@ from coconut.command import Runner
 from coconut.compiler import Compiler
 from coconut.exceptions import CoconutException
 from coconut.logging import logger
-from coconut.constants import \
-    py_syntax_version, \
-    mimetype, \
-    varchars, \
-    all_keywords, \
-    version_banner, \
-    tutorial_url, \
-    documentation_url, \
-    reserved_prefix, \
-    default_encoding, \
-    code_exts, \
-    tabideal
+from coconut.constants import (
+    py_syntax_version,
+    mimetype,
+    varchars,
+    all_keywords,
+    version_banner,
+    tutorial_url,
+    documentation_url,
+    reserved_prefix,
+    default_encoding,
+    code_exts,
+    tabideal,
+)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:

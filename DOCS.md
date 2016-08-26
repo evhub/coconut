@@ -1199,7 +1199,7 @@ class Node(collections.namedtuple("Node", "l, r")):
 
 ### Parenthetical Continuation
 
-Coconut allows for the more elegant parenthetical continuation instead of the less elegant backslash continuation in `import`, `del`, `global`, `nonlocal`, and `with` statements.
+Coconut allows for the more elegant parenthetical continuation instead of the less elegant backslash continuation in `del`, `global`, `nonlocal`, and `with` statements.
 
 ##### Example
 

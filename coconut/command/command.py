@@ -29,29 +29,31 @@ from concurrent.futures import ProcessPoolExecutor
 from coconut.compiler import Compiler, gethash
 from coconut.exceptions import CoconutException
 from coconut.logging import logger
-from coconut.constants import \
-    code_exts, \
-    comp_ext, \
-    default_prompt, \
-    default_moreprompt, \
-    watch_interval, \
-    version_long, \
-    version_banner, \
-    version_tag, \
-    tutorial_url, \
-    documentation_url, \
-    icoconut_dir, \
-    icoconut_kernel_dirs
-from coconut.command.util import \
-    openfile, \
-    writefile, \
-    readfile, \
-    fixpath, \
-    showpath, \
-    rem_encoding, \
-    try_eval, \
-    Runner, \
-    multiprocess_wrapper
+from coconut.constants import (
+    code_exts,
+    comp_ext,
+    default_prompt,
+    default_moreprompt,
+    watch_interval,
+    version_long,
+    version_banner,
+    version_tag,
+    tutorial_url,
+    documentation_url,
+    icoconut_dir,
+    icoconut_kernel_dirs,
+)
+from coconut.command.util import (
+    openfile,
+    writefile,
+    readfile,
+    fixpath,
+    showpath,
+    rem_encoding,
+    try_eval,
+    Runner,
+    multiprocess_wrapper,
+)
 from coconut.command.cli import arguments
 
 #-----------------------------------------------------------------------------------------------------------------------

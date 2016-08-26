@@ -89,10 +89,11 @@ class CoconutSyntaxError(CoconutException):
 
 class CoconutParseError(CoconutSyntaxError):
     """Coconut ParseError."""
-    def __init__(self, source=None, point=None, lineno=None):
+    def __init__(self, message=None, source=None, point=None, lineno=None):
         """Creates The Coconut ParseError."""
-        CoconutSyntaxError.__init__(self, "parsing failed", source, point, lineno)
-        self.args = (source, point, lineno)
+        if message is None:
+            message = "parsing failed"
+        CoconutSyntaxError.__init__(self, message, source, point, lineno)
 
 class CoconutStyleError(CoconutSyntaxError):
     """Coconut --strict error."""
@@ -103,10 +104,10 @@ class CoconutStyleError(CoconutSyntaxError):
 
 class CoconutTargetError(CoconutSyntaxError):
     """Coconut --target error."""
-    def __init__(self, message, source=None, point=None, lineno=None):
+    def __init__(self, message, source=None, point=None, lineno=None, target=None):
         """Creates the --target Coconut error."""
-        message, target = message
-        message += " (enable --target "+target+" to dismiss)"
+        if target is not None:
+            message += " (enable --target "+target+" to dismiss)"
         CoconutSyntaxError.__init__(self, message, source, point, lineno)
 
 class CoconutWarning(CoconutSyntaxError):

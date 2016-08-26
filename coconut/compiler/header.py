@@ -18,10 +18,11 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *
 
-from coconut.constants import \
-    hash_prefix, \
-    tabideal, \
-    default_encoding
+from coconut.constants import (
+    hash_prefix,
+    tabideal,
+    default_encoding,
+)
 from coconut.exceptions import CoconutException
 from coconut.compiler.util import target_info
 

@@ -23,14 +23,15 @@ import os
 import traceback
 from contextlib import contextmanager
 
-from coconut.constants import \
-    default_encoding, \
-    color_codes, \
-    end_color_code, \
-    info_tabulation, \
-    main_sig, \
-    debug_sig, \
-    taberrfmt
+from coconut.constants import (
+    default_encoding,
+    color_codes,
+    end_color_code,
+    info_tabulation,
+    main_sig,
+    debug_sig,
+    taberrfmt,
+)
 from coconut.exceptions import CoconutException, CoconutWarning
 from coconut.compiler.util import attach
 

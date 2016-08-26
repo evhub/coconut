@@ -22,13 +22,14 @@ from pygments.lexers import Python3Lexer, PythonConsoleLexer
 from pygments.token import Text, Comment, Operator, Keyword, Name, String, Number, Punctuation, Generic, Other, Error
 from pygments.lexer import words, bygroups
 
-from coconut.constants import \
-    builtins, \
-    new_operators, \
-    tabideal, \
-    default_encoding, \
-    code_exts, \
-    reserved_vars
+from coconut.constants import (
+    builtins,
+    new_operators,
+    tabideal,
+    default_encoding,
+    code_exts,
+    reserved_vars,
+)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # LEXERS:

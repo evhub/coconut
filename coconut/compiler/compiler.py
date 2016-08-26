@@ -29,90 +29,95 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *
 
-from pyparsing import \
-    CaselessLiteral, \
-    Combine, \
-    Forward, \
-    Group, \
-    Keyword, \
-    Literal, \
-    OneOrMore, \
-    Optional, \
-    ParseBaseException, \
-    ParserElement, \
-    Regex, \
-    stringEnd, \
-    stringStart, \
-    Word, \
-    ZeroOrMore, \
-    col, \
-    line, \
-    lineno, \
-    hexnums, \
-    nums
+from pyparsing import (
+    CaselessLiteral,
+    Combine,
+    Forward,
+    Group,
+    Keyword,
+    Literal,
+    OneOrMore,
+    Optional,
+    ParseBaseException,
+    ParserElement,
+    Regex,
+    stringEnd,
+    stringStart,
+    Word,
+    ZeroOrMore,
+    col,
+    line,
+    lineno,
+    hexnums,
+    nums,
+)
 
-from coconut.constants import \
-    specific_targets, \
-    targets, \
-    pseudo_targets, \
-    sys_target, \
-    default_encoding, \
-    hash_sep, \
-    openindent, \
-    closeindent, \
-    strwrapper, \
-    lnwrapper, \
-    unwrapper, \
-    downs, \
-    ups, \
-    holds, \
-    tabideal, \
-    tabworth, \
-    reserved_prefix, \
-    decorator_var, \
-    match_to_var, \
-    match_check_var, \
-    match_iter_var, \
-    match_err_var, \
-    lazy_item_var, \
-    lazy_chain_var, \
-    import_as_var, \
-    yield_from_var, \
-    yield_item_var, \
-    raise_from_var, \
-    stmt_lambda_var, \
-    wildcard, \
-    keywords, \
-    const_vars, \
-    reserved_vars, \
-    new_to_old_stdlib, \
-    default_whitespace_chars, \
-    checksum
-from coconut.exceptions import \
-    CoconutException, \
-    CoconutSyntaxError, \
-    CoconutParseError, \
-    CoconutStyleError, \
-    CoconutTargetError, \
-    CoconutWarning, \
-    clean
+from coconut.constants import (
+    specific_targets,
+    targets,
+    pseudo_targets,
+    sys_target,
+    default_encoding,
+    hash_sep,
+    openindent,
+    closeindent,
+    strwrapper,
+    lnwrapper,
+    unwrapper,
+    downs,
+    ups,
+    holds,
+    tabideal,
+    tabworth,
+    reserved_prefix,
+    decorator_var,
+    match_to_var,
+    match_check_var,
+    match_iter_var,
+    match_err_var,
+    lazy_item_var,
+    lazy_chain_var,
+    import_as_var,
+    yield_from_var,
+    yield_item_var,
+    raise_from_var,
+    stmt_lambda_var,
+    wildcard,
+    keywords,
+    const_vars,
+    reserved_vars,
+    new_to_old_stdlib,
+    default_whitespace_chars,
+    checksum,
+)
+from coconut.exceptions import (
+    CoconutException,
+    CoconutSyntaxError,
+    CoconutParseError,
+    CoconutStyleError,
+    CoconutTargetError,
+    CoconutWarning,
+    clean,
+)
 from coconut.logging import logger, trace
-from coconut.compiler.util import \
-    target_info, \
-    addskip, \
-    count_end, \
-    change, \
-    attach, \
-    fixto, \
-    addspace, \
-    condense, \
-    parenwrap, \
-    tokenlist, \
-    itemlist
-from coconut.compiler.header import \
-    gethash, \
-    minify, \
-    getheader
+from coconut.compiler.util import (
+    target_info,
+    addskip,
+    count_end,
+    change,
+    attach,
+    fixto,
+    addspace,
+    condense,
+    parenwrap,
+    tokenlist,
+    itemlist,
+)
+from coconut.compiler.header import (
+    gethash,
+    minify,
+    getheader,
+)
 
 # end: IMPORTS
 #-----------------------------------------------------------------------------------------------------------------------
@@ -889,14 +894,14 @@ class Compiler(object):
             return (self.repl_proc(snip, careful=False, add_to_line=False),
                     len(self.repl_proc(snip[:index], careful=False, add_to_line=False)))
 
-    def make_err(self, errtype, message, original, location, ln=None, reformat=True):
+    def make_err(self, errtype, message, original, location, ln=None, reformat=True, *args, **kwargs):
         """Generates an error of the specified type."""
         if ln is None:
             ln = self.adjust(lineno(location, original))
         errstr, index = line(location, original), col(location, original)-1
         if reformat:
             errstr, index = self.reformat(errstr, index)
-        return errtype(message, errstr, index, ln)
+        return errtype(message, errstr, index, ln, *args, **kwargs)
 
     def strict_err_or_warn(self, *args, **kwargs):
         """Raises an error if in strict mode, otherwise raises a warning."""
@@ -992,7 +997,7 @@ class Compiler(object):
             out = self.post(parser.parseWithTabs().parseString(self.pre(inputstring, **preargs)), **postargs)
         except ParseBaseException as err:
             err_line, err_index = self.reformat(err.line, err.col-1)
-            raise CoconutParseError(err_line, err_index, self.adjust(err.lineno))
+            raise CoconutParseError(None, cerr_line, err_index, self.adjust(err.lineno))
         except RuntimeError as err:
             if err.message == "maximum recursion depth exceeded":
                 raise CoconutException("maximum recursion depth exceeded (try again with a larger --recursion-limit)")
@@ -1563,7 +1568,7 @@ class Compiler(object):
                 if self.target.startswith("3"):
                     return "(" + tokens[0][0] + ")"
                 else:
-                    raise self.make_err(CoconutTargetError, ("found Python 3 keyword class definition", "3"), original, location)
+                    raise self.make_err(CoconutTargetError, "found Python 3 keyword class definition", original, location, target="3")
             else:
                 raise CoconutException("invalid inner classlist token", tokens[0])
         else:
@@ -1801,7 +1806,7 @@ class Compiler(object):
         if len(tokens) != 1:
             raise CoconutException("invalid "+name+" tokens", tokens)
         elif self.target_info() < target_info(version):
-            raise self.make_err(CoconutTargetError, ("found Python "+version+" " + name, version), original, location)
+            raise self.make_err(CoconutTargetError, "found Python "+version+" " + name, original, location, target=version)
         else:
             return tokens[0]
 
