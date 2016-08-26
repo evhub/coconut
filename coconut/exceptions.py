@@ -92,6 +92,7 @@ class CoconutParseError(CoconutSyntaxError):
     def __init__(self, source=None, point=None, lineno=None):
         """Creates The Coconut ParseError."""
         CoconutSyntaxError.__init__(self, "parsing failed", source, point, lineno)
+        self.args = (source, point, lineno)
 
 class CoconutStyleError(CoconutSyntaxError):
     """Coconut --strict error."""
