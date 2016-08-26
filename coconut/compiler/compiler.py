@@ -1005,10 +1005,8 @@ class Compiler(object):
             err_line, err_index = self.reformat(err.line, err.col-1)
             raise CoconutParseError(None, err_line, err_index, self.adjust(err.lineno))
         except RuntimeError as err:
-            logger.verbose = True
             if logger.verbose:
                 logger.print_exc()
-            logger.verbose = False
             raise CoconutException(str(err)
                 + " (try again with --recursion-limit greater than the current "
                 + str(sys.getrecursionlimit()) + ")")
