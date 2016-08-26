@@ -999,10 +999,9 @@ class Compiler(object):
             err_line, err_index = self.reformat(err.line, err.col-1)
             raise CoconutParseError(None, err_line, err_index, self.adjust(err.lineno))
         except RuntimeError as err:
-            if "recursion" in str(err):
-                raise CoconutException("maximum recursion depth exceeded (try again with a larger --recursion-limit)")
-            else:
-                raise
+            raise CoconutException(str(err)
+                + " (try again with --recursion-limit greater than the current "
+                + str(sys.getrecursionlimit()) + ")")
         return out
 
 # end: COMPILER
