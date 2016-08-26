@@ -293,12 +293,16 @@ class Command(object):
             with self.handling_exceptions():
                 callback(getattr(self.comp, method)(*args, **kwargs))
         else:
+            # pickle the compiler in the path context so it gets to warnings
             with logger.in_path(path):
                 future = self.executor.submit(multiprocess_wrapper(self.comp, method), *args, **kwargs)
             def callback_wrapper(completed_future):
+                """Ensures that all errors are always caught, since errors raised in a callback won't be propagated."""
                 with logger.in_path(path):
+                    # for parser exceptions, handle them in the path context
                     with self.handling_exceptions():
                         result = completed_future.result()
+                # for callback exceptions, don't handle them in the path context
                 with self.handling_exceptions():
                     callback(result)
             future.add_done_callback(callback_wrapper)
