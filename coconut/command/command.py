@@ -308,9 +308,10 @@ class Command(object):
                     # for parser exceptions, handle them in the path context
                     with self.handling_exceptions():
                         result = completed_future.result()
-                # for callback exceptions, don't handle them in the path context
-                with self.handling_exceptions():
-                    callback(result)
+                if not self.exit_code:
+                    # for callback exceptions, don't handle them in the path context
+                    with self.handling_exceptions():
+                        callback(result)
             future.add_done_callback(callback_wrapper)
 
     @contextmanager
