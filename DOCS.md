@@ -39,7 +39,7 @@
     1. [Underscore Separators](#underscore-separators)
 1. [Function Notation](#function-notation)
     1. [Operator Functions](#operator-functions)
-    1. [Shorthand Functions](#shorthand-functions)
+    1. [Assignment Functions](#assignment-functions)
     1. [Infix Functions](#infix-functions)
     1. [Pattern-Matching Functions](#pattern-matching-functions)
 1. [Statements](#statements)
@@ -959,9 +959,9 @@ import operator
 print(list(map(operator.add, range(0, 5), range(5, 10))))
 ```
 
-### Shorthand Functions
+### Assignment Functions
 
-Coconut allows for shorthand function definition that automatically returns the last line of the function body. A shorthand function is constructed by substituting `=` for `:` after the function definition line. Thus, the syntax for shorthand function definition is either
+Coconut allows for assignment function definition that automatically returns the last line of the function body. An assignment function is constructed by substituting `=` for `:` after the function definition line. Thus, the syntax for assignment function definition is either
 ```coconut
 def <name>(<args>) = <expr>
 ```
@@ -973,11 +973,11 @@ def <name>(<args>) =
 ```
 for full functions, where `<name>` is the name of the function, `<args>` are the functions arguments, `<stmts>` are any statements that the function should execute, and `<expr>` is the value that the function should return.
 
-_Note: Shorthand function definition can be combined with infix and/or pattern-matching function definition._
+_Note: Assignment function definition can be combined with infix and/or pattern-matching function definition._
 
 ##### Rationale
 
-Coconut's shorthand function definition is as easy to write as assignment to a lambda, but will appear named in tracebacks, as it compiles to normal Python function definition.
+Coconut's Assignment function definition is as easy to write as assignment to a lambda, but will appear named in tracebacks, as it compiles to normal Python function definition.
 
 ##### Example
 
@@ -1004,7 +1004,7 @@ def <arg> `<name>` <arg>:
 ```
 where `<name>` is the name of the function, the `<arg>`s are the function arguments, and `<body>` is the body of the function. If an `<arg>` includes a default, the `<arg>` must be surrounded in parentheses.
 
-_Note: Infix function definition can be combined with shorthand and/or pattern-matching function definition._
+_Note: Infix function definition can be combined with assignment and/or pattern-matching function definition._
 
 ##### Rationale
 
@@ -1044,7 +1044,7 @@ def <name>(*args):
 ```
 If pattern-matching function definition fails, it will raise a [`MatchError`](#matcherror) object just like [destructuring assignment](#destructuring-assignment).
 
-_Note: Pattern-matching function definition can be combined with shorthand and/or infix function definition._
+_Note: Pattern-matching function definition can be combined with assignment and/or infix function definition._
 
 ##### Example
 

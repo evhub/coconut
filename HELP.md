@@ -681,7 +681,7 @@ Copy, paste! Now that was a lot of code. But looking it over, it looks clean, re
 
 For the final case study, instead of me writing the code, and you looking at it, you'll be writing the code—of course, I won't be looking at it, but I will show you how I would have done it after you give it a shot by yourself.
 
-The bonus challenge for this section is to write each of the functions we'll be defining in just one line. To help with that, we're going to introduce a new concept up front, shorthand functions. A shorthand function looks like this
+The bonus challenge for this section is to write each of the functions we'll be defining in just one line. To help with that, we're going to introduce a new concept up front, assignment functions. An assignment function looks like this
 ```coconut
 def <name>(<args>) = <return value>
 ```
@@ -689,7 +689,7 @@ which has the advantage over the classic Python
 ```coconut
 def <name>(<args>): return <return value>
 ```
-of being shorter, more readable, and not requiring `return` to be typed out. If you try to go for the one-liner approach, using shorthand functions will help keep your lines short and your code readable.
+of being shorter, more readable, and not requiring `return` to be typed out. If you try to go for the one-liner approach, using assignment functions will help keep your lines short and your code readable.
 
 With that out of the way, it's time to introduce the general goal of this case study. We want to write a program that will allow us to produce infinite vector fields that we can iterate over and apply operations to. And in our case, we'll say we only care about vectors with positive components.
 
@@ -912,7 +912,7 @@ For the some of the applications you might want to use your `vector_field` for, 
 
 ### `__truediv__`
 
-Vector division is just scalar division, so we're going to write a `__truediv__` method that takes `self` as the first argument and `other` as the second argument, and returns a new vector the same size as `self` with every element divided by `other`. For an extra challenge, try writing this one in one line using shorthand function notation.
+Vector division is just scalar division, so we're going to write a `__truediv__` method that takes `self` as the first argument and `other` as the second argument, and returns a new vector the same size as `self` with every element divided by `other`. For an extra challenge, try writing this one in one line using assignment function notation.
 
 Tests:
 ```coconut
