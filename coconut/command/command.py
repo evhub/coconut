@@ -22,9 +22,8 @@ import sys
 import os
 import time
 import subprocess
+import platform
 from contextlib import contextmanager
-
-from concurrent.futures import ProcessPoolExecutor
 
 from coconut.compiler import Compiler, gethash
 from coconut.exceptions import CoconutException
@@ -320,7 +319,10 @@ class Command(object):
     @contextmanager
     def running_jobs(self, jobs):
         """Initialize multiprocessing."""
+        if jobs is None and platform.python_implementation() == "PyPy":
+            jobs = 0
         if jobs is None or jobs >= 1:
+            from concurrent.futures import ProcessPoolExecutor
             try:
                 with ProcessPoolExecutor(jobs) as self.executor:
                     yield
