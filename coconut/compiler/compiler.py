@@ -29,95 +29,106 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *
 
-from pyparsing import \
-    CaselessLiteral, \
-    Combine, \
-    Forward, \
-    Group, \
-    Keyword, \
-    Literal, \
-    OneOrMore, \
-    Optional, \
-    ParseBaseException, \
-    ParserElement, \
-    Regex, \
-    stringEnd, \
-    stringStart, \
-    Word, \
-    ZeroOrMore, \
-    col, \
-    line, \
-    lineno, \
-    hexnums, \
-    nums
+import sys
 
-from coconut.constants import \
-    specific_targets, \
-    targets, \
-    pseudo_targets, \
-    sys_target, \
-    default_encoding, \
-    hash_sep, \
-    openindent, \
-    closeindent, \
-    strwrapper, \
-    lnwrapper, \
-    unwrapper, \
-    downs, \
-    ups, \
-    holds, \
-    tabideal, \
-    tabworth, \
-    reserved_prefix, \
-    decorator_var, \
-    match_to_var, \
-    match_check_var, \
-    match_iter_var, \
-    match_err_var, \
-    lazy_item_var, \
-    lazy_chain_var, \
-    import_as_var, \
-    yield_from_var, \
-    yield_item_var, \
-    raise_from_var, \
-    stmt_lambda_var, \
-    wildcard, \
-    keywords, \
-    const_vars, \
-    reserved_vars, \
-    new_to_old_stdlib, \
-    default_whitespace_chars, \
-    checksum
-from coconut.compiler.exceptions import \
-    CoconutException, \
-    CoconutSyntaxError, \
-    CoconutParseError, \
-    CoconutStyleError, \
-    CoconutTargetError, \
-    CoconutWarning, \
-    printerr, \
-    get_error, \
-    clean
-from coconut.compiler.util import \
-    target_info, \
-    addskip, \
-    count_end, \
-    change, \
-    attach, \
-    fixto, \
-    addspace, \
-    condense, \
-    parenwrap, \
-    Tracer
-from coconut.compiler.header import \
-    gethash, \
-    minify, \
-    getheader
+from pyparsing import (
+    CaselessLiteral,
+    Combine,
+    Forward,
+    Group,
+    Keyword,
+    Literal,
+    OneOrMore,
+    Optional,
+    ParseBaseException,
+    ParserElement,
+    Regex,
+    stringEnd,
+    stringStart,
+    Word,
+    ZeroOrMore,
+    col,
+    line,
+    lineno,
+    hexnums,
+    nums,
+)
+
+from coconut.constants import (
+    specific_targets,
+    targets,
+    pseudo_targets,
+    sys_target,
+    default_encoding,
+    hash_sep,
+    openindent,
+    closeindent,
+    strwrapper,
+    lnwrapper,
+    unwrapper,
+    downs,
+    ups,
+    holds,
+    tabideal,
+    tabworth,
+    reserved_prefix,
+    decorator_var,
+    match_to_var,
+    match_check_var,
+    match_iter_var,
+    match_err_var,
+    lazy_item_var,
+    lazy_chain_var,
+    import_as_var,
+    yield_from_var,
+    yield_item_var,
+    raise_from_var,
+    stmt_lambda_var,
+    wildcard,
+    keywords,
+    const_vars,
+    reserved_vars,
+    new_to_old_stdlib,
+    default_whitespace_chars,
+    minimum_recursion_limit,
+    checksum,
+)
+from coconut.exceptions import (
+    CoconutException,
+    CoconutSyntaxError,
+    CoconutParseError,
+    CoconutStyleError,
+    CoconutTargetError,
+    CoconutWarning,
+    clean,
+)
+from coconut.logging import logger, trace
+from coconut.compiler.util import (
+    target_info,
+    addskip,
+    count_end,
+    change,
+    attach,
+    fixto,
+    addspace,
+    condense,
+    parenwrap,
+    tokenlist,
+    itemlist,
+)
+from coconut.compiler.header import (
+    gethash,
+    minify,
+    getheader,
+)
 
 # end: IMPORTS
 #-----------------------------------------------------------------------------------------------------------------------
 # SETUP:
 #-----------------------------------------------------------------------------------------------------------------------
+
+if sys.getrecursionlimit() < minimum_recursion_limit:
+    sys.setrecursionlimit(minimum_recursion_limit)
 
 ParserElement.enablePackrat()
 ParserElement.setDefaultWhitespaceChars(default_whitespace_chars)
@@ -126,25 +137,6 @@ ParserElement.setDefaultWhitespaceChars(default_whitespace_chars)
 #-----------------------------------------------------------------------------------------------------------------------
 # HANDLERS:
 #-----------------------------------------------------------------------------------------------------------------------
-
-def list_handle(tokens):
-    """Properly formats lists."""
-    out = []
-    for x in range(0, len(tokens)-1, 2):
-        out.append(tokens[x] + tokens[x+1])
-    if len(tokens) % 2 == 1:
-        out.append(tokens[-1])
-    return " ".join(out)
-
-def tokenlist(item, sep, suppress=True):
-    """Creates a list of tokens matching the item."""
-    if suppress:
-        sep = sep.suppress()
-    return item + ZeroOrMore(sep + item) + Optional(sep)
-
-def itemlist(item, sep):
-    """Creates a list of an item."""
-    return attach(tokenlist(item, sep, suppress=False), list_handle)
 
 def add_paren_handle(tokens):
     """Adds parentheses."""
@@ -319,6 +311,21 @@ def else_handle(tokens):
 
 class Matcher(object):
     """Pattern-matching processor."""
+    matchers = {
+        "dict": lambda self: self.match_dict,
+        "iter": lambda self: self.match_iterator,
+        "series": lambda self: self.match_sequence,
+        "rseries": lambda self: self.match_rsequence,
+        "mseries": lambda self: self.match_msequence,
+        "const": lambda self: self.match_const,
+        "var": lambda self: self.match_var,
+        "set": lambda self: self.match_set,
+        "data": lambda self: self.match_data,
+        "paren": lambda self: self.match_paren,
+        "trailer": lambda self: self.match_trailer,
+        "and": lambda self: self.match_and,
+        "or": lambda self: self.match_or,
+    }
     __slots__ = (
         "position",
         "iter_index",
@@ -586,21 +593,6 @@ class Matcher(object):
             self.duplicate().match(original[x], item)
         self.match(original[0], item)
 
-    matchers = {
-        "dict": lambda self: self.match_dict,
-        "iter": lambda self: self.match_iterator,
-        "series": lambda self: self.match_sequence,
-        "rseries": lambda self: self.match_rsequence,
-        "mseries": lambda self: self.match_msequence,
-        "const": lambda self: self.match_const,
-        "var": lambda self: self.match_var,
-        "set": lambda self: self.match_set,
-        "data": lambda self: self.match_data,
-        "paren": lambda self: self.match_paren,
-        "trailer": lambda self: self.match_trailer,
-        "and": lambda self: self.match_and,
-        "or": lambda self: self.match_or
-    }
     def match(self, original, item):
         """Performs pattern-matching processing."""
         for flag, handler in self.matchers.items():
@@ -786,36 +778,31 @@ def namelist_handle(tokens):
 
 class Compiler(object):
     """The Coconut compiler."""
-    tracer = Tracer()
-    trace = tracer.trace
-    debug = tracer.debug
-    autopep8_args = None
+    preprocs = [
+        lambda self: self.prepare,
+        lambda self: self.str_proc,
+        lambda self: self.passthrough_proc,
+        lambda self: self.ind_proc,
+    ]
+    postprocs = [
+        lambda self: self.stmt_lambda_proc,
+        lambda self: self.reind_proc,
+        lambda self: self.repl_proc,
+        lambda self: self.header_proc,
+        lambda self: self.polish,
+        lambda self: self.autopep8_proc,
+    ]
+    replprocs = [
+        lambda self: self.endline_repl,
+        lambda self: self.passthrough_repl,
+        lambda self: self.str_repl,
+    ]
 
-    def __init__(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False, debugger=printerr):
+    def __init__(self, *args, **kwargs):
         """Creates a new compiler with the given parsing parameters."""
-        self.debugger = debugger
-        self.setup(target, strict, minify, line_numbers, keep_lines)
-        self.preprocs = [
-            self.prepare,
-            self.str_proc,
-            self.passthrough_proc,
-            self.ind_proc
-        ]
-        self.postprocs = [
-            self.stmt_lambda_proc,
-            self.reind_proc,
-            self.repl_proc,
-            self.header_proc,
-            self.polish,
-            self.autopep8_proc
-        ]
-        self.replprocs = [
-            self.endline_repl,
-            self.passthrough_repl,
-            self.str_repl
-        ]
+        self.setup(*args, **kwargs)
 
-    def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False):
+    def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False, autopep8=None):
         """Initializes parsing parameters."""
         if target is None:
             target = ""
@@ -828,17 +815,16 @@ class Compiler(object):
                 + '" (supported targets are "' + '", "'.join(specific_targets) + '", or leave blank for universal)')
         self.target, self.strict, self.minify, self.line_numbers, self.keep_lines = target, strict, minify, line_numbers, keep_lines
         self.tablen = 1 if self.minify else tabideal
+        if autopep8 is not None:
+            autopep8 = tuple(autopep8)
+        self.autopep8_args = autopep8
 
-    def autopep8(self, args=()):
-        """Enables autopep8 integration."""
-        if args is None:
-            self.autopep8_args = None
-        else:
-            self.autopep8_args = tuple(args)
+    def __reduce__(self):
+        """Return pickling information."""
+        return (Compiler, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.autopep8_args))
 
     def reset(self):
         """Resets references."""
-        self.tracer.show = self.debugger
         self.indchar = None
         self.refs = []
         self.skips = set()
@@ -850,23 +836,23 @@ class Compiler(object):
     def bind(self):
         """Binds reference objects to the proper parse actions."""
         self.endline <<= attach(self.endline_ref, self.endline_handle, copy=True)
-        self.moduledoc_item <<= self.trace(attach(self.moduledoc, self.set_docstring, copy=True), "moduledoc")
-        self.name <<= self.trace(attach(self.name_ref, self.name_check, copy=True), "name")
-        self.atom_item <<= self.trace(attach(self.atom_item_ref, self.item_handle, copy=True), "atom_item")
-        self.simple_assign <<= self.trace(attach(self.simple_assign_ref, self.item_handle, copy=True), "simple_assign")
-        self.set_literal <<= self.trace(attach(self.set_literal_ref, self.set_literal_handle, copy=True), "set_literal")
-        self.set_letter_literal <<= self.trace(attach(self.set_letter_literal_ref, self.set_letter_literal_handle, copy=True), "set_letter_literal")
-        self.classlist <<= self.trace(attach(self.classlist_ref, self.classlist_handle, copy=True), "classlist")
-        self.import_stmt <<= self.trace(attach(self.import_stmt_ref, self.import_handle, copy=True), "import_stmt")
-        self.complex_raise_stmt <<= self.trace(attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_handle, copy=True), "complex_raise_stmt")
-        self.augassign_stmt <<= self.trace(attach(self.augassign_stmt_ref, self.augassign_handle, copy=True), "augassign_stmt")
-        self.dict_comp <<= self.trace(attach(self.dict_comp_ref, self.dict_comp_handle, copy=True), "dict_comp")
-        self.destructuring_stmt <<= self.trace(attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle, copy=True), "destructuring_stmt")
-        self.name_match_funcdef <<= self.trace(attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle, copy=True), "name_match_funcdef")
-        self.op_match_funcdef <<= self.trace(attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle, copy=True), "op_match_funcdef")
-        self.yield_from <<= self.trace(attach(self.yield_from_ref, self.yield_from_handle, copy=True), "yield_from")
-        self.exec_stmt <<= self.trace(attach(self.exec_stmt_ref, self.exec_stmt_handle, copy=True), "exec_stmt")
-        self.stmt_lambdef <<= self.trace(attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle, copy=True), "stmt_lambdef")
+        self.moduledoc_item <<= trace(attach(self.moduledoc, self.set_docstring, copy=True), "moduledoc")
+        self.name <<= trace(attach(self.name_ref, self.name_check, copy=True), "name")
+        self.atom_item <<= trace(attach(self.atom_item_ref, self.item_handle, copy=True), "atom_item")
+        self.simple_assign <<= trace(attach(self.simple_assign_ref, self.item_handle, copy=True), "simple_assign")
+        self.set_literal <<= trace(attach(self.set_literal_ref, self.set_literal_handle, copy=True), "set_literal")
+        self.set_letter_literal <<= trace(attach(self.set_letter_literal_ref, self.set_letter_literal_handle, copy=True), "set_letter_literal")
+        self.classlist <<= trace(attach(self.classlist_ref, self.classlist_handle, copy=True), "classlist")
+        self.import_stmt <<= trace(attach(self.import_stmt_ref, self.import_handle, copy=True), "import_stmt")
+        self.complex_raise_stmt <<= trace(attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_handle, copy=True), "complex_raise_stmt")
+        self.augassign_stmt <<= trace(attach(self.augassign_stmt_ref, self.augassign_handle, copy=True), "augassign_stmt")
+        self.dict_comp <<= trace(attach(self.dict_comp_ref, self.dict_comp_handle, copy=True), "dict_comp")
+        self.destructuring_stmt <<= trace(attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle, copy=True), "destructuring_stmt")
+        self.name_match_funcdef <<= trace(attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle, copy=True), "name_match_funcdef")
+        self.op_match_funcdef <<= trace(attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle, copy=True), "op_match_funcdef")
+        self.yield_from <<= trace(attach(self.yield_from_ref, self.yield_from_handle, copy=True), "yield_from")
+        self.exec_stmt <<= trace(attach(self.exec_stmt_ref, self.exec_stmt_handle, copy=True), "exec_stmt")
+        self.stmt_lambdef <<= trace(attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle, copy=True), "stmt_lambdef")
         self.u_string <<= attach(self.u_string_ref, self.u_string_check, copy=True)
         self.f_string <<= attach(self.f_string_ref, self.f_string_check, copy=True)
         self.typedef <<= attach(self.typedef_ref, self.typedef_check, copy=True)
@@ -914,21 +900,21 @@ class Compiler(object):
             return (self.repl_proc(snip, careful=False, add_to_line=False),
                     len(self.repl_proc(snip[:index], careful=False, add_to_line=False)))
 
-    def make_err(self, errtype, message, original, location, ln=None, reformat=True):
+    def make_err(self, errtype, message, original, location, ln=None, reformat=True, *args, **kwargs):
         """Generates an error of the specified type."""
         if ln is None:
             ln = self.adjust(lineno(location, original))
         errstr, index = line(location, original), col(location, original)-1
         if reformat:
             errstr, index = self.reformat(errstr, index)
-        return errtype(message, errstr, index, ln)
+        return errtype(message, errstr, index, ln, *args, **kwargs)
 
     def strict_err_or_warn(self, *args, **kwargs):
         """Raises an error if in strict mode, otherwise raises a warning."""
         if self.strict:
             raise self.make_err(CoconutStyleError, *args, **kwargs)
         else:
-            self.warn(self.make_err(CoconutWarning, *args, **kwargs))
+            logger.warn(self.make_err(CoconutWarning, *args, **kwargs))
 
     def add_ref(self, ref):
         """Adds a reference and returns the identifier."""
@@ -976,39 +962,24 @@ class Compiler(object):
         """Wraps a line number."""
         return "#" + self.add_ref(ln) + lnwrapper
 
-    def indebug(self):
-        """Checks whether debug mode is active."""
-        return self.tracer.on
-
-    def log(self, tag, code):
-        """If debugging, prints a debug message."""
-        if self.indebug():
-            self.tracer.show("["+str(tag)+"] "+ascii(code))
-
-    def warn(self, warning):
-        """Displays a warning."""
-        try:
-            raise warning
-        except CoconutWarning:
-            self.tracer.show(get_error(self.indebug()))
+    def apply_procs(self, procs, kwargs, inputstring):
+        """Applies processors to inputstring."""
+        for get_proc in procs:
+            proc = get_proc(self)
+            inputstring = proc(inputstring, **kwargs)
+            logger.log_tag(proc.__name__, inputstring)
+        return inputstring
 
     def pre(self, inputstring, **kwargs):
         """Performs pre-processing."""
-        out = str(inputstring)
-        for proc in self.preprocs:
-            out = proc(out, **kwargs)
-            self.log(proc.__name__, out)
-        self.log("skips", list(sorted(self.skips)))
+        out = self.apply_procs(self.preprocs, kwargs, str(inputstring))
+        logger.log_tag("skips", list(sorted(self.skips)))
         return out
 
     def post(self, tokens, **kwargs):
         """Performs post-processing."""
         if len(tokens) == 1:
-            out = tokens[0]
-            for proc in self.postprocs:
-                out = proc(out, **kwargs)
-                self.log(proc.__name__, out)
-            return out
+            return self.apply_procs(self.postprocs, kwargs, tokens[0])
         else:
             raise CoconutException("multiple tokens leftover", tokens)
 
@@ -1032,9 +1003,13 @@ class Compiler(object):
             out = self.post(parser.parseWithTabs().parseString(self.pre(inputstring, **preargs)), **postargs)
         except ParseBaseException as err:
             err_line, err_index = self.reformat(err.line, err.col-1)
-            raise CoconutParseError(err_line, err_index, self.adjust(err.lineno))
-        except RuntimeError:
-            raise CoconutException("maximum recursion depth exceeded (try again with a larger --recursion-limit)")
+            raise CoconutParseError(None, err_line, err_index, self.adjust(err.lineno))
+        except RuntimeError as err:
+            if logger.verbose:
+                logger.print_exc()
+            raise CoconutException(str(err)
+                + " (try again with --recursion-limit greater than the current "
+                + str(sys.getrecursionlimit()) + ")")
         return out
 
 # end: COMPILER
@@ -1471,10 +1446,7 @@ class Compiler(object):
 
     def repl_proc(self, inputstring, **kwargs):
         """Processes using replprocs."""
-        for repl in self.replprocs:
-            inputstring = repl(inputstring, **kwargs)
-            self.log(repl.__name__, inputstring)
-        return inputstring
+        return self.apply_procs(self.replprocs, kwargs, inputstring)
 
     def header_proc(self, inputstring, header="file", initial="initial", usehash=None, **kwargs):
         """Adds the header."""
@@ -1603,7 +1575,7 @@ class Compiler(object):
                 if self.target.startswith("3"):
                     return "(" + tokens[0][0] + ")"
                 else:
-                    raise self.make_err(CoconutTargetError, ("found Python 3 keyword class definition", "3"), original, location)
+                    raise self.make_err(CoconutTargetError, "found Python 3 keyword class definition", original, location, target="3")
             else:
                 raise CoconutException("invalid inner classlist token", tokens[0])
         else:
@@ -1841,7 +1813,7 @@ class Compiler(object):
         if len(tokens) != 1:
             raise CoconutException("invalid "+name+" tokens", tokens)
         elif self.target_info() < target_info(version):
-            raise self.make_err(CoconutTargetError, ("found Python "+version+" " + name, version), original, location)
+            raise self.make_err(CoconutTargetError, "found Python "+version+" " + name, original, location, target=version)
         else:
             return tokens[0]
 

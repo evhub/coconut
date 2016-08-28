@@ -9,6 +9,7 @@ Author: Evan Hubinger
 License: Apache 2.0
 Description: Utilites for use in the compiler.
 """
+
 #-----------------------------------------------------------------------------------------------------------------------
 # IMPORTS:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -17,10 +18,16 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *
 
-from pyparsing import replaceWith, lineno, col
+from pyparsing import (
+    replaceWith,
+    lineno,
+    col,
+    ZeroOrMore,
+    Optional,
+)
 
-from coconut.compiler.exceptions import printerr
 from coconut.constants import ups, downs
+from coconut.exceptions import CoconutException
 
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
@@ -84,41 +91,12 @@ def parenwrap(lparen, item, rparen, tokens=False):
         wrap = condense(wrap)
     return wrap
 
-#-----------------------------------------------------------------------------------------------------------------------
-# CLASSES:
-#-----------------------------------------------------------------------------------------------------------------------
+def tokenlist(item, sep, suppress=True):
+    """Creates a list of tokens matching the item."""
+    if suppress:
+        sep = sep.suppress()
+    return item + ZeroOrMore(sep + item) + Optional(sep)
 
-class Tracer(object):
-    """Debug tracer."""
-
-    def __init__(self, show=printerr, on=False):
-        """Creates the tracer."""
-        self.show = show
-        self.debug(on)
-
-    def debug(self, on=True):
-        """Changes the tracer's state."""
-        self.on = on
-
-    def show_trace(self, tag, original, location, tokens):
-        """Formats and displays a trace."""
-        original = str(original)
-        location = int(location)
-        out = "[" + tag + "] "
-        if len(tokens) == 1 and isinstance(tokens[0], str):
-            out += ascii(tokens[0])
-        else:
-            out += str(tokens)
-        out += " (line "+str(lineno(location, original))+", col "+str(col(location, original))+")"
-        self.show(out)
-
-    def trace(self, item, tag):
-        """Traces a parse element."""
-        def callback(original, location, tokens):
-            """Callback function constructed by tracer."""
-            if self.on:
-                self.show_trace(tag, original, location, tokens)
-            return tokens
-        bound = attach(item, callback)
-        bound.setName(tag)
-        return bound
+def itemlist(item, sep):
+    """Creates a list of an item."""
+    return condense(item + ZeroOrMore(addspace(sep + item)) + Optional(sep))

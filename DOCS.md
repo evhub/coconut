@@ -39,7 +39,7 @@
     1. [Underscore Separators](#underscore-separators)
 1. [Function Notation](#function-notation)
     1. [Operator Functions](#operator-functions)
-    1. [Shorthand Functions](#shorthand-functions)
+    1. [Assignment Functions](#assignment-functions)
     1. [Infix Functions](#infix-functions)
     1. [Pattern-Matching Functions](#pattern-matching-functions)
 1. [Statements](#statements)
@@ -62,7 +62,7 @@
     1. [`count`](#count)
     1. [`map` and `zip`](#map-and-zip)
     1. [`datamaker`](#datamaker)
-    1. [`recursive`](#recursive)
+    1. [`tail_recursive`](#tail_recursive)
     1. [`recursive_iterator`](#recursive_iterator)
     1. [`parallel_map`](#parallel_map)
     1. [`concurrent_map`](#concurrent_map)
@@ -97,18 +97,18 @@ While most of Coconut gets its inspiration simply from trying to make functional
 
 Since Coconut is hosted on the [Python Package Index](https://pypi.python.org/pypi/coconut), it can be installed easily using `pip`. Simply install [Python](https://www.python.org/downloads/), open up a command-line prompt, and enter
 ```
-python -m pip install coconut
+pip install coconut
 ```
 which will install Coconut and its required dependencies. Coconut also has some optional dependencies, which can be installed by entering
 ```
-python -m pip install coconut[all]
+pip install coconut[all]
 ```
 which will enable the use of Coconut's `--autopep8`, `--watch`, and `--jupyter` flags. To install the optional dependencies only for a particular flag, simply put the flag name in place of `all`.
 
 ### Usage
 
 ```
-coconut [-h] [-v] [source] [dest] [-t version] [-s] [-l] [-k] [-p] [-a] [-w] [-f] [-d] [-r] [-n] [-m] [-i] [-q] [-c code] [--jupyter ...] [--autopep8 ...] [--recursion-limit limit] [--color color] [--verbose]
+coconut [-h] [-v] [source] [dest] [-t version] [-s] [-l] [-k] [-p] [-a] [-w] [-d] [-r] [-n] [-m] [-i] [-q] [-f] [-c code] [-j processes] [--jupyter ...] [--autopep8 ...] [--recursion-limit limit] [--color color] [--verbose]
 ```
 
 #### Positional Arguments
@@ -130,14 +130,15 @@ dest                  destination directory for compiled files (defaults to the 
 -p, --package           compile source as part of a package (defaults to only if source is a directory)
 -a, --standalone        compile source as standalone files (defaults to only if source is a single file)
 -w, --watch           watch a directory and recompile on changes (requires watchdog)
--f, --force             force overwriting of compiled Python (otherwise only overwrites when source code or compilation parameters change)
 -d, --display           print compiled Python
 -r, --run               run compiled Python (often used with --nowrite)
 -n, --nowrite           disable writing compiled Python
 -m, --minify            compress compiled Python
 -i, --interact          force the interpreter to start (otherwise starts if no other command is given)
 -q, --quiet             suppress all informational output (combine with --display to write runnable code to stdout)
--c code, --code code    run a line of Coconut passed in as a string (can also be passed into stdin)
+-f, --force             force overwriting of compiled Python (otherwise only overwrites when source code or compilation parameters change)
+-c, --code code         run a line of Coconut passed in as a string (can also be passed into stdin)
+-j, --jobs processes    number of additional processes to use (set to 0 to use a single process) (defaults to the number of processors on your machine)
 --jupyter, --ipython    run Jupyter/IPython with Coconut as the kernel (remaining args passed to Jupyter)
 --autopep8 ...          use autopep8 to format compiled code (remaining args passed to autopep8) (requires autopep8)
 --recursion-limit       set maximum recursion depth (default is system dependent)
@@ -958,9 +959,9 @@ import operator
 print(list(map(operator.add, range(0, 5), range(5, 10))))
 ```
 
-### Shorthand Functions
+### Assignment Functions
 
-Coconut allows for shorthand function definition that automatically returns the last line of the function body. A shorthand function is constructed by substituting `=` for `:` after the function definition line. Thus, the syntax for shorthand function definition is either
+Coconut allows for assignment function definition that automatically returns the last line of the function body. An assignment function is constructed by substituting `=` for `:` after the function definition line. Thus, the syntax for assignment function definition is either
 ```coconut
 def <name>(<args>) = <expr>
 ```
@@ -972,11 +973,11 @@ def <name>(<args>) =
 ```
 for full functions, where `<name>` is the name of the function, `<args>` are the functions arguments, `<stmts>` are any statements that the function should execute, and `<expr>` is the value that the function should return.
 
-_Note: Shorthand function definition can be combined with infix and/or pattern-matching function definition._
+_Note: Assignment function definition can be combined with infix and/or pattern-matching function definition._
 
 ##### Rationale
 
-Coconut's shorthand function definition is as easy to write as assignment to a lambda, but will appear named in tracebacks, as it compiles to normal Python function definition.
+Coconut's Assignment function definition is as easy to write as assignment to a lambda, but will appear named in tracebacks, as it compiles to normal Python function definition.
 
 ##### Example
 
@@ -1003,7 +1004,7 @@ def <arg> `<name>` <arg>:
 ```
 where `<name>` is the name of the function, the `<arg>`s are the function arguments, and `<body>` is the body of the function. If an `<arg>` includes a default, the `<arg>` must be surrounded in parentheses.
 
-_Note: Infix function definition can be combined with shorthand and/or pattern-matching function definition._
+_Note: Infix function definition can be combined with assignment and/or pattern-matching function definition._
 
 ##### Rationale
 
@@ -1043,7 +1044,7 @@ def <name>(*args):
 ```
 If pattern-matching function definition fails, it will raise a [`MatchError`](#matcherror) object just like [destructuring assignment](#destructuring-assignment).
 
-_Note: Pattern-matching function definition can be combined with shorthand and/or infix function definition._
+_Note: Pattern-matching function definition can be combined with assignment and/or infix function definition._
 
 ##### Example
 
@@ -1198,7 +1199,7 @@ class Node(collections.namedtuple("Node", "l, r")):
 
 ### Parenthetical Continuation
 
-Coconut allows for the more elegant parenthetical continuation instead of the less elegant backslash continuation in `import`, `del`, `global`, `nonlocal`, and `with` statements.
+Coconut allows for the more elegant parenthetical continuation instead of the less elegant backslash continuation in `del`, `global`, `nonlocal`, and `with` statements.
 
 ##### Example
 
@@ -1536,20 +1537,20 @@ class trilen(collections.namedtuple("trilen", "h")):
         return super(cls, cls).__new__(cls, (a**2 + b**2)**0.5)
 ```
 
-### `recursive`
+### `tail_recursive`
 
-Coconut provides a `recursive` decorator to perform tail recursion optimization on a function written in a tail-recursive style. To use `recursive` on a function, it must meet the following criteria:
+Coconut provides a `tail_recursive` decorator to perform tail recursion optimization on a function written in a tail-recursive style. To use `tail_recursive` on a function, it must meet the following criteria:
 
 1. your function calls itself, and
 2. in all cases where your function calls itself, it returns the result of that call without modifying it (synonymous with the function being written in a tail-recursive style).
 
-If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for `recursive`, or the corresponding criteria for [`recursive_iterator`](#recursive-iterator), since either decorator should prevent such errors.
+If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for `tail_recursive`, or the corresponding criteria for [`recursive_iterator`](#recursive-iterator), since either decorator should prevent such errors.
 
 ##### Example
 
 ###### Coconut
 ```coconut
-@recursive
+@tail_recursive
 def factorial(n, acc=1):
     case n:
         match 0:
@@ -1573,7 +1574,7 @@ Coconut provides a `recursive_iterator` decorator that provides significant opti
 3. all arguments passed to your function are hashable (synonymous with the function being memoizable), and
 4. your function calls itself multiple times with the same arguments.
 
-If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for `recursive_iterator`, or the corresponding criteria for [`recursive`](#recursive), since either decorator should prevent such errors.
+If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for `recursive_iterator`, or the corresponding criteria for [`tail_recursive`](#tail-recursive), since either decorator should prevent such errors.
 
 Furthermore, `recursive_iterator` also allows the resolution of a [nasty segmentation fault in Python's iterator logic that has never been fixed](http://bugs.python.org/issue14010). Specifically, instead of writing
 ```coconut
@@ -1600,7 +1601,7 @@ _Can't be done without a long decorator definition. The full definition of the d
 
 ### `parallel_map`
 
-Coconut provides a parallel version of `map` under the name `parallel_map`. `parallel_map` makes use of multiple processes, and is therefore much faster than `map` for CPU-bound tasks. Use of `parallel_map` requires `concurrent.futures`, which exists in the Python 3 standard library, but under Python 2 will require `python -m pip install futures` to function.
+Coconut provides a parallel version of `map` under the name `parallel_map`. `parallel_map` makes use of multiple processes, and is therefore much faster than `map` for CPU-bound tasks. Use of `parallel_map` requires `concurrent.futures`, which exists in the Python 3 standard library, but under Python 2 will require `pip install futures` to function.
 
 Because `parallel_map` uses multiple processes for its execution, it is necessary that all of its arguments be pickleable. Only objects defined at the module level, and not lambdas, objects defined inside of a function, or objects defined inside of the interpreter, are pickleable. Furthermore, on Windows, it is necessary that all calls to `parallel_map` occur inside of an `if __name__ == "__main__"` guard.
 
@@ -1627,7 +1628,7 @@ with concurrent.futures.ProcessPoolExecutor() as executor:
 
 ### `concurrent_map`
 
-Coconut provides a concurrent version of `map` under the name `concurrent_map`. `concurrent_map` makes use of multiple threads, and is therefore much faster than `map` for IO-bound tasks. Use of `concurrent_map` requires `concurrent.futures`, which exists in the Python 3 standard library, but under Python 2 will require `python -m pip install futures` to function.
+Coconut provides a concurrent version of `map` under the name `concurrent_map`. `concurrent_map` makes use of multiple threads, and is therefore much faster than `map` for IO-bound tasks. Use of `concurrent_map` requires `concurrent.futures`, which exists in the Python 3 standard library, but under Python 2 will require `pip install futures` to function.
 
 ##### Python Docs
 
@@ -1695,9 +1696,9 @@ All Coconut built-ins are accessible from `coconut.__coconut__`. The recommended
 
 ###### Python
 ```coconut_python
-from coconut.__coconut__ import recursive
+from coconut.__coconut__ import tail_recursive
 
-@recursive
+@tail_recursive
 def recursive_func(args):
     ...
 ```
@@ -1746,7 +1747,7 @@ Each _mode_ has two components: what parser it uses, and what header it prepends
 
 #### `setup`
 
-**coconut.convenience.setup**(_target, strict, minify, line\_numbers, keep\_lines, quiet, color_**)**
+**coconut.convenience.setup**(_target, strict, minify, line\_numbers, keep\_lines, autopep8_**)**
 
 `setup` can be used to pass command line flags for use in `parse`. The possible values for each flag argument are:
 
@@ -1755,8 +1756,7 @@ Each _mode_ has two components: what parser it uses, and what header it prepends
 - _minify_: `False` (default) or `True`
 - _line\_numbers_: `False` (default) or `True`
 - _keep\_lines_: `False` (default) or `True`
-- _quiet_: `False` (default) or `True`
-- _color_: `None` (default) or `str`
+- _autopep8_: `None` (default) or arguments to `autopep8`
 
 #### `cmd`
 

@@ -18,11 +18,13 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *
 
+import sys
 import os
 import traceback
+from copy import copy
 
-from coconut.constants import default_encoding, color_codes, end_color_code
-from coconut.compiler.exceptions import printerr
+from coconut.constants import default_encoding
+from coconut.logging import logger
 
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
@@ -47,6 +49,13 @@ def fixpath(path):
     """Uniformly formats a path."""
     return os.path.normpath(os.path.realpath(path))
 
+def showpath(path):
+    """Formats a path for displaying."""
+    if logger.verbose:
+        return os.path.abspath(path)
+    else:
+        return os.path.basename(path)
+
 def rem_encoding(code):
     """Removes encoding declarations from Python code so it can be passed to exec."""
     old_lines = code.splitlines()
@@ -67,24 +76,20 @@ def try_eval(code, in_vars):
     exec(code, in_vars)
     return None
 
-def escape_color(code):
-    """Generates an ANSII color code."""
-    return "\033[" + str(code) + "m"
-
 #-----------------------------------------------------------------------------------------------------------------------
 # CLASSES:
 #-----------------------------------------------------------------------------------------------------------------------
 
 class Runner(object):
     """Compiled Python executor."""
-    def __init__(self, proc=None, exit=None, path=None):
+    def __init__(self, comp=None, exit=None, path=None):
         """Creates the executor."""
         self.exit = exit
         self.vars = {"__name__": "__main__"}
         if path is not None:
             self.vars["__file__"] = fixpath(path)
-        if proc is not None:
-            self.run(proc.headers("code"))
+        if comp is not None:
+            self.run(comp.headers("code"))
             self.fixpickle()
 
     def fixpickle(self):
@@ -113,62 +118,15 @@ class Runner(object):
                 self.exit()
         return None
 
-class Console(object):
-    """Manages printing and reading data to the console."""
-    color_code = None
-    on = True
+class multiprocess_wrapper(object):
+    """Wrapper for a method that needs to be multiprocessed."""
 
-    def __init__(self, main_sig="", debug_sig=""):
-        """Creates the console."""
-        self.main_sig, self.debug_sig = main_sig, debug_sig
+    def __init__(self, base, method):
+        """Creates new multiprocessable method."""
+        self.recursion, self.logger, self.base, self.method = sys.getrecursionlimit(), copy(logger), base, method
 
-    def set_color(self, color=None):
-        """Set output color."""
-        if color:
-            color = color.replace("_", "")
-            if color in color_codes:
-                self.color_code = color_codes[color]
-            else:
-                try:
-                    color = int(color)
-                except ValueError:
-                    raise CoconutException('unrecognized color "'+color+'" (enter a valid color name or code)')
-                else:
-                    if 0 < color <= 256:
-                        self.color_code = color
-                    else:
-                        raise CoconutException('color code '+str(color)+' out of range (must obey 0 < color code <= 256)')
-        else:
-            self.color_code = None
-
-    def add_color(self, inputstring):
-        """Adds the specified color to the string."""
-        if self.color_code is None:
-            return inputstring
-        else:
-            return escape_color(self.color_code) + inputstring + escape_color(end_color_code)
-
-    def display(self, messages, sig="", debug=False):
-        """Prints an iterator of messages with color."""
-        message = " ".join(str(msg) for msg in messages)
-        for line in message.splitlines():
-            msg = sig + line
-            if msg:
-                msg = self.add_color(msg)
-            if debug is True:
-                printerr(msg)
-            else:
-                print(msg)
-
-    def print(self, *messages):
-        """Prints messages with color."""
-        self.display(messages)
-
-    def printerr(self, *messages):
-        """Prints error messages with color and debug signature."""
-        self.display(messages, self.debug_sig, True)
-
-    def show(self, *messages):
-        """Prints messages with color and main signature."""
-        if self.on:
-            self.display(messages, self.main_sig)
+    def __call__(self, *args, **kwargs):
+        """Sets up new process then calls the method."""
+        sys.setrecursionlimit(self.recursion)
+        logger.copy_from(self.logger)
+        return getattr(self.base, self.method)(*args, **kwargs)

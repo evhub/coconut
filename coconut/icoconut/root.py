@@ -26,22 +26,22 @@ except ImportError:
 from ipykernel.kernelbase import Kernel
 
 from coconut.command import Runner
-from coconut.compiler import \
-    Compiler, \
-    printerr, \
-    CoconutException
-from coconut.constants import \
-    py_syntax_version, \
-    mimetype, \
-    varchars, \
-    all_keywords, \
-    version_banner, \
-    tutorial_url, \
-    documentation_url, \
-    reserved_prefix, \
-    default_encoding, \
-    code_exts, \
-    tabideal
+from coconut.compiler import Compiler
+from coconut.exceptions import CoconutException
+from coconut.logging import logger
+from coconut.constants import (
+    py_syntax_version,
+    mimetype,
+    varchars,
+    all_keywords,
+    version_banner,
+    tutorial_url,
+    documentation_url,
+    reserved_prefix,
+    default_encoding,
+    code_exts,
+    tabideal,
+)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -109,7 +109,7 @@ def get_name(code, cursor_pos, get_bounds=False):
 # KERNEL:
 #-----------------------------------------------------------------------------------------------------------------------
 
-proc = Compiler(target="sys") # from coconut.compiler
+comp = Compiler(target="sys") # from coconut.compiler
 
 class CoconutKernel(Kernel):
     """Jupyter kernel for Coconut."""
@@ -152,18 +152,18 @@ class CoconutKernel(Kernel):
     def _setup(self, force=False):
         """Binds to the runner."""
         if force or self._runner is None:
-            self._runner = Runner(proc)
+            self._runner = Runner(comp)
 
     def _execute(self, code, evaluate=False):
         """Compiles and runs code."""
         self._setup()
         try:
             if evaluate:
-                compiled = proc.parse_eval(code)
+                compiled = comp.parse_eval(code)
             else:
-                compiled = proc.parse_block(code)
+                compiled = comp.parse_block(code)
         except CoconutException:
-            printerr(get_error())
+            logger.print_exc()
             return None
         else:
             if evaluate:
@@ -200,13 +200,13 @@ class CoconutKernel(Kernel):
     def do_is_complete(self, code):
         """Check Coconut code for correctness."""
         try:
-            proc.parse_block(code)
+            comp.parse_block(code)
         except CoconutException:
             if code.endswith("\n"):
                 return {
                     "status": "complete"
                 }
-            elif proc.should_indent(code):
+            elif comp.should_indent(code):
                 return {
                     "status": "incomplete",
                     "indent": " "*tabideal
