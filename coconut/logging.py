@@ -23,6 +23,8 @@ import os
 import traceback
 from contextlib import contextmanager
 
+from pyparsing import lineno, col
+
 from coconut.constants import (
     default_encoding,
     color_codes,
@@ -32,7 +34,7 @@ from coconut.constants import (
     debug_sig,
     taberrfmt,
 )
-from coconut.exceptions import CoconutException, CoconutWarning
+from coconut.exceptions import CoconutException, CoconutWarning, clean
 from coconut.compiler.util import attach
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -165,9 +167,12 @@ class Logger(object):
         if self.verbose:
             self.printerr(msg)
 
-    def log_tag(self, tag, code):
+    def log_tag(self, tag, code, multiline=False):
         """Logs a tagged message if in verbose mode."""
-        self.log("["+str(tag)+"] " + ascii(code))
+        if multiline:
+            self.log("[" + str(tag) + "]\n" + clean(code, rem_indents=False, encoding_errors="backslashreplace"))
+        else:
+            self.log("[" + str(tag) + "] " + ascii(code))
 
     def log_cmd(self, args):
         """Logs a console command if in verbose mode."""

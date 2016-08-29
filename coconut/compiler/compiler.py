@@ -229,30 +229,23 @@ def lambdef_handle(tokens):
         raise CoconutException("invalid lambda tokens", tokens)
 
 def math_funcdef_suite_handle(original, location, tokens):
-    """Processes shorthand function definiton suites."""
+    """Processes assignment function definiton suites."""
     if len(tokens) < 1:
-        raise CoconutException("invalid shorthand function definition suite tokens", tokens)
+        raise CoconutException("invalid assignment function definition suite tokens", tokens)
     else:
         return "".join(tokens[:-1]) + "return " + tokens[-1]
 
 def math_funcdef_handle(tokens):
-    """Processes shorthand function definition."""
+    """Processes assignment function definition."""
     if len(tokens) == 2:
         return tokens[0] + ("" if tokens[1].startswith("\n") else " ") + tokens[1]
     else:
-        raise CoconutException("invalid shorthand function definition tokens")
-
-def math_match_funcdef_handle(tokens):
-    """Processes match shorthand function definitions."""
-    if len(tokens) == 1:
-        return tokens[0] + "\n" + closeindent
-    else:
-        raise CoconutException("invalid pattern-matching shorthand function definition tokens", tokens)
+        raise CoconutException("invalid assignment function definition tokens")
 
 def def_match_funcdef_handle(tokens):
     """Processes full match function definition."""
     if len(tokens) == 2:
-        return tokens[0] + "".join(tokens[1]) + closeindent
+        return tokens[0] + openindent + "".join(tokens[1]) + closeindent
     else:
         raise CoconutException("invalid pattern-matching function definition tokens", tokens)
 
@@ -967,7 +960,7 @@ class Compiler(object):
         for get_proc in procs:
             proc = get_proc(self)
             inputstring = proc(inputstring, **kwargs)
-            logger.log_tag(proc.__name__, inputstring)
+            logger.log_tag(proc.__name__, inputstring, multiline=True)
         return inputstring
 
     def pre(self, inputstring, **kwargs):
@@ -1702,7 +1695,7 @@ class Compiler(object):
         out = "def " + func + "(*" + match_to_var + "):\n" + openindent
         out += match_check_var + " = False\n"
         out += matching.out()
-        out += self.pattern_error(original, loc)
+        out += self.pattern_error(original, loc) + closeindent
         return out
 
     def op_match_funcdef_handle(self, original, loc, tokens):
@@ -2415,9 +2408,9 @@ class Compiler(object):
     math_funcdef = trace(attach(
         condense(addspace(Keyword("def") + base_funcdef) + fixto(equals, ":", copy=True)) - math_funcdef_suite
         , math_funcdef_handle), "math_funcdef")
-    math_match_funcdef = trace(attach(
+    math_match_funcdef = trace(
         Optional(Keyword("match").suppress()) + condense(base_match_funcdef + equals.suppress() - math_funcdef_suite)
-        , math_match_funcdef_handle), "math_match_funcdef")
+        , "math_match_funcdef")
 
     async_funcdef_ref = addspace(Keyword("async") + (funcdef | math_funcdef))
     async_block_ref = addspace(Keyword("async") + (with_stmt | for_stmt))

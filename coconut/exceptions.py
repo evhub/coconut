@@ -27,16 +27,18 @@ from coconut.constants import openindent, closeindent, taberrfmt
 # FUNCTIONS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def clean(inputline, strip=True):
+def clean(inputline, strip=True, rem_indents=True, encoding_errors="replace"):
     """Cleans and strips a line."""
     if hasattr(sys.stdout, "encoding") and sys.stdout.encoding is not None:
         stdout_encoding = sys.stdout.encoding
     else:
         stdout_encoding = default_encoding
-    inputline = inputline.replace(openindent, "").replace(closeindent, "")
+    inputline = str(inputline)
+    if rem_indents:
+        inputline = inputline.replace(openindent, "").replace(closeindent, "")
     if strip:
         inputline = inputline.strip()
-    return inputline.encode(stdout_encoding, "replace").decode(stdout_encoding)
+    return inputline.encode(stdout_encoding, encoding_errors).decode(stdout_encoding)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # EXCEPTIONS:
