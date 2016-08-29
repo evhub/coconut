@@ -218,10 +218,10 @@ matrix:
         - ipython --ext coconut -c "%coconut assert '_coconut' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - coconut --jupyter
         - coconut pyston --recursionlimit 500
+        - coconut prisoner --strict --recursionlimit 500
         - pushd pyston
         - python runner.py
         - popd
-        - coconut prisoner --strict
         - coconut extras.coco --run --strict
         - python extras.py
         - coconut src/runner.coco file_build --strict
@@ -681,7 +681,7 @@ matrix:
         - echo "assert '_coconut' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --display
         - python -c "from coconut.convenience import parse; exec(parse('assert \'_coconut\' in \`globals\`; msg = \'<success>\'; pmsg = print\$(msg); pmsg()'))"
         - coconut pyston --recursionlimit 500
-        - coconut prisoner --strict
+        - coconut prisoner --strict --recursionlimit 500
         - coconut extras.coco --run --strict
         - python extras.py
         - coconut src/runner.coco file_build --strict
