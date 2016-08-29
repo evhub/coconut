@@ -102,7 +102,7 @@ from coconut.exceptions import (
     CoconutWarning,
     clean,
 )
-from coconut.logging import logger, trace
+from coconut.logging import logger, trace, complain
 from coconut.compiler.util import (
     target_info,
     addskip,
@@ -1293,6 +1293,8 @@ class Compiler(object):
                     level -= 1
                 line = line[:-1].rstrip()
             out.append(line + comment)
+        if level != 0:
+            complain(CoconutException("non-zero net indentation marker level", level))
         return "\n".join(out)
 
     def endline_comment(self, ln):

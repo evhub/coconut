@@ -26,6 +26,7 @@ from pyparsing import (
     Optional,
 )
 
+from coconut.logging import complain
 from coconut.constants import ups, downs
 from coconut.exceptions import CoconutException
 
@@ -40,9 +41,9 @@ def target_info(target):
 def addskip(skips, skip):
     """Adds a line skip to the skips."""
     if skip < 1:
-        raise CoconutException("invalid skip of line " + str(skip))
+        complain(CoconutException("invalid skip of line " + str(skip)))
     elif skip in skips:
-        raise CoconutException("duplicate skip of line " + str(skip))
+        complain(CoconutException("duplicate skip of line " + str(skip)))
     else:
         skips.add(skip)
         return skips

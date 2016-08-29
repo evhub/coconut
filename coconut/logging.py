@@ -58,6 +58,11 @@ def escape_color(code):
     """Generates an ANSII color code."""
     return "\033[" + str(code) + "m"
 
+def complain(error):
+    """Raises an error in DEVELOP, otherwise does nothing."""
+    if DEVELOP:
+        raise error
+
 #-----------------------------------------------------------------------------------------------------------------------
 # logger:
 #-----------------------------------------------------------------------------------------------------------------------
