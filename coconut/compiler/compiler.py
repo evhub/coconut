@@ -233,7 +233,7 @@ def math_funcdef_suite_handle(original, location, tokens):
     if len(tokens) < 1:
         raise CoconutException("invalid assignment function definition suite tokens", tokens)
     else:
-        return "".join(tokens[:-1]) + "return " + tokens[-1]
+        return "\n" + openindent + "".join(tokens[:-1]) + "return " + tokens[-1] + closeindent
 
 def math_funcdef_handle(tokens):
     """Processes assignment function definition."""
@@ -2405,7 +2405,7 @@ class Compiler(object):
     testlist_stmt = condense(testlist + newline)
     math_funcdef_suite = attach(
         testlist_stmt
-        | condense(newline - indent) - ZeroOrMore(~(testlist_stmt + dedent) + stmt) - condense(testlist_stmt - dedent)
+        | (newline - indent).suppress() - ZeroOrMore(~(testlist_stmt + dedent) + stmt) - testlist_stmt - dedent.suppress()
         , math_funcdef_suite_handle)
     math_funcdef = trace(attach(
         condense(addspace(Keyword("def") + base_funcdef) + fixto(equals, ":", copy=True)) - math_funcdef_suite
