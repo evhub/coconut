@@ -35,7 +35,6 @@ from coconut.constants import (
     taberrfmt,
 )
 from coconut.exceptions import CoconutException, CoconutWarning, clean
-from coconut.compiler.util import attach
 
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
@@ -208,9 +207,7 @@ class Logger(object):
         def trace_action(original, location, tokens):
             """Callback function constructed by tracer."""
             self.log_trace(tag, original, location, tokens)
-        bound = attach(item, trace_action)
-        bound.setName(tag)
-        return bound
+        return item.addParseAction(trace_action).setName(tag)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
