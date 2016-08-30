@@ -298,6 +298,7 @@ class Command(object):
             with self.handling_exceptions():
                 callback(getattr(self.comp, method)(*args, **kwargs))
         else:
+            path = showpath(path)
             # pickle the compiler in the path context so it gets to warnings
             with logger.in_path(path):
                 future = self.executor.submit(multiprocess_wrapper(self.comp, method), *args, **kwargs)

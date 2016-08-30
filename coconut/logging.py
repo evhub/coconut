@@ -158,7 +158,7 @@ class Logger(object):
         """Properly prints an exception in the exception context."""
         errmsg = self.get_error()
         if self.path is not None:
-            errmsg_lines = ["in " + os.path.abspath(self.path) + ":"]
+            errmsg_lines = ["in " + self.path + ":"]
             for line in errmsg.splitlines():
                 if line:
                     line = " "*taberrfmt + line
