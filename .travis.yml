@@ -14,7 +14,6 @@ matrix:
         - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
-        - pip install autopep8
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
         - pip install futures
@@ -88,10 +87,10 @@ matrix:
         - coconut src_target/cocotest/py2_test.coco keeplines_build/cocotest --strict --package --target 2.6 --keeplines
         - coconut src_target/cocotest/non_py26_test.coco keeplines_build/cocotest --strict --package --target 2.6 --keeplines
         - python keeplines_build/runner.py
-        - coconut src autopep8_build --strict --autopep8
-        - coconut src_target/cocotest/py2_test.coco autopep8_build/cocotest --strict --package --target 2.6 --autopep8
-        - coconut src_target/cocotest/non_py26_test.coco autopep8_build/cocotest --strict --package --target 2.6 --autopep8
-        - python autopep8_build/runner.py
+        - coconut src jobs0_build --strict --jobs 0
+        - coconut src_target/cocotest/py2_test.coco jobs0_build/cocotest --strict --package --target 2.6 --jobs 0
+        - coconut src_target/cocotest/non_py26_test.coco jobs0_build/cocotest --strict --package --target 2.6 --jobs 0
+        - python jobs0_build/runner.py
         - coconut src_target sys_build --strict --target sys
         - python sys_build/runner.py
         - coconut src_target target_build --strict --display --target 2.6
@@ -103,7 +102,6 @@ matrix:
         - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
-        - pip install autopep8
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
         - pip install futures
@@ -181,10 +179,10 @@ matrix:
         - coconut src_target/cocotest/py2_test.coco keeplines_build/cocotest --strict --package --target 2.7 --keeplines
         - coconut src_target/cocotest/non_py26_test.coco keeplines_build/cocotest --strict --package --target 2.7 --keeplines
         - python keeplines_build/runner.py
-        - coconut src autopep8_build --strict --autopep8
-        - coconut src_target/cocotest/py2_test.coco autopep8_build/cocotest --strict --package --target 2.7 --autopep8
-        - coconut src_target/cocotest/non_py26_test.coco autopep8_build/cocotest --strict --package --target 2.7 --autopep8
-        - python autopep8_build/runner.py
+        - coconut src jobs0_build --strict --jobs 0
+        - coconut src_target/cocotest/py2_test.coco jobs0_build/cocotest --strict --package --target 2.7 --jobs 0
+        - coconut src_target/cocotest/non_py26_test.coco jobs0_build/cocotest --strict --package --target 2.7 --jobs 0
+        - python jobs0_build/runner.py
         - coconut src_target sys_build --strict --target sys
         - python sys_build/runner.py
         - coconut src_target target_build --strict --display --target 2.7
@@ -196,7 +194,6 @@ matrix:
         - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
-        - pip install autopep8
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
         - pip install futures
@@ -277,10 +274,10 @@ matrix:
         - coconut src_target/cocotest/py2_test.coco keeplines_build/cocotest --strict --package --target 2.7 --keeplines
         - coconut src_target/cocotest/non_py26_test.coco keeplines_build/cocotest --strict --package --target 2.7 --keeplines
         - python keeplines_build/runner.py
-        - coconut src autopep8_build --strict --autopep8
-        - coconut src_target/cocotest/py2_test.coco autopep8_build/cocotest --strict --package --target 2.7 --autopep8
-        - coconut src_target/cocotest/non_py26_test.coco autopep8_build/cocotest --strict --package --target 2.7 --autopep8
-        - python autopep8_build/runner.py
+        - coconut src jobs0_build --strict --jobs 0
+        - coconut src_target/cocotest/py2_test.coco jobs0_build/cocotest --strict --package --target 2.7 --jobs 0
+        - coconut src_target/cocotest/non_py26_test.coco jobs0_build/cocotest --strict --package --target 2.7 --jobs 0
+        - python jobs0_build/runner.py
         - coconut src_target sys_build --strict --target sys
         - python sys_build/runner.py
         - coconut src_target target_build --strict --display --target 2.7
@@ -292,7 +289,6 @@ matrix:
         - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
-        - pip install autopep8
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
         - rm src/cocotest/py35_test.coco
@@ -365,10 +361,10 @@ matrix:
         - coconut src_target/cocotest/py3_test.coco keeplines_build/cocotest --strict --package --target 3.2 --keeplines
         - coconut src_target/cocotest/non_py26_test.coco keeplines_build/cocotest --strict --package --target 3.2 --keeplines
         - python keeplines_build/runner.py
-        - coconut src autopep8_build --strict --autopep8
-        - coconut src_target/cocotest/py3_test.coco autopep8_build/cocotest --strict --package --target 3.2 --autopep8
-        - coconut src_target/cocotest/non_py26_test.coco autopep8_build/cocotest --strict --package --target 3.2 --autopep8
-        - python autopep8_build/runner.py
+        - coconut src jobs0_build --strict --jobs 0
+        - coconut src_target/cocotest/py3_test.coco jobs0_build/cocotest --strict --package --target 3.2 --jobs 0
+        - coconut src_target/cocotest/non_py26_test.coco jobs0_build/cocotest --strict --package --target 3.2 --jobs 0
+        - python jobs0_build/runner.py
         - coconut src_target sys_build --strict --target sys
         - python sys_build/runner.py
         - coconut src_target target_build --strict --display --target 3.2
@@ -380,7 +376,6 @@ matrix:
         - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
-        - pip install autopep8
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
         - pip install pygments
@@ -457,10 +452,10 @@ matrix:
         - coconut src_target/cocotest/py3_test.coco keeplines_build/cocotest --strict --package --target 3.3 --keeplines
         - coconut src_target/cocotest/non_py26_test.coco keeplines_build/cocotest --strict --package --target 3.3 --keeplines
         - python keeplines_build/runner.py
-        - coconut src autopep8_build --strict --autopep8
-        - coconut src_target/cocotest/py3_test.coco autopep8_build/cocotest --strict --package --target 3.3 --autopep8
-        - coconut src_target/cocotest/non_py26_test.coco autopep8_build/cocotest --strict --package --target 3.3 --autopep8
-        - python autopep8_build/runner.py
+        - coconut src jobs0_build --strict --jobs 0
+        - coconut src_target/cocotest/py3_test.coco jobs0_build/cocotest --strict --package --target 3.3 --jobs 0
+        - coconut src_target/cocotest/non_py26_test.coco jobs0_build/cocotest --strict --package --target 3.3 --jobs 0
+        - python jobs0_build/runner.py
         - coconut src_target sys_build --strict --target sys
         - python sys_build/runner.py
         - coconut src_target target_build --strict --display --target 3.3
@@ -472,7 +467,6 @@ matrix:
         - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
-        - pip install autopep8
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
         - pip install pygments
@@ -549,10 +543,10 @@ matrix:
         - coconut src_target/cocotest/py3_test.coco keeplines_build/cocotest --strict --package --target 3.4 --keeplines
         - coconut src_target/cocotest/non_py26_test.coco keeplines_build/cocotest --strict --package --target 3.4 --keeplines
         - python keeplines_build/runner.py
-        - coconut src autopep8_build --strict --autopep8
-        - coconut src_target/cocotest/py3_test.coco autopep8_build/cocotest --strict --package --target 3.4 --autopep8
-        - coconut src_target/cocotest/non_py26_test.coco autopep8_build/cocotest --strict --package --target 3.4 --autopep8
-        - python autopep8_build/runner.py
+        - coconut src jobs0_build --strict --jobs 0
+        - coconut src_target/cocotest/py3_test.coco jobs0_build/cocotest --strict --package --target 3.4 --jobs 0
+        - coconut src_target/cocotest/non_py26_test.coco jobs0_build/cocotest --strict --package --target 3.4 --jobs 0
+        - python jobs0_build/runner.py
         - coconut src_target sys_build --strict --target sys
         - python sys_build/runner.py
         - coconut src_target target_build --strict --display --target 3.4
@@ -564,7 +558,6 @@ matrix:
         - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
-        - pip install autopep8
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
         - pip install pygments
@@ -648,11 +641,11 @@ matrix:
         - coconut src_target/cocotest/non_py26_test.coco keeplines_build/cocotest --strict --package --target 3.5 --keeplines
         - coconut src_target/cocotest/py35_test.coco keeplines_build/cocotest --strict --package --target 3.5 --keeplines
         - python keeplines_build/runner.py
-        - coconut src autopep8_build --strict --autopep8
-        - coconut src_target/cocotest/py3_test.coco autopep8_build/cocotest --strict --package --target 3.5 --autopep8
-        - coconut src_target/cocotest/non_py26_test.coco autopep8_build/cocotest --strict --package --target 3.5 --autopep8
-        - coconut src_target/cocotest/py35_test.coco autopep8_build/cocotest --strict --package --target 3.5 --autopep8
-        - python autopep8_build/runner.py
+        - coconut src jobs0_build --strict --jobs 0
+        - coconut src_target/cocotest/py3_test.coco jobs0_build/cocotest --strict --package --target 3.5 --jobs 0
+        - coconut src_target/cocotest/non_py26_test.coco jobs0_build/cocotest --strict --package --target 3.5 --jobs 0
+        - coconut src_target/cocotest/py35_test.coco jobs0_build/cocotest --strict --package --target 3.5 --jobs 0
+        - python jobs0_build/runner.py
         - coconut src_target sys_build --strict --target sys
         - python sys_build/runner.py
         - coconut src_target target_build --strict --display --target 3.5
@@ -664,7 +657,6 @@ matrix:
         - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
-        - pip install autopep8
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
         - rm src/cocotest/py35_test.coco
@@ -737,10 +729,10 @@ matrix:
         - coconut src_target/cocotest/py3_test.coco keeplines_build/cocotest --strict --package --target 3.2 --keeplines
         - coconut src_target/cocotest/non_py26_test.coco keeplines_build/cocotest --strict --package --target 3.2 --keeplines
         - python keeplines_build/runner.py
-        - coconut src autopep8_build --strict --autopep8
-        - coconut src_target/cocotest/py3_test.coco autopep8_build/cocotest --strict --package --target 3.2 --autopep8
-        - coconut src_target/cocotest/non_py26_test.coco autopep8_build/cocotest --strict --package --target 3.2 --autopep8
-        - python autopep8_build/runner.py
+        - coconut src jobs0_build --strict --jobs 0
+        - coconut src_target/cocotest/py3_test.coco jobs0_build/cocotest --strict --package --target 3.2 --jobs 0
+        - coconut src_target/cocotest/non_py26_test.coco jobs0_build/cocotest --strict --package --target 3.2 --jobs 0
+        - python jobs0_build/runner.py
         - coconut src_target sys_build --strict --target sys
         - python sys_build/runner.py
         - coconut src_target target_build --strict --display --target 3.2

@@ -166,15 +166,18 @@ class _coconut_compose:'''
                 header += r'''
 class _coconut_compose(object):'''
             header += r'''
-    __slots__ = ("f", "g")
-    def __init__(self, f, g):
-        self.f, self.g = f, g
+    __slots__ = ("funcs")
+    def __init__(self, *funcs):
+        self.funcs = funcs
     def __call__(self, *args, **kwargs):
-        return self.f(self.g(*args, **kwargs))
+        arg = self.funcs[-1](*args, **kwargs)
+        for f in self.funcs[-2::-1]:
+            arg = f(arg)
+        return arg
     def __repr__(self):
-        return _coconut.repr(self.f) + ".." + _coconut.repr(self.g)
+        return "..".join(_coconut.repr(f) for f in self.funcs)
     def __reduce__(self):
-        return (_coconut_compose, (self.f, self.g))
+        return (_coconut_compose, self.funcs)
 def _coconut_pipe(x, f): return f(x)
 def _coconut_starpipe(xs, f): return f(*xs)
 def _coconut_backpipe(f, x): return f(x)

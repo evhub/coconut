@@ -764,6 +764,15 @@ def namelist_handle(tokens):
     else:
         raise CoconutException("invalid in-line nonlocal / global tokens", tokens)
 
+def compose_item_handle(tokens):
+    """Handles function composition."""
+    if len(tokens) < 1:
+        raise CoconutException("invalid function composition tokens", tokens)
+    elif len(tokens) == 1:
+        return tokens[0]
+    else:
+        return "_coconut_compose(" + ", ".join(tokens) + ")"
+
 # end: HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
 # COMPILER:
@@ -815,11 +824,10 @@ class Compiler(object):
         """Generates a hash from code."""
         return hex(checksum(
             hash_sep.join(
-                str(item) for item in self.__reduce__()[1] + (
-                    VERSION_STR,
-                    package,
-                    code,
-                )
+                str(item) for item in
+                    (VERSION_STR,)
+                    + self.__reduce__()[1]
+                    + (package, code)
             ).encode(default_encoding)
         ) & 0xffffffff) # necessary for cross-compatibility
 
@@ -1507,8 +1515,6 @@ class Compiler(object):
                     out = "_coconut.functools.partial("+out+", "+trailer[1]+")"
                 elif trailer[0] == "$[":
                     out = "_coconut_igetitem("+out+", "+trailer[1]+")"
-                elif trailer[0] == "..":
-                    out = "_coconut_compose("+out+", "+trailer[1]+")"
                 else:
                     raise CoconutException("invalid special trailer", trailer[0])
             else:
@@ -2080,11 +2086,11 @@ class Compiler(object):
 
     testlist_comp = addspace((test | star_expr) + comp_for) | testlist_star_expr
     list_comp = condense(lbrack + Optional(testlist_comp) + rbrack)
-    composable_atom = trace(
+    func_atom = (
         name
         | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
         | lparen.suppress() + op_item + rparen.suppress()
-        , "composable_atom")
+    )
     keyword_atom = Keyword(const_vars[0])
     for x in range(1, len(const_vars)):
         keyword_atom |= Keyword(const_vars[x])
@@ -2122,7 +2128,7 @@ class Compiler(object):
     atom = (
         known_atom
         | passthrough_atom
-        | composable_atom
+        | func_atom
         )
 
     simple_trailer = (
@@ -2132,7 +2138,6 @@ class Compiler(object):
     complex_trailer = (
         condense(lparen + callargslist + rparen)
         | Group(condense(dollar + lparen) + callargslist + rparen.suppress())
-        | Group(dotdot + composable_atom)
         | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())
         | Group(condense(dollar + lbrack + rbrack))
         | Group(dollar)
@@ -2154,10 +2159,12 @@ class Compiler(object):
     assign_item = star_assign_item | base_assign_item
     assignlist <<= itemlist(assign_item, comma)
 
+    compose_item = attach(atom_item + ZeroOrMore(dotdot.suppress() + atom_item), compose_item_handle)
+
     factor = Forward()
     await_keyword = Forward()
     await_keyword_ref = Keyword("await")
-    power = trace(condense(addspace(Optional(await_keyword) + atom_item) + Optional(exp_dubstar + factor)), "power")
+    power = trace(condense(addspace(Optional(await_keyword) + compose_item) + Optional(exp_dubstar + factor)), "power")
     unary = plus | neg_minus | tilde
 
     factor <<= trace(condense(ZeroOrMore(unary) + power), "factor")
