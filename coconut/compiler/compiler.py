@@ -806,7 +806,6 @@ class Compiler(object):
             raise CoconutException('unsupported target Python version "' + target
                 + '" (supported targets are "' + '", "'.join(specific_targets) + '", or leave blank for universal)')
         self.target, self.strict, self.minify, self.line_numbers, self.keep_lines = target, strict, minify, line_numbers, keep_lines
-        self.tablen = 1 if self.minify else tabideal
 
     def __reduce__(self):
         """Return pickling information."""
@@ -1279,7 +1278,7 @@ class Compiler(object):
                     level -= 1
                 line = line[1:].lstrip()
             if line and not line.startswith("#"):
-                line = " "*self.tablen*level + line
+                line = " "*(1 if self.minify else tabideal)*level + line
             while line.endswith(openindent) or line.endswith(closeindent):
                 if line[-1] == openindent:
                     level += 1
