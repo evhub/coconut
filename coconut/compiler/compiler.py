@@ -783,7 +783,6 @@ class Compiler(object):
         lambda self: self.repl_proc,
         lambda self: self.header_proc,
         lambda self: self.polish,
-        lambda self: self.autopep8_proc,
     ]
     replprocs = [
         lambda self: self.endline_repl,
@@ -795,7 +794,7 @@ class Compiler(object):
         """Creates a new compiler with the given parsing parameters."""
         self.setup(*args, **kwargs)
 
-    def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False, autopep8=None):
+    def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False):
         """Initializes parsing parameters."""
         if target is None:
             target = ""
@@ -808,13 +807,10 @@ class Compiler(object):
                 + '" (supported targets are "' + '", "'.join(specific_targets) + '", or leave blank for universal)')
         self.target, self.strict, self.minify, self.line_numbers, self.keep_lines = target, strict, minify, line_numbers, keep_lines
         self.tablen = 1 if self.minify else tabideal
-        if autopep8 is not None:
-            autopep8 = tuple(autopep8)
-        self.autopep8_args = autopep8
 
     def __reduce__(self):
         """Return pickling information."""
-        return (Compiler, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.autopep8_args))
+        return (Compiler, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines))
 
     def reset(self):
         """Resets references."""
@@ -869,7 +865,6 @@ class Compiler(object):
                     self.target,
                     self.minify,
                     self.line_numbers,
-                    self.autopep8_args,
                     package,
                     code
                 )).encode(default_encoding)
@@ -1454,14 +1449,6 @@ class Compiler(object):
     def polish(self, inputstring, final_endline=True, **kwargs):
         """Does final polishing touches."""
         return inputstring.rstrip() + ("\n" if final_endline else "")
-
-    def autopep8_proc(self, inputstring, use_autopep8=True, **kwargs):
-        """Applies autopep8."""
-        if use_autopep8 and self.autopep8_args is not None:
-            import autopep8
-            return autopep8.fix_code(inputstring, options=autopep8.parse_args(("autopep8",) + self.autopep8_args))
-        else:
-            return inputstring
 
 # end: PROCESSORS
 #-----------------------------------------------------------------------------------------------------------------------

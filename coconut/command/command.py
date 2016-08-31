@@ -128,7 +128,6 @@ class Command(object):
             minify = args.minify,
             line_numbers = args.line_numbers,
             keep_lines = args.keep_lines,
-            autopep8 = args.autopep8,
             )
 
         with self.running_jobs(args.jobs[0]):

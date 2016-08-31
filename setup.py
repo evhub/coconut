@@ -29,7 +29,6 @@ import setuptools
 #-----------------------------------------------------------------------------------------------------------------------
 
 extras = {
-    "autopep8": "autopep8",
     "watch": "watchdog",
     "jupyter": "jupyter",
     "ipython": "jupyter",

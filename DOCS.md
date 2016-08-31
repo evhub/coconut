@@ -103,12 +103,12 @@ which will install Coconut and its required dependencies. Coconut also has some 
 ```
 pip install coconut[all]
 ```
-which will enable the use of Coconut's `--autopep8`, `--watch`, and `--jupyter` flags. To install the optional dependencies only for a particular flag, simply put the flag name in place of `all`.
+which will enable the use of Coconut's `--watch` and `--jupyter` flags. To install the optional dependencies only for a particular flag, simply put the flag name in place of `all`.
 
 ### Usage
 
 ```
-coconut [-h] [-v] [source] [dest] [-t version] [-s] [-l] [-k] [-p] [-a] [-w] [-d] [-r] [-n] [-m] [-i] [-q] [-f] [-c code] [-j processes] [--jupyter ...] [--autopep8 ...] [--recursion-limit limit] [--color color] [--verbose]
+coconut [-h] [-v] [source] [dest] [-t version] [-s] [-l] [-k] [-p] [-a] [-w] [-d] [-r] [-n] [-m] [-i] [-q] [-f] [-c code] [-j processes] [--jupyter ...] [--recursion-limit limit] [--color color] [--verbose]
 ```
 
 #### Positional Arguments
@@ -140,7 +140,6 @@ dest                  destination directory for compiled files (defaults to the 
 -c, --code code         run a line of Coconut passed in as a string (can also be passed into stdin)
 -j, --jobs processes    number of additional processes to use (set to 0 to use a single process) (defaults to the number of processors on your machine)
 --jupyter, --ipython    run Jupyter/IPython with Coconut as the kernel (remaining args passed to Jupyter)
---autopep8 ...          use autopep8 to format compiled code (remaining args passed to autopep8) (requires autopep8)
 --recursion-limit       set maximum recursion depth (default is system dependent)
 --tutorial              open the Coconut tutorial in the default web browser
 --documentation         open the Coconut documentation in the default web browser
@@ -1747,7 +1746,7 @@ Each _mode_ has two components: what parser it uses, and what header it prepends
 
 #### `setup`
 
-**coconut.convenience.setup**(_target, strict, minify, line\_numbers, keep\_lines, autopep8_**)**
+**coconut.convenience.setup**(_target, strict, minify, line\_numbers, keep\_lines_**)**
 
 `setup` can be used to pass command line flags for use in `parse`. The possible values for each flag argument are:
 
@@ -1756,7 +1755,6 @@ Each _mode_ has two components: what parser it uses, and what header it prepends
 - _minify_: `False` (default) or `True`
 - _line\_numbers_: `False` (default) or `True`
 - _keep\_lines_: `False` (default) or `True`
-- _autopep8_: `None` (default) or arguments to `autopep8`
 
 #### `cmd`
 

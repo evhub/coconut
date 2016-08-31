@@ -177,12 +177,6 @@ arguments.add_argument(
     help="run Jupyter/IPython with Coconut as the kernel (remaining args passed to Jupyter)")
 
 arguments.add_argument(
-    "--autopep8", type=str,
-    nargs=argparse.REMAINDER,
-    default=None,
-    help="use autopep8 to format compiled code (remaining args passed to autopep8) (requires autopep8)")
-
-arguments.add_argument(
     "--recursion-limit", "--recursionlimit",
     metavar="limit",
     type=int,
