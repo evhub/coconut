@@ -856,7 +856,7 @@ class Compiler(object):
         self.classic_lambdef <<= attach(self.classic_lambdef_ref, self.lambdef_check, copy=True)
         self.async_funcdef <<= attach(self.async_funcdef_ref, self.async_stmt_check, copy=True)
         self.async_match_funcdef <<= attach(self.async_match_funcdef_ref, self.async_stmt_check, copy=True)
-        self.async_block <<= attach(self.async_block_ref, self.async_stmt_check, copy=True)
+        self.async_stmt <<= attach(self.async_stmt_ref, self.async_stmt_check, copy=True)
         self.await_keyword <<= attach(self.await_keyword_ref, self.await_keyword_check, copy=True)
         self.star_expr <<= attach(self.star_expr_ref, self.star_expr_check, copy=True)
         self.dubstar_expr <<= attach(self.dubstar_expr_ref, self.star_expr_check, copy=True)
@@ -2383,7 +2383,7 @@ class Compiler(object):
 
     return_typedef = Forward()
     async_funcdef = Forward()
-    async_block = Forward()
+    async_stmt = Forward()
     name_funcdef = condense(name + parameters)
     op_funcdef_arg = name | condense(lparen.suppress() + tfpdef + Optional(default) + rparen.suppress())
     op_funcdef_name = backtick.suppress() + name + backtick.suppress()
@@ -2415,7 +2415,7 @@ class Compiler(object):
         , "math_match_funcdef")
 
     async_funcdef_ref = addspace(Keyword("async") + (funcdef | math_funcdef))
-    async_block_ref = addspace(Keyword("async") + (with_stmt | for_stmt))
+    async_stmt_ref = addspace(Keyword("async") + (with_stmt | for_stmt))
     async_match_funcdef_ref = addspace(
         (
             Optional(Keyword("match")).suppress() + Keyword("async")
@@ -2423,7 +2423,6 @@ class Compiler(object):
             )
         + (def_match_funcdef | math_match_funcdef)
         )
-    async_stmt = async_block | async_funcdef | async_match_funcdef_ref
 
     data_args = Optional(lparen.suppress() + Optional(itemlist(~underscore + name, comma)) + rparen.suppress())
     data_suite = Group(colon.suppress() - (
@@ -2436,16 +2435,16 @@ class Compiler(object):
     simple_decorator = condense(dotted_name + Optional(lparen + callargslist + rparen))("simple")
     complex_decorator = test("test")
     decorators = attach(OneOrMore(at.suppress() - Group(simple_decorator ^ complex_decorator) - newline.suppress()), decorator_handle)
-    decoratable_stmt = trace(
-        classdef
-        | datadef
-        | funcdef
+    funcdef_stmt = trace(
+        funcdef
         | async_funcdef
         | async_match_funcdef
         | math_funcdef
         | math_match_funcdef
         | match_funcdef
-        , "decoratable_stmt")
+    , "funcdef_stmt")
+    class_stmt = trace(classdef | datadef, "class_stmt")
+    decoratable_stmt = class_stmt | funcdef_stmt
     decorated = condense(decorators - decoratable_stmt)
 
     passthrough_stmt = condense(passthrough_block - (base_suite | newline))
