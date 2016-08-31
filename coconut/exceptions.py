@@ -21,7 +21,12 @@ from coconut.root import *
 import sys
 from pyparsing import lineno
 
-from coconut.constants import openindent, closeindent, taberrfmt
+from coconut.constants import (
+    openindent,
+    closeindent,
+    taberrfmt,
+    default_encoding,
+)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:

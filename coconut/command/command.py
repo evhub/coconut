@@ -26,7 +26,7 @@ import platform
 from contextlib import contextmanager
 
 from coconut.compiler import Compiler, gethash
-from coconut.exceptions import CoconutException
+from coconut.exceptions import CoconutException, CoconutWarning
 from coconut.logging import logger
 from coconut.constants import (
     code_exts,

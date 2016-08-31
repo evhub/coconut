@@ -17,7 +17,7 @@ Description: Basic Coconut constants and compatibility handling.
 from __future__ import print_function, absolute_import, unicode_literals, division
 
 try:
-    import readline as _ # improves input function
+    import readline as _readline # improves input function
 except ImportError:
     pass
 
@@ -147,9 +147,7 @@ PY27_HEADER = "import sys as _coconut_sys, os as _coconut_os\n" + PY27_HEADER_BA
 PYCHECK_HEADER = r'''import sys as _coconut_sys
 if _coconut_sys.version_info < (3,):
     import os as _coconut_os
-'''
-for _line in PY2_HEADER_BASE.splitlines():
-    PYCHECK_HEADER += "    " + _line + "\n"
+''' + "".join("    " + _line + "\n" for _line in PY2_HEADER_BASE.splitlines())
 PYCHECK_HEADER += r'''else:
     py3_map, py3_zip = map, zip
 '''
