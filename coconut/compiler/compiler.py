@@ -812,6 +812,18 @@ class Compiler(object):
         """Return pickling information."""
         return (Compiler, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines))
 
+    def genhash(self, package, code):
+        """Generates a hash from code."""
+        return hex(checksum(
+            hash_sep.join(
+                str(item) for item in self.__reduce__()[1] + (
+                    VERSION_STR,
+                    package,
+                    code,
+                )
+            ).encode(default_encoding)
+        ) & 0xffffffff) # necessary for cross-compatibility
+
     def reset(self):
         """Resets references."""
         self.indchar = None
@@ -856,19 +868,6 @@ class Compiler(object):
         self.await_keyword <<= attach(self.await_keyword_ref, self.await_keyword_check, copy=True)
         self.star_expr <<= attach(self.star_expr_ref, self.star_expr_check, copy=True)
         self.dubstar_expr <<= attach(self.dubstar_expr_ref, self.star_expr_check, copy=True)
-
-    def genhash(self, package, code):
-        """Generates a hash from code."""
-        return hex(checksum(
-                hash_sep.join(str(item) for item in (
-                    VERSION_STR,
-                    self.target,
-                    self.minify,
-                    self.line_numbers,
-                    package,
-                    code
-                )).encode(default_encoding)
-            ) & 0xffffffff) # necessary for cross-compatibility
 
     def adjust(self, ln):
         """Adjusts a line number."""
