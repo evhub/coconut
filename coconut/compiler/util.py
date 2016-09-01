@@ -27,7 +27,12 @@ from pyparsing import (
 )
 
 from coconut.logging import complain
-from coconut.constants import ups, downs
+from coconut.constants import (
+    ups,
+    downs,
+    openindent,
+    closeindent,
+)
 from coconut.exceptions import CoconutException
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -105,3 +110,19 @@ def itemlist(item, sep):
 def rem_comment(line):
     """Removes a comment from a line."""
     return line.split("#", 1)[0].rstrip()
+
+def split_leading_indent(line):
+    """Split line into leading indent and main."""
+    indent = ""
+    while line.startswith(openindent) or line.startswith(closeindent) or line.lstrip() != line:
+        indent += line[0]
+        line = line[1:]
+    return indent, line
+
+def split_trailing_indent(line):
+    """Split line into leading indent and main."""
+    indent = ""
+    while line.endswith(openindent) or line.endswith(closeindent) or line.rstrip() != line:
+        indent = line[-1] + indent
+        line = line[:-1]
+    return line, indent

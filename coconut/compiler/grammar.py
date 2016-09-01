@@ -24,6 +24,8 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *
 
+import re
+
 from pyparsing import (
     CaselessLiteral,
     Combine,
@@ -43,7 +45,8 @@ from pyparsing import (
     nums,
 )
 
-from coconut.logging import trace
+from coconut.exceptions import CoconutException
+from coconut.logging import trace, complain
 from coconut.constants import (
     openindent,
     closeindent,
@@ -63,6 +66,7 @@ from coconut.compiler.util import (
     parenwrap,
     tokenlist,
     itemlist,
+    split_leading_indent,
 )
 
 # end: IMPORTS
@@ -669,12 +673,35 @@ def compose_item_handle(tokens):
     else:
         return "_coconut_compose(" + ", ".join(tokens) + ")"
 
+funcdef_regex = re.compile(r"^def\b", re.U)
+
 def maybe_tco_handle(tokens):
     """Determines if tail call optimization can be done and if so does it."""
     if len(tokens) != 1:
         raise CoconutException("invalid function definition tokens", tokens)
     else:
-        return tokens[0]
+        _indent = 0
+        _body = 1
+
+        funcdef = None
+        prestmts, decorators, func_stmts = [], [], []
+        for line in tokens[0].splitlines():
+            line = split_leading_indent(line)
+            if funcdef is not None:
+                func_stmts.append(line)
+            elif line[_body].startswith("@"):
+                decorators.append(line)
+            elif funcdef_regex.match(line[_body]):
+                funcdef = line
+            else:
+                if decorators:
+                    complain(CoconutException("funcdef prestmt after funcdef decorators"), line)
+                prestmts.append(line)
+
+        out = []
+        for line in prestmts + decorators + [funcdef] + func_stmts:
+            out.append("".join(line))
+        return "\n".join(out)
 
 # end: HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
@@ -745,7 +772,7 @@ class Grammar(object):
     matrix_at = Forward()
 
     name = Forward()
-    name_ref = ~Literal(reserved_prefix) + Regex(r"\b(?![0-9])\w+\b")
+    name_ref = ~Literal(reserved_prefix) + Regex(r"\b(?![0-9])\w+\b", re.U)
     for k in keywords + const_vars:
         name_ref = ~Keyword(k) + name_ref
     for k in reserved_vars:
@@ -1271,10 +1298,10 @@ class Grammar(object):
         | math_match_funcdef
         | match_funcdef
     , "funcdef_stmt")
-    decoratable_func_stmt = attach(condense(Optional(decorators) + funcdef_stmt), maybe_tco_handle)
+    decoratable_func_stmt = trace(attach(condense(Optional(decorators) + funcdef_stmt), maybe_tco_handle), "decoratable_func_stmt")
 
-    class_stmt = trace(classdef | datadef, "class_stmt")
-    decoratable_class_stmt = condense(Optional(decorators) + class_stmt)
+    class_stmt = classdef | datadef
+    decoratable_class_stmt = trace(condense(Optional(decorators) + class_stmt), "decoratable_class_stmt")
 
     passthrough_stmt = condense(passthrough_block - (base_suite | newline))
 

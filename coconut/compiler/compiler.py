@@ -29,7 +29,6 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *
 
 import sys
-import ast
 
 from pyparsing import (
     ParseBaseException,
@@ -97,6 +96,8 @@ from coconut.compiler.util import (
     change,
     rem_comment,
     attach,
+    split_leading_indent,
+    split_trailing_indent,
 )
 from coconut.compiler.header import (
     gethash,
@@ -659,11 +660,8 @@ class Compiler(Grammar):
             for i in range(len(self.stmt_lambdas)):
                 name = self.stmt_lambda_name(i)
                 if name in line:
-                    indents = ""
-                    while line.startswith(openindent) or line.startswith(closeindent):
-                        indents += line[0]
-                        line = line[1:]
-                    out.append(indents + self.stmt_lambdas[i])
+                    indent, line = split_leading_indent(line)
+                    out.append(indent + self.stmt_lambdas[i])
             out.append(line)
         return "\n".join(out)
 
@@ -680,20 +678,16 @@ class Compiler(Grammar):
                 comment = "#" + comment
             else:
                 comment = ""
-            while line.startswith(openindent) or line.startswith(closeindent):
-                if line[0] == openindent:
-                    level += 1
-                elif line[0] == closeindent:
-                    level -= 1
-                line = line[1:].lstrip()
+
+            indent, line = split_leading_indent(line)
+            level += indent.count(openindent) - indent.count(closeindent)
+
             if line and not line.startswith("#"):
                 line = " "*(1 if self.minify else tabideal)*level + line
-            while line.endswith(openindent) or line.endswith(closeindent):
-                if line[-1] == openindent:
-                    level += 1
-                elif line[-1] == closeindent:
-                    level -= 1
-                line = line[:-1].rstrip()
+
+            line, indent = split_trailing_indent(line)
+            level += indent.count(openindent) - indent.count(closeindent)
+
             out.append(line + comment)
 
         if level != 0:
