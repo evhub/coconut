@@ -35,6 +35,7 @@ from pyparsing import (
     col,
     line,
     lineno,
+    nums,
 )
 
 from coconut.constants import (
