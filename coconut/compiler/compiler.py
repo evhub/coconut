@@ -1029,11 +1029,13 @@ class Compiler(object):
         if nl_at_eof_check and not inputstring.endswith("\n"):
             end_index = len(inputstring) - 1 if inputstring else 0
             self.strict_err_or_warn("missing new line at end of file", inputstring, end_index)
+        original_lines = inputstring.splitlines()
         if self.keep_lines:
-            self.original_lines = inputstring.splitlines()
+            self.original_lines = original_lines
+        inputstring = "\n".join(original_lines)
         if strip:
             inputstring = inputstring.strip()
-        return "\n".join(inputstring.splitlines()) + "\n"
+        return inputstring
 
     def str_proc(self, inputstring, **kwargs):
         """Processes strings and comments."""
@@ -1147,8 +1149,13 @@ class Compiler(object):
         count = None # current parenthetical level
         multiline = None
         skips = self.skips.copy()
-        for x in range(0, len(inputstring)):
-            c = inputstring[x]
+
+        for x in range(0, len(inputstring)+1):
+            if x == len(inputstring):
+                c = "\n"
+            else:
+                c = inputstring[x]
+
             if hold is not None:
                 count += change(c)
                 if count >= 0 and c == hold:
@@ -1179,6 +1186,7 @@ class Compiler(object):
                 found = True
             else:
                 out.append(c)
+
         if hold is not None or found is not None:
             raise self.make_err(CoconutSyntaxError, "unclosed passthrough", inputstring, x)
         else:
@@ -1267,7 +1275,7 @@ class Compiler(object):
                 raise self.make_err(CoconutSyntaxError, "illegal final backslash continuation", last, len(last), self.adjust(len(new)))
             if count != 0:
                 raise self.make_err(CoconutSyntaxError, "unclosed parenthetical", new[-1], len(new[-1]), self.adjust(len(new)))
-            new[-1] += closeindent*len(levels)
+        new.append(closeindent*len(levels))
         return "\n".join(new)
 
     def stmt_lambda_proc(self, inputstring, **kwargs):
