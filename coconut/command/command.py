@@ -130,40 +130,42 @@ class Command(object):
             keep_lines = args.keep_lines,
             )
 
-        with self.running_jobs(args.jobs[0]):
 
-            if args.source is not None:
-                if args.run and os.path.isdir(args.source):
-                    raise CoconutException("source path must point to file not directory when --run is enabled")
-                elif args.watch and os.path.isfile(args.source):
-                    raise CoconutException("source path must point to directory not file when --watch is enabled")
-                if args.dest is None:
-                    if args.nowrite:
-                        dest = None # no dest
-                    else:
-                        dest = True # auto-generate dest
-                elif args.nowrite:
-                    raise CoconutException("destination path cannot be given when --nowrite is enabled")
-                elif os.path.isfile(args.dest):
-                    raise CoconutException("destination path must point to directory not file")
+        if args.source is not None:
+            if args.run and os.path.isdir(args.source):
+                raise CoconutException("source path must point to file not directory when --run is enabled")
+            elif args.watch and os.path.isfile(args.source):
+                raise CoconutException("source path must point to directory not file when --watch is enabled")
+            if args.dest is None:
+                if args.nowrite:
+                    dest = None # no dest
                 else:
-                    dest = args.dest
-                if args.package and args.standalone:
-                    raise CoconutException("cannot compile as both --package and --standalone")
-                elif args.package:
-                    package = True
-                elif args.standalone:
-                    package = False
-                else:
-                    package = None # auto-decide package
+                    dest = True # auto-generate dest
+            elif args.nowrite:
+                raise CoconutException("destination path cannot be given when --nowrite is enabled")
+            elif os.path.isfile(args.dest):
+                raise CoconutException("destination path must point to directory not file")
+            else:
+                dest = args.dest
+            if args.package and args.standalone:
+                raise CoconutException("cannot compile as both --package and --standalone")
+            elif args.package:
+                package = True
+            elif args.standalone:
+                package = False
+            else:
+                package = None # auto-decide package
+
+            with self.running_jobs(args.jobs[0]):
                 self.compile_path(args.source, dest, package, args.run, args.force)
-            elif (args.run
-                  or args.nowrite
-                  or args.force
-                  or args.package
-                  or args.standalone
-                  or args.watch):
-                raise CoconutException("a source file/folder must be specified when options that depend on the source are enabled")
+
+        elif (args.run
+              or args.nowrite
+              or args.force
+              or args.package
+              or args.standalone
+              or args.watch):
+            raise CoconutException("a source file/folder must be specified when options that depend on the source are enabled")
 
         if args.code is not None:
             self.execute(self.comp.parse_block(args.code[0]))
