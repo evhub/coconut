@@ -669,12 +669,12 @@ def compose_item_handle(tokens):
     else:
         return "_coconut_compose(" + ", ".join(tokens) + ")"
 
-def maybe_tco_handle(self, tokens):
+def maybe_tco_handle(tokens):
     """Determines if tail call optimization can be done and if so does it."""
     if len(tokens) != 1:
         raise CoconutException("invalid function definition tokens", tokens)
     else:
-        return out
+        return tokens[0]
 
 # end: HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
