@@ -116,6 +116,7 @@ from coconut.compiler.util import (
     parenwrap,
     tokenlist,
     itemlist,
+    rem_comment,
 )
 from coconut.compiler.header import (
     gethash,
@@ -866,7 +867,7 @@ class Compiler(object):
         self.yield_from <<= trace(attach(self.yield_from_ref, self.yield_from_handle, copy=True), "yield_from")
         self.exec_stmt <<= trace(attach(self.exec_stmt_ref, self.exec_stmt_handle, copy=True), "exec_stmt")
         self.stmt_lambdef <<= trace(attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle, copy=True), "stmt_lambdef")
-        self.decoratable_func_stmt <<= trace(attach(self.decoratable_func_stmt_ref, self.decoratable_func_stmt_handle, copy=True), "decoratable_func_stmt")
+        self.decoratable_func_stmt <<= trace(attach(self.decoratable_func_stmt_ref, self.maybe_tco_handle, copy=True), "decoratable_func_stmt")
         self.u_string <<= attach(self.u_string_ref, self.u_string_check, copy=True)
         self.f_string <<= attach(self.f_string_ref, self.f_string_check, copy=True)
         self.typedef <<= attach(self.typedef_ref, self.typedef_check, copy=True)
@@ -894,12 +895,17 @@ class Compiler(object):
 
     def reformat(self, snip, index=None, reind=False):
         """Post processes a preprocessed snippet."""
-        if index is None:
-            if reind:
-                snip = self.reind_proc(snip, careful=False)
-            return self.repl_proc(snip, careful=False, add_to_line=False)
-        else:
+        kwargs = {
+            "careful": False,
+            "add_to_line": False,
+            "storage_dict": {},
+        }
+        if index is not None:
             return self.reformat(snip, reind=reind), len(self.reformat(snip[:index], reind=reind))
+        elif reind:
+            return self.reformat(self.reind_proc(snip, **kwargs)), kwargs["storage_dict"]["final indentation level"]
+        else:
+            return self.repl_proc(snip, **kwargs)
 
     def make_err(self, errtype, message, original, location, ln=None, reformat=True, *args, **kwargs):
         """Generates an error of the specified type."""
@@ -994,8 +1000,8 @@ class Compiler(object):
 
     def should_indent(self, code):
         """Determines whether the next line should be indented."""
-        last = code.splitlines()[-1].split("#", 1)[0].rstrip()
-        return last.endswith(":") or change(last) < 0
+        last = rem_comment(code.splitlines()[-1])
+        return last.endswith(":") or last.endswith("\\") or change(last) < 0
 
     def parse(self, inputstring, parser, preargs, postargs):
         """Uses the parser to parse the inputstring."""
@@ -1027,7 +1033,7 @@ class Compiler(object):
             self.original_lines = inputstring.splitlines()
         if strip:
             inputstring = inputstring.strip()
-        return "\n".join(inputstring.splitlines()) # str_proc will add a newline to the end
+        return "\n".join(inputstring.splitlines()) + "\n"
 
     def str_proc(self, inputstring, **kwargs):
         """Processes strings and comments."""
@@ -1042,11 +1048,13 @@ class Compiler(object):
         _stop = 2 # store of characters that might be the end of the string
         x = 0
         skips = self.skips.copy()
+
         while x <= len(inputstring):
             if x == len(inputstring):
                 c = "\n"
             else:
                 c = inputstring[x]
+
             if hold is not None:
                 if len(hold) == 1: # hold == [_comment]
                     if c == "\n":
@@ -1124,6 +1132,7 @@ class Compiler(object):
             else:
                 out.append(c)
             x += 1
+
         if hold is not None or found is not None:
             raise self.make_err(CoconutSyntaxError, "unclosed string", inputstring, x, reformat=False)
         else:
@@ -1195,13 +1204,14 @@ class Compiler(object):
         return count
 
     def ind_proc(self, inputstring, **kwargs):
-        """Processes indentation and fixes line/file endings."""
+        """Processes indentation."""
         lines = inputstring.splitlines()
         new = []
         levels = []
         count = 0
         current = None
         skips = self.skips.copy()
+
         for ln in range(0, len(lines)):
             line = lines[ln]
             ln += 1
@@ -1212,7 +1222,7 @@ class Compiler(object):
                 else:
                     line = line_rstrip
             if new:
-                last = new[-1].split("#", 1)[0].rstrip()
+                last = rem_comment(new[-1])
             else:
                 last = None
             if not line or line.lstrip().startswith("#"):
@@ -1249,14 +1259,15 @@ class Compiler(object):
                     raise self.make_err(CoconutSyntaxError, "illegal dedent to unused indentation level", line, 0, self.adjust(ln))
                 new.append(line)
             count += change(line)
+
         self.skips = skips
         if new:
-            last = new[-1].split("#", 1)[0].rstrip()
+            last = rem_comment(new[-1])
             if last.endswith("\\"):
                 raise self.make_err(CoconutSyntaxError, "illegal final backslash continuation", last, len(last), self.adjust(len(new)))
             if count != 0:
                 raise self.make_err(CoconutSyntaxError, "unclosed parenthetical", new[-1], len(new[-1]), self.adjust(len(new)))
-        new.append(closeindent*len(levels))
+            new[-1] += closeindent*len(levels)
         return "\n".join(new)
 
     def stmt_lambda_proc(self, inputstring, **kwargs):
@@ -1274,10 +1285,11 @@ class Compiler(object):
             out.append(line)
         return "\n".join(out)
 
-    def reind_proc(self, inputstring, careful=True, **kwargs):
+    def reind_proc(self, inputstring, storage_dict=None, **kwargs):
         """Adds back indentation."""
         out = []
         level = 0
+
         for line in inputstring.splitlines():
             line = line.strip()
             if "#" in line:
@@ -1301,8 +1313,12 @@ class Compiler(object):
                     level -= 1
                 line = line[:-1].rstrip()
             out.append(line + comment)
-        if careful and level != 0:
-            complain(CoconutException("non-zero net indentation marker level", level))
+
+            if storage_dict is not None:
+                storage_dict["final indentation level"] = level
+            elif level != 0:
+                complain(CoconutException("non-zero final indentation level", level))
+
         return "\n".join(out)
 
     def endline_comment(self, ln):
@@ -1397,9 +1413,11 @@ class Compiler(object):
         out = []
         comment = None
         string = None
+
         for x in range(len(inputstring)+1):
             c = inputstring[x] if x != len(inputstring) else None
             try:
+
                 if comment is not None:
                     if c is not None and c in nums:
                         comment += c
@@ -1435,6 +1453,7 @@ class Compiler(object):
                         string = ""
                     else:
                         out.append(c)
+
             except CoconutException:
                 if careful:
                     raise
@@ -1445,6 +1464,7 @@ class Compiler(object):
                     out.append(string)
                     string = None
                 out.append(c)
+
         return "".join(out)
 
     def repl_proc(self, inputstring, **kwargs):
@@ -1779,18 +1799,24 @@ class Compiler(object):
         )
         return name
 
-    def decoratable_func_stmt_handle(self, tokens):
-        """Determins if TCO can be done and if so does it."""
+    def maybe_tco_handle(self, tokens):
+        """Determines if TCO can be done and if so does it."""
         if len(tokens) != 1:
             raise CoconutException("invalid function definition tokens", tokens)
         else:
-            snippet = self.reformat(tokens[0], reind=True)
+            snippet, final_level = self.reformat(tokens[0], reind=True)
             try:
                 transformed = tco_optimize(snippet)
             except SyntaxError:
                 return tokens[0]
             else:
-                return self.wrap_passthrough(transformed)
+                out = self.ind_proc(transformed)
+                if final_level < 0:
+                    out += closeindent * -final_level
+                elif final_level > 0:
+                    complain(CoconutException("surplus of open indents in function definition", tokens[0]))
+                    out += openindent * final_level
+                return out
 
 # end: COMPILER HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------

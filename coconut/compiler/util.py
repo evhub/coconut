@@ -101,3 +101,7 @@ def tokenlist(item, sep, suppress=True):
 def itemlist(item, sep):
     """Creates a list of an item."""
     return condense(item + ZeroOrMore(addspace(sep + item)) + Optional(sep))
+
+def rem_comment(line):
+    """Removes a comment from a line."""
+    return line.split("#", 1)[0].rstrip()
