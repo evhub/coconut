@@ -305,7 +305,7 @@ def tail_recursive(func):
     state = [True, None]  # state = [is_top_level, (args, kwargs)]
     recurse = object()
     @_coconut.functools.wraps(func)
-    def recursive_func(*args, **kwargs):
+    def tail_recursive_func(*args, **kwargs):
         """Tail Recursion Wrapper."""
         if state[0]:
             state[0] = False
@@ -322,7 +322,7 @@ def tail_recursive(func):
         else:
             state[1] = args, kwargs
             return recurse
-    return recursive_func
+    return tail_recursive_func
 def recursive_iterator(func):
     """Decorates a function by optimizing it for iterator recursion."""
     tee_store = {}
@@ -364,7 +364,7 @@ def datamaker(data_type):
 def consume(iterable, keep_last=0):
     """Fully exhaust iterable and return the last keep_last elements."""
     return _coconut.collections.deque(iterable, maxlen=keep_last)  # fastest way to exhaust an iterator
-MatchError, map, reduce, takewhile, dropwhile, tee, recursive = _coconut_MatchError, _coconut_map, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile, _coconut_tee, tail_recursive
+MatchError, map, reduce, takewhile, dropwhile, tee = _coconut_MatchError, _coconut_map, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile, _coconut_tee
 '''
         else:
             raise CoconutException("invalid header type", which)

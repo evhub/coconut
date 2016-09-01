@@ -30,6 +30,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *
 
 import sys
+import ast
 
 from pyparsing import (
     CaselessLiteral,
@@ -773,6 +774,10 @@ def compose_item_handle(tokens):
     else:
         return "_coconut_compose(" + ", ".join(tokens) + ")"
 
+def tco_optimize(code):
+    """Perform tail call optimization on given code."""
+    return code #TODO
+
 # end: HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
 # COMPILER:
@@ -861,6 +866,7 @@ class Compiler(object):
         self.yield_from <<= trace(attach(self.yield_from_ref, self.yield_from_handle, copy=True), "yield_from")
         self.exec_stmt <<= trace(attach(self.exec_stmt_ref, self.exec_stmt_handle, copy=True), "exec_stmt")
         self.stmt_lambdef <<= trace(attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle, copy=True), "stmt_lambdef")
+        self.decoratable_func_stmt <<= trace(attach(self.decoratable_func_stmt_ref, self.decoratable_func_stmt_handle, copy=True), "decoratable_func_stmt")
         self.u_string <<= attach(self.u_string_ref, self.u_string_check, copy=True)
         self.f_string <<= attach(self.f_string_ref, self.f_string_check, copy=True)
         self.typedef <<= attach(self.typedef_ref, self.typedef_check, copy=True)
@@ -886,13 +892,14 @@ class Compiler(object):
                 i += 1
         return adj_ln
 
-    def reformat(self, snip, index=None):
+    def reformat(self, snip, index=None, reind=False):
         """Post processes a preprocessed snippet."""
         if index is None:
+            if reind:
+                snip = self.reind_proc(snip, careful=False)
             return self.repl_proc(snip, careful=False, add_to_line=False)
         else:
-            return (self.repl_proc(snip, careful=False, add_to_line=False),
-                    len(self.repl_proc(snip[:index], careful=False, add_to_line=False)))
+            return self.reformat(snip, reind=reind), len(self.reformat(snip[:index], reind=reind))
 
     def make_err(self, errtype, message, original, location, ln=None, reformat=True, *args, **kwargs):
         """Generates an error of the specified type."""
@@ -1267,7 +1274,7 @@ class Compiler(object):
             out.append(line)
         return "\n".join(out)
 
-    def reind_proc(self, inputstring, **kwargs):
+    def reind_proc(self, inputstring, careful=True, **kwargs):
         """Adds back indentation."""
         out = []
         level = 0
@@ -1294,7 +1301,7 @@ class Compiler(object):
                     level -= 1
                 line = line[:-1].rstrip()
             out.append(line + comment)
-        if level != 0:
+        if careful and level != 0:
             complain(CoconutException("non-zero net indentation marker level", level))
         return "\n".join(out)
 
@@ -1341,9 +1348,9 @@ class Compiler(object):
                         fix = False
                     if add_to_line and line and not line.lstrip().startswith("#"):
                         line += self.endline_comment(ln)
-                except CoconutException:
+                except CoconutException as err:
                     if careful:
-                        raise
+                        complain(err)
                     fix = False
                 out.append(line)
             return "\n".join(out)
@@ -1771,6 +1778,19 @@ class Compiler(object):
             + openindent + self.stmt_lambda_proc("\n".join(stmts)) + closeindent
         )
         return name
+
+    def decoratable_func_stmt_handle(self, tokens):
+        """Determins if TCO can be done and if so does it."""
+        if len(tokens) != 1:
+            raise CoconutException("invalid function definition tokens", tokens)
+        else:
+            snippet = self.reformat(tokens[0], reind=True)
+            try:
+                transformed = tco_optimize(snippet)
+            except SyntaxError:
+                return tokens[0]
+            else:
+                return self.wrap_passthrough(transformed)
 
 # end: COMPILER HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
@@ -2427,6 +2447,7 @@ class Compiler(object):
     simple_decorator = condense(dotted_name + Optional(lparen + callargslist + rparen))("simple")
     complex_decorator = test("test")
     decorators = attach(OneOrMore(at.suppress() - Group(simple_decorator ^ complex_decorator) - newline.suppress()), decorator_handle)
+
     funcdef_stmt = trace(
         funcdef
         | async_funcdef
@@ -2435,9 +2456,11 @@ class Compiler(object):
         | math_match_funcdef
         | match_funcdef
     , "funcdef_stmt")
+    decoratable_func_stmt = Forward()
+    decoratable_func_stmt_ref = condense(Optional(decorators) + funcdef_stmt)
+
     class_stmt = trace(classdef | datadef, "class_stmt")
-    decoratable_stmt = class_stmt | funcdef_stmt
-    decorated = condense(decorators - decoratable_stmt)
+    decoratable_class_stmt = condense(Optional(decorators) + class_stmt)
 
     passthrough_stmt = condense(passthrough_block - (base_suite | newline))
 
@@ -2449,13 +2472,13 @@ class Compiler(object):
         | passthrough_stmt
         , "simple_compound_stmt")
     compound_stmt = trace(
-        decoratable_stmt
+        decoratable_class_stmt
+        | decoratable_func_stmt
         | with_stmt
         | while_stmt
         | for_stmt
         | async_stmt
         | simple_compound_stmt
-        | decorated
         | match_assign_stmt
         , "compound_stmt")
     keyword_stmt = trace(
