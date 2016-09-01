@@ -57,6 +57,12 @@ from coconut.constants import (
     const_vars,
     reserved_vars,
     default_whitespace_chars,
+    decorator_var,
+    match_to_var,
+    match_check_var,
+    match_iter_var,
+    lazy_item_var,
+    wildcard,
 )
 from coconut.compiler.util import (
     attach,
