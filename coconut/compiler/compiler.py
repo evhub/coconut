@@ -275,7 +275,7 @@ class Compiler(Grammar):
     def reformat(self, snip, index=None):
         """Post processes a preprocessed snippet."""
         if index is not None:
-            return self.reformat(snip, reind=reind), len(self.reformat(snip[:index], reind=reind))
+            return self.reformat(snip), len(self.reformat(snip[:index]))
         else:
             return self.repl_proc(snip, careful=False, add_to_line=False)
 
