@@ -1314,10 +1314,10 @@ class Compiler(object):
                 line = line[:-1].rstrip()
             out.append(line + comment)
 
-            if storage_dict is not None:
-                storage_dict["final indentation level"] = level
-            elif level != 0:
-                complain(CoconutException("non-zero final indentation level", level))
+        if storage_dict is not None:
+            storage_dict["final indentation level"] = level
+        elif level != 0:
+            complain(CoconutException("non-zero final indentation level", level))
 
         return "\n".join(out)
 
