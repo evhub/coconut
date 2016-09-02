@@ -126,3 +126,9 @@ def split_trailing_indent(line):
         indent = line[-1] + indent
         line = line[:-1]
     return line, indent
+
+def match_in(grammar, text):
+    """Determines if there is a match for grammar in text."""
+    for result in grammar.scanString(text):
+        return True
+    return False

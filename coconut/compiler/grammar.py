@@ -24,8 +24,6 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *
 
-import re
-
 from pyparsing import (
     CaselessLiteral,
     Combine,
@@ -73,6 +71,7 @@ from coconut.compiler.util import (
     tokenlist,
     itemlist,
     split_leading_indent,
+    match_in,
 )
 
 # end: IMPORTS
@@ -679,9 +678,7 @@ def compose_item_handle(tokens):
     else:
         return "_coconut_compose(" + ", ".join(tokens) + ")"
 
-funcdef_regex = re.compile(r"^(async\s*)?def\b", re.U)
-
-def maybe_tco_handle(tokens):
+def decoratable_func_stmt_handle(tokens):
     """Determines if tail call optimization can be done and if so does it."""
     if len(tokens) != 1:
         raise CoconutException("invalid function definition tokens", tokens)
@@ -692,24 +689,28 @@ def maybe_tco_handle(tokens):
         funcdef = None
         prestmts, decorators, func_stmts = [], [], []
         for line in tokens[0].splitlines():
-            line = split_leading_indent(line)
+            line = split_leading_indent(line) # [_indent, _body]
             if funcdef is not None:
+                if match_in(Keyword("yield"), line[_body]):
+                    # we can't tco generators
+                    return tokens[0]
                 func_stmts.append(line)
             elif line[_body].startswith("@"):
                 decorators.append(line)
-            elif funcdef_regex.match(line[_body]):
+            elif line[_body].startswith("def "):
                 funcdef = line
-            elif decorators:
-                raise CoconutException("funcdef prestmt after funcdef decorators", line)
+            elif line[_body].startswith("async def "):
+                # we can't tco async functions
+                return tokens[0]
             else:
+                if decorators:
+                    raise CoconutException("funcdef prestmt after funcdef decorators", line)
                 prestmts.append(line)
         if funcdef is None:
             raise CoconutException("could not find function definition in funcdef", tokens[0])
 
         out = []
         for line in prestmts + decorators + [funcdef] + func_stmts:
-            from coconut.exceptions import clean
-            print(clean(repr(line), rem_indents=False, encoding_errors="backslashreplace"))
             out.append("".join(line))
         return "\n".join(out)
 
@@ -1308,7 +1309,7 @@ class Grammar(object):
         | math_match_funcdef
         | match_funcdef
     , "funcdef_stmt")
-    decoratable_func_stmt = trace(attach(condense(Optional(decorators) + funcdef_stmt), maybe_tco_handle), "decoratable_func_stmt")
+    decoratable_func_stmt = trace(attach(condense(Optional(decorators) + funcdef_stmt), decoratable_func_stmt_handle), "decoratable_func_stmt")
 
     class_stmt = classdef | datadef
     decoratable_class_stmt = trace(condense(Optional(decorators) + class_stmt), "decoratable_class_stmt")
