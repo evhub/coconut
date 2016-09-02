@@ -22,6 +22,7 @@ import sys
 import os
 import time
 import subprocess
+import traceback
 import platform
 from contextlib import contextmanager
 
@@ -313,6 +314,8 @@ class Command(object):
                         # for callback exceptions, don't handle them in the path context
                         logger.path = None
                         callback(result)
+                except Exception:
+                    traceback.print_exc()
                 finally:
                     # make sure the path gets reset after printing any errors
                     logger.path = None
