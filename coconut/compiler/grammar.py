@@ -46,7 +46,7 @@ from pyparsing import (
 )
 
 from coconut.exceptions import CoconutException
-from coconut.logging import trace, complain
+from coconut.logging import trace
 from coconut.constants import (
     openindent,
     closeindent,
@@ -679,7 +679,7 @@ def compose_item_handle(tokens):
     else:
         return "_coconut_compose(" + ", ".join(tokens) + ")"
 
-funcdef_regex = re.compile(r"^def\b", re.U)
+funcdef_regex = re.compile(r"^(async\s*)?def\b", re.U)
 
 def maybe_tco_handle(tokens):
     """Determines if tail call optimization can be done and if so does it."""
@@ -699,13 +699,17 @@ def maybe_tco_handle(tokens):
                 decorators.append(line)
             elif funcdef_regex.match(line[_body]):
                 funcdef = line
+            elif decorators:
+                raise CoconutException("funcdef prestmt after funcdef decorators", line)
             else:
-                if decorators:
-                    complain(CoconutException("funcdef prestmt after funcdef decorators"), line)
                 prestmts.append(line)
+        if funcdef is None:
+            raise CoconutException("could not find function definition in funcdef", tokens[0])
 
         out = []
         for line in prestmts + decorators + [funcdef] + func_stmts:
+            from coconut.exceptions import clean
+            print(clean(repr(line), rem_indents=False, encoding_errors="backslashreplace"))
             out.append("".join(line))
         return "\n".join(out)
 
