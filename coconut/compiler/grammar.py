@@ -683,23 +683,21 @@ def decoratable_func_stmt_handle(tokens):
     if len(tokens) != 1:
         raise CoconutException("invalid function definition tokens", tokens)
     else:
-        _indent = 0
-        _body = 1
 
         funcdef = None
         prestmts, decorators, func_stmts = [], [], []
         for line in tokens[0].splitlines():
-            line = split_leading_indent(line) # [_indent, _body]
+            indent, body = split_leading_indent(line)
             if funcdef is not None:
-                if match_in(Keyword("yield"), line[_body]):
+                if match_in(Keyword("yield"), body):
                     # we can't tco generators
                     return tokens[0]
                 func_stmts.append(line)
-            elif line[_body].startswith("@"):
+            elif body.startswith("@"):
                 decorators.append(line)
-            elif line[_body].startswith("def "):
+            elif body.startswith("def "):
                 funcdef = line
-            elif line[_body].startswith("async def "):
+            elif body.startswith("async def "):
                 # we can't tco async functions
                 return tokens[0]
             else:
@@ -709,10 +707,7 @@ def decoratable_func_stmt_handle(tokens):
         if funcdef is None:
             raise CoconutException("could not find function definition in funcdef", tokens[0])
 
-        out = []
-        for line in prestmts + decorators + [funcdef] + func_stmts:
-            out.append("".join(line))
-        return "\n".join(out)
+        return "\n".join(prestmts + decorators + [funcdef] + func_stmts)
 
 # end: HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
