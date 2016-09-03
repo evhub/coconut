@@ -36,6 +36,7 @@ from pyparsing import (
     line,
     lineno,
     nums,
+    Keyword,
 )
 
 from coconut.constants import (
@@ -95,6 +96,7 @@ from coconut.compiler.util import (
     attach,
     split_leading_indent,
     split_trailing_indent,
+    match_in,
 )
 from coconut.compiler.header import (
     gethash,
@@ -247,6 +249,7 @@ class Compiler(Grammar):
         self.yield_from <<= trace(attach(self.yield_from_ref, self.yield_from_handle, copy=True), "yield_from")
         self.exec_stmt <<= trace(attach(self.exec_stmt_ref, self.exec_stmt_handle, copy=True), "exec_stmt")
         self.stmt_lambdef <<= trace(attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle, copy=True), "stmt_lambdef")
+        self.decoratable_func_stmt <<= trace(attach(self.decoratable_func_stmt_ref, self.decoratable_func_stmt_handle, copy=True), "decoratable_func_stmt")
         self.u_string <<= attach(self.u_string_ref, self.u_string_check, copy=True)
         self.f_string <<= attach(self.f_string_ref, self.f_string_check, copy=True)
         self.typedef <<= attach(self.typedef_ref, self.typedef_check, copy=True)
@@ -1168,6 +1171,37 @@ class Compiler(Grammar):
             + openindent + self.stmt_lambda_proc("\n".join(stmts)) + closeindent
         )
         return name
+
+    def decoratable_func_stmt_handle(self, tokens):
+        """Determines if tail call optimization can be done and if so does it."""
+        if len(tokens) != 1:
+            raise CoconutException("invalid function definition tokens", tokens)
+        else:
+
+            funcdef = None
+            prestmts, decorators, func_stmts = [], [], []
+            for line in tokens[0].splitlines():
+                indent, body = split_leading_indent(line)
+                if funcdef is not None:
+                    if match_in(Keyword("yield"), body):
+                        # we can't tco generators
+                        return tokens[0]
+                    func_stmts.append(line)
+                elif body.startswith("@"):
+                    decorators.append(line)
+                elif body.startswith("def "):
+                    funcdef = line
+                elif body.startswith("async def "):
+                    # we can't tco async functions
+                    return tokens[0]
+                else:
+                    if decorators:
+                        raise CoconutException("funcdef prestmt after funcdef decorators", line)
+                    prestmts.append(line)
+            if funcdef is None:
+                raise CoconutException("could not find function definition in funcdef", tokens[0])
+
+            return "\n".join(prestmts + decorators + [funcdef] + func_stmts)
 
 # end: COMPILER HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------

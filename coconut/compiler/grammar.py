@@ -14,7 +14,8 @@ Description: Defines the Coconut grammar.
 #   - Imports
 #   - Setup
 #   - Handlers
-#   - Grammar
+#   - Main Grammar
+#   - Extra Grammar
 
 #-----------------------------------------------------------------------------------------------------------------------
 # IMPORTS:
@@ -43,6 +44,8 @@ from pyparsing import (
     ZeroOrMore,
     hexnums,
     nums,
+    originalTextFor,
+    nestedExpr,
 )
 
 from coconut.exceptions import CoconutException
@@ -73,7 +76,6 @@ from coconut.compiler.util import (
     tokenlist,
     itemlist,
     split_leading_indent,
-    match_in,
 )
 
 # end: IMPORTS
@@ -680,40 +682,9 @@ def compose_item_handle(tokens):
     else:
         return "_coconut_compose(" + ", ".join(tokens) + ")"
 
-def decoratable_func_stmt_handle(tokens):
-    """Determines if tail call optimization can be done and if so does it."""
-    if len(tokens) != 1:
-        raise CoconutException("invalid function definition tokens", tokens)
-    else:
-
-        funcdef = None
-        prestmts, decorators, func_stmts = [], [], []
-        for line in tokens[0].splitlines():
-            indent, body = split_leading_indent(line)
-            if funcdef is not None:
-                if match_in(Keyword("yield"), body):
-                    # we can't tco generators
-                    return tokens[0]
-                func_stmts.append(line)
-            elif body.startswith("@"):
-                decorators.append(line)
-            elif body.startswith("def "):
-                funcdef = line
-            elif body.startswith("async def "):
-                # we can't tco async functions
-                return tokens[0]
-            else:
-                if decorators:
-                    raise CoconutException("funcdef prestmt after funcdef decorators", line)
-                prestmts.append(line)
-        if funcdef is None:
-            raise CoconutException("could not find function definition in funcdef", tokens[0])
-
-        return "\n".join(prestmts + decorators + [funcdef] + func_stmts)
-
 # end: HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
-# GRAMMAR:
+# MAIN GRAMMAR:
 #-----------------------------------------------------------------------------------------------------------------------
 
 class Grammar(object):
@@ -1298,6 +1269,7 @@ class Grammar(object):
     complex_decorator = test("test")
     decorators = attach(OneOrMore(at.suppress() - Group(simple_decorator ^ complex_decorator) - newline.suppress()), decorator_handle)
 
+    decoratable_func_stmt = Forward()
     funcdef_stmt = trace(
         funcdef
         | async_funcdef
@@ -1306,7 +1278,7 @@ class Grammar(object):
         | math_match_funcdef
         | match_funcdef
     , "funcdef_stmt")
-    decoratable_func_stmt = trace(attach(condense(Optional(decorators) + funcdef_stmt), decoratable_func_stmt_handle), "decoratable_func_stmt")
+    decoratable_func_stmt_ref = condense(Optional(decorators) + funcdef_stmt)
 
     class_stmt = classdef | datadef
     decoratable_class_stmt = trace(condense(Optional(decorators) + class_stmt), "decoratable_class_stmt")
@@ -1362,4 +1334,17 @@ class Grammar(object):
     file_parser = condense(start_marker - file_input - end_marker)
     eval_parser = condense(start_marker - eval_input - end_marker)
 
-# end: GRAMMAR
+# end: MAIN GRAMMAR
+#-----------------------------------------------------------------------------------------------------------------------
+# EXTRA GRAMMAR:
+#-----------------------------------------------------------------------------------------------------------------------
+
+    parens = originalTextFor(nestedExpr("(", ")"))
+    brackets = originalTextFor(nestedExpr("[", "]"))
+    braces = originalTextFor(nestedExpr("{", "}"))
+    tco_return = Keyword("return") + condense(
+            (name | parens | brackets | braces | string)
+            + ZeroOrMore(dot + name | brackets)
+        ) + parens
+
+#end: EXTRA GRAMMAR
