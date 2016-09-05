@@ -121,7 +121,7 @@ class _coconut:'''
                 header += r'''
 class _coconut(object):'''
             header += r'''
-    import collections, functools, imp, itertools, operator, types, copy
+    import collections, functools, imp, itertools, operator, types, copy, pickle
 '''
             if target.startswith("2"):
                 header += r'''    abc = collections'''
@@ -215,7 +215,8 @@ class _coconut_map(_coconut.map):
     def __copy__(self):
         return self.__class__(self._func, *_coconut_map(_coconut.copy.copy, self._iters))
 class parallel_map(_coconut_map):
-    """Multiprocessing implementation of map using concurrent.futures; requires arguments to be pickleable."""
+    """Multiprocessing implementation of map using concurrent.futures.
+    Requires arguments to be pickleable."""
     __slots__ = ()
     def __iter__(self):
         from concurrent.futures import ProcessPoolExecutor
@@ -339,11 +340,12 @@ def tail_recursive(func):
             return recurse
     return tail_recursive_func
 def recursive_iterator(func):
-    """Decorates a function by optimizing it for iterator recursion."""
+    """Decorates a function by optimizing it for iterator recursion.
+    Requires function arguments to be pickleable."""
     tee_store = {}
     @_coconut.functools.wraps(func)
     def recursive_iterator_func(*args, **kwargs):
-        hashable_args_kwargs = args, _coconut.frozenset(kwargs.items())
+        hashable_args_kwargs = _coconut.pickle.dumps((args, kwargs), _coconut.pickle.HIGHEST_PROTOCOL)
         if hashable_args_kwargs in tee_store:
             to_tee = tee_store[hashable_args_kwargs]
         else:
