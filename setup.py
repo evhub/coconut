@@ -28,12 +28,6 @@ import setuptools
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-extras = {
-    "watch": "watchdog",
-    "jupyter": "jupyter",
-    "ipython": "jupyter",
-}
-
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "License :: OSI Approved :: Apache Software License",
@@ -137,38 +131,45 @@ with open("README.rst", "r") as readme_file:
     readme = "\n".join(readme_lines)
 
 #-----------------------------------------------------------------------------------------------------------------------
+# UTILITIES:
+#-----------------------------------------------------------------------------------------------------------------------
+
+def read_reqs(tag=""):
+    if tag:
+        tag = "-" + tag
+    req_file_name = "requirements" + tag + ".txt"
+    with open(req_file_name, "r") as req_file:
+        return [line.strip() for line in req_file.readlines() if line]
+
+def all_reqs_in(req_dict):
+    return list(set(req for req_list in req_dict.values() for req in req_list))
+
+#-----------------------------------------------------------------------------------------------------------------------
 # REQUIREMENTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-def read_reqs(req_file):
-    return [line.strip() for line in req_file.readlines() if line]
-
-with open("requirements.txt", "r") as req_file:
-    reqs = read_reqs(req_file)
-
-with open("requirements-py2.txt", "r") as req_py2_file:
-    py2_reqs = read_reqs(req_py2_file)
+reqs = read_reqs()
 
 if PY2:
-    reqs += py2_reqs
+    reqs += read_reqs("py2")
+    if sys.version_info < (2, 7):
+        reqs += read_reqs("py26")
 
-PY26 = sys.version_info < (2, 7)
+watch_reqs = read_reqs("watch")
+jupyter_reqs = read_reqs("jupyter")
+docs_reqs = read_reqs("docs")
 
-with open("requirements-py26.txt", "r") as req_py26_file:
-    py26_reqs = read_reqs(req_py26_file)
+extras = {
+    "watch": watch_reqs,
+    "jupyter": jupyter_reqs,
+    "ipython": jupyter_reqs,
+}
 
-if PY26:
-    reqs += py26_reqs
-py26_reqs += py2_reqs
+extras["all"] = all_reqs_in(extras)
 
-extras["all"] = list(set(extras.keys()))
+extras["docs"] = docs_reqs
 
-if not PY2:
-    extras["py2"] = py26_reqs
-    extras["py27"] = py2_reqs
-
-with open("requirements-docs.txt", "r") as req_docs_file:
-    extras["docs"] = read_reqs(req_docs_file)
+extras["dev"] = all_reqs_in(extras)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:

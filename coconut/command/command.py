@@ -496,7 +496,6 @@ class Command(object):
                     kernel_name = "coconut"
                 else:
                     kernel_name = "coconut"+ver
-                logger.print(version_banner)
                 run_args = [jupyter, "console", "--kernel", kernel_name] + args[1:]
             elif args[0] == "notebook":
                 run_args = [jupyter, "notebook"] + args[1:]
