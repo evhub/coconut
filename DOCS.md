@@ -38,6 +38,7 @@
     1. [Imaginary Literals](#imaginary-literals)
     1. [Underscore Separators](#underscore-separators)
 1. [Function Notation](#function-notation)
+    1. [Tail Call Optimization](#tail-call-optimization)
     1. [Operator Functions](#operator-functions)
     1. [Assignment Functions](#assignment-functions)
     1. [Infix Functions](#infix-functions)
@@ -62,7 +63,6 @@
     1. [`count`](#count)
     1. [`map` and `zip`](#map-and-zip)
     1. [`datamaker`](#datamaker)
-    1. [`tail_recursive`](#tail_recursive)
     1. [`recursive_iterator`](#recursive_iterator)
     1. [`parallel_map`](#parallel_map)
     1. [`concurrent_map`](#concurrent_map)
@@ -899,6 +899,33 @@ Coconut allows for one underscore between digits and after base specifiers in nu
 
 ## Function Notation
 
+### Tail Call Optimization
+
+Coconut will perform automatic [tail call optimization]() on any function that meets the following criteria:
+
+1. it must not be a generator (uses `yield`) or an asynchronous function (uses `async`) and
+2. it must directly return a call to another function (the function call must be in the `return` statement).
+
+If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for tail call optimization, or the corresponding criteria for [`recursive_iterator`](#recursive-iterator), either of which should prevent such errors.
+
+##### Example
+
+###### Coconut
+```coconut
+def factorial(n, acc=1):
+    case n:
+        match 0:
+            return acc
+        match _ is int if n > 0:
+            return factorial(n-1, acc*n)
+    else:
+        raise TypeError("the argument to factorial must be an integer >= 0")
+```
+
+###### Python
+
+_Can't be done without rewriting the function._
+
 ### Operator Functions
 
 Coconut uses a simple operator function short-hand: surround an operator with parentheses to retrieve its function. Similarly to iterator comprehensions, if the operator function is the only argument to a function, the parentheses of the function call can also serve as the parentheses for the operator function.
@@ -1536,44 +1563,16 @@ class trilen(collections.namedtuple("trilen", "h")):
         return super(cls, cls).__new__(cls, (a**2 + b**2)**0.5)
 ```
 
-### `tail_recursive`
-
-Coconut provides a `tail_recursive` decorator to perform tail recursion optimization on a function written in a tail-recursive style. To use `tail_recursive` on a function, it must meet the following criteria:
-
-1. your function calls itself, and
-2. in all cases where your function calls itself, it returns the result of that call without modifying it (synonymous with the function being written in a tail-recursive style).
-
-If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for `tail_recursive`, or the corresponding criteria for [`recursive_iterator`](#recursive-iterator), since either decorator should prevent such errors.
-
-##### Example
-
-###### Coconut
-```coconut
-@tail_recursive
-def factorial(n, acc=1):
-    case n:
-        match 0:
-            return acc
-        match _ is int if n > 0:
-            return factorial(n-1, acc*n)
-    else:
-        raise TypeError("the argument to factorial must be an integer >= 0")
-```
-
-###### Python
-
-_Can't be done without a long decorator definition. The full definition of the decorator in Python can be found in the Coconut header._
-
 ### `recursive_iterator`
 
-Coconut provides a `recursive_iterator` decorator that provides significant optimizations for any stateless, memoizable, recursive function that returns an iterator. To use `recursive_iterator` on a function, it must meet the following criteria:
+Coconut provides a `recursive_iterator` decorator that provides significant optimizations for any stateless, recursive function that returns an iterator. To use `recursive_iterator` on a function, it must meet the following criteria:
 
-1. your function either always `return`s an iterator or always generates an iterator using `yield`,
-2. when called multiple times with the same arguments, your function produces the same iterator (synonymous with the function being stateless),
-3. all arguments passed to your function are hashable (synonymous with the function being memoizable), and
-4. your function calls itself multiple times with the same arguments.
+1. your function either always `return`s an iterator or generates an iterator using `yield`,
+2. when called multiple times with the same arguments, your function produces the same iterator (your function is stateless),
+3. your function calls itself multiple times with the same arguments, and
+4. all arguments passed to your function are pickleable (this should almost always be true).
 
-If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for `recursive_iterator`, or the corresponding criteria for [`tail_recursive`](#tail-recursive), since either decorator should prevent such errors.
+If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for `recursive_iterator`, or the corresponding criteria for Coconut's [tail call optimization](#tail-call-optimization), either of which should prevent such errors.
 
 Furthermore, `recursive_iterator` also allows the resolution of a [nasty segmentation fault in Python's iterator logic that has never been fixed](http://bugs.python.org/issue14010). Specifically, instead of writing
 ```coconut
@@ -1695,11 +1694,7 @@ All Coconut built-ins are accessible from `coconut.__coconut__`. The recommended
 
 ###### Python
 ```coconut_python
-from coconut.__coconut__ import tail_recursive
-
-@tail_recursive
-def recursive_func(args):
-    ...
+from coconut.__coconut__ import parallel_map
 ```
 
 ### `coconut.convenience`
