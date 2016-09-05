@@ -35,7 +35,6 @@ from coconut.constants import (
     default_prompt,
     default_moreprompt,
     watch_interval,
-    version_long,
     version_banner,
     version_tag,
     tutorial_url,
@@ -63,11 +62,12 @@ from coconut.command.cli import arguments
 
 class Command(object):
     """The Coconut command-line interface."""
-    comp = None # current .compiler.Compiler
+    comp = None # current coconut.compiler.Compiler
     show = False # corresponds to --display flag
     running = False # whether the interpreter is currently active
     runner = None # the current Runner
     target = None # corresponds to --target flag
+    jobs = None # corresponds to --jobs flag
     executor = None # runs --jobs
     exit_code = 0 # exit status to return
 
@@ -87,7 +87,7 @@ class Command(object):
             self.comp.setup(*args, **kwargs)
 
     def set_color(self, color):
-        """Sets the color."""
+        """Sets --color."""
         logger.set_color(color)
         self.prompt = logger.add_color(self.prompt)
         self.moreprompt = logger.add_color(self.moreprompt)
@@ -107,15 +107,15 @@ class Command(object):
     def use_args(self, args, interact=True):
         """Handles command-line arguments."""
         logger.quiet, logger.verbose = args.quiet, args.verbose
-        if args.color[0] is not None:
-            self.set_color(args.color[0])
-        if args.recursion_limit[0] is not None:
-            if args.recursion_limit[0] < minimum_recursion_limit:
+        if args.color is not None:
+            self.set_color(args.color)
+        if args.recursion_limit is not None:
+            if args.recursion_limit < minimum_recursion_limit:
                 raise CoconutException("--recursion-limit must be at least " + str(minimum_recursion_limit))
             else:
-                sys.setrecursionlimit(args.recursion_limit[0])
-        if args.version:
-            logger.show(version_long)
+                sys.setrecursionlimit(args.recursion_limit)
+        if args.jobs is not None:
+            self.set_jobs(args.jobs)
         if args.tutorial:
             self.launch_tutorial()
         if args.documentation:
@@ -124,13 +124,12 @@ class Command(object):
             self.show = True
 
         self.setup(
-            target = args.target[0],
+            target = args.target,
             strict = args.strict,
             minify = args.minify,
             line_numbers = args.line_numbers,
             keep_lines = args.keep_lines,
             )
-
 
         if args.source is not None:
             if args.run and os.path.isdir(args.source):
@@ -157,7 +156,7 @@ class Command(object):
             else:
                 package = None # auto-decide package
 
-            with self.running_jobs(args.jobs[0]):
+            with self.running_jobs():
                 self.compile_path(args.source, dest, package, args.run, args.force)
 
         elif (args.run
@@ -169,7 +168,7 @@ class Command(object):
             raise CoconutException("a source file/folder must be specified when options that depend on the source are enabled")
 
         if args.code is not None:
-            self.execute(self.comp.parse_block(args.code[0]))
+            self.execute(self.comp.parse_block(args.code))
         stdin = not sys.stdin.isatty() # check if input was piped in
         if stdin:
             self.execute(self.comp.parse_block(sys.stdin.read()))
@@ -321,23 +320,28 @@ class Command(object):
                     logger.path = None
             future.add_done_callback(callback_wrapper)
 
-    @contextmanager
-    def running_jobs(self, jobs):
-        """Initialize multiprocessing."""
+    def set_jobs(self, jobs):
+        """Sets --jobs."""
         if jobs is None and platform.python_implementation() == "PyPy":
             jobs = 0
-        if jobs is None or jobs >= 1:
+        if jobs is not None and jobs < 0:
+            raise CoconutException("the number of processes passed to --jobs must be >= 0")
+        else:
+            self.jobs = jobs
+
+    @contextmanager
+    def running_jobs(self):
+        """Initialize multiprocessing."""
+        if self.jobs == 0:
+            yield
+        else:
             from concurrent.futures import ProcessPoolExecutor
             try:
-                with ProcessPoolExecutor(jobs) as self.executor:
+                with ProcessPoolExecutor(self.jobs) as self.executor:
                     yield
             finally:
                 self.executor = None
                 self.exit_on_error()
-        elif jobs == 0:
-            yield
-        else:
-            raise CoconutException("the number of processes passed to --jobs must be >= 0")
 
     def create_package(self, dirpath):
         """Sets up a package directory."""
@@ -515,19 +519,19 @@ class Command(object):
 
         def recompile(path):
             if os.path.isfile(path) and os.path.splitext(path)[1] in code_exts:
-                try:
+                with self.handling_exceptions():
                     self.compile_path(path, write, package, run, force)
-                except CoconutException:
-                    logger.print_exc()
 
         observer = Observer()
         observer.schedule(RecompilationWatcher(recompile), source, recursive=True)
-        observer.start()
-        try:
-            while True:
-                time.sleep(watch_interval)
-        except KeyboardInterrupt:
-            pass
-        finally:
-            observer.stop()
-            observer.join()
+
+        with self.running_jobs():
+            observer.start()
+            try:
+                while True:
+                    time.sleep(watch_interval)
+            except KeyboardInterrupt:
+                pass
+            finally:
+                observer.stop()
+                observer.join()
