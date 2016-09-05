@@ -251,7 +251,7 @@ builtins = (
     "dropwhile",
     "tee",
     "count",
-    "recursive",
+    "tail_recursive",
     "datamaker",
     "consume",
     "parallel_map",

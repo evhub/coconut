@@ -121,7 +121,7 @@ class _coconut:'''
                 header += r'''
 class _coconut(object):'''
             header += r'''
-    import collections, functools, imp, itertools, operator, types, copy
+    import collections, functools, imp, itertools, operator, types, copy, pickle
 '''
             if target.startswith("2"):
                 header += r'''    abc = collections'''
@@ -215,7 +215,8 @@ class _coconut_map(_coconut.map):
     def __copy__(self):
         return self.__class__(self._func, *_coconut_map(_coconut.copy.copy, self._iters))
 class parallel_map(_coconut_map):
-    """Multiprocessing implementation of map using concurrent.futures; requires arguments to be pickleable."""
+    """Multiprocessing implementation of map using concurrent.futures.
+    Requires arguments to be pickleable."""
     __slots__ = ()
     def __iter__(self):
         from concurrent.futures import ProcessPoolExecutor
@@ -300,13 +301,28 @@ class count(object):'''
         return (self.__class__, (self._start, self._step))
     def __copy__(self):
         return self.__class__(self._start, self._step)
+class _coconut_tail_call(Exception):
+    __slots__ = ("func", "args", "kwargs")
+    def __init__(self, func, *args, **kwargs):
+        self.func, self.args, self.kwargs = func, args, kwargs
+def _coconut_tco(func):
+    @_coconut.functools.wraps(func)
+    def tail_call_optimized_func(*args, **kwargs):
+        call_func = func
+        while True:
+            try:
+                return call_func(*args, **kwargs)
+            except _coconut_tail_call as tail_call:
+                call_func, args, kwargs = tail_call.func, tail_call.args, tail_call.kwargs
+                if call_func is tail_call_optimized_func:
+                    call_func = func
+    return tail_call_optimized_func
 def tail_recursive(func):
     """Decorates a function by optimizing it for tail recursion."""
     state = [True, None]  # state = [is_top_level, (args, kwargs)]
     recurse = object()
     @_coconut.functools.wraps(func)
-    def recursive_func(*args, **kwargs):
-        """Tail Recursion Wrapper."""
+    def tail_recursive_func(*args, **kwargs):
         if state[0]:
             state[0] = False
             try:
@@ -322,13 +338,14 @@ def tail_recursive(func):
         else:
             state[1] = args, kwargs
             return recurse
-    return recursive_func
+    return tail_recursive_func
 def recursive_iterator(func):
-    """Decorates a function by optimizing it for iterator recursion."""
+    """Decorates a function by optimizing it for iterator recursion.
+    Requires function arguments to be pickleable."""
     tee_store = {}
     @_coconut.functools.wraps(func)
     def recursive_iterator_func(*args, **kwargs):
-        hashable_args_kwargs = args, _coconut.frozenset(kwargs.items())
+        hashable_args_kwargs = _coconut.pickle.dumps((args, kwargs), _coconut.pickle.HIGHEST_PROTOCOL)
         if hashable_args_kwargs in tee_store:
             to_tee = tee_store[hashable_args_kwargs]
         else:
@@ -364,7 +381,7 @@ def datamaker(data_type):
 def consume(iterable, keep_last=0):
     """Fully exhaust iterable and return the last keep_last elements."""
     return _coconut.collections.deque(iterable, maxlen=keep_last)  # fastest way to exhaust an iterator
-MatchError, map, reduce, takewhile, dropwhile, tee, recursive = _coconut_MatchError, _coconut_map, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile, _coconut_tee, tail_recursive
+MatchError, map, reduce, takewhile, dropwhile, tee = _coconut_MatchError, _coconut_map, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile, _coconut_tee
 '''
         else:
             raise CoconutException("invalid header type", which)

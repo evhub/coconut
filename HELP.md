@@ -275,9 +275,8 @@ First, copy and paste! While this destructuring assignment equivalent should wor
 
 It will be helpful to, as we continue to use Coconut's pattern-matching and destructuring assignment statements in further examples, think _assignment_ whenever you see the keyword `match`.
 
-Up until now, for the recursive method, we have only dealt with pattern-matching, but there's actually another way that Coconut allows us to improve our `factorial` function: by writing it in a tail-recursive style, where it directly returns all calls to itself, and using Coconut's `tail_recursive` decorator, like so:
+Up until now, for the recursive method, we have only dealt with pattern-matching, but there's actually another way that Coconut allows us to improve our `factorial` function. Coconut performs automatic tail call optimization, which means that whenever a function directly returns a call to another function, Coconut will optimize away the additional call. Thus, we can improve our `factorial` function by rewriting it to use a tail call:
 ```coconut
-@tail_recursive
 def factorial(n, acc=1):
     """Compute n! where n is an integer >= 0."""
     case n:
@@ -295,7 +294,7 @@ def factorial(n, acc=1):
 3 |> factorial |> print # 6
 ```
 
-Copy, paste! This version is exactly equivalent to the original version, with the exception that it will never raise a `MaximumRecursionDepthError`, because Coconut's `tail_recursive` decorator will optimize away the tail recursion into a `while` loop.
+Copy, paste! This new `factorial` function is equivalent to the original version, with the exception that it will never raise a `RuntimeError` due to reaching Python's maximum recursion depth, since Coconut will optimize away the recursive tail call.
 
 ### Iterative Method
 
