@@ -304,30 +304,20 @@ class count(object):'''
 class _coconut_tail_call(Exception):
     __slots__ = ("func", "args", "kwargs")
     def __init__(self, func, *args, **kwargs):
-        self.func, self.args, self.kwargs = func, args, kwargs'''
-            if target.startswith("3"):
-                header += r'''
-class _coconut_tco:'''
-            else:
-                header += r'''
-class _coconut_tco(object):'''
-            header += r'''
-    """This function has been tail call optimized.
-    To see the help for the original function, type:
-
-            help(<function name>.func)"""
-    __slots__ = ("func",)
-    def __init__(self, func):
-        self.func = func
-    def __call__(self, *args, **kwargs):
-        func = self.func
+        self.func, self.args, self.kwargs = func, args, kwargs
+def _coconut_tco(func):
+    @_coconut.functools.wraps(func)
+    def tail_call_optimized_func(*args, **kwargs):
+        call_func = func
         while True:
             try:
-                return func(*args, **kwargs)
+                return call_func(*args, **kwargs)
             except _coconut_tail_call as tail_call:
-                func, args, kwargs = tail_call.func, tail_call.args, tail_call.kwargs
-            if isinstance(func, _coconut_tco):
-                func = func.func
+                call_func, args, kwargs = tail_call.func, tail_call.args, tail_call.kwargs
+            if _coconut.hasattr(call_func, "_coconut_base_func"):
+                call_func = call_func._coconut_base_func
+    tail_call_optimized_func._coconut_base_func = func
+    return tail_call_optimized_func
 def recursive_iterator(func):
     """Decorates a function by optimizing it for iterator recursion.
     Requires function arguments to be pickleable."""
