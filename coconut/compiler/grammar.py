@@ -46,6 +46,7 @@ from pyparsing import (
     nums,
     originalTextFor,
     nestedExpr,
+    FollowedBy,
 )
 
 from coconut.exceptions import CoconutException
@@ -1352,9 +1353,10 @@ class Grammar(object):
     brackets = originalTextFor(nestedExpr("[", "]"))
     braces = originalTextFor(nestedExpr("{", "}"))
     tco_return = attach(
-        Keyword("return").suppress() + condense(
-            (name | parens | brackets | braces | string)
-            + ZeroOrMore(dot + name | brackets)
-        ) + parens, tco_return_handle)
+            Keyword("return").suppress() + condense(
+                (name | parens | brackets | braces | string)
+                + ZeroOrMore(dot + name | brackets)
+            ) + parens + FollowedBy(Literal("\n"))
+        , tco_return_handle)
 
 #end: EXTRA GRAMMAR
