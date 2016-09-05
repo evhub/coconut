@@ -317,28 +317,6 @@ def _coconut_tco(func):
                 if call_func is tail_call_optimized_func:
                     call_func = func
     return tail_call_optimized_func
-def tail_recursive(func):
-    """Decorates a function by optimizing it for tail recursion."""
-    state = [True, None]  # state = [is_top_level, (args, kwargs)]
-    recurse = object()
-    @_coconut.functools.wraps(func)
-    def tail_recursive_func(*args, **kwargs):
-        if state[0]:
-            state[0] = False
-            try:
-                while True:
-                    result = func(*args, **kwargs)
-                    if result is recurse:
-                        args, kwargs = state[1]
-                        state[1] = None
-                    else:
-                        return result
-            finally:
-                state[0] = True
-        else:
-            state[1] = args, kwargs
-            return recurse
-    return tail_recursive_func
 def recursive_iterator(func):
     """Decorates a function by optimizing it for iterator recursion.
     Requires function arguments to be pickleable."""
