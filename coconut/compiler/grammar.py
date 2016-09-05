@@ -682,6 +682,15 @@ def compose_item_handle(tokens):
     else:
         return "_coconut_compose(" + ", ".join(tokens) + ")"
 
+def tco_return_handle(tokens):
+    """Handles tail-call-optimizable return statements."""
+    if len(tokens) != 2:
+        raise CoconutException("invalid tail-call-optimizable return statement tokens", tokens)
+    elif tokens[1] == "()":
+        return "raise _coconut_tail_call(" + tokens[0] + ")"
+    else:
+        return "raise _coconut_tail_call(" + tokens[0] + ", " + tokens[1][1:] # tokens
+
 # end: HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN GRAMMAR:
@@ -1342,9 +1351,10 @@ class Grammar(object):
     parens = originalTextFor(nestedExpr("(", ")"))
     brackets = originalTextFor(nestedExpr("[", "]"))
     braces = originalTextFor(nestedExpr("{", "}"))
-    tco_return = Keyword("return") + condense(
+    tco_return = attach(
+        Keyword("return").suppress() + condense(
             (name | parens | brackets | braces | string)
             + ZeroOrMore(dot + name | brackets)
-        ) + parens
+        ) + parens, tco_return_handle)
 
 #end: EXTRA GRAMMAR

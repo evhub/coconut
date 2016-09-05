@@ -300,13 +300,28 @@ class count(object):'''
         return (self.__class__, (self._start, self._step))
     def __copy__(self):
         return self.__class__(self._start, self._step)
+class _coconut_tail_call(Exception):
+    __slots__ = ("func", "args", "kwargs")
+    def __init__(self, func, *args, **kwargs):
+        self.func, self.args, self.kwargs = func, args, kwargs
+def _coconut_tco(func):
+    @_coconut.functools.wraps(func)
+    def tail_call_optimized_func(*args, **kwargs):
+        call_func = func
+        while True:
+            try:
+                return call_func(*args, **kwargs)
+            except _coconut_tail_call as tail_call:
+                call_func, args, kwargs = tail_call.func, tail_call.args, tail_call.kwargs
+                if call_func is tail_call_optimized_func:
+                    call_func = func
+    return tail_call_optimized_func
 def tail_recursive(func):
     """Decorates a function by optimizing it for tail recursion."""
     state = [True, None]  # state = [is_top_level, (args, kwargs)]
     recurse = object()
     @_coconut.functools.wraps(func)
     def tail_recursive_func(*args, **kwargs):
-        """Tail Recursion Wrapper."""
         if state[0]:
             state[0] = False
             try:

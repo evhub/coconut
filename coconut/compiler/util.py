@@ -132,3 +132,36 @@ def match_in(grammar, text):
     for result in grammar.scanString(text):
         return True
     return False
+
+def transform(grammar, text):
+    """Transforms text by replacing matches to grammar."""
+    results = []
+    intervals = []
+    for tokens, start, stop in grammar.scanString(text):
+        if len(tokens) != 1:
+            raise CoconutException("invalid transform result tokens", tokens)
+        results.append(tokens[0])
+        intervals.append((start, stop))
+
+    if not results:
+        return None
+
+    split_indices = [0]
+    split_indices.extend(start for start, _ in intervals)
+    split_indices.extend(stop for _, stop in intervals)
+    split_indices.sort()
+    split_indices.append(None)
+
+    out = []
+    for i in range(len(split_indices) - 1):
+        if i % 2 == 0:
+            start, stop = split_indices[i], split_indices[i+1]
+            out.append(text[start:stop])
+        else:
+            out.append(results[i//2])
+    if i//2 < len(results) - 1:
+        raise CoconutException("unused transform results", results[i//2+1:])
+    if stop is not None:
+        raise CoconutException("failed to properly split text to be transformed")
+
+    return "".join(out)

@@ -97,6 +97,7 @@ from coconut.compiler.util import (
     split_leading_indent,
     split_trailing_indent,
     match_in,
+    transform,
 )
 from coconut.compiler.header import (
     gethash,
@@ -1201,7 +1202,13 @@ class Compiler(Grammar):
             if funcdef is None:
                 raise CoconutException("could not find function definition in funcdef", tokens[0])
 
-            return "\n".join(prestmts + decorators + [funcdef] + func_stmts)
+            func_body = "\n".join(func_stmts)
+            tco_body = transform(self.tco_return, func_body)
+            if tco_body is None:
+                return tokens[0]
+            else:
+                decorators.append("@_coconut_tco")
+                return "\n".join(prestmts + decorators + [funcdef, tco_body])
 
 # end: COMPILER HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
