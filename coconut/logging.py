@@ -152,7 +152,8 @@ class Logger(object):
         try:
             raise warning
         except CoconutWarning:
-            self.print_exc()
+            if not self.quiet:
+                self.print_exc()
 
     def print_exc(self):
         """Properly prints an exception in the exception context."""
@@ -214,4 +215,5 @@ class Logger(object):
 #-----------------------------------------------------------------------------------------------------------------------
 
 logger = Logger()
+
 trace = logger.trace
