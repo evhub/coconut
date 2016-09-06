@@ -54,10 +54,10 @@ def showpath(path):
     if logger.verbose:
         return os.path.abspath(path)
     else:
-        return os.path.join(*(
-            part for part in os.path.split(os.path.relpath(path))
-            if part != "."*len(part)
-        ))
+        path = os.path.relpath(path)
+        if path.startswith(os.curdir + os.sep):
+            path = path[len(os.curdir + os.sep):]
+        return path
 
 def rem_encoding(code):
     """Removes encoding declarations from Python code so it can be passed to exec."""

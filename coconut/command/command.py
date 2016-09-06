@@ -99,9 +99,11 @@ class Command(object):
             self.use_args(args, interact)
         self.exit_on_error()
 
-    def exit_on_error(self):
+    def exit_on_error(self, message=None):
         """Exits if exit_code is abnormal."""
         if self.exit_code:
+            if message is not None:
+                logger.show(message)
             sys.exit(self.exit_code)
 
     def use_args(self, args, interact=True):
@@ -340,7 +342,7 @@ class Command(object):
                     yield
             finally:
                 self.executor = None
-                self.exit_on_error()
+                self.exit_on_error("Aborted due to compilation error.")
 
     def create_package(self, dirpath):
         """Sets up a package directory."""
@@ -530,7 +532,7 @@ class Command(object):
                 while True:
                     time.sleep(watch_interval)
             except KeyboardInterrupt:
-                pass
+                logger.show("Aborted due to keyboard interrupt.")
             finally:
                 observer.stop()
                 observer.join()
