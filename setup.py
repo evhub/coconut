@@ -81,6 +81,7 @@ search_terms = [
     "lazy",
     "tail recursion",
     "tail call",
+    "optimization",
     "recursion",
     "recursive",
     "infix",
