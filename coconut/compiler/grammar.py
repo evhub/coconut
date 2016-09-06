@@ -1355,7 +1355,7 @@ class Grammar(object):
             Keyword("return").suppress() + condense(
                 (name | parens | brackets | braces | string)
                 + ZeroOrMore(dot + name | brackets)
-            ) + condense(parens + newline)
+            ) + parens + end_marker
         , tco_return_handle)
 
 #end: EXTRA GRAMMAR

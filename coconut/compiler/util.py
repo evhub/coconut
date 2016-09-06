@@ -115,6 +115,11 @@ def rem_comment(line):
     """Removes a comment from a line."""
     return line.split("#", 1)[0].rstrip()
 
+def split_comment(line):
+    """Splits a line into base and comment."""
+    base = rem_comment(line)
+    return base, line[len(base):]
+
 def split_leading_indent(line):
     """Split line into leading indent and main."""
     indent = ""

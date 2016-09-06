@@ -94,6 +94,7 @@ from coconut.compiler.util import (
     paren_change,
     ind_change,
     rem_comment,
+    split_comment,
     attach,
     split_leading_indent,
     split_trailing_indent,
@@ -1200,9 +1201,10 @@ class Compiler(Grammar):
                     elif i and match_in(Keyword("def"), body):
                         in_func = level
                     else:
-                        tco_line = transform(self.tco_return, line)
-                        if tco_line is not None:
-                            line = tco_line
+                        base, comment = split_comment(body)
+                        tco_base = transform(self.tco_return, base)
+                        if tco_base is not None:
+                            line = tco_base + comment + indent
                             tco = True
                 lines.append(line)
                 level += ind_change(indent)
