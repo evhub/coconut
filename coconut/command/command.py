@@ -67,7 +67,10 @@ class Command(object):
     running = False # whether the interpreter is currently active
     runner = None # the current Runner
     target = None # corresponds to --target flag
-    jobs = None # corresponds to --jobs flag
+    if platform.python_implementation() == "PyPy":
+        jobs = 0
+    else:
+        jobs = None # corresponds to --jobs flag
     executor = None # runs --jobs
     exit_code = 0 # exit status to return
 
