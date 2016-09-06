@@ -335,11 +335,9 @@ def recursive_iterator(func):
     return recursive_iterator_func
 def addpattern(base_func):
     """Decorator to add a new case to a pattern-matching function, where the new case is checked last."""
-    if _coconut.hasattr(base_func, "'''+tco_inner_func_var+r'''"):
-        base_func = base_func.'''+tco_inner_func_var+r'''
     def pattern_adder(func):
-        @_coconut.functools.wraps(func)
         @_coconut_tco
+        @_coconut.functools.wraps(func)
         def add_pattern_func(*args, **kwargs):
             try:
                 return base_func(*args, **kwargs)
