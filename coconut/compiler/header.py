@@ -24,6 +24,7 @@ from coconut.constants import (
     default_encoding,
 )
 from coconut.exceptions import CoconutException
+from coconut.constants import tco_inner_func_var
 from coconut.compiler.util import target_info
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -314,9 +315,9 @@ def _coconut_tco(func):
                 return call_func(*args, **kwargs)
             except _coconut_tail_call as tail_call:
                 call_func, args, kwargs = tail_call.func, tail_call.args, tail_call.kwargs
-            if _coconut.hasattr(call_func, "_coconut_base_func"):
-                call_func = call_func._coconut_base_func
-    tail_call_optimized_func._coconut_base_func = func
+            if _coconut.hasattr(call_func, "'''+tco_inner_func_var+r'''"):
+                call_func = call_func.'''+tco_inner_func_var+r'''
+    tail_call_optimized_func.'''+tco_inner_func_var+r''' = func
     return tail_call_optimized_func
 def recursive_iterator(func):
     """Decorates a function by optimizing it for iterator recursion.
@@ -334,25 +335,22 @@ def recursive_iterator(func):
     return recursive_iterator_func
 def addpattern(base_func):
     """Decorator to add a new case to a pattern-matching function, where the new case is checked last."""
+    if _coconut.hasattr(base_func, "'''+tco_inner_func_var+r'''"):
+        base_func = base_func.'''+tco_inner_func_var+r'''
     def pattern_adder(func):
         @_coconut.functools.wraps(func)
+        @_coconut_tco
         def add_pattern_func(*args, **kwargs):
             try:
                 return base_func(*args, **kwargs)
             except _coconut_MatchError:
-                return func(*args, **kwargs)
+                raise _coconut_tail_call(func, *args, **kwargs)
         return add_pattern_func
     return pattern_adder
 def prepattern(base_func):
     """Decorator to add a new case to a pattern-matching function, where the new case is checked first."""
     def pattern_prepender(func):
-        @_coconut.functools.wraps(func)
-        def pre_pattern_func(*args, **kwargs):
-            try:
-                return func(*args, **kwargs)
-            except _coconut_MatchError:
-                return base_func(*args, **kwargs)
-        return pre_pattern_func
+        return addpattern(func, base_func)
     return pattern_prepender
 def datamaker(data_type):
     """Returns base data constructor of passed data type."""

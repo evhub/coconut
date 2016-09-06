@@ -26,7 +26,7 @@ from pyparsing import alphanums
 # COMPILER CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-minimum_recursion_limit = 400
+default_recursion_limit = 2000
 
 from zlib import crc32 as checksum # used for generating __coconut_hash__
 hash_prefix = "# __coconut_hash__ = "
@@ -75,6 +75,7 @@ yield_from_var = "_coconut_yield_from"
 yield_item_var = "_coconut_yield_item"
 raise_from_var = "_coconut_raise_from"
 stmt_lambda_var = "_coconut_lambda"
+tco_inner_func_var = "_coconut_undecorated_tco_func"
 
 wildcard = "_" # for pattern-matching
 

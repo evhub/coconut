@@ -67,7 +67,7 @@ from coconut.constants import (
     stmt_lambda_var,
     const_vars,
     new_to_old_stdlib,
-    minimum_recursion_limit,
+    default_recursion_limit,
     checksum,
 )
 from coconut.exceptions import (
@@ -112,8 +112,8 @@ from coconut.compiler.header import (
 # SETUP:
 #-----------------------------------------------------------------------------------------------------------------------
 
-if sys.getrecursionlimit() < minimum_recursion_limit:
-    sys.setrecursionlimit(minimum_recursion_limit)
+if sys.getrecursionlimit() < default_recursion_limit:
+    sys.setrecursionlimit(default_recursion_limit)
 
 # end: SETUP
 #-----------------------------------------------------------------------------------------------------------------------
@@ -252,7 +252,7 @@ class Compiler(Grammar):
         self.yield_from <<= trace(attach(self.yield_from_ref, self.yield_from_handle, copy=True), "yield_from")
         self.exec_stmt <<= trace(attach(self.exec_stmt_ref, self.exec_stmt_handle, copy=True), "exec_stmt")
         self.stmt_lambdef <<= trace(attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle, copy=True), "stmt_lambdef")
-        self.decoratable_func_stmt <<= trace(attach(self.decoratable_func_stmt_ref, self.decoratable_func_stmt_handle, copy=True), "decoratable_func_stmt")
+        self.normal_funcdef_stmt <<= trace(attach(self.normal_funcdef_stmt_ref, self.normal_funcdef_stmt_handle, copy=True), "normal_funcdef_stmt")
         self.u_string <<= attach(self.u_string_ref, self.u_string_check, copy=True)
         self.f_string <<= attach(self.f_string_ref, self.f_string_check, copy=True)
         self.typedef <<= attach(self.typedef_ref, self.typedef_check, copy=True)
@@ -1175,31 +1175,28 @@ class Compiler(Grammar):
         )
         return name
 
-    def decoratable_func_stmt_handle(self, tokens):
+    def normal_funcdef_stmt_handle(self, tokens):
         """Determines if tail call optimization can be done and if so does it."""
         if len(tokens) != 1:
             raise CoconutException("invalid function definition tokens", tokens)
-        elif not tokens[0].startswith("def "):
-            # either has decorators or is an async def, neither of which we can tco
-            return tokens[0]
         else:
             lines = [] # transformed
             tco = False # whether tco was done
             level = 0 # indentation level
-            in_func = None # if inside of a func, the indentation level outside that func
+            disabled_until_level = None # whether inside of a def/try/with
 
             for i, line in enumerate(tokens[0].splitlines(True)):
                 body, indent = split_trailing_indent(line)
                 level += ind_change(body)
-                if in_func is not None:
-                    if level <= in_func:
-                        in_func = None
-                if in_func is None:
+                if disabled_until_level is not None:
+                    if level <= disabled_until_level:
+                        disabled_until_level = None
+                if disabled_until_level is None:
                     if match_in(Keyword("yield"), body):
                         # we can't tco generators
                         return tokens[0]
-                    elif i and match_in(Keyword("def"), body):
-                        in_func = level
+                    elif i and match_in(Keyword("def") | Keyword("try") | Keyword("with"), body):
+                        disabled_until_level = level
                     else:
                         base, comment = split_comment(body)
                         tco_base = transform(self.tco_return, base)

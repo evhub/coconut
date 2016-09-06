@@ -903,9 +903,8 @@ Coconut allows for one underscore between digits and after base specifiers in nu
 
 Coconut will perform automatic tail call optimization on any function that meets the following criteria:
 
-1. it must directly return a call to another function (using either `return` or [assignment function notation](#assignment-functions)),
-2. it must not be a generator (uses `yield`) or an asynchronous function (uses `async`), and
-3. it must not have any decorators attached to it.
+1. it must directly return a call to another function (using either `return` or [assignment function notation](#assignment-functions)) and
+2. it must not be a generator (uses `yield`) or an asynchronous function (uses `async`).
 
 If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for tail call optimization, or the corresponding criteria for [`recursive_iterator`](#recursive-iterator), either of which should prevent such errors.
 

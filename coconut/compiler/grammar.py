@@ -1278,16 +1278,16 @@ class Grammar(object):
     complex_decorator = test("test")
     decorators = attach(OneOrMore(at.suppress() - Group(simple_decorator ^ complex_decorator) - newline.suppress()), decorator_handle)
 
-    decoratable_func_stmt = Forward()
-    funcdef_stmt = trace(
+    normal_funcdef_stmt = Forward()
+    normal_funcdef_stmt_ref = trace(
         funcdef
-        | async_funcdef
-        | async_match_funcdef
         | math_funcdef
         | math_match_funcdef
         | match_funcdef
-    , "funcdef_stmt")
-    decoratable_func_stmt_ref = condense(Optional(decorators) + funcdef_stmt)
+    , "normal_funcdef_stmt")
+    async_funcdef_stmt = trace(async_funcdef | async_match_funcdef, "async_funcdef_stmt")
+    funcdef_stmt = normal_funcdef_stmt | async_funcdef_stmt
+    decoratable_func_stmt = trace(condense(Optional(decorators) + funcdef_stmt), "decoratable_func_stmt")
 
     class_stmt = classdef | datadef
     decoratable_class_stmt = trace(condense(Optional(decorators) + class_stmt), "decoratable_class_stmt")

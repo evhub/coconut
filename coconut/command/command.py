@@ -41,7 +41,6 @@ from coconut.constants import (
     documentation_url,
     icoconut_dir,
     icoconut_kernel_dirs,
-    minimum_recursion_limit,
 )
 from coconut.command.util import (
     openfile,
@@ -115,10 +114,7 @@ class Command(object):
         if args.color is not None:
             self.set_color(args.color)
         if args.recursion_limit is not None:
-            if args.recursion_limit < minimum_recursion_limit:
-                raise CoconutException("--recursion-limit must be at least " + str(minimum_recursion_limit))
-            else:
-                sys.setrecursionlimit(args.recursion_limit)
+            sys.setrecursionlimit(args.recursion_limit)
         if args.jobs is not None:
             self.set_jobs(args.jobs)
         if args.tutorial:
@@ -345,7 +341,7 @@ class Command(object):
                     yield
             finally:
                 self.executor = None
-                self.exit_on_error("Aborted due to compilation error.")
+                self.exit_on_error("Aborting due to compilation error.")
 
     def create_package(self, dirpath):
         """Sets up a package directory."""
@@ -535,7 +531,7 @@ class Command(object):
                 while True:
                     time.sleep(watch_interval)
             except KeyboardInterrupt:
-                logger.show("Aborted due to keyboard interrupt.")
+                logger.show("Aborting due to keyboard interrupt.")
             finally:
                 observer.stop()
                 observer.join()
