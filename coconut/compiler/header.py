@@ -350,7 +350,7 @@ def addpattern(base_func):
 def prepattern(base_func):
     """Decorator to add a new case to a pattern-matching function, where the new case is checked first."""
     def pattern_prepender(func):
-        return addpattern(func, base_func)
+        return addpattern(func)(base_func)
     return pattern_prepender
 def datamaker(data_type):
     """Returns base data constructor of passed data type."""
