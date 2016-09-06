@@ -91,7 +91,8 @@ from coconut.compiler.util import (
     target_info,
     addskip,
     count_end,
-    change,
+    paren_change,
+    ind_change,
     rem_comment,
     attach,
     split_leading_indent,
@@ -377,7 +378,7 @@ class Compiler(Grammar):
     def should_indent(self, code):
         """Determines whether the next line should be indented."""
         last = rem_comment(code.splitlines()[-1])
-        return last.endswith(":") or last.endswith("\\") or change(last) < 0
+        return last.endswith(":") or last.endswith("\\") or paren_change(last) < 0
 
     def parse(self, inputstring, parser, preargs, postargs):
         """Uses the parser to parse the inputstring."""
@@ -533,7 +534,7 @@ class Compiler(Grammar):
                 c = inputstring[x]
 
             if hold is not None:
-                count += change(c)
+                count += paren_change(c)
                 if count >= 0 and c == hold:
                     out.append(self.wrap_passthrough(found, multiline))
                     found = None
@@ -642,7 +643,7 @@ class Compiler(Grammar):
                 elif current != check:
                     raise self.make_err(CoconutSyntaxError, "illegal dedent to unused indentation level", line, 0, self.adjust(ln))
                 new.append(line)
-            count += change(line)
+            count += paren_change(line)
 
         self.skips = skips
         if new:
@@ -681,13 +682,13 @@ class Compiler(Grammar):
                 comment = ""
 
             indent, line = split_leading_indent(line)
-            level += indent.count(openindent) - indent.count(closeindent)
+            level += ind_change(indent)
 
             if line and not line.startswith("#"):
                 line = " "*(1 if self.minify else tabideal)*level + line
 
             line, indent = split_trailing_indent(line)
-            level += indent.count(openindent) - indent.count(closeindent)
+            level += ind_change(indent)
 
             out.append(line + comment)
 
@@ -1177,38 +1178,39 @@ class Compiler(Grammar):
         """Determines if tail call optimization can be done and if so does it."""
         if len(tokens) != 1:
             raise CoconutException("invalid function definition tokens", tokens)
+        elif not tokens[0].startswith("def "):
+            # either has decorators or is an async def, neither of which we can tco
+            return tokens[0]
         else:
+            lines = [] # transformed
+            tco = False # whether tco was done
+            level = 0 # indentation level
+            in_func = None # if inside of a func, the indentation level outside that func
 
-            funcdef = None
-            prestmts, decorators, func_stmts = [], [], []
-            for line in tokens[0].splitlines():
-                indent, body = split_leading_indent(line)
-                if funcdef is not None:
+            for i, line in enumerate(tokens[0].splitlines(True)):
+                body, indent = split_trailing_indent(line)
+                level += ind_change(body)
+                if in_func is not None:
+                    if level <= in_func:
+                        in_func = None
+                if in_func is None:
                     if match_in(Keyword("yield"), body):
                         # we can't tco generators
                         return tokens[0]
-                    func_stmts.append(line)
-                elif body.startswith("@"):
-                    decorators.append(line)
-                elif body.startswith("def "):
-                    funcdef = line
-                elif body.startswith("async def "):
-                    # we can't tco async functions
-                    return tokens[0]
-                else:
-                    if decorators:
-                        raise CoconutException("funcdef prestmt after funcdef decorators", line)
-                    prestmts.append(line)
-            if funcdef is None:
-                raise CoconutException("could not find function definition in funcdef", tokens[0])
+                    elif i and match_in(Keyword("def"), body):
+                        in_func = level
+                    else:
+                        tco_line = transform(self.tco_return, line)
+                        if tco_line is not None:
+                            line = tco_line
+                            tco = True
+                lines.append(line)
+                level += ind_change(indent)
 
-            func_body = "\n".join(func_stmts)
-            tco_body = transform(self.tco_return, func_body)
-            if tco_body is None:
-                return tokens[0]
+            if tco:
+                return "@_coconut_tco\n" + "".join(lines)
             else:
-                decorators.append("@_coconut_tco")
-                return "\n".join(prestmts + decorators + [funcdef, tco_body])
+                return tokens[0]
 
 # end: COMPILER HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------

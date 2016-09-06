@@ -46,7 +46,6 @@ from pyparsing import (
     nums,
     originalTextFor,
     nestedExpr,
-    FollowedBy,
 )
 
 from coconut.exceptions import CoconutException
@@ -687,10 +686,10 @@ def tco_return_handle(tokens):
     """Handles tail-call-optimizable return statements."""
     if len(tokens) != 2:
         raise CoconutException("invalid tail-call-optimizable return statement tokens", tokens)
-    elif tokens[1] == "()":
-        return "raise _coconut_tail_call(" + tokens[0] + ")"
+    elif tokens[1].startswith("()"):
+        return "raise _coconut_tail_call(" + tokens[0] + ")" + tokens[1][2:] # tokens[1] contains \n
     else:
-        return "raise _coconut_tail_call(" + tokens[0] + ", " + tokens[1][1:] # tokens
+        return "raise _coconut_tail_call(" + tokens[0] + ", " + tokens[1][1:] # tokens[1] contains )\n
 
 # end: HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1356,7 +1355,7 @@ class Grammar(object):
             Keyword("return").suppress() + condense(
                 (name | parens | brackets | braces | string)
                 + ZeroOrMore(dot + name | brackets)
-            ) + parens + FollowedBy(Literal("\n"))
+            ) + condense(parens + Literal("\n"))
         , tco_return_handle)
 
 #end: EXTRA GRAMMAR

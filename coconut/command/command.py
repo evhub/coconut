@@ -177,7 +177,6 @@ class Command(object):
         if args.interact or (interact and not (
                 stdin
                 or args.source
-                or args.version
                 or args.code
                 or args.tutorial
                 or args.documentation

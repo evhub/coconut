@@ -62,7 +62,7 @@ def count_end(teststr, testchar):
         x -= 1
     return count
 
-def change(inputstring):
+def paren_change(inputstring):
     """Determines the parenthetical change of level."""
     count = 0
     for c in inputstring:
@@ -71,6 +71,10 @@ def change(inputstring):
         elif c in ups:
             count += 1
     return count
+
+def ind_change(inputstring):
+    """Determines the change in indentation level."""
+    return inputstring.count(openindent) - inputstring.count(closeindent)
 
 def attach(item, action, copy=False):
     """Attaches a parse action to an item."""
