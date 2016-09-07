@@ -314,7 +314,7 @@ def _coconut_tco(func):
                 del kwargs["_coconut_inside_tco"]
                 return call_func(*args, **kwargs)
             if hasattr(call_func, "_coconut_is_tco"):
-                kwargs["_coconut_inside_tco"] = True
+                kwargs["_coconut_inside_tco"] = call_func._coconut_is_tco
             try:
                 return call_func(*args, **kwargs)
             except _coconut_tail_call as tail_call:
@@ -338,8 +338,8 @@ def recursive_iterator(func):
 def addpattern(base_func):
     """Decorator to add a new case to a pattern-matching function, where the new case is checked last."""
     def pattern_adder(func):
-        @_coconut_tco
         @_coconut.functools.wraps(func)
+        @_coconut_tco
         def add_pattern_func(*args, **kwargs):
             try:
                 return base_func(*args, **kwargs)
