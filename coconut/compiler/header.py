@@ -24,7 +24,6 @@ from coconut.constants import (
     default_encoding,
 )
 from coconut.exceptions import CoconutException
-from coconut.constants import tco_inner_func_var
 from coconut.compiler.util import target_info
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -311,13 +310,16 @@ def _coconut_tco(func):
     def tail_call_optimized_func(*args, **kwargs):
         call_func = func
         while True:
+            if "_coconut_inside_tco" in kwargs:
+                del kwargs["_coconut_inside_tco"]
+                return call_func(*args, **kwargs)
+            if hasattr(call_func, "_coconut_is_tco"):
+                kwargs["_coconut_inside_tco"] = True
             try:
                 return call_func(*args, **kwargs)
             except _coconut_tail_call as tail_call:
                 call_func, args, kwargs = tail_call.func, tail_call.args, tail_call.kwargs
-            if _coconut.hasattr(call_func, "'''+tco_inner_func_var+r'''"):
-                call_func = call_func.'''+tco_inner_func_var+r'''
-    tail_call_optimized_func.'''+tco_inner_func_var+r''' = func
+    tail_call_optimized_func._coconut_is_tco = True
     return tail_call_optimized_func
 def recursive_iterator(func):
     """Decorates a function by optimizing it for iterator recursion.

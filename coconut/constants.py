@@ -75,7 +75,6 @@ yield_from_var = "_coconut_yield_from"
 yield_item_var = "_coconut_yield_item"
 raise_from_var = "_coconut_raise_from"
 stmt_lambda_var = "_coconut_lambda"
-tco_inner_func_var = "_coconut_undecorated_tco_func"
 
 wildcard = "_" # for pattern-matching
 
