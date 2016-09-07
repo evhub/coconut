@@ -10,3 +10,4 @@ def non_py26_test():
     test = {}
     exec("b = mod(5, 3)", globals(), test)
     assert test["b"] == 2
+    return True

@@ -126,11 +126,13 @@ def map_iter(func, args):
         return (| func(x) |) :: map_iter(func, xs)
 
 # Recursive Functions:
+
 def next_mul_of(n, x):
     if x % n == 0:
         return x
     else:
         return next_mul_of(n, x+1)
+
 def collatz(n):
     if n == 1:
         return True
@@ -138,9 +140,28 @@ def collatz(n):
         return collatz(n/2)
     else:
         return collatz(3*n+1)
-def recurse_n_times(n):
-    if n:
-        return recurse_n_times(n-1)
+
+def recurse_n_times(n) =
+    if not n:
+        return True
+    recurse_n_times(n-1)
+
+def is_even(n) =
+    if not n:
+        return True
+    is_odd(n-1)
+def is_odd(n) =
+    if not n:
+        return False
+    is_even(n-1)
+
+def is_even_(0) = True
+@addpattern(is_even_)
+def is_even_(n) = is_odd_(n-1)
+
+def is_odd_(0) = False
+@addpattern(is_odd_)
+def is_odd_(n) = is_even_(n-1)
 
 # Data Blocks:
 data preop(x, y):
@@ -492,7 +513,7 @@ def `pattern_abs_` (x) = x
 def fib() = (1, 2) :: map((+), fib(), fib()$[1:])
 
 @recursive_iterator
-def repeat(it) = it :: repeat(it)
+def loop(it) = it :: loop(it)
 
 # Sieve Example
 
@@ -520,3 +541,14 @@ def assign_func_2(f, x, y) =
 
 mul = (*)
 def minus(a, b) = b - a
+
+# Exception Functions
+
+def raise_exc():
+    raise Exception()
+
+def does_raise_exc(func):
+    try:
+        return func()
+    except Exception:
+        return True

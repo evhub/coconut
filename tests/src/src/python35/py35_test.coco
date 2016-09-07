@@ -22,3 +22,4 @@ def py35_test():
         assert False
     assert (1, *(2, 3), 4) == (1, 2, 3, 4)
     assert {"a": 1, **{"b": 2}, "c": 3} == {"a": 1, "b": 2, "c": 3}
+    return True

@@ -5,3 +5,4 @@ def py2_test():
     assert py2_range(5) == [0, 1, 2, 3, 4]
     assert not isinstance(long(1), py2_int)
     assert py2_str(3) == b"3" == unicode(b"3")
+    return True

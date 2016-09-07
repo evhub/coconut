@@ -156,7 +156,6 @@ def main():
         assert True
     else:
         assert False
-    cmd("-v")
     try:
         parse("f''")
     except CoconutException:

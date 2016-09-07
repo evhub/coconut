@@ -36,3 +36,4 @@ def py3_test():
     assert test["a"] == 1
     def keyword_only(*, a) = a
     assert keyword_only(a=10) == 10
+    return True

@@ -215,8 +215,10 @@ def suite_test():
     assert pattern_abs(-4) == 4 == pattern_abs_(-4)
     assert vector(1, 2) |> .__eq__(other=vector(1, 2))
     assert fib() |> takewhile$((i) -> i < 4000000 ) |> filter$((i) -> i % 2 == 0 ) |> sum == 4613732
-    assert repeat([1,2])$[:4] |> list == [1, 2] * 2
+    assert loop([1,2])$[:4] |> list == [1, 2] * 2
     assert recurse_n_times(10000)
+    assert is_even(5000) and is_odd(5001)
+    assert is_even_(5000) and is_odd_(5001)
     assert (def -> mod)()(5, 3) == 2
     assert sieve((2, 3, 4, 5)) |> list == [2, 3, 5]
     assert 11 == double_plus_one(5)
@@ -224,3 +226,5 @@ def suite_test():
     assert 15 == assign_func_2((*), 3, 5)
     assert 20 == (..)(minus$(2), mul$(2), plus$(1))(10)
     assert 20 == (minus$(2) .. mul$(2) .. plus$(1))(10)
+    assert does_raise_exc(raise_exc)
+    return True
