@@ -81,7 +81,6 @@ else:
 assert 0 |> factorial == 1
 assert 3 |> factorial == 6
 
-@recursive
 def factorial(n, acc=1):
     """Compute n! where n is an integer >= 0."""
     case n:

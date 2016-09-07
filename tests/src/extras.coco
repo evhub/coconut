@@ -1,7 +1,13 @@
-from coconut.convenience import CoconutException, cmd, version, setup, parse
-from coconut.__coconut__ import consume as coc_consume
-
 import sys
+
+from coconut.__coconut__ import consume as coc_consume
+from coconut.convenience import (
+    CoconutException,
+    cmd,
+    version,
+    setup,
+    parse,
+)
 
 NOT_PY_32 = sys.version_info >= (3, 3) or (sys.version_info < (3,) and sys.version_info >= (2, 7))
 if NOT_PY_32:

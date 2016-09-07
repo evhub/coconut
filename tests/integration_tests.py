@@ -95,7 +95,8 @@ class OldCocoTest(unittest.TestCase):
 
     def tearDown(self):
         try:
-            self._clean()
+            pass
+            #self._clean()
         except:
             pass
 

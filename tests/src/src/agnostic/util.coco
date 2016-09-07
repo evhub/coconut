@@ -126,18 +126,11 @@ def map_iter(func, args):
         return (| func(x) |) :: map_iter(func, xs)
 
 # Recursive Functions:
-@recursive
 def next_mul_of(n, x):
     if x % n == 0:
         return x
     else:
         return next_mul_of(n, x+1)
-def maybe_recursive(cond):
-    if cond:
-        return recursive
-    else:
-        return (func) -> func
-@maybe_recursive(True)
 def collatz(n):
     if n == 1:
         return True
@@ -145,14 +138,9 @@ def collatz(n):
         return collatz(n/2)
     else:
         return collatz(3*n+1)
-@maybe_recursive(False)
-def collatz_(n):
-    if n == 1:
-        return True
-    elif n%2 == 0:
-        return collatz(n/2)
-    else:
-        return collatz(3*n+1)
+def recurse_n_times(n):
+    if n:
+        return recurse_n_times(n-1)
 
 # Data Blocks:
 data preop(x, y):
@@ -503,6 +491,9 @@ def `pattern_abs_` (x) = x
 @recursive_iterator
 def fib() = (1, 2) :: map((+), fib(), fib()$[1:])
 
+@recursive_iterator
+def repeat(it) = it :: repeat(it)
+
 # Sieve Example
 
 def sieve((||)) = []
@@ -510,8 +501,22 @@ def sieve((||)) = []
 @prepattern(sieve)
 def sieve([head] :: tail) = [head] :: sieve(n for n in tail if n % head)
 
-# Shorthand function definition
+# "Assignment function" definitions
 
 def double_plus_one(x) =
     x *= 2
     x + 1
+
+def assign_func_1(f, x, y) =
+    def inner_assign_func((a, b)) = f(a, b)
+    inner_assign_func((x, y))
+
+def assign_func_2(f, x, y) =
+    def inner_assign_func((a, b)) =
+        f(a, b)
+    inner_assign_func((x, y))
+
+# Composable Functions
+
+mul = (*)
+def minus(a, b) = b - a
