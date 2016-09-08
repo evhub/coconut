@@ -43,7 +43,7 @@ from coconut.constants import (
     use_mouse_support,
 )
 from coconut.logging import logger
-from coconut.exceptions import CoconutException
+from coconut.exceptions import CoconutException, CoconutInternalException
 
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
@@ -111,14 +111,15 @@ class Prompt(object):
 
     def __init__(self):
         """Set up the prompt."""
-        self.history = prompt_toolkit.history.InMemoryHistory()
+        if prompt_toolkit is not None:
+            self.history = prompt_toolkit.history.InMemoryHistory()
 
     def set_style(self, style):
         """Set pygments syntax highlighting style."""
         if style == "none":
             self.style = None
         elif prompt_toolkit is None:
-            raise CoconutException("syntax highlighting is not supported for this Python version")
+            raise CoconutException("syntax highlighting is not supported on this Python version")
         elif style in pygments.styles.get_all_styles():
             self.style = style
         else:
@@ -132,6 +133,8 @@ class Prompt(object):
             msg = main_prompt
         if self.style is None:
             return input(msg)
+        elif prompt_toolkit is None:
+            raise CoconutInternalException("cannot highlight style without prompt_toolkit", self.style)
         else:
             return prompt_toolkit.prompt(
                 msg,
