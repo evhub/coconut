@@ -1,2 +1,2 @@
 jupyter==1.0.0
-jupyter-console==5.1.0
+jupyter-console==4.1.1

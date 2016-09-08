@@ -179,9 +179,9 @@ debug_sig = ""
 main_prompt = ">>> "
 more_prompt = "    "
 
-default_style = "default"
+default_style = "emacs"
 use_vi_mode = False
-use_mouse_support = False
+use_mouse_support = True
 
 watch_interval = .1 # seconds
 
