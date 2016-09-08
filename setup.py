@@ -151,9 +151,12 @@ def all_reqs_in(req_dict):
 
 reqs = read_reqs()
 
+if not PY26:
+    reqs += read_reqs("non-py26")
+
 if PY2:
     reqs += read_reqs("py2")
-    if sys.version_info < (2, 7):
+    if PY26:
         reqs += read_reqs("py26")
 
 watch_reqs = read_reqs("watch")
@@ -193,9 +196,9 @@ setuptools.setup(
             "coconut = coconut.__main__:main",
             ],
         "pygments.lexers": [
-            "coconut_python = coconut.highlighter:pylexer",
-            "coconut_pycon = coconut.highlighter:pyconlexer",
-            "coconut = coconut.highlighter:cocolexer",
+            "coconut_python = coconut.highlighter:CoconutPythonLexer",
+            "coconut_pycon = coconut.highlighter:CoconutPythonConsoleLexer",
+            "coconut = coconut.highlighter:CoconutLexer",
             ]
         },
     classifiers = classifiers,

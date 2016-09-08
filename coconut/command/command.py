@@ -32,8 +32,6 @@ from coconut.logging import logger
 from coconut.constants import (
     code_exts,
     comp_ext,
-    default_prompt,
-    default_moreprompt,
     watch_interval,
     version_banner,
     version_tag,
@@ -52,6 +50,7 @@ from coconut.command.util import (
     try_eval,
     Runner,
     multiprocess_wrapper,
+    prompt,
 )
 from coconut.command.cli import arguments
 
@@ -73,9 +72,8 @@ class Command(object):
     executor = None # runs --jobs
     exit_code = 0 # exit status to return
 
-    def __init__(self, prompt=default_prompt, moreprompt=default_moreprompt):
+    def __init__(self):
         """Creates the CLI."""
-        self.prompt, self.moreprompt = prompt, moreprompt
 
     def start(self):
         """Processes command-line arguments."""
@@ -87,12 +85,6 @@ class Command(object):
             self.comp = Compiler(*args, **kwargs)
         else:
             self.comp.setup(*args, **kwargs)
-
-    def set_color(self, color):
-        """Sets --color."""
-        logger.set_color(color)
-        self.prompt = logger.add_color(self.prompt)
-        self.moreprompt = logger.add_color(self.moreprompt)
 
     def cmd(self, args, interact=True):
         """Processes command-line arguments."""
@@ -111,8 +103,6 @@ class Command(object):
     def use_args(self, args, interact=True):
         """Handles command-line arguments."""
         logger.quiet, logger.verbose = args.quiet, args.verbose
-        if args.color is not None:
-            self.set_color(args.color)
         if args.recursion_limit is not None:
             sys.setrecursionlimit(args.recursion_limit)
         if args.jobs is not None:
@@ -359,10 +349,10 @@ class Command(object):
                     return compiled
         return None
 
-    def prompt_with(self, prompt):
-        """Prompts for code."""
+    def get_input(self, more=False):
+        """Prompts for code input."""
         try:
-            return input(prompt) # using input from coconut.root
+            return prompt(more)
         except KeyboardInterrupt:
             logger.printerr("\nKeyboardInterrupt")
         except EOFError:
@@ -384,7 +374,7 @@ class Command(object):
         logger.print('(type "exit()" or press Ctrl-D to end)')
         self.start_running()
         while self.running:
-            code = self.prompt_with(self.prompt)
+            code = self.get_input()
             if code:
                 compiled = self.handle_input(code)
                 if compiled:
@@ -404,7 +394,7 @@ class Command(object):
                 pass
         if compiled is None:
             while True:
-                line = self.prompt_with(self.moreprompt)
+                line = self.get_input(more=True)
                 if line is None:
                     return None
                 elif line.strip():

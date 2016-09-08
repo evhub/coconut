@@ -108,7 +108,7 @@ which will enable the use of Coconut's `--watch` and `--jupyter` flags. To insta
 ### Usage
 
 ```
-coconut [-h] [-v] [source] [dest] [-t version] [-s] [-l] [-k] [-p] [-a] [-w] [-d] [-r] [-n] [-m] [-i] [-q] [-f] [-c code] [-j processes] [--jupyter ...] [--recursion-limit limit] [--color color] [--verbose]
+coconut [-h] [-v] [source] [dest] [-t version] [-s] [-l] [-k] [-p] [-a] [-w] [-d] [-r] [-n] [-m] [-i] [-q] [-f] [-c code] [-j processes] [--jupyter ...] [--recursion-limit limit] [--verbose]
 ```
 
 #### Positional Arguments
@@ -143,7 +143,6 @@ dest                  destination directory for compiled files (defaults to the 
 --recursion-limit       set maximum recursion depth (default is system dependent)
 --tutorial              open the Coconut tutorial in the default web browser
 --documentation         open the Coconut documentation in the default web browser
---color color           show all Coconut messages in the given color
 --verbose               print verbose debug output
 ```
 

@@ -40,7 +40,7 @@ def lenient_add_filter(self, *args, **kwargs):
     if len(args) >= 1 and args[0] != "raiseonerror":
         self.original_add_filter(*args, **kwargs)
 
-class pylexer(Python3Lexer):
+class CoconutPythonLexer(Python3Lexer):
     """Coconut-style Python syntax highlighter."""
     name = "coconut_python"
     aliases = ["coconut_python", "coconut_py", "coconut_python3", "coconut_py3"]
@@ -51,7 +51,7 @@ class pylexer(Python3Lexer):
         Python3Lexer.__init__(self, stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=default_encoding)
         self.original_add_filter, self.add_filter = self.add_filter, lenient_add_filter
 
-class pyconlexer(PythonConsoleLexer):
+class CoconutPythonConsoleLexer(PythonConsoleLexer):
     """Coconut-style Python console syntax highlighter."""
     name = "coconut_pycon"
     aliases = ["coconut_pycon", "coconut_pycon3"]
@@ -62,7 +62,7 @@ class pyconlexer(PythonConsoleLexer):
         PythonConsoleLexer.__init__(self, stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=default_encoding, python3=python3)
         self.original_add_filter, self.add_filter = self.add_filter, lenient_add_filter
 
-class cocolexer(Python3Lexer):
+class CoconutLexer(Python3Lexer):
     """Coconut syntax highlighter."""
     name = "coconut"
     aliases = ["coconut", "coco", "coconutcon", "cococon"]

@@ -23,7 +23,26 @@ import os
 import traceback
 from copy import copy
 
-from coconut.constants import default_encoding
+if PY26:
+    try:
+        import readline
+    except ImportError:
+        pass
+    prompt_toolkit = None
+else:
+    import prompt_toolkit
+    import pygments
+    from coconut.highlighter import CoconutLexer
+    history = prompt_toolkit.history.InMemoryHistory()
+
+from coconut.constants import (
+    default_encoding,
+    main_prompt,
+    more_prompt,
+    pygments_style,
+    use_vi_mode,
+    mouse_support,
+)
 from coconut.logging import logger
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -78,6 +97,24 @@ def try_eval(code, in_vars):
         pass # exit the exception context before executing code
     exec(code, in_vars)
     return None
+
+def prompt(more=False):
+    """Prompts for code input."""
+    if more:
+        msg = more_prompt
+    else:
+        msg = main_prompt
+    if prompt_toolkit is None:
+        return input(msg)
+    else:
+        return prompt_toolkit.prompt(
+            msg,
+            vi_mode=use_vi_mode,
+            mouse_support=mouse_support,
+            history=history,
+            lexer=prompt_toolkit.layout.lexers.PygmentsLexer(CoconutLexer),
+            style=prompt_toolkit.styles.style_from_pygments(pygments.styles.get_style_by_name(pygments_style)),
+        )
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CLASSES:

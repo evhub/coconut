@@ -27,8 +27,6 @@ from pyparsing import lineno, col
 
 from coconut.constants import (
     default_encoding,
-    color_codes,
-    end_color_code,
     info_tabulation,
     main_sig,
     debug_sig,
@@ -53,10 +51,6 @@ def format_error(err_type, err_value, err_trace=None):
     else:
         return "".join(traceback.format_exception(err_type, err_value, err_trace)).strip()
 
-def escape_color(code):
-    """Generates an ANSII color code."""
-    return "\033[" + str(code) + "m"
-
 def complain(error):
     """Raises an error in DEVELOP, otherwise does nothing."""
     if DEVELOP:
@@ -70,64 +64,30 @@ class Logger(object):
     """Container object for various logger functions and variables."""
     verbose = False
     quiet = False
-    color_code = None
     path = None
 
     def copy_from(self, other):
         """Copy other onto self."""
-        self.verbose, self.quiet, self.color_code, self.path = other.verbose, other.quiet, other.color_code, other.path
-
-    def set_color(self, color=None):
-        """Set output color."""
-        if color:
-            color = color.replace("_", "")
-            if color in color_codes:
-                self.color_code = color_codes[color]
-            else:
-                try:
-                    color = int(color)
-                except ValueError:
-                    raise CoconutException('unrecognized color "'+color+'" (enter a valid color name or code)')
-                else:
-                    if 0 < color <= 256:
-                        self.color_code = color
-                    else:
-                        raise CoconutException('color code '+str(color)+' out of range (must obey 0 < color code <= 256)')
-        else:
-            self.color_code = None
-
-    def add_color(self, inputstring):
-        """Adds the specified color to the string."""
-        if self.color_code is None:
-            return inputstring
-        else:
-            return escape_color(self.color_code) + inputstring + escape_color(end_color_code)
+        self.verbose, self.quiet, self.path = other.verbose, other.quiet, other.path
 
     def display(self, messages, sig="", debug=False):
-        """Prints an iterator of messages with color."""
+        """Prints an iterator of messages."""
         full_message = " ".join(str(msg) for msg in messages)
-        print_lines = []
-        for line in full_message.splitlines():
-            line = sig + line
-            if line:
-                line = self.add_color(line)
-            print_lines.append(line)
-        print_message = "\n".join(print_lines)
         if debug is True:
-            printerr(print_message)
+            printerr(full_message)
         else:
-            print(print_message)
+            print(full_message)
 
     def print(self, *messages):
-        """Prints messages with color."""
+        """Prints messages."""
         self.display(messages)
 
     def printerr(self, *messages):
-        """Prints error messages with color and debug signature."""
+        """Prints error messages with debug signature."""
         self.display(messages, debug_sig, True)
 
     def show(self, *messages):
-        """Prints messages with color and main signature."""
+        """Prints messages with main signature."""
         if not self.quiet:
             self.display(messages, main_sig)
 

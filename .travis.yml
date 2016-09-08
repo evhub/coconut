@@ -25,7 +25,7 @@ matrix:
         - rm src/cocotest/non_py26_test.coco
 
       script:
-        - coconut --version --color cyan
+        - coconut --version
         - coconut --help
         - coconut --strict --display --code "assert '_coconut' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - echo "assert '_coconut' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --display
@@ -115,7 +115,7 @@ matrix:
         - rm src/cocotest/non_py26_test.coco
 
       script:
-        - coconut --version --color cyan
+        - coconut --version
         - coconut --help
         - coconut --strict --display --code "assert '_coconut' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - echo "assert '_coconut' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --display
@@ -207,7 +207,7 @@ matrix:
         - rm src/cocotest/non_py26_test.coco
 
       script:
-        - coconut --version --color cyan
+        - coconut --version
         - coconut --help
         - coconut --strict --display --code "assert '_coconut' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - echo "assert '_coconut' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --display
@@ -299,7 +299,7 @@ matrix:
         - rm src/cocotest/non_py26_test.coco
 
       script:
-        - coconut --version --color cyan
+        - coconut --version
         - coconut --help
         - coconut --strict --display --code "assert '_coconut' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - echo "assert '_coconut' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --display
@@ -388,7 +388,7 @@ matrix:
         - rm src/cocotest/non_py26_test.coco
 
       script:
-        - coconut --version --color cyan
+        - coconut --version
         - coconut --help
         - coconut --strict --display --code "assert '_coconut' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - echo "assert '_coconut' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --display
@@ -479,7 +479,7 @@ matrix:
         - rm src/cocotest/non_py26_test.coco
 
       script:
-        - coconut --version --color cyan
+        - coconut --version
         - coconut --help
         - coconut --strict --display --code "assert '_coconut' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - echo "assert '_coconut' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --display
@@ -570,7 +570,7 @@ matrix:
         - rm src/cocotest/py35_test.coco
 
       script:
-        - coconut --version --color cyan
+        - coconut --version
         - coconut --help
         - coconut --strict --display --code "assert '_coconut' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - echo "assert '_coconut' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --display
@@ -667,7 +667,7 @@ matrix:
         - rm src/cocotest/non_py26_test.coco
 
       script:
-        - coconut --version --color cyan
+        - coconut --version
         - coconut --help
         - coconut --strict --display --code "assert '_coconut' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()"
         - echo "assert '_coconut' in \`globals\`; msg = '<success>'; pmsg = print\$(msg); pmsg()" | coconut --strict --display

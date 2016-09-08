@@ -157,12 +157,6 @@ arguments.add_argument(
     help="open the Coconut documentation in the default web browser")
 
 arguments.add_argument(
-    "--color",
-    metavar="color",
-    type=str,
-    help="show all Coconut messages in the given color")
-
-arguments.add_argument(
     "--verbose",
     action="store_true",
     help="print verbose debug output")

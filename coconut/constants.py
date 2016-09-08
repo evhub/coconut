@@ -176,54 +176,16 @@ comp_ext = ".py"
 main_sig = "Coconut: "
 debug_sig = ""
 
-default_prompt = ">>> "
-default_moreprompt = "    "
+main_prompt = ">>> "
+more_prompt = "    "
+
+pygments_style = "default"
+use_vi_mode = False
+mouse_support = False
 
 watch_interval = .1 # seconds
 
 info_tabulation = 18 # offset for tabulated info messages
-
-end_color_code = 0
-color_codes = { # unix/ansii color codes, underscores in names removed
-    "bold": 1,
-    "dim": 2,
-    "underlined": 4,
-    "blink": 5,
-    "reverse": 7,
-    "default": 39,
-    "black": 30,
-    "red": 31,
-    "yellow": 33,
-    "blue": 34,
-    "magenta": 35,
-    "cyan": 36,
-    "lightgray": 37,
-    "darkgray": 90,
-    "lightred": 91,
-    "lightgreen": 92,
-    "lightyellow": 93,
-    "lightblue": 94,
-    "lightmagenta": 95,
-    "lightcyan": 96,
-    "white": 97,
-    "defaultbackground": 49,
-    "blackbackground": 40,
-    "redbackground": 41,
-    "greenbackground": 42,
-    "yellowbackground": 43,
-    "bluebackground": 44,
-    "magentabackground": 45,
-    "cyanbackground": 46,
-    "lightgraybackground": 47,
-    "darkgraybackground": 100,
-    "lightredbackground": 101,
-    "lightgreenbackground": 102,
-    "lightyellowbackground": 103,
-    "lightbluebackground": 104,
-    "lightmagentabackground": 105,
-    "lightcyanbackground": 106,
-    "whitebackground": 107,
-    }
 
 version_long = "Version " + VERSION_STR + " running on Python " + " ".join(sys.version.splitlines())
 version_banner = "Coconut " + VERSION_STR
