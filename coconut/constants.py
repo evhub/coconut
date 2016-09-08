@@ -179,9 +179,9 @@ debug_sig = ""
 main_prompt = ">>> "
 more_prompt = "    "
 
-pygments_style = "default"
+default_style = "default"
 use_vi_mode = False
-mouse_support = False
+use_mouse_support = False
 
 watch_interval = .1 # seconds
 

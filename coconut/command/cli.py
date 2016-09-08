@@ -18,10 +18,13 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *
 
-import sys
 import argparse
 
-from coconut.constants import documentation_url, version_long
+from coconut.constants import (
+    documentation_url,
+    version_long,
+    default_recursion_limit,
+)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
@@ -144,7 +147,7 @@ arguments.add_argument(
     "--recursion-limit", "--recursionlimit",
     metavar="limit",
     type=int,
-    help="set maximum recursion depth (defaults to "+str(sys.getrecursionlimit())+")")
+    help="set maximum recursion depth (defaults to "+str(default_recursion_limit)+")")
 
 arguments.add_argument(
     "--tutorial",
@@ -155,6 +158,12 @@ arguments.add_argument(
     "--documentation",
     action="store_true",
     help="open the Coconut documentation in the default web browser")
+
+arguments.add_argument(
+    "--style",
+    metavar="name",
+    type=str,
+    help="pygments syntax highlighting style (or 'none' to disable)")
 
 arguments.add_argument(
     "--verbose",

@@ -27,7 +27,11 @@ import platform
 from contextlib import contextmanager
 
 from coconut.compiler import Compiler, gethash
-from coconut.exceptions import CoconutException, CoconutWarning
+from coconut.exceptions import (
+    CoconutException,
+    CoconutWarning,
+    CoconutInternalException,
+)
 from coconut.logging import logger
 from coconut.constants import (
     code_exts,
@@ -50,7 +54,7 @@ from coconut.command.util import (
     try_eval,
     Runner,
     multiprocess_wrapper,
-    prompt,
+    Prompt,
 )
 from coconut.command.cli import arguments
 
@@ -74,6 +78,7 @@ class Command(object):
 
     def __init__(self):
         """Creates the CLI."""
+        self.prompt = Prompt()
 
     def start(self):
         """Processes command-line arguments."""
@@ -111,6 +116,8 @@ class Command(object):
             self.launch_tutorial()
         if args.documentation:
             self.launch_documentation()
+        if args.style is not None:
+            self.prompt.set_style(args.style)
         if args.display:
             self.show = True
 
@@ -201,7 +208,7 @@ class Command(object):
                 package = True
             self.compile_folder(path, write, package, run, force)
         else:
-            raise CoconutException("could not find source path "+path)
+            raise CoconutException("could not find source path", path)
 
     def compile_folder(self, directory, write=True, package=True, run=False, force=False):
         """Compiles a directory."""
@@ -266,7 +273,7 @@ class Command(object):
             elif package is False:
                 compile_method = "parse_file"
             else:
-                raise CoconutException("invalid value for package", package)
+                raise CoconutInternalException("invalid value for package", package)
 
             def callback(compiled):
                 if destpath is None:
@@ -352,7 +359,7 @@ class Command(object):
     def get_input(self, more=False):
         """Prompts for code input."""
         try:
-            return prompt(more)
+            return self.prompt.input(more)
         except KeyboardInterrupt:
             logger.printerr("\nKeyboardInterrupt")
         except EOFError:

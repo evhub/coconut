@@ -22,28 +22,28 @@ import sys
 import os
 import traceback
 from copy import copy
+try:
+    import readline # improves built-in input
+except ImportError:
+    readline = None
 
-if PY26:
-    try:
-        import readline
-    except ImportError:
-        pass
+if PY26 or (3,) <= sys.version_info < (3, 3):
     prompt_toolkit = None
 else:
     import prompt_toolkit
     import pygments
     from coconut.highlighter import CoconutLexer
-    history = prompt_toolkit.history.InMemoryHistory()
 
 from coconut.constants import (
     default_encoding,
     main_prompt,
     more_prompt,
-    pygments_style,
+    default_style,
     use_vi_mode,
-    mouse_support,
+    use_mouse_support,
 )
 from coconut.logging import logger
+from coconut.exceptions import CoconutException
 
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
@@ -98,27 +98,50 @@ def try_eval(code, in_vars):
     exec(code, in_vars)
     return None
 
-def prompt(more=False):
-    """Prompts for code input."""
-    if more:
-        msg = more_prompt
-    else:
-        msg = main_prompt
-    if prompt_toolkit is None:
-        return input(msg)
-    else:
-        return prompt_toolkit.prompt(
-            msg,
-            vi_mode=use_vi_mode,
-            mouse_support=mouse_support,
-            history=history,
-            lexer=prompt_toolkit.layout.lexers.PygmentsLexer(CoconutLexer),
-            style=prompt_toolkit.styles.style_from_pygments(pygments.styles.get_style_by_name(pygments_style)),
-        )
-
 #-----------------------------------------------------------------------------------------------------------------------
 # CLASSES:
 #-----------------------------------------------------------------------------------------------------------------------
+
+class Prompt(object):
+    """Manages prompting for code on the command line."""
+    if prompt_toolkit is None:
+        style = None
+    else:
+        style = default_style
+
+    def __init__(self):
+        """Set up the prompt."""
+        self.history = prompt_toolkit.history.InMemoryHistory()
+
+    def set_style(self, style):
+        """Set pygments syntax highlighting style."""
+        if style == "none":
+            self.style = None
+        elif prompt_toolkit is None:
+            raise CoconutException("syntax highlighting is not supported for this Python version")
+        elif style in pygments.styles.get_all_styles():
+            self.style = style
+        else:
+            raise CoconutException("unrecognized pygments style", style)
+
+    def input(self, more=False):
+        """Prompts for code input."""
+        if more:
+            msg = more_prompt
+        else:
+            msg = main_prompt
+        if self.style is None:
+            return input(msg)
+        else:
+            return prompt_toolkit.prompt(
+                msg,
+                history=self.history,
+                lexer=prompt_toolkit.layout.lexers.PygmentsLexer(CoconutLexer),
+                style=prompt_toolkit.styles.style_from_pygments(pygments.styles.get_style_by_name(self.style)),
+                vi_mode=use_vi_mode,
+                mouse_support=use_mouse_support,
+            )
+
 
 class Runner(object):
     """Compiled Python executor."""

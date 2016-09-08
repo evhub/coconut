@@ -119,3 +119,6 @@ class CoconutTargetError(CoconutSyntaxError):
 
 class CoconutWarning(CoconutSyntaxError):
     """Base Coconut warning."""
+
+class CoconutInternalException(CoconutException):
+    """Internal Coconut exceptions."""

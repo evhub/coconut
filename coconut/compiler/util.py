@@ -33,7 +33,7 @@ from coconut.constants import (
     openindent,
     closeindent,
 )
-from coconut.exceptions import CoconutException
+from coconut.exceptions import CoconutInternalException
 
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
@@ -46,9 +46,9 @@ def target_info(target):
 def addskip(skips, skip):
     """Adds a line skip to the skips."""
     if skip < 1:
-        complain(CoconutException("invalid skip of line " + str(skip)))
+        complain(CoconutInternalException("invalid skip of line " + str(skip)))
     elif skip in skips:
-        complain(CoconutException("duplicate skip of line " + str(skip)))
+        complain(CoconutInternalException("duplicate skip of line " + str(skip)))
     else:
         skips.add(skip)
         return skips
@@ -148,7 +148,7 @@ def transform(grammar, text):
     intervals = []
     for tokens, start, stop in grammar.scanString(text):
         if len(tokens) != 1:
-            raise CoconutException("invalid transform result tokens", tokens)
+            raise CoconutInternalException("invalid transform result tokens", tokens)
         results.append(tokens[0])
         intervals.append((start, stop))
 
@@ -169,8 +169,8 @@ def transform(grammar, text):
         else:
             out.append(results[i//2])
     if i//2 < len(results) - 1:
-        raise CoconutException("unused transform results", results[i//2+1:])
+        raise CoconutInternalException("unused transform results", results[i//2+1:])
     if stop is not None:
-        raise CoconutException("failed to properly split text to be transformed")
+        raise CoconutInternalException("failed to properly split text to be transformed")
 
     return "".join(out)

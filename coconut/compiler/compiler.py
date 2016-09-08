@@ -76,6 +76,7 @@ from coconut.exceptions import (
     CoconutParseError,
     CoconutStyleError,
     CoconutTargetError,
+    CoconutInternalException,
     CoconutWarning,
     clean,
 )
@@ -123,13 +124,13 @@ if sys.getrecursionlimit() < default_recursion_limit:
 def set_to_tuple(tokens):
     """Converts set literal tokens to tuples."""
     if len(tokens) != 1:
-        raise CoconutException("invalid set maker tokens", tokens)
+        raise CoconutInternalException("invalid set maker tokens", tokens)
     elif "comp" in tokens.keys() or "list" in tokens.keys():
         return "(" + tokens[0] + ")"
     elif "test" in tokens.keys():
         return "(" + tokens[0] + ",)"
     else:
-        raise CoconutException("invalid set maker item", tokens[0])
+        raise CoconutInternalException("invalid set maker item", tokens[0])
 
 def gen_imports(path, impas):
     """Generates import statements."""
@@ -315,7 +316,7 @@ class Compiler(Grammar):
         try:
             return self.refs[int(index)]
         except (IndexError, ValueError):
-            raise CoconutException("invalid reference", index)
+            raise CoconutInternalException("invalid reference", index)
 
     def wrap_str(self, text, strchar, multiline=False):
         """Wraps a string."""
@@ -366,7 +367,7 @@ class Compiler(Grammar):
         if len(tokens) == 1:
             return self.apply_procs(self.postprocs, kwargs, tokens[0])
         else:
-            raise CoconutException("multiple tokens leftover", tokens)
+            raise CoconutInternalException("multiple tokens leftover", tokens)
 
     def headers(self, which, usehash=None):
         """Gets a formatted header."""
@@ -694,13 +695,13 @@ class Compiler(Grammar):
             out.append(line + comment)
 
         if level != 0:
-            complain(CoconutException("non-zero final indentation level", level))
+            complain(CoconutInternalException("non-zero final indentation level", level))
         return "\n".join(out)
 
     def endline_comment(self, ln):
         """Gets an end line comment."""
         if ln < 0 or (self.keep_lines and ln > len(self.original_lines)):
-            raise CoconutException("out of bounds line number", ln)
+            raise CoconutInternalException("out of bounds line number", ln)
         elif self.line_numbers and self.keep_lines:
             if self.minify:
                 comment = str(ln) + " " + self.original_lines[ln-1]
@@ -717,7 +718,7 @@ class Compiler(Grammar):
             else:
                 comment = " line " + str(ln)
         else:
-            raise CoconutException("attempted to add line number comment without --line-numbers or --keep-lines")
+            raise CoconutInternalException("attempted to add line number comment without --line-numbers or --keep-lines")
         return self.wrap_comment(comment)
 
     def endline_repl(self, inputstring, add_to_line=True, careful=True, **kwargs):
@@ -732,7 +733,7 @@ class Compiler(Grammar):
                         line, index = line[:-1].rsplit("#", 1)
                         ln = self.get_ref(index)
                         if not isinstance(ln, int):
-                            raise CoconutException("invalid reference for a line number", ln)
+                            raise CoconutInternalException("invalid reference for a line number", ln)
                         line = line.rstrip()
                         fix = True
                     elif fix:
@@ -740,7 +741,7 @@ class Compiler(Grammar):
                         fix = False
                     if add_to_line and line and not line.lstrip().startswith("#"):
                         line += self.endline_comment(ln)
-                except CoconutException as err:
+                except CoconutInternalException as err:
                     if careful:
                         complain(err)
                     fix = False
@@ -762,7 +763,7 @@ class Compiler(Grammar):
                     elif c == unwrapper and index:
                         ref = self.get_ref(index)
                         if not isinstance(ref, str):
-                            raise CoconutException("invalid reference for a passthrough", ref)
+                            raise CoconutInternalException("invalid reference for a passthrough", ref)
                         out.append(ref)
                         index = None
                     elif c != "\\" or index:
@@ -775,7 +776,7 @@ class Compiler(Grammar):
                         index = ""
                     else:
                         out.append(c)
-            except CoconutException:
+            except CoconutInternalException:
                 if careful:
                     raise
                 if index is not None:
@@ -800,20 +801,20 @@ class Compiler(Grammar):
                     elif c == unwrapper and comment:
                         ref = self.get_ref(comment)
                         if not isinstance(ref, str):
-                            raise CoconutException("invalid reference for a comment", ref)
+                            raise CoconutInternalException("invalid reference for a comment", ref)
                         if out and not out[-1].endswith("\n"):
                             out.append(" ")
                         out.append("#" + ref)
                         comment = None
                     else:
-                        raise CoconutException("invalid comment marker in", line(x, inputstring))
+                        raise CoconutInternalException("invalid comment marker in", line(x, inputstring))
                 elif string is not None:
                     if c is not None and c in nums:
                         string += c
                     elif c == unwrapper and string:
                         ref = self.get_ref(string)
                         if not isinstance(ref, tuple):
-                            raise CoconutException("invalid reference for a str", ref)
+                            raise CoconutInternalException("invalid reference for a str", ref)
                         text, strchar, multiline = ref
                         if multiline:
                             out.append(strchar*3 + text + strchar*3)
@@ -821,7 +822,7 @@ class Compiler(Grammar):
                             out.append(strchar + text + strchar)
                         string = None
                     else:
-                        raise CoconutException("invalid string marker in", line(x, inputstring))
+                        raise CoconutInternalException("invalid string marker in", line(x, inputstring))
                 elif c is not None:
                     if c == "#":
                         comment = ""
@@ -830,7 +831,7 @@ class Compiler(Grammar):
                     else:
                         out.append(c)
 
-            except CoconutException:
+            except CoconutInternalException:
                 if careful:
                     raise
                 if comment is not None:
@@ -870,12 +871,12 @@ class Compiler(Grammar):
             self.docstring = self.reformat(tokens[0]) + "\n\n"
             return tokens[1]
         else:
-            raise CoconutException("invalid docstring tokens", tokens)
+            raise CoconutInternalException("invalid docstring tokens", tokens)
 
     def yield_from_handle(self, tokens):
         """Processes Python 3.3 yield from."""
         if len(tokens) != 1:
-            raise CoconutException("invalid yield from tokens", tokens)
+            raise CoconutInternalException("invalid yield from tokens", tokens)
         elif self.target_info() < (3, 3):
             return (yield_from_var + " = " + tokens[0]
                 + "\nfor " + yield_item_var + " in " + yield_from_var + ":\n"
@@ -886,7 +887,7 @@ class Compiler(Grammar):
     def endline_handle(self, original, location, tokens):
         """Inserts line number comments when in line_numbers mode."""
         if len(tokens) != 1:
-            raise CoconutException("invalid endline tokens", tokens)
+            raise CoconutInternalException("invalid endline tokens", tokens)
         out = tokens[0]
         if self.minify:
             out = out.splitlines(True)[0] # if there are multiple new lines, take only the first one
@@ -912,16 +913,16 @@ class Compiler(Grammar):
                 elif trailer[0] == "$(":
                     raise self.make_err(CoconutSyntaxError, "a partial application argument is required", original, location)
                 else:
-                    raise CoconutException("invalid trailer symbol", trailer[0])
+                    raise CoconutInternalException("invalid trailer symbol", trailer[0])
             elif len(trailer) == 2:
                 if trailer[0] == "$(":
                     out = "_coconut.functools.partial("+out+", "+trailer[1]+")"
                 elif trailer[0] == "$[":
                     out = "_coconut_igetitem("+out+", "+trailer[1]+")"
                 else:
-                    raise CoconutException("invalid special trailer", trailer[0])
+                    raise CoconutInternalException("invalid special trailer", trailer[0])
             else:
-                raise CoconutException("invalid trailer tokens", trailer)
+                raise CoconutInternalException("invalid trailer tokens", trailer)
         return out
 
     def augassign_handle(self, tokens):
@@ -948,7 +949,7 @@ class Compiler(Grammar):
                 out += name+" "+op+" "+item
             return out
         else:
-            raise CoconutException("invalid assignment tokens", tokens)
+            raise CoconutInternalException("invalid assignment tokens", tokens)
 
     def classlist_handle(self, original, location, tokens):
         """Processes class inheritance lists."""
@@ -966,9 +967,9 @@ class Compiler(Grammar):
                 else:
                     raise self.make_err(CoconutTargetError, "found Python 3 keyword class definition", original, location, target="3")
             else:
-                raise CoconutException("invalid inner classlist token", tokens[0])
+                raise CoconutInternalException("invalid inner classlist token", tokens[0])
         else:
-            raise CoconutException("invalid classlist tokens", tokens)
+            raise CoconutInternalException("invalid classlist tokens", tokens)
 
     def import_handle(self, original, location, tokens):
         """Universalizes imports."""
@@ -980,7 +981,7 @@ class Compiler(Grammar):
                 self.strict_err_or_warn("unnecessary from __future__ import (Coconut does these automatically)", original, location)
                 return ""
         else:
-            raise CoconutException("invalid import tokens", tokens)
+            raise CoconutInternalException("invalid import tokens", tokens)
         importmap = [] # [((imp | old_imp, imp, version_check), impas), ...]
         for imps in imports:
             if len(imps) == 1:
@@ -1034,7 +1035,7 @@ class Compiler(Grammar):
     def complex_raise_stmt_handle(self, tokens):
         """Processes Python 3 raise from statement."""
         if len(tokens) != 2:
-            raise CoconutException("invalid raise from tokens", tokens)
+            raise CoconutInternalException("invalid raise from tokens", tokens)
         elif self.target.startswith("3"):
             return "raise " + tokens[0] + " from " + tokens[1]
         else:
@@ -1045,7 +1046,7 @@ class Compiler(Grammar):
     def dict_comp_handle(self, original, location, tokens):
         """Processes Python 2.7 dictionary comprehension."""
         if len(tokens) != 3:
-            raise CoconutException("invalid dictionary comprehension tokens", tokens)
+            raise CoconutInternalException("invalid dictionary comprehension tokens", tokens)
         elif self.target.startswith("3"):
             key, val, comp = tokens
             return "{" + key + ": " + val + " " + comp + "}"
@@ -1073,7 +1074,7 @@ class Compiler(Grammar):
             out += self.pattern_error(original, loc)
             return out
         else:
-            raise CoconutException("invalid destructuring assignment tokens", tokens)
+            raise CoconutInternalException("invalid destructuring assignment tokens", tokens)
 
     def name_match_funcdef_handle(self, original, loc, tokens):
         """Processes match defs."""
@@ -1083,7 +1084,7 @@ class Compiler(Grammar):
         elif len(tokens) == 3:
             func, matches, cond = tokens
         else:
-            raise CoconutException("invalid match function definition tokens", tokens)
+            raise CoconutInternalException("invalid match function definition tokens", tokens)
         matching = Matcher()
         matching.match_sequence(("(", matches), match_to_var, typecheck=False)
         if cond is not None:
@@ -1101,15 +1102,15 @@ class Compiler(Grammar):
         elif len(tokens) == 4:
             name_tokens = get_infix_items(tokens[:-1]) + tuple(tokens[-1:])
         else:
-            raise CoconutException("invalid infix match function definition tokens", tokens)
+            raise CoconutInternalException("invalid infix match function definition tokens", tokens)
         return self.name_match_funcdef_handle(original, loc, name_tokens)
 
     def set_literal_handle(self, tokens):
         """Converts set literals to the right form for the target Python."""
         if len(tokens) != 1:
-            raise CoconutException("invalid set literal tokens", tokens)
+            raise CoconutInternalException("invalid set literal tokens", tokens)
         elif len(tokens[0]) != 1:
-            raise CoconutException("invalid set literal item", tokens[0])
+            raise CoconutInternalException("invalid set literal item", tokens[0])
         elif self.target_info() < (2, 7):
             return "_coconut.set(" + set_to_tuple(tokens[0]) + ")"
         else:
@@ -1124,24 +1125,24 @@ class Compiler(Grammar):
             elif set_type == "f":
                 return "_coconut.frozenset()"
             else:
-                raise CoconutException("invalid set type", set_type)
+                raise CoconutInternalException("invalid set type", set_type)
         elif len(tokens) == 2:
             set_type, set_items = tokens
             if len(set_items) != 1:
-                raise CoconutException("invalid set literal item", tokens[0])
+                raise CoconutInternalException("invalid set literal item", tokens[0])
             elif set_type == "s":
                 return self.set_literal_handle([set_items])
             elif set_type == "f":
                 return "_coconut.frozenset(" + set_to_tuple(set_items) + ")"
             else:
-                raise CoconutException("invalid set type", set_type)
+                raise CoconutInternalException("invalid set type", set_type)
         else:
-            raise CoconutException("invalid set literal tokens", tokens)
+            raise CoconutInternalException("invalid set literal tokens", tokens)
 
     def exec_stmt_handle(self, tokens):
         """Handles Python-3-style exec statements."""
         if len(tokens) < 1 or len(tokens) > 3:
-            raise CoconutException("invalid exec statement tokens", tokens)
+            raise CoconutInternalException("invalid exec statement tokens", tokens)
         elif self.target.startswith("2"):
             out = "exec " + tokens[0]
             if len(tokens) > 1:
@@ -1167,7 +1168,7 @@ class Compiler(Grammar):
             else:
                 stmts = stmts.asList() + [last]
         else:
-            raise CoconutException("invalid statement lambda tokens", tokens)
+            raise CoconutInternalException("invalid statement lambda tokens", tokens)
         name = self.stmt_lambda_name()
         self.stmt_lambdas.append(
             "def " + name + params + ":\n"
@@ -1178,7 +1179,7 @@ class Compiler(Grammar):
     def normal_funcdef_stmt_handle(self, tokens):
         """Determines if tail call optimization can be done and if so does it."""
         if len(tokens) != 1:
-            raise CoconutException("invalid function definition tokens", tokens)
+            raise CoconutInternalException("invalid function definition tokens", tokens)
         else:
             lines = [] # transformed
             tco = False # whether tco was done
@@ -1219,7 +1220,7 @@ class Compiler(Grammar):
     def check_strict(self, name, original, location, tokens):
         """Checks that syntax meets --strict requirements."""
         if len(tokens) != 1:
-            raise CoconutException("invalid "+name+" tokens", tokens)
+            raise CoconutInternalException("invalid "+name+" tokens", tokens)
         elif self.strict:
             raise self.make_err(CoconutStyleError, "found "+name, original, location)
         else:
@@ -1236,7 +1237,7 @@ class Compiler(Grammar):
     def check_py(self, version, name, original, location, tokens):
         """Checks for Python-version-specific syntax."""
         if len(tokens) != 1:
-            raise CoconutException("invalid "+name+" tokens", tokens)
+            raise CoconutInternalException("invalid "+name+" tokens", tokens)
         elif self.target_info() < target_info(version):
             raise self.make_err(CoconutTargetError, "found Python "+version+" " + name, original, location, target=version)
         else:
@@ -1245,7 +1246,7 @@ class Compiler(Grammar):
     def name_check(self, original, location, tokens):
         """Checks for Python 3 exec function."""
         if len(tokens) != 1:
-            raise CoconutException("invalid name tokens", tokens)
+            raise CoconutInternalException("invalid name tokens", tokens)
         elif tokens[0] == "exec":
             return self.check_py("3", "exec function", original, location, tokens)
         else:

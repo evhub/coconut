@@ -32,7 +32,11 @@ from coconut.constants import (
     debug_sig,
     taberrfmt,
 )
-from coconut.exceptions import CoconutException, CoconutWarning, clean
+from coconut.exceptions import (
+    CoconutWarning,
+    CoconutInternalException,
+    clean,
+)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
@@ -148,7 +152,7 @@ class Logger(object):
         if len(begin) < info_tabulation:
             self.show(begin + " "*(info_tabulation - len(begin)) + middle + " " + end)
         else:
-            raise CoconutException("info message too long", begin)
+            raise CoconutInternalException("info message too long", begin)
 
     def log_trace(self, tag, original, location, tokens):
         """Formats and displays a trace."""

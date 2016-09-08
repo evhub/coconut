@@ -23,7 +23,7 @@ from coconut.constants import (
     tabideal,
     default_encoding,
 )
-from coconut.exceptions import CoconutException
+from coconut.exceptions import CoconutInternalException
 from coconut.compiler.util import target_info
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -51,7 +51,7 @@ def minify(compiled):
                     line = line[1:]
                     ind += 1
                 if ind % tabideal != 0:
-                    raise CoconutException("invalid indentation in", line)
+                    raise CoconutInternalException("invalid indentation in", line)
                 out.append(" "*(ind//tabideal) + line)
         compiled = "\n".join(out) + "\n"
     return compiled
@@ -81,7 +81,7 @@ def getheader(which, target="", usehash=None):
 
 '''
     elif usehash is not None:
-        raise CoconutException("can only add a hash to an initial or package header, not "+str(which))
+        raise CoconutInternalException("can only add a hash to an initial or package header, not", which)
     else:
         header = ""
     if which != "initial":
@@ -361,7 +361,7 @@ def consume(iterable, keep_last=0):
 MatchError, map, reduce, takewhile, dropwhile, tee = _coconut_MatchError, _coconut_map, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile, _coconut_tee
 '''
         else:
-            raise CoconutException("invalid header type", which)
+            raise CoconutInternalException("invalid header type", which)
         if which == "file" or which == "module":
             header += r'''
 # Compiled Coconut: ------------------------------------------------------

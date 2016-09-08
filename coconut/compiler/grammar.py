@@ -48,7 +48,7 @@ from pyparsing import (
     nestedExpr,
 )
 
-from coconut.exceptions import CoconutException
+from coconut.exceptions import CoconutInternalException
 from coconut.logging import trace
 from coconut.constants import (
     openindent,
@@ -96,7 +96,7 @@ def add_paren_handle(tokens):
     if len(tokens) == 1:
         return "(" + tokens[0] + ")"
     else:
-        raise CoconutException("invalid tokens for parentheses adding", tokens)
+        raise CoconutInternalException("invalid tokens for parentheses adding", tokens)
 
 def attr_handle(tokens):
     """Processes attrgetter literals."""
@@ -105,7 +105,7 @@ def attr_handle(tokens):
     elif len(tokens) == 2:
         return '_coconut.operator.methodcaller("'+tokens[0]+'", '+tokens[1]+")"
     else:
-        raise CoconutException("invalid attrgetter literal tokens", tokens)
+        raise CoconutInternalException("invalid attrgetter literal tokens", tokens)
 
 def lazy_list_handle(tokens):
     """Processes lazy lists."""
@@ -124,7 +124,7 @@ def chain_handle(tokens):
 
 def infix_error(tokens):
     """Raises inner infix error."""
-    raise CoconutException("invalid inner infix tokens", tokens)
+    raise CoconutInternalException("invalid inner infix tokens", tokens)
 
 def infix_handle(tokens):
     """Processes infix calls."""
@@ -134,7 +134,7 @@ def infix_handle(tokens):
 def get_infix_items(tokens, callback=infix_error):
     """Performs infix token processing."""
     if len(tokens) < 3:
-        raise CoconutException("invalid infix tokens", tokens)
+        raise CoconutInternalException("invalid infix tokens", tokens)
     else:
         items = []
         for item in tokens[0]:
@@ -170,7 +170,7 @@ def pipe_handle(tokens):
         elif op == "<*|":
             return "(" + pipe_handle(tokens) + ")(*" + func + ")"
         else:
-            raise CoconutException("invalid pipe operator", op)
+            raise CoconutInternalException("invalid pipe operator", op)
 
 def lambdef_handle(tokens):
     """Processes lambda calls."""
@@ -179,12 +179,12 @@ def lambdef_handle(tokens):
     elif len(tokens) == 1:
         return "lambda " + tokens[0] + ":"
     else:
-        raise CoconutException("invalid lambda tokens", tokens)
+        raise CoconutInternalException("invalid lambda tokens", tokens)
 
 def math_funcdef_suite_handle(original, location, tokens):
     """Processes assignment function definiton suites."""
     if len(tokens) < 1:
-        raise CoconutException("invalid assignment function definition suite tokens", tokens)
+        raise CoconutInternalException("invalid assignment function definition suite tokens", tokens)
     else:
         return "\n" + openindent + "".join(tokens[:-1]) + "return " + tokens[-1] + closeindent
 
@@ -193,14 +193,14 @@ def math_funcdef_handle(tokens):
     if len(tokens) == 2:
         return tokens[0] + ("" if tokens[1].startswith("\n") else " ") + tokens[1]
     else:
-        raise CoconutException("invalid assignment function definition tokens")
+        raise CoconutInternalException("invalid assignment function definition tokens")
 
 def def_match_funcdef_handle(tokens):
     """Processes full match function definition."""
     if len(tokens) == 2:
         return tokens[0] + openindent + "".join(tokens[1]) + closeindent
     else:
-        raise CoconutException("invalid pattern-matching function definition tokens", tokens)
+        raise CoconutInternalException("invalid pattern-matching function definition tokens", tokens)
 
 def data_handle(tokens):
     """Processes data blocks."""
@@ -210,7 +210,7 @@ def data_handle(tokens):
     elif len(tokens) == 3:
         name, attrs, stmts = tokens
     else:
-        raise CoconutException("invalid data tokens", tokens)
+        raise CoconutInternalException("invalid data tokens", tokens)
     out = "class " + name + '(_coconut.collections.namedtuple("' + name + '", "' + attrs + '")):\n' + openindent
     rest = None
     if "simple" in stmts.keys() and len(stmts) == 1:
@@ -227,7 +227,7 @@ def data_handle(tokens):
     elif "empty" in stmts.keys() and len(stmts) == 1:
         out += "__slots__ = ()" + stmts[0]
     else:
-        raise CoconutException("invalid inner data tokens", stmts)
+        raise CoconutInternalException("invalid inner data tokens", stmts)
     if rest is not None and rest != "pass\n":
         out += rest
     out += closeindent
@@ -245,7 +245,7 @@ def decorator_handle(tokens):
             defs.append(varname+" = "+tokens[x][0])
             decorates.append("@"+varname)
         else:
-            raise CoconutException("invalid decorator tokens", tokens[x])
+            raise CoconutInternalException("invalid decorator tokens", tokens[x])
     return "\n".join(defs + decorates) + "\n"
 
 def else_handle(tokens):
@@ -253,7 +253,7 @@ def else_handle(tokens):
     if len(tokens) == 1:
         return "\n" + openindent + tokens[0] + closeindent
     else:
-        raise CoconutException("invalid compound else statement tokens", tokens)
+        raise CoconutInternalException("invalid compound else statement tokens", tokens)
 
 class Matcher(object):
     """Pattern-matching processor."""
@@ -343,7 +343,7 @@ class Matcher(object):
             self.defs = self.checkdefs[position][1]
             self.position = position
         else:
-            raise CoconutException("invalid match index: "+str(position))
+            raise CoconutInternalException("invalid match index", position)
 
     def increment(self, forall=False):
         """Advances the if-statement position."""
@@ -369,7 +369,7 @@ class Matcher(object):
         if len(original) == 1:
             match = original[0]
         else:
-            raise CoconutException("invalid dict match tokens", original)
+            raise CoconutInternalException("invalid dict match tokens", original)
         self.checks.append("_coconut.isinstance("+item+", _coconut.abc.Mapping)")
         self.checks.append("_coconut.len("+item+") == "+str(len(match)))
         for x in range(0, len(match)):
@@ -399,7 +399,7 @@ class Matcher(object):
             elif series_type == "[":
                 self.defs.append(tail+" = _coconut.list("+item+splice+")")
             else:
-                raise CoconutException("invalid series match type", series_type)
+                raise CoconutInternalException("invalid series match type", series_type)
         for x in range(0, len(match)):
             self.match(match[x], item+"["+str(x)+"]")
 
@@ -438,7 +438,7 @@ class Matcher(object):
         elif series_type == "[":
             self.defs.append(front+" = _coconut.list("+item+splice+")")
         else:
-            raise CoconutException("invalid series match type", series_type)
+            raise CoconutInternalException("invalid series match type", series_type)
         for x in range(0, len(match)):
             self.match(match[x], item+"["+str(x-len(match))+"]")
 
@@ -460,7 +460,7 @@ class Matcher(object):
         elif series_type == "[":
             self.defs.append(middle+" = _coconut.list("+item+splice+")")
         else:
-            raise CoconutException("invalid series match type", series_type)
+            raise CoconutInternalException("invalid series match type", series_type)
         for x in range(0, len(head_match)):
             self.match(head_match[x], item+"["+str(x)+"]")
         for x in range(0, len(last_match)):
@@ -489,7 +489,7 @@ class Matcher(object):
         if len(original) == 1:
             match = original[0]
         else:
-            raise CoconutException("invalid set match tokens", original)
+            raise CoconutInternalException("invalid set match tokens", original)
         self.checks.append("_coconut.isinstance("+item+", _coconut.abc.Set)")
         self.checks.append("_coconut.len("+item+") == "+str(len(match)))
         for const in match:
@@ -511,7 +511,7 @@ class Matcher(object):
     def match_trailer(self, original, item):
         """Matches typedefs and as patterns."""
         if len(original) <= 1 or len(original) % 2 != 1:
-            raise CoconutException("invalid trailer match tokens", original)
+            raise CoconutInternalException("invalid trailer match tokens", original)
         else:
             match, trailers = original[0], original[1:]
             for i in range(0, len(trailers), 2):
@@ -525,7 +525,7 @@ class Matcher(object):
                         self.defs.append(arg+" = "+item)
                         self.names[arg] = item
                 else:
-                    raise CoconutException("invalid trailer match operation", op)
+                    raise CoconutInternalException("invalid trailer match operation", op)
             self.match(match, item)
 
     def match_and(self, original, item):
@@ -544,7 +544,7 @@ class Matcher(object):
         for flag, handler in self.matchers.items():
             if flag in original.keys():
                 return handler(self)(original, item)
-        raise CoconutException("invalid inner match tokens", original)
+        raise CoconutInternalException("invalid inner match tokens", original)
 
     def out(self):
         out = ""
@@ -569,7 +569,7 @@ def match_handle(o, l, tokens, top=True):
     elif len(tokens) == 4:
         matches, item, cond, stmts = tokens
     else:
-        raise CoconutException("invalid outer match tokens", tokens)
+        raise CoconutInternalException("invalid outer match tokens", tokens)
     matching = Matcher()
     matching.match(matches, match_to_var)
     if cond:
@@ -592,7 +592,7 @@ def case_to_match(tokens, item):
         matches, cond, stmts = tokens
         return matches, item, cond, stmts
     else:
-        raise CoconutException("invalid case match tokens", tokens)
+        raise CoconutInternalException("invalid case match tokens", tokens)
 
 def case_handle(o, l, tokens):
     """Processes case blocks."""
@@ -602,7 +602,7 @@ def case_handle(o, l, tokens):
     elif len(tokens) == 3:
         item, cases, default = tokens
     else:
-        raise CoconutException("invalid top-level case tokens", tokens)
+        raise CoconutInternalException("invalid top-level case tokens", tokens)
     out = match_handle(o, l, case_to_match(cases[0], item))
     for case in cases[1:]:
         out += ("if not "+match_check_var+":\n" + openindent
@@ -618,7 +618,7 @@ def except_handle(tokens):
     elif len(tokens) == 2:
         errs, asname = tokens
     else:
-        raise CoconutException("invalid except tokens", tokens)
+        raise CoconutInternalException("invalid except tokens", tokens)
     out = "except "
     if "list" in tokens.keys():
         out += "(" + errs + ")"
@@ -642,12 +642,12 @@ def subscriptgroup_handle(tokens):
         else:
             return "_coconut.slice(" + ", ".join(args) + ")"
     else:
-        raise CoconutException("invalid slice args", tokens)
+        raise CoconutInternalException("invalid slice args", tokens)
 
 def itemgetter_handle(tokens):
     """Processes implicit itemgetter partials."""
     if len(tokens) != 2:
-        raise CoconutException("invalid implicit itemgetter args", tokens)
+        raise CoconutInternalException("invalid implicit itemgetter args", tokens)
     else:
         op, args = tokens
         if op == "[":
@@ -655,12 +655,12 @@ def itemgetter_handle(tokens):
         elif op == "$[":
             return "_coconut.functools.partial(_coconut_igetitem, index=" + args + ")"
         else:
-            raise CoconutException("invalid implicit itemgetter type", op)
+            raise CoconutInternalException("invalid implicit itemgetter type", op)
 
 def class_suite_handle(tokens):
     """Processes implicit pass in class suite."""
     if len(tokens) != 1:
-        raise CoconutException("invalid implicit pass in class suite tokens", tokens)
+        raise CoconutInternalException("invalid implicit pass in class suite tokens", tokens)
     else:
         return ": pass" + tokens[0]
 
@@ -671,12 +671,12 @@ def namelist_handle(tokens):
     elif len(tokens) == 2:
         return tokens[0] + "; " + tokens[0] + " = " + tokens[1]
     else:
-        raise CoconutException("invalid in-line nonlocal / global tokens", tokens)
+        raise CoconutInternalException("invalid in-line nonlocal / global tokens", tokens)
 
 def compose_item_handle(tokens):
     """Handles function composition."""
     if len(tokens) < 1:
-        raise CoconutException("invalid function composition tokens", tokens)
+        raise CoconutInternalException("invalid function composition tokens", tokens)
     elif len(tokens) == 1:
         return tokens[0]
     else:
@@ -685,7 +685,7 @@ def compose_item_handle(tokens):
 def tco_return_handle(tokens):
     """Handles tail-call-optimizable return statements."""
     if len(tokens) != 2:
-        raise CoconutException("invalid tail-call-optimizable return statement tokens", tokens)
+        raise CoconutInternalException("invalid tail-call-optimizable return statement tokens", tokens)
     elif tokens[1].startswith("()"):
         return "raise _coconut_tail_call(" + tokens[0] + ")" + tokens[1][2:] # tokens[1] contains \n
     else:
