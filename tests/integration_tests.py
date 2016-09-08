@@ -63,18 +63,26 @@ class OldCocoTest(unittest.TestCase):
     def _run_source(self):
         call(["python",os.path.join(self.bin,"runner.py")])
 
-    def _compile_source(self,agnosticTarget = None, stict = False, minify = False, line_numbers = False, keep_lines = False):
+    def _compile_source(self,agnosticTarget = None, jobs = None, stict = False, minify = False, line_numbers = False, keep_lines = False, standalone = False, package = False):
 
         agnosticCommands = []
         extraCommands = []
         if agnosticTarget != None:
             agnosticCommands += ["--target",agnosticTarget]
+        if jobs != None:
+            extraCommands += ["--jobs",str(jobs)]
         if stict:
             extraCommands += ["--strict"]
         if line_numbers:
             extraCommands += ["--line-numbers"]
         if keep_lines:
             extraCommands += ["--keep-lines"]
+        if standalone:
+            extraCommands += ["--standalone"]
+        if package:
+            extraCommands += ["--package"]
+        if minify:
+            extraCommands += ["--minify"]
 
         self._compile_runner(extraCommands+agnosticCommands)
         self._compile_agnostic(extraCommands+agnosticCommands)
@@ -130,10 +138,30 @@ class OldCocoTest(unittest.TestCase):
         self._compile_source(agnosticTarget = version)
         self._run_source()
         self._clean()
+
+    def test_standalone(self):
+        self._compile_source(standalone = True)
+        self._run_source()
+        self._clean()
         
+    def test_package(self):
+        self._compile_source(package = True)
+        self._run_source()
+        self._clean()
+
+    def test_minify(self):
+        self._compile_source(minify = True)
+        self._run_source()
+        self._clean()
+
+    def test_jobs_zero(self):
+        self._compile_source(jobs=0)
+        self._run_source()
+        self._clean()
+
     def test_extra(self):
         self._compile_extras()
-        #call(["python",os.path.join(self.bin,"extras.py")])
+        call(["python",os.path.join(self.bin,"extras.py")])
         self._clean()
 
 if __name__ == '__main__':
