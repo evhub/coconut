@@ -106,6 +106,8 @@ for name in dir(__coconut__):
         globals()[name] = getattr(__coconut__, name)
 '''
         elif which == "package" or which == "code" or which == "file":
+            header += r'''import sys as _coconut_sys
+'''
             if target.startswith("3"):
                 header += PY3_HEADER
             elif target_info(target) >= (2, 7):
