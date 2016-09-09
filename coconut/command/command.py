@@ -23,7 +23,6 @@ import os
 import time
 import subprocess
 import traceback
-import platform
 from contextlib import contextmanager
 
 from coconut.compiler import Compiler, gethash
@@ -69,10 +68,7 @@ class Command(object):
     running = False # whether the interpreter is currently active
     runner = None # the current Runner
     target = None # corresponds to --target flag
-    if platform.python_implementation() == "PyPy":
-        jobs = 0
-    else:
-        jobs = None # corresponds to --jobs flag
+    jobs = None # corresponds to --jobs flag
     executor = None # runs --jobs
     exit_code = 0 # exit status to return
 
@@ -319,8 +315,6 @@ class Command(object):
 
     def set_jobs(self, jobs):
         """Sets --jobs."""
-        if jobs is None and platform.python_implementation() == "PyPy":
-            jobs = 0
         if jobs is not None and jobs < 0:
             raise CoconutException("the number of processes passed to --jobs must be >= 0")
         else:
@@ -332,6 +326,10 @@ class Command(object):
         if self.jobs == 0:
             yield
         else:
+            import platform
+            if platform.python_implementation() == "PyPy":
+                yield
+                return
             from concurrent.futures import ProcessPoolExecutor
             try:
                 with ProcessPoolExecutor(self.jobs) as self.executor:
