@@ -163,25 +163,21 @@ While Coconut syntax is based off of Python 3, Coconut code compiled in universa
 
 _Note: The tested against implementations are [CPython](https://www.python.org/) `2.6, 2.7, 3.2, 3.3, 3.4, 3.5` and [PyPy](http://pypy.org/) `2.7, 3.2`._
 
-As part of Coconut's cross-compatibility efforts, Coconut adds in new Python 3 built-ins and overwrites Python 2 built-ins to use the Python 3 versions where possible. If access to the Python 2 versions is desired, the old built-ins can be retrieved by prefixing them with `py2_`. The old built-ins available are:
-- `py2_chr`
-- `py2_filter`
-- `py2_hex`
-- `py2_input`
-- `py2_int`
-- `py2_map`
-- `py2_oct`
-- `py2_open`
-- `py2_print`
-- `py2_range`
-- `py2_raw_input`
-- `py2_str`
-- `py2_xrange`
-- `py2_zip`
-
-Additionally, since Coconut also overrides some Python 3 built-ins for optimization purposes, those can be retrieved by prefixing them with `py3_`. The overwritten built-ins available are:
-- `py3_map`
-- `py3_zip`
+As part of Coconut's cross-compatibility efforts, Coconut adds in new Python 3 built-ins and overwrites Python 2 built-ins to use the Python 3 versions where possible. Additionally, Coconut also overrides some Python 3 built-ins for optimization purposes. If access to the Python versions is desired, the old built-ins can be retrieved by prefixing them with `py_`. The Python built-ins available are:
+- `py_chr`
+- `py_filter`
+- `py_hex`
+- `py_input`
+- `py_raw_input`
+- `py_int`
+- `py_oct`
+- `py_open`
+- `py_print`
+- `py_range`
+- `py_xrange`
+- `py_str`
+- `py_map`
+- `py_zip`
 
 Finally, while Coconut will try to compile Python-3-specific syntax to its universal equivalent, the follow constructs have no equivalent in Python 2, and require a target of at least `3` to be specified to be used:
 - destructuring assignment with `*`s (use Coconut pattern-matching instead),
