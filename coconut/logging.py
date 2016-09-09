@@ -76,7 +76,11 @@ class Logger(object):
 
     def display(self, messages, sig="", debug=False):
         """Prints an iterator of messages."""
-        full_message = " ".join(str(msg) for msg in messages)
+        full_message = "".join(
+            sig + line for line in " ".join(
+                str(msg) for msg in messages
+            ).splitlines(True)
+        )
         if debug is True:
             printerr(full_message)
         else:
