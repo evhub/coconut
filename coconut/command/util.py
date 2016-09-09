@@ -110,26 +110,11 @@ class Prompt(object):
     else:
         style = default_style
 
-    def handling_prompt_toolkit_errors(func):
-        """Handles prompt_toolkit and pygments errors."""
-        @functools.wraps(func)
-        def handles_prompt_toolkit_errors_func(self, *args, **kwargs):
-            try:
-                return func(self, *args, **kwargs)
-            except (Exception, AssertionError):
-                logger.print_exc()
-                logger.show("Syntax highlighting failed; switching to --style none.")
-                self.style = None
-            return func(self, *args, **kwargs)
-        return handles_prompt_toolkit_errors_func
-
-    @handling_prompt_toolkit_errors
     def __init__(self):
         """Set up the prompt."""
         if prompt_toolkit is not None:
             self.history = prompt_toolkit.history.InMemoryHistory()
 
-    @handling_prompt_toolkit_errors
     def set_style(self, style):
         """Set pygments syntax highlighting style."""
         if style == "none":
@@ -140,6 +125,22 @@ class Prompt(object):
             self.style = style
         else:
             raise CoconutException("unrecognized pygments style", style)
+
+    def handling_prompt_toolkit_errors(func):
+        """Handles prompt_toolkit and pygments errors."""
+        @functools.wraps(func)
+        def handles_prompt_toolkit_errors_func(self, *args, **kwargs):
+            if self.style is not None:
+                try:
+                    return func(self, *args, **kwargs)
+                except (KeyboardInterrupt, EOFError):
+                    raise
+                except (Exception, AssertionError):
+                    logger.print_exc()
+                    logger.show("Syntax highlighting failed; switching to --style none.")
+                    self.style = None
+            return func(self, *args, **kwargs)
+        return handles_prompt_toolkit_errors_func
 
     @handling_prompt_toolkit_errors
     def input(self, more=False):
