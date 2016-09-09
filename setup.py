@@ -193,7 +193,7 @@ setuptools.setup(
     include_package_data = True,
     entry_points = {
         "console_scripts": [
-            "coconut = coconut.__main__:main",
+            "coconut = coconut.main:main",
             ],
         "pygments.lexers": [
             "coconut_python = coconut.highlighter:CoconutPythonLexer",
