@@ -51,11 +51,13 @@ def clean(inputline, strip=True, rem_indents=True, encoding_errors="replace"):
 
 class CoconutException(Exception):
     """Base Coconut exception."""
-    def __init__(self, message, item=None):
+    def __init__(self, message, item=None, extra=None):
         """Creates the Coconut exception."""
         self.message = message
         if item is not None:
             self.message += ": " + ascii(item)
+        if extra is not None:
+            self.message += " (" + str(extra) + ")"
 
     @property
     def args(self):

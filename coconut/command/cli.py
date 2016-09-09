@@ -135,19 +135,13 @@ arguments.add_argument(
     "-j", "--jobs",
     metavar="processes",
     type=int,
-    help="number of additional processes to use (set to 0 to use a single process) (defaults to the number of processors on your machine)")
+    help="number of additional processes to use (set to 0 to disable multiprocessing) (defaults to the number of processors on your machine)")
 
 arguments.add_argument(
     "--jupyter", "--ipython",
     type=str,
     nargs=argparse.REMAINDER,
     help="run Jupyter/IPython with Coconut as the kernel (remaining args passed to Jupyter)")
-
-arguments.add_argument(
-    "--recursion-limit", "--recursionlimit",
-    metavar="limit",
-    type=int,
-    help="set maximum recursion depth (defaults to "+str(default_recursion_limit)+")")
 
 arguments.add_argument(
     "--tutorial",
@@ -164,6 +158,12 @@ arguments.add_argument(
     metavar="name",
     type=str,
     help="pygments syntax highlighting style (or 'none' to disable)")
+
+arguments.add_argument(
+    "--recursion-limit", "--recursionlimit",
+    metavar="limit",
+    type=int,
+    help="set maximum recursion depth in compiler (defaults to "+str(default_recursion_limit)+")")
 
 arguments.add_argument(
     "--verbose",

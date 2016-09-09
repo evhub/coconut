@@ -27,6 +27,7 @@ from pyparsing import alphanums
 #-----------------------------------------------------------------------------------------------------------------------
 
 default_recursion_limit = 2000
+minimum_recursion_limit = 100
 
 from zlib import crc32 as checksum # used for generating __coconut_hash__
 hash_prefix = "# __coconut_hash__ = "
@@ -174,14 +175,14 @@ code_exts = [".coco", ".coc", ".coconut"] # in order of preference
 comp_ext = ".py"
 
 main_sig = "Coconut: "
-debug_sig = ""
 
 main_prompt = ">>> "
 more_prompt = "    "
 
 default_style = "emacs"
-use_vi_mode = False
-use_mouse_support = True
+default_multiline = False
+default_vi_mode = False
+default_mouse_support = True
 
 watch_interval = .1 # seconds
 

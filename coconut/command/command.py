@@ -42,6 +42,7 @@ from coconut.constants import (
     documentation_url,
     icoconut_dir,
     icoconut_kernel_dirs,
+    minimum_recursion_limit,
 )
 from coconut.command.util import (
     openfile,
@@ -101,11 +102,18 @@ class Command(object):
                 logger.show(message)
             sys.exit(self.exit_code)
 
+    def set_recursion_limit(self, limit):
+        """Sets the Python recursion limit."""
+        if limit < minimum_recursion_limit:
+            raise CoconutException("--recursion-limit must be at least " + str(minimum_recursion_limit))
+        else:
+            sys.setrecursionlimit(limit)
+
     def use_args(self, args, interact=True):
         """Handles command-line arguments."""
         logger.quiet, logger.verbose = args.quiet, args.verbose
         if args.recursion_limit is not None:
-            sys.setrecursionlimit(args.recursion_limit)
+            self.set_recursion_limit(args.recursion_limit)
         if args.jobs is not None:
             self.set_jobs(args.jobs)
         if args.tutorial:
@@ -326,10 +334,6 @@ class Command(object):
         if self.jobs == 0:
             yield
         else:
-            import platform
-            if platform.python_implementation() == "PyPy":
-                yield
-                return
             from concurrent.futures import ProcessPoolExecutor
             try:
                 with ProcessPoolExecutor(self.jobs) as self.executor:
@@ -391,13 +395,12 @@ class Command(object):
 
     def handle_input(self, code):
         """Compiles Coconut interpreter input."""
-        compiled = None
-        if not self.comp.should_indent(code):
-            try:
-                compiled = self.comp.parse_block(code)
-            except CoconutException:
-                pass
-        if compiled is None:
+        if not self.prompt.multiline:
+            if not self.comp.should_indent(code):
+                try:
+                    return self.comp.parse_block(code)
+                except CoconutException:
+                    pass
             while True:
                 line = self.get_input(more=True)
                 if line is None:
@@ -406,11 +409,11 @@ class Command(object):
                     code += "\n" + line
                 else:
                     break
-            try:
-                compiled = self.comp.parse_block(code)
-            except CoconutException:
-                logger.print_exc()
-        return compiled
+        try:
+            return self.comp.parse_block(code)
+        except CoconutException:
+            logger.print_exc()
+        return None
 
     def execute(self, compiled=None, error=True, path=None, isolate=False, print_expr=False):
         """Executes compiled code."""

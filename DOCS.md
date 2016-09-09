@@ -63,15 +63,15 @@
     1. [`count`](#count)
     1. [`map` and `zip`](#map-and-zip)
     1. [`datamaker`](#datamaker)
-    1. [`recursive_iterator`](#recursive_iterator)
-    1. [`parallel_map`](#parallel_map)
-    1. [`concurrent_map`](#concurrent_map)
+    1. [`recursive_iterator`](#recursiveiterator)
+    1. [`parallel_map`](#parallelmap)
+    1. [`concurrent_map`](#concurrentmap)
     1. [`MatchError`](#matcherror)
 1. [Coconut Utilities](#coconut-utilities)
     1. [Syntax Highlighting](#syntax-highlighting)
         1. [SublimeText](#sublimetext)
         1. [Pygments](#pygments)
-    1. [`coconut.__coconut__`](#coconut__coconut__)
+    1. [`coconut.__coconut__`](#coconutcoconut)
     1. [`coconut.convenience`](#coconutconvenience)
         1. [`parse`](#parse)
         1. [`setup`](#setup)
@@ -108,7 +108,7 @@ which will enable the use of Coconut's `--watch` and `--jupyter` flags. To insta
 ### Usage
 
 ```
-coconut [-h] [-v] [source] [dest] [-t version] [-s] [-l] [-k] [-p] [-a] [-w] [-d] [-r] [-n] [-m] [-i] [-q] [-f] [-c code] [-j processes] [--jupyter ...] [--recursion-limit limit] [--tutorial] [--documentation] [--style name] [--verbose]
+coconut [-h] [-v] [source] [dest] [-t version] [-s] [-l] [-k] [-p] [-a] [-w] [-d] [-r] [-n] [-m] [-i] [-q] [-f] [-c code] [-j processes] [--jupyter ...] [--tutorial] [--documentation] [--style name] [--recursion-limit limit] [--verbose]
 ```
 
 #### Positional Arguments
@@ -138,12 +138,12 @@ dest                  destination directory for compiled files (defaults to the 
 -q, --quiet             suppress all informational output (combine with --display to write runnable code to stdout)
 -f, --force             force overwriting of compiled Python (otherwise only overwrites when source code or compilation parameters change)
 -c, --code code         run a line of Coconut passed in as a string (can also be passed into stdin)
--j, --jobs processes    number of additional processes to use (set to 0 to use a single process) (defaults to the number of processors on your machine)
+-j, --jobs processes    number of additional processes to use (set to 0 to disable multiprocessing) (defaults to the number of processors on your machine)
 --jupyter, --ipython    run Jupyter/IPython with Coconut as the kernel (remaining args passed to Jupyter)
---recursion-limit       set maximum recursion depth (default is system dependent)
 --tutorial              open the Coconut tutorial in the default web browser
 --documentation         open the Coconut documentation in the default web browser
 --style name            pygments syntax highlighting style (or 'none' to disable)
+--recursion-limit       set maximum recursion depth in compiler (defaults to 2000)
 --verbose               print verbose debug output
 ```
 
