@@ -189,6 +189,10 @@ class Command(object):
         if args.watch:
             self.watch(args.source, dest, package, args.run, args.force)
 
+    def register_error(self, code=1):
+        """Updates the exit code."""
+        self.exit_code = max(self.exit_code, code)
+
     @contextmanager
     def handling_exceptions(self):
         """Handles CoconutExceptions."""
@@ -196,7 +200,7 @@ class Command(object):
             yield
         except CoconutException:
             logger.print_exc()
-            self.exit_code = 1
+            self.register_error()
 
     def compile_path(self, path, write=True, package=None, run=False, force=False):
         """Compiles a path."""
@@ -316,6 +320,7 @@ class Command(object):
                         callback(result)
                 except Exception:
                     traceback.print_exc()
+                    self.register_error()
                 finally:
                     # make sure the path gets reset after printing any errors
                     logger.path = None
@@ -456,15 +461,17 @@ class Command(object):
 
     def start_jupyter(self, args):
         """Starts Jupyter with the Coconut kernel."""
-        if args and not logger.verbose:
-            install_func = subprocess.check_output # stdout is returned and ignored
-        else:
-            install_func = subprocess.check_call
 
-        check_args = ["jupyter", "--version"]
-        logger.log_cmd(check_args)
+        def install_func(cmd):
+            """Runs an installation command."""
+            logger.log_cmd(cmd)
+            if args and not logger.verbose:
+                subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+            else:
+                subprocess.check_call(cmd)
+
         try:
-            install_func(check_args)
+            install_func(["jupyter", "--version"])
         except subprocess.CalledProcessError:
             jupyter = "ipython"
         else:
@@ -472,28 +479,22 @@ class Command(object):
 
         for icoconut_kernel_dir in icoconut_kernel_dirs:
             install_args = [jupyter, "kernelspec", "install", icoconut_kernel_dir, "--replace"]
-            logger.log_cmd(install_args)
             try:
                 install_func(install_args)
             except subprocess.CalledProcessError:
                 user_install_args = install_args + ["--user"]
-                logger.log_cmd(user_install_args)
                 try:
                     install_func(user_install_args)
                 except subprocess.CalledProcessError:
-                    errmsg = 'unable to install Jupyter kernel (failed command "'+" ".join(install_args)+'")'
-                    if args:
-                        self.comp.warn(CoconutWarning(errmsg))
-                    else:
-                        raise CoconutException(errmsg)
+                    args = "kernel install failed on command'", " ".join(install_args)
+                    self.comp.warn(*args)
+                    self.register_error()
 
         if args:
             if args[0] == "console":
                 ver = "2" if PY2 else "3"
-                check_args = ["python"+ver, "-m", "coconut", "--version"]
-                logger.log_cmd(check_args)
                 try:
-                    install_func(check_args)
+                    install_func(["python"+ver, "-m", "coconut.main", "--version"])
                 except subprocess.CalledProcessError:
                     kernel_name = "coconut"
                 else:
@@ -504,7 +505,7 @@ class Command(object):
             else:
                 raise CoconutException('first argument after --jupyter must be either "console" or "notebook"')
             logger.log_cmd(run_args)
-            subprocess.call(run_args)
+            self.register_error(subprocess.call(run_args))
 
     def watch(self, source, write=True, package=None, run=False, force=False):
         """Watches a source and recompiles on change."""
