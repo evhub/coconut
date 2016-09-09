@@ -187,12 +187,13 @@ class Logger(object):
 
     def patch_logging(self):
         """Patches built-in Python logging."""
-        def getLogger(name=None):
-            other = Logger(self)
-            if name is not None:
-                other.name = name
-            return other
-        logging.getLogger = getLogger
+        if not hasattr(logging, "getLogger"):
+            def getLogger(name=None):
+                other = Logger(self)
+                if name is not None:
+                    other.name = name
+                return other
+            logging.getLogger = getLogger
 
     def pylog(self, *args, **kwargs):
         """Display all available logging information."""
