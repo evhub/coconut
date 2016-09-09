@@ -36,8 +36,7 @@ VERSION_STR_TAG = "v" + VERSION_STR
 PY2 = _coconut_sys.version_info < (3,)
 PY26 = _coconut_sys.version_info < (2, 7)
 
-PY3_HEADER = r'''import sys as _coconut_sys
-py_chr, py_filter, py_hex, py_input, py_int, py_map, py_oct, py_open, py_print, py_range, py_str, py_zip = chr, filter, hex, input, int, map, oct, open, print, range, str, zip
+PY3_HEADER = r'''py_chr, py_filter, py_hex, py_input, py_int, py_map, py_oct, py_open, py_print, py_range, py_str, py_zip = chr, filter, hex, input, int, map, oct, open, print, range, str, zip
 '''
 PY27_HEADER = PY3_HEADER + r'''py_raw_input, py_xrange = raw_input, xrange
 _coconut_raw_input, _coconut_xrange, _coconut_int, _coconut_long, _coconut_print, _coconut_str, _coconut_unicode, _coconut_repr = raw_input, xrange, int, long, print, str, unicode, repr
@@ -142,10 +141,13 @@ PY2_HEADER = PY27_HEADER + '''if _coconut_sys.version_info < (2, 7):
         return (_coconut_new_partial, (self.func, self.args, self.keywords))
     _coconut_copy_reg.pickle(_coconut_functools.partial, _coconut_reduce_partial)
 '''
-PYCHECK_HEADER = r'''import sys as _coconut_sys
-if _coconut_sys.version_info < (3,):
-    import os as _coconut_os
-''' + "".join(("    " if _line else "") + _line for _line in PY2_HEADER.splitlines(True))
+PYCHECK_HEADER = r'''if _coconut_sys.version_info < (3,):
+''' + "".join(
+    ("    " if _line else "") + _line for _line in PY2_HEADER.splitlines(True)
+) + '''else:
+''' + "".join(
+    ("    " if _line else "") + _line for _line in PY3_HEADER.splitlines(True)
+)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # SETUP:
