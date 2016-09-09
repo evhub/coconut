@@ -65,13 +65,13 @@ class CoconutPythonConsoleLexer(PythonConsoleLexer):
 class CoconutLexer(Python3Lexer):
     """Coconut syntax highlighter."""
     name = "coconut"
-    aliases = ["coconut", "coco", "coconutcon", "cococon"]
+    aliases = ["coconut", "coco", "coc"]
     filenames = ["*"+ext for ext in code_exts]
 
     tokens = Python3Lexer.tokens.copy()
     tokens["root"] = [
         (r"|".join(new_operators), Operator),
-        (r'(?<!\\)(data)((?:\s|\\\s)+)', bygroups(Keyword, Text), 'classname')
+        (r'(?<!\\)(data)((?:\s|\\\s)+)', bygroups(Keyword, Text), py_str('classname'))
     ] + tokens["root"]
     tokens["keywords"] = tokens["keywords"] + [
         (words(reserved_vars, prefix=r"(?<!\\)", suffix=r"\b"), Keyword)

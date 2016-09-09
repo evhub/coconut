@@ -220,6 +220,20 @@ builtins = (
     "prepattern",
     "recursive_iterator",
     "concurrent_map",
+    "py_chr",
+    "py_filter",
+    "py_hex",
+    "py_input",
+    "py_input",
+    "py_int",
+    "py_oct",
+    "py_open",
+    "py_print",
+    "py_range",
+    "py_xrange",
+    "py_str",
+    "py_map",
+    "py_zip",
     )
 
 new_operators = (
