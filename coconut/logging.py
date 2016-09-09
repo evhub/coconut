@@ -21,6 +21,7 @@ from coconut.root import *
 import sys
 import os
 import traceback
+import logging
 from contextlib import contextmanager
 
 from pyparsing import lineno, col
@@ -29,7 +30,6 @@ from coconut.constants import (
     default_encoding,
     info_tabulation,
     main_sig,
-    debug_sig,
     taberrfmt,
 )
 from coconut.exceptions import (
@@ -69,10 +69,17 @@ class Logger(object):
     verbose = False
     quiet = False
     path = None
+    name = None
+
+    def __init__(self, other=None):
+        """Create a logger, optionally from another logger."""
+        if other is not None:
+            self.copy_from(other)
+        self.patch_logging()
 
     def copy_from(self, other):
         """Copy other onto self."""
-        self.verbose, self.quiet, self.path = other.verbose, other.quiet, other.path
+        self.verbose, self.quiet, self.path, self.name = other.verbose, other.quiet, other.path, other.name
 
     def display(self, messages, sig="", debug=False):
         """Prints an iterator of messages."""
@@ -92,7 +99,7 @@ class Logger(object):
 
     def printerr(self, *messages):
         """Prints error messages with debug signature."""
-        self.display(messages, debug_sig, True)
+        self.display(messages, debug=True)
 
     def show(self, *messages):
         """Prints messages with main signature."""
@@ -177,6 +184,20 @@ class Logger(object):
             """Callback function constructed by tracer."""
             self.log_trace(tag, original, location, tokens)
         return item.addParseAction(trace_action).setName(tag)
+
+    def patch_logging(self):
+        """Patches built-in Python logging."""
+        def getLogger(name=None):
+            other = Logger(self)
+            if name is not None:
+                other.name = name
+            return other
+        logging.getLogger = getLogger
+
+    def pylog(self, *args, **kwargs):
+        """Display all available logging information."""
+        self.printerr(self.name, args, kwargs, traceback.format_exc())
+    debug = info = warning = error = critical = exception = pylog
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:

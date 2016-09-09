@@ -40,8 +40,9 @@ from coconut.constants import (
     main_prompt,
     more_prompt,
     default_style,
-    use_vi_mode,
-    use_mouse_support,
+    default_multiline,
+    default_vi_mode,
+    default_mouse_support,
 )
 from coconut.logging import logger
 from coconut.exceptions import CoconutException, CoconutInternalException
@@ -109,6 +110,9 @@ class Prompt(object):
         style = None
     else:
         style = default_style
+    multiline = default_multiline
+    vi_mode = default_vi_mode
+    mouse_support = default_mouse_support
 
     def __init__(self):
         """Set up the prompt."""
@@ -121,10 +125,12 @@ class Prompt(object):
             self.style = None
         elif prompt_toolkit is None:
             raise CoconutException("syntax highlighting is not supported on this Python version")
+        elif style == "list":
+            logger.print("Coconut Styles: none, " + ", ".join(pygments.styles.get_all_styles()))
         elif style in pygments.styles.get_all_styles():
             self.style = style
         else:
-            raise CoconutException("unrecognized pygments style", style)
+            raise CoconutException("unrecognized pygments style", style, "try '--style list' to show all valid styles")
 
     def handling_prompt_toolkit_errors(func):
         """Handles prompt_toolkit and pygments errors."""
@@ -154,14 +160,18 @@ class Prompt(object):
         elif prompt_toolkit is None:
             raise CoconutInternalException("cannot highlight style without prompt_toolkit", self.style)
         else:
-            return prompt_toolkit.prompt(
-                msg,
-                history=self.history,
-                lexer=prompt_toolkit.layout.lexers.PygmentsLexer(CoconutLexer),
-                style=prompt_toolkit.styles.style_from_pygments(pygments.styles.get_style_by_name(self.style)),
-                vi_mode=use_vi_mode,
-                mouse_support=use_mouse_support,
-            )
+            return prompt_toolkit.prompt(msg, **self.prompt_kwargs())
+
+    def prompt_kwargs(self):
+        """Gets prompt_toolkit.prompt keyword args."""
+        return {
+            "history": self.history,
+            "multiline": self.multiline,
+            "vi_mode": self.vi_mode,
+            "mouse_support": self.mouse_support,
+            "lexer": prompt_toolkit.layout.lexers.PygmentsLexer(CoconutLexer),
+            "style": prompt_toolkit.styles.style_from_pygments(pygments.styles.get_style_by_name(self.style)),
+        }
 
 
 class Runner(object):
@@ -207,7 +217,9 @@ class multiprocess_wrapper(object):
 
     def __init__(self, base, method):
         """Creates new multiprocessable method."""
-        self.recursion, self.logger, self.base, self.method = sys.getrecursionlimit(), copy(logger), base, method
+        self.recursion = sys.getrecursionlimit()
+        self.logger = copy(logger)
+        self.base, self.method = base, method
 
     def __call__(self, *args, **kwargs):
         """Sets up new process then calls the method."""

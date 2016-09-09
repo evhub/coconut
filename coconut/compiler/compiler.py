@@ -393,9 +393,8 @@ class Compiler(Grammar):
         except RuntimeError as err:
             if logger.verbose:
                 logger.print_exc()
-            raise CoconutException(str(err)
-                + " (try again with --recursion-limit greater than the current "
-                + str(sys.getrecursionlimit()) + ")")
+            raise CoconutException(str(err),
+                extra="try again with --recursion-limit greater than the current " + str(sys.getrecursionlimit()))
         return out
 
 # end: COMPILER
