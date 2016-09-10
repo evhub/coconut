@@ -196,9 +196,9 @@ setuptools.setup(
             "coconut = coconut.main:main",
             ],
         "pygments.lexers": [
+            "coconut = coconut.highlighter:CoconutLexer",
             "coconut_python = coconut.highlighter:CoconutPythonLexer",
             "coconut_pycon = coconut.highlighter:CoconutPythonConsoleLexer",
-            "coconut = coconut.highlighter:CoconutLexer",
             ]
         },
     classifiers = classifiers,
