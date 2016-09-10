@@ -51,7 +51,7 @@ def addskip(skips, skip):
         complain(CoconutInternalException("duplicate skip of line " + str(skip)))
     else:
         skips.add(skip)
-        return skips
+    return skips
 
 def count_end(teststr, testchar):
     """Counts instances of testchar at end of teststr."""
