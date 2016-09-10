@@ -78,7 +78,7 @@ matrix:
 
       install:
         - pip install .
-        - pip install autopep8
+        - pip install autopep
 
       script:
         - python -m unittest tests
