@@ -11,12 +11,13 @@ matrix:
     - python: "2.6"
 
       install:
-        - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
+        - pushd ..
+        - pip install .
+        - popd
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
-        - pip install futures
         - rm src/cocotest/py35_test.coco
         - rm src/cocotest/py3_test.coco
         - mkdir src_target
@@ -99,14 +100,14 @@ matrix:
     - python: "2.7"
 
       install:
-        - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
+        - pushd ..
+        - pip install -r requirements-jupyter.txt
+        - pip install .
+        - popd
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
-        - pip install futures
-        - pip install pygments
-        - pip install jupyter
         - rm src/cocotest/py35_test.coco
         - rm src/cocotest/py3_test.coco
         - mkdir src_target
@@ -191,14 +192,14 @@ matrix:
     - python: "pypy"
 
       install:
-        - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
+        - pushd ..
+        - pip install -r requirements-jupyter.txt
+        - pip install .
+        - popd
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
-        - pip install futures
-        - pip install pygments
-        - pip install jupyter
         - rm src/cocotest/py35_test.coco
         - rm src/cocotest/py3_test.coco
         - mkdir src_target
@@ -286,9 +287,11 @@ matrix:
     - python: "3.2"
 
       install:
-        - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
+        - pushd ..
+        - pip install .
+        - popd
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
         - rm src/cocotest/py35_test.coco
@@ -373,13 +376,14 @@ matrix:
     - python: "3.3"
 
       install:
-        - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
+        - pushd ..
+        - pip install -r requirements-jupyter.txt
+        - pip install .
+        - popd
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
-        - pip install pygments
-        - pip install jupyter
         - rm src/cocotest/py35_test.coco
         - rm src/cocotest/py2_test.coco
         - mkdir src_target
@@ -464,13 +468,14 @@ matrix:
     - python: "3.4"
 
       install:
-        - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
+        - pushd ..
+        - pip install -r requirements-jupyter.txt
+        - pip install .
+        - popd
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
-        - pip install pygments
-        - pip install jupyter
         - rm src/cocotest/py35_test.coco
         - rm src/cocotest/py2_test.coco
         - mkdir src_target
@@ -555,13 +560,14 @@ matrix:
     - python: "3.5"
 
       install:
-        - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
+        - pushd ..
+        - pip install -r requirements-jupyter.txt
+        - pip install .
+        - popd
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
-        - pip install pygments
-        - pip install jupyter
         - rm src/cocotest/py2_test.coco
         - mkdir src_target
         - cp -r src/* src_target
@@ -654,9 +660,11 @@ matrix:
     - python: "pypy3"
 
       install:
-        - pip install .
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
+        - pushd ..
+        - pip install .
+        - popd
         - git clone https://github.com/evhub/prisoner.git
         - git clone https://github.com/evhub/pyston.git
         - rm src/cocotest/py35_test.coco

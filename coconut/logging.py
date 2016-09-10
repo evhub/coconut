@@ -142,10 +142,10 @@ class Logger(object):
             errmsg = "\n".join(errmsg_lines)
         self.printerr(errmsg)
 
-    def log(self, msg):
+    def log(self, *messages):
         """Logs a debug message if in verbose mode."""
         if self.verbose:
-            self.printerr(msg)
+            self.printerr(*messages)
 
     def log_tag(self, tag, code, multiline=False):
         """Logs a tagged message if in verbose mode."""
