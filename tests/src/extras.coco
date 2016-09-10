@@ -1,0 +1,194 @@
+import sys
+
+from coconut.__coconut__ import consume as coc_consume
+from coconut.convenience import (
+    CoconutException,
+    cmd,
+    version,
+    setup,
+    parse,
+)
+
+NOT_PY_32 = sys.version_info >= (3, 3) or (sys.version_info < (3,) and sys.version_info >= (2, 7))
+if NOT_PY_32:
+    from coconut.icoconut import CoconutKernel
+else:
+    CoconutKernel = None
+
+def main():
+    if NOT_PY_32:
+        import coconut.highlighter
+    assert consume(range(10), keep_last=1)[0] == 9 == coc_consume(range(10), keep_last=1)[0]
+    assert version() == version("num")
+    assert version("name")
+    assert version("spec")
+    assert version("tag")
+    assert version("-v")
+    try:
+        version("other")
+    except CoconutException:
+        assert True
+    else:
+        assert False
+    setup()
+    _exec = parse("abc", "exec")
+    assert _exec
+    assert _exec == parse("abc")
+    _single = parse("abc", "single")
+    assert _single
+    _file = parse("abc", "file")
+    assert _file
+    _module = parse("abc", "module")
+    assert _module
+    _block = parse("abc", "block")
+    assert _block
+    _eval = parse("abc", "eval")
+    assert _eval
+    _debug = parse("abc", "debug")
+    assert _debug
+    assert _single == parse("abc", "single")
+    assert _file == parse("abc", "file")
+    assert _module == parse("abc", "module")
+    assert _block == parse("abc", "block")
+    assert _eval == parse("abc", "eval")
+    assert _debug == parse("abc", "debug")
+    assert parse(" abc", "eval")
+    try:
+        parse(" abc", "file")
+    except CoconutException:
+        assert True
+    else:
+        assert False
+    try:
+        parse("'")
+    except CoconutException:
+        assert True
+    else:
+        assert False
+    try:
+        parse("(")
+    except CoconutException:
+        assert True
+    else:
+        assert False
+    try:
+        parse("\\(")
+    except CoconutException:
+        assert True
+    else:
+        assert False
+    try:
+        parse("if a:\n  b\n c")
+    except CoconutException:
+        assert True
+    else:
+        assert False
+    try:
+        parse("$")
+    except CoconutException:
+        assert True
+    else:
+        assert False
+    try:
+        parse("_coconut")
+    except CoconutException:
+        assert True
+    else:
+        assert False
+    assert parse("def f(x):\n \t pass")
+    assert parse("lambda x: x")
+    assert parse("u''")
+    assert parse("def f(x):\\\n pass")
+    assert parse("abc ")
+    setup(strict=True)
+    try:
+        parse("def f(x):\n \t pass")
+    except CoconutException:
+        assert True
+    else:
+        assert False
+    try:
+        parse("lambda x: x")
+    except CoconutException:
+        assert True
+    else:
+        assert False
+    try:
+        parse("u''")
+    except CoconutException:
+        assert True
+    else:
+        assert False
+    try:
+        parse("def f(x):\\\n pass")
+    except CoconutException:
+        assert True
+    else:
+        assert False
+    try:
+        parse("abc ")
+    except CoconutException:
+        assert True
+    else:
+        assert False
+    try:
+        parse("abc", "file")
+    except CoconutException:
+        assert True
+    else:
+        assert False
+    setup()
+    try:
+        cmd("-f")
+    except SystemExit:
+        assert True
+    else:
+        assert False
+    try:
+        cmd("-pa .")
+    except SystemExit:
+        assert True
+    else:
+        assert False
+    try:
+        cmd("-n . .")
+    except SystemExit:
+        assert True
+    else:
+        assert False
+    try:
+        parse("f''")
+    except CoconutException:
+        assert True
+    else:
+        assert False
+    setup(target="3.6")
+    assert parse("f''")
+    if CoconutKernel is not None:
+        k = CoconutKernel()
+        exec_result = k.do_execute("abcdefghi = True", False, True, {"two": "1+1"}, True)
+        assert exec_result["status"] == "ok"
+        assert exec_result["user_expressions"]["two"] == 2
+        assert k.do_is_complete("if abc:")["status"] == "incomplete"
+        assert k.do_is_complete("f(")["status"] == "incomplete"
+        assert k.do_is_complete("abc")["status"] == "complete"
+        inspect_result = k.do_inspect("abcdefghi", 4, 0)
+        assert inspect_result["status"] == "ok"
+        assert inspect_result["found"]
+        assert inspect_result["data"]["text/plain"]
+        complete_result = k.do_complete("abc", 1)
+        assert complete_result["status"] == "ok"
+        assert complete_result["matches"] == ["abcdefghi"]
+        assert complete_result["cursor_start"] == 0
+        assert complete_result["cursor_end"] == 3
+        assert not complete_result["metadata"]
+        keyword_complete_result = k.do_complete("ma", 1)
+        assert keyword_complete_result["status"] == "ok"
+        assert set(keyword_complete_result["matches"]) == set(["map", "match"])
+        assert keyword_complete_result["cursor_start"] == 0
+        assert keyword_complete_result["cursor_end"] == 2
+        assert not keyword_complete_result["metadata"]
+    print("<success>")
+
+if __name__ == "__main__":
+    main()

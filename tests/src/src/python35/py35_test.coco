@@ -1,0 +1,25 @@
+import asyncio
+
+def py35_test():
+    """Performs Python-3.5-specific tests."""
+    async def async_map_0(args):
+        return parallel_map(args[0], *args[1:])
+    async def async_map_1(args) = parallel_map(args[0], *args[1:])
+    async def async_map_2([func] + iters) = parallel_map(func, *iters)
+    async match def async_map_3([func] + iters) = parallel_map(func, *iters)
+    match async def async_map_4([func] + iters) = parallel_map(func, *iters)
+    async def async_map_test():
+        for async_map in (async_map_0, async_map_1, async_map_2, async_map_3, async_map_4):
+            assert (await ((pow$(2), range(5)) |> async_map)) |> tuple == (1, 2, 4, 8, 16)
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(async_map_test())
+    loop.close()
+    try:
+        2 @ 3
+    except TypeError:
+        assert True
+    else:
+        assert False
+    assert (1, *(2, 3), 4) == (1, 2, 3, 4)
+    assert {"a": 1, **{"b": 2}, "c": 3} == {"a": 1, "b": 2, "c": 3}
+    return True

@@ -1,0 +1,8 @@
+def py2_test():
+    """Performs Python2-specific tests."""
+    assert py2_filter((>)$(3), range(10)) == [0, 1, 2]
+    assert py2_map((+)$(2), range(5)) == [2, 3, 4, 5, 6]
+    assert py2_range(5) == [0, 1, 2, 3, 4]
+    assert not isinstance(long(1), py2_int)
+    assert py2_str(3) == b"3" == unicode(b"3")
+    return True

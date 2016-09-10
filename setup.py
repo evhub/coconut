@@ -189,7 +189,7 @@ setuptools.setup(
     author_email = "evanjhub@gmail.com",
     install_requires = reqs,
     extras_require = extras,
-    packages = setuptools.find_packages(),
+    packages = setuptools.find_packages(exclude=("tests",)),
     include_package_data = True,
     entry_points = {
         "console_scripts": [
