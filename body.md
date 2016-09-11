@@ -44,7 +44,7 @@ range(15) |> map$((*)$(2)) |> list
 ```
 - function composition
 ```coconut
-f .. g .. h (x, y, z)
+(f .. g .. h)(x, y, z)
 ```
 - lazy lists
 ```coconut
