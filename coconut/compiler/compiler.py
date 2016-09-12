@@ -652,7 +652,8 @@ class Compiler(Grammar):
             if last.endswith("\\"):
                 raise self.make_err(CoconutSyntaxError, "illegal final backslash continuation", last, len(last), self.adjust(len(new)))
             if count != 0:
-                raise self.make_err(CoconutSyntaxError, "unclosed parenthetical", new[-1], len(new[-1]), self.adjust(len(new)))
+                errmsg = "too many open parentheses" if count < 0 else "too many close parentheses"
+                raise self.make_err(CoconutSyntaxError, errmsg, new[-1], len(new[-1]), self.adjust(len(new)))
         new.append(closeindent*len(levels))
         return "\n".join(new)
 
