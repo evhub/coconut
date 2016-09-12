@@ -759,7 +759,7 @@ It is illegal for a variable name to start with `_coconut`, as these variables a
 
 ### Statement Lambdas
 
-The statement lambda syntax is an extension of the [normal lambda syntax](#lambdas) to support statements, not just expressions, as well as proper closure.
+The statement lambda syntax is an extension of the [normal lambda syntax](#lambdas) to support statements, not just expressions.
 
 The syntax for a statement lambda is:
 ```
@@ -773,17 +773,15 @@ Statement lambdas also support implicit lambda syntax, where when the arguments 
 
 ###### Coconut
 ```coconut
-((def () -> x) for x in range(10))
+L |> map$(def (x) -> y = 1 / x; y*(1 - y))
 ```
 
 ###### Python
 ```coconut_python
-def _lambda(closure):
-    vars = globals().copy()
-    vars.update(closure)
-    exec('def _lambda_func():\n    return x', vars)
-    return vars["_lambda_func"]
-(_lambda(locals()) for x in range(10))
+def _lambda(x):
+    y = 1 / x
+    return y*(1 - y)
+map(_lambda, L)
 ```
 
 ### Lazy Lists
