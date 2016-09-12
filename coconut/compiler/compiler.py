@@ -645,6 +645,8 @@ class Compiler(Grammar):
                     raise self.make_err(CoconutSyntaxError, "illegal dedent to unused indentation level", line, 0, self.adjust(ln))
                 new.append(line)
             count += paren_change(line)
+            if count > 0:
+                raise self.make_err(CoconutSyntaxError, "unmatched close parentheses", new[-1], len(new[-1]), self.adjust(len(new)))
 
         self.skips = skips
         if new:
@@ -652,8 +654,7 @@ class Compiler(Grammar):
             if last.endswith("\\"):
                 raise self.make_err(CoconutSyntaxError, "illegal final backslash continuation", last, len(last), self.adjust(len(new)))
             if count != 0:
-                errmsg = "too many open parentheses" if count < 0 else "too many close parentheses"
-                raise self.make_err(CoconutSyntaxError, errmsg, new[-1], len(new[-1]), self.adjust(len(new)))
+                raise self.make_err(CoconutSyntaxError, "unclosed open parentheses", new[-1], len(new[-1]), self.adjust(len(new)))
         new.append(closeindent*len(levels))
         return "\n".join(new)
 
