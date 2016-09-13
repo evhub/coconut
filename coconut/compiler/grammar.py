@@ -1069,7 +1069,7 @@ class Grammar(object):
 
     classic_lambdef = Forward()
     classic_lambdef_params = parenwrap(lparen, varargslist, rparen)
-    new_lambdef_params = lparen.suppress() + varargslist + rparen.suppress()
+    new_lambdef_params = lparen.suppress() + varargslist + rparen.suppress() | name
     classic_lambdef_ref = addspace(Keyword("lambda") + condense(classic_lambdef_params + colon))
     new_lambdef = attach(new_lambdef_params + arrow.suppress(), lambdef_handle)
     implicit_lambdef = fixto(arrow, "lambda _=None:", copy=True)
