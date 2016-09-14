@@ -127,6 +127,7 @@ class Prompt(object):
             raise CoconutException("syntax highlighting is not supported on this Python version")
         elif style == "list":
             logger.print("Coconut Styles: none, " + ", ".join(pygments.styles.get_all_styles()))
+            sys.exit(0)
         elif style in pygments.styles.get_all_styles():
             self.style = style
         else:
