@@ -195,13 +195,6 @@ def math_funcdef_handle(tokens):
     else:
         raise CoconutInternalException("invalid assignment function definition tokens")
 
-def def_match_funcdef_handle(tokens):
-    """Processes full match function definition."""
-    if len(tokens) == 2:
-        return tokens[0] + openindent + "".join(tokens[1]) + closeindent
-    else:
-        raise CoconutInternalException("invalid pattern-matching function definition tokens", tokens)
-
 def data_handle(tokens):
     """Processes data blocks."""
     if len(tokens) == 2:
@@ -669,7 +662,7 @@ def namelist_handle(tokens):
     if len(tokens) == 1:
         return tokens[0]
     elif len(tokens) == 2:
-        return tokens[0] + "; " + tokens[0] + " = " + tokens[1]
+        return tokens[0] + "\n" + tokens[0] + " = " + tokens[1]
     else:
         raise CoconutInternalException("invalid in-line nonlocal / global tokens", tokens)
 
@@ -681,6 +674,13 @@ def compose_item_handle(tokens):
         return tokens[0]
     else:
         return "_coconut_compose(" + ", ".join(tokens) + ")"
+
+def make_suite_handle(tokens):
+    """Makes simple statements into suites."""
+    if len(tokens) != 1:
+        raise CoconutInternalException("invalid simple suite tokens", tokens)
+    else:
+        return "\n" + openindent + tokens[0] + closeindent
 
 def tco_return_handle(tokens):
     """Handles tail-call-optimizable return statements."""
@@ -1241,7 +1241,7 @@ class Grammar(object):
     op_match_funcdef_arg = lparen.suppress() + match + rparen.suppress()
     op_match_funcdef_ref = Group(Optional(op_match_funcdef_arg)) + op_funcdef_name + Group(Optional(op_match_funcdef_arg)) + match_guard
     base_match_funcdef = trace(Keyword("def").suppress() + (op_match_funcdef | name_match_funcdef), "base_match_funcdef")
-    def_match_funcdef = trace(attach(base_match_funcdef + full_suite, def_match_funcdef_handle), "def_match_funcdef")
+    def_match_funcdef = trace(base_match_funcdef + suite, "def_match_funcdef")
     match_funcdef = Optional(Keyword("match").suppress()) + def_match_funcdef
 
     testlist_stmt = condense(testlist + newline)
@@ -1329,10 +1329,15 @@ class Grammar(object):
         ), "expr_stmt")
 
     small_stmt <<= trace(keyword_stmt | expr_stmt, "small_stmt")
-    simple_stmt <<= trace(condense(itemlist(small_stmt, semicolon) + newline), "simple_stmt")
-    stmt <<= compound_stmt | simple_stmt | destructuring_stmt
+    simple_stmt <<= trace(condense(
+        small_stmt + ZeroOrMore(fixto(semicolon, "\n", copy=True) + small_stmt) + Optional(semicolon.suppress()) + newline
+    ), "simple_stmt")
+    stmt <<= trace(compound_stmt | simple_stmt | destructuring_stmt, "stmt")
     base_suite <<= condense(newline + indent - OneOrMore(stmt) - dedent)
-    suite <<= trace(condense(colon + base_suite) | addspace(colon + simple_stmt), "suite")
+    suite <<= trace(condense(colon + (
+        base_suite
+        | attach(simple_stmt, make_suite_handle, copy=True)
+    )), "suite")
     line = trace(newline | stmt, "line")
 
     single_input = trace(condense(Optional(line) - ZeroOrMore(newline)), "single_input")
