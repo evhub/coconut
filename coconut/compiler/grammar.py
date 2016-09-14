@@ -676,7 +676,8 @@ def compose_item_handle(tokens):
         return "_coconut_compose(" + ", ".join(tokens) + ")"
 
 def make_suite_handle(tokens):
-    """Makes simple statements into suites."""
+    """Makes simple statements into suites.
+    Necessary because multiline lambdas count on every statement having its own line to work."""
     if len(tokens) != 1:
         raise CoconutInternalException("invalid simple suite tokens", tokens)
     else:
