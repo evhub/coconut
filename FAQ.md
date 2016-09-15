@@ -70,4 +70,4 @@ If you don't get the reference, the image above is from [Monty Python and the Ho
 
 ### Who developed Coconut?
 
-[Evan Hubinger](https://github.com/evhub) is an undergraduate student studying mathematics and computer science at [Harvey Mudd College](https://www.hmc.edu/).
+[Evan Hubinger](https://github.com/evhub) is an undergraduate student studying mathematics and computer science at [Harvey Mudd College](https://www.hmc.edu/). You can find his resume online at <http://evhub.github.io/resume.pdf>.
