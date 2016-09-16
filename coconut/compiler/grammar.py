@@ -26,6 +26,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *
 
 import re
+from contextlib import contextmanager
 
 from pyparsing import (
     CaselessLiteral,
@@ -230,7 +231,7 @@ def decorator_handle(tokens):
     """Processes decorators."""
     defs = []
     decorates = []
-    for x in range(0, len(tokens)):
+    for x in range(len(tokens)):
         if "simple" in tokens[x].keys() and len(tokens[x]) == 1:
             decorates.append("@"+tokens[x][0])
         elif "test" in tokens[x].keys() and len(tokens[x]) == 1:
@@ -264,6 +265,7 @@ class Matcher(object):
         "trailer": lambda self: self.match_trailer,
         "and": lambda self: self.match_and,
         "or": lambda self: self.match_or,
+        "star": lambda self: self.match_star,
     }
     __slots__ = (
         "position",
@@ -338,6 +340,13 @@ class Matcher(object):
         else:
             raise CoconutInternalException("invalid match index", position)
 
+    @contextmanager
+    def incremented(self, forall=False):
+        """Increment then decrement."""
+        self.increment(forall)
+        yield
+        self.decrement(forall)
+
     def increment(self, forall=False):
         """Advances the if-statement position."""
         self.set_position(self.position+1)
@@ -365,7 +374,7 @@ class Matcher(object):
             raise CoconutInternalException("invalid dict match tokens", original)
         self.checks.append("_coconut.isinstance("+item+", _coconut.abc.Mapping)")
         self.checks.append("_coconut.len("+item+") == "+str(len(match)))
-        for x in range(0, len(match)):
+        for x in range(len(match)):
             k,v = match[x]
             self.checks.append(k+" in "+item)
             self.match(v, item+"["+k+"]")
@@ -393,8 +402,14 @@ class Matcher(object):
                 self.defs.append(tail+" = _coconut.list("+item+splice+")")
             else:
                 raise CoconutInternalException("invalid series match type", series_type)
-        for x in range(0, len(match)):
+        for x in range(len(match)):
             self.match(match[x], item+"["+str(x)+"]")
+
+    def get_iter_var(self):
+        """Gets the next match_iter_var."""
+        itervar = match_iter_var + "_" + str(self.iter_index)
+        self.iter_index += 1
+        return itervar
 
     def match_iterator(self, original, item):
         """Matches an iterator."""
@@ -404,18 +419,47 @@ class Matcher(object):
         else:
             _, match, tail = original
         self.checks.append("_coconut.isinstance("+item+", _coconut.abc.Iterable)")
-        itervar = match_iter_var + "_" + str(self.iter_index)
-        self.iter_index += 1
+        itervar = self.get_iter_var()
         if tail is None:
             self.defs.append(itervar+" = _coconut.tuple("+item+")")
         else:
             self.defs.append(tail+" = _coconut.iter("+item+")")
             self.defs.append(itervar+" = _coconut.tuple(_coconut_igetitem("+tail+", _coconut.slice(None, "+str(len(match))+")))")
-        self.increment()
-        self.checks.append("_coconut.len("+itervar+") == "+str(len(match)))
-        for x in range(0, len(match)):
-            self.match(match[x], itervar+"["+str(x)+"]")
-        self.decrement()
+        with self.incremented():
+            self.checks.append("_coconut.len("+itervar+") == "+str(len(match)))
+            for x in range(len(match)):
+                self.match(match[x], itervar+"["+str(x)+"]")
+
+    def match_star(self, original, item):
+        """Matches starred assignment."""
+        head_match, middle, last_match = None, None, None
+        if len(original) == 1:
+            middle = original[0]
+        elif len(original) == 2:
+            if isinstance(original[0], str):
+                middle, last_match = original
+            else:
+                head_match, middle = original
+        else:
+            head_match, middle, last_match = original
+        self.checks.append("_coconut.isinstance("+item+", _coconut.abc.Iterable)")
+        if head_match is None and last_match is None:
+            self.defs.append(middle+" = _coconut.list("+item+")")
+        else:
+            itervar = self.get_iter_var()
+            self.defs.append(itervar+" = _coconut.list("+item+")")
+            with self.incremented():
+                req_length = (len(head_match) if head_match is not None else 0) + (len(last_match) if last_match is not None else 0)
+                self.checks.append("_coconut.len("+itervar+") >= "+str(req_length))
+                head_splice = str(len(head_match)) if head_match is not None else ""
+                last_splice = "-"+str(len(last_match)) if last_match is not None else ""
+                self.defs.append(middle+" = "+itervar+"["+head_splice+":"+last_splice+"]")
+                if head_match is not None:
+                    for x in range(len(head_match)):
+                        self.match(head_match[x], itervar+"["+str(x)+"]")
+                if last_match is not None:
+                    for x in range(1, len(last_match)+1):
+                        self.match(last_match[-x], itervar+"[-"+str(x)+"]")
 
     def match_rsequence(self, original, item):
         """Matches a reverse sequence."""
@@ -432,7 +476,7 @@ class Matcher(object):
             self.defs.append(front+" = _coconut.list("+item+splice+")")
         else:
             raise CoconutInternalException("invalid series match type", series_type)
-        for x in range(0, len(match)):
+        for x in range(len(match)):
             self.match(match[x], item+"["+str(x-len(match))+"]")
 
     def match_msequence(self, original, item):
@@ -454,9 +498,9 @@ class Matcher(object):
             self.defs.append(middle+" = _coconut.list("+item+splice+")")
         else:
             raise CoconutInternalException("invalid series match type", series_type)
-        for x in range(0, len(head_match)):
+        for x in range(len(head_match)):
             self.match(head_match[x], item+"["+str(x)+"]")
-        for x in range(0, len(last_match)):
+        for x in range(len(last_match)):
             self.match(last_match[x], item+"["+str(x-len(last_match))+"]")
 
     def match_const(self, original, item):
@@ -493,7 +537,7 @@ class Matcher(object):
         data_type, match = original
         self.checks.append("_coconut.isinstance("+item+", "+data_type+")")
         self.checks.append("_coconut.len("+item+") == "+str(len(match)))
-        for x in range(0, len(match)):
+        for x in range(len(match)):
             self.match(match[x], item+"["+str(x)+"]")
 
     def match_paren(self, original, item):
@@ -534,9 +578,9 @@ class Matcher(object):
 
     def match(self, original, item):
         """Performs pattern-matching processing."""
-        for flag, handler in self.matchers.items():
+        for flag, get_handler in self.matchers.items():
             if flag in original.keys():
-                return handler(self)(original, item)
+                return get_handler(self)(original, item)
         raise CoconutInternalException("invalid inner match tokens", original)
 
     def out(self):
@@ -625,7 +669,7 @@ def subscriptgroup_handle(tokens):
     """Processes subscriptgroups."""
     if 0 < len(tokens) <= 3:
         args = []
-        for x in range(0, len(tokens)):
+        for x in range(len(tokens)):
             arg = tokens[x]
             if not arg:
                 arg = "None"
@@ -1001,14 +1045,18 @@ class Grammar(object):
     atom_item_ref = atom + ZeroOrMore(trailer)
     simple_assign = Forward()
     simple_assign_ref = (name | passthrough_atom) + ZeroOrMore(ZeroOrMore(complex_trailer) + OneOrMore(simple_trailer))
+    simple_assignlist = parenwrap(lparen, itemlist(simple_assign, comma), rparen)
 
     assignlist = Forward()
     star_assign_item = Forward()
-    simple_assignlist = parenwrap(lparen, itemlist(simple_assign, comma), rparen)
     base_assign_item = condense(simple_assign | lparen + assignlist + rparen | lbrack + assignlist + rbrack)
     star_assign_item_ref = condense(star + base_assign_item)
     assign_item = star_assign_item | base_assign_item
-    assignlist <<= itemlist(assign_item, comma)
+    assignlist <<= trace(itemlist(assign_item, comma), "assignlist")
+
+    augassign_stmt = Forward()
+    augassign_stmt_ref = simple_assign + augassign + test_expr
+    assign_stmt = trace(addspace(ZeroOrMore(assignlist + equals) + test_expr), "assign_stmt")
 
     compose_item = attach(atom_item + ZeroOrMore(dotdot.suppress() + atom_item), compose_item_handle)
 
@@ -1145,6 +1193,13 @@ class Grammar(object):
     matchlist_list = Group(Optional(tokenlist(match, comma)))
     matchlist_tuple = Group(Optional(match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress())
                                      | match + comma.suppress()))
+    matchlist_star = (
+        Optional(Group(OneOrMore(match + comma.suppress())))
+        + star.suppress() + name
+        + Optional(Group(OneOrMore(comma.suppress() + match)))
+        + Optional(comma.suppress())
+    )
+
     match_const = const_atom | condense(equals.suppress() + atom_item)
     matchlist_set = Group(Optional(tokenlist(match_const, comma)))
     match_pair = Group(match_const + colon.suppress() + match)
@@ -1152,20 +1207,31 @@ class Grammar(object):
     match_list = lbrack + matchlist_list + rbrack.suppress()
     match_tuple = lparen + matchlist_tuple + rparen.suppress()
     match_lazy = lbanana + matchlist_list + rbanana.suppress()
-    base_match = Group(
+    series_match = (
+        (match_list + plus.suppress() + name + plus.suppress() + match_list)("mseries")
+        | (match_tuple + plus.suppress() + name + plus.suppress() + match_tuple)("mseries")
+        | ((match_list | match_tuple) + Optional(plus.suppress() + name))("series")
+        | (name + plus.suppress() + (match_list | match_tuple))("rseries")
+    )
+    iter_match = (
+        ((match_list | match_tuple | match_lazy) + dubcolon.suppress() + name)
+        | match_lazy
+    )("iter")
+    star_match = (
+        lbrack.suppress() + matchlist_star + rbrack.suppress()
+        | lparen.suppress() + matchlist_star + rparen.suppress()
+    )("star")
+    base_match = trace(Group(
         match_const("const")
         | (lparen.suppress() + match + rparen.suppress())("paren")
         | (lbrace.suppress() + matchlist_dict + rbrace.suppress())("dict")
         | (Optional(set_s.suppress()) + lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
-        | ((match_list | match_tuple | match_lazy) + dubcolon.suppress() + name)("iter")
-        | match_lazy("iter")
-        | (match_list + plus.suppress() + name + plus.suppress() + match_list)("mseries")
-        | (match_tuple + plus.suppress() + name + plus.suppress() + match_tuple)("mseries")
-        | ((match_list | match_tuple) + Optional(plus.suppress() + name))("series")
-        | (name + plus.suppress() + (match_list | match_tuple))("rseries")
+        | iter_match
+        | series_match
+        | star_match
         | (name + lparen.suppress() + matchlist_list + rparen.suppress())("data")
         | name("var")
-        )
+        ), "base_match")
     matchlist_trailer = base_match + OneOrMore(Keyword("as") + name | Keyword("is") + atom_item)
     as_match = Group(matchlist_trailer("trailer")) | base_match
     matchlist_and = as_match + OneOrMore(Keyword("and").suppress() + as_match)
@@ -1185,8 +1251,7 @@ class Grammar(object):
     match_stmt = condense(full_match - Optional(else_stmt))
 
     destructuring_stmt = Forward()
-    destructuring_stmt_ref = match + equals.suppress() - test_expr - newline.suppress()
-    match_assign_stmt = Keyword("match").suppress() + destructuring_stmt
+    destructuring_stmt_ref = Optional(Keyword("match").suppress()) + match + equals.suppress() + test_expr
 
     case_match = trace(Group(
         Keyword("match").suppress() - match - Optional(Keyword("if").suppress() - test) - full_suite
@@ -1238,11 +1303,12 @@ class Grammar(object):
     name_match_funcdef = Forward()
     op_match_funcdef = Forward()
     async_match_funcdef = Forward()
+    nocolon_suite = Forward()
     name_match_funcdef_ref = name + lparen.suppress() + matchlist_list + match_guard + rparen.suppress()
     op_match_funcdef_arg = lparen.suppress() + match + rparen.suppress()
     op_match_funcdef_ref = Group(Optional(op_match_funcdef_arg)) + op_funcdef_name + Group(Optional(op_match_funcdef_arg)) + match_guard
     base_match_funcdef = trace(Keyword("def").suppress() + (op_match_funcdef | name_match_funcdef), "base_match_funcdef")
-    def_match_funcdef = trace(base_match_funcdef + suite, "def_match_funcdef")
+    def_match_funcdef = trace(condense(base_match_funcdef + colon.suppress() + nocolon_suite), "def_match_funcdef")
     match_funcdef = Optional(Keyword("match").suppress()) + def_match_funcdef
 
     testlist_stmt = condense(testlist + newline)
@@ -1310,8 +1376,10 @@ class Grammar(object):
         | for_stmt
         | async_stmt
         | simple_compound_stmt
-        | match_assign_stmt
         , "compound_stmt")
+
+    endline_semicolon = Forward()
+    endline_semicolon_ref = semicolon.suppress() + newline
     keyword_stmt = trace(
         del_stmt
         | pass_stmt
@@ -1322,23 +1390,21 @@ class Grammar(object):
         | assert_stmt
         | exec_stmt
         , "keyword_stmt")
-    augassign_stmt = Forward()
-    augassign_stmt_ref = simple_assign + augassign + test_expr
-    expr_stmt = trace(addspace(
-        augassign_stmt
-        | ZeroOrMore(assignlist + equals) + test_expr
-        ), "expr_stmt")
-
-    small_stmt <<= trace(keyword_stmt | expr_stmt, "small_stmt")
+    small_stmt <<= trace(
+        keyword_stmt
+        | augassign_stmt
+        | (assign_stmt
+        ^ destructuring_stmt)
+    , "small_stmt")
     simple_stmt <<= trace(condense(
-        small_stmt + ZeroOrMore(fixto(semicolon, "\n", copy=True) + small_stmt) + Optional(semicolon.suppress()) + newline
+        small_stmt
+        + ZeroOrMore(fixto(semicolon, "\n", copy=True) + small_stmt)
+        + (newline | endline_semicolon)
     ), "simple_stmt")
-    stmt <<= trace(compound_stmt | simple_stmt | destructuring_stmt, "stmt")
+    stmt <<= trace(compound_stmt | simple_stmt, "stmt")
     base_suite <<= condense(newline + indent - OneOrMore(stmt) - dedent)
-    suite <<= trace(condense(colon + (
-        base_suite
-        | attach(simple_stmt, make_suite_handle, copy=True)
-    )), "suite")
+    nocolon_suite <<= trace(base_suite | attach(simple_stmt, make_suite_handle, copy=True), "nocolon_suite")
+    suite <<= condense(colon + nocolon_suite)
     line = trace(newline | stmt, "line")
 
     single_input = trace(condense(Optional(line) - ZeroOrMore(newline)), "single_input")

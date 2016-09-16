@@ -21,10 +21,13 @@ from coconut.root import *
 import sys
 import os
 import traceback
+import functools
 import logging
 from contextlib import contextmanager
 
 from pyparsing import lineno, col
+if DEVELOP:
+    from pyparsing import _trim_arity
 
 from coconut.constants import (
     default_encoding,
@@ -35,6 +38,7 @@ from coconut.constants import (
 from coconut.exceptions import (
     CoconutWarning,
     CoconutInternalException,
+    CoconutException,
     clean,
 )
 
@@ -180,10 +184,28 @@ class Logger(object):
 
     def trace(self, item, tag):
         """Traces a parse element."""
-        def trace_action(original, location, tokens):
-            """Callback function constructed by tracer."""
-            self.log_trace(tag, original, location, tokens)
-        return item.addParseAction(trace_action).setName(tag)
+        if DEVELOP:
+            def trace_action(original, location, tokens):
+                """Callback function constructed by tracer."""
+                self.log_trace(tag, original, location, tokens)
+            item = item.addParseAction(trace_action)
+        return item.setName(tag)
+
+    def wrap_handler(self, handler):
+        """Wraps a handler to catch errors in verbose mode (only enabled in develop)."""
+        if DEVELOP and handler.__name__ not in ("<lambda>", "join"): # not addspace, condense, or fixto
+            @functools.wraps(handler)
+            def wrapped_handler(s, l, t):
+                self.log_trace(handler.__name__, s, l, t)
+                try:
+                    return _trim_arity(handler)(s, l, t)
+                except CoconutException:
+                    raise
+                except Exception:
+                    raise CoconutInternalException("error calling handler "+handler.__name__+" with tokens", t)
+            return wrapped_handler
+        else:
+            return handler
 
     def patch_logging(self):
         """Patches built-in Python logging."""

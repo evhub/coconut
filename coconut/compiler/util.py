@@ -26,7 +26,7 @@ from pyparsing import (
     Optional,
 )
 
-from coconut.logging import complain
+from coconut.logging import logger, complain
 from coconut.constants import (
     ups,
     downs,
@@ -80,7 +80,7 @@ def attach(item, action, copy=False):
     """Attaches a parse action to an item."""
     if copy:
         item = item.copy()
-    return item.addParseAction(action)
+    return item.addParseAction(logger.wrap_handler(action))
 
 def fixto(item, output, copy=False):
     """Forces an item to result in a specific output."""

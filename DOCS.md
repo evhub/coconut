@@ -207,16 +207,17 @@ _Note: Periods are ignored in target specifications, such that the target `2.7` 
 
 ### `strict` Mode
 
-If the `--strict` or `-s` flag is enabled, Coconut will throw errors on various style problems. These are
+If the `--strict` (or `-s`) flag is enabled, Coconut will throw errors on various style problems. These are
 - mixing of tabs and spaces (without `--strict` will show a Warning),
 - missing new line at end of file (without `--strict` will show a Warning),
 - use of `from __future__` imports (without `--strict` will show a Warning)
 - trailing whitespace at end of lines,
+- semicolons at end of lines,
 - use of the Python-style `lambda` statement,
 - use of `u` to denote Unicode strings, and
 - use of backslash continuations (use [parenthetical continuation](#parenthetical-continuation) instead).
 
-It is recommended that you use the `--strict` or `-s` flag if you are starting a new Coconut project, as it will help you write cleaner code.
+It is recommended that you use the `--strict` (or `-s`) flag if you are starting a new Coconut project, as it will help you write cleaner code.
 
 ### IPython/ Jupyter Support
 
@@ -561,6 +562,11 @@ pattern ::= (
     | "(|" patterns "|)"            # lazy lists
     | "{" pattern_pairs "}"         # dictionaries
     | ["s"] "{" pattern_consts "}"  # sets
+    | ("(" | "[")                   # star splits
+        patterns,
+        "*" middle,
+        patterns
+      (")" | "]")                       # must both be parens or brackets
     | (                             # head-tail splits
         "(" patterns ")"
         | "[" patterns "]"
