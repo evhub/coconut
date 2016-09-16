@@ -305,25 +305,18 @@ class Command(object):
                 callback(getattr(self.comp, method)(*args, **kwargs))
         else:
             path = showpath(path)
-            # pickle the compiler in the path context so it gets to warnings
-            with logger.in_path(path):
+            with logger.in_path(path): # pickle the compiler in the path context
                 future = self.executor.submit(multiprocess_wrapper(self.comp, method), *args, **kwargs)
             def callback_wrapper(completed_future):
                 """Ensures that all errors are always caught, since errors raised in a callback won't be propagated."""
                 try:
-                    with self.handling_exceptions():
-                        # for parser exceptions, handle them in the path context
-                        logger.path = path
-                        result = completed_future.result()
-                        # for callback exceptions, don't handle them in the path context
-                        logger.path = None
-                        callback(result)
-                except Exception:
+                    with logger.in_path(path): # handle errors in the path context
+                        with self.handling_exceptions():
+                            result = completed_future.result()
+                            callback(result)
+                except:
                     traceback.print_exc()
                     self.register_error()
-                finally:
-                    # make sure the path gets reset after printing any errors
-                    logger.path = None
             future.add_done_callback(callback_wrapper)
 
     def set_jobs(self, jobs):
@@ -345,7 +338,7 @@ class Command(object):
                     yield
             finally:
                 self.executor = None
-                self.exit_on_error("Aborting due to compilation error.")
+                self.exit_on_error("Exiting due to compilation error.")
 
     def create_package(self, dirpath):
         """Sets up a package directory."""
@@ -394,8 +387,9 @@ class Command(object):
                 if compiled:
                     self.execute(compiled, error=False, print_expr=True)
 
-    def exit_runner(self):
+    def exit_runner(self, exit_code=0):
         """Exits the interpreter."""
+        self.register_error(exit_code)
         self.running = False
 
     def handle_input(self, code):
@@ -530,7 +524,7 @@ class Command(object):
                 while True:
                     time.sleep(watch_interval)
             except KeyboardInterrupt:
-                logger.show("Aborting due to keyboard interrupt.")
+                logger.show("Exiting due to keyboard interrupt.")
             finally:
                 observer.stop()
                 observer.join()

@@ -174,7 +174,6 @@ class Prompt(object):
             "style": prompt_toolkit.styles.style_from_pygments(pygments.styles.get_style_by_name(self.style)),
         }
 
-
 class Runner(object):
     """Compiled Python executor."""
     def __init__(self, comp=None, exit=None, path=None):
@@ -201,16 +200,16 @@ class Runner(object):
                 exec(code, self.vars)
             else:
                 return run_func(code, self.vars)
-        except (Exception, KeyboardInterrupt):
+        except SystemExit as err:
+            if self.exit is None:
+                raise
+            else:
+                self.exit(err.code)
+        except:
             if error:
                 raise
             else:
                 traceback.print_exc()
-        except SystemExit:
-            if self.exit is None:
-                raise
-            else:
-                self.exit()
         return None
 
 class multiprocess_wrapper(object):

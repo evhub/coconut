@@ -16,6 +16,17 @@ Description: Starts the Coconut command line utility.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
+import sys
+import os.path
+
+def add_coconut_to_path():
+    """Adds coconut to sys.path if it isn't there already."""
+    try:
+        import coconut
+    except ImportError:
+        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+add_coconut_to_path()
 from coconut.root import *
 
 from coconut.command import Command
