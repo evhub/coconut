@@ -268,6 +268,7 @@ class Compiler(Grammar):
         self.await_keyword <<= attach(self.await_keyword_ref, self.await_keyword_check, copy=True)
         self.star_expr <<= attach(self.star_expr_ref, self.star_expr_check, copy=True)
         self.dubstar_expr <<= attach(self.dubstar_expr_ref, self.star_expr_check, copy=True)
+        self.endline_semicolon <<= attach(self.endline_semicolon_ref, self.endline_semicolon_check, copy=True)
 
     def adjust(self, ln):
         """Adjusts a line number."""
@@ -391,8 +392,6 @@ class Compiler(Grammar):
             err_line, err_index = self.reformat(err.line, err.col-1)
             raise CoconutParseError(None, err_line, err_index, self.adjust(err.lineno))
         except RuntimeError as err:
-            if logger.verbose:
-                logger.print_exc()
             raise CoconutException(str(err),
                 extra="try again with --recursion-limit greater than the current " + str(sys.getrecursionlimit()))
         return out
@@ -528,7 +527,7 @@ class Compiler(Grammar):
         multiline = None
         skips = self.skips.copy()
 
-        for x in range(0, len(inputstring)+1):
+        for x in range(len(inputstring)+1):
             if x == len(inputstring):
                 c = "\n"
             else:
@@ -574,7 +573,7 @@ class Compiler(Grammar):
     def leading(self, inputstring):
         """Counts leading whitespace."""
         count = 0
-        for x in range(0, len(inputstring)):
+        for x in range(len(inputstring)):
             if inputstring[x] == " ":
                 if self.indchar is None:
                     self.indchar = " "
@@ -598,7 +597,7 @@ class Compiler(Grammar):
         current = None
         skips = self.skips.copy()
 
-        for ln in range(0, len(lines)):
+        for ln in range(len(lines)):
             line = lines[ln]
             ln += 1
             line_rstrip = line.rstrip()
@@ -1231,6 +1230,10 @@ class Compiler(Grammar):
         """Checks for Python-style lambdas."""
         return self.check_strict("Python-style lambda", original, location, tokens)
 
+    def endline_semicolon_check(self, original, location, tokens):
+        """Checks for semicolons at the end of lines."""
+        return self.check_strict("semicolon at end of line", original, location, tokens)
+
     def u_string_check(self, original, location, tokens):
         """Checks for Python2-style unicode strings."""
         return self.check_strict("Python-2-style unicode string", original, location, tokens)
@@ -1263,7 +1266,7 @@ class Compiler(Grammar):
 
     def star_assign_item_check(self, original, location, tokens):
         """Checks for Python 3 starred assignment."""
-        return self.check_py("3", "starred assignment", original, location, tokens)
+        return self.check_py("3", "starred assignment (use pattern-matching version to produce universal code)", original, location, tokens)
 
     def matrix_at_check(self, original, location, tokens):
         """Checks for Python 3.5 matrix multiplication."""

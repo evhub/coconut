@@ -431,7 +431,7 @@ class Command(object):
             if print_expr:
                 result = self.runner.run(compiled, error, run_func=try_eval)
                 if result is not None: # if the input was an expression, we should print it
-                    print(result)
+                    print(ascii(result))
             else:
                 self.runner.run(compiled, error)
 
