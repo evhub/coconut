@@ -336,7 +336,6 @@ class Command(object):
             try:
                 with ProcessPoolExecutor(self.jobs) as self.executor:
                     yield
-                    print("--- FINISHED ---")
             finally:
                 self.executor = None
                 self.exit_on_error("Exiting due to compilation error.")
