@@ -110,6 +110,16 @@ class Logger(object):
         if not self.quiet:
             self.display(messages, main_sig)
 
+    def log(self, *messages):
+        """Logs a debug message if in verbose mode."""
+        if self.verbose:
+            self.printerr(*messages)
+
+    def log_show(self, *messages):
+        """Logs a debug message with main signature."""
+        if self.verbose:
+            self.display(messages, main_sig, debug=True)
+
     def get_error(self):
         """Properly formats the current error."""
         err_type, err_value, err_trace = sys.exc_info()
@@ -145,11 +155,6 @@ class Logger(object):
                 errmsg_lines.append(line)
             errmsg = "\n".join(errmsg_lines)
         self.printerr(errmsg)
-
-    def log(self, *messages):
-        """Logs a debug message if in verbose mode."""
-        if self.verbose:
-            self.printerr(*messages)
 
     def log_tag(self, tag, code, multiline=False):
         """Logs a tagged message if in verbose mode."""
