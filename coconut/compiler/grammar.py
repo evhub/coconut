@@ -432,7 +432,7 @@ class Matcher(object):
 
     def match_star(self, original, item):
         """Matches starred assignment."""
-        head_match, middle, last_match = None, None, None
+        head_match, last_match = None, None
         if len(original) == 1:
             middle = original[0]
         elif len(original) == 2:
