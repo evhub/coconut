@@ -189,7 +189,7 @@ setuptools.setup(
     author_email = "evanjhub@gmail.com",
     install_requires = reqs,
     extras_require = extras,
-    packages = find_packages(exclude=[
+    packages = setuptools.find_packages(exclude=[
         "reqs",
         "docs",
     ]),
