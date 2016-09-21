@@ -138,7 +138,7 @@ with open("README.rst", "r") as readme_file:
 def read_reqs(tag=""):
     if tag:
         tag = "-" + tag
-    req_file_name = "requirements" + tag + ".txt"
+    req_file_name = "./reqs/requirements" + tag + ".txt"
     with open(req_file_name, "r") as req_file:
         return [line.strip() for line in req_file.readlines() if line]
 
@@ -189,7 +189,10 @@ setuptools.setup(
     author_email = "evanjhub@gmail.com",
     install_requires = reqs,
     extras_require = extras,
-    packages = setuptools.find_packages(),
+    packages = find_packages(exclude=[
+        "reqs",
+        "docs",
+    ]),
     include_package_data = True,
     entry_points = {
         "console_scripts": [
