@@ -35,7 +35,7 @@ html_theme_path = get_html_theme_path()
 highlight_language = "coconut"
 
 project = "Coconut"
-copyright = "2015, Evan Hubinger, licensed under Apache 2.0"
+copyright = "2015-2016, Evan Hubinger, licensed under Apache 2.0"
 author = "Evan Hubinger"
 version = VERSION
 release = VERSION_STR_TAG
