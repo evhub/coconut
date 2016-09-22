@@ -33,7 +33,7 @@ import sys
 from pyparsing import (
     ParseBaseException,
     col,
-    line,
+    line as getline,
     lineno,
     nums,
     Keyword,
@@ -289,7 +289,7 @@ class Compiler(Grammar):
         """Generates an error of the specified type."""
         if ln is None:
             ln = self.adjust(lineno(location, original))
-        errstr, index = line(location, original), col(location, original) - 1
+        errstr, index = getline(location, original), col(location, original) - 1
         if reformat:
             errstr, index = self.reformat(errstr, index)
         return errtype(message, errstr, index, ln, *args, **kwargs)
@@ -805,7 +805,7 @@ class Compiler(Grammar):
                         out.append("#" + ref)
                         comment = None
                     else:
-                        raise CoconutInternalException("invalid comment marker in", line(x, inputstring))
+                        raise CoconutInternalException("invalid comment marker in", getline(x, inputstring))
                 elif string is not None:
                     if c is not None and c in nums:
                         string += c
@@ -820,7 +820,7 @@ class Compiler(Grammar):
                             out.append(strchar + text + strchar)
                         string = None
                     else:
-                        raise CoconutInternalException("invalid string marker in", line(x, inputstring))
+                        raise CoconutInternalException("invalid string marker in", getline(x, inputstring))
                 elif c is not None:
                     if c == "#":
                         comment = ""
@@ -1054,7 +1054,7 @@ class Compiler(Grammar):
 
     def pattern_error(self, original, loc):
         """Constructs a pattern-matching error message."""
-        base_line = clean(self.reformat(line(loc, original)))
+        base_line = clean(self.reformat(getline(loc, original)))
         line_wrap = self.wrap_str_of(base_line)
         repr_wrap = self.wrap_str_of(ascii(base_line))
         return ("if not " + match_check_var + ":\n" + openindent
