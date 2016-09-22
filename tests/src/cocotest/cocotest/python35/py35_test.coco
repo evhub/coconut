@@ -11,7 +11,7 @@ def py35_test():
     async def async_map_test():
         for async_map in (async_map_0, async_map_1, async_map_2, async_map_3, async_map_4):
             assert (await ((pow$(2), range(5)) |> async_map)) |> tuple == (1, 2, 4, 8, 16)
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
     loop.run_until_complete(async_map_test())
     loop.close()
     try:

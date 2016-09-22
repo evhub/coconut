@@ -3,6 +3,7 @@
     hooks:
     -   id: check-added-large-files
     -   id: check-byte-order-marker
+    -   id: fix-encoding-pragma
     -   id: end-of-file-fixer
     -   id: trailing-whitespace
     -   id: debug-statements

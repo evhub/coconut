@@ -1,12 +1,20 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+#-----------------------------------------------------------------------------------------------------------------------
+# INFO:
+#-----------------------------------------------------------------------------------------------------------------------
+
 """
-Authors: Fred Buchanan
+Authors: Evan Hubinger, Fred Buchanan
 License: Apache 2.0
-Description: Coconut test suite
+Description: Coconut test suite.
 """
+
+#-----------------------------------------------------------------------------------------------------------------------
+# IMPORTS:
+#-----------------------------------------------------------------------------------------------------------------------
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from coconut.root import *
-
-from tests.integration_tests import OldCocoTest
+from coconut.root import *  # NOQA

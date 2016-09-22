@@ -1,6 +1,7 @@
 import sys
 
 from coconut.__coconut__ import consume as coc_consume
+from coconut.exceptions import CoconutStyleError
 from coconut.convenience import (
     CoconutException,
     cmd,
@@ -103,37 +104,43 @@ def main():
     setup(strict=True)
     try:
         parse("def f(x):\n \t pass")
-    except CoconutException:
+    except CoconutStyleError:
         assert True
     else:
         assert False
     try:
         parse("lambda x: x")
-    except CoconutException:
+    except CoconutStyleError:
         assert True
     else:
         assert False
     try:
         parse("u''")
-    except CoconutException:
+    except CoconutStyleError:
         assert True
     else:
         assert False
     try:
         parse("def f(x):\\\n pass")
-    except CoconutException:
+    except CoconutStyleError:
         assert True
     else:
         assert False
     try:
         parse("abc ")
-    except CoconutException:
+    except CoconutStyleError:
         assert True
     else:
         assert False
     try:
         parse("abc", "file")
-    except CoconutException:
+    except CoconutStyleError:
+        assert True
+    else:
+        assert False
+    try:
+        parse("a=1;")
+    except CoconutStyleError:
         assert True
     else:
         assert False

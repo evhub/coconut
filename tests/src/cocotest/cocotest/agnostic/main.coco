@@ -250,6 +250,19 @@ def main_test():
     assert abc(10).xyz == 10
     class aclass
     assert isinstance(aclass, object)
+    assert tee((1,2)) |*> (is)
+    assert tee(f{1,2}) |*> (is)
+    assert (x -> 2 / x)(4) == 1/2
+    match [a, *b, c] = range(10)
+    assert a == 0
+    assert b == [1, 2, 3, 4, 5, 6, 7, 8]
+    assert c == 9
+    match [a, *b, a] in range(10):
+        assert False
+    else:
+        assert True
+    a = 1; b = 1
+    assert a == 1 == b
     return True
 
 def main(*args):

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 #-----------------------------------------------------------------------------------------------------------------------
 # INFO:
@@ -47,7 +48,7 @@ if sys_target in pseudo_targets:
 else:
     pseudo_targets["sys"] = sys_target
 
-default_encoding = "UTF-8"
+default_encoding = "utf-8"
 default_whitespace_chars = " \t\f\v"
 
 openindent = "\u204b"  # reverse pilcrow

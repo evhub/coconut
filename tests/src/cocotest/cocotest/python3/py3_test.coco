@@ -26,8 +26,8 @@ def py3_test():
     assert isinstance(A(), A)
     assert isinstance("", A)
     assert isinstance(5, A)
-    assert py3_map((x) -> x+1, range(4)) |> tuple == (1, 2, 3, 4)
-    assert py3_zip(range(3), range(3)) |> tuple == ((0, 0), (1, 1), (2, 2))
+    assert py_map((x) -> x+1, range(4)) |> tuple == (1, 2, 3, 4)
+    assert py_zip(range(3), range(3)) |> tuple == ((0, 0), (1, 1), (2, 2))
     class B(*()): pass
     assert isinstance(B(), B)
     e = exec

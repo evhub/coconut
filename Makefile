@@ -1,11 +1,14 @@
-.PHONY: install dev format docs clean build
+.PHONY: install dev pip format docs test clean build
 
-install:
-	pip install --upgrade .[all]
+install: pip
+	pip install .[all]
 
-dev:
+dev: pip
 	pip install --upgrade -e .[dev]
 	pre-commit install
+
+pip:
+	pip install "pip>=7.1.2"
 
 format:
 	pre-commit autoupdate
@@ -18,10 +21,14 @@ docs:
 	zip -r ./docs.zip ./*
 	popd
 
+test: install
+	python tests
+
 clean:
 	rm -rf ./docs
 	rm -rf ./dist
 	rm -rf ./build
+	rm -rf ./tests/dest
 	find . -name '*.pyc' -delete
 	find . -name '__pycache__' -delete
 
