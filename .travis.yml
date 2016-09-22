@@ -15,8 +15,7 @@ python:
   - "3.5"
 
 install:
-  - pip install "pip==7.1.2"
-  - pip install -r ./reqs/requirements-dev.txt
+  - pip install -r ./reqs/requirements-tests.txt
   - make
 
 script:

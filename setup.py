@@ -138,6 +138,7 @@ with open("README.rst", "r") as readme_file:
 
 
 def read_reqs(tag=""):
+    """Read the requirements file for the given tag."""
     if tag:
         tag = "-" + tag
     req_file_name = "./reqs/requirements" + tag + ".txt"
@@ -145,8 +146,14 @@ def read_reqs(tag=""):
         return [line.strip() for line in req_file.readlines() if line]
 
 
+def uniqueify(reqs):
+    """Make a list of requirements unique."""
+    return list(set(reqs))
+
+
 def all_reqs_in(req_dict):
-    return list(set(req for req_list in req_dict.values() for req in req_list))
+    """Gets all requirements in a requirements dict."""
+    return uniqueify(req for req_list in req_dict.values() for req in req_list)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # REQUIREMENTS:
@@ -176,7 +183,11 @@ extras["all"] = all_reqs_in(extras)
 
 extras["docs"] = docs_reqs
 
-extras["dev"] = all_reqs_in(extras) + read_reqs("dev")
+extras["dev"] = uniqueify(
+    all_reqs_in(extras)
+    + read_reqs("tests")
+    + read_reqs("dev")
+)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
