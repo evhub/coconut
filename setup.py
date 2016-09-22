@@ -159,29 +159,26 @@ def all_reqs_in(req_dict):
 # REQUIREMENTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-reqs = read_reqs()
+requirements = read_reqs()
 
 if not PY26:
-    reqs += read_reqs("non-py26")
+    requirements += read_reqs("non-py26")
 
 if PY2:
-    reqs += read_reqs("py2")
+    requirements += read_reqs("py2")
     if PY26:
-        reqs += read_reqs("py26")
-
-watch_reqs = read_reqs("watch")
-jupyter_reqs = read_reqs("jupyter")
-docs_reqs = read_reqs("docs")
+        requirements += read_reqs("py26")
 
 extras = {
-    "watch": watch_reqs,
-    "jupyter": jupyter_reqs,
-    "ipython": jupyter_reqs,
+    "watch": read_reqs("watch"),
 }
+
+if (PY2 and not PY26) or (not PY2 and sys.version_info >= (3, 3)):
+    extras["jupyter"] = extras["ipython"] = read_reqs("jupyter")
 
 extras["all"] = all_reqs_in(extras)
 
-extras["docs"] = docs_reqs
+extras["docs"] = read_reqs("docs")
 
 extras["dev"] = uniqueify(
     all_reqs_in(extras)
@@ -201,7 +198,7 @@ setuptools.setup(
     url="http://coconut-lang.org",
     author="Evan Hubinger",
     author_email="evanjhub@gmail.com",
-    install_requires=reqs,
+    install_requires=requirements,
     extras_require=extras,
     packages=setuptools.find_packages(exclude=[
         "reqs",

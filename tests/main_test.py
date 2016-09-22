@@ -31,21 +31,30 @@ from contextlib import contextmanager
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
 
+IPY = (PY2 and not PY26) or (not PY2 and sys.version_info >= (3, 3))
+
 base = os.path.dirname(os.path.relpath(__file__))
 src = os.path.join(base, "src")
 dest = os.path.join(base, "dest")
 
 
-def call(cmd, assert_output=False):
+def call(cmd, assert_output=False, **kwargs):
     """Executes a shell command."""
     print("\n>", " ".join(cmd))
     if assert_output:
-        for line in subprocess.Popen(cmd, stdout=subprocess.PIPE).stdout.readlines():
+        for line in subprocess.Popen(cmd, stdout=subprocess.PIPE, **kwargs).stdout.readlines():
             line = line.rstrip()
             print(line)
         assert line == b"<success>"
     else:
-        subprocess.check_call(cmd)
+        subprocess.check_call(cmd, **kwargs)
+
+
+def call_coconut(args):
+    """Calls Coconut."""
+    if "--jobs" not in args and platform.python_implementation() == "PyPy":
+        args += ["--jobs", "0"]
+    call(["coconut"] + args)
 
 
 def comp(path=None, folder=None, file=None, args=[]):
@@ -59,9 +68,7 @@ def comp(path=None, folder=None, file=None, args=[]):
     if file is not None:
         paths.append(file)
     source = os.path.join(src, *paths)
-    if "--jobs" not in args and platform.python_implementation() == "PyPy":
-        args += ["--jobs", "0"]
-    call(["coconut", source, compdest] + args)
+    call_coconut([source, compdest] + args)
 
 
 @contextmanager
@@ -144,16 +151,55 @@ def run(args=[], agnostic_target=None, comp_run=False):
             comp_runner(agnostic_args)
             run_src()
 
-        if (PY2 and not PY26) or (not PY2 and sys.version_info >= (3, 3)):
+        if IPY:
             if comp_run:
                 comp_extras(agnostic_args + ["--run"])
             else:
                 comp_extras(agnostic_args)
                 run_extras()
 
+
+def comp_prisoner(args=[]):
+    """Compiles evhub/prisoner."""
+    call(["git", "clone", "https://github.com/evhub/prisoner.git"])
+    call_coconut(["prisoner", "--strict"] + args)
+
+
+def comp_pyston(args=[]):
+    """Compiles evhub/pyston."""
+    call(["git", "clone", "https://github.com/evhub/pyston.git"])
+    call_coconut(["pyston"] + args)
+
+
+def run_pyston():
+    """Runs pyston."""
+    call(["python", os.path.join(os.curdir, "pyston", "runner.py")], assert_output=True)
+
 #-----------------------------------------------------------------------------------------------------------------------
 # TESTS:
 #-----------------------------------------------------------------------------------------------------------------------
+
+coconut_snip = r'''msg = '<success>'; pmsg = print\$(msg); `pmsg`'''
+
+
+class TestShell(unittest.TestCase):
+
+    def test_code(self):
+        call(["coconut", "-s", "--code", coconut_snip], assert_output=True)
+
+    def test_pipe(self):
+        call(r'echo "' + coconut_snip + '" | coconut -s', shell=True, assert_output=True)
+
+    def test_convenience(self):
+        call(["python", "-c", 'from coconut.convenience import parse; exec(parse("' + coconut_snip + '"))'])
+
+    if IPY:
+
+        def test_ipython(self):
+            call(["ipython", "--ext", "coconut", "-c", '%coconut ' + coconut_snip])
+
+        def test_jupyter(self):
+            call(["coconut", "--jupyter"])
 
 
 class TestCompilation(unittest.TestCase):
@@ -187,6 +233,17 @@ class TestCompilation(unittest.TestCase):
 
     def test_strict(self):
         run(["--strict"])
+
+
+class TestExternal(unittest.TestCase):
+
+    def test_prisoner(self):
+        comp_prisoner()
+
+    def test_pyston(self):
+        comp_pyston()
+        if platform.python_implementation() == "PyPy":
+            run_pyston()
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
