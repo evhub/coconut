@@ -14,5 +14,8 @@ python:
   - "3.4"
   - "3.5"
 
+install:
+  - pip install "pip==7.1.2"
+
 script:
   - make test
