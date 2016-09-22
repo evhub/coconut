@@ -9,10 +9,9 @@ dev:
 
 format:
 	pre-commit autoupdate
-	pre-commit run
+	pre-commit run --allow-unstaged-config --all-files
 
 clean:
-	pre-commit clean
 	rm -rf ./docs
 	rm -rf ./dist
 	rm -rf ./build
