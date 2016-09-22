@@ -44,9 +44,9 @@ def call(cmd, assert_output=False, **kwargs):
     if assert_output:
         line = None
         for raw_line in subprocess.Popen(cmd, stdout=subprocess.PIPE, **kwargs).stdout.readlines():
-            line = raw_line.rstrip()
+            line = raw_line.rstrip().decode(sys.stdout.encoding)
             print(line)
-        assert line == b"<success>"
+        assert line == "<success>"
     else:
         subprocess.check_call(cmd, **kwargs)
 

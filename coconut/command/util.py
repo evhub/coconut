@@ -115,13 +115,16 @@ def try_eval(code, in_vars):
 @contextmanager
 def ensure_minimum_process_time():
     """Ensures minimum_process_time has elapsed."""
-    start = time.time()
-    try:
+    if sys.version_info < (3, 3):
+        start = time.time()
+        try:
+            yield
+        finally:
+            elapsed = time.time() - start
+            if elapsed < minimum_process_time:
+                time.sleep(minimum_process_time - elapsed)
+    else:
         yield
-    finally:
-        elapsed = time.time() - start
-        if elapsed < minimum_process_time:
-            time.sleep(minimum_process_time - elapsed)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CLASSES:
