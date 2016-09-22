@@ -1,12 +1,18 @@
-.PHONY: install dev clean docs build
+.PHONY: install dev format clean docs build
 
 install:
 	pip install --upgrade .[all]
 
 dev:
 	pip install --upgrade -e .[dev]
+	pre-commit install
+
+format:
+	pre-commit autoupdate
+	pre-commit run
 
 clean:
+	pre-commit clean
 	rm -rf ./docs
 	rm -rf ./dist
 	rm -rf ./build
