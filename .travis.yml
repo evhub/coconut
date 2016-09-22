@@ -103,7 +103,7 @@ matrix:
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
         - pushd ..
-        - pip install -r requirements-jupyter.txt
+        - pip install -r reqs/requirements-jupyter.txt
         - pip install .
         - popd
         - git clone https://github.com/evhub/prisoner.git
@@ -195,7 +195,7 @@ matrix:
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
         - pushd ..
-        - pip install -r requirements-jupyter.txt
+        - pip install -r reqs/requirements-jupyter.txt
         - pip install .
         - popd
         - git clone https://github.com/evhub/prisoner.git
@@ -379,7 +379,7 @@ matrix:
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
         - pushd ..
-        - pip install -r requirements-jupyter.txt
+        - pip install -r reqs/requirements-jupyter.txt
         - pip install .
         - popd
         - git clone https://github.com/evhub/prisoner.git
@@ -471,7 +471,7 @@ matrix:
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
         - pushd ..
-        - pip install -r requirements-jupyter.txt
+        - pip install -r reqs/requirements-jupyter.txt
         - pip install .
         - popd
         - git clone https://github.com/evhub/prisoner.git
@@ -563,7 +563,7 @@ matrix:
         - git clone https://github.com/evhub/cocotest.git
         - cd cocotest
         - pushd ..
-        - pip install -r requirements-jupyter.txt
+        - pip install -r reqs/requirements-jupyter.txt
         - pip install .
         - popd
         - git clone https://github.com/evhub/prisoner.git
