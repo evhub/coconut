@@ -40,10 +40,11 @@ dest = os.path.join(base, "dest")
 
 def call(cmd, assert_output=False, **kwargs):
     """Executes a shell command."""
-    print("\n>", " ".join(cmd))
+    print("\n>", (cmd if isinstance(cmd, str) else " ".join(cmd)))
     if assert_output:
-        for line in subprocess.Popen(cmd, stdout=subprocess.PIPE, **kwargs).stdout.readlines():
-            line = line.rstrip()
+        line = None
+        for raw_line in subprocess.Popen(cmd, stdout=subprocess.PIPE, **kwargs).stdout.readlines():
+            line = raw_line.rstrip()
             print(line)
         assert line == b"<success>"
     else:
@@ -179,7 +180,7 @@ def run_pyston():
 # TESTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-coconut_snip = r'''msg = '<success>'; pmsg = print\$(msg); `pmsg`'''
+coconut_snip = "msg = '<success>'; pmsg = print$(msg); `pmsg`"
 
 
 class TestShell(unittest.TestCase):
@@ -188,15 +189,15 @@ class TestShell(unittest.TestCase):
         call(["coconut", "-s", "--code", coconut_snip], assert_output=True)
 
     def test_pipe(self):
-        call(r'echo "' + coconut_snip + '" | coconut -s', shell=True, assert_output=True)
+        call(r'echo "' + coconut_snip.replace("$", "\\$") + '" | coconut -s', shell=True, assert_output=True)
 
     def test_convenience(self):
-        call(["python", "-c", 'from coconut.convenience import parse; exec(parse("' + coconut_snip + '"))'])
+        call(["python", "-c", 'from coconut.convenience import parse; exec(parse("' + coconut_snip + '"))'], assert_output=True)
 
     if IPY:
 
         def test_ipython(self):
-            call(["ipython", "--ext", "coconut", "-c", '%coconut ' + coconut_snip])
+            call(["ipython", "--ext", "coconut", "-c", '%coconut ' + coconut_snip], assert_output=True)
 
         def test_jupyter(self):
             call(["coconut", "--jupyter"])
