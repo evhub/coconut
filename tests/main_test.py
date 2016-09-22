@@ -8,7 +8,7 @@
 """
 Authors: Evan Hubinger, Fred Buchanan
 License: Apache 2.0
-Description: Runs Coconut tests.
+Description: Main Coconut tests.
 """
 
 #-----------------------------------------------------------------------------------------------------------------------

@@ -15,7 +15,7 @@ python:
   - "pypy3"
 
 install:
-  - pip install -r ./reqs/requirements-tests.txt
+  - pip install "pip==7.1.2"
   - make
 
 script:

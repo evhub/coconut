@@ -8,7 +8,7 @@
 """
 Author: Evan Hubinger
 License: Apache 2.0
-Description: Starts the Coconut command line utility.
+Description: Runs Coconut's tests.
 """
 
 #-----------------------------------------------------------------------------------------------------------------------

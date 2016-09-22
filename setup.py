@@ -171,20 +171,16 @@ if PY2:
 
 extras = {
     "watch": read_reqs("watch"),
+    "tests": read_reqs("tests"),
 }
 
-if (PY2 and not PY26) or (not PY2 and sys.version_info >= (3, 3)):
-    extras["jupyter"] = extras["ipython"] = read_reqs("jupyter")
+extras["jupyter"] = extras["ipython"] = read_reqs("jupyter")
 
 extras["all"] = all_reqs_in(extras)
 
 extras["docs"] = read_reqs("docs")
 
-extras["dev"] = uniqueify(
-    all_reqs_in(extras)
-    + read_reqs("tests")
-    + read_reqs("dev")
-)
+extras["dev"] = uniqueify(all_reqs_in(extras) + read_reqs("dev"))
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
