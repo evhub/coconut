@@ -31,21 +31,21 @@ from contextlib import contextmanager
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
 
-base = os.path.dirname(os.path.abspath(__file__))
+base = os.path.dirname(os.path.relpath(__file__))
 src = os.path.join(base, "src")
 dest = os.path.join(base, "dest")
 
 
 def call(cmd, assert_output=False):
     """Executes a shell command."""
-    print(">", " ".join(cmd))
+    print("\n>", " ".join(cmd))
     if assert_output:
         for line in subprocess.Popen(cmd, stdout=subprocess.PIPE).stdout.readlines():
+            line = line.rstrip()
             print(line)
-        assert line == "<success>\n"
+        assert line == b"<success>"
     else:
         subprocess.check_call(cmd)
-    print()
 
 
 def comp(path=None, folder=None, file=None, args=[]):
