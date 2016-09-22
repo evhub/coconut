@@ -25,7 +25,7 @@ import subprocess
 import traceback
 from contextlib import contextmanager
 
-from coconut.compiler import Compiler, gethash
+from coconut.compiler import Compiler
 from coconut.exceptions import (
     CoconutException,
     CoconutInternalException,
@@ -52,6 +52,7 @@ from coconut.command.util import (
     multiprocess_wrapper,
     Prompt,
 )
+from coconut.compiler.header import gethash
 from coconut.command.cli import arguments
 
 #-----------------------------------------------------------------------------------------------------------------------
