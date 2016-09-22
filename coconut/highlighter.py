@@ -16,10 +16,10 @@ Description: Syntax highlighting for Coconut code.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from coconut.root import *
+from coconut.root import *  # NOQA
 
 from pygments.lexers import Python3Lexer, PythonConsoleLexer
-from pygments.token import Text, Comment, Operator, Keyword, Name, String, Number, Punctuation, Generic, Other, Error
+from pygments.token import Text, Operator, Keyword, Name, Number
 from pygments.lexer import words, bygroups
 
 from coconut.constants import (
@@ -35,10 +35,12 @@ from coconut.constants import (
 # LEXERS:
 #-----------------------------------------------------------------------------------------------------------------------
 
+
 def lenient_add_filter(self, *args, **kwargs):
     """Disables the raiseonerror filter."""
     if len(args) >= 1 and args[0] != "raiseonerror":
         self.original_add_filter(*args, **kwargs)
+
 
 class CoconutPythonLexer(Python3Lexer):
     """Coconut-style Python syntax highlighter."""
@@ -51,6 +53,7 @@ class CoconutPythonLexer(Python3Lexer):
         Python3Lexer.__init__(self, stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=default_encoding)
         self.original_add_filter, self.add_filter = self.add_filter, lenient_add_filter
 
+
 class CoconutPythonConsoleLexer(PythonConsoleLexer):
     """Coconut-style Python console syntax highlighter."""
     name = "coconut_pycon"
@@ -62,11 +65,12 @@ class CoconutPythonConsoleLexer(PythonConsoleLexer):
         PythonConsoleLexer.__init__(self, stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=default_encoding, python3=python3)
         self.original_add_filter, self.add_filter = self.add_filter, lenient_add_filter
 
+
 class CoconutLexer(Python3Lexer):
     """Coconut syntax highlighter."""
     name = "coconut"
     aliases = ["coconut", "coco", "coc"]
-    filenames = ["*"+ext for ext in code_exts]
+    filenames = ["*" + ext for ext in code_exts]
 
     tokens = Python3Lexer.tokens.copy()
     tokens["root"] = [

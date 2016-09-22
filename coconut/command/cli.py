@@ -16,7 +16,7 @@ Description: Defines arguments for the Coconut CLI.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from coconut.root import *
+from coconut.root import *  # NOQA
 
 import argparse
 
@@ -163,7 +163,7 @@ arguments.add_argument(
     "--recursion-limit", "--recursionlimit",
     metavar="limit",
     type=int,
-    help="set maximum recursion depth in compiler (defaults to "+str(default_recursion_limit)+")")
+    help="set maximum recursion depth in compiler (defaults to " + str(default_recursion_limit) + ")")
 
 arguments.add_argument(
     "--verbose",

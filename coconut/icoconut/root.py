@@ -16,7 +16,7 @@ Description: The Coconut IPython kernel.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from coconut.root import *
+from coconut.root import *  # NOQA
 
 import sys
 try:
@@ -47,9 +47,10 @@ from coconut.constants import (
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
 
+
 class fakefile(StringIO):
     """A file-like object wrapper around a messaging function."""
-    encoding = default_encoding # from coconut.compiler
+    encoding = default_encoding  # from coconut.compiler
 
     def __init__(self, send):
         """Initialize with a messaging function."""
@@ -76,6 +77,7 @@ class fakefile(StringIO):
         """Write lines to the messaging function."""
         StringIO.writelines(self, *args, **kwargs)
         self._refresh()
+
 
 def get_name(code, cursor_pos, get_bounds=False):
     """Extract the name of the object in code at cursor_pos."""
@@ -109,11 +111,12 @@ def get_name(code, cursor_pos, get_bounds=False):
 # KERNEL:
 #-----------------------------------------------------------------------------------------------------------------------
 
-comp = Compiler(target="sys") # from coconut.compiler
+comp = Compiler(target="sys")  # from coconut.compiler
+
 
 class CoconutKernel(Kernel):
     """Jupyter kernel for Coconut."""
-    _runner = None # current ..command.Runner
+    _runner = None  # current ..command.Runner
     implementation = "icoconut"
     implementation_version = VERSION
     language = "coconut"
@@ -146,7 +149,7 @@ class CoconutKernel(Kernel):
             message = {
                 "name": "stderr" if debug else "stdout",
                 "text": text
-                }
+            }
             self.send_response(self.iopub_socket, "stream", message)
 
     def _setup(self, force=False):
@@ -209,7 +212,7 @@ class CoconutKernel(Kernel):
             elif comp.should_indent(code):
                 return {
                     "status": "incomplete",
-                    "indent": " "*tabideal
+                    "indent": " " * tabideal
                 }
             else:
                 return {
@@ -244,8 +247,8 @@ class CoconutKernel(Kernel):
         self._setup()
         test_name, cursor_start, cursor_end = get_name(code, cursor_pos, True)
         matches = []
-        if cursor_start > 1 and code[cursor_start-1] == "." and code[cursor_start-2] in varchars:
-            obj_name = get_name(code, cursor_start-1)
+        if cursor_start > 1 and code[cursor_start - 1] == "." and code[cursor_start - 2] in varchars:
+            obj_name = get_name(code, cursor_start - 1)
             if obj_name in self._runner.vars:
                 for var_name in dir(self._runner.vars[obj_name]):
                     if var_name.startswith(test_name) and not var_name.startswith(reserved_prefix):

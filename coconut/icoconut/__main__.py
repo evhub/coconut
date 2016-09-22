@@ -20,13 +20,16 @@ import sys
 import os.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from coconut.icoconut.root import *
+from coconut.root import *  # NOQA
+
+from coconut.icoconut import CoconutKernel
 
 from ipykernel.kernelapp import IPKernelApp
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
 #-----------------------------------------------------------------------------------------------------------------------
+
 
 def main():
     """Launch the kernel app."""

@@ -23,7 +23,7 @@ Description: Defines the Coconut grammar.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from coconut.root import *
+from coconut.root import *  # NOQA
 
 import re
 from contextlib import contextmanager
@@ -76,7 +76,6 @@ from coconut.compiler.util import (
     parenwrap,
     tokenlist,
     itemlist,
-    split_leading_indent,
 )
 
 # end: IMPORTS
@@ -92,6 +91,7 @@ ParserElement.setDefaultWhitespaceChars(default_whitespace_chars)
 # HANDLERS:
 #-----------------------------------------------------------------------------------------------------------------------
 
+
 def add_paren_handle(tokens):
     """Adds parentheses."""
     if len(tokens) == 1:
@@ -99,14 +99,16 @@ def add_paren_handle(tokens):
     else:
         raise CoconutInternalException("invalid tokens for parentheses adding", tokens)
 
+
 def attr_handle(tokens):
     """Processes attrgetter literals."""
     if len(tokens) == 1:
-        return '_coconut.operator.attrgetter("'+tokens[0]+'")'
+        return '_coconut.operator.attrgetter("' + tokens[0] + '")'
     elif len(tokens) == 2:
-        return '_coconut.operator.methodcaller("'+tokens[0]+'", '+tokens[1]+")"
+        return '_coconut.operator.methodcaller("' + tokens[0] + '", ' + tokens[1] + ")"
     else:
         raise CoconutInternalException("invalid attrgetter literal tokens", tokens)
+
 
 def lazy_list_handle(tokens):
     """Processes lazy lists."""
@@ -114,7 +116,8 @@ def lazy_list_handle(tokens):
         return "_coconut.iter(())"
     else:
         return ("(" + lazy_item_var + "() for " + lazy_item_var + " in ("
-            + "lambda: " + ", lambda: ".join(tokens) + ("," if len(tokens) == 1 else "") + "))")
+                + "lambda: " + ", lambda: ".join(tokens) + ("," if len(tokens) == 1 else "") + "))")
+
 
 def chain_handle(tokens):
     """Processes chain calls."""
@@ -123,14 +126,17 @@ def chain_handle(tokens):
     else:
         return "_coconut.itertools.chain.from_iterable(" + lazy_list_handle(tokens) + ")"
 
+
 def infix_error(tokens):
     """Raises inner infix error."""
     raise CoconutInternalException("invalid inner infix tokens", tokens)
+
 
 def infix_handle(tokens):
     """Processes infix calls."""
     func, args = get_infix_items(tokens, infix_handle)
     return "(" + func + ")(" + ", ".join(args) + ")"
+
 
 def get_infix_items(tokens, callback=infix_error):
     """Performs infix token processing."""
@@ -143,17 +149,19 @@ def get_infix_items(tokens, callback=infix_error):
         for item in tokens[2]:
             items.append(item)
         if len(tokens) > 3:
-            items.append(callback([[]]+tokens[3:]))
+            items.append(callback([[]] + tokens[3:]))
         args = []
         for arg in items:
             if arg:
                 args.append(arg)
         return tokens[1], args
 
+
 def op_funcdef_handle(tokens):
     """Processes infix defs."""
     func, args = get_infix_items(tokens)
     return func + "(" + ", ".join(args) + ")"
+
 
 def pipe_handle(tokens):
     """Processes pipe calls."""
@@ -173,6 +181,7 @@ def pipe_handle(tokens):
         else:
             raise CoconutInternalException("invalid pipe operator", op)
 
+
 def lambdef_handle(tokens):
     """Processes lambda calls."""
     if len(tokens) == 0:
@@ -182,6 +191,7 @@ def lambdef_handle(tokens):
     else:
         raise CoconutInternalException("invalid lambda tokens", tokens)
 
+
 def math_funcdef_suite_handle(original, location, tokens):
     """Processes assignment function definiton suites."""
     if len(tokens) < 1:
@@ -189,12 +199,14 @@ def math_funcdef_suite_handle(original, location, tokens):
     else:
         return "\n" + openindent + "".join(tokens[:-1]) + "return " + tokens[-1] + closeindent
 
+
 def math_funcdef_handle(tokens):
     """Processes assignment function definition."""
     if len(tokens) == 2:
         return tokens[0] + ("" if tokens[1].startswith("\n") else " ") + tokens[1]
     else:
         raise CoconutInternalException("invalid assignment function definition tokens")
+
 
 def data_handle(tokens):
     """Processes data blocks."""
@@ -227,20 +239,22 @@ def data_handle(tokens):
     out += closeindent
     return out
 
+
 def decorator_handle(tokens):
     """Processes decorators."""
     defs = []
     decorates = []
     for x in range(len(tokens)):
         if "simple" in tokens[x].keys() and len(tokens[x]) == 1:
-            decorates.append("@"+tokens[x][0])
+            decorates.append("@" + tokens[x][0])
         elif "test" in tokens[x].keys() and len(tokens[x]) == 1:
             varname = decorator_var + "_" + str(x)
-            defs.append(varname+" = "+tokens[x][0])
-            decorates.append("@"+varname)
+            defs.append(varname + " = " + tokens[x][0])
+            decorates.append("@" + varname)
         else:
             raise CoconutInternalException("invalid decorator tokens", tokens[x])
     return "\n".join(defs + decorates) + "\n"
+
 
 def else_handle(tokens):
     """Processes compound else statements."""
@@ -248,6 +262,7 @@ def else_handle(tokens):
         return "\n" + openindent + tokens[0] + closeindent
     else:
         raise CoconutInternalException("invalid compound else statement tokens", tokens)
+
 
 class Matcher(object):
     """Pattern-matching processor."""
@@ -275,7 +290,7 @@ class Matcher(object):
         "defs",
         "names",
         "others"
-        )
+    )
 
     def __init__(self, checkdefs=None, names=None):
         """Creates the matcher."""
@@ -298,7 +313,7 @@ class Matcher(object):
     def duplicate(self):
         """Duplicates the matcher to others."""
         self.others.append(Matcher(self.checkdefs, self.names))
-        self.others[-1].set_checks(0, ["not "+match_check_var] + self.others[-1].get_checks(0))
+        self.others[-1].set_checks(0, ["not " + match_check_var] + self.others[-1].get_checks(0))
         return self.others[-1]
 
     def get_checks(self, position):
@@ -349,14 +364,14 @@ class Matcher(object):
 
     def increment(self, forall=False):
         """Advances the if-statement position."""
-        self.set_position(self.position+1)
+        self.set_position(self.position + 1)
         if forall:
             for other in self.others:
                 other.increment(True)
 
     def decrement(self, forall=False):
         """Decrements the if-statement position."""
-        self.set_position(self.position-1)
+        self.set_position(self.position - 1)
         if forall:
             for other in self.others:
                 other.decrement(True)
@@ -372,12 +387,12 @@ class Matcher(object):
             match = original[0]
         else:
             raise CoconutInternalException("invalid dict match tokens", original)
-        self.checks.append("_coconut.isinstance("+item+", _coconut.abc.Mapping)")
-        self.checks.append("_coconut.len("+item+") == "+str(len(match)))
+        self.checks.append("_coconut.isinstance(" + item + ", _coconut.abc.Mapping)")
+        self.checks.append("_coconut.len(" + item + ") == " + str(len(match)))
         for x in range(len(match)):
-            k,v = match[x]
-            self.checks.append(k+" in "+item)
-            self.match(v, item+"["+k+"]")
+            k, v = match[x]
+            self.checks.append(k + " in " + item)
+            self.match(v, item + "[" + k + "]")
 
     def match_sequence(self, original, item, typecheck=True):
         """Matches a sequence."""
@@ -387,23 +402,23 @@ class Matcher(object):
         else:
             series_type, match, tail = original
         if typecheck:
-            self.checks.append("_coconut.isinstance("+item+", _coconut.abc.Sequence)")
+            self.checks.append("_coconut.isinstance(" + item + ", _coconut.abc.Sequence)")
         if tail is None:
-            self.checks.append("_coconut.len("+item+") == "+str(len(match)))
+            self.checks.append("_coconut.len(" + item + ") == " + str(len(match)))
         else:
-            self.checks.append("_coconut.len("+item+") >= "+str(len(match)))
+            self.checks.append("_coconut.len(" + item + ") >= " + str(len(match)))
             if len(match):
-                splice = "["+str(len(match))+":]"
+                splice = "[" + str(len(match)) + ":]"
             else:
                 splice = ""
             if series_type == "(":
-                self.defs.append(tail+" = _coconut.tuple("+item+splice+")")
+                self.defs.append(tail + " = _coconut.tuple(" + item + splice + ")")
             elif series_type == "[":
-                self.defs.append(tail+" = _coconut.list("+item+splice+")")
+                self.defs.append(tail + " = _coconut.list(" + item + splice + ")")
             else:
                 raise CoconutInternalException("invalid series match type", series_type)
         for x in range(len(match)):
-            self.match(match[x], item+"["+str(x)+"]")
+            self.match(match[x], item + "[" + str(x) + "]")
 
     def get_iter_var(self):
         """Gets the next match_iter_var."""
@@ -418,17 +433,17 @@ class Matcher(object):
             _, match = original
         else:
             _, match, tail = original
-        self.checks.append("_coconut.isinstance("+item+", _coconut.abc.Iterable)")
+        self.checks.append("_coconut.isinstance(" + item + ", _coconut.abc.Iterable)")
         itervar = self.get_iter_var()
         if tail is None:
-            self.defs.append(itervar+" = _coconut.tuple("+item+")")
+            self.defs.append(itervar + " = _coconut.tuple(" + item + ")")
         else:
-            self.defs.append(tail+" = _coconut.iter("+item+")")
-            self.defs.append(itervar+" = _coconut.tuple(_coconut_igetitem("+tail+", _coconut.slice(None, "+str(len(match))+")))")
+            self.defs.append(tail + " = _coconut.iter(" + item + ")")
+            self.defs.append(itervar + " = _coconut.tuple(_coconut_igetitem(" + tail + ", _coconut.slice(None, " + str(len(match)) + ")))")
         with self.incremented():
-            self.checks.append("_coconut.len("+itervar+") == "+str(len(match)))
+            self.checks.append("_coconut.len(" + itervar + ") == " + str(len(match)))
             for x in range(len(match)):
-                self.match(match[x], itervar+"["+str(x)+"]")
+                self.match(match[x], itervar + "[" + str(x) + "]")
 
     def match_star(self, original, item):
         """Matches starred assignment."""
@@ -442,83 +457,83 @@ class Matcher(object):
                 head_match, middle = original
         else:
             head_match, middle, last_match = original
-        self.checks.append("_coconut.isinstance("+item+", _coconut.abc.Iterable)")
+        self.checks.append("_coconut.isinstance(" + item + ", _coconut.abc.Iterable)")
         if head_match is None and last_match is None:
-            self.defs.append(middle+" = _coconut.list("+item+")")
+            self.defs.append(middle + " = _coconut.list(" + item + ")")
         else:
             itervar = self.get_iter_var()
-            self.defs.append(itervar+" = _coconut.list("+item+")")
+            self.defs.append(itervar + " = _coconut.list(" + item + ")")
             with self.incremented():
                 req_length = (len(head_match) if head_match is not None else 0) + (len(last_match) if last_match is not None else 0)
-                self.checks.append("_coconut.len("+itervar+") >= "+str(req_length))
+                self.checks.append("_coconut.len(" + itervar + ") >= " + str(req_length))
                 head_splice = str(len(head_match)) if head_match is not None else ""
-                last_splice = "-"+str(len(last_match)) if last_match is not None else ""
-                self.defs.append(middle+" = "+itervar+"["+head_splice+":"+last_splice+"]")
+                last_splice = "-" + str(len(last_match)) if last_match is not None else ""
+                self.defs.append(middle + " = " + itervar + "[" + head_splice + ":" + last_splice + "]")
                 if head_match is not None:
                     for x in range(len(head_match)):
-                        self.match(head_match[x], itervar+"["+str(x)+"]")
+                        self.match(head_match[x], itervar + "[" + str(x) + "]")
                 if last_match is not None:
-                    for x in range(1, len(last_match)+1):
-                        self.match(last_match[-x], itervar+"[-"+str(x)+"]")
+                    for x in range(1, len(last_match) + 1):
+                        self.match(last_match[-x], itervar + "[-" + str(x) + "]")
 
     def match_rsequence(self, original, item):
         """Matches a reverse sequence."""
         front, series_type, match = original
-        self.checks.append("_coconut.isinstance("+item+", _coconut.abc.Sequence)")
-        self.checks.append("_coconut.len("+item+") >= "+str(len(match)))
+        self.checks.append("_coconut.isinstance(" + item + ", _coconut.abc.Sequence)")
+        self.checks.append("_coconut.len(" + item + ") >= " + str(len(match)))
         if len(match):
-            splice = "[:"+str(-len(match))+"]"
+            splice = "[:" + str(-len(match)) + "]"
         else:
             splice = ""
         if series_type == "(":
-            self.defs.append(front+" = _coconut.tuple("+item+splice+")")
+            self.defs.append(front + " = _coconut.tuple(" + item + splice + ")")
         elif series_type == "[":
-            self.defs.append(front+" = _coconut.list("+item+splice+")")
+            self.defs.append(front + " = _coconut.list(" + item + splice + ")")
         else:
             raise CoconutInternalException("invalid series match type", series_type)
         for x in range(len(match)):
-            self.match(match[x], item+"["+str(x-len(match))+"]")
+            self.match(match[x], item + "[" + str(x - len(match)) + "]")
 
     def match_msequence(self, original, item):
         """Matches a middle sequence."""
         series_type, head_match, middle, _, last_match = original
-        self.checks.append("_coconut.isinstance("+item+", _coconut.abc.Sequence)")
-        self.checks.append("_coconut.len("+item+") >= "+str(len(head_match) + len(last_match)))
+        self.checks.append("_coconut.isinstance(" + item + ", _coconut.abc.Sequence)")
+        self.checks.append("_coconut.len(" + item + ") >= " + str(len(head_match) + len(last_match)))
         if len(head_match) and len(last_match):
-            splice = "["+str(len(head_match))+":"+str(-len(last_match))+"]"
+            splice = "[" + str(len(head_match)) + ":" + str(-len(last_match)) + "]"
         elif len(head_match):
-            splice = "["+str(len(head_match))+":]"
+            splice = "[" + str(len(head_match)) + ":]"
         elif len(last_match):
-            splice = "[:"+str(-len(last_match))+"]"
+            splice = "[:" + str(-len(last_match)) + "]"
         else:
             splice = ""
         if series_type == "(":
-            self.defs.append(middle+" = _coconut.tuple("+item+splice+")")
+            self.defs.append(middle + " = _coconut.tuple(" + item + splice + ")")
         elif series_type == "[":
-            self.defs.append(middle+" = _coconut.list("+item+splice+")")
+            self.defs.append(middle + " = _coconut.list(" + item + splice + ")")
         else:
             raise CoconutInternalException("invalid series match type", series_type)
         for x in range(len(head_match)):
-            self.match(head_match[x], item+"["+str(x)+"]")
+            self.match(head_match[x], item + "[" + str(x) + "]")
         for x in range(len(last_match)):
-            self.match(last_match[x], item+"["+str(x-len(last_match))+"]")
+            self.match(last_match[x], item + "[" + str(x - len(last_match)) + "]")
 
     def match_const(self, original, item):
         """Matches a constant."""
         (match,) = original
         if match in const_vars:
-            self.checks.append(item+" is "+match)
+            self.checks.append(item + " is " + match)
         else:
-            self.checks.append(item+" == "+match)
+            self.checks.append(item + " == " + match)
 
     def match_var(self, original, item):
         """Matches a variable."""
         (setvar,) = original
         if setvar != wildcard:
             if setvar in self.names:
-                self.checks.append(self.names[setvar]+" == "+item)
+                self.checks.append(self.names[setvar] + " == " + item)
             else:
-                self.defs.append(setvar+" = "+item)
+                self.defs.append(setvar + " = " + item)
                 self.names[setvar] = item
 
     def match_set(self, original, item):
@@ -527,18 +542,18 @@ class Matcher(object):
             match = original[0]
         else:
             raise CoconutInternalException("invalid set match tokens", original)
-        self.checks.append("_coconut.isinstance("+item+", _coconut.abc.Set)")
-        self.checks.append("_coconut.len("+item+") == "+str(len(match)))
+        self.checks.append("_coconut.isinstance(" + item + ", _coconut.abc.Set)")
+        self.checks.append("_coconut.len(" + item + ") == " + str(len(match)))
         for const in match:
-            self.checks.append(const+" in "+item)
+            self.checks.append(const + " in " + item)
 
     def match_data(self, original, item):
         """Matches a data type."""
         data_type, match = original
-        self.checks.append("_coconut.isinstance("+item+", "+data_type+")")
-        self.checks.append("_coconut.len("+item+") == "+str(len(match)))
+        self.checks.append("_coconut.isinstance(" + item + ", " + data_type + ")")
+        self.checks.append("_coconut.len(" + item + ") == " + str(len(match)))
         for x in range(len(match)):
-            self.match(match[x], item+"["+str(x)+"]")
+            self.match(match[x], item + "[" + str(x) + "]")
 
     def match_paren(self, original, item):
         """Matches a paren."""
@@ -552,14 +567,14 @@ class Matcher(object):
         else:
             match, trailers = original[0], original[1:]
             for i in range(0, len(trailers), 2):
-                op, arg = trailers[i], trailers[i+1]
+                op, arg = trailers[i], trailers[i + 1]
                 if op == "is":
-                    self.checks.append("_coconut.isinstance("+item+", "+arg+")")
+                    self.checks.append("_coconut.isinstance(" + item + ", " + arg + ")")
                 elif op == "as":
                     if arg in self.names:
-                        self.checks.append(self.names[arg]+" == "+item)
+                        self.checks.append(self.names[arg] + " == " + item)
                     elif arg != wildcard:
-                        self.defs.append(arg+" = "+item)
+                        self.defs.append(arg + " = " + item)
                         self.names[arg] = item
                 else:
                     raise CoconutInternalException("invalid trailer match operation", op)
@@ -598,6 +613,7 @@ class Matcher(object):
             out += other.out()
         return out
 
+
 def match_handle(o, l, tokens, top=True):
     """Processes match blocks."""
     if len(tokens) == 3:
@@ -617,8 +633,9 @@ def match_handle(o, l, tokens, top=True):
     out += match_to_var + " = " + item + "\n"
     out += matching.out()
     if stmts is not None:
-        out += "if "+match_check_var+":" + "\n" + openindent + "".join(stmts) + closeindent
+        out += "if " + match_check_var + ":" + "\n" + openindent + "".join(stmts) + closeindent
     return out
+
 
 def case_to_match(tokens, item):
     """Converts case tokens to match tokens."""
@@ -631,6 +648,7 @@ def case_to_match(tokens, item):
     else:
         raise CoconutInternalException("invalid case match tokens", tokens)
 
+
 def case_handle(o, l, tokens):
     """Processes case blocks."""
     if len(tokens) == 2:
@@ -642,11 +660,12 @@ def case_handle(o, l, tokens):
         raise CoconutInternalException("invalid top-level case tokens", tokens)
     out = match_handle(o, l, case_to_match(cases[0], item))
     for case in cases[1:]:
-        out += ("if not "+match_check_var+":\n" + openindent
-            + match_handle(o, l, case_to_match(case, item), top=False) + closeindent)
+        out += ("if not " + match_check_var + ":\n" + openindent
+                + match_handle(o, l, case_to_match(case, item), top=False) + closeindent)
     if default is not None:
-        out += "if not "+match_check_var+default
+        out += "if not " + match_check_var + default
     return out
+
 
 def except_handle(tokens):
     """Processes except statements."""
@@ -665,6 +684,7 @@ def except_handle(tokens):
         out += " as " + asname
     return out
 
+
 def subscriptgroup_handle(tokens):
     """Processes subscriptgroups."""
     if 0 < len(tokens) <= 3:
@@ -681,6 +701,7 @@ def subscriptgroup_handle(tokens):
     else:
         raise CoconutInternalException("invalid slice args", tokens)
 
+
 def itemgetter_handle(tokens):
     """Processes implicit itemgetter partials."""
     if len(tokens) != 2:
@@ -694,12 +715,14 @@ def itemgetter_handle(tokens):
         else:
             raise CoconutInternalException("invalid implicit itemgetter type", op)
 
+
 def class_suite_handle(tokens):
     """Processes implicit pass in class suite."""
     if len(tokens) != 1:
         raise CoconutInternalException("invalid implicit pass in class suite tokens", tokens)
     else:
         return ": pass" + tokens[0]
+
 
 def namelist_handle(tokens):
     """Handles inline nonlocal and global statements."""
@@ -710,6 +733,7 @@ def namelist_handle(tokens):
     else:
         raise CoconutInternalException("invalid in-line nonlocal / global tokens", tokens)
 
+
 def compose_item_handle(tokens):
     """Handles function composition."""
     if len(tokens) < 1:
@@ -719,6 +743,7 @@ def compose_item_handle(tokens):
     else:
         return "_coconut_compose(" + ", ".join(tokens) + ")"
 
+
 def make_suite_handle(tokens):
     """Makes simple statements into suites.
     Necessary because multiline lambdas count on every statement having its own line to work."""
@@ -727,70 +752,72 @@ def make_suite_handle(tokens):
     else:
         return "\n" + openindent + tokens[0] + closeindent
 
+
 def tco_return_handle(tokens):
     """Handles tail-call-optimizable return statements."""
     if len(tokens) != 2:
         raise CoconutInternalException("invalid tail-call-optimizable return statement tokens", tokens)
     elif tokens[1].startswith("()"):
-        return "raise _coconut_tail_call(" + tokens[0] + ")" + tokens[1][2:] # tokens[1] contains \n
+        return "raise _coconut_tail_call(" + tokens[0] + ")" + tokens[1][2:]  # tokens[1] contains \n
     else:
-        return "raise _coconut_tail_call(" + tokens[0] + ", " + tokens[1][1:] # tokens[1] contains )\n
+        return "raise _coconut_tail_call(" + tokens[0] + ", " + tokens[1][1:]  # tokens[1] contains )\n
 
 # end: HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN GRAMMAR:
 #-----------------------------------------------------------------------------------------------------------------------
 
+
 class Grammar(object):
     """Contains Coconut grammar definitions."""
 
     comma = Literal(",")
     dubstar = Literal("**")
-    star = ~dubstar+Literal("*")
+    star = ~dubstar + Literal("*")
     at = Literal("@")
     arrow = Literal("->") | fixto(Literal("\u2192"), "->")
     dubcolon = Literal("::")
     unsafe_colon = Literal(":")
-    colon = ~dubcolon+unsafe_colon
+    colon = ~dubcolon + unsafe_colon
     semicolon = Literal(";")
     eq = Literal("==")
-    equals = ~eq+Literal("=")
+    equals = ~eq + Literal("=")
     lbrack = Literal("[")
     rbrack = Literal("]")
     lbrace = Literal("{")
     rbrace = Literal("}")
-    lbanana = ~Literal("(|)")+~Literal("(|>)")+~Literal("(|*>)")+Literal("(|")
+    lbanana = ~Literal("(|)") + ~Literal("(|>)") + ~Literal("(|*>)") + Literal("(|")
     rbanana = Literal("|)")
-    lparen = ~lbanana+Literal("(")
-    rparen = ~rbanana+Literal(")")
+    lparen = ~lbanana + Literal("(")
+    rparen = ~rbanana + Literal(")")
     unsafe_dot = Literal(".")
-    dot = ~Literal("..")+unsafe_dot
+    dot = ~Literal("..") + unsafe_dot
     plus = Literal("+")
-    minus = ~Literal("->")+Literal("-")
+    minus = ~Literal("->") + Literal("-")
     dubslash = Literal("//")
-    slash = ~dubslash+Literal("/")
+    slash = ~dubslash + Literal("/")
     pipeline = Literal("|>") | fixto(Literal("\u21a6"), "|>")
     starpipe = Literal("|*>") | fixto(Literal("*\u21a6"), "|*>")
     backpipe = Literal("<|") | fixto(Literal("\u21a4"), "<|")
     backstarpipe = Literal("<*|") | fixto(Literal("\u21a4*"), "<*|")
     amp = Literal("&") | fixto(Literal("\u2227") | Literal("\u2229"), "&")
     caret = Literal("^") | fixto(Literal("\u22bb") | Literal("\u2295"), "^")
-    bar = ~Literal("|>")+~Literal("|*>")+Literal("|") | fixto(Literal("\u2228") | Literal("\u222a"), "|")
+    bar = ~Literal("|>") + ~Literal("|*>") + Literal("|") | fixto(Literal("\u2228") | Literal("\u222a"), "|")
     percent = Literal("%")
-    dotdot = ~Literal("...")+Literal("..") | fixto(Literal("\u2218"), "..")
+    dotdot = ~Literal("...") + Literal("..") | fixto(Literal("\u2218"), "..")
     dollar = Literal("$")
     ellipses = fixto(Literal("...") | Literal("\u2026"), "...")
     lshift = Literal("<<") | fixto(Literal("\xab"), "<<")
     rshift = Literal(">>") | fixto(Literal("\xbb"), ">>")
-    tilde = Literal("~") | fixto(~Literal("\xac=")+Literal("\xac"), "~")
+    tilde = Literal("~") | fixto(~Literal("\xac=") + Literal("\xac"), "~")
     underscore = Literal("_")
     pound = Literal("#")
     backtick = Literal("`")
     dubbackslash = Literal("\\\\")
-    backslash = ~dubbackslash+Literal("\\")
+    backslash = ~dubbackslash + Literal("\\")
 
-    lt = ~Literal("<<")+~Literal("<=")+Literal("<")
-    gt = ~Literal(">>")+~Literal(">=")+Literal(">")
+    lt = ~Literal("<<") + ~Literal("<=") + Literal("<")
+    gt = ~Literal(">>") + ~Literal(">=") + Literal(">")
     le = Literal("<=") | fixto(Literal("\u2264"), "<=")
     ge = Literal(">=") | fixto(Literal("\u2265"), ">=")
     ne = Literal("!=") | fixto(Literal("\xac=") | Literal("\u2260"), "!=")
@@ -799,8 +826,8 @@ class Grammar(object):
     exp_dubstar = fixto(dubstar | Literal("\u2191"), "**")
     neg_minus = fixto(minus | Literal("\u207b"), "-")
     sub_minus = fixto(minus | Literal("\u2212"), "-")
-    div_slash = fixto(slash | Literal("\xf7")+~slash, "/")
-    div_dubslash = fixto(dubslash | Combine(Literal("\xf7")+slash), "//")
+    div_slash = fixto(slash | Literal("\xf7") + ~slash, "/")
+    div_dubslash = fixto(dubslash | Combine(Literal("\xf7") + slash), "//")
     matrix_at_ref = fixto(at | Literal("\xd7"), "@")
     matrix_at = Forward()
 
@@ -877,7 +904,7 @@ class Grammar(object):
         | Combine(lshift + equals)
         | Combine(rshift + equals)
         | Combine(matrix_at + equals)
-        )
+    )
 
     comp_op = (le | ge | ne | lt | gt | eq
                | addspace(Keyword("not") + Keyword("in"))
@@ -952,23 +979,22 @@ class Grammar(object):
         dubstar + tfpdef
         | star + Optional(tfpdef)
         | tfpdef + Optional(default)
-        ), comma)), "argslist")
+    ), comma)), "argslist")
     varargslist = trace(Optional(itemlist(condense(
         dubstar + name
         | star + Optional(name)
         | name + Optional(default)
-        ), comma)), "varargslist")
+    ), comma)), "varargslist")
     parameters = condense(lparen + argslist + rparen)
 
     callargslist = Optional(trace(
         attach(addspace(test + comp_for), add_paren_handle)
         | itemlist(condense(dubstar + test | star + test | name + default | test), comma)
-        | op_item
-        , "callargslist"))
+        | op_item, "callargslist"))
     methodcaller_args = (
         itemlist(condense(name + default | test), comma)
         | op_item
-        )
+    )
 
     slicetest = Optional(test_nochain)
     sliceop = condense(unsafe_colon + slicetest)
@@ -1007,7 +1033,7 @@ class Grammar(object):
         keyword_atom
         | number
         | string_atom
-        )
+    )
     known_atom = trace(
         const_atom
         | ellipses
@@ -1018,18 +1044,17 @@ class Grammar(object):
         | dict_item
         | set_literal
         | set_letter_literal
-        | lazy_list
-        , "known_atom")
+        | lazy_list, "known_atom")
     atom = (
         known_atom
         | passthrough_atom
         | func_atom
-        )
+    )
 
     simple_trailer = (
         condense(lbrack + subscriptlist + rbrack)
         | condense(dot + name)
-        )
+    )
     complex_trailer = (
         condense(lparen + callargslist + rparen)
         | Group(condense(dollar + lparen) + callargslist + rparen.suppress())
@@ -1038,7 +1063,7 @@ class Grammar(object):
         | Group(dollar)
         | Group(condense(lbrack + rbrack))
         | Group(~(dot + (name | lbrack)) + dot)
-        )
+    )
     trailer = simple_trailer | complex_trailer
 
     atom_item = Forward()
@@ -1131,8 +1156,8 @@ class Grammar(object):
         + (
             Group(OneOrMore(small_stmt + semicolon.suppress())) + Optional(closing_stmt)
             | Group(ZeroOrMore(small_stmt + semicolon.suppress())) + closing_stmt
-            )
         )
+    )
 
     lambdef = trace(addspace(lambdef_base + test) | stmt_lambdef, "lambdef")
     lambdef_nocond = trace(addspace(lambdef_base + test_nocond), "lambdef_nocond")
@@ -1141,15 +1166,15 @@ class Grammar(object):
     test <<= trace(lambdef | addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test)), "test")
     test_nocond <<= trace(lambdef_nocond | test_item, "test_nocond")
     test_nochain <<= trace(lambdef_nochain
-        | addspace(nochain_test_item + Optional(Keyword("if") + nochain_test_item + Keyword("else") + test_nochain)), "test_nochain")
+                           | addspace(nochain_test_item + Optional(Keyword("if") + nochain_test_item + Keyword("else") + test_nochain)), "test_nochain")
 
     classlist_ref = Optional(
         lparen.suppress() + rparen.suppress()
         | Group(
             lparen.suppress() + testlist("tests") + rparen.suppress()
             | lparen.suppress() + callargslist("args") + rparen.suppress()
-            )
         )
+    )
     class_suite = suite | attach(newline, class_suite_handle, copy=True)
     classdef = condense(addspace(Keyword("class") - name) + classlist + class_suite)
     comp_iter = Forward()
@@ -1173,16 +1198,15 @@ class Grammar(object):
     import_from_names = Group(parenwrap(lparen, tokenlist(import_as_name, comma), rparen, tokens=True))
     import_name = Keyword("import").suppress() - import_names
     import_from = (Keyword("from").suppress()
-        - condense(ZeroOrMore(unsafe_dot) + dotted_name | OneOrMore(unsafe_dot))
-        - Keyword("import").suppress() - (Group(star) | import_from_names))
+                   - condense(ZeroOrMore(unsafe_dot) + dotted_name | OneOrMore(unsafe_dot))
+                   - Keyword("import").suppress() - (Group(star) | import_from_names))
     import_stmt = Forward()
     import_stmt_ref = import_from | import_name
 
     nonlocal_stmt = Forward()
     namelist = attach(
         parenwrap(lparen, itemlist(name, comma), rparen)
-        - Optional(equals.suppress() - test_expr)
-        , namelist_handle)
+        - Optional(equals.suppress() - test_expr), namelist_handle)
     global_stmt = addspace(Keyword("global") - namelist)
     nonlocal_stmt_ref = addspace(Keyword("nonlocal") - namelist)
     del_stmt = addspace(Keyword("del") - simple_assignlist)
@@ -1231,7 +1255,7 @@ class Grammar(object):
         | star_match
         | (name + lparen.suppress() + matchlist_list + rparen.suppress())("data")
         | name("var")
-        ), "base_match")
+    ), "base_match")
     matchlist_trailer = base_match + OneOrMore(Keyword("as") + name | Keyword("is") + atom_item)
     as_match = Group(matchlist_trailer("trailer")) | base_match
     matchlist_and = as_match + OneOrMore(Keyword("and").suppress() + as_match)
@@ -1246,8 +1270,7 @@ class Grammar(object):
     match_guard = Optional(Keyword("if").suppress() + test)
     full_suite = colon.suppress() + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
     full_match = trace(attach(
-        Keyword("match").suppress() + match + Keyword("in").suppress() - test - match_guard - full_suite
-        , match_handle), "full_match")
+        Keyword("match").suppress() + match + Keyword("in").suppress() - test - match_guard - full_suite, match_handle), "full_match")
     match_stmt = condense(full_match - Optional(else_stmt))
 
     destructuring_stmt = Forward()
@@ -1255,12 +1278,11 @@ class Grammar(object):
 
     case_match = trace(Group(
         Keyword("match").suppress() - match - Optional(Keyword("if").suppress() - test) - full_suite
-        ), "case_match")
+    ), "case_match")
     case_stmt = attach(
         Keyword("case").suppress() + test - colon.suppress() - newline.suppress()
         - indent.suppress() - Group(OneOrMore(case_match))
-        - dedent.suppress() - Optional(Keyword("else").suppress() - else_suite)
-        , case_handle)
+        - dedent.suppress() - Optional(Keyword("else").suppress() - else_suite), case_handle)
 
     exec_stmt = Forward()
     assert_stmt = addspace(Keyword("assert") - testlist)
@@ -1271,23 +1293,23 @@ class Grammar(object):
     while_stmt = addspace(Keyword("while") - condense(test - suite - Optional(else_stmt)))
     for_stmt = addspace(Keyword("for") - assignlist - Keyword("in") - condense(testlist - suite - Optional(else_stmt)))
     except_clause = attach(Keyword("except").suppress() + (
-            multi_testlist("list") | test("test")
-        ) - Optional(Keyword("as").suppress() - name), except_handle)
+        multi_testlist("list") | test("test")
+    ) - Optional(Keyword("as").suppress() - name), except_handle)
     try_stmt = condense(Keyword("try") - suite + (
         Keyword("finally") - suite
         | (
             OneOrMore(except_clause - suite) - Optional(Keyword("except") - suite)
             | Keyword("except") - suite
-          ) - Optional(else_stmt) - Optional(Keyword("finally") - suite)
-        ))
+        ) - Optional(else_stmt) - Optional(Keyword("finally") - suite)
+    ))
     with_stmt = addspace(Keyword("with") - with_item_list - suite)
     exec_stmt_ref = Keyword("exec").suppress() + lparen.suppress() + test + Optional(
         comma.suppress() + test + Optional(
             comma.suppress() + test + Optional(
                 comma.suppress()
-                )
             )
-        ) + rparen.suppress()
+        )
+    ) + rparen.suppress()
 
     return_typedef = Forward()
     async_funcdef = Forward()
@@ -1314,14 +1336,11 @@ class Grammar(object):
     testlist_stmt = condense(testlist + newline)
     math_funcdef_suite = attach(
         testlist_stmt
-        | (newline - indent).suppress() - ZeroOrMore(~(testlist_stmt + dedent) + stmt) - testlist_stmt - dedent.suppress()
-        , math_funcdef_suite_handle)
+        | (newline - indent).suppress() - ZeroOrMore(~(testlist_stmt + dedent) + stmt) - testlist_stmt - dedent.suppress(), math_funcdef_suite_handle)
     math_funcdef = trace(attach(
-        condense(addspace(Keyword("def") + base_funcdef) + fixto(equals, ":", copy=True)) - math_funcdef_suite
-        , math_funcdef_handle), "math_funcdef")
+        condense(addspace(Keyword("def") + base_funcdef) + fixto(equals, ":", copy=True)) - math_funcdef_suite, math_funcdef_handle), "math_funcdef")
     math_match_funcdef = trace(
-        Optional(Keyword("match").suppress()) + condense(base_match_funcdef + equals.suppress() - math_funcdef_suite)
-        , "math_match_funcdef")
+        Optional(Keyword("match").suppress()) + condense(base_match_funcdef + equals.suppress() - math_funcdef_suite), "math_match_funcdef")
 
     async_funcdef_ref = addspace(Keyword("async") + (funcdef | math_funcdef))
     async_stmt_ref = addspace(Keyword("async") + (with_stmt | for_stmt))
@@ -1329,16 +1348,16 @@ class Grammar(object):
         (
             Optional(Keyword("match")).suppress() + Keyword("async")
             | Keyword("async") + Optional(Keyword("match")).suppress()
-            )
-        + (def_match_funcdef | math_match_funcdef)
         )
+        + (def_match_funcdef | math_match_funcdef)
+    )
 
     data_args = Optional(lparen.suppress() + Optional(itemlist(~underscore + name, comma)) + rparen.suppress())
     data_suite = Group(colon.suppress() - (
         (newline.suppress() + indent.suppress() + Optional(docstring) + Group(OneOrMore(stmt)) + dedent.suppress())("complex")
         | (newline.suppress() + indent.suppress() + docstring + dedent.suppress() | docstring)("docstring")
         | simple_stmt("simple")
-        ) | newline("empty"))
+    ) | newline("empty"))
     datadef = condense(attach(Keyword("data").suppress() + name - data_args - data_suite, data_handle))
 
     simple_decorator = condense(dotted_name + Optional(lparen + callargslist + rparen))("simple")
@@ -1350,8 +1369,7 @@ class Grammar(object):
         funcdef
         | math_funcdef
         | math_match_funcdef
-        | match_funcdef
-    , "normal_funcdef_stmt")
+        | match_funcdef, "normal_funcdef_stmt")
     async_funcdef_stmt = trace(async_funcdef | async_match_funcdef, "async_funcdef_stmt")
     funcdef_stmt = normal_funcdef_stmt | async_funcdef_stmt
     decoratable_func_stmt = trace(condense(Optional(decorators) + funcdef_stmt), "decoratable_func_stmt")
@@ -1366,8 +1384,7 @@ class Grammar(object):
         | try_stmt
         | case_stmt
         | match_stmt
-        | passthrough_stmt
-        , "simple_compound_stmt")
+        | passthrough_stmt, "simple_compound_stmt")
     compound_stmt = trace(
         decoratable_class_stmt
         | decoratable_func_stmt
@@ -1375,8 +1392,7 @@ class Grammar(object):
         | while_stmt
         | for_stmt
         | async_stmt
-        | simple_compound_stmt
-        , "compound_stmt")
+        | simple_compound_stmt, "compound_stmt")
 
     endline_semicolon = Forward()
     endline_semicolon_ref = semicolon.suppress() + newline
@@ -1388,14 +1404,12 @@ class Grammar(object):
         | global_stmt
         | nonlocal_stmt
         | assert_stmt
-        | exec_stmt
-        , "keyword_stmt")
+        | exec_stmt, "keyword_stmt")
     small_stmt <<= trace(
         keyword_stmt
         | augassign_stmt
         | (assign_stmt
-        ^ destructuring_stmt)
-    , "small_stmt")
+           ^ destructuring_stmt), "small_stmt")
     simple_stmt <<= trace(condense(
         small_stmt
         + ZeroOrMore(fixto(semicolon, "\n", copy=True) + small_stmt)
@@ -1424,10 +1438,9 @@ class Grammar(object):
     brackets = originalTextFor(nestedExpr("[", "]"))
     braces = originalTextFor(nestedExpr("{", "}"))
     tco_return = attach(
-            Keyword("return").suppress() + condense(
-                (name | parens | brackets | braces | string)
-                + ZeroOrMore(dot + name | brackets)
-            ) + parens + end_marker
-        , tco_return_handle)
+        Keyword("return").suppress() + condense(
+            (name | parens | brackets | braces | string)
+            + ZeroOrMore(dot + name | brackets)
+        ) + parens + end_marker, tco_return_handle)
 
-#end: EXTRA GRAMMAR
+# end: EXTRA GRAMMAR

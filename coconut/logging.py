@@ -16,10 +16,9 @@ Description: logger utilities.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from coconut.root import *
+from coconut.root import *  # NOQA
 
 import sys
-import os
 import traceback
 import functools
 import logging
@@ -30,7 +29,6 @@ if DEVELOP:
     from pyparsing import _trim_arity
 
 from coconut.constants import (
-    default_encoding,
     info_tabulation,
     main_sig,
     taberrfmt,
@@ -46,9 +44,11 @@ from coconut.exceptions import (
 # FUNCTIONS:
 #-----------------------------------------------------------------------------------------------------------------------
 
+
 def printerr(*args):
     """Prints to standard error."""
     print(*args, file=sys.stderr)
+
 
 def format_error(err_type, err_value, err_trace=None):
     """Properly formats the specified error."""
@@ -59,6 +59,7 @@ def format_error(err_type, err_value, err_trace=None):
     else:
         return "".join(traceback.format_exception(err_type, err_value, err_trace)).strip()
 
+
 def complain(error):
     """Raises an error in DEVELOP, otherwise does nothing."""
     if DEVELOP:
@@ -67,6 +68,7 @@ def complain(error):
 #-----------------------------------------------------------------------------------------------------------------------
 # logger:
 #-----------------------------------------------------------------------------------------------------------------------
+
 
 class Logger(object):
     """Container object for various logger functions and variables."""
@@ -151,7 +153,7 @@ class Logger(object):
             errmsg_lines = ["in " + self.path + ":"]
             for line in errmsg.splitlines():
                 if line:
-                    line = " "*taberrfmt + line
+                    line = " " * taberrfmt + line
                 errmsg_lines.append(line)
             errmsg = "\n".join(errmsg_lines)
         self.printerr(errmsg)
@@ -170,7 +172,7 @@ class Logger(object):
     def show_tabulated(self, begin, middle, end):
         """Shows a tabulated message."""
         if len(begin) < info_tabulation:
-            self.show(begin + " "*(info_tabulation - len(begin)) + middle + " " + end)
+            self.show(begin + " " * (info_tabulation - len(begin)) + middle + " " + end)
         else:
             raise CoconutInternalException("info message too long", begin)
 
@@ -184,7 +186,7 @@ class Logger(object):
                 out += ascii(tokens[0])
             else:
                 out += str(tokens)
-            out += " (line "+str(lineno(location, original))+", col "+str(col(location, original))+")"
+            out += " (line " + str(lineno(location, original)) + ", col " + str(col(location, original)) + ")"
             self.printerr(out)
 
     def trace(self, item, tag):
@@ -198,7 +200,7 @@ class Logger(object):
 
     def wrap_handler(self, handler):
         """Wraps a handler to catch errors in verbose mode (only enabled in develop)."""
-        if DEVELOP and handler.__name__ not in ("<lambda>", "join"): # not addspace, condense, or fixto
+        if DEVELOP and handler.__name__ not in ("<lambda>", "join"):  # not addspace, condense, or fixto
             @functools.wraps(handler)
             def wrapped_handler(s, l, t):
                 self.log_trace(handler.__name__, s, l, t)
@@ -207,7 +209,7 @@ class Logger(object):
                 except CoconutException:
                     raise
                 except Exception:
-                    raise CoconutInternalException("error calling handler "+handler.__name__+" with tokens", t)
+                    raise CoconutInternalException("error calling handler " + handler.__name__ + " with tokens", t)
             return wrapped_handler
         else:
             return handler

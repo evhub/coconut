@@ -20,7 +20,7 @@ import sys
 import os.path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from coconut.root import *
+from coconut.root import *  # NOQA
 
 import setuptools
 
@@ -135,12 +135,14 @@ with open("README.rst", "r") as readme_file:
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
 
+
 def read_reqs(tag=""):
     if tag:
         tag = "-" + tag
     req_file_name = "./reqs/requirements" + tag + ".txt"
     with open(req_file_name, "r") as req_file:
         return [line.strip() for line in req_file.readlines() if line]
+
 
 def all_reqs_in(req_dict):
     return list(set(req for req_list in req_dict.values() for req in req_list))
@@ -180,30 +182,30 @@ extras["dev"] = all_reqs_in(extras) + read_reqs("dev")
 #-----------------------------------------------------------------------------------------------------------------------
 
 setuptools.setup(
-    name = "coconut",
-    version = VERSION,
-    description = "Simple, elegant, Pythonic functional programming.",
-    long_description = readme,
-    url = "http://coconut-lang.org",
-    author = "Evan Hubinger",
-    author_email = "evanjhub@gmail.com",
-    install_requires = reqs,
-    extras_require = extras,
-    packages = setuptools.find_packages(exclude=[
+    name="coconut",
+    version=VERSION,
+    description="Simple, elegant, Pythonic functional programming.",
+    long_description=readme,
+    url="http://coconut-lang.org",
+    author="Evan Hubinger",
+    author_email="evanjhub@gmail.com",
+    install_requires=reqs,
+    extras_require=extras,
+    packages=setuptools.find_packages(exclude=[
         "reqs",
         "docs",
     ]),
-    include_package_data = True,
-    entry_points = {
+    include_package_data=True,
+    entry_points={
         "console_scripts": [
             "coconut = coconut.main:main",
-            ],
+        ],
         "pygments.lexers": [
             "coconut = coconut.highlighter:CoconutLexer",
             "coconut_python = coconut.highlighter:CoconutPythonLexer",
             "coconut_pycon = coconut.highlighter:CoconutPythonConsoleLexer",
-            ]
-        },
-    classifiers = classifiers,
-    keywords = search_terms,
-    )
+        ]
+    },
+    classifiers=classifiers,
+    keywords=search_terms,
+)

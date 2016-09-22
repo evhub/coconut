@@ -158,7 +158,7 @@ if PY2:
         exec(PY2_HEADER)
     else:
         exec(PY27_HEADER)
-    import __builtin__ as _coconut
+    import __builtin__ as _coconut  # NOQA
     _coconut_map = map
 else:
     exec(PY3_HEADER)

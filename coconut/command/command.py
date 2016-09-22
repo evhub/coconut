@@ -16,7 +16,7 @@ Description: The Coconut command-line utility.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from coconut.root import *
+from coconut.root import *  # NOQA
 
 import sys
 import os
@@ -28,7 +28,6 @@ from contextlib import contextmanager
 from coconut.compiler import Compiler, gethash
 from coconut.exceptions import (
     CoconutException,
-    CoconutWarning,
     CoconutInternalException,
 )
 from coconut.logging import logger
@@ -36,11 +35,8 @@ from coconut.constants import (
     code_exts,
     comp_ext,
     watch_interval,
-    version_banner,
-    version_tag,
     tutorial_url,
     documentation_url,
-    icoconut_dir,
     icoconut_kernel_dirs,
     minimum_recursion_limit,
 )
@@ -62,16 +58,17 @@ from coconut.command.cli import arguments
 # MAIN:
 #-----------------------------------------------------------------------------------------------------------------------
 
+
 class Command(object):
     """The Coconut command-line interface."""
-    comp = None # current coconut.compiler.Compiler
-    show = False # corresponds to --display flag
-    running = False # whether the interpreter is currently active
-    runner = None # the current Runner
-    target = None # corresponds to --target flag
-    jobs = None # corresponds to --jobs flag
-    executor = None # runs --jobs
-    exit_code = 0 # exit status to return
+    comp = None  # current coconut.compiler.Compiler
+    show = False  # corresponds to --display flag
+    running = False  # whether the interpreter is currently active
+    runner = None  # the current Runner
+    target = None  # corresponds to --target flag
+    jobs = None  # corresponds to --jobs flag
+    executor = None  # runs --jobs
+    exit_code = 0  # exit status to return
 
     def __init__(self):
         """Creates the CLI."""
@@ -126,12 +123,12 @@ class Command(object):
             self.show = True
 
         self.setup(
-            target = args.target,
-            strict = args.strict,
-            minify = args.minify,
-            line_numbers = args.line_numbers,
-            keep_lines = args.keep_lines,
-            )
+            target=args.target,
+            strict=args.strict,
+            minify=args.minify,
+            line_numbers=args.line_numbers,
+            keep_lines=args.keep_lines,
+        )
 
         if args.source is not None:
             if args.run and os.path.isdir(args.source):
@@ -140,9 +137,9 @@ class Command(object):
                 raise CoconutException("source path must point to directory not file when --watch is enabled")
             if args.dest is None:
                 if args.nowrite:
-                    dest = None # no dest
+                    dest = None  # no dest
                 else:
-                    dest = True # auto-generate dest
+                    dest = True  # auto-generate dest
             elif args.nowrite:
                 raise CoconutException("destination path cannot be given when --nowrite is enabled")
             elif os.path.isfile(args.dest):
@@ -156,7 +153,7 @@ class Command(object):
             elif args.standalone:
                 package = False
             else:
-                package = None # auto-decide package
+                package = None  # auto-decide package
 
             with self.running_jobs():
                 self.compile_path(args.source, dest, package, args.run, args.force)
@@ -171,7 +168,7 @@ class Command(object):
 
         if args.code is not None:
             self.execute(self.comp.parse_block(args.code))
-        stdin = not sys.stdin.isatty() # check if input was piped in
+        stdin = not sys.stdin.isatty()  # check if input was piped in
         if stdin:
             self.execute(self.comp.parse_block(sys.stdin.read()))
         if args.jupyter is not None:
@@ -184,7 +181,7 @@ class Command(object):
                 or args.documentation
                 or args.watch
                 or args.jupyter is not None
-                )):
+        )):
             self.start_prompt()
         if args.watch:
             self.watch(args.source, dest, package, args.run, args.force)
@@ -229,10 +226,10 @@ class Command(object):
                 if os.path.splitext(filename)[1] in code_exts:
                     self.compile_file(os.path.join(dirpath, filename), writedir, package, run, force)
             for name in dirnames[:]:
-                if name != "."*len(name) and name.startswith("."):
+                if name != "." * len(name) and name.startswith("."):
                     if logger.verbose:
                         logger.show_tabulated("Skipped directory", name, "(explicitly pass as source to override).")
-                    dirnames.remove(name) # directories removed from dirnames won't appear in further os.walk iteration
+                    dirnames.remove(name)  # directories removed from dirnames won't appear in further os.walk iteration
 
     def compile_file(self, filepath, write=True, package=False, run=False, force=False):
         """Compiles a file."""
@@ -248,7 +245,7 @@ class Command(object):
                 ext = comp_ext
             destpath = base + ext
         if filepath == destpath:
-            raise CoconutException("cannot compile "+showpath(filepath)+" to itself (incorrect file extension)")
+            raise CoconutException("cannot compile " + showpath(filepath) + " to itself (incorrect file extension)")
         else:
             self.compile(filepath, destpath, package, run, force)
 
@@ -305,12 +302,13 @@ class Command(object):
                 callback(getattr(self.comp, method)(*args, **kwargs))
         else:
             path = showpath(path)
-            with logger.in_path(path): # pickle the compiler in the path context
+            with logger.in_path(path):  # pickle the compiler in the path context
                 future = self.executor.submit(multiprocess_wrapper(self.comp, method), *args, **kwargs)
+
             def callback_wrapper(completed_future):
                 """Ensures that all errors are always caught, since errors raised in a callback won't be propagated."""
                 try:
-                    with logger.in_path(path): # handle errors in the path context
+                    with logger.in_path(path):  # handle errors in the path context
                         with self.handling_exceptions():
                             result = completed_future.result()
                             callback(result)
@@ -420,11 +418,11 @@ class Command(object):
         if compiled is not None:
             if self.show:
                 print(compiled)
-            if isolate: # isolate means header is included, and thus encoding must be removed
+            if isolate:  # isolate means header is included, and thus encoding must be removed
                 compiled = rem_encoding(compiled)
             if print_expr:
                 result = self.runner.run(compiled, error, run_func=try_eval)
-                if result is not None: # if the input was an expression, we should print it
+                if result is not None:  # if the input was an expression, we should print it
                     print(ascii(result))
             else:
                 self.runner.run(compiled, error)
@@ -488,11 +486,11 @@ class Command(object):
             if args[0] == "console":
                 ver = "2" if PY2 else "3"
                 try:
-                    install_func(["python"+ver, "-m", "coconut.main", "--version"])
+                    install_func(["python" + ver, "-m", "coconut.main", "--version"])
                 except subprocess.CalledProcessError:
                     kernel_name = "coconut"
                 else:
-                    kernel_name = "coconut"+ver
+                    kernel_name = "coconut" + ver
                 run_args = [jupyter, "console", "--kernel", kernel_name] + args[1:]
             elif args[0] == "notebook":
                 run_args = [jupyter, "notebook"] + args[1:]

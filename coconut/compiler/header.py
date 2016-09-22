@@ -16,7 +16,7 @@ Description: Header utilities for the compiler.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from coconut.root import *
+from coconut.root import *  # NOQA
 
 from coconut.constants import (
     hash_prefix,
@@ -30,6 +30,7 @@ from coconut.compiler.util import target_info
 # MAIN:
 #-----------------------------------------------------------------------------------------------------------------------
 
+
 def gethash(compiled):
     """Retrieves a hash from a header."""
     lines = compiled.splitlines()
@@ -37,6 +38,7 @@ def gethash(compiled):
         return None
     else:
         return lines[2][len(hash_prefix):]
+
 
 def minify(compiled):
     """Performs basic minifications (fails with strings or non-tabideal indentation)."""
@@ -52,9 +54,10 @@ def minify(compiled):
                     ind += 1
                 if ind % tabideal != 0:
                     raise CoconutInternalException("invalid indentation in", line)
-                out.append(" "*(ind//tabideal) + line)
+                out.append(" " * (ind // tabideal) + line)
         compiled = "\n".join(out) + "\n"
     return compiled
+
 
 def getheader(which, target="", usehash=None):
     """Generates the specified header."""
@@ -68,12 +71,12 @@ def getheader(which, target="", usehash=None):
         else:
             header = "#!/usr/bin/env python"
         header += '''
-# -*- coding: '''+default_encoding+''' -*-
+# -*- coding: ''' + default_encoding + ''' -*-
 '''
         if usehash is not None:
             header += hash_prefix + usehash + "\n"
         header += '''
-# Compiled with Coconut version '''+VERSION_STR+'''
+# Compiled with Coconut version ''' + VERSION_STR + '''
 
 '''
         if which == "package":
