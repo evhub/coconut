@@ -173,7 +173,7 @@ extras["all"] = all_reqs_in(extras)
 
 extras["docs"] = docs_reqs
 
-extras["dev"] = all_reqs_in(extras)
+extras["dev"] = all_reqs_in(extras) + read_reqs("dev")
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:

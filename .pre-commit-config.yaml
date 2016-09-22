@@ -1,0 +1,25 @@
+# -   repo: https://github.com/Lucas-C/pre-commit-hooks.git
+#     sha: 63e26cdfa5ae134c42ffd73d2978ec6248106bdd
+#     hooks:
+#     -   id: remove-tabs
+-   repo: git://github.com/pre-commit/pre-commit-hooks.git
+    sha: 18d7035de5388cc7775be57f529c154bf541aab9
+    hooks:
+    -   id: check-added-large-files
+    -   id: check-byte-order-marker
+    -   id: end-of-file-fixer
+    -   id: trailing-whitespace
+    -   id: debug-statements
+    # -   id: autopep8-wrapper
+    #     args:
+    #     - --in-place
+    #     - --aggressive
+    #     - --aggressive
+    #     - --ignore=W503,E501
+    # -   id: flake8
+    #     args:
+    #     - --ignore=W503,E501
+# -   repo: git://github.com/pre-commit/mirrors-yapf
+#     sha: fcb392f02cb7789a7e43b60fa311886ee36716b1
+#     hooks:
+#     -   id: yapf
