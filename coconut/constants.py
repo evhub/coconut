@@ -186,7 +186,7 @@ default_multiline = False
 default_vi_mode = False
 default_mouse_support = True
 
-minimum_process_time = 0.01  # seconds
+minimum_process_time = .1  # seconds
 watch_interval = .1  # seconds
 
 info_tabulation = 18  # offset for tabulated info messages
