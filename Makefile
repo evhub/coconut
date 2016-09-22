@@ -5,7 +5,7 @@ install: pip
 
 dev: pip
 	pip install --upgrade -e .[dev]
-	pre-commit install
+	pre-commit install -f --install-hooks
 
 pip:
 	pip install "pip>=7.1.2"
@@ -21,8 +21,9 @@ docs:
 	zip -r ./docs.zip ./*
 	popd
 
-test: install
-	python tests
+test:
+	pip install -r ./reqs/requirements-dev.txt
+	pytest -s tests
 
 clean:
 	rm -rf ./docs

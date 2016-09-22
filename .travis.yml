@@ -16,6 +16,7 @@ python:
 
 install:
   - pip install "pip==7.1.2"
+  - make
 
 script:
   - make test
