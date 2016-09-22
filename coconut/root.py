@@ -86,8 +86,13 @@ class range(object):
         return _coconut.repr(self._xrange)[1:]
     def __reduce_ex__(self, protocol):
         return (self.__class__, self._xrange.__reduce_ex__(protocol)[1])
+    def __reduce__(self):
+        return self.__reduce_ex__(_coconut.pickle.DEFAULT_PROTOCOL)
     def __copy__(self):
         return self.__class__(*self._xrange.__reduce__()[1])
+    def __eq__(self, other):
+        reduction = self.__reduce__()
+        return _coconut.isinstance(other, reduction[0]) and reduction[1] == other.__reduce__()[1]
 from collections import Sequence as _coconut_Sequence
 _coconut_Sequence.register(range)
 class int(_coconut_int):
@@ -160,6 +165,8 @@ if PY2:
     else:
         exec(PY27_HEADER)
     import __builtin__ as _coconut  # NOQA
+    import pickle
+    _coconut.pickle = pickle
     _coconut_map = map
 else:
     exec(PY3_HEADER)

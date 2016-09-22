@@ -218,8 +218,10 @@ class _coconut_map(_coconut.map):
         return _coconut.min(_coconut.len(i) for i in self._iters)
     def __repr__(self):
         return "map(" + _coconut.repr(self._func) + ", " + ", ".join((_coconut.repr(i) for i in self._iters)) + ")"
-    def __reduce_ex__(self, _):
+    def __reduce__(self):
         return (self.__class__, (self._func,) + self._iters)
+    def __reduce_ex__(self, _):
+        return self.__reduce__()
     def __copy__(self):
         return self.__class__(self._func, *_coconut_map(_coconut.copy.copy, self._iters))
 class parallel_map(_coconut_map):
@@ -267,8 +269,10 @@ class zip(_coconut.zip):
         return _coconut.min(_coconut.len(i) for i in self._iters)
     def __repr__(self):
         return "zip(" + ", ".join((_coconut.repr(i) for i in self._iters)) + ")"
-    def __reduce_ex__(self, _):
+    def __reduce__(self):
         return (self.__class__, self._iters)
+    def __reduce_ex__(self, _):
+        return self.__reduce__()
     def __copy__(self):
         return self.__class__(*_coconut_map(_coconut.copy.copy, self._iters))'''
             if target.startswith("3"):
@@ -309,6 +313,9 @@ class count(object):'''
         return (self.__class__, (self._start, self._step))
     def __copy__(self):
         return self.__class__(self._start, self._step)
+    def __eq__(self, other):
+        reduction = self.__reduce__()
+        return _coconut.isinstance(other, reduction[0]) and reduction[1] == other.__reduce__()[1]
 class _coconut_tail_call(Exception):
     __slots__ = ("func", "args", "kwargs")
     def __init__(self, func, *args, **kwargs):

@@ -263,6 +263,10 @@ def main_test():
         assert True
     a = 1; b = 1
     assert a == 1 == b
+    assert range(1, 2) == range(1, 2)
+    assert range(1, 2) != range(3, 4)
+    assert count(5) == count(5)
+    assert count(5) != count(3)
     return True
 
 def main(*args):
