@@ -16,6 +16,7 @@ python:
 
 install:
   - pip install "pip==7.1.2"
+  - pip install -r ./reqs/requirements-dev.txt
   - make
 
 script:

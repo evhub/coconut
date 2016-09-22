@@ -23,6 +23,7 @@ import sys
 import os
 import traceback
 import functools
+import time
 from copy import copy
 try:
     import readline  # improves built-in input
@@ -44,6 +45,7 @@ from coconut.constants import (
     default_multiline,
     default_vi_mode,
     default_mouse_support,
+    minimum_process_time,
 )
 from coconut.logging import logger
 from coconut.exceptions import CoconutException, CoconutInternalException
@@ -237,4 +239,6 @@ class multiprocess_wrapper(object):
         """Sets up new process then calls the method."""
         sys.setrecursionlimit(self.recursion)
         logger.copy_from(self.logger)
-        return getattr(self.base, self.method)(*args, **kwargs)
+        result = getattr(self.base, self.method)(*args, **kwargs)
+        time.sleep(minimum_process_time)
+        return result

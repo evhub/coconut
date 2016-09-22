@@ -102,7 +102,7 @@ def comp_35(args=[]):
 
 def run_src():
     """Runs runner.py."""
-    subprocess.check_call(["python", os.path.join(dest, "cocotest", "runner.py")])
+    subprocess.check_call(["python", os.path.join(dest, "runner.py")])
 
 
 def run_extras():
@@ -164,14 +164,8 @@ class TestCompilation(unittest.TestCase):
     def test_normal(self):
         run()
 
-    def test_strict(self):
-        run(strict=True)
-
-    def test_line_numbers(self):
-        run(line_numbers=True)
-
-    def test_keep_lines(self):
-        run(keep_lines=True)
+    def test_jobs_zero(self):
+        run(jobs=0)
 
     def test_target(self):
         run(agnostic_target=(2 if PY2 else 3))
@@ -182,15 +176,18 @@ class TestCompilation(unittest.TestCase):
     def test_package(self):
         run(package=True)
 
+    def test_line_numbers(self):
+        run(line_numbers=True)
+
+    def test_keep_lines(self):
+        run(keep_lines=True)
+
     def test_minify(self):
         run(minify=True)
 
-    def test_jobs_zero(self):
-        run(jobs=0)
+    def test_strict(self):
+        run(strict=True)
 
-#-----------------------------------------------------------------------------------------------------------------------
-# MAIN:
-#-----------------------------------------------------------------------------------------------------------------------
 
-if __name__ == '__main__':
+def main():
     unittest.main()

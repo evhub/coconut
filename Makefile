@@ -22,7 +22,6 @@ docs:
 	popd
 
 test:
-	pip install -r ./reqs/requirements-dev.txt
 	pytest -s tests
 
 clean:
