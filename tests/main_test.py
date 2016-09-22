@@ -36,6 +36,18 @@ src = os.path.join(base, "src")
 dest = os.path.join(base, "dest")
 
 
+def call(cmd, assert_output=False):
+    """Executes a shell command."""
+    print(">", " ".join(cmd))
+    if assert_output:
+        for line in subprocess.Popen(cmd, stdout=subprocess.PIPE).stdout.readlines():
+            print(line)
+        assert line == "<success>\n"
+    else:
+        subprocess.check_call(cmd)
+    print()
+
+
 def comp(path=None, folder=None, file=None, args=[]):
     """Compiles a test file or directory."""
     paths = []
@@ -49,7 +61,7 @@ def comp(path=None, folder=None, file=None, args=[]):
     source = os.path.join(src, *paths)
     if "--jobs" not in args and platform.python_implementation() == "PyPy":
         args += ["--jobs", "0"]
-    subprocess.check_call(["coconut", source, compdest] + args)
+    call(["coconut", source, compdest] + args)
 
 
 @contextmanager
@@ -102,48 +114,27 @@ def comp_35(args=[]):
 
 def run_src():
     """Runs runner.py."""
-    subprocess.check_call(["python", os.path.join(dest, "runner.py")])
+    call(["python", os.path.join(dest, "runner.py")], assert_output=True)
 
 
 def run_extras():
     """Runs extras.py."""
-    subprocess.check_call(["python", os.path.join(dest, "extras.py")])
+    call(["python", os.path.join(dest, "extras.py")], assert_output=True)
 
 
-def run(agnostic_target=None,
-        jobs=None,
-        strict=False,
-        minify=False,
-        line_numbers=False,
-        keep_lines=False,
-        standalone=False,
-        package=False):
+def run(args=[], agnostic_target=None):
     """Compiles and runs tests."""
-
-    args, agnostic_args = [], []
-    if agnostic_target is not None:
-        agnostic_args += ["--target", str(agnostic_target)]
-    if jobs is not None:
-        args += ["--jobs", str(jobs)]
-    if strict:
-        args += ["--strict"]
-    if line_numbers:
-        args += ["--line-numbers"]
-    if keep_lines:
-        args += ["--keep-lines"]
-    if standalone:
-        args += ["--standalone"]
-    if package:
-        args += ["--package"]
-    if minify:
-        args += ["--minify"]
+    if agnostic_target is None:
+        agnostic_args = []
+    else:
+        agnostic_args = ["--target", str(agnostic_target)]
 
     with create_dest():
 
         comp_runner(args + agnostic_args)
         comp_agnostic(args + agnostic_args)
         if PY2:
-            comp_2()
+            comp_2(args)
         else:
             comp_3(args)
             if sys.version_info >= (3, 5):
@@ -151,7 +142,7 @@ def run(agnostic_target=None,
         run_src()
 
         if (PY2 and not PY26) or (not PY2 and sys.version_info >= (3, 3)):
-            comp_extras()
+            comp_extras(args)
             run_extras()
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -165,29 +156,34 @@ class TestCompilation(unittest.TestCase):
         run()
 
     def test_jobs_zero(self):
-        run(jobs=0)
+        run(["--jobs", "0"])
 
     def test_target(self):
         run(agnostic_target=(2 if PY2 else 3))
 
     def test_standalone(self):
-        run(standalone=True)
+        run(["--standalone"])
 
     def test_package(self):
-        run(package=True)
+        run(["--package"])
 
     def test_line_numbers(self):
-        run(line_numbers=True)
+        run(["--linenumbers"])
 
     def test_keep_lines(self):
-        run(keep_lines=True)
+        run(["--keeplines"])
 
     def test_minify(self):
-        run(minify=True)
+        run(["--minify"])
 
     def test_strict(self):
-        run(strict=True)
+        run(["--strict"])
+
+#-----------------------------------------------------------------------------------------------------------------------
+# MAIN:
+#-----------------------------------------------------------------------------------------------------------------------
 
 
 def main():
+    """Run Coconut tests."""
     unittest.main()
