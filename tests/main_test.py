@@ -31,7 +31,7 @@ from contextlib import contextmanager
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
 
-base = os.path.abspath(os.path.dirname(__file__))
+base = os.path.dirname(os.path.abspath(__file__))
 src = os.path.join(base, "src")
 dest = os.path.join(base, "dest")
 
@@ -77,7 +77,7 @@ def comp_extras(args=[]):
 
 def comp_runner(args=[]):
     """Compiles runner.coco."""
-    comp(path="cocotest", file="runner.coco", args=args)
+    comp(file="runner.coco", args=args)
 
 
 def comp_agnostic(args=[]):
