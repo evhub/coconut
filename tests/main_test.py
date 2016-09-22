@@ -122,28 +122,34 @@ def run_extras():
     call(["python", os.path.join(dest, "extras.py")], assert_output=True)
 
 
-def run(args=[], agnostic_target=None):
+def run(args=[], agnostic_target=None, comp_run=False):
     """Compiles and runs tests."""
     if agnostic_target is None:
-        agnostic_args = []
+        agnostic_args = args
     else:
-        agnostic_args = ["--target", str(agnostic_target)]
+        agnostic_args = args + ["--target", str(agnostic_target)]
 
     with create_dest():
 
-        comp_runner(args + agnostic_args)
-        comp_agnostic(args + agnostic_args)
+        comp_agnostic(agnostic_args)
         if PY2:
             comp_2(args)
         else:
             comp_3(args)
             if sys.version_info >= (3, 5):
                 comp_35(args)
-        run_src()
+        if comp_run:
+            comp_runner(agnostic_args + ["--run"])
+        else:
+            comp_runner(agnostic_args)
+            run_src()
 
         if (PY2 and not PY26) or (not PY2 and sys.version_info >= (3, 3)):
-            comp_extras(args)
-            run_extras()
+            if comp_run:
+                comp_extras(agnostic_args + ["--run"])
+            else:
+                comp_extras(agnostic_args)
+                run_extras()
 
 #-----------------------------------------------------------------------------------------------------------------------
 # TESTS:
@@ -157,6 +163,9 @@ class TestCompilation(unittest.TestCase):
 
     def test_jobs_zero(self):
         run(["--jobs", "0"])
+
+    def test_run(self):
+        run(comp_run=True)
 
     def test_target(self):
         run(agnostic_target=(2 if PY2 else 3))
