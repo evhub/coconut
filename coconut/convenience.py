@@ -16,7 +16,7 @@ Description: Convenience functions for using Coconut as a module.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from coconut.root import *
+from coconut.root import *  # NOQA
 
 from coconut.exceptions import CoconutException
 from coconut.command import Command, arguments
@@ -28,11 +28,13 @@ from coconut.constants import version_tag, version_long, main_sig
 
 CLI = Command()
 
+
 def cmd(args, interact=False):
     """Processes command-line arguments."""
     if isinstance(args, (str, bytes)):
         args = args.split()
     return CLI.cmd(arguments.parse_args(args), interact)
+
 
 def version(which="num"):
     """Gets the Coconut version."""
@@ -56,6 +58,7 @@ def version(which="num"):
 
 setup = CLI.setup
 
+
 def parse(code, mode="exec"):
     """Parses Coconut code."""
     if CLI.comp is None:
@@ -76,4 +79,4 @@ def parse(code, mode="exec"):
         return CLI.comp.parse_debug(code)
     else:
         raise CoconutException("invalid parse mode " + ascii(mode)
-            + "; valid modes are 'exec', 'file', 'single', 'module', 'block', 'eval', and 'debug'")
+                               + "; valid modes are 'exec', 'file', 'single', 'module', 'block', 'eval', and 'debug'")

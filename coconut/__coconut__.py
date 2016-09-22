@@ -22,4 +22,4 @@ from coconut.compiler import Compiler as __coconut_compiler__
 # HEADER:
 #-----------------------------------------------------------------------------------------------------------------------
 
-exec(__coconut_compiler__(target="sys").headers("code")) # executes the __coconut__.py header for the current Python version
+exec(__coconut_compiler__(target="sys").headers("code"))  # executes the __coconut__.py header for the current Python version

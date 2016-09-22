@@ -16,4 +16,4 @@ Description: The Coconut compiler module.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from coconut.compiler.compiler import *
+from coconut.compiler.compiler import *  # NOQA

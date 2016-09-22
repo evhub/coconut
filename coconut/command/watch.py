@@ -16,16 +16,18 @@ Description: Handles interfacing with watchdog to make --watch work.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from coconut.root import *
+from coconut.root import *  # NOQA
 
 from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer
+from watchdog.observers import Observer  # NOQA
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CLASSES:
 #-----------------------------------------------------------------------------------------------------------------------
 
+
 class RecompilationWatcher(FileSystemEventHandler):
+
     def __init__(self, recompile):
         self.recompile = recompile
 

@@ -26,7 +26,7 @@ Description: Compiles Coconut code into Python code.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from coconut.root import *
+from coconut.root import *  # NOQA
 
 import sys
 
@@ -43,7 +43,6 @@ from coconut.constants import (
     specific_targets,
     targets,
     pseudo_targets,
-    sys_target,
     default_encoding,
     hash_sep,
     openindent,
@@ -51,8 +50,6 @@ from coconut.constants import (
     strwrapper,
     lnwrapper,
     unwrapper,
-    downs,
-    ups,
     holds,
     tabideal,
     tabworth,
@@ -65,7 +62,6 @@ from coconut.constants import (
     yield_item_var,
     raise_from_var,
     stmt_lambda_var,
-    const_vars,
     new_to_old_stdlib,
     default_recursion_limit,
     checksum,
@@ -103,7 +99,6 @@ from coconut.compiler.util import (
     transform,
 )
 from coconut.compiler.header import (
-    gethash,
     minify,
     getheader,
 )
@@ -121,6 +116,7 @@ if sys.getrecursionlimit() < default_recursion_limit:
 # HANDLERS:
 #-----------------------------------------------------------------------------------------------------------------------
 
+
 def set_to_tuple(tokens):
     """Converts set literal tokens to tuples."""
     if len(tokens) != 1:
@@ -132,10 +128,11 @@ def set_to_tuple(tokens):
     else:
         raise CoconutInternalException("invalid set maker item", tokens[0])
 
+
 def gen_imports(path, impas):
     """Generates import statements."""
     out = []
-    parts = path.split("./") # denotes from ... import ...
+    parts = path.split("./")  # denotes from ... import ...
     if len(parts) == 1:
         imp, = parts
         if impas == imp:
@@ -169,6 +166,7 @@ def gen_imports(path, impas):
 #-----------------------------------------------------------------------------------------------------------------------
 # COMPILER:
 #-----------------------------------------------------------------------------------------------------------------------
+
 
 class Compiler(Grammar):
     """The Coconut compiler."""
@@ -205,7 +203,7 @@ class Compiler(Grammar):
             target = pseudo_targets[target]
         if target not in targets:
             raise CoconutException('unsupported target Python version "' + target
-                + '" (supported targets are "' + '", "'.join(specific_targets) + '", or leave blank for universal)')
+                                   + '" (supported targets are "' + '", "'.join(specific_targets) + '", or leave blank for universal)')
         self.target, self.strict, self.minify, self.line_numbers, self.keep_lines = target, strict, minify, line_numbers, keep_lines
 
     def __reduce__(self):
@@ -217,11 +215,11 @@ class Compiler(Grammar):
         return hex(checksum(
             hash_sep.join(
                 str(item) for item in
-                    (VERSION_STR,)
-                    + self.__reduce__()[1]
-                    + (package, code)
+                (VERSION_STR,)
+                + self.__reduce__()[1]
+                + (package, code)
             ).encode(default_encoding)
-        ) & 0xffffffff) # necessary for cross-compatibility
+        ) & 0xffffffff)  # necessary for cross-compatibility
 
     def reset(self):
         """Resets references."""
@@ -291,7 +289,7 @@ class Compiler(Grammar):
         """Generates an error of the specified type."""
         if ln is None:
             ln = self.adjust(lineno(location, original))
-        errstr, index = line(location, original), col(location, original)-1
+        errstr, index = line(location, original), col(location, original) - 1
         if reformat:
             errstr, index = self.reformat(errstr, index)
         return errtype(message, errstr, index, ln, *args, **kwargs)
@@ -389,11 +387,11 @@ class Compiler(Grammar):
         try:
             out = self.post(parser.parseWithTabs().parseString(self.pre(inputstring, **preargs)), **postargs)
         except ParseBaseException as err:
-            err_line, err_index = self.reformat(err.line, err.col-1)
+            err_line, err_index = self.reformat(err.line, err.col - 1)
             raise CoconutParseError(None, err_line, err_index, self.adjust(err.lineno))
         except RuntimeError as err:
             raise CoconutException(str(err),
-                extra="try again with --recursion-limit greater than the current " + str(sys.getrecursionlimit()))
+                                   extra="try again with --recursion-limit greater than the current " + str(sys.getrecursionlimit()))
         return out
 
 # end: COMPILER
@@ -417,14 +415,14 @@ class Compiler(Grammar):
     def str_proc(self, inputstring, **kwargs):
         """Processes strings and comments."""
         out = []
-        found = None # store of characters that might be the start of a string
+        found = None  # store of characters that might be the start of a string
         hold = None
         # hold = [_comment]:
-        _comment = 0 # the contents of the comment so far
+        _comment = 0  # the contents of the comment so far
         # hold = [_contents, _start, _stop]:
-        _contents = 0 # the contents of the string so far
-        _start = 1 # the string of characters that started the string
-        _stop = 2 # store of characters that might be the end of the string
+        _contents = 0  # the contents of the string so far
+        _start = 1  # the string of characters that started the string
+        _stop = 2  # store of characters that might be the end of the string
         x = 0
         skips = self.skips.copy()
 
@@ -435,7 +433,7 @@ class Compiler(Grammar):
                 c = inputstring[x]
 
             if hold is not None:
-                if len(hold) == 1: # hold == [_comment]
+                if len(hold) == 1:  # hold == [_comment]
                     if c == "\n":
                         if self.minify:
                             if out:
@@ -466,7 +464,7 @@ class Compiler(Grammar):
                                 raise self.make_err(CoconutSyntaxError, "linebreak in non-multiline string", inputstring, x, reformat=False)
                             else:
                                 skips = addskip(skips, self.adjust(lineno(x, inputstring)))
-                        hold[_contents] += hold[_stop]+c
+                        hold[_contents] += hold[_stop] + c
                         hold[_stop] = None
                 elif count_end(hold[_contents], "\\") % 2 == 1:
                     if c == "\n":
@@ -487,25 +485,25 @@ class Compiler(Grammar):
             elif found is not None:
                 if c == found[0]:
                     found += c
-                elif len(found) == 1: # found == "_"
+                elif len(found) == 1:  # found == "_"
                     if c == "\n":
                         raise self.make_err(CoconutSyntaxError, "linebreak in non-multiline string", inputstring, x, reformat=False)
                     else:
-                        hold = [c, found, None] # [_contents, _start, _stop]
+                        hold = [c, found, None]  # [_contents, _start, _stop]
                         found = None
-                elif len(found) == 2: # found == "__"
+                elif len(found) == 2:  # found == "__"
                     out.append(self.wrap_str("", found[0], False))
                     found = None
                     x -= 1
-                elif len(found) == 3: # found == "___"
+                elif len(found) == 3:  # found == "___"
                     if c == "\n":
                         skips = addskip(skips, self.adjust(lineno(x, inputstring)))
-                    hold = [c, found, None] # [_contents, _start, _stop]
+                    hold = [c, found, None]  # [_contents, _start, _stop]
                     found = None
                 else:
                     raise self.make_err(CoconutSyntaxError, "invalid number of string starts", inputstring, x, reformat=False)
             elif c == "#":
-                hold = [""] # [_comment]
+                hold = [""]  # [_comment]
             elif c in holds:
                 found = c
             else:
@@ -521,13 +519,13 @@ class Compiler(Grammar):
     def passthrough_proc(self, inputstring, **kwargs):
         """Processes python passthroughs."""
         out = []
-        found = None # store of characters that might be the start of a passthrough
-        hold = None # the contents of the passthrough so far
-        count = None # current parenthetical level
+        found = None  # store of characters that might be the start of a passthrough
+        hold = None  # the contents of the passthrough so far
+        count = None  # current parenthetical level
         multiline = None
         skips = self.skips.copy()
 
-        for x in range(len(inputstring)+1):
+        for x in range(len(inputstring) + 1):
             if x == len(inputstring):
                 c = "\n"
             else:
@@ -617,13 +615,13 @@ class Compiler(Grammar):
                     skips = addskip(skips, self.adjust(ln))
             elif last is not None and last.endswith("\\"):
                 if self.strict:
-                    raise self.make_err(CoconutStyleError, "found backslash continuation", last, len(last), self.adjust(ln-1))
+                    raise self.make_err(CoconutStyleError, "found backslash continuation", last, len(last), self.adjust(ln - 1))
                 else:
                     skips = addskip(skips, self.adjust(ln))
-                    new[-1] = last[:-1]+" "+line
+                    new[-1] = last[:-1] + " " + line
             elif count < 0:
                 skips = addskip(skips, self.adjust(ln))
-                new[-1] = last+" "+line
+                new[-1] = last + " " + line
             else:
                 check = self.leading(line)
                 if current is None:
@@ -637,7 +635,7 @@ class Compiler(Grammar):
                     line = openindent + line
                 elif check in levels:
                     point = levels.index(check) + 1
-                    line = closeindent*(len(levels[point:]) + 1) + line
+                    line = closeindent * (len(levels[point:]) + 1) + line
                     levels = levels[:point]
                     current = levels.pop()
                 elif current != check:
@@ -654,7 +652,7 @@ class Compiler(Grammar):
                 raise self.make_err(CoconutSyntaxError, "illegal final backslash continuation", last, len(last), self.adjust(len(new)))
             if count != 0:
                 raise self.make_err(CoconutSyntaxError, "unclosed open parentheses", new[-1], len(new[-1]), self.adjust(len(new)))
-        new.append(closeindent*len(levels))
+        new.append(closeindent * len(levels))
         return "\n".join(new)
 
     def stmt_lambda_proc(self, inputstring, **kwargs):
@@ -687,7 +685,7 @@ class Compiler(Grammar):
             level += ind_change(indent)
 
             if line and not line.startswith("#"):
-                line = " "*(1 if self.minify else tabideal)*level + line
+                line = " " * (1 if self.minify else tabideal) * level + line
 
             line, indent = split_trailing_indent(line)
             level += ind_change(indent)
@@ -704,14 +702,14 @@ class Compiler(Grammar):
             raise CoconutInternalException("out of bounds line number", ln)
         elif self.line_numbers and self.keep_lines:
             if self.minify:
-                comment = str(ln) + " " + self.original_lines[ln-1]
+                comment = str(ln) + " " + self.original_lines[ln - 1]
             else:
-                comment = " line " + str(ln) + ": " + self.original_lines[ln-1]
+                comment = " line " + str(ln) + ": " + self.original_lines[ln - 1]
         elif self.keep_lines:
             if self.minify:
-                comment = self.original_lines[ln-1]
+                comment = self.original_lines[ln - 1]
             else:
-                comment = " " + self.original_lines[ln-1]
+                comment = " " + self.original_lines[ln - 1]
         elif self.line_numbers:
             if self.minify:
                 comment = str(ln)
@@ -754,7 +752,7 @@ class Compiler(Grammar):
         """Adds back passthroughs."""
         out = []
         index = None
-        for x in range(len(inputstring)+1):
+        for x in range(len(inputstring) + 1):
             c = inputstring[x] if x != len(inputstring) else None
             try:
                 if index is not None:
@@ -791,7 +789,7 @@ class Compiler(Grammar):
         comment = None
         string = None
 
-        for x in range(len(inputstring)+1):
+        for x in range(len(inputstring) + 1):
             c = inputstring[x] if x != len(inputstring) else None
             try:
 
@@ -817,7 +815,7 @@ class Compiler(Grammar):
                             raise CoconutInternalException("invalid reference for a str", ref)
                         text, strchar, multiline = ref
                         if multiline:
-                            out.append(strchar*3 + text + strchar*3)
+                            out.append(strchar * 3 + text + strchar * 3)
                         else:
                             out.append(strchar + text + strchar)
                         string = None
@@ -879,8 +877,8 @@ class Compiler(Grammar):
             raise CoconutInternalException("invalid yield from tokens", tokens)
         elif self.target_info() < (3, 3):
             return (yield_from_var + " = " + tokens[0]
-                + "\nfor " + yield_item_var + " in " + yield_from_var + ":\n"
-                + openindent + "yield " + yield_item_var + "\n" + closeindent)
+                    + "\nfor " + yield_item_var + " in " + yield_from_var + ":\n"
+                    + openindent + "yield " + yield_item_var + "\n" + closeindent)
         else:
             return "yield from " + tokens[0]
 
@@ -890,7 +888,7 @@ class Compiler(Grammar):
             raise CoconutInternalException("invalid endline tokens", tokens)
         out = tokens[0]
         if self.minify:
-            out = out.splitlines(True)[0] # if there are multiple new lines, take only the first one
+            out = out.splitlines(True)[0]  # if there are multiple new lines, take only the first one
         if self.line_numbers or self.keep_lines:
             out = self.wrap_line_number(self.adjust(lineno(location, original))) + out
         return out
@@ -903,22 +901,22 @@ class Compiler(Grammar):
                 out += trailer
             elif len(trailer) == 1:
                 if trailer[0] == "$[]":
-                    out = "_coconut.functools.partial(_coconut_igetitem, "+out+")"
+                    out = "_coconut.functools.partial(_coconut_igetitem, " + out + ")"
                 elif trailer[0] == "$":
-                    out = "_coconut.functools.partial(_coconut.functools.partial, "+out+")"
+                    out = "_coconut.functools.partial(_coconut.functools.partial, " + out + ")"
                 elif trailer[0] == "[]":
-                    out = "_coconut.functools.partial(_coconut.operator.getitem, "+out+")"
+                    out = "_coconut.functools.partial(_coconut.operator.getitem, " + out + ")"
                 elif trailer[0] == ".":
-                    out = "_coconut.functools.partial(_coconut.getattr, "+out+")"
+                    out = "_coconut.functools.partial(_coconut.getattr, " + out + ")"
                 elif trailer[0] == "$(":
                     raise self.make_err(CoconutSyntaxError, "a partial application argument is required", original, location)
                 else:
                     raise CoconutInternalException("invalid trailer symbol", trailer[0])
             elif len(trailer) == 2:
                 if trailer[0] == "$(":
-                    out = "_coconut.functools.partial("+out+", "+trailer[1]+")"
+                    out = "_coconut.functools.partial(" + out + ", " + trailer[1] + ")"
                 elif trailer[0] == "$[":
-                    out = "_coconut_igetitem("+out+", "+trailer[1]+")"
+                    out = "_coconut_igetitem(" + out + ", " + trailer[1] + ")"
                 else:
                     raise CoconutInternalException("invalid special trailer", trailer[0])
             else:
@@ -931,22 +929,22 @@ class Compiler(Grammar):
             name, op, item = tokens
             out = ""
             if op == "|>=":
-                out += name+" = ("+item+")("+name+")"
+                out += name + " = (" + item + ")(" + name + ")"
             elif op == "|*>=":
-                out += name+" = ("+item+")(*"+name+")"
+                out += name + " = (" + item + ")(*" + name + ")"
             elif op == "<|=":
-                out += name+" = "+name+"(("+item+"))"
+                out += name + " = " + name + "((" + item + "))"
             elif op == "<*|=":
-                out += name+" = "+name+"(*("+item+"))"
+                out += name + " = " + name + "(*(" + item + "))"
             elif op == "..=":
-                out += name+" = (lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)))("+name+", ("+item+"))"
+                out += name + " = (lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)))(" + name + ", (" + item + "))"
             elif op == "::=":
-                ichain_var = lazy_chain_var + "_" + str(self.ichain_count) # necessary to prevent a segfault caused by self-reference
+                ichain_var = lazy_chain_var + "_" + str(self.ichain_count)  # necessary to prevent a segfault caused by self-reference
                 out += ichain_var + " = " + name + "\n"
-                out += name + " = _coconut.itertools.chain.from_iterable(" + lazy_list_handle([ichain_var, "("+item+")"]) + ")"
+                out += name + " = _coconut.itertools.chain.from_iterable(" + lazy_list_handle([ichain_var, "(" + item + ")"]) + ")"
                 self.ichain_count += 1
             else:
-                out += name+" "+op+" "+item
+                out += name + " " + op + " " + item
             return out
         else:
             raise CoconutInternalException("invalid assignment tokens", tokens)
@@ -982,17 +980,17 @@ class Compiler(Grammar):
                 return ""
         else:
             raise CoconutInternalException("invalid import tokens", tokens)
-        importmap = [] # [((imp | old_imp, imp, version_check), impas), ...]
+        importmap = []  # [((imp | old_imp, imp, version_check), impas), ...]
         for imps in imports:
             if len(imps) == 1:
                 imp, impas = imps[0], imps[0]
             else:
                 imp, impas = imps
             if imp_from is not None:
-                imp = imp_from + "./" + imp # marker for from ... import ...
+                imp = imp_from + "./" + imp  # marker for from ... import ...
             old_imp = None
             path = imp.split(".")
-            for i in reversed(range(1, len(path)+1)):
+            for i in reversed(range(1, len(path) + 1)):
                 base, exts = ".".join(path[:i]), path[i:]
                 clean_base = base.replace("/", "")
                 if clean_base in new_to_old_stdlib:
@@ -1040,8 +1038,8 @@ class Compiler(Grammar):
             return "raise " + tokens[0] + " from " + tokens[1]
         else:
             return (raise_from_var + " = " + tokens[0] + "\n"
-                + raise_from_var + ".__cause__ = " + tokens[1] + "\n"
-                + "raise " + raise_from_var)
+                    + raise_from_var + ".__cause__ = " + tokens[1] + "\n"
+                    + "raise " + raise_from_var)
 
     def dict_comp_handle(self, original, location, tokens):
         """Processes Python 2.7 dictionary comprehension."""
@@ -1060,11 +1058,11 @@ class Compiler(Grammar):
         line_wrap = self.wrap_str_of(base_line)
         repr_wrap = self.wrap_str_of(ascii(base_line))
         return ("if not " + match_check_var + ":\n" + openindent
-            + match_err_var + ' = _coconut_MatchError("pattern-matching failed for " '
-            + repr_wrap + ' " in " + _coconut.repr(_coconut.repr(' + match_to_var + ")))\n"
-            + match_err_var + ".pattern = " + line_wrap + "\n"
-            + match_err_var + ".value = " + match_to_var
-            + "\nraise " + match_err_var + "\n" + closeindent)
+                + match_err_var + ' = _coconut_MatchError("pattern-matching failed for " '
+                + repr_wrap + ' " in " + _coconut.repr(_coconut.repr(' + match_to_var + ")))\n"
+                + match_err_var + ".pattern = " + line_wrap + "\n"
+                + match_err_var + ".value = " + match_to_var
+                + "\nraise " + match_err_var + "\n" + closeindent)
 
     def destructuring_stmt_handle(self, original, loc, tokens):
         """Processes match assign blocks."""
@@ -1181,10 +1179,10 @@ class Compiler(Grammar):
         if len(tokens) != 1:
             raise CoconutInternalException("invalid function definition tokens", tokens)
         else:
-            lines = [] # transformed
-            tco = False # whether tco was done
-            level = 0 # indentation level
-            disabled_until_level = None # whether inside of a def/try/with
+            lines = []  # transformed
+            tco = False  # whether tco was done
+            level = 0  # indentation level
+            disabled_until_level = None  # whether inside of a def/try/with
 
             for i, line in enumerate(tokens[0].splitlines(True)):
                 body, indent = split_trailing_indent(line)
@@ -1220,9 +1218,9 @@ class Compiler(Grammar):
     def check_strict(self, name, original, location, tokens):
         """Checks that syntax meets --strict requirements."""
         if len(tokens) != 1:
-            raise CoconutInternalException("invalid "+name+" tokens", tokens)
+            raise CoconutInternalException("invalid " + name + " tokens", tokens)
         elif self.strict:
-            raise self.make_err(CoconutStyleError, "found "+name, original, location)
+            raise self.make_err(CoconutStyleError, "found " + name, original, location)
         else:
             return tokens[0]
 
@@ -1241,9 +1239,9 @@ class Compiler(Grammar):
     def check_py(self, version, name, original, location, tokens):
         """Checks for Python-version-specific syntax."""
         if len(tokens) != 1:
-            raise CoconutInternalException("invalid "+name+" tokens", tokens)
+            raise CoconutInternalException("invalid " + name + " tokens", tokens)
         elif self.target_info() < target_info(version):
-            raise self.make_err(CoconutTargetError, "found Python "+version+" " + name, original, location, target=version)
+            raise self.make_err(CoconutTargetError, "found Python " + version + " " + name, original, location, target=version)
         else:
             return tokens[0]
 

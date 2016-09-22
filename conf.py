@@ -20,7 +20,7 @@ import sys
 import os.path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from coconut.root import *
+from coconut.root import *  # NOQA
 
 from recommonmark.parser import CommonMarkParser
 from sphinx_bootstrap_theme import get_html_theme_path

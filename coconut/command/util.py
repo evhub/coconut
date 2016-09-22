@@ -16,7 +16,7 @@ Description: Utility functions for the main command module.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from coconut.root import *
+from coconut.root import *  # NOQA
 
 import sys
 import os
@@ -24,7 +24,7 @@ import traceback
 import functools
 from copy import copy
 try:
-    import readline # improves built-in input
+    import readline  # improves built-in input
 except ImportError:
     readline = None
 
@@ -51,9 +51,11 @@ from coconut.exceptions import CoconutException, CoconutInternalException
 # FUNCTIONS:
 #-----------------------------------------------------------------------------------------------------------------------
 
+
 def openfile(filename, opentype="r+"):
     """Returns an open file object."""
-    return open(filename, opentype, encoding=default_encoding) # using open from coconut.root
+    return open(filename, opentype, encoding=default_encoding)  # using open from coconut.root
+
 
 def writefile(openedfile, newcontents):
     """Sets the contents of a file."""
@@ -61,14 +63,17 @@ def writefile(openedfile, newcontents):
     openedfile.truncate()
     openedfile.write(newcontents)
 
+
 def readfile(openedfile):
     """Reads the contents of a file."""
     openedfile.seek(0)
     return str(openedfile.read())
 
+
 def fixpath(path):
     """Uniformly formats a path."""
     return os.path.normpath(os.path.realpath(path))
+
 
 def showpath(path):
     """Formats a path for displaying."""
@@ -79,6 +84,7 @@ def showpath(path):
         if path.startswith(os.curdir + os.sep):
             path = path[len(os.curdir + os.sep):]
         return path
+
 
 def rem_encoding(code):
     """Removes encoding declarations from Python code so it can be passed to exec."""
@@ -91,18 +97,20 @@ def rem_encoding(code):
     new_lines += old_lines[2:]
     return "\n".join(new_lines)
 
+
 def try_eval(code, in_vars):
     """Try to evaluate the given code, otherwise execute it."""
     try:
         return eval(code, in_vars)
     except SyntaxError:
-        pass # exit the exception context before executing code
+        pass  # exit the exception context before executing code
     exec(code, in_vars)
     return None
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CLASSES:
 #-----------------------------------------------------------------------------------------------------------------------
+
 
 class Prompt(object):
     """Manages prompting for code on the command line."""
@@ -174,8 +182,10 @@ class Prompt(object):
             "style": prompt_toolkit.styles.style_from_pygments(pygments.styles.get_style_by_name(self.style)),
         }
 
+
 class Runner(object):
     """Compiled Python executor."""
+
     def __init__(self, comp=None, exit=None, path=None):
         """Creates the executor."""
         self.exit = exit
@@ -211,6 +221,7 @@ class Runner(object):
             else:
                 traceback.print_exc()
         return None
+
 
 class multiprocess_wrapper(object):
     """Wrapper for a method that needs to be multiprocessed."""

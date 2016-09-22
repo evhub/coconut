@@ -16,7 +16,7 @@ Description: This file contains all the global constants used accross Coconut.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from coconut.root import *
+from coconut.root import *  # NOQA
 
 import sys
 import os
@@ -29,7 +29,8 @@ from pyparsing import alphanums
 default_recursion_limit = 2000
 minimum_recursion_limit = 100
 
-from zlib import crc32 as checksum # used for generating __coconut_hash__
+# used for generating __coconut_hash__
+from zlib import crc32 as checksum  # NOQA
 hash_prefix = "# __coconut_hash__ = "
 hash_sep = "\x00"
 
@@ -49,19 +50,19 @@ else:
 default_encoding = "UTF-8"
 default_whitespace_chars = " \t\f\v"
 
-openindent = "\u204b" # reverse pilcrow
-closeindent = "\xb6" # pilcrow
-strwrapper = "\u25b6" # right-pointing triangle
-lnwrapper = "\u23f4" # left-pointing triangle
-unwrapper = "\u23f9" # stop square
+openindent = "\u204b"  # reverse pilcrow
+closeindent = "\xb6"  # pilcrow
+strwrapper = "\u25b6"  # right-pointing triangle
+lnwrapper = "\u23f4"  # left-pointing triangle
+unwrapper = "\u23f9"  # stop square
 
-downs = "([{" # opens parenthetical
-ups = ")]}" # closes parenthetical
-holds = "'\"" # string open/close chars
+downs = "([{"  # opens parenthetical
+ups = ")]}"  # closes parenthetical
+holds = "'\""  # string open/close chars
 
-taberrfmt = 2 # spaces to indent exceptions
-tabideal = 4 # spaces to indent code for displaying
-tabworth = 8 # worth of \t in spaces for parsing (8 = Python standard)
+taberrfmt = 2  # spaces to indent exceptions
+tabideal = 4  # spaces to indent code for displaying
+tabworth = 8  # worth of \t in spaces for parsing (8 = Python standard)
 
 reserved_prefix = "_coconut"
 decorator_var = "_coconut_decorator"
@@ -77,7 +78,7 @@ yield_item_var = "_coconut_yield_item"
 raise_from_var = "_coconut_raise_from"
 stmt_lambda_var = "_coconut_lambda"
 
-wildcard = "_" # for pattern-matching
+wildcard = "_"  # for pattern-matching
 
 keywords = (
     "and",
@@ -110,23 +111,23 @@ keywords = (
     "with",
     "yield",
     "nonlocal",
-    )
+)
 
 const_vars = (
     "True",
     "False",
     "None",
-    )
+)
 
-reserved_vars = ( # can be backslash-escaped
+reserved_vars = (  # can be backslash-escaped
     "data",
     "match",
     "case",
     "async",
     "await",
-    )
+)
 
-new_to_old_stdlib = { # new_name: (old_name, new_version_info)
+new_to_old_stdlib = {  # new_name: (old_name, new_version_info)
     "builtins": ("__builtin__", (3,)),
     "configparser": ("ConfigParser", (3,)),
     "copyreg": ("copy_reg", (3,)),
@@ -171,7 +172,7 @@ new_to_old_stdlib = { # new_name: (old_name, new_version_info)
 # COMMAND CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-code_exts = [".coco", ".coc", ".coconut"] # in order of preference
+code_exts = [".coco", ".coc", ".coconut"]  # in order of preference
 comp_ext = ".py"
 
 main_sig = "Coconut: "
@@ -184,9 +185,9 @@ default_multiline = False
 default_vi_mode = False
 default_mouse_support = True
 
-watch_interval = .1 # seconds
+watch_interval = .1  # seconds
 
-info_tabulation = 18 # offset for tabulated info messages
+info_tabulation = 18  # offset for tabulated info messages
 
 version_long = "Version " + VERSION_STR + " running on Python " + " ".join(sys.version.splitlines())
 version_banner = "Coconut " + VERSION_STR
@@ -235,7 +236,7 @@ builtins = (
     "py_str",
     "py_map",
     "py_zip",
-    )
+)
 
 new_operators = (
     r">>>",
@@ -267,7 +268,7 @@ new_operators = (
     r"\xd7",
     r"\u2026",
     r"\u2218",
-    )
+)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # ICOCONUT CONSTANTS:
