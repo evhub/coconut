@@ -16,11 +16,7 @@ python:
 
 install:
   - pip install "pip==7.1.2"
-  - pip install "coveralls==1.1"
   - make
 
 script:
   - make test
-
-after_success:
-  - coveralls

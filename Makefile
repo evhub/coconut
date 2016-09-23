@@ -22,7 +22,7 @@ docs:
 	popd
 
 test:
-	coverage run -m pytest --strict -s tests
+	pytest -s tests
 
 clean:
 	rm -rf ./docs

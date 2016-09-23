@@ -200,7 +200,6 @@ setuptools.setup(
         "reqs",
         "docs",
         "tests",
-        "coverage",
     ]),
     include_package_data=True,
     entry_points={
