@@ -103,7 +103,13 @@ which will install Coconut and its required dependencies. Coconut also has some 
 ```
 pip install coconut[all]
 ```
-which will enable the use of Coconut's `--watch` and `--jupyter` flags. To install the optional dependencies only for a particular flag, simply put the flag name in place of `all`.
+which will enable the use of Coconut's `--watch` flag, `--jupyter` flag, and test suite. To install the optional dependencies only for a particular flag, simply put the flag name in place of `all`.
+
+Alternatively, if you want to test out Coconut's latest and greatest, enter
+```
+pip install coconut-develop
+```
+which will install the the most recent working [development build](https://github.com/evhub/coconut/tree/develop) (optional dependency installation is also supported in the same manner as above if you want). For more information on the current development build, check out the [development version of this documentation](http://coconut.readthedocs.org/en/develop/DOCS.html). Be warned: `coconut-develop` is likely to be unstable—if you find a bug, please report it by [creating a new issue](https://github.com/evhub/coconut/issues/new).
 
 ### Usage
 
