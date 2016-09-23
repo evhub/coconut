@@ -11,3 +11,9 @@ def non_py26_test():
     exec("b = mod(5, 3)", globals(), test)
     assert test["b"] == 2
     return True
+
+def non_py32_test():
+    """Tests for any non-py32 version."""
+    assert {range(8): True}[range(8)]
+    assert range(1, 2) == range(1, 2)
+    assert range(1, 2) != range(3, 4)
