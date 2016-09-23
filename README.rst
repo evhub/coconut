@@ -29,7 +29,7 @@ __ Coconut_
 .. _Python: https://www.python.org/
 .. _PyPI: https://pypi.python.org/pypi/coconut
 .. _Tutorial: http://coconut.readthedocs.org/en/master/HELP.html
-.. _Documntation: http://coconut.readthedocs.org/en/master/DOCS.html
+.. _Documentation: http://coconut.readthedocs.org/en/master/DOCS.html
 .. _FAQ: http://coconut.readthedocs.org/en/master/FAQ.html
 .. _GitHub: https://github.com/evhub/coconut
 .. _Gitter: https://gitter.im/evhub/coconut
