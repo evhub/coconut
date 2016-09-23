@@ -28,7 +28,7 @@ VERSION_NAME = "Brontosaurus"
 DEVELOP = True
 
 if DEVELOP:
-    VERSION += "-post_dev" + int(DEVELOP)
+    VERSION += "-post_dev" + str(int(DEVELOP))
 __version__ = VERSION
 VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
 VERSION_TAG = "v" + VERSION
