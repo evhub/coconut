@@ -23,9 +23,9 @@ import sys as _coconut_sys
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-VERSION = "1.1.1"
-VERSION_NAME = "Brontosaurus"
-DEVELOP = 2
+VERSION = "1.1.2"
+VERSION_NAME = "Colonel"
+DEVELOP = 1
 
 if DEVELOP:
     VERSION += "-post_dev" + str(int(DEVELOP))
