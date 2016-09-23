@@ -124,13 +124,13 @@ with open("README.rst", "r") as readme_file:
     readme_lines = []
     in_toc = False
     for line in readme_file.readlines():
-        if in_toc and line and not line.startswith(" "):
-            in_toc = False
-        if line == ".. toctree::":
+        if line.startswith(".. toctree::"):
             in_toc = True
+        if in_toc and 0 < len(line.lstrip()) < len(line):
+            in_toc = False
         if not in_toc:
             readme_lines.append(line)
-    readme = "\n".join(readme_lines)
+    readme = "".join(readme_lines)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -187,7 +187,7 @@ extras["dev"] = uniqueify(all_reqs_in(extras) + read_reqs("dev"))
 #-----------------------------------------------------------------------------------------------------------------------
 
 setuptools.setup(
-    name="coconut",
+    name="coconut" + ("-develop" if DEVELOP else ""),
     version=VERSION,
     description="Simple, elegant, Pythonic functional programming.",
     long_description=readme,

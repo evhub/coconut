@@ -34,3 +34,7 @@ clean:
 
 build: clean
 	python setup.py sdist bdist_wheel
+
+upload: build
+	pip install --upgrade twine
+	twine upload dist/*

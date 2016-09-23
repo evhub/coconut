@@ -1,24 +1,27 @@
 language: python
-
 notifications:
   email: false
-
 sudo: false
-
 cache: pip
-
 python:
-  - "2.6"
-  - "2.7"
-  - "pypy"
-  - "3.3"
-  - "3.4"
-  - "3.5"
-  - "pypy3"
-
+- '2.6'
+- '2.7'
+- pypy
+- '3.3'
+- '3.4'
+- '3.5'
+- pypy3
 install:
-  - pip install "pip==7.1.2"
-  - make
-
+- pip install "pip==7.1.2"
+- make
 script:
-  - make test
+- make test
+deploy:
+  provider: pypi
+  user: evhub-develop
+  password:
+    secure: f5zfnO9cuMJyszSVG7h6ZZ0NtrQpI33NuCvyOEYeoLCL5815ANElRuBlGcP6KbydHM1rSp2/i62DXANy73U2mcPiQyiWUkhffOLxYnSGIMQ2hyRz2ZAopCusf5ZQFWH40NhT2q/gOnN/Cwyjd6KyU1oXSpolfROaE5aimu5dQcg=
+  on:
+    distributions: sdist bdist_wheel
+    repo: evhub/coconut
+    branch: develop
