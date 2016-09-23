@@ -38,6 +38,11 @@ src = os.path.join(base, "src")
 dest = os.path.join(base, "dest")
 
 
+def escape(inputstring):
+    """Performs basic shell escaping."""
+    return inputstring.replace("$", "\\$").replace("`", "\\`")
+
+
 def call(cmd, assert_output=False, **kwargs):
     """Executes a shell command."""
     print("\n>", (cmd if isinstance(cmd, str) else " ".join(cmd)))
@@ -200,7 +205,7 @@ class TestShell(unittest.TestCase):
         call(["coconut", "-s", "--code", coconut_snip], assert_output=True)
 
     def test_pipe(self):
-        call(r'echo "' + coconut_snip.replace("$", "\\$") + '" | coconut -s', shell=True, assert_output=True)
+        call(r'echo "' + escape(coconut_snip) + '" | coconut -s', shell=True, assert_output=True)
 
     def test_convenience(self):
         call(["python", "-c", 'from coconut.convenience import parse; exec(parse("' + coconut_snip + '"))'], assert_output=True)
