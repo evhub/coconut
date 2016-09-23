@@ -118,6 +118,11 @@ def ensure_time_elapsed():
     """Ensures minimum_process_time has elapsed."""
     if sys.version_info >= (3, 2):
         yield
+    elif PY26:
+        try:
+            yield
+        finally:
+            time.sleep(minimum_process_time)
     else:
         start = time.time()
         try:
@@ -127,8 +132,7 @@ def ensure_time_elapsed():
             sleep_time = minimum_process_time - elapsed_time
             if sleep_time < minimum_sleep_time:
                 sleep_time = minimum_sleep_time
-            if sleep_time > 0:
-                time.sleep(sleep_time)
+            time.sleep(sleep_time)
 
 
 def handling_prompt_toolkit_errors(func):
