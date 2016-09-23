@@ -52,6 +52,7 @@ from coconut.command.util import (
     Runner,
     multiprocess_wrapper,
     Prompt,
+    ensure_time_elapsed,
 )
 from coconut.compiler.header import gethash
 from coconut.command.cli import arguments
@@ -335,7 +336,8 @@ class Command(object):
             from concurrent.futures import ProcessPoolExecutor
             try:
                 with ProcessPoolExecutor(self.jobs) as self.executor:
-                    yield
+                    with ensure_time_elapsed():
+                        yield
             finally:
                 self.executor = None
                 self.exit_on_error("Exiting due to compilation error.")

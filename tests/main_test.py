@@ -28,7 +28,7 @@ import platform
 from contextlib import contextmanager
 
 #-----------------------------------------------------------------------------------------------------------------------
-# UTILITIES:
+# CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
 IPY = (PY2 and not PY26) or (not PY2 and sys.version_info >= (3, 3))
@@ -36,6 +36,15 @@ IPY = (PY2 and not PY26) or (not PY2 and sys.version_info >= (3, 3))
 base = os.path.dirname(os.path.relpath(__file__))
 src = os.path.join(base, "src")
 dest = os.path.join(base, "dest")
+
+prisoner = os.path.join(os.curdir, "prisoner")
+pyston = os.path.join(os.curdir, "pyston")
+
+coconut_snip = "msg = '<success>'; pmsg = print$(msg); `pmsg`"
+
+#-----------------------------------------------------------------------------------------------------------------------
+# UTILITIES:
+#-----------------------------------------------------------------------------------------------------------------------
 
 
 def escape(inputstring):
@@ -78,6 +87,15 @@ def comp(path=None, folder=None, file=None, args=[]):
 
 
 @contextmanager
+def remove_when_done(directory):
+    """Removes a directory when done."""
+    try:
+        yield
+    finally:
+        shutil.rmtree(directory)
+
+
+@contextmanager
 def using_dest():
     """Makes and removes the dest folder."""
     try:
@@ -85,10 +103,8 @@ def using_dest():
     except Exception:
         shutil.rmtree(dest)
         os.mkdir(dest)
-    try:
+    with remove_when_done(dest):
         yield
-    finally:
-        shutil.rmtree(dest)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # RUNNER:
@@ -199,8 +215,6 @@ def comp_all(args=[]):
 # TESTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-coconut_snip = "msg = '<success>'; pmsg = print$(msg); `pmsg`"
-
 
 class TestShell(unittest.TestCase):
 
@@ -258,15 +272,11 @@ class TestCompilation(unittest.TestCase):
 class TestExternal(unittest.TestCase):
 
     def test_prisoner(self):
-        try:
+        with remove_when_done(prisoner):
             comp_prisoner()
-        finally:
-            shutil.rmtree(os.path.join(os.curdir, "prisoner"))
 
     def test_pyston(self):
-        try:
+        with remove_when_done(pyston):
             comp_pyston()
             if PY2 and platform.python_implementation() == "PyPy":
                 run_pyston()
-        finally:
-            shutil.rmtree(os.path.join(os.curdir, "pyston"))

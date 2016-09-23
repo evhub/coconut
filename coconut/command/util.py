@@ -47,6 +47,7 @@ from coconut.constants import (
     default_vi_mode,
     default_mouse_support,
     minimum_process_time,
+    minimum_sleep_time,
 )
 from coconut.logging import logger
 from coconut.exceptions import CoconutException, CoconutInternalException
@@ -113,18 +114,38 @@ def try_eval(code, in_vars):
 
 
 @contextmanager
-def ensure_minimum_process_time():
+def ensure_time_elapsed():
     """Ensures minimum_process_time has elapsed."""
-    if sys.version_info < (3, 3):
+    if sys.version_info >= (3, 2):
+        yield
+    else:
         start = time.time()
         try:
             yield
         finally:
-            elapsed = time.time() - start
-            if elapsed < minimum_process_time:
-                time.sleep(minimum_process_time - elapsed)
-    else:
-        yield
+            elapsed_time = time.time() - start
+            sleep_time = minimum_process_time - elapsed_time
+            if sleep_time < minimum_sleep_time:
+                sleep_time = minimum_sleep_time
+            if sleep_time > 0:
+                time.sleep(sleep_time)
+
+
+def handling_prompt_toolkit_errors(func):
+    """Handles prompt_toolkit and pygments errors."""
+    @functools.wraps(func)
+    def handles_prompt_toolkit_errors_func(self, *args, **kwargs):
+        if self.style is not None:
+            try:
+                return func(self, *args, **kwargs)
+            except (KeyboardInterrupt, EOFError):
+                raise
+            except (Exception, AssertionError):
+                logger.print_exc()
+                logger.show("Syntax highlighting failed; switching to --style none.")
+                self.style = None
+        return func(self, *args, **kwargs)
+    return handles_prompt_toolkit_errors_func
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CLASSES:
@@ -159,22 +180,6 @@ class Prompt(object):
             self.style = style
         else:
             raise CoconutException("unrecognized pygments style", style, "try '--style list' to show all valid styles")
-
-    def handling_prompt_toolkit_errors(func):
-        """Handles prompt_toolkit and pygments errors."""
-        @functools.wraps(func)
-        def handles_prompt_toolkit_errors_func(self, *args, **kwargs):
-            if self.style is not None:
-                try:
-                    return func(self, *args, **kwargs)
-                except (KeyboardInterrupt, EOFError):
-                    raise
-                except (Exception, AssertionError):
-                    logger.print_exc()
-                    logger.show("Syntax highlighting failed; switching to --style none.")
-                    self.style = None
-            return func(self, *args, **kwargs)
-        return handles_prompt_toolkit_errors_func
 
     @handling_prompt_toolkit_errors
     def input(self, more=False):
@@ -254,6 +259,6 @@ class multiprocess_wrapper(object):
     def __call__(self, *args, **kwargs):
         """Sets up new process then calls the method."""
         sys.setrecursionlimit(self.recursion)
-        with ensure_minimum_process_time():
+        with ensure_time_elapsed():
             logger.copy_from(self.logger)
             return getattr(self.base, self.method)(*args, **kwargs)
