@@ -88,6 +88,8 @@ class range(object):
         return (self.__class__, self._xrange.__reduce_ex__(protocol)[1])
     def __reduce__(self):
         return self.__reduce_ex__(_coconut.pickle.HIGHEST_PROTOCOL)
+    def __hash__(self):
+        return _coconut.hash(self._xrange.__reduce__()[1])
     def __copy__(self):
         return self.__class__(*self._xrange.__reduce__()[1])
     def __eq__(self, other):

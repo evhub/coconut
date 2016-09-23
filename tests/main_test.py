@@ -144,13 +144,13 @@ def run(args=[], agnostic_target=None, comp_run=False):
 
     with create_dest():
 
-        comp_agnostic(agnostic_args)
         if PY2:
             comp_2(args)
         else:
             comp_3(args)
             if sys.version_info >= (3, 5):
                 comp_35(args)
+        comp_agnostic(agnostic_args)
         if comp_run:
             comp_runner(agnostic_args + ["--run"])
         else:
@@ -184,11 +184,14 @@ def run_pyston():
 
 def comp_all(args=[]):
     """Compile Coconut tests."""
-    create_dest().__enter__()
-    comp_agnostic(args)
+    try:
+        os.mkdir(dest)
+    except FileExistsError:
+        pass
     comp_2(args)
     comp_3(args)
     comp_35(args)
+    comp_agnostic(args)
     comp_runner(args)
     comp_extras(args)
 

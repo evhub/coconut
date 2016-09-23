@@ -266,6 +266,7 @@ def main_test():
     assert count(5) == count(5)
     assert count(5) != count(3)
     assert {count(5): True}[count(5)]
+    assert {range(8): True}[range(8)]
     return True
 
 def main(*args):
