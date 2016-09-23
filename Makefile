@@ -22,7 +22,7 @@ docs:
 	popd
 
 test:
-	pytest -s tests
+	pytest --strict -s tests
 
 clean:
 	rm -rf ./docs
