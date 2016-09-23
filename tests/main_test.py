@@ -82,7 +82,7 @@ def create_dest():
     """Makes and removes the dest folder."""
     try:
         os.mkdir(dest)
-    except FileExistsError:
+    except Exception:
         shutil.rmtree(dest)
         os.mkdir(dest)
     try:
@@ -186,7 +186,7 @@ def comp_all(args=[]):
     """Compile Coconut tests."""
     try:
         os.mkdir(dest)
-    except FileExistsError:
+    except Exception:
         pass
     comp_2(args)
     comp_3(args)
