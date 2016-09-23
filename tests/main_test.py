@@ -78,7 +78,7 @@ def comp(path=None, folder=None, file=None, args=[]):
 
 
 @contextmanager
-def create_dest():
+def using_dest():
     """Makes and removes the dest folder."""
     try:
         os.mkdir(dest)
@@ -142,7 +142,7 @@ def run(args=[], agnostic_target=None, comp_run=False):
     else:
         agnostic_args = args + ["--target", str(agnostic_target)]
 
-    with create_dest():
+    with using_dest():
 
         if PY2:
             comp_2(args)
@@ -258,9 +258,15 @@ class TestCompilation(unittest.TestCase):
 class TestExternal(unittest.TestCase):
 
     def test_prisoner(self):
-        comp_prisoner()
+        try:
+            comp_prisoner()
+        finally:
+            shutil.rmtree(os.path.join(os.curdir, "prisoner"))
 
     def test_pyston(self):
-        comp_pyston()
-        if platform.python_implementation() == "PyPy":
-            run_pyston()
+        try:
+            comp_pyston()
+            if platform.python_implementation() == "PyPy":
+                run_pyston()
+        finally:
+            shutil.rmtree(os.path.join(os.curdir, "pyston"))
