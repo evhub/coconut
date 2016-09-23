@@ -266,7 +266,7 @@ class TestExternal(unittest.TestCase):
     def test_pyston(self):
         try:
             comp_pyston()
-            if platform.python_implementation() == "PyPy":
+            if PY2 and platform.python_implementation() == "PyPy":
                 run_pyston()
         finally:
             shutil.rmtree(os.path.join(os.curdir, "pyston"))
