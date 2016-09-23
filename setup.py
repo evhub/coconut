@@ -126,7 +126,7 @@ with open("README.rst", "r") as readme_file:
     for line in readme_file.readlines():
         if line.startswith(".. toctree::"):
             in_toc = True
-        if in_toc and 0 < len(line.lstrip()) < len(line):
+        if in_toc and 0 < len(line.lstrip()) == len(line):
             in_toc = False
         if not in_toc:
             readme_lines.append(line)
