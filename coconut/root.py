@@ -25,7 +25,7 @@ import sys as _coconut_sys
 
 VERSION = "1.1.2"
 VERSION_NAME = "Colonel"
-DEVELOP = 1
+DEVELOP = 2
 
 if DEVELOP:
     VERSION += "-post_dev" + str(int(DEVELOP))

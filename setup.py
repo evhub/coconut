@@ -116,21 +116,13 @@ search_terms = [
     "case keyword",
 ]
 
-#-----------------------------------------------------------------------------------------------------------------------
-# README:
-#-----------------------------------------------------------------------------------------------------------------------
-
-with open("README.rst", "r") as readme_file:
-    readme_lines = []
-    in_toc = False
-    for line in readme_file.readlines():
-        if line.startswith(".. toctree::"):
-            in_toc = True
-        elif in_toc and 0 < len(line.lstrip()) == len(line):
-            in_toc = False
-        if not in_toc:
-            readme_lines.append(line)
-    readme = "".join(readme_lines)
+script_names = [
+    "coconut",
+    "coconut-" + VERSION_TAG.split("-", 1)[0],
+    ("coconut-py2" if PY2 else "coconut-py3"),
+    "coconut-py" + str(sys.version_info[0]) + str(sys.version_info[1]),
+    ("coconut-develop" if DEVELOP else "coconut-release"),
+]
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -183,6 +175,22 @@ extras["docs"] = read_reqs("docs")
 extras["dev"] = uniqueify(all_reqs_in(extras) + read_reqs("dev"))
 
 #-----------------------------------------------------------------------------------------------------------------------
+# README:
+#-----------------------------------------------------------------------------------------------------------------------
+
+with open("README.rst", "r") as readme_file:
+    readme_lines = []
+    in_toc = False
+    for line in readme_file.readlines():
+        if line.startswith(".. toctree::"):
+            in_toc = True
+        elif in_toc and 0 < len(line.lstrip()) == len(line):
+            in_toc = False
+        if not in_toc:
+            readme_lines.append(line)
+    readme = "".join(readme_lines)
+
+#-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -204,7 +212,8 @@ setuptools.setup(
     include_package_data=True,
     entry_points={
         "console_scripts": [
-            "coconut = coconut.main:main",
+            script + " = coconut.main:main"
+            for script in script_names
         ],
         "pygments.lexers": [
             "coconut = coconut.highlighter:CoconutLexer",
