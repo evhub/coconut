@@ -8,7 +8,7 @@
 """
 Author: Evan Hubinger
 License: Apache 2.0
-Description: Runs Coconut's tests.
+Description: Compile Coconut test source.
 """
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -23,11 +23,17 @@ import sys
 import os.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tests.main_test import main
+from tests.main_test import comp_all
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
 #-----------------------------------------------------------------------------------------------------------------------
+
+
+def main():
+    """Compile everything with given arguments."""
+    comp_all(sys.argv[1:])
+
 
 if __name__ == "__main__":
     main()

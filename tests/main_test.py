@@ -176,6 +176,17 @@ def run_pyston():
     """Runs pyston."""
     call(["python", os.path.join(os.curdir, "pyston", "runner.py")], assert_output=True)
 
+
+def comp_all(args=[]):
+    """Compile Coconut tests."""
+    create_dest().__enter__()
+    comp_agnostic(args)
+    comp_2(args)
+    comp_3(args)
+    comp_35(args)
+    comp_runner(args)
+    comp_extras(args)
+
 #-----------------------------------------------------------------------------------------------------------------------
 # TESTS:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -245,12 +256,3 @@ class TestExternal(unittest.TestCase):
         comp_pyston()
         if platform.python_implementation() == "PyPy":
             run_pyston()
-
-#-----------------------------------------------------------------------------------------------------------------------
-# MAIN:
-#-----------------------------------------------------------------------------------------------------------------------
-
-
-def main():
-    """Run Coconut tests."""
-    unittest.main()
