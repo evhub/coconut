@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 #-----------------------------------------------------------------------------------------------------------------------
 # INFO:
@@ -47,7 +48,7 @@ if sys_target in pseudo_targets:
 else:
     pseudo_targets["sys"] = sys_target
 
-default_encoding = "UTF-8"
+default_encoding = "utf-8"
 default_whitespace_chars = " \t\f\v"
 
 openindent = "\u204b"  # reverse pilcrow
@@ -185,6 +186,7 @@ default_multiline = False
 default_vi_mode = False
 default_mouse_support = True
 
+minimum_process_time = .1  # seconds
 watch_interval = .1  # seconds
 
 info_tabulation = 18  # offset for tabulated info messages

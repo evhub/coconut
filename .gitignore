@@ -61,7 +61,6 @@ coverage.xml
 
 # Sphinx documentation
 _build/
-_docs/
 
 # PyBuilder
 target/
@@ -75,3 +74,7 @@ target/
 
 # Sublime
 *.sublime-*
+
+# Coconut
+tests/dest/
+docs/

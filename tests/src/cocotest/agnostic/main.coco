@@ -1,0 +1,291 @@
+import sys
+
+def main_test():
+    """Basic no-dependency tests."""
+    assert "\n" == (
+
+'''
+'''
+
+) == """
+"""
+    assert \(_coconut)
+    assert "_coconut" in globals()
+    assert "_coconut" not in locals()
+    x = 5
+    assert x == 5
+    x == 6
+    assert x == 5
+    assert r"hello, world" == "hello, world" == "hello," " " "world"
+    assert "\n " == """
+ """
+    assert "\\" "\"" == "\\\""
+    assert """
+
+""" == "\n\n"
+    assert {"a":5}["a"] == 5
+    a, = [24]
+    assert a == 24
+    assert set((1, 2, 3)) == {1, 2, 3}
+    olist = [0,1,2]
+    olist[1] += 4
+    assert olist == [0,5,2]
+    assert +5e+5 == +5 * +10**+5
+    assert repr(3) == "3" == ascii(3)
+    assert 5 |> (-)$(2) |> (*)$(2) == -6
+    assert map(pow$(2), 0 `range` 5) |> list == [1,2,4,8,16]
+    iter1 = range(0,10)
+    iter1, iter2 = tee(iter1)
+    assert iter1$[2:8] |> list == iter2$[2:8] |> list
+    \data = 5
+    assert \data == 5
+    \\data = 3
+    \\assert data == 3
+    \\def backslash_test():
+        return (x) -> x
+    assert \(1) == 1 == backslash_test()(1)
+    assert (\(
+            "hello"
+        ) == "hello" == \(
+            'hello'
+        ))
+    \\def multiline_backslash_test(
+                                   x,
+                                   y):
+        return x + y
+    assert multiline_backslash_test(1, 2) == 3
+    \\ assert True
+    class one_line_class: pass
+    assert isinstance(one_line_class(), one_line_class)
+    assert "" |> .join <| ["1","2","3"] == "123" == "". <| "join" <| ["1","2","3"]
+    assert 1 |> [1,2,3][] == 2 == 1 |> [1,2,3]$[]
+    assert 1 |> "123"[] == "2" == 1 |> "123"$[]
+    assert (| -1, 0, |) :: range(1, 5) |> list == [-1, 0, 1, 2, 3, 4]
+    assert (| 1 |) :: (| 2 |) |> list == [1, 2]
+    assert not isinstance(map((+)$(2), [1,2,3]), list)
+    assert not isinstance(range(10), list)
+    assert isinstance(10**100, int)
+    assert chr(1000)
+    assert 3 + 4i |> abs == 5
+    assert 3.14j == 3.14i
+    assert 10.j == 10.i
+    assert 10j == 10i
+    assert .001j == .001i
+    assert 1e100j == 1e100i
+    assert 3.14e-10j == 3.14e-10i
+    {"text": text, "tags": [first] + rest} = {"text": "abc", "tags": [1, 2, 3]}
+    assert text == "abc"
+    assert first == 1
+    assert rest == [2, 3]
+    assert bytes(3) == b"\x00\x00\x00"
+    assert isinstance("a", str)
+    assert isinstance(b"a", bytes)
+    global (glob_a,
+            glob_b)
+    glob_a, glob_b = 0, 0
+    assert glob_a == 0 == glob_b
+    def set_globs(x):
+        global (glob_a, glob_b)
+        glob_a, glob_b = x, x
+    set_globs(2)
+    assert glob_a == 2 == glob_b
+    def set_globs_again(x):
+        global (glob_a, glob_b) = (x, x)
+    set_globs_again(10)
+    assert glob_a == 10 == glob_b
+    assert (-)(1) == -1 == (-)$(1)(2)
+    assert 3 `(<=)` 3
+    assert range(10) |> consume |> list == []
+    assert range(10) |> consume$(keep_last=2) |> list == [8, 9]
+    i = int()
+    try:
+        i.x = 12
+    except AttributeError as err:
+        assert err
+    else:
+        assert False
+    b = bytes()
+    try:
+        b.x = 12
+    except AttributeError as err:
+        assert err
+    else:
+        assert False
+    import queue as q, builtins, email.mime.base
+    assert q.Queue
+    assert builtins.len([1, 1]) == 2
+    assert email.mime.base
+    from email.mime import base as mimebase
+    assert mimebase
+    from_err = TypeError()
+    try:
+        raise ValueError() from from_err
+    except ValueError as err:
+        assert err.__cause__ is from_err
+    else:
+        assert False
+    data doc: "doc"
+    data doc_:
+        """doc"""
+    assert doc.__doc__ == "doc" == doc_.__doc__
+    assert 10000000.0 == 10_000_000.0
+    assert (||) |> tuple == ()
+    import collections
+    import collections.abc
+    assert isinstance([], collections.abc.Sequence)
+    assert isinstance(range(1), collections.abc.Sequence)
+    assert collections.defaultdict(int)[5] == 0
+    assert len(range(10)) == 10
+    assert range(4) |> reversed |> tuple == (3,2,1,0)
+    assert range(5)[1:] |> tuple == (1,2,3,4) == range(5)$[1:] |> tuple
+    assert range(10)[-3:-1] |> tuple == (7,8) == range(10)$[-3:-1] |> tuple
+    assert map(abs, (1,-2,-5,2))$[:] |> tuple == (1,2,5,2)
+    assert (|1,2|)$[-1] == 2
+    assert (|0,1,2,3|)$[-2:] |> tuple == (2,3)
+    assert (|0,1,2,3|)$[:-2] |> tuple == (0,1)
+    assert map((+), (|10, 20|), (|1, 2|))$[-1] == 22 == map((+), (|10, 20|), (|1, 2|))[-1]
+    assert map((x)->x+1, range(10**9))$[-1] == 10**9 == count()$[10**9]
+    assert count()$[10:15] |> tuple == (10,11,12,13,14) == count()[10:15] |> tuple
+    assert zip((1,2), (3,4)) |> tuple == ((1,3),(2,4)) == zip((1,2), (3,4))$[:] |> tuple
+    assert zip((|10, 20|), (|1, 2|))$[-1] |> tuple == (20,2) == zip((|10, 20|), (|1, 2|))[-1] |> tuple
+    assert zip(count(), count())$[10**9] |> tuple == (10**9, 10**9) == zip(count(), count())[10**9] |> tuple
+    assert count(1.5, 0.5)$[0] == 1.5 == (1.5,2,2.5,3)$[0]
+    assert count(1.5, 0.5)$[1:3] |> tuple == (2,2.5) == (1.5,2,2.5,3)$[1:3] |> tuple
+    assert iter((0,1,2,3,4))$[::2] |> tuple == (0,2,4)
+    assert iter((0,1,2,3,4))$[::-1] |> tuple == (4,3,2,1,0)
+    assert {x:x for x in range(5)} == {0:0, 1:1, 2:2, 3:3, 4:4}
+    match x = 12
+    assert x == 12
+    get_int = () -> int
+    x is get_int() = 5
+    assert x == 5
+    class a(get_int()): pass
+    assert isinstance(a(), int)
+    assert map((+), range(5), range(6)) |> len == 5 == zip(range(5), range(6)) |> len
+    assert map((-), range(5))._func(3) == -3
+    assert map((-), range(5))._iters[0] |> tuple == range(5) |> tuple == zip(range(5), range(6))._iters[0] |> tuple
+    assert repr(zip((0,1), (1,2))) == "zip((0, 1), (1, 2))"
+    assert repr(map((-), range(5))).startswith("map(")
+    assert repr(parallel_map((-), range(5))).startswith("parallel_map(")
+    assert parallel_map((-), range(5)) |> tuple == (0, -1, -2, -3, -4) == parallel_map(map$((-)), (range(5),))$[0] |> tuple
+    assert parallel_map(zip, (range(2),), (range(2),)) |> map$(tuple) |> tuple == (((0,0), (1,1)),)
+    assert (range(0, 5), range(5, 10)) |*> map$(+) |> tuple == (5, 7, 9, 11, 13)
+    assert parallel_map((*)$(2)..(+)$(1), range(5)) |> tuple == (2, 4, 6, 8, 10)
+    assert repr(concurrent_map((-), range(5))).startswith("concurrent_map(")
+    assert concurrent_map((-), range(5)) |> tuple == (0, -1, -2, -3, -4) == concurrent_map(map$((-)), (range(5),))$[0] |> tuple
+    assert concurrent_map(zip, (range(2),), (range(2),)) |> map$(tuple) |> tuple == (((0,0), (1,1)),)
+    assert (range(0, 5), range(5, 10)) |*> map$(+) |> tuple == (5, 7, 9, 11, 13)
+    assert concurrent_map((*)$(2)..(+)$(1), range(5)) |> tuple == (2, 4, 6, 8, 10)
+    assert 0 in range(1)
+    assert range(1).count(0) == 1
+    assert 2 in range(5)
+    assert range(5).count(2) == 1
+    assert 10 not in range(3)
+    assert range(3).count(10) == 0
+    assert 1 in range(1,2,3)
+    assert range(1,2,3).count(1) == 1
+    assert range(1,2,3).index(1) == 0
+    assert range(1,2,3)[0] == 1
+    assert range(1,5,3).index(4) == 1
+    assert range(1,5,3)[1] == 4
+    try:
+        range(1,2,3).index(2)
+    except ValueError as err:
+        assert err
+    else:
+        assert False
+    assert 0 in count()
+    assert count().count(0) == 1
+    assert -1 not in count()
+    assert count().count(-1) == 0
+    assert 1 not in count(5)
+    assert count(5).count(1) == 0
+    assert 2 not in count(1,2)
+    assert count(1,2).count(2) == 0
+    try:
+        count(1,2).index(2)
+    except ValueError as err:
+        assert err
+    else:
+        assert False
+    assert count(1,3).index(1) == 0
+    assert count(1,3)[0] == 1
+    assert count(1,3).index(4) == 1
+    assert count(1,3)[1] == 4
+    assert len <| map((x) -> x, [1, 2]) == 2
+    assert repr("hello") == "'hello'" == ascii("hello")
+    assert count(1,3) |> .index(1) == 0
+    assert count(1).__copy__()$[0] == 1
+    assert map((+), count(1), count(1)).__copy__()$[0] == 2
+    assert zip(count(1), count(1)).__copy__()$[0] |> tuple == (1, 1)
+    assert tee(count()) |> map$((t) -> isinstance(t, count)) |> all
+    assert tee(range(10)) |> map$((t) -> isinstance(t, range)) |> all
+    assert tee([1, 2, 3]) |> map$((t) -> isinstance(t, list)) |> all
+    assert (-> 5)() == 5
+    assert (-> _[0])([1, 2, 3]) == 1
+    assert iter(range(10))$[-5:-8] |> list == [5, 6]
+    assert iter(range(10))$[-2:] |> list == [8, 9]
+    assert range(1, 5) |> .[1] == 2 == range(1, 5) |> .$[1]
+    assert range(10) |> .[:5] |> list == [0, 1, 2, 3, 4] == range(10) |> .$[:5] |> list
+    assert range(10) |> map$(def (x) -> y = x) |> list == [None]*10
+    assert range(5) |> map$(def (x) -> yield x) |> map$(list) |> list == [[0], [1], [2], [3], [4]]
+    def do_stuff(x) = True
+    assert (def (x=3) -> do_stuff(x))() is True
+    assert (def (x=4) -> do_stuff(x); x)() == 4
+    assert (def (x=5) -> do_stuff(x);)() is None
+    (def (x=6) -> do_stuff(x); assert x)()
+    assert (def (x=7) -> do_stuff(x); assert x; yield x)() |> list == [7]
+    assert (def -> do_stuff(_); assert _; _)(8) == 8
+    assert (def (x=9) -> x)() == 9
+    assert (def (x=10) -> do_stuff(x); x)() == 10
+    assert (def -> def -> 11)()() == 11
+    assert (def -> 12)() == 12 == (def -> 12)()
+    assert ((def (x) -> -> x)(x) for x in range(5)) |> map$(-> _()) |> list == [0, 1, 2, 3, 4]
+    herpaderp = 5
+    def derp():
+        herp = 10
+        return (def -> herpaderp + herp)
+    assert derp()() == 15
+    data abc(xyz)
+    assert abc(10).xyz == 10
+    class aclass
+    assert isinstance(aclass, object)
+    assert tee((1,2)) |*> (is)
+    assert tee(f{1,2}) |*> (is)
+    assert (x -> 2 / x)(4) == 1/2
+    match [a, *b, c] = range(10)
+    assert a == 0
+    assert b == [1, 2, 3, 4, 5, 6, 7, 8]
+    assert c == 9
+    match [a, *b, a] in range(10):
+        assert False
+    else:
+        assert True
+    a = 1; b = 1
+    assert a == 1 == b
+    assert count(5) == count(5)
+    assert count(5) != count(3)
+    assert {count(5): True}[count(5)]
+    assert {range(8): True}[range(8)]
+    return True
+
+def main(*args):
+    """Asserts arguments and executes tests."""
+    assert all(args)
+    assert main_test()
+    if sys.version_info >= (2, 7):
+        from .non_py26_test import non_py26_test
+        assert non_py26_test()
+    from .suite import suite_test
+    assert suite_test()
+    if sys.version_info < (3,):
+        from .py2_test import py2_test
+        assert py2_test()
+    else:
+        from .py3_test import py3_test
+        assert py3_test()
+        if sys.version_info >= (3, 5):
+            from .py35_test import py35_test
+            assert py35_test()
+    from . import tutorial
+    print("<success>")

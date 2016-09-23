@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 #-----------------------------------------------------------------------------------------------------------------------
 # INFO:
@@ -137,6 +138,7 @@ with open("README.rst", "r") as readme_file:
 
 
 def read_reqs(tag=""):
+    """Read the requirements file for the given tag."""
     if tag:
         tag = "-" + tag
     req_file_name = "./reqs/requirements" + tag + ".txt"
@@ -144,38 +146,41 @@ def read_reqs(tag=""):
         return [line.strip() for line in req_file.readlines() if line]
 
 
+def uniqueify(reqs):
+    """Make a list of requirements unique."""
+    return list(set(reqs))
+
+
 def all_reqs_in(req_dict):
-    return list(set(req for req_list in req_dict.values() for req in req_list))
+    """Gets all requirements in a requirements dict."""
+    return uniqueify(req for req_list in req_dict.values() for req in req_list)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # REQUIREMENTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-reqs = read_reqs()
+requirements = read_reqs()
 
 if not PY26:
-    reqs += read_reqs("non-py26")
+    requirements += read_reqs("non-py26")
 
 if PY2:
-    reqs += read_reqs("py2")
+    requirements += read_reqs("py2")
     if PY26:
-        reqs += read_reqs("py26")
-
-watch_reqs = read_reqs("watch")
-jupyter_reqs = read_reqs("jupyter")
-docs_reqs = read_reqs("docs")
+        requirements += read_reqs("py26")
 
 extras = {
-    "watch": watch_reqs,
-    "jupyter": jupyter_reqs,
-    "ipython": jupyter_reqs,
+    "watch": read_reqs("watch"),
+    "tests": read_reqs("tests"),
 }
+
+extras["jupyter"] = extras["ipython"] = read_reqs("jupyter")
 
 extras["all"] = all_reqs_in(extras)
 
-extras["docs"] = docs_reqs
+extras["docs"] = read_reqs("docs")
 
-extras["dev"] = all_reqs_in(extras) + read_reqs("dev")
+extras["dev"] = uniqueify(all_reqs_in(extras) + read_reqs("dev"))
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
@@ -189,11 +194,12 @@ setuptools.setup(
     url="http://coconut-lang.org",
     author="Evan Hubinger",
     author_email="evanjhub@gmail.com",
-    install_requires=reqs,
+    install_requires=requirements,
     extras_require=extras,
     packages=setuptools.find_packages(exclude=[
         "reqs",
         "docs",
+        "tests",
     ]),
     include_package_data=True,
     entry_points={

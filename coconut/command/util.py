@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 #-----------------------------------------------------------------------------------------------------------------------
 # INFO:
@@ -22,7 +23,9 @@ import sys
 import os
 import traceback
 import functools
+import time
 from copy import copy
+from contextlib import contextmanager
 try:
     import readline  # improves built-in input
 except ImportError:
@@ -43,6 +46,7 @@ from coconut.constants import (
     default_multiline,
     default_vi_mode,
     default_mouse_support,
+    minimum_process_time,
 )
 from coconut.logging import logger
 from coconut.exceptions import CoconutException, CoconutInternalException
@@ -106,6 +110,21 @@ def try_eval(code, in_vars):
         pass  # exit the exception context before executing code
     exec(code, in_vars)
     return None
+
+
+@contextmanager
+def ensure_minimum_process_time():
+    """Ensures minimum_process_time has elapsed."""
+    if sys.version_info < (3, 3):
+        start = time.time()
+        try:
+            yield
+        finally:
+            elapsed = time.time() - start
+            if elapsed < minimum_process_time:
+                time.sleep(minimum_process_time - elapsed)
+    else:
+        yield
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CLASSES:
@@ -235,5 +254,6 @@ class multiprocess_wrapper(object):
     def __call__(self, *args, **kwargs):
         """Sets up new process then calls the method."""
         sys.setrecursionlimit(self.recursion)
-        logger.copy_from(self.logger)
-        return getattr(self.base, self.method)(*args, **kwargs)
+        with ensure_minimum_process_time():
+            logger.copy_from(self.logger)
+            return getattr(self.base, self.method)(*args, **kwargs)

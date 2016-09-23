@@ -6,9 +6,9 @@
 #-----------------------------------------------------------------------------------------------------------------------
 
 """
-Author: Evan Hubinger
+Authors: Evan Hubinger, Fred Buchanan
 License: Apache 2.0
-Description: The Coconut compiler module.
+Description: Coconut test suite.
 """
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -17,4 +17,4 @@ Description: The Coconut compiler module.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from coconut.compiler.compiler import *  # NOQA
+from coconut.root import *  # NOQA
