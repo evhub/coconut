@@ -309,6 +309,8 @@ class count(object):'''
         return (elem - self._start) // self._step
     def __repr__(self):
         return "count(" + str(self._start) + ", " + str(self._step) + ")"
+    def __hash__(self):
+        return hash((self._start, self._step))
     def __reduce__(self):
         return (self.__class__, (self._start, self._step))
     def __copy__(self):
