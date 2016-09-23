@@ -1,0 +1,15 @@
+[run]
+branch = True
+source = .
+omit =
+    setup.py
+    tests/dest/*
+
+[report]
+exclude_lines =
+    ^\s*complain\b
+    ^\s*assert\b
+    ^if __name__ == ['"]__main__['"]:$
+
+[html]
+directory = coverage
