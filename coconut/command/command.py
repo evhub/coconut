@@ -23,7 +23,7 @@ import sys
 import os
 import time
 import subprocess
-import traceback
+import signal
 from contextlib import contextmanager
 
 from coconut.compiler import Compiler
@@ -72,6 +72,7 @@ class Command(object):
     jobs = None  # corresponds to --jobs flag
     executor = None  # runs --jobs
     exit_code = 0  # exit status to return
+    errmsg = None  # error message to display
 
     def __init__(self):
         """Creates the CLI."""
@@ -91,16 +92,22 @@ class Command(object):
     def cmd(self, args, interact=True):
         """Processes command-line arguments."""
         self.exit_code = 0
-        with self.handling_exceptions():
+        with self.handling_exceptions(True):
             self.use_args(args, interact)
         self.exit_on_error()
 
-    def exit_on_error(self, message=None):
+    def exit_on_error(self):
         """Exits if exit_code is abnormal."""
         if self.exit_code:
-            if message is not None:
-                logger.show(message)
-            sys.exit(self.exit_code)
+            if self.errmsg is not None:
+                logger.show("Exiting due to " + self.errmsg + ".")
+                self.errmsg = None
+            try:
+                from psutil import Process
+                for child in Process().children(recursive=True):
+                    child.send_signal(signal.SIGTERM)
+            finally:
+                sys.exit(self.exit_code)
 
     def set_recursion_limit(self, limit):
         """Sets the Python recursion limit."""
@@ -189,18 +196,30 @@ class Command(object):
         if args.watch:
             self.watch(args.source, dest, package, args.run, args.force)
 
-    def register_error(self, code=1):
+    def register_error(self, code=1, errmsg=None):
         """Updates the exit code."""
+        self.errmsg = errmsg or self.errmsg
         self.exit_code = max(self.exit_code, code)
 
     @contextmanager
-    def handling_exceptions(self):
+    def handling_exceptions(self, blanket=False, errmsg=None):
         """Handles CoconutExceptions."""
-        try:
-            yield
-        except CoconutException:
-            logger.print_exc()
-            self.register_error()
+        if blanket:
+            try:
+                yield
+            except KeyboardInterrupt:
+                self.register_error(errmsg="KeyboardInterrupt")
+            except SystemExit as err:
+                self.register_error(err.code)
+            except:
+                logger.print_exc()
+                self.register_error(errmsg=errmsg)
+        else:
+            try:
+                yield
+            except CoconutException:
+                logger.print_exc()
+                self.register_error(errmsg=errmsg)
 
     def compile_path(self, path, write=True, package=None, run=False, force=False):
         """Compiles a path."""
@@ -310,14 +329,10 @@ class Command(object):
 
             def callback_wrapper(completed_future):
                 """Ensures that all errors are always caught, since errors raised in a callback won't be propagated."""
-                try:
-                    with logger.in_path(path):  # handle errors in the path context
-                        with self.handling_exceptions():
-                            result = completed_future.result()
-                            callback(result)
-                except:
-                    traceback.print_exc()
-                    self.register_error()
+                with logger.in_path(path):  # handle errors in the path context
+                    with self.handling_exceptions(True, "compilation error"):
+                        result = completed_future.result()
+                        callback(result)
             future.add_done_callback(callback_wrapper)
 
     def set_jobs(self, jobs):
@@ -338,9 +353,11 @@ class Command(object):
                 with ProcessPoolExecutor(self.jobs) as self.executor:
                     with ensure_time_elapsed():
                         yield
+            except KeyboardInterrupt:
+                self.register_error(errmsg="KeyboardInterrupt")
             finally:
                 self.executor = None
-                self.exit_on_error("Exiting due to compilation error.")
+                self.exit_on_error()
 
     def create_package(self, dirpath):
         """Sets up a package directory."""
@@ -484,7 +501,7 @@ class Command(object):
                 except subprocess.CalledProcessError:
                     args = "kernel install failed on command'", " ".join(install_args)
                     self.comp.warn(*args)
-                    self.register_error()
+                    self.register_error(errmsg="Jupyter error")
 
         if args:
             if args[0] == "console":
@@ -501,7 +518,7 @@ class Command(object):
             else:
                 raise CoconutException('first argument after --jupyter must be either "console" or "notebook"')
             logger.log_cmd(run_args)
-            self.register_error(subprocess.call(run_args))
+            self.register_error(subprocess.call(run_args), errmsg="Jupyter error")
 
     def watch(self, source, write=True, package=None, run=False, force=False):
         """Watches a source and recompiles on change."""
@@ -526,7 +543,7 @@ class Command(object):
                 while True:
                     time.sleep(watch_interval)
             except KeyboardInterrupt:
-                logger.show("Exiting due to keyboard interrupt.")
+                logger.show("Got KeyboardInterrupt; stopping watcher.")
             finally:
                 observer.stop()
                 observer.join()

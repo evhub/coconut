@@ -125,10 +125,14 @@ class Logger(object):
 
     def get_error(self):
         """Properly formats the current error."""
-        err_type, err_value, err_trace = sys.exc_info()
-        if not self.verbose:
-            err_trace = None
-        return format_error(err_type, err_value, err_trace)
+        exc_info = sys.exc_info()
+        if exc_info[0] is None:
+            return None
+        else:
+            err_type, err_value, err_trace = exc_info[0], exc_info[1], None
+            if self.verbose and len(exc_info) > 2:
+                err_trace = exc_info[2]
+            return format_error(err_type, err_value, err_trace)
 
     @contextmanager
     def in_path(self, new_path, old_path=None):
@@ -150,14 +154,15 @@ class Logger(object):
     def print_exc(self):
         """Properly prints an exception in the exception context."""
         errmsg = self.get_error()
-        if self.path is not None:
-            errmsg_lines = ["in " + self.path + ":"]
-            for line in errmsg.splitlines():
-                if line:
-                    line = " " * taberrfmt + line
-                errmsg_lines.append(line)
-            errmsg = "\n".join(errmsg_lines)
-        self.printerr(errmsg)
+        if errmsg is not None:
+            if self.path is not None:
+                errmsg_lines = ["in " + self.path + ":"]
+                for line in errmsg.splitlines():
+                    if line:
+                        line = " " * taberrfmt + line
+                    errmsg_lines.append(line)
+                errmsg = "\n".join(errmsg_lines)
+            self.printerr(errmsg)
 
     def log_tag(self, tag, code, multiline=False):
         """Logs a tagged message if in verbose mode."""

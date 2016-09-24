@@ -153,13 +153,13 @@ def all_reqs_in(req_dict):
 
 requirements = read_reqs()
 
-if not PY26:
-    requirements += read_reqs("non-py26")
-
 if PY2:
     requirements += read_reqs("py2")
-    if PY26:
-        requirements += read_reqs("py26")
+
+if PY26:
+    requirements += read_reqs("py26")
+else:
+    requirements += read_reqs("non-py26")
 
 extras = {
     "watch": read_reqs("watch"),
