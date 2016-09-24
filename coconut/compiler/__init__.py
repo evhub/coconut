@@ -8,7 +8,7 @@
 """
 Author: Evan Hubinger
 License: Apache 2.0
-Description: The Coconut IPython kernel module.
+Description: The Coconut compiler module.
 """
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -17,4 +17,4 @@ Description: The Coconut IPython kernel module.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from coconut.icoconut.root import *  # NOQA
+from coconut.compiler.compiler import *  # NOQA

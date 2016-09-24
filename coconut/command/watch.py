@@ -6,9 +6,9 @@
 #-----------------------------------------------------------------------------------------------------------------------
 
 """
-Author: Evan Hubinger
+Authors: Evan Hubinger, Fred Buchanan
 License: Apache 2.0
-Description: Mimics what a compiled __coconut__.py would do.
+Description: Handles interfacing with watchdog to make --watch work.
 """
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -17,10 +17,23 @@ Description: Mimics what a compiled __coconut__.py would do.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from coconut.compiler import Compiler as __coconut_compiler__
+from coconut.root import *  # NOQA
+
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer  # NOQA
 
 #-----------------------------------------------------------------------------------------------------------------------
-# HEADER:
+# CLASSES:
 #-----------------------------------------------------------------------------------------------------------------------
 
-exec(__coconut_compiler__(target="sys").headers("code"))  # executes the __coconut__.py header for the current Python version
+
+class RecompilationWatcher(FileSystemEventHandler):
+
+    def __init__(self, recompile):
+        self.recompile = recompile
+
+    def on_modified(self, event):
+        self.recompile(event.src_path)
+
+    def on_created(self, event):
+        self.recompile(event.src_path)

@@ -1,0 +1,10 @@
+requirements_file: reqs/requirements-docs.txt
+
+python:
+    version: 3
+    pip_install: true
+
+formats:
+    - htmlzip
+    - pdf
+    - epub

@@ -1,0 +1,4 @@
+sphinx==1.4.6
+pygments==2.1.3
+recommonmark==0.4.0
+sphinx_bootstrap_theme==0.4.12

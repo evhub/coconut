@@ -14,20 +14,20 @@
     1. [Recursive Method](#recursive-method)
     1. [Iterative Method](#iterative-method)
     1. [`addpattern` Method](#addpattern-method)
-1. [Case Study 2: `quick_sort`](#case-study-2-quick_sort)
+1. [Case Study 2: `quick_sort`](#case-study-2-quicksort)
     1. [Sorting a Sequence](#sorting-a-sequence)
     1. [Sorting an Iterator](#sorting-an-iterator)
 1. [Case Study 3: `vector` Part I](#case-study-3-vector-part-i)
     1. [2-Vector](#2-vector)
     1. [n-Vector Constructor](#n-vector-constructor)
     1. [n-Vector Methods](#n-vector-methods)
-1. [Case Study 4: `vector_field`](#case-study-4-vector_field)
-    1. [`diagonal_line`](#diagonal_line)
-    1. [`linearized_plane`](#linearized_plane)
-    1. [`vector_field`](#vector_field)
+1. [Case Study 4: `vector_field`](#case-study-4-vectorfield)
+    1. [`diagonal_line`](#diagonalline)
+    1. [`linearized_plane`](#linearizedplane)
+    1. [`vector_field`](#vectorfield)
     1. [Applications](#applications)
 1. [Case Study 5: `vector` Part II](#case-study-5-vector-part-ii)
-    1. [`__truediv__`](#__truediv__)
+    1. [`__truediv__`](#truediv)
     1. [`.unit`](#unit)
     1. [`.angle`](#angle)
 1. [Filling in the Gaps](#filling-in-the-gaps)
@@ -73,7 +73,7 @@ Installing Coconut, including all the features above, is drop-dead simple. Just
 2. open a command-line prompt,
 3. and enter:
 ```
-python -m pip install coconut
+pip install coconut
 ```
 
 To check that your installation is functioning properly, try entering into the command line
@@ -115,7 +115,7 @@ hello, world!
 
 Of course, while being able to interpret Coconut code on-the-fly is a great thing, it wouldn't be very useful without the ability to write and compile larger programs. To that end, it's time to write our first Coconut program: "hello, world!" Coconut-style.
 
-First, we're going to need to create a file to put our code into. The recommended file extension for Coconut source files is `.coco`, so let's create the new file `hello_world.coco`. After you do that, you should take the time now to set up your text editor to properly highlight Coconut code. For instructions on how to do that, see the documentation on [Coconut syntax highlighting](http://coconut.readthedocs.org/en/master/DOCS.html#syntax-highlighting).
+First, we're going to need to create a file to put our code into. The recommended file extension for Coconut source files is `.coco`, so let's create the new file `hello_world.coco`. After you do that, you should take the time now to set up your text editor to properly highlight Coconut code. For instructions on how to do that, see the documentation on [Coconut syntax highlighting](http://coconut.readthedocs.io/en/master/DOCS.html#syntax-highlighting).
 
 Now let's put some code in our `hello_world.coco` file. Unlike in Python, where headers like
 ```coconut_python
@@ -188,7 +188,7 @@ or
 
 Because Coconut is built to be fundamentally _useful_, the best way to demo it is to show it in action. To that end, the majority of this tutorial will be showing how to apply Coconut to solve particular problems, which we'll call case studies.
 
-These case studies are not intended to provide a complete picture of all of Coconut's features. For that, see Coconut's comprehensive [documentation](http://coconut.readthedocs.org/en/master/DOCS.html). Instead, they are intended to show how Coconut can actually be used to solve practical programming problems.
+These case studies are not intended to provide a complete picture of all of Coconut's features. For that, see Coconut's comprehensive [documentation](http://coconut.readthedocs.io/en/master/DOCS.html). Instead, they are intended to show how Coconut can actually be used to solve practical programming problems.
 
 ## Case Study 1: `factorial`
 
@@ -275,9 +275,8 @@ First, copy and paste! While this destructuring assignment equivalent should wor
 
 It will be helpful to, as we continue to use Coconut's pattern-matching and destructuring assignment statements in further examples, think _assignment_ whenever you see the keyword `match`.
 
-Up until now, for the recursive method, we have only dealt with pattern-matching, but there's actually another way that Coconut allows us to improve our `factorial` function: by writing it in a tail-recursive style, where it directly returns all calls to itself, and using Coconut's `recursive` decorator, like so:
+Up until now, for the recursive method, we have only dealt with pattern-matching, but there's actually another way that Coconut allows us to improve our `factorial` function. Coconut performs automatic tail call optimization, which means that whenever a function directly returns a call to another function, Coconut will optimize away the additional call. Thus, we can improve our `factorial` function by rewriting it to use a tail call:
 ```coconut
-@recursive
 def factorial(n, acc=1):
     """Compute n! where n is an integer >= 0."""
     case n:
@@ -295,7 +294,7 @@ def factorial(n, acc=1):
 3 |> factorial |> print # 6
 ```
 
-Copy, paste! This version is exactly equivalent to the original version, with the exception that it will never raise a `MaximumRecursionDepthError`, because Coconut's `recursive` decorator will optimize away the tail recursion into a `while` loop.
+Copy, paste! This new `factorial` function is equivalent to the original version, with the exception that it will never raise a `RuntimeError` due to reaching Python's maximum recursion depth, since Coconut will optimize away the recursive tail call.
 
 ### Iterative Method
 
@@ -307,7 +306,7 @@ def factorial(n):
         match 0:
             return 1
         match _ is int if n > 0:
-            return range(1, n+1) |> reduce$((*))
+            return range(1, n+1) |> reduce$(*)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
 
@@ -320,10 +319,10 @@ def factorial(n):
 
 Copy, paste! This definition differs from the recursive definition only by one line. That's intentional: because both the iterative and recursive approaches are functional approaches, Coconut can provide a great assist in making the code cleaner and more readable. The one line that differs is this one:
 ```coconut
-return range(1, n+1) |> reduce$((*))
+return range(1, n+1) |> reduce$(*)
 ```
 
-Let's break down what's happening on this line. First, the `range` function constructs an iterator of all the numbers that need to be multiplied together. Then, it is piped into the function `reduce$((*))`, which does that multiplication. But how? What is `reduce$((*))`.
+Let's break down what's happening on this line. First, the `range` function constructs an iterator of all the numbers that need to be multiplied together. Then, it is piped into the function `reduce$(*)`, which does that multiplication. But how? What is `reduce$(*)`.
 
 We'll start with the base, the `reduce` function. `reduce` used to exist as a built-in in Python 2, and Coconut brings it back. `reduce` is a higher-order function that takes a function on two arguments as its first argument, and an iterator as its second argument, and applies that function to the given iterator by starting with the first element, and calling the function on the accumulated call so far and the next element, until the iterator is exhausted. Here's a visual representation:
 ```coconut
@@ -339,15 +338,15 @@ f(f(f(a, b), c), d)
 return acc
 ```
 
-Now let's take a look at what we do to `reduce` to make it multiply all the numbers we feed into it together. The Coconut code that we saw for that was `reduce$((*))`. There are two different Coconut constructs being used here: the operator function for multiplication in the form of `(*)`, and partial application in the form of `$`.
+Now let's take a look at what we do to `reduce` to make it multiply all the numbers we feed into it together. The Coconut code that we saw for that was `reduce$(*)`. There are two different Coconut constructs being used here: the operator function for multiplication in the form of `(*)`, and partial application in the form of `$`.
 
 First, the operator function. In Coconut, a function form of any operator can be retrieved by surrounding that operator in parentheses. In this case, `(*)` is roughly equivalent to `lambda x, y: x*y`, but much cleaner and neater. In Coconut's lambda syntax, `(*)` is also equivalent to `(x, y) -> x*y`, which we will use from now on for all lambdas, even though both are legal Coconut, because Python's `lambda` statement is too ugly and bulky to use regularly. In fact, if Coconut's `--strict` mode is enabled, which will force your code to obey certain cleanliness standards, it will raise an error whenever Python `lambda` statements are used.
 
-Second, the partial application. Think of partial application as _lazy function calling_, and `$` as the _lazy-ify_ operator, where lazy just means "don't evaluate this until you need to". In Coconut, if a function call is prefixed by a `$`, like in this example, instead of actually performing the function call, a new function is returned with the given arguments already provided to it, so that when it is then called, it will be called with both the partially-applied arguments and the new arguments, in that order. In this case, `reduce$((*))` is equivalent to `(*args, **kwargs) -> reduce((*), *args, **kwargs)`.
+Second, the partial application. Think of partial application as _lazy function calling_, and `$` as the _lazy-ify_ operator, where lazy just means "don't evaluate this until you need to". In Coconut, if a function call is prefixed by a `$`, like in this example, instead of actually performing the function call, a new function is returned with the given arguments already provided to it, so that when it is then called, it will be called with both the partially-applied arguments and the new arguments, in that order. In this case, `reduce$(*)` is equivalent to `(*args, **kwargs) -> reduce((*), *args, **kwargs)`.
 
 Putting it all together, we can see how the single line of code
 ```coconut
-range(1, n+1) |> reduce$((*))
+range(1, n+1) |> reduce$(*)
 ```
 is able to compute the proper factorial, without using any state or loops, only higher-order functions, in true functional style. By supplying the tools we use here like partial application (`$`), pipeline-style programming (`|>`), higher-order functions (`reduce`), and operator functions (`(*)`), Coconut enables this sort of functional programming to be done cleanly, neatly, and easily.
 
@@ -361,7 +360,7 @@ def factorial(n):
         match 0:
             return 1
         match _ is int if n > 0:
-            return range(1, n+1) |> reduce$((*))
+            return range(1, n+1) |> reduce$(*)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
 ```
@@ -374,7 +373,7 @@ def factorial(0):
 @addpattern(factorial)
 def factorial(n is int if n > 0):
     """Compute n! where n is an integer >= 0."""
-    return range(1, n+1) |> reduce$((*))
+    return range(1, n+1) |> reduce$(*)
 
 # Test cases:
 -1 |> factorial |> print # MatchError
@@ -411,7 +410,7 @@ In the second case study, we will be implementing the [quick sort algorithm](htt
 
 ### Sorting a Sequence
 
-First up is `quick_sort` for lists. We're going to use a recursive `addpattern`-based approach to tackle this problem—a similar approach to the very last `factorial` function we wrote. That's because since we're not going to write `quick_sort` in a tail-recursive style, we can't use `recursive`, and thus there's no reason to write the whole thing as one function and we might as well use `addpattern` to reduce the amount of indentation we're going to need. Without further ado, here's our implementation of `quick_sort` for lists:
+First up is `quick_sort` for lists. We're going to use a recursive `addpattern`-based approach to tackle this problem—a similar approach to the very last `factorial` function we wrote. That's because since we're not going to write `quick_sort` in a tail-recursive style, we can't use `tail_recursive`, and thus there's no reason to write the whole thing as one function and we might as well use `addpattern` to reduce the amount of indentation we're going to need. Without further ado, here's our implementation of `quick_sort` for lists:
 ```coconut
 def quick_sort([]):
     return []
@@ -681,7 +680,7 @@ Copy, paste! Now that was a lot of code. But looking it over, it looks clean, re
 
 For the final case study, instead of me writing the code, and you looking at it, you'll be writing the code—of course, I won't be looking at it, but I will show you how I would have done it after you give it a shot by yourself.
 
-The bonus challenge for this section is to write each of the functions we'll be defining in just one line. To help with that, we're going to introduce a new concept up front, shorthand functions. A shorthand function looks like this
+The bonus challenge for this section is to write each of the functions we'll be defining in just one line. To help with that, we're going to introduce a new concept up front, assignment functions. An assignment function looks like this
 ```coconut
 def <name>(<args>) = <return value>
 ```
@@ -689,7 +688,7 @@ which has the advantage over the classic Python
 ```coconut
 def <name>(<args>): return <return value>
 ```
-of being shorter, more readable, and not requiring `return` to be typed out. If you try to go for the one-liner approach, using shorthand functions will help keep your lines short and your code readable.
+of being shorter, more readable, and not requiring `return` to be typed out. If you try to go for the one-liner approach, using assignment functions will help keep your lines short and your code readable.
 
 With that out of the way, it's time to introduce the general goal of this case study. We want to write a program that will allow us to produce infinite vector fields that we can iterate over and apply operations to. And in our case, we'll say we only care about vectors with positive components.
 
@@ -912,7 +911,7 @@ For the some of the applications you might want to use your `vector_field` for, 
 
 ### `__truediv__`
 
-Vector division is just scalar division, so we're going to write a `__truediv__` method that takes `self` as the first argument and `other` as the second argument, and returns a new vector the same size as `self` with every element divided by `other`. For an extra challenge, try writing this one in one line using shorthand function notation.
+Vector division is just scalar division, so we're going to write a `__truediv__` method that takes `self` as the first argument and `other` as the second argument, and returns a new vector the same size as `self` with every element divided by `other`. For an extra challenge, try writing this one in one line using assignment function notation.
 
 Tests:
 ```coconut
@@ -1120,11 +1119,13 @@ obj.
 func$
 seq[]
 iter$[]
+.[slice]
+.$[slice]
 ```
 
 ### Further Reading
 
-And that's it for this tutorial! But that's hardly it for Coconut. All of the features examined in this tutorial, as well as a bunch of others, are documented in detail in Coconut's comprehensive [documentation](http://coconut.readthedocs.org/en/master/DOCS.html).
+And that's it for this tutorial! But that's hardly it for Coconut. All of the features examined in this tutorial, as well as a bunch of others, are documented in detail in Coconut's comprehensive [documentation](http://coconut.readthedocs.io/en/master/DOCS.html).
 
 Also, if you have any other questions not covered in this tutorial, feel free to ask around at Coconut's [Gitter](https://gitter.im/evhub/coconut), a GitHub-integrated chat room for Coconut developers.
 

@@ -1,0 +1,17 @@
+-   repo: git://github.com/pre-commit/pre-commit-hooks.git
+    sha: 18d7035de5388cc7775be57f529c154bf541aab9
+    hooks:
+    -   id: check-added-large-files
+    -   id: check-byte-order-marker
+    -   id: end-of-file-fixer
+    -   id: trailing-whitespace
+    -   id: debug-statements
+    -   id: autopep8-wrapper
+        args:
+        - --in-place
+        - --aggressive
+        - --aggressive
+        - --ignore=W503,E501
+    -   id: flake8
+        args:
+        - --ignore=W503,E501,E265,E402,F405

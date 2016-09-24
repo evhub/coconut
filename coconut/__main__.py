@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 #-----------------------------------------------------------------------------------------------------------------------
 # INFO:
@@ -20,16 +21,13 @@ import sys
 import os.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from coconut.root import *
-from coconut.command import cli
+from coconut.root import *  # NOQA
+
+from coconut.main import main
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
 #-----------------------------------------------------------------------------------------------------------------------
-
-def main():
-    """Runs the Coconut CLI."""
-    cli().start()
 
 if __name__ == "__main__":
     main()

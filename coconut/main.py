@@ -8,7 +8,7 @@
 """
 Author: Evan Hubinger
 License: Apache 2.0
-Description: Mimics what a compiled __coconut__.py would do.
+Description: Starts the Coconut command line utility.
 """
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -17,10 +17,31 @@ Description: Mimics what a compiled __coconut__.py would do.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from coconut.compiler import Compiler as __coconut_compiler__
+import sys
+import os.path
+
+
+def add_coconut_to_path():
+    """Adds coconut to sys.path if it isn't there already."""
+    try:
+        import coconut  # NOQA
+    except ImportError:
+        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+add_coconut_to_path()
+from coconut.root import *  # NOQA
+
+from coconut.command import Command
 
 #-----------------------------------------------------------------------------------------------------------------------
-# HEADER:
+# MAIN:
 #-----------------------------------------------------------------------------------------------------------------------
 
-exec(__coconut_compiler__(target="sys").headers("code"))  # executes the __coconut__.py header for the current Python version
+
+def main():
+    """Runs the Coconut CLI."""
+    Command().start()
+
+if __name__ == "__main__":
+    main()

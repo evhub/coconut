@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 #-----------------------------------------------------------------------------------------------------------------------
 # INFO:
@@ -16,29 +17,41 @@ Description: The Coconut IPython kernel.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from ..command import *
+from coconut.root import *  # NOQA
+
+import sys
 try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
 from ipykernel.kernelbase import Kernel
 
-#-----------------------------------------------------------------------------------------------------------------------
-# CONSTANTS:
-#-----------------------------------------------------------------------------------------------------------------------
-
-mimetype = "text/x-python3"
-py_syntax_version = 3.6
-varchars = alphanums + "_"
-all_keywords = keywords + const_vars + reserved_vars
+from coconut.command import Runner
+from coconut.compiler import Compiler
+from coconut.exceptions import CoconutException
+from coconut.logging import logger
+from coconut.constants import (
+    py_syntax_version,
+    mimetype,
+    varchars,
+    all_keywords,
+    version_banner,
+    tutorial_url,
+    documentation_url,
+    reserved_prefix,
+    default_encoding,
+    code_exts,
+    tabideal,
+)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
 
+
 class fakefile(StringIO):
     """A file-like object wrapper around a messaging function."""
-    encoding = default_encoding # from ..compiler
+    encoding = default_encoding  # from coconut.compiler
 
     def __init__(self, send):
         """Initialize with a messaging function."""
@@ -65,6 +78,7 @@ class fakefile(StringIO):
         """Write lines to the messaging function."""
         StringIO.writelines(self, *args, **kwargs)
         self._refresh()
+
 
 def get_name(code, cursor_pos, get_bounds=False):
     """Extract the name of the object in code at cursor_pos."""
@@ -98,11 +112,12 @@ def get_name(code, cursor_pos, get_bounds=False):
 # KERNEL:
 #-----------------------------------------------------------------------------------------------------------------------
 
-proc = processor(target="sys") # from ..compiler
+comp = Compiler(target="sys")  # from coconut.compiler
+
 
 class CoconutKernel(Kernel):
     """Jupyter kernel for Coconut."""
-    _runner = None # current ..command.executor
+    _runner = None  # current ..command.Runner
     implementation = "icoconut"
     implementation_version = VERSION
     language = "coconut"
@@ -135,30 +150,30 @@ class CoconutKernel(Kernel):
             message = {
                 "name": "stderr" if debug else "stdout",
                 "text": text
-                }
+            }
             self.send_response(self.iopub_socket, "stream", message)
 
     def _setup(self, force=False):
         """Binds to the runner."""
         if force or self._runner is None:
-            self._runner = executor(proc)
+            self._runner = Runner(comp)
 
     def _execute(self, code, evaluate=False):
         """Compiles and runs code."""
         self._setup()
         try:
             if evaluate:
-                compiled = proc.parse_eval(code)
+                compiled = comp.parse_eval(code)
             else:
-                compiled = proc.parse_block(code)
+                compiled = comp.parse_block(code)
         except CoconutException:
-            printerr(get_error())
+            logger.print_exc()
             return None
         else:
             if evaluate:
                 return self._runner.run(compiled, run_func=eval)
             else:
-                return self._runner.run(compiled)
+                self._runner.run(compiled)
 
     def do_execute(self, code, silent=False, store_history=True, user_expressions=None, allow_stdin=False):
         """Execute Coconut code."""
@@ -189,16 +204,16 @@ class CoconutKernel(Kernel):
     def do_is_complete(self, code):
         """Check Coconut code for correctness."""
         try:
-            proc.parse_block(code)
+            comp.parse_block(code)
         except CoconutException:
             if code.endswith("\n"):
                 return {
                     "status": "complete"
                 }
-            elif proc.should_indent(code):
+            elif comp.should_indent(code):
                 return {
                     "status": "incomplete",
-                    "indent": " "*tabideal
+                    "indent": " " * tabideal
                 }
             else:
                 return {
@@ -233,8 +248,8 @@ class CoconutKernel(Kernel):
         self._setup()
         test_name, cursor_start, cursor_end = get_name(code, cursor_pos, True)
         matches = []
-        if cursor_start > 1 and code[cursor_start-1] == "." and code[cursor_start-2] in varchars:
-            obj_name = get_name(code, cursor_start-1)
+        if cursor_start > 1 and code[cursor_start - 1] == "." and code[cursor_start - 2] in varchars:
+            obj_name = get_name(code, cursor_start - 1)
             if obj_name in self._runner.vars:
                 for var_name in dir(self._runner.vars[obj_name]):
                     if var_name.startswith(test_name) and not var_name.startswith(reserved_prefix):

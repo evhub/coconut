@@ -1,0 +1,230 @@
+from .util import *
+
+def suite_test():
+    """Executes the main test suite."""
+    assert 1 `plus` 1 == 2 == 1 `(+)` 1
+    assert "1" `plus` "1" == "11" == "1" `(+)` "1"
+    assert 3 `mod` 6 == 3 == 3 `(%)` 6
+    assert 5 `mod` 4 == 1 == 5 `mod_` 4
+    assert 5 `mod` 2 `plus` 2 == 1 == 5 `(%)` 2 `(+)` 2
+    assert "11" `base` 2 == 3
+    assert "10A" `int` 12 == 154
+    assert ["1", "2"] `join_with` ", " == "1, 2"
+    assert ["a","b","c"] `join_with` == "abc"
+    assert {"a", 5} |> len == 2
+    assert 5 |> swap2((-))$(2) |> (*)$(2) == 6 == 5 |> swap2_((-))$(2) |> (*)$(2)
+    assert all(same((1, 2, 3), [1, 2, 3]))
+    assert chain2((|1, 2|), (|3, 4|)) |> list == [1, 2, 3, 4]
+    assert 1 `range` 5 |> prod == 24
+    assert plus1(4) == 5 == plus1_(4)
+    assert 2 `plus1` == 3 == plus1(2)
+    assert plus1(plus1(5)) == 7 == (plus1..plus1)(5)
+    assert `sqrt` 16 == 4 == `sqrt_` 16
+    assert `square` 3 == 9
+    assert sqplus1(3) == 10 == (plus1..square)(3)
+    assert 3 `plus1sq` == 16 == 3 `plus1sq_`
+    assert 3 `sqplus1` == 10 == 3 `sqplus1_`
+    assert 3 |> plus1 |> square == 16 == 3 |> plus1_ |> square
+    assert reduce((|>), [3, plus1, square]) == 16 == pipe(pipe(3, plus1), square)
+    assert reduce((..), [sqrt, square, plus1])(3) == 4 == compose(compose(sqrt, square), plus1)(3)
+    assert sum_([1,7,3,5]) == 16
+    assert (add([1,2,3], [10,20,30]) |> list
+            == [11,22,33]
+            == zipsum([1,2,3], [10,20,30]) |> list
+            )
+    assert clean("   ab cd ef   ") == "ab cd ef" == "   ab cd ef   " |> clean
+    assert add2 <| 2 <| 3 == 5
+    for qsort in [qsort1, qsort2, qsort3, qsort4, qsort5]:
+        to_sort = rand_list(10)
+        assert to_sort |> qsort |> tuple == to_sort |> sorted |> tuple
+    assert repeat(3)$[2] == 3 == repeat_(3)$[2]
+    assert sum_(repeat(1)$[:5]) == 5 == sum_(repeat_(1)$[:5])
+    assert (sum_(takewhile((x)-> x<5, N()))
+            == 10
+            == dropwhile((>)$(0), (range(-10, 0) :: N()))$[:5] |> sum
+            )
+    assert "ABCDEFG" |> ((s) -> map(s[], (1, 3, 5))) |> sum_ == "BDF"
+    assert N()$[10:15] |> list == [10,11,12,13,14] == N_()$[10:15] |> list
+    assert (N() |> takewhile$((>)$(5)) |> list
+            == [0,1,2,3,4]
+            == range(0,10)$[:5:] |> list
+            )
+    assert (range(-10, 0) :: N())$[5:15] |> sum == -5 == chain(range(-10, 0), N())$[5:15] |> sum
+    assert add(repeat(1), N())$[:5] |> list == [1,2,3,4,5] == add(repeat(1), N_())$[:5] |> list
+    assert sum(N()$[5:]$[:5]) == 35 == sum(N_()$[5:]$[:5])
+    assert N()$[](slice(5, 10)) |> list == [5,6,7,8,9] == list(range(0, 15))[](slice(5, 10))
+    assert N()$[slice(5, 10)] |> list == [5,6,7,8,9] == list(range(0, 15))[slice(5, 10)]
+    assert preN(range(-5, 0))$[1:10] |> list == [-4,-3,-2,-1,0,1,2,3,4]
+    assert map_iter((*)$(2), N())$[:5] |> list == [0,2,4,6,8]
+    assert N()$[:100] |> tuple == N_()$[:100] |> tuple == N__()$[:100] |> tuple
+    assert 12 |> next_mul_of $(5) == 15
+    assert collatz(27)
+    assert preop(1, 2).add() == 3
+    assert vector(3, 4) |> abs == 5
+    assert vector(1, 2) |> ((v) -> map(v., ("x", "y"))) |> tuple == (1, 2)
+    assert vector(3, 1) |> vector(1, 2).transform |> ((v) -> map(v[], (0, 1))) |> tuple == (4, 3)
+    assert vector(1, 2) |> vector(1, 2).__eq__
+    assert not vector(1, 2) |> vector(3, 4).__eq__
+    assert not (1, 2) |> vector(1, 2).__eq__
+    assert vector(vector(4, 3)) == vector(4, 3)
+    assert triangle(3, 4, 5).is_right()
+    assert (.)(triangle(3, 4, 5), "is_right")
+    assert factorial1(3) == 6
+    assert factorial2(3) == 6
+    assert factorial4(3) == 6
+    assert factorial5(3) == 6
+    assert factorial1(-1) is None
+    assert factorial2(-1) is None
+    assert factorial4(-1) is None
+    assert factorial5(-1) is None
+    assert factorial3([2,3]) == [2,6] == factorial3((2,3))
+    assert classify(()) == "empty tuple"
+    assert classify([]) == "empty list"
+    assert classify((1,)) == "singleton tuple"
+    assert classify([1,1]) == "duplicate pair list of 1"
+    assert classify((1,2)) == "pair tuple"
+    assert classify([1,2,3]) == "list"
+    assert classify((1,1,1)) == "tuple"
+    assert classify({}) == "empty dict"
+    assert classify({"a":1}) == "dict"
+    assert classify({0}) == "set of 0" == classify(f{0})
+    assert classify({0,1}) == "set" == classify(f{1})
+    assert classify(s{}) == "empty set" == classify(f{})
+    assert classify_sequence(()) == "empty"
+    assert classify_sequence((1,)) == "singleton"
+    assert classify_sequence((1, 1)) == "duplicate pair of 1"
+    assert classify_sequence((1, 2)) == "pair"
+    assert classify_sequence((1, 2, 3)) == "few"
+    assert dictpoint({"x":1, "y":2}) == (1,2)
+    assert dictpoint_({"x":1, "y":2}) == (1,2) == dictpoint__({"x":1, "y":2})
+    assert map_((+)$(1), []) == []
+    assert map_((+)$(1), ()) == ()
+    assert map_((+)$(1), [0,1,2,3]) == [1,2,3,4]
+    assert map_((+)$(1), (0,1,2,3)) == (1,2,3,4)
+    assert duplicate_first1([1,2,3]) == [1,1,2,3]
+    assert duplicate_first2([1,2,3]) |> list == [1,1,2,3] == duplicate_first3([1,2,3]) |> list
+    assert one_to_five([1,2,3,4,5]) == [2,3,4]
+    assert not one_to_five([0,1,2,3,4,5])
+    assert one_to_five([1,5]) == []
+    assert -4 == neg_square_u(2) ≠ 4 ∧ 0 ≤ neg_square_u(0) ≤ 0
+    assert is_null(null1())
+    assert is_null(null2())
+    assert empty() |> depth == 0
+    assert leaf(5) |> depth == 1
+    assert node(leaf(2), node(empty(), leaf(3))) |> depth == 3
+    assert maybes(5, square, plus1) == 26
+    assert maybes(None, square, plus1) is None
+    assert square <| 2 == 4
+    assert (5, 3) |*> mod == 2 == mod <*| (5, 3)
+    assert Just(5) <| square <| plus1 == Just(26)
+    assert Nothing() <| square <| plus1 == Nothing()
+    assert head_tail([1,2,3]) == (1, [2,3])
+    assert init_last([1,2,3]) == ([1,2], 3)
+    assert last_two([1,2,3]) == (2, 3) == last_two_([1,2,3])
+    assert expl_ident(5) == 5
+    assert mod$ <| 5 <| 3 == 2 == (%)$ <| 5 <| 3
+    assert 5 |> dectest == 5
+    try:
+        raise ValueError()
+    except TypeError, ValueError as err:
+        assert err
+    else:
+        assert False
+    assert delist2([1, 2]) == (1, 2) == delist2_([1, 2])
+    assert tuple1(1) == (1,) == tuple1_(1)
+    assert tuple2(1, 2) == (1, 2) == tuple2_(1, 2)
+    assert htsplit([1,2,3]) == [1,[2,3]] == htsplit_([1,2,3])
+    assert iadd(1, 2) == 3 == iadd_(1, 2)
+    assert strmul("a", 3) == "aaa" == strmul_("a", 3)
+    try:
+        strmul("a", "b")
+    except MatchError as err:
+        assert err.pattern == "match def strmul(a is str, x is int):"
+        assert err.value == ("a", "b")
+    else:
+        assert False
+    laz = lazy()
+    assert not laz.done
+    lazl = laz.list()
+    assert lazl$[:3] |> list == [1, 2, 3]
+    assert not laz.done
+    assert lazl |> list == [None]
+    assert laz.done
+    assert is_empty(iter(()))
+    assert is_empty(())
+    assert not is_empty([1])
+    assert is_one(iter([1]))
+    assert not is_one(iter(()))
+    assert not is_one([])
+    assert is_one([1])
+    assert trilen(3, 4).h == 5 == datamaker(trilen)(5).h
+    assert A().true()
+    assert B().true()
+    assert pt.__doc__
+    out0 = grid() |> grid_trim$(xmax=5, ymax=5)
+    assert out0 == [
+     [pt(x=0, y=0), pt(x=0, y=1), pt(x=0, y=2), pt(x=0, y=3), pt(x=0, y=4)],
+     [pt(x=1, y=0), pt(x=1, y=1), pt(x=1, y=2), pt(x=1, y=3), pt(x=1, y=4)],
+     [pt(x=2, y=0), pt(x=2, y=1), pt(x=2, y=2), pt(x=2, y=3), pt(x=2, y=4)],
+     [pt(x=3, y=0), pt(x=3, y=1), pt(x=3, y=2), pt(x=3, y=3), pt(x=3, y=4)],
+     [pt(x=4, y=0), pt(x=4, y=1), pt(x=4, y=2), pt(x=4, y=3), pt(x=4, y=4)]
+    ]
+    out1 = grid() |> grid_map$(abs) |> grid_trim$(xmax=5, ymax=5)
+    out1_ = grid() |> grid_trim$(xmax=5, ymax=5) |> parallel_grid_map$(abs) |> map$(list) |> list
+    assert out1[0] == [0.0, 1.0, 2.0, 3.0, 4.0] == out1_[0]
+    assert out1[1][0] == 1.0 == out1_[1][0]
+    assert out1[2][0] == 2.0 == out1_[2][0]
+    assert out1[3][0] == 3.0 == out1_[3][0]
+    assert out1[3][4] == 5.0 == out1_[3][4]
+    assert out1[4][0] == 4.0 == out1_[4][0]
+    assert out1[4][3] == 5.0 == out1_[4][3]
+    x = 5
+    x |>= square
+    y = square
+    y <|= 5
+    assert x == 25 == y
+    x = (5, 3)
+    x |*>= mod
+    y = mod
+    y <*|= (5, 3)
+    assert x == 2 == y
+    x = square
+    x ..= (+)$(1)
+    x <|= 4
+    assert x == 25
+    v = vector(1, 2)
+    try:
+        v.x = 3
+    except AttributeError as err:
+        assert err
+    else:
+        assert False
+    try:
+        v.new_attr = True
+    except AttributeError as err:
+        assert err
+    else:
+        assert False
+    assert SHOPeriodTerminate([-1, 0], 0, {"epsilon": 1})
+    assert add_int_or_str_1(2) == 3 == coercive_add(2, "1")
+    assert add_int_or_str_1("2") == "21" == coercive_add("2", 1)
+    assert still_ident(3) == 3
+    assert not_ident(3) == "bar"
+    assert pattern_abs(4) == 4 == pattern_abs_(4)
+    assert pattern_abs(0) == 0 == pattern_abs_(0)
+    assert pattern_abs(-4) == 4 == pattern_abs_(-4)
+    assert vector(1, 2) |> .__eq__(other=vector(1, 2))
+    assert fib() |> takewhile$((i) -> i < 4000000 ) |> filter$((i) -> i % 2 == 0 ) |> sum == 4613732
+    assert loop([1,2])$[:4] |> list == [1, 2] * 2
+    assert recurse_n_times(10000)
+    assert is_even(5000) and is_odd(5001)
+    assert is_even_(5000) and is_odd_(5001)
+    assert (def -> mod)()(5, 3) == 2
+    assert sieve((2, 3, 4, 5)) |> list == [2, 3, 5]
+    assert 11 == double_plus_one(5)
+    assert 15 == assign_func_1((*), 3, 5)
+    assert 15 == assign_func_2((*), 3, 5)
+    assert 20 == (..)(minus$(2), mul$(2), plus$(1))(10)
+    assert 20 == (minus$(2) .. mul$(2) .. plus$(1))(10)
+    assert does_raise_exc(raise_exc)
+    return True
