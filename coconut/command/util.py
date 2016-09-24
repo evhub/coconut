@@ -116,11 +116,13 @@ def try_eval(code, in_vars):
 @contextmanager
 def ensure_time_elapsed():
     """Ensures minimum_process_time has elapsed."""
-    try:
-        yield
-    finally:
-        if sys.version_info < (3, 2):
+    if sys.version_info < (3, 2):
+        try:
+            yield
+        finally:
             time.sleep(ensure_elapsed_time)
+    else:
+        yield
 
 
 def handling_prompt_toolkit_errors(func):

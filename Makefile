@@ -1,15 +1,13 @@
 .PHONY: install
-install: pip
-	pip install .[all]
+install:
+	pip install "pip>=7.1.2"
+	pip install .[tests]
 
 .PHONY: dev
-dev: pip
+dev:
+	pip install --upgrade pip
 	pip install --upgrade -e .[dev]
 	pre-commit install -f --install-hooks
-
-.PHONY: pip
-pip:
-	pip install "pip>=7.1.2"
 
 .PHONY: format
 format:

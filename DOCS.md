@@ -103,7 +103,7 @@ which will install Coconut and its required dependencies. Coconut also has some 
 ```
 pip install coconut[all]
 ```
-which will enable the use of Coconut's `--jobs`, `--watch`, and `--jupyter` flags (as well as Coconut's test suite). To install the optional dependencies only for a particular flag, simply put the flag name in place of `all`.
+which will enable the use of Coconut's `--jobs`, `--watch`, and `--jupyter` flags. To install the optional dependencies only for a particular flag, simply put the flag name in place of `all`.
 
 Alternatively, if you want to test out Coconut's latest and greatest, enter
 ```

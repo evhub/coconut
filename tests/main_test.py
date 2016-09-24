@@ -31,7 +31,7 @@ from contextlib import contextmanager
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-IPY = (PY2 and not PY26) or (not PY2 and sys.version_info >= (3, 3))
+IPY = (PY2 and not PY26) or sys.version_info >= (3, 3)
 
 base = os.path.dirname(os.path.relpath(__file__))
 src = os.path.join(base, "src")

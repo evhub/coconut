@@ -105,10 +105,9 @@ class Command(object):
             if self.errmsg is not None:
                 logger.show_error("Exiting due to " + self.errmsg + ".")
                 self.errmsg = None
-            try:
+            if self.jobs != 0:
                 kill_children()
-            finally:
-                sys.exit(self.exit_code)
+            sys.exit(self.exit_code)
 
     def set_recursion_limit(self, limit):
         """Sets the Python recursion limit."""

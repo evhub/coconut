@@ -24,6 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from coconut.root import *  # NOQA
 
 import setuptools
+import platform
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
@@ -160,20 +161,29 @@ else:
 
 extras = {
     "watch": read_reqs("watch"),
-    "tests": read_reqs("tests"),
     "jobs": read_reqs("jobs"),
 }
 
 if PY2:
-    extras["jobs"] += read_reqs("py2-jobs")
+    extras["jobs"] += read_reqs("jobs-py2")
 
 extras["jupyter"] = extras["ipython"] = read_reqs("jupyter")
 
 extras["all"] = all_reqs_in(extras)
 
+extras["tests"] = uniqueify(
+    extras["watch"]
+    + (extras["jobs"] if platform.python_implementation() != "PyPy" else [])
+    + (extras["jupyter"] if (PY2 and not PY26) or sys.version_info >= (3, 3) else [])
+    + read_reqs("tests")
+)
+
 extras["docs"] = read_reqs("docs")
 
-extras["dev"] = uniqueify(all_reqs_in(extras) + read_reqs("dev"))
+extras["dev"] = uniqueify(
+    all_reqs_in(extras)
+    + read_reqs("dev")
+)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # README:
