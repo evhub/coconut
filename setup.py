@@ -159,13 +159,13 @@ if PY26:
 else:
     requirements += read_reqs("non-py26")
 
+if PY2:
+    requirements += read_reqs("py2")
+
 extras = {
     "watch": read_reqs("watch"),
     "jobs": read_reqs("jobs"),
 }
-
-if PY2:
-    extras["jobs"] += read_reqs("jobs-py2")
 
 extras["jupyter"] = extras["ipython"] = read_reqs("jupyter")
 
