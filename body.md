@@ -71,7 +71,6 @@ def size(Tree(l, r)) = size(l) + size(r)
 ```
 - tail recursion optimization
 ```coconut
-@recursive
 def factorial(n, acc=1):
     case n:
         match 0:
