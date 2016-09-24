@@ -172,10 +172,9 @@ extras["jupyter"] = extras["ipython"] = read_reqs("jupyter")
 extras["all"] = all_reqs_in(extras)
 
 extras["tests"] = uniqueify(
-    extras["watch"]
+    read_reqs("tests")
     + (extras["jobs"] if platform.python_implementation() != "PyPy" else [])
     + (extras["jupyter"] if (PY2 and not PY26) or sys.version_info >= (3, 3) else [])
-    + read_reqs("tests")
 )
 
 extras["docs"] = read_reqs("docs")

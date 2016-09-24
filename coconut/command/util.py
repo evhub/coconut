@@ -31,7 +31,6 @@ try:
 except ImportError:
     readline = None
 
-import psutil
 if PY26 or (3,) <= sys.version_info < (3, 3):
     prompt_toolkit = None
 else:
@@ -157,6 +156,7 @@ def handle_broken_process_pool():
 
 def kill_children():
     """Terminates all child processes."""
+    import psutil
     master = psutil.Process()
     children = master.children(recursive=True)
     while children:

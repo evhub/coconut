@@ -25,8 +25,6 @@ import time
 import subprocess
 from contextlib import contextmanager
 
-from concurrent.futures import ProcessPoolExecutor
-
 from coconut.compiler import Compiler
 from coconut.exceptions import (
     CoconutException,
@@ -360,6 +358,7 @@ class Command(object):
         if self.jobs == 0:
             yield
         else:
+            from concurrent.futures import ProcessPoolExecutor
             with self.handling_exceptions(True):
                 with ProcessPoolExecutor(self.jobs) as self.executor:
                     with ensure_time_elapsed():
