@@ -102,14 +102,20 @@ def rem_encoding(code):
     return "\n".join(new_lines)
 
 
-def try_eval(code, in_vars):
+def exec_func(code, in_vars):
+    """Wrapper around exec."""
+    exec(code, in_vars)
+
+
+def interpret(code, in_vars):
     """Try to evaluate the given code, otherwise execute it."""
     try:
-        return eval(code, in_vars)
+        result = eval(code, in_vars)
     except SyntaxError:
-        pass  # exit the exception context before executing code
-    exec(code, in_vars)
-    return None
+        exec_func(code, in_vars)
+    else:
+        if result is not None:
+            print(ascii(result))
 
 
 @contextmanager
@@ -247,13 +253,12 @@ class Runner(object):
             if not var.startswith("__") and var in dir(__coconut__):
                 self.vars[var] = getattr(__coconut__, var)
 
-    def run(self, code, error=False, run_func=None):
+    def run(self, code, error=False, run_func=interpret):
         """Executes Python code."""
+        if run_func is None:
+            run_func = exec_func
         try:
-            if run_func is None:
-                exec(code, self.vars)
-            else:
-                return run_func(code, self.vars)
+            return run_func(code, self.vars)
         except SystemExit as err:
             if self.exit is None:
                 raise

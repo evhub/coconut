@@ -173,7 +173,7 @@ class CoconutKernel(Kernel):
             if evaluate:
                 return self._runner.run(compiled, run_func=eval)
             else:
-                return self._runner.run(compiled)
+                self._runner.run(compiled)
 
     def do_execute(self, code, silent=False, store_history=True, user_expressions=None, allow_stdin=False):
         """Execute Coconut code."""

@@ -47,7 +47,6 @@ from coconut.command.util import (
     fixpath,
     showpath,
     rem_encoding,
-    try_eval,
     Runner,
     multiprocess_wrapper,
     Prompt,
@@ -449,11 +448,9 @@ class Command(object):
             if isolate:  # isolate means header is included, and thus encoding must be removed
                 compiled = rem_encoding(compiled)
             if print_expr:
-                result = self.runner.run(compiled, error, run_func=try_eval)
-                if result is not None:  # if the input was an expression, we should print it
-                    print(ascii(result))
-            else:
                 self.runner.run(compiled, error)
+            else:
+                self.runner.run(compiled, error, run_func=None)
 
     def check_runner(self, path=None, isolate=False):
         """Makes sure there is a runner."""
