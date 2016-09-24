@@ -16,17 +16,15 @@ format:
 	pre-commit autoupdate
 	pre-commit run --allow-unstaged-config --all-files
 
-.PHONY: docs
-docs:
-	sphinx-build -b html . ./docs
-	pushd ./docs
-	cp ./README.html ./index.html
-	zip -r ./docs.zip ./*
-	popd
-
 .PHONY: test
 test:
 	pytest --strict -s tests
+
+.PHONY: docs
+docs: clean
+	sphinx-build -b html . ./docs
+	cp ./docs/README.html ./docs/index.html
+	pushd ./docs; zip -r ./docs.zip ./*; popd
 
 .PHONY: clean
 clean:
