@@ -158,11 +158,11 @@ class CoconutKernel(Kernel):
         if force or self._runner is None:
             self._runner = Runner(comp)
 
-    def _execute(self, code, evaluate=False):
+    def _execute(self, code, use_eval=None):
         """Compiles and runs code."""
         self._setup()
         try:
-            if evaluate:
+            if use_eval:
                 compiled = comp.parse_eval(code)
             else:
                 compiled = comp.parse_block(code)
@@ -170,10 +170,7 @@ class CoconutKernel(Kernel):
             logger.print_exc()
             return None
         else:
-            if evaluate:
-                return self._runner.run(compiled, run_func=eval)
-            else:
-                self._runner.run(compiled)
+            return self._runner.run(compiled, use_eval=use_eval)
 
     def do_execute(self, code, silent=False, store_history=True, user_expressions=None, allow_stdin=False):
         """Execute Coconut code."""

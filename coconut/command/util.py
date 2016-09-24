@@ -170,7 +170,7 @@ def kill_children():
             try:
                 child.terminate()
             except psutil.NoSuchProcess:
-                pass
+                pass  # process is already dead, so do nothing
         children = master.children(recursive=True)
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -253,9 +253,13 @@ class Runner(object):
             if not var.startswith("__") and var in dir(__coconut__):
                 self.vars[var] = getattr(__coconut__, var)
 
-    def run(self, code, error=False, run_func=interpret):
+    def run(self, code, error=False, use_eval=None):
         """Executes Python code."""
-        if run_func is None:
+        if use_eval is None:
+            run_func = interpret
+        elif use_eval:
+            run_func = eval
+        else:
             run_func = exec_func
         try:
             return run_func(code, self.vars)

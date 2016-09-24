@@ -144,6 +144,11 @@ def uniqueify(reqs):
     return list(set(reqs))
 
 
+def unique_from(reqs, main_reqs):
+    """Ensures reqs doesn't contain anything in main_reqs."""
+    return list(set(reqs) - set(main_reqs))
+
+
 def all_reqs_in(req_dict):
     """Gets all requirements in a requirements dict."""
     return uniqueify(req for req_list in req_dict.values() for req in req_list)
@@ -177,7 +182,7 @@ extras["tests"] = uniqueify(
     + (extras["jupyter"] if (PY2 and not PY26) or sys.version_info >= (3, 3) else [])
 )
 
-extras["docs"] = read_reqs("docs")
+extras["docs"] = unique_from(read_reqs("docs"), requirements)
 
 extras["dev"] = uniqueify(
     all_reqs_in(extras)
