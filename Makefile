@@ -26,10 +26,7 @@ docs: clean
 
 .PHONY: clean
 clean:
-	rm -rf ./docs
-	rm -rf ./dist
-	rm -rf ./build
-	rm -rf ./tests/dest
+	rm -rf ./docs ./dist ./build ./tests/dest
 	find . -name '*.pyc' -delete
 	find . -name '__pycache__' -delete
 
