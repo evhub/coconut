@@ -186,8 +186,7 @@ default_multiline = False
 default_vi_mode = False
 default_mouse_support = True
 
-minimum_sleep_time = .001  # seconds
-minimum_process_time = .1  # seconds
+ensure_elapsed_time = .001  # seconds
 watch_interval = .1  # seconds
 
 info_tabulation = 18  # offset for tabulated info messages

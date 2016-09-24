@@ -1,2 +1,1 @@
 pyparsing==2.1.9
-psutil==4.3.1

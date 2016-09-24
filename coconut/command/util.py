@@ -31,6 +31,7 @@ try:
 except ImportError:
     readline = None
 
+import psutil
 if PY26 or (3,) <= sys.version_info < (3, 3):
     prompt_toolkit = None
 else:
@@ -46,8 +47,7 @@ from coconut.constants import (
     default_multiline,
     default_vi_mode,
     default_mouse_support,
-    minimum_process_time,
-    minimum_sleep_time,
+    ensure_elapsed_time,
 )
 from coconut.logging import logger
 from coconut.exceptions import CoconutException, CoconutInternalException
@@ -116,23 +116,11 @@ def try_eval(code, in_vars):
 @contextmanager
 def ensure_time_elapsed():
     """Ensures minimum_process_time has elapsed."""
-    if sys.version_info >= (3, 2):
+    try:
         yield
-    elif PY26:
-        try:
-            yield
-        finally:
-            time.sleep(minimum_process_time)
-    else:
-        start = time.time()
-        try:
-            yield
-        finally:
-            elapsed_time = time.time() - start
-            sleep_time = minimum_process_time - elapsed_time
-            if sleep_time < minimum_sleep_time:
-                sleep_time = minimum_sleep_time
-            time.sleep(sleep_time)
+    finally:
+        if sys.version_info < (3, 2):
+            time.sleep(ensure_elapsed_time)
 
 
 def handling_prompt_toolkit_errors(func):
@@ -150,6 +138,32 @@ def handling_prompt_toolkit_errors(func):
                 self.style = None
         return func(self, *args, **kwargs)
     return handles_prompt_toolkit_errors_func
+
+
+@contextmanager
+def handle_broken_process_pool():
+    """Handles BrokenProcessPool error."""
+    if sys.version_info < (3, 3):
+        yield
+    else:
+        from concurrent.futures.process import BrokenProcessPool
+        try:
+            yield
+        except BrokenProcessPool:
+            raise KeyboardInterrupt()
+
+
+def kill_children():
+    """Terminates all child processes."""
+    master = psutil.Process()
+    children = master.children(recursive=True)
+    while children:
+        for child in children:
+            try:
+                child.terminate()
+            except psutil.NoSuchProcess:
+                pass
+        children = master.children(recursive=True)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CLASSES:

@@ -113,13 +113,18 @@ class Logger(object):
         if not self.quiet:
             self.display(messages, main_sig)
 
+    def show_error(self, *messages):
+        """Prints error messages with main signature."""
+        if not self.quiet:
+            self.display(messages, main_sig, debug=True)
+
     def log(self, *messages):
-        """Logs a debug message if in verbose mode."""
+        """Logs debug messages if in verbose mode."""
         if self.verbose:
             self.printerr(*messages)
 
     def log_show(self, *messages):
-        """Logs a debug message with main signature."""
+        """Logs debug messages with main signature."""
         if self.verbose:
             self.display(messages, main_sig, debug=True)
 

@@ -153,9 +153,6 @@ def all_reqs_in(req_dict):
 
 requirements = read_reqs()
 
-if PY2:
-    requirements += read_reqs("py2")
-
 if PY26:
     requirements += read_reqs("py26")
 else:
@@ -164,7 +161,11 @@ else:
 extras = {
     "watch": read_reqs("watch"),
     "tests": read_reqs("tests"),
+    "jobs": read_reqs("jobs"),
 }
+
+if PY2:
+    extras["jobs"] += read_reqs("py2-jobs")
 
 extras["jupyter"] = extras["ipython"] = read_reqs("jupyter")
 

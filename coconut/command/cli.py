@@ -135,8 +135,8 @@ arguments.add_argument(
 arguments.add_argument(
     "-j", "--jobs",
     metavar="processes",
-    type=int,
-    help="number of additional processes to use (set to 0 to disable multiprocessing) (defaults to the number of processors on your machine)")
+    type=str,
+    help="number of additional processes to use (defaults to 0) (pass 'sys' to use machine default)")
 
 arguments.add_argument(
     "--jupyter", "--ipython",

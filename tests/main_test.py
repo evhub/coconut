@@ -67,8 +67,8 @@ def call(cmd, assert_output=False, **kwargs):
 
 def call_coconut(args):
     """Calls Coconut."""
-    if "--jobs" not in args and platform.python_implementation() == "PyPy":
-        args += ["--jobs", "0"]
+    if "--jobs" not in args and platform.python_implementation() != "PyPy":
+        args += ["--jobs", "sys"]
     call(["coconut"] + args)
 
 

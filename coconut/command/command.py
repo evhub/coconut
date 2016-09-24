@@ -23,8 +23,9 @@ import sys
 import os
 import time
 import subprocess
-import signal
 from contextlib import contextmanager
+
+from concurrent.futures import ProcessPoolExecutor
 
 from coconut.compiler import Compiler
 from coconut.exceptions import (
@@ -53,6 +54,8 @@ from coconut.command.util import (
     multiprocess_wrapper,
     Prompt,
     ensure_time_elapsed,
+    handle_broken_process_pool,
+    kill_children,
 )
 from coconut.compiler.header import gethash
 from coconut.command.cli import arguments
@@ -69,7 +72,7 @@ class Command(object):
     running = False  # whether the interpreter is currently active
     runner = None  # the current Runner
     target = None  # corresponds to --target flag
-    jobs = None  # corresponds to --jobs flag
+    jobs = 0  # corresponds to --jobs flag
     executor = None  # runs --jobs
     exit_code = 0  # exit status to return
     errmsg = None  # error message to display
@@ -100,12 +103,10 @@ class Command(object):
         """Exits if exit_code is abnormal."""
         if self.exit_code:
             if self.errmsg is not None:
-                logger.show("Exiting due to " + self.errmsg + ".")
+                logger.show_error("Exiting due to " + self.errmsg + ".")
                 self.errmsg = None
             try:
-                from psutil import Process
-                for child in Process().children(recursive=True):
-                    child.send_signal(signal.SIGTERM)
+                kill_children()
             finally:
                 sys.exit(self.exit_code)
 
@@ -198,15 +199,20 @@ class Command(object):
 
     def register_error(self, code=1, errmsg=None):
         """Updates the exit code."""
-        self.errmsg = errmsg or self.errmsg
+        if errmsg is not None:
+            if self.errmsg is None:
+                self.errmsg = errmsg
+            elif errmsg not in self.errmsg:
+                self.errmsg += ", " + errmsg
         self.exit_code = max(self.exit_code, code)
 
     @contextmanager
     def handling_exceptions(self, blanket=False, errmsg=None):
-        """Handles CoconutExceptions."""
+        """Performs proper exception handling."""
         if blanket:
             try:
-                yield
+                with handle_broken_process_pool():
+                    yield
             except KeyboardInterrupt:
                 self.register_error(errmsg="KeyboardInterrupt")
             except SystemExit as err:
@@ -337,10 +343,17 @@ class Command(object):
 
     def set_jobs(self, jobs):
         """Sets --jobs."""
-        if jobs is not None and jobs < 0:
-            raise CoconutException("the number of processes passed to --jobs must be >= 0")
+        if jobs == "sys":
+            self.jobs = None
         else:
-            self.jobs = jobs
+            try:
+                jobs = int(jobs)
+            except ValueError:
+                jobs = -1
+            if jobs < 0:
+                raise CoconutException("--jobs must be an integer >= 0 or 'sys'")
+            else:
+                self.jobs = jobs
 
     @contextmanager
     def running_jobs(self):
@@ -348,16 +361,12 @@ class Command(object):
         if self.jobs == 0:
             yield
         else:
-            from concurrent.futures import ProcessPoolExecutor
-            try:
+            with self.handling_exceptions(True):
                 with ProcessPoolExecutor(self.jobs) as self.executor:
                     with ensure_time_elapsed():
                         yield
-            except KeyboardInterrupt:
-                self.register_error(errmsg="KeyboardInterrupt")
-            finally:
-                self.executor = None
-                self.exit_on_error()
+            self.executor = None
+            self.exit_on_error()
 
     def create_package(self, dirpath):
         """Sets up a package directory."""

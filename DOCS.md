@@ -103,7 +103,7 @@ which will install Coconut and its required dependencies. Coconut also has some 
 ```
 pip install coconut[all]
 ```
-which will enable the use of Coconut's `--watch` flag, `--jupyter` flag, and test suite. To install the optional dependencies only for a particular flag, simply put the flag name in place of `all`.
+which will enable the use of Coconut's `--jobs`, `--watch`, and `--jupyter` flags (as well as Coconut's test suite). To install the optional dependencies only for a particular flag, simply put the flag name in place of `all`.
 
 Alternatively, if you want to test out Coconut's latest and greatest, enter
 ```
@@ -144,7 +144,7 @@ dest                  destination directory for compiled files (defaults to the 
 -q, --quiet             suppress all informational output (combine with --display to write runnable code to stdout)
 -f, --force             force overwriting of compiled Python (otherwise only overwrites when source code or compilation parameters change)
 -c, --code code         run a line of Coconut passed in as a string (can also be passed into stdin)
--j, --jobs processes    number of additional processes to use (set to 0 to disable multiprocessing) (defaults to the number of processors on your machine)
+-j, --jobs processes    number of additional processes to use (defaults to 0) (pass 'sys' to use machine default)
 --jupyter, --ipython    run Jupyter/IPython with Coconut as the kernel (remaining args passed to Jupyter)
 --tutorial              open the Coconut tutorial in the default web browser
 --documentation         open the Coconut documentation in the default web browser
