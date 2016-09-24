@@ -241,8 +241,9 @@ class TestCompilation(unittest.TestCase):
     def test_normal(self):
         run()
 
-    def test_jobs_zero(self):
-        run(["--jobs", "0"])
+    if platform.python_implementation() != "PyPy":
+        def test_jobs_zero(self):
+            run(["--jobs", "0"])
 
     def test_run(self):
         run(comp_run=True)
