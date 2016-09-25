@@ -1,6 +1,6 @@
 # Coconut
 
-Coconut is a **simple, elegant, Pythonic functional programming language** that compiles to [Python](https://www.python.org/). Since **all valid Python is valid Coconut**, using Coconut will only extend and enhance what you're already capable of in Python.
+Coconut is a **functional programming language** that **compiles to [Python](https://www.python.org/)**. Since **all valid Python is valid Coconut**, using Coconut will only extend and enhance what you're already capable of in Python.
 
 Why use Coconut? Coconut is built to be fundamentally **useful**. Coconut enhances the repertoire of Python programmers to include the tools of modern functional programming, in such a way that those tools are **easy** to use and immensely **powerful**; that is, **Coconut does to functional programming what Python did to imperative programming**. And Coconut code runs the same on **any Python version**, making the Python 2/3 split a thing of the past.
 
