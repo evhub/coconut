@@ -138,12 +138,10 @@ class _coconut(object):'''
         import collections.abc as abc'''
             if target.startswith("3"):
                 header += r'''
-    IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, next, object, range, reversed, set, slice, super, tuple, repr = IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, next, object, range, reversed, set, slice, super, tuple, repr
-'''
+    IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, next, object, range, reversed, set, slice, super, tuple, repr = IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, next, object, range, reversed, set, slice, super, tuple, repr'''
             else:
                 header += r'''
-    IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, next, object, range, reversed, set, slice, super, tuple, bytearray, repr = IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, next, object, range, reversed, set, slice, super, tuple, bytearray, staticmethod(repr)
-'''
+    IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, next, object, range, reversed, set, slice, super, tuple, bytearray, repr = IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, next, object, range, reversed, set, slice, super, tuple, bytearray, staticmethod(repr)'''
             header += r'''
 class _coconut_MatchError(Exception):
     """Pattern-matching error."""
