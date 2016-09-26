@@ -410,7 +410,7 @@ class Command(object):
             if code:
                 compiled = self.handle_input(code)
                 if compiled:
-                    self.execute(compiled, error=False, use_eval=None)
+                    self.execute(compiled, use_eval=None)
 
     def exit_runner(self, exit_code=0):
         """Exits the interpreter."""
@@ -439,7 +439,7 @@ class Command(object):
             logger.print_exc()
         return None
 
-    def execute(self, compiled=None, error=True, path=None, isolate=False, use_eval=False):
+    def execute(self, compiled=None, path=None, isolate=False, use_eval=False):
         """Executes compiled code."""
         self.check_runner(path, isolate)
         if compiled is not None:
@@ -447,7 +447,7 @@ class Command(object):
                 print(compiled)
             if isolate:  # isolate means header is included, and thus encoding must be removed
                 compiled = rem_encoding(compiled)
-            self.runner.run(compiled, error, use_eval=use_eval)
+            self.runner.run(compiled, use_eval=use_eval)
 
     def check_runner(self, path=None, isolate=False):
         """Makes sure there is a runner."""

@@ -253,7 +253,7 @@ class Runner(object):
             if not var.startswith("__") and var in dir(__coconut__):
                 self.vars[var] = getattr(__coconut__, var)
 
-    def run(self, code, error=False, use_eval=None):
+    def run(self, code, use_eval=None):
         """Executes Python code."""
         if use_eval is None:
             run_func = interpret
@@ -269,10 +269,7 @@ class Runner(object):
             else:
                 self.exit(err.code)
         except:
-            if error:
-                raise
-            else:
-                traceback.print_exc()
+            traceback.print_exc()
         return None
 
 
