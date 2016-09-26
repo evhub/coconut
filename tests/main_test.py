@@ -42,7 +42,7 @@ pyston = os.path.join(os.curdir, "pyston")
 runnable_coco = os.path.join(src, "runnable.coco")
 runnable_py = os.path.join(src, "runnable.py")
 
-coconut_snip = "msg = '<success>'; pmsg = print$(msg); `pmsg`"
+coconut_snip = r"msg = '<success>'; pmsg = print$(msg); `pmsg`"
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -96,7 +96,7 @@ def remove_when_done(path):
     finally:
         if os.path.isdir(path):
             shutil.rmtree(path)
-        else:
+        elif os.path.isfile(path):
             os.remove(path)
 
 
@@ -227,7 +227,7 @@ class TestShell(unittest.TestCase):
         call(["coconut", "-s", "--code", coconut_snip], assert_output=True)
 
     def test_pipe(self):
-        call(r'echo "' + escape(coconut_snip) + '" | coconut -s', shell=True, assert_output=True)
+        call('echo "' + escape(coconut_snip) + '" | coconut -s', shell=True, assert_output=True)
 
     def test_convenience(self):
         call(["python", "-c", 'from coconut.convenience import parse; exec(parse("' + coconut_snip + '"))'], assert_output=True)
