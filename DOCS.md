@@ -50,7 +50,6 @@
     1. [`else` Statements](#else-statements)
     1. [`except` Statements](#except-statements)
     1. [Implicit `pass`](#implicit-pass)
-    1. [Parenthetical Continuation](#parenthetical-continuation)
     1. [In-line `global` And `nonlocal` Assignment](#in-line-global-and-nonlocal-assignment)
     1. [Code Passthrough](#code-passthrough)
 1. [Built-Ins](#built-ins)
@@ -229,7 +228,7 @@ If the `--strict` (or `-s`) flag is enabled, Coconut will throw errors on variou
 - semicolons at end of lines,
 - use of the Python-style `lambda` statement,
 - use of `u` to denote Unicode strings, and
-- use of backslash continuations (use [parenthetical continuation](#parenthetical-continuation) instead).
+- use of backslash continuations (use parenthetical continuation instead).
 
 It is recommended that you use the `--strict` (or `-s`) flag if you are starting a new Coconut project, as it will help you write cleaner code.
 
@@ -1237,24 +1236,6 @@ class Leaf(collections.namedtuple("Leaf", "n")):
     __slots__ = ()
 class Node(collections.namedtuple("Node", "l, r")):
     __slots__ = ()
-```
-
-### Parenthetical Continuation
-
-Coconut allows for the more elegant parenthetical continuation instead of the less elegant backslash continuation in `del`, `global`, `nonlocal`, and `with` statements.
-
-##### Example
-
-###### Coconut
-```coconut
-global (really_long_global_variable_name_the_first_one,
-        really_long_global_variable_name_the_second_one)
-```
-
-###### Python
-```coconut_python
-global really_long_global_variable_name_the_first_one, \
-        really_long_global_variable_name_the_second_one
 ```
 
 ### In-line `global` And `nonlocal` Assignment
