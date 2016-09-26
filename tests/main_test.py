@@ -234,7 +234,7 @@ class TestShell(unittest.TestCase):
 
     def test_runnable(self):
         with remove_when_done(runnable_py):
-            call(["coconut-run", runnable_coco], assert_output=True)
+            call(["coconut-run", runnable_coco, "--arg"], assert_output=True)
 
     if IPY:
 

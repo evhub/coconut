@@ -1,2 +1,3 @@
 #!/usr/bin/env coconut-run
+assert sys.argv[1] == "--arg"
 "<success>" |> print

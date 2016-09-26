@@ -46,8 +46,7 @@ def main():
 
 def main_run():
     """Starts Coconut with the --run and --quiet options."""
-    sys.argv = sys.argv[:1] + ["-rq"] + sys.argv[1:]
-    main()
+    Command().start(run=True)
 
 
 if __name__ == "__main__":

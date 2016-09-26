@@ -78,9 +78,25 @@ class Command(object):
         """Creates the CLI."""
         self.prompt = Prompt()
 
-    def start(self):
+    def start(self, run=False):
         """Processes command-line arguments."""
-        self.cmd(arguments.parse_args())
+        if run:
+            args = sys.argv[1:2] + ["-rq"]
+            sys.argv = sys.argv[2:]
+            self.cmd(args)
+        else:
+            self.cmd()
+
+    def cmd(self, args=None, interact=True):
+        """Processes command-line arguments."""
+        if args is None:
+            args = arguments.parse_args()
+        else:
+            args = arguments.parse_args(args)
+        self.exit_code = 0
+        with self.handling_exceptions(True):
+            self.use_args(args, interact)
+        self.exit_on_error()
 
     def setup(self, *args, **kwargs):
         """Sets parameters for the compiler."""
@@ -88,13 +104,6 @@ class Command(object):
             self.comp = Compiler(*args, **kwargs)
         else:
             self.comp.setup(*args, **kwargs)
-
-    def cmd(self, args, interact=True):
-        """Processes command-line arguments."""
-        self.exit_code = 0
-        with self.handling_exceptions(True):
-            self.use_args(args, interact)
-        self.exit_on_error()
 
     def exit_on_error(self):
         """Exits if exit_code is abnormal."""
@@ -501,7 +510,7 @@ class Command(object):
                     install_func(user_install_args)
                 except subprocess.CalledProcessError:
                     args = "kernel install failed on command'", " ".join(install_args)
-                    self.comp.warn(*args)
+                    logger.warn(*args)
                     self.register_error(errmsg="Jupyter error")
 
         if args:
