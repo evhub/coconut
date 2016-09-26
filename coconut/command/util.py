@@ -238,7 +238,7 @@ class Runner(object):
 
     def __init__(self, comp=None, exit=None, path=None):
         """Creates the executor."""
-        self.exit = exit
+        self.exit = sys.exit if exit is None else exit
         self.vars = {"__name__": "__main__"}
         if path is not None:
             self.vars["__file__"] = fixpath(path)
@@ -253,7 +253,7 @@ class Runner(object):
             if not var.startswith("__") and var in dir(__coconut__):
                 self.vars[var] = getattr(__coconut__, var)
 
-    def run(self, code, use_eval=None):
+    def run(self, code, use_eval=None, all_errors_exit=False):
         """Executes Python code."""
         if use_eval is None:
             run_func = interpret
@@ -264,12 +264,11 @@ class Runner(object):
         try:
             return run_func(code, self.vars)
         except SystemExit as err:
-            if self.exit is None:
-                raise
-            else:
-                self.exit(err.code)
+            self.exit(err.code)
         except:
             traceback.print_exc()
+            if all_errors_exit:
+                self.exit(1)
         return None
 
 

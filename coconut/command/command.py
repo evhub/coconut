@@ -447,7 +447,7 @@ class Command(object):
                 print(compiled)
             if isolate:  # isolate means header is included, and thus encoding must be removed
                 compiled = rem_encoding(compiled)
-            self.runner.run(compiled, use_eval=use_eval)
+            self.runner.run(compiled, use_eval=use_eval, all_errors_exit=isolate)
 
     def check_runner(self, path=None, isolate=False):
         """Makes sure there is a runner."""
