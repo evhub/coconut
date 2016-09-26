@@ -81,8 +81,8 @@ class Command(object):
     def start(self, run=False):
         """Processes command-line arguments."""
         if run:
-            args = sys.argv[1:2] + ["-rq"]
-            sys.argv = sys.argv[2:]
+            args = [sys.argv[1], "-rq"]
+            sys.argv = sys.argv[1:]
             self.cmd(args)
         else:
             self.cmd()
