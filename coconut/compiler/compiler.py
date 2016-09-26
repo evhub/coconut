@@ -802,7 +802,7 @@ class Compiler(Grammar):
                         if not isinstance(ref, str):
                             raise CoconutInternalException("invalid reference for a comment", ref)
                         if out and not out[-1].endswith("\n"):
-                            out.append(" ")
+                            out.append("  ")
                         out.append("#" + ref)
                         comment = None
                     else:
