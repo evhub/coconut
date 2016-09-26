@@ -224,7 +224,7 @@ def comp_all(args=[]):
 class TestShell(unittest.TestCase):
 
     def test_code(self):
-        call(["coconut", "-s", "--code", coconut_snip], assert_output=True)
+        call(["coconut", "-s", "-c", coconut_snip], assert_output=True)
 
     def test_pipe(self):
         call('echo "' + escape(coconut_snip) + '" | coconut -s', shell=True, assert_output=True)
@@ -235,6 +235,9 @@ class TestShell(unittest.TestCase):
     def test_runnable(self):
         with remove_when_done(runnable_py):
             call(["coconut-run", runnable_coco, "--arg"], assert_output=True)
+
+    def test_runnable_nowrite(self):
+        call(["coconut-run", "-n", runnable_coco, "--arg"], assert_output=True)
 
     if IPY:
 

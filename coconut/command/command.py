@@ -81,11 +81,19 @@ class Command(object):
     def start(self, run=False):
         """Processes command-line arguments."""
         if run:
-            args = [sys.argv[1], "-rq"]
-            sys.argv = sys.argv[1:]
-            self.cmd(args)
+            args, argv = ["-rq"], []
+            for i in range(1, len(sys.argv)):
+                arg = sys.argv[i]
+                if arg.startswith("-"):
+                    args.append(arg)
+                else:
+                    args.append(arg)
+                    argv = sys.argv[i:]
+                    break
+            sys.argv = argv
         else:
-            self.cmd()
+            args = None
+        self.cmd(args)
 
     def cmd(self, args=None, interact=True):
         """Processes command-line arguments."""
@@ -151,6 +159,9 @@ class Command(object):
                 raise CoconutException("source path must point to file not directory when --run is enabled")
             elif args.watch and os.path.isfile(args.source):
                 raise CoconutException("source path must point to directory not file when --watch is enabled")
+            elif args.interact and args.run:
+                raise CoconutException("extraneous --run; --interact implies --run when used in compilation")
+
             if args.dest is None:
                 if args.nowrite:
                     dest = None  # no dest
@@ -172,7 +183,7 @@ class Command(object):
                 package = None  # auto-decide package
 
             with self.running_jobs():
-                self.compile_path(args.source, dest, package, args.run, args.force)
+                self.compile_path(args.source, dest, package, args.run or args.interact, args.force)
 
         elif (args.run
               or args.nowrite
