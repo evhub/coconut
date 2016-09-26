@@ -39,6 +39,8 @@ dest = os.path.join(base, "dest")
 
 prisoner = os.path.join(os.curdir, "prisoner")
 pyston = os.path.join(os.curdir, "pyston")
+runnable_coco = os.path.join(src, "runnable.coco")
+runnable_py = os.path.join(src, "runnable.py")
 
 coconut_snip = "msg = '<success>'; pmsg = print$(msg); `pmsg`"
 
@@ -87,12 +89,15 @@ def comp(path=None, folder=None, file=None, args=[]):
 
 
 @contextmanager
-def remove_when_done(directory):
-    """Removes a directory when done."""
+def remove_when_done(path):
+    """Removes a path when done."""
     try:
         yield
     finally:
-        shutil.rmtree(directory)
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+        else:
+            os.remove(path)
 
 
 @contextmanager
@@ -226,6 +231,10 @@ class TestShell(unittest.TestCase):
 
     def test_convenience(self):
         call(["python", "-c", 'from coconut.convenience import parse; exec(parse("' + coconut_snip + '"))'], assert_output=True)
+
+    def test_runnable(self):
+        with remove_when_done(runnable_py):
+            call([runnable_coco], assert_output=True)
 
     if IPY:
 

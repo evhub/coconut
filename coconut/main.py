@@ -40,8 +40,15 @@ from coconut.command import Command
 
 
 def main():
-    """Runs the Coconut CLI."""
+    """Starts Coconut."""
     Command().start()
+
+
+def main_run():
+    """Starts Coconut with the --run and --quiet options."""
+    sys.argv = sys.argv[:1] + ["-rq"] + sys.argv[1:]
+    main()
+
 
 if __name__ == "__main__":
     main()

@@ -5,7 +5,7 @@ install:
 
 .PHONY: dev
 dev:
-	pip install --upgrade pip
+	pip install --upgrade pip setuptools
 	pip install --upgrade -e .[dev]
 	pre-commit install -f --install-hooks
 

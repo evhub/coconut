@@ -8,6 +8,7 @@
     1. [Usage](#usage)
         1. [Positional Arguments](#positional-arguments)
         1. [Optional Arguments](#optional-arguments)
+    1. [Coconut Scripts](#coconut-scripts)
     1. [Naming Source Files](#naming-source-files)
     1. [Compilation Modes](#compilation-modes)
     1. [Compatible Python Versions](#compatible-python-versions)
@@ -151,6 +152,13 @@ dest                  destination directory for compiled files (defaults to the 
 --style name            pygments syntax highlighting style (or 'none' to disable)
 --recursion-limit       set maximum recursion depth in compiler (defaults to 2000)
 --verbose               print verbose debug output
+```
+
+### Coconut Scripts
+
+To run a Coconut file as a script, Coconut provides the command `coconut-run` as an alias for `coconut --run --quiet`, which will quietly compile the file if it's been changed or use the existing file if it hasn't and then run that. The `coconut-run` alias is especially useful for using in shebangs, which often don't support command-line arguments. The recommended shebang for a Coconut script file, therefore, is:
+```bash
+#!/usr/bin/env coconut-run
 ```
 
 ### Naming Source Files

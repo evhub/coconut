@@ -229,6 +229,9 @@ setuptools.setup(
         "console_scripts": [
             script + " = coconut.main:main"
             for script in script_names
+        ] + [
+            script + "-run = coconut.main:main_run"
+            for script in script_names
         ],
         "pygments.lexers": [
             "coconut = coconut.highlighter:CoconutLexer",

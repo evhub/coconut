@@ -1,0 +1,2 @@
+#!/usr/bin/env coconut-run
+"<success>" |> print
