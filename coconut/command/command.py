@@ -326,12 +326,13 @@ class Command(object):
                     with openfile(destpath, "w") as opened:
                         writefile(opened, compiled)
                     logger.show_tabulated("Compiled to", showpath(destpath), ".")
-                if destpath is not None:
-                    self.execute_file(destpath)
+                if destpath is None:
+                    if run:
+                        self.execute(compiled, path=codepath)
+                    elif self.show:
+                        print(compiled)
                 elif run:
-                    self.execute(compiled, path=codepath)
-                elif self.show:
-                    print(compiled)
+                    self.execute_file(destpath)
 
             self.submit_comp_job(codepath, callback, compile_method, code)
 

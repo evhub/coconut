@@ -174,6 +174,13 @@ def kill_children():
                 pass  # process is already dead, so do nothing
         children = master.children(recursive=True)
 
+
+def splitname(path):
+    """Split a path into a directory and a name."""
+    dirpath, filename = os.path.split(path)
+    name = filename.split(os.path.extsep, 1)[0]
+    return dirpath, name
+
 #-----------------------------------------------------------------------------------------------------------------------
 # CLASSES:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -249,6 +256,7 @@ class Runner(object):
         """Builds initial vars."""
         init_vars = {
             "__name__": "__main__",
+            "__package__": None,
         }
         if path is not None:
             init_vars["__file__"] = fixpath(path)
@@ -293,8 +301,7 @@ class Runner(object):
 
     def run_file(self, path, all_errors_exit=True):
         """Executes a Python file."""
-        path, filename = os.path.split(path)
-        name = filename.split(os.path.extsep, 1)[0]
+        path, name = splitname(path)
         found = imp.find_module(name, [path])
         try:
             with self.handling_errors(all_errors_exit):
