@@ -105,8 +105,10 @@ def attr_handle(tokens):
     """Processes attrgetter literals."""
     if len(tokens) == 1:
         return '_coconut.operator.attrgetter("' + tokens[0] + '")'
-    elif len(tokens) == 2:
-        return '_coconut.operator.methodcaller("' + tokens[0] + '", ' + tokens[1] + ")"
+    elif len(tokens) == 2 and tokens[1] == "(":
+        return '_coconut.operator.methodcaller("' + tokens[0] + '")'
+    elif len(tokens) == 3 and tokens[1] == "(":
+        return '_coconut.operator.methodcaller("' + tokens[0] + '", ' + tokens[2] + ")"
     else:
         raise CoconutInternalException("invalid attrgetter literal tokens", tokens)
 
@@ -1018,7 +1020,11 @@ class Grammar(object):
         keyword_atom |= Keyword(const_vars[x])
     string_atom = addspace(OneOrMore(string))
     passthrough_atom = trace(addspace(OneOrMore(passthrough)), "passthrough_atom")
-    attr_atom = attach(dot.suppress() + name + Optional(lparen.suppress() + methodcaller_args + rparen.suppress()), attr_handle)
+    attr_atom = attach(
+        dot.suppress() + name
+        + Optional(
+            lparen + Optional(methodcaller_args) + rparen.suppress()
+        ), attr_handle)
     itemgetter_atom = attach(dot.suppress() + condense(Optional(dollar) + lbrack) + subscriptgroup + rbrack.suppress(), itemgetter_handle)
     set_literal = Forward()
     set_letter_literal = Forward()

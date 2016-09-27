@@ -69,6 +69,7 @@ def suite_test():
     assert vector(vector(4, 3)) == vector(4, 3)
     assert triangle(3, 4, 5).is_right()
     assert (.)(triangle(3, 4, 5), "is_right")
+    assert triangle(3, 4, 5) |> .is_right()
     assert factorial1(3) == 6
     assert factorial2(3) == 6
     assert factorial4(3) == 6
@@ -213,6 +214,7 @@ def suite_test():
     assert pattern_abs(4) == 4 == pattern_abs_(4)
     assert pattern_abs(0) == 0 == pattern_abs_(0)
     assert pattern_abs(-4) == 4 == pattern_abs_(-4)
+    assert vector(1, 2) |> (==)$(vector(1, 2))
     assert vector(1, 2) |> .__eq__(other=vector(1, 2))
     assert fib() |> takewhile$((i) -> i < 4000000 ) |> filter$((i) -> i % 2 == 0 ) |> sum == 4613732
     assert loop([1,2])$[:4] |> list == [1, 2] * 2
