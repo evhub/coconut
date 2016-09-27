@@ -23,6 +23,7 @@ import sys
 import os
 import time
 import subprocess
+import traceback
 from contextlib import contextmanager
 
 from coconut.compiler import Compiler
@@ -102,7 +103,7 @@ class Command(object):
         else:
             args = arguments.parse_args(args)
         self.exit_code = 0
-        with self.handling_exceptions(True):
+        with self.handling_exceptions():
             self.use_args(args, interact)
         self.exit_on_error()
 
@@ -223,25 +224,19 @@ class Command(object):
         self.exit_code = max(self.exit_code, code)
 
     @contextmanager
-    def handling_exceptions(self, blanket=False, errmsg=None):
+    def handling_exceptions(self):
         """Performs proper exception handling."""
-        if blanket:
-            try:
-                with handle_broken_process_pool():
-                    yield
-            except KeyboardInterrupt:
-                self.register_error(errmsg="KeyboardInterrupt")
-            except SystemExit as err:
-                self.register_error(err.code)
-            except:
-                logger.print_exc()
-                self.register_error(errmsg=errmsg)
-        else:
-            try:
+        try:
+            with handle_broken_process_pool():
                 yield
-            except CoconutException:
+        except SystemExit as err:
+            self.register_error(err.code)
+        except BaseException as err:
+            if isinstance(err, CoconutException):
                 logger.print_exc()
-                self.register_error(errmsg=errmsg)
+            elif not isinstance(err, KeyboardInterrupt):
+                traceback.print_exc()
+            self.register_error(errmsg=err.__class__.__name__)
 
     def compile_path(self, path, write=True, package=None, run=False, force=False):
         """Compiles a path."""
@@ -310,10 +305,10 @@ class Command(object):
         foundhash = None if force else self.hashashof(destpath, code, package)
         if foundhash:
             logger.show_tabulated("Left unchanged", showpath(destpath), "(pass --force to override).")
-            if run:
-                self.execute(foundhash, path=destpath, isolate=True)
-            elif self.show:
+            if self.show:
                 print(foundhash)
+            if run:
+                self.execute_file(destpath)
 
         else:
 
@@ -331,9 +326,10 @@ class Command(object):
                     with openfile(destpath, "w") as opened:
                         writefile(opened, compiled)
                     logger.show_tabulated("Compiled to", showpath(destpath), ".")
-                if run:
-                    runpath = destpath if destpath is not None else codepath
-                    self.execute(compiled, path=runpath, isolate=True)
+                if destpath is not None:
+                    self.execute_file(destpath)
+                elif run:
+                    self.execute(compiled, path=codepath)
                 elif self.show:
                     print(compiled)
 
@@ -352,7 +348,7 @@ class Command(object):
             def callback_wrapper(completed_future):
                 """Ensures that all errors are always caught, since errors raised in a callback won't be propagated."""
                 with logger.in_path(path):  # handle errors in the path context
-                    with self.handling_exceptions(True, "compilation error"):
+                    with self.handling_exceptions():
                         result = completed_future.result()
                         callback(result)
             future.add_done_callback(callback_wrapper)
@@ -374,16 +370,18 @@ class Command(object):
     @contextmanager
     def running_jobs(self):
         """Initialize multiprocessing."""
-        if self.jobs == 0:
-            yield
-        else:
-            from concurrent.futures import ProcessPoolExecutor
-            with self.handling_exceptions(True):
-                with ProcessPoolExecutor(self.jobs) as self.executor:
-                    with ensure_time_elapsed():
-                        yield
-            self.executor = None
-            self.exit_on_error()
+        with self.handling_exceptions():
+            if self.jobs == 0:
+                yield
+            else:
+                from concurrent.futures import ProcessPoolExecutor
+                try:
+                    with ProcessPoolExecutor(self.jobs) as self.executor:
+                        with ensure_time_elapsed():
+                            yield
+                finally:
+                    self.executor = None
+        self.exit_on_error()
 
     def create_package(self, dirpath):
         """Sets up a package directory."""
@@ -459,29 +457,27 @@ class Command(object):
             logger.print_exc()
         return None
 
-    def execute(self, compiled=None, path=None, isolate=False, use_eval=False):
+    def execute(self, compiled=None, path=None, use_eval=False):
         """Executes compiled code."""
-        self.check_runner(path, isolate)
+        self.check_runner()
         if compiled is not None:
             if self.show:
                 print(compiled)
-            if isolate:  # isolate means header is included, and thus encoding must be removed
+            if path is not None:  # path means header is included, and thus encoding must be removed
                 compiled = rem_encoding(compiled)
-            self.runner.run(compiled, use_eval=use_eval, all_errors_exit=isolate)
+            self.runner.run(compiled, use_eval=use_eval, path=path, all_errors_exit=(path is not None))
 
-    def check_runner(self, path=None, isolate=False):
+    def execute_file(self, destpath):
+        """Executes compiled file."""
+        self.check_runner()
+        self.runner.run_file(destpath)
+
+    def check_runner(self):
         """Makes sure there is a runner."""
-        if isolate or path is not None or self.runner is None:
-            self.start_runner(path, isolate)
-
-    def start_runner(self, path=None, isolate=False):
-        """Starts the runner."""
-        sys.path.insert(0, os.getcwd())
-        if isolate:
-            comp = None
-        else:
-            comp = self.comp
-        self.runner = Runner(comp, self.exit_runner, path)
+        if os.getcwd() not in sys.path:
+            sys.path.append(os.getcwd())
+        if self.runner is None:
+            self.runner = Runner(self.comp, self.exit_runner)
 
     def launch_tutorial(self):
         """Opens the Coconut tutorial."""

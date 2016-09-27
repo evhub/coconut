@@ -24,6 +24,7 @@ import os
 import traceback
 import functools
 import time
+import imp
 from copy import copy
 from contextlib import contextmanager
 try:
@@ -239,12 +240,19 @@ class Runner(object):
     def __init__(self, comp=None, exit=None, path=None):
         """Creates the executor."""
         self.exit = sys.exit if exit is None else exit
-        self.vars = {"__name__": "__main__"}
-        if path is not None:
-            self.vars["__file__"] = fixpath(path)
+        self.vars = self.build_vars(path)
         if comp is not None:
             self.run(comp.headers("code"))
             self.fixpickle()
+
+    def build_vars(self, path=None):
+        """Builds initial vars."""
+        init_vars = {
+            "__name__": "__main__",
+        }
+        if path is not None:
+            init_vars["__file__"] = fixpath(path)
+        return init_vars
 
     def fixpickle(self):
         """Fixes pickling of Coconut header objects."""
@@ -253,7 +261,19 @@ class Runner(object):
             if not var.startswith("__") and var in dir(__coconut__):
                 self.vars[var] = getattr(__coconut__, var)
 
-    def run(self, code, use_eval=None, all_errors_exit=False):
+    @contextmanager
+    def handling_errors(self, all_errors_exit=False):
+        """Handles execution errors."""
+        try:
+            yield
+        except SystemExit as err:
+            self.exit(err.code)
+        except:
+            traceback.print_exc()
+            if all_errors_exit:
+                self.exit(1)
+
+    def run(self, code, use_eval=None, path=None, all_errors_exit=False):
         """Executes Python code."""
         if use_eval is None:
             run_func = interpret
@@ -261,15 +281,27 @@ class Runner(object):
             run_func = eval
         else:
             run_func = exec_func
+        with self.handling_errors(all_errors_exit):
+            if path is None:
+                return run_func(code, self.vars)
+            else:
+                use_vars = self.build_vars(path)
+                try:
+                    return run_func(code, use_vars)
+                finally:
+                    self.vars.update(use_vars)
+
+    def run_file(self, path, all_errors_exit=True):
+        """Executes a Python file."""
+        path, filename = os.path.split(path)
+        name = filename.split(os.path.extsep, 1)[0]
+        found = imp.find_module(name, [path])
         try:
-            return run_func(code, self.vars)
-        except SystemExit as err:
-            self.exit(err.code)
-        except:
-            traceback.print_exc()
-            if all_errors_exit:
-                self.exit(1)
-        return None
+            with self.handling_errors(all_errors_exit):
+                module = imp.load_module("__main__", *found)
+                self.vars.update(vars(module))
+        finally:
+            found[0].close()
 
 
 class multiprocess_wrapper(object):
