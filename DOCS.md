@@ -176,21 +176,7 @@ While Coconut syntax is based off of Python 3, Coconut code compiled in universa
 
 _Note: The tested against implementations are [CPython](https://www.python.org/) `2.6, 2.7, 3.2, 3.3, 3.4, 3.5` and [PyPy](http://pypy.org/) `2.7, 3.2`._
 
-As part of Coconut's cross-compatibility efforts, Coconut adds in new Python 3 built-ins and overwrites Python 2 built-ins to use the Python 3 versions where possible. Additionally, Coconut also overrides some Python 3 built-ins for optimization purposes. If access to the Python versions is desired, the old built-ins can be retrieved by prefixing them with `py_`. The Python built-ins available are:
-- `py_chr`
-- `py_filter`
-- `py_hex`
-- `py_input`
-- `py_raw_input`
-- `py_int`
-- `py_oct`
-- `py_open`
-- `py_print`
-- `py_range`
-- `py_xrange`
-- `py_str`
-- `py_map`
-- `py_zip`
+As part of Coconut's cross-compatibility efforts, Coconut adds in new Python 3 built-ins and overwrites Python 2 built-ins to use the Python 3 versions where possible. Additionally, Coconut also overrides some Python 3 built-ins for optimization purposes. If access to the Python versions is desired, the old built-ins can be retrieved by prefixing them with `py_`.
 
 Finally, while Coconut will try to compile Python-3-specific syntax to its universal equivalent, the follow constructs have no equivalent in Python 2, and require a target of at least `3` to be specified to be used:
 - destructuring assignment with `*`s (use Coconut pattern-matching instead),
@@ -493,15 +479,14 @@ _Showcases the syntax, features, and immutable nature of `data` types._
 data Empty(): pass
 data Leaf(n): pass
 data Node(l, r): pass
-Tree = (Empty, Leaf, Node)
 
-def size(Tree()) = 0
-
-@addpattern(size)
-def size(Tree(n)) = 1
+def size(Empty()) = 0
 
 @addpattern(size)
-def size(Tree(l, r)) = size(l) + size(r)
+def size(Leaf(n)) = 1
+
+@addpattern(size)
+def size(Node(l, r)) = size(l) + size(r)
 
 size(Node(Empty(), Leaf(10))) == 1
 ```
@@ -658,14 +643,14 @@ data point(x, y):
             return False
 
 point(1,2) |> point(3,4).transform |> print
-point(1,2) |> point(1,2).__eq__ |> print
+point(1,2) |> (==)$(point(1,2)) |> print
 ```
 _Showcases matching to data types. Values defined by the user with the `data` statement can be matched against and their contents accessed by specifically referencing arguments to the data type's constructor._
 ```coconut
-data Empty(): pass
-data Leaf(n): pass
-data Node(l, r): pass
-Tree = (Empty, Leaf, Node)
+data Empty()
+data Leaf(n)
+data Node(l, r)
+Tree = (Empty, Leaf, Node) # type union
 
 def depth(Tree()) = 0
 
@@ -927,14 +912,12 @@ If you are encountering a `RuntimeError` due to maximum recursion depth, it is h
 
 ###### Coconut
 ```coconut
+# unlike in Python, this function will never hit a maximum recursion depth
 def factorial(n, acc=1):
-    case n:
-        match 0:
-            return acc
-        match _ is int if n > 0:
-            return factorial(n-1, acc*n)
+    if n == 0:
+        return acc
     else:
-        raise TypeError("the argument to factorial must be an integer >= 0")
+        return factorial(n-1, acc*n)
 ```
 
 ###### Python
@@ -1128,11 +1111,8 @@ If a destructuring assignment statement fails, then instead of continuing on as 
 
 ###### Coconut
 ```coconut
-def last_two(l):
-    _ + [a, b] = l
-    return a, b
-
-[0,1,2,3] |> last_two |> print
+_ + [a, b] = [0, 1, 2, 3]
+print(a, b)
 ```
 
 ###### Python
@@ -1168,32 +1148,29 @@ Coconut supports the compound statements `try`, `if`, and `match` on the end of 
 
 ###### Coconut
 ```coconut
-try:
-    unsafe_1()
-except MyError:
-    handle_1()
-else: try:
-    unsafe_2()
-except MyError:
-    handle_2()
+if invalid(input_list):
+    raise Exception()
+else: match [head] + tail in input_list:
+    print(head, tail)
+else:
+    print(input_list)
 ```
 
 ###### Python
 ```coconut_python
-try:
-    unsafe_1()
-except MyError:
-    handle_1()
+from collections.abc import Sequence
+if invalid(input_list):
+    raise Exception()
+elif isinstance(input_list, Sequence):
+    head, tail = inputlist[0], inputlist[1:]
+    print(head, tail)
 else:
-    try:
-        unsafe_2()
-    except MyError:
-        handle_2()
+    print(input_list)
 ```
 
 ### `except` Statements
 
-Python 3 requires that if multiple exceptions are to be caught, they must be placed inside of parentheses, so as to disallow Python 2's use of a comma instead of `as`. Coconut allows commas in except statements to translate to catching multiple exceptions without the need for parentheses.
+Python 3 requires that if multiple exceptions are to be caught, they must be placed inside of parentheses, so as to disallow Python 2's use of a comma instead of `as`. Coconut allows commas in except statements to translate to catching multiple exceptions without the need for parentheses, since, as in Python 3, `as` is always required to bind the exception to a name.
 
 ##### Example
 
@@ -1562,7 +1539,7 @@ Coconut provides a `recursive_iterator` decorator that provides significant opti
 1. your function either always `return`s an iterator or generates an iterator using `yield`,
 2. when called multiple times with the same arguments, your function produces the same iterator (your function is stateless),
 3. your function calls itself multiple times with the same arguments, and
-4. all arguments passed to your function are pickleable (this should almost always be true).
+4. all arguments passed to your function have a unique pickling (this should almost always be true).
 
 If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for `recursive_iterator`, or the corresponding criteria for Coconut's [tail call optimization](#tail-call-optimization), either of which should prevent such errors.
 

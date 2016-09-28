@@ -409,9 +409,6 @@ class Command(object):
         except EOFError:
             print()
             self.exit_runner()
-        except ValueError:
-            logger.print_exc()
-            self.exit_runner()
         return None
 
     def start_running(self):
