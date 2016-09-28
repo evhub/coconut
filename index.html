@@ -105,23 +105,6 @@
 </pre></div>
 </div>
 <ul class="simple">
-<li>algebraic data types</li>
-</ul>
-<div class="highlight-coconut"><div class="highlight"><pre><span></span><span class="k">data</span> <span class="nc">Empty</span><span class="p">():</span> <span class="k">pass</span>
-<span class="k">data</span> <span class="nc">Leaf</span><span class="p">(</span><span class="n">n</span><span class="p">):</span> <span class="k">pass</span>
-<span class="k">data</span> <span class="nc">Node</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span> <span class="k">pass</span>
-<span class="n">Tree</span> <span class="o">=</span> <span class="p">(</span><span class="n">Empty</span><span class="p">,</span> <span class="n">Leaf</span><span class="p">,</span> <span class="n">Node</span><span class="p">)</span>
-
-<span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="n">Tree</span><span class="p">())</span> <span class="o">=</span> <span class="mi">0</span>
-
-<span class="o">@</span><span class="nb">addpattern</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="n">Tree</span><span class="p">(</span><span class="n">n</span><span class="p">))</span> <span class="o">=</span> <span class="mi">1</span>
-
-<span class="o">@</span><span class="nb">addpattern</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="n">Tree</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">))</span> <span class="o">=</span> <span class="n">size</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">+</span> <span class="n">size</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
-</pre></div>
-</div>
-<ul class="simple">
 <li>tail recursion optimization</li>
 </ul>
 <div class="highlight-coconut"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">factorial</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">acc</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
@@ -132,6 +115,24 @@
             <span class="k">return</span> <span class="n">factorial</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">acc</span><span class="o">*</span><span class="n">n</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;the argument to factorial must be an integer &gt;= 0&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li>algebraic data types</li>
+</ul>
+<div class="highlight-coconut"><div class="highlight"><pre><span></span><span class="k">data</span> <span class="nc">Empty</span><span class="p">()</span>
+<span class="k">data</span> <span class="nc">Leaf</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+<span class="k">data</span> <span class="nc">Node</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="n">Empty</span><span class="p">())</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="o">@</span><span class="nb">addpattern</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="n">Leaf</span><span class="p">(</span><span class="n">n</span><span class="p">))</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="o">@</span><span class="nb">addpattern</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="n">Node</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">))</span> <span class="o">=</span> <span class="n">size</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">+</span> <span class="n">size</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+
+<span class="n">size</span><span class="p">(</span><span class="n">Node</span><span class="p">(</span><span class="n">Empty</span><span class="p">(),</span> <span class="n">Leaf</span><span class="p">(</span><span class="mi">10</span><span class="p">)))</span> <span class="o">==</span> <span class="mi">1</span>
 </pre></div>
 </div>
 </ul>

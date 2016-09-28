@@ -54,21 +54,6 @@ range(15) |> map$((*)$(2)) |> list
 ```coconut
 range(100) |> parallel_map$((**)$(2)) |> list
 ```
-- algebraic data types
-```coconut
-data Empty(): pass
-data Leaf(n): pass
-data Node(l, r): pass
-Tree = (Empty, Leaf, Node)
-
-def size(Tree()) = 0
-
-@addpattern(size)
-def size(Tree(n)) = 1
-
-@addpattern(size)
-def size(Tree(l, r)) = size(l) + size(r)
-```
 - tail recursion optimization
 ```coconut
 def factorial(n, acc=1):
@@ -77,6 +62,20 @@ def factorial(n, acc=1):
             return acc
         match _ is int if n > 0:
             return factorial(n-1, acc*n)
+```
+- algebraic data types
+```coconut
+data Empty()
+data Leaf(n)
+data Node(l, r)
+
+def size(Empty()) = 0
+
+@addpattern(size)
+def size(Leaf(n)) = 1
+
+@addpattern(size)
+def size(Node(l, r)) = size(l) + size(r)
 ```
 
 and much more!
