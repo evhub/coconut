@@ -55,7 +55,7 @@ Specifically, Coconut adds to Python _built-in, syntactical support_ for:
 - infix notation
 - pipeline-style programming
 - operator functions
-- tail recursion optimization
+- tail call optimization
 - parallel programming
 
 and much more!
@@ -142,7 +142,7 @@ coconut hello_world.coco
 which should give the output
 ```
 Coconut: Compiling       hello_world.coco ...
-Coconut: Compiled to       hello_world.py .
+Coconut: Compiled to     hello_world.py .
 ```
 and deposit a new `hello_world.py` file in the same directory as the `hello_world.coco` file. You should then be able to run that file with
 ```
