@@ -220,6 +220,7 @@ class Logger(object):
                 except CoconutException:
                     raise
                 except Exception:
+                    traceback.print_exc()
                     raise CoconutInternalException("error calling handler " + handler.__name__ + " with tokens", t)
             return wrapped_handler
         else:
