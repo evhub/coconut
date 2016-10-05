@@ -166,21 +166,36 @@ def op_funcdef_handle(tokens):
     return func + "(" + ", ".join(args) + ")"
 
 
+def pipe_item_handle(tokens):
+    """Split a partial trailer."""
+    if len(tokens) == 1:
+        return tokens[0]
+    elif len(tokens) == 2 and len(tokens[1]) == 2 and tokens[1][0] == "$(":
+        return tokens[0], tokens[1][1]
+    else:
+        raise CoconutInternalException("invalid partial trailer", tokens)
+
+
 def pipe_handle(tokens):
     """Processes pipe calls."""
     if len(tokens) == 1:
-        return tokens[0]
+        func = pipe_item_handle(tokens.pop())
+        if isinstance(func, tuple):
+            return "_coconut_partial(" + func[0] + ", " + func[1] + ")"
+        else:
+            return func
     else:
-        func = tokens.pop()
+        func = pipe_item_handle(tokens.pop())
         op = tokens.pop()
-        if op == "|>":
-            return "(" + func + ")(" + pipe_handle(tokens) + ")"
-        elif op == "|*>":
-            return "(" + func + ")(*" + pipe_handle(tokens) + ")"
-        elif op == "<|":
-            return "(" + pipe_handle(tokens) + ")(" + func + ")"
-        elif op == "<*|":
-            return "(" + pipe_handle(tokens) + ")(*" + func + ")"
+        if op == "|>" or op == "|*>":
+            star = "*" if op == "|*>" else ""
+            if isinstance(func, tuple):
+                return func[0] + "(" + func[1] + ", " + star + pipe_handle(tokens) + ")"
+            else:
+                return "(" + func + ")(" + star + pipe_handle(tokens) + ")"
+        elif op == "<|" or op == "<*|":
+            star = "*" if op == "<*|" else ""
+            return pipe_handle([[func], "|" + star + ">"] + list(tokens))
         else:
             raise CoconutInternalException("invalid pipe operator", op)
 
@@ -921,7 +936,7 @@ class Grammar(object):
     star_expr = Forward()
     dubstar_expr = Forward()
     comp_for = Forward()
-    test_nochain = Forward()
+    test_no_chain = Forward()
     test_nocond = Forward()
 
     testlist = trace(itemlist(test, comma), "testlist")
@@ -999,12 +1014,12 @@ class Grammar(object):
         | op_item
     )
 
-    slicetest = Optional(test_nochain)
+    slicetest = Optional(test_no_chain)
     sliceop = condense(unsafe_colon + slicetest)
     subscript = condense(slicetest + sliceop + Optional(sliceop)) | test
     subscriptlist = itemlist(subscript, comma)
 
-    slicetestgroup = Optional(test_nochain, default="")
+    slicetestgroup = Optional(test_no_chain, default="")
     sliceopgroup = unsafe_colon.suppress() + slicetestgroup
     subscriptgroup = attach(slicetestgroup + sliceopgroup + Optional(sliceopgroup) | test, subscriptgroup_handle)
 
@@ -1062,19 +1077,22 @@ class Grammar(object):
         condense(lbrack + subscriptlist + rbrack)
         | condense(dot + name)
     )
-    complex_trailer = (
+    partial_trailer = Group(condense(dollar + lparen) + callargslist + rparen.suppress())
+    complex_trailer_no_partial = (
         condense(lparen + callargslist + rparen)
-        | Group(condense(dollar + lparen) + callargslist + rparen.suppress())
         | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())
         | Group(condense(dollar + lbrack + rbrack))
-        | Group(dollar)
+        | Group(dollar + ~lparen)
         | Group(condense(lbrack + rbrack))
         | Group(~(dot + (name | lbrack)) + dot)
     )
+    complex_trailer = partial_trailer | complex_trailer_no_partial
     trailer = simple_trailer | complex_trailer
 
     atom_item = Forward()
     atom_item_ref = atom + ZeroOrMore(trailer)
+    no_partial_atom_item = Forward()
+    no_partial_atom_item_ref = atom + ZeroOrMore(complex_trailer_no_partial)
     simple_assign = Forward()
     simple_assign_ref = (name | passthrough_atom) + ZeroOrMore(ZeroOrMore(complex_trailer) + OneOrMore(simple_trailer))
     simple_assignlist = parenwrap(lparen, itemlist(simple_assign, comma), rparen)
@@ -1117,13 +1135,15 @@ class Grammar(object):
     infix_op = condense(backtick.suppress() + chain_expr + backtick.suppress())
     infix_item = attach(Group(Optional(chain_expr)) + infix_op + Group(Optional(infix_expr)), infix_handle)
     infix_expr <<= infix_item | chain_expr
-    nochain_infix_expr = Forward()
-    nochain_infix_item = attach(Group(Optional(or_expr)) + infix_op + Group(Optional(nochain_infix_expr)), infix_handle)
-    nochain_infix_expr <<= nochain_infix_item | or_expr
+    no_chain_infix_expr = Forward()
+    no_chain_infix_item = attach(Group(Optional(or_expr)) + infix_op + Group(Optional(no_chain_infix_expr)), infix_handle)
+    no_chain_infix_expr <<= no_chain_infix_item | or_expr
 
     pipe_op = pipeline | starpipe | backpipe | backstarpipe
-    pipe_expr = attach(infix_expr + ZeroOrMore(pipe_op + infix_expr), pipe_handle)
-    nochain_pipe_expr = attach(nochain_infix_expr + ZeroOrMore(pipe_op + nochain_infix_expr), pipe_handle)
+    pipe_item = Group(no_partial_atom_item + partial_trailer | infix_expr)
+    pipe_expr = attach(pipe_item + ZeroOrMore(pipe_op + pipe_item), pipe_handle)
+    no_chain_pipe_item = Group(no_partial_atom_item + partial_trailer | no_chain_infix_expr)
+    no_chain_pipe_expr = attach(no_chain_pipe_item + ZeroOrMore(pipe_op + no_chain_pipe_item), pipe_handle)
 
     expr <<= trace(pipe_expr, "expr")
     star_expr_ref = condense(star + expr)
@@ -1133,12 +1153,12 @@ class Grammar(object):
     and_test = addspace(not_test + ZeroOrMore(Keyword("and") + not_test))
     or_test = addspace(and_test + ZeroOrMore(Keyword("or") + and_test))
     test_item = trace(or_test, "test_item")
-    nochain_expr = trace(nochain_pipe_expr, "nochain_expr")
-    nochain_comparison = addspace(nochain_expr + ZeroOrMore(comp_op + nochain_expr))
-    nochain_not_test = addspace(ZeroOrMore(Keyword("not")) + nochain_comparison)
-    nochain_and_test = addspace(nochain_not_test + ZeroOrMore(Keyword("and") + nochain_not_test))
-    nochain_or_test = addspace(nochain_and_test + ZeroOrMore(Keyword("or") + nochain_and_test))
-    nochain_test_item = trace(nochain_or_test, "nochain_test_item")
+    no_chain_expr = trace(no_chain_pipe_expr, "no_chain_expr")
+    no_chain_comparison = addspace(no_chain_expr + ZeroOrMore(comp_op + no_chain_expr))
+    no_chain_not_test = addspace(ZeroOrMore(Keyword("not")) + no_chain_comparison)
+    no_chain_and_test = addspace(no_chain_not_test + ZeroOrMore(Keyword("and") + no_chain_not_test))
+    no_chain_or_test = addspace(no_chain_and_test + ZeroOrMore(Keyword("or") + no_chain_and_test))
+    no_chain_test_item = trace(no_chain_or_test, "no_chain_test_item")
 
     small_stmt = Forward()
     simple_stmt = Forward()
@@ -1168,12 +1188,12 @@ class Grammar(object):
 
     lambdef = trace(addspace(lambdef_base + test) | stmt_lambdef, "lambdef")
     lambdef_nocond = trace(addspace(lambdef_base + test_nocond), "lambdef_nocond")
-    lambdef_nochain = trace(addspace(lambdef_base + test_nochain), "lambdef_nochain")
+    lambdef_no_chain = trace(addspace(lambdef_base + test_no_chain), "lambdef_no_chain")
 
     test <<= trace(lambdef | addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test)), "test")
     test_nocond <<= trace(lambdef_nocond | test_item, "test_nocond")
-    test_nochain <<= trace(lambdef_nochain
-                           | addspace(nochain_test_item + Optional(Keyword("if") + nochain_test_item + Keyword("else") + test_nochain)), "test_nochain")
+    test_no_chain <<= trace(lambdef_no_chain
+                            | addspace(no_chain_test_item + Optional(Keyword("if") + no_chain_test_item + Keyword("else") + test_no_chain)), "test_no_chain")
 
     classlist_ref = Optional(
         lparen.suppress() + rparen.suppress()

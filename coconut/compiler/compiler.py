@@ -238,6 +238,7 @@ class Compiler(Grammar):
         self.moduledoc_item <<= trace(attach(self.moduledoc, self.set_docstring, copy=True), "moduledoc")
         self.name <<= trace(attach(self.name_ref, self.name_check, copy=True), "name")
         self.atom_item <<= trace(attach(self.atom_item_ref, self.item_handle, copy=True), "atom_item")
+        self.no_partial_atom_item <<= trace(attach(self.no_partial_atom_item_ref, self.item_handle, copy=True), "no_partial_atom_item")
         self.simple_assign <<= trace(attach(self.simple_assign_ref, self.item_handle, copy=True), "simple_assign")
         self.set_literal <<= trace(attach(self.set_literal_ref, self.set_literal_handle, copy=True), "set_literal")
         self.set_letter_literal <<= trace(attach(self.set_letter_literal_ref, self.set_letter_literal_handle, copy=True), "set_letter_literal")
