@@ -181,7 +181,7 @@ def pipe_handle(tokens):
     if len(tokens) == 1:
         func = pipe_item_handle(tokens.pop())
         if isinstance(func, tuple):
-            return "_coconut_partial(" + func[0] + ", " + func[1] + ")"
+            return "_coconut.functools.partial(" + func[0] + ", " + func[1] + ")"
         else:
             return func
     else:
