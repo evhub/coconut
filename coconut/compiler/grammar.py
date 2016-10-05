@@ -1140,9 +1140,9 @@ class Grammar(object):
     no_chain_infix_expr <<= no_chain_infix_item | or_expr
 
     pipe_op = pipeline | starpipe | backpipe | backstarpipe
-    pipe_item = Group(no_partial_atom_item + partial_trailer | infix_expr)
+    pipe_item = Group(no_partial_atom_item + partial_trailer ^ infix_expr)
     pipe_expr = attach(pipe_item + ZeroOrMore(pipe_op + pipe_item), pipe_handle)
-    no_chain_pipe_item = Group(no_partial_atom_item + partial_trailer | no_chain_infix_expr)
+    no_chain_pipe_item = Group(no_partial_atom_item + partial_trailer ^ no_chain_infix_expr)
     no_chain_pipe_expr = attach(no_chain_pipe_item + ZeroOrMore(pipe_op + no_chain_pipe_item), pipe_handle)
 
     expr <<= trace(pipe_expr, "expr")
