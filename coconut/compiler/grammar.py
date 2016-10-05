@@ -166,7 +166,7 @@ def op_funcdef_handle(tokens):
     return func + "(" + ", ".join(args) + ")"
 
 
-def pipe_item_handle(tokens):
+def pipe_item_split(tokens):
     """Split a partial trailer."""
     if len(tokens) == 1:
         return tokens[0]
@@ -179,13 +179,13 @@ def pipe_item_handle(tokens):
 def pipe_handle(tokens):
     """Processes pipe calls."""
     if len(tokens) == 1:
-        func = pipe_item_handle(tokens.pop())
+        func = pipe_item_split(tokens.pop())
         if isinstance(func, tuple):
             return "_coconut.functools.partial(" + func[0] + ", " + func[1] + ")"
         else:
             return func
     else:
-        func = pipe_item_handle(tokens.pop())
+        func = pipe_item_split(tokens.pop())
         op = tokens.pop()
         if op == "|>" or op == "|*>":
             star = "*" if op == "|*>" else ""
