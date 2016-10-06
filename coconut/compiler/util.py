@@ -23,6 +23,8 @@ from pyparsing import (
     replaceWith,
     ZeroOrMore,
     Optional,
+    SkipTo,
+    CharsNotIn,
 )
 
 from coconut.logging import logger, complain
@@ -31,12 +33,26 @@ from coconut.constants import (
     downs,
     openindent,
     closeindent,
+    default_whitespace_chars,
 )
 from coconut.exceptions import CoconutInternalException
 
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
 #-----------------------------------------------------------------------------------------------------------------------
+
+skip_whitespace = SkipTo(CharsNotIn(default_whitespace_chars)).suppress()
+
+
+def longest(*args):
+    """Match the longest of the given grammar elements."""
+    if len(args) < 2:
+        raise CoconutInternalException("match_longest expected at least two args")
+    else:
+        matcher = args[0] + skip_whitespace
+        for elem in args[1:]:
+            matcher ^= elem + skip_whitespace
+        return matcher
 
 
 def target_info(target):

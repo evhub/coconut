@@ -113,10 +113,12 @@ def interpret(code, in_vars):
     try:
         result = eval(code, in_vars)
     except SyntaxError:
-        exec_func(code, in_vars)
+        pass  # exec code outside of exception context
     else:
         if result is not None:
             print(ascii(result))
+        return  # don't also exec code
+    exec_func(code, in_vars)
 
 
 @contextmanager

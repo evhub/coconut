@@ -77,6 +77,7 @@ from coconut.compiler.util import (
     parenwrap,
     tokenlist,
     itemlist,
+    longest,
 )
 
 # end: IMPORTS
@@ -176,11 +177,14 @@ def pipe_item_split(tokens):
         raise CoconutInternalException("invalid partial trailer", tokens)
 
 
-def pipe_handle(tokens):
+def pipe_handle(tokens, **kwargs):
     """Processes pipe calls."""
+    if set(kwargs) > set(("top",)):
+        complain(CoconutInternalException("unknown pipe_handle keyword arguments", kwargs))
+    top = kwargs.get("top", True)
     if len(tokens) == 1:
         func = pipe_item_split(tokens.pop())
-        if isinstance(func, tuple):
+        if top and isinstance(func, tuple):
             return "_coconut.functools.partial(" + func[0] + ", " + func[1] + ")"
         else:
             return func
@@ -195,7 +199,7 @@ def pipe_handle(tokens):
                 return "(" + func + ")(" + star + pipe_handle(tokens) + ")"
         elif op == "<|" or op == "<*|":
             star = "*" if op == "<*|" else ""
-            return pipe_handle([[func], "|" + star + ">"] + list(tokens))
+            return pipe_handle([[func], "|" + star + ">", [pipe_handle(tokens, top=False)]])
         else:
             raise CoconutInternalException("invalid pipe operator", op)
 
@@ -1082,9 +1086,9 @@ class Grammar(object):
         condense(lparen + callargslist + rparen)
         | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())
         | Group(condense(dollar + lbrack + rbrack))
-        | Group(dollar + ~lparen)
+        | Group(dollar + ~lparen + ~lbrack)
         | Group(condense(lbrack + rbrack))
-        | Group(~(dot + (name | lbrack)) + dot)
+        | Group(dot + ~name + ~lbrack)
     )
     complex_trailer = partial_trailer | complex_trailer_no_partial
     trailer = simple_trailer | complex_trailer
@@ -1140,10 +1144,10 @@ class Grammar(object):
     no_chain_infix_expr <<= no_chain_infix_item | or_expr
 
     pipe_op = pipeline | starpipe | backpipe | backstarpipe
-    pipe_item = Group(no_partial_atom_item + partial_trailer ^ infix_expr)
-    pipe_expr = attach(pipe_item + ZeroOrMore(pipe_op + pipe_item), pipe_handle)
-    no_chain_pipe_item = Group(no_partial_atom_item + partial_trailer ^ no_chain_infix_expr)
-    no_chain_pipe_expr = attach(no_chain_pipe_item + ZeroOrMore(pipe_op + no_chain_pipe_item), pipe_handle)
+    pipe_item = Group(longest(no_partial_atom_item + partial_trailer, infix_expr))
+    pipe_expr = trace(attach(pipe_item + ZeroOrMore(pipe_op + pipe_item), pipe_handle), "pipe_expr")
+    no_chain_pipe_item = Group(longest(no_partial_atom_item + partial_trailer, no_chain_infix_expr))
+    no_chain_pipe_expr = trace(attach(no_chain_pipe_item + ZeroOrMore(pipe_op + no_chain_pipe_item), pipe_handle), "no_chain_pipe_expr")
 
     expr <<= trace(pipe_expr, "expr")
     star_expr_ref = condense(star + expr)
@@ -1177,7 +1181,7 @@ class Grammar(object):
     lambdef_base = classic_lambdef | new_lambdef | implicit_lambdef
 
     stmt_lambdef = Forward()
-    closing_stmt = testlist("tests") ^ small_stmt
+    closing_stmt = longest(testlist("tests"), small_stmt)
     stmt_lambdef_ref = (
         Keyword("def").suppress() + Optional(parameters, default="(_=None)") + arrow.suppress()
         + (
@@ -1389,7 +1393,7 @@ class Grammar(object):
 
     simple_decorator = condense(dotted_name + Optional(lparen + callargslist + rparen))("simple")
     complex_decorator = test("test")
-    decorators = attach(OneOrMore(at.suppress() - Group(simple_decorator ^ complex_decorator) - newline.suppress()), decorator_handle)
+    decorators = attach(OneOrMore(at.suppress() - Group(longest(simple_decorator, complex_decorator)) - newline.suppress()), decorator_handle)
 
     normal_funcdef_stmt = Forward()
     normal_funcdef_stmt_ref = trace(
@@ -1420,7 +1424,6 @@ class Grammar(object):
         | for_stmt
         | async_stmt
         | simple_compound_stmt, "compound_stmt")
-
     endline_semicolon = Forward()
     endline_semicolon_ref = semicolon.suppress() + newline
     keyword_stmt = trace(
@@ -1435,8 +1438,7 @@ class Grammar(object):
     small_stmt <<= trace(
         keyword_stmt
         | augassign_stmt
-        | (assign_stmt
-           ^ destructuring_stmt), "small_stmt")
+        | longest(assign_stmt, destructuring_stmt), "small_stmt")
     simple_stmt <<= trace(condense(
         small_stmt
         + ZeroOrMore(fixto(semicolon, "\n", copy=True) + small_stmt)
