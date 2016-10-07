@@ -189,21 +189,27 @@ def callargslist_tokens_split(tokens):
     return pos_args + star_args, kwd_args + dubstar_args
 
 
+def callargslist_tokens_join(args):
+    """Joins split callargslist_tokens."""
+    return ", ".join(arg for arg in args if arg)
+
+
+def callargslist_handle(tokens):
+    """Properly order call arguments."""
+    pos_args, kwd_args = callargslist_tokens_split(tokens)
+    return callargslist_tokens_join(pos_args + kwd_args)
+
+
 def pipe_item_split(tokens):
     """Split a partial trailer."""
     if len(tokens) == 1:
         return tokens[0]
     elif len(tokens) == 2:
         func, args = tokens
-        pos_args, extra_args = callargslist_tokens_split(args)
-        return func, ", ".join(pos_args), ", ".join(extra_args)
+        pos_args, kwd_args = callargslist_tokens_split(args)
+        return func, ", ".join(pos_args), ", ".join(kwd_args)
     else:
         raise CoconutInternalException("invalid partial trailer", tokens)
-
-
-def callargslist_tokens_join(args):
-    """Joins split callargslist_tokens."""
-    return ", ".join(arg for arg in args if arg)
 
 
 def pipe_handle(tokens, **kwargs):
@@ -1038,13 +1044,13 @@ class Grammar(object):
     ), comma)), "varargslist")
     parameters = condense(lparen + argslist + rparen)
 
-    callargslist = Optional(trace(
-        attach(addspace(test + comp_for), add_paren_handle)
-        | itemlist(condense(dubstar + test | star + test | name + default | test), comma)
-        | op_item, "callargslist"))
-    callargslist_tokens = Group(
+    callargslist_tokens = Optional(
         tokenlist(Group(dubstar + test | star + test | name + default | test), comma)
-        | Group(callargslist))
+        | Group(
+            attach(addspace(test + comp_for), add_paren_handle)
+            | op_item
+        ))
+    callargslist = trace(attach(callargslist_tokens, callargslist_handle), "callargslist")
     methodcaller_args = (
         itemlist(condense(name + default | test), comma)
         | op_item
@@ -1114,7 +1120,7 @@ class Grammar(object):
         | condense(dot + name)
     )
     partial_trailer = Group(condense(dollar + lparen) + callargslist + rparen.suppress())
-    partial_trailer_tokens = (dollar + lparen).suppress() + callargslist_tokens + rparen.suppress()
+    partial_trailer_tokens = Group((dollar + lparen).suppress() + callargslist_tokens + rparen.suppress())
     complex_trailer_no_partial = (
         condense(lparen + callargslist + rparen)
         | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())
