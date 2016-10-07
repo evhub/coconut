@@ -167,78 +167,6 @@ def op_funcdef_handle(tokens):
     return func + "(" + ", ".join(args) + ")"
 
 
-def callargslist_tokens_split(tokens):
-    """Split into positional arguments and keyword arguments."""
-    pos_args = []
-    star_args = []
-    kwd_args = []
-    dubstar_args = []
-    for arg in tokens:
-        argstr = "".join(arg)
-        if len(arg) == 1:
-            pos_args.append(argstr)
-        elif len(arg) == 2:
-            if arg[0] == "*":
-                star_args.append(argstr)
-            elif arg[0] == "**":
-                dubstar_args.append(argstr)
-            else:
-                kwd_args.append(argstr)
-        else:
-            raise CoconutInternalException("invalid callargslist_tokens argument", arg)
-    return pos_args + star_args, kwd_args + dubstar_args
-
-
-def callargslist_tokens_join(args):
-    """Joins split callargslist_tokens."""
-    return ", ".join(arg for arg in args if arg)
-
-
-def callargslist_handle(tokens):
-    """Properly order call arguments."""
-    pos_args, kwd_args = callargslist_tokens_split(tokens)
-    return callargslist_tokens_join(pos_args + kwd_args)
-
-
-def pipe_item_split(tokens):
-    """Split a partial trailer."""
-    if len(tokens) == 1:
-        return tokens[0]
-    elif len(tokens) == 2:
-        func, args = tokens
-        pos_args, kwd_args = callargslist_tokens_split(args)
-        return func, callargslist_tokens_join(pos_args), callargslist_tokens_join(kwd_args)
-    else:
-        raise CoconutInternalException("invalid partial trailer", tokens)
-
-
-def pipe_handle(tokens, **kwargs):
-    """Processes pipe calls."""
-    if set(kwargs) > set(("top",)):
-        complain(CoconutInternalException("unknown pipe_handle keyword arguments", kwargs))
-    top = kwargs.get("top", True)
-    if len(tokens) == 1:
-        func = pipe_item_split(tokens.pop())
-        if top and isinstance(func, tuple):
-            return "_coconut.functools.partial(" + callargslist_tokens_join(func) + ")"
-        else:
-            return func
-    else:
-        func = pipe_item_split(tokens.pop())
-        op = tokens.pop()
-        if op == "|>" or op == "|*>":
-            star = "*" if op == "|*>" else ""
-            if isinstance(func, tuple):
-                return func[0] + "(" + callargslist_tokens_join((func[1], star + pipe_handle(tokens), func[2])) + ")"
-            else:
-                return "(" + func + ")(" + star + pipe_handle(tokens) + ")"
-        elif op == "<|" or op == "<*|":
-            star = "*" if op == "<*|" else ""
-            return pipe_handle([[func], "|" + star + ">", [pipe_handle(tokens, top=False)]])
-        else:
-            raise CoconutInternalException("invalid pipe operator", op)
-
-
 def lambdef_handle(tokens):
     """Processes lambda calls."""
     if len(tokens) == 0:
@@ -1044,13 +972,13 @@ class Grammar(object):
     ), comma)), "varargslist")
     parameters = condense(lparen + argslist + rparen)
 
+    callargslist = Forward()
     callargslist_tokens = Optional(
         tokenlist(Group(dubstar + test | star + test | name + default | test), comma)
         | Group(
             attach(addspace(test + comp_for), add_paren_handle)
             | op_item
         ))
-    callargslist = trace(attach(callargslist_tokens, callargslist_handle), "callargslist")
     methodcaller_args = (
         itemlist(condense(name + default | test), comma)
         | op_item
@@ -1182,13 +1110,14 @@ class Grammar(object):
     no_chain_infix_item = attach(Group(Optional(or_expr)) + infix_op + Group(Optional(no_chain_infix_expr)), infix_handle)
     no_chain_infix_expr <<= no_chain_infix_item | or_expr
 
+    expr = Forward()
+    no_chain_expr = Forward()
     pipe_op = pipeline | starpipe | backpipe | backstarpipe
     pipe_item = Group(longest(no_partial_atom_item + partial_trailer_tokens, infix_expr))
-    pipe_expr = trace(attach(pipe_item + ZeroOrMore(pipe_op + pipe_item), pipe_handle), "pipe_expr")
+    expr_ref = pipe_item + ZeroOrMore(pipe_op + pipe_item)
     no_chain_pipe_item = Group(longest(no_partial_atom_item + partial_trailer_tokens, no_chain_infix_expr))
-    no_chain_pipe_expr = trace(attach(no_chain_pipe_item + ZeroOrMore(pipe_op + no_chain_pipe_item), pipe_handle), "no_chain_pipe_expr")
+    no_chain_expr_ref = no_chain_pipe_item + ZeroOrMore(pipe_op + no_chain_pipe_item)
 
-    expr <<= trace(pipe_expr, "expr")
     star_expr_ref = condense(star + expr)
     dubstar_expr_ref = condense(dubstar + expr)
     comparison = addspace(expr + ZeroOrMore(comp_op + expr))
@@ -1196,7 +1125,6 @@ class Grammar(object):
     and_test = addspace(not_test + ZeroOrMore(Keyword("and") + not_test))
     or_test = addspace(and_test + ZeroOrMore(Keyword("or") + and_test))
     test_item = trace(or_test, "test_item")
-    no_chain_expr = trace(no_chain_pipe_expr, "no_chain_expr")
     no_chain_comparison = addspace(no_chain_expr + ZeroOrMore(comp_op + no_chain_expr))
     no_chain_not_test = addspace(ZeroOrMore(Keyword("not")) + no_chain_comparison)
     no_chain_and_test = addspace(no_chain_not_test + ZeroOrMore(Keyword("and") + no_chain_not_test))

@@ -44,6 +44,11 @@ from coconut.exceptions import CoconutInternalException
 skip_whitespace = SkipTo(CharsNotIn(default_whitespace_chars)).suppress()
 
 
+def join_args(args):
+    """Joins split callargslist_tokens."""
+    return ", ".join(arg for arg in args if arg)
+
+
 def longest(*args):
     """Match the longest of the given grammar elements."""
     if len(args) < 2:

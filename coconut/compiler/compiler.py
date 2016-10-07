@@ -98,6 +98,7 @@ from coconut.compiler.util import (
     split_trailing_indent,
     match_in,
     transform,
+    join_args,
 )
 from coconut.compiler.header import (
     minify,
@@ -254,6 +255,9 @@ class Compiler(Grammar):
         self.exec_stmt <<= trace(attach(self.exec_stmt_ref, self.exec_stmt_handle, copy=True), "exec_stmt")
         self.stmt_lambdef <<= trace(attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle, copy=True), "stmt_lambdef")
         self.normal_funcdef_stmt <<= trace(attach(self.normal_funcdef_stmt_ref, self.normal_funcdef_stmt_handle, copy=True), "normal_funcdef_stmt")
+        self.callargslist <<= trace(attach(self.callargslist_tokens, self.callargslist_handle, copy=True), "callargslist")
+        self.expr <<= trace(attach(self.expr_ref, self.pipe_handle, copy=True), "expr")
+        self.no_chain_expr <<= trace(attach(self.no_chain_expr_ref, self.pipe_handle, copy=True), "no_chain_expr")
         self.u_string <<= attach(self.u_string_ref, self.u_string_check, copy=True)
         self.f_string <<= attach(self.f_string_ref, self.f_string_check, copy=True)
         self.typedef <<= attach(self.typedef_ref, self.typedef_check, copy=True)
@@ -1211,6 +1215,73 @@ class Compiler(Grammar):
                 return "@_coconut_tco\n" + "".join(lines)
             else:
                 return tokens[0]
+
+    def callargslist_tokens_split(self, original, location, tokens, careful=True):
+        """Split into positional arguments and keyword arguments."""
+        pos_args = []
+        star_args = []
+        kwd_args = []
+        dubstar_args = []
+        for arg in tokens:
+            argstr = "".join(arg)
+            if len(arg) == 1:
+                if careful and (kwd_args or dubstar_args):
+                    raise self.make_err(CoconutSyntaxError, "positional argument after keyword argument", original, location)
+                pos_args.append(argstr)
+            elif len(arg) == 2:
+                if arg[0] == "*":
+                    if careful and dubstar_args:
+                        raise self.make_err(CoconutSyntaxError, "star unpacking after double star unpacking", original, location)
+                    star_args.append(argstr)
+                elif arg[0] == "**":
+                    dubstar_args.append(argstr)
+                else:
+                    kwd_args.append(argstr)
+            else:
+                raise CoconutInternalException("invalid callargslist_tokens argument", arg)
+        return pos_args + star_args, kwd_args + dubstar_args
+
+    def callargslist_handle(self, original, location, tokens):
+        """Properly order call arguments."""
+        pos_args, kwd_args = self.callargslist_tokens_split(original, location, tokens)
+        return join_args(pos_args + kwd_args)
+
+    def pipe_item_split(self, tokens):
+        """Split a partial trailer."""
+        if len(tokens) == 1:
+            return tokens[0]
+        elif len(tokens) == 2:
+            func, args = tokens
+            pos_args, kwd_args = self.callargslist_tokens_split(None, None, args)
+            return func, join_args(pos_args), join_args(kwd_args)
+        else:
+            raise CoconutInternalException("invalid partial trailer", tokens)
+
+    def pipe_handle(self, tokens, **kwargs):
+        """Processes pipe calls."""
+        if set(kwargs) > set(("top",)):
+            complain(CoconutInternalException("unknown pipe_handle keyword arguments", kwargs))
+        top = kwargs.get("top", True)
+        if len(tokens) == 1:
+            func = self.pipe_item_split(tokens.pop())
+            if top and isinstance(func, tuple):
+                return "_coconut.functools.partial(" + join_args(func) + ")"
+            else:
+                return func
+        else:
+            func = self.pipe_item_split(tokens.pop())
+            op = tokens.pop()
+            if op == "|>" or op == "|*>":
+                star = "*" if op == "|*>" else ""
+                if isinstance(func, tuple):
+                    return func[0] + "(" + join_args((func[1], star + self.pipe_handle(tokens), func[2])) + ")"
+                else:
+                    return "(" + func + ")(" + star + self.pipe_handle(tokens) + ")"
+            elif op == "<|" or op == "<*|":
+                star = "*" if op == "<*|" else ""
+                return self.pipe_handle([[func], "|" + star + ">", [self.pipe_handle(tokens, top=False)]])
+            else:
+                raise CoconutInternalException("invalid pipe operator", op)
 
 # end: COMPILER HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
