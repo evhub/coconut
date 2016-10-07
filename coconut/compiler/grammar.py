@@ -207,7 +207,7 @@ def pipe_item_split(tokens):
     elif len(tokens) == 2:
         func, args = tokens
         pos_args, kwd_args = callargslist_tokens_split(args)
-        return func, ", ".join(pos_args), ", ".join(kwd_args)
+        return func, callargslist_tokens_join(pos_args), callargslist_tokens_join(kwd_args)
     else:
         raise CoconutInternalException("invalid partial trailer", tokens)
 
