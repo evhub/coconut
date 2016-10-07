@@ -1044,7 +1044,7 @@ class Grammar(object):
         | op_item, "callargslist"))
     callargslist_tokens = Group(
         tokenlist(Group(dubstar + test | star + test | name + default | test), comma)
-        | callargslist)
+        | Group(callargslist))
     methodcaller_args = (
         itemlist(condense(name + default | test), comma)
         | op_item
