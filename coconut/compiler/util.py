@@ -47,7 +47,7 @@ skip_whitespace = SkipTo(CharsNotIn(default_whitespace_chars)).suppress()
 def longest(*args):
     """Match the longest of the given grammar elements."""
     if len(args) < 2:
-        raise CoconutInternalException("match_longest expected at least two args")
+        raise CoconutInternalException("longest expected at least two args")
     else:
         matcher = args[0] + skip_whitespace
         for elem in args[1:]:

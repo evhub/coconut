@@ -167,14 +167,43 @@ def op_funcdef_handle(tokens):
     return func + "(" + ", ".join(args) + ")"
 
 
+def callargslist_tokens_split(tokens):
+    """Split into positional arguments and keyword arguments."""
+    pos_args = []
+    star_args = []
+    kwd_args = []
+    dubstar_args = []
+    for arg in tokens:
+        argstr = "".join(arg)
+        if len(arg) == 1:
+            pos_args.append(argstr)
+        elif len(arg) == 2:
+            if arg[0] == "*":
+                star_args.append(argstr)
+            elif arg[0] == "**":
+                dubstar_args.append(argstr)
+            else:
+                kwd_args.append(argstr)
+        else:
+            raise CoconutInternalException("invalid callargslist_tokens argument", arg)
+    return pos_args + star_args, kwd_args + dubstar_args
+
+
 def pipe_item_split(tokens):
     """Split a partial trailer."""
     if len(tokens) == 1:
         return tokens[0]
-    elif len(tokens) == 2 and len(tokens[1]) == 2 and tokens[1][0] == "$(":
-        return tokens[0], tokens[1][1]
+    elif len(tokens) == 2:
+        func, args = tokens
+        pos_args, extra_args = callargslist_tokens_split(args)
+        return func, ", ".join(pos_args), ", ".join(extra_args)
     else:
         raise CoconutInternalException("invalid partial trailer", tokens)
+
+
+def callargslist_tokens_join(args):
+    """Joins split callargslist_tokens."""
+    return ", ".join(arg for arg in args if arg)
 
 
 def pipe_handle(tokens, **kwargs):
@@ -185,7 +214,7 @@ def pipe_handle(tokens, **kwargs):
     if len(tokens) == 1:
         func = pipe_item_split(tokens.pop())
         if top and isinstance(func, tuple):
-            return "_coconut.functools.partial(" + func[0] + ", " + func[1] + ")"
+            return "_coconut.functools.partial(" + callargslist_tokens_join(func) + ")"
         else:
             return func
     else:
@@ -194,7 +223,7 @@ def pipe_handle(tokens, **kwargs):
         if op == "|>" or op == "|*>":
             star = "*" if op == "|*>" else ""
             if isinstance(func, tuple):
-                return func[0] + "(" + func[1] + ", " + star + pipe_handle(tokens) + ")"
+                return func[0] + "(" + callargslist_tokens_join((func[1], star + pipe_handle(tokens), func[2])) + ")"
             else:
                 return "(" + func + ")(" + star + pipe_handle(tokens) + ")"
         elif op == "<|" or op == "<*|":
@@ -1013,6 +1042,9 @@ class Grammar(object):
         attach(addspace(test + comp_for), add_paren_handle)
         | itemlist(condense(dubstar + test | star + test | name + default | test), comma)
         | op_item, "callargslist"))
+    callargslist_tokens = Group(
+        tokenlist(Group(dubstar + test | star + test | name + default | test), comma)
+        | callargslist)
     methodcaller_args = (
         itemlist(condense(name + default | test), comma)
         | op_item
@@ -1082,6 +1114,7 @@ class Grammar(object):
         | condense(dot + name)
     )
     partial_trailer = Group(condense(dollar + lparen) + callargslist + rparen.suppress())
+    partial_trailer_tokens = (dollar + lparen).suppress() + callargslist_tokens + rparen.suppress()
     complex_trailer_no_partial = (
         condense(lparen + callargslist + rparen)
         | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())
@@ -1144,9 +1177,9 @@ class Grammar(object):
     no_chain_infix_expr <<= no_chain_infix_item | or_expr
 
     pipe_op = pipeline | starpipe | backpipe | backstarpipe
-    pipe_item = Group(longest(no_partial_atom_item + partial_trailer, infix_expr))
+    pipe_item = Group(longest(no_partial_atom_item + partial_trailer_tokens, infix_expr))
     pipe_expr = trace(attach(pipe_item + ZeroOrMore(pipe_op + pipe_item), pipe_handle), "pipe_expr")
-    no_chain_pipe_item = Group(longest(no_partial_atom_item + partial_trailer, no_chain_infix_expr))
+    no_chain_pipe_item = Group(longest(no_partial_atom_item + partial_trailer_tokens, no_chain_infix_expr))
     no_chain_pipe_expr = trace(attach(no_chain_pipe_item + ZeroOrMore(pipe_op + no_chain_pipe_item), pipe_handle), "no_chain_pipe_expr")
 
     expr <<= trace(pipe_expr, "expr")
