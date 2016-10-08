@@ -807,7 +807,7 @@ class Compiler(Grammar):
                         if not isinstance(ref, str):
                             raise CoconutInternalException("invalid reference for a comment", ref)
                         if out and not out[-1].endswith("\n"):
-                            out.append("  ")
+                            out[-1] = out[-1].rstrip(" ") + "  "  # enforce two spaces before comment
                         out.append("#" + ref)
                         comment = None
                     else:
@@ -964,10 +964,10 @@ class Compiler(Grammar):
                 return "(_coconut.object)"
         elif len(tokens) == 1 and len(tokens[0]) == 1:
             if "tests" in tokens[0].keys():
-                return "(" + tokens[0][0] + ")"
+                return tokens[0][0]
             elif "args" in tokens[0].keys():
                 if self.target.startswith("3"):
-                    return "(" + tokens[0][0] + ")"
+                    return tokens[0][0]
                 else:
                     raise self.make_err(CoconutTargetError, "found Python 3 keyword class definition", original, location, target="3")
             else:
@@ -1244,7 +1244,7 @@ class Compiler(Grammar):
     def function_call_handle(self, original, location, tokens):
         """Properly order call arguments."""
         pos_args, kwd_args = self.function_call_tokens_split(original, location, tokens)
-        return join_args(pos_args + kwd_args)
+        return "(" + join_args(pos_args + kwd_args) + ")"
 
     def pipe_item_split(self, tokens):
         """Split a partial trailer."""

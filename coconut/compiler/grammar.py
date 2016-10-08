@@ -974,10 +974,9 @@ class Grammar(object):
 
     function_call = Forward()
     function_call_tokens = lparen.suppress() + Optional(
-        Group(
-            attach(addspace(test + comp_for), add_paren_handle)
-            | op_item
-        ) | tokenlist(Group(dubstar + test | star + test | name + default | test), comma)
+        Group(attach(addspace(test + comp_for), add_paren_handle))
+        | tokenlist(Group(dubstar + test | star + test | name + default | test), comma)
+        | Group(op_item)
     ) + rparen.suppress()
     methodcaller_args = (
         itemlist(condense(name + default | test), comma)
@@ -1149,8 +1148,9 @@ class Grammar(object):
 
     stmt_lambdef = Forward()
     closing_stmt = longest(testlist("tests"), small_stmt)
+    stmt_lambdef_params = Optional(parameters | attach(name, add_paren_handle, copy=True), default="(_=None)")
     stmt_lambdef_ref = (
-        Keyword("def").suppress() + Optional(parameters, default="(_=None)") + arrow.suppress()
+        Keyword("def").suppress() + stmt_lambdef_params + arrow.suppress()
         + (
             Group(OneOrMore(small_stmt + semicolon.suppress())) + Optional(closing_stmt)
             | Group(ZeroOrMore(small_stmt + semicolon.suppress())) + closing_stmt
@@ -1169,7 +1169,7 @@ class Grammar(object):
     classlist_ref = Optional(
         lparen.suppress() + rparen.suppress()
         | Group(
-            lparen.suppress() + testlist("tests") + rparen.suppress()
+            condense(lparen + testlist + rparen)("tests")
             | function_call("args")
         )
     )
