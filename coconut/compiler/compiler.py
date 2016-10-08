@@ -255,7 +255,7 @@ class Compiler(Grammar):
         self.exec_stmt <<= trace(attach(self.exec_stmt_ref, self.exec_stmt_handle, copy=True), "exec_stmt")
         self.stmt_lambdef <<= trace(attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle, copy=True), "stmt_lambdef")
         self.normal_funcdef_stmt <<= trace(attach(self.normal_funcdef_stmt_ref, self.normal_funcdef_stmt_handle, copy=True), "normal_funcdef_stmt")
-        self.callargslist <<= trace(attach(self.callargslist_tokens, self.callargslist_handle, copy=True), "callargslist")
+        self.function_call <<= trace(attach(self.function_call_tokens, self.function_call_handle, copy=True), "function_call")
         self.expr <<= trace(attach(self.expr_ref, self.pipe_handle, copy=True), "expr")
         self.no_chain_expr <<= trace(attach(self.no_chain_expr_ref, self.pipe_handle, copy=True), "no_chain_expr")
         self.u_string <<= attach(self.u_string_ref, self.u_string_check, copy=True)
@@ -1216,7 +1216,7 @@ class Compiler(Grammar):
             else:
                 return tokens[0]
 
-    def callargslist_tokens_split(self, original, location, tokens, careful=True):
+    def function_call_tokens_split(self, original, location, tokens, careful=True):
         """Split into positional arguments and keyword arguments."""
         pos_args = []
         star_args = []
@@ -1238,12 +1238,12 @@ class Compiler(Grammar):
                 else:
                     kwd_args.append(argstr)
             else:
-                raise CoconutInternalException("invalid callargslist_tokens argument", arg)
+                raise CoconutInternalException("invalid function call argument", arg)
         return pos_args + star_args, kwd_args + dubstar_args
 
-    def callargslist_handle(self, original, location, tokens):
+    def function_call_handle(self, original, location, tokens):
         """Properly order call arguments."""
-        pos_args, kwd_args = self.callargslist_tokens_split(original, location, tokens)
+        pos_args, kwd_args = self.function_call_tokens_split(original, location, tokens)
         return join_args(pos_args + kwd_args)
 
     def pipe_item_split(self, tokens):
@@ -1252,7 +1252,7 @@ class Compiler(Grammar):
             return tokens[0]
         elif len(tokens) == 2:
             func, args = tokens
-            pos_args, kwd_args = self.callargslist_tokens_split(None, None, args)
+            pos_args, kwd_args = self.function_call_tokens_split(None, None, args)
             return func, join_args(pos_args), join_args(kwd_args)
         else:
             raise CoconutInternalException("invalid partial trailer", tokens)

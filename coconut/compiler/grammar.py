@@ -972,13 +972,13 @@ class Grammar(object):
     ), comma)), "varargslist")
     parameters = condense(lparen + argslist + rparen)
 
-    callargslist = Forward()
-    callargslist_tokens = Optional(
+    function_call = Forward()
+    function_call_tokens = lparen.suppress() + Optional(
         tokenlist(Group(dubstar + test | star + test | name + default | test), comma)
         | Group(
             attach(addspace(test + comp_for), add_paren_handle)
             | op_item
-        ))
+        )) + rparen.suppress()
     methodcaller_args = (
         itemlist(condense(name + default | test), comma)
         | op_item
@@ -1047,10 +1047,10 @@ class Grammar(object):
         condense(lbrack + subscriptlist + rbrack)
         | condense(dot + name)
     )
-    partial_trailer = Group(condense(dollar + lparen) + callargslist + rparen.suppress())
-    partial_trailer_tokens = Group((dollar + lparen).suppress() + callargslist_tokens + rparen.suppress())
+    partial_trailer = Group(fixto(dollar, "$(", copy=True) + function_call)
+    partial_trailer_tokens = Group(dollar.suppress() + function_call_tokens)
     complex_trailer_no_partial = (
-        condense(lparen + callargslist + rparen)
+        condense(function_call)
         | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())
         | Group(condense(dollar + lbrack + rbrack))
         | Group(dollar + ~lparen + ~lbrack)
@@ -1170,7 +1170,7 @@ class Grammar(object):
         lparen.suppress() + rparen.suppress()
         | Group(
             lparen.suppress() + testlist("tests") + rparen.suppress()
-            | lparen.suppress() + callargslist("args") + rparen.suppress()
+            | function_call("args")
         )
     )
     class_suite = suite | attach(newline, class_suite_handle, copy=True)
@@ -1358,7 +1358,7 @@ class Grammar(object):
     ) | newline("empty"))
     datadef = condense(attach(Keyword("data").suppress() + name - data_args - data_suite, data_handle))
 
-    simple_decorator = condense(dotted_name + Optional(lparen + callargslist + rparen))("simple")
+    simple_decorator = condense(dotted_name + Optional(function_call))("simple")
     complex_decorator = test("test")
     decorators = attach(OneOrMore(at.suppress() - Group(longest(simple_decorator, complex_decorator)) - newline.suppress()), decorator_handle)
 
