@@ -258,10 +258,10 @@ class Compiler(Grammar):
         self.function_call <<= trace(attach(self.function_call_tokens, self.function_call_handle, copy=True), "function_call")
         self.expr <<= trace(attach(self.expr_ref, self.pipe_handle, copy=True), "expr")
         self.no_chain_expr <<= trace(attach(self.no_chain_expr_ref, self.pipe_handle, copy=True), "no_chain_expr")
+        self.typedef <<= trace(attach(self.typedef_ref, self.typedef_handle, copy=True), "typedef")
+        self.return_typedef <<= trace(attach(self.return_typedef_ref, self.typedef_handle, copy=True), "return_typedef")
         self.u_string <<= attach(self.u_string_ref, self.u_string_check, copy=True)
         self.f_string <<= attach(self.f_string_ref, self.f_string_check, copy=True)
-        self.typedef <<= attach(self.typedef_ref, self.typedef_check, copy=True)
-        self.return_typedef <<= attach(self.return_typedef_ref, self.typedef_check, copy=True)
         self.matrix_at <<= attach(self.matrix_at_ref, self.matrix_at_check, copy=True)
         self.nonlocal_stmt <<= attach(self.nonlocal_stmt_ref, self.nonlocal_check, copy=True)
         self.star_assign_item <<= attach(self.star_assign_item_ref, self.star_assign_item_check, copy=True)
@@ -1283,6 +1283,21 @@ class Compiler(Grammar):
             else:
                 raise CoconutInternalException("invalid pipe operator", op)
 
+    def typedef_handle(self, tokens):
+        """Checks for Python 3 type defs."""
+        if len(tokens) == 1:  # return typedef
+            if self.target.startswith("3"):
+                return tokens[0]
+            else:
+                return ""
+        elif len(tokens) == 2:  # argument typedef
+            if self.target.startswith("3"):
+                return tokens[0] + ": " + tokens[1]
+            else:
+                return tokens[0]
+        else:
+            raise CoconutInternalException("invalid typedef tokens", tokens)
+
 # end: COMPILER HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
 # CHECKING HANDLERS:
@@ -1326,10 +1341,6 @@ class Compiler(Grammar):
             return self.check_py("3", "exec function", original, location, tokens)
         else:
             return tokens[0]
-
-    def typedef_check(self, original, location, tokens):
-        """Checks for Python 3 type defs."""
-        return self.check_py("3", "type annotation", original, location, tokens)
 
     def nonlocal_check(self, original, location, tokens):
         """Checks for Python 3 nonlocal statement."""

@@ -956,7 +956,7 @@ class Grammar(object):
     )
 
     typedef = Forward()
-    typedef_ref = addspace(condense(name + colon) + test)
+    typedef_ref = name + colon.suppress() + test
     tfpdef = typedef | name
     default = condense(equals + test)
 
@@ -974,11 +974,11 @@ class Grammar(object):
 
     function_call = Forward()
     function_call_tokens = lparen.suppress() + Optional(
-        tokenlist(Group(dubstar + test | star + test | name + default | test), comma)
-        | Group(
+        Group(
             attach(addspace(test + comp_for), add_paren_handle)
             | op_item
-        )) + rparen.suppress()
+        ) | tokenlist(Group(dubstar + test | star + test | name + default | test), comma)
+    ) + rparen.suppress()
     methodcaller_args = (
         itemlist(condense(name + default | test), comma)
         | op_item

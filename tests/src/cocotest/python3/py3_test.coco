@@ -1,8 +1,5 @@
 def py3_test():
     """Performs Python-3-specific tests."""
-    def p1(x: int) -> int:
-        return x+1
-    assert p1(2) == 3
     x = 5
     assert x == 5
     def set_x(y):
