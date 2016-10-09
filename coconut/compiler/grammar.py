@@ -921,6 +921,7 @@ class Grammar(object):
 
     test = Forward()
     expr = Forward()
+    no_chain_expr = Forward()
     star_expr = Forward()
     dubstar_expr = Forward()
     comp_for = Forward()
@@ -1130,8 +1131,6 @@ class Grammar(object):
     no_chain_infix_item = attach(Group(Optional(or_expr)) + infix_op + Group(Optional(no_chain_infix_expr)), infix_handle)
     no_chain_infix_expr <<= no_chain_infix_item | or_expr
 
-    expr = Forward()
-    no_chain_expr = Forward()
     pipe_op = pipeline | starpipe | backpipe | backstarpipe
     pipe_item = Group(longest(no_partial_atom_item + partial_trailer_tokens, infix_expr))
     expr_ref = pipe_item + ZeroOrMore(pipe_op + pipe_item)
