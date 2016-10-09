@@ -67,6 +67,7 @@ from coconut.constants import (
     new_to_old_stdlib,
     default_recursion_limit,
     checksum,
+    reserved_prefix,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -239,7 +240,7 @@ class Compiler(Grammar):
         """Binds reference objects to the proper parse actions."""
         self.endline <<= attach(self.endline_ref, self.endline_handle, copy=True)
         self.moduledoc_item <<= trace(attach(self.moduledoc, self.set_docstring, copy=True), "moduledoc")
-        self.name <<= trace(attach(self.name_ref, self.name_check, copy=True), "name")
+        self.name <<= trace(attach(self.base_name, self.name_check, copy=True), "name")
         self.atom_item <<= trace(attach(self.atom_item_ref, self.item_handle, copy=True), "atom_item")
         self.no_partial_atom_item <<= trace(attach(self.no_partial_atom_item_ref, self.item_handle, copy=True), "no_partial_atom_item")
         self.simple_assign <<= trace(attach(self.simple_assign_ref, self.item_handle, copy=True), "simple_assign")
@@ -1375,6 +1376,8 @@ class Compiler(Grammar):
             raise CoconutInternalException("invalid name tokens", tokens)
         elif tokens[0] == "exec":
             return self.check_py("3", "exec function", original, location, tokens)
+        elif tokens[0].startswith(reserved_prefix):
+            raise self.make_err(CoconutSyntaxError, "variable names cannot start with reserved prefix " + reserved_prefix, original, location)
         else:
             return tokens[0]
 

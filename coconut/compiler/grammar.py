@@ -48,6 +48,7 @@ from pyparsing import (
     nums,
     originalTextFor,
     nestedExpr,
+    SkipTo,
 )
 
 from coconut.exceptions import CoconutInternalException
@@ -57,7 +58,6 @@ from coconut.constants import (
     closeindent,
     strwrapper,
     unwrapper,
-    reserved_prefix,
     keywords,
     const_vars,
     reserved_vars,
@@ -838,11 +838,11 @@ class Grammar(object):
     matrix_at = Forward()
 
     name = Forward()
-    name_ref = ~Literal(reserved_prefix) + Regex(r"\b(?![0-9])\w+\b", re.U)
+    base_name = Regex(r"\b(?![0-9])\w+\b", re.U)
     for k in keywords + const_vars:
-        name_ref = ~Keyword(k) + name_ref
+        base_name = ~Keyword(k) + base_name
     for k in reserved_vars:
-        name_ref |= backslash.suppress() + Keyword(k)
+        base_name |= backslash.suppress() + Keyword(k)
     dotted_name = condense(name + ZeroOrMore(dot + name))
 
     integer = Combine(Word(nums) + ZeroOrMore(underscore.suppress() + Word(nums)))
@@ -1457,19 +1457,20 @@ class Grammar(object):
 
     tco_return = attach(
         Keyword("return").suppress() + condense(
-            (name | parens | brackets | braces | string)
-            + ZeroOrMore(dot + name | brackets)
+            (base_name | parens | brackets | braces | string)
+            + ZeroOrMore(dot + base_name | brackets)
         ) + parens + end_marker, tco_return_handle)
 
-    tfpdef_tokens = name + Optional(addspace(colon + test))
-    parameters_tokens = Group(ZeroOrMore(Group(
-        dubstar + tfpdef
-        | star + Optional(tfpdef)
-        | tfpdef + Optional(default)
-    )))
+    tfpdef_tokens = base_name + Optional(addspace(colon + test))
+    untouched_default = originalTextFor(equals + SkipTo(comma | rparen))
+    parameters_tokens = Group(Optional(tokenlist(Group(
+        dubstar + tfpdef_tokens
+        | star + Optional(tfpdef_tokens)
+        | tfpdef_tokens + Optional(untouched_default)
+    ), comma)))
 
     split_func_name_args_params = attach(
-        (start_marker + Keyword("def")).suppress() + name + lparen.suppress()
+        (start_marker + Keyword("def")).suppress() + base_name + lparen.suppress()
         + parameters_tokens + rparen.suppress(), split_func_name_args_params_handle)
 
 # end: EXTRA GRAMMAR
