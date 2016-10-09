@@ -1180,6 +1180,15 @@ class Compiler(Grammar):
         )
         return name
 
+    def tre_return(self, func_name, func_args):
+        """Generates a tail recursion elimination grammar element."""
+        def tre_return_handle(original, location, tokens):
+            if len(tokens) != 1:
+                raise CoconutInternalException("invalid tail recursion elimination tokens", tokens)
+            else:
+                return func_args + " = " + tre_func_var + tokens[0] + "\ncontinue"
+        return attach((Keyword("return") + Keyword(func_name)).suppress() + function_call + end_marker.suppress(), tre_return_handle)
+
     def normal_funcdef_stmt_handle(self, tokens):
         """Determines if tail call optimization can be done and if so does it."""
         if len(tokens) != 1:
@@ -1216,7 +1225,7 @@ class Compiler(Grammar):
             else:
                 return tokens[0]
 
-    def function_call_tokens_split(self, original, location, tokens, careful=True):
+    def function_call_tokens_split(self, original, location, tokens):
         """Split into positional arguments and keyword arguments."""
         pos_args = []
         star_args = []
@@ -1225,12 +1234,12 @@ class Compiler(Grammar):
         for arg in tokens:
             argstr = "".join(arg)
             if len(arg) == 1:
-                if careful and (kwd_args or dubstar_args):
+                if kwd_args or dubstar_args:
                     raise self.make_err(CoconutSyntaxError, "positional argument after keyword argument", original, location)
                 pos_args.append(argstr)
             elif len(arg) == 2:
                 if arg[0] == "*":
-                    if careful and dubstar_args:
+                    if dubstar_args:
                         raise self.make_err(CoconutSyntaxError, "star unpacking after double star unpacking", original, location)
                     star_args.append(argstr)
                 elif arg[0] == "**":
@@ -1246,13 +1255,13 @@ class Compiler(Grammar):
         pos_args, kwd_args = self.function_call_tokens_split(original, location, tokens)
         return "(" + join_args(pos_args + kwd_args) + ")"
 
-    def pipe_item_split(self, tokens):
+    def pipe_item_split(self, original, location, tokens):
         """Split a partial trailer."""
         if len(tokens) == 1:
             return tokens[0]
         elif len(tokens) == 2:
             func, args = tokens
-            pos_args, kwd_args = self.function_call_tokens_split(None, None, args)
+            pos_args, kwd_args = self.function_call_tokens_split(original, location, args)
             return func, join_args(pos_args), join_args(kwd_args)
         else:
             raise CoconutInternalException("invalid partial trailer", tokens)

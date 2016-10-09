@@ -1433,6 +1433,7 @@ class Grammar(object):
     parens = originalTextFor(nestedExpr("(", ")"))
     brackets = originalTextFor(nestedExpr("[", "]"))
     braces = originalTextFor(nestedExpr("{", "}"))
+
     tco_return = attach(
         Keyword("return").suppress() + condense(
             (name | parens | brackets | braces | string)
