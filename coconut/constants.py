@@ -32,6 +32,7 @@ minimum_recursion_limit = 100
 
 # used for generating __coconut_hash__
 from zlib import crc32 as checksum  # NOQA
+
 hash_prefix = "# __coconut_hash__ = "
 hash_sep = "\x00"
 
@@ -78,6 +79,7 @@ yield_from_var = "_coconut_yield_from"
 yield_item_var = "_coconut_yield_item"
 raise_from_var = "_coconut_raise_from"
 stmt_lambda_var = "_coconut_lambda"
+tre_func_var = "_coconut_mock_func"
 
 wildcard = "_"  # for pattern-matching
 
@@ -181,7 +183,7 @@ main_sig = "Coconut: "
 main_prompt = ">>> "
 more_prompt = "    "
 
-default_style = "emacs"
+default_style = "monokai"
 default_multiline = False
 default_vi_mode = False
 default_mouse_support = True

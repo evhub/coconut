@@ -48,6 +48,7 @@ from pyparsing import (
     nums,
     originalTextFor,
     nestedExpr,
+    SkipTo,
 )
 
 from coconut.exceptions import CoconutInternalException
@@ -57,7 +58,6 @@ from coconut.constants import (
     closeindent,
     strwrapper,
     unwrapper,
-    reserved_prefix,
     keywords,
     const_vars,
     reserved_vars,
@@ -747,6 +747,27 @@ def tco_return_handle(tokens):
     else:
         return "raise _coconut_tail_call(" + tokens[0] + ", " + tokens[1][1:]  # tokens[1] contains )\n
 
+
+def split_func_name_args_params_handle(tokens):
+    """Handles splitting a function into name, params, and args."""
+    if len(tokens) != 2:
+        raise CoconutInternalException("invalid function definition splitting tokens", tokens)
+    else:
+        func_name = tokens[0]
+        func_args = []
+        func_params = []
+        for arg in tokens[1]:
+            if len(arg) > 1 and arg[0] in ("*", "**"):
+                func_args.append(arg[1])
+            else:
+                func_args.append(arg[0])
+            func_params.append("".join(arg))
+        return [
+            func_name,
+            ", ".join(func_args),
+            "(" + ", ".join(func_params) + ")"
+        ]
+
 # end: HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN GRAMMAR:
@@ -817,11 +838,11 @@ class Grammar(object):
     matrix_at = Forward()
 
     name = Forward()
-    name_ref = ~Literal(reserved_prefix) + Regex(r"\b(?![0-9])\w+\b", re.U)
+    base_name = Regex(r"\b(?![0-9])\w+\b", re.U)
     for k in keywords + const_vars:
-        name_ref = ~Keyword(k) + name_ref
+        base_name = ~Keyword(k) + base_name
     for k in reserved_vars:
-        name_ref |= backslash.suppress() + Keyword(k)
+        base_name |= backslash.suppress() + Keyword(k)
     dotted_name = condense(name + ZeroOrMore(dot + name))
 
     integer = Combine(Word(nums) + ZeroOrMore(underscore.suppress() + Word(nums)))
@@ -900,6 +921,7 @@ class Grammar(object):
 
     test = Forward()
     expr = Forward()
+    no_chain_expr = Forward()
     star_expr = Forward()
     dubstar_expr = Forward()
     comp_for = Forward()
@@ -1109,8 +1131,6 @@ class Grammar(object):
     no_chain_infix_item = attach(Group(Optional(or_expr)) + infix_op + Group(Optional(no_chain_infix_expr)), infix_handle)
     no_chain_infix_expr <<= no_chain_infix_item | or_expr
 
-    expr = Forward()
-    no_chain_expr = Forward()
     pipe_op = pipeline | starpipe | backpipe | backstarpipe
     pipe_item = Group(longest(no_partial_atom_item + partial_trailer_tokens, infix_expr))
     expr_ref = pipe_item + ZeroOrMore(pipe_op + pipe_item)
@@ -1433,10 +1453,23 @@ class Grammar(object):
     parens = originalTextFor(nestedExpr("(", ")"))
     brackets = originalTextFor(nestedExpr("[", "]"))
     braces = originalTextFor(nestedExpr("{", "}"))
+
     tco_return = attach(
         Keyword("return").suppress() + condense(
-            (name | parens | brackets | braces | string)
-            + ZeroOrMore(dot + name | brackets)
+            (base_name | parens | brackets | braces | string)
+            + ZeroOrMore(dot + base_name | brackets)
         ) + parens + end_marker, tco_return_handle)
+
+    tfpdef_tokens = base_name + Optional(addspace(colon + test))
+    untouched_default = originalTextFor(equals + SkipTo(comma | rparen))
+    parameters_tokens = Group(Optional(tokenlist(Group(
+        dubstar + tfpdef_tokens
+        | star + Optional(tfpdef_tokens)
+        | tfpdef_tokens + Optional(untouched_default)
+    ), comma)))
+
+    split_func_name_args_params = attach(
+        (start_marker + Keyword("def")).suppress() + base_name + lparen.suppress()
+        + parameters_tokens + rparen.suppress(), split_func_name_args_params_handle)
 
 # end: EXTRA GRAMMAR

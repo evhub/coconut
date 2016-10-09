@@ -173,6 +173,11 @@ def split_trailing_indent(line):
     return line, indent
 
 
+def parse(grammar, text):
+    """Parses text using grammar."""
+    return grammar.parseWithTabs().parseString(text)
+
+
 def match_in(grammar, text):
     """Determines if there is a match for grammar in text."""
     for result in grammar.scanString(text):
