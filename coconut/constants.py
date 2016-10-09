@@ -183,7 +183,7 @@ main_sig = "Coconut: "
 main_prompt = ">>> "
 more_prompt = "    "
 
-default_style = "emacs"
+default_style = "monokai"
 default_multiline = False
 default_vi_mode = False
 default_mouse_support = True
