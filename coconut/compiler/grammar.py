@@ -747,6 +747,27 @@ def tco_return_handle(tokens):
     else:
         return "raise _coconut_tail_call(" + tokens[0] + ", " + tokens[1][1:]  # tokens[1] contains )\n
 
+
+def split_func_name_args_params_handle(tokens):
+    """Handles splitting a function into name, params, and args."""
+    if len(tokens) != 2:
+        raise CoconutInternalException("invalid function definition splitting tokens", tokens)
+    else:
+        func_name = tokens[0]
+        func_args = []
+        func_params = []
+        for arg in tokens[1]:
+            if len(arg) > 1 and arg[0] in ("*", "**"):
+                func_args.append(arg[1])
+            else:
+                func_args.append(arg[0])
+            func_params.append("".join(arg))
+        return [
+            func_name,
+            ", ".join(func_args),
+            "(" + ", ".join(func_params) + ")"
+        ]
+
 # end: HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN GRAMMAR:
@@ -1439,5 +1460,16 @@ class Grammar(object):
             (name | parens | brackets | braces | string)
             + ZeroOrMore(dot + name | brackets)
         ) + parens + end_marker, tco_return_handle)
+
+    tfpdef_tokens = name + Optional(addspace(colon + test))
+    parameters_tokens = Group(ZeroOrMore(Group(
+        dubstar + tfpdef
+        | star + Optional(tfpdef)
+        | tfpdef + Optional(default)
+    )))
+
+    split_func_name_args_params = attach(
+        (start_marker + Keyword("def")).suppress() + name + lparen.suppress()
+        + parameters_tokens + rparen.suppress(), split_func_name_args_params_handle)
 
 # end: EXTRA GRAMMAR

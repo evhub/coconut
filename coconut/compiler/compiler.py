@@ -63,6 +63,7 @@ from coconut.constants import (
     yield_item_var,
     raise_from_var,
     stmt_lambda_var,
+    tre_func_var,
     new_to_old_stdlib,
     default_recursion_limit,
     checksum,
@@ -99,6 +100,7 @@ from coconut.compiler.util import (
     match_in,
     transform,
     join_args,
+    parse,
 )
 from coconut.compiler.header import (
     minify,
@@ -391,7 +393,7 @@ class Compiler(Grammar):
         """Uses the parser to parse the inputstring."""
         self.reset()
         try:
-            out = self.post(parser.parseWithTabs().parseString(self.pre(inputstring, **preargs)), **postargs)
+            out = self.post(parse(parser, self.pre(inputstring, **preargs)), **postargs)
         except ParseBaseException as err:
             err_line, err_index = self.reformat(err.line, err.col - 1)
             raise CoconutParseError(None, err_line, err_index, self.adjust(err.lineno))
@@ -1185,9 +1187,13 @@ class Compiler(Grammar):
         def tre_return_handle(original, location, tokens):
             if len(tokens) != 1:
                 raise CoconutInternalException("invalid tail recursion elimination tokens", tokens)
-            else:
+            elif func_args:
                 return func_args + " = " + tre_func_var + tokens[0] + "\ncontinue"
-        return attach((Keyword("return") + Keyword(func_name)).suppress() + function_call + end_marker.suppress(), tre_return_handle)
+            else:
+                return "continue"
+        return attach(
+            (Keyword("return") + Keyword(func_name)).suppress() + self.function_call + self.end_marker.suppress(),
+            tre_return_handle)
 
     def normal_funcdef_stmt_handle(self, tokens):
         """Determines if tail call optimization can be done and if so does it."""
@@ -1196,10 +1202,15 @@ class Compiler(Grammar):
         else:
             lines = []  # transformed
             tco = False  # whether tco was done
+            tre = False  # wether tre was done
             level = 0  # indentation level
             disabled_until_level = None  # whether inside of a def/try/with
 
-            for i, line in enumerate(tokens[0].splitlines(True)):
+            raw_lines = tokens[0].splitlines(True)
+            def_stmt, raw_lines = raw_lines[0], raw_lines[1:]
+            func_name, func_args, func_params = parse(self.split_func_name_args_params, def_stmt)
+
+            for line in raw_lines:
                 body, indent = split_trailing_indent(line)
                 level += ind_change(body)
                 if disabled_until_level is not None:
@@ -1209,21 +1220,37 @@ class Compiler(Grammar):
                     if match_in(Keyword("yield"), body):
                         # we can't tco generators
                         return tokens[0]
-                    elif i and match_in(Keyword("def") | Keyword("try") | Keyword("with"), body):
+                    elif match_in(Keyword("def") | Keyword("try") | Keyword("with"), body):
                         disabled_until_level = level
                     else:
                         base, comment = split_comment(body)
-                        tco_base = transform(self.tco_return, base)
-                        if tco_base is not None:
-                            line = tco_base + comment + indent
-                            tco = True
+                        # attempt tre
+                        tre_base = transform(self.tre_return(func_name, func_args), base)
+                        if tre_base is not None:
+                            line = tre_base + comment + indent
+                            tre = True
+                        else:
+                            # attempt tco
+                            tco_base = transform(self.tco_return, base)
+                            if tco_base is not None:
+                                line = tco_base + comment + indent
+                                tco = True
                 lines.append(line)
                 level += ind_change(indent)
 
+            out = "".join(lines)
+            if tre:
+                indent, base = split_leading_indent(out)
+                out = (
+                    indent + (
+                        "def " + tre_func_var + func_params + ": return " + func_args + "\n"
+                        if func_args else ""
+                    ) + "while True:\n" + openindent + base + closeindent
+                )
+            out = def_stmt + out
             if tco:
-                return "@_coconut_tco\n" + "".join(lines)
-            else:
-                return tokens[0]
+                out = "@_coconut_tco\n" + out
+            return out
 
     def function_call_tokens_split(self, original, location, tokens):
         """Split into positional arguments and keyword arguments."""
@@ -1266,29 +1293,29 @@ class Compiler(Grammar):
         else:
             raise CoconutInternalException("invalid partial trailer", tokens)
 
-    def pipe_handle(self, tokens, **kwargs):
+    def pipe_handle(self, original, location, tokens, **kwargs):
         """Processes pipe calls."""
         if set(kwargs) > set(("top",)):
             complain(CoconutInternalException("unknown pipe_handle keyword arguments", kwargs))
         top = kwargs.get("top", True)
         if len(tokens) == 1:
-            func = self.pipe_item_split(tokens.pop())
+            func = self.pipe_item_split(original, location, tokens.pop())
             if top and isinstance(func, tuple):
                 return "_coconut.functools.partial(" + join_args(func) + ")"
             else:
                 return func
         else:
-            func = self.pipe_item_split(tokens.pop())
+            func = self.pipe_item_split(original, location, tokens.pop())
             op = tokens.pop()
             if op == "|>" or op == "|*>":
                 star = "*" if op == "|*>" else ""
                 if isinstance(func, tuple):
-                    return func[0] + "(" + join_args((func[1], star + self.pipe_handle(tokens), func[2])) + ")"
+                    return func[0] + "(" + join_args((func[1], star + self.pipe_handle(original, location, tokens), func[2])) + ")"
                 else:
-                    return "(" + func + ")(" + star + self.pipe_handle(tokens) + ")"
+                    return "(" + func + ")(" + star + self.pipe_handle(original, location, tokens) + ")"
             elif op == "<|" or op == "<*|":
                 star = "*" if op == "<*|" else ""
-                return self.pipe_handle([[func], "|" + star + ">", [self.pipe_handle(tokens, top=False)]])
+                return self.pipe_handle(original, location, [[func], "|" + star + ">", [self.pipe_handle(original, location, tokens, top=False)]])
             else:
                 raise CoconutInternalException("invalid pipe operator", op)
 
