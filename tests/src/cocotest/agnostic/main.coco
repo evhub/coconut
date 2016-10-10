@@ -270,7 +270,6 @@ def main_test():
         return x+1
     assert p1(2) == 3
     assert (def x -> x)(1) == 1
-    assert ret_none(10) is None
     return True
 
 def main(*args):

@@ -230,4 +230,5 @@ def suite_test():
     assert 20 == (..)(minus$(2), mul$(2), plus$(1))(10)
     assert 20 == (minus$(2) .. mul$(2) .. plus$(1))(10)
     assert does_raise_exc(raise_exc)
+    assert ret_none(10) is None
     return True
