@@ -1274,7 +1274,8 @@ class Compiler(Grammar):
                     if use_mock else ""
                 ) + "while True:\n"
                     + openindent + base + base_dedent
-                    + ("\n" if "\n" not in base_dedent else "") + "return None" + closeindent + dedent
+                    + ("\n" if "\n" not in base_dedent else "") + "return None"
+                    + ("\n" if "\n" not in dedent else "") + closeindent + dedent
                 + func_store + " = " + func_name + "\n"
             )
         out = def_stmt + out
