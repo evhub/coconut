@@ -155,19 +155,29 @@ def split_comment(line):
     return base, line[len(base):]
 
 
-def split_leading_indent(line):
+def split_leading_indent(line, max_indents=None):
     """Split line into leading indent and main."""
     indent = ""
-    while line.startswith(openindent) or line.startswith(closeindent) or line.lstrip() != line:
+    while line.lstrip() != line or (
+        (max_indents is None or max_indents > 0)
+        and (line.startswith(openindent) or line.startswith(closeindent))
+    ):
+        if max_indents is not None and (line.startswith(openindent) or line.startswith(closeindent)):
+            max_indents -= 1
         indent += line[0]
         line = line[1:]
     return indent, line
 
 
-def split_trailing_indent(line):
+def split_trailing_indent(line, max_indents=None):
     """Split line into leading indent and main."""
     indent = ""
-    while line.endswith(openindent) or line.endswith(closeindent) or line.rstrip() != line:
+    while line.rstrip() != line or (
+        (max_indents is None or max_indents > 0)
+        and (line.endswith(openindent) or line.endswith(closeindent))
+    ):
+        if max_indents is not None and (line.endswith(openindent) or line.endswith(closeindent)):
+            max_indents -= 1
         indent = line[-1] + indent
         line = line[:-1]
     return line, indent

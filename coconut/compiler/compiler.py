@@ -63,7 +63,8 @@ from coconut.constants import (
     yield_item_var,
     raise_from_var,
     stmt_lambda_var,
-    tre_func_var,
+    tre_mock_var,
+    tre_store_var,
     new_to_old_stdlib,
     default_recursion_limit,
     checksum,
@@ -233,6 +234,7 @@ class Compiler(Grammar):
         self.skips = set()
         self.docstring = ""
         self.ichain_count = 0
+        self.tre_store_count = 0
         self.stmt_lambdas = []
         self.bind()
 
@@ -1183,16 +1185,25 @@ class Compiler(Grammar):
         )
         return name
 
-    def tre_return(self, func_name, func_args):
+    def tre_return(self, func_name, func_args, func_store, use_mock=True):
         """Generates a tail recursion elimination grammar element."""
         def tre_return_handle(original, location, tokens):
             if len(tokens) != 1:
                 raise CoconutInternalException("invalid tail recursion elimination tokens", tokens)
             else:
-                if func_args:
-                    return func_args + " = " + tre_func_var + tokens[0] + "\ncontinue"
+                tco_recurse = "raise _coconut_tail_call(" + func_name + ", " + tokens[0][1:]  # strip initial paren, include final paren
+                if not func_args:
+                    tre_recurse = "continue"
+                elif use_mock:
+                    tre_recurse = func_args + " = " + tre_mock_var + tokens[0] + "\ncontinue"
                 else:
-                    return "continue"
+                    tre_recurse = func_args + " = " + tokens[0][1:-1] + "\ncontinue"
+                return (
+                    "if " + func_name + " is " + func_store + ":\n" + openindent
+                    + tre_recurse + "\n" + closeindent
+                    + "else:\n" + openindent
+                    + tco_recurse + "\n" + closeindent
+                )
         return attach(
             (Keyword("return") + Keyword(func_name)).suppress() + self.function_call + self.end_marker.suppress(),
             tre_return_handle)
@@ -1215,6 +1226,9 @@ class Compiler(Grammar):
         raw_lines = funcdef.splitlines(True)
         def_stmt, raw_lines = raw_lines[0], raw_lines[1:]
         func_name, func_args, func_params = parse(self.split_func_name_args_params, def_stmt)
+        use_mock = func_args and func_args != func_params[1:-1]
+        func_store = tre_store_var + "_" + str(int(self.tre_store_count))
+        self.tre_store_count += 1
 
         for line in raw_lines:
             body, indent = split_trailing_indent(line)
@@ -1235,10 +1249,11 @@ class Compiler(Grammar):
                         tre_base = None
                     else:
                         # attempt tre
-                        tre_base = transform(self.tre_return(func_name, func_args), base)
+                        tre_base = transform(self.tre_return(func_name, func_args, func_store, use_mock=use_mock), base)
                         if tre_base is not None:
                             line = tre_base + comment + indent
                             tre = True
+                            tco = True  # tre falls back on tco if the function is changed
                     if tre_base is None:
                         # attempt tco
                         tco_base = transform(self.tco_return, base)
@@ -1250,13 +1265,17 @@ class Compiler(Grammar):
 
         out = "".join(lines)
         if tre:
-            indent, base = split_leading_indent(out)
-            base, dedent = split_trailing_indent(base)
+            indent, base = split_leading_indent(out, 1)
+            base, dedent = split_trailing_indent(base, 1)
+            base, base_dedent = split_trailing_indent(base)
             out = (
                 indent + (
-                    "def " + tre_func_var + func_params + ": return " + func_args + "\n"
-                    if func_args else ""
-                ) + "while True:\n" + openindent + base + "\nreturn None" + closeindent + dedent
+                    "def " + tre_mock_var + func_params + ": return " + func_args + "\n"
+                    if use_mock else ""
+                ) + "while True:\n"
+                    + openindent + base + base_dedent
+                    + ("\n" if "\n" not in base_dedent else "") + "return None" + closeindent + dedent
+                + func_store + " = " + func_name + "\n"
             )
         out = def_stmt + out
         if tco:

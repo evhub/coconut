@@ -79,7 +79,8 @@ yield_from_var = "_coconut_yield_from"
 yield_item_var = "_coconut_yield_item"
 raise_from_var = "_coconut_raise_from"
 stmt_lambda_var = "_coconut_lambda"
-tre_func_var = "_coconut_mock_func"
+tre_mock_var = "_coconut_mock_func"
+tre_store_var = "_coconut_recursive_func"
 
 wildcard = "_"  # for pattern-matching
 
