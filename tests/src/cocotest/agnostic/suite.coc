@@ -74,6 +74,7 @@ def suite_test():
     assert factorial2(3) == 6
     assert factorial4(3) == 6
     assert factorial5(3) == 6
+    assert fact(3) == 6
     assert factorial1(-1) is None
     assert factorial2(-1) is None
     assert factorial4(-1) is None

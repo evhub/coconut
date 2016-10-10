@@ -1382,15 +1382,19 @@ class Grammar(object):
     complex_decorator = test("test")
     decorators = attach(OneOrMore(at.suppress() - Group(longest(simple_decorator, complex_decorator)) - newline.suppress()), decorator_handle)
 
-    normal_funcdef_stmt = Forward()
-    normal_funcdef_stmt_ref = trace(
+    decoratable_normal_funcdef_stmt = Forward()
+    normal_funcdef_stmt = (
         funcdef
         | math_funcdef
         | math_match_funcdef
-        | match_funcdef, "normal_funcdef_stmt")
-    async_funcdef_stmt = trace(async_funcdef | async_match_funcdef, "async_funcdef_stmt")
-    funcdef_stmt = normal_funcdef_stmt | async_funcdef_stmt
-    decoratable_func_stmt = trace(condense(Optional(decorators) + funcdef_stmt), "decoratable_func_stmt")
+        | match_funcdef
+    )
+    decoratable_normal_funcdef_stmt_ref = Optional(decorators) + normal_funcdef_stmt
+
+    async_funcdef_stmt = async_funcdef | async_match_funcdef
+    decoratable_async_funcdef_stmt = trace(condense(Optional(decorators) + async_funcdef_stmt), "decoratable_async_func_stmt")
+
+    decoratable_func_stmt = decoratable_normal_funcdef_stmt | decoratable_async_funcdef_stmt
 
     class_stmt = classdef | datadef
     decoratable_class_stmt = trace(condense(Optional(decorators) + class_stmt), "decoratable_class_stmt")

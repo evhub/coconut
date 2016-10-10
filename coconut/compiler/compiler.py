@@ -257,7 +257,7 @@ class Compiler(Grammar):
         self.yield_from <<= trace(attach(self.yield_from_ref, self.yield_from_handle, copy=True), "yield_from")
         self.exec_stmt <<= trace(attach(self.exec_stmt_ref, self.exec_stmt_handle, copy=True), "exec_stmt")
         self.stmt_lambdef <<= trace(attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle, copy=True), "stmt_lambdef")
-        self.normal_funcdef_stmt <<= trace(attach(self.normal_funcdef_stmt_ref, self.normal_funcdef_stmt_handle, copy=True), "normal_funcdef_stmt")
+        self.decoratable_normal_funcdef_stmt <<= trace(attach(self.decoratable_normal_funcdef_stmt_ref, self.decoratable_normal_funcdef_stmt_handle, copy=True), "decoratable_normal_funcdef_stmt")
         self.function_call <<= trace(attach(self.function_call_tokens, self.function_call_handle, copy=True), "function_call")
         self.expr <<= trace(attach(self.expr_ref, self.pipe_handle, copy=True), "expr")
         self.no_chain_expr <<= trace(attach(self.no_chain_expr_ref, self.pipe_handle, copy=True), "no_chain_expr")
@@ -1188,70 +1188,82 @@ class Compiler(Grammar):
         def tre_return_handle(original, location, tokens):
             if len(tokens) != 1:
                 raise CoconutInternalException("invalid tail recursion elimination tokens", tokens)
-            elif func_args:
-                return func_args + " = " + tre_func_var + tokens[0] + "\ncontinue"
             else:
-                return "continue"
+                if func_args:
+                    return func_args + " = " + tre_func_var + tokens[0] + "\ncontinue"
+                else:
+                    return "continue"
         return attach(
             (Keyword("return") + Keyword(func_name)).suppress() + self.function_call + self.end_marker.suppress(),
             tre_return_handle)
 
-    def normal_funcdef_stmt_handle(self, tokens):
+    def decoratable_normal_funcdef_stmt_handle(self, tokens):
         """Determines if tail call optimization can be done and if so does it."""
-        if len(tokens) != 1:
-            raise CoconutInternalException("invalid function definition tokens", tokens)
+        if len(tokens) == 1:
+            decorators, funcdef = None, tokens[0]
+        elif len(tokens) == 2:
+            decorators, funcdef = tokens
         else:
-            lines = []  # transformed
-            tco = False  # whether tco was done
-            tre = False  # wether tre was done
-            level = 0  # indentation level
-            disabled_until_level = None  # whether inside of a def/try/with
+            raise CoconutInternalException("invalid function definition tokens", tokens)
 
-            raw_lines = tokens[0].splitlines(True)
-            def_stmt, raw_lines = raw_lines[0], raw_lines[1:]
-            func_name, func_args, func_params = parse(self.split_func_name_args_params, def_stmt)
+        lines = []  # transformed
+        tco = False  # whether tco was done
+        tre = False  # wether tre was done
+        level = 0  # indentation level
+        disabled_until_level = None  # whether inside of a def/try/with
 
-            for line in raw_lines:
-                body, indent = split_trailing_indent(line)
-                level += ind_change(body)
-                if disabled_until_level is not None:
-                    if level <= disabled_until_level:
-                        disabled_until_level = None
-                if disabled_until_level is None:
-                    if match_in(Keyword("yield"), body):
-                        # we can't tco generators
-                        return tokens[0]
-                    elif match_in(Keyword("def") | Keyword("try") | Keyword("with"), body):
-                        disabled_until_level = level
+        raw_lines = funcdef.splitlines(True)
+        def_stmt, raw_lines = raw_lines[0], raw_lines[1:]
+        func_name, func_args, func_params = parse(self.split_func_name_args_params, def_stmt)
+
+        for line in raw_lines:
+            body, indent = split_trailing_indent(line)
+            level += ind_change(body)
+            if disabled_until_level is not None:
+                if level <= disabled_until_level:
+                    disabled_until_level = None
+            if disabled_until_level is None:
+                if match_in(Keyword("yield"), body):
+                    # we can't tco generators
+                    return tokens[0]
+                elif match_in(Keyword("def") | Keyword("try") | Keyword("with"), body):
+                    disabled_until_level = level
+                else:
+                    base, comment = split_comment(body)
+                    if decorators:
+                        # tco works with decorators, but not tre
+                        tre_base = None
                     else:
-                        base, comment = split_comment(body)
                         # attempt tre
                         tre_base = transform(self.tre_return(func_name, func_args), base)
                         if tre_base is not None:
                             line = tre_base + comment + indent
                             tre = True
-                        else:
-                            # attempt tco
-                            tco_base = transform(self.tco_return, base)
-                            if tco_base is not None:
-                                line = tco_base + comment + indent
-                                tco = True
-                lines.append(line)
-                level += ind_change(indent)
+                    if tre_base is None:
+                        # attempt tco
+                        tco_base = transform(self.tco_return, base)
+                        if tco_base is not None:
+                            line = tco_base + comment + indent
+                            tco = True
+            lines.append(line)
+            level += ind_change(indent)
 
-            out = "".join(lines)
-            if tre:
-                indent, base = split_leading_indent(out)
-                out = (
-                    indent + (
-                        "def " + tre_func_var + func_params + ": return " + func_args + "\n"
-                        if func_args else ""
-                    ) + "while True:\n" + openindent + base + closeindent
-                )
-            out = def_stmt + out
-            if tco:
-                out = "@_coconut_tco\n" + out
-            return out
+        out = "".join(lines)
+        if tre:
+            indent, base = split_leading_indent(out)
+            base, dedent = split_trailing_indent(base)
+            out = (
+                indent + (
+                    "def " + tre_func_var + func_params + ": return " + func_args + "\n"
+                    if func_args else ""
+                ) + "while True:\n" + openindent + base + "\nreturn None" + closeindent + dedent
+            )
+        out = def_stmt + out
+        if tco:
+            out = "@_coconut_tco\n" + out
+        if decorators:
+            out = decorators + out
+        return out
 
     def function_call_tokens_split(self, original, location, tokens):
         """Split into positional arguments and keyword arguments."""

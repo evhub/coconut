@@ -196,7 +196,7 @@ def is_null(item):
     else:
         return False
 
-# Match Functions:
+# Factorial:
 def factorial1(value):
     match 0 in value: return 1
     match n is int in value if n > 0: return n * factorial1(n-1)
@@ -230,6 +230,13 @@ def factorial5(value):
     else:
         return None
     raise TypeError()
+match def fact(n) = fact(n, 1)
+@addpattern(fact)
+match def fact(0, acc) = acc
+@addpattern(fact)
+match def fact(n, acc) = fact(n-1, acc*n)
+
+# Match Functions:
 def classify(value):
     match _ is tuple in value:
         match () in value:
@@ -552,3 +559,9 @@ def does_raise_exc(func):
         return func()
     except Exception:
         return True
+
+# Returns None
+
+def ret_none(n):
+    if n != 0:
+        return ret_none(n - 1)
