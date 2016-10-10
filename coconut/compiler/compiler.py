@@ -709,18 +709,23 @@ class Compiler(Grammar):
 
     def endline_comment(self, ln):
         """Gets an end line comment."""
-        if ln < 0 or (self.keep_lines and ln > len(self.original_lines)):
-            raise CoconutInternalException("out of bounds line number", ln)
-        elif self.line_numbers and self.keep_lines:
-            if self.minify:
-                comment = str(ln) + " " + self.original_lines[ln - 1]
+        if self.keep_lines:
+            if ln < 0 or ln - 1 > len(self.original_lines):
+                raise CoconutInternalException("out of bounds line number", ln)
+            elif ln - 1 == len(self.original_lines):
+                lni = -1
             else:
-                comment = " line " + str(ln) + ": " + self.original_lines[ln - 1]
+                lni = ln - 1
+        if self.line_numbers and self.keep_lines:
+            if self.minify:
+                comment = str(ln) + " " + self.original_lines[lni]
+            else:
+                comment = " line " + str(ln) + ": " + self.original_lines[lni]
         elif self.keep_lines:
             if self.minify:
-                comment = self.original_lines[ln - 1]
+                comment = self.original_lines[lni]
             else:
-                comment = " " + self.original_lines[ln - 1]
+                comment = " " + self.original_lines[lni]
         elif self.line_numbers:
             if self.minify:
                 comment = str(ln)
