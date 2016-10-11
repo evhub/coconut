@@ -296,11 +296,11 @@ class Compiler(Grammar):
         else:
             return self.repl_proc(snip, careful=False, add_to_line=False)
 
-    def make_err(self, errtype, message, original, location, ln=None, reformat=True, *args, **kwargs):
+    def make_err(self, errtype, message, original, loc, ln=None, reformat=True, *args, **kwargs):
         """Generates an error of the specified type."""
         if ln is None:
-            ln = self.adjust(lineno(location, original))
-        errstr, index = getline(location, original), col(location, original) - 1
+            ln = self.adjust(lineno(loc, original))
+        errstr, index = getline(loc, original), col(loc, original) - 1
         if reformat:
             errstr, index = self.reformat(errstr, index)
         return errtype(message, errstr, index, ln, *args, **kwargs)
@@ -879,7 +879,7 @@ class Compiler(Grammar):
 # COMPILER HANDLERS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-    def set_docstring(self, original, location, tokens):
+    def set_docstring(self, original, loc, tokens):
         """Sets the docstring."""
         if len(tokens) == 2:
             self.docstring = self.reformat(tokens[0]) + "\n\n"
@@ -898,7 +898,7 @@ class Compiler(Grammar):
         else:
             return "yield from " + tokens[0]
 
-    def endline_handle(self, original, location, tokens):
+    def endline_handle(self, original, loc, tokens):
         """Inserts line number comments when in line_numbers mode."""
         if len(tokens) != 1:
             raise CoconutInternalException("invalid endline tokens", tokens)
@@ -906,10 +906,10 @@ class Compiler(Grammar):
         if self.minify:
             out = out.splitlines(True)[0]  # if there are multiple new lines, take only the first one
         if self.line_numbers or self.keep_lines:
-            out = self.wrap_line_number(self.adjust(lineno(location, original))) + out
+            out = self.wrap_line_number(self.adjust(lineno(loc, original))) + out
         return out
 
-    def item_handle(self, original, location, tokens):
+    def item_handle(self, original, loc, tokens):
         """Processes items."""
         out = tokens.pop(0)
         for trailer in tokens:
@@ -925,7 +925,7 @@ class Compiler(Grammar):
                 elif trailer[0] == ".":
                     out = "_coconut.functools.partial(_coconut.getattr, " + out + ")"
                 elif trailer[0] == "$(":
-                    raise self.make_err(CoconutSyntaxError, "a partial application argument is required", original, location)
+                    raise self.make_err(CoconutSyntaxError, "a partial application argument is required", original, loc)
                 else:
                     raise CoconutInternalException("invalid trailer symbol", trailer[0])
             elif len(trailer) == 2:
@@ -965,7 +965,7 @@ class Compiler(Grammar):
         else:
             raise CoconutInternalException("invalid assignment tokens", tokens)
 
-    def classlist_handle(self, original, location, tokens):
+    def classlist_handle(self, original, loc, tokens):
         """Processes class inheritance lists."""
         if len(tokens) == 0:
             if self.target.startswith("3"):
@@ -979,20 +979,20 @@ class Compiler(Grammar):
                 if self.target.startswith("3"):
                     return tokens[0][0]
                 else:
-                    raise self.make_err(CoconutTargetError, "found Python 3 keyword class definition", original, location, target="3")
+                    raise self.make_err(CoconutTargetError, "found Python 3 keyword class definition", original, loc, target="3")
             else:
                 raise CoconutInternalException("invalid inner classlist token", tokens[0])
         else:
             raise CoconutInternalException("invalid classlist tokens", tokens)
 
-    def import_handle(self, original, location, tokens):
+    def import_handle(self, original, loc, tokens):
         """Universalizes imports."""
         if len(tokens) == 1:
             imp_from, imports = None, tokens[0]
         elif len(tokens) == 2:
             imp_from, imports = tokens
             if imp_from == "__future__":
-                self.strict_err_or_warn("unnecessary from __future__ import (Coconut does these automatically)", original, location)
+                self.strict_err_or_warn("unnecessary from __future__ import (Coconut does these automatically)", original, loc)
                 return ""
         else:
             raise CoconutInternalException("invalid import tokens", tokens)
@@ -1057,7 +1057,7 @@ class Compiler(Grammar):
                     + raise_from_var + ".__cause__ = " + tokens[1] + "\n"
                     + "raise " + raise_from_var)
 
-    def dict_comp_handle(self, original, location, tokens):
+    def dict_comp_handle(self, original, loc, tokens):
         """Processes Python 2.7 dictionary comprehension."""
         if len(tokens) != 3:
             raise CoconutInternalException("invalid dictionary comprehension tokens", tokens)
@@ -1171,7 +1171,7 @@ class Compiler(Grammar):
             index = len(self.stmt_lambdas)
         return stmt_lambda_var + "_" + str(index)
 
-    def stmt_lambdef_handle(self, tokens):
+    def stmt_lambdef_handle(self, original, loc, tokens):
         """Handles multi-line lambdef statements."""
         if len(tokens) == 2:
             params, stmts = tokens
@@ -1184,15 +1184,21 @@ class Compiler(Grammar):
         else:
             raise CoconutInternalException("invalid statement lambda tokens", tokens)
         name = self.stmt_lambda_name()
-        self.stmt_lambdas.append(
-            "def " + name + params + ":\n"
-            + openindent + self.stmt_lambda_proc("\n".join(stmts)) + closeindent
-        )
+        body = openindent + self.stmt_lambda_proc("\n".join(stmts)) + closeindent
+        if isinstance(params, str):
+            self.stmt_lambdas.append(
+                "def " + name + params + ":\n" + body
+            )
+        else:
+            params.insert(0, name)
+            self.stmt_lambdas.append(
+                self.name_match_funcdef_handle(original, loc, params) + body
+            )
         return name
 
     def tre_return(self, func_name, func_args, func_store, use_mock=True):
         """Generates a tail recursion elimination grammar element."""
-        def tre_return_handle(original, location, tokens):
+        def tre_return_handle(original, loc, tokens):
             if len(tokens) != 1:
                 raise CoconutInternalException("invalid tail recursion elimination tokens", tokens)
             else:
@@ -1290,7 +1296,7 @@ class Compiler(Grammar):
             out = decorators + out
         return out
 
-    def function_call_tokens_split(self, original, location, tokens):
+    def function_call_tokens_split(self, original, loc, tokens):
         """Split into positional arguments and keyword arguments."""
         pos_args = []
         star_args = []
@@ -1300,12 +1306,12 @@ class Compiler(Grammar):
             argstr = "".join(arg)
             if len(arg) == 1:
                 if kwd_args or dubstar_args:
-                    raise self.make_err(CoconutSyntaxError, "positional argument after keyword argument", original, location)
+                    raise self.make_err(CoconutSyntaxError, "positional argument after keyword argument", original, loc)
                 pos_args.append(argstr)
             elif len(arg) == 2:
                 if arg[0] == "*":
                     if dubstar_args:
-                        raise self.make_err(CoconutSyntaxError, "star unpacking after double star unpacking", original, location)
+                        raise self.make_err(CoconutSyntaxError, "star unpacking after double star unpacking", original, loc)
                     star_args.append(argstr)
                 elif arg[0] == "**":
                     dubstar_args.append(argstr)
@@ -1315,45 +1321,45 @@ class Compiler(Grammar):
                 raise CoconutInternalException("invalid function call argument", arg)
         return pos_args + star_args, kwd_args + dubstar_args
 
-    def function_call_handle(self, original, location, tokens):
+    def function_call_handle(self, original, loc, tokens):
         """Properly order call arguments."""
-        pos_args, kwd_args = self.function_call_tokens_split(original, location, tokens)
+        pos_args, kwd_args = self.function_call_tokens_split(original, loc, tokens)
         return "(" + join_args(pos_args + kwd_args) + ")"
 
-    def pipe_item_split(self, original, location, tokens):
+    def pipe_item_split(self, original, loc, tokens):
         """Split a partial trailer."""
         if len(tokens) == 1:
             return tokens[0]
         elif len(tokens) == 2:
             func, args = tokens
-            pos_args, kwd_args = self.function_call_tokens_split(original, location, args)
+            pos_args, kwd_args = self.function_call_tokens_split(original, loc, args)
             return func, join_args(pos_args), join_args(kwd_args)
         else:
             raise CoconutInternalException("invalid partial trailer", tokens)
 
-    def pipe_handle(self, original, location, tokens, **kwargs):
+    def pipe_handle(self, original, loc, tokens, **kwargs):
         """Processes pipe calls."""
         if set(kwargs) > set(("top",)):
             complain(CoconutInternalException("unknown pipe_handle keyword arguments", kwargs))
         top = kwargs.get("top", True)
         if len(tokens) == 1:
-            func = self.pipe_item_split(original, location, tokens.pop())
+            func = self.pipe_item_split(original, loc, tokens.pop())
             if top and isinstance(func, tuple):
                 return "_coconut.functools.partial(" + join_args(func) + ")"
             else:
                 return func
         else:
-            func = self.pipe_item_split(original, location, tokens.pop())
+            func = self.pipe_item_split(original, loc, tokens.pop())
             op = tokens.pop()
             if op == "|>" or op == "|*>":
                 star = "*" if op == "|*>" else ""
                 if isinstance(func, tuple):
-                    return func[0] + "(" + join_args((func[1], star + self.pipe_handle(original, location, tokens), func[2])) + ")"
+                    return func[0] + "(" + join_args((func[1], star + self.pipe_handle(original, loc, tokens), func[2])) + ")"
                 else:
-                    return "(" + func + ")(" + star + self.pipe_handle(original, location, tokens) + ")"
+                    return "(" + func + ")(" + star + self.pipe_handle(original, loc, tokens) + ")"
             elif op == "<|" or op == "<*|":
                 star = "*" if op == "<*|" else ""
-                return self.pipe_handle(original, location, [[func], "|" + star + ">", [self.pipe_handle(original, location, tokens, top=False)]])
+                return self.pipe_handle(original, loc, [[func], "|" + star + ">", [self.pipe_handle(original, loc, tokens, top=False)]])
             else:
                 raise CoconutInternalException("invalid pipe operator", op)
 
@@ -1377,74 +1383,74 @@ class Compiler(Grammar):
 # CHECKING HANDLERS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-    def check_strict(self, name, original, location, tokens):
+    def check_strict(self, name, original, loc, tokens):
         """Checks that syntax meets --strict requirements."""
         if len(tokens) != 1:
             raise CoconutInternalException("invalid " + name + " tokens", tokens)
         elif self.strict:
-            raise self.make_err(CoconutStyleError, "found " + name, original, location)
+            raise self.make_err(CoconutStyleError, "found " + name, original, loc)
         else:
             return tokens[0]
 
-    def lambdef_check(self, original, location, tokens):
+    def lambdef_check(self, original, loc, tokens):
         """Checks for Python-style lambdas."""
-        return self.check_strict("Python-style lambda", original, location, tokens)
+        return self.check_strict("Python-style lambda", original, loc, tokens)
 
-    def endline_semicolon_check(self, original, location, tokens):
+    def endline_semicolon_check(self, original, loc, tokens):
         """Checks for semicolons at the end of lines."""
-        return self.check_strict("semicolon at end of line", original, location, tokens)
+        return self.check_strict("semicolon at end of line", original, loc, tokens)
 
-    def u_string_check(self, original, location, tokens):
+    def u_string_check(self, original, loc, tokens):
         """Checks for Python2-style unicode strings."""
-        return self.check_strict("Python-2-style unicode string", original, location, tokens)
+        return self.check_strict("Python-2-style unicode string", original, loc, tokens)
 
-    def check_py(self, version, name, original, location, tokens):
+    def check_py(self, version, name, original, loc, tokens):
         """Checks for Python-version-specific syntax."""
         if len(tokens) != 1:
             raise CoconutInternalException("invalid " + name + " tokens", tokens)
         elif self.target_info() < target_info(version):
-            raise self.make_err(CoconutTargetError, "found Python " + version + " " + name, original, location, target=version)
+            raise self.make_err(CoconutTargetError, "found Python " + version + " " + name, original, loc, target=version)
         else:
             return tokens[0]
 
-    def name_check(self, original, location, tokens):
+    def name_check(self, original, loc, tokens):
         """Checks for Python 3 exec function."""
         if len(tokens) != 1:
             raise CoconutInternalException("invalid name tokens", tokens)
         elif tokens[0] == "exec":
-            return self.check_py("3", "exec function", original, location, tokens)
+            return self.check_py("3", "exec function", original, loc, tokens)
         elif tokens[0].startswith(reserved_prefix):
-            raise self.make_err(CoconutSyntaxError, "variable names cannot start with reserved prefix " + reserved_prefix, original, location)
+            raise self.make_err(CoconutSyntaxError, "variable names cannot start with reserved prefix " + reserved_prefix, original, loc)
         else:
             return tokens[0]
 
-    def nonlocal_check(self, original, location, tokens):
+    def nonlocal_check(self, original, loc, tokens):
         """Checks for Python 3 nonlocal statement."""
-        return self.check_py("3", "nonlocal statement", original, location, tokens)
+        return self.check_py("3", "nonlocal statement", original, loc, tokens)
 
-    def star_assign_item_check(self, original, location, tokens):
+    def star_assign_item_check(self, original, loc, tokens):
         """Checks for Python 3 starred assignment."""
-        return self.check_py("3", "starred assignment (use pattern-matching version to produce universal code)", original, location, tokens)
+        return self.check_py("3", "starred assignment (use pattern-matching version to produce universal code)", original, loc, tokens)
 
-    def matrix_at_check(self, original, location, tokens):
+    def matrix_at_check(self, original, loc, tokens):
         """Checks for Python 3.5 matrix multiplication."""
-        return self.check_py("35", "matrix multiplication", original, location, tokens)
+        return self.check_py("35", "matrix multiplication", original, loc, tokens)
 
-    def async_stmt_check(self, original, location, tokens):
+    def async_stmt_check(self, original, loc, tokens):
         """Checks for Python 3.5 async statement."""
-        return self.check_py("35", "async statement", original, location, tokens)
+        return self.check_py("35", "async statement", original, loc, tokens)
 
-    def await_keyword_check(self, original, location, tokens):
+    def await_keyword_check(self, original, loc, tokens):
         """Checks for Python 3.5 await expression."""
-        return self.check_py("35", "await expression", original, location, tokens)
+        return self.check_py("35", "await expression", original, loc, tokens)
 
-    def star_expr_check(self, original, location, tokens):
+    def star_expr_check(self, original, loc, tokens):
         """Checks for Python 3.5 star unpacking."""
-        return self.check_py("35", "star unpacking", original, location, tokens)
+        return self.check_py("35", "star unpacking", original, loc, tokens)
 
-    def f_string_check(self, original, location, tokens):
+    def f_string_check(self, original, loc, tokens):
         """Checks for Python 3.5 format strings."""
-        return self.check_py("36", "format string", original, location, tokens)
+        return self.check_py("36", "format string", original, loc, tokens)
 
 # end: CHECKING HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------

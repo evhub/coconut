@@ -1166,9 +1166,17 @@ class Grammar(object):
     implicit_lambdef = fixto(arrow, "lambda _=None:", copy=True)
     lambdef_base = classic_lambdef | new_lambdef | implicit_lambdef
 
+    match = Forward()
+    matchlist_list = Forward()
+    match_guard = Optional(Keyword("if").suppress() + test)
+
     stmt_lambdef = Forward()
     closing_stmt = longest(testlist("tests"), small_stmt)
-    stmt_lambdef_params = Optional(parameters | attach(name, add_paren_handle, copy=True), default="(_=None)")
+    stmt_lambdef_params = Optional(
+        attach(name, add_paren_handle, copy=True)
+        | parameters
+        | Group(lparen.suppress() + matchlist_list + match_guard + rparen.suppress()),
+        default="(_=None)")
     stmt_lambdef_ref = (
         Keyword("def").suppress() + stmt_lambdef_params + arrow.suppress()
         + (
@@ -1231,8 +1239,7 @@ class Grammar(object):
     with_item = addspace(test - Optional(Keyword("as") - name))
     with_item_list = parenwrap(lparen, condense(itemlist(with_item, comma)), rparen)
 
-    match = Forward()
-    matchlist_list = Group(Optional(tokenlist(match, comma)))
+    matchlist_list <<= Group(Optional(tokenlist(match, comma)))
     matchlist_tuple = Group(Optional(match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress())
                                      | match + comma.suppress()))
     matchlist_star = (
@@ -1285,7 +1292,6 @@ class Grammar(object):
     else_suite = condense(colon + trace(attach(simple_compound_stmt, else_handle, copy=True), "else_suite")) | suite
     else_stmt = condense(Keyword("else") - else_suite)
 
-    match_guard = Optional(Keyword("if").suppress() + test)
     full_suite = colon.suppress() + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
     full_match = trace(attach(
         Keyword("match").suppress() + match + Keyword("in").suppress() - test - match_guard - full_suite, match_handle), "full_match")

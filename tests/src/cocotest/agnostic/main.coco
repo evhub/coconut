@@ -270,6 +270,7 @@ def main_test():
         return x+1
     assert p1(2) == 3
     assert (def x -> x)(1) == 1
+    assert (def ([x] + xs) -> x, xs) <| range(5) == (0, [1,2,3,4])
     return True
 
 def main(*args):

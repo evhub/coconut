@@ -76,20 +76,21 @@ class CoconutLexer(Python3Lexer):
     tokens = Python3Lexer.tokens.copy()
     tokens["root"] = [
         (r"|".join(new_operators), Operator),
-        (r'(?<!\\)(data)((?:\s|\\\s)+)', bygroups(Keyword, Text), py_str('classname'))
+        (r'(?<!\\)(data)((?:\s|\\\s)+)', bygroups(Keyword, Text), py_str('classname')),
+        (r'def(?=\s*\()', Keyword),
     ] + tokens["root"]
     tokens["keywords"] = tokens["keywords"] + [
-        (words(reserved_vars, prefix=r"(?<!\\)", suffix=r"\b"), Keyword)
+        (words(reserved_vars, prefix=r"(?<!\\)", suffix=r"\b"), Keyword),
     ]
     tokens["builtins"] = tokens["builtins"] + [
         (words(builtins, suffix=r"\b"), Name.Builtin),
-        (r"MatchError\b", Name.Exception)
+        (r"MatchError\b", Name.Exception),
     ]
     tokens["numbers"] = [
         (r"\d[\d_]*(\.\d[\d_]*)?", Number.Integer),
         (r"0b[01_]+", Number.Integer),
         (r"0o[0-7_]+", Number.Integer),
-        (r"0x[\da-fA-F_]+", Number.Integer)
+        (r"0x[\da-fA-F_]+", Number.Integer),
     ] + tokens["numbers"]
 
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tabideal, encoding=default_encoding):
