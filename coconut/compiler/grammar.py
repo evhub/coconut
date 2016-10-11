@@ -1240,8 +1240,10 @@ class Grammar(object):
     with_item_list = parenwrap(lparen, condense(itemlist(with_item, comma)), rparen)
 
     matchlist_list <<= Group(Optional(tokenlist(match, comma)))
-    matchlist_tuple = Group(Optional(match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress())
-                                     | match + comma.suppress()))
+    matchlist_tuple = Group(Optional(
+        match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress())
+        | match + comma.suppress())
+    )
     matchlist_star = (
         Optional(Group(OneOrMore(match + comma.suppress())))
         + star.suppress() + name
