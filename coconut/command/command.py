@@ -69,11 +69,11 @@ class Command(object):
     show = False  # corresponds to --display flag
     running = False  # whether the interpreter is currently active
     runner = None  # the current Runner
-    target = None  # corresponds to --target flag
     jobs = 0  # corresponds to --jobs flag
     executor = None  # runs --jobs
     exit_code = 0  # exit status to return
     errmsg = None  # error message to display
+    mypy = None  # corresponds to --mypy flag
 
     def __init__(self):
         """Creates the CLI."""
@@ -146,6 +146,8 @@ class Command(object):
             self.prompt.set_style(args.style)
         if args.display:
             self.show = True
+        if args.mypy is not None:
+            self.mypy = args.mypy
 
         self.setup(
             target=args.target,
@@ -307,6 +309,7 @@ class Command(object):
             logger.show_tabulated("Left unchanged", showpath(destpath), "(pass --force to override).")
             if self.show:
                 print(foundhash)
+            self.run_mypy(destpath)
             if run:
                 self.execute_file(destpath)
 
@@ -326,13 +329,14 @@ class Command(object):
                     with openfile(destpath, "w") as opened:
                         writefile(opened, compiled)
                     logger.show_tabulated("Compiled to", showpath(destpath), ".")
-                if destpath is None:
-                    if run:
-                        self.execute(compiled, path=codepath)
-                    elif self.show:
-                        print(compiled)
-                elif run:
-                    self.execute_file(destpath)
+                if self.show:
+                    print(compiled)
+                self.run_mypy(destpath)
+                if self.run:
+                    if destpath is None:
+                        self.execute(compiled, path=codepath, allow_show=False)
+                    else:
+                        self.execute_file(destpath)
 
             self.submit_comp_job(codepath, callback, compile_method, code)
 
@@ -455,11 +459,11 @@ class Command(object):
             logger.print_exc()
         return None
 
-    def execute(self, compiled=None, path=None, use_eval=False):
+    def execute(self, compiled=None, path=None, use_eval=False, allow_show=True):
         """Executes compiled code."""
         self.check_runner()
         if compiled is not None:
-            if self.show:
+            if allow_show and self.show:
                 print(compiled)
             if path is not None:  # path means header is included, and thus encoding must be removed
                 compiled = rem_encoding(compiled)
@@ -486,6 +490,19 @@ class Command(object):
         """Opens the Coconut documentation."""
         import webbrowser
         webbrowser.open(documentation_url, 2)
+
+    def run_mypy(self, path=None):
+        """Run MyPy on a path."""
+        if self.mypy is not None:
+            if path is None:
+                logger.warn("cannot run MyPy if not compiling to file")
+            else:
+                cmd = ["mypy", path] + self.mypy
+                logger.log_cmd(cmd)
+                try:
+                    subprocess.check_call(cmd, shell=True)
+                except subprocess.CalledProcessError as e:
+                    print(e)
 
     def start_jupyter(self, args):
         """Starts Jupyter with the Coconut kernel."""
@@ -514,8 +531,7 @@ class Command(object):
                 try:
                     install_func(user_install_args)
                 except subprocess.CalledProcessError:
-                    args = "kernel install failed on command'", " ".join(install_args)
-                    logger.warn(*args)
+                    logger.warn("kernel install failed on command'", " ".join(install_args))
                     self.register_error(errmsg="Jupyter error")
 
         if args:

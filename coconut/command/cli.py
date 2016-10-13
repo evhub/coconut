@@ -145,6 +145,12 @@ arguments.add_argument(
     help="run Jupyter/IPython with Coconut as the kernel (remaining args passed to Jupyter)")
 
 arguments.add_argument(
+    "--mypy",
+    type=str,
+    nargs=argparse.REMAINDER,
+    help="compile files for MyPy and run MyPy on compiled files (remaining args passed to MyPy)")
+
+arguments.add_argument(
     "--tutorial",
     action="store_true",
     help="open the Coconut tutorial in the default web browser")

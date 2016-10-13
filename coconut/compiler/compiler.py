@@ -310,7 +310,7 @@ class Compiler(Grammar):
         if self.strict:
             raise self.make_err(CoconutStyleError, *args, **kwargs)
         else:
-            logger.warn(self.make_err(CoconutWarning, *args, **kwargs))
+            logger.warn_err(self.make_err(CoconutWarning, *args, **kwargs))
 
     def add_ref(self, ref):
         """Adds a reference and returns the identifier."""

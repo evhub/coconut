@@ -114,7 +114,7 @@ which will install the most recent working [development build](https://github.co
 ### Usage
 
 ```
-coconut [-h] [-v] [source] [dest] [-t version] [-s] [-l] [-k] [-p] [-a] [-w] [-d] [-r] [-n] [-m] [-i] [-q] [-f] [-c code] [-j processes] [--jupyter ...] [--tutorial] [--documentation] [--style name] [--recursion-limit limit] [--verbose]
+coconut [-h] [-v] [source] [dest] [-t version] [-s] [-l] [-k] [-p] [-a] [-w] [-d] [-r] [-n] [-m] [-i] [-q] [-f] [-c code] [-j processes] [--jupyter ...] [--mypy ...] [--tutorial] [--documentation] [--style name] [--recursion-limit limit] [--verbose]
 ```
 
 #### Positional Arguments
@@ -146,6 +146,7 @@ dest                  destination directory for compiled files (defaults to the 
 -c, --code code         run a line of Coconut passed in as a string (can also be passed into stdin)
 -j, --jobs processes    number of additional processes to use (defaults to 0) (pass 'sys' to use machine default)
 --jupyter, --ipython    run Jupyter/IPython with Coconut as the kernel (remaining args passed to Jupyter)
+--mypy                   compile files for MyPy and run MyPy on compiled files (remaining args passed to MyPy)
 --tutorial              open the Coconut tutorial in the default web browser
 --documentation         open the Coconut documentation in the default web browser
 --style name            pygments syntax highlighting style (or 'none' to disable)

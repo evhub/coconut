@@ -281,6 +281,11 @@ class TestCompilation(unittest.TestCase):
     def test_strict(self):
         run(["--strict"])
 
+    if not PY2:
+
+        def test_mypy(self):
+            run(["--mypy"])
+
 
 class TestExternal(unittest.TestCase):
 

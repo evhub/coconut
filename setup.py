@@ -170,6 +170,7 @@ if PY2:
 extras = {
     "watch": read_reqs("watch"),
     "jobs": read_reqs("jobs"),
+    "mypy": read_reqs("mypy"),
 }
 
 extras["jupyter"] = extras["ipython"] = read_reqs("jupyter")
@@ -180,6 +181,7 @@ extras["tests"] = uniqueify(
     read_reqs("tests")
     + (extras["jobs"] if platform.python_implementation() != "PyPy" else [])
     + (extras["jupyter"] if (PY2 and not PY26) or sys.version_info >= (3, 3) else [])
+    + (extras["mypy"] if not PY2 else [])
 )
 
 extras["docs"] = unique_from(read_reqs("docs"), requirements)

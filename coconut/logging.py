@@ -148,7 +148,11 @@ class Logger(object):
         finally:
             self.path = old_path
 
-    def warn(self, warning):
+    def warn(self, *args):
+        """Creates and displays a warning."""
+        return self.warn_err(CoconutWarning(*args))
+
+    def warn_err(self, warning):
         """Displays a warning."""
         try:
             raise warning
