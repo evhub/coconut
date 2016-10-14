@@ -199,7 +199,7 @@ class Compiler(Grammar):
         """Creates a new compiler with the given parsing parameters."""
         self.setup(*args, **kwargs)
 
-    def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False):
+    def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False, mypy=False):
         """Initializes parsing parameters."""
         if target is None:
             target = ""
@@ -210,11 +210,11 @@ class Compiler(Grammar):
         if target not in targets:
             raise CoconutException('unsupported target Python version "' + target
                                    + '" (supported targets are "' + '", "'.join(specific_targets) + '", or leave blank for universal)')
-        self.target, self.strict, self.minify, self.line_numbers, self.keep_lines = target, strict, minify, line_numbers, keep_lines
+        self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.mypy = target, strict, minify, line_numbers, keep_lines, mypy
 
     def __reduce__(self):
         """Return pickling information."""
-        return (Compiler, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines))
+        return (Compiler, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.mypy))
 
     def genhash(self, package, code):
         """Generates a hash from code."""
@@ -381,7 +381,7 @@ class Compiler(Grammar):
 
     def headers(self, which, usehash=None):
         """Gets a formatted header."""
-        return self.polish(getheader(which, self.target, usehash))
+        return self.polish(getheader(which, self.target, usehash, self.mypy))
 
     def target_info(self):
         """Returns information on the current target as a version tuple."""

@@ -60,7 +60,7 @@ def minify(compiled):
     return compiled
 
 
-def getheader(which, target="", usehash=None):
+def getheader(which, target="", usehash=None, mypy=False):
     """Generates the specified header."""
     if which == "none":
         return ""

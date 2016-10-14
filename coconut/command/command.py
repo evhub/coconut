@@ -24,6 +24,8 @@ import os
 import time
 import subprocess
 import traceback
+import webbrowser
+import functools
 from contextlib import contextmanager
 
 from coconut.compiler import Compiler
@@ -54,6 +56,7 @@ from coconut.command.util import (
     ensure_time_elapsed,
     handle_broken_process_pool,
     kill_children,
+    run_cmd,
 )
 from coconut.compiler.header import gethash
 from coconut.command.cli import arguments
@@ -67,13 +70,12 @@ class Command(object):
     """The Coconut command-line interface."""
     comp = None  # current coconut.compiler.Compiler
     show = False  # corresponds to --display flag
-    running = False  # whether the interpreter is currently active
     runner = None  # the current Runner
     jobs = 0  # corresponds to --jobs flag
     executor = None  # runs --jobs
     exit_code = 0  # exit status to return
     errmsg = None  # error message to display
-    mypy = None  # corresponds to --mypy flag
+    mypy_args = None  # corresponds to --mypy flag
 
     def __init__(self):
         """Creates the CLI."""
@@ -109,6 +111,8 @@ class Command(object):
 
     def setup(self, *args, **kwargs):
         """Sets parameters for the compiler."""
+        if "mypy" not in kwargs:
+            kwargs["mypy"] = self.mypy_args is not None
         if self.comp is None:
             self.comp = Compiler(*args, **kwargs)
         else:
@@ -147,7 +151,7 @@ class Command(object):
         if args.display:
             self.show = True
         if args.mypy is not None:
-            self.mypy = args.mypy
+            self.mypy_args = args.mypy
 
         self.setup(
             target=args.target,
@@ -265,14 +269,15 @@ class Command(object):
                 writedir = os.path.join(write, os.path.relpath(dirpath, directory))
             for filename in filenames:
                 if os.path.splitext(filename)[1] in code_exts:
-                    self.compile_file(os.path.join(dirpath, filename), writedir, package, run, force)
+                    self.compile_file(os.path.join(dirpath, filename), writedir, package, run, force, mypy=False)
             for name in dirnames[:]:
                 if name != "." * len(name) and name.startswith("."):
                     if logger.verbose:
                         logger.show_tabulated("Skipped directory", name, "(explicitly pass as source to override).")
                     dirnames.remove(name)  # directories removed from dirnames won't appear in further os.walk iteration
+        self.run_mypy(write if write is not True else directory)
 
-    def compile_file(self, filepath, write=True, package=False, run=False, force=False):
+    def compile_file(self, filepath, write=True, package=False, run=False, force=False, mypy=True):
         """Compiles a file."""
         if write is None:
             destpath = None
@@ -287,8 +292,9 @@ class Command(object):
             destpath = base + ext
         if filepath == destpath:
             raise CoconutException("cannot compile " + showpath(filepath) + " to itself (incorrect file extension)")
-        else:
-            self.compile(filepath, destpath, package, run, force)
+        self.compile(filepath, destpath, package, run, force)
+        if mypy:
+            self.run_mypy(destpath)
 
     def compile(self, codepath, destpath=None, package=False, run=False, force=False):
         """Compiles a source Coconut file to a destination Python file."""
@@ -309,7 +315,6 @@ class Command(object):
             logger.show_tabulated("Left unchanged", showpath(destpath), "(pass --force to override).")
             if self.show:
                 print(foundhash)
-            self.run_mypy(destpath)
             if run:
                 self.execute_file(destpath)
 
@@ -331,8 +336,7 @@ class Command(object):
                     logger.show_tabulated("Compiled to", showpath(destpath), ".")
                 if self.show:
                     print(compiled)
-                self.run_mypy(destpath)
-                if self.run:
+                if run:
                     if destpath is None:
                         self.execute(compiled, path=codepath, allow_show=False)
                     else:
@@ -483,37 +487,27 @@ class Command(object):
 
     def launch_tutorial(self):
         """Opens the Coconut tutorial."""
-        import webbrowser
         webbrowser.open(tutorial_url, 2)
 
     def launch_documentation(self):
         """Opens the Coconut documentation."""
-        import webbrowser
         webbrowser.open(documentation_url, 2)
 
-    def run_mypy(self, path=None):
+    def run_mypy(self, path):
         """Run MyPy on a path."""
-        if self.mypy is not None:
+        if self.comp.mypy:
             if path is None:
                 logger.warn("cannot run MyPy if not compiling to file")
             else:
-                cmd = ["mypy", path] + self.mypy
-                logger.log_cmd(cmd)
-                try:
-                    subprocess.check_call(cmd, shell=True)
-                except subprocess.CalledProcessError as e:
-                    print(e)
+                run_cmd(
+                    ["mypy", path]
+                    + (["--py2"] if not self.comp.target.startswith("3") else [])
+                    + (self.mypy_args if self.mypy_args is not None else [])
+                )
 
     def start_jupyter(self, args):
         """Starts Jupyter with the Coconut kernel."""
-
-        def install_func(cmd):
-            """Runs an installation command."""
-            logger.log_cmd(cmd)
-            if args and not logger.verbose:
-                subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-            else:
-                subprocess.check_call(cmd)
+        install_func = functools.partial(run_cmd, show_output=logger.verbose or not args)
 
         try:
             install_func(["jupyter", "--version"])
@@ -548,8 +542,7 @@ class Command(object):
                 run_args = [jupyter, "notebook"] + args[1:]
             else:
                 raise CoconutException('first argument after --jupyter must be either "console" or "notebook"')
-            logger.log_cmd(run_args)
-            self.register_error(subprocess.call(run_args), errmsg="Jupyter error")
+            self.register_error(run_cmd(run_args, raise_errs=False), errmsg="Jupyter error")
 
     def watch(self, source, write=True, package=None, run=False, force=False):
         """Watches a source and recompiles on change."""

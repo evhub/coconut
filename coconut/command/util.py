@@ -25,6 +25,8 @@ import traceback
 import functools
 import time
 import imp
+import subprocess
+import shutil
 from copy import copy
 from contextlib import contextmanager
 try:
@@ -182,6 +184,24 @@ def splitname(path):
     dirpath, filename = os.path.split(path)
     name = filename.split(os.path.extsep, 1)[0]
     return dirpath, name
+
+
+def run_cmd(cmd, show_output=True, raise_errs=True):
+    """Runs a console command."""
+    if not isinstance(cmd, list):
+        raise CoconutInternalException("console commands must be passed as lists")
+    else:
+        cmd[0] = shutil.which(cmd[0]) or cmd[0]
+        logger.log_cmd(cmd)
+        if show_output and raise_errs:
+            return subprocess.check_call(cmd)
+        elif not show_output:
+            return subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+        elif not raise_errs:
+            return subprocess.call(cmd)
+        else:
+            raise CoconutInternalException("cannot show console output and not raise errors")
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CLASSES:
