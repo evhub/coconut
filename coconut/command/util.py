@@ -26,7 +26,6 @@ import functools
 import time
 import imp
 import subprocess
-import shutil
 from copy import copy
 from contextlib import contextmanager
 try:
@@ -125,7 +124,7 @@ def interpret(code, in_vars):
 
 @contextmanager
 def ensure_time_elapsed():
-    """Ensures minimum_process_time has elapsed."""
+    """Ensures ensure_elapsed_time has elapsed."""
     if sys.version_info < (3, 2):
         try:
             yield
@@ -191,7 +190,9 @@ def run_cmd(cmd, show_output=True, raise_errs=True):
     if not isinstance(cmd, list):
         raise CoconutInternalException("console commands must be passed as lists")
     else:
-        cmd[0] = shutil.which(cmd[0]) or cmd[0]
+        if sys.version_info >= (3, 3):
+            import shutil
+            cmd[0] = shutil.which(cmd[0]) or cmd[0]
         logger.log_cmd(cmd)
         if show_output and raise_errs:
             return subprocess.check_call(cmd)
@@ -200,7 +201,7 @@ def run_cmd(cmd, show_output=True, raise_errs=True):
         elif not raise_errs:
             return subprocess.call(cmd)
         else:
-            raise CoconutInternalException("cannot show console output and not raise errors")
+            raise CoconutInternalException("cannot not show console output and not raise errors")
 
 
 #-----------------------------------------------------------------------------------------------------------------------

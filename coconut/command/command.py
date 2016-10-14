@@ -238,7 +238,7 @@ class Command(object):
         except SystemExit as err:
             self.register_error(err.code)
         except BaseException as err:
-            if isinstance(err, CoconutException):
+            if isinstance(err, (CoconutException, subprocess.CalledProcessError)):
                 logger.print_exc()
             elif not isinstance(err, KeyboardInterrupt):
                 traceback.print_exc()

@@ -70,7 +70,7 @@ def call(cmd, assert_output=False, **kwargs):
 def call_coconut(args):
     """Calls Coconut."""
     if "--jobs" not in args and platform.python_implementation() != "PyPy":
-        args += ["--jobs", "sys"]
+        args = ["--jobs", "sys"] + args
     call(["coconut"] + args)
 
 
@@ -161,7 +161,7 @@ def run(args=[], agnostic_target=None, comp_run=False):
     if agnostic_target is None:
         agnostic_args = args
     else:
-        agnostic_args = args + ["--target", str(agnostic_target)]
+        agnostic_args = ["--target", str(agnostic_target)] + args
 
     with using_dest():
 
@@ -173,14 +173,14 @@ def run(args=[], agnostic_target=None, comp_run=False):
                 comp_35(args)
         comp_agnostic(agnostic_args)
         if comp_run:
-            comp_runner(agnostic_args + ["--run"])
+            comp_runner(["--run"] + agnostic_args)
         else:
             comp_runner(agnostic_args)
             run_src()
 
         if IPY:
             if comp_run:
-                comp_extras(agnostic_args + ["--run"])
+                comp_extras(["--run"] + agnostic_args)
             else:
                 comp_extras(agnostic_args)
                 run_extras()
