@@ -22,11 +22,11 @@ from coconut.root import *  # NOQA
 import sys
 import os
 import time
-import subprocess
 import traceback
 import webbrowser
 import functools
 from contextlib import contextmanager
+from subprocess import CalledProcessError
 
 from coconut.compiler import Compiler
 from coconut.exceptions import (
@@ -238,7 +238,7 @@ class Command(object):
         except SystemExit as err:
             self.register_error(err.code)
         except BaseException as err:
-            if isinstance(err, (CoconutException, subprocess.CalledProcessError)):
+            if isinstance(err, CoconutException):
                 logger.print_exc()
             elif not isinstance(err, KeyboardInterrupt):
                 traceback.print_exc()
@@ -499,11 +499,19 @@ class Command(object):
             if path is None:
                 logger.warn("cannot run MyPy if not compiling to file")
             else:
-                run_cmd(
-                    ["mypy", path]
-                    + (["--py2"] if not self.comp.target.startswith("3") else [])
-                    + (self.mypy_args if self.mypy_args is not None else [])
-                )
+                args = ["mypy", path] + self.mypy_args
+                if not self.comp.target.startswith("3"):
+                    args.append("--py2")
+                try:
+                    import typed_ast  # NOQA
+                except ImportError:
+                    pass
+                else:
+                    args.append("--fast-parser")
+                try:
+                    run_cmd(args)
+                except CalledProcessError:
+                    raise CoconutException("failed to run MyPy using command", args)
 
     def start_jupyter(self, args):
         """Starts Jupyter with the Coconut kernel."""
@@ -511,7 +519,7 @@ class Command(object):
 
         try:
             install_func(["jupyter", "--version"])
-        except subprocess.CalledProcessError:
+        except CalledProcessError:
             jupyter = "ipython"
         else:
             jupyter = "jupyter"
@@ -520,11 +528,11 @@ class Command(object):
             install_args = [jupyter, "kernelspec", "install", icoconut_kernel_dir, "--replace"]
             try:
                 install_func(install_args)
-            except subprocess.CalledProcessError:
+            except CalledProcessError:
                 user_install_args = install_args + ["--user"]
                 try:
                     install_func(user_install_args)
-                except subprocess.CalledProcessError:
+                except CalledProcessError:
                     logger.warn("kernel install failed on command'", " ".join(install_args))
                     self.register_error(errmsg="Jupyter error")
 
@@ -533,7 +541,7 @@ class Command(object):
                 ver = "2" if PY2 else "3"
                 try:
                     install_func(["python" + ver, "-m", "coconut.main", "--version"])
-                except subprocess.CalledProcessError:
+                except CalledProcessError:
                     kernel_name = "coconut"
                 else:
                     kernel_name = "coconut" + ver

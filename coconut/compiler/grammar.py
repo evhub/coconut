@@ -49,6 +49,7 @@ from pyparsing import (
     originalTextFor,
     nestedExpr,
     SkipTo,
+    FollowedBy,
 )
 
 from coconut.exceptions import CoconutInternalException
@@ -163,8 +164,15 @@ def get_infix_items(tokens, callback=infix_error):
 
 def op_funcdef_handle(tokens):
     """Processes infix defs."""
-    func, args = get_infix_items(tokens)
-    return func + "(" + ", ".join(args) + ")"
+    func, base_args = get_infix_items(tokens)
+    args = []
+    for arg in base_args:
+        rstrip_arg = arg.rstrip()
+        # if arg has a typedef, it will already have a comma, so don't add one
+        if not (rstrip_arg.endswith(",") or rstrip_arg.endswith(unwrapper)):
+            arg += ", "
+        args.append(arg)
+    return func + "(" + "".join(args) + ")"
 
 
 def lambdef_handle(tokens):
@@ -759,7 +767,7 @@ def split_func_name_args_params_handle(tokens):
         for arg in tokens[1]:
             if len(arg) > 1 and arg[0] in ("*", "**"):
                 func_args.append(arg[1])
-            else:
+            elif arg[0] != "*":
                 func_args.append(arg[0])
             func_params.append("".join(arg))
         return [
@@ -865,7 +873,7 @@ class Grammar(object):
     string_item = Combine(Literal(strwrapper) + integer + unwrap)
     comment = Combine(pound + integer + unwrap)
     passthrough = Combine(backslash + integer + unwrap)
-    passthrough_block = Combine(fixto(dubbackslash, "\\", copy=True) + integer + unwrap)
+    passthrough_block = Combine(fixto(dubbackslash, "\\") + integer + unwrap)
 
     endline = Forward()
     endline_ref = condense(OneOrMore(Literal("\n")))
@@ -888,7 +896,7 @@ class Grammar(object):
     f_string_ref = Combine((format_f + raw_r | raw_r + format_f) + string_item)
     string = trace(b_string | u_string | f_string, "string")
     moduledoc = string + newline
-    docstring = condense(moduledoc, copy=True)
+    docstring = condense(moduledoc)
 
     augassign = (
         Combine(pipeline + equals)
@@ -942,51 +950,55 @@ class Grammar(object):
     test_expr = yield_expr | testlist_star_expr
 
     op_item = (
-        fixto(pipeline, "_coconut_pipe", copy=True)
-        | fixto(starpipe, "_coconut_starpipe", copy=True)
-        | fixto(backpipe, "_coconut_backpipe", copy=True)
-        | fixto(backstarpipe, "_coconut_backstarpipe", copy=True)
-        | fixto(dotdot, "_coconut_compose", copy=True)
-        | fixto(Keyword("and"), "_coconut_bool_and", copy=True)
-        | fixto(Keyword("or"), "_coconut_bool_or", copy=True)
-        | fixto(minus, "_coconut_minus", copy=True)
-        | fixto(dot, "_coconut.getattr", copy=True)
-        | fixto(dubcolon, "_coconut.itertools.chain", copy=True)
-        | fixto(dollar, "_coconut.functools.partial", copy=True)
-        | fixto(exp_dubstar, "_coconut.operator.pow", copy=True)
-        | fixto(mul_star, "_coconut.operator.mul", copy=True)
-        | fixto(div_dubslash, "_coconut.operator.floordiv", copy=True)
-        | fixto(div_slash, "_coconut.operator.truediv", copy=True)
-        | fixto(percent, "_coconut.operator.mod", copy=True)
-        | fixto(plus, "_coconut.operator.add", copy=True)
-        | fixto(amp, "_coconut.operator.and_", copy=True)
-        | fixto(caret, "_coconut.operator.xor", copy=True)
-        | fixto(bar, "_coconut.operator.or_", copy=True)
-        | fixto(lshift, "_coconut.operator.lshift", copy=True)
-        | fixto(rshift, "_coconut.operator.rshift", copy=True)
-        | fixto(lt, "_coconut.operator.lt", copy=True)
-        | fixto(gt, "_coconut.operator.gt", copy=True)
-        | fixto(eq, "_coconut.operator.eq", copy=True)
-        | fixto(le, "_coconut.operator.le", copy=True)
-        | fixto(ge, "_coconut.operator.ge", copy=True)
-        | fixto(ne, "_coconut.operator.ne", copy=True)
-        | fixto(tilde, "_coconut.operator.inv", copy=True)
-        | fixto(matrix_at, "_coconut.operator.matmul", copy=True)
+        fixto(pipeline, "_coconut_pipe")
+        | fixto(starpipe, "_coconut_starpipe")
+        | fixto(backpipe, "_coconut_backpipe")
+        | fixto(backstarpipe, "_coconut_backstarpipe")
+        | fixto(dotdot, "_coconut_compose")
+        | fixto(Keyword("and"), "_coconut_bool_and")
+        | fixto(Keyword("or"), "_coconut_bool_or")
+        | fixto(minus, "_coconut_minus")
+        | fixto(dot, "_coconut.getattr")
+        | fixto(dubcolon, "_coconut.itertools.chain")
+        | fixto(dollar, "_coconut.functools.partial")
+        | fixto(exp_dubstar, "_coconut.operator.pow")
+        | fixto(mul_star, "_coconut.operator.mul")
+        | fixto(div_dubslash, "_coconut.operator.floordiv")
+        | fixto(div_slash, "_coconut.operator.truediv")
+        | fixto(percent, "_coconut.operator.mod")
+        | fixto(plus, "_coconut.operator.add")
+        | fixto(amp, "_coconut.operator.and_")
+        | fixto(caret, "_coconut.operator.xor")
+        | fixto(bar, "_coconut.operator.or_")
+        | fixto(lshift, "_coconut.operator.lshift")
+        | fixto(rshift, "_coconut.operator.rshift")
+        | fixto(lt, "_coconut.operator.lt")
+        | fixto(gt, "_coconut.operator.gt")
+        | fixto(eq, "_coconut.operator.eq")
+        | fixto(le, "_coconut.operator.le")
+        | fixto(ge, "_coconut.operator.ge")
+        | fixto(ne, "_coconut.operator.ne")
+        | fixto(tilde, "_coconut.operator.inv")
+        | fixto(matrix_at, "_coconut.operator.matmul")
         | fixto(Keyword("not"), "_coconut.operator.not_")
         | fixto(Keyword("is"), "_coconut.operator.is_")
         | fixto(Keyword("in"), "_coconut.operator.contains")
     )
 
     typedef = Forward()
-    typedef_ref = name + colon.suppress() + test
-    tfpdef = typedef | name
+    typedef_default = Forward()
     default = condense(equals + test)
+    typedef_ref = name + colon.suppress() + test
+    typedef_default_ref = typedef_ref + Optional(default)
+    arg_comma = comma | FollowedBy(rparen)
+    tfpdef = typedef + arg_comma.suppress() | condense(name + arg_comma)
+    tfpdef_default = typedef_default + arg_comma.suppress() | condense(name + Optional(default) + arg_comma)
 
-    argslist = trace(Optional(itemlist(condense(
+    argslist = trace(ZeroOrMore(condense(
         dubstar + tfpdef
-        | star + Optional(tfpdef)
-        | tfpdef + Optional(default)
-    ), comma)), "argslist")
+        | star + (tfpdef | arg_comma)
+        | tfpdef_default
+    )), "argslist")
     varargslist = trace(Optional(itemlist(condense(
         dubstar + name
         | star + Optional(name)
@@ -1068,7 +1080,7 @@ class Grammar(object):
         condense(lbrack + subscriptlist + rbrack)
         | condense(dot + name)
     )
-    partial_trailer = Group(fixto(dollar, "$(", copy=True) + function_call)
+    partial_trailer = Group(fixto(dollar, "$(") + function_call)
     partial_trailer_tokens = Group(dollar.suppress() + function_call_tokens)
     complex_trailer_no_partial = (
         condense(function_call)
@@ -1155,6 +1167,7 @@ class Grammar(object):
     simple_compound_stmt = Forward()
     stmt = Forward()
     suite = Forward()
+    nocolon_suite = Forward()
     base_suite = Forward()
     classlist = Forward()
 
@@ -1163,7 +1176,7 @@ class Grammar(object):
     new_lambdef_params = lparen.suppress() + varargslist + rparen.suppress() | name
     classic_lambdef_ref = addspace(Keyword("lambda") + condense(classic_lambdef_params + colon))
     new_lambdef = attach(new_lambdef_params + arrow.suppress(), lambdef_handle)
-    implicit_lambdef = fixto(arrow, "lambda _=None:", copy=True)
+    implicit_lambdef = fixto(arrow, "lambda _=None:")
     lambdef_base = classic_lambdef | new_lambdef | implicit_lambdef
 
     match = Forward()
@@ -1173,7 +1186,7 @@ class Grammar(object):
     stmt_lambdef = Forward()
     closing_stmt = longest(testlist("tests"), small_stmt)
     stmt_lambdef_params = Optional(
-        attach(name, add_paren_handle, copy=True)
+        attach(name, add_paren_handle)
         | parameters
         | Group(lparen.suppress() + matchlist_list + match_guard + rparen.suppress()),
         default="(_=None)")
@@ -1201,7 +1214,7 @@ class Grammar(object):
             | function_call("args")
         )
     )
-    class_suite = suite | attach(newline, class_suite_handle, copy=True)
+    class_suite = suite | attach(newline, class_suite_handle)
     classdef = condense(addspace(Keyword("class") - name) + classlist + class_suite)
     comp_iter = Forward()
     comp_for <<= trace(addspace(Keyword("for") + assignlist + Keyword("in") + test_item + Optional(comp_iter)), "comp_for")
@@ -1291,7 +1304,7 @@ class Grammar(object):
     or_match = Group(matchlist_or("or")) | and_match
     match <<= trace(or_match, "match")
 
-    else_suite = condense(colon + trace(attach(simple_compound_stmt, else_handle, copy=True), "else_suite")) | suite
+    else_suite = condense(colon + trace(attach(simple_compound_stmt, else_handle), "else_suite")) | suite
     else_stmt = condense(Keyword("else") - else_suite)
 
     full_suite = colon.suppress() + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
@@ -1340,18 +1353,23 @@ class Grammar(object):
     return_typedef = Forward()
     async_funcdef = Forward()
     async_stmt = Forward()
-    name_funcdef = condense(name + parameters)
-    op_funcdef_arg = name | condense(lparen.suppress() + tfpdef + Optional(default) + rparen.suppress())
+    name_funcdef = trace(condense(name + parameters), "name_funcdef")
+    op_tfpdef = typedef_default | condense(name + Optional(default))
+    op_funcdef_arg = name | condense(lparen.suppress() + op_tfpdef + rparen.suppress())
     op_funcdef_name = backtick.suppress() + name + backtick.suppress()
-    op_funcdef = attach(Group(Optional(op_funcdef_arg)) + op_funcdef_name + Group(Optional(op_funcdef_arg)), op_funcdef_handle)
+    op_funcdef = trace(attach(
+        Group(Optional(op_funcdef_arg))
+        + op_funcdef_name
+        + Group(Optional(op_funcdef_arg)),
+        op_funcdef_handle), "op_funcdef")
     return_typedef_ref = addspace(arrow + test)
-    base_funcdef = trace(addspace((op_funcdef | name_funcdef) + Optional(return_typedef)), "base_funcdef")
-    funcdef = trace(addspace(Keyword("def") + condense(base_funcdef + suite)), "funcdef")
+    end_func_colon = return_typedef + colon.suppress() | colon
+    base_funcdef = op_funcdef | name_funcdef
+    funcdef = trace(addspace(Keyword("def") + condense(base_funcdef + end_func_colon + nocolon_suite)), "funcdef")
 
     name_match_funcdef = Forward()
     op_match_funcdef = Forward()
     async_match_funcdef = Forward()
-    nocolon_suite = Forward()
     name_match_funcdef_ref = name + lparen.suppress() + matchlist_list + match_guard + rparen.suppress()
     op_match_funcdef_arg = lparen.suppress() + match + rparen.suppress()
     op_match_funcdef_ref = Group(Optional(op_match_funcdef_arg)) + op_funcdef_name + Group(Optional(op_match_funcdef_arg)) + match_guard
@@ -1362,9 +1380,11 @@ class Grammar(object):
     testlist_stmt = condense(testlist + newline)
     math_funcdef_suite = attach(
         testlist_stmt
-        | (newline - indent).suppress() - ZeroOrMore(~(testlist_stmt + dedent) + stmt) - testlist_stmt - dedent.suppress(), math_funcdef_suite_handle)
+        | (newline - indent).suppress() - ZeroOrMore(~(testlist_stmt + dedent) + stmt) - testlist_stmt - dedent.suppress(),
+        math_funcdef_suite_handle)
+    end_func_equals = return_typedef + equals.suppress() | fixto(equals, ":")
     math_funcdef = trace(attach(
-        condense(addspace(Keyword("def") + base_funcdef) + fixto(equals, ":", copy=True)) - math_funcdef_suite, math_funcdef_handle), "math_funcdef")
+        condense(addspace(Keyword("def") + base_funcdef) + end_func_equals) - math_funcdef_suite, math_funcdef_handle), "math_funcdef")
     math_match_funcdef = trace(
         Optional(Keyword("match").suppress()) + condense(base_match_funcdef + equals.suppress() - math_funcdef_suite), "math_match_funcdef")
 
@@ -1440,12 +1460,12 @@ class Grammar(object):
         | longest(assign_stmt, destructuring_stmt), "small_stmt")
     simple_stmt <<= trace(condense(
         small_stmt
-        + ZeroOrMore(fixto(semicolon, "\n", copy=True) + small_stmt)
+        + ZeroOrMore(fixto(semicolon, "\n") + small_stmt)
         + (newline | endline_semicolon)
     ), "simple_stmt")
     stmt <<= trace(compound_stmt | simple_stmt, "stmt")
     base_suite <<= condense(newline + indent - OneOrMore(stmt) - dedent)
-    nocolon_suite <<= trace(base_suite | attach(simple_stmt, make_suite_handle, copy=True), "nocolon_suite")
+    nocolon_suite <<= trace(base_suite | attach(simple_stmt, make_suite_handle), "nocolon_suite")
     suite <<= condense(colon + nocolon_suite)
     line = trace(newline | stmt, "line")
 
@@ -1472,13 +1492,14 @@ class Grammar(object):
             + ZeroOrMore(dot + base_name | brackets)
         ) + parens + end_marker, tco_return_handle)
 
-    tfpdef_tokens = base_name + Optional(addspace(colon + test))
-    untouched_default = originalTextFor(equals + SkipTo(comma | rparen))
+    rest_of_arg = SkipTo(comma | rparen)
+    tfpdef_tokens = base_name + Optional(originalTextFor(colon + rest_of_arg))
+    tfpdef_default_tokens = base_name + Optional(originalTextFor((equals | colon) + rest_of_arg))
     parameters_tokens = Group(Optional(tokenlist(Group(
         dubstar + tfpdef_tokens
         | star + Optional(tfpdef_tokens)
-        | tfpdef_tokens + Optional(untouched_default)
-    ), comma)))
+        | tfpdef_default_tokens
+    ), comma + Optional(passthrough))))
 
     split_func_name_args_params = attach(
         (start_marker + Keyword("def")).suppress() + base_name + lparen.suppress()

@@ -9,9 +9,9 @@ def rand_list(n):
 # Infix Functions:
 plus = (+)
 mod = (%)
-def a `mod_` b = a % b
+def (a: int) `mod_` (b: int) -> int = a % b
 base = int
-def (a) `join_with` (b=""):
+def a `join_with` (b=""):
     return b.join(a)
 
 # Basic Functions:
@@ -21,8 +21,8 @@ zipsum = map$(sum)..zip
 plus1 = plus$(1)
 ident = (x) -> x
 @ ident .. ident
-def plus1_(x) = x + 1
-def sqrt(x) = x**0.5
+def plus1_(x: int) -> int = x + 1
+def sqrt(x: int) -> float = x**0.5
 def sqrt_(x) = x**0.5
 square = (x) -> x**2
 plus1sq = square..plus1

@@ -266,9 +266,6 @@ def main_test():
     assert count(5) == count(5)
     assert count(5) != count(3)
     assert {count(5): True}[count(5)]
-    def p1(x: int) -> int:
-        return x+1
-    assert p1(2) == 3
     assert (def x -> x)(1) == 1
     assert (def ([x] + xs) -> x, xs) <| range(5) == (0, [1,2,3,4])
     return True

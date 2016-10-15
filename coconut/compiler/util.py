@@ -102,26 +102,24 @@ def ind_change(inputstring):
     return inputstring.count(openindent) - inputstring.count(closeindent)
 
 
-def attach(item, action, copy=False):
+def attach(item, action):
     """Attaches a parse action to an item."""
-    if copy:
-        item = item.copy()
-    return item.addParseAction(logger.wrap_handler(action))
+    return item.copy().addParseAction(logger.wrap_handler(action))
 
 
-def fixto(item, output, copy=False):
+def fixto(item, output):
     """Forces an item to result in a specific output."""
-    return attach(item, replaceWith(output), copy)
+    return attach(item, replaceWith(output))
 
 
-def addspace(item, copy=False):
+def addspace(item):
     """Condenses and adds space to the tokenized output."""
-    return attach(item, " ".join, copy)
+    return attach(item, " ".join)
 
 
-def condense(item, copy=False):
+def condense(item):
     """Condenses the tokenized output."""
-    return attach(item, "".join, copy)
+    return attach(item, "".join)
 
 
 def parenwrap(lparen, item, rparen, tokens=False):

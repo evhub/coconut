@@ -240,44 +240,45 @@ class Compiler(Grammar):
 
     def bind(self):
         """Binds reference objects to the proper parse actions."""
-        self.endline <<= attach(self.endline_ref, self.endline_handle, copy=True)
-        self.moduledoc_item <<= trace(attach(self.moduledoc, self.set_docstring, copy=True), "moduledoc")
-        self.name <<= trace(attach(self.base_name, self.name_check, copy=True), "name")
-        self.atom_item <<= trace(attach(self.atom_item_ref, self.item_handle, copy=True), "atom_item")
-        self.no_partial_atom_item <<= trace(attach(self.no_partial_atom_item_ref, self.item_handle, copy=True), "no_partial_atom_item")
-        self.simple_assign <<= trace(attach(self.simple_assign_ref, self.item_handle, copy=True), "simple_assign")
-        self.set_literal <<= trace(attach(self.set_literal_ref, self.set_literal_handle, copy=True), "set_literal")
-        self.set_letter_literal <<= trace(attach(self.set_letter_literal_ref, self.set_letter_literal_handle, copy=True), "set_letter_literal")
-        self.classlist <<= trace(attach(self.classlist_ref, self.classlist_handle, copy=True), "classlist")
-        self.import_stmt <<= trace(attach(self.import_stmt_ref, self.import_handle, copy=True), "import_stmt")
-        self.complex_raise_stmt <<= trace(attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_handle, copy=True), "complex_raise_stmt")
-        self.augassign_stmt <<= trace(attach(self.augassign_stmt_ref, self.augassign_handle, copy=True), "augassign_stmt")
-        self.dict_comp <<= trace(attach(self.dict_comp_ref, self.dict_comp_handle, copy=True), "dict_comp")
-        self.destructuring_stmt <<= trace(attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle, copy=True), "destructuring_stmt")
-        self.name_match_funcdef <<= trace(attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle, copy=True), "name_match_funcdef")
-        self.op_match_funcdef <<= trace(attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle, copy=True), "op_match_funcdef")
-        self.yield_from <<= trace(attach(self.yield_from_ref, self.yield_from_handle, copy=True), "yield_from")
-        self.exec_stmt <<= trace(attach(self.exec_stmt_ref, self.exec_stmt_handle, copy=True), "exec_stmt")
-        self.stmt_lambdef <<= trace(attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle, copy=True), "stmt_lambdef")
-        self.decoratable_normal_funcdef_stmt <<= trace(attach(self.decoratable_normal_funcdef_stmt_ref, self.decoratable_normal_funcdef_stmt_handle, copy=True), "decoratable_normal_funcdef_stmt")
-        self.function_call <<= trace(attach(self.function_call_tokens, self.function_call_handle, copy=True), "function_call")
-        self.expr <<= trace(attach(self.expr_ref, self.pipe_handle, copy=True), "expr")
-        self.no_chain_expr <<= trace(attach(self.no_chain_expr_ref, self.pipe_handle, copy=True), "no_chain_expr")
-        self.typedef <<= trace(attach(self.typedef_ref, self.typedef_handle, copy=True), "typedef")
-        self.return_typedef <<= trace(attach(self.return_typedef_ref, self.typedef_handle, copy=True), "return_typedef")
-        self.u_string <<= attach(self.u_string_ref, self.u_string_check, copy=True)
-        self.f_string <<= attach(self.f_string_ref, self.f_string_check, copy=True)
-        self.matrix_at <<= attach(self.matrix_at_ref, self.matrix_at_check, copy=True)
-        self.nonlocal_stmt <<= attach(self.nonlocal_stmt_ref, self.nonlocal_check, copy=True)
-        self.star_assign_item <<= attach(self.star_assign_item_ref, self.star_assign_item_check, copy=True)
-        self.classic_lambdef <<= attach(self.classic_lambdef_ref, self.lambdef_check, copy=True)
-        self.async_funcdef <<= attach(self.async_funcdef_ref, self.async_stmt_check, copy=True)
-        self.async_match_funcdef <<= attach(self.async_match_funcdef_ref, self.async_stmt_check, copy=True)
-        self.async_stmt <<= attach(self.async_stmt_ref, self.async_stmt_check, copy=True)
-        self.await_keyword <<= attach(self.await_keyword_ref, self.await_keyword_check, copy=True)
-        self.star_expr <<= attach(self.star_expr_ref, self.star_expr_check, copy=True)
-        self.dubstar_expr <<= attach(self.dubstar_expr_ref, self.star_expr_check, copy=True)
-        self.endline_semicolon <<= attach(self.endline_semicolon_ref, self.endline_semicolon_check, copy=True)
+        self.endline <<= attach(self.endline_ref, self.endline_handle)
+        self.moduledoc_item <<= trace(attach(self.moduledoc, self.set_docstring), "moduledoc")
+        self.name <<= trace(attach(self.base_name, self.name_check), "name")
+        self.atom_item <<= trace(attach(self.atom_item_ref, self.item_handle), "atom_item")
+        self.no_partial_atom_item <<= trace(attach(self.no_partial_atom_item_ref, self.item_handle), "no_partial_atom_item")
+        self.simple_assign <<= trace(attach(self.simple_assign_ref, self.item_handle), "simple_assign")
+        self.set_literal <<= trace(attach(self.set_literal_ref, self.set_literal_handle), "set_literal")
+        self.set_letter_literal <<= trace(attach(self.set_letter_literal_ref, self.set_letter_literal_handle), "set_letter_literal")
+        self.classlist <<= trace(attach(self.classlist_ref, self.classlist_handle), "classlist")
+        self.import_stmt <<= trace(attach(self.import_stmt_ref, self.import_handle), "import_stmt")
+        self.complex_raise_stmt <<= trace(attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_handle), "complex_raise_stmt")
+        self.augassign_stmt <<= trace(attach(self.augassign_stmt_ref, self.augassign_handle), "augassign_stmt")
+        self.dict_comp <<= trace(attach(self.dict_comp_ref, self.dict_comp_handle), "dict_comp")
+        self.destructuring_stmt <<= trace(attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle), "destructuring_stmt")
+        self.name_match_funcdef <<= trace(attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle), "name_match_funcdef")
+        self.op_match_funcdef <<= trace(attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle), "op_match_funcdef")
+        self.yield_from <<= trace(attach(self.yield_from_ref, self.yield_from_handle), "yield_from")
+        self.exec_stmt <<= trace(attach(self.exec_stmt_ref, self.exec_stmt_handle), "exec_stmt")
+        self.stmt_lambdef <<= trace(attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle), "stmt_lambdef")
+        self.decoratable_normal_funcdef_stmt <<= trace(attach(self.decoratable_normal_funcdef_stmt_ref, self.decoratable_normal_funcdef_stmt_handle), "decoratable_normal_funcdef_stmt")
+        self.function_call <<= trace(attach(self.function_call_tokens, self.function_call_handle), "function_call")
+        self.expr <<= trace(attach(self.expr_ref, self.pipe_handle), "expr")
+        self.no_chain_expr <<= trace(attach(self.no_chain_expr_ref, self.pipe_handle), "no_chain_expr")
+        self.typedef <<= trace(attach(self.typedef_ref, self.typedef_handle), "typedef")
+        self.typedef_default <<= trace(attach(self.typedef_default_ref, self.typedef_handle), "typedef")
+        self.return_typedef <<= trace(attach(self.return_typedef_ref, self.typedef_handle), "return_typedef")
+        self.u_string <<= attach(self.u_string_ref, self.u_string_check)
+        self.f_string <<= attach(self.f_string_ref, self.f_string_check)
+        self.matrix_at <<= attach(self.matrix_at_ref, self.matrix_at_check)
+        self.nonlocal_stmt <<= attach(self.nonlocal_stmt_ref, self.nonlocal_check)
+        self.star_assign_item <<= attach(self.star_assign_item_ref, self.star_assign_item_check)
+        self.classic_lambdef <<= attach(self.classic_lambdef_ref, self.lambdef_check)
+        self.async_funcdef <<= attach(self.async_funcdef_ref, self.async_stmt_check)
+        self.async_match_funcdef <<= attach(self.async_match_funcdef_ref, self.async_stmt_check)
+        self.async_stmt <<= attach(self.async_stmt_ref, self.async_stmt_check)
+        self.await_keyword <<= attach(self.await_keyword_ref, self.await_keyword_check)
+        self.star_expr <<= attach(self.star_expr_ref, self.star_expr_check)
+        self.dubstar_expr <<= attach(self.dubstar_expr_ref, self.star_expr_check)
+        self.endline_semicolon <<= attach(self.endline_semicolon_ref, self.endline_semicolon_check)
 
     def adjust(self, ln):
         """Adjusts a line number."""
@@ -684,18 +685,12 @@ class Compiler(Grammar):
         level = 0
 
         for line in inputstring.splitlines():
-            line = line.strip()
-            if "#" in line:
-                line, comment = line.split("#", 1)
-                line = line.rstrip()
-                comment = "#" + comment
-            else:
-                comment = ""
+            line, comment = split_comment(line.strip())
 
             indent, line = split_leading_indent(line)
             level += ind_change(indent)
 
-            if line and not line.startswith("#"):
+            if line:
                 line = " " * (1 if self.minify else tabideal) * level + line
 
             line, indent = split_trailing_indent(line)
@@ -1291,7 +1286,7 @@ class Compiler(Grammar):
             )
         out = def_stmt + out
         if tco:
-            out = "@_coconut_tco\n" + out
+            out = "@_coconut_tco" + ("  # type: ignore" if self.mypy else "") + "\n" + out
         if decorators:
             out = decorators + out
         return out
@@ -1307,7 +1302,10 @@ class Compiler(Grammar):
             if len(arg) == 1:
                 if kwd_args or dubstar_args:
                     raise self.make_err(CoconutSyntaxError, "positional argument after keyword argument", original, loc)
-                pos_args.append(argstr)
+                if arg[0] == "*":
+                    kwd_args.insert(0, self.check_py("3", "star seperator", original, loc, [argstr]))
+                else:
+                    pos_args.append(argstr)
             elif len(arg) == 2:
                 if arg[0] == "*":
                     if dubstar_args:
@@ -1367,16 +1365,21 @@ class Compiler(Grammar):
         """Checks for Python 3 type defs."""
         if len(tokens) == 1:  # return typedef
             if self.target.startswith("3"):
-                return tokens[0]
+                return tokens[0] + ":"
             else:
-                return ""
-        elif len(tokens) == 2:  # argument typedef
+                return ":\n" + self.wrap_comment(" type: (...) " + tokens[0])
+        else:  # argument typedef
+            if len(tokens) == 2:
+                varname, typedef = tokens
+                default = ""
+            elif len(tokens) == 3:
+                varname, typedef, default = tokens
+            else:
+                raise CoconutInternalException("invalid typedef tokens", tokens)
             if self.target.startswith("3"):
-                return tokens[0] + ": " + tokens[1]
+                return varname + ": " + typedef + default + ","
             else:
-                return tokens[0]
-        else:
-            raise CoconutInternalException("invalid typedef tokens", tokens)
+                return varname + default + "," + self.wrap_passthrough(self.wrap_comment(" type: " + typedef) + "\n" + " " * tabideal)
 
 # end: COMPILER HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
