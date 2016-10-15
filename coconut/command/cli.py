@@ -148,7 +148,7 @@ arguments.add_argument(
     "--mypy",
     type=str,
     nargs=argparse.REMAINDER,
-    help="compile files for MyPy and run MyPy on compiled files (remaining args passed to MyPy)")
+    help="run MyPy on compiled Python (remaining args passed to MyPy)")
 
 arguments.add_argument(
     "--tutorial",
