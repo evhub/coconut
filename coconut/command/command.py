@@ -267,15 +267,18 @@ class Command(object):
                 writedir = os.path.join(write, os.path.relpath(dirpath, directory))
             for filename in filenames:
                 if os.path.splitext(filename)[1] in code_exts:
-                    self.compile_file(os.path.join(dirpath, filename), writedir, package, run, force, mypy=False)
+                    self.compile_file(os.path.join(dirpath, filename), writedir, package, run, force, allow_mypy=False)
             for name in dirnames[:]:
                 if name != "." * len(name) and name.startswith("."):
                     if logger.verbose:
                         logger.show_tabulated("Skipped directory", name, "(explicitly pass as source to override).")
                     dirnames.remove(name)  # directories removed from dirnames won't appear in further os.walk iteration
-        self.run_mypy(write if write is not True else directory)
+        if write is True:
+            self.run_mypy(directory)
+        elif write is not None:
+            self.run_mypy(write)
 
-    def compile_file(self, filepath, write=True, package=False, run=False, force=False, mypy=True):
+    def compile_file(self, filepath, write=True, package=False, run=False, force=False, allow_mypy=True):
         """Compiles a file."""
         if write is None:
             destpath = None
@@ -291,7 +294,7 @@ class Command(object):
         if filepath == destpath:
             raise CoconutException("cannot compile " + showpath(filepath) + " to itself (incorrect file extension)")
         self.compile(filepath, destpath, package, run, force)
-        if mypy:
+        if allow_mypy and destpath is not None:
             self.run_mypy(destpath)
 
     def compile(self, codepath, destpath=None, package=False, run=False, force=False):
@@ -467,6 +470,7 @@ class Command(object):
         if compiled is not None:
             if allow_show and self.show:
                 print(compiled)
+            self.run_mypy("-c", compiled)
             if path is not None:  # path means header is included, and thus encoding must be removed
                 compiled = rem_encoding(compiled)
             self.runner.run(compiled, use_eval=use_eval, path=path, all_errors_exit=(path is not None))
@@ -491,41 +495,37 @@ class Command(object):
         """Opens the Coconut documentation."""
         webbrowser.open(documentation_url, 2)
 
-    def run_mypy(self, path):
-        """Run MyPy on a path."""
+    def run_mypy(self, *args):
+        """Run MyPy with arguments."""
         if self.mypy_args is not None:
-            if path is None:
-                logger.warn("cannot run MyPy if not writing files")
-            else:
-                args = ["mypy", path]
+            args = ["mypy"] + list(args)
 
-                for arg in self.mypy_args:
-                    if path == fixpath(arg):
-                        logger.warn("unnecessary mypy argument", arg, extra="path to compiled files passed automatically")
-                    else:
-                        args.append(arg)
+            for arg in self.mypy_args:
+                if arg == "--fast-parser":
+                    logger.warn("unnecessary --mypy argument", arg, extra="passed automatically if available")
+                elif arg == "--py2" or arg == "-2":
+                    logger.warn("unnecessary --mypy argument", arg, extra="passed automatically when needed")
+                elif path == fixpath(arg):
+                    logger.warn("unnecessary --mypy argument", arg, extra="path to compiled files passed automatically")
+                    continue
+                args.append(arg)
 
-                has_py2 = "--py2" in args or "-2" in args
-
-                if has_py2:
-                    logger.warn("unnecessary mypy argument --py2 (passed automatically when needed)")
-                if "--fast-parser" in args:
-                    logger.warn("unnecessary mypy argument --fast-parser (passed automatically if available)")
-
-                if not has_py2 and not self.comp.target.startswith("3"):
-                    args.append("--py2")
-                if "--fast-parser" not in args:
-                    try:
-                        import typed_ast  # NOQA
-                    except ImportError:
-                        pass
-                    else:
-                        args.append("--fast-parser")
-
+            if not ("--py2" in args or "-2" in args) and not self.comp.target.startswith("3"):
+                args.append("--py2")
+            if "--fast-parser" not in args:
                 try:
-                    run_cmd(args)
-                except CalledProcessError:
-                    raise CoconutException("failed to run MyPy command", args)
+                    import typed_ast  # NOQA
+                except ImportError:
+                    if not self.comp.target.startswith("3"):
+                        logger.warn("missing typed_ast module; MyPy may not properly analyze added type annotation comments",
+                                    extra="run 'pip install typed_ast' or pass '--target 3' to fix")
+                else:
+                    args.append("--fast-parser")
+
+            try:
+                run_cmd(args)
+            except CalledProcessError:
+                raise CoconutException("failed to run MyPy command", args)
 
     def start_jupyter(self, args):
         """Starts Jupyter with the Coconut kernel."""
