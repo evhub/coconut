@@ -40,8 +40,8 @@ from pyparsing import (
     Optional,
     ParserElement,
     Regex,
-    stringEnd,
-    stringStart,
+    StringEnd,
+    StringStart,
     Word,
     ZeroOrMore,
     hexnums,
@@ -879,9 +879,9 @@ class Grammar(object):
     endline_ref = condense(OneOrMore(Literal("\n")))
     lineitem = Combine(Optional(comment) + endline)
     newline = condense(OneOrMore(lineitem))
-    start_marker = stringStart
+    start_marker = StringStart()
     moduledoc_marker = condense(ZeroOrMore(lineitem) - Optional(moduledoc_item))
-    end_marker = stringEnd
+    end_marker = StringEnd()
     indent = Literal(openindent)
     dedent = Literal(closeindent)
 

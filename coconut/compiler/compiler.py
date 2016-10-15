@@ -295,7 +295,7 @@ class Compiler(Grammar):
         if index is not None:
             return self.reformat(snip), len(self.reformat(snip[:index]))
         else:
-            return self.repl_proc(snip, careful=False, add_to_line=False)
+            return self.repl_proc(snip, log=False, add_to_line=False)
 
     def make_err(self, errtype, message, original, loc, ln=None, reformat=True, *args, **kwargs):
         """Generates an error of the specified type."""
@@ -359,18 +359,20 @@ class Compiler(Grammar):
         """Wraps a line number."""
         return "#" + self.add_ref(ln) + lnwrapper
 
-    def apply_procs(self, procs, kwargs, inputstring):
+    def apply_procs(self, procs, kwargs, inputstring, log=True):
         """Applies processors to inputstring."""
         for get_proc in procs:
             proc = get_proc(self)
             inputstring = proc(inputstring, **kwargs)
-            logger.log_tag(proc.__name__, inputstring, multiline=True)
+            if log:
+                logger.log_tag(proc.__name__, inputstring, multiline=True)
         return inputstring
 
     def pre(self, inputstring, **kwargs):
         """Performs pre-processing."""
         out = self.apply_procs(self.preprocs, kwargs, str(inputstring))
-        logger.log_tag("skips", list(sorted(self.skips)))
+        if self.line_numbers or self.keep_lines:
+            logger.log_tag("skips", list(sorted(self.skips)))
         return out
 
     def post(self, tokens, **kwargs):
@@ -397,7 +399,9 @@ class Compiler(Grammar):
         """Uses the parser to parse the inputstring."""
         self.reset()
         try:
-            out = self.post(parse(parser, self.pre(inputstring, **preargs)), **postargs)
+            pre_procd = self.pre(inputstring, **preargs)
+            parsed = parse(parser, pre_procd)
+            out = self.post(parsed, **postargs)
         except ParseBaseException as err:
             err_line, err_index = self.reformat(err.line, err.col - 1)
             raise CoconutParseError(None, err_line, err_index, self.adjust(err.lineno))
@@ -679,6 +683,11 @@ class Compiler(Grammar):
             out.append(line)
         return "\n".join(out)
 
+    @property
+    def tabideal(self):
+        """Local tabideal."""
+        return 1 if self.minify else tabideal
+
     def reind_proc(self, inputstring, **kwargs):
         """Adds back indentation."""
         out = []
@@ -691,7 +700,7 @@ class Compiler(Grammar):
             level += ind_change(indent)
 
             if line:
-                line = " " * (1 if self.minify else tabideal) * level + line
+                line = " " * self.tabideal * level + line
 
             line, indent = split_trailing_indent(line)
             level += ind_change(indent)
@@ -730,7 +739,7 @@ class Compiler(Grammar):
             raise CoconutInternalException("attempted to add line number comment without --line-numbers or --keep-lines")
         return self.wrap_comment(comment)
 
-    def endline_repl(self, inputstring, add_to_line=True, careful=True, **kwargs):
+    def endline_repl(self, inputstring, add_to_line=True, **kwargs):
         """Adds in end line comments."""
         if self.line_numbers or self.keep_lines:
             out = []
@@ -751,15 +760,14 @@ class Compiler(Grammar):
                     if add_to_line and line and not line.lstrip().startswith("#"):
                         line += self.endline_comment(ln)
                 except CoconutInternalException as err:
-                    if careful:
-                        complain(err)
+                    complain(err)
                     fix = False
                 out.append(line)
             return "\n".join(out)
         else:
             return inputstring
 
-    def passthrough_repl(self, inputstring, careful=True, **kwargs):
+    def passthrough_repl(self, inputstring, **kwargs):
         """Adds back passthroughs."""
         out = []
         index = None
@@ -785,16 +793,15 @@ class Compiler(Grammar):
                         index = ""
                     else:
                         out.append(c)
-            except CoconutInternalException:
-                if careful:
-                    raise
+            except CoconutInternalException as err:
+                complain(err)
                 if index is not None:
                     out.append(index)
                     index = None
                 out.append(c)
         return "".join(out)
 
-    def str_repl(self, inputstring, careful=True, **kwargs):
+    def str_repl(self, inputstring, **kwargs):
         """Adds back strings."""
         out = []
         comment = None
@@ -812,7 +819,9 @@ class Compiler(Grammar):
                         if not isinstance(ref, str):
                             raise CoconutInternalException("invalid reference for a comment", ref)
                         if out and not out[-1].endswith("\n"):
-                            out[-1] = out[-1].rstrip(" ") + "  "  # enforce two spaces before comment
+                            out[-1] = out[-1].rstrip(" ")
+                            if not self.minify:
+                                out[-1] += "  "  # enforce two spaces before comment
                         out.append("#" + ref)
                         comment = None
                     else:
@@ -840,9 +849,8 @@ class Compiler(Grammar):
                     else:
                         out.append(c)
 
-            except CoconutInternalException:
-                if careful:
-                    raise
+            except CoconutInternalException as err:
+                complain(err)
                 if comment is not None:
                     out.append(comment)
                     comment = None
@@ -853,9 +861,9 @@ class Compiler(Grammar):
 
         return "".join(out)
 
-    def repl_proc(self, inputstring, **kwargs):
+    def repl_proc(self, inputstring, log=True, **kwargs):
         """Processes using replprocs."""
-        return self.apply_procs(self.replprocs, kwargs, inputstring)
+        return self.apply_procs(self.replprocs, kwargs, inputstring, log=log)
 
     def header_proc(self, inputstring, header="file", initial="initial", usehash=None, **kwargs):
         """Adds the header."""
@@ -1379,7 +1387,7 @@ class Compiler(Grammar):
             if self.target.startswith("3"):
                 return varname + ": " + typedef + default + ","
             else:
-                return varname + default + "," + self.wrap_passthrough(self.wrap_comment(" type: " + typedef) + "\n" + " " * tabideal)
+                return varname + default + "," + self.wrap_passthrough(self.wrap_comment(" type: " + typedef) + "\n" + " " * self.tabideal)
 
 # end: COMPILER HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------

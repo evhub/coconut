@@ -48,6 +48,12 @@ def clean(inputline, strip=True, rem_indents=True, encoding_errors="replace"):
         inputline = inputline.strip()
     return inputline.encode(stdout_encoding, encoding_errors).decode(stdout_encoding)
 
+
+def debug_clean(inputline, strip=True):
+    """Call clean with debug parameters."""
+    return clean(inputline, strip, False, "backslashreplace")
+
+
 #-----------------------------------------------------------------------------------------------------------------------
 # EXCEPTIONS:
 #----------------------------------------------------------------------------------------------------------------------

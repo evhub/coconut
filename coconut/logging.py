@@ -38,7 +38,7 @@ from coconut.exceptions import (
     CoconutWarning,
     CoconutInternalException,
     CoconutException,
-    clean,
+    debug_clean,
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -175,10 +175,11 @@ class Logger(object):
 
     def log_tag(self, tag, code, multiline=False):
         """Logs a tagged message if in verbose mode."""
+        tagstr = "[" + str(tag) + "]"
         if multiline:
-            self.log("[" + str(tag) + "]\n" + clean(code, rem_indents=False, encoding_errors="backslashreplace"))
+            self.log(tagstr + "\n" + debug_clean(code))
         else:
-            self.log("[" + str(tag) + "] " + ascii(code))
+            self.log(tagstr + " " + ascii(code))
 
     def log_cmd(self, args):
         """Logs a console command if in verbose mode."""

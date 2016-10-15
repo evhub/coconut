@@ -17,6 +17,7 @@
     1. [IPython/ Jupyter Support](#ipython-jupyter-support)
         1. [Extension](#extension)
         1. [Kernel](#kernel)
+    1. [MyPy Integration](#mypy-integration)
 1. [Operators](#operators)
     1. [Lambdas](#lambdas)
     1. [Partial Application](#partial-application)
@@ -103,7 +104,7 @@ which will install Coconut and its required dependencies. Coconut also has some 
 ```
 pip install coconut[all]
 ```
-which will enable the use of Coconut's `--jobs`, `--watch`, and `--jupyter` flags. To install the optional dependencies only for a particular flag, simply put the flag name in place of `all`.
+which will enable the use of Coconut's `--jobs`, `--watch`, `--jupyter`, and `--mypy` flags. To install the optional dependencies only for a particular flag, simply put the flag name in place of `all`.
 
 Alternatively, if you want to test out Coconut's latest and greatest, enter
 ```
@@ -230,6 +231,10 @@ If Coconut is used as an extension, a special magic command will send snippets o
 #### Kernel
 
 If Coconut is used as a kernel, all code in the console or notebook will be sent directly to Coconut instead of Python to be evaluated. The command `coconut --jupyter notebook` (or `coconut --ipython notebook`) will launch an IPython/ Jupyter notebook using Coconut as the kernel and the command `coconut --jupyter console` (or `coconut --ipython console`) will launch an IPython/ Jupyter console using Coconut as the kernel. Additionally, the command `coconut --jupyter` (or `coconut --ipython`) will add Coconut as a language option inside of all IPython/ Jupyter notebooks, even those not launched with Coconut. This command may need to be re-run when a new version of Coconut is installed.
+
+### MyPy Integration
+
+Coconut has the ability to integrate with [MyPy](http://mypy-lang.org/) to provide optional static type-checking. Simply pass `--mypy` (be careful to pass it only as the last argument), use [standard Python 3 type annotation syntax](https://www.python.org/dev/peps/pep-0484/), and Coconut will take care of the rest. By default, Coconut compiles Python 3 type annotations into `mypy --py2` compatible type comments. If you want to keep the Python 3 type annotations instead, simply pass `--target 3`.
 
 ## Operators
 

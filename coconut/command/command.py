@@ -497,21 +497,37 @@ class Command(object):
         """Run MyPy on a path."""
         if self.comp.mypy:
             if path is None:
-                logger.warn("cannot run MyPy if not compiling to file")
+                logger.warn("cannot run MyPy if not writing files")
             else:
-                args = ["mypy", path] + self.mypy_args
-                if not self.comp.target.startswith("3"):
+                args = ["mypy", path]
+
+                for arg in self.mypy_args:
+                    if path == fixpath(arg):
+                        logger.warn("unnecessary mypy argument (path to compiled files passed automatically)", arg)
+                    else:
+                        args.append(arg)
+
+                has_py2 = "--py2" in args or "-2" in args
+
+                if has_py2:
+                    logger.warn("unnecessary mypy argument --py2 (passed automatically when needed)")
+                if "--fast-parser" in args:
+                    logger.warn("unnecessary mypy argument --fast-parser (passed automatically if available)")
+
+                if not has_py2 and not self.comp.target.startswith("3"):
                     args.append("--py2")
-                try:
-                    import typed_ast  # NOQA
-                except ImportError:
-                    pass
-                else:
-                    args.append("--fast-parser")
+                if "--fast-parser" not in args:
+                    try:
+                        import typed_ast  # NOQA
+                    except ImportError:
+                        pass
+                    else:
+                        args.append("--fast-parser")
+
                 try:
                     run_cmd(args)
                 except CalledProcessError:
-                    raise CoconutException("failed to run MyPy using command", args)
+                    raise CoconutException("failed to run MyPy command", args)
 
     def start_jupyter(self, args):
         """Starts Jupyter with the Coconut kernel."""
