@@ -1385,7 +1385,7 @@ class Compiler(Grammar):
             else:
                 raise CoconutInternalException("invalid typedef tokens", tokens)
             if self.target.startswith("3"):
-                return varname + ": " + typedef + default + ","
+                return varname + ": " + typedef + default + ", "
             else:
                 return varname + default + "," + self.wrap_passthrough(self.wrap_comment(" type: " + typedef) + "\n" + " " * self.tabideal)
 
