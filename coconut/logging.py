@@ -148,9 +148,9 @@ class Logger(object):
         finally:
             self.path = old_path
 
-    def warn(self, *args):
+    def warn(self, *args, **kwargs):
         """Creates and displays a warning."""
-        return self.warn_err(CoconutWarning(*args))
+        return self.warn_err(CoconutWarning(*args, **kwargs))
 
     def warn_err(self, warning):
         """Displays a warning."""

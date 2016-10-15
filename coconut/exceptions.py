@@ -139,8 +139,12 @@ class CoconutTargetError(CoconutSyntaxError):
         CoconutSyntaxError.__init__(self, message, source, point, lineno)
 
 
-class CoconutWarning(CoconutSyntaxError):
+class CoconutWarning(CoconutException):
     """Base Coconut warning."""
+
+
+class CoconutStyleWarning(CoconutStyleError, CoconutWarning):
+    """Coconut --strict warning."""
 
 
 class CoconutInternalException(CoconutException):

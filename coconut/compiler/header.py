@@ -60,22 +60,22 @@ def minify(compiled):
     return compiled
 
 
-def getheader(which, target="", usehash=None, mypy=False):
+def getheader(which, target="", usehash=None):
     """Generates the specified header."""
     if which == "none":
         return ""
     elif which == "initial" or which == "package":
         if target.startswith("2"):
-            header = "#!/usr/bin/env python2"
-        elif target.startswith("3"):
-            header = "#!/usr/bin/env python3"
+            header = '#!/usr/bin/env python2'
+        elif target.startswith('3'):
+            header = '#!/usr/bin/env python3'
         else:
-            header = "#!/usr/bin/env python"
+            header = '#!/usr/bin/env python'
         header += '''
 # -*- coding: ''' + default_encoding + ''' -*-
 '''
         if usehash is not None:
-            header += hash_prefix + usehash + "\n"
+            header += hash_prefix + usehash + '\n'
         header += '''
 # Compiled with Coconut version ''' + VERSION_STR + '''
 

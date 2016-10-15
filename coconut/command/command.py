@@ -111,8 +111,6 @@ class Command(object):
 
     def setup(self, *args, **kwargs):
         """Sets parameters for the compiler."""
-        if "mypy" not in kwargs:
-            kwargs["mypy"] = self.mypy_args is not None
         if self.comp is None:
             self.comp = Compiler(*args, **kwargs)
         else:
@@ -495,7 +493,7 @@ class Command(object):
 
     def run_mypy(self, path):
         """Run MyPy on a path."""
-        if self.comp.mypy:
+        if self.mypy_args is not None:
             if path is None:
                 logger.warn("cannot run MyPy if not writing files")
             else:
@@ -503,7 +501,7 @@ class Command(object):
 
                 for arg in self.mypy_args:
                     if path == fixpath(arg):
-                        logger.warn("unnecessary mypy argument (path to compiled files passed automatically)", arg)
+                        logger.warn("unnecessary mypy argument", arg, extra="path to compiled files passed automatically")
                     else:
                         args.append(arg)
 

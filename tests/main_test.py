@@ -286,9 +286,6 @@ class TestCompilation(unittest.TestCase):
         def test_mypy(self):
             run(["--mypy"])
 
-        def test_py3_mypy(self):
-            run(["--mypy"], agnostic_target=3)
-
 
 class TestExternal(unittest.TestCase):
 

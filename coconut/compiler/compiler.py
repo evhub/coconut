@@ -77,7 +77,7 @@ from coconut.exceptions import (
     CoconutStyleError,
     CoconutTargetError,
     CoconutInternalException,
-    CoconutWarning,
+    CoconutStyleWarning,
     clean,
 )
 from coconut.logging import logger, trace, complain
@@ -199,7 +199,7 @@ class Compiler(Grammar):
         """Creates a new compiler with the given parsing parameters."""
         self.setup(*args, **kwargs)
 
-    def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False, mypy=False):
+    def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False):
         """Initializes parsing parameters."""
         if target is None:
             target = ""
@@ -210,11 +210,11 @@ class Compiler(Grammar):
         if target not in targets:
             raise CoconutException('unsupported target Python version "' + target
                                    + '" (supported targets are "' + '", "'.join(specific_targets) + '", or leave blank for universal)')
-        self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.mypy = target, strict, minify, line_numbers, keep_lines, mypy
+        self.target, self.strict, self.minify, self.line_numbers, self.keep_lines = target, strict, minify, line_numbers, keep_lines
 
     def __reduce__(self):
         """Return pickling information."""
-        return (Compiler, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.mypy))
+        return (Compiler, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines))
 
     def genhash(self, package, code):
         """Generates a hash from code."""
@@ -311,7 +311,7 @@ class Compiler(Grammar):
         if self.strict:
             raise self.make_err(CoconutStyleError, *args, **kwargs)
         else:
-            logger.warn_err(self.make_err(CoconutWarning, *args, **kwargs))
+            logger.warn_err(self.make_err(CoconutStyleWarning, *args, **kwargs))
 
     def add_ref(self, ref):
         """Adds a reference and returns the identifier."""
@@ -384,7 +384,7 @@ class Compiler(Grammar):
 
     def headers(self, which, usehash=None):
         """Gets a formatted header."""
-        return self.polish(getheader(which, self.target, usehash, self.mypy))
+        return self.polish(getheader(which, self.target, usehash))
 
     def target_info(self):
         """Returns information on the current target as a version tuple."""
@@ -1294,7 +1294,7 @@ class Compiler(Grammar):
             )
         out = def_stmt + out
         if tco:
-            out = "@_coconut_tco" + ("  # type: ignore" if self.mypy else "") + "\n" + out
+            out = "@_coconut_tco\n" + out
         if decorators:
             out = decorators + out
         return out
