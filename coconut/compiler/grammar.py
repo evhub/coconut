@@ -994,11 +994,11 @@ class Grammar(object):
     tfpdef = typedef + arg_comma.suppress() | condense(name + arg_comma)
     tfpdef_default = typedef_default + arg_comma.suppress() | condense(name + Optional(default) + arg_comma)
 
-    argslist = trace(ZeroOrMore(condense(
+    argslist = trace(addspace(ZeroOrMore(condense(
         dubstar + tfpdef
         | star + (tfpdef | arg_comma)
         | tfpdef_default
-    )), "argslist")
+    ))), "argslist")
     varargslist = trace(Optional(itemlist(condense(
         dubstar + name
         | star + Optional(name)
