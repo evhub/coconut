@@ -190,7 +190,8 @@ class Command(object):
                 package = None  # auto-decide package
 
             with self.running_jobs():
-                self.compile_path(args.source, dest, package, args.run or args.interact, args.force)
+                filepaths = self.compile_path(args.source, dest, package, args.run or args.interact, args.force)
+            self.run_mypy(*filepaths)
 
         elif (args.run
               or args.nowrite
@@ -245,7 +246,7 @@ class Command(object):
             self.register_error(errmsg=err.__class__.__name__)
 
     def compile_path(self, path, write=True, package=None, run=False, force=False):
-        """Compiles a path."""
+        """Compiles a path and returns paths to compiled files."""
         path = fixpath(path)
         if write is not None and write is not True:
             write = fixpath(write)
@@ -253,17 +254,19 @@ class Command(object):
             if package is None:
                 package = False
             destpath = self.compile_file(path, write, package, run, force)
-            if destpath is not None:
-                self.run_mypy(destpath)
+            if destpath is None:
+                return []
+            else:
+                return [destpath]
         elif os.path.isdir(path):
             if package is None:
                 package = True
-            self.compile_folder(path, write, package, run, force)
+            return self.compile_folder(path, write, package, run, force)
         else:
             raise CoconutException("could not find source path", path)
 
     def compile_folder(self, directory, write=True, package=True, run=False, force=False):
-        """Compiles a directory."""
+        """Compiles a directory and returns paths to compiled files."""
         filepaths = []
         for dirpath, dirnames, filenames in os.walk(directory):
             if write is None or write is True:
@@ -280,7 +283,7 @@ class Command(object):
                     if logger.verbose:
                         logger.show_tabulated("Skipped directory", name, "(explicitly pass as source to override).")
                     dirnames.remove(name)  # directories removed from dirnames won't appear in further os.walk iteration
-        self.run_mypy(*filepaths)
+        return filepaths
 
     def compile_file(self, filepath, write=True, package=False, run=False, force=False):
         """Compiles a file and returns the compiled file's path."""
@@ -593,7 +596,7 @@ class Command(object):
         def recompile(path):
             if os.path.isfile(path) and os.path.splitext(path)[1] in code_exts:
                 with self.handling_exceptions():
-                    self.compile_path(path, write, package, run, force)
+                    self.run_mypy(*self.compile_path(path, write, package, run, force))
 
         observer = Observer()
         observer.schedule(RecompilationWatcher(recompile), source, recursive=True)
