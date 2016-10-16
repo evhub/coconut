@@ -1144,11 +1144,16 @@ class Grammar(object):
     no_chain_infix_expr <<= no_chain_infix_item | or_expr
 
     pipe_op = pipeline | starpipe | backpipe | backstarpipe
+    pipe_expr = Forward()
     pipe_item = Group(no_partial_atom_item + partial_trailer_tokens) + pipe_op | Group(infix_expr) + pipe_op
     last_pipe_item = Group(longest(no_partial_atom_item + partial_trailer_tokens, infix_expr))
-    expr_ref = OneOrMore(pipe_item) + last_pipe_item | Group(infix_expr)
-    no_chain_pipe_item = Group(longest(no_partial_atom_item + partial_trailer_tokens, no_chain_infix_expr))
-    no_chain_expr_ref = no_chain_pipe_item + ZeroOrMore(pipe_op + no_chain_pipe_item)
+    pipe_expr_ref = OneOrMore(pipe_item) + last_pipe_item
+    expr <<= infix_expr + ~pipe_op | pipe_expr
+    no_chain_pipe_expr = Forward()
+    no_chain_pipe_item = Group(no_partial_atom_item + partial_trailer_tokens) + pipe_op | Group(no_chain_infix_expr) + pipe_op
+    no_chain_last_pipe_item = Group(longest(no_partial_atom_item + partial_trailer_tokens, no_chain_infix_expr))
+    no_chain_pipe_expr_ref = OneOrMore(no_chain_pipe_item) + no_chain_last_pipe_item
+    no_chain_expr <<= no_chain_infix_expr + ~pipe_op | no_chain_pipe_expr
 
     star_expr_ref = condense(star + expr)
     dubstar_expr_ref = condense(dubstar + expr)
@@ -1205,8 +1210,11 @@ class Grammar(object):
 
     test <<= trace(lambdef | addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test)), "test")
     test_nocond <<= trace(lambdef_nocond | test_item, "test_nocond")
-    test_no_chain <<= trace(lambdef_no_chain
-                            | addspace(no_chain_test_item + Optional(Keyword("if") + no_chain_test_item + Keyword("else") + test_no_chain)), "test_no_chain")
+    test_no_chain <<= trace(
+        lambdef_no_chain
+        | addspace(
+            no_chain_test_item + Optional(Keyword("if") + no_chain_test_item + Keyword("else") + test_no_chain)
+        ), "test_no_chain")
 
     classlist_ref = Optional(
         lparen.suppress() + rparen.suppress()
