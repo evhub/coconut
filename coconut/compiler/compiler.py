@@ -1258,10 +1258,11 @@ class Compiler(Grammar):
 
         raw_lines = funcdef.splitlines(True)
         def_stmt, raw_lines = raw_lines[0], raw_lines[1:]
-        func_name, func_args, func_params = parse(self.split_func_name_args_params, def_stmt)
-        use_mock = func_args and func_args != func_params[1:-1]
-        func_store = tre_store_var + "_" + str(int(self.tre_store_count))
-        self.tre_store_count += 1
+        if False:
+            func_name, func_args, func_params = parse(self.split_func_name_args_params, def_stmt)
+            use_mock = func_args and func_args != func_params[1:-1]
+            func_store = tre_store_var + "_" + str(int(self.tre_store_count))
+            self.tre_store_count += 1
 
         for line in raw_lines:
             body, indent = split_trailing_indent(line)
@@ -1277,7 +1278,7 @@ class Compiler(Grammar):
                     disabled_until_level = level
                 else:
                     base, comment = split_comment(body)
-                    if decorators:
+                    if True or decorators:
                         # tco works with decorators, but not tre
                         tre_base = None
                     else:
