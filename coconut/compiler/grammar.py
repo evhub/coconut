@@ -1144,8 +1144,9 @@ class Grammar(object):
     no_chain_infix_expr <<= no_chain_infix_item | or_expr
 
     pipe_op = pipeline | starpipe | backpipe | backstarpipe
-    pipe_item = Group(longest(no_partial_atom_item + partial_trailer_tokens, infix_expr))
-    expr_ref = pipe_item + ZeroOrMore(pipe_op + pipe_item)
+    pipe_item = Group(no_partial_atom_item + partial_trailer_tokens) + pipe_op | Group(infix_expr) + pipe_op
+    last_pipe_item = Group(longest(no_partial_atom_item + partial_trailer_tokens, infix_expr))
+    expr_ref = OneOrMore(pipe_item) + last_pipe_item | Group(infix_expr)
     no_chain_pipe_item = Group(longest(no_partial_atom_item + partial_trailer_tokens, no_chain_infix_expr))
     no_chain_expr_ref = no_chain_pipe_item + ZeroOrMore(pipe_op + no_chain_pipe_item)
 
