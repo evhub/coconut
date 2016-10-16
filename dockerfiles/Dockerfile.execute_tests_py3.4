@@ -1,0 +1,33 @@
+FROM python:3.4-alpine
+MAINTAINER x10an14
+
+#  'apk add'
+#     on alpine
+#=> equivalent of
+#  'apt-get install'
+#     on debian/ubuntu
+
+# Necessary for pip requirements (like pyzmq):
+RUN apk add --no-cache \
+    linux-headers \
+    g++ \
+    gcc
+
+# Necessary for Makefile & tests (git):
+RUN apk add --no-cache \
+    git \
+    make
+
+# Copy local source-code to docker image
+#   TODO:
+#       Extract out what's needed for pip in a separate step,
+#       so that 'make install' can be executed before copying
+#       over all of the source-code
+ADD . /usr/coconut
+WORKDIR /usr/coconut
+
+# Install pip requirements needed for tests
+RUN make install
+
+# Execute tests
+ENTRYPOINT ["make", "test"]

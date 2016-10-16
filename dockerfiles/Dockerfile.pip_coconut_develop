@@ -1,0 +1,16 @@
+# This install is NOT minimal!
+#   TODO: Minimize the docker container
+FROM python:3.5-alpine
+MAINTAINER x10an14
+
+# Necessary for pip requirements (like pyzmq):
+RUN apk add --no-cache \
+    g++ \
+    gcc
+
+WORKDIR /usr/
+
+RUN pip3 install coconut-develop jupyter
+
+ENTRYPOINT ["coconut"]
+CMD ["--ipython", "console"]
