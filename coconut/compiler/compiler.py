@@ -89,7 +89,7 @@ from coconut.compiler.grammar import (
     match_handle,
 )
 from coconut.compiler.util import (
-    target_info,
+    get_target_info,
     addskip,
     count_end,
     paren_change,
@@ -386,9 +386,28 @@ class Compiler(Grammar):
         """Gets a formatted header."""
         return self.polish(getheader(which, self.target, usehash))
 
+    @property
     def target_info(self):
         """Returns information on the current target as a version tuple."""
-        return target_info(self.target)
+        return get_target_info(self.target)
+
+    @property
+    def target_info_len2(self):
+        """Returns target_info as a length 2 tuple."""
+        info = self.target_info
+        if not info:
+            return (2, 7)
+        elif len(info) == 1:
+            if info == (2,):
+                return (2, 7)
+            elif info == (3,):
+                return (3, 4)
+            else:
+                raise CoconutInternalException("invalid target info", info)
+        elif len(info) == 2:
+            return info
+        else:
+            return info[:2]
 
     def should_indent(self, code):
         """Determines whether the next line should be indented."""
@@ -894,7 +913,7 @@ class Compiler(Grammar):
         """Processes Python 3.3 yield from."""
         if len(tokens) != 1:
             raise CoconutInternalException("invalid yield from tokens", tokens)
-        elif self.target_info() < (3, 3):
+        elif self.target_info < (3, 3):
             return (yield_from_var + " = " + tokens[0]
                     + "\nfor " + yield_item_var + " in " + yield_from_var + ":\n"
                     + openindent + "yield " + yield_item_var + "\n" + closeindent)
@@ -1025,7 +1044,7 @@ class Compiler(Grammar):
                 paths = (imp,)
             elif self.target.startswith("2"):
                 paths = (old_imp,)
-            elif not self.target or self.target_info() < version_check:
+            elif not self.target or self.target_info < version_check:
                 paths = (old_imp, imp, version_check)
             else:
                 paths = (imp,)
@@ -1128,7 +1147,7 @@ class Compiler(Grammar):
             raise CoconutInternalException("invalid set literal tokens", tokens)
         elif len(tokens[0]) != 1:
             raise CoconutInternalException("invalid set literal item", tokens[0])
-        elif self.target_info() < (2, 7):
+        elif self.target_info < (2, 7):
             return "_coconut.set(" + set_to_tuple(tokens[0]) + ")"
         else:
             return "{" + tokens[0][0] + "}"
@@ -1419,7 +1438,7 @@ class Compiler(Grammar):
         """Checks for Python-version-specific syntax."""
         if len(tokens) != 1:
             raise CoconutInternalException("invalid " + name + " tokens", tokens)
-        elif self.target_info() < target_info(version):
+        elif self.target_info < get_target_info(version):
             raise self.make_err(CoconutTargetError, "found Python " + version + " " + name, original, loc, target=version)
         else:
             return tokens[0]

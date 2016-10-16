@@ -25,7 +25,7 @@ from coconut.constants import (
     default_encoding,
 )
 from coconut.exceptions import CoconutInternalException
-from coconut.compiler.util import target_info
+from coconut.compiler.util import get_target_info
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
@@ -76,6 +76,8 @@ def getheader(which, target="", usehash=None):
 '''
         if usehash is not None:
             header += hash_prefix + usehash + '\n'
+        if which == "package":
+            header += '# type: ignore\n'
         header += '''
 # Compiled with Coconut version ''' + VERSION_STR + '''
 
@@ -95,11 +97,12 @@ def getheader(which, target="", usehash=None):
         if not target.startswith("3"):
             header += r'''from __future__ import print_function, absolute_import, unicode_literals, division
 '''
-        elif target_info(target) >= (3, 5):
+        elif get_target_info(target) >= (3, 5):
             header += r'''from __future__ import generator_stop
 '''
         if which == "module":
-            header += r'''import sys as _coconut_sys, os.path as _coconut_os_path
+            header += r'''
+import sys as _coconut_sys, os.path as _coconut_os_path
 _coconut_file_path = _coconut_os_path.dirname(_coconut_os_path.abspath(__file__))
 _coconut_sys.path.insert(0, _coconut_file_path)
 from __coconut__ import _coconut, _coconut_MatchError, _coconut_tail_call, _coconut_tco, _coconut_igetitem, _coconut_compose, _coconut_pipe, _coconut_starpipe, _coconut_backpipe, _coconut_backstarpipe, _coconut_bool_and, _coconut_bool_or, _coconut_minus, _coconut_tee, _coconut_map
@@ -111,7 +114,7 @@ _coconut_sys.path.remove(_coconut_file_path)
 '''
             if target.startswith("3"):
                 header += PY3_HEADER
-            elif target_info(target) >= (2, 7):
+            elif get_target_info(target) >= (2, 7):
                 header += PY27_HEADER
             elif target.startswith("2"):
                 header += PY2_HEADER
@@ -254,7 +257,7 @@ class concurrent_map(_coconut_map):
     __slots__ = ()
     def __iter__(self):
         from concurrent.futures import ThreadPoolExecutor'''
-            if target_info(target) >= (3, 5):
+            if get_target_info(target) >= (3, 5):
                 header += r'''
         with ThreadPoolExecutor() as executor:'''
             else:

@@ -24,6 +24,15 @@ import os
 from pyparsing import alphanums
 
 #-----------------------------------------------------------------------------------------------------------------------
+# UTILITIES:
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def fixpath(path):
+    """Uniformly formats a path."""
+    return os.path.normpath(os.path.realpath(path))
+
+#-----------------------------------------------------------------------------------------------------------------------
 # COMPILER CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -203,12 +212,16 @@ else:
 tutorial_url = "http://coconut.readthedocs.io/en/" + version_tag + "/HELP.html"
 documentation_url = "http://coconut.readthedocs.io/en/" + version_tag + "/DOCS.html"
 
-icoconut_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icoconut")
+base_dir = os.path.dirname(os.path.abspath(fixpath(__file__)))
+
+icoconut_dir = os.path.join(base_dir, "icoconut")
 icoconut_kernel_dirs = [
     os.path.join(icoconut_dir, "coconut"),
     os.path.join(icoconut_dir, "coconut2"),
     os.path.join(icoconut_dir, "coconut3"),
 ]
+
+stub_dir = os.path.join(base_dir, "stubs")
 
 #-----------------------------------------------------------------------------------------------------------------------
 # HIGHLIGHTER CONSTANTS:

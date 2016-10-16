@@ -41,6 +41,7 @@ else:
     from coconut.highlighter import CoconutLexer
 
 from coconut.constants import (
+    fixpath,
     default_encoding,
     main_prompt,
     more_prompt,
@@ -74,11 +75,6 @@ def readfile(openedfile):
     """Reads the contents of a file."""
     openedfile.seek(0)
     return str(openedfile.read())
-
-
-def fixpath(path):
-    """Uniformly formats a path."""
-    return os.path.normpath(os.path.realpath(path))
 
 
 def showpath(path):
@@ -152,7 +148,7 @@ def handling_prompt_toolkit_errors(func):
 
 
 @contextmanager
-def handle_broken_process_pool():
+def handling_broken_process_pool():
     """Handles BrokenProcessPool error."""
     if sys.version_info < (3, 3):
         yield
@@ -202,6 +198,23 @@ def run_cmd(cmd, show_output=True, raise_errs=True):
             return subprocess.call(cmd)
         else:
             raise CoconutInternalException("cannot not show console output and not raise errors")
+
+
+@contextmanager
+def in_mypy_path(mypy_path):
+    """Temporarily adds to MYPYPATH."""
+    original = os.environ.get("MYPYPATH")
+    if original is None:
+        os.environ["MYPYPATH"] = mypy_path
+    else:
+        os.environ["MYPYPATH"] += os.pathsep + mypy_path
+    try:
+        yield
+    finally:
+        if original is None:
+            del os.environ["MYPYPATH"]
+        else:
+            os.environ["MYPYPATH"] = original
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -271,8 +284,10 @@ class Runner(object):
         """Creates the executor."""
         self.exit = sys.exit if exit is None else exit
         self.vars = self.build_vars(path)
+        self.lines = []
         if comp is not None:
-            self.run(comp.headers("code"))
+            self.lines.append(comp.headers("module"))
+            self.run(comp.headers("code"), add_to_lines=False)
             self.fixpickle()
 
     def build_vars(self, path=None):
@@ -304,7 +319,7 @@ class Runner(object):
             if all_errors_exit:
                 self.exit(1)
 
-    def run(self, code, use_eval=None, path=None, all_errors_exit=False):
+    def run(self, code, use_eval=None, path=None, all_errors_exit=False, add_to_lines=True):
         """Executes Python code."""
         if use_eval is None:
             run_func = interpret
@@ -314,13 +329,16 @@ class Runner(object):
             run_func = exec_func
         with self.handling_errors(all_errors_exit):
             if path is None:
-                return run_func(code, self.vars)
+                result = run_func(code, self.vars)
             else:
                 use_vars = self.build_vars(path)
                 try:
-                    return run_func(code, use_vars)
+                    result = run_func(code, use_vars)
                 finally:
                     self.vars.update(use_vars)
+            if add_to_lines:
+                self.lines.append(code)
+            return result
 
     def run_file(self, path, all_errors_exit=True):
         """Executes a Python file."""
@@ -330,8 +348,15 @@ class Runner(object):
             with self.handling_errors(all_errors_exit):
                 module = imp.load_module("__main__", *found)
                 self.vars.update(vars(module))
+                self.lines.append("from " + name + " import *")
         finally:
             found[0].close()
+
+    def was_run_code(self, get_all=True):
+        """Gets all the code that was run."""
+        if get_all:
+            self.lines = ["\n".join(self.lines)]
+        return self.lines[-1]
 
 
 class multiprocess_wrapper(object):

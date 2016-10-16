@@ -35,6 +35,7 @@ from coconut.exceptions import (
 )
 from coconut.logging import logger
 from coconut.constants import (
+    fixpath,
     code_exts,
     comp_ext,
     watch_interval,
@@ -42,21 +43,22 @@ from coconut.constants import (
     documentation_url,
     icoconut_kernel_dirs,
     minimum_recursion_limit,
+    stub_dir,
 )
 from coconut.command.util import (
     openfile,
     writefile,
     readfile,
-    fixpath,
     showpath,
     rem_encoding,
     Runner,
     multiprocess_wrapper,
     Prompt,
     ensure_time_elapsed,
-    handle_broken_process_pool,
+    handling_broken_process_pool,
     kill_children,
     run_cmd,
+    in_mypy_path,
 )
 from coconut.compiler.header import gethash
 from coconut.command.cli import arguments
@@ -231,7 +233,7 @@ class Command(object):
     def handling_exceptions(self):
         """Performs proper exception handling."""
         try:
-            with handle_broken_process_pool():
+            with handling_broken_process_pool():
                 yield
         except SystemExit as err:
             self.register_error(err.code)
@@ -250,7 +252,9 @@ class Command(object):
         if os.path.isfile(path):
             if package is None:
                 package = False
-            self.compile_file(path, write, package, run, force)
+            destpath = self.compile_file(path, write, package, run, force)
+            if destpath is not None:
+                self.run_mypy(destpath)
         elif os.path.isdir(path):
             if package is None:
                 package = True
@@ -260,6 +264,7 @@ class Command(object):
 
     def compile_folder(self, directory, write=True, package=True, run=False, force=False):
         """Compiles a directory."""
+        filepaths = []
         for dirpath, dirnames, filenames in os.walk(directory):
             if write is None or write is True:
                 writedir = write
@@ -267,19 +272,18 @@ class Command(object):
                 writedir = os.path.join(write, os.path.relpath(dirpath, directory))
             for filename in filenames:
                 if os.path.splitext(filename)[1] in code_exts:
-                    self.compile_file(os.path.join(dirpath, filename), writedir, package, run, force, allow_mypy=False)
+                    destpath = self.compile_file(os.path.join(dirpath, filename), writedir, package, run, force)
+                    if destpath is not None:
+                        filepaths.append(destpath)
             for name in dirnames[:]:
                 if name != "." * len(name) and name.startswith("."):
                     if logger.verbose:
                         logger.show_tabulated("Skipped directory", name, "(explicitly pass as source to override).")
                     dirnames.remove(name)  # directories removed from dirnames won't appear in further os.walk iteration
-        if write is True:
-            self.run_mypy(directory)
-        elif write is not None:
-            self.run_mypy(write)
+        self.run_mypy(*filepaths)
 
-    def compile_file(self, filepath, write=True, package=False, run=False, force=False, allow_mypy=True):
-        """Compiles a file."""
+    def compile_file(self, filepath, write=True, package=False, run=False, force=False):
+        """Compiles a file and returns the compiled file's path."""
         if write is None:
             destpath = None
         elif write is True:
@@ -290,12 +294,11 @@ class Command(object):
             base, ext = os.path.splitext(os.path.splitext(destpath)[0])
             if not ext:
                 ext = comp_ext
-            destpath = base + ext
-        if filepath == destpath:
-            raise CoconutException("cannot compile " + showpath(filepath) + " to itself (incorrect file extension)")
+            destpath = fixpath(base + ext)
+            if filepath == destpath:
+                raise CoconutException("cannot compile " + showpath(filepath) + " to itself (incorrect file extension)")
         self.compile(filepath, destpath, package, run, force)
-        if allow_mypy and destpath is not None:
-            self.run_mypy(destpath)
+        return destpath
 
     def compile(self, codepath, destpath=None, package=False, run=False, force=False):
         """Compiles a source Coconut file to a destination Python file."""
@@ -395,7 +398,9 @@ class Command(object):
 
     def create_package(self, dirpath):
         """Sets up a package directory."""
-        filepath = os.path.join(fixpath(dirpath), "__coconut__.py")
+        dirpath = fixpath(dirpath)
+
+        filepath = os.path.join(dirpath, "__coconut__.py")
         with openfile(filepath, "w") as opened:
             writefile(opened, self.comp.headers("package"))
 
@@ -470,10 +475,10 @@ class Command(object):
         if compiled is not None:
             if allow_show and self.show:
                 print(compiled)
-            self.run_mypy("-c", compiled)
             if path is not None:  # path means header is included, and thus encoding must be removed
                 compiled = rem_encoding(compiled)
             self.runner.run(compiled, use_eval=use_eval, path=path, all_errors_exit=(path is not None))
+            self.run_mypy("-c", self.runner.was_run_code())
 
     def execute_file(self, destpath):
         """Executes compiled file."""
@@ -495,9 +500,14 @@ class Command(object):
         """Opens the Coconut documentation."""
         webbrowser.open(documentation_url, 2)
 
+    @property
+    def mypy(self):
+        """Whether using MyPy or not."""
+        return self.mypy_args is not None
+
     def run_mypy(self, *args):
         """Run MyPy with arguments."""
-        if self.mypy_args is not None:
+        if self.mypy:
             args = ["mypy"] + list(args)
 
             for arg in self.mypy_args:
@@ -505,6 +515,8 @@ class Command(object):
                     logger.warn("unnecessary --mypy argument", arg, extra="passed automatically if available")
                 elif arg == "--py2" or arg == "-2":
                     logger.warn("unnecessary --mypy argument", arg, extra="passed automatically when needed")
+                elif arg == "--python-version":
+                    logger.warn("unnecessary --mypy argument", arg, extra="current --target passed as version automatically")
                 elif path == fixpath(arg):
                     logger.warn("unnecessary --mypy argument", arg, extra="path to compiled files passed automatically")
                     continue
@@ -512,6 +524,8 @@ class Command(object):
 
             if not ("--py2" in args or "-2" in args) and not self.comp.target.startswith("3"):
                 args.append("--py2")
+            if "--python-version" not in args:
+                args += ["--python-version", ".".join(str(v) for v in self.comp.target_info_len2)]
             if "--fast-parser" not in args:
                 try:
                     import typed_ast  # NOQA
@@ -523,7 +537,8 @@ class Command(object):
                     args.append("--fast-parser")
 
             try:
-                run_cmd(args)
+                with in_mypy_path(stub_dir):
+                    run_cmd(args)
             except CalledProcessError:
                 raise CoconutException("failed to run MyPy command", args)
 

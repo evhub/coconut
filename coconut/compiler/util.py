@@ -60,7 +60,7 @@ def longest(*args):
         return matcher
 
 
-def target_info(target):
+def get_target_info(target):
     """Returns target information as a version tuple."""
     return tuple(int(x) for x in target)
 
