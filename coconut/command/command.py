@@ -543,7 +543,7 @@ class Command(object):
                 with in_mypy_path(stub_dir):
                     run_cmd(args)
             except CalledProcessError:
-                raise CoconutException("failed to run MyPy command", args)
+                logger.warn("failed to run MyPy command", " ".join(args))
 
     def start_jupyter(self, args):
         """Starts Jupyter with the Coconut kernel."""
