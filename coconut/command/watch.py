@@ -34,6 +34,3 @@ class RecompilationWatcher(FileSystemEventHandler):
 
     def on_modified(self, event):
         self.recompile(event.src_path)
-
-    def on_created(self, event):
-        self.recompile(event.src_path)
