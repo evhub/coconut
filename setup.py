@@ -168,12 +168,16 @@ if PY2:
     requirements += read_reqs("py2")
 
 extras = {
+    "jupyter": read_reqs("jupyter"),
     "watch": read_reqs("watch"),
     "jobs": read_reqs("jobs"),
     "mypy": read_reqs("mypy"),
 }
 
-extras["jupyter"] = extras["ipython"] = read_reqs("jupyter")
+if sys.version_info >= (3, 3) and platform.system() != "Windows":
+    extras["mypy"] += read_reqs("typed-ast")
+
+extras["ipython"] = extras["jupyter"]
 
 extras["all"] = all_reqs_in(extras)
 

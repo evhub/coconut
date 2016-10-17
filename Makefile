@@ -5,7 +5,7 @@ install:
 
 .PHONY: dev
 dev:
-	pip install --upgrade setuptools pip
+	pip install --upgrade pip
 	pip install --upgrade -e .[dev]
 	pre-commit install -f --install-hooks
 
@@ -32,6 +32,7 @@ clean:
 
 .PHONY: build
 build: clean
+	pip install --upgrade setuptools
 	python setup.py sdist bdist_wheel
 
 .PHONY: upload
