@@ -150,8 +150,6 @@ class Command(object):
             self.prompt.set_style(args.style)
         if args.display:
             self.show = True
-        if args.mypy is not None:
-            self.mypy_args = args.mypy
 
         self.setup(
             target=args.target,
@@ -160,6 +158,9 @@ class Command(object):
             line_numbers=args.line_numbers,
             keep_lines=args.keep_lines,
         )
+
+        if args.mypy is not None:
+            self.set_mypy_args(args.mypy)
 
         if args.source is not None:
             if args.run and os.path.isdir(args.source):
@@ -508,10 +509,12 @@ class Command(object):
         """Whether using MyPy or not."""
         return self.mypy_args is not None
 
-    def run_mypy(self, *args):
-        """Run MyPy with arguments."""
-        if self.mypy:
-            args = ["mypy"] + list(args)
+    def set_mypy_args(self, mypy_args=None):
+        """Sets MyPy arguments."""
+        if mypy_args is None:
+            self.mypy_args = None
+        else:
+            self.mypy_args = list(mypy_args)
 
             for arg in self.mypy_args:
                 if arg == "--fast-parser":
@@ -520,16 +523,8 @@ class Command(object):
                     logger.warn("unnecessary --mypy argument", arg, extra="passed automatically when needed")
                 elif arg == "--python-version":
                     logger.warn("unnecessary --mypy argument", arg, extra="current --target passed as version automatically")
-                elif path == fixpath(arg):
-                    logger.warn("unnecessary --mypy argument", arg, extra="path to compiled files passed automatically")
-                    continue
-                args.append(arg)
 
-            if not ("--py2" in args or "-2" in args) and not self.comp.target.startswith("3"):
-                args.append("--py2")
-            if "--python-version" not in args:
-                args += ["--python-version", ".".join(str(v) for v in self.comp.target_info_len2)]
-            if "--fast-parser" not in args:
+            if "--fast-parser" not in self.mypy_args:
                 try:
                     import typed_ast  # NOQA
                 except ImportError:
@@ -537,11 +532,20 @@ class Command(object):
                         logger.warn("missing typed_ast module; MyPy may not properly analyze added type annotation comments",
                                     extra="run 'pip install typed_ast' or pass '--target 3' to fix")
                 else:
-                    args.append("--fast-parser")
+                    self.mypy_args.append("--fast-parser")
 
+            if not ("--py2" in self.mypy_args or "-2" in self.mypy_args) and not self.comp.target.startswith("3"):
+                self.mypy_args.append("--py2")
+
+            if "--python-version" not in self.mypy_args:
+                self.mypy_args += ["--python-version", ".".join(str(v) for v in self.comp.target_info_len2)]
+
+    def run_mypy(self, *args):
+        """Run MyPy with arguments."""
+        if self.mypy:
             try:
                 with in_mypy_path(stub_dir):
-                    run_cmd(args)
+                    run_cmd(["python3", "-m", "mypy"] + list(args) + self.mypy_args)
             except CalledProcessError:
                 pass
 
