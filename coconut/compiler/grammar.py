@@ -79,6 +79,7 @@ from coconut.compiler.util import (
     tokenlist,
     itemlist,
     longest,
+    exprlist,
 )
 
 # end: IMPORTS
@@ -126,10 +127,7 @@ def lazy_list_handle(tokens):
 
 def chain_handle(tokens):
     """Processes chain calls."""
-    if len(tokens) == 1:
-        return tokens[0]
-    else:
-        return "_coconut.itertools.chain.from_iterable(" + lazy_list_handle(tokens) + ")"
+    return "_coconut.itertools.chain.from_iterable(" + lazy_list_handle(tokens) + ")"
 
 
 def infix_error(tokens):
@@ -1123,27 +1121,35 @@ class Grammar(object):
     factor <<= trace(condense(ZeroOrMore(unary) + power), "factor")
 
     mulop = mul_star | div_dubslash | div_slash | percent | matrix_at
-    term = addspace(factor + ZeroOrMore(mulop + factor))
-    arith = plus | sub_minus
-    arith_expr = addspace(term + ZeroOrMore(arith + term))
-
+    addop = plus | sub_minus
     shift = lshift | rshift
-    shift_expr = addspace(arith_expr + ZeroOrMore(shift + arith_expr))
-    and_expr = addspace(shift_expr + ZeroOrMore(amp + shift_expr))
-    xor_expr = addspace(and_expr + ZeroOrMore(caret + and_expr))
-    or_expr = addspace(xor_expr + ZeroOrMore(bar + xor_expr))
 
-    chain_expr = attach(or_expr + ZeroOrMore(dubcolon.suppress() + or_expr), chain_handle)
+    term = exprlist(factor, mulop)
+    arith_expr = exprlist(term, addop)
+    shift_expr = exprlist(arith_expr, shift)
+    and_expr = exprlist(shift_expr, amp)
+    xor_expr = exprlist(and_expr, caret)
+    or_expr = exprlist(xor_expr, bar)
+
+    chain_expr = (
+        or_expr + ~dubcolon
+        | attach(or_expr + OneOrMore(dubcolon.suppress() + or_expr), chain_handle)
+    )
+
+    infix_op = condense(backtick.suppress() + chain_expr + backtick.suppress())
+    pipe_op = pipeline | starpipe | backpipe | backstarpipe
 
     infix_expr = Forward()
-    infix_op = condense(backtick.suppress() + chain_expr + backtick.suppress())
-    infix_item = attach(Group(Optional(chain_expr)) + infix_op + Group(Optional(infix_expr)), infix_handle)
-    infix_expr <<= infix_item | chain_expr
+    infix_expr <<= (
+        chain_expr + ~infix_op
+        | attach(Group(Optional(chain_expr)) + infix_op + Group(Optional(infix_expr)), infix_handle)
+    )
     no_chain_infix_expr = Forward()
-    no_chain_infix_item = attach(Group(Optional(or_expr)) + infix_op + Group(Optional(no_chain_infix_expr)), infix_handle)
-    no_chain_infix_expr <<= no_chain_infix_item | or_expr
+    no_chain_infix_expr <<= (
+        or_expr + ~infix_op
+        | attach(Group(Optional(or_expr)) + infix_op + Group(Optional(no_chain_infix_expr)), infix_handle)
+    )
 
-    pipe_op = pipeline | starpipe | backpipe | backstarpipe
     pipe_expr = Forward()
     pipe_item = Group(no_partial_atom_item + partial_trailer_tokens) + pipe_op | Group(infix_expr) + pipe_op
     last_pipe_item = Group(longest(no_partial_atom_item + partial_trailer_tokens, infix_expr))
@@ -1157,16 +1163,15 @@ class Grammar(object):
 
     star_expr_ref = condense(star + expr)
     dubstar_expr_ref = condense(dubstar + expr)
-    comparison = addspace(expr + ZeroOrMore(comp_op + expr))
+
+    comparison = exprlist(expr, comp_op)
     not_test = addspace(ZeroOrMore(Keyword("not")) + comparison)
-    and_test = addspace(not_test + ZeroOrMore(Keyword("and") + not_test))
-    or_test = addspace(and_test + ZeroOrMore(Keyword("or") + and_test))
-    test_item = trace(or_test, "test_item")
-    no_chain_comparison = addspace(no_chain_expr + ZeroOrMore(comp_op + no_chain_expr))
+    and_test = exprlist(not_test, Keyword("and"))
+    test_item = trace(exprlist(and_test, Keyword("or")), "test_item")
+    no_chain_comparison = exprlist(no_chain_expr, comp_op)
     no_chain_not_test = addspace(ZeroOrMore(Keyword("not")) + no_chain_comparison)
-    no_chain_and_test = addspace(no_chain_not_test + ZeroOrMore(Keyword("and") + no_chain_not_test))
-    no_chain_or_test = addspace(no_chain_and_test + ZeroOrMore(Keyword("or") + no_chain_and_test))
-    no_chain_test_item = trace(no_chain_or_test, "no_chain_test_item")
+    no_chain_and_test = exprlist(no_chain_not_test, Keyword("and"))
+    no_chain_test_item = trace(exprlist(no_chain_and_test, Keyword("or")), "no_chain_test_item")
 
     small_stmt = Forward()
     simple_stmt = Forward()

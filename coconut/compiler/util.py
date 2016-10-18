@@ -22,6 +22,7 @@ from coconut.root import *  # NOQA
 from pyparsing import (
     replaceWith,
     ZeroOrMore,
+    OneOrMore,
     Optional,
     SkipTo,
     CharsNotIn,
@@ -138,8 +139,13 @@ def tokenlist(item, sep, suppress=True):
 
 
 def itemlist(item, sep):
-    """Creates a list of an item."""
+    """Creates a list of items seperated by seps."""
     return condense(item + ZeroOrMore(addspace(sep + item)) + Optional(sep))
+
+
+def exprlist(expr, op):
+    """Creates a list of exprs seperated by ops."""
+    return expr + ~op | addspace(expr + OneOrMore(op + expr))
 
 
 def rem_comment(line):

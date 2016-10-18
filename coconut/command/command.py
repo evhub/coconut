@@ -541,10 +541,10 @@ class Command(object):
             if "--python-version" not in self.mypy_args:
                 self.mypy_args += ["--python-version", ".".join(str(v) for v in self.comp.target_info_len2)]
 
-    def run_mypy(self, paths, code=None):
+    def run_mypy(self, paths=[], code=None):
         """Run MyPy with arguments."""
         if self.mypy:
-            args = ["python3", "-m", "mypy"] + list(paths) + self.mypy_args
+            args = ["python3", "-m", "mypy"] + paths + self.mypy_args
             with in_mypy_path(stub_dir):
                 if code is None:
                     run_cmd(args, raise_errs=False)
