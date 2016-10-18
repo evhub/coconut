@@ -127,7 +127,10 @@ def lazy_list_handle(tokens):
 
 def chain_handle(tokens):
     """Processes chain calls."""
-    return "_coconut.itertools.chain.from_iterable(" + lazy_list_handle(tokens) + ")"
+    if len(tokens) == 1:
+        return tokens[0]
+    else:
+        return "_coconut.itertools.chain.from_iterable(" + lazy_list_handle(tokens) + ")"
 
 
 def infix_error(tokens):
@@ -1132,10 +1135,7 @@ class Grammar(object):
     xor_expr = exprlist(and_expr, caret)
     or_expr = exprlist(xor_expr, bar)
 
-    chain_expr = (
-        or_expr + ~dubcolon
-        | attach(or_expr + OneOrMore(dubcolon.suppress() + or_expr), chain_handle)
-    )
+    chain_expr = attach(or_expr + ZeroOrMore(dubcolon.suppress() + or_expr), chain_handle)
 
     infix_op = condense(backtick.suppress() + chain_expr + backtick.suppress())
     pipe_op = pipeline | starpipe | backpipe | backstarpipe
