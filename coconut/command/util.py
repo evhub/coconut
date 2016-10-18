@@ -51,8 +51,12 @@ from coconut.constants import (
     default_mouse_support,
     ensure_elapsed_time,
 )
+from coconut.exceptions import (
+    CoconutException,
+    CoconutInternalException,
+    get_encoding,
+)
 from coconut.logging import logger
-from coconut.exceptions import CoconutException, CoconutInternalException
 
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
@@ -181,6 +185,17 @@ def splitname(path):
     return dirpath, name
 
 
+def call_output(cmd):
+    """Run command and read output."""
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    while p.poll() is None:
+        out, err = p.communicate()
+        if out is not None:
+            yield out.decode(get_encoding(sys.stdout))
+        if err is not None:
+            yield err.decode(get_encoding(sys.stderr))
+
+
 def run_cmd(cmd, show_output=True, raise_errs=True):
     """Runs a console command."""
     if not isinstance(cmd, list):
@@ -192,12 +207,12 @@ def run_cmd(cmd, show_output=True, raise_errs=True):
         logger.log_cmd(cmd)
         if show_output and raise_errs:
             return subprocess.check_call(cmd)
-        elif not show_output:
+        elif raise_errs:
             return subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-        elif not raise_errs:
+        elif show_output:
             return subprocess.call(cmd)
         else:
-            raise CoconutInternalException("cannot not show console output and not raise errors")
+            return "".join(call_output(cmd))
 
 
 @contextmanager

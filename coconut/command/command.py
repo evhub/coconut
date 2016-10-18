@@ -482,7 +482,7 @@ class Command(object):
             if path is not None:  # path means header is included, and thus encoding must be removed
                 compiled = rem_encoding(compiled)
             self.runner.run(compiled, use_eval=use_eval, path=path, all_errors_exit=(path is not None))
-            self.run_mypy("-c", self.runner.was_run_code())
+            self.run_mypy(code=self.runner.was_run_code())
 
     def execute_file(self, destpath):
         """Executes compiled file."""
@@ -514,6 +514,7 @@ class Command(object):
         if mypy_args is None:
             self.mypy_args = None
         else:
+            self.mypy_errs = []
             self.mypy_args = list(mypy_args)
 
             for arg in self.mypy_args:
@@ -540,14 +541,18 @@ class Command(object):
             if "--python-version" not in self.mypy_args:
                 self.mypy_args += ["--python-version", ".".join(str(v) for v in self.comp.target_info_len2)]
 
-    def run_mypy(self, *args):
+    def run_mypy(self, *paths, code=None):
         """Run MyPy with arguments."""
         if self.mypy:
-            try:
-                with in_mypy_path(stub_dir):
-                    run_cmd(["python3", "-m", "mypy"] + list(args) + self.mypy_args)
-            except CalledProcessError:
-                pass
+            args = ["python3", "-m", "mypy"] + list(paths) + self.mypy_args
+            with in_mypy_path(stub_dir):
+                if code is None:
+                    run_cmd(args, raise_errs=False)
+                else:
+                    for err in run_cmd(args + ["-c", code], show_output=False, raise_errs=False).splitlines():
+                        if err not in self.mypy_errs:
+                            logger.printerr(err)
+                            self.mypy_errs.append(err)
 
     def start_jupyter(self, args):
         """Starts Jupyter with the Coconut kernel."""

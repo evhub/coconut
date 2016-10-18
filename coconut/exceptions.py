@@ -35,12 +35,14 @@ from coconut.constants import (
 #-----------------------------------------------------------------------------------------------------------------------
 
 
+def get_encoding(fileobj):
+    """Get encoding of a file."""
+    return getattr(fileobj, "encoding", default_encoding)
+
+
 def clean(inputline, strip=True, rem_indents=True, encoding_errors="replace"):
     """Cleans and strips a line."""
-    if hasattr(sys.stdout, "encoding") and sys.stdout.encoding is not None:
-        stdout_encoding = sys.stdout.encoding
-    else:
-        stdout_encoding = default_encoding
+    stdout_encoding = get_encoding(sys.stdout)
     inputline = str(inputline)
     if rem_indents:
         inputline = inputline.replace(openindent, "").replace(closeindent, "")
