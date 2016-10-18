@@ -62,19 +62,9 @@ arguments.add_argument(
     help="specify target Python version (defaults to universal)")
 
 arguments.add_argument(
-    "-s", "--strict",
+    "-i", "--interact",
     action="store_true",
-    help="enforce code cleanliness standards")
-
-arguments.add_argument(
-    "-l", "--line-numbers", "--linenumbers",
-    action="store_true",
-    help="add line number comments for ease of debugging")
-
-arguments.add_argument(
-    "-k", "--keep-lines", "--keeplines",
-    action="store_true",
-    help="include source code in comments for ease of debugging")
+    help="force the interpreter to start (otherwise starts if no other command is given) (implies --run)")
 
 arguments.add_argument(
     "-p", "--package",
@@ -87,19 +77,24 @@ arguments.add_argument(
     help="compile source as standalone files (defaults to only if source is a single file)")
 
 arguments.add_argument(
-    "-w", "--watch",
+    "-l", "--line-numbers", "--linenumbers",
     action="store_true",
-    help="watch a directory and recompile on changes (requires watchdog)")
+    help="add line number comments for ease of debugging")
 
 arguments.add_argument(
-    "-d", "--display",
+    "-k", "--keep-lines", "--keeplines",
     action="store_true",
-    help="print compiled Python")
+    help="include source code in comments for ease of debugging")
+
+arguments.add_argument(
+    "-w", "--watch",
+    action="store_true",
+    help="watch a directory and recompile on changes")
 
 arguments.add_argument(
     "-r", "--run",
     action="store_true",
-    help="run compiled Python (often used with --nowrite)")
+    help="execute compiled Python")
 
 arguments.add_argument(
     "-n", "--nowrite",
@@ -107,14 +102,9 @@ arguments.add_argument(
     help="disable writing compiled Python")
 
 arguments.add_argument(
-    "-m", "--minify",
+    "-d", "--display",
     action="store_true",
-    help="compress compiled Python")
-
-arguments.add_argument(
-    "-i", "--interact",
-    action="store_true",
-    help="force the interpreter to start (otherwise starts if no other command is given)")
+    help="print compiled Python")
 
 arguments.add_argument(
     "-q", "--quiet",
@@ -122,21 +112,26 @@ arguments.add_argument(
     help="suppress all informational output (combine with --display to write runnable code to stdout)")
 
 arguments.add_argument(
-    "-f", "--force",
+    "-s", "--strict",
     action="store_true",
-    help="force overwriting of compiled Python (otherwise only overwrites when source code or compilation parameters change)")
+    help="enforce code cleanliness standards")
 
 arguments.add_argument(
     "-c", "--code",
     metavar="code",
     type=str,
-    help="run a line of Coconut passed in as a string (can also be passed into stdin)")
+    help="run Coconut passed in as a string (can also be piped into stdin)")
 
 arguments.add_argument(
     "-j", "--jobs",
     metavar="processes",
     type=str,
     help="number of additional processes to use (defaults to 0) (pass 'sys' to use machine default)")
+
+arguments.add_argument(
+    "--minify",
+    action="store_true",
+    help="reduce size of compiled Python")
 
 arguments.add_argument(
     "--jupyter", "--ipython",

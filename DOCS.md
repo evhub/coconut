@@ -115,44 +115,69 @@ which will install the most recent working [development build](https://github.co
 ### Usage
 
 ```
-coconut [-h] [-v] [source] [dest] [-t version] [-s] [-l] [-k] [-p] [-a] [-w] [-d] [-r] [-n] [-m] [-i] [-q] [-f] [-c code] [-j processes] [--jupyter ...] [--mypy ...] [--tutorial] [--documentation] [--style name] [--recursion-limit limit] [--verbose]
+coconut [-h] [-v] [-t version] [-s] [-l] [-k] [-p] [-a] [-w] [-d] [-r]
+    [-n] [-m] [-i] [-q] [-f] [-c code] [-j processes]
+    [--jupyter ...] [--mypy ...] [--tutorial] [--documentation]
+    [--style name] [--recursion-limit limit] [--verbose]
+    [source] [dest]
 ```
 
 #### Positional Arguments
 
 ```
-source                path to the coconut file/folder to compile
-dest                  destination directory for compiled files (defaults to the source directory)
+source                path to the Coconut file/folder to compile
+dest                  destination directory for compiled files (defaults to
+                      the source directory)
 ```
 
 #### Optional Arguments
 
 ```
--h, --help              show this help message and exit
--v, --version           print Coconut and Python version information
--t, --target            specify target Python version (defaults to universal)
--s, --strict            enforce code cleanliness standards
--l, --line-numbers      add line number comments for ease of debugging
--k, --keep-lines        include source code in comments for ease of debugging
--p, --package           compile source as part of a package (defaults to only if source is a directory)
--a, --standalone        compile source as standalone files (defaults to only if source is a single file)
--w, --watch           watch a directory and recompile on changes (requires watchdog)
--d, --display           print compiled Python
--r, --run               run compiled Python (often used with --nowrite)
--n, --nowrite           disable writing compiled Python
--m, --minify            compress compiled Python
--i, --interact          force the interpreter to start (otherwise starts if no other command is given)
--q, --quiet             suppress all informational output (combine with --display to write runnable code to stdout)
--f, --force             force overwriting of compiled Python (otherwise only overwrites when source code or compilation parameters change)
--c, --code code         run a line of Coconut passed in as a string (can also be passed into stdin)
--j, --jobs processes    number of additional processes to use (defaults to 0) (pass 'sys' to use machine default)
---jupyter, --ipython    run Jupyter/IPython with Coconut as the kernel (remaining args passed to Jupyter)
---mypy                   run MyPy on compiled Python (remaining args passed to MyPy)
---tutorial              open the Coconut tutorial in the default web browser
---documentation         open the Coconut documentation in the default web browser
---style name            pygments syntax highlighting style (or 'none' to disable)
---recursion-limit       set maximum recursion depth in compiler (defaults to 2000)
---verbose               print verbose debug output
+-h, --help            show this help message and exit
+-v, --version         print Coconut and Python version information
+-t version, --target version
+                      specify target Python version (defaults to universal)
+-s, --strict          enforce code cleanliness standards
+-l, --line-numbers, --linenumbers
+                      add line number comments for ease of debugging
+-k, --keep-lines, --keeplines
+                      include source code in comments for ease of debugging
+-p, --package         compile source as part of a package (defaults to only
+                      if source is a directory)
+-a, --standalone      compile source as standalone files (defaults to only
+                      if source is a single file)
+-w, --watch           watch a directory and recompile on changes (requires
+                      watchdog)
+-d, --display         print compiled Python
+-r, --run             run compiled Python (often used with --nowrite)
+-n, --nowrite         disable writing compiled Python
+-m, --minify          compress compiled Python
+-i, --interact        force the interpreter to start (otherwise starts if no
+                      other command is given)
+-q, --quiet           suppress all informational output (combine with
+                      --display to write runnable code to stdout)
+-f, --force           force overwriting of compiled Python (otherwise only
+                      overwrites when source code or compilation parameters
+                      change)
+-c code, --code code  run a line of Coconut passed in as a string (can also
+                      be passed into stdin)
+-j processes, --jobs processes
+                      number of additional processes to use (defaults to 0)
+                      (pass 'sys' to use machine default)
+--jupyter ..., --ipython ...
+                      run Jupyter/IPython with Coconut as the kernel
+                      (remaining args passed to Jupyter)
+--mypy ...            run MyPy on compiled Python (remaining args passed to
+                      MyPy)
+--tutorial            open the Coconut tutorial in the default web browser
+--documentation       open the Coconut documentation in the default web
+                      browser
+--style name          pygments syntax highlighting style (or 'none' to
+                      disable)
+--recursion-limit limit, --recursionlimit limit
+                      set maximum recursion depth in compiler (defaults to
+                      2000)
+--verbose             print verbose debug output
 ```
 
 ### Coconut Scripts
