@@ -21,7 +21,6 @@ from coconut.root import *  # NOQA
 
 from pyparsing import (
     replaceWith,
-    ZeroOrMore,
     OneOrMore,
     Optional,
     SkipTo,
@@ -135,12 +134,12 @@ def tokenlist(item, sep, suppress=True):
     """Creates a list of tokens matching the item."""
     if suppress:
         sep = sep.suppress()
-    return item + ZeroOrMore(sep + item) + Optional(sep)
+    return item + ~sep | item + OneOrMore(sep + item) + Optional(sep)
 
 
 def itemlist(item, sep):
     """Creates a list of items seperated by seps."""
-    return condense(item + ZeroOrMore(addspace(sep + item)) + Optional(sep))
+    return item + ~sep | condense(item + OneOrMore(addspace(sep + item)) + Optional(sep))
 
 
 def exprlist(expr, op):
