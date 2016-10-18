@@ -137,7 +137,7 @@ def tokenlist(item, sep, suppress=True):
 
 def itemlist(item, sep):
     """Creates a list of items seperated by seps."""
-    return item + ~sep | condense(item + OneOrMore(addspace(sep + item)) + Optional(sep))
+    return item + ~sep | addspace(OneOrMore(condense(item + sep)) + Optional(item))
 
 
 def exprlist(expr, op):
