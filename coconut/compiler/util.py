@@ -134,7 +134,7 @@ def tokenlist(item, sep, suppress=True):
     """Creates a list of tokens matching the item."""
     if suppress:
         sep = sep.suppress()
-    return item + ~sep | item + OneOrMore(sep + item) + Optional(sep)
+    return item + OneOrMore(sep + item) + Optional(sep)
 
 
 def itemlist(item, sep):
