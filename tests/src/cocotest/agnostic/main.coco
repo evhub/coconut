@@ -103,7 +103,7 @@ def main_test():
         assert err
     else:
         assert False
-    r = range()
+    r = range(10)
     try:
         r.x = 12
     except AttributeError as err:
