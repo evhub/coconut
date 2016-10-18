@@ -21,7 +21,7 @@ if sys.version_info < (3,):
     from io import open
 
     py_raw_input, py_xrange = builtins.raw_input, builtins.xrange
-    chr, str, bytes = unichr, unicode, bytearray
+    chr, str = unichr, unicode
 
     class range:
         def __init__(self,

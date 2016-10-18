@@ -77,7 +77,6 @@ def main_test():
     assert text == "abc"
     assert first == 1
     assert rest == [2, 3]
-    assert bytes(3) == b"\x00\x00\x00"
     assert isinstance("a", str)
     assert isinstance(b"a", bytes)
     global (glob_a,
@@ -104,9 +103,9 @@ def main_test():
         assert err
     else:
         assert False
-    b = bytes()
+    r = range()
     try:
-        b.x = 12
+        r.x = 12
     except AttributeError as err:
         assert err
     else:
@@ -270,7 +269,6 @@ def main_test():
     assert (def ([x] + xs) -> x, xs) <| range(5) == (0, [1,2,3,4])
     s: str = "hello"
     assert s == "hello"
-    assert list(b"abc") == [97, 98, 99]
     return True
 
 def main(*args):
