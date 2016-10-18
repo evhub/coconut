@@ -21,6 +21,7 @@ from coconut.root import *  # NOQA
 
 from pyparsing import (
     replaceWith,
+    ZeroOrMore,
     OneOrMore,
     Optional,
     SkipTo,
@@ -122,19 +123,16 @@ def condense(item):
     return attach(item, "".join)
 
 
-def parenwrap(lparen, item, rparen, tokens=False):
+def maybeparens(lparen, item, rparen):
     """Wraps an item in optional parentheses."""
-    wrap = lparen.suppress() + item + rparen.suppress() | item
-    if not tokens:
-        wrap = condense(wrap)
-    return wrap
+    return lparen.suppress() + item + rparen.suppress() | item
 
 
 def tokenlist(item, sep, suppress=True):
     """Creates a list of tokens matching the item."""
     if suppress:
         sep = sep.suppress()
-    return item + OneOrMore(sep + item) + Optional(sep)
+    return item + ZeroOrMore(sep + item) + Optional(sep)
 
 
 def itemlist(item, sep):
@@ -196,6 +194,11 @@ def match_in(grammar, text):
     for result in grammar.scanString(text):
         return True
     return False
+
+
+def matches(grammar, text):
+    """Finds all matches for grammar in text."""
+    return list(grammar.parseWithTabs().scanString(text))
 
 
 def transform(grammar, text):

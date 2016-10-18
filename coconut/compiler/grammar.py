@@ -75,7 +75,7 @@ from coconut.compiler.util import (
     fixto,
     addspace,
     condense,
-    parenwrap,
+    maybeparens,
     tokenlist,
     itemlist,
     longest,
@@ -814,7 +814,8 @@ class Grammar(object):
     backstarpipe = Literal("<*|") | fixto(Literal("\u21a4*"), "<*|")
     amp = Literal("&") | fixto(Literal("\u2227") | Literal("\u2229"), "&")
     caret = Literal("^") | fixto(Literal("\u22bb") | Literal("\u2295"), "^")
-    bar = ~Literal("|>") + ~Literal("|*>") + ~rbanana + Literal("|") | fixto(Literal("\u2228") | Literal("\u222a"), "|")
+    unsafe_bar = ~Literal("|>") + ~Literal("|*>") + Literal("|") | fixto(Literal("\u2228") | Literal("\u222a"), "|")
+    bar = ~rbanana + unsafe_bar
     percent = Literal("%")
     dotdot = ~Literal("...") + Literal("..") | fixto(Literal("\u2218"), "..")
     dollar = Literal("$")
@@ -967,7 +968,7 @@ class Grammar(object):
         | fixto(plus, "_coconut.operator.add")
         | fixto(amp, "_coconut.operator.and_")
         | fixto(caret, "_coconut.operator.xor")
-        | fixto(bar, "_coconut.operator.or_")
+        | fixto(unsafe_bar, "_coconut.operator.or_")
         | fixto(lshift, "_coconut.operator.lshift")
         | fixto(rshift, "_coconut.operator.rshift")
         | fixto(lt, "_coconut.operator.lt")
@@ -1097,7 +1098,7 @@ class Grammar(object):
     no_partial_atom_item_ref = atom + ZeroOrMore(complex_trailer_no_partial)
     simple_assign = Forward()
     simple_assign_ref = (name | passthrough_atom) + ZeroOrMore(ZeroOrMore(complex_trailer) + OneOrMore(simple_trailer))
-    simple_assignlist = parenwrap(lparen, itemlist(simple_assign, comma), rparen)
+    simple_assignlist = maybeparens(lparen, itemlist(simple_assign, comma), rparen)
 
     assignlist = Forward()
     star_assign_item = Forward()
@@ -1183,7 +1184,7 @@ class Grammar(object):
     classlist = Forward()
 
     classic_lambdef = Forward()
-    classic_lambdef_params = parenwrap(lparen, varargslist, rparen)
+    classic_lambdef_params = maybeparens(lparen, varargslist, rparen)
     new_lambdef_params = lparen.suppress() + varargslist + rparen.suppress() | name
     classic_lambdef_ref = addspace(Keyword("lambda") + condense(classic_lambdef_params + colon))
     new_lambdef = attach(new_lambdef_params + arrow.suppress(), lambdef_handle)
@@ -1247,24 +1248,24 @@ class Grammar(object):
 
     dotted_as_name = Group(dotted_name - Optional(Keyword("as").suppress() - name))
     import_as_name = Group(name - Optional(Keyword("as").suppress() - name))
-    import_names = Group(parenwrap(lparen, tokenlist(dotted_as_name, comma), rparen, tokens=True))
-    import_from_names = Group(parenwrap(lparen, tokenlist(import_as_name, comma), rparen, tokens=True))
-    import_name = Keyword("import").suppress() - import_names
-    import_from = (Keyword("from").suppress()
+    import_names = Group(maybeparens(lparen, tokenlist(dotted_as_name, comma), rparen))
+    from_import_names = Group(maybeparens(lparen, tokenlist(import_as_name, comma), rparen))
+    basic_import = Keyword("import").suppress() - import_names
+    from_import = (Keyword("from").suppress()
                    - condense(ZeroOrMore(unsafe_dot) + dotted_name | OneOrMore(unsafe_dot))
-                   - Keyword("import").suppress() - (Group(star) | import_from_names))
+                   - Keyword("import").suppress() - (Group(star) | from_import_names))
     import_stmt = Forward()
-    import_stmt_ref = import_from | import_name
+    import_stmt_ref = from_import | basic_import
 
     nonlocal_stmt = Forward()
     namelist = attach(
-        parenwrap(lparen, itemlist(name, comma), rparen)
+        maybeparens(lparen, itemlist(name, comma), rparen)
         - Optional(equals.suppress() - test_expr), namelist_handle)
     global_stmt = addspace(Keyword("global") - namelist)
     nonlocal_stmt_ref = addspace(Keyword("nonlocal") - namelist)
     del_stmt = addspace(Keyword("del") - simple_assignlist)
     with_item = addspace(test - Optional(Keyword("as") - name))
-    with_item_list = parenwrap(lparen, condense(itemlist(with_item, comma)), rparen)
+    with_item_list = maybeparens(lparen, condense(itemlist(with_item, comma)), rparen)
 
     matchlist_list <<= Group(Optional(tokenlist(match, comma)))
     matchlist_tuple = Group(Optional(
