@@ -129,6 +129,11 @@ arguments.add_argument(
     help="number of additional processes to use (defaults to 0) (pass 'sys' to use machine default)")
 
 arguments.add_argument(
+    "-f", "--force",
+    action="store_true",
+    help="force overwriting of compiled Python (otherwise only overwrites when source code or compilation parameters change)")
+
+arguments.add_argument(
     "--minify",
     action="store_true",
     help="reduce size of compiled Python")

@@ -76,7 +76,7 @@ class CoconutLexer(Python3Lexer):
     tokens = Python3Lexer.tokens.copy()
     tokens["root"] = [
         (r"|".join(new_operators), Operator),
-        (r'(?<!\\)(data)((?:\s|\\\s)+)', bygroups(Keyword, Text), py_str('classname')),
+        (r'(?<!\\)(data)((?:\s|\\\s)+)', bygroups(Keyword, Text), py_str("classname")),
         (r'def(?=\s*\()', Keyword),
     ] + tokens["root"]
     tokens["keywords"] = tokens["keywords"] + [

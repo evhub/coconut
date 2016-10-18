@@ -21,7 +21,7 @@ from coconut.root import *  # NOQA
 
 from coconut.exceptions import CoconutException
 from coconut.command import Command
-from coconut.constants import version_tag, version_long, main_sig
+from coconut.constants import version_tag, version_long
 
 #-----------------------------------------------------------------------------------------------------------------------
 # COMMAND:
@@ -48,7 +48,7 @@ def version(which="num"):
     elif which == "tag":
         return version_tag
     elif which == "-v":
-        return main_sig + version_long
+        return version_long
     else:
         raise CoconutException("invalid version type " + ascii(which)
                                + "; valid versions are 'num', 'name', 'spec', 'tag', and '-v'")
