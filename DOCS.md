@@ -39,7 +39,7 @@
     1. [Set Literals](#set-literals)
     1. [Imaginary Literals](#imaginary-literals)
     1. [Underscore Separators](#underscore-separators)
-1. [Function Notation](#function-notation)
+1. [Function Definition](#function-definition)
     1. [Tail Call Optimization](#tail-call-optimization)
     1. [Operator Functions](#operator-functions)
     1. [Assignment Functions](#assignment-functions)
@@ -206,7 +206,6 @@ As part of Coconut's cross-compatibility efforts, Coconut adds in new Python 3 b
 
 Finally, while Coconut will try to compile Python-3-specific syntax to its universal equivalent, the follow constructs have no equivalent in Python 2, and require a target of at least `3` to be specified to be used:
 - destructuring assignment with `*`s (use Coconut pattern-matching instead),
-- function type annotation,
 - the `nonlocal` keyword,
 - `exec` used in a context where it must be a function,
 - keyword class definition,
@@ -261,6 +260,8 @@ If Coconut is used as a kernel, all code in the console or notebook will be sent
 Coconut has the ability to integrate with [MyPy](http://mypy-lang.org/) to provide optional static type-checking, including for all Coconut built-ins.
 
 Simply pass `--mypy` (be careful to pass it only as the last argument), use [standard Python 3 type annotation syntax](https://www.python.org/dev/peps/pep-0484/), and Coconut will take care of the rest. By default, Coconut compiles Python 3 type annotations into `mypy --py2` compatible type comments. If you want to keep the Python 3 type annotations instead, simply pass `--target 3`.
+
+In addition to function argument type annotation, Coconut also supports variable type annotation using the [new Python 3.6 syntax](https://www.python.org/dev/peps/pep-0526/), which compiles to `mypy --py2` compatible type comments unless `--target 3.6` is specified.
 
 Coconut even supports `--mypy` in the interpreter, which will intelligently scan each new line of code, in the context of previous lines, for newly-introduced MyPy errors. For example:
 ```coconut
@@ -933,7 +934,7 @@ Coconut allows for one underscore between digits and after base specifiers in nu
 10000000.0
 ```
 
-## Function Notation
+## Function Definition
 
 ### Tail Call Optimization
 

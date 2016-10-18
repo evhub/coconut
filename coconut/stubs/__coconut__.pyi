@@ -16,7 +16,34 @@ _S = TypeVar('_S')
 
 
 if sys.version_info < (3,):
+    import __builtin__ as builtins
     from future_builtins import *  # type: ignore
+    from io import open
+
+    py_raw_input, py_xrange = builtins.raw_input, builtins.xrange
+    chr, str, bytes = unichr, unicode, bytearray
+
+    class range:
+        def __init__(self,
+            start: Optional[int] = ...,
+            stop: Optional[int] = ...,
+            step: Optional[int] = ...
+            ) -> None: ...
+        def __iter__(self) -> Iterable[int]: ...
+        def __reversed__(self) -> Iterable[int]: ...
+        def __len__(self) -> int: ...
+        def __contains__(self, elem: int) -> bool: ...
+        def __getitem__(self, index: int) -> int: ...
+        def __hash__(self) -> int: ...
+        def count(self, elem: int) -> int: ...
+        def index(self, elem: int) -> int: ...
+
+else:
+    import builtins
+
+py_chr, py_filter, py_hex, py_input, py_int, py_map, py_oct, py_open, py_print, py_range, py_str, py_zip = builtins.chr, builtins.filter, builtins.hex, builtins.input, builtins.int, builtins.map, builtins.oct, builtins.open, builtins.print, builtins.range, builtins.str, builtins.zip
+
+
 from functools import reduce
 from itertools import takewhile, dropwhile, tee
 

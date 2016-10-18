@@ -403,7 +403,6 @@ class Command(object):
     def create_package(self, dirpath):
         """Sets up a package directory."""
         dirpath = fixpath(dirpath)
-
         filepath = os.path.join(dirpath, "__coconut__.py")
         with openfile(filepath, "w") as opened:
             writefile(opened, self.comp.headers("package"))

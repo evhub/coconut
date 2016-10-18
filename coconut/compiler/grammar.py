@@ -1100,7 +1100,10 @@ class Grammar(object):
     no_partial_atom_item = Forward()
     no_partial_atom_item_ref = atom + ZeroOrMore(complex_trailer_no_partial)
     simple_assign = Forward()
-    simple_assign_ref = (name | passthrough_atom) + ZeroOrMore(ZeroOrMore(complex_trailer) + OneOrMore(simple_trailer))
+    simple_assign_ref = maybeparens(lparen,
+                                    (name | passthrough_atom)
+                                    + ZeroOrMore(ZeroOrMore(complex_trailer) + OneOrMore(simple_trailer)),
+                                    rparen)
     simple_assignlist = maybeparens(lparen, itemlist(simple_assign, comma), rparen)
 
     assignlist = Forward()
@@ -1111,8 +1114,10 @@ class Grammar(object):
     assignlist <<= trace(itemlist(assign_item, comma), "assignlist")
 
     augassign_stmt = Forward()
+    typed_assign_stmt = Forward()
     augassign_stmt_ref = simple_assign + augassign + test_expr
-    assign_stmt = trace(addspace(ZeroOrMore(assignlist + equals) + test_expr), "assign_stmt")
+    typed_assign_stmt_ref = simple_assign + colon.suppress() + test + Optional(equals.suppress() + test_expr)
+    basic_stmt = trace(addspace(ZeroOrMore(assignlist + equals) + test_expr), "basic_stmt")
 
     compose_item = attach(atom_item + ZeroOrMore(dotdot.suppress() + atom_item), compose_item_handle)
 
@@ -1472,7 +1477,8 @@ class Grammar(object):
     small_stmt <<= trace(
         keyword_stmt
         | augassign_stmt
-        | longest(assign_stmt, destructuring_stmt), "small_stmt")
+        | typed_assign_stmt
+        | longest(basic_stmt, destructuring_stmt), "small_stmt")
     simple_stmt <<= trace(condense(
         small_stmt
         + ZeroOrMore(fixto(semicolon, "\n") + small_stmt)

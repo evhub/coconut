@@ -266,6 +266,7 @@ class Compiler(Grammar):
         self.typedef <<= trace(attach(self.typedef_ref, self.typedef_handle), "typedef")
         self.typedef_default <<= trace(attach(self.typedef_default_ref, self.typedef_handle), "typedef")
         self.return_typedef <<= trace(attach(self.return_typedef_ref, self.typedef_handle), "return_typedef")
+        self.typed_assign_stmt <<= trace(attach(self.typed_assign_stmt_ref, self.typed_assign_stmt_handle), "typed_assign_stmt")
         self.u_string <<= attach(self.u_string_ref, self.u_string_check)
         self.f_string <<= attach(self.f_string_ref, self.f_string_check)
         self.matrix_at <<= attach(self.matrix_at_ref, self.matrix_at_check)
@@ -1389,7 +1390,7 @@ class Compiler(Grammar):
                 raise CoconutInternalException("invalid pipe operator", op)
 
     def typedef_handle(self, tokens):
-        """Checks for Python 3 type defs."""
+        """Checks for Python 3 type annotations."""
         if len(tokens) == 1:  # return typedef
             if self.target.startswith("3"):
                 return tokens[0] + ":"
@@ -1402,11 +1403,27 @@ class Compiler(Grammar):
             elif len(tokens) == 3:
                 varname, typedef, default = tokens
             else:
-                raise CoconutInternalException("invalid typedef tokens", tokens)
+                raise CoconutInternalException("invalid type annotation tokens", tokens)
             if self.target.startswith("3"):
                 return varname + ": " + typedef + default + ","
             else:
                 return varname + default + "," + self.wrap_passthrough(self.wrap_comment(" type: " + typedef) + "\n" + " " * self.tabideal)
+
+    def typed_assign_stmt_handle(self, tokens):
+        """Handles variable type annotations."""
+        if len(tokens) == 2:
+            if self.target_info >= (3, 6):
+                return tokens[0] + ": " + tokens[1]
+            else:
+                return tokens[0] + " = None" + self.wrap_comment(" type: " + tokens[1])
+        elif len(tokens) == 3:
+            if self.target_info >= (3, 6):
+                return tokens[0] + ": " + tokens[1] + " = " + tokens[2]
+            else:
+                return tokens[0] + " = " + tokens[2] + self.wrap_comment(" type: " + tokens[1])
+        else:
+            raise CoconutInternalException("invalid variable type annotation tokens", tokens)
+
 
 # end: COMPILER HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1439,7 +1456,7 @@ class Compiler(Grammar):
         if len(tokens) != 1:
             raise CoconutInternalException("invalid " + name + " tokens", tokens)
         elif self.target_info < get_target_info(version):
-            raise self.make_err(CoconutTargetError, "found Python " + version + " " + name, original, loc, target=version)
+            raise self.make_err(CoconutTargetError, "found Python " + ".".join(version) + " " + name, original, loc, target=version)
         else:
             return tokens[0]
 
