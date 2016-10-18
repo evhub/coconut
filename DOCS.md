@@ -258,7 +258,15 @@ If Coconut is used as a kernel, all code in the console or notebook will be sent
 
 ### MyPy Integration
 
-Coconut has the ability to integrate with [MyPy](http://mypy-lang.org/) to provide optional static type-checking. Simply pass `--mypy` (be careful to pass it only as the last argument), use [standard Python 3 type annotation syntax](https://www.python.org/dev/peps/pep-0484/), and Coconut will take care of the rest. By default, Coconut compiles Python 3 type annotations into `mypy --py2` compatible type comments. If you want to keep the Python 3 type annotations instead, simply pass `--target 3`.
+Coconut has the ability to integrate with [MyPy](http://mypy-lang.org/) to provide optional static type-checking, including for all Coconut built-ins.
+
+Simply pass `--mypy` (be careful to pass it only as the last argument), use [standard Python 3 type annotation syntax](https://www.python.org/dev/peps/pep-0484/), and Coconut will take care of the rest. By default, Coconut compiles Python 3 type annotations into `mypy --py2` compatible type comments. If you want to keep the Python 3 type annotations instead, simply pass `--target 3`.
+
+Coconut even supports `--mypy` in the interpreter, which will intelligently scan each new line of code, in the context of previous lines, for newly-introduced MyPy errors. For example:
+```coconut
+>>> a = count()[0]  # type: str
+<string>:14: error: Incompatible types in assignment (expression has type "int", variable has type "str")
+```
 
 ## Operators
 

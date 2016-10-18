@@ -192,7 +192,7 @@ class Command(object):
 
             with self.running_jobs():
                 filepaths = self.compile_path(args.source, dest, package, args.run or args.interact, args.force)
-            self.run_mypy(filepaths)
+            self.run_mypy(package, filepaths)
 
         elif (args.run
               or args.nowrite
@@ -541,9 +541,11 @@ class Command(object):
             if "--python-version" not in self.mypy_args:
                 self.mypy_args += ["--python-version", ".".join(str(v) for v in self.comp.target_info_len2)]
 
-    def run_mypy(self, paths=[], code=None):
+    def run_mypy(self, package=True, paths=[], code=None):
         """Run MyPy with arguments."""
         if self.mypy:
+            if not package:
+                logger.warn("--mypy requires --package mode to properly type-check Coconut built-ins")
             args = ["python3", "-m", "mypy"] + paths + self.mypy_args
             with in_mypy_path(stub_dir):
                 if code is None:
@@ -605,7 +607,7 @@ class Command(object):
         def recompile(path):
             if os.path.isfile(path) and os.path.splitext(path)[1] in code_exts:
                 with self.handling_exceptions():
-                    self.run_mypy(self.compile_path(path, write, package, run, force))
+                    self.run_mypy(package, self.compile_path(path, write, package, run, force))
 
         observer = Observer()
         observer.schedule(RecompilationWatcher(recompile), source, recursive=True)
