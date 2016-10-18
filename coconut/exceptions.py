@@ -37,7 +37,9 @@ from coconut.constants import (
 
 def get_encoding(fileobj):
     """Get encoding of a file."""
-    return getattr(fileobj, "encoding", default_encoding)
+    # sometimes fileobj.encoding is undefined, but sometimes it is None; we need to handle both cases
+    obj_encoding = getattr(fileobj, "encoding", None)
+    return obj_encoding if obj_encoding is not None else default_encoding
 
 
 def clean(inputline, strip=True, rem_indents=True, encoding_errors="replace"):
