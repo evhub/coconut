@@ -536,7 +536,7 @@ class Command(object):
                 try:
                     import typed_ast  # NOQA
                 except ImportError:
-                    if not (3,) <= self.comp.target_info < (3, 6):
+                    if self.comp.target != "3":
                         logger.warn("missing typed_ast; MyPy may not properly analyze type annotations",
                                     extra="run 'pip install typed_ast' or pass '--target 3' to fix")
                 else:
