@@ -148,7 +148,7 @@ arguments.add_argument(
     "--mypy",
     type=str,
     nargs=argparse.REMAINDER,
-    help="run MyPy on compiled Python (remaining args passed to MyPy)")
+    help="run MyPy on compiled Python (remaining args passed to MyPy) (implies --package)")
 
 arguments.add_argument(
     "--tutorial",
@@ -164,7 +164,7 @@ arguments.add_argument(
     "--style",
     metavar="name",
     type=str,
-    help="pygments syntax highlighting style (or 'none' to disable)")
+    help="Pygments syntax highlighting style (or 'none' to disable)")
 
 arguments.add_argument(
     "--recursion-limit", "--recursionlimit",

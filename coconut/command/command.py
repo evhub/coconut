@@ -142,14 +142,14 @@ class Command(object):
             self.set_recursion_limit(args.recursion_limit)
         if args.jobs is not None:
             self.set_jobs(args.jobs)
-        if args.tutorial:
-            self.launch_tutorial()
-        if args.documentation:
-            self.launch_documentation()
-        if args.style is not None:
-            self.prompt.set_style(args.style)
         if args.display:
             self.show = True
+        if args.style is not None:
+            self.prompt.set_style(args.style)
+        if args.documentation:
+            self.launch_documentation()
+        if args.tutorial:
+            self.launch_tutorial()
 
         self.setup(
             target=args.target,
@@ -163,12 +163,21 @@ class Command(object):
             self.set_mypy_args(args.mypy)
 
         if args.source is not None:
-            if args.run and os.path.isdir(args.source):
-                raise CoconutException("source path must point to file not directory when --run is enabled")
-            elif args.watch and os.path.isfile(args.source):
+            if args.interact and args.run:
+                logger.warn("extraneous --run argument passed; --interact implies --run")
+            if args.package and self.mypy:
+                logger.warn("extraneous --package argument passed; --mypy implies --package")
+            if args.standalone and args.package:
+                raise CoconutException("cannot compile as both --package and --standalone")
+            if args.standalone and self.mypy:
+                raise CoconutException("cannot compile as both --package (implied by --mypy) and --standalone")
+            if (args.run or args.interact) and os.path.isdir(args.source):
+                if args.run:
+                    raise CoconutException("source path must point to file not directory when --run is enabled")
+                if args.interact:
+                    raise CoconutException("source path must point to file not directory when --run (implied by --interact) is enabled")
+            if args.watch and os.path.isfile(args.source):
                 raise CoconutException("source path must point to directory not file when --watch is enabled")
-            elif args.interact and args.run:
-                raise CoconutException("extraneous --run; --interact implies --run when used in compilation")
 
             if args.dest is None:
                 if args.nowrite:
@@ -181,9 +190,7 @@ class Command(object):
                 raise CoconutException("destination path must point to directory not file")
             else:
                 dest = args.dest
-            if args.package and args.standalone:
-                raise CoconutException("cannot compile as both --package and --standalone")
-            elif args.package:
+            if args.package or self.mypy:
                 package = True
             elif args.standalone:
                 package = False
@@ -192,7 +199,7 @@ class Command(object):
 
             with self.running_jobs():
                 filepaths = self.compile_path(args.source, dest, package, args.run or args.interact, args.force)
-            self.run_mypy(package, filepaths)
+            self.run_mypy(filepaths)
 
         elif (args.run
               or args.nowrite
@@ -541,11 +548,9 @@ class Command(object):
             if "--python-version" not in self.mypy_args:
                 self.mypy_args += ["--python-version", ".".join(str(v) for v in self.comp.target_info_len2)]
 
-    def run_mypy(self, package=True, paths=[], code=None):
+    def run_mypy(self, paths=[], code=None):
         """Run MyPy with arguments."""
         if self.mypy:
-            if not package:
-                logger.warn("--mypy requires --package mode to properly type-check Coconut built-ins")
             args = ["python3", "-m", "mypy"] + paths + self.mypy_args
             with in_mypy_path(stub_dir):
                 if code is None:
@@ -607,7 +612,7 @@ class Command(object):
         def recompile(path):
             if os.path.isfile(path) and os.path.splitext(path)[1] in code_exts:
                 with self.handling_exceptions():
-                    self.run_mypy(package, self.compile_path(path, write, package, run, force))
+                    self.run_mypy(self.compile_path(path, write, package, run, force))
 
         observer = Observer()
         observer.schedule(RecompilationWatcher(recompile), source, recursive=True)

@@ -167,11 +167,11 @@ dest                  destination directory for compiled files (defaults to
                       run Jupyter/IPython with Coconut as the kernel
                       (remaining args passed to Jupyter)
 --mypy ...            run MyPy on compiled Python (remaining args passed to
-                      MyPy)
+                      MyPy) (implies --package)
 --tutorial            open the Coconut tutorial in the default web browser
 --documentation       open the Coconut documentation in the default web
                       browser
---style name          pygments syntax highlighting style (or 'none' to
+--style name          Pygments syntax highlighting style (or 'none' to
                       disable)
 --recursion-limit limit, --recursionlimit limit
                       set maximum recursion depth in compiler (defaults to

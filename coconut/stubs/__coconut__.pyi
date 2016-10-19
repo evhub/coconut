@@ -16,11 +16,11 @@ _S = TypeVar('_S')
 
 
 if sys.version_info < (3,):
-    import __builtin__ as builtins
+    import __builtin__ as _b
     from future_builtins import *  # type: ignore
     from io import open
 
-    py_raw_input, py_xrange = builtins.raw_input, builtins.xrange
+    py_raw_input, py_xrange = _b.raw_input, _b.xrange
     chr, str = unichr, unicode
 
     class range:
@@ -39,9 +39,9 @@ if sys.version_info < (3,):
         def index(self, elem: int) -> int: ...
 
 else:
-    import builtins
+    import builtins as _b
 
-py_chr, py_filter, py_hex, py_input, py_int, py_map, py_oct, py_open, py_print, py_range, py_str, py_zip = builtins.chr, builtins.filter, builtins.hex, builtins.input, builtins.int, builtins.map, builtins.oct, builtins.open, builtins.print, builtins.range, builtins.str, builtins.zip
+py_chr, py_filter, py_hex, py_input, py_int, py_map, py_oct, py_open, py_print, py_range, py_str, py_zip = _b.chr, _b.filter, _b.hex, _b.input, _b.int, _b.map, _b.oct, _b.open, _b.print, _b.range, _b.str, _b.zip
 
 
 from functools import reduce
