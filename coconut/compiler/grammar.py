@@ -164,8 +164,21 @@ def get_infix_items(tokens, callback=infix_error):
 
 def op_funcdef_handle(tokens):
     """Processes infix defs."""
-    func, args = get_infix_items(tokens)
-    return func + "(" + ", ".join(args) + ")"
+    func, base_args = get_infix_items(tokens)
+    args = []
+    for arg in base_args[:-1]:
+        rstrip_arg = arg.rstrip()
+        if not rstrip_arg.endswith(unwrapper):
+            if not rstrip_arg.endswith(","):
+                arg += ", "
+            elif arg.endswith(","):
+                arg += " "
+        args.append(arg)
+    last_arg = base_args[-1]
+    if last_arg.rstrip().endswith(","):
+        last_arg = last_arg.rsplit(",")[0]
+    args.append(last_arg)
+    return func + "(" + "".join(args) + ")"
 
 
 def lambdef_handle(tokens):
@@ -981,10 +994,12 @@ class Grammar(object):
 
     typedef = Forward()
     typedef_default = Forward()
+    unsafe_typedef_default = Forward()
     default = condense(equals + test)
     arg_comma = comma | fixto(FollowedBy(rparen), "")
     typedef_ref = name + colon.suppress() + test + arg_comma
     typedef_default_ref = name + colon.suppress() + test + Optional(default) + arg_comma
+    unsafe_typedef_default_ref = name + colon.suppress() + test + Optional(default)
     tfpdef = typedef | condense(name + arg_comma)
     tfpdef_default = typedef_default | condense(name + Optional(default) + arg_comma)
 
@@ -1366,7 +1381,7 @@ class Grammar(object):
     async_funcdef = Forward()
     async_stmt = Forward()
     name_funcdef = trace(condense(name + parameters), "name_funcdef")
-    op_tfpdef = typedef_default | condense(name + Optional(default))
+    op_tfpdef = unsafe_typedef_default | condense(name + Optional(default))
     op_funcdef_arg = name | condense(lparen.suppress() + op_tfpdef + rparen.suppress())
     op_funcdef_name = backtick.suppress() + name + backtick.suppress()
     op_funcdef = trace(attach(

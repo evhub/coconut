@@ -265,6 +265,7 @@ class Compiler(Grammar):
         self.no_chain_pipe_expr <<= trace(attach(self.no_chain_pipe_expr_ref, self.pipe_handle), "no_chain_pipe_expr")
         self.typedef <<= trace(attach(self.typedef_ref, self.typedef_handle), "typedef")
         self.typedef_default <<= trace(attach(self.typedef_default_ref, self.typedef_handle), "typedef")
+        self.unsafe_typedef_default <<= trace(attach(self.unsafe_typedef_default_ref, self.unsafe_typedef_handle), "unsafe_typedef_default")
         self.return_typedef <<= trace(attach(self.return_typedef_ref, self.typedef_handle), "return_typedef")
         self.typed_assign_stmt <<= trace(attach(self.typed_assign_stmt_ref, self.typed_assign_stmt_handle), "typed_assign_stmt")
         self.u_string <<= attach(self.u_string_ref, self.u_string_check)
@@ -1269,10 +1270,10 @@ class Compiler(Grammar):
             complain(self.make_parse_err(err.line, err.col - 1))
             attempt_tre = False
         else:
-            attempt_tre = True
             use_mock = func_args and func_args != func_params[1:-1]
             func_store = tre_store_var + "_" + str(int(self.tre_store_count))
             self.tre_store_count += 1
+            attempt_tre = True
 
         for line in raw_lines:
             body, indent = split_trailing_indent(line)
@@ -1399,8 +1400,12 @@ class Compiler(Grammar):
             else:
                 raise CoconutInternalException("invalid pipe operator", op)
 
+    def unsafe_typedef_handle(self, tokens):
+        """Handles unsafe type annotations."""
+        return self.typedef_handle(tokens.asList() + [","])
+
     def typedef_handle(self, tokens):
-        """Checks for Python 3 type annotations."""
+        """Handles Python 3 type annotations."""
         if len(tokens) == 1:  # return typedef
             if self.target.startswith("3"):
                 return tokens[0] + ":"
@@ -1420,7 +1425,7 @@ class Compiler(Grammar):
                 return varname + default + comma + self.wrap_passthrough(self.wrap_comment(" type: " + typedef) + "\n" + " " * self.tabideal)
 
     def typed_assign_stmt_handle(self, tokens):
-        """Handles variable type annotations."""
+        """Handles Python 3.6 variable type annotations."""
         if len(tokens) == 2:
             if self.target_info >= (3, 6):
                 return tokens[0] + ": " + tokens[1]
