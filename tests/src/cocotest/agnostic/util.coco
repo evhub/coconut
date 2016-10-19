@@ -565,3 +565,7 @@ def does_raise_exc(func):
 def ret_none(n):
     if n != 0:
         return ret_none(n - 1)
+
+def anything_func(*args: Any, **kwargs: Any) -> None: pass
+
+def args_kwargs_func(args:List[Any]=[], kwargs:Dict[Any,Any]={}) -> None: pass

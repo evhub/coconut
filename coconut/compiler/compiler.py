@@ -415,6 +415,10 @@ class Compiler(Grammar):
         last = rem_comment(code.splitlines()[-1])
         return last.endswith(":") or last.endswith("\\") or paren_change(last) < 0
 
+    def make_parse_err(self, err_line, err_index=None, err_lineno=None):
+        """Make a CoconutParseError from a ParseBaseException."""
+        return CoconutParseError(None, err_line, err_index, err_lineno)
+
     def parse(self, inputstring, parser, preargs, postargs):
         """Uses the parser to parse the inputstring."""
         self.reset()
@@ -424,7 +428,7 @@ class Compiler(Grammar):
             out = self.post(parsed, **postargs)
         except ParseBaseException as err:
             err_line, err_index = self.reformat(err.line, err.col - 1)
-            raise CoconutParseError(None, err_line, err_index, self.adjust(err.lineno))
+            raise self.make_parse_err(err_line, err_index, self.adjust(err.lineno))
         except RuntimeError as err:
             raise CoconutException(str(err),
                                    extra="try again with --recursion-limit greater than the current " + str(sys.getrecursionlimit()))
@@ -1259,10 +1263,16 @@ class Compiler(Grammar):
 
         raw_lines = funcdef.splitlines(True)
         def_stmt, raw_lines = raw_lines[0], raw_lines[1:]
-        func_name, func_args, func_params = parse(self.split_func_name_args_params, def_stmt)
-        use_mock = func_args and func_args != func_params[1:-1]
-        func_store = tre_store_var + "_" + str(int(self.tre_store_count))
-        self.tre_store_count += 1
+        try:
+            func_name, func_args, func_params = parse(self.split_func_name_args_params, def_stmt)
+        except ParseBaseException as err:
+            complain(self.make_parse_err(err.line, err.col - 1))
+            attempt_tre = False
+        else:
+            attempt_tre = True
+            use_mock = func_args and func_args != func_params[1:-1]
+            func_store = tre_store_var + "_" + str(int(self.tre_store_count))
+            self.tre_store_count += 1
 
         for line in raw_lines:
             body, indent = split_trailing_indent(line)
@@ -1278,8 +1288,8 @@ class Compiler(Grammar):
                     disabled_until_level = level
                 else:
                     base, comment = split_comment(body)
-                    if decorators:
-                        # tco works with decorators, but not tre
+                    # tco works with decorators, but not tre
+                    if decorators or not attempt_tre:
                         tre_base = None
                     else:
                         # attempt tre
@@ -1397,17 +1407,17 @@ class Compiler(Grammar):
             else:
                 return ":\n" + self.wrap_comment(" type: (...) " + tokens[0])
         else:  # argument typedef
-            if len(tokens) == 2:
-                varname, typedef = tokens
+            if len(tokens) == 3:
+                varname, typedef, comma = tokens
                 default = ""
-            elif len(tokens) == 3:
-                varname, typedef, default = tokens
+            elif len(tokens) == 4:
+                varname, typedef, default, comma = tokens
             else:
                 raise CoconutInternalException("invalid type annotation tokens", tokens)
             if self.target.startswith("3"):
-                return varname + ": " + typedef + default + ","
+                return varname + ": " + typedef + default + comma
             else:
-                return varname + default + "," + self.wrap_passthrough(self.wrap_comment(" type: " + typedef) + "\n" + " " * self.tabideal)
+                return varname + default + comma + self.wrap_passthrough(self.wrap_comment(" type: " + typedef) + "\n" + " " * self.tabideal)
 
     def typed_assign_stmt_handle(self, tokens):
         """Handles variable type annotations."""

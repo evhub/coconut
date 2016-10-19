@@ -48,7 +48,6 @@ from pyparsing import (
     nums,
     originalTextFor,
     nestedExpr,
-    SkipTo,
     FollowedBy,
 )
 
@@ -165,15 +164,8 @@ def get_infix_items(tokens, callback=infix_error):
 
 def op_funcdef_handle(tokens):
     """Processes infix defs."""
-    func, base_args = get_infix_items(tokens)
-    args = []
-    for arg in base_args:
-        rstrip_arg = arg.rstrip()
-        # if arg has a typedef, it will already have a comma, so don't add one
-        if not (rstrip_arg.endswith(",") or rstrip_arg.endswith(unwrapper)):
-            arg += ", "
-        args.append(arg)
-    return func + "(" + "".join(args) + ")"
+    func, args = get_infix_items(tokens)
+    return func + "(" + ", ".join(args) + ")"
 
 
 def lambdef_handle(tokens):
@@ -990,11 +982,11 @@ class Grammar(object):
     typedef = Forward()
     typedef_default = Forward()
     default = condense(equals + test)
-    typedef_ref = name + colon.suppress() + test
-    typedef_default_ref = typedef_ref + Optional(default)
-    arg_comma = comma | FollowedBy(rparen)
-    tfpdef = typedef + arg_comma.suppress() | condense(name + arg_comma)
-    tfpdef_default = typedef_default + arg_comma.suppress() | condense(name + Optional(default) + arg_comma)
+    arg_comma = comma | fixto(FollowedBy(rparen), "")
+    typedef_ref = name + colon.suppress() + test + arg_comma
+    typedef_default_ref = name + colon.suppress() + test + Optional(default) + arg_comma
+    tfpdef = typedef | condense(name + arg_comma)
+    tfpdef_default = typedef_default | condense(name + Optional(default) + arg_comma)
 
     argslist = trace(addspace(ZeroOrMore(condense(
         dubstar + tfpdef
@@ -1506,6 +1498,7 @@ class Grammar(object):
     parens = originalTextFor(nestedExpr("(", ")"))
     brackets = originalTextFor(nestedExpr("[", "]"))
     braces = originalTextFor(nestedExpr("{", "}"))
+    any_char = Regex(r".", re.U | re.DOTALL)
 
     tco_return = attach(
         Keyword("return").suppress() + condense(
@@ -1513,14 +1506,15 @@ class Grammar(object):
             + ZeroOrMore(dot + base_name | brackets)
         ) + parens + end_marker, tco_return_handle)
 
-    rest_of_arg = SkipTo(comma | rparen)
+    rest_of_arg = ZeroOrMore(parens | brackets | braces | ~comma + ~rparen + any_char)
     tfpdef_tokens = base_name + Optional(originalTextFor(colon + rest_of_arg))
     tfpdef_default_tokens = base_name + Optional(originalTextFor((equals | colon) + rest_of_arg))
     parameters_tokens = Group(Optional(tokenlist(Group(
         dubstar + tfpdef_tokens
         | star + Optional(tfpdef_tokens)
         | tfpdef_default_tokens
-    ), comma + Optional(passthrough))))
+    ) + Optional(passthrough.suppress()),
+        comma + Optional(passthrough))))
 
     split_func_name_args_params = attach(
         (start_marker + Keyword("def")).suppress() + base_name + lparen.suppress()

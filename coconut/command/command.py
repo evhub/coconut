@@ -530,7 +530,7 @@ class Command(object):
                     import typed_ast  # NOQA
                 except ImportError:
                     if not (3,) <= self.comp.target_info < (3, 6):
-                        logger.warn("missing typed_ast module; MyPy may not properly analyze type annotations",
+                        logger.warn("missing typed_ast; MyPy may not properly analyze type annotations",
                                     extra="run 'pip install typed_ast' or pass '--target 3' to fix")
                 else:
                     self.mypy_args.append("--fast-parser")

@@ -231,4 +231,6 @@ def suite_test():
     assert 20 == (minus$(2) .. mul$(2) .. plus$(1))(10)
     assert does_raise_exc(raise_exc)
     assert ret_none(10) is None
+    assert anything_func() is None
+    assert args_kwargs_func() is None
     return True
