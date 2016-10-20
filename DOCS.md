@@ -1739,9 +1739,9 @@ Each _mode_ has two components: what parser it uses, and what header it prepends
     + parser: file
     + header: none
         No header is included, thus this can only be passed to `exec` if the exec header has already been executed at the global level.
-- `"module"`:
+- `"sys"`:
     + parser: file
-    + header: module
+    + header: sys
         This header imports `coconut.__coconut__` to access Coconut built-ins instead of creating them itself.
 - `"single"`:
     + parser: single

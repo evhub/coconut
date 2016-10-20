@@ -67,7 +67,7 @@ PARSERS = {
     "exec": lambda comp: comp.parse_exec,
     "package": lambda comp: comp.parse_package,
     "block": lambda comp: comp.parse_block,
-    "module": lambda comp: comp.parse_module,
+    "sys": lambda comp: comp.parse_sys,
     "eval": lambda comp: comp.parse_eval,
     "debug": lambda comp: comp.parse_debug,
 }

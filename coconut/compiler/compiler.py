@@ -1547,9 +1547,9 @@ class Compiler(Grammar):
         """Parses block code."""
         return self.parse(inputstring, self.file_parser, {}, {"header": "none", "initial": "none"})
 
-    def parse_module(self, inputstring):
+    def parse_sys(self, inputstring):
         """Parses module code."""
-        return self.parse(inputstring, self.file_parser, {}, {"header": "module", "initial": "none"})
+        return self.parse(inputstring, self.file_parser, {}, {"header": "sys", "initial": "none"})
 
     def parse_eval(self, inputstring):
         """Parses eval code."""

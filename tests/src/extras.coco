@@ -39,8 +39,8 @@ def main():
     assert _single
     _file = parse("abc", "file")
     assert _file
-    _module = parse("abc", "module")
-    assert _module
+    _package = parse("abc", "package")
+    assert _package
     _block = parse("abc", "block")
     assert _block
     _eval = parse("abc", "eval")
@@ -49,7 +49,7 @@ def main():
     assert _debug
     assert _single == parse("abc", "single")
     assert _file == parse("abc", "file")
-    assert _module == parse("abc", "module")
+    assert _package == parse("abc", "package")
     assert _block == parse("abc", "block")
     assert _eval == parse("abc", "eval")
     assert _debug == parse("abc", "debug")
