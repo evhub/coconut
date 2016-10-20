@@ -336,7 +336,7 @@ class Command(object):
         else:
 
             if package is True:
-                compile_method = "parse_module"
+                compile_method = "parse_package"
             elif package is False:
                 compile_method = "parse_file"
             else:
@@ -412,7 +412,7 @@ class Command(object):
         dirpath = fixpath(dirpath)
         filepath = os.path.join(dirpath, "__coconut__.py")
         with openfile(filepath, "w") as opened:
-            writefile(opened, self.comp.headers("package"))
+            writefile(opened, self.comp.getheader("__coconut__"))
 
     def hashashof(self, destpath, code, package):
         """Determines if a file has the hash of the code."""

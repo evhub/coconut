@@ -384,7 +384,7 @@ class Compiler(Grammar):
         else:
             raise CoconutInternalException("multiple tokens leftover", tokens)
 
-    def headers(self, which, usehash=None):
+    def getheader(self, which, usehash=None):
         """Gets a formatted header."""
         return self.polish(getheader(which, self.target, usehash))
 
@@ -1535,17 +1535,21 @@ class Compiler(Grammar):
         """Parses exec code."""
         return self.parse(inputstring, self.file_parser, {}, {"header": "file", "initial": "none"})
 
-    def parse_module(self, inputstring, addhash=True):
-        """Parses module code."""
+    def parse_package(self, inputstring, addhash=True):
+        """Parses package code."""
         if addhash:
             usehash = self.genhash(True, inputstring)
         else:
             usehash = None
-        return self.parse(inputstring, self.file_parser, {"nl_at_eof_check": True}, {"header": "module", "usehash": usehash})
+        return self.parse(inputstring, self.file_parser, {"nl_at_eof_check": True}, {"header": "package", "usehash": usehash})
 
     def parse_block(self, inputstring):
         """Parses block code."""
         return self.parse(inputstring, self.file_parser, {}, {"header": "none", "initial": "none"})
+
+    def parse_module(self, inputstring):
+        """Parses module code."""
+        return self.parse(inputstring, self.file_parser, {}, {"header": "module", "initial": "none"})
 
     def parse_eval(self, inputstring):
         """Parses eval code."""

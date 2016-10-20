@@ -64,7 +64,7 @@ def getheader(which, target="", usehash=None):
     """Generates the specified header."""
     if which == "none":
         return ""
-    elif which == "initial" or which == "package":
+    elif which == "initial" or which == "__coconut__":
         if target.startswith("2"):
             header = '#!/usr/bin/env python2'
         elif target.startswith('3'):
@@ -76,18 +76,18 @@ def getheader(which, target="", usehash=None):
 '''
         if usehash is not None:
             header += hash_prefix + usehash + '\n'
-        if which == "package":
+        if which == "__coconut__":
             header += '# type: ignore\n'
         header += '''
 # Compiled with Coconut version ''' + VERSION_STR + '''
 
 '''
-        if which == "package":
+        if which == "__coconut__":
             header += r'''"""Built-in Coconut utilities."""
 
 '''
     elif usehash is not None:
-        raise CoconutInternalException("can only add a hash to an initial or package header, not", which)
+        raise CoconutInternalException("can only add a hash to an initial or __coconut__ header, not", which)
     else:
         header = ""
     if which != "initial":
@@ -100,7 +100,7 @@ def getheader(which, target="", usehash=None):
         elif get_target_info(target) >= (3, 5):
             header += r'''from __future__ import generator_stop
 '''
-        if which == "module":
+        if which == "package":
             header += r'''
 import sys as _coconut_sys, os.path as _coconut_os_path
 _coconut_file_path = _coconut_os_path.dirname(_coconut_os_path.abspath(__file__))
@@ -109,7 +109,13 @@ from __coconut__ import _coconut, _coconut_MatchError, _coconut_tail_call, _coco
 from __coconut__ import *
 _coconut_sys.path.remove(_coconut_file_path)
 '''
-        elif which == "package" or which == "code" or which == "file":
+        elif which == "module":
+            header += r'''
+import sys as _coconut_sys
+from coconut.__coconut__ import _coconut, _coconut_MatchError, _coconut_tail_call, _coconut_tco, _coconut_igetitem, _coconut_compose, _coconut_pipe, _coconut_starpipe, _coconut_backpipe, _coconut_backstarpipe, _coconut_bool_and, _coconut_bool_or, _coconut_minus, _coconut_tee, _coconut_map
+from coconut.__coconut__ import *
+'''
+        elif which == "__coconut__" or which == "code" or which == "file":
             header += r'''import sys as _coconut_sys
 '''
             if target.startswith("3"):
@@ -377,7 +383,7 @@ MatchError, map, reduce, takewhile, dropwhile, tee = _coconut_MatchError, _cocon
 '''
         else:
             raise CoconutInternalException("invalid header type", which)
-        if which == "file" or which == "module":
+        if which == "file" or which == "package":
             header += r'''
 # Compiled Coconut: ------------------------------------------------------
 

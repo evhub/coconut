@@ -125,59 +125,60 @@ coconut [-h] [-v] [-t version] [-i] [-p] [-a] [-l] [-k] [-w] [-r] [-n]
 #### Positional Arguments
 
 ```
-source                path to the Coconut file/folder to compile
-dest                  destination directory for compiled files (defaults to
-                      the source directory)
+source              path to the Coconut file/folder to compile
+dest                destination directory for compiled files (defaults to
+                    the source directory)
 ```
 
 #### Optional Arguments
 
 ```
--h, --help            show this help message and exit
--v, --version         print Coconut and Python version information
+-h, --help          show this help message and exit
+-v, --version       print Coconut and Python version information
 -t version, --target version
-                      specify target Python version (defaults to universal)
--i, --interact        force the interpreter to start (otherwise starts if no
-                      other command is given) (implies --run)
--p, --package         compile source as part of a package (defaults to only
-                      if source is a directory)
--a, --standalone      compile source as standalone files (defaults to only
-                      if source is a single file)
+                    specify target Python version (defaults to universal)
+-i, --interact      force the interpreter to start (otherwise starts if no
+                    other command is given) (implies --run)
+-p, --package       compile source as part of a package (defaults to only
+                    if source is a directory)
+-a, --standalone    compile source as standalone files (defaults to only
+                    if source is a single file)
 -l, --line-numbers, --linenumbers
-                      add line number comments for ease of debugging
+                    add line number comments for ease of debugging
 -k, --keep-lines, --keeplines
-                      include source code in comments for ease of debugging
--w, --watch           watch a directory and recompile on changes
--r, --run             execute compiled Python
--n, --nowrite         disable writing compiled Python
--d, --display         print compiled Python
--q, --quiet           suppress all informational output (combine with
-                      --display to write runnable code to stdout)
--s, --strict          enforce code cleanliness standards
--c code, --code code  run Coconut passed in as a string (can also be piped
-                      into stdin)
+                    include source code in comments for ease of debugging
+-w, --watch         watch a directory and recompile on changes
+-r, --run           execute compiled Python
+-n, --nowrite       disable writing compiled Python
+-d, --display       print compiled Python
+-q, --quiet         suppress all informational output (combine with
+                    --display to write runnable code to stdout)
+-s, --strict        enforce code cleanliness standards
+-c code, --code code
+                    run Coconut passed in as a string (can also be piped
+                    into stdin)
 -j processes, --jobs processes
-                      number of additional processes to use (defaults to 0)
-                      (pass 'sys' to use machine default)
--f, --force           force overwriting of compiled Python (otherwise only
-                      overwrites when source code or compilation parameters
-                      change)
---minify              reduce size of compiled Python
+                    number of additional processes to use (defaults to 0)
+                    (pass 'sys' to use machine default)
+-f, --force         force overwriting of compiled Python (otherwise only
+                    overwrites when source code or compilation parameters
+                    change)
+--minify            reduce size of compiled Python
 --jupyter ..., --ipython ...
-                      run Jupyter/IPython with Coconut as the kernel
-                      (remaining args passed to Jupyter)
---mypy ...            run MyPy on compiled Python (remaining args passed to
-                      MyPy) (implies --package)
---tutorial            open the Coconut tutorial in the default web browser
---documentation       open the Coconut documentation in the default web
-                      browser
---style name          Pygments syntax highlighting style (or 'none' to
-                      disable) (will default to value of COCONUT_STYLE
-                      environment variable if it exists)
+                    run Jupyter/IPython with Coconut as the kernel
+                    (remaining args passed to Jupyter)
+--mypy ...          run MyPy on compiled Python (remaining args passed to
+                    MyPy) (implies --package)
+--tutorial          open the Coconut tutorial in the default web browser
+--documentation     open the Coconut documentation in the default web
+                    browser
+--style name        Pygments syntax highlighting style (or 'none' to
+                    disable) (will default to value of COCONUT_STYLE
+                    environment variable if it exists)
 --recursion-limit limit, --recursionlimit limit
-                      set maximum recursion depth in compiler (defaults to
-                      2000)
---verbose             print verbose debug output
+                    set maximum recursion depth in compiler (defaults to
+                    2000)
+--verbose           print verbose debug output
 ```
 
 ### Coconut Scripts
@@ -250,7 +251,9 @@ If you prefer [IPython](http://ipython.org/) (the python kernel for the [Jupyter
 
 #### Extension
 
-If Coconut is used as an extension, a special magic command will send snippets of code to be evaluated using Coconut instead of IPython, but IPython will still be used as the default. The line magic `%load_ext coconut` will load Coconut as an extension, adding the `%coconut` and `%%coconut` magics. The `%coconut` line magic will run a line of Coconut with default parameters, and the `%%coconut` block magic will take command-line arguments on the first line, and run any Coconut code provided in the rest of the cell with those parameters.
+If Coconut is used as an extension, a special magic command will send snippets of code to be evaluated using Coconut instead of IPython, but IPython will still be used as the default.
+
+The line magic `%load_ext coconut` will load Coconut as an extension, providing the `%coconut` and `%%coconut` magics and adding Coconut built-ins. The `%coconut` line magic will run a line of Coconut with default parameters, and the `%%coconut` block magic will take command-line arguments on the first line, and run any Coconut code provided in the rest of the cell with those parameters.
 
 #### Kernel
 
@@ -1728,14 +1731,18 @@ Each _mode_ has two components: what parser it uses, and what header it prepends
     + parser: file
     + header: file
         This header is meant to be written to a `--standalone` file and should not be passed to `exec`.
-- `"module"`:
+- `"package"`:
     + parser: file
-    + header: module
+    + header: package
         This header is meant to be written to a `--package` file and should not be passed to `exec`.
 - `"block"`:
     + parser: file
     + header: none
         No header is included, thus this can only be passed to `exec` if the exec header has already been executed at the global level.
+- `"module"`:
+    + parser: file
+    + header: module
+        This header imports `coconut.__coconut__` to access Coconut built-ins instead of creating them itself.
 - `"single"`:
     + parser: single
         Can only parse one line of Coconut code.

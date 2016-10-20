@@ -37,18 +37,30 @@ from coconut.root import *  # NOQA
 
 def load_ipython_extension(ipython):
     """Loads Coconut as an IPython extension."""
+    # add Coconut built-ins
+    from coconut import __coconut__
+    newvars = {}
+    for var, val in vars(__coconut__).items():
+        if not var.startswith("__"):
+            newvars[var] = val
+    ipython.push(newvars)
+
+    # add magic function
     from coconut.convenience import cmd, parse, CoconutException
     from coconut.logging import logger
 
     def magic(line, cell=None):
-        """Coconut IPython magic."""
+        """Provides %coconut and %%coconut magics."""
         try:
             if cell is None:
                 code = line
             else:
-                cmd(line)  # first line in block is cmd
+                # first line in block is cmd, rest is code
+                line = line.strip()
+                if line:
+                    cmd(line)
                 code = cell
-            compiled = parse(code)
+            compiled = parse(code, mode="module")
         except CoconutException:
             logger.print_exc()
         else:
