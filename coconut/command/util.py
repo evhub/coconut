@@ -303,8 +303,8 @@ class Runner(object):
         self.vars = self.build_vars(path)
         self.lines = []
         if comp is not None:
-            self.lines.append(comp.headers("module"))
-            self.run(comp.headers("code"), add_to_lines=False)
+            self.lines.append(comp.getheader("package"))
+            self.run(comp.getheader("code"), add_to_lines=False)
             self.fixpickle()
 
     def build_vars(self, path=None):
