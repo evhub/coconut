@@ -236,7 +236,8 @@ class Command(object):
                 self.errmsg = errmsg
             elif errmsg not in self.errmsg:
                 self.errmsg += ", " + errmsg
-        self.exit_code = max(self.exit_code, code)
+        if code is not None:
+            self.exit_code = max(self.exit_code, code)
 
     @contextmanager
     def handling_exceptions(self):
