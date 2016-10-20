@@ -193,10 +193,12 @@ main_sig = "Coconut: "
 main_prompt = ">>> "
 more_prompt = "    "
 
-default_style = "monokai"
+default_style = "default"
 default_multiline = False
 default_vi_mode = False
 default_mouse_support = True
+
+style_env_var = "COCONUT_STYLE"
 
 ensure_elapsed_time = .001  # seconds
 watch_interval = .1  # seconds

@@ -25,6 +25,7 @@ from coconut.constants import (
     documentation_url,
     version_long,
     default_recursion_limit,
+    style_env_var,
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -164,7 +165,7 @@ arguments.add_argument(
     "--style",
     metavar="name",
     type=str,
-    help="Pygments syntax highlighting style (or 'none' to disable)")
+    help="Pygments syntax highlighting style (or 'none' to disable) (will default to value of " + style_env_var + " environment variable if it exists)")
 
 arguments.add_argument(
     "--recursion-limit", "--recursionlimit",

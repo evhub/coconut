@@ -172,7 +172,8 @@ dest                  destination directory for compiled files (defaults to
 --documentation       open the Coconut documentation in the default web
                       browser
 --style name          Pygments syntax highlighting style (or 'none' to
-                      disable)
+                      disable) (will default to value of COCONUT_STYLE
+                      environment variable if it exists)
 --recursion-limit limit, --recursionlimit limit
                       set maximum recursion depth in compiler (defaults to
                       2000)

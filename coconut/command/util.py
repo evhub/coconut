@@ -50,6 +50,7 @@ from coconut.constants import (
     default_vi_mode,
     default_mouse_support,
     ensure_elapsed_time,
+    style_env_var,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -239,16 +240,17 @@ def in_mypy_path(mypy_path):
 
 class Prompt(object):
     """Manages prompting for code on the command line."""
-    if prompt_toolkit is None:
-        style = None
-    else:
-        style = default_style
+    style = None
     multiline = default_multiline
     vi_mode = default_vi_mode
     mouse_support = default_mouse_support
 
     def __init__(self):
         """Set up the prompt."""
+        if style_env_var in os.environ:
+            self.set_style(os.environ[style_env_var])
+        elif prompt_toolkit is not None:
+            self.style = default_style
         if prompt_toolkit is not None:
             self.history = prompt_toolkit.history.InMemoryHistory()
 
@@ -264,7 +266,7 @@ class Prompt(object):
         elif style in pygments.styles.get_all_styles():
             self.style = style
         else:
-            raise CoconutException("unrecognized pygments style", style, "try '--style list' to show all valid styles")
+            raise CoconutException("unrecognized pygments style", style, extra="use '--style list' to show all valid styles")
 
     @handling_prompt_toolkit_errors
     def input(self, more=False):
