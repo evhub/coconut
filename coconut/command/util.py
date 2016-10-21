@@ -51,6 +51,7 @@ from coconut.constants import (
     default_mouse_support,
     ensure_elapsed_time,
     style_env_var,
+    mypy_path_env_var,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -216,21 +217,13 @@ def run_cmd(cmd, show_output=True, raise_errs=True):
             return "".join(call_output(cmd))
 
 
-@contextmanager
-def in_mypy_path(mypy_path):
-    """Temporarily adds to MYPYPATH."""
-    original = os.environ.get("MYPYPATH")
+def set_mypy_path(mypy_path):
+    """Prepends to MYPYPATH."""
+    original = os.environ.get(mypy_path_env_var)
     if original is None:
-        os.environ["MYPYPATH"] = mypy_path
-    else:
-        os.environ["MYPYPATH"] += os.pathsep + mypy_path
-    try:
-        yield
-    finally:
-        if original is None:
-            del os.environ["MYPYPATH"]
-        else:
-            os.environ["MYPYPATH"] = original
+        os.environ[mypy_path_env_var] = mypy_path
+    elif mypy_path not in original.split(os.pathsep):
+        os.environ[mypy_path_env_var] = mypy_path + os.pathsep + original
 
 
 #-----------------------------------------------------------------------------------------------------------------------

@@ -58,7 +58,7 @@ from coconut.command.util import (
     handling_broken_process_pool,
     kill_children,
     run_cmd,
-    in_mypy_path,
+    set_mypy_path,
 )
 from coconut.compiler.header import gethash
 from coconut.command.cli import arguments
@@ -551,16 +551,16 @@ class Command(object):
 
     def run_mypy(self, paths=[], code=None):
         """Run MyPy with arguments."""
+        set_mypy_path(stub_dir)
         if self.mypy:
             args = ["python3", "-m", "mypy"] + paths + self.mypy_args
-            with in_mypy_path(stub_dir):
-                if code is None:
-                    run_cmd(args, raise_errs=False)
-                else:
-                    for err in run_cmd(args + ["-c", code], show_output=False, raise_errs=False).splitlines():
-                        if err not in self.mypy_errs:
-                            logger.printerr(err)
-                            self.mypy_errs.append(err)
+            if code is None:
+                run_cmd(args, raise_errs=False)
+            else:
+                for err in run_cmd(args + ["-c", code], show_output=False, raise_errs=False).splitlines():
+                    if err not in self.mypy_errs:
+                        logger.printerr(err)
+                        self.mypy_errs.append(err)
 
     def start_jupyter(self, args):
         """Starts Jupyter with the Coconut kernel."""

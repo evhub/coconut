@@ -198,6 +198,7 @@ default_multiline = False
 default_vi_mode = False
 default_mouse_support = True
 
+mypy_path_env_var = "MYPYPATH"
 style_env_var = "COCONUT_STYLE"
 
 ensure_elapsed_time = .001  # seconds
