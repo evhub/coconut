@@ -1722,11 +1722,15 @@ Likely the most useful of the convenience functions, `parse` takes Coconut code 
 
 Each _mode_ has two components: what parser it uses, and what header it prepends. The parser determines what Coconut code is allowed as input, and the header determines how the compiled Python can be used. Possible values of _mode_ are:
 
-- `"exec"`: (the default)
+- `"sys"`: (the default)
     + parser: file
         The file parser can parse any Coconut code.
+    + header: sys
+        This header imports `coconut.__coconut__` to access the necessary Coconut objects.
+- `"exec"`:
+    + parser: file
     + header: exec
-        When passed to `exec` at the global level, this header will create all the necessary Coconut objects.
+        When passed to `exec` at the global level, this header will create all the necessary Coconut objects itself instead of importing them.
 - `"file"`:
     + parser: file
     + header: file
@@ -1738,11 +1742,7 @@ Each _mode_ has two components: what parser it uses, and what header it prepends
 - `"block"`:
     + parser: file
     + header: none
-        No header is included, thus this can only be passed to `exec` if the exec header has already been executed at the global level.
-- `"sys"`:
-    + parser: file
-    + header: sys
-        This header imports `coconut.__coconut__` to access Coconut built-ins instead of creating them itself.
+        No header is included, thus this can only be passed to `exec` if code with a header has already been executed at the global level.
 - `"single"`:
     + parser: single
         Can only parse one line of Coconut code.

@@ -32,9 +32,9 @@ def main():
     else:
         assert False
     setup()
-    _exec = parse("abc", "exec")
-    assert _exec
-    assert _exec == parse("abc")
+    _sys = parse("abc", "sys")
+    assert _sys
+    assert _sys == parse("abc")
     _single = parse("abc", "single")
     assert _single
     _file = parse("abc", "file")

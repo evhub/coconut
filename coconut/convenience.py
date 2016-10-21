@@ -73,7 +73,7 @@ PARSERS = {
 }
 
 
-def parse(code, mode="exec"):
+def parse(code, mode="sys"):
     """Parses Coconut code."""
     if CLI.comp is None:
         setup()

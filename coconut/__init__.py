@@ -60,7 +60,7 @@ def load_ipython_extension(ipython):
                 if line:
                     cmd(line)
                 code = cell
-            compiled = parse(code, mode="sys")
+            compiled = parse(code)
         except CoconutException:
             logger.print_exc()
         else:
