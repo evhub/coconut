@@ -37,6 +37,7 @@ def same(iter1, iter2) = map((==), iter1, iter2)
 def chain2(a, b):
     yield from a
     yield from b
+def threeple(a, b, c) = (a, b, c)
 
 # Partial Applications:
 sum_ = reduce$((+))

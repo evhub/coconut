@@ -958,7 +958,7 @@ class Compiler(Grammar):
                     raise CoconutInternalException("invalid trailer symbol", trailer[0])
             elif len(trailer) == 2:
                 if trailer[0] == "$(":
-                    out = "_coconut.functools.partial(" + out + ", " + trailer[1] + ")"
+                    out = "_coconut.functools.partial(" + out + ", " + trailer[1][1:-1] + ")"
                 elif trailer[0] == "$[":
                     out = "_coconut_igetitem(" + out + ", " + trailer[1] + ")"
                 else:
