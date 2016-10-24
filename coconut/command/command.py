@@ -86,13 +86,13 @@ class Command(object):
     def start(self, run=False):
         """Processes command-line arguments."""
         if run:
-            args, argv = ["-rq"], []
+            args, argv = ["--run", "--quiet", "--target", "sys"], []
             for i in range(1, len(sys.argv)):
                 arg = sys.argv[i]
                 if arg.startswith("-"):
-                    args.append(arg)
+                    args.append(arg)  # coconut option
                 else:
-                    args.append(arg)
+                    args.append(arg)  # source file
                     argv = sys.argv[i:]
                     break
             sys.argv = argv
