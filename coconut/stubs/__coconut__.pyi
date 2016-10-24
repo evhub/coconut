@@ -40,6 +40,8 @@ if sys.version_info < (3,):
 
 else:
     import builtins as _b
+    ascii, filter, hex, map, oct, zip, open, chr, str, range = ascii, filter, hex, map, oct, zip, open, chr, str, range
+
 
 py_chr, py_filter, py_hex, py_input, py_int, py_map, py_oct, py_open, py_print, py_range, py_str, py_zip = _b.chr, _b.filter, _b.hex, _b.input, _b.int, _b.map, _b.oct, _b.open, _b.print, _b.range, _b.str, _b.zip
 
