@@ -1389,7 +1389,7 @@ class Grammar(object):
         + op_funcdef_name
         + Group(Optional(op_funcdef_arg)),
         op_funcdef_handle), "op_funcdef")
-    return_typedef_ref = addspace(arrow + test)
+    return_typedef_ref = arrow.suppress() + test
     end_func_colon = return_typedef + colon.suppress() | colon
     base_funcdef = op_funcdef | name_funcdef
     funcdef = trace(addspace(Keyword("def") + condense(base_funcdef + end_func_colon + nocolon_suite)), "funcdef")

@@ -1409,9 +1409,9 @@ class Compiler(Grammar):
         """Handles Python 3 type annotations."""
         if len(tokens) == 1:  # return typedef
             if self.target.startswith("3"):
-                return tokens[0] + ":"
+                return " -> " + tokens[0] + ":"
             else:
-                return ":\n" + self.wrap_comment(" type: (...) " + tokens[0])
+                return ":\n" + self.wrap_comment(" type: (...) -> " + tokens[0])
         else:  # argument typedef
             if len(tokens) == 3:
                 varname, typedef, comma = tokens
