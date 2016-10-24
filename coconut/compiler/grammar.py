@@ -68,6 +68,8 @@ from coconut.constants import (
     match_iter_var,
     lazy_item_var,
     wildcard,
+    use_packrat,
+    packrat_cache_size,
 )
 from coconut.compiler.util import (
     attach,
@@ -86,7 +88,8 @@ from coconut.compiler.util import (
 # SETUP:
 #-----------------------------------------------------------------------------------------------------------------------
 
-ParserElement.enablePackrat()
+if use_packrat:
+    ParserElement.enablePackrat(packrat_cache_size)
 ParserElement.setDefaultWhitespaceChars(default_whitespace_chars)
 
 # end: SETUP
@@ -901,7 +904,7 @@ class Grammar(object):
     u_string_ref = Combine((unicode_u + raw_r | raw_r + unicode_u) + string_item)
     format_f = CaselessLiteral("f")
     f_string_ref = Combine((format_f + raw_r | raw_r + format_f) + string_item)
-    string = trace(b_string | u_string | f_string, "string")
+    string = trace(b_string | u_string | f_string)
     moduledoc = string + newline
     docstring = condense(moduledoc)
 
@@ -943,9 +946,9 @@ class Grammar(object):
     test_no_chain = Forward()
     test_nocond = Forward()
 
-    testlist = trace(itemlist(test, comma), "testlist")
-    testlist_star_expr = trace(itemlist(test | star_expr, comma), "testlist_star_expr")
-    multi_testlist = trace(addspace(OneOrMore(condense(test + comma)) + Optional(test)), "multi_testlist")
+    testlist = trace(itemlist(test, comma))
+    testlist_star_expr = trace(itemlist(test | star_expr, comma))
+    multi_testlist = trace(addspace(OneOrMore(condense(test + comma)) + Optional(test)))
 
     yield_from = Forward()
     dict_comp = Forward()
@@ -1007,12 +1010,12 @@ class Grammar(object):
         dubstar + tfpdef
         | star + (tfpdef | arg_comma)
         | tfpdef_default
-    ))), "argslist")
+    ))))
     varargslist = trace(Optional(itemlist(condense(
         dubstar + name
         | star + Optional(name)
         | name + Optional(default)
-    ), comma)), "varargslist")
+    ), comma)))
     parameters = condense(lparen + argslist + rparen)
 
     function_call = Forward()
@@ -1046,7 +1049,7 @@ class Grammar(object):
     for x in range(1, len(const_vars)):
         keyword_atom |= Keyword(const_vars[x])
     string_atom = addspace(OneOrMore(string))
-    passthrough_atom = trace(addspace(OneOrMore(passthrough)), "passthrough_atom")
+    passthrough_atom = trace(addspace(OneOrMore(passthrough)))
     attr_atom = attach(
         dot.suppress() + name
         + Optional(
@@ -1078,7 +1081,8 @@ class Grammar(object):
         | dict_item
         | set_literal
         | set_letter_literal
-        | lazy_list, "known_atom")
+        | lazy_list
+    )
     atom = (
         known_atom
         | passthrough_atom
@@ -1118,23 +1122,23 @@ class Grammar(object):
     base_assign_item = condense(simple_assign | lparen + assignlist + rparen | lbrack + assignlist + rbrack)
     star_assign_item_ref = condense(star + base_assign_item)
     assign_item = star_assign_item | base_assign_item
-    assignlist <<= trace(itemlist(assign_item, comma), "assignlist")
+    assignlist <<= trace(itemlist(assign_item, comma))
 
     augassign_stmt = Forward()
     typed_assign_stmt = Forward()
     augassign_stmt_ref = simple_assign + augassign + test_expr
     typed_assign_stmt_ref = simple_assign + colon.suppress() + test + Optional(equals.suppress() + test_expr)
-    basic_stmt = trace(addspace(ZeroOrMore(assignlist + equals) + test_expr), "basic_stmt")
+    basic_stmt = trace(addspace(ZeroOrMore(assignlist + equals) + test_expr))
 
     compose_item = attach(atom_item + ZeroOrMore(dotdot.suppress() + atom_item), compose_item_handle)
 
     factor = Forward()
     await_keyword = Forward()
     await_keyword_ref = Keyword("await")
-    power = trace(condense(addspace(Optional(await_keyword) + compose_item) + Optional(exp_dubstar + factor)), "power")
+    power = trace(condense(addspace(Optional(await_keyword) + compose_item) + Optional(exp_dubstar + factor)))
     unary = plus | neg_minus | tilde
 
-    factor <<= trace(condense(ZeroOrMore(unary) + power), "factor")
+    factor <<= trace(condense(ZeroOrMore(unary) + power))
 
     mulop = mul_star | div_dubslash | div_slash | percent | matrix_at
     addop = plus | sub_minus
@@ -1180,11 +1184,11 @@ class Grammar(object):
     comparison = exprlist(expr, comp_op)
     not_test = addspace(ZeroOrMore(Keyword("not")) + comparison)
     and_test = exprlist(not_test, Keyword("and"))
-    test_item = trace(exprlist(and_test, Keyword("or")), "test_item")
+    test_item = trace(exprlist(and_test, Keyword("or")))
     no_chain_comparison = exprlist(no_chain_expr, comp_op)
     no_chain_not_test = addspace(ZeroOrMore(Keyword("not")) + no_chain_comparison)
     no_chain_and_test = exprlist(no_chain_not_test, Keyword("and"))
-    no_chain_test_item = trace(exprlist(no_chain_and_test, Keyword("or")), "no_chain_test_item")
+    no_chain_test_item = trace(exprlist(no_chain_and_test, Keyword("or")))
 
     small_stmt = Forward()
     simple_stmt = Forward()
@@ -1222,17 +1226,18 @@ class Grammar(object):
         )
     )
 
-    lambdef = trace(addspace(lambdef_base + test) | stmt_lambdef, "lambdef")
-    lambdef_nocond = trace(addspace(lambdef_base + test_nocond), "lambdef_nocond")
-    lambdef_no_chain = trace(addspace(lambdef_base + test_no_chain), "lambdef_no_chain")
+    lambdef = trace(addspace(lambdef_base + test) | stmt_lambdef)
+    lambdef_nocond = trace(addspace(lambdef_base + test_nocond))
+    lambdef_no_chain = trace(addspace(lambdef_base + test_no_chain))
 
-    test <<= trace(lambdef | addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test)), "test")
-    test_nocond <<= trace(lambdef_nocond | test_item, "test_nocond")
+    test <<= trace(lambdef | addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test)))
+    test_nocond <<= trace(lambdef_nocond | test_item)
     test_no_chain <<= trace(
         lambdef_no_chain
         | addspace(
             no_chain_test_item + Optional(Keyword("if") + no_chain_test_item + Keyword("else") + test_no_chain)
-        ), "test_no_chain")
+        )
+    )
 
     classlist_ref = Optional(
         lparen.suppress() + rparen.suppress()
@@ -1244,7 +1249,7 @@ class Grammar(object):
     class_suite = suite | attach(newline, class_suite_handle)
     classdef = condense(addspace(Keyword("class") - name) + classlist + class_suite)
     comp_iter = Forward()
-    comp_for <<= trace(addspace(Keyword("for") + assignlist + Keyword("in") + test_item + Optional(comp_iter)), "comp_for")
+    comp_for <<= trace(addspace(Keyword("for") + assignlist + Keyword("in") + test_item + Optional(comp_iter)))
     comp_if = addspace(Keyword("if") + test_nocond + Optional(comp_iter))
     comp_iter <<= comp_for | comp_if
 
@@ -1322,21 +1327,21 @@ class Grammar(object):
         | star_match
         | (name + lparen.suppress() + matchlist_list + rparen.suppress())("data")
         | name("var")
-    ), "base_match")
+    ))
     matchlist_trailer = base_match + OneOrMore(Keyword("as") + name | Keyword("is") + atom_item)
     as_match = Group(matchlist_trailer("trailer")) | base_match
     matchlist_and = as_match + OneOrMore(Keyword("and").suppress() + as_match)
     and_match = Group(matchlist_and("and")) | as_match
     matchlist_or = and_match + OneOrMore(Keyword("or").suppress() + and_match)
     or_match = Group(matchlist_or("or")) | and_match
-    match <<= trace(or_match, "match")
+    match <<= trace(or_match)
 
-    else_suite = condense(colon + trace(attach(simple_compound_stmt, else_handle), "else_suite")) | suite
+    else_suite = condense(colon + trace(attach(simple_compound_stmt, else_handle))) | suite
     else_stmt = condense(Keyword("else") - else_suite)
 
     full_suite = colon.suppress() + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
     full_match = trace(attach(
-        Keyword("match").suppress() + match + Keyword("in").suppress() - test - match_guard - full_suite, match_handle), "full_match")
+        Keyword("match").suppress() + match + Keyword("in").suppress() - test - match_guard - full_suite, match_handle))
     match_stmt = condense(full_match - Optional(else_stmt))
 
     destructuring_stmt = Forward()
@@ -1344,7 +1349,7 @@ class Grammar(object):
 
     case_match = trace(Group(
         Keyword("match").suppress() - match - Optional(Keyword("if").suppress() - test) - full_suite
-    ), "case_match")
+    ))
     case_stmt = attach(
         Keyword("case").suppress() + test - colon.suppress() - newline.suppress()
         - indent.suppress() - Group(OneOrMore(case_match))
@@ -1380,7 +1385,7 @@ class Grammar(object):
     return_typedef = Forward()
     async_funcdef = Forward()
     async_stmt = Forward()
-    name_funcdef = trace(condense(name + parameters), "name_funcdef")
+    name_funcdef = trace(condense(name + parameters))
     op_tfpdef = unsafe_typedef_default | condense(name + Optional(default))
     op_funcdef_arg = name | condense(lparen.suppress() + op_tfpdef + rparen.suppress())
     op_funcdef_name = backtick.suppress() + name + backtick.suppress()
@@ -1388,11 +1393,12 @@ class Grammar(object):
         Group(Optional(op_funcdef_arg))
         + op_funcdef_name
         + Group(Optional(op_funcdef_arg)),
-        op_funcdef_handle), "op_funcdef")
+        op_funcdef_handle)
+    )
     return_typedef_ref = arrow.suppress() + test
     end_func_colon = return_typedef + colon.suppress() | colon
     base_funcdef = op_funcdef | name_funcdef
-    funcdef = trace(addspace(Keyword("def") + condense(base_funcdef + end_func_colon + nocolon_suite)), "funcdef")
+    funcdef = trace(addspace(Keyword("def") + condense(base_funcdef + end_func_colon + nocolon_suite)))
 
     name_match_funcdef = Forward()
     op_match_funcdef = Forward()
@@ -1400,8 +1406,8 @@ class Grammar(object):
     name_match_funcdef_ref = name + lparen.suppress() + matchlist_list + match_guard + rparen.suppress()
     op_match_funcdef_arg = lparen.suppress() + match + rparen.suppress()
     op_match_funcdef_ref = Group(Optional(op_match_funcdef_arg)) + op_funcdef_name + Group(Optional(op_match_funcdef_arg)) + match_guard
-    base_match_funcdef = trace(Keyword("def").suppress() + (op_match_funcdef | name_match_funcdef), "base_match_funcdef")
-    def_match_funcdef = trace(condense(base_match_funcdef + colon.suppress() + nocolon_suite), "def_match_funcdef")
+    base_match_funcdef = trace(Keyword("def").suppress() + (op_match_funcdef | name_match_funcdef))
+    def_match_funcdef = trace(condense(base_match_funcdef + colon.suppress() + nocolon_suite))
     match_funcdef = Optional(Keyword("match").suppress()) + def_match_funcdef
 
     testlist_stmt = condense(testlist + newline)
@@ -1411,9 +1417,9 @@ class Grammar(object):
         math_funcdef_suite_handle)
     end_func_equals = return_typedef + equals.suppress() | fixto(equals, ":")
     math_funcdef = trace(attach(
-        condense(addspace(Keyword("def") + base_funcdef) + end_func_equals) - math_funcdef_suite, math_funcdef_handle), "math_funcdef")
+        condense(addspace(Keyword("def") + base_funcdef) + end_func_equals) - math_funcdef_suite, math_funcdef_handle))
     math_match_funcdef = trace(
-        Optional(Keyword("match").suppress()) + condense(base_match_funcdef + equals.suppress() - math_funcdef_suite), "math_match_funcdef")
+        Optional(Keyword("match").suppress()) + condense(base_match_funcdef + equals.suppress() - math_funcdef_suite))
 
     async_funcdef_ref = addspace(Keyword("async") + (funcdef | math_funcdef))
     async_stmt_ref = addspace(Keyword("async") + (with_stmt | for_stmt))
@@ -1447,12 +1453,12 @@ class Grammar(object):
     decoratable_normal_funcdef_stmt_ref = Optional(decorators) + normal_funcdef_stmt
 
     async_funcdef_stmt = async_funcdef | async_match_funcdef
-    decoratable_async_funcdef_stmt = trace(condense(Optional(decorators) + async_funcdef_stmt), "decoratable_async_func_stmt")
+    decoratable_async_funcdef_stmt = trace(condense(Optional(decorators) + async_funcdef_stmt))
 
     decoratable_func_stmt = decoratable_normal_funcdef_stmt | decoratable_async_funcdef_stmt
 
     class_stmt = classdef | datadef
-    decoratable_class_stmt = trace(condense(Optional(decorators) + class_stmt), "decoratable_class_stmt")
+    decoratable_class_stmt = trace(condense(Optional(decorators) + class_stmt))
 
     passthrough_stmt = condense(passthrough_block - (base_suite | newline))
 
@@ -1461,7 +1467,8 @@ class Grammar(object):
         | try_stmt
         | case_stmt
         | match_stmt
-        | passthrough_stmt, "simple_compound_stmt")
+        | passthrough_stmt
+    )
     compound_stmt = trace(
         decoratable_class_stmt
         | decoratable_func_stmt
@@ -1469,7 +1476,8 @@ class Grammar(object):
         | while_stmt
         | for_stmt
         | async_stmt
-        | simple_compound_stmt, "compound_stmt")
+        | simple_compound_stmt
+    )
     endline_semicolon = Forward()
     endline_semicolon_ref = semicolon.suppress() + newline
     keyword_stmt = trace(
@@ -1480,26 +1488,28 @@ class Grammar(object):
         | global_stmt
         | nonlocal_stmt
         | assert_stmt
-        | exec_stmt, "keyword_stmt")
+        | exec_stmt
+    )
     small_stmt <<= trace(
         keyword_stmt
         | augassign_stmt
         | typed_assign_stmt
-        | longest(basic_stmt, destructuring_stmt), "small_stmt")
+        | longest(basic_stmt, destructuring_stmt)
+    )
     simple_stmt <<= trace(condense(
         small_stmt
         + ZeroOrMore(fixto(semicolon, "\n") + small_stmt)
         + (newline | endline_semicolon)
-    ), "simple_stmt")
-    stmt <<= trace(compound_stmt | simple_stmt, "stmt")
+    ))
+    stmt <<= trace(compound_stmt | simple_stmt,)
     base_suite <<= condense(newline + indent - OneOrMore(stmt) - dedent)
-    nocolon_suite <<= trace(base_suite | attach(simple_stmt, make_suite_handle), "nocolon_suite")
+    nocolon_suite <<= trace(base_suite | attach(simple_stmt, make_suite_handle))
     suite <<= condense(colon + nocolon_suite)
-    line = trace(newline | stmt, "line")
+    line = trace(newline | stmt)
 
-    single_input = trace(condense(Optional(line) - ZeroOrMore(newline)), "single_input")
-    file_input = trace(condense(moduledoc_marker - ZeroOrMore(line)), "file_input")
-    eval_input = trace(condense(testlist - ZeroOrMore(newline)), "eval_input")
+    single_input = trace(condense(Optional(line) - ZeroOrMore(newline)))
+    file_input = trace(condense(moduledoc_marker - ZeroOrMore(line)))
+    eval_input = trace(condense(testlist - ZeroOrMore(newline)))
 
     single_parser = condense(start_marker - single_input - end_marker)
     file_parser = condense(start_marker - file_input - end_marker)
@@ -1536,3 +1546,12 @@ class Grammar(object):
         + parameters_tokens + rparen.suppress(), split_func_name_args_params_handle)
 
 # end: EXTRA GRAMMAR
+#-----------------------------------------------------------------------------------------------------------------------
+# NAMING:
+#-----------------------------------------------------------------------------------------------------------------------
+
+for varname, val in vars(Grammar).items():
+    if isinstance(val, ParserElement):
+        setattr(Grammar, varname, val.setName(varname))
+
+# end: NAMING

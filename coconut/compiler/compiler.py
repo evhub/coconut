@@ -38,6 +38,7 @@ from pyparsing import (
     lineno,
     nums,
     Keyword,
+    ParserElement,
 )
 
 from coconut.constants import (
@@ -69,6 +70,7 @@ from coconut.constants import (
     default_recursion_limit,
     checksum,
     reserved_prefix,
+    use_packrat,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -241,33 +243,33 @@ class Compiler(Grammar):
     def bind(self):
         """Binds reference objects to the proper parse actions."""
         self.endline <<= attach(self.endline_ref, self.endline_handle)
-        self.moduledoc_item <<= trace(attach(self.moduledoc, self.set_docstring), "moduledoc")
-        self.name <<= trace(attach(self.base_name, self.name_check), "name")
-        self.atom_item <<= trace(attach(self.atom_item_ref, self.item_handle), "atom_item")
-        self.no_partial_atom_item <<= trace(attach(self.no_partial_atom_item_ref, self.item_handle), "no_partial_atom_item")
-        self.simple_assign <<= trace(attach(self.simple_assign_ref, self.item_handle), "simple_assign")
-        self.set_literal <<= trace(attach(self.set_literal_ref, self.set_literal_handle), "set_literal")
-        self.set_letter_literal <<= trace(attach(self.set_letter_literal_ref, self.set_letter_literal_handle), "set_letter_literal")
-        self.classlist <<= trace(attach(self.classlist_ref, self.classlist_handle), "classlist")
-        self.import_stmt <<= trace(attach(self.import_stmt_ref, self.import_handle), "import_stmt")
-        self.complex_raise_stmt <<= trace(attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_handle), "complex_raise_stmt")
-        self.augassign_stmt <<= trace(attach(self.augassign_stmt_ref, self.augassign_handle), "augassign_stmt")
-        self.dict_comp <<= trace(attach(self.dict_comp_ref, self.dict_comp_handle), "dict_comp")
-        self.destructuring_stmt <<= trace(attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle), "destructuring_stmt")
-        self.name_match_funcdef <<= trace(attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle), "name_match_funcdef")
-        self.op_match_funcdef <<= trace(attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle), "op_match_funcdef")
-        self.yield_from <<= trace(attach(self.yield_from_ref, self.yield_from_handle), "yield_from")
-        self.exec_stmt <<= trace(attach(self.exec_stmt_ref, self.exec_stmt_handle), "exec_stmt")
-        self.stmt_lambdef <<= trace(attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle), "stmt_lambdef")
-        self.decoratable_normal_funcdef_stmt <<= trace(attach(self.decoratable_normal_funcdef_stmt_ref, self.decoratable_normal_funcdef_stmt_handle), "decoratable_normal_funcdef_stmt")
-        self.function_call <<= trace(attach(self.function_call_tokens, self.function_call_handle), "function_call")
-        self.pipe_expr <<= trace(attach(self.pipe_expr_ref, self.pipe_handle), "pipe_expr")
-        self.no_chain_pipe_expr <<= trace(attach(self.no_chain_pipe_expr_ref, self.pipe_handle), "no_chain_pipe_expr")
-        self.typedef <<= trace(attach(self.typedef_ref, self.typedef_handle), "typedef")
-        self.typedef_default <<= trace(attach(self.typedef_default_ref, self.typedef_handle), "typedef")
-        self.unsafe_typedef_default <<= trace(attach(self.unsafe_typedef_default_ref, self.unsafe_typedef_handle), "unsafe_typedef_default")
-        self.return_typedef <<= trace(attach(self.return_typedef_ref, self.typedef_handle), "return_typedef")
-        self.typed_assign_stmt <<= trace(attach(self.typed_assign_stmt_ref, self.typed_assign_stmt_handle), "typed_assign_stmt")
+        self.moduledoc_item <<= trace(attach(self.moduledoc, self.set_docstring))
+        self.name <<= trace(attach(self.base_name, self.name_check))
+        self.atom_item <<= trace(attach(self.atom_item_ref, self.item_handle))
+        self.no_partial_atom_item <<= trace(attach(self.no_partial_atom_item_ref, self.item_handle))
+        self.simple_assign <<= trace(attach(self.simple_assign_ref, self.item_handle))
+        self.set_literal <<= trace(attach(self.set_literal_ref, self.set_literal_handle))
+        self.set_letter_literal <<= trace(attach(self.set_letter_literal_ref, self.set_letter_literal_handle))
+        self.classlist <<= trace(attach(self.classlist_ref, self.classlist_handle))
+        self.import_stmt <<= trace(attach(self.import_stmt_ref, self.import_handle))
+        self.complex_raise_stmt <<= trace(attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_handle))
+        self.augassign_stmt <<= trace(attach(self.augassign_stmt_ref, self.augassign_handle))
+        self.dict_comp <<= trace(attach(self.dict_comp_ref, self.dict_comp_handle))
+        self.destructuring_stmt <<= trace(attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle))
+        self.name_match_funcdef <<= trace(attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle))
+        self.op_match_funcdef <<= trace(attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle))
+        self.yield_from <<= trace(attach(self.yield_from_ref, self.yield_from_handle))
+        self.exec_stmt <<= trace(attach(self.exec_stmt_ref, self.exec_stmt_handle))
+        self.stmt_lambdef <<= trace(attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle))
+        self.decoratable_normal_funcdef_stmt <<= trace(attach(self.decoratable_normal_funcdef_stmt_ref, self.decoratable_normal_funcdef_stmt_handle))
+        self.function_call <<= trace(attach(self.function_call_tokens, self.function_call_handle))
+        self.pipe_expr <<= trace(attach(self.pipe_expr_ref, self.pipe_handle))
+        self.no_chain_pipe_expr <<= trace(attach(self.no_chain_pipe_expr_ref, self.pipe_handle))
+        self.typedef <<= trace(attach(self.typedef_ref, self.typedef_handle))
+        self.typedef_default <<= trace(attach(self.typedef_default_ref, self.typedef_handle))
+        self.unsafe_typedef_default <<= trace(attach(self.unsafe_typedef_default_ref, self.unsafe_typedef_handle))
+        self.return_typedef <<= trace(attach(self.return_typedef_ref, self.typedef_handle))
+        self.typed_assign_stmt <<= trace(attach(self.typed_assign_stmt_ref, self.typed_assign_stmt_handle))
         self.u_string <<= attach(self.u_string_ref, self.u_string_check)
         self.f_string <<= attach(self.f_string_ref, self.f_string_check)
         self.matrix_at <<= attach(self.matrix_at_ref, self.matrix_at_check)
@@ -433,6 +435,9 @@ class Compiler(Grammar):
         except RuntimeError as err:
             raise CoconutException(str(err),
                                    extra="try again with --recursion-limit greater than the current " + str(sys.getrecursionlimit()))
+        if use_packrat:
+            hits, misses = ParserElement.packrat_cache_stats
+            logger.log("Packrat parsing statistics:", hits, "hits;", misses, "misses")
         return out
 
 # end: COMPILER

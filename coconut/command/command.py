@@ -59,6 +59,7 @@ from coconut.command.util import (
     kill_children,
     run_cmd,
     set_mypy_path,
+    is_special_dir,
 )
 from coconut.compiler.header import gethash
 from coconut.command.cli import arguments
@@ -288,7 +289,7 @@ class Command(object):
                     if destpath is not None:
                         filepaths.append(destpath)
             for name in dirnames[:]:
-                if name != "." * len(name) and name.startswith("."):
+                if not is_special_dir(name) and name.startswith("."):
                     if logger.verbose:
                         logger.show_tabulated("Skipped directory", name, "(explicitly pass as source to override).")
                     dirnames.remove(name)  # directories removed from dirnames won't appear in further os.walk iteration
@@ -308,7 +309,7 @@ class Command(object):
                 ext = comp_ext
             destpath = fixpath(base + ext)
             if filepath == destpath:
-                raise CoconutException("cannot compile " + showpath(filepath) + " to itself (incorrect file extension)")
+                raise CoconutException("cannot compile " + showpath(filepath) + " to itself", extra="incorrect file extension")
         self.compile(filepath, destpath, package, run, force)
         return destpath
 

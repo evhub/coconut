@@ -192,27 +192,38 @@ class Logger(object):
         else:
             raise CoconutInternalException("info message too long", begin)
 
-    def log_trace(self, tag, original, location, tokens):
+    def log_trace(self, tag, original, loc, tokens=None):
         """Formats and displays a trace."""
         if self.verbose:
             original = str(original)
-            location = int(location)
-            out = "[" + tag + "] "
-            if len(tokens) == 1 and isinstance(tokens[0], str):
-                out += ascii(tokens[0])
-            else:
-                out += str(tokens)
-            out += " (line " + str(lineno(location, original)) + ", col " + str(col(location, original)) + ")"
-            self.printerr(out)
+            loc = int(loc)
+            out = ["[" + str(tag) + "]"]
+            if tokens is not None:
+                if not isinstance(tokens, Exception) and len(tokens) == 1 and isinstance(tokens[0], str):
+                    out.append(ascii(tokens[0]))
+                else:
+                    out.append(str(tokens))
+            out.append("(line " + str(lineno(loc, original)) + ", col " + str(col(loc, original)) + ")")
+            self.printerr(*out)
 
-    def trace(self, item, tag):
+    def _trace_start_action(self, original, loc, expr):
+        self.log_trace(expr, original, loc)
+
+    def _trace_success_action(self, original, start_loc, end_loc, expr, tokens):
+        self.log_trace(expr, original, start_loc, tokens)
+
+    def _trace_exc_action(self, original, loc, expr, exc):
+        self.log_trace(expr, original, loc, exc)
+
+    def trace(self, item):
         """Traces a parse element."""
         if DEVELOP:
-            def trace_action(original, location, tokens):
-                """Callback function constructed by tracer."""
-                self.log_trace(tag, original, location, tokens)
-            item = item.addParseAction(trace_action)
-        return item.setName(tag)
+            item = item.setDebugActions(
+                self._trace_start_action,
+                self._trace_success_action,
+                self._trace_exc_action,
+            )
+        return item
 
     def wrap_handler(self, handler):
         """Wraps a handler to catch errors in verbose mode (only enabled in develop)."""

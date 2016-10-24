@@ -94,6 +94,11 @@ def showpath(path):
         return path
 
 
+def is_special_dir(dirname):
+    """Determines if a directory name is a special directory."""
+    return dirname == os.curdir or dirname == os.pardir
+
+
 def rem_encoding(code):
     """Removes encoding declarations from Python code so it can be passed to exec."""
     old_lines = code.splitlines()
