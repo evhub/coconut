@@ -182,7 +182,7 @@ new_to_old_stdlib = {  # new_name: (old_name, new_version_info)
 }
 
 use_packrat = True
-packrat_cache_size = 2048
+packrat_cache_size = 1024
 
 #-----------------------------------------------------------------------------------------------------------------------
 # COMMAND CONSTANTS:
