@@ -703,7 +703,7 @@ class Compiler(Grammar):
         for line in inputstring.splitlines():
             for i in range(len(self.stmt_lambdas)):
                 name = self.stmt_lambda_name(i)
-                if name in line:
+                if match_in(Keyword(name), line):
                     indent, line = split_leading_indent(line)
                     out.append(indent + self.stmt_lambdas[i])
             out.append(line)
@@ -1196,7 +1196,7 @@ class Compiler(Grammar):
 
     def wrap_num_var(self, index):
         """Wrap an index for inclusion in a variable name."""
-        return "_" + str(index) + "th"  # must add trailing string for "in" to work properly
+        return "_" + str(index)
 
     def stmt_lambda_name(self, index=None):
         """Return the next (or specified) statement lambda name."""
