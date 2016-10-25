@@ -23,9 +23,10 @@ import sys
 import traceback
 import functools
 import logging
+import time
 from contextlib import contextmanager
 
-from pyparsing import lineno, col
+from pyparsing import lineno, col, ParserElement
 if DEVELOP:
     from pyparsing import _trim_arity
 
@@ -33,6 +34,7 @@ from coconut.constants import (
     info_tabulation,
     main_sig,
     taberrfmt,
+    use_packrat,
 )
 from coconut.exceptions import (
     CoconutWarning,
@@ -75,6 +77,7 @@ class Logger(object):
     """Container object for various logger functions and variables."""
     verbose = False
     quiet = False
+    tracing = False
     path = None
     name = None
 
@@ -86,7 +89,7 @@ class Logger(object):
 
     def copy_from(self, other):
         """Copy other onto self."""
-        self.verbose, self.quiet, self.path, self.name = other.verbose, other.quiet, other.path, other.name
+        self.verbose, self.quiet, self.path, self.name, self.tracing = other.verbose, other.quiet, other.path, other.name, other.tracing
 
     def display(self, messages, sig="", debug=False):
         """Prints an iterator of messages."""
@@ -173,14 +176,6 @@ class Logger(object):
                 errmsg = "\n".join(errmsg_lines)
             self.printerr(errmsg)
 
-    def log_tag(self, tag, code, multiline=False):
-        """Logs a tagged message if in verbose mode."""
-        tagstr = "[" + str(tag) + "]"
-        if multiline:
-            self.log(tagstr + "\n" + debug_clean(code))
-        else:
-            self.log(tagstr + " " + ascii(code))
-
     def log_cmd(self, args):
         """Logs a console command if in verbose mode."""
         self.log("> " + " ".join(args))
@@ -192,9 +187,18 @@ class Logger(object):
         else:
             raise CoconutInternalException("info message too long", begin)
 
+    def log_tag(self, tag, code, multiline=False):
+        """Logs a tagged message if tracing."""
+        if self.tracing:
+            tagstr = "[" + str(tag) + "]"
+            if multiline:
+                self.printerr(tagstr + "\n" + debug_clean(code))
+            else:
+                self.printerr(tagstr, ascii(code))
+
     def log_trace(self, tag, original, loc, tokens=None):
-        """Formats and displays a trace."""
-        if self.verbose:
+        """Formats and displays a trace if tracing."""
+        if self.tracing:
             original = str(original)
             loc = int(loc)
             out = ["[" + str(tag) + "]"]
@@ -216,7 +220,7 @@ class Logger(object):
         self.log_trace(expr, original, loc, exc)
 
     def trace(self, item):
-        """Traces a parse element."""
+        """Traces a parse element (only enabled in develop)."""
         if DEVELOP:
             item = item.setDebugActions(
                 self._trace_start_action,
@@ -241,6 +245,22 @@ class Logger(object):
             return wrapped_handler
         else:
             return handler
+
+    @contextmanager
+    def gather_parsing_stats(self):
+        """Times parsing if in verbose mode."""
+        if self.verbose:
+            start_time = time.clock()
+            try:
+                yield
+            finally:
+                elapsed_time = time.clock() - start_time
+                self.printerr("Total parsing time:", elapsed_time, "seconds")
+                if use_packrat:
+                    hits, misses = ParserElement.packrat_cache_stats
+                    self.printerr("Packrat parsing stats:", hits, "hits;", misses, "misses")
+        else:
+            yield
 
     def patch_logging(self):
         """Patches built-in Python logging."""

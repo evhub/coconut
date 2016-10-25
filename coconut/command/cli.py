@@ -179,3 +179,9 @@ arguments.add_argument(
     "--verbose",
     action="store_true",
     help="print verbose debug output")
+
+if DEVELOP:
+    arguments.add_argument(
+        "--trace",
+        action="store_true",
+        help="show verbose parsing data (only available in coconut-develop)")

@@ -38,7 +38,6 @@ from pyparsing import (
     lineno,
     nums,
     Keyword,
-    ParserElement,
 )
 
 from coconut.constants import (
@@ -70,7 +69,6 @@ from coconut.constants import (
     default_recursion_limit,
     checksum,
     reserved_prefix,
-    use_packrat,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -425,19 +423,17 @@ class Compiler(Grammar):
     def parse(self, inputstring, parser, preargs, postargs):
         """Uses the parser to parse the inputstring."""
         self.reset()
-        try:
-            pre_procd = self.pre(inputstring, **preargs)
-            parsed = parse(parser, pre_procd)
-            out = self.post(parsed, **postargs)
-        except ParseBaseException as err:
-            err_line, err_index = self.reformat(err.line, err.col - 1)
-            raise self.make_parse_err(err_line, err_index, self.adjust(err.lineno))
-        except RuntimeError as err:
-            raise CoconutException(str(err),
-                                   extra="try again with --recursion-limit greater than the current " + str(sys.getrecursionlimit()))
-        if use_packrat:
-            hits, misses = ParserElement.packrat_cache_stats
-            logger.log("Packrat parsing statistics:", hits, "hits;", misses, "misses")
+        with logger.gather_parsing_stats():
+            try:
+                pre_procd = self.pre(inputstring, **preargs)
+                parsed = parse(parser, pre_procd)
+                out = self.post(parsed, **postargs)
+            except ParseBaseException as err:
+                err_line, err_index = self.reformat(err.line, err.col - 1)
+                raise self.make_parse_err(err_line, err_index, self.adjust(err.lineno))
+            except RuntimeError as err:
+                raise CoconutException(str(err),
+                                       extra="try again with --recursion-limit greater than the current " + str(sys.getrecursionlimit()))
         return out
 
 # end: COMPILER

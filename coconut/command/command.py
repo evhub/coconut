@@ -139,6 +139,8 @@ class Command(object):
     def use_args(self, args, interact=True):
         """Handles command-line arguments."""
         logger.quiet, logger.verbose = args.quiet, args.verbose
+        if DEVELOP:
+            logger.tracing = args.trace
         if args.recursion_limit is not None:
             self.set_recursion_limit(args.recursion_limit)
         if args.jobs is not None:

@@ -17,6 +17,7 @@ Description: Defines the Coconut grammar.
 #   - Handlers
 #   - Main Grammar
 #   - Extra Grammar
+#   - Naming
 
 #-----------------------------------------------------------------------------------------------------------------------
 # IMPORTS:
