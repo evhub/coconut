@@ -23,7 +23,6 @@ import sys
 import os
 import traceback
 import functools
-import time
 import imp
 import subprocess
 from copy import copy
@@ -49,7 +48,6 @@ from coconut.constants import (
     default_multiline,
     default_vi_mode,
     default_mouse_support,
-    ensure_elapsed_time,
     style_env_var,
     mypy_path_env_var,
 )
@@ -127,18 +125,6 @@ def interpret(code, in_vars):
             print(ascii(result))
         return  # don't also exec code
     exec_func(code, in_vars)
-
-
-@contextmanager
-def ensure_time_elapsed():
-    """Ensures ensure_elapsed_time has elapsed."""
-    if sys.version_info < (3, 2):
-        try:
-            yield
-        finally:
-            time.sleep(ensure_elapsed_time)
-    else:
-        yield
 
 
 def handling_prompt_toolkit_errors(func):
@@ -386,6 +372,5 @@ class multiprocess_wrapper(object):
     def __call__(self, *args, **kwargs):
         """Sets up new process then calls the method."""
         sys.setrecursionlimit(self.recursion)
-        with ensure_time_elapsed():
-            logger.copy_from(self.logger)
-            return getattr(self.base, self.method)(*args, **kwargs)
+        logger.copy_from(self.logger)
+        return getattr(self.base, self.method)(*args, **kwargs)

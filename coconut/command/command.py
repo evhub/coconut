@@ -54,7 +54,6 @@ from coconut.command.util import (
     Runner,
     multiprocess_wrapper,
     Prompt,
-    ensure_time_elapsed,
     handling_broken_process_pool,
     kill_children,
     run_cmd,
@@ -405,8 +404,7 @@ class Command(object):
                 from concurrent.futures import ProcessPoolExecutor
                 try:
                     with ProcessPoolExecutor(self.jobs) as self.executor:
-                        with ensure_time_elapsed():
-                            yield
+                        yield
                 finally:
                     self.executor = None
         self.exit_on_error()

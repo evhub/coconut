@@ -204,7 +204,6 @@ default_mouse_support = True
 mypy_path_env_var = "MYPYPATH"
 style_env_var = "COCONUT_STYLE"
 
-ensure_elapsed_time = .001  # seconds
 watch_interval = .1  # seconds
 
 info_tabulation = 18  # offset for tabulated info messages
