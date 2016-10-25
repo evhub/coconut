@@ -230,7 +230,7 @@ class Logger(object):
         return item
 
     def wrap_handler(self, handler):
-        """Wraps a handler to catch errors in verbose mode (only enabled in develop)."""
+        """Wraps a handler to catch errors (only enabled in develop)."""
         if DEVELOP and handler.__name__ not in ("<lambda>", "join"):  # not addspace, condense, or fixto
             @functools.wraps(handler)
             def wrapped_handler(s, l, t):
@@ -255,7 +255,7 @@ class Logger(object):
                 yield
             finally:
                 elapsed_time = time.clock() - start_time
-                self.printerr("Total parsing time:", elapsed_time, "seconds")
+                self.printerr("Time while parsing:", elapsed_time, "seconds")
                 if use_packrat:
                     hits, misses = ParserElement.packrat_cache_stats
                     self.printerr("Packrat parsing stats:", hits, "hits;", misses, "misses")
