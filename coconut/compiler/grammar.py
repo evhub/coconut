@@ -71,6 +71,7 @@ from coconut.constants import (
     wildcard,
     use_packrat,
     packrat_cache_size,
+    varchars,
 )
 from coconut.compiler.util import (
     attach,
@@ -91,7 +92,10 @@ from coconut.compiler.util import (
 
 if use_packrat:
     ParserElement.enablePackrat(packrat_cache_size)
+
 ParserElement.setDefaultWhitespaceChars(default_whitespace_chars)
+
+Keyword.setDefaultKeywordChars(varchars)
 
 # end: SETUP
 #-----------------------------------------------------------------------------------------------------------------------

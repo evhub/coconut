@@ -64,9 +64,11 @@ def format_error(err_type, err_value, err_trace=None):
 
 
 def complain(error):
-    """Raises an error in DEVELOP, otherwise does nothing."""
+    """Raises in develop; warns in release."""
     if DEVELOP:
         raise error
+    else:
+        logger.warn_err(error)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # logger:
@@ -159,7 +161,7 @@ class Logger(object):
         """Displays a warning."""
         try:
             raise warning
-        except CoconutWarning:
+        except Exception:
             if not self.quiet:
                 self.print_exc()
 

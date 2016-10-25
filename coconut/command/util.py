@@ -98,7 +98,7 @@ def is_special_dir(dirname):
 
 
 def rem_encoding(code):
-    """Removes encoding declarations from Python code so it can be passed to exec."""
+    """Removes encoding declarations from compiled code so it can be passed to exec."""
     old_lines = code.splitlines()
     new_lines = []
     for i in range(min(2, len(old_lines))):

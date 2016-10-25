@@ -36,6 +36,9 @@ def fixpath(path):
 # COMPILER CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
+use_packrat = True
+packrat_cache_size = 512
+
 default_recursion_limit = 2000
 minimum_recursion_limit = 100
 
@@ -59,7 +62,9 @@ else:
     pseudo_targets["sys"] = sys_target
 
 default_encoding = "utf-8"
+
 default_whitespace_chars = " \t\f\v"
+varchars = alphanums + "_"
 
 openindent = "\u204b"  # reverse pilcrow
 closeindent = "\xb6"  # pilcrow
@@ -140,7 +145,7 @@ reserved_vars = (  # can be backslash-escaped
     "await",
 )
 
-new_to_old_stdlib = {  # new_name: (old_name, new_version_info)
+new_to_old_stdlib = {  # new_name: (old_name, before_version_info)
     "builtins": ("__builtin__", (3,)),
     "configparser": ("ConfigParser", (3,)),
     "copyreg": ("copy_reg", (3,)),
@@ -180,9 +185,6 @@ new_to_old_stdlib = {  # new_name: (old_name, new_version_info)
     "io.BytesIO": ("BytesIO.BytesIO", (3,)),
     "collections.abc": ("collections", (3, 3)),
 }
-
-use_packrat = True
-packrat_cache_size = 512
 
 #-----------------------------------------------------------------------------------------------------------------------
 # COMMAND CONSTANTS:
@@ -262,7 +264,7 @@ builtins = (
 )
 
 new_operators = (
-    r">>>",
+    main_prompt.strip(),
     r"@",
     r"\$",
     r"`",
@@ -300,5 +302,4 @@ new_operators = (
 py_syntax_version = 3.6
 mimetype = "text/x-python3"
 
-varchars = alphanums + "_"
 all_keywords = keywords + const_vars + reserved_vars
