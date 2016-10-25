@@ -1191,6 +1191,7 @@ class Grammar(object):
     no_chain_test_item = trace(exprlist(no_chain_and_test, Keyword("or")))
 
     small_stmt = Forward()
+    unsafe_small_stmt = Forward()
     simple_stmt = Forward()
     simple_compound_stmt = Forward()
     stmt = Forward()
@@ -1212,7 +1213,7 @@ class Grammar(object):
     match_guard = Optional(Keyword("if").suppress() + test)
 
     stmt_lambdef = Forward()
-    closing_stmt = longest(testlist("tests"), small_stmt)
+    closing_stmt = longest(testlist("tests"), unsafe_small_stmt)
     stmt_lambdef_params = Optional(
         attach(name, add_paren_handle)
         | parameters
@@ -1490,18 +1491,24 @@ class Grammar(object):
         | assert_stmt
         | exec_stmt
     )
-    small_stmt <<= trace(
+    special_stmt = (
         keyword_stmt
         | augassign_stmt
         | typed_assign_stmt
-        | longest(basic_stmt, destructuring_stmt)
+    )
+    unsafe_small_stmt <<= trace(special_stmt | longest(basic_stmt, destructuring_stmt))
+    end_small_stmt = FollowedBy(semicolon | newline)
+    small_stmt <<= trace(
+        special_stmt
+        | basic_stmt + end_small_stmt
+        | destructuring_stmt + end_small_stmt
     )
     simple_stmt <<= trace(condense(
         small_stmt
         + ZeroOrMore(fixto(semicolon, "\n") + small_stmt)
         + (newline | endline_semicolon)
     ))
-    stmt <<= trace(compound_stmt | simple_stmt,)
+    stmt <<= trace(compound_stmt | simple_stmt)
     base_suite <<= condense(newline + indent - OneOrMore(stmt) - dedent)
     nocolon_suite <<= trace(base_suite | attach(simple_stmt, make_suite_handle))
     suite <<= condense(colon + nocolon_suite)
