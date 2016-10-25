@@ -1550,8 +1550,9 @@ class Grammar(object):
 # NAMING:
 #-----------------------------------------------------------------------------------------------------------------------
 
-for varname, val in vars(Grammar).items():
-    if isinstance(val, ParserElement):
-        setattr(Grammar, varname, val.setName(varname))
+if DEVELOP:
+    for varname, val in vars(Grammar).items():
+        if isinstance(val, ParserElement):
+            setattr(Grammar, varname, val.setName(varname))
 
 # end: NAMING
