@@ -63,7 +63,7 @@ else:
 
 default_encoding = "utf-8"
 
-default_whitespace_chars = " \t\f\v"
+default_whitespace_chars = " \t\f\v\xa0"
 varchars = alphanums + "_"
 
 openindent = "\u204b"  # reverse pilcrow
