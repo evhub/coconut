@@ -967,13 +967,14 @@ class Compiler(Grammar):
                 elif trailer[0] == "$(?":
                     pos_args, star_args, kwd_args, dubstar_args = self.function_call_tokens_split(original, loc, trailer[1])
                     extra_args_str = join_args(star_args, kwd_args, dubstar_args)
-                    argdict_elems = []
+                    argdict_pairs = []
                     for i in range(len(pos_args)):
                         if pos_args[i] != "?":
-                            argdict_elems.append(ascii(i) + ": " + pos_args[i])
+                            argdict_pairs.append(str(i) + ": " + pos_args[i])
                     out = ("_coconut_partial("
                            + out
-                           + ", {" + ", ".join(argdict_elems) + "}"
+                           + ", {" + ", ".join(argdict_pairs) + "}"
+                           + ", " + str(len(pos_args))
                            + (", " if extra_args_str else "") + extra_args_str
                            + ")")
                 else:

@@ -380,29 +380,26 @@ class _coconut_partial:'''
                 header += r'''
 class _coconut_partial(object):'''
             header += r'''
-    __slots__ = ("func", "_argdict", "_stargs", "keywords")
+    __slots__ = ("func", "_argdict", "_arglen", "_stargs", "keywords")
     if hasattr(_coconut.functools.partial, "__doc__"):
         __doc__ = _coconut.functools.partial.__doc__
-    def __init__(self, func, argdict, *args, **kwargs):
-        self.func, self._argdict, self._stargs, self.keywords = func, argdict, args, kwargs
+    def __init__(self, func, argdict, arglen, *args, **kwargs):
+        self.func, self._argdict, self._arglen, self._stargs, self.keywords = func, argdict, arglen, args, kwargs
     def __reduce__(self):
-        return (self.__class__, (self.func, self._argdict) + self._stargs, self.keywords)
+        return (self.__class__, (self.func, self._argdict, self._arglen) + self._stargs, self.keywords)
     def __setstate__(self, keywords):
         self.keywords = keywords
     @property
-    def _argdict_maxpos(self):
-        return (_coconut.max(self._argdict) + 1 if self._argdict else 0)
-    @property
     def args(self):
-        return _coconut.tuple(self._argdict.get(i) for i in _coconut.range(self._argdict_maxpos)) + self._stargs
+        return _coconut.tuple(self._argdict.get(i) for i in _coconut.range(self._arglen)) + self._stargs
     def __call__(self, *args, **kwargs):
         callargs = []
         argind = 0
-        for i in _coconut.range(self._argdict_maxpos):
+        for i in _coconut.range(self._arglen):
             if i in self._argdict:
                 callargs.append(self._argdict[i])
             elif argind >= _coconut.len(args):
-                raise TypeError("expected at least " + _coconut.str(self._argdict_maxpos - _coconut.len(self._argdict)) + " additional argument(s) to " + _coconut.repr(self))
+                raise TypeError("expected at least " + _coconut.str(self._arglen - _coconut.len(self._argdict)) + " argument(s) to " + _coconut.repr(self))
             else:
                 callargs.append(args[argind])
                 argind += 1
@@ -412,7 +409,7 @@ class _coconut_partial(object):'''
         return self.func(*callargs, **kwargs)
     def __repr__(self):
         args = []
-        for i in _coconut.range(self._argdict_maxpos):
+        for i in _coconut.range(self._arglen):
             if i in self._argdict:
                 args.append(_coconut.repr(self._argdict[i]))
             else:
