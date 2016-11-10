@@ -394,7 +394,7 @@ class _coconut_partial(object):'''
         return (_coconut.max(self._argdict) + 1 if self._argdict else 0)
     @property
     def args(self):
-        return [self._argdict.get(i) for i in _coconut.range(self._argdict_maxpos)] + self._stargs
+        return _coconut.tuple(self._argdict.get(i) for i in _coconut.range(self._argdict_maxpos)) + self._stargs
     def __call__(self, *args, **kwargs):
         callargs = []
         argind = 0
