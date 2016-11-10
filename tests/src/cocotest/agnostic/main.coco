@@ -270,7 +270,7 @@ def main_test():
     s: str = "hello"
     assert s == "hello"
     assert pow$(?, 2)(3) == 9
-    assert [] |> reduce$(?, (+), ()) == ()
+    assert [] |> reduce$((+), ?, ()) == ()
     assert pow$(?, 2) |> repr == "<built-in function pow>$(?, 2)"
     assert parallel_map(pow$(?, 2), range(10)) |> tuple == (0, 1, 4, 9, 16, 25, 36, 49, 64, 81)
     assert pow$(?, 2).args == (None, 2)

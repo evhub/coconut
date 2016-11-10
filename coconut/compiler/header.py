@@ -105,14 +105,14 @@ def getheader(which, target="", usehash=None):
 import sys as _coconut_sys, os.path as _coconut_os_path
 _coconut_file_path = _coconut_os_path.dirname(_coconut_os_path.abspath(__file__))
 _coconut_sys.path.insert(0, _coconut_file_path)
-from __coconut__ import _coconut, _coconut_MatchError, _coconut_tail_call, _coconut_tco, _coconut_igetitem, _coconut_compose, _coconut_pipe, _coconut_starpipe, _coconut_backpipe, _coconut_backstarpipe, _coconut_bool_and, _coconut_bool_or, _coconut_minus, _coconut_tee, _coconut_map
+from __coconut__ import _coconut, _coconut_MatchError, _coconut_tail_call, _coconut_tco, _coconut_igetitem, _coconut_compose, _coconut_pipe, _coconut_starpipe, _coconut_backpipe, _coconut_backstarpipe, _coconut_bool_and, _coconut_bool_or, _coconut_minus, _coconut_tee, _coconut_map, _coconut_partial
 from __coconut__ import *
 _coconut_sys.path.remove(_coconut_file_path)
 '''
         elif which == "sys":
             header += r'''
 import sys as _coconut_sys
-from coconut.__coconut__ import _coconut, _coconut_MatchError, _coconut_tail_call, _coconut_tco, _coconut_igetitem, _coconut_compose, _coconut_pipe, _coconut_starpipe, _coconut_backpipe, _coconut_backstarpipe, _coconut_bool_and, _coconut_bool_or, _coconut_minus, _coconut_tee, _coconut_map
+from coconut.__coconut__ import _coconut, _coconut_MatchError, _coconut_tail_call, _coconut_tco, _coconut_igetitem, _coconut_compose, _coconut_pipe, _coconut_starpipe, _coconut_backpipe, _coconut_backstarpipe, _coconut_bool_and, _coconut_bool_or, _coconut_minus, _coconut_tee, _coconut_map, _coconut_partial
 from coconut.__coconut__ import *
 '''
         elif which == "__coconut__" or which == "code" or which == "file":
@@ -144,10 +144,10 @@ class _coconut(object):'''
         import collections.abc as abc'''
             if target.startswith("3"):
                 header += r'''
-    IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, max, next, object, range, reversed, set, slice, super, tuple, repr = IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, max, next, object, range, reversed, set, slice, super, tuple, repr'''
+    IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, max, next, object, range, reversed, set, slice, str, super, tuple, repr = IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, max, next, object, range, reversed, set, slice, str, super, tuple, repr'''
             else:
                 header += r'''
-    IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, max, next, object, range, reversed, set, slice, super, tuple, bytearray, repr = IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, max, next, object, range, reversed, set, slice, super, tuple, bytearray, staticmethod(repr)'''
+    IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, max, next, object, range, reversed, set, slice, str, super, tuple, bytearray, repr = IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, max, next, object, range, reversed, set, slice, str, super, tuple, bytearray, staticmethod(repr)'''
             header += r'''
 class _coconut_MatchError(Exception):
     """Pattern-matching error."""
@@ -332,7 +332,7 @@ class count(object):'''
             raise _coconut.ValueError(_coconut.repr(elem) + " is not in count")
         return (elem - self._start) // self._step
     def __repr__(self):
-        return "count(" + str(self._start) + ", " + str(self._step) + ")"
+        return "count(" + _coconut.str(self._start) + ", " + _coconut.str(self._step) + ")"
     def __hash__(self):
         return _coconut.hash((self._start, self._step))
     def __reduce__(self):
