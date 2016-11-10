@@ -251,7 +251,7 @@ data vector(pts):
             return pts |> tuple |> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
-        self.pts |> map$((x) -> x**2) |> sum |> ((s) -> s**0.5)
+        self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
     def __add__(self, other) =
         """Add two vectors together."""
         vector(other_pts) = other
@@ -325,7 +325,7 @@ data vector(pts):
             return pts |> tuple |> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
-        self.pts |> map$((x) -> x**2) |> sum |> ((s) -> s**0.5)
+        self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
     def __add__(self, other) =
         """Add two vectors together."""
         vector(other_pts) = other
@@ -381,7 +381,7 @@ data vector(pts):
             return pts |> tuple |> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
-        self.pts |> map$((x) -> x**2) |> sum |> ((s) -> s**0.5)
+        self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
     def __add__(self, other) =
         """Add two vectors together."""
         vector(other_pts) = other

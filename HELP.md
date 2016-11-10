@@ -556,9 +556,9 @@ Now that we have a constructor for our n-vector, it's time to write its methods.
 ```coconut
     def __abs__(self) =
         """Return the magnitude of the vector."""
-        self.pts |> map$((x) -> x**2) |> sum |> ((s) -> s**0.5)
+        self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
 ```
-The basic algorithm here is map square over each element, sum them all, then square root the result, an algorithm which is so clean to implement in Coconut that it can be read right off the code.
+The basic algorithm here is map square over each element, sum them all, then square root the result. The one new construct used here is the use of a `?` in partial application, which simply allows skipping an argument from being partially applied and deferring it to when the function is called. In this case, the `?` lets us partially apply the exponent instead of the base in `pow` (we could also have equivalently used `(**)`).
 
 Next up is vector addition. The goal here is to add two vectors of equal length by adding their components. To do this, we're going to make use of Coconut's ability to perform pattern-matching, or in this case destructuring assignment, to data types, like so:
 ```coconut
@@ -629,7 +629,7 @@ data vector(pts):
             return pts |> tuple |> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
-        self.pts |> map$((x) -> x**2) |> sum |> ((s) -> s**0.5)
+        self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
     def __add__(self, other) =
         """Add two vectors together."""
         vector(other_pts) = other
@@ -842,7 +842,7 @@ data vector(pts):
             return pts |> tuple |> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
-        self.pts |> map$((x) -> x**2) |> sum |> ((s) -> s**0.5)
+        self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
     def __add__(self, other) =
         """Add two vectors together."""
         vector(other_pts) = other
@@ -1030,7 +1030,7 @@ data vector(pts):
             return pts |> tuple |> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
-        self.pts |> map$((x) -> x**2) |> sum |> ((s) -> s**0.5)
+        self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
     def __add__(self, other) =
         """Add two vectors together."""
         vector(other_pts) = other

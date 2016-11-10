@@ -314,6 +314,8 @@ print(list(dubsums))
 
 Coconut uses a `$` sign right after a function's name but before the open parenthesis used to call the function to denote partial application. It has the same precedence as subscription.
 
+Coconut's partial application also supports the use of a `?` to skip partially applying an argument, deferring filling in that argument until the partially-applied function is called. This is useful if you want to partially apply argument(s) that aren't first in the argument order.
+
 ##### Rationale
 
 Partial application, or currying, is a mainstay of functional programming, and for good reason: it allows the dynamic customization of functions to fit the needs of where they are being used. Partial application allows a new function to be created out of an old function with some of its arguments pre-specified.
@@ -338,14 +340,14 @@ The `partial` object is used for partial function application which â€œfreezesâ€
 
 ###### Coconut
 ```coconut
-expnums = map(pow$(2), range(5))
+expnums = range(5) |> map$(pow$(?, 2))
 expnums |> list |> print
 ```
 
 ###### Python
 ```coconut_python
-import functools
-expnums = map(functools.partial(pow, 2), range(5))
+# unlike this simple lambda, $ produces a pickleable object
+expnums = map(lambda x: pow(x, 2), range(5))
 print(list(expnums))
 ```
 
