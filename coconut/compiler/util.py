@@ -44,9 +44,9 @@ from coconut.exceptions import CoconutInternalException
 skip_whitespace = SkipTo(CharsNotIn(default_whitespace_chars)).suppress()
 
 
-def join_args(args):
+def join_args(*arglists):
     """Joins split argument tokens."""
-    return ", ".join(arg for arg in args if arg)
+    return ", ".join(arg for args in arglists for arg in args if arg)
 
 
 def longest(*args):

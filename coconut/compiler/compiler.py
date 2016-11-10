@@ -953,15 +953,29 @@ class Compiler(Grammar):
                     out = "_coconut.functools.partial(_coconut.operator.getitem, " + out + ")"
                 elif trailer[0] == ".":
                     out = "_coconut.functools.partial(_coconut.getattr, " + out + ")"
-                elif trailer[0] == "$(":
-                    raise self.make_err(CoconutSyntaxError, "a partial application argument is required", original, loc)
                 else:
                     raise CoconutInternalException("invalid trailer symbol", trailer[0])
             elif len(trailer) == 2:
                 if trailer[0] == "$(":
-                    out = "_coconut.functools.partial(" + out + ", " + trailer[1][1:-1] + ")"
+                    args = trailer[1][1:-1]
+                    if args:
+                        out = "_coconut.functools.partial(" + out + ", " + args + ")"
+                    else:
+                        raise self.make_err(CoconutSyntaxError, "a partial application argument is required", original, loc)
                 elif trailer[0] == "$[":
                     out = "_coconut_igetitem(" + out + ", " + trailer[1] + ")"
+                elif trailer[0] == "$(?":
+                    pos_args, star_args, kwd_args, dubstar_args = self.function_call_tokens_split(original, loc, trailer[1])
+                    extra_args_str = join_args(star_args, kwd_args, dubstar_args)
+                    argdict_elems = []
+                    for i in range(len(pos_args)):
+                        if pos_args[i] != "?":
+                            argdict_elems.append(ascii(i) + ": " + pos_args[i])
+                    out = ("_coconut_partial("
+                           + out
+                           + ", {" + ", ".join(argdict_elems) + "}"
+                           + (", " if extra_args_str else "") + extra_args_str
+                           + ")")
                 else:
                     raise CoconutInternalException("invalid special trailer", trailer[0])
             else:
@@ -1362,12 +1376,11 @@ class Compiler(Grammar):
                     kwd_args.append(argstr)
             else:
                 raise CoconutInternalException("invalid function call argument", arg)
-        return pos_args + star_args, kwd_args + dubstar_args
+        return pos_args, star_args, kwd_args, dubstar_args
 
     def function_call_handle(self, original, loc, tokens):
         """Properly order call arguments."""
-        pos_args, kwd_args = self.function_call_tokens_split(original, loc, tokens)
-        return "(" + join_args(pos_args + kwd_args) + ")"
+        return "(" + join_args(*self.function_call_tokens_split(original, loc, tokens)) + ")"
 
     def pipe_item_split(self, original, loc, tokens):
         """Split a partial trailer."""
@@ -1375,8 +1388,8 @@ class Compiler(Grammar):
             return tokens[0]
         elif len(tokens) == 2:
             func, args = tokens
-            pos_args, kwd_args = self.function_call_tokens_split(original, loc, args)
-            return func, join_args(pos_args), join_args(kwd_args)
+            pos_args, star_args, kwd_args, dubstar_args = self.function_call_tokens_split(original, loc, args)
+            return func, join_args(pos_args, star_args), join_args(kwd_args, dubstar_args)
         else:
             raise CoconutInternalException("invalid partial trailer", tokens)
 

@@ -269,6 +269,8 @@ def main_test():
     assert (def ([x] + xs) -> x, xs) <| range(5) == (0, [1,2,3,4])
     s: str = "hello"
     assert s == "hello"
+    assert pow$(?, 2)(3) == 9
+    assert [] |> reduce$(?, (+), ()) == ()
     return True
 
 def main(*args):

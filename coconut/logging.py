@@ -203,7 +203,10 @@ class Logger(object):
         if self.tracing:
             original = str(original)
             loc = int(loc)
-            out = ["[" + str(tag) + "]"]
+            tag = str(tag)
+            if " " in tag:
+                tag = "..."
+            out = ["[" + tag + "]"]
             if tokens is not None:
                 if not isinstance(tokens, Exception) and len(tokens) == 1 and isinstance(tokens[0], str):
                     out.append(ascii(tokens[0]))

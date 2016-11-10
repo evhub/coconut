@@ -561,11 +561,13 @@ def does_raise_exc(func):
     except Exception:
         return True
 
-# Returns None
+# Returns
 
 def ret_none(n):
     if n != 0:
         return ret_none(n - 1)
+
+def ret_args_kwargs(*args, **kwargs) = (args, kwargs)
 
 # Typing:
 

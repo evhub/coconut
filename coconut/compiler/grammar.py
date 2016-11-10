@@ -844,6 +844,7 @@ class Grammar(object):
     backtick = Literal("`")
     dubbackslash = Literal("\\\\")
     backslash = ~dubbackslash + Literal("\\")
+    questionmark = Literal("?")
 
     lt = ~Literal("<<") + ~Literal("<=") + Literal("<")
     gt = ~Literal(">>") + ~Literal(">=") + Literal(">")
@@ -1029,6 +1030,9 @@ class Grammar(object):
         | tokenlist(Group(dubstar + test | star + test | name + default | test), comma)
         | Group(op_item)
     ) + rparen.suppress()
+    questionmark_call_tokens = Group(tokenlist(Group(
+        questionmark | dubstar + test | star + test | name + default | test
+    ), comma))
     methodcaller_args = (
         itemlist(condense(name + default | test), comma)
         | op_item
@@ -1104,6 +1108,7 @@ class Grammar(object):
         condense(function_call)
         | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())
         | Group(condense(dollar + lbrack + rbrack))
+        | Group(fixto(dollar + lparen, "$(?") + questionmark_call_tokens) + rparen.suppress()
         | Group(dollar + ~lparen + ~lbrack)
         | Group(condense(lbrack + rbrack))
         | Group(dot + ~name + ~lbrack)

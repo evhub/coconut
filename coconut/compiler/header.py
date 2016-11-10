@@ -144,10 +144,10 @@ class _coconut(object):'''
         import collections.abc as abc'''
             if target.startswith("3"):
                 header += r'''
-    IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, next, object, range, reversed, set, slice, super, tuple, repr = IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, next, object, range, reversed, set, slice, super, tuple, repr'''
+    IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, max, next, object, range, reversed, set, slice, super, tuple, repr = IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, max, next, object, range, reversed, set, slice, super, tuple, repr'''
             else:
                 header += r'''
-    IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, next, object, range, reversed, set, slice, super, tuple, bytearray, repr = IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, next, object, range, reversed, set, slice, super, tuple, bytearray, staticmethod(repr)'''
+    IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, max, next, object, range, reversed, set, slice, super, tuple, bytearray, repr = IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, max, next, object, range, reversed, set, slice, super, tuple, bytearray, staticmethod(repr)'''
             header += r'''
 class _coconut_MatchError(Exception):
     """Pattern-matching error."""
@@ -372,7 +372,54 @@ def prepattern(base_func):
     """Decorator to add a new case to a pattern-matching function, where the new case is checked first."""
     def pattern_prepender(func):
         return addpattern(func)(base_func)
-    return pattern_prepender
+    return pattern_prepender'''
+            if target.startswith("3"):
+                header += r'''
+class _coconut_partial:'''
+            else:
+                header += r'''
+class _coconut_partial(object):'''
+            header += r'''
+    __slots__ = ("func", "_argdict", "_stargs", "keywords")
+    if hasattr(_coconut.functools.partial, "__doc__"):
+        __doc__ = _coconut.functools.partial.__doc__
+    def __init__(self, func, argdict, *args, **kwargs):
+        self.func, self._argdict, self._stargs, self.keywords = func, argdict, args, kwargs
+    def __reduce__(self):
+        return (self.__class__, (self.func, self._argdict) + self._stargs, self.keywords)
+    def __setstate__(self, keywords):
+        self.keywords = keywords
+    @property
+    def _argdict_maxpos(self):
+        return (_coconut.max(self._argdict) + 1 if self._argdict else 0)
+    @property
+    def args(self):
+        return [self._argdict.get(i) for i in _coconut.range(self._argdict_maxpos)] + self._stargs
+    def __call__(self, *args, **kwargs):
+        callargs = []
+        argind = 0
+        for i in _coconut.range(self._argdict_maxpos):
+            if i in self._argdict:
+                callargs.append(self._argdict[i])
+            elif argind >= _coconut.len(args):
+                raise TypeError("expected at least " + _coconut.str(self._argdict_maxpos - _coconut.len(self._argdict)) + " additional argument(s) to " + _coconut.repr(self))
+            else:
+                callargs.append(args[argind])
+                argind += 1
+        callargs += self._stargs
+        callargs += args[argind:]
+        kwargs.update(self.keywords)
+        return self.func(*callargs, **kwargs)
+    def __repr__(self):
+        args = []
+        for i in _coconut.range(self._argdict_maxpos):
+            if i in self._argdict:
+                args.append(_coconut.repr(self._argdict[i]))
+            else:
+                args.append("?")
+        for arg in self._stargs:
+            args.append(_coconut.repr(arg))
+        return _coconut.repr(self.func) + "$(" + ", ".join(args) + ")"
 def datamaker(data_type):
     """Returns base data constructor of passed data type."""
     return _coconut.functools.partial(_coconut.super(data_type, data_type).__new__, data_type)
