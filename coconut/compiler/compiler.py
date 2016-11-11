@@ -971,7 +971,7 @@ class Compiler(Grammar):
                     for i in range(len(pos_args)):
                         if pos_args[i] != "?":
                             argdict_pairs.append(str(i) + ": " + pos_args[i])
-                    if argdict_pairs:
+                    if argdict_pairs or extra_args_str:
                         out = ("_coconut_partial("
                                + out
                                + ", {" + ", ".join(argdict_pairs) + "}"
