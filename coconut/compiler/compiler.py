@@ -81,11 +81,11 @@ from coconut.exceptions import (
     clean,
 )
 from coconut.logging import logger, trace, complain
+from coconut.compiler.matching import Matcher
 from coconut.compiler.grammar import (
     Grammar,
     lazy_list_handle,
     get_infix_items,
-    Matcher,
     match_handle,
 )
 from coconut.compiler.util import (
@@ -965,7 +965,7 @@ class Compiler(Grammar):
                 elif trailer[0] == "$[":
                     out = "_coconut_igetitem(" + out + ", " + trailer[1] + ")"
                 elif trailer[0] == "$(?":
-                    pos_args, star_args, kwd_args, dubstar_args = self.function_call_tokens_split(original, loc, trailer[1])
+                    pos_args, star_args, kwd_args, dubstar_args = self.split_function_call(original, loc, trailer[1])
                     extra_args_str = join_args(star_args, kwd_args, dubstar_args)
                     argdict_pairs = []
                     for i in range(len(pos_args)):
@@ -1115,12 +1115,13 @@ class Compiler(Grammar):
             key, val, comp = tokens
             return "dict(((" + key + "), (" + val + ")) " + comp + ")"
 
-    def pattern_error(self, original, loc):
+    def pattern_error(self, original, loc, value=None):
         """Constructs a pattern-matching error message."""
         base_line = clean(self.reformat(getline(loc, original)))
         line_wrap = self.wrap_str_of(base_line)
         repr_wrap = self.wrap_str_of(ascii(base_line))
         return ("if not " + match_check_var + ":\n" + openindent
+                + (match_to_var + " = " + value + "\n" if value is not None else "")
                 + match_err_var + ' = _coconut_MatchError("pattern-matching failed for " '
                 + repr_wrap + ' " in " + _coconut.repr(_coconut.repr(' + match_to_var + ")))\n"
                 + match_err_var + ".pattern = " + line_wrap + "\n"
@@ -1146,14 +1147,19 @@ class Compiler(Grammar):
             func, matches, cond = tokens
         else:
             raise CoconutInternalException("invalid match function definition tokens", tokens)
-        matching = Matcher()
-        matching.match_sequence(("(", matches), match_to_var, typecheck=False)
+        match_to_args_var = match_to_var + "_args"
+        match_to_kwargs_var = match_to_var + "_kwargs"
+        matcher = Matcher()
+
+        req_args, def_args, star_arg, kwd_args, dubstar_arg = self.split_args_list(original, loc, tokens)
+        matcher.match_function(match_to_args_var, match_to_kwargs_var, req_args + def_args, star_arg, kwd_args, dubstar_arg)
+
         if cond is not None:
-            matching.add_guard(cond)
-        out = "def " + func + "(*" + match_to_var + "):\n" + openindent
+            matcher.add_guard(cond)
+        out = "def " + func + "(*" + match_to_args_var + ", **" + match_to_kwargs_var + "):\n" + openindent
         out += match_check_var + " = False\n"
-        out += matching.out()
-        out += self.pattern_error(original, loc) + closeindent
+        out += matcher.out()
+        out += self.pattern_error(original, loc, "(" + match_to_args_var + ", " + match_to_kwargs_var + ")") + closeindent
         return out
 
     def op_match_funcdef_handle(self, original, loc, tokens):
@@ -1354,7 +1360,50 @@ class Compiler(Grammar):
             out = decorators + out
         return out
 
-    def function_call_tokens_split(self, original, loc, tokens):
+    def split_args_list(self, original, loc, tokens):
+        """Splits function definition arguments."""
+        req_args, def_args, star_arg, kwd_args, dubstar_arg = [], [], None, [], None
+        pos = 0
+        for arg in tokens:
+            if len(arg) == 1:
+                if arg[0] == "*":
+                    # star sep (pos = 3)
+                    if pos >= 3:
+                        raise self.make_err(CoconutSyntaxError, "invalid star seperator in function definition", original, loc)
+                    pos = 3
+                else:
+                    # pos arg (pos = 0)
+                    if pos > 0:
+                        raise self.make_err(CoconutSyntaxError, "invalid positional argument in function definition", original, loc)
+                    req_args.append(arg[0])
+            elif len(arg) == 2:
+                if arg[0] == "*":
+                    # star arg (pos = 2)
+                    if pos >= 2:
+                        raise self.make_err(CoconutSyntaxError, "invalid star argument in function definition", original, loc)
+                    pos = 2
+                    star_arg = arg[1]
+                elif arg[0] == "**":
+                    # dub star arg (pos = 4)
+                    if pos == 4:
+                        raise self.make_err(CoconutSyntaxError, "invalid double star argument in function definition", original, loc)
+                    pos = 4
+                    dubstar_arg = arg[1]
+                else:
+                    # kwd arg (pos = 1 or 3)
+                    if pos <= 1:
+                        pos = 1
+                        def_args.append((arg[0], arg[1]))
+                    elif pos <= 3:
+                        pos = 3
+                        kwd_args.append((arg[0], arg[1]))
+                    else:
+                        raise self.make_err(CoconutSyntaxError, "invalid default argument in function definition", original, loc)
+            else:
+                raise CoconutInternalException("invalid function definition argument", arg)
+        return req_args, def_args, star_arg, kwd_args, dubstar_arg
+
+    def split_function_call(self, original, loc, tokens):
         """Split into positional arguments and keyword arguments."""
         pos_args = []
         star_args = []
@@ -1365,10 +1414,7 @@ class Compiler(Grammar):
             if len(arg) == 1:
                 if kwd_args or dubstar_args:
                     raise self.make_err(CoconutSyntaxError, "positional argument after keyword argument", original, loc)
-                if arg[0] == "*":
-                    kwd_args.insert(0, self.check_py("3", "star seperator", original, loc, [argstr]))
-                else:
-                    pos_args.append(argstr)
+                pos_args.append(argstr)
             elif len(arg) == 2:
                 if arg[0] == "*":
                     if dubstar_args:
@@ -1384,7 +1430,7 @@ class Compiler(Grammar):
 
     def function_call_handle(self, original, loc, tokens):
         """Properly order call arguments."""
-        return "(" + join_args(*self.function_call_tokens_split(original, loc, tokens)) + ")"
+        return "(" + join_args(*self.split_function_call(original, loc, tokens)) + ")"
 
     def pipe_item_split(self, original, loc, tokens):
         """Split a partial trailer."""
@@ -1392,7 +1438,7 @@ class Compiler(Grammar):
             return tokens[0]
         elif len(tokens) == 2:
             func, args = tokens
-            pos_args, star_args, kwd_args, dubstar_args = self.function_call_tokens_split(original, loc, args)
+            pos_args, star_args, kwd_args, dubstar_args = self.split_function_call(original, loc, args)
             return func, join_args(pos_args, star_args), join_args(kwd_args, dubstar_args)
         else:
             raise CoconutInternalException("invalid partial trailer", tokens)
