@@ -149,7 +149,7 @@ class _coconut(object):'''
                 header += r'''
     IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, max, next, object, range, reversed, set, slice, str, super, tuple, bytearray, repr = IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, max, next, object, range, reversed, set, slice, str, super, tuple, bytearray, staticmethod(repr)'''
             header += r'''
-class _coconut_MatchError(Exception):
+class MatchError(Exception):
     """Pattern-matching error."""
     __slots__ = ("pattern", "value")
 class _coconut_tail_call(Exception):
@@ -423,7 +423,7 @@ def datamaker(data_type):
 def consume(iterable, keep_last=0):
     """Fully exhaust iterable and return the last keep_last elements."""
     return _coconut.collections.deque(iterable, maxlen=keep_last)  # fastest way to exhaust an iterator
-MatchError, map, reduce, takewhile, dropwhile, tee = _coconut_MatchError, _coconut_map, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile, _coconut_tee
+_coconut_MatchError, map, reduce, takewhile, dropwhile, tee = MatchError, _coconut_map, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile, _coconut_tee
 '''
         else:
             raise CoconutInternalException("invalid header type", which)

@@ -1115,17 +1115,16 @@ class Compiler(Grammar):
             key, val, comp = tokens
             return "dict(((" + key + "), (" + val + ")) " + comp + ")"
 
-    def pattern_error(self, original, loc, value=None):
+    def pattern_error(self, original, loc, value_var=match_to_var):
         """Constructs a pattern-matching error message."""
         base_line = clean(self.reformat(getline(loc, original)))
         line_wrap = self.wrap_str_of(base_line)
         repr_wrap = self.wrap_str_of(ascii(base_line))
         return ("if not " + match_check_var + ":\n" + openindent
-                + (match_to_var + " = " + value + "\n" if value is not None else "")
                 + match_err_var + ' = _coconut_MatchError("pattern-matching failed for " '
-                + repr_wrap + ' " in " + _coconut.repr(_coconut.repr(' + match_to_var + ")))\n"
+                + repr_wrap + ' " in " + _coconut.repr(_coconut.repr(' + value_var + ")))\n"
                 + match_err_var + ".pattern = " + line_wrap + "\n"
-                + match_err_var + ".value = " + match_to_var
+                + match_err_var + ".value = " + value_var
                 + "\nraise " + match_err_var + "\n" + closeindent)
 
     def destructuring_stmt_handle(self, original, loc, tokens):
@@ -1151,7 +1150,7 @@ class Compiler(Grammar):
         match_to_kwargs_var = match_to_var + "_kwargs"
         matcher = Matcher()
 
-        req_args, def_args, star_arg, kwd_args, dubstar_arg = self.split_args_list(original, loc, tokens)
+        req_args, def_args, star_arg, kwd_args, dubstar_arg = self.split_args_list(original, loc, matches)
         matcher.match_function(match_to_args_var, match_to_kwargs_var, req_args + def_args, star_arg, kwd_args, dubstar_arg)
 
         if cond is not None:
@@ -1159,7 +1158,7 @@ class Compiler(Grammar):
         out = "def " + func + "(*" + match_to_args_var + ", **" + match_to_kwargs_var + "):\n" + openindent
         out += match_check_var + " = False\n"
         out += matcher.out()
-        out += self.pattern_error(original, loc, "(" + match_to_args_var + ", " + match_to_kwargs_var + ")") + closeindent
+        out += self.pattern_error(original, loc, match_to_args_var) + closeindent
         return out
 
     def op_match_funcdef_handle(self, original, loc, tokens):
