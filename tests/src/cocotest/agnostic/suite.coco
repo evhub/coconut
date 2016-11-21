@@ -76,7 +76,7 @@ def suite_test():
     assert factorial2(3) == 6
     assert factorial4(3) == 6
     assert factorial5(3) == 6
-    assert fact(3) == 6
+    assert fact(3) == 6 == fact_(3)
     assert factorial1(-1) is None
     assert factorial2(-1) is None
     assert factorial4(-1) is None
@@ -236,4 +236,26 @@ def suite_test():
     assert (2, 3, 5) |*> ret_args_kwargs$(1, ?, ?, 4, ?, *(6, 7), a="k") == ((1, 2, 3, 4, 5, 6, 7), {"a": "k"})
     assert anything_func() is None
     assert args_kwargs_func() is None
+    assert x_is_int(4) == 4 == x_is_int(x=4)
+    try:
+        x_is_int(x="herp")
+    except MatchError:
+        pass
+    else:
+        assert False
+    assert x_as_y(x=2) == (2, 2) == x_as_y(y=2)
+    assert x_y_are_int_gt_0(1, 2) == (1, 2) == x_y_are_int_gt_0(x=1, y=2)
+    try:
+        x_y_are_int_gt_0(1, y=0)
+    except MatchError:
+        pass
+    else:
+        assert False
+    assert x_is_int_def_0() == 0 == x_is_int_def_0(x=0)
+    try:
+        x_is_int_def_0("derp")
+    except MatchError:
+        pass
+    else:
+        assert False
     return True

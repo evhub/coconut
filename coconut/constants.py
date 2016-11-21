@@ -36,8 +36,8 @@ def fixpath(path):
 # COMPILER CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-use_packrat = True
 packrat_cache_size = 512
+use_packrat = packrat_cache_size != 0
 
 default_recursion_limit = 2000
 minimum_recursion_limit = 100

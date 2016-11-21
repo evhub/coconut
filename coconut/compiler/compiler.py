@@ -1143,7 +1143,7 @@ class Compiler(Grammar):
         """Processes match assign blocks."""
         if len(tokens) == 2:
             matches, item = tokens
-            out = match_handle(original, loc, (matches, item, None))
+            out = match_handle(original, loc, [matches, item, None])
             out += self.pattern_error(original, loc, match_to_var)
             return out
         else:
@@ -1158,19 +1158,20 @@ class Compiler(Grammar):
             func, matches, cond = tokens
         else:
             raise CoconutInternalException("invalid match function definition tokens", tokens)
-
         matcher = Matcher()
+
         req_args, def_args, star_arg, kwd_args, dubstar_arg = self.split_args_list(original, loc, matches)
         with self.handle_deferred_syntax_errs(original, loc):
             matcher.match_function(match_to_args_var, match_to_kwargs_var, req_args + def_args, star_arg, kwd_args, dubstar_arg)
+
         if cond is not None:
             matcher.add_guard(cond)
-
-        out = "def " + func + "(*" + match_to_args_var + ", **" + match_to_kwargs_var + "):\n" + openindent
-        out += match_check_var + " = False\n"
-        out += matcher.out()
-        out += self.pattern_error(original, loc, match_to_args_var) + closeindent
-        return out
+        return (
+            "def " + func + "(*" + match_to_args_var + ", **" + match_to_kwargs_var + "):\n" + openindent
+            + match_check_var + " = False\n"
+            + matcher.out()
+            + self.pattern_error(original, loc, match_to_args_var) + closeindent
+        )
 
     def op_match_funcdef_handle(self, original, loc, tokens):
         """Processes infix match defs."""
@@ -1179,10 +1180,12 @@ class Compiler(Grammar):
             cond = None
         elif len(tokens) == 4:
             func, args = get_infix_items(tokens[:-1])
-            cond = tokens[-1:]
+            cond = tokens[-1]
         else:
             raise CoconutInternalException("invalid infix match function definition tokens", tokens)
-        name_tokens = [func, args] + ([cond] if cond is not None else [])
+        name_tokens = [func, args]
+        if cond is not None:
+            name_tokens.append(cond)
         return self.name_match_funcdef_handle(original, loc, name_tokens)
 
     def set_literal_handle(self, tokens):

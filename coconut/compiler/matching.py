@@ -88,7 +88,8 @@ class Matcher(object):
         "checks",
         "defs",
         "names",
-        "others"
+        "others",
+        "guards",
     )
 
     def __init__(self, checkdefs=None, names=None, var_index=0):
@@ -105,12 +106,17 @@ class Matcher(object):
             self.defs = self.get_defs(-1)
         self.names = {} if names is None else names
         self.others = []
+        self.guards = []
 
     def duplicate(self):
         """Duplicates the matcher to others."""
         self.others.append(Matcher(self.checkdefs, self.names, self.var_index))
         self.others[-1].set_checks(0, ["not " + match_check_var] + self.others[-1].get_checks(0))
         return self.others[-1]
+
+    def add_guard(self, cond):
+        """Adds cond as a guard."""
+        self.guards.append(cond)
 
     def get_checks(self, position):
         """Gets the checks at the position."""
@@ -161,32 +167,21 @@ class Matcher(object):
             raise CoconutInternalException("invalid match index", position)
 
     @contextmanager
-    def incremented(self, forall=False):
+    def incremented(self):
         """Increment then decrement."""
-        self.increment(forall)
+        self.increment()
         try:
             yield
         finally:
-            self.decrement(forall)
+            self.decrement()
 
-    def increment(self, forall=False):
+    def increment(self):
         """Advances the if-statement position."""
         self.set_position(self.position + 1)
-        if forall:
-            for other in self.others:
-                other.increment(True)
 
-    def decrement(self, forall=False):
+    def decrement(self):
         """Decrements the if-statement position."""
         self.set_position(self.position - 1)
-        if forall:
-            for other in self.others:
-                other.decrement(True)
-
-    def add_guard(self, cond):
-        """Adds cond as a guard."""
-        self.increment(True)
-        self.add_check(cond)
 
     def get_temp_var(self):
         """Gets the next match_temp_var."""
@@ -518,8 +513,11 @@ class Matcher(object):
                 closes += 1
             if defs:
                 out += "\n".join(defs) + "\n"
-        out += match_check_var + " = True\n"
-        out += closeindent * closes
-        for other in self.others:
-            out += other.out()
-        return out
+        return out + (
+            match_check_var + " = True\n"
+            + closeindent * closes
+            + "".join(other.out() for other in self.others)
+            + ("if " + match_check_var + " and not ((" + ") and (".join(self.guards) + ")):\n" + openindent
+                + match_check_var + " = False\n" + closeindent
+                if self.guards else "")
+        )
