@@ -21,7 +21,10 @@ from coconut.root import *  # NOQA
 
 from contextlib import contextmanager
 
-from coconut.exceptions import CoconutInternalException
+from coconut.exceptions import (
+    CoconutInternalException,
+    CoconutDeferredSyntaxError,
+)
 from coconut.constants import (
     match_temp_var,
     wildcard,
@@ -36,26 +39,24 @@ from coconut.constants import (
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def get_match_name(match):
-    """Gets the name of the match if it has one."""
+def get_match_names(match):
+    """Gets keyword names for the given match."""
+    names = []
     if "paren" in match.keys():
         (match,) = match
-        return get_match_name(match)
+        names += get_match_names(match)
     elif "var" in match.keys():
-        (name,) = match
-        if name == wildcard:
-            return None
-        else:
-            return name
+        (setvar,) = match
+        if setvar != wildcard:
+            names.append(setvar)
     elif "trailer" in match.keys():
         match, trailers = match[0], match[1:]
-        for i in reversed(range(0, len(trailers), 2)):
+        for i in range(0, len(trailers), 2):
             op, arg = trailers[i], trailers[i + 1]
             if op == "as":
-                return arg
-        return get_match_name(match)
-    else:
-        return None
+                names.append(arg)
+        names += get_match_names(match)
+    return names
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MATCHER:
@@ -231,27 +232,31 @@ class Matcher(object):
                 (match, default) = match_args[x]
             else:
                 match, default = match_args[x], None
-            name = get_match_name(match)
+            names = get_match_names(match)
             if default is None:
-                if name is None:
+                if not names:
                     self.match(match, args + "[" + str(x) + "]")
                     req_len = x + 1
                 else:
                     arg_checks[x] = (
                         # if x < req_len
-                        '"' + name + '" not in ' + kwargs,
+                        " and ".join('"' + name + '" not in ' + kwargs for name in names),
                         # if x >= req_len
-                        "(_coconut.len(" + args + ") > " + str(x) + ') ^ ("' + name + '" in ' + kwargs + ")",
+                        "_coconut.sum((_coconut.len(" + args + ") > " + str(x) + ", "
+                        + ", ".join('"' + name + '" in ' + kwargs for name in names)
+                        + ")) == 1",
                     )
                     tempvar = self.get_temp_var()
                     self.add_def(tempvar + " = "
-                                 + args + "[" + str(x) + "] if _coconut.len(" + args + ") > " + str(x)
-                                 + " else " + kwargs + '.pop("' + name + '")'
+                                 + args + "[" + str(x) + "] if _coconut.len(" + args + ") > " + str(x) + " else "
+                                 + "".join(kwargs + '.pop("' + name + '") if "' + name + '" in ' + kwargs + " else "
+                                           for name in names[:-1])
+                                 + kwargs + '.pop("' + names[-1] + '")'
                                  )
                     with self.incremented():
                         self.match(match, tempvar)
             else:
-                if name is None:
+                if not names:
                     tempvar = self.get_temp_var()
                     self.add_def(tempvar + " = " + args + "[" + str(x) + "] if _coconut.len(" + args + ") > " + str(x) + " else " + default)
                     with self.increment():
@@ -261,13 +266,16 @@ class Matcher(object):
                         # if x < req_len
                         None,
                         # if x >= req_len
-                        "_coconut.len(" + args + ") <= " + str(x) + ' or "' + name + '" not in ' + kwargs,
+                        "_coconut.sum((_coconut.len(" + args + ") > " + str(x) + ", "
+                        + ", ".join('"' + name + '" in ' + kwargs for name in names)
+                        + ")) <= 1",
                     )
                     tempvar = self.get_temp_var()
                     self.add_def(tempvar + " = "
-                                 + args + "[" + str(x) + "] if _coconut.len(" + args + ") > " + str(x)
-                                 + " else " + kwargs + '.pop("' + name + '") if "' + name + '" in ' + kwargs
-                                 + " else " + default
+                                 + args + "[" + str(x) + "] if _coconut.len(" + args + ") > " + str(x) + " else "
+                                 + "".join(kwargs + '.pop("' + name + '") if "' + name + '" in ' + kwargs + " else "
+                                           for name in names)
+                                 + default
                                  )
                     with self.incremented():
                         self.match(match, tempvar)
@@ -285,14 +293,18 @@ class Matcher(object):
     def match_in_kwargs(self, match_args, kwargs):
         """Matches against kwargs."""
         for match, default in match_args:
-            name = get_match_name(match)
-            tempvar = self.get_temp_var()
-            self.add_def(tempvar + " = "
-                         + kwargs + '.pop("' + name + '") if "' + name + '" in ' + kwargs
-                         + " else " + default
-                         )
-            with self.incremented():
-                self.match(match, tempvar)
+            names = get_match_names(match)
+            if names:
+                tempvar = self.get_temp_var()
+                self.add_def(tempvar + " = "
+                             + "".join(kwargs + '.pop("' + name + '") if "' + name + '" in ' + kwargs + " else "
+                                       for name in names)
+                             + default
+                             )
+                with self.incremented():
+                    self.match(match, tempvar)
+            else:
+                raise CoconutDeferredSyntaxError("keyword-only pattern-matching function arguments must have names")
 
     def match_dict(self, tokens, item):
         """Matches a dictionary."""
@@ -368,7 +380,7 @@ class Matcher(object):
                 req_length = (len(head_matches) if head_matches is not None else 0) + (len(last_matches) if last_matches is not None else 0)
                 self.add_check("_coconut.len(" + itervar + ") >= " + str(req_length))
                 head_splice = str(len(head_matches)) if head_matches is not None else ""
-                last_splice = "-" + str(len(last_match)) if last_match is not None else ""
+                last_splice = "-" + str(len(last_matches)) if last_matches is not None else ""
                 self.add_def(middle + " = " + itervar + "[" + head_splice + ":" + last_splice + "]")
                 if head_matches is not None:
                     self.match_all_in(head_matches, itervar)

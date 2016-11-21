@@ -153,3 +153,7 @@ class CoconutStyleWarning(CoconutStyleError, CoconutWarning):
 
 class CoconutInternalException(CoconutException):
     """Internal Coconut exceptions."""
+
+
+class CoconutDeferredSyntaxError(CoconutException):
+    """Deferred Coconut SyntaxError."""

@@ -30,6 +30,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import sys
+from contextlib import contextmanager
 
 from pyparsing import (
     ParseBaseException,
@@ -55,6 +56,8 @@ from coconut.constants import (
     tabideal,
     tabworth,
     match_to_var,
+    match_to_args_var,
+    match_to_kwargs_var,
     match_check_var,
     match_err_var,
     lazy_chain_var,
@@ -78,6 +81,7 @@ from coconut.exceptions import (
     CoconutTargetError,
     CoconutInternalException,
     CoconutStyleWarning,
+    CoconutDeferredSyntaxError,
     clean,
 )
 from coconut.logging import logger, trace, complain
@@ -415,6 +419,14 @@ class Compiler(Grammar):
         """Determines whether the next line should be indented."""
         last = rem_comment(code.splitlines()[-1])
         return last.endswith(":") or last.endswith("\\") or paren_change(last) < 0
+
+    @contextmanager
+    def handle_deferred_syntax_errs(self, original, loc):
+        """Handles CoconutDeferredSyntaxError."""
+        try:
+            yield
+        except CoconutDeferredSyntaxError as err:
+            raise self.make_err(CoconutSyntaxError, str(err), original, loc)
 
     def make_parse_err(self, err_line, err_index=None, err_lineno=None):
         """Make a CoconutParseError from a ParseBaseException."""
@@ -1115,7 +1127,7 @@ class Compiler(Grammar):
             key, val, comp = tokens
             return "dict(((" + key + "), (" + val + ")) " + comp + ")"
 
-    def pattern_error(self, original, loc, value_var=match_to_var):
+    def pattern_error(self, original, loc, value_var):
         """Constructs a pattern-matching error message."""
         base_line = clean(self.reformat(getline(loc, original)))
         line_wrap = self.wrap_str_of(base_line)
@@ -1132,7 +1144,7 @@ class Compiler(Grammar):
         if len(tokens) == 2:
             matches, item = tokens
             out = match_handle(original, loc, (matches, item, None))
-            out += self.pattern_error(original, loc)
+            out += self.pattern_error(original, loc, match_to_var)
             return out
         else:
             raise CoconutInternalException("invalid destructuring assignment tokens", tokens)
@@ -1146,15 +1158,14 @@ class Compiler(Grammar):
             func, matches, cond = tokens
         else:
             raise CoconutInternalException("invalid match function definition tokens", tokens)
-        match_to_args_var = match_to_var + "_args"
-        match_to_kwargs_var = match_to_var + "_kwargs"
+
         matcher = Matcher()
-
         req_args, def_args, star_arg, kwd_args, dubstar_arg = self.split_args_list(original, loc, matches)
-        matcher.match_function(match_to_args_var, match_to_kwargs_var, req_args + def_args, star_arg, kwd_args, dubstar_arg)
-
+        with self.handle_deferred_syntax_errs(original, loc):
+            matcher.match_function(match_to_args_var, match_to_kwargs_var, req_args + def_args, star_arg, kwd_args, dubstar_arg)
         if cond is not None:
             matcher.add_guard(cond)
+
         out = "def " + func + "(*" + match_to_args_var + ", **" + match_to_kwargs_var + "):\n" + openindent
         out += match_check_var + " = False\n"
         out += matcher.out()

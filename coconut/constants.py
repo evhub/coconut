@@ -83,6 +83,8 @@ tabworth = 8  # worth of \t in spaces for parsing (8 = Python standard)
 reserved_prefix = "_coconut"
 decorator_var = reserved_prefix + "_decorator"
 match_to_var = reserved_prefix + "_match_to"
+match_to_args_var = match_to_var + "_args"
+match_to_kwargs_var = match_to_var + "_kwargs"
 match_check_var = reserved_prefix + "_match_check"
 match_temp_var = reserved_prefix + "_match_temp"
 match_err_var = reserved_prefix + "_match_err"

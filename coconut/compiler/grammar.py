@@ -675,7 +675,7 @@ class Grammar(object):
     match_args_list = trace(Group(Optional(tokenlist(Group(
         dubstar + match
         | star + Optional(match)
-        | match + Optional(default)
+        | match + Optional(equals.suppress() + test)
     ), comma))))
 
     function_call = Forward()
