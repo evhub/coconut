@@ -1175,11 +1175,14 @@ class Compiler(Grammar):
     def op_match_funcdef_handle(self, original, loc, tokens):
         """Processes infix match defs."""
         if len(tokens) == 3:
-            name_tokens = get_infix_items(tokens)
+            func, args = get_infix_items(tokens)
+            cond = None
         elif len(tokens) == 4:
-            name_tokens = get_infix_items(tokens[:-1]) + tuple(tokens[-1:])
+            func, args = get_infix_items(tokens[:-1])
+            cond = tokens[-1:]
         else:
             raise CoconutInternalException("invalid infix match function definition tokens", tokens)
+        name_tokens = [func, args] + ([cond] if cond is not None else [])
         return self.name_match_funcdef_handle(original, loc, name_tokens)
 
     def set_literal_handle(self, tokens):

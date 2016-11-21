@@ -277,7 +277,7 @@ def match_handle(o, l, tokens, top=True):
     elif len(tokens) == 4:
         matches, item, cond, stmts = tokens
     else:
-        raise CoconutInternalException("invalid outer match tokens", tokens)
+        raise CoconutInternalException("invalid match statement tokens", tokens)
     matching = Matcher()
     matching.match(matches, match_to_var)
     if cond:
@@ -1066,8 +1066,10 @@ class Grammar(object):
     op_match_funcdef = Forward()
     async_match_funcdef = Forward()
     name_match_funcdef_ref = name + lparen.suppress() + match_args_list + match_guard + rparen.suppress()
-    op_match_funcdef_arg = lparen.suppress() + match + rparen.suppress()
-    op_match_funcdef_ref = Group(Optional(op_match_funcdef_arg)) + op_funcdef_name + Group(Optional(op_match_funcdef_arg)) + match_guard
+    op_match_funcdef_arg = Group(Optional(lparen.suppress()
+                                          + Group(match + Optional(equals.suppress() + test))
+                                          + rparen.suppress()))
+    op_match_funcdef_ref = op_match_funcdef_arg + op_funcdef_name + op_match_funcdef_arg + match_guard
     base_match_funcdef = trace(Keyword("def").suppress() + (op_match_funcdef | name_match_funcdef))
     def_match_funcdef = trace(condense(base_match_funcdef + colon.suppress() + nocolon_suite))
     match_funcdef = Optional(Keyword("match").suppress()) + def_match_funcdef

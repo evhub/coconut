@@ -507,7 +507,7 @@ class Matcher(object):
         for flag, get_handler in self.matchers.items():
             if flag in tokens.keys():
                 return get_handler(self)(tokens, item)
-        raise CoconutInternalException("invalid inner match tokens", tokens)
+        raise CoconutInternalException("invalid pattern-matching tokens", tokens)
 
     def out(self):
         out = ""
