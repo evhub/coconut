@@ -585,6 +585,7 @@ def anything_func(*args: int, **kwargs: int) -> None: pass
 # Enhanced Pattern-Matching
 
 def fact_(0, acc=1) = acc
+@addpattern(fact_)
 def fact_(n is int, acc=1 if n > 0) = fact_(n-1, acc*n)
 
 def x_is_int(x is int) = x
