@@ -597,3 +597,5 @@ def (x is int) `x_y_are_int_gt_0` (y is int) if x > 0 and y > 0 = (x, y)
 def x_is_int_def_0(x is int = 0) = x
 
 def head_tail_def_none([head] + tail = [None]) = (head, tail)
+
+def kwd_only_x_is_int_def_0(*, x is int = 0) = x

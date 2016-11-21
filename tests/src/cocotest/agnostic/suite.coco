@@ -265,4 +265,11 @@ def suite_test():
     else:
         assert False
     assert head_tail_def_none() == (None, []) == head_tail_def_none([None])
+    assert kwd_only_x_is_int_def_0() == 0 == kwd_only_x_is_int_def_0(x=0)
+    try:
+        kwd_only_x_is_int_def_0(1)
+    except MatchError:
+        pass
+    else:
+        assert False
     return True
