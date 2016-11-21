@@ -25,6 +25,7 @@ import traceback
 import functools
 import imp
 import subprocess
+import webbrowser
 from copy import copy
 from contextlib import contextmanager
 try:
@@ -50,6 +51,8 @@ from coconut.constants import (
     default_mouse_support,
     style_env_var,
     mypy_path_env_var,
+    tutorial_url,
+    documentation_url,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -79,6 +82,16 @@ def readfile(openedfile):
     """Reads the contents of a file."""
     openedfile.seek(0)
     return str(openedfile.read())
+
+
+def launch_tutorial():
+    """Opens the Coconut tutorial."""
+    webbrowser.open(tutorial_url, 2)
+
+
+def launch_documentation():
+    """Opens the Coconut documentation."""
+    webbrowser.open(documentation_url, 2)
 
 
 def showpath(path):

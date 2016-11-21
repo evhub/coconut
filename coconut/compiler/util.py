@@ -41,12 +41,13 @@ from coconut.exceptions import CoconutInternalException
 # FUNCTIONS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-skip_whitespace = SkipTo(CharsNotIn(default_whitespace_chars)).suppress()
-
 
 def join_args(*arglists):
     """Joins split argument tokens."""
     return ", ".join(arg for args in arglists for arg in args if arg)
+
+
+skip_whitespace = SkipTo(CharsNotIn(default_whitespace_chars)).suppress()
 
 
 def longest(*args):
@@ -149,6 +150,12 @@ def rem_comment(line):
     return line.split("#", 1)[0].rstrip()
 
 
+def should_indent(code):
+    """Determines whether the next line should be indented."""
+    last = rem_comment(code.splitlines()[-1])
+    return last.endswith(":") or last.endswith("\\") or paren_change(last) < 0
+
+
 def split_comment(line):
     """Splits a line into base and comment."""
     base = rem_comment(line)
@@ -190,7 +197,7 @@ def parse(grammar, text):
 
 def match_in(grammar, text):
     """Determines if there is a match for grammar in text."""
-    for result in grammar.scanString(text):
+    for result in grammar.parseWithTabs().scanString(text):
         return True
     return False
 
@@ -202,33 +209,4 @@ def matches(grammar, text):
 
 def transform(grammar, text):
     """Transforms text by replacing matches to grammar."""
-    results = []
-    intervals = []
-    for tokens, start, stop in grammar.scanString(text):
-        if len(tokens) != 1:
-            raise CoconutInternalException("invalid transform result tokens", tokens)
-        results.append(tokens[0])
-        intervals.append((start, stop))
-
-    if not results:
-        return None
-
-    split_indices = [0]
-    split_indices.extend(start for start, _ in intervals)
-    split_indices.extend(stop for _, stop in intervals)
-    split_indices.sort()
-    split_indices.append(None)
-
-    out = []
-    for i in range(len(split_indices) - 1):
-        if i % 2 == 0:
-            start, stop = split_indices[i], split_indices[i + 1]
-            out.append(text[start:stop])
-        else:
-            out.append(results[i // 2])
-    if i // 2 < len(results) - 1:
-        raise CoconutInternalException("unused transform results", results[i // 2 + 1:])
-    if stop is not None:
-        raise CoconutInternalException("failed to properly split text to be transformed")
-
-    return "".join(out)
+    return grammar.parseWithTabs().transformString(text)

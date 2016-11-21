@@ -415,11 +415,6 @@ class Compiler(Grammar):
         else:
             return info[:2]
 
-    def should_indent(self, code):
-        """Determines whether the next line should be indented."""
-        last = rem_comment(code.splitlines()[-1])
-        return last.endswith(":") or last.endswith("\\") or paren_change(last) < 0
-
     @contextmanager
     def handle_deferred_syntax_errs(self, original, loc):
         """Handles CoconutDeferredSyntaxError."""
@@ -428,8 +423,15 @@ class Compiler(Grammar):
         except CoconutDeferredSyntaxError as err:
             raise self.make_err(CoconutSyntaxError, str(err), original, loc)
 
-    def make_parse_err(self, err_line, err_index=None, err_lineno=None):
+    def make_parse_err(self, err, reformat=True, include_ln=True):
         """Make a CoconutParseError from a ParseBaseException."""
+        err_line = err.line
+        err_index = err.col - 1
+        err_lineno = err.lineno if include_ln else None
+        if reformat:
+            err_line, err_index = self.reformat(err_line, err_index)
+            if err_lineno is not None:
+                err_lineno = self.adjust(err_lineno)
         return CoconutParseError(None, err_line, err_index, err_lineno)
 
     def parse(self, inputstring, parser, preargs, postargs):
@@ -441,8 +443,7 @@ class Compiler(Grammar):
                 parsed = parse(parser, pre_procd)
                 out = self.post(parsed, **postargs)
             except ParseBaseException as err:
-                err_line, err_index = self.reformat(err.line, err.col - 1)
-                raise self.make_parse_err(err_line, err_index, self.adjust(err.lineno))
+                raise self.make_parse_err(err)
             except RuntimeError as err:
                 raise CoconutException(str(err),
                                        extra="try again with --recursion-limit greater than the current " + str(sys.getrecursionlimit()))
@@ -1014,7 +1015,7 @@ class Compiler(Grammar):
             elif op == "..=":
                 out += name + " = _coconut_compose(" + name + ", (" + item + "))"
             elif op == "::=":
-                ichain_var = lazy_chain_var + self.wrap_num_var(self.ichain_count)  # necessary to prevent a segfault caused by self-reference
+                ichain_var = lazy_chain_var + "_" + str(self.ichain_count)  # necessary to prevent a segfault caused by self-reference
                 out += ichain_var + " = " + name + "\n"
                 out += name + " = _coconut.itertools.chain.from_iterable(" + lazy_list_handle([ichain_var, "(" + item + ")"]) + ")"
                 self.ichain_count += 1
@@ -1234,15 +1235,11 @@ class Compiler(Grammar):
         else:
             return "exec(" + ", ".join(tokens) + ")"
 
-    def wrap_num_var(self, index):
-        """Wrap an index for inclusion in a variable name."""
-        return "_" + str(index)
-
     def stmt_lambda_name(self, index=None):
         """Return the next (or specified) statement lambda name."""
         if index is None:
             index = len(self.stmt_lambdas)
-        return stmt_lambda_var + self.wrap_num_var(index)
+        return stmt_lambda_var + "_" + str(index)
 
     def stmt_lambdef_handle(self, original, loc, tokens):
         """Handles multi-line lambdef statements."""
@@ -1313,11 +1310,11 @@ class Compiler(Grammar):
         try:
             func_name, func_args, func_params = parse(self.split_func_name_args_params, def_stmt)
         except ParseBaseException as err:
-            complain(self.make_parse_err(err.line, err.col - 1))
+            complain(self.make_parse_err(err, reformat=False, include_ln=False))
             attempt_tre = False
         else:
             use_mock = func_args and func_args != func_params[1:-1]
-            func_store = tre_store_var + self.wrap_num_var(int(self.tre_store_count))
+            func_store = tre_store_var + "_" + str(self.tre_store_count)
             self.tre_store_count += 1
             attempt_tre = True
 

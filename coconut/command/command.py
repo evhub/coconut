@@ -23,7 +23,6 @@ import sys
 import os
 import time
 import traceback
-import webbrowser
 import functools
 from contextlib import contextmanager
 from subprocess import CalledProcessError
@@ -39,8 +38,6 @@ from coconut.constants import (
     code_exts,
     comp_ext,
     watch_interval,
-    tutorial_url,
-    documentation_url,
     icoconut_kernel_dirs,
     minimum_recursion_limit,
     stub_dir,
@@ -59,7 +56,10 @@ from coconut.command.util import (
     run_cmd,
     set_mypy_path,
     is_special_dir,
+    launch_documentation,
+    launch_tutorial,
 )
+from coconut.compiler.util import should_indent
 from coconut.compiler.header import gethash
 from coconut.command.cli import arguments
 
@@ -149,9 +149,9 @@ class Command(object):
         if args.style is not None:
             self.prompt.set_style(args.style)
         if args.documentation:
-            self.launch_documentation()
+            launch_documentation()
         if args.tutorial:
-            self.launch_tutorial()
+            launch_tutorial()
 
         self.setup(
             target=args.target,
@@ -463,7 +463,7 @@ class Command(object):
     def handle_input(self, code):
         """Compiles Coconut interpreter input."""
         if not self.prompt.multiline:
-            if not self.comp.should_indent(code):
+            if not should_indent(code):
                 try:
                     return self.comp.parse_block(code)
                 except CoconutException:
@@ -504,14 +504,6 @@ class Command(object):
             sys.path.append(os.getcwd())
         if self.runner is None:
             self.runner = Runner(self.comp, self.exit_runner)
-
-    def launch_tutorial(self):
-        """Opens the Coconut tutorial."""
-        webbrowser.open(tutorial_url, 2)
-
-    def launch_documentation(self):
-        """Opens the Coconut documentation."""
-        webbrowser.open(documentation_url, 2)
 
     @property
     def mypy(self):

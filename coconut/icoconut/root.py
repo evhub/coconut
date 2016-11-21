@@ -28,6 +28,7 @@ from ipykernel.kernelbase import Kernel
 
 from coconut.command import Runner
 from coconut.compiler import Compiler
+from coconut.compiler.util import should_indent
 from coconut.exceptions import CoconutException
 from coconut.logging import logger
 from coconut.constants import (
@@ -207,7 +208,7 @@ class CoconutKernel(Kernel):
                 return {
                     "status": "complete"
                 }
-            elif comp.should_indent(code):
+            elif should_indent(code):
                 return {
                     "status": "incomplete",
                     "indent": " " * tabideal
