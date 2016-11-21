@@ -83,11 +83,9 @@ class Matcher(object):
     }
     __slots__ = (
         "position",
-        "var_index",
         "checkdefs",
-        "checks",
-        "defs",
         "names",
+        "var_index",
         "others",
         "guards",
     )
@@ -95,53 +93,56 @@ class Matcher(object):
     def __init__(self, checkdefs=None, names=None, var_index=0):
         """Creates the matcher."""
         self.position = 0
-        self.var_index = var_index
         self.checkdefs = []
         if checkdefs is None:
             self.increment()
         else:
             for checks, defs in checkdefs:
                 self.checkdefs.append([checks[:], defs[:]])
-            self.checks = self.get_checks(-1)
-            self.defs = self.get_defs(-1)
+            self.set_position(-1)
         self.names = {} if names is None else names
+        self.var_index = var_index
         self.others = []
         self.guards = []
 
     def duplicate(self):
         """Duplicates the matcher to others."""
-        self.others.append(Matcher(self.checkdefs, self.names, self.var_index))
-        self.others[-1].set_checks(0, ["not " + match_check_var] + self.others[-1].get_checks(0))
-        return self.others[-1]
+        other = Matcher(self.checkdefs, self.names, self.var_index)
+        other.insert_check(0, "not " + match_check_var)
+        self.others.append(other)
+        return other
 
     def add_guard(self, cond):
         """Adds cond as a guard."""
         self.guards.append(cond)
 
-    def get_checks(self, position):
+    def get_checks(self, position=None):
         """Gets the checks at the position."""
+        if position is None:
+            position = self.position
         return self.checkdefs[position][0]
 
-    def set_checks(self, position, checks):
+    def set_checks(self, checks, position=None):
         """Sets the checks at the position."""
+        if position is None:
+            position = self.position
         self.checkdefs[position][0] = checks
 
-    def set_defs(self, position, defs):
-        """Sets the defs at the position."""
-        self.checkdefs[position][1] = defs
+    checks = property(get_checks, set_checks)
 
-    def get_defs(self, position):
+    def get_defs(self, position=None):
         """Gets the defs at the position."""
+        if position is None:
+            position = self.position
         return self.checkdefs[position][1]
 
-    @contextmanager
-    def only_self(self):
-        """Only match in self not others."""
-        others, self.others = self.others, []
-        try:
-            yield
-        finally:
-            self.others = others + self.others
+    def set_defs(self, defs, position=None):
+        """Sets the defs at the position."""
+        if position is None:
+            position = self.position
+        self.checkdefs[position][1] = defs
+
+    defs = property(get_defs, set_defs)
 
     def add_check(self, check_item):
         """Adds a check universally."""
@@ -155,16 +156,33 @@ class Matcher(object):
         for other in self.others:
             other.add_def(def_item)
 
+    def insert_check(self, index, check_item):
+        """Inserts a check universally."""
+        self.checks.insert(index, check_item)
+        for other in self.others:
+            other.insert_check(index, check_item)
+
+    def insert_def(self, index, def_item):
+        """Inserts a def universally."""
+        self.defs.insert(index, def_item)
+        for other in self.others:
+            other.insert_def(index, def_item)
+
     def set_position(self, position):
         """Sets the if-statement position."""
-        if position > 0:
-            while position >= len(self.checkdefs):
-                self.checkdefs.append([[], []])
-            self.checks = self.checkdefs[position][0]
-            self.defs = self.checkdefs[position][1]
-            self.position = position
-        else:
-            raise CoconutInternalException("invalid match index", position)
+        if position < 0:
+            position += len(self.checkdefs)
+        while position >= len(self.checkdefs):
+            self.checkdefs.append([[], []])
+        self.position = position
+
+    def increment(self, by=1):
+        """Advances the if-statement position."""
+        self.set_position(self.position + by)
+
+    def decrement(self, by=1):
+        """Decrements the if-statement position."""
+        self.set_position(self.position - by)
 
     @contextmanager
     def incremented(self):
@@ -175,13 +193,14 @@ class Matcher(object):
         finally:
             self.decrement()
 
-    def increment(self):
-        """Advances the if-statement position."""
-        self.set_position(self.position + 1)
-
-    def decrement(self):
-        """Decrements the if-statement position."""
-        self.set_position(self.position - 1)
+    @contextmanager
+    def only_self(self):
+        """Only match in self not others."""
+        others, self.others = self.others, []
+        try:
+            yield
+        finally:
+            self.others = others + self.others
 
     def get_temp_var(self):
         """Gets the next match_temp_var."""
@@ -523,7 +542,10 @@ class Matcher(object):
             match_check_var + " = True\n"
             + closeindent * closes
             + "".join(other.out() for other in self.others)
-            + ("if " + match_check_var + " and not ((" + ") and (".join(self.guards) + ")):\n" + openindent
+            + ("if " + match_check_var + " and not "
+                + ("(" + self.guards[0] + ")" if len(self.guards) == 1 else
+                    "((" + ") and (".join(self.guards) + "))")
+                + ":\n" + openindent
                 + match_check_var + " = False\n" + closeindent
                 if self.guards else "")
         )
