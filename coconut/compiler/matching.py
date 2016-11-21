@@ -254,7 +254,7 @@ class Matcher(object):
                 if not names:
                     tempvar = self.get_temp_var()
                     self.add_def(tempvar + " = " + args + "[" + str(x) + "] if _coconut.len(" + args + ") > " + str(x) + " else " + default)
-                    with self.increment():
+                    with self.incremented():
                         self.match(match, tempvar)
                 else:
                     arg_checks[x] = (

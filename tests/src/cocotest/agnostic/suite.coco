@@ -258,4 +258,5 @@ def suite_test():
         pass
     else:
         assert False
+    assert head_tail_def_none() == (None, []) == head_tail_def_none([None])
     return True
