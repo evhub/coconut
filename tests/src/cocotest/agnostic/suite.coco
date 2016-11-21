@@ -243,6 +243,12 @@ def suite_test():
         pass
     else:
         assert False
+    try:
+        x_is_int()
+    except MatchError:
+        pass
+    else:
+        assert False
     assert x_as_y(x=2) == (2, 2) == x_as_y(y=2)
     assert x_y_are_int_gt_0(1, 2) == (1, 2) == x_y_are_int_gt_0(x=1, y=2)
     try:

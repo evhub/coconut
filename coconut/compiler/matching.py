@@ -222,6 +222,7 @@ class Matcher(object):
         """Matches against args or kwargs."""
         req_len = 0
         arg_checks = {}
+        to_match = []  # [(increment, match, against)]
         for x in range(len(match_args)):
             if isinstance(match_args[x], tuple):
                 (match, default) = match_args[x]
@@ -230,8 +231,8 @@ class Matcher(object):
             names = get_match_names(match)
             if default is None:
                 if not names:
-                    self.match(match, args + "[" + str(x) + "]")
                     req_len = x + 1
+                    to_match.append((False, match, args + "[" + str(x) + "]"))
                 else:
                     arg_checks[x] = (
                         # if x < req_len
@@ -248,14 +249,12 @@ class Matcher(object):
                                            for name in names[:-1])
                                  + kwargs + '.pop("' + names[-1] + '")'
                                  )
-                    with self.incremented():
-                        self.match(match, tempvar)
+                    to_match.append((True, match, tempvar))
             else:
                 if not names:
                     tempvar = self.get_temp_var()
                     self.add_def(tempvar + " = " + args + "[" + str(x) + "] if _coconut.len(" + args + ") > " + str(x) + " else " + default)
-                    with self.incremented():
-                        self.match(match, tempvar)
+                    to_match.append((True, match, tempvar))
                 else:
                     arg_checks[x] = (
                         # if x < req_len
@@ -272,18 +271,25 @@ class Matcher(object):
                                            for name in names)
                                  + default
                                  )
-                    with self.incremented():
-                        self.match(match, tempvar)
+                    to_match.append((True, match, tempvar))
 
         max_len = None if allow_star_args else len(match_args)
         self.check_len_in(req_len, max_len, args)
         for x in arg_checks:
+            lt_check, ge_check = arg_checks[x]
             if x < req_len:
-                if arg_checks[x][0] is not None:
-                    self.add_check(arg_checks[x][0])
+                if lt_check is not None:
+                    self.add_check(lt_check)
             else:
-                if arg_checks[x][1] is not None:
-                    self.add_check(arg_checks[x][1])
+                if ge_check is not None:
+                    self.add_check(ge_check)
+
+        for increment, match, against in to_match:
+            if increment:
+                with self.incremented():
+                    self.match(match, against)
+            else:
+                self.match(match, against)
 
     def match_in_kwargs(self, match_args, kwargs):
         """Matches against kwargs."""
