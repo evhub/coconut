@@ -98,7 +98,7 @@ class Matcher(object):
             self.increment()
         else:
             for checks, defs in checkdefs:
-                self.checkdefs.append([checks[:], defs[:]])
+                self.checkdefs.append((checks[:], defs[:]))
             self.set_position(-1)
         self.names = {} if names is None else names
         self.var_index = var_index
@@ -173,7 +173,7 @@ class Matcher(object):
         if position < 0:
             position += len(self.checkdefs)
         while position >= len(self.checkdefs):
-            self.checkdefs.append([[], []])
+            self.checkdefs.append(([], []))
         self.position = position
 
     def increment(self, by=1):
@@ -185,13 +185,13 @@ class Matcher(object):
         self.set_position(self.position - by)
 
     @contextmanager
-    def incremented(self):
+    def incremented(self, by=1):
         """Increment then decrement."""
-        self.increment()
+        self.increment(by)
         try:
             yield
         finally:
-            self.decrement()
+            self.decrement(by)
 
     @contextmanager
     def only_self(self):
