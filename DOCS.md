@@ -43,8 +43,8 @@
     1. [Tail Call Optimization](#tail-call-optimization)
     1. [Operator Functions](#operator-functions)
     1. [Assignment Functions](#assignment-functions)
-    1. [Infix Functions](#infix-functions)
     1. [Pattern-Matching Functions](#pattern-matching-functions)
+    1. [Infix Functions](#infix-functions)
 1. [Statements](#statements)
     1. [Destructuring Assignment](#destructuring-assignment)
     1. [Decorators](#decorators)
@@ -1062,6 +1062,36 @@ def binexp(x): return 2**x
 print(binexp(5))
 ```
 
+### Pattern-Matching Functions
+
+Coconut supports pattern-matching on the arguments to a function in that function's definition. The syntax for pattern-matching function definition is
+```coconut
+[match] def <name>(<pattern> [= <default>], ... [if <cond>]):
+    <body>
+```
+where `<name>` is the name of the function, `<cond>` is an optional additional check, `<body>` is the body of the function, `<pattern>` is defined by Coconut's [`match` statement](#match), and `<default>` is the optional default if no argument is passed. The `match` keyword at the beginning is optional, but is sometimes necessary to disambiguate pattern-matching function definition from normal function definition, which will always take precedence.
+
+If `<pattern>` has a variable name (either directly or with `as`), the resulting pattern-matching function will support keyword arguments using that variable name. If pattern-matching function definition fails, it will raise a [`MatchError`](#matcherror) object just like [destructuring assignment](#destructuring-assignment).
+
+_Note: Pattern-matching function definition can be combined with assignment and/or infix function definition._
+
+##### Example
+
+###### Coconut
+```coconut
+def last_two(_ + [a, b]):
+    return a, b
+def xydict_to_xytuple({"x":x is int, "y":y is int}):
+    return x, y
+
+range(5) |> last_two |> print
+{"x":1, "y":2} |> xydict_to_xytuple |> print
+```
+
+###### Python
+
+_Can't be done without a long series of checks at the top of the function. See the compiled code for the Python syntax._
+
 ### Infix Functions
 
 Coconut allows for infix function calling, where a function is surrounded by backticks and then can have arguments placed in front of or behind it. Backtick calling has a precedence in-between chaining and piping.
@@ -1092,45 +1122,6 @@ def a `mod` b = a % b
 def mod(a, b): return a % b
 print(mod(x, 2))
 ```
-
-### Pattern-Matching Functions
-
-Coconut supports pattern-matching / destructuring assignment syntax inside of function definition. The syntax for pattern-matching function definition is
-```coconut
-[match] def <name>(<pattern>, <pattern>, ... [if <cond>]):
-    <body>
-```
-where `<name>` is the name of the function, `<cond>` is an optional additional check, `<body>` is the body of the function, and `<pattern>` is defined by Coconut's [`match` statement](#match). The `match` keyword at the beginning is optional, but is sometimes necessary to disambiguate pattern-matching function definition from normal function definition, which will always take precedence. Coconut's pattern-matching function definition is equivalent to a [`match` statement](#match) that looks like:
-```coconut
-def <name>(*args):
-    match (<pattern>, <pattern>, ...) in args:
-        <body>
-    else:
-        err = MatchError(<error message>)
-        err.pattern = "def <name>(<pattern>, <pattern>, ...):"
-        err.value = args
-        raise err
-```
-If pattern-matching function definition fails, it will raise a [`MatchError`](#matcherror) object just like [destructuring assignment](#destructuring-assignment).
-
-_Note: Pattern-matching function definition can be combined with assignment and/or infix function definition._
-
-##### Example
-
-###### Coconut
-```coconut
-def last_two(_ + [a, b]):
-    return a, b
-def xydict_to_xytuple({"x":x is int, "y":y is int}):
-    return x, y
-
-range(5) |> last_two |> print
-{"x":1, "y":2} |> xydict_to_xytuple |> print
-```
-
-###### Python
-
-_Can't be done without a long series of checks at the top of the function. See the compiled code for the Python syntax._
 
 ## Statements
 

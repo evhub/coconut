@@ -26,9 +26,6 @@ except ImportError:
     from io import StringIO
 from ipykernel.kernelbase import Kernel
 
-from coconut.command import Runner
-from coconut.compiler import Compiler
-from coconut.compiler.util import should_indent
 from coconut.exceptions import CoconutException
 from coconut.logging import logger
 from coconut.constants import (
@@ -44,6 +41,9 @@ from coconut.constants import (
     code_exts,
     tabideal,
 )
+from coconut.compiler import Compiler
+from coconut.compiler.util import should_indent
+from coconut.command.util import Runner
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -118,7 +118,7 @@ comp = Compiler(target="sys")  # from coconut.compiler
 
 class CoconutKernel(Kernel):
     """Jupyter kernel for Coconut."""
-    _runner = None  # current ..command.Runner
+    _runner = None  # current coconut.command.Runner
     implementation = "icoconut"
     implementation_version = VERSION
     language = "coconut"
@@ -183,14 +183,15 @@ class CoconutKernel(Kernel):
         stdout, stderr = sys.stdout, sys.stderr
         sys.stdout = fakefile(lambda text: self._send(silent, text))
         sys.stderr = fakefile(lambda text: self._send(silent, text, True))
+        try:
+            self._execute(code)
+            for name in user_expressions:
+                user_expressions[name] = self._execute(user_expressions[name], True)
+        finally:
+            sys.stdout.close()
+            sys.stderr.close()
+            sys.stdout, sys.stderr = stdout, stderr
 
-        self._execute(code)
-        for name in user_expressions:
-            user_expressions[name] = self._execute(user_expressions[name], True)
-
-        sys.stdout.close()
-        sys.stderr.close()
-        sys.stdout, sys.stderr = stdout, stderr
         if not store_history:
             self._setup(True)
         return {

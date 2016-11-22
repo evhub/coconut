@@ -8,6 +8,9 @@ from typing import (
     Any,
     Optional,
     Union,
+    Dict,
+    Tuple,
+    Text,
 )
 
 
@@ -15,7 +18,11 @@ _T = TypeVar('_T')
 _S = TypeVar('_S')
 
 
-if sys.version_info < (3,):
+if sys.version_info >= (3,):
+    import builtins as _b
+    ascii, filter, hex, map, oct, zip, open, chr, str, range = ascii, filter, hex, map, oct, zip, open, chr, str, range
+
+else:
     import __builtin__ as _b
     from future_builtins import *  # type: ignore
     from io import open
@@ -38,10 +45,6 @@ if sys.version_info < (3,):
         def count(self, elem: int) -> int: ...
         def index(self, elem: int) -> int: ...
 
-else:
-    import builtins as _b
-    ascii, filter, hex, map, oct, zip, open, chr, str, range = ascii, filter, hex, map, oct, zip, open, chr, str, range
-
 
 py_chr, py_filter, py_hex, py_input, py_int, py_map, py_oct, py_open, py_print, py_range, py_str, py_zip = _b.chr, _b.filter, _b.hex, _b.input, _b.int, _b.map, _b.oct, _b.open, _b.print, _b.range, _b.str, _b.zip
 
@@ -56,15 +59,16 @@ parallel_map = concurrent_map = _coconut_map = map
 
 class _coconut:
     import collections, functools, imp, itertools, operator, types, copy, pickle
+    IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, repr = IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, repr
     if sys.version_info < (3, 3):
         abc = collections
     else:
+        bytearray, repr = bytearray, staticmethod(repr)
         import collections.abc as abc  # type: ignore
-    IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, next, object, range, reversed, set, slice, super, tuple, repr = IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, next, object, range, reversed, set, slice, super, tuple, repr
 
 
-class _coconut_MatchError(Exception): ...
-MatchError = _coconut_MatchError
+class MatchError(Exception): ...
+_coconut_MatchError = MatchError
 
 
 class _coconut_tail_call(Exception): ...
@@ -127,3 +131,10 @@ def consume(
     iterable: Iterable[_T],
     keep_last: Optional[int] = ...
     ) -> Iterable[_T]: ...
+
+
+class _coconut_partial:
+    args = ...  # type: Tuple
+    keywords = ...  # type: Dict[Text, Any]
+    def __init__(self, func: Callable, argdict: Dict[int, Any], arglen: int, *args, **kwargs) -> None: ...
+    def __call__(self, *args, **kwargs) -> Any: ...

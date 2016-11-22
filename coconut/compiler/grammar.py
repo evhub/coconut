@@ -1220,9 +1220,14 @@ class Grammar(object):
 # NAMING:
 #-----------------------------------------------------------------------------------------------------------------------
 
-if DEVELOP:
+
+def set_grammar_names():
+    """Set names of grammar elements to their variable names."""
     for varname, val in vars(Grammar).items():
         if isinstance(val, ParserElement):
             setattr(Grammar, varname, val.setName(varname))
+
+if DEVELOP:
+    set_grammar_names()
 
 # end: NAMING
