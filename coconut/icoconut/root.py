@@ -63,6 +63,7 @@ class CoconutCompiler(CachingCompiler):
     """IPython compiler for Coconut."""
 
     def __init__(self, *args, **kwargs):
+        """Version of __init__ that remembers header futures."""
         super(CoconutCompiler, self).__init__(*args, **kwargs)
         super(CoconutCompiler, self).ast_parse(COMPILER.getheader("sys"))
 
@@ -76,6 +77,7 @@ class CoconutSplitter(IPythonInputSplitter):
     """IPython splitter for Coconut."""
 
     def __init__(self, *args, **kwargs):
+        """Version of __init__ that sets up Coconut code compilation."""
         super(CoconutSplitter, self).__init__(*args, **kwargs)
         self._python_compile = self._compile
 
@@ -95,14 +97,14 @@ class CoconutShell(ZMQInteractiveShell):
         super(CoconutShell, self).init_instance_attrs()
         self.compile = CoconutCompiler()
 
+    def init_create_namespaces(self, *args, **kwargs):
+        """Version of init_create_namespaces that adds Coconut built-ins to globals."""
+        super(CoconutShell, self).init_create_namespaces(*args, **kwargs)
+        RUNNER.update_vars(self.user_global_ns)
+
     def run_cell(self, raw_cell, store_history=False, silent=False, shell_futures=None):
         """Version of run_cell that always uses shell_futures."""
         return super(CoconutShell, self).run_cell(raw_cell, store_history, silent)
-
-    def run_code(self, *args, **kwargs):
-        """Version of run_code that adds Coconut built-ins to globals."""
-        RUNNER.update_vars(self.user_global_ns)
-        return super(CoconutShell, self).run_code(*args, **kwargs)
 
 
 InteractiveShellABC.register(CoconutShell)
