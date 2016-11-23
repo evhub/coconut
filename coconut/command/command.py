@@ -503,7 +503,7 @@ class Command(object):
         if os.getcwd() not in sys.path:
             sys.path.append(os.getcwd())
         if self.runner is None:
-            self.runner = Runner(self.comp, self.exit_runner)
+            self.runner = Runner(self.comp, exit=self.exit_runner, store=self.mypy)
 
     @property
     def mypy(self):

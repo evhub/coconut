@@ -122,9 +122,12 @@ def rem_encoding(code):
     return "\n".join(new_lines)
 
 
-def exec_func(code, in_vars):
+def exec_func(code, glob_vars, loc_vars=None):
     """Wrapper around exec."""
-    exec(code, in_vars)
+    if loc_vars is None:
+        exec(code, glob_vars)
+    else:
+        exec(code, glob_vars, loc_vars)
 
 
 def interpret(code, in_vars):
@@ -294,15 +297,20 @@ class Prompt(object):
 class Runner(object):
     """Compiled Python executor."""
 
-    def __init__(self, comp=None, exit=None, path=None):
+    def __init__(self, comp=None, exit=None, store=False, path=None):
         """Creates the executor."""
         self.exit = sys.exit if exit is None else exit
         self.vars = self.build_vars(path)
-        self.lines = []
+        self.stored = [] if store else None
         if comp is not None:
-            self.lines.append(comp.getheader("package"))
-            self.run(comp.getheader("code"), add_to_lines=False)
-            self.fixpickle()
+            self.store(comp.getheader("package"))
+            self.run(comp.getheader("code"), store=False)
+            self.fix_pickle()
+
+    def store(self, line):
+        """Stores a line."""
+        if self.stored is not None:
+            self.stored.append(line)
 
     def build_vars(self, path=None):
         """Builds initial vars."""
@@ -314,7 +322,7 @@ class Runner(object):
             init_vars["__file__"] = fixpath(path)
         return init_vars
 
-    def fixpickle(self):
+    def fix_pickle(self):
         """Fixes pickling of Coconut header objects."""
         from coconut import __coconut__
         for var in self.vars:
@@ -333,11 +341,15 @@ class Runner(object):
             if all_errors_exit:
                 self.exit(1)
 
-    def run(self, code, use_eval=None, path=None, all_errors_exit=False, add_to_lines=True):
+    def update_vars(self, global_vars):
+        """Adds Coconut built-ins to given vars."""
+        global_vars.update(self.vars)
+
+    def run(self, code, use_eval=None, path=None, all_errors_exit=False, store=True):
         """Executes Python code."""
         if use_eval is None:
             run_func = interpret
-        elif use_eval:
+        elif use_eval is True:
             run_func = eval
         else:
             run_func = exec_func
@@ -350,8 +362,8 @@ class Runner(object):
                     result = run_func(code, use_vars)
                 finally:
                     self.vars.update(use_vars)
-            if add_to_lines:
-                self.lines.append(code)
+            if store:
+                self.store(code)
             return result
 
     def run_file(self, path, all_errors_exit=True):
@@ -362,15 +374,18 @@ class Runner(object):
             with self.handling_errors(all_errors_exit):
                 module = imp.load_module("__main__", *found)
                 self.vars.update(vars(module))
-                self.lines.append("from " + name + " import *")
+                self.store("from " + name + " import *")
         finally:
             found[0].close()
 
     def was_run_code(self, get_all=True):
         """Gets all the code that was run."""
-        if get_all:
-            self.lines = ["\n".join(self.lines)]
-        return self.lines[-1]
+        if self.stored is None:
+            return ""
+        else:
+            if get_all:
+                self.stored = ["\n".join(self.stored)]
+            return self.stored[-1]
 
 
 class multiprocess_wrapper(object):

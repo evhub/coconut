@@ -68,24 +68,27 @@ class CoconutException(Exception):
 
     def __init__(self, message, item=None, extra=None):
         """Creates the Coconut exception."""
-        self.message = message
-        if item is not None:
-            self.message += ": " + ascii(item)
-        if extra is not None:
-            self.message += " (" + str(extra) + ")"
+        self.args = (message, item, extra)
 
-    @property
-    def args(self):
-        """Get the arguments to the exception."""
-        return (self.message,)
+    def message(self, message, item, extra):
+        """Uses arguments to create the message."""
+        if item is not None:
+            message += ": " + ascii(item)
+        if extra is not None:
+            message += " (" + str(extra) + ")"
+        return message
+
+    def syntax_err(self):
+        """Converts to a SyntaxError."""
+        return SyntaxError(str(self))
+
+    def __str__(self):
+        """Get the exception message."""
+        return self.message(*self.args)
 
     def __reduce__(self):
         """Get pickling information."""
         return (self.__class__, self.args)
-
-    def __str__(self):
-        """Get the exception message."""
-        return self.message
 
     def __repr__(self):
         """Get a representation of the exception."""
@@ -95,52 +98,60 @@ class CoconutException(Exception):
 class CoconutSyntaxError(CoconutException):
     """Coconut SyntaxError."""
 
-    def __init__(self, message, source=None, point=None, ln=None):
+    def __init__(self, message=None, source=None, point=None, ln=None):
+        """Creates the SyntaxError."""
+        self.args = (message, source, point, ln)
+
+    def message(self, message, source, point, ln):
         """Creates the Coconut SyntaxError."""
-        self.message = message
+        if message is None:
+            message = "parsing failed"
         if ln is not None:
-            self.message += " (line " + str(ln) + ")"
+            message += " (line " + str(ln) + ")"
         if source:
             if point is None:
-                self.message += "\n" + " " * taberrfmt + clean(source)
+                message += "\n" + " " * taberrfmt + clean(source)
             else:
                 part = clean(source.splitlines()[lineno(point, source) - 1], False).lstrip()
                 point -= len(source) - len(part)  # adjust all points based on lstrip
                 part = part.rstrip()  # adjust only points that are too large based on rstrip
-                self.message += "\n" + " " * taberrfmt + part
+                message += "\n" + " " * taberrfmt + part
                 if point > 0:
                     if point >= len(part):
                         point = len(part) - 1
-                    self.message += "\n" + " " * (taberrfmt + point) + "^"
+                    message += "\n" + " " * (taberrfmt + point) + "^"
+        return message
 
-
-class CoconutParseError(CoconutSyntaxError):
-    """Coconut ParseError."""
-
-    def __init__(self, message=None, source=None, point=None, ln=None):
-        """Creates The Coconut ParseError."""
-        if message is None:
-            message = "parsing failed"
-        CoconutSyntaxError.__init__(self, message, source, point, ln)
+    def syntax_err(self):
+        """Creates the Coconut SyntaxError."""
+        message, source, point, ln = self.args
+        err = SyntaxError(self.message(message, source, point, None))
+        err.offset = point
+        err.lineno = ln
+        return err
 
 
 class CoconutStyleError(CoconutSyntaxError):
     """Coconut --strict error."""
 
-    def __init__(self, message, source=None, point=None, ln=None):
+    def message(self, message, source, point, ln):
         """Creates the --strict Coconut error."""
         message += " (disable --strict to dismiss)"
-        CoconutSyntaxError.__init__(self, message, source, point, ln)
+        return super(CoconutSyntaxError, self).message(message, source, point, ln)
 
 
 class CoconutTargetError(CoconutSyntaxError):
     """Coconut --target error."""
 
-    def __init__(self, message, source=None, point=None, ln=None, target=None):
+    def message(self, message, source, point, ln, target):
         """Creates the --target Coconut error."""
         if target is not None:
             message += " (enable --target " + target + " to dismiss)"
-        CoconutSyntaxError.__init__(self, message, source, point, ln)
+        return super(CoconutSyntaxError, self).message(message, source, point, ln)
+
+
+class CoconutParseError(CoconutSyntaxError):
+    """Coconut ParseError."""
 
 
 class CoconutWarning(CoconutException):
