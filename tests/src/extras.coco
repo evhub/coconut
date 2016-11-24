@@ -10,14 +10,14 @@ from coconut.convenience import (
     parse,
 )
 
-NOT_PY_32 = sys.version_info >= (3, 3) or (sys.version_info < (3,) and sys.version_info >= (2, 7))
-if NOT_PY_32:
+IPY = sys.version_info >= (3, 3) or (sys.version_info < (3,) and sys.version_info >= (2, 7))
+if IPY:
     from coconut.icoconut import CoconutKernel
 else:
     CoconutKernel = None
 
 def main():
-    if NOT_PY_32:
+    if IPY:
         import coconut.highlighter
     assert consume(range(10), keep_last=1)[0] == 9 == coc_consume(range(10), keep_last=1)[0]
     assert version() == version("num")

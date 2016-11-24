@@ -44,18 +44,8 @@ from coconut.command.util import Runner
 COMPILER = Compiler(target="sys")
 RUNNER = Runner(COMPILER)
 
-
-def PARSE(code):
-    """Memoized COMPILER.parse_block."""
-    try:
-        compiled = COMPILER.parse_block(code)
-    except CoconutException as err:
-        raise err.syntax_err()
-    else:
-        return compiled
-
 #-----------------------------------------------------------------------------------------------------------------------
-# KERNLE:
+# KERNEL:
 #-----------------------------------------------------------------------------------------------------------------------
 
 
@@ -69,8 +59,12 @@ class CoconutCompiler(CachingCompiler, object):
 
     def ast_parse(self, source, *args, **kwargs):
         """Version of ast_parse that compiles Coconut code first."""
-        compiled = PARSE(source)
-        return super(CoconutCompiler, self).ast_parse(compiled, *args, **kwargs)
+        try:
+            compiled = COMPILER.parse_block(source)
+        except CoconutException as err:
+            raise err.syntax_err()
+        else:
+            return super(CoconutCompiler, self).ast_parse(compiled, *args, **kwargs)
 
 
 class CoconutSplitter(IPythonInputSplitter, object):
@@ -79,12 +73,19 @@ class CoconutSplitter(IPythonInputSplitter, object):
     def __init__(self, *args, **kwargs):
         """Version of __init__ that sets up Coconut code compilation."""
         super(CoconutSplitter, self).__init__(*args, **kwargs)
-        self._python_compile = self._compile
+        self._python_compile, self._compile = self._compile, self._coconut_compile
 
-        def _compile(source, *args, **kwargs):
-            compiled = PARSE(source)
+    def _coconut_compile(self, source, *args, **kwargs):
+        """Version of _compile that compiles Coconut code first."""
+        try:
+            compiled = COMPILER.parse_block(source)
+        except CoconutException as err:
+            if source.endswith("\n\n"):
+                raise err.syntax_err()
+            else:
+                return None
+        else:
             return self._python_compile(compiled)
-        self._compile = _compile
 
 
 class CoconutShell(ZMQInteractiveShell, object):
@@ -108,10 +109,13 @@ class CoconutShell(ZMQInteractiveShell, object):
 
     def user_expressions(self, expressions):
         """Version of user_expressions that compiles Coconut code first."""
-        compiled = {}
+        compiled_expressions = {}
         for key, expr in expressions.items():
-            compiled[key] = PARSE(expr)
-        return super(CoconutShell, self).user_expressions(compiled)
+            try:
+                compiled_expressions[key] = COMPILER.parse_eval(expr)
+            except CoconutException:
+                compiled_expressions[key] = expr
+        return super(CoconutShell, self).user_expressions(compiled_expressions)
 
 InteractiveShellABC.register(CoconutShell)
 

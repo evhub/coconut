@@ -156,7 +156,7 @@ def run_extras():
     call(["python", os.path.join(dest, "extras.py")], assert_output=True)
 
 
-def run(args=[], agnostic_target=None, comp_run=False):
+def run(args=[], agnostic_target=None, use_run_arg=False):
     """Compiles and runs tests."""
     if agnostic_target is None:
         agnostic_args = args
@@ -172,18 +172,17 @@ def run(args=[], agnostic_target=None, comp_run=False):
             if sys.version_info >= (3, 5):
                 comp_35(args)
         comp_agnostic(agnostic_args)
-        if comp_run:
+        if use_run_arg:
             comp_runner(["--run"] + agnostic_args)
         else:
             comp_runner(agnostic_args)
             run_src()
 
-        if IPY:
-            if comp_run:
-                comp_extras(["--run"] + agnostic_args)
-            else:
-                comp_extras(agnostic_args)
-                run_extras()
+        if use_run_arg:
+            comp_extras(["--run"] + agnostic_args + (["--jobs", "0"] if IPY else []))
+        else:
+            comp_extras(agnostic_args)
+            run_extras()
 
 
 def comp_prisoner(args=[]):
@@ -258,7 +257,7 @@ class TestCompilation(unittest.TestCase):
             run(["--jobs", "0"])
 
     def test_run(self):
-        run(comp_run=True)
+        run(use_run_arg=True)
 
     def test_target(self):
         run(agnostic_target=(2 if PY2 else 3))
