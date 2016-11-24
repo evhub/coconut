@@ -375,7 +375,7 @@ class Runner(object):
         with self.handling_errors(all_errors_exit):
             module_vars = runpy.run_path(path, run_name="__main__")
         self.vars.update(module_vars)
-        self.store("from " + name + " import *")
+        self.store("from " + os.path.basename(path) + " import *")
 
     def was_run_code(self, get_all=True):
         """Gets all the code that was run."""
