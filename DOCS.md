@@ -1717,36 +1717,36 @@ Each _mode_ has two components: what parser it uses, and what header it prepends
 
 - `"sys"`: (the default)
     + parser: file
-        The file parser can parse any Coconut code.
+        * The file parser can parse any Coconut code.
     + header: sys
-        This header imports `coconut.__coconut__` to access the necessary Coconut objects.
+        * This header imports `coconut.__coconut__` to access the necessary Coconut objects.
 - `"exec"`:
     + parser: file
     + header: exec
-        When passed to `exec` at the global level, this header will create all the necessary Coconut objects itself instead of importing them.
+        * When passed to `exec` at the global level, this header will create all the necessary Coconut objects itself instead of importing them.
 - `"file"`:
     + parser: file
     + header: file
-        This header is meant to be written to a `--standalone` file and should not be passed to `exec`.
+        * This header is meant to be written to a `--standalone` file and should not be passed to `exec`.
 - `"package"`:
     + parser: file
     + header: package
-        This header is meant to be written to a `--package` file and should not be passed to `exec`.
+        * This header is meant to be written to a `--package` file and should not be passed to `exec`.
 - `"block"`:
     + parser: file
     + header: none
-        No header is included, thus this can only be passed to `exec` if code with a header has already been executed at the global level.
+        * No header is included, thus this can only be passed to `exec` if code with a header has already been executed at the global level.
 - `"single"`:
     + parser: single
-        Can only parse one line of Coconut code.
+        * Can only parse one line of Coconut code.
     + header: none
 - `"eval"`:
     + parser: eval
-        Can only parse a Coconut expression, not a statement.
+        * Can only parse a Coconut expression, not a statement.
     + header: none
 - `"debug"`:
     + parser: debug
-        Can parse any Coconut code and allows leading whitespace.
+        * Can parse any Coconut code and allows leading whitespace.
     + header: none
 
 #### `setup`
