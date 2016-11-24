@@ -23,7 +23,7 @@ import sys
 import os
 import traceback
 import functools
-import imp
+import runpy
 import subprocess
 import webbrowser
 from copy import copy
@@ -371,15 +371,11 @@ class Runner(object):
 
     def run_file(self, path, all_errors_exit=True):
         """Executes a Python file."""
-        path, name = splitname(path)
-        found = imp.find_module(name, [path])
-        try:
-            with self.handling_errors(all_errors_exit):
-                module = imp.load_module("__main__", *found)
-                self.vars.update(vars(module))
-                self.store("from " + name + " import *")
-        finally:
-            found[0].close()
+        path = fixpath(path)
+        with self.handling_errors(all_errors_exit):
+            module_vars = runpy.run_path(path, run_name="__main__")
+        self.vars.update(module_vars)
+        self.store("from " + name + " import *")
 
     def was_run_code(self, get_all=True):
         """Gets all the code that was run."""
