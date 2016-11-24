@@ -53,6 +53,7 @@ from coconut.constants import (
     mypy_path_env_var,
     tutorial_url,
     documentation_url,
+    reserved_vars,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -318,6 +319,8 @@ class Runner(object):
             "__name__": "__main__",
             "__package__": None,
         }
+        for var in reserved_vars:
+            init_vars[var] = None
         if path is not None:
             init_vars["__file__"] = fixpath(path)
         return init_vars

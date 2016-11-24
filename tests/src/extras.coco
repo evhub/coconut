@@ -173,27 +173,28 @@ def main():
     assert parse("f''")
     if CoconutKernel is not None:
         k = CoconutKernel()
-        exec_result = k.do_execute("abcdefghi = True", False, True, {"two": "1+1"}, True)
+        exec_result = k.do_execute("derp = pow$(?, 2)", False, True, {"two": "(+)(1, 1)"}, True)
         assert exec_result["status"] == "ok"
-        assert exec_result["user_expressions"]["two"] == 2
-        assert k.do_is_complete("if abc:")["status"] == "incomplete"
+        assert exec_result["user_expressions"]["two"]["data"]["text/plain"] == 2
+        assert k.do_is_complete("if abc:")["status"] == "invalid"
         assert k.do_is_complete("f(")["status"] == "incomplete"
         assert k.do_is_complete("abc")["status"] == "complete"
-        inspect_result = k.do_inspect("abcdefghi", 4, 0)
+        inspect_result = k.do_inspect("derp", 4, 0)
         assert inspect_result["status"] == "ok"
         assert inspect_result["found"]
         assert inspect_result["data"]["text/plain"]
-        complete_result = k.do_complete("abc", 1)
+        complete_result = k.do_complete("der", 1)
         assert complete_result["status"] == "ok"
-        assert complete_result["matches"] == ["abcdefghi"]
+        assert "derp" in complete_result["matches"]
         assert complete_result["cursor_start"] == 0
-        assert complete_result["cursor_end"] == 3
+        assert complete_result["cursor_end"] == 1
         assert not complete_result["metadata"]
         keyword_complete_result = k.do_complete("ma", 1)
         assert keyword_complete_result["status"] == "ok"
-        assert set(keyword_complete_result["matches"]) == set(["map", "match"])
+        assert "match" in keyword_complete_result["matches"]
+        assert "map" in keyword_complete_result["matches"]
         assert keyword_complete_result["cursor_start"] == 0
-        assert keyword_complete_result["cursor_end"] == 2
+        assert keyword_complete_result["cursor_end"] == 1
         assert not keyword_complete_result["metadata"]
     print("<success>")
 

@@ -59,7 +59,7 @@ def PARSE(code):
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-class CoconutCompiler(CachingCompiler):
+class CoconutCompiler(CachingCompiler, object):
     """IPython compiler for Coconut."""
 
     def __init__(self, *args, **kwargs):
@@ -73,7 +73,7 @@ class CoconutCompiler(CachingCompiler):
         return super(CoconutCompiler, self).ast_parse(compiled, *args, **kwargs)
 
 
-class CoconutSplitter(IPythonInputSplitter):
+class CoconutSplitter(IPythonInputSplitter, object):
     """IPython splitter for Coconut."""
 
     def __init__(self, *args, **kwargs):
@@ -87,7 +87,7 @@ class CoconutSplitter(IPythonInputSplitter):
         self._compile = _compile
 
 
-class CoconutShell(ZMQInteractiveShell):
+class CoconutShell(ZMQInteractiveShell, object):
     """IPython shell for Coconut."""
     input_splitter = CoconutSplitter(line_input_checker=True)
     input_transformer_manager = CoconutSplitter(line_input_checker=False)
@@ -106,11 +106,17 @@ class CoconutShell(ZMQInteractiveShell):
         """Version of run_cell that always uses shell_futures."""
         return super(CoconutShell, self).run_cell(raw_cell, store_history, silent)
 
+    def user_expressions(self, expressions):
+        """Version of user_expressions that compiles Coconut code first."""
+        compiled = {}
+        for key, expr in expressions.items():
+            compiled[key] = PARSE(expr)
+        return super(CoconutShell, self).user_expressions(compiled)
 
 InteractiveShellABC.register(CoconutShell)
 
 
-class CoconutKernel(IPythonKernel):
+class CoconutKernel(IPythonKernel, object):
     """Jupyter kernel for Coconut."""
     shell_class = CoconutShell
     implementation = "icoconut"
