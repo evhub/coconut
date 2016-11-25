@@ -15,8 +15,8 @@
     1. [Allowable Targets](#allowable-targets)
     1. [`strict` Mode](#strict-mode)
     1. [IPython/ Jupyter Support](#ipython-jupyter-support)
-        1. [Extension](#extension)
         1. [Kernel](#kernel)
+        1. [Extension](#extension)
     1. [MyPy Integration](#mypy-integration)
 1. [Operators](#operators)
     1. [Lambdas](#lambdas)
@@ -247,17 +247,19 @@ It is recommended that you use the `--strict` (or `-s`) flag if you are starting
 
 ### IPython/ Jupyter Support
 
-If you prefer [IPython](http://ipython.org/) (the python kernel for the [Jupyter](http://jupyter.org/) framework) to the normal Python shell, Coconut can be used as an IPython extension or Jupyter kernel.
+If you prefer [IPython](http://ipython.org/) (the python kernel for the [Jupyter](http://jupyter.org/) framework) to the normal Python shell, Coconut can be used as a Jupyter kernel or IPython extension.
+
+#### Kernel
+
+If Coconut is used as a kernel, all code in the console or notebook will be sent directly to Coconut instead of Python to be evaluated. Otherwise, the Coconut kernel behaves exactly like the IPython kernel, including support for `%magic` commands.
+
+The command `coconut --jupyter notebook` (or `coconut --ipython notebook`) will launch an IPython/ Jupyter notebook using Coconut as the kernel and the command `coconut --jupyter console` (or `coconut --ipython console`) will launch an IPython/ Jupyter console using Coconut as the kernel. Additionally, the command `coconut --jupyter` (or `coconut --ipython`) will add Coconut as a language option inside of all IPython/ Jupyter notebooks, even those not launched with Coconut. This command may need to be re-run when a new version of Coconut is installed.
 
 #### Extension
 
 If Coconut is used as an extension, a special magic command will send snippets of code to be evaluated using Coconut instead of IPython, but IPython will still be used as the default.
 
 The line magic `%load_ext coconut` will load Coconut as an extension, providing the `%coconut` and `%%coconut` magics and adding Coconut built-ins. The `%coconut` line magic will run a line of Coconut with default parameters, and the `%%coconut` block magic will take command-line arguments on the first line, and run any Coconut code provided in the rest of the cell with those parameters.
-
-#### Kernel
-
-If Coconut is used as a kernel, all code in the console or notebook will be sent directly to Coconut instead of Python to be evaluated. The command `coconut --jupyter notebook` (or `coconut --ipython notebook`) will launch an IPython/ Jupyter notebook using Coconut as the kernel and the command `coconut --jupyter console` (or `coconut --ipython console`) will launch an IPython/ Jupyter console using Coconut as the kernel. Additionally, the command `coconut --jupyter` (or `coconut --ipython`) will add Coconut as a language option inside of all IPython/ Jupyter notebooks, even those not launched with Coconut. This command may need to be re-run when a new version of Coconut is installed.
 
 ### MyPy Integration
 
