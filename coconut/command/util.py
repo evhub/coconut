@@ -202,7 +202,7 @@ def run_file(path):
     """Runs a module from a path."""
     if PY26:
         dirpath, name = splitname(path)
-        found = imp.find_module(name, dirpath)
+        found = imp.find_module(name, [dirpath])
         module = imp.load_module("__main__", *found)
         return vars(module)
     else:
