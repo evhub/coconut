@@ -27,14 +27,14 @@ import subprocess
 import webbrowser
 from copy import copy
 from contextlib import contextmanager
-try:
-    import readline  # improves built-in input
-except ImportError:
-    readline = None
 if PY26:
     import imp
 else:
     import runpy
+try:
+    import readline  # improves built-in input
+except ImportError:
+    readline = None
 
 if PY26 or (3,) <= sys.version_info < (3, 3):
     prompt_toolkit = None
@@ -198,6 +198,17 @@ def splitname(path):
     return dirpath, name
 
 
+def run_file(path):
+    """Runs a module from a path."""
+    if PY26:
+        dirpath, name = splitname(path)
+        found = imp.find_module(name, dirpath)
+        module = imp.load_module("__main__", *found)
+        return vars(module)
+    else:
+        return runpy.run_path(path, run_name="__main__")
+
+
 def call_output(cmd):
     """Run command and read output."""
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -235,17 +246,6 @@ def set_mypy_path(mypy_path):
         os.environ[mypy_path_env_var] = mypy_path
     elif mypy_path not in original.split(os.pathsep):
         os.environ[mypy_path_env_var] = mypy_path + os.pathsep + original
-
-
-def run_file(path):
-    """Runs a module from a path."""
-    if PY26:
-        dirpath, basename = os.path.split(path)
-        found = imp.find_module(basename, dirpath)
-        module = imp.load_module("__main__", *found)
-        return vars(module)
-    else:
-        return runpy.run_path(path, run_name="__main__")
 
 
 #-----------------------------------------------------------------------------------------------------------------------
