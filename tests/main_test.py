@@ -179,7 +179,7 @@ def run(args=[], agnostic_target=None, use_run_arg=False):
             run_src()
 
         if use_run_arg:
-            comp_extras(["--run"] + agnostic_args + (["--jobs", "0"] if IPY else []))
+            comp_extras(["--run"] + agnostic_args + (["--jobs", "0"] if IPY and not PY2 else []))
         else:
             comp_extras(agnostic_args)
             run_extras()

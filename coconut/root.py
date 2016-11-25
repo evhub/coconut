@@ -25,7 +25,7 @@ import sys as _coconut_sys
 
 VERSION = "1.2.0"
 VERSION_NAME = "Colonel"
-DEVELOP = 22
+DEVELOP = 23
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
