@@ -23,7 +23,6 @@ import sys
 import os
 import traceback
 import functools
-import runpy
 import subprocess
 import webbrowser
 from copy import copy
@@ -32,6 +31,10 @@ try:
     import readline  # improves built-in input
 except ImportError:
     readline = None
+if PY26:
+    import imp
+else:
+    import runpy
 
 if PY26 or (3,) <= sys.version_info < (3, 3):
     prompt_toolkit = None
@@ -234,6 +237,17 @@ def set_mypy_path(mypy_path):
         os.environ[mypy_path_env_var] = mypy_path + os.pathsep + original
 
 
+def run_file(path):
+    """Runs a module from a path."""
+    if PY26:
+        dirpath, basename = os.path.split(path)
+        found = imp.find_module(basename, dirpath)
+        module = imp.load_module("__main__", *found)
+        return vars(module)
+    else:
+        return runpy.run_path(path, run_name="__main__")
+
+
 #-----------------------------------------------------------------------------------------------------------------------
 # CLASSES:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -373,9 +387,9 @@ class Runner(object):
         """Executes a Python file."""
         path = fixpath(path)
         with self.handling_errors(all_errors_exit):
-            module_vars = runpy.run_path(path, run_name="__main__")
-        self.vars.update(module_vars)
-        self.store("from " + os.path.basename(path) + " import *")
+            module_vars = run_file(path)
+            self.vars.update(module_vars)
+            self.store("from " + os.path.basename(path) + " import *")
 
     def was_run_code(self, get_all=True):
         """Gets all the code that was run."""
