@@ -522,11 +522,11 @@ class Grammar(object):
     octint = Combine(Word("01234567") + ZeroOrMore(underscore.suppress() + Word("01234567")))
     hexint = Combine(Word(hexnums) + ZeroOrMore(underscore.suppress() + Word(hexnums)))
 
-    basenum = Combine(integer + dot + (integer | ~name) | Optional(integer) + dot + integer) | integer
+    imag_j = CaselessLiteral("j") | fixto(CaselessLiteral("i"), "j")
+    basenum = Combine(integer + dot + (integer | FollowedBy(imag_j) | ~name) | Optional(integer) + dot + integer) | integer
     sci_e = Combine(CaselessLiteral("e") + Optional(plus | neg_minus))
-    numitem = Combine(basenum + sci_e + integer) | basenum
-    complex_i = CaselessLiteral("j") | fixto(CaselessLiteral("i"), "j")
-    complex_num = Combine(numitem + complex_i)
+    numitem = Combine(basenum + Optional(sci_e + integer))
+    imag_num = Combine(numitem + imag_j)
     bin_num = Combine(CaselessLiteral("0b") + Optional(underscore.suppress()) + binint)
     oct_num = Combine(CaselessLiteral("0o") + Optional(underscore.suppress()) + octint)
     hex_num = Combine(CaselessLiteral("0x") + Optional(underscore.suppress()) + hexint)
@@ -534,7 +534,7 @@ class Grammar(object):
         bin_num
         | oct_num
         | hex_num
-        | complex_num
+        | imag_num
         | numitem
     ) + Optional(condense(dot + name)))
 
