@@ -522,7 +522,7 @@ class Grammar(object):
     octint = Combine(Word("01234567") + ZeroOrMore(underscore.suppress() + Word("01234567")))
     hexint = Combine(Word(hexnums) + ZeroOrMore(underscore.suppress() + Word(hexnums)))
 
-    basenum = Combine(integer + dot + Optional(integer) | Optional(integer) + dot + integer) | integer
+    basenum = Combine(integer + dot + (integer | ~name) | Optional(integer) + dot + integer) | integer
     sci_e = Combine(CaselessLiteral("e") + Optional(plus | neg_minus))
     numitem = Combine(basenum + sci_e + integer) | basenum
     complex_i = CaselessLiteral("j") | fixto(CaselessLiteral("i"), "j")
@@ -530,7 +530,13 @@ class Grammar(object):
     bin_num = Combine(CaselessLiteral("0b") + Optional(underscore.suppress()) + binint)
     oct_num = Combine(CaselessLiteral("0o") + Optional(underscore.suppress()) + octint)
     hex_num = Combine(CaselessLiteral("0x") + Optional(underscore.suppress()) + hexint)
-    number = bin_num | oct_num | hex_num | complex_num | numitem
+    number = addspace((
+        bin_num
+        | oct_num
+        | hex_num
+        | complex_num
+        | numitem
+    ) + Optional(condense(dot + name)))
 
     moduledoc_item = Forward()
     unwrap = Literal(unwrapper)
