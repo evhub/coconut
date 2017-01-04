@@ -1,1 +1,1 @@
-mypy-lang==0.4.5
+mypy-lang==0.4.6
