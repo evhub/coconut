@@ -1531,7 +1531,7 @@ _Can't be done quickly without Coconut's iterator slicing, which requires many c
 
 ### `map`, `zip`, and `filter`
 
-Coconut's `map`, `zip`, and `filter` objects are enhanced versions of their Python equivalents that support optimized normal (and iterator) slicing, `reversed`, `repr`, `len` (except for `filter`) and have added attributes which subclasses can make use of to get at the original arguments to the object (`map` supports `_func` and `_iters` attributes, `zip` supports the `_iters` attribute, and `filter` supports `_func` and `_iter` attributes).
+Coconut's `map`, `zip`, and `filter` objects are enhanced versions of their Python equivalents that support `reversed`, `repr`, optimized normal (and iterator) slicing (all but `filter`), `len` (all but `filter`), and have added attributes which subclasses can make use of to get at the original arguments to the object (`map` supports `_func` and `_iters` attributes, `zip` supports the `_iters` attribute, and `filter` supports `_func` and `_iter` attributes).
 
 ##### Example
 

@@ -283,11 +283,6 @@ class filter(_coconut.filter):
         new_filter._func = function
         new_filter._iter = iterable
         return new_filter
-    def __getitem__(self, index):
-        if _coconut.isinstance(index, _coconut.slice):
-            return self.__class__(self._func, self._iter[index])
-        else:
-            raise _coconut.IndexError("filter does not support single indexing")
     def __reversed__(self):
         return self.__class__(self._func, _coconut.reversed(self._iter))
     def __repr__(self):
