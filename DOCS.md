@@ -62,7 +62,7 @@
     1. [`tee`](#tee)
     1. [`consume`](#consume)
     1. [`count`](#count)
-    1. [`map` and `zip`](#map-and-zip)
+    1. [`map`, `zip`, and `filter`](#map-zip-and-filter)
     1. [`datamaker`](#datamaker)
     1. [`recursive_iterator`](#recursiveiterator)
     1. [`parallel_map`](#parallelmap)
@@ -1529,15 +1529,16 @@ count()$[10**100] |> print
 ###### Python
 _Can't be done quickly without Coconut's iterator slicing, which requires many complicated pieces. The necessary definitions in Python can be found in the Coconut header._
 
-### `map` and `zip`
+### `map`, `zip`, and `filter`
 
-Coconut's `map` and `zip` objects are enhanced versions of their Python equivalents that support optimized normal (and iterator) slicing, `reversed`, `len`, `repr`, and have added attributes which subclasses can make use of to get at the original arguments to the object (`map` supports `_func` and `_iters` attributes and `zip` supports the `_iters` attribute).
+Coconut's `map`, `zip`, and `filter` objects are enhanced versions of their Python equivalents that support optimized normal (and iterator) slicing, `reversed`, `repr`, `len` (except for `filter`) and have added attributes which subclasses can make use of to get at the original arguments to the object (`map` supports `_func` and `_iters` attributes, `zip` supports the `_iters` attribute, and `filter` supports `_func` and `_iter` attributes).
 
 ##### Example
 
 ###### Coconut
 ```coconut
 map((+), range(5), range(6)) |> len |> print
+range(10) |> filter$((x) -> x < 5) |> reversed |> tuple |> print
 ```
 
 ###### Python
