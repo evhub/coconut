@@ -144,10 +144,10 @@ class _coconut(object):'''
         import collections.abc as abc'''
             if target.startswith("3"):
                 header += r'''
-    IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, repr = IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, repr'''
+    IndexError, NameError, ValueError, map, zip, dict, filter, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, repr = IndexError, NameError, ValueError, map, zip, dict, filter, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, repr'''
             else:
                 header += r'''
-    IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, bytearray, repr = IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, bytearray, staticmethod(repr)'''
+    IndexError, NameError, ValueError, map, zip, dict, filter, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, bytearray, repr = IndexError, NameError, ValueError, map, zip, dict, filter, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, bytearray, staticmethod(repr)'''
             header += r'''
 class MatchError(Exception):
     """Pattern-matching error."""
@@ -274,6 +274,30 @@ class concurrent_map(_coconut_map):
             return _coconut.iter(_coconut.tuple(executor.map(self._func, *self._iters)))
     def __repr__(self):
         return "concurrent_" + _coconut_map.__repr__(self)
+class filter(_coconut.filter):
+    __slots__ = ("_func", "_iter")
+    if hasattr(_coconut.filter, "__doc__"):
+        __doc__ = _coconut.filter.__doc__
+    def __new__(cls, function, iterable):
+        new_filter = _coconut.filter.__new__(cls, function, iterable)
+        new_filter._func = function
+        new_filter._iter = iterable
+        return new_filter
+    def __getitem__(self, index):
+        if _coconut.isinstance(index, _coconut.slice):
+            return self.__class__(self._func, self._iter[index])
+        else:
+            raise _coconut.IndexError("filter does not support single indexing")
+    def __reversed__(self):
+        return self.__class__(self._func, _coconut.reversed(self._iter))
+    def __repr__(self):
+        return "filter(" + _coconut.repr(self._func) + ", " + _coconut.repr(self._iter) + ")"
+    def __reduce__(self):
+        return (self.__class__, (self._func, self_iter))
+    def __reduce_ex__(self, _):
+        return self.__reduce__()
+    def __copy__(self):
+        return self.__class__(self._func, _coconut.copy.copy(self._iter))
 class zip(_coconut.zip):
     __slots__ = ("_iters",)
     if hasattr(_coconut.zip, "__doc__"):
