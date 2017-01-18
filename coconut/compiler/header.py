@@ -233,11 +233,11 @@ class _coconut_map(_coconut.map):
         return new_map
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
-            return self.__class__(self._func, *(_coconut_igetitem(i, index) for i in self._iters))
+            return self.__class__(self._func, *_coconut.tuple(_coconut_igetitem(i, index) for i in self._iters))
         else:
-            return self._func(*(_coconut_igetitem(i, index) for i in self._iters))
+            return self._func(*_coconut.tuple(_coconut_igetitem(i, index) for i in self._iters))
     def __reversed__(self):
-        return self.__class__(self._func, *(_coconut.reversed(i) for i in self._iters))
+        return self.__class__(self._func, *_coconut.tuple(_coconut.reversed(i) for i in self._iters))
     def __len__(self):
         return _coconut.min(_coconut.len(i) for i in self._iters)
     def __repr__(self):
@@ -247,7 +247,7 @@ class _coconut_map(_coconut.map):
     def __reduce_ex__(self, _):
         return self.__reduce__()
     def __copy__(self):
-        return self.__class__(self._func, *_coconut_map(_coconut.copy.copy, self._iters))
+        return self.__class__(self._func, *_coconut.tuple(_coconut_map(_coconut.copy.copy, self._iters)))
 class parallel_map(_coconut_map):
     """Multiprocessing implementation of map using concurrent.futures.
     Requires arguments to be pickleable."""
@@ -303,11 +303,11 @@ class zip(_coconut.zip):
         return new_zip
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
-            return self.__class__(*(_coconut_igetitem(i, index) for i in self._iters))
+            return self.__class__(*_coconut.tuple(_coconut_igetitem(i, index) for i in self._iters))
         else:
             return _coconut.tuple(_coconut_igetitem(i, index) for i in self._iters)
     def __reversed__(self):
-        return self.__class__(*(_coconut.reversed(i) for i in self._iters))
+        return self.__class__(*_coconut.tuple(_coconut.reversed(i) for i in self._iters))
     def __len__(self):
         return _coconut.min(_coconut.len(i) for i in self._iters)
     def __repr__(self):
@@ -317,7 +317,7 @@ class zip(_coconut.zip):
     def __reduce_ex__(self, _):
         return self.__reduce__()
     def __copy__(self):
-        return self.__class__(*_coconut_map(_coconut.copy.copy, self._iters))'''
+        return self.__class__(*_coconut.tuple(_coconut_map(_coconut.copy.copy, self._iters)))'''
             if target.startswith("3"):
                 header += r'''
 class count:'''
