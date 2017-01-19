@@ -62,7 +62,7 @@
     1. [`tee`](#tee)
     1. [`consume`](#consume)
     1. [`count`](#count)
-    1. [`map`, `zip`, and `filter`](#map-zip-and-filter)
+    1. [Enhanced Built-Ins](#enhanced-built-ins)
     1. [`datamaker`](#datamaker)
     1. [`recursive_iterator`](#recursiveiterator)
     1. [`parallel_map`](#parallelmap)
@@ -433,7 +433,7 @@ Coconut uses a `$` sign right after an iterator before a slice to perform iterat
 
 Iterator slicing works just like sequence slicing, including support for negative indices and slices, and support for `slice` objects in the same way as can be done with normal slicing. Iterator slicing makes no guarantee, however, that the original iterator passed to it be preserved (to preserve the iterator, use Coconut's [`tee` function](#tee)).
 
-Coconut's iterator slicing is very similar to Python's `itertools.islice`, but unlike `itertools.islice`, Coconut's iterator slicing supports negative indices, and will preferentially call an object's `__getitem__`, if it exists. Coconut's iterator slicing is also optimized to work well with Coconut's `map`, `zip`, `range`, and `count` objects, only computing the elements of each that are actually necessary to extract the desired slice.
+Coconut's iterator slicing is very similar to Python's `itertools.islice`, but unlike `itertools.islice`, Coconut's iterator slicing supports negative indices, and will preferentially call an object's `__getitem__`, if it exists. Coconut's iterator slicing is also optimized to work well with all of Coconut's built-in objects, only computing the elements of each that are actually necessary to extract the desired slice.
 
 ##### Example
 
@@ -1529,9 +1529,15 @@ count()$[10**100] |> print
 ###### Python
 _Can't be done quickly without Coconut's iterator slicing, which requires many complicated pieces. The necessary definitions in Python can be found in the Coconut header._
 
-### `map`, `zip`, and `filter`
+### Enhanced Built-Ins
 
-Coconut's `map`, `zip`, and `filter` objects are enhanced versions of their Python equivalents that support `reversed`, `repr`, optimized normal (and iterator) slicing (all but `filter`), `len` (all but `filter`), and have added attributes which subclasses can make use of to get at the original arguments to the object (`map` supports `_func` and `_iters` attributes, `zip` supports the `_iters` attribute, and `filter` supports `_func` and `_iter` attributes).
+Coconut's `map`, `zip`, `filter`, `reversed`, and `enumerate` objects are enhanced versions of their Python equivalents that support `reversed`, `repr`, optimized normal (and iterator) slicing (all but `filter`), `len` (all but `filter`), and have added attributes which subclasses can make use of to get at the original arguments to the object:
+
+- `map`: `_func`, `_iters`
+- `zip`: `_iters`
+- `filter`: `_func`, `_iter`
+- `reversed`: `_iter`
+- `enumerate`: `_iter`, `_start`
 
 ##### Example
 

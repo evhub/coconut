@@ -282,7 +282,7 @@ def main_test():
     assert range(10) |> reversed |> .[1] == 8
     assert range(10) |> reversed |> .[-1] == 0
     assert range(10) |> reversed |> .[:-1] |> tuple == range(1, 10) |> reversed |> tuple
-    assert range(10) |> reversed |> .[1:] |> tuple == range(9) |> reversed
+    assert range(10) |> reversed |> .[1:] |> tuple == range(9) |> reversed |> tuple
     assert range(10) |> reversed |> .[2:-3] |> tuple == range(3, 8) |> reversed |> tuple
 
     range10 = range(10) |> list

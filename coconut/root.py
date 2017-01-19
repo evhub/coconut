@@ -75,6 +75,8 @@ class range(object):
                 stop += _coconut.len(self._xrange)
             if step is None:
                 step = 1
+            elif step < 0:
+                start, stop = stop, start
             return _coconut_map(self._xrange.__getitem__, self.__class__(start, stop, step))
         else:
             return self._xrange[index]

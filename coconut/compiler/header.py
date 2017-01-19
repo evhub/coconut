@@ -223,29 +223,6 @@ def _coconut_tee(iterable, n=2):
         return (iterable,) + _coconut.tuple(_coconut.copy.copy(iterable) for i in range(n - 1))
     else:
         return _coconut.itertools.tee(iterable, n)
-class _coconut_enumerate(_coconut.enumerate):
-    __slots__ = ("_iter", "_start")
-    if hasattr(_coconut.enumerate, "__doc__"):
-        __doc__ = _coconut.enumerate.__doc__
-    def __new__(cls, iterable, start=0):
-        new_enumerate = _coconut.enumerate.__new__(cls, iterable, start)
-        new_enumerate._iter, new_enumerate._start = iterable, start
-        return new_enumerate
-    def __getitem__(self, index):
-        if _coconut.isinstance(index, _coconut.slice):
-            return self.__class__(self._iter[index], self._start + (index.start if index.start is not None else 0))
-        else:
-            return (self._start + index, self._iter[index])
-    def __len__(self):
-        return _coconut.len(self._iter)
-    def __repr__(self):
-        return "enumerate(" + _coconut.repr(self._iter) + ", " + _coconut.repr(self._start) + ")"
-    def __reduce__(self):
-        return (self.__class__, (self._iter, self._start))
-    def __reduce_ex__(self, _):
-        return self.__reduce__()
-    def __copy__(self):
-        return self.__class__(_coconut.copy.copy(self._iter), self._start)
 class _coconut_reversed(_coconut.reversed):
     __slots__ = ("_iter",)
     if hasattr(_coconut.map, "__doc__"):
@@ -368,7 +345,30 @@ class zip(_coconut.zip):
     def __reduce_ex__(self, _):
         return self.__reduce__()
     def __copy__(self):
-        return self.__class__(*_coconut_map(_coconut.copy.copy, self._iters))'''
+        return self.__class__(*_coconut_map(_coconut.copy.copy, self._iters))
+class _coconut_enumerate(_coconut.enumerate):
+    __slots__ = ("_iter", "_start")
+    if hasattr(_coconut.enumerate, "__doc__"):
+        __doc__ = _coconut.enumerate.__doc__
+    def __new__(cls, iterable, start=0):
+        new_enumerate = _coconut.enumerate.__new__(cls, iterable, start)
+        new_enumerate._iter, new_enumerate._start = iterable, start
+        return new_enumerate
+    def __getitem__(self, index):
+        if _coconut.isinstance(index, _coconut.slice):
+            return self.__class__(self._iter[index], self._start + (index.start if index.start is not None else 0))
+        else:
+            return (self._start + index, self._iter[index])
+    def __len__(self):
+        return _coconut.len(self._iter)
+    def __repr__(self):
+        return "enumerate(" + _coconut.repr(self._iter) + ", " + _coconut.repr(self._start) + ")"
+    def __reduce__(self):
+        return (self.__class__, (self._iter, self._start))
+    def __reduce_ex__(self, _):
+        return self.__reduce__()
+    def __copy__(self):
+        return self.__class__(_coconut.copy.copy(self._iter), self._start)'''
             if target.startswith("3"):
                 header += r'''
 class count:'''
