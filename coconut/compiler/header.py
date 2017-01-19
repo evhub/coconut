@@ -252,7 +252,7 @@ class _coconut_reversed(_coconut.reversed):
         __doc__ = _coconut.reversed.__doc__
     def __new__(cls, iterable):
         if _coconut.isinstance(iterable, _coconut.range):
-            return iterable.__class__(*_coconut.reversed(iterable).__reduce__()[1])
+            return iterable[::-1]
         else:
             new_reversed = _coconut.reversed.__new__(cls, iterable)
             if _coconut.isinstance(new_reversed, _coconut.reversed):
