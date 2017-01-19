@@ -223,18 +223,21 @@ def _coconut_tee(iterable, n=2):
         return (iterable,) + _coconut.tuple(_coconut.copy.copy(iterable) for i in range(n - 1))
     else:
         return _coconut.itertools.tee(iterable, n)
-class _coconut_reversed(_coconut.reversed):
+class _coconut_reversed(object):
     __slots__ = ("_iter",)
     if hasattr(_coconut.map, "__doc__"):
         __doc__ = _coconut.reversed.__doc__
     def __new__(cls, iterable):
         if _coconut.isinstance(iterable, _coconut.range):
             return iterable[::-1]
-        else:
-            new_reversed = _coconut.reversed.__new__(cls, iterable)
-            if _coconut.isinstance(new_reversed, _coconut.reversed):
-                new_reversed._iter = iterable
+        elif not _coconut.hasattr(iterable, "__reversed__") or _coconut.isinstance(iterable, (_coconut.list, _coconut.tuple)):
+            new_reversed = _coconut.object.__new__(cls)
+            new_reversed._iter = iterable
             return new_reversed
+        else:
+            return _coconut.reversed(iterable)
+    def __iter__(self):
+        return _coconut.reversed(self._iter)
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
             return self._iter[_coconut.slice(-(index.stop) if index.stop else None, -(index.start + 1) if index.start is not None else None, index.step)]
@@ -246,6 +249,8 @@ class _coconut_reversed(_coconut.reversed):
         return _coconut.len(self._iter)
     def __repr__(self):
         return "reversed(" + _coconut.repr(self._iter) + ")"
+    def __hash__(self):
+        return _coconut.hash(self._iter)
     def __reduce__(self):
         return (self.__class__, (self._iter,))
     def __reduce_ex__(self, _):

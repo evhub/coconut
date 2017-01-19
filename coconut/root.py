@@ -75,9 +75,10 @@ class range(object):
                 stop += _coconut.len(self._xrange)
             if step is None:
                 step = 1
-            elif step < 0:
-                start, stop = stop, start
-            return _coconut_map(self._xrange.__getitem__, self.__class__(start, stop, step))
+            out = _coconut_map(self._xrange.__getitem__, self.__class__(start, stop, step))
+            if step < 0:
+                out = _coconut.reversed(out)
+            return out
         else:
             return self._xrange[index]
     def count(self, elem):
