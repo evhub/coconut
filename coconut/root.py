@@ -41,7 +41,7 @@ VERSION_STR_TAG = "v" + VERSION_STR
 PY2 = _coconut_sys.version_info < (3,)
 PY26 = _coconut_sys.version_info < (2, 7)
 
-PY3_HEADER = r'''py_chr, py_filter, py_hex, py_input, py_int, py_map, py_oct, py_open, py_print, py_range, py_str, py_zip = chr, filter, hex, input, int, map, oct, open, print, range, str, zip
+PY3_HEADER = r'''py_chr, py_filter, py_hex, py_input, py_int, py_map, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate = chr, filter, hex, input, int, map, oct, open, print, range, str, zip, filter, reversed, enumerate
 '''
 PY27_HEADER = PY3_HEADER + r'''py_raw_input, py_xrange = raw_input, xrange
 _coconut_raw_input, _coconut_xrange, _coconut_int, _coconut_long, _coconut_print, _coconut_str, _coconut_unicode, _coconut_repr = raw_input, xrange, int, long, print, str, unicode, repr
@@ -91,7 +91,7 @@ class range(object):
     def __reduce_ex__(self, protocol):
         return (self.__class__, self._xrange.__reduce_ex__(protocol)[1])
     def __reduce__(self):
-        return self.__reduce_ex__(_coconut.pickle.HIGHEST_PROTOCOL)
+        return self.__reduce_ex__(_coconut.pickle.DEFAULT_PROTOCOL)
     def __hash__(self):
         return _coconut.hash(self._xrange.__reduce__()[1])
     def __copy__(self):
