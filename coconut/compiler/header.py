@@ -240,7 +240,7 @@ class _coconut_reversed(object):
         return _coconut.reversed(self._iter)
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
-            return self._iter[_coconut.slice(-(index.stop) if index.stop else None, -(index.start + 1) if index.start is not None else None, -(index.step if index.step is not None else 1))]
+            return self._iter[_coconut.slice(-(index.start + 1) if index.start is not None else None, -(index.stop) if index.stop else None, -(index.step if index.step is not None else 1))]
         else:
             return self._iter[-(index + 1)]
     def __reversed__(self):
@@ -250,7 +250,7 @@ class _coconut_reversed(object):
     def __repr__(self):
         return "reversed(" + _coconut.repr(self._iter) + ")"
     def __hash__(self):
-        return _coconut.hash(self._iter)
+        return -_coconut.hash(self._iter)
     def __reduce__(self):
         return (self.__class__, (self._iter,))
     def __reduce_ex__(self, _):
@@ -261,6 +261,12 @@ class _coconut_reversed(object):
         return isinstance(other, self.__class__) and self._iter == other._iter
     def __contains__(self, elem):
         return elem in self._iter
+    def count(self, elem):
+        """Count the number of times elem appears in the reversed iterator."""
+        return self._iter.count(elem)
+    def index(self, elem):
+        """Find the index of elem in the reversed iterator."""
+        return _coconut.len(self._iter) - self._iter.index(elem) - 1
 class _coconut_map(_coconut.map):
     __slots__ = ("_func", "_iters")
     if hasattr(_coconut.map, "__doc__"):
