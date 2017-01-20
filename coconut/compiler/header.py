@@ -240,7 +240,7 @@ class _coconut_reversed(object):
         return _coconut.reversed(self._iter)
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
-            return self._iter[_coconut.slice(-(index.stop) if index.stop else None, -(index.start + 1) if index.start is not None else None, -index.step)]
+            return self._iter[_coconut.slice(-(index.stop) if index.stop else None, -(index.start + 1) if index.start is not None else None, -(index.step if index.step is not None else 1))]
         else:
             return self._iter[-(index + 1)]
     def __reversed__(self):
@@ -257,6 +257,10 @@ class _coconut_reversed(object):
         return self.__reduce__()
     def __copy__(self):
         return self.__class__(_coconut.copy.copy(self._iter))
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self._iter == other._iter
+    def __contains__(self, elem):
+        return elem in self._iter
 class _coconut_map(_coconut.map):
     __slots__ = ("_func", "_iters")
     if hasattr(_coconut.map, "__doc__"):

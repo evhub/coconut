@@ -70,7 +70,7 @@ class range(object):
             stop = ind_stop if len(args) < 2 else args[1] if ind_stop is None else args[1] + ind_stop
             step = (args[2] if len(args) >= 3 and args[2] is not None else 1) * (index.step if index.step is not None else 1)
             if step < 0:
-                start, stop = stop, start
+                start, stop = stop - 1, start - 1
             return self.__class__(start, stop, step)
         else:
             return self._xrange[index]
