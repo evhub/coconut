@@ -64,11 +64,19 @@ class range(object):
         return elem in self._xrange
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
-            args = self._args
-            start = (args[0] if len(args) >= 1 and args[0] is not None else 0) + (0 if index.start is None else index.start if index.start >= 0 else len(self) + index.start)
-            ind_stop = None if index.stop is None else index.stop if index.stop >= 0 else len(self) + index.stop
-            stop = ind_stop if len(args) < 2 else args[1] if ind_stop is None else _coconut.min(args[1], ind_stop)
-            step = (args[2] if len(args) >= 3 and args[2] is not None else 1) * (index.step if index.step is not None else 1)
+            args = _coconut.slice(*self._args)
+            if args.step is not None and args.step < 0:
+                args = _coconut.slice(args.stop, args.start, args.step)
+            ind_start = 0 if index.start is None else index.start if index.start >= 0 else _coconut.len(self) + index.start
+            ind_stop = None if index.stop is None else index.stop if index.stop >= 0 else _coconut.len(self) + index.stop
+            ind_step = index.step if index.step is not None else 1
+            if ind_step < 0:
+                ind_start, ind_stop = ind_stop, ind_start
+            start = (args.start if args.start is not None else 0) + ind_start
+            stop = ind_stop if args.stop is None else args.stop if ind_stop is None else _coconut.min(args.stop, ind_stop)
+            step = (args.step if args.step is not None else 1) * ind_step
+            if step < 0:
+                start, stop = stop, start
             return self.__class__(start, stop, step)
         else:
             return self._xrange[index]
