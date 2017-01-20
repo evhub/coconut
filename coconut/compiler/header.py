@@ -240,7 +240,7 @@ class _coconut_reversed(object):
         return _coconut.reversed(self._iter)
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
-            return self._iter[_coconut.slice(-(index.stop) if index.stop else None, -(index.start + 1) if index.start is not None else None, index.step)]
+            return self._iter[_coconut.slice(-(index.stop) if index.stop else None, -(index.start + 1) if index.start is not None else None, -index.step)]
         else:
             return self._iter[-(index + 1)]
     def __reversed__(self):

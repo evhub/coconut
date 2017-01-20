@@ -64,21 +64,14 @@ class range(object):
         return elem in self._xrange
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
-            start, stop, step = index.start, index.stop, index.step
-            if start is None:
-                start = 0
-            elif start < 0:
-                start += _coconut.len(self._xrange)
-            if stop is None:
-                stop = _coconut.len(self._xrange)
-            elif stop is not None and stop < 0:
-                stop += _coconut.len(self._xrange)
-            if step is None:
-                step = 1
-            out = _coconut_map(self._xrange.__getitem__, self.__class__(start, stop, step))
+            args = self._args
+            start = (args[0] if len(args) >= 1 and args[0] is not None else 0) + (0 if index.start is None else index.start if index.start >= 0 else len(self) + index.start)
+            ind_stop = None if index.stop is None else index.stop if index.stop >= 0 else len(self) + index.stop
+            stop = ind_stop if len(args) < 2 else args[1] if ind_stop is None else args[1] + ind_stop
+            step = (args[2] if len(args) >= 3 and args[2] is not None else 1) * (index.step if index.step is not None else 1)
             if step < 0:
-                out = _coconut.reversed(out)
-            return out
+                start, stop = stop, start
+            return self.__class__(start, stop, step)
         else:
             return self._xrange[index]
     def count(self, elem):
@@ -91,14 +84,17 @@ class range(object):
         return (elem - start) // step
     def __repr__(self):
         return _coconut.repr(self._xrange)[1:]
+    @property
+    def _args(self):
+        return self._xrange.__reduce__()[1]
     def __reduce_ex__(self, protocol):
         return (self.__class__, self._xrange.__reduce_ex__(protocol)[1])
     def __reduce__(self):
         return self.__reduce_ex__(_coconut.pickle.DEFAULT_PROTOCOL)
     def __hash__(self):
-        return _coconut.hash(self._xrange.__reduce__()[1])
+        return _coconut.hash(self._args)
     def __copy__(self):
-        return self.__class__(*self._xrange.__reduce__()[1])
+        return self.__class__(*self._args)
     def __eq__(self, other):
         reduction = self.__reduce__()
         return _coconut.isinstance(other, reduction[0]) and reduction[1] == other.__reduce__()[1]
@@ -167,6 +163,5 @@ if PY2:
     import __builtin__ as _coconut  # NOQA
     import pickle
     _coconut.pickle = pickle
-    _coconut_map = map
 else:
     exec(PY3_HEADER)
