@@ -76,7 +76,7 @@ class range(object):
             stop = ind_stop if args.stop is None else args.stop if ind_stop is None else _coconut.min(args.stop, ind_stop)
             step = (args.step if args.step is not None else 1) * ind_step
             if step < 0:
-                start, stop = stop, start
+                start, stop = (stop - 1 if stop is not None else None), (start - 1 if start is not None else None)
             return self.__class__(start, stop, step)
         else:
             return self._xrange[index]

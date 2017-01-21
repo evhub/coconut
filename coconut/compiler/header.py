@@ -173,7 +173,7 @@ def _coconut_tco(func):
     tail_call_optimized_func._coconut_is_tco = True
     return tail_call_optimized_func
 def _coconut_igetitem(iterable, index):
-    if isinstance(iterable, (_coconut_reversed, _coconut_map, _coconut.filter, _coconut.zip, _coconut_enumerate, _coconut.abc.Sequence)):
+    if isinstance(iterable, (_coconut_reversed, _coconut_map, _coconut.filter, _coconut.zip, _coconut_enumerate, _coconut_count, _coconut.abc.Sequence)):
         return iterable[index]
     elif not _coconut.isinstance(index, _coconut.slice):
         if index < 0:
@@ -230,7 +230,7 @@ class _coconut_reversed(object):
     def __new__(cls, iterable):
         if _coconut.isinstance(iterable, _coconut.range):
             return iterable[::-1]
-        elif not _coconut.hasattr(iterable, "__reversed__") or _coconut.isinstance(iterable, (_coconut.list, _coconut.tuple)):
+        elif _coconut.isinstance(iterable, (_coconut.list, _coconut.tuple)) or not _coconut.isinstance(iterable, _coconut.abc.Reversible):
             new_reversed = _coconut.object.__new__(cls)
             new_reversed._iter = iterable
             return new_reversed
@@ -386,10 +386,10 @@ class _coconut_enumerate(_coconut.enumerate):
         return self.__class__(_coconut.copy.copy(self._iter), self._start)'''
             if target.startswith("3"):
                 header += r'''
-class count:'''
+class _coconut_count:'''
             else:
                 header += r'''
-class count(object):'''
+class _coconut_count(object):'''
             header += r'''
     """count(start, step) returns an infinite iterator starting at start and increasing by step."""
     __slots__ = ("_start", "_step")
@@ -429,7 +429,6 @@ class count(object):'''
         return self.__class__(self._start, self._step)
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self._start == other._start and self._step == other._step
-_coconut.abc.Sequence.register(count)
 def recursive_iterator(func):
     """Decorates a function by optimizing it for iterator recursion.
     Requires function arguments to be pickleable."""
@@ -511,7 +510,7 @@ def datamaker(data_type):
 def consume(iterable, keep_last=0):
     """Fully exhaust iterable and return the last keep_last elements."""
     return _coconut.collections.deque(iterable, maxlen=keep_last)  # fastest way to exhaust an iterator
-_coconut_MatchError, enumerate, reversed, map, reduce, takewhile, dropwhile, tee = MatchError, _coconut_enumerate, _coconut_reversed, _coconut_map, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile, _coconut_tee
+_coconut_MatchError, count, enumerate, reversed, map, reduce, takewhile, dropwhile, tee = MatchError, _coconut_count, _coconut_enumerate, _coconut_reversed, _coconut_map, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile, _coconut_tee
 '''
         else:
             raise CoconutInternalException("invalid header type", which)
