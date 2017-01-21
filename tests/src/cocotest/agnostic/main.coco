@@ -133,7 +133,6 @@ def main_test():
     import collections.abc
     assert isinstance([], collections.abc.Sequence)
     assert isinstance(range(1), collections.abc.Sequence)
-    assert isinstance([1,2,3] |> reversed, collections.abc.Reversible)
     assert collections.defaultdict(int)[5] == 0
     assert len(range(10)) == 10
     assert range(4) |> reversed |> tuple == (3,2,1,0)
@@ -278,7 +277,7 @@ def main_test():
     assert range(20) |> filter$((x) -> x < 5) |> reversed |> tuple == (4,3,2,1,0) == (0,1,2,3,4,5,6,7,8,9) |> filter$((x) -> x < 5) |> reversed |> tuple
     assert (range(10) |> map$((x) -> x) |> reversed) `isinstance` map
 
-    assert range(10) |> reversed |> reversed == range(10)
+    assert range(10) |> reversed |> reversed |> tuple == range(10) |> tuple
     assert range(10) |> reversed |> len == 10
     assert range(10) |> reversed |> .[1] == 8
     assert range(10) |> reversed |> .[-1] == 0

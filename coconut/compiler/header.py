@@ -196,7 +196,7 @@ class _coconut_compose:'''
                 header += r'''
 class _coconut_compose(object):'''
             header += r'''
-    __slots__ = ("funcs")
+    __slots__ = ("funcs",)
     def __init__(self, *funcs):
         self.funcs = funcs
     def __call__(self, *args, **kwargs):
@@ -230,7 +230,7 @@ class _coconut_reversed(object):
     def __new__(cls, iterable):
         if _coconut.isinstance(iterable, _coconut.range):
             return iterable[::-1]
-        elif _coconut.isinstance(iterable, (_coconut.list, _coconut.tuple)) or not _coconut.isinstance(iterable, _coconut.abc.Reversible):
+        elif not _coconut.hasattr("__reversed__") or _coconut.isinstance(iterable, (_coconut.list, _coconut.tuple)):
             new_reversed = _coconut.object.__new__(cls)
             new_reversed._iter = iterable
             return new_reversed
@@ -268,13 +268,15 @@ class _coconut_reversed(object):
         """Find the index of elem in the reversed iterator."""
         return _coconut.len(self._iter) - self._iter.index(elem) - 1
 class _coconut_map(_coconut.map):
-    __slots__ = ("_func", "_iters")
+    __slots__ = ()
     if hasattr(_coconut.map, "__doc__"):
         __doc__ = _coconut.map.__doc__
-    def __new__(cls, function, *iterables):
-        new_map = _coconut.map.__new__(cls, function, *iterables)
-        new_map._func, new_map._iters = function, iterables
-        return new_map
+    @property
+    def _func(self):
+        return _coconut.map.__reduce__(self)[1][0]
+    @property
+    def _iters(self):
+        return _coconut.map.__reduce__(self)[1][1:]
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
             return self.__class__(self._func, *(_coconut_igetitem(i, index) for i in self._iters))
@@ -287,7 +289,7 @@ class _coconut_map(_coconut.map):
     def __repr__(self):
         return "map(" + _coconut.repr(self._func) + ", " + ", ".join((_coconut.repr(i) for i in self._iters)) + ")"
     def __reduce__(self):
-        return (self.__class__, (self._func,) + self._iters)
+        return (self.__class__, _coconut.map.__reduce__(self)[1])
     def __reduce_ex__(self, _):
         return self.__reduce__()
     def __copy__(self):
@@ -319,31 +321,32 @@ class concurrent_map(_coconut_map):
     def __repr__(self):
         return "concurrent_" + _coconut_map.__repr__(self)
 class filter(_coconut.filter):
-    __slots__ = ("_func", "_iter")
+    __slots__ = ()
     if hasattr(_coconut.filter, "__doc__"):
         __doc__ = _coconut.filter.__doc__
-    def __new__(cls, function, iterable):
-        new_filter = _coconut.filter.__new__(cls, function, iterable)
-        new_filter._func, new_filter._iter = function, iterable
-        return new_filter
+    @property
+    def _func(self):
+        return _coconut.filter.__reduce__(self)[1][0]
+    @property
+    def _iter(self):
+        return _coconut.filter.__reduce__(self)[1][1]
     def __reversed__(self):
         return self.__class__(self._func, _coconut_reversed(self._iter))
     def __repr__(self):
         return "filter(" + _coconut.repr(self._func) + ", " + _coconut.repr(self._iter) + ")"
     def __reduce__(self):
-        return (self.__class__, (self._func, self._iter))
+        return (self.__class__, _coconut.map.__reduce__(self)[1])
     def __reduce_ex__(self, _):
         return self.__reduce__()
     def __copy__(self):
         return self.__class__(self._func, _coconut.copy.copy(self._iter))
 class zip(_coconut.zip):
-    __slots__ = ("_iters",)
+    __slots__ = ()
     if hasattr(_coconut.zip, "__doc__"):
         __doc__ = _coconut.zip.__doc__
-    def __new__(cls, *iterables):
-        new_zip = _coconut.zip.__new__(cls, *iterables)
-        new_zip._iters = iterables
-        return new_zip
+    @property
+    def _iters(self):
+        return _coconut.zip.__reduce__(self)[1]
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
             return self.__class__(*(_coconut_igetitem(i, index) for i in self._iters))
@@ -362,13 +365,15 @@ class zip(_coconut.zip):
     def __copy__(self):
         return self.__class__(*_coconut_map(_coconut.copy.copy, self._iters))
 class _coconut_enumerate(_coconut.enumerate):
-    __slots__ = ("_iter", "_start")
+    __slots__ = ()
     if hasattr(_coconut.enumerate, "__doc__"):
         __doc__ = _coconut.enumerate.__doc__
-    def __new__(cls, iterable, start=0):
-        new_enumerate = _coconut.enumerate.__new__(cls, iterable, start)
-        new_enumerate._iter, new_enumerate._start = iterable, start
-        return new_enumerate
+    @property
+    def _iter(self):
+        return _coconut.enumerate.__reduce__(self)[1][0]
+    @property
+    def _start(self):
+        return _coconut.enumerate.__reduce__(self)[1][1]
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
             return self.__class__(_coconut_igetitem(self._iter, index), self._start + (0 if index.start is None else index.start if index.start >= 0 else len(self._iter) + index.start))
@@ -379,7 +384,7 @@ class _coconut_enumerate(_coconut.enumerate):
     def __repr__(self):
         return "enumerate(" + _coconut.repr(self._iter) + ", " + _coconut.repr(self._start) + ")"
     def __reduce__(self):
-        return (self.__class__, (self._iter, self._start))
+        return (self.__class__, _coconut.map.__reduce__(self)[1])
     def __reduce_ex__(self, _):
         return self.__reduce__()
     def __copy__(self):
