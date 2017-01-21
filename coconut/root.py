@@ -66,12 +66,12 @@ class range(object):
         if _coconut.isinstance(index, _coconut.slice):
             args = _coconut.slice(*self._args)
             if args.step is not None and args.step < 0:
-                args = _coconut.slice(args.stop, args.start, args.step)
+                args = _coconut.slice((args.stop + 1 if args.stop is not None else None), (args.start + 1 if args.start is not None else None), args.step)
             ind_start = None if index.start is None else index.start if index.start >= 0 else _coconut.len(self) + index.start
             ind_stop = None if index.stop is None else index.stop if index.stop >= 0 else _coconut.len(self) + index.stop
             ind_step = index.step if index.step is not None else 1
             if ind_step < 0:
-                ind_start, ind_stop = ind_stop, ind_start
+                ind_start, ind_stop = (ind_stop + 1 if ind_stop is not None else None), (ind_start + 1 if ind_start is not None else None)
             start = (args.start if args.start is not None else 0) + (ind_start if ind_start is not None else 0)
             stop = ind_stop if args.stop is None else args.stop if ind_stop is None else _coconut.min(args.stop, ind_stop)
             step = (args.step if args.step is not None else 1) * ind_step
