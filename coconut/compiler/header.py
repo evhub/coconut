@@ -406,7 +406,7 @@ class count(object):'''
             if index.stop is None:
                 return self.__class__(self._start + (index.start if index.start is not None else 0), self._step * (index.step if index.step is not None else 1))
             else:
-                return _coconut.range(self._start + (index.start if index.start is not None else 0), index.stop, self._step * (index.step if index.step is not None else 1))
+                return _coconut_map(lambda x: self._start + self._step * x, _coconut.range(index.start if index.start is not None else 0, index.stop, index.step if index.step is not None else 1))
         elif index >= 0:
             return self._start + index * self._step
         else:

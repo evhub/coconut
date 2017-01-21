@@ -67,7 +67,7 @@ class range(object):
             args = _coconut.slice(*self._args)
             if args.step is not None and args.step < 0:
                 args = _coconut.slice(args.stop, args.start, args.step)
-            ind_start = 0 if index.start is None else index.start if index.start >= 0 else _coconut.len(self) + index.start
+            ind_start = None if index.start is None else index.start if index.start >= 0 else _coconut.len(self) + index.start
             ind_stop = None if index.stop is None else index.stop if index.stop >= 0 else _coconut.len(self) + index.stop
             ind_step = index.step if index.step is not None else 1
             if ind_step < 0:
