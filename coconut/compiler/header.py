@@ -371,7 +371,7 @@ class _coconut_enumerate(_coconut.enumerate):
         return new_enumerate
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
-            return self.__class__(self._iter[index], self._start + (index.start if index.start is not None else 0))
+            return self.__class__(self._iter[index], self._start + (0 if index.start is None else index.start if index.start >= 0 else len(self._iter) + index.start))
         else:
             return (self._start + index, self._iter[index])
     def __len__(self):
