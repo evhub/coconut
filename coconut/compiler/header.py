@@ -230,7 +230,7 @@ class reversed(object):
     def __new__(cls, iterable):
         if _coconut.isinstance(iterable, _coconut.range):
             return iterable[::-1]
-        elif not _coconut.hasattr("__reversed__") or _coconut.isinstance(iterable, (_coconut.list, _coconut.tuple)):
+        elif not _coconut.hasattr(iterable, "__reversed__") or _coconut.isinstance(iterable, (_coconut.list, _coconut.tuple)):
             new_reversed = _coconut.object.__new__(cls)
             new_reversed._iter = iterable
             return new_reversed
