@@ -102,8 +102,7 @@ class range(object):
     def __copy__(self):
         return self.__class__(*self._args)
     def __eq__(self, other):
-        reduction = self.__reduce__()
-        return _coconut.isinstance(other, reduction[0]) and reduction[1] == other.__reduce__()[1]
+        return _coconut.isinstance(other, self.__class__) and self._args == other._args
 from collections import Sequence as _coconut_Sequence
 _coconut_Sequence.register(range)
 class int(_coconut_int):

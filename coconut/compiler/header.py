@@ -42,7 +42,7 @@ def gethash(compiled):
 
 
 def minify(compiled):
-    """Performs basic minifications (fails with strings or non-tabideal indentation)."""
+    """Performs basic minifications (fails on non-tabideal indentation or a string with a #)."""
     compiled = compiled.strip()
     if compiled:
         out = []
@@ -216,14 +216,14 @@ def _coconut_bool_and(a, b): return a and b
 def _coconut_bool_or(a, b): return a or b
 def _coconut_minus(*args): return _coconut.operator.neg(*args) if len(args) < 2 else _coconut.operator.sub(*args)
 @_coconut.functools.wraps(_coconut.itertools.tee)
-def _coconut_tee(iterable, n=2):
+def tee(iterable, n=2):
     if n >= 0 and _coconut.isinstance(iterable, (_coconut.tuple, _coconut.frozenset)):
         return (iterable,)*n
     elif n > 0 and (_coconut.hasattr(iterable, "__copy__") or _coconut.isinstance(iterable, _coconut.abc.Sequence)):
         return (iterable,) + _coconut.tuple(_coconut.copy.copy(iterable) for i in range(n - 1))
     else:
         return _coconut.itertools.tee(iterable, n)
-class _coconut_reversed(object):
+class reversed(object):
     __slots__ = ("_iter",)
     if hasattr(_coconut.map, "__doc__"):
         __doc__ = _coconut.reversed.__doc__
@@ -267,16 +267,14 @@ class _coconut_reversed(object):
     def index(self, elem):
         """Find the index of elem in the reversed iterator."""
         return _coconut.len(self._iter) - self._iter.index(elem) - 1
-class _coconut_map(_coconut.map):
-    __slots__ = ()
+class map(_coconut.map):
+    __slots__ = ("_func", "_iters")
     if hasattr(_coconut.map, "__doc__"):
         __doc__ = _coconut.map.__doc__
-    @property
-    def _func(self):
-        return _coconut.map.__reduce__(self)[1][0]
-    @property
-    def _iters(self):
-        return _coconut.map.__reduce__(self)[1][1:]
+    def __new__(cls, function, *iterables):
+        new_map = _coconut.map.__new__(cls, function, *iterables)
+        new_map._func, new_map._iters = function, iterables
+        return new_map
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
             return self.__class__(self._func, *(_coconut_igetitem(i, index) for i in self._iters))
@@ -289,12 +287,12 @@ class _coconut_map(_coconut.map):
     def __repr__(self):
         return "map(" + _coconut.repr(self._func) + ", " + ", ".join((_coconut.repr(i) for i in self._iters)) + ")"
     def __reduce__(self):
-        return (self.__class__, _coconut.map.__reduce__(self)[1])
+        return (self.__class__, (self._func,) + self._iters)
     def __reduce_ex__(self, _):
         return self.__reduce__()
     def __copy__(self):
         return self.__class__(self._func, *_coconut_map(_coconut.copy.copy, self._iters))
-class parallel_map(_coconut_map):
+class parallel_map(map):
     """Multiprocessing implementation of map using concurrent.futures.
     Requires arguments to be pickleable."""
     __slots__ = ()
@@ -304,7 +302,7 @@ class parallel_map(_coconut_map):
             return _coconut.iter(_coconut.tuple(executor.map(self._func, *self._iters)))
     def __repr__(self):
         return "parallel_" + _coconut_map.__repr__(self)
-class concurrent_map(_coconut_map):
+class concurrent_map(map):
     """Multithreading implementation of map using concurrent.futures."""
     __slots__ = ()
     def __iter__(self):
@@ -321,32 +319,31 @@ class concurrent_map(_coconut_map):
     def __repr__(self):
         return "concurrent_" + _coconut_map.__repr__(self)
 class filter(_coconut.filter):
-    __slots__ = ()
+    __slots__ = ("_func", "_iter")
     if hasattr(_coconut.filter, "__doc__"):
         __doc__ = _coconut.filter.__doc__
-    @property
-    def _func(self):
-        return _coconut.filter.__reduce__(self)[1][0]
-    @property
-    def _iter(self):
-        return _coconut.filter.__reduce__(self)[1][1]
+    def __new__(cls, function, iterable):
+        new_filter = _coconut.filter.__new__(cls, function, iterable)
+        new_filter._func, new_filter._iter = function, iterable
+        return new_filter
     def __reversed__(self):
         return self.__class__(self._func, _coconut_reversed(self._iter))
     def __repr__(self):
         return "filter(" + _coconut.repr(self._func) + ", " + _coconut.repr(self._iter) + ")"
     def __reduce__(self):
-        return (self.__class__, _coconut.map.__reduce__(self)[1])
+        return (self.__class__, (self._func, self._iter))
     def __reduce_ex__(self, _):
         return self.__reduce__()
     def __copy__(self):
         return self.__class__(self._func, _coconut.copy.copy(self._iter))
 class zip(_coconut.zip):
-    __slots__ = ()
+    __slots__ = ("_iters",)
     if hasattr(_coconut.zip, "__doc__"):
         __doc__ = _coconut.zip.__doc__
-    @property
-    def _iters(self):
-        return _coconut.zip.__reduce__(self)[1]
+    def __new__(cls, *iterables):
+        new_zip = _coconut.zip.__new__(cls, *iterables)
+        new_zip._iters = iterables
+        return new_zip
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
             return self.__class__(*(_coconut_igetitem(i, index) for i in self._iters))
@@ -364,16 +361,14 @@ class zip(_coconut.zip):
         return self.__reduce__()
     def __copy__(self):
         return self.__class__(*_coconut_map(_coconut.copy.copy, self._iters))
-class _coconut_enumerate(_coconut.enumerate):
-    __slots__ = ()
+class enumerate(_coconut.enumerate):
+    __slots__ = ("_iter", "_start")
     if hasattr(_coconut.enumerate, "__doc__"):
         __doc__ = _coconut.enumerate.__doc__
-    @property
-    def _iter(self):
-        return _coconut.enumerate.__reduce__(self)[1][0]
-    @property
-    def _start(self):
-        return _coconut.enumerate.__reduce__(self)[1][1]
+    def __new__(cls, iterable, start=0):
+        new_enumerate = _coconut.enumerate.__new__(cls, iterable, start)
+        new_enumerate._iter, new_enumerate._start = iterable, start
+        return new_enumerate
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
             return self.__class__(_coconut_igetitem(self._iter, index), self._start + (0 if index.start is None else index.start if index.start >= 0 else len(self._iter) + index.start))
@@ -384,17 +379,17 @@ class _coconut_enumerate(_coconut.enumerate):
     def __repr__(self):
         return "enumerate(" + _coconut.repr(self._iter) + ", " + _coconut.repr(self._start) + ")"
     def __reduce__(self):
-        return (self.__class__, _coconut.map.__reduce__(self)[1])
+        return (self.__class__, (self._iter, self._start))
     def __reduce_ex__(self, _):
         return self.__reduce__()
     def __copy__(self):
         return self.__class__(_coconut.copy.copy(self._iter), self._start)'''
             if target.startswith("3"):
                 header += r'''
-class _coconut_count:'''
+class count:'''
             else:
                 header += r'''
-class _coconut_count(object):'''
+class count(object):'''
             header += r'''
     """count(start, step) returns an infinite iterator starting at start and increasing by step."""
     __slots__ = ("_start", "_step")
@@ -515,7 +510,7 @@ def datamaker(data_type):
 def consume(iterable, keep_last=0):
     """Fully exhaust iterable and return the last keep_last elements."""
     return _coconut.collections.deque(iterable, maxlen=keep_last)  # fastest way to exhaust an iterator
-_coconut_MatchError, count, enumerate, reversed, map, reduce, takewhile, dropwhile, tee = MatchError, _coconut_count, _coconut_enumerate, _coconut_reversed, _coconut_map, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile, _coconut_tee
+_coconut_MatchError, _coconut_count, _coconut_enumerate, _coconut_reversed, _coconut_map, _coconut_tee, reduce, takewhile, dropwhile = MatchError, count, enumerate, reversed, map, tee, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile
 '''
         else:
             raise CoconutInternalException("invalid header type", which)
