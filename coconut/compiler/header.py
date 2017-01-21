@@ -173,7 +173,7 @@ def _coconut_tco(func):
     tail_call_optimized_func._coconut_is_tco = True
     return tail_call_optimized_func
 def _coconut_igetitem(iterable, index):
-    if isinstance(iterable, _coconut.range) or _coconut.hasattr(iterable, "__getitem__"):
+    if isinstance(iterable, (_coconut_reversed, _coconut_map, _coconut.filter, _coconut.zip, _coconut_enumerate, _coconut.abc.Sequence)):
         return iterable[index]
     elif not _coconut.isinstance(index, _coconut.slice):
         if index < 0:
@@ -240,9 +240,9 @@ class _coconut_reversed(object):
         return _coconut.reversed(self._iter)
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
-            return self._iter[_coconut.slice(-(index.start + 1) if index.start is not None else None, -(index.stop + 1) if index.stop else None, -(index.step if index.step is not None else 1))]
+            return _coconut_igetitem(self._iter, _coconut.slice(-(index.start + 1) if index.start is not None else None, -(index.stop + 1) if index.stop else None, -(index.step if index.step is not None else 1)))
         else:
-            return self._iter[-(index + 1)]
+            return _coconut_igetitem(self._iter, -(index + 1))
     def __reversed__(self):
         return self._iter
     def __len__(self):
@@ -371,9 +371,9 @@ class _coconut_enumerate(_coconut.enumerate):
         return new_enumerate
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
-            return self.__class__(self._iter[index], self._start + (0 if index.start is None else index.start if index.start >= 0 else len(self._iter) + index.start))
+            return self.__class__(_coconut_igetitem(self._iter, index), self._start + (0 if index.start is None else index.start if index.start >= 0 else len(self._iter) + index.start))
         else:
-            return (self._start + index, self._iter[index])
+            return (self._start + index, _coconut_igetitem(self._iter, index))
     def __len__(self):
         return _coconut.len(self._iter)
     def __repr__(self):
@@ -402,8 +402,11 @@ class count(object):'''
     def __contains__(self, elem):
         return elem >= self._start and (elem - self._start) % self._step == 0
     def __getitem__(self, index):
-        if _coconut.isinstance(index, _coconut.slice) and (index.start is None or index.start >= 0) and (index.stop is not None and index.stop >= 0):
-            return _coconut_map(lambda x: self._start + x * self._step, _coconut.range(index.start if index.start is not None else 0, index.stop, index.step if index.step is not None else 1))
+        if _coconut.isinstance(index, _coconut.slice) and (index.start is None or index.start >= 0) and (index.stop is None or index.stop >= 0):
+            if index.stop is None:
+                return self.__class__(self._start + (index.start if index.start is not None else 0), self._step * (index.step if index.step is not None else 1))
+            else:
+                return _coconut.range(self._start + (index.start if index.start is not None else 0), index.stop, self._step * (index.step if index.step is not None else 1))
         elif index >= 0:
             return self._start + index * self._step
         else:
@@ -425,8 +428,8 @@ class count(object):'''
     def __copy__(self):
         return self.__class__(self._start, self._step)
     def __eq__(self, other):
-        reduction = self.__reduce__()
-        return _coconut.isinstance(other, reduction[0]) and reduction[1] == other.__reduce__()[1]
+        return isinstance(other, self.__class__) and self._start == other._start and self._step == other._step
+_coconut.abc.Sequence.register(count)
 def recursive_iterator(func):
     """Decorates a function by optimizing it for iterator recursion.
     Requires function arguments to be pickleable."""
