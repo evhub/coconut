@@ -72,7 +72,7 @@ class range(object):
             ind_step = index.step if index.step is not None else 1
             if ind_step < 0:
                 ind_start, ind_stop = ind_stop, ind_start
-            start = (args.start if args.start is not None else 0) + ind_start
+            start = (args.start if args.start is not None else 0) + (ind_start if ind_start is not None else 0)
             stop = ind_stop if args.stop is None else args.stop if ind_stop is None else _coconut.min(args.stop, ind_stop)
             step = (args.step if args.step is not None else 1) * ind_step
             if step < 0:
