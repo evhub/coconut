@@ -32,7 +32,7 @@ from coconut.exceptions import (
     CoconutException,
     CoconutInternalException,
 )
-from coconut.logging import logger
+from coconut.display import logger
 from coconut.constants import (
     fixpath,
     code_exts,

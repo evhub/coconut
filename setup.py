@@ -23,8 +23,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from coconut.root import *  # NOQA
 
+from coconut.requirements import requirements, extras
+
 import setuptools
-import platform
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
@@ -124,76 +125,6 @@ script_names = [
     "coconut-py" + str(sys.version_info[0]) + str(sys.version_info[1]),
     ("coconut-develop" if DEVELOP else "coconut-release"),
 ]
-
-#-----------------------------------------------------------------------------------------------------------------------
-# UTILITIES:
-#-----------------------------------------------------------------------------------------------------------------------
-
-
-def read_reqs(tag=""):
-    """Read the requirements file for the given tag."""
-    if tag:
-        tag = "-" + tag
-    req_file_name = "./reqs/requirements" + tag + ".txt"
-    with open(req_file_name, "r") as req_file:
-        return [line.strip() for line in req_file.readlines() if line]
-
-
-def uniqueify(reqs):
-    """Make a list of requirements unique."""
-    return list(set(reqs))
-
-
-def unique_from(reqs, main_reqs):
-    """Ensures reqs doesn't contain anything in main_reqs."""
-    return list(set(reqs) - set(main_reqs))
-
-
-def all_reqs_in(req_dict):
-    """Gets all requirements in a requirements dict."""
-    return uniqueify(req for req_list in req_dict.values() for req in req_list)
-
-#-----------------------------------------------------------------------------------------------------------------------
-# REQUIREMENTS:
-#-----------------------------------------------------------------------------------------------------------------------
-
-requirements = read_reqs()
-
-if PY26:
-    requirements += read_reqs("py26")
-else:
-    requirements += read_reqs("non-py26")
-
-if PY2:
-    requirements += read_reqs("py2")
-
-extras = {
-    "jupyter": read_reqs("jupyter"),
-    "watch": read_reqs("watch"),
-    "jobs": read_reqs("jobs"),
-    "mypy": read_reqs("mypy"),
-}
-
-if sys.version_info >= (3, 3) and platform.system() != "Windows":
-    extras["mypy"] += read_reqs("typed-ast")
-
-extras["ipython"] = extras["jupyter"]
-
-extras["all"] = all_reqs_in(extras)
-
-extras["tests"] = uniqueify(
-    read_reqs("tests")
-    + (extras["jobs"] if platform.python_implementation() != "PyPy" else [])
-    + (extras["jupyter"] if (PY2 and not PY26) or sys.version_info >= (3, 3) else [])
-    + (extras["mypy"] if not PY2 else [])
-)
-
-extras["docs"] = unique_from(read_reqs("docs"), requirements)
-
-extras["dev"] = uniqueify(
-    all_reqs_in(extras)
-    + read_reqs("dev")
-)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # README:

@@ -63,7 +63,7 @@ from coconut.exceptions import (
     CoconutInternalException,
     get_encoding,
 )
-from coconut.logging import logger
+from coconut.display import logger
 
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
