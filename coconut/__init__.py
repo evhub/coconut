@@ -47,7 +47,7 @@ def load_ipython_extension(ipython):
 
     # add magic function
     from coconut.convenience import cmd, parse, CoconutException
-    from coconut.display import logger
+    from coconut.terminal import logger
 
     def magic(line, cell=None):
         """Provides %coconut and %%coconut magics."""

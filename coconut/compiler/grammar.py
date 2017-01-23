@@ -52,7 +52,7 @@ from pyparsing import (
 )
 
 from coconut.exceptions import CoconutInternalException
-from coconut.display import trace
+from coconut.terminal import trace
 from coconut.constants import (
     openindent,
     closeindent,

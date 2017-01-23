@@ -27,7 +27,7 @@ from pyparsing import (
     CharsNotIn,
 )
 
-from coconut.display import logger, complain
+from coconut.terminal import logger, complain
 from coconut.constants import (
     ups,
     downs,

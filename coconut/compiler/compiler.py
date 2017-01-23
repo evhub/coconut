@@ -84,7 +84,7 @@ from coconut.exceptions import (
     CoconutDeferredSyntaxError,
     clean,
 )
-from coconut.display import logger, trace, complain
+from coconut.terminal import logger, trace, complain
 from coconut.compiler.matching import Matcher
 from coconut.compiler.grammar import (
     Grammar,
