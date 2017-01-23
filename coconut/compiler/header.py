@@ -144,10 +144,10 @@ class _coconut(object):'''
         import collections.abc as abc'''
             if target.startswith("3"):
                 header += r'''
-    IndexError, NameError, ValueError, dict, enumerate, filter, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, map, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, zip, repr = IndexError, NameError, ValueError, dict, enumerate, filter, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, map, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, zip, repr'''
+    IndexError, NameError, ValueError, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, iter, len, list, map, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, zip, repr = IndexError, NameError, ValueError, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, iter, len, list, map, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, zip, repr'''
             else:
                 header += r'''
-    IndexError, NameError, ValueError, dict, enumerate, filter, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, map, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, zip, repr, bytearray = IndexError, NameError, ValueError, dict, enumerate, filter, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, map, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, zip, staticmethod(repr), bytearray'''
+    IndexError, NameError, ValueError, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, iter, len, list, map, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, zip, repr, bytearray = IndexError, NameError, ValueError, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, iter, len, list, map, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, zip, staticmethod(repr), bytearray'''
             header += r'''
 class MatchError(Exception):
     """Pattern-matching error."""
@@ -405,10 +405,12 @@ class count(object):'''
         if _coconut.isinstance(index, _coconut.slice) and (index.start is None or index.start >= 0) and (index.stop is None or index.stop >= 0):
             if index.stop is None:
                 return self.__class__(self._start + (index.start if index.start is not None else 0), self._step * (index.step if index.step is not None else 1))
+            elif _coconut.isinstance(self._start, _coconut.int) and _coconut.isinstance(self._step, _coconut.int):
+                return _coconut.range(self._start + self._step * (index.start if index.start is not None else 0), self._start + self._step * index.stop, self._step * (index.step if index.step is not None else 1))
             else:
-                return _coconut_map(lambda x: self._start + self._step * x, _coconut.range(index.start if index.start is not None else 0, index.stop, index.step if index.step is not None else 1))
+                return _coconut_map(self.__getitem__, _coconut.range(index.start if index.start is not None else 0, index.stop, index.step if index.step is not None else 1))
         elif index >= 0:
-            return self._start + index * self._step
+            return self._start + self._step * index
         else:
             raise _coconut.IndexError("count indices must be positive")
     def count(self, elem):
