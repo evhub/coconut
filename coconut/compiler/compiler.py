@@ -278,13 +278,12 @@ class Compiler(Grammar):
         self.nonlocal_stmt <<= attach(self.nonlocal_stmt_ref, self.nonlocal_check)
         self.star_assign_item <<= attach(self.star_assign_item_ref, self.star_assign_item_check)
         self.classic_lambdef <<= attach(self.classic_lambdef_ref, self.lambdef_check)
-        self.async_funcdef <<= attach(self.async_funcdef_ref, self.async_stmt_check)
-        self.async_match_funcdef <<= attach(self.async_match_funcdef_ref, self.async_stmt_check)
-        self.async_stmt <<= attach(self.async_stmt_ref, self.async_stmt_check)
+        self.async_keyword <<= attach(self.async_keyword_ref, self.async_keyword_check)
         self.await_keyword <<= attach(self.await_keyword_ref, self.await_keyword_check)
         self.star_expr <<= attach(self.star_expr_ref, self.star_expr_check)
         self.dubstar_expr <<= attach(self.dubstar_expr_ref, self.star_expr_check)
         self.endline_semicolon <<= attach(self.endline_semicolon_ref, self.endline_semicolon_check)
+        self.async_comp_for <<= attach(self.async_comp_for_ref, self.async_comp_check)
 
     def adjust(self, ln):
         """Adjusts a line number."""
@@ -1580,9 +1579,13 @@ class Compiler(Grammar):
         """Checks for Python 3.5 matrix multiplication."""
         return self.check_py("35", "matrix multiplication", original, loc, tokens)
 
-    def async_stmt_check(self, original, loc, tokens):
+    def async_keyword_check(self, original, loc, tokens):
         """Checks for Python 3.5 async statement."""
         return self.check_py("35", "async statement", original, loc, tokens)
+
+    def async_comp_check(self, original, loc, tokens):
+        """Checks for Python 3.6 async comprehension."""
+        return self.check_py("36", "async comprehension", original, loc, tokens)
 
     def await_keyword_check(self, original, loc, tokens):
         """Checks for Python 3.5 await expression."""
@@ -1593,7 +1596,7 @@ class Compiler(Grammar):
         return self.check_py("35", "star unpacking", original, loc, tokens)
 
     def f_string_check(self, original, loc, tokens):
-        """Checks for Python 3.5 format strings."""
+        """Checks for Python 3.6 format strings."""
         return self.check_py("36", "format string", original, loc, tokens)
 
 # end: CHECKING HANDLERS

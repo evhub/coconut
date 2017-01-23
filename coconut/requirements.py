@@ -28,15 +28,15 @@ all_reqs = {
     "main": [
         "pyparsing",
     ],
-    "dev": [
-        "pre-commit",
-        "requests",
-    ],
-    "docs": [
-        "sphinx",
+    "non-py26": [
         "pygments",
-        "recommonmark",
-        "sphinx_bootstrap_theme",
+        "prompt_toolkit",
+    ],
+    "py2": [
+        "futures",
+    ],
+    "py26": [
+        "argparse",
     ],
     "jobs": [
         "psutil",
@@ -49,24 +49,24 @@ all_reqs = {
     "mypy": [
         "mypy-lang",
     ],
-    "non-py26": [
-        "pygments",
-        "prompt_toolkit",
-    ],
-    "py2": [
-        "futures",
-    ],
-    "py26": [
-        "argparse",
-    ],
-    "tests": [
-        "pytest",
-    ],
     "typed-ast": [
         "typed_ast",
     ],
     "watch": [
         "watchdog",
+    ],
+    "dev": [
+        "pre-commit",
+        "requests",
+    ],
+    "docs": [
+        "sphinx",
+        "pygments",
+        "recommonmark",
+        "sphinx_bootstrap_theme",
+    ],
+    "tests": [
+        "pytest",
     ],
 }
 
@@ -74,7 +74,7 @@ versions = {
     "pyparsing": (2, 1, 10),
     "pre-commit": (0, 11, 0),
     "sphinx": (1, 4, 6),
-    "pygments": (2, 1, 3),
+    "pygments": (2, 2, 0),
     "recommonmark": (0, 4, 0),
     "sphinx_bootstrap_theme": (0, 4, 13),
     "psutil": (5, 0, 1),
@@ -85,7 +85,7 @@ versions = {
     "prompt_toolkit": (1, 0, 9),
     "futures": (3, 0, 5),
     "argparse": (1, 4, 0),
-    "pytest": (3, 0, 5),
+    "pytest": (3, 0, 6),
     "typed_ast": (0, 6, 3),
     "watchdog": (0, 8, 3),
     "requests": (2, 12, 5),
@@ -96,7 +96,7 @@ versions = {
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def read_reqs(which="main"):
+def get_reqs(which="main"):
     """Gets requirements from all_reqs with versions."""
     reqs = []
     for req in all_reqs[which]:
@@ -121,45 +121,45 @@ def everything_in(req_dict):
     return uniqueify(req for req_list in req_dict.values() for req in req_list)
 
 #-----------------------------------------------------------------------------------------------------------------------
-# RESOURCES:
+# SETUP:
 #-----------------------------------------------------------------------------------------------------------------------
 
-requirements = read_reqs()
+requirements = get_reqs()
 
 if PY26:
-    requirements += read_reqs("py26")
+    requirements += get_reqs("py26")
 else:
-    requirements += read_reqs("non-py26")
+    requirements += get_reqs("non-py26")
 
 if PY2:
-    requirements += read_reqs("py2")
+    requirements += get_reqs("py2")
 
 extras = {
-    "jupyter": read_reqs("jupyter"),
-    "watch": read_reqs("watch"),
-    "jobs": read_reqs("jobs"),
-    "mypy": read_reqs("mypy"),
+    "jupyter": get_reqs("jupyter"),
+    "watch": get_reqs("watch"),
+    "jobs": get_reqs("jobs"),
+    "mypy": get_reqs("mypy"),
 }
 
 if sys.version_info >= (3, 3) and platform.system() != "Windows":
-    extras["mypy"] += read_reqs("typed-ast")
+    extras["mypy"] += get_reqs("typed-ast")
 
 extras["ipython"] = extras["jupyter"]
 
 extras["all"] = everything_in(extras)
 
 extras["tests"] = uniqueify(
-    read_reqs("tests")
+    get_reqs("tests")
     + (extras["jobs"] if platform.python_implementation() != "PyPy" else [])
     + (extras["jupyter"] if (PY2 and not PY26) or sys.version_info >= (3, 3) else [])
     + (extras["mypy"] if not PY2 else [])
 )
 
-extras["docs"] = unique_wrt(read_reqs("docs"), requirements)
+extras["docs"] = unique_wrt(get_reqs("docs"), requirements)
 
 extras["dev"] = uniqueify(
     everything_in(extras)
-    + read_reqs("dev")
+    + get_reqs("dev")
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -176,11 +176,7 @@ def latest_version(req):
 
 def print_new_versions():
     """Prints new versions."""
-    reqs = set()
-    for name in all_reqs:
-        for req in all_reqs[name]:
-            reqs.add(req)
-    for req in reqs:
+    for req in everything_in(all_reqs):
         old = ".".join(str(x) for x in versions[req])
         new = latest_version(req)
         if old != new:

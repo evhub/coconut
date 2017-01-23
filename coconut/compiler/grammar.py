@@ -597,6 +597,11 @@ class Grammar(object):
                | Keyword("is")
                )
 
+    async_keyword = Forward()
+    async_keyword_ref = Keyword("async")
+    await_keyword = Forward()
+    await_keyword_ref = Keyword("await")
+
     test = Forward()
     expr = Forward()
     no_chain_expr = Forward()
@@ -803,8 +808,6 @@ class Grammar(object):
     compose_item = attach(atom_item + ZeroOrMore(dotdot.suppress() + atom_item), compose_item_handle)
 
     factor = Forward()
-    await_keyword = Forward()
-    await_keyword_ref = Keyword("await")
     power = trace(condense(addspace(Optional(await_keyword) + compose_item) + Optional(exp_dubstar + factor)))
     unary = plus | neg_minus | tilde
 
@@ -907,6 +910,7 @@ class Grammar(object):
         )
     )
 
+    async_comp_for = Forward()
     classlist_ref = Optional(
         lparen.suppress() + rparen.suppress()
         | Group(
@@ -917,7 +921,9 @@ class Grammar(object):
     class_suite = suite | attach(newline, class_suite_handle)
     classdef = condense(addspace(Keyword("class") - name) + classlist + class_suite)
     comp_iter = Forward()
-    comp_for <<= trace(addspace(Keyword("for") + assignlist + Keyword("in") + test_item + Optional(comp_iter)))
+    base_comp_for = addspace(Keyword("for") + assignlist + Keyword("in") + test_item + Optional(comp_iter))
+    async_comp_for_ref = addspace(Keyword("async") + base_comp_for)
+    comp_for <<= async_comp_for | base_comp_for
     comp_if = addspace(Keyword("if") + test_nocond + Optional(comp_iter))
     comp_iter <<= comp_for | comp_if
 
@@ -1051,8 +1057,6 @@ class Grammar(object):
     ) + rparen.suppress()
 
     return_typedef = Forward()
-    async_funcdef = Forward()
-    async_stmt = Forward()
     name_funcdef = trace(condense(name + parameters))
     op_tfpdef = unsafe_typedef_default | condense(name + Optional(default))
     op_funcdef_arg = name | condense(lparen.suppress() + op_tfpdef + rparen.suppress())
@@ -1070,7 +1074,6 @@ class Grammar(object):
 
     name_match_funcdef = Forward()
     op_match_funcdef = Forward()
-    async_match_funcdef = Forward()
     name_match_funcdef_ref = name + lparen.suppress() + match_args_list + match_guard + rparen.suppress()
     op_match_funcdef_arg = Group(Optional(lparen.suppress()
                                           + Group(match + Optional(equals.suppress() + test))
@@ -1091,12 +1094,12 @@ class Grammar(object):
     math_match_funcdef = trace(
         Optional(Keyword("match").suppress()) + condense(base_match_funcdef + equals.suppress() - math_funcdef_suite))
 
-    async_funcdef_ref = addspace(Keyword("async") + (funcdef | math_funcdef))
-    async_stmt_ref = addspace(Keyword("async") + (with_stmt | for_stmt))
-    async_match_funcdef_ref = addspace(
+    async_funcdef = addspace(async_keyword + (funcdef | math_funcdef))
+    async_stmt = addspace(async_keyword + (with_stmt | for_stmt))
+    async_match_funcdef = addspace(
         (
-            Optional(Keyword("match")).suppress() + Keyword("async")
-            | Keyword("async") + Optional(Keyword("match")).suppress()
+            Optional(Keyword("match")).suppress() + async_keyword
+            | async_keyword + Optional(Keyword("match")).suppress()
         )
         + (def_match_funcdef | math_match_funcdef)
     )
