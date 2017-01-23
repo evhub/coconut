@@ -71,24 +71,24 @@ all_reqs = {
 }
 
 versions = {
-    "pyparsing": "2.1.10",
-    "pre-commit": "0.11.0",
-    "sphinx": "1.4.6",
-    "pygments": "2.1.3",
-    "recommonmark": "0.4.0",
-    "sphinx_bootstrap_theme": "0.4.13",
-    "psutil": "5.0.1",
-    "jupyter": "1.0.0",
-    "jupyter-console": "4.1.1",
-    "ipython": "4.2.1",
-    "mypy-lang": "0.4.6",
-    "prompt_toolkit": "1.0.9",
-    "futures": "3.0.5",
-    "argparse": "1.4.0",
-    "pytest": "3.0.5",
-    "typed_ast": "0.6.3",
-    "watchdog": "0.8.3",
-    "requests": "2.12.5",
+    "pyparsing": (2, 1, 10),
+    "pre-commit": (0, 11, 0),
+    "sphinx": (1, 4, 6),
+    "pygments": (2, 1, 3),
+    "recommonmark": (0, 4, 0),
+    "sphinx_bootstrap_theme": (0, 4, 13),
+    "psutil": (5, 0, 1),
+    "jupyter": (1, 0, 0),
+    "jupyter-console": (4, 1, 1),
+    "ipython": (4, 2, 1),
+    "mypy-lang": (0, 4, 6),
+    "prompt_toolkit": (1, 0, 9),
+    "futures": (3, 0, 5),
+    "argparse": (1, 4, 0),
+    "pytest": (3, 0, 5),
+    "typed_ast": (0, 6, 3),
+    "watchdog": (0, 8, 3),
+    "requests": (2, 12, 5),
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -100,7 +100,9 @@ def read_reqs(which="main"):
     """Gets requirements from all_reqs with versions."""
     reqs = []
     for req in all_reqs[which]:
-        reqs.append(req + "==" + versions[req])
+        cur_ver = ".".join(str(x) for x in versions[req])
+        next_ver = str(versions[req][0]) + "." + str(versions[req][1] + 1)
+        reqs.append(req + ">=" + cur_ver + ",<" + next_ver)
     return reqs
 
 
@@ -179,7 +181,7 @@ def print_new_versions():
         for req in all_reqs[name]:
             reqs.add(req)
     for req in reqs:
-        old = versions[req]
+        old = ".".join(str(x) for x in versions[req])
         new = latest_version(req)
         if old != new:
             print(req + ": " + old + " -> " + new)
