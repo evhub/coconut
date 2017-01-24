@@ -4,6 +4,7 @@
 
 1. [Can I use Python modules from Coconut and Coconut modules from Python?](#can-i-use-python-modules-from-coconut-and-coconut-modules-from-python)
 1. [What versions of Python does Coconut support?](#what-versions-of-python-does-coconut-support)
+1. [I saw that Coconut was recently updated. Where is the change log?](#i-saw-that-coconut-was-recently-updated-where-is-the-change-log)
 1. [Help! I tried to write a recursive iterator and my Python segfaulted!](#help-i-tried-to-write-a-recursive-iterator-and-my-python-segfaulted)
 1. [If I'm already perfectly happy with Python, why should I learn Coconut?](#if-im-already-perfectly-happy-with-python-why-should-i-learn-coconut)
 1. [How will I be able to debug my Python if I'm not the one writing it?](#how-will-i-be-able-to-debug-my-python-if-im-not-the-one-writing-it)
@@ -25,6 +26,10 @@ Yes and yes! Coconut compiles to Python, so Coconut modules are accessible from 
 ### What versions of Python does Coconut support?
 
 Coconut supports any Python version `>= 2.6` on the `2.x` branch or `>= 3.2` on the `3.x` branch. See [compatible Python versions](http://coconut.readthedocs.io/en/master/DOCS.html#compatible-python-versions) for more information.
+
+### I saw that Coconut was recently updated. Where is the change log?
+
+Information on every Coconut release is chronicled on the [GitHub releases page](https://github.com/evhub/coconut/releases). There you can find all of the new features and breaking changes introduced in each release.
 
 ### Help! I tried to write a recursive iterator and my Python segfaulted!
 
