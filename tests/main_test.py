@@ -252,15 +252,15 @@ class TestCompilation(unittest.TestCase):
     def test_normal(self):
         run()
 
+    def test_target(self):
+        run(agnostic_target=(2 if PY2 else 3))
+
     if platform.python_implementation() != "PyPy":
         def test_jobs_zero(self):
             run(["--jobs", "0"])
 
     def test_run(self):
         run(use_run_arg=True)
-
-    def test_target(self):
-        run(agnostic_target=(2 if PY2 else 3))
 
     def test_standalone(self):
         run(["--standalone"])
