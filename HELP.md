@@ -69,12 +69,14 @@ At its very core, Coconut is a compiler that turns Coconut code into Python code
 
 Installing Coconut, including all the features above, is drop-dead simple. Just
 
-1. install Python from [python.org](https://www.python.org/downloads/),
+1. install [Python](https://www.python.org/downloads/),
 2. open a command-line prompt,
 3. and enter:
 ```
 pip install coconut
 ```
+
+_Note: Try re-running the above command with the `--user` option if you are encountering errors._
 
 To check that your installation is functioning properly, try entering into the command line
 ```
