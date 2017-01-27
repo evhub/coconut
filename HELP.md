@@ -76,7 +76,7 @@ Installing Coconut, including all the features above, is drop-dead simple. Just
 pip install coconut
 ```
 
-_Note: Try re-running the above command with the `--user` option if you are encountering permission denied errors. Be sure that `coconut` binary location (usually `${HOME}/.local/bin/` when using `--user` option, or `/usr/local/bin` when installing from root, on UNIX machines) is in your PATH environment variable._
+_Note: Try re-running the above command with the `--user` option if you are encountering errors. Be sure that the `coconut` installation location (`/usr/local/bin` or `${HOME}/.local/bin/` on UNIX machines) is in your PATH environment variable._
 
 To check that your installation is functioning properly, try entering into the command line
 ```
