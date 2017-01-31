@@ -72,7 +72,7 @@ all_reqs = {
 
 versions = {
     "pyparsing": (2, 1, 10),
-    "pre-commit": (0, 11, 0),
+    "pre-commit": (0, 12, 2),
     "sphinx": (1, 4, 6),
     "pygments": (2, 2, 0),
     "recommonmark": (0, 4, 0),
@@ -82,13 +82,13 @@ versions = {
     "jupyter-console": (4, 1, 1),
     "ipython": (4, 2, 1),
     "mypy-lang": (0, 4, 6),
-    "prompt_toolkit": (1, 0, 9),
+    "prompt_toolkit": (1, 0, 10),
     "futures": (3, 0, 5),
     "argparse": (1, 4, 0),
     "pytest": (3, 0, 6),
     "typed_ast": (0, 6, 3),
     "watchdog": (0, 8, 3),
-    "requests": (2, 12, 5),
+    "requests": (2, 13, 0),
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
