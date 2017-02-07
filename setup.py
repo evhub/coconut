@@ -25,7 +25,7 @@ from coconut.root import *  # NOQA
 
 import setuptools
 
-# from coconut.requirements import requirements, extras
+from coconut.requirements import requirements, extras
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
@@ -155,8 +155,8 @@ setuptools.setup(
     url="http://coconut-lang.org",
     author="Evan Hubinger",
     author_email="evanjhub@gmail.com",
-    # install_requires=requirements,
-    # extras_require=extras,
+    install_requires=requirements,
+    extras_require=extras,
     packages=setuptools.find_packages(exclude=[
         "docs",
         "tests",
