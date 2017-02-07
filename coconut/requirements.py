@@ -116,5 +116,4 @@ def print_new_versions():
 
 
 if __name__ == "__main__":
-    write_readthedocs_reqs()
     print_new_versions()
