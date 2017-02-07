@@ -23,9 +23,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from coconut.root import *  # NOQA
 
-from coconut.requirements import requirements, extras
-
 import setuptools
+
+from coconut.requirements import requirements, extras
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
@@ -53,6 +53,7 @@ classifiers = [
     "Programming Language :: Python :: 3.3",
     "Programming Language :: Python :: 3.4",
     "Programming Language :: Python :: 3.5",
+    "Programming Language :: Python :: 3.6",
     "Programming Language :: Other",
     "Programming Language :: Other Scripting Engines",
     "Programming Language :: Python :: Implementation :: CPython",

@@ -24,6 +24,8 @@ import platform
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
+readthedocs_reqs_filename = "docs_reqs.txt"
+
 all_reqs = {
     "main": [
         "pyparsing",
@@ -120,6 +122,7 @@ def everything_in(req_dict):
     """Gets all requirements in a requirements dict."""
     return uniqueify(req for req_list in req_dict.values() for req in req_list)
 
+
 #-----------------------------------------------------------------------------------------------------------------------
 # SETUP:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -167,6 +170,12 @@ extras["dev"] = uniqueify(
 #-----------------------------------------------------------------------------------------------------------------------
 
 
+def write_readthedocs_reqs():
+    """Writes readthedocs requirements to file."""
+    with open(readthedocs_reqs_filename, "w") as readthedocs_reqs_file:
+        readthedocs_reqs_file.write("\n".join(extras["docs"]) + "\n")
+
+
 def latest_version(req):
     """Get the latest version of req from PyPI."""
     import requests
@@ -184,4 +193,5 @@ def print_new_versions():
 
 
 if __name__ == "__main__":
+    write_readthedocs_reqs()
     print_new_versions()

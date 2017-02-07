@@ -21,7 +21,7 @@ from coconut.root import *  # NOQA
 
 import sys
 import os
-from pyparsing import alphanums
+import string
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -31,6 +31,7 @@ from pyparsing import alphanums
 def fixpath(path):
     """Uniformly formats a path."""
     return os.path.normpath(os.path.realpath(path))
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # COMPILER CONSTANTS:
@@ -64,7 +65,7 @@ else:
 default_encoding = "utf-8"
 
 default_whitespace_chars = " \t\f\v\xa0"
-varchars = alphanums + "_"
+varchars = string.ascii_letters + string.digits + "_"
 
 openindent = "\u204b"  # reverse pilcrow
 closeindent = "\xb6"  # pilcrow
