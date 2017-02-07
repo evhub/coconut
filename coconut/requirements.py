@@ -24,8 +24,6 @@ import platform
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-readthedocs_reqs_filename = "docs_reqs.txt"
-
 all_reqs = {
     "main": [
         "pyparsing",
@@ -168,12 +166,6 @@ extras["dev"] = uniqueify(
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
 #-----------------------------------------------------------------------------------------------------------------------
-
-
-def write_readthedocs_reqs():
-    """Writes readthedocs requirements to file."""
-    with open(readthedocs_reqs_filename, "w") as readthedocs_reqs_file:
-        readthedocs_reqs_file.write("\n".join(extras["docs"]) + "\n")
 
 
 def latest_version(req):
