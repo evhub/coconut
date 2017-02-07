@@ -20,76 +20,7 @@ from coconut.root import *  # NOQA
 import sys
 import platform
 
-#-----------------------------------------------------------------------------------------------------------------------
-# CONSTANTS:
-#-----------------------------------------------------------------------------------------------------------------------
-
-all_reqs = {
-    "main": [
-        "pyparsing",
-    ],
-    "non-py26": [
-        "pygments",
-        "prompt_toolkit",
-    ],
-    "py2": [
-        "futures",
-    ],
-    "py26": [
-        "argparse",
-    ],
-    "jobs": [
-        "psutil",
-    ],
-    "jupyter": [
-        "jupyter",
-        "jupyter-console",
-        "ipython",
-    ],
-    "mypy": [
-        "mypy-lang",
-    ],
-    "typed-ast": [
-        "typed_ast",
-    ],
-    "watch": [
-        "watchdog",
-    ],
-    "dev": [
-        "pre-commit",
-        "requests",
-    ],
-    "docs": [
-        "sphinx",
-        "pygments",
-        "recommonmark",
-        "sphinx_bootstrap_theme",
-    ],
-    "tests": [
-        "pytest",
-    ],
-}
-
-versions = {
-    "pyparsing": (2, 1, 10),
-    "pre-commit": (0, 12, 2),
-    "sphinx": (1, 4, 6),
-    "pygments": (2, 2, 0),
-    "recommonmark": (0, 4, 0),
-    "sphinx_bootstrap_theme": (0, 4, 13),
-    "psutil": (5, 0, 1),
-    "jupyter": (1, 0, 0),
-    "jupyter-console": (4, 1, 1),
-    "ipython": (4, 2, 1),
-    "mypy-lang": (0, 4, 6),
-    "prompt_toolkit": (1, 0, 10),
-    "futures": (3, 0, 5),
-    "argparse": (1, 4, 0),
-    "pytest": (3, 0, 6),
-    "typed_ast": (0, 6, 3),
-    "watchdog": (0, 8, 3),
-    "requests": (2, 13, 0),
-}
+from coconut.constants import all_reqs, req_vers
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -97,11 +28,11 @@ versions = {
 
 
 def get_reqs(which="main"):
-    """Gets requirements from all_reqs with versions."""
+    """Gets requirements from all_reqs with req_vers."""
     reqs = []
     for req in all_reqs[which]:
-        cur_ver = ".".join(str(x) for x in versions[req])
-        next_ver = str(versions[req][0]) + "." + str(versions[req][1] + 1)
+        cur_ver = ".".join(str(x) for x in req_vers[req])
+        next_ver = str(req_vers[req][0]) + "." + str(req_vers[req][1] + 1)
         reqs.append(req + ">=" + cur_ver + ",<" + next_ver)
     return reqs
 
@@ -176,9 +107,9 @@ def latest_version(req):
 
 
 def print_new_versions():
-    """Prints new versions."""
+    """Prints new requirement versions."""
     for req in everything_in(all_reqs):
-        old = ".".join(str(x) for x in versions[req])
+        old = ".".join(str(x) for x in req_vers[req])
         new = latest_version(req)
         if old != new:
             print(req + ": " + old + " -> " + new)

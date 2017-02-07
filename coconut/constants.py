@@ -34,6 +34,173 @@ def fixpath(path):
 
 
 #-----------------------------------------------------------------------------------------------------------------------
+# INSTALLATION CONSTANTS:
+#-----------------------------------------------------------------------------------------------------------------------
+
+all_reqs = {
+    "main": [
+        "pyparsing",
+    ],
+    "non-py26": [
+        "pygments",
+        "prompt_toolkit",
+    ],
+    "py2": [
+        "futures",
+    ],
+    "py26": [
+        "argparse",
+    ],
+    "jobs": [
+        "psutil",
+    ],
+    "jupyter": [
+        "jupyter",
+        "jupyter-console",
+        "ipython",
+    ],
+    "mypy": [
+        "mypy-lang",
+    ],
+    "typed-ast": [
+        "typed_ast",
+    ],
+    "watch": [
+        "watchdog",
+    ],
+    "dev": [
+        "pre-commit",
+        "requests",
+    ],
+    "docs": [
+        "sphinx",
+        "pygments",
+        "recommonmark",
+        "sphinx_bootstrap_theme",
+    ],
+    "tests": [
+        "pytest",
+    ],
+}
+
+req_vers = {
+    "pyparsing": (2, 1, 10),
+    "pre-commit": (0, 12, 2),
+    "sphinx": (1, 4, 6),
+    "pygments": (2, 2, 0),
+    "recommonmark": (0, 4, 0),
+    "sphinx_bootstrap_theme": (0, 4, 13),
+    "psutil": (5, 0, 1),
+    "jupyter": (1, 0, 0),
+    "jupyter-console": (4, 1, 1),
+    "ipython": (4, 2, 1),
+    "mypy-lang": (0, 4, 6),
+    "prompt_toolkit": (1, 0, 10),
+    "futures": (3, 0, 5),
+    "argparse": (1, 4, 0),
+    "pytest": (3, 0, 6),
+    "typed_ast": (0, 6, 3),
+    "watchdog": (0, 8, 3),
+    "requests": (2, 13, 0),
+}
+
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: Apache Software License",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Compilers",
+    "Topic :: Software Development :: Interpreters",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+    "Environment :: Console",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 2",
+    "Programming Language :: Python :: 2.6",
+    "Programming Language :: Python :: 2.7",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.2",
+    "Programming Language :: Python :: 3.3",
+    "Programming Language :: Python :: 3.4",
+    "Programming Language :: Python :: 3.5",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Other",
+    "Programming Language :: Other Scripting Engines",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Framework :: IPython",
+]
+
+search_terms = [
+    "functional programming language",
+    "functional programming",
+    "functional",
+    "programming language",
+    "compiler",
+    "match",
+    "matches",
+    "matching",
+    "pattern-matching",
+    "pattern matching",
+    "algebraic data type",
+    "algebraic data types",
+    "data",
+    "data type",
+    "data types",
+    "lambda",
+    "lambdas",
+    "lazy list",
+    "lazy lists",
+    "lazy evaluation",
+    "lazy",
+    "tail recursion",
+    "tail call",
+    "optimization",
+    "recursion",
+    "recursive",
+    "infix",
+    "function composition",
+    "partial application",
+    "currying",
+    "curry",
+    "pipeline",
+    "pipe",
+    "unicode operator",
+    "unicode operators",
+    "frozenset literal",
+    "frozenset literals",
+    "destructuring",
+    "destructuring assignment",
+    "reduce",
+    "takewhile",
+    "dropwhile",
+    "tee",
+    "consume",
+    "count",
+    "parallel_map",
+    "concurrent_map",
+    "MatchError",
+    "datamaker",
+    "addpattern",
+    "prepattern",
+    "recursive_iterator",
+    "data keyword",
+    "match keyword",
+    "case keyword",
+]
+
+script_names = [
+    "coconut",
+    "coconut-" + VERSION_TAG.split("-", 1)[0],
+    ("coconut-py2" if PY2 else "coconut-py3"),
+    "coconut-py" + str(sys.version_info[0]) + str(sys.version_info[1]),
+    ("coconut-develop" if DEVELOP else "coconut-release"),
+]
+
+#-----------------------------------------------------------------------------------------------------------------------
 # COMPILER CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
