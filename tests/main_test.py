@@ -76,7 +76,10 @@ def call_coconut(args):
     """Calls Coconut."""
     if "--jobs" not in args and platform.python_implementation() != "PyPy":
         args = ["--jobs", "sys"] + args
-    call(["coconut"] + args)
+    if "--mypy" in args and not any("extras" in arg for arg in args):
+        call(["coconut"] + args, assert_output="Coconut:")
+    else:
+        call(["coconut"] + args)
 
 
 def comp(path=None, folder=None, file=None, args=[]):
