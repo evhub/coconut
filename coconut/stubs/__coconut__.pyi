@@ -20,7 +20,7 @@ _S = TypeVar('_S')
 
 if sys.version_info >= (3,):
     import builtins as _b
-    ascii, filter, hex, map, oct, zip, open, chr, str, range = ascii, filter, hex, map, oct, zip, open, chr, str, range
+    ascii, filter, hex, map, oct, zip, open, chr, str, range = _b.ascii, _b.filter, _b.hex, _b.map, _b.oct, _b.zip, _b.open, _b.chr, _b.str, _b.range
 
 else:
     import __builtin__ as _b
@@ -28,7 +28,7 @@ else:
     from io import open
 
     py_raw_input, py_xrange = _b.raw_input, _b.xrange
-    chr, str = unichr, unicode
+    chr, str = _b.unichr, _b.unicode
 
     class range:
         def __init__(self,
@@ -63,7 +63,7 @@ class _coconut:
     if sys.version_info < (3, 3):
         abc = collections
     else:
-        bytearray, repr = bytearray, staticmethod(repr)
+        bytearray, repr = bytearray, repr
         import collections.abc as abc  # type: ignore
 
 
