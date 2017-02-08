@@ -444,8 +444,8 @@ class Compiler(Grammar):
             except ParseBaseException as err:
                 raise self.make_parse_err(err)
             except RuntimeError as err:
-                raise CoconutException(str(err),
-                                       extra="try again with --recursion-limit greater than the current " + str(sys.getrecursionlimit()))
+                raise CoconutException(str(err), extra="try again with --recursion-limit greater than the current "
+                                       + str(sys.getrecursionlimit()))
         return out
 
 # end: COMPILER

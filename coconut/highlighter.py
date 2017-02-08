@@ -39,7 +39,7 @@ from coconut.constants import (
 
 def lenient_add_filter(self, *args, **kwargs):
     """Disables the raiseonerror filter."""
-    if len(args) >= 1 and args[0] != "raiseonerror":
+    if args and args[0] != "raiseonerror":
         self.original_add_filter(*args, **kwargs)
 
 
