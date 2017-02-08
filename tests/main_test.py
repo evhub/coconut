@@ -56,13 +56,18 @@ def escape(inputstring):
 
 def call(cmd, assert_output=False, **kwargs):
     """Executes a shell command."""
+    if assert_output is True:
+        assert_output = "<success>"
     print("\n>", (cmd if isinstance(cmd, str) else " ".join(cmd)))
-    if assert_output:
+    if assert_output is not False:
         line = None
         for raw_line in subprocess.Popen(cmd, stdout=subprocess.PIPE, **kwargs).stdout.readlines():
             line = raw_line.rstrip().decode(sys.stdout.encoding)
             print(line)
-        assert line == "<success>"
+        if assert_output is None:
+            assert line is None
+        else:
+            assert assert_output in line
     else:
         subprocess.check_call(cmd, **kwargs)
 
