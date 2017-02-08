@@ -1,5 +1,5 @@
 -   repo: git://github.com/pre-commit/pre-commit-hooks.git
-    sha: 63142f2d4ece8fd67cad3521c6e0c0f2bfef1c03
+    sha: v0.7.1
     hooks:
     -   id: check-added-large-files
     -   id: check-byte-order-marker
@@ -14,4 +14,4 @@
         - --ignore=W503,E501
     -   id: flake8
         args:
-        - --ignore=W503,E501,E265,E402,F405
+        - --ignore=W503,E501,E265,E402,F405,E305

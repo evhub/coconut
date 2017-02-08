@@ -1224,6 +1224,7 @@ class Grammar(object):
         (start_marker + Keyword("def")).suppress() + base_name + lparen.suppress()
         + parameters_tokens + rparen.suppress(), split_func_name_args_params_handle)
 
+
 # end: EXTRA GRAMMAR
 #-----------------------------------------------------------------------------------------------------------------------
 # NAMING:
@@ -1235,6 +1236,7 @@ def set_grammar_names():
     for varname, val in vars(Grammar).items():
         if isinstance(val, ParserElement):
             setattr(Grammar, varname, val.setName(varname))
+
 
 if DEVELOP:
     set_grammar_names()

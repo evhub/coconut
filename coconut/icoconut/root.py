@@ -117,6 +117,7 @@ class CoconutShell(ZMQInteractiveShell, object):
                 compiled_expressions[key] = expr
         return super(CoconutShell, self).user_expressions(compiled_expressions)
 
+
 InteractiveShellABC.register(CoconutShell)
 
 
