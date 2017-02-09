@@ -7,6 +7,7 @@ Coconut
    FAQ
    HELP
    DOCS
+   CONTRIBUTING
 
 Coconut (`coconut-lang.org`__) is a variant of Python_ built for **simple, elegant, Pythonic functional programming**.
 
