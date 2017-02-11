@@ -39,3 +39,7 @@ build: clean
 upload: build
 	pip3 install --upgrade twine
 	twine upload dist/*
+
+.PHONY: check
+check:
+	python ./coconut/requirements.py
