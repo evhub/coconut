@@ -69,7 +69,3 @@ target/
 
 # Sublime
 *.sublime-*
-
-# Coconut
-tests/dest/
-docs/
