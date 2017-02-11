@@ -1,18 +1,19 @@
-# Macintosh desktop services store files
+# OS files
 .DS_Store
-
-# Windows thumbs database file
 Thumbs.db
+*~
+.#*
+._*
+\#*\#
+.cache
 
-# Byte-compiled / optimized / DLL files
+# Python files
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
 *.so
 
-# Distribution / packaging
+# Packaging
 .Python
 env/
 build/
@@ -26,6 +27,8 @@ lib64/
 parts/
 sdist/
 var/
+bin/
+*.iml
 *.egg-info/
 .installed.cfg
 *.egg
@@ -37,6 +40,7 @@ var/
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
+*.log
 
 # Unit test / coverage reports
 htmlcov/
@@ -53,14 +57,19 @@ coverage.xml
 *.mo
 *.pot
 
-# Django stuff
-*.log
-
-# Sphinx documentation
-_build/
-
 # PyBuilder
 target/
 
-# Ipython notebook
+# Ipython
 .ipynb_checkpoints
+
+# Vim
+*.sw[nop]
+.ropeproject
+
+# Sublime
+*.sublime-*
+
+# Coconut
+tests/dest/
+docs/
