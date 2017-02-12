@@ -27,12 +27,17 @@ from coconut.constants import all_reqs, req_vers
 #-----------------------------------------------------------------------------------------------------------------------
 
 
+def req_str(req_ver):
+    """Converts a requirement version tuple into a version string."""
+    return ".".join(str(x) for x in req_ver)
+
+
 def get_reqs(which="main"):
     """Gets requirements from all_reqs with req_vers."""
     reqs = []
     for req in all_reqs[which]:
-        cur_ver = ".".join(str(x) for x in req_vers[req])
-        next_ver = str(req_vers[req][0]) + "." + str(req_vers[req][1] + 1)
+        cur_ver = req_str(req_vers[req])
+        next_ver = req_str(req_vers[req][:-1]) + "." + str(req_vers[req][-1] + 1)
         reqs.append(req + ">=" + cur_ver + ",<" + next_ver)
     return reqs
 
@@ -109,10 +114,15 @@ def latest_version(req):
 def print_new_versions():
     """Prints new requirement versions."""
     for req in everything_in(all_reqs):
-        old = ".".join(str(x) for x in req_vers[req])
-        new = latest_version(req)
-        if old != new:
-            print(req + ": " + old + " -> " + new)
+        new_str = latest_version(req)
+        new_ver = tuple(int(x) for x in new_str.split("."))
+        updated = False
+        for i, x in enumerate(req_vers[req]):
+            if len(new_ver) <= i or x != new_ver[i]:
+                updated = True
+                break
+        if updated:
+            print(req + ": " + req_str(req_vers[req]) + " -> " + new_str)
 
 
 if __name__ == "__main__":
