@@ -89,7 +89,7 @@ req_vers = {
     "sphinx": (1, 5, 2),
     "pygments": (2, 2, 0),
     "recommonmark": (0, 4, 0),
-    "sphinx_bootstrap_theme": (0, 4, 13),
+    "sphinx_bootstrap_theme": (0, 4, 14),
     "psutil": (5, 1, 3),
     "jupyter": (1, 0, 0),
     "jupyter-console": (5, 1, 0),
