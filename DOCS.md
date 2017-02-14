@@ -183,7 +183,7 @@ dest                destination directory for compiled files (defaults to
 
 ### Coconut Scripts
 
-To run a Coconut file as a script, Coconut provides the command `coconut-run` as an alias for `coconut --run --quiet`, which will quietly compile the file if it's been changed or use the existing file if it hasn't and then run that. The `coconut-run` alias is especially useful for using in shebangs, which often don't support command-line arguments. The recommended shebang for a Coconut script file, therefore, is:
+To run a Coconut file as a script, Coconut provides the command `coconut-run` as an alias for `coconut --run --quiet` that also passes all additional command-line arguments to the script being run. `coconut-run` will quietly compile the file if it's been changed or use the existing compiled Python if it hasn't and then run that. `coconut-run` can be used in a Unix shebang to create a Coconut script with the following line:
 ```bash
 #!/usr/bin/env coconut-run
 ```
