@@ -99,7 +99,7 @@ req_vers = {
     "futures": (3, 0),
     "argparse": (1, 4),
     "pytest": (3, 0),
-    "typed_ast": (0, 6),
+    "typed_ast": (1, 0),
     "watchdog": (0, 8),
     "requests": (2, 13),
 }
