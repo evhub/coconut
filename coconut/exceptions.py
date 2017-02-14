@@ -124,9 +124,10 @@ class CoconutSyntaxError(CoconutException):
 
     def syntax_err(self):
         """Creates a SyntaxError."""
-        err = SyntaxError(self.message(*self.args))
-        err.offset = point
-        err.lineno = ln
+        args = self.args[:2] + (None, None) + self.args[4:]
+        err = SyntaxError(self.message(*args))
+        err.offset = args[2]
+        err.lineno = args[3]
         return err
 
 

@@ -1,7 +1,7 @@
 import sys
 
 from coconut.__coconut__ import consume as coc_consume
-from coconut.exceptions import CoconutStyleError
+from coconut.exceptions import CoconutStyleError, CoconutSyntaxError
 from coconut.convenience import (
     CoconutException,
     cmd,
@@ -28,6 +28,12 @@ def main():
     try:
         version("other")
     except CoconutException:
+        assert True
+    else:
+        assert False
+    try:
+        raise CoconutException("derp").syntax_err()
+    except SyntaxError:
         assert True
     else:
         assert False
