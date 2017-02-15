@@ -63,6 +63,7 @@ def call(cmd, assert_output=False, **kwargs):
         line = None
         for raw_line in subprocess.Popen(cmd, stdout=subprocess.PIPE, **kwargs).stdout.readlines():
             line = raw_line.rstrip().decode(sys.stdout.encoding)
+            assert "Traceback (most recent call last):" not in line
             print(line)
         if assert_output is None:
             assert line is None
@@ -288,7 +289,7 @@ class TestCompilation(unittest.TestCase):
     def test_strict(self):
         run(["--strict"])
 
-    if not PY2:
+    if sys.version_info >= (3, 4):
 
         def test_mypy(self):
             run(["--mypy"])
