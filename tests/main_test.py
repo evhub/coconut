@@ -54,20 +54,21 @@ def escape(inputstring):
     return inputstring.replace("$", "\\$").replace("`", "\\`")
 
 
-def call(cmd, assert_output=False, **kwargs):
+def call(cmd, assert_output=False, check_mypy=None, ignore_mypy=("tutorial",), **kwargs):
     """Executes a shell command."""
     if assert_output is True:
         assert_output = "<success>"
+    if check_mypy is None:
+        check_mypy = all("extras" not in arg for arg in cmd)
     print("\n>", (cmd if isinstance(cmd, str) else " ".join(cmd)))
-    check_error = not any("extras" in arg for arg in cmd)
     line = None
     for raw_line in subprocess.Popen(cmd, stdout=subprocess.PIPE, **kwargs).stdout.readlines():
         line = raw_line.rstrip().decode(sys.stdout.encoding)
         assert "Traceback (most recent call last):" not in line
-        if check_error:
+        assert "Exception" not in line
+        assert "Error" not in line
+        if check_mypy and all(test not in line for test in ignore_mypy):
             assert "error:" not in line
-            assert "Exception" not in line
-            assert "Error" not in line
         print(line)
     if assert_output is None:
         assert line is None
