@@ -41,7 +41,7 @@ except ImportError:
 
 def mypy_run(args):
     """Runs mypy with given arguments and shows the result."""
-    argv, sys.argv = sys.argv, args
+    argv, sys.argv = sys.argv, [""] + args
     stdout, sys.stdout = sys.stdout, StringIO()
     stderr, sys.stderr = sys.stderr, StringIO()
 
