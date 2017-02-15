@@ -86,7 +86,7 @@ extras["tests"] = uniqueify(
     get_reqs("tests")
     + (extras["jobs"] if platform.python_implementation() != "PyPy" else [])
     + (extras["jupyter"] if (PY2 and not PY26) or sys.version_info >= (3, 3) else [])
-    + (extras["mypy"] if not PY2 else [])
+    + (extras["mypy"] if sys.version_info >= (3, 4) else [])
 )
 
 extras["docs"] = unique_wrt(get_reqs("docs"), requirements)
