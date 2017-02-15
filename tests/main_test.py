@@ -59,28 +59,27 @@ def call(cmd, assert_output=False, **kwargs):
     if assert_output is True:
         assert_output = "<success>"
     print("\n>", (cmd if isinstance(cmd, str) else " ".join(cmd)))
-    if assert_output is not False:
-        line = None
-        for raw_line in subprocess.Popen(cmd, stdout=subprocess.PIPE, **kwargs).stdout.readlines():
-            line = raw_line.rstrip().decode(sys.stdout.encoding)
-            assert "Traceback (most recent call last):" not in line
-            print(line)
-        if assert_output is None:
-            assert line is None
-        else:
-            assert assert_output in line
-    else:
-        subprocess.check_call(cmd, **kwargs)
+    check_error = not any("extras" in arg for arg in cmd)
+    line = None
+    for raw_line in subprocess.Popen(cmd, stdout=subprocess.PIPE, **kwargs).stdout.readlines():
+        line = raw_line.rstrip().decode(sys.stdout.encoding)
+        assert "Traceback (most recent call last):" not in line
+        if check_error:
+            assert "error:" not in line
+            assert "Exception" not in line
+            assert "Error" not in line
+        print(line)
+    if assert_output is None:
+        assert line is None
+    elif assert_output is not False:
+        assert assert_output in line
 
 
 def call_coconut(args):
     """Calls Coconut."""
     if "--jobs" not in args and platform.python_implementation() != "PyPy":
         args = ["--jobs", "sys"] + args
-    if "--mypy" in args and not any("extras" in arg for arg in args):
-        call(["coconut"] + args, assert_output="Coconut:")
-    else:
-        call(["coconut"] + args)
+    call(["coconut"] + args)
 
 
 def comp(path=None, folder=None, file=None, args=[]):
