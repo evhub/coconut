@@ -21,17 +21,198 @@ from coconut.root import *  # NOQA
 
 import sys
 import os
-from pyparsing import alphanums
+import string
+
+#-----------------------------------------------------------------------------------------------------------------------
+# UTILITIES:
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def fixpath(path):
+    """Uniformly formats a path."""
+    return os.path.normpath(os.path.realpath(path))
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# INSTALLATION CONSTANTS:
+#-----------------------------------------------------------------------------------------------------------------------
+
+all_reqs = {
+    "main": [
+        "pyparsing",
+    ],
+    "non-py26": [
+        "pygments",
+        "prompt_toolkit",
+    ],
+    "py2": [
+        "futures",
+    ],
+    "py26": [
+        "argparse",
+    ],
+    "jobs": [
+        "psutil",
+    ],
+    "jupyter": [
+        "jupyter",
+        "jupyter-console",
+        "ipython",
+    ],
+    "mypy": [
+        "mypy-lang",
+    ],
+    "typed-ast": [
+        "typed_ast",
+    ],
+    "watch": [
+        "watchdog",
+    ],
+    "dev": [
+        "pre-commit",
+        "requests",
+    ],
+    "docs": [
+        "sphinx",
+        "pygments",
+        "recommonmark",
+        "sphinx_bootstrap_theme",
+    ],
+    "tests": [
+        "pytest",
+    ],
+}
+
+req_vers = {
+    "pyparsing": (2, 1, 10),
+    "pre-commit": (0, 12),
+    "sphinx": (1, 5),
+    "pygments": (2, 2),
+    "recommonmark": (0, 4),
+    "sphinx_bootstrap_theme": (0, 4),
+    "psutil": (5, 1),
+    "jupyter": (1, 0),
+    "jupyter-console": (5, 1),
+    "ipython": (5, 2),
+    "mypy-lang": (0, 4),
+    "prompt_toolkit": (1, 0),
+    "futures": (3, 0),
+    "argparse": (1, 4),
+    "pytest": (3, 0),
+    "typed_ast": (1, 0),
+    "watchdog": (0, 8),
+    "requests": (2, 13),
+}
+
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: Apache Software License",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Compilers",
+    "Topic :: Software Development :: Interpreters",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+    "Environment :: Console",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 2",
+    "Programming Language :: Python :: 2.6",
+    "Programming Language :: Python :: 2.7",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.2",
+    "Programming Language :: Python :: 3.3",
+    "Programming Language :: Python :: 3.4",
+    "Programming Language :: Python :: 3.5",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Other",
+    "Programming Language :: Other Scripting Engines",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Framework :: IPython",
+]
+
+search_terms = [
+    "functional programming language",
+    "functional programming",
+    "functional",
+    "programming language",
+    "compiler",
+    "match",
+    "matches",
+    "matching",
+    "pattern-matching",
+    "pattern matching",
+    "algebraic data type",
+    "algebraic data types",
+    "data",
+    "data type",
+    "data types",
+    "lambda",
+    "lambdas",
+    "lazy list",
+    "lazy lists",
+    "lazy evaluation",
+    "lazy",
+    "tail recursion",
+    "tail call",
+    "optimization",
+    "recursion",
+    "recursive",
+    "infix",
+    "function composition",
+    "partial application",
+    "currying",
+    "curry",
+    "pipeline",
+    "pipe",
+    "unicode operator",
+    "unicode operators",
+    "frozenset literal",
+    "frozenset literals",
+    "destructuring",
+    "destructuring assignment",
+    "reduce",
+    "takewhile",
+    "dropwhile",
+    "tee",
+    "consume",
+    "count",
+    "parallel_map",
+    "concurrent_map",
+    "MatchError",
+    "datamaker",
+    "addpattern",
+    "prepattern",
+    "recursive_iterator",
+    "data keyword",
+    "match keyword",
+    "case keyword",
+]
+
+script_names = [
+    "coconut",
+    "coconut-" + VERSION_TAG.split("-", 1)[0],
+    ("coconut-py2" if PY2 else "coconut-py3"),
+    "coconut-py" + str(sys.version_info[0]) + str(sys.version_info[1]),
+    ("coconut-develop" if DEVELOP else "coconut-release"),
+]
 
 #-----------------------------------------------------------------------------------------------------------------------
 # COMPILER CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
+
+packrat_cache_size = 512
+use_packrat = packrat_cache_size != 0
 
 default_recursion_limit = 2000
 minimum_recursion_limit = 100
 
 # used for generating __coconut_hash__
 from zlib import crc32 as checksum  # NOQA
+
 hash_prefix = "# __coconut_hash__ = "
 hash_sep = "\x00"
 
@@ -49,7 +230,9 @@ else:
     pseudo_targets["sys"] = sys_target
 
 default_encoding = "utf-8"
-default_whitespace_chars = " \t\f\v"
+
+default_whitespace_chars = " \t\f\v\xa0"
+varchars = string.ascii_letters + string.digits + "_"
 
 openindent = "\u204b"  # reverse pilcrow
 closeindent = "\xb6"  # pilcrow
@@ -66,18 +249,22 @@ tabideal = 4  # spaces to indent code for displaying
 tabworth = 8  # worth of \t in spaces for parsing (8 = Python standard)
 
 reserved_prefix = "_coconut"
-decorator_var = "_coconut_decorator"
-match_to_var = "_coconut_match_to"
-match_check_var = "_coconut_match_check"
-match_iter_var = "_coconut_match_iter"
-match_err_var = "_coconut_match_err"
-lazy_item_var = "_coconut_lazy_item"
-lazy_chain_var = "_coconut_lazy_chain"
-import_as_var = "_coconut_import"
-yield_from_var = "_coconut_yield_from"
-yield_item_var = "_coconut_yield_item"
-raise_from_var = "_coconut_raise_from"
-stmt_lambda_var = "_coconut_lambda"
+decorator_var = reserved_prefix + "_decorator"
+match_to_var = reserved_prefix + "_match_to"
+match_to_args_var = match_to_var + "_args"
+match_to_kwargs_var = match_to_var + "_kwargs"
+match_check_var = reserved_prefix + "_match_check"
+match_temp_var = reserved_prefix + "_match_temp"
+match_err_var = reserved_prefix + "_match_err"
+lazy_item_var = reserved_prefix + "_lazy_item"
+lazy_chain_var = reserved_prefix + "_lazy_chain"
+import_as_var = reserved_prefix + "_import"
+yield_from_var = reserved_prefix + "_yield_from"
+yield_item_var = reserved_prefix + "_yield_item"
+raise_from_var = reserved_prefix + "_raise_from"
+stmt_lambda_var = reserved_prefix + "_lambda"
+tre_mock_var = reserved_prefix + "_mock_func"
+tre_store_var = reserved_prefix + "_recursive_func"
 
 wildcard = "_"  # for pattern-matching
 
@@ -128,7 +315,7 @@ reserved_vars = (  # can be backslash-escaped
     "await",
 )
 
-new_to_old_stdlib = {  # new_name: (old_name, new_version_info)
+new_to_old_stdlib = {  # new_name: (old_name, before_version_info)
     "builtins": ("__builtin__", (3,)),
     "configparser": ("ConfigParser", (3,)),
     "copyreg": ("copy_reg", (3,)),
@@ -181,17 +368,19 @@ main_sig = "Coconut: "
 main_prompt = ">>> "
 more_prompt = "    "
 
-default_style = "emacs"
+default_style = "default"
 default_multiline = False
 default_vi_mode = False
 default_mouse_support = True
 
-ensure_elapsed_time = .001  # seconds
+mypy_path_env_var = "MYPYPATH"
+style_env_var = "COCONUT_STYLE"
+
 watch_interval = .1  # seconds
 
 info_tabulation = 18  # offset for tabulated info messages
 
-version_long = "Version " + VERSION_STR + " running on Python " + " ".join(sys.version.splitlines())
+version_long = main_sig + "Version " + VERSION_STR + " running on Python " + sys.version.split()[0]
 version_banner = "Coconut " + VERSION_STR
 if DEVELOP:
     version_tag = "develop"
@@ -200,12 +389,16 @@ else:
 tutorial_url = "http://coconut.readthedocs.io/en/" + version_tag + "/HELP.html"
 documentation_url = "http://coconut.readthedocs.io/en/" + version_tag + "/DOCS.html"
 
-icoconut_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icoconut")
+base_dir = os.path.dirname(os.path.abspath(fixpath(__file__)))
+
+icoconut_dir = os.path.join(base_dir, "icoconut")
 icoconut_kernel_dirs = [
     os.path.join(icoconut_dir, "coconut"),
     os.path.join(icoconut_dir, "coconut2"),
     os.path.join(icoconut_dir, "coconut3"),
 ]
+
+stub_dir = os.path.join(base_dir, "stubs")
 
 #-----------------------------------------------------------------------------------------------------------------------
 # HIGHLIGHTER CONSTANTS:
@@ -241,7 +434,7 @@ builtins = (
 )
 
 new_operators = (
-    r">>>",
+    main_prompt.strip(),
     r"@",
     r"\$",
     r"`",
@@ -279,5 +472,4 @@ new_operators = (
 py_syntax_version = 3.6
 mimetype = "text/x-python3"
 
-varchars = alphanums + "_"
 all_keywords = keywords + const_vars + reserved_vars

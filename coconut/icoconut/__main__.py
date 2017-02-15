@@ -36,5 +36,6 @@ def main():
     """Launch the kernel app."""
     IPKernelApp.launch_instance(kernel_class=CoconutKernel)
 
+
 if __name__ == "__main__":
     main()

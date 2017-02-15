@@ -1,5 +1,5 @@
 {
     "argv": ["python3", "-m", "coconut.icoconut", "-f", "{connection_file}"],
-    "display_name": "Coconut3",
+    "display_name": "Coconut (Python 3)",
     "language": "coconut"
 }

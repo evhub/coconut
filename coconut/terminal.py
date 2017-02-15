@@ -23,9 +23,10 @@ import sys
 import traceback
 import functools
 import logging
+import time
 from contextlib import contextmanager
 
-from pyparsing import lineno, col
+from pyparsing import lineno, col, ParserElement
 if DEVELOP:
     from pyparsing import _trim_arity
 
@@ -33,12 +34,13 @@ from coconut.constants import (
     info_tabulation,
     main_sig,
     taberrfmt,
+    use_packrat,
 )
 from coconut.exceptions import (
     CoconutWarning,
     CoconutInternalException,
     CoconutException,
-    clean,
+    debug_clean,
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -62,9 +64,11 @@ def format_error(err_type, err_value, err_trace=None):
 
 
 def complain(error):
-    """Raises an error in DEVELOP, otherwise does nothing."""
+    """Raises in develop; warns in release."""
     if DEVELOP:
         raise error
+    else:
+        logger.warn_err(error)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # logger:
@@ -75,6 +79,7 @@ class Logger(object):
     """Container object for various logger functions and variables."""
     verbose = False
     quiet = False
+    tracing = False
     path = None
     name = None
 
@@ -86,7 +91,7 @@ class Logger(object):
 
     def copy_from(self, other):
         """Copy other onto self."""
-        self.verbose, self.quiet, self.path, self.name = other.verbose, other.quiet, other.path, other.name
+        self.verbose, self.quiet, self.path, self.name, self.tracing = other.verbose, other.quiet, other.path, other.name, other.tracing
 
     def display(self, messages, sig="", debug=False):
         """Prints an iterator of messages."""
@@ -148,11 +153,15 @@ class Logger(object):
         finally:
             self.path = old_path
 
-    def warn(self, warning):
+    def warn(self, *args, **kwargs):
+        """Creates and displays a warning."""
+        return self.warn_err(CoconutWarning(*args, **kwargs))
+
+    def warn_err(self, warning):
         """Displays a warning."""
         try:
             raise warning
-        except CoconutWarning:
+        except Exception:
             if not self.quiet:
                 self.print_exc()
 
@@ -169,13 +178,6 @@ class Logger(object):
                 errmsg = "\n".join(errmsg_lines)
             self.printerr(errmsg)
 
-    def log_tag(self, tag, code, multiline=False):
-        """Logs a tagged message if in verbose mode."""
-        if multiline:
-            self.log("[" + str(tag) + "]\n" + clean(code, rem_indents=False, encoding_errors="backslashreplace"))
-        else:
-            self.log("[" + str(tag) + "] " + ascii(code))
-
     def log_cmd(self, args):
         """Logs a console command if in verbose mode."""
         self.log("> " + " ".join(args))
@@ -187,30 +189,53 @@ class Logger(object):
         else:
             raise CoconutInternalException("info message too long", begin)
 
-    def log_trace(self, tag, original, location, tokens):
-        """Formats and displays a trace."""
-        if self.verbose:
-            original = str(original)
-            location = int(location)
-            out = "[" + tag + "] "
-            if len(tokens) == 1 and isinstance(tokens[0], str):
-                out += ascii(tokens[0])
+    def log_tag(self, tag, code, multiline=False):
+        """Logs a tagged message if tracing."""
+        if self.tracing:
+            tagstr = "[" + str(tag) + "]"
+            if multiline:
+                self.printerr(tagstr + "\n" + debug_clean(code))
             else:
-                out += str(tokens)
-            out += " (line " + str(lineno(location, original)) + ", col " + str(col(location, original)) + ")"
-            self.printerr(out)
+                self.printerr(tagstr, ascii(code))
 
-    def trace(self, item, tag):
-        """Traces a parse element."""
+    def log_trace(self, tag, original, loc, tokens=None):
+        """Formats and displays a trace if tracing."""
+        if self.tracing:
+            original = str(original)
+            loc = int(loc)
+            tag = str(tag)
+            if " " in tag:
+                tag = "..."
+            out = ["[" + tag + "]"]
+            if tokens is not None:
+                if not isinstance(tokens, Exception) and len(tokens) == 1 and isinstance(tokens[0], str):
+                    out.append(ascii(tokens[0]))
+                else:
+                    out.append(str(tokens))
+            out.append("(line " + str(lineno(loc, original)) + ", col " + str(col(loc, original)) + ")")
+            self.printerr(*out)
+
+    def _trace_start_action(self, original, loc, expr):
+        self.log_trace(expr, original, loc)
+
+    def _trace_success_action(self, original, start_loc, end_loc, expr, tokens):
+        self.log_trace(expr, original, start_loc, tokens)
+
+    def _trace_exc_action(self, original, loc, expr, exc):
+        self.log_trace(expr, original, loc, exc)
+
+    def trace(self, item):
+        """Traces a parse element (only enabled in develop)."""
         if DEVELOP:
-            def trace_action(original, location, tokens):
-                """Callback function constructed by tracer."""
-                self.log_trace(tag, original, location, tokens)
-            item = item.addParseAction(trace_action)
-        return item.setName(tag)
+            item = item.setDebugActions(
+                self._trace_start_action,
+                self._trace_success_action,
+                self._trace_exc_action,
+            )
+        return item
 
     def wrap_handler(self, handler):
-        """Wraps a handler to catch errors in verbose mode (only enabled in develop)."""
+        """Wraps a handler to catch errors (only enabled in develop)."""
         if DEVELOP and handler.__name__ not in ("<lambda>", "join"):  # not addspace, condense, or fixto
             @functools.wraps(handler)
             def wrapped_handler(s, l, t):
@@ -220,10 +245,27 @@ class Logger(object):
                 except CoconutException:
                     raise
                 except Exception:
+                    traceback.print_exc()
                     raise CoconutInternalException("error calling handler " + handler.__name__ + " with tokens", t)
             return wrapped_handler
         else:
             return handler
+
+    @contextmanager
+    def gather_parsing_stats(self):
+        """Times parsing if in verbose mode."""
+        if self.verbose:
+            start_time = time.clock()
+            try:
+                yield
+            finally:
+                elapsed_time = time.clock() - start_time
+                self.printerr("Time while parsing:", elapsed_time, "seconds")
+                if use_packrat:
+                    hits, misses = ParserElement.packrat_cache_stats
+                    self.printerr("Packrat parsing stats:", hits, "hits;", misses, "misses")
+        else:
+            yield
 
     def patch_logging(self):
         """Patches built-in Python logging."""
@@ -239,6 +281,7 @@ class Logger(object):
         """Display all available logging information."""
         self.printerr(self.name, args, kwargs, traceback.format_exc())
     debug = info = warning = error = critical = exception = pylog
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:

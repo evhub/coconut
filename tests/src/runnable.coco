@@ -1,0 +1,6 @@
+#!/usr/bin/env coconut-run
+import sys
+
+if __name__ == "__main__":
+    assert sys.argv[1] == "--arg"
+    "<success>" |> print

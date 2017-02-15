@@ -19,11 +19,11 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
+import unittest
 import sys
 import os
 import subprocess
 import shutil
-import unittest
 import platform
 from contextlib import contextmanager
 
@@ -39,8 +39,10 @@ dest = os.path.join(base, "dest")
 
 prisoner = os.path.join(os.curdir, "prisoner")
 pyston = os.path.join(os.curdir, "pyston")
+runnable_coco = os.path.join(src, "runnable.coco")
+runnable_py = os.path.join(src, "runnable.py")
 
-coconut_snip = "msg = '<success>'; pmsg = print$(msg); `pmsg`"
+coconut_snip = r"msg = '<success>'; pmsg = print$(msg); `pmsg`"
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -54,13 +56,18 @@ def escape(inputstring):
 
 def call(cmd, assert_output=False, **kwargs):
     """Executes a shell command."""
+    if assert_output is True:
+        assert_output = "<success>"
     print("\n>", (cmd if isinstance(cmd, str) else " ".join(cmd)))
-    if assert_output:
+    if assert_output is not False:
         line = None
         for raw_line in subprocess.Popen(cmd, stdout=subprocess.PIPE, **kwargs).stdout.readlines():
             line = raw_line.rstrip().decode(sys.stdout.encoding)
             print(line)
-        assert line == "<success>"
+        if assert_output is None:
+            assert line is None
+        else:
+            assert assert_output in line
     else:
         subprocess.check_call(cmd, **kwargs)
 
@@ -68,8 +75,11 @@ def call(cmd, assert_output=False, **kwargs):
 def call_coconut(args):
     """Calls Coconut."""
     if "--jobs" not in args and platform.python_implementation() != "PyPy":
-        args += ["--jobs", "sys"]
-    call(["coconut"] + args)
+        args = ["--jobs", "sys"] + args
+    if "--mypy" in args and not any("extras" in arg for arg in args):
+        call(["coconut"] + args, assert_output="Coconut:")
+    else:
+        call(["coconut"] + args)
 
 
 def comp(path=None, folder=None, file=None, args=[]):
@@ -87,12 +97,15 @@ def comp(path=None, folder=None, file=None, args=[]):
 
 
 @contextmanager
-def remove_when_done(directory):
-    """Removes a directory when done."""
+def remove_when_done(path):
+    """Removes a path when done."""
     try:
         yield
     finally:
-        shutil.rmtree(directory)
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+        elif os.path.isfile(path):
+            os.remove(path)
 
 
 @contextmanager
@@ -151,12 +164,12 @@ def run_extras():
     call(["python", os.path.join(dest, "extras.py")], assert_output=True)
 
 
-def run(args=[], agnostic_target=None, comp_run=False):
+def run(args=[], agnostic_target=None, use_run_arg=False):
     """Compiles and runs tests."""
     if agnostic_target is None:
         agnostic_args = args
     else:
-        agnostic_args = args + ["--target", str(agnostic_target)]
+        agnostic_args = ["--target", str(agnostic_target)] + args
 
     with using_dest():
 
@@ -167,18 +180,17 @@ def run(args=[], agnostic_target=None, comp_run=False):
             if sys.version_info >= (3, 5):
                 comp_35(args)
         comp_agnostic(agnostic_args)
-        if comp_run:
-            comp_runner(agnostic_args + ["--run"])
+        if use_run_arg:
+            comp_runner(["--run"] + agnostic_args)
         else:
             comp_runner(agnostic_args)
             run_src()
 
-        if IPY:
-            if comp_run:
-                comp_extras(agnostic_args + ["--run"])
-            else:
-                comp_extras(agnostic_args)
-                run_extras()
+        if use_run_arg:
+            comp_extras(["--run"] + agnostic_args)
+        else:
+            comp_extras(agnostic_args)
+            run_extras()
 
 
 def comp_prisoner(args=[]):
@@ -219,13 +231,20 @@ def comp_all(args=[]):
 class TestShell(unittest.TestCase):
 
     def test_code(self):
-        call(["coconut", "-s", "--code", coconut_snip], assert_output=True)
+        call(["coconut", "-s", "-c", coconut_snip], assert_output=True)
 
     def test_pipe(self):
-        call(r'echo "' + escape(coconut_snip) + '" | coconut -s', shell=True, assert_output=True)
+        call('echo "' + escape(coconut_snip) + '" | coconut -s', shell=True, assert_output=True)
 
     def test_convenience(self):
         call(["python", "-c", 'from coconut.convenience import parse; exec(parse("' + coconut_snip + '"))'], assert_output=True)
+
+    def test_runnable(self):
+        with remove_when_done(runnable_py):
+            call(["coconut-run", runnable_coco, "--arg"], assert_output=True)
+
+    def test_runnable_nowrite(self):
+        call(["coconut-run", "-n", runnable_coco, "--arg"], assert_output=True)
 
     if IPY:
 
@@ -241,15 +260,15 @@ class TestCompilation(unittest.TestCase):
     def test_normal(self):
         run()
 
+    def test_target(self):
+        run(agnostic_target=(2 if PY2 else 3))
+
     if platform.python_implementation() != "PyPy":
         def test_jobs_zero(self):
             run(["--jobs", "0"])
 
     def test_run(self):
-        run(comp_run=True)
-
-    def test_target(self):
-        run(agnostic_target=(2 if PY2 else 3))
+        run(use_run_arg=True)
 
     def test_standalone(self):
         run(["--standalone"])
@@ -268,6 +287,11 @@ class TestCompilation(unittest.TestCase):
 
     def test_strict(self):
         run(["--strict"])
+
+    if not PY2:
+
+        def test_mypy(self):
+            run(["--mypy"])
 
 
 class TestExternal(unittest.TestCase):

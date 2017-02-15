@@ -1,3 +1,0 @@
-jupyter==1.0.0
-jupyter-console==4.1.1
-ipython==4.2.1

@@ -15,6 +15,7 @@ def suite_test():
     assert 5 |> swap2((-))$(2) |> (*)$(2) == 6 == 5 |> swap2_((-))$(2) |> (*)$(2)
     assert all(same((1, 2, 3), [1, 2, 3]))
     assert chain2((|1, 2|), (|3, 4|)) |> list == [1, 2, 3, 4]
+    assert threeple$(1, 2)(3) == (1, 2, 3)
     assert 1 `range` 5 |> prod == 24
     assert plus1(4) == 5 == plus1_(4)
     assert 2 `plus1` == 3 == plus1(2)
@@ -22,6 +23,7 @@ def suite_test():
     assert `sqrt` 16 == 4 == `sqrt_` 16
     assert `square` 3 == 9
     assert sqplus1(3) == 10 == (plus1..square)(3)
+    assert parallel_map(sqplus1, range(3)) |> tuple == (1, 2, 5)
     assert 3 `plus1sq` == 16 == 3 `plus1sq_`
     assert 3 `sqplus1` == 10 == 3 `sqplus1_`
     assert 3 |> plus1 |> square == 16 == 3 |> plus1_ |> square
@@ -69,10 +71,12 @@ def suite_test():
     assert vector(vector(4, 3)) == vector(4, 3)
     assert triangle(3, 4, 5).is_right()
     assert (.)(triangle(3, 4, 5), "is_right")
+    assert triangle(3, 4, 5) |> .is_right()
     assert factorial1(3) == 6
     assert factorial2(3) == 6
     assert factorial4(3) == 6
     assert factorial5(3) == 6
+    assert fact(3) == 6 == fact_(3)
     assert factorial1(-1) is None
     assert factorial2(-1) is None
     assert factorial4(-1) is None
@@ -213,6 +217,7 @@ def suite_test():
     assert pattern_abs(4) == 4 == pattern_abs_(4)
     assert pattern_abs(0) == 0 == pattern_abs_(0)
     assert pattern_abs(-4) == 4 == pattern_abs_(-4)
+    assert vector(1, 2) |> (==)$(vector(1, 2))
     assert vector(1, 2) |> .__eq__(other=vector(1, 2))
     assert fib() |> takewhile$((i) -> i < 4000000 ) |> filter$((i) -> i % 2 == 0 ) |> sum == 4613732
     assert loop([1,2])$[:4] |> list == [1, 2] * 2
@@ -227,4 +232,44 @@ def suite_test():
     assert 20 == (..)(minus$(2), mul$(2), plus$(1))(10)
     assert 20 == (minus$(2) .. mul$(2) .. plus$(1))(10)
     assert does_raise_exc(raise_exc)
+    assert ret_none(10) is None
+    assert (2, 3, 5) |*> ret_args_kwargs$(1, ?, ?, 4, ?, *(6, 7), a="k") == ((1, 2, 3, 4, 5, 6, 7), {"a": "k"})
+    assert anything_func() is None
+    assert args_kwargs_func() is None
+    assert x_is_int(4) == 4 == x_is_int(x=4)
+    try:
+        x_is_int(x="herp")
+    except MatchError:
+        pass
+    else:
+        assert False
+    try:
+        x_is_int()
+    except MatchError:
+        pass
+    else:
+        assert False
+    assert x_as_y(x=2) == (2, 2) == x_as_y(y=2)
+    assert x_y_are_int_gt_0(1, 2) == (1, 2) == x_y_are_int_gt_0(x=1, y=2)
+    try:
+        x_y_are_int_gt_0(1, y=0)
+    except MatchError:
+        pass
+    else:
+        assert False
+    assert x_is_int_def_0() == 0 == x_is_int_def_0(x=0)
+    try:
+        x_is_int_def_0("derp")
+    except MatchError:
+        pass
+    else:
+        assert False
+    assert head_tail_def_none() == (None, []) == head_tail_def_none([None])
+    assert kwd_only_x_is_int_def_0() == 0 == kwd_only_x_is_int_def_0(x=0)
+    try:
+        kwd_only_x_is_int_def_0(1)
+    except MatchError:
+        pass
+    else:
+        assert False
     return True

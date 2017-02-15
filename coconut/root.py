@@ -23,7 +23,7 @@ import sys as _coconut_sys
 # VERSION:
 #-----------------------------------------------------------------------------------------------------------------------
 
-VERSION = "1.2.0"
+VERSION = "1.2.1"
 VERSION_NAME = "Colonel"
 DEVELOP = False
 
@@ -41,7 +41,7 @@ VERSION_STR_TAG = "v" + VERSION_STR
 PY2 = _coconut_sys.version_info < (3,)
 PY26 = _coconut_sys.version_info < (2, 7)
 
-PY3_HEADER = r'''py_chr, py_filter, py_hex, py_input, py_int, py_map, py_oct, py_open, py_print, py_range, py_str, py_zip = chr, filter, hex, input, int, map, oct, open, print, range, str, zip
+PY3_HEADER = r'''py_chr, py_filter, py_hex, py_input, py_int, py_map, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate = chr, filter, hex, input, int, map, oct, open, print, range, str, zip, filter, reversed, enumerate
 '''
 PY27_HEADER = PY3_HEADER + r'''py_raw_input, py_xrange = raw_input, xrange
 _coconut_raw_input, _coconut_xrange, _coconut_int, _coconut_long, _coconut_print, _coconut_str, _coconut_unicode, _coconut_repr = raw_input, xrange, int, long, print, str, unicode, repr
@@ -64,18 +64,9 @@ class range(object):
         return elem in self._xrange
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
-            start, stop, step = index.start, index.stop, index.step
-            if start is None:
-                start = 0
-            elif start < 0:
-                start += _coconut.len(self._xrange)
-            if stop is None:
-                stop = _coconut.len(self._xrange)
-            elif stop is not None and stop < 0:
-                stop += _coconut.len(self._xrange)
-            if step is None:
-                step = 1
-            return _coconut_map(self._xrange.__getitem__, self.__class__(start, stop, step))
+            args = _coconut.slice(*self._args)
+            start, stop, step, ind_step = (args.start if args.start is not None else 0), args.stop, (args.step if args.step is not None else 1), (index.step if index.step is not None else 1)
+            return self.__class__((start if ind_step >= 0 else stop - step) if index.start is None else start + step * index.start if index.start >= 0 else stop + step * index.start, (stop if ind_step >= 0 else start - step) if index.stop is None else start + step * index.stop if index.stop >= 0 else stop + step * index.stop, step if index.step is None else step * index.step)
         else:
             return self._xrange[index]
     def count(self, elem):
@@ -88,17 +79,19 @@ class range(object):
         return (elem - start) // step
     def __repr__(self):
         return _coconut.repr(self._xrange)[1:]
+    @property
+    def _args(self):
+        return self._xrange.__reduce__()[1]
     def __reduce_ex__(self, protocol):
         return (self.__class__, self._xrange.__reduce_ex__(protocol)[1])
     def __reduce__(self):
-        return self.__reduce_ex__(_coconut.pickle.HIGHEST_PROTOCOL)
+        return self.__reduce_ex__(_coconut.pickle.DEFAULT_PROTOCOL)
     def __hash__(self):
-        return _coconut.hash(self._xrange.__reduce__()[1])
+        return _coconut.hash(self._args)
     def __copy__(self):
-        return self.__class__(*self._xrange.__reduce__()[1])
+        return self.__class__(*self._args)
     def __eq__(self, other):
-        reduction = self.__reduce__()
-        return _coconut.isinstance(other, reduction[0]) and reduction[1] == other.__reduce__()[1]
+        return _coconut.isinstance(other, self.__class__) and self._args == other._args
 from collections import Sequence as _coconut_Sequence
 _coconut_Sequence.register(range)
 class int(_coconut_int):
@@ -108,15 +101,6 @@ class int(_coconut_int):
     class __metaclass__(type):
         def __instancecheck__(cls, inst):
             return _coconut.isinstance(inst, (_coconut_int, _coconut_long))
-class bytes(_coconut_str):
-    __slots__ = ()
-    if hasattr(_coconut_str, "__doc__"):
-        __doc__ = _coconut_str.__doc__
-    class __metaclass__(type):
-        def __instancecheck__(cls, inst):
-            return _coconut.isinstance(inst, _coconut_str)
-    def __new__(cls, *args, **kwargs):
-        return _coconut_str.__new__(cls, _coconut.bytearray(*args, **kwargs))
 from functools import wraps as _coconut_wraps
 @_coconut_wraps(_coconut_print)
 def print(*args, **kwargs):
@@ -173,6 +157,5 @@ if PY2:
     import __builtin__ as _coconut  # NOQA
     import pickle
     _coconut.pickle = pickle
-    _coconut_map = map
 else:
     exec(PY3_HEADER)

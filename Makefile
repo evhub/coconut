@@ -5,8 +5,8 @@ install:
 
 .PHONY: dev
 dev:
-	pip install --upgrade pip
-	pip install --upgrade -e .[dev]
+	pip3 install --upgrade pip
+	pip3 install --upgrade -e .[dev]
 	pre-commit install -f --install-hooks
 
 .PHONY: format
@@ -26,18 +26,20 @@ docs: clean
 
 .PHONY: clean
 clean:
-	rm -rf ./docs
-	rm -rf ./dist
-	rm -rf ./build
-	rm -rf ./tests/dest
+	rm -rf ./docs ./dist ./build ./tests/dest
 	find . -name '*.pyc' -delete
 	find . -name '__pycache__' -delete
 
 .PHONY: build
 build: clean
-	python setup.py sdist bdist_wheel
+	pip3 install --upgrade setuptools
+	python3 setup.py sdist bdist_wheel
 
 .PHONY: upload
 upload: build
-	pip install --upgrade twine
+	pip3 install --upgrade twine
 	twine upload dist/*
+
+.PHONY: check
+check:
+	python ./coconut/requirements.py

@@ -53,13 +53,13 @@ assert 3 |> factorial == 6
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
     try:
-        0 = n # destructuring assignment
+        0 = n  # destructuring assignment
     except MatchError:
         try:
-            _ is int = n # also destructuring assignment
+            _ is int = n  # also destructuring assignment
         except MatchError:
             pass
-        else: if n > 0: # in Coconut, if, match, and try are allowed after else
+        else: if n > 0:  # in Coconut, if, match, and try are allowed after else
             return n * factorial(n-1)
     else:
         return 1
@@ -133,13 +133,12 @@ else:
 assert 0 |> factorial == 1
 assert 3 |> factorial == 6
 
-def factorial(0):
-    return 1
+def factorial(0) = 1
 
 @addpattern(factorial)
-def factorial(n is int if n > 0):
+def factorial(n is int if n > 0) =
     """Compute n! where n is an integer >= 0."""
-    return range(1, n+1) |> reduce$(*)
+    range(1, n+1) |> reduce$(*)
 
 # Test cases:
 try:
@@ -160,9 +159,9 @@ assert 3 |> factorial == 6
 def factorial(0) = 1
 
 @addpattern(factorial)
-def factorial(n is int if n > 0):
+def factorial(n is int if n > 0) =
     """Compute n! where n is an integer >= 0."""
-    return n * factorial(n - 1)
+    n * factorial(n - 1)
 
 # Test cases:
 try:
@@ -180,13 +179,12 @@ else:
 assert 0 |> factorial == 1
 assert 3 |> factorial == 6
 
-def quick_sort([]):
-    return []
+def quick_sort([]) = []
 
 @addpattern(quick_sort)
-def quick_sort([head] + tail):
+def quick_sort([head] + tail) =
     """Sort the input sequence using the quick sort algorithm."""
-    return (quick_sort([x for x in tail if x < head])
+    (quick_sort([x for x in tail if x < head])
         + [head]
         + quick_sort([x for x in tail if x >= head]))
 
@@ -201,9 +199,9 @@ def quick_sort(l):
     """Sort the input iterator, using the quick sort algorithm, and without using any data until necessary."""
     match [head] :: tail in l:
         tail, tail_ = tee(tail)
-        yield from (quick_sort((x for x in tail if x <= head))
+        yield from (quick_sort((x for x in tail if x < head))
             :: (head,)
-            :: quick_sort((x for x in tail_ if x > head))
+            :: quick_sort((x for x in tail_ if x >= head))
             )
 
 # Test cases:
@@ -215,9 +213,9 @@ assert [3,0,4,2,1] |> quick_sort |> list == [0,1,2,3,4]
 
 data vector2(x, y):
     """Immutable 2-vector."""
-    def __abs__(self):
+    def __abs__(self) =
         """Return the magnitude of the 2-vector."""
-        return (self.x**2 + self.y**2)**0.5
+        (self.x**2 + self.y**2)**0.5
 
 # Test cases:
 assert vector2(1, 2) |> repr == "vector2(x=1, y=2)"
@@ -235,9 +233,9 @@ data vector(pts):
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
         if len(pts) == 1 and pts[0] `isinstance` vector:
-            return pts[0] # vector(v) where v is a vector should return v
+            return pts[0]  # vector(v) where v is a vector should return v
         else:
-            return pts |> tuple |> datamaker(cls) # accesses base constructor
+            return pts |> tuple |> datamaker(cls)  # accesses base constructor
 
 # Test cases:
 assert vector(1, 2, 3) |> repr == "vector(pts=(1, 2, 3))"
@@ -248,25 +246,25 @@ data vector(pts):
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
         if len(pts) == 1 and pts[0] `isinstance` vector:
-            return pts[0] # vector(v) where v is a vector should return v
+            return pts[0]  # vector(v) where v is a vector should return v
         else:
-            return pts |> tuple |> datamaker(cls) # accesses base constructor
-    def __abs__(self):
+            return pts |> tuple |> datamaker(cls)  # accesses base constructor
+    def __abs__(self) =
         """Return the magnitude of the vector."""
-        return self.pts |> map$((x) -> x**2) |> sum |> ((s) -> s**0.5)
-    def __add__(self, other):
+        self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
+    def __add__(self, other) =
         """Add two vectors together."""
         vector(other_pts) = other
         assert len(other_pts) == len(self.pts)
-        return map((+), self.pts, other_pts) |*> vector
-    def __sub__(self, other):
+        map((+), self.pts, other_pts) |*> vector
+    def __sub__(self, other) =
         """Subtract one vector from another."""
         vector(other_pts) = other
         assert len(other_pts) == len(self.pts)
-        return map((-), self.pts, other_pts) |*> vector
-    def __neg__(self):
+        map((-), self.pts, other_pts) |*> vector
+    def __neg__(self) =
         """Retrieve the negative of the vector."""
-        return self.pts |> map$((-)) |*> vector
+        self.pts |> map$((-)) |*> vector
     def __eq__(self, other):
         """Compare whether two vectors are equal."""
         match vector(=self.pts) in other:
@@ -277,12 +275,12 @@ data vector(pts):
         """Scalar multiplication and dot product."""
         match vector(other_pts) in other:
             assert len(other_pts) == len(self.pts)
-            return map((*), self.pts, other_pts) |> sum # dot product
+            return map((*), self.pts, other_pts) |> sum  # dot product
         else:
-            return self.pts |> map$((*)$(other)) |*> vector # scalar multiplication
-    def __rmul__(self, other):
+            return self.pts |> map$((*)$(other)) |*> vector  # scalar multiplication
+    def __rmul__(self, other) =
         """Necessary to make scalar multiplication commutative."""
-        return self * other
+        self * other
 
 # Test cases:
 assert vector(1, 2, 3) |> repr == "vector(pts=(1, 2, 3))"
@@ -322,25 +320,25 @@ data vector(pts):
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
         if len(pts) == 1 and pts[0] `isinstance` vector:
-            return pts[0] # vector(v) where v is a vector should return v
+            return pts[0]  # vector(v) where v is a vector should return v
         else:
-            return pts |> tuple |> datamaker(cls) # accesses base constructor
-    def __abs__(self):
+            return pts |> tuple |> datamaker(cls)  # accesses base constructor
+    def __abs__(self) =
         """Return the magnitude of the vector."""
-        return self.pts |> map$((x) -> x**2) |> sum |> ((s) -> s**0.5)
-    def __add__(self, other):
+        self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
+    def __add__(self, other) =
         """Add two vectors together."""
         vector(other_pts) = other
         assert len(other_pts) == len(self.pts)
-        return map((+), self.pts, other_pts) |*> vector
-    def __sub__(self, other):
+        map((+), self.pts, other_pts) |*> vector
+    def __sub__(self, other) =
         """Subtract one vector from another."""
         vector(other_pts) = other
         assert len(other_pts) == len(self.pts)
-        return map((-), self.pts, other_pts) |*> vector
-    def __neg__(self):
+        map((-), self.pts, other_pts) |*> vector
+    def __neg__(self) =
         """Retrieve the negative of the vector."""
-        return self.pts |> map$((-)) |*> vector
+        self.pts |> map$((-)) |*> vector
     def __eq__(self, other):
         """Compare whether two vectors are equal."""
         match vector(=self.pts) in other:
@@ -351,12 +349,12 @@ data vector(pts):
         """Scalar multiplication and dot product."""
         match vector(other_pts) in other:
             assert len(other_pts) == len(self.pts)
-            return map((*), self.pts, other_pts) |> sum # dot product
+            return map((*), self.pts, other_pts) |> sum  # dot product
         else:
-            return self.pts |> map$((*)$(other)) |*> vector # scalar multiplication
-    def __rmul__(self, other):
+            return self.pts |> map$((*)$(other)) |*> vector  # scalar multiplication
+    def __rmul__(self, other) =
         """Necessary to make scalar multiplication commutative."""
-        return self * other
+        self * other
 
 def diagonal_line(n) = range(n+1) |> map$((i) -> (i, n-i))
 def linearized_plane(n=0) = diagonal_line(n) :: linearized_plane(n+1)
@@ -371,32 +369,32 @@ assert linearized_plane()$[:3] |> list == [(0, 0), (0, 1), (1, 0)]
 assert vector_field()$[0] |> repr == "vector(pts=(0, 0))"
 assert vector_field()$[2:3] |> list |> repr == "[vector(pts=(1, 0))]"
 
-import math # necessary for math.acos in .angle
+import math  # necessary for math.acos in .angle
 
 data vector(pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
         if len(pts) == 1 and pts[0] `isinstance` vector:
-            return pts[0] # vector(v) where v is a vector should return v
+            return pts[0]  # vector(v) where v is a vector should return v
         else:
-            return pts |> tuple |> datamaker(cls) # accesses base constructor
-    def __abs__(self):
+            return pts |> tuple |> datamaker(cls)  # accesses base constructor
+    def __abs__(self) =
         """Return the magnitude of the vector."""
-        return self.pts |> map$((x) -> x**2) |> sum |> ((s) -> s**0.5)
-    def __add__(self, other):
+        self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
+    def __add__(self, other) =
         """Add two vectors together."""
         vector(other_pts) = other
         assert len(other_pts) == len(self.pts)
-        return map((+), self.pts, other_pts) |*> vector
-    def __sub__(self, other):
+        map((+), self.pts, other_pts) |*> vector
+    def __sub__(self, other) =
         """Subtract one vector from another."""
         vector(other_pts) = other
         assert len(other_pts) == len(self.pts)
-        return map((-), self.pts, other_pts) |*> vector
-    def __neg__(self):
+        map((-), self.pts, other_pts) |*> vector
+    def __neg__(self) =
         """Retrieve the negative of the vector."""
-        return self.pts |> map$((-)) |*> vector
+        self.pts |> map$((-)) |*> vector
     def __eq__(self, other):
         """Compare whether two vectors are equal."""
         match vector(=self.pts) in other:
@@ -407,13 +405,13 @@ data vector(pts):
         """Scalar multiplication and dot product."""
         match vector(other_pts) in other:
             assert len(other_pts) == len(self.pts)
-            return map((*), self.pts, other_pts) |> sum # dot product
+            return map((*), self.pts, other_pts) |> sum  # dot product
         else:
-            return self.pts |> map$((*)$(other)) |*> vector # scalar multiplication
-    def __rmul__(self, other):
+            return self.pts |> map$((*)$(other)) |*> vector  # scalar multiplication
+    def __rmul__(self, other) =
         """Necessary to make scalar multiplication commutative."""
-        return self * other
-    # New one-line functions necessary for finding the angle between vectors:
+        self * other
+     # New one-line functions necessary for finding the angle between vectors:
     def __truediv__(self, other) = self.pts |> map$((x) -> x/other) |*> vector
     def unit(self) = self / abs(self)
     def angle(self, other is vector) = math.acos(self.unit() * other.unit())

@@ -77,7 +77,6 @@ def main_test():
     assert text == "abc"
     assert first == 1
     assert rest == [2, 3]
-    assert bytes(3) == b"\x00\x00\x00"
     assert isinstance("a", str)
     assert isinstance(b"a", bytes)
     global (glob_a,
@@ -104,9 +103,9 @@ def main_test():
         assert err
     else:
         assert False
-    b = bytes()
+    r = range(10)
     try:
-        b.x = 12
+        r.x = 12
     except AttributeError as err:
         assert err
     else:
@@ -266,6 +265,56 @@ def main_test():
     assert count(5) == count(5)
     assert count(5) != count(3)
     assert {count(5): True}[count(5)]
+    assert (def x -> x)(1) == 1
+    assert (def ([x] + xs) -> x, xs) <| range(5) == (0, [1,2,3,4])
+    s: str = "hello"
+    assert s == "hello"
+    assert pow$(?, 2)(3) == 9
+    assert [] |> reduce$((+), ?, ()) == ()
+    assert pow$(?, 2) |> repr == "<built-in function pow>$(?, 2)"
+    assert parallel_map(pow$(?, 2), range(10)) |> tuple == (0, 1, 4, 9, 16, 25, 36, 49, 64, 81)
+    assert pow$(?, 2).args == (None, 2)
+    assert range(20) |> filter$((x) -> x < 5) |> reversed |> tuple == (4,3,2,1,0) == (0,1,2,3,4,5,6,7,8,9) |> filter$((x) -> x < 5) |> reversed |> tuple
+    assert (range(10) |> map$((x) -> x) |> reversed) `isinstance` map
+
+    assert range(10) |> reversed |> reversed |> tuple == range(10) |> tuple
+    assert range(10) |> reversed |> len == 10
+    assert range(10) |> reversed |> .[1] == 8
+    assert range(10) |> reversed |> .[-1] == 0
+    assert range(10) |> reversed |> .[:-1] |> tuple == range(1, 10) |> reversed |> tuple
+    assert range(10) |> reversed |> .[1:] |> tuple == range(9) |> reversed |> tuple
+    assert range(10) |> reversed |> .[2:-3] |> tuple == range(3, 8) |> reversed |> tuple
+    assert 5 in (range(10) |> reversed)
+    assert (range(10) |> reversed).count(3) == 1
+    assert (range(10) |> reversed).count(10) == 0
+    assert (range(10) |> reversed).index(3)
+
+    range10 = range(10) |> list
+    assert range10 |> reversed |> reversed == range10
+    assert range10 |> reversed |> len == 10
+    assert range10 |> reversed |> .[1] == 8
+    assert range10 |> reversed |> .[-1] == 0
+    assert range10 |> reversed |> .[:-1] |> tuple == range(1, 10) |> reversed |> tuple
+    assert range10 |> reversed |> .[1:] |> tuple == range(9) |> reversed |> tuple
+    assert range10 |> reversed |> .[2:-3] |> tuple == range(3, 8) |> reversed |> tuple
+    assert 5 in (range10 |> reversed)
+    assert (range10 |> reversed).count(3) == 1
+    assert (range10 |> reversed).count(10) == 0
+    assert (range10 |> reversed).index(3)
+
+    assert range(1, 3) |> enumerate |> list == [(0, 1), (1, 2)]
+    assert range(2) |> enumerate$(start=1) |> list == [(1, 0), (2, 1)]
+    assert range(10) |> enumerate |> len == 10
+    assert range(10) |> enumerate |> .[1] == (1, 1)
+    assert range(10) |> enumerate |> .[:1] |> list == [(0, 0)]
+    assert range(10) |> enumerate |> .[1:3] |> list == [(1, 1), (2, 2)]
+    assert range(10) |> enumerate |> .[-1:] |> list == [(9, 9)]
+    assert range(3, 0, -1) |> tuple == (3, 2, 1)
+    assert range(10, 0, -1)[9:1:-1] |> tuple == tuple(range(10, 0, -1))[9:1:-1]
+    assert count(1)[1:] == count(2)
+    assert reversed(x for x in range(10))[2:-3] |> tuple == range(3, 8) |> reversed |> tuple
+    assert count(1, 2)[:3] |> tuple == (1, 3, 5)
+    assert count(0.5, 0.5)[:3] |> tuple == (0.5, 1, 1.5)
     return True
 
 def main(*args):

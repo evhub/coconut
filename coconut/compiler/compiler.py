@@ -30,6 +30,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import sys
+from contextlib import contextmanager
 
 from pyparsing import (
     ParseBaseException,
@@ -55,6 +56,8 @@ from coconut.constants import (
     tabideal,
     tabworth,
     match_to_var,
+    match_to_args_var,
+    match_to_kwargs_var,
     match_check_var,
     match_err_var,
     lazy_chain_var,
@@ -63,9 +66,12 @@ from coconut.constants import (
     yield_item_var,
     raise_from_var,
     stmt_lambda_var,
+    tre_mock_var,
+    tre_store_var,
     new_to_old_stdlib,
     default_recursion_limit,
     checksum,
+    reserved_prefix,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -74,19 +80,20 @@ from coconut.exceptions import (
     CoconutStyleError,
     CoconutTargetError,
     CoconutInternalException,
-    CoconutWarning,
+    CoconutStyleWarning,
+    CoconutDeferredSyntaxError,
     clean,
 )
-from coconut.logging import logger, trace, complain
+from coconut.terminal import logger, trace, complain
+from coconut.compiler.matching import Matcher
 from coconut.compiler.grammar import (
     Grammar,
     lazy_list_handle,
     get_infix_items,
-    Matcher,
     match_handle,
 )
 from coconut.compiler.util import (
-    target_info,
+    get_target_info,
     addskip,
     count_end,
     paren_change,
@@ -98,6 +105,8 @@ from coconut.compiler.util import (
     split_trailing_indent,
     match_in,
     transform,
+    join_args,
+    parse,
 )
 from coconut.compiler.header import (
     minify,
@@ -229,45 +238,52 @@ class Compiler(Grammar):
         self.skips = set()
         self.docstring = ""
         self.ichain_count = 0
+        self.tre_store_count = 0
         self.stmt_lambdas = []
         self.bind()
 
     def bind(self):
         """Binds reference objects to the proper parse actions."""
-        self.endline <<= attach(self.endline_ref, self.endline_handle, copy=True)
-        self.moduledoc_item <<= trace(attach(self.moduledoc, self.set_docstring, copy=True), "moduledoc")
-        self.name <<= trace(attach(self.name_ref, self.name_check, copy=True), "name")
-        self.atom_item <<= trace(attach(self.atom_item_ref, self.item_handle, copy=True), "atom_item")
-        self.simple_assign <<= trace(attach(self.simple_assign_ref, self.item_handle, copy=True), "simple_assign")
-        self.set_literal <<= trace(attach(self.set_literal_ref, self.set_literal_handle, copy=True), "set_literal")
-        self.set_letter_literal <<= trace(attach(self.set_letter_literal_ref, self.set_letter_literal_handle, copy=True), "set_letter_literal")
-        self.classlist <<= trace(attach(self.classlist_ref, self.classlist_handle, copy=True), "classlist")
-        self.import_stmt <<= trace(attach(self.import_stmt_ref, self.import_handle, copy=True), "import_stmt")
-        self.complex_raise_stmt <<= trace(attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_handle, copy=True), "complex_raise_stmt")
-        self.augassign_stmt <<= trace(attach(self.augassign_stmt_ref, self.augassign_handle, copy=True), "augassign_stmt")
-        self.dict_comp <<= trace(attach(self.dict_comp_ref, self.dict_comp_handle, copy=True), "dict_comp")
-        self.destructuring_stmt <<= trace(attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle, copy=True), "destructuring_stmt")
-        self.name_match_funcdef <<= trace(attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle, copy=True), "name_match_funcdef")
-        self.op_match_funcdef <<= trace(attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle, copy=True), "op_match_funcdef")
-        self.yield_from <<= trace(attach(self.yield_from_ref, self.yield_from_handle, copy=True), "yield_from")
-        self.exec_stmt <<= trace(attach(self.exec_stmt_ref, self.exec_stmt_handle, copy=True), "exec_stmt")
-        self.stmt_lambdef <<= trace(attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle, copy=True), "stmt_lambdef")
-        self.normal_funcdef_stmt <<= trace(attach(self.normal_funcdef_stmt_ref, self.normal_funcdef_stmt_handle, copy=True), "normal_funcdef_stmt")
-        self.u_string <<= attach(self.u_string_ref, self.u_string_check, copy=True)
-        self.f_string <<= attach(self.f_string_ref, self.f_string_check, copy=True)
-        self.typedef <<= attach(self.typedef_ref, self.typedef_check, copy=True)
-        self.return_typedef <<= attach(self.return_typedef_ref, self.typedef_check, copy=True)
-        self.matrix_at <<= attach(self.matrix_at_ref, self.matrix_at_check, copy=True)
-        self.nonlocal_stmt <<= attach(self.nonlocal_stmt_ref, self.nonlocal_check, copy=True)
-        self.star_assign_item <<= attach(self.star_assign_item_ref, self.star_assign_item_check, copy=True)
-        self.classic_lambdef <<= attach(self.classic_lambdef_ref, self.lambdef_check, copy=True)
-        self.async_funcdef <<= attach(self.async_funcdef_ref, self.async_stmt_check, copy=True)
-        self.async_match_funcdef <<= attach(self.async_match_funcdef_ref, self.async_stmt_check, copy=True)
-        self.async_stmt <<= attach(self.async_stmt_ref, self.async_stmt_check, copy=True)
-        self.await_keyword <<= attach(self.await_keyword_ref, self.await_keyword_check, copy=True)
-        self.star_expr <<= attach(self.star_expr_ref, self.star_expr_check, copy=True)
-        self.dubstar_expr <<= attach(self.dubstar_expr_ref, self.star_expr_check, copy=True)
-        self.endline_semicolon <<= attach(self.endline_semicolon_ref, self.endline_semicolon_check, copy=True)
+        self.endline <<= attach(self.endline_ref, self.endline_handle)
+        self.moduledoc_item <<= trace(attach(self.moduledoc, self.set_docstring))
+        self.name <<= trace(attach(self.base_name, self.name_check))
+        self.atom_item <<= trace(attach(self.atom_item_ref, self.item_handle))
+        self.no_partial_atom_item <<= trace(attach(self.no_partial_atom_item_ref, self.item_handle))
+        self.simple_assign <<= trace(attach(self.simple_assign_ref, self.item_handle))
+        self.set_literal <<= trace(attach(self.set_literal_ref, self.set_literal_handle))
+        self.set_letter_literal <<= trace(attach(self.set_letter_literal_ref, self.set_letter_literal_handle))
+        self.classlist <<= trace(attach(self.classlist_ref, self.classlist_handle))
+        self.import_stmt <<= trace(attach(self.import_stmt_ref, self.import_handle))
+        self.complex_raise_stmt <<= trace(attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_handle))
+        self.augassign_stmt <<= trace(attach(self.augassign_stmt_ref, self.augassign_handle))
+        self.dict_comp <<= trace(attach(self.dict_comp_ref, self.dict_comp_handle))
+        self.destructuring_stmt <<= trace(attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle))
+        self.name_match_funcdef <<= trace(attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle))
+        self.op_match_funcdef <<= trace(attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle))
+        self.yield_from <<= trace(attach(self.yield_from_ref, self.yield_from_handle))
+        self.exec_stmt <<= trace(attach(self.exec_stmt_ref, self.exec_stmt_handle))
+        self.stmt_lambdef <<= trace(attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle))
+        self.decoratable_normal_funcdef_stmt <<= trace(attach(self.decoratable_normal_funcdef_stmt_ref, self.decoratable_normal_funcdef_stmt_handle))
+        self.function_call <<= trace(attach(self.function_call_tokens, self.function_call_handle))
+        self.pipe_expr <<= trace(attach(self.pipe_expr_ref, self.pipe_handle))
+        self.no_chain_pipe_expr <<= trace(attach(self.no_chain_pipe_expr_ref, self.pipe_handle))
+        self.typedef <<= trace(attach(self.typedef_ref, self.typedef_handle))
+        self.typedef_default <<= trace(attach(self.typedef_default_ref, self.typedef_handle))
+        self.unsafe_typedef_default <<= trace(attach(self.unsafe_typedef_default_ref, self.unsafe_typedef_handle))
+        self.return_typedef <<= trace(attach(self.return_typedef_ref, self.typedef_handle))
+        self.typed_assign_stmt <<= trace(attach(self.typed_assign_stmt_ref, self.typed_assign_stmt_handle))
+        self.u_string <<= attach(self.u_string_ref, self.u_string_check)
+        self.f_string <<= attach(self.f_string_ref, self.f_string_check)
+        self.matrix_at <<= attach(self.matrix_at_ref, self.matrix_at_check)
+        self.nonlocal_stmt <<= attach(self.nonlocal_stmt_ref, self.nonlocal_check)
+        self.star_assign_item <<= attach(self.star_assign_item_ref, self.star_assign_item_check)
+        self.classic_lambdef <<= attach(self.classic_lambdef_ref, self.lambdef_check)
+        self.async_keyword <<= attach(self.async_keyword_ref, self.async_keyword_check)
+        self.await_keyword <<= attach(self.await_keyword_ref, self.await_keyword_check)
+        self.star_expr <<= attach(self.star_expr_ref, self.star_expr_check)
+        self.dubstar_expr <<= attach(self.dubstar_expr_ref, self.star_expr_check)
+        self.endline_semicolon <<= attach(self.endline_semicolon_ref, self.endline_semicolon_check)
+        self.async_comp_for <<= attach(self.async_comp_for_ref, self.async_comp_check)
 
     def adjust(self, ln):
         """Adjusts a line number."""
@@ -284,13 +300,13 @@ class Compiler(Grammar):
         if index is not None:
             return self.reformat(snip), len(self.reformat(snip[:index]))
         else:
-            return self.repl_proc(snip, careful=False, add_to_line=False)
+            return self.repl_proc(snip, log=False, add_to_line=False)
 
-    def make_err(self, errtype, message, original, location, ln=None, reformat=True, *args, **kwargs):
+    def make_err(self, errtype, message, original, loc, ln=None, reformat=True, *args, **kwargs):
         """Generates an error of the specified type."""
         if ln is None:
-            ln = self.adjust(lineno(location, original))
-        errstr, index = getline(location, original), col(location, original) - 1
+            ln = self.adjust(lineno(loc, original))
+        errstr, index = getline(loc, original), col(loc, original) - 1
         if reformat:
             errstr, index = self.reformat(errstr, index)
         return errtype(message, errstr, index, ln, *args, **kwargs)
@@ -300,7 +316,7 @@ class Compiler(Grammar):
         if self.strict:
             raise self.make_err(CoconutStyleError, *args, **kwargs)
         else:
-            logger.warn(self.make_err(CoconutWarning, *args, **kwargs))
+            logger.warn_err(self.make_err(CoconutStyleWarning, *args, **kwargs))
 
     def add_ref(self, ref):
         """Adds a reference and returns the identifier."""
@@ -348,18 +364,20 @@ class Compiler(Grammar):
         """Wraps a line number."""
         return "#" + self.add_ref(ln) + lnwrapper
 
-    def apply_procs(self, procs, kwargs, inputstring):
+    def apply_procs(self, procs, kwargs, inputstring, log=True):
         """Applies processors to inputstring."""
         for get_proc in procs:
             proc = get_proc(self)
             inputstring = proc(inputstring, **kwargs)
-            logger.log_tag(proc.__name__, inputstring, multiline=True)
+            if log:
+                logger.log_tag(proc.__name__, inputstring, multiline=True)
         return inputstring
 
     def pre(self, inputstring, **kwargs):
         """Performs pre-processing."""
         out = self.apply_procs(self.preprocs, kwargs, str(inputstring))
-        logger.log_tag("skips", list(sorted(self.skips)))
+        if self.line_numbers or self.keep_lines:
+            logger.log_tag("skips", list(sorted(self.skips)))
         return out
 
     def post(self, tokens, **kwargs):
@@ -369,30 +387,65 @@ class Compiler(Grammar):
         else:
             raise CoconutInternalException("multiple tokens leftover", tokens)
 
-    def headers(self, which, usehash=None):
+    def getheader(self, which, usehash=None):
         """Gets a formatted header."""
         return self.polish(getheader(which, self.target, usehash))
 
+    @property
     def target_info(self):
         """Returns information on the current target as a version tuple."""
-        return target_info(self.target)
+        return get_target_info(self.target)
 
-    def should_indent(self, code):
-        """Determines whether the next line should be indented."""
-        last = rem_comment(code.splitlines()[-1])
-        return last.endswith(":") or last.endswith("\\") or paren_change(last) < 0
+    @property
+    def target_info_len2(self):
+        """Returns target_info as a length 2 tuple."""
+        info = self.target_info
+        if not info:
+            return (2, 7)
+        elif len(info) == 1:
+            if info == (2,):
+                return (2, 7)
+            elif info == (3,):
+                return (3, 4)
+            else:
+                raise CoconutInternalException("invalid target info", info)
+        elif len(info) == 2:
+            return info
+        else:
+            return info[:2]
+
+    @contextmanager
+    def handle_deferred_syntax_errs(self, original, loc):
+        """Handles CoconutDeferredSyntaxError."""
+        try:
+            yield
+        except CoconutDeferredSyntaxError as err:
+            raise self.make_err(CoconutSyntaxError, str(err), original, loc)
+
+    def make_parse_err(self, err, reformat=True, include_ln=True):
+        """Make a CoconutParseError from a ParseBaseException."""
+        err_line = err.line
+        err_index = err.col - 1
+        err_lineno = err.lineno if include_ln else None
+        if reformat:
+            err_line, err_index = self.reformat(err_line, err_index)
+            if err_lineno is not None:
+                err_lineno = self.adjust(err_lineno)
+        return CoconutParseError(None, err_line, err_index, err_lineno)
 
     def parse(self, inputstring, parser, preargs, postargs):
         """Uses the parser to parse the inputstring."""
         self.reset()
-        try:
-            out = self.post(parser.parseWithTabs().parseString(self.pre(inputstring, **preargs)), **postargs)
-        except ParseBaseException as err:
-            err_line, err_index = self.reformat(err.line, err.col - 1)
-            raise CoconutParseError(None, err_line, err_index, self.adjust(err.lineno))
-        except RuntimeError as err:
-            raise CoconutException(str(err),
-                                   extra="try again with --recursion-limit greater than the current " + str(sys.getrecursionlimit()))
+        with logger.gather_parsing_stats():
+            try:
+                pre_procd = self.pre(inputstring, **preargs)
+                parsed = parse(parser, pre_procd)
+                out = self.post(parsed, **postargs)
+            except ParseBaseException as err:
+                raise self.make_parse_err(err)
+            except RuntimeError as err:
+                raise CoconutException(str(err), extra="try again with --recursion-limit greater than the current "
+                                       + str(sys.getrecursionlimit()))
         return out
 
 # end: COMPILER
@@ -650,7 +703,7 @@ class Compiler(Grammar):
         if new:
             last = rem_comment(new[-1])
             if last.endswith("\\"):
-                raise self.make_err(CoconutSyntaxError, "illegal final backslash continuation", last, len(last), self.adjust(len(new)))
+                raise self.make_err(CoconutSyntaxError, "illegal final backslash continuation", new[-1], len(new[-1]), self.adjust(len(new)))
             if count != 0:
                 raise self.make_err(CoconutSyntaxError, "unclosed open parentheses", new[-1], len(new[-1]), self.adjust(len(new)))
         new.append(closeindent * len(levels))
@@ -662,11 +715,16 @@ class Compiler(Grammar):
         for line in inputstring.splitlines():
             for i in range(len(self.stmt_lambdas)):
                 name = self.stmt_lambda_name(i)
-                if name in line:
+                if match_in(Keyword(name), line):
                     indent, line = split_leading_indent(line)
                     out.append(indent + self.stmt_lambdas[i])
             out.append(line)
         return "\n".join(out)
+
+    @property
+    def tabideal(self):
+        """Local tabideal."""
+        return 1 if self.minify else tabideal
 
     def reind_proc(self, inputstring, **kwargs):
         """Adds back indentation."""
@@ -674,19 +732,13 @@ class Compiler(Grammar):
         level = 0
 
         for line in inputstring.splitlines():
-            line = line.strip()
-            if "#" in line:
-                line, comment = line.split("#", 1)
-                line = line.rstrip()
-                comment = "#" + comment
-            else:
-                comment = ""
+            line, comment = split_comment(line.strip())
 
             indent, line = split_leading_indent(line)
             level += ind_change(indent)
 
-            if line and not line.startswith("#"):
-                line = " " * (1 if self.minify else tabideal) * level + line
+            if line:
+                line = " " * self.tabideal * level + line
 
             line, indent = split_trailing_indent(line)
             level += ind_change(indent)
@@ -699,18 +751,23 @@ class Compiler(Grammar):
 
     def endline_comment(self, ln):
         """Gets an end line comment."""
-        if ln < 0 or (self.keep_lines and ln > len(self.original_lines)):
-            raise CoconutInternalException("out of bounds line number", ln)
-        elif self.line_numbers and self.keep_lines:
-            if self.minify:
-                comment = str(ln) + " " + self.original_lines[ln - 1]
+        if self.keep_lines:
+            if ln < 0 or ln - 1 > len(self.original_lines):
+                raise CoconutInternalException("out of bounds line number", ln)
+            elif ln - 1 == len(self.original_lines):
+                lni = -1
             else:
-                comment = " line " + str(ln) + ": " + self.original_lines[ln - 1]
+                lni = ln - 1
+        if self.line_numbers and self.keep_lines:
+            if self.minify:
+                comment = str(ln) + " " + self.original_lines[lni]
+            else:
+                comment = " line " + str(ln) + ": " + self.original_lines[lni]
         elif self.keep_lines:
             if self.minify:
-                comment = self.original_lines[ln - 1]
+                comment = self.original_lines[lni]
             else:
-                comment = " " + self.original_lines[ln - 1]
+                comment = " " + self.original_lines[lni]
         elif self.line_numbers:
             if self.minify:
                 comment = str(ln)
@@ -720,7 +777,7 @@ class Compiler(Grammar):
             raise CoconutInternalException("attempted to add line number comment without --line-numbers or --keep-lines")
         return self.wrap_comment(comment)
 
-    def endline_repl(self, inputstring, add_to_line=True, careful=True, **kwargs):
+    def endline_repl(self, inputstring, add_to_line=True, **kwargs):
         """Adds in end line comments."""
         if self.line_numbers or self.keep_lines:
             out = []
@@ -741,15 +798,14 @@ class Compiler(Grammar):
                     if add_to_line and line and not line.lstrip().startswith("#"):
                         line += self.endline_comment(ln)
                 except CoconutInternalException as err:
-                    if careful:
-                        complain(err)
+                    complain(err)
                     fix = False
                 out.append(line)
             return "\n".join(out)
         else:
             return inputstring
 
-    def passthrough_repl(self, inputstring, careful=True, **kwargs):
+    def passthrough_repl(self, inputstring, **kwargs):
         """Adds back passthroughs."""
         out = []
         index = None
@@ -775,16 +831,15 @@ class Compiler(Grammar):
                         index = ""
                     else:
                         out.append(c)
-            except CoconutInternalException:
-                if careful:
-                    raise
+            except CoconutInternalException as err:
+                complain(err)
                 if index is not None:
                     out.append(index)
                     index = None
                 out.append(c)
         return "".join(out)
 
-    def str_repl(self, inputstring, careful=True, **kwargs):
+    def str_repl(self, inputstring, **kwargs):
         """Adds back strings."""
         out = []
         comment = None
@@ -802,7 +857,9 @@ class Compiler(Grammar):
                         if not isinstance(ref, str):
                             raise CoconutInternalException("invalid reference for a comment", ref)
                         if out and not out[-1].endswith("\n"):
-                            out.append(" ")
+                            out[-1] = out[-1].rstrip(" ")
+                            if not self.minify:
+                                out[-1] += "  "  # enforce two spaces before comment
                         out.append("#" + ref)
                         comment = None
                     else:
@@ -830,9 +887,8 @@ class Compiler(Grammar):
                     else:
                         out.append(c)
 
-            except CoconutInternalException:
-                if careful:
-                    raise
+            except CoconutInternalException as err:
+                complain(err)
                 if comment is not None:
                     out.append(comment)
                     comment = None
@@ -843,9 +899,9 @@ class Compiler(Grammar):
 
         return "".join(out)
 
-    def repl_proc(self, inputstring, **kwargs):
+    def repl_proc(self, inputstring, log=True, **kwargs):
         """Processes using replprocs."""
-        return self.apply_procs(self.replprocs, kwargs, inputstring)
+        return self.apply_procs(self.replprocs, kwargs, inputstring, log=log)
 
     def header_proc(self, inputstring, header="file", initial="initial", usehash=None, **kwargs):
         """Adds the header."""
@@ -864,7 +920,7 @@ class Compiler(Grammar):
 # COMPILER HANDLERS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-    def set_docstring(self, original, location, tokens):
+    def set_docstring(self, original, loc, tokens):
         """Sets the docstring."""
         if len(tokens) == 2:
             self.docstring = self.reformat(tokens[0]) + "\n\n"
@@ -876,14 +932,14 @@ class Compiler(Grammar):
         """Processes Python 3.3 yield from."""
         if len(tokens) != 1:
             raise CoconutInternalException("invalid yield from tokens", tokens)
-        elif self.target_info() < (3, 3):
+        elif self.target_info < (3, 3):
             return (yield_from_var + " = " + tokens[0]
                     + "\nfor " + yield_item_var + " in " + yield_from_var + ":\n"
                     + openindent + "yield " + yield_item_var + "\n" + closeindent)
         else:
             return "yield from " + tokens[0]
 
-    def endline_handle(self, original, location, tokens):
+    def endline_handle(self, original, loc, tokens):
         """Inserts line number comments when in line_numbers mode."""
         if len(tokens) != 1:
             raise CoconutInternalException("invalid endline tokens", tokens)
@@ -891,10 +947,10 @@ class Compiler(Grammar):
         if self.minify:
             out = out.splitlines(True)[0]  # if there are multiple new lines, take only the first one
         if self.line_numbers or self.keep_lines:
-            out = self.wrap_line_number(self.adjust(lineno(location, original))) + out
+            out = self.wrap_line_number(self.adjust(lineno(loc, original))) + out
         return out
 
-    def item_handle(self, original, location, tokens):
+    def item_handle(self, original, loc, tokens):
         """Processes items."""
         out = tokens.pop(0)
         for trailer in tokens:
@@ -909,15 +965,33 @@ class Compiler(Grammar):
                     out = "_coconut.functools.partial(_coconut.operator.getitem, " + out + ")"
                 elif trailer[0] == ".":
                     out = "_coconut.functools.partial(_coconut.getattr, " + out + ")"
-                elif trailer[0] == "$(":
-                    raise self.make_err(CoconutSyntaxError, "a partial application argument is required", original, location)
                 else:
                     raise CoconutInternalException("invalid trailer symbol", trailer[0])
             elif len(trailer) == 2:
                 if trailer[0] == "$(":
-                    out = "_coconut.functools.partial(" + out + ", " + trailer[1] + ")"
+                    args = trailer[1][1:-1]
+                    if args:
+                        out = "_coconut.functools.partial(" + out + ", " + args + ")"
+                    else:
+                        raise self.make_err(CoconutSyntaxError, "a partial application argument is required", original, loc)
                 elif trailer[0] == "$[":
                     out = "_coconut_igetitem(" + out + ", " + trailer[1] + ")"
+                elif trailer[0] == "$(?":
+                    pos_args, star_args, kwd_args, dubstar_args = self.split_function_call(original, loc, trailer[1])
+                    extra_args_str = join_args(star_args, kwd_args, dubstar_args)
+                    argdict_pairs = []
+                    for i in range(len(pos_args)):
+                        if pos_args[i] != "?":
+                            argdict_pairs.append(str(i) + ": " + pos_args[i])
+                    if argdict_pairs or extra_args_str:
+                        out = ("_coconut_partial("
+                               + out
+                               + ", {" + ", ".join(argdict_pairs) + "}"
+                               + ", " + str(len(pos_args))
+                               + (", " if extra_args_str else "") + extra_args_str
+                               + ")")
+                    else:
+                        raise self.make_err(CoconutSyntaxError, "a non-? partial application argument is required", original, loc)
                 else:
                     raise CoconutInternalException("invalid special trailer", trailer[0])
             else:
@@ -938,7 +1012,7 @@ class Compiler(Grammar):
             elif op == "<*|=":
                 out += name + " = " + name + "(*(" + item + "))"
             elif op == "..=":
-                out += name + " = (lambda f, g: lambda *args, **kwargs: f(g(*args, **kwargs)))(" + name + ", (" + item + "))"
+                out += name + " = _coconut_compose(" + name + ", (" + item + "))"
             elif op == "::=":
                 ichain_var = lazy_chain_var + "_" + str(self.ichain_count)  # necessary to prevent a segfault caused by self-reference
                 out += ichain_var + " = " + name + "\n"
@@ -950,7 +1024,7 @@ class Compiler(Grammar):
         else:
             raise CoconutInternalException("invalid assignment tokens", tokens)
 
-    def classlist_handle(self, original, location, tokens):
+    def classlist_handle(self, original, loc, tokens):
         """Processes class inheritance lists."""
         if len(tokens) == 0:
             if self.target.startswith("3"):
@@ -959,25 +1033,25 @@ class Compiler(Grammar):
                 return "(_coconut.object)"
         elif len(tokens) == 1 and len(tokens[0]) == 1:
             if "tests" in tokens[0].keys():
-                return "(" + tokens[0][0] + ")"
+                return tokens[0][0]
             elif "args" in tokens[0].keys():
                 if self.target.startswith("3"):
-                    return "(" + tokens[0][0] + ")"
+                    return tokens[0][0]
                 else:
-                    raise self.make_err(CoconutTargetError, "found Python 3 keyword class definition", original, location, target="3")
+                    raise self.make_err(CoconutTargetError, "found Python 3 keyword class definition", original, loc, target="3")
             else:
                 raise CoconutInternalException("invalid inner classlist token", tokens[0])
         else:
             raise CoconutInternalException("invalid classlist tokens", tokens)
 
-    def import_handle(self, original, location, tokens):
+    def import_handle(self, original, loc, tokens):
         """Universalizes imports."""
         if len(tokens) == 1:
             imp_from, imports = None, tokens[0]
         elif len(tokens) == 2:
             imp_from, imports = tokens
             if imp_from == "__future__":
-                self.strict_err_or_warn("unnecessary from __future__ import (Coconut does these automatically)", original, location)
+                self.strict_err_or_warn("unnecessary from __future__ import (Coconut does these automatically)", original, loc)
                 return ""
         else:
             raise CoconutInternalException("invalid import tokens", tokens)
@@ -1007,7 +1081,7 @@ class Compiler(Grammar):
                 paths = (imp,)
             elif self.target.startswith("2"):
                 paths = (old_imp,)
-            elif not self.target or self.target_info() < version_check:
+            elif not self.target or self.target_info < version_check:
                 paths = (old_imp, imp, version_check)
             else:
                 paths = (imp,)
@@ -1042,7 +1116,7 @@ class Compiler(Grammar):
                     + raise_from_var + ".__cause__ = " + tokens[1] + "\n"
                     + "raise " + raise_from_var)
 
-    def dict_comp_handle(self, original, location, tokens):
+    def dict_comp_handle(self, original, loc, tokens):
         """Processes Python 2.7 dictionary comprehension."""
         if len(tokens) != 3:
             raise CoconutInternalException("invalid dictionary comprehension tokens", tokens)
@@ -1053,24 +1127,24 @@ class Compiler(Grammar):
             key, val, comp = tokens
             return "dict(((" + key + "), (" + val + ")) " + comp + ")"
 
-    def pattern_error(self, original, loc):
+    def pattern_error(self, original, loc, value_var):
         """Constructs a pattern-matching error message."""
         base_line = clean(self.reformat(getline(loc, original)))
         line_wrap = self.wrap_str_of(base_line)
         repr_wrap = self.wrap_str_of(ascii(base_line))
         return ("if not " + match_check_var + ":\n" + openindent
                 + match_err_var + ' = _coconut_MatchError("pattern-matching failed for " '
-                + repr_wrap + ' " in " + _coconut.repr(_coconut.repr(' + match_to_var + ")))\n"
+                + repr_wrap + ' " in " + _coconut.repr(_coconut.repr(' + value_var + ")))\n"
                 + match_err_var + ".pattern = " + line_wrap + "\n"
-                + match_err_var + ".value = " + match_to_var
+                + match_err_var + ".value = " + value_var
                 + "\nraise " + match_err_var + "\n" + closeindent)
 
     def destructuring_stmt_handle(self, original, loc, tokens):
         """Processes match assign blocks."""
         if len(tokens) == 2:
             matches, item = tokens
-            out = match_handle(original, loc, (matches, item, None))
-            out += self.pattern_error(original, loc)
+            out = match_handle(original, loc, [matches, item, None])
+            out += self.pattern_error(original, loc, match_to_var)
             return out
         else:
             raise CoconutInternalException("invalid destructuring assignment tokens", tokens)
@@ -1084,24 +1158,34 @@ class Compiler(Grammar):
             func, matches, cond = tokens
         else:
             raise CoconutInternalException("invalid match function definition tokens", tokens)
-        matching = Matcher()
-        matching.match_sequence(("(", matches), match_to_var, typecheck=False)
+        matcher = Matcher()
+
+        req_args, def_args, star_arg, kwd_args, dubstar_arg = self.split_args_list(original, loc, matches)
+        with self.handle_deferred_syntax_errs(original, loc):
+            matcher.match_function(match_to_args_var, match_to_kwargs_var, req_args + def_args, star_arg, kwd_args, dubstar_arg)
+
         if cond is not None:
-            matching.add_guard(cond)
-        out = "def " + func + "(*" + match_to_var + "):\n" + openindent
-        out += match_check_var + " = False\n"
-        out += matching.out()
-        out += self.pattern_error(original, loc) + closeindent
-        return out
+            matcher.add_guard(cond)
+        return (
+            "def " + func + "(*" + match_to_args_var + ", **" + match_to_kwargs_var + "):\n" + openindent
+            + match_check_var + " = False\n"
+            + matcher.out()
+            + self.pattern_error(original, loc, match_to_args_var) + closeindent
+        )
 
     def op_match_funcdef_handle(self, original, loc, tokens):
         """Processes infix match defs."""
         if len(tokens) == 3:
-            name_tokens = get_infix_items(tokens)
+            func, args = get_infix_items(tokens)
+            cond = None
         elif len(tokens) == 4:
-            name_tokens = get_infix_items(tokens[:-1]) + tuple(tokens[-1:])
+            func, args = get_infix_items(tokens[:-1])
+            cond = tokens[-1]
         else:
             raise CoconutInternalException("invalid infix match function definition tokens", tokens)
+        name_tokens = [func, args]
+        if cond is not None:
+            name_tokens.append(cond)
         return self.name_match_funcdef_handle(original, loc, name_tokens)
 
     def set_literal_handle(self, tokens):
@@ -1110,7 +1194,7 @@ class Compiler(Grammar):
             raise CoconutInternalException("invalid set literal tokens", tokens)
         elif len(tokens[0]) != 1:
             raise CoconutInternalException("invalid set literal item", tokens[0])
-        elif self.target_info() < (2, 7):
+        elif self.target_info < (2, 7):
             return "_coconut.set(" + set_to_tuple(tokens[0]) + ")"
         else:
             return "{" + tokens[0][0] + "}"
@@ -1156,7 +1240,7 @@ class Compiler(Grammar):
             index = len(self.stmt_lambdas)
         return stmt_lambda_var + "_" + str(index)
 
-    def stmt_lambdef_handle(self, tokens):
+    def stmt_lambdef_handle(self, original, loc, tokens):
         """Handles multi-line lambdef statements."""
         if len(tokens) == 2:
             params, stmts = tokens
@@ -1169,123 +1253,351 @@ class Compiler(Grammar):
         else:
             raise CoconutInternalException("invalid statement lambda tokens", tokens)
         name = self.stmt_lambda_name()
-        self.stmt_lambdas.append(
-            "def " + name + params + ":\n"
-            + openindent + self.stmt_lambda_proc("\n".join(stmts)) + closeindent
-        )
+        body = openindent + self.stmt_lambda_proc("\n".join(stmts)) + closeindent
+        if isinstance(params, str):
+            self.stmt_lambdas.append(
+                "def " + name + params + ":\n" + body
+            )
+        else:
+            params.insert(0, name)
+            self.stmt_lambdas.append(
+                self.name_match_funcdef_handle(original, loc, params) + body
+            )
         return name
 
-    def normal_funcdef_stmt_handle(self, tokens):
-        """Determines if tail call optimization can be done and if so does it."""
-        if len(tokens) != 1:
-            raise CoconutInternalException("invalid function definition tokens", tokens)
-        else:
-            lines = []  # transformed
-            tco = False  # whether tco was done
-            level = 0  # indentation level
-            disabled_until_level = None  # whether inside of a def/try/with
+    def tre_return(self, func_name, func_args, func_store, use_mock=True):
+        """Generates a tail recursion elimination grammar element."""
+        def tre_return_handle(original, loc, tokens):
+            if len(tokens) != 1:
+                raise CoconutInternalException("invalid tail recursion elimination tokens", tokens)
+            else:
+                args = tokens[0][1:-1]  # strip parens
+                tco_recurse = "raise _coconut_tail_call(" + func_name + (", " + args if args else "") + ")"
+                if not func_args or func_args == args:
+                    tre_recurse = "continue"
+                elif use_mock:
+                    tre_recurse = func_args + " = " + tre_mock_var + "(" + args + ")" + "\ncontinue"
+                else:
+                    tre_recurse = func_args + " = " + args + "\ncontinue"
+                return (
+                    "if " + func_name + " is " + func_store + ":\n" + openindent
+                    + tre_recurse + "\n" + closeindent
+                    + "else:\n" + openindent
+                    + tco_recurse + "\n" + closeindent
+                )
+        return attach(
+            (Keyword("return") + Keyword(func_name)).suppress() + self.function_call + self.end_marker.suppress(),
+            tre_return_handle)
 
-            for i, line in enumerate(tokens[0].splitlines(True)):
-                body, indent = split_trailing_indent(line)
-                level += ind_change(body)
-                if disabled_until_level is not None:
-                    if level <= disabled_until_level:
-                        disabled_until_level = None
-                if disabled_until_level is None:
-                    if match_in(Keyword("yield"), body):
-                        # we can't tco generators
-                        return tokens[0]
-                    elif i and match_in(Keyword("def") | Keyword("try") | Keyword("with"), body):
-                        disabled_until_level = level
+    def decoratable_normal_funcdef_stmt_handle(self, tokens):
+        """Determines if tail call optimization can be done and if so does it."""
+        if len(tokens) == 1:
+            decorators, funcdef = None, tokens[0]
+        elif len(tokens) == 2:
+            decorators, funcdef = tokens
+        else:
+            raise CoconutInternalException("invalid function definition tokens", tokens)
+
+        lines = []  # transformed
+        tco = False  # whether tco was done
+        tre = False  # wether tre was done
+        level = 0  # indentation level
+        disabled_until_level = None  # whether inside of a def/try/with
+
+        raw_lines = funcdef.splitlines(True)
+        def_stmt, raw_lines = raw_lines[0], raw_lines[1:]
+        try:
+            func_name, func_args, func_params = parse(self.split_func_name_args_params, def_stmt)
+        except ParseBaseException as err:
+            complain(self.make_parse_err(err, reformat=False, include_ln=False))
+            attempt_tre = False
+        else:
+            use_mock = func_args and func_args != func_params[1:-1]
+            func_store = tre_store_var + "_" + str(self.tre_store_count)
+            self.tre_store_count += 1
+            attempt_tre = True
+
+        for line in raw_lines:
+            body, indent = split_trailing_indent(line)
+            level += ind_change(body)
+            if disabled_until_level is not None:
+                if level <= disabled_until_level:
+                    disabled_until_level = None
+            if disabled_until_level is None:
+                if match_in(Keyword("yield"), body):
+                    # we can't tco generators
+                    return tokens[0]
+                elif match_in(Keyword("def") | Keyword("try") | Keyword("with"), body):
+                    disabled_until_level = level
+                else:
+                    base, comment = split_comment(body)
+                    # tco works with decorators, but not tre
+                    if decorators or not attempt_tre:
+                        tre_base = None
                     else:
-                        base, comment = split_comment(body)
+                        # attempt tre
+                        tre_base = transform(self.tre_return(func_name, func_args, func_store, use_mock=use_mock), base)
+                        if tre_base is not None:
+                            line = tre_base + comment + indent
+                            tre = True
+                            tco = True  # tre falls back on tco if the function is changed
+                    if tre_base is None:
+                        # attempt tco
                         tco_base = transform(self.tco_return, base)
                         if tco_base is not None:
                             line = tco_base + comment + indent
                             tco = True
-                lines.append(line)
-                level += ind_change(indent)
+            lines.append(line)
+            level += ind_change(indent)
 
-            if tco:
-                return "@_coconut_tco\n" + "".join(lines)
+        out = "".join(lines)
+        if tre:
+            indent, base = split_leading_indent(out, 1)
+            base, dedent = split_trailing_indent(base, 1)
+            base, base_dedent = split_trailing_indent(base)
+            out = (
+                indent + (
+                    "def " + tre_mock_var + func_params + ": return " + func_args + "\n"
+                    if use_mock else ""
+                ) + "while True:\n"
+                    + openindent + base + base_dedent
+                    + ("\n" if "\n" not in base_dedent else "") + "return None"
+                    + ("\n" if "\n" not in dedent else "") + closeindent + dedent
+                + func_store + " = " + func_name + "\n"
+            )
+        out = def_stmt + out
+        if tco:
+            out = "@_coconut_tco\n" + out
+        if decorators:
+            out = decorators + out
+        return out
+
+    def split_args_list(self, original, loc, tokens):
+        """Splits function definition arguments."""
+        req_args, def_args, star_arg, kwd_args, dubstar_arg = [], [], None, [], None
+        pos = 0
+        for arg in tokens:
+            if len(arg) == 1:
+                if arg[0] == "*":
+                    # star sep (pos = 3)
+                    if pos >= 3:
+                        raise self.make_err(CoconutSyntaxError, "invalid star seperator in function definition", original, loc)
+                    pos = 3
+                else:
+                    # pos arg (pos = 0)
+                    if pos > 0:
+                        raise self.make_err(CoconutSyntaxError, "invalid positional argument in function definition", original, loc)
+                    req_args.append(arg[0])
+            elif len(arg) == 2:
+                if arg[0] == "*":
+                    # star arg (pos = 2)
+                    if pos >= 2:
+                        raise self.make_err(CoconutSyntaxError, "invalid star argument in function definition", original, loc)
+                    pos = 2
+                    star_arg = arg[1]
+                elif arg[0] == "**":
+                    # dub star arg (pos = 4)
+                    if pos == 4:
+                        raise self.make_err(CoconutSyntaxError, "invalid double star argument in function definition", original, loc)
+                    pos = 4
+                    dubstar_arg = arg[1]
+                else:
+                    # kwd arg (pos = 1 or 3)
+                    if pos <= 1:
+                        pos = 1
+                        def_args.append((arg[0], arg[1]))
+                    elif pos <= 3:
+                        pos = 3
+                        kwd_args.append((arg[0], arg[1]))
+                    else:
+                        raise self.make_err(CoconutSyntaxError, "invalid default argument in function definition", original, loc)
             else:
-                return tokens[0]
+                raise CoconutInternalException("invalid function definition argument", arg)
+        return req_args, def_args, star_arg, kwd_args, dubstar_arg
+
+    def split_function_call(self, original, loc, tokens):
+        """Split into positional arguments and keyword arguments."""
+        pos_args = []
+        star_args = []
+        kwd_args = []
+        dubstar_args = []
+        for arg in tokens:
+            argstr = "".join(arg)
+            if len(arg) == 1:
+                if kwd_args or dubstar_args:
+                    raise self.make_err(CoconutSyntaxError, "positional argument after keyword argument", original, loc)
+                pos_args.append(argstr)
+            elif len(arg) == 2:
+                if arg[0] == "*":
+                    if dubstar_args:
+                        raise self.make_err(CoconutSyntaxError, "star unpacking after double star unpacking", original, loc)
+                    star_args.append(argstr)
+                elif arg[0] == "**":
+                    dubstar_args.append(argstr)
+                else:
+                    kwd_args.append(argstr)
+            else:
+                raise CoconutInternalException("invalid function call argument", arg)
+        return pos_args, star_args, kwd_args, dubstar_args
+
+    def function_call_handle(self, original, loc, tokens):
+        """Properly order call arguments."""
+        return "(" + join_args(*self.split_function_call(original, loc, tokens)) + ")"
+
+    def pipe_item_split(self, original, loc, tokens):
+        """Split a partial trailer."""
+        if len(tokens) == 1:
+            return tokens[0]
+        elif len(tokens) == 2:
+            func, args = tokens
+            pos_args, star_args, kwd_args, dubstar_args = self.split_function_call(original, loc, args)
+            return func, join_args(pos_args, star_args), join_args(kwd_args, dubstar_args)
+        else:
+            raise CoconutInternalException("invalid partial trailer", tokens)
+
+    def pipe_handle(self, original, loc, tokens, **kwargs):
+        """Processes pipe calls."""
+        if set(kwargs) > set(("top",)):
+            complain(CoconutInternalException("unknown pipe_handle keyword arguments", kwargs))
+        top = kwargs.get("top", True)
+        if len(tokens) == 1:
+            func = self.pipe_item_split(original, loc, tokens.pop())
+            if top and isinstance(func, tuple):
+                return "_coconut.functools.partial(" + join_args(func) + ")"
+            else:
+                return func
+        else:
+            func = self.pipe_item_split(original, loc, tokens.pop())
+            op = tokens.pop()
+            if op == "|>" or op == "|*>":
+                star = "*" if op == "|*>" else ""
+                if isinstance(func, tuple):
+                    return func[0] + "(" + join_args((func[1], star + self.pipe_handle(original, loc, tokens), func[2])) + ")"
+                else:
+                    return "(" + func + ")(" + star + self.pipe_handle(original, loc, tokens) + ")"
+            elif op == "<|" or op == "<*|":
+                star = "*" if op == "<*|" else ""
+                return self.pipe_handle(original, loc, [[func], "|" + star + ">", [self.pipe_handle(original, loc, tokens, top=False)]])
+            else:
+                raise CoconutInternalException("invalid pipe operator", op)
+
+    def unsafe_typedef_handle(self, tokens):
+        """Handles unsafe type annotations."""
+        return self.typedef_handle(tokens.asList() + [","])
+
+    def typedef_handle(self, tokens):
+        """Handles Python 3 type annotations."""
+        if len(tokens) == 1:  # return typedef
+            if self.target.startswith("3"):
+                return " -> " + tokens[0] + ":"
+            else:
+                return ":\n" + self.wrap_comment(" type: (...) -> " + tokens[0])
+        else:  # argument typedef
+            if len(tokens) == 3:
+                varname, typedef, comma = tokens
+                default = ""
+            elif len(tokens) == 4:
+                varname, typedef, default, comma = tokens
+            else:
+                raise CoconutInternalException("invalid type annotation tokens", tokens)
+            if self.target.startswith("3"):
+                return varname + ": " + typedef + default + comma
+            else:
+                return varname + default + comma + self.wrap_passthrough(self.wrap_comment(" type: " + typedef) + "\n" + " " * self.tabideal)
+
+    def typed_assign_stmt_handle(self, tokens):
+        """Handles Python 3.6 variable type annotations."""
+        if len(tokens) == 2:
+            if self.target_info >= (3, 6):
+                return tokens[0] + ": " + tokens[1]
+            else:
+                return tokens[0] + " = None" + self.wrap_comment(" type: " + tokens[1])
+        elif len(tokens) == 3:
+            if self.target_info >= (3, 6):
+                return tokens[0] + ": " + tokens[1] + " = " + tokens[2]
+            else:
+                return tokens[0] + " = " + tokens[2] + self.wrap_comment(" type: " + tokens[1])
+        else:
+            raise CoconutInternalException("invalid variable type annotation tokens", tokens)
+
 
 # end: COMPILER HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
 # CHECKING HANDLERS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-    def check_strict(self, name, original, location, tokens):
+    def check_strict(self, name, original, loc, tokens):
         """Checks that syntax meets --strict requirements."""
         if len(tokens) != 1:
             raise CoconutInternalException("invalid " + name + " tokens", tokens)
         elif self.strict:
-            raise self.make_err(CoconutStyleError, "found " + name, original, location)
+            raise self.make_err(CoconutStyleError, "found " + name, original, loc)
         else:
             return tokens[0]
 
-    def lambdef_check(self, original, location, tokens):
+    def lambdef_check(self, original, loc, tokens):
         """Checks for Python-style lambdas."""
-        return self.check_strict("Python-style lambda", original, location, tokens)
+        return self.check_strict("Python-style lambda", original, loc, tokens)
 
-    def endline_semicolon_check(self, original, location, tokens):
+    def endline_semicolon_check(self, original, loc, tokens):
         """Checks for semicolons at the end of lines."""
-        return self.check_strict("semicolon at end of line", original, location, tokens)
+        return self.check_strict("semicolon at end of line", original, loc, tokens)
 
-    def u_string_check(self, original, location, tokens):
+    def u_string_check(self, original, loc, tokens):
         """Checks for Python2-style unicode strings."""
-        return self.check_strict("Python-2-style unicode string", original, location, tokens)
+        return self.check_strict("Python-2-style unicode string", original, loc, tokens)
 
-    def check_py(self, version, name, original, location, tokens):
+    def check_py(self, version, name, original, loc, tokens):
         """Checks for Python-version-specific syntax."""
         if len(tokens) != 1:
             raise CoconutInternalException("invalid " + name + " tokens", tokens)
-        elif self.target_info() < target_info(version):
-            raise self.make_err(CoconutTargetError, "found Python " + version + " " + name, original, location, target=version)
+        elif self.target_info < get_target_info(version):
+            raise self.make_err(CoconutTargetError, "found Python " + ".".join(version) + " " + name, original, loc, target=version)
         else:
             return tokens[0]
 
-    def name_check(self, original, location, tokens):
+    def name_check(self, original, loc, tokens):
         """Checks for Python 3 exec function."""
         if len(tokens) != 1:
             raise CoconutInternalException("invalid name tokens", tokens)
         elif tokens[0] == "exec":
-            return self.check_py("3", "exec function", original, location, tokens)
+            return self.check_py("3", "exec function", original, loc, tokens)
+        elif tokens[0].startswith(reserved_prefix):
+            raise self.make_err(CoconutSyntaxError, "variable names cannot start with reserved prefix " + reserved_prefix, original, loc)
         else:
             return tokens[0]
 
-    def typedef_check(self, original, location, tokens):
-        """Checks for Python 3 type defs."""
-        return self.check_py("3", "type annotation", original, location, tokens)
-
-    def nonlocal_check(self, original, location, tokens):
+    def nonlocal_check(self, original, loc, tokens):
         """Checks for Python 3 nonlocal statement."""
-        return self.check_py("3", "nonlocal statement", original, location, tokens)
+        return self.check_py("3", "nonlocal statement", original, loc, tokens)
 
-    def star_assign_item_check(self, original, location, tokens):
+    def star_assign_item_check(self, original, loc, tokens):
         """Checks for Python 3 starred assignment."""
-        return self.check_py("3", "starred assignment (use pattern-matching version to produce universal code)", original, location, tokens)
+        return self.check_py("3", "starred assignment (use pattern-matching version to produce universal code)", original, loc, tokens)
 
-    def matrix_at_check(self, original, location, tokens):
+    def matrix_at_check(self, original, loc, tokens):
         """Checks for Python 3.5 matrix multiplication."""
-        return self.check_py("35", "matrix multiplication", original, location, tokens)
+        return self.check_py("35", "matrix multiplication", original, loc, tokens)
 
-    def async_stmt_check(self, original, location, tokens):
+    def async_keyword_check(self, original, loc, tokens):
         """Checks for Python 3.5 async statement."""
-        return self.check_py("35", "async statement", original, location, tokens)
+        return self.check_py("35", "async statement", original, loc, tokens)
 
-    def await_keyword_check(self, original, location, tokens):
+    def async_comp_check(self, original, loc, tokens):
+        """Checks for Python 3.6 async comprehension."""
+        return self.check_py("36", "async comprehension", original, loc, tokens)
+
+    def await_keyword_check(self, original, loc, tokens):
         """Checks for Python 3.5 await expression."""
-        return self.check_py("35", "await expression", original, location, tokens)
+        return self.check_py("35", "await expression", original, loc, tokens)
 
-    def star_expr_check(self, original, location, tokens):
+    def star_expr_check(self, original, loc, tokens):
         """Checks for Python 3.5 star unpacking."""
-        return self.check_py("35", "star unpacking", original, location, tokens)
+        return self.check_py("35", "star unpacking", original, loc, tokens)
 
-    def f_string_check(self, original, location, tokens):
-        """Checks for Python 3.5 format strings."""
-        return self.check_py("36", "format string", original, location, tokens)
+    def f_string_check(self, original, loc, tokens):
+        """Checks for Python 3.6 format strings."""
+        return self.check_py("36", "format string", original, loc, tokens)
 
 # end: CHECKING HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1308,17 +1620,21 @@ class Compiler(Grammar):
         """Parses exec code."""
         return self.parse(inputstring, self.file_parser, {}, {"header": "file", "initial": "none"})
 
-    def parse_module(self, inputstring, addhash=True):
-        """Parses module code."""
+    def parse_package(self, inputstring, addhash=True):
+        """Parses package code."""
         if addhash:
             usehash = self.genhash(True, inputstring)
         else:
             usehash = None
-        return self.parse(inputstring, self.file_parser, {"nl_at_eof_check": True}, {"header": "module", "usehash": usehash})
+        return self.parse(inputstring, self.file_parser, {"nl_at_eof_check": True}, {"header": "package", "usehash": usehash})
 
     def parse_block(self, inputstring):
         """Parses block code."""
         return self.parse(inputstring, self.file_parser, {}, {"header": "none", "initial": "none"})
+
+    def parse_sys(self, inputstring):
+        """Parses module code."""
+        return self.parse(inputstring, self.file_parser, {}, {"header": "sys", "initial": "none"})
 
     def parse_eval(self, inputstring):
         """Parses eval code."""

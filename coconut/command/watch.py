@@ -19,8 +19,14 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
-from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer  # NOQA
+from coconut.exceptions import CoconutException
+
+try:
+    from watchdog.events import FileSystemEventHandler
+    from watchdog.observers import Observer  # NOQA
+except ImportError:
+    raise CoconutException("--watch flag requires watchdog library",
+                           extra="run 'pip install coconut[watch]' to fix")
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CLASSES:
@@ -33,7 +39,4 @@ class RecompilationWatcher(FileSystemEventHandler):
         self.recompile = recompile
 
     def on_modified(self, event):
-        self.recompile(event.src_path)
-
-    def on_created(self, event):
         self.recompile(event.src_path)

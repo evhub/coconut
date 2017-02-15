@@ -1,8 +1,8 @@
-requirements_file: reqs/requirements-docs.txt
-
 python:
     version: 3
     pip_install: true
+    extra_requirements:
+        - docs
 
 formats:
     - htmlzip

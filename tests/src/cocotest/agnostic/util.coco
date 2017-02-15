@@ -9,9 +9,9 @@ def rand_list(n):
 # Infix Functions:
 plus = (+)
 mod = (%)
-def a `mod_` b = a % b
+def (a: int) `mod_` (b: int) -> int = a % b
 base = int
-def (a) `join_with` (b=""):
+def a `join_with` (b=""):
     return b.join(a)
 
 # Basic Functions:
@@ -21,12 +21,13 @@ zipsum = map$(sum)..zip
 plus1 = plus$(1)
 ident = (x) -> x
 @ ident .. ident
-def plus1_(x) = x + 1
-def sqrt(x) = x**0.5
+def plus1_(x: int) -> int = x + 1
+def sqrt(x: int) -> float = x**0.5
 def sqrt_(x) = x**0.5
-square = (x) -> x**2
+square = (**)$(?, 2)
 plus1sq = square..plus1
-sqplus1 = plus1..square
+sqplus1 = plus1
+sqplus1 ..= square
 plus1sq_ = (x) -> x |> plus1 |> square
 sqplus1_ = (x) -> x |> square |> plus1
 clean = (s) -> s.strip()
@@ -37,6 +38,7 @@ def same(iter1, iter2) = map((==), iter1, iter2)
 def chain2(a, b):
     yield from a
     yield from b
+def threeple(a, b, c) = (a, b, c)
 
 # Partial Applications:
 sum_ = reduce$((+))
@@ -196,7 +198,7 @@ def is_null(item):
     else:
         return False
 
-# Match Functions:
+# Factorial:
 def factorial1(value):
     match 0 in value: return 1
     match n is int in value if n > 0: return n * factorial1(n-1)
@@ -230,6 +232,13 @@ def factorial5(value):
     else:
         return None
     raise TypeError()
+match def fact(n) = fact(n, 1)
+@addpattern(fact)
+match def fact(0, acc) = acc
+@addpattern(fact)
+match def fact(n, acc) = fact(n-1, acc*n)
+
+# Match Functions:
 def classify(value):
     match _ is tuple in value:
         match () in value:
@@ -552,3 +561,41 @@ def does_raise_exc(func):
         return func()
     except Exception:
         return True
+
+# Returns
+
+def ret_none(n):
+    if n != 0:
+        return ret_none(n - 1)
+
+def ret_args_kwargs(*args, **kwargs) = (args, kwargs)
+
+# Typing
+
+import sys
+if sys.version_info > (3, 5):
+    from typing import Any, List, Dict
+
+    def args_kwargs_func(args:List[Any]=[], kwargs:Dict[Any,Any]={}) -> None: pass
+else:
+    def args_kwargs_func(args: [int]=[], kwargs: {"str": int}={}) -> None: pass
+
+def anything_func(*args: int, **kwargs: int) -> None: pass
+
+# Enhanced Pattern-Matching
+
+def fact_(0, acc=1) = acc
+@addpattern(fact_)
+def fact_(n is int, acc=1 if n > 0) = fact_(n-1, acc*n)
+
+def x_is_int(x is int) = x
+
+def x_as_y(x as y) = (x, y)
+
+def (x is int) `x_y_are_int_gt_0` (y is int) if x > 0 and y > 0 = (x, y)
+
+def x_is_int_def_0(x is int = 0) = x
+
+def head_tail_def_none([head] + tail = [None]) = (head, tail)
+
+def kwd_only_x_is_int_def_0(*, x is int = 0) = x

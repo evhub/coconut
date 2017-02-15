@@ -7,15 +7,13 @@ Thumbs.db
 \#*\#
 .cache
 
-# Byte-compiled / optimized / DLL files
+# Python files
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
 *.so
 
-# Distribution / packaging
+# Packaging
 .Python
 env/
 build/
@@ -29,6 +27,8 @@ lib64/
 parts/
 sdist/
 var/
+bin/
+*.iml
 *.egg-info/
 .installed.cfg
 *.egg
@@ -40,6 +40,7 @@ var/
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
+*.log
 
 # Unit test / coverage reports
 htmlcov/
@@ -55,12 +56,6 @@ coverage.xml
 # Translations
 *.mo
 *.pot
-
-# Django
-*.log
-
-# Sphinx documentation
-_build/
 
 # PyBuilder
 target/
