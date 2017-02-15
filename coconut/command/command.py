@@ -32,7 +32,7 @@ from coconut.exceptions import (
     CoconutException,
     CoconutInternalException,
 )
-from coconut.terminal import logger
+from coconut.terminal import logger, printerr
 from coconut.constants import (
     fixpath,
     code_exts,
@@ -431,7 +431,7 @@ class Command(object):
         try:
             return self.prompt.input(more)
         except KeyboardInterrupt:
-            logger.printerr("\nKeyboardInterrupt")
+            printerr("\nKeyboardInterrupt")
         except EOFError:
             print()
             self.exit_runner()
@@ -445,8 +445,8 @@ class Command(object):
 
     def start_prompt(self):
         """Starts the interpreter."""
-        logger.print("Coconut Interpreter:")
-        logger.print('(type "exit()" or press Ctrl-D to end)')
+        print("Coconut Interpreter:")
+        print('(type "exit()" or press Ctrl-D to end)')
         self.start_running()
         while self.running:
             code = self.get_input()
@@ -546,14 +546,18 @@ class Command(object):
         """Run MyPy with arguments."""
         set_mypy_path(stub_dir)
         if self.mypy:
-            args = ["python3", "-m", "mypy"] + paths + self.mypy_args
-            if code is None:
-                run_cmd(args, raise_errs=False)
-            else:
-                for err in run_cmd(args + ["-c", code], show_output=False, raise_errs=False).splitlines():
-                    if err not in self.mypy_errs:
-                        logger.printerr(err)
-                        self.mypy_errs.append(err)
+            from coconut.command.mypy import mypy_run
+            args = paths + self.mypy_args
+            if code is not None:
+                args += ["-c", code]
+            for line, is_err in mypy_run(args):
+                if code is None or line not in self.mypy_errs:
+                    if is_err:
+                        printerr(line)
+                    else:
+                        print(line)
+                if line not in self.mypy_errs:
+                    self.mypy_errs.append(line)
 
     def start_jupyter(self, args):
         """Starts Jupyter with the Coconut kernel."""
@@ -600,7 +604,7 @@ class Command(object):
 
         source = fixpath(source)
 
-        logger.print()
+        print()
         logger.show_tabulated("Watching", showpath(source), "(press Ctrl-C to end)...")
 
         def recompile(path):

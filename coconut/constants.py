@@ -60,10 +60,7 @@ all_reqs = {
         "ipython",
     ],
     "mypy": [
-        "mypy-lang",
-    ],
-    "typed-ast": [
-        "typed_ast",
+        "mypy",
     ],
     "watch": [
         "watchdog",
@@ -94,12 +91,11 @@ req_vers = {
     "jupyter": (1, 0),
     "jupyter-console": (5, 1),
     "ipython": (5, 2),
-    "mypy-lang": (0, 4),
+    "mypy": (0, 470),
     "prompt_toolkit": (1, 0),
     "futures": (3, 0),
     "argparse": (1, 4),
     "pytest": (3, 0),
-    "typed_ast": (1, 0),
     "watchdog": (0, 8),
     "requests": (2, 13),
 }
