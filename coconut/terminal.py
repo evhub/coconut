@@ -105,14 +105,6 @@ class Logger(object):
         else:
             print(full_message)
 
-    def print(self, *messages):
-        """Prints messages."""
-        self.display(messages)
-
-    def printerr(self, *messages):
-        """Prints error messages with debug signature."""
-        self.display(messages, debug=True)
-
     def show(self, *messages):
         """Prints messages with main signature."""
         if not self.quiet:

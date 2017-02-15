@@ -78,9 +78,6 @@ extras = {
     "mypy": get_reqs("mypy"),
 }
 
-if sys.version_info >= (3, 3) and platform.system() != "Windows":
-    extras["mypy"] += get_reqs("typed-ast")
-
 extras["ipython"] = extras["jupyter"]
 
 extras["all"] = everything_in(extras)
