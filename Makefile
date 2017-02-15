@@ -30,6 +30,16 @@ clean:
 	find . -name '*.pyc' -delete
 	find . -name '__pycache__' -delete
 
+.PHONY: wipe
+wipe: clean
+	-pip uninstall coconut
+	-pip uninstall coconut-develop
+	-pip3 uninstall coconut
+	-pip3 uninstall coconut-develop
+	-pip2 uninstall coconut
+	-pip2 uninstall coconut-develop
+	rm -rf *.egg-info
+
 .PHONY: build
 build: clean
 	pip3 install --upgrade setuptools
