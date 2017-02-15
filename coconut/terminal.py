@@ -118,7 +118,7 @@ class Logger(object):
     def log(self, *messages):
         """Logs debug messages if in verbose mode."""
         if self.verbose:
-            self.printerr(*messages)
+            printerr(*messages)
 
     def log_show(self, *messages):
         """Logs debug messages with main signature."""
@@ -168,7 +168,7 @@ class Logger(object):
                         line = " " * taberrfmt + line
                     errmsg_lines.append(line)
                 errmsg = "\n".join(errmsg_lines)
-            self.printerr(errmsg)
+            printerr(errmsg)
 
     def log_cmd(self, args):
         """Logs a console command if in verbose mode."""
@@ -186,9 +186,9 @@ class Logger(object):
         if self.tracing:
             tagstr = "[" + str(tag) + "]"
             if multiline:
-                self.printerr(tagstr + "\n" + debug_clean(code))
+                printerr(tagstr + "\n" + debug_clean(code))
             else:
-                self.printerr(tagstr, ascii(code))
+                printerr(tagstr, ascii(code))
 
     def log_trace(self, tag, original, loc, tokens=None):
         """Formats and displays a trace if tracing."""
@@ -205,7 +205,7 @@ class Logger(object):
                 else:
                     out.append(str(tokens))
             out.append("(line " + str(lineno(loc, original)) + ", col " + str(col(loc, original)) + ")")
-            self.printerr(*out)
+            printerr(*out)
 
     def _trace_start_action(self, original, loc, expr):
         self.log_trace(expr, original, loc)
@@ -252,10 +252,10 @@ class Logger(object):
                 yield
             finally:
                 elapsed_time = time.clock() - start_time
-                self.printerr("Time while parsing:", elapsed_time, "seconds")
+                printerr("Time while parsing:", elapsed_time, "seconds")
                 if use_packrat:
                     hits, misses = ParserElement.packrat_cache_stats
-                    self.printerr("Packrat parsing stats:", hits, "hits;", misses, "misses")
+                    printerr("Packrat parsing stats:", hits, "hits;", misses, "misses")
         else:
             yield
 
@@ -271,7 +271,7 @@ class Logger(object):
 
     def pylog(self, *args, **kwargs):
         """Display all available logging information."""
-        self.printerr(self.name, args, kwargs, traceback.format_exc())
+        printerr(self.name, args, kwargs, traceback.format_exc())
     debug = info = warning = error = critical = exception = pylog
 
 
