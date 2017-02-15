@@ -44,6 +44,11 @@ runnable_py = os.path.join(src, "runnable.py")
 
 coconut_snip = r"msg = '<success>'; pmsg = print$(msg); `pmsg`"
 
+ignore_mypy_errs_with = (
+    "already defined",
+    "cannot determine type of",
+)
+
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -54,26 +59,28 @@ def escape(inputstring):
     return inputstring.replace("$", "\\$").replace("`", "\\`")
 
 
-def call(cmd, assert_output=False, check_mypy=None, ignore_mypy=("tutorial",), **kwargs):
+def call(cmd, assert_output=False, check_mypy=None, **kwargs):
     """Executes a shell command."""
     if assert_output is True:
         assert_output = "<success>"
     if check_mypy is None:
         check_mypy = all("extras" not in arg for arg in cmd)
     print("\n>", (cmd if isinstance(cmd, str) else " ".join(cmd)))
-    line = None
+    lines = []
     for raw_line in subprocess.Popen(cmd, stdout=subprocess.PIPE, **kwargs).stdout.readlines():
         line = raw_line.rstrip().decode(sys.stdout.encoding)
+        print(line)
+        lines.append(line)
+    for line in lines:
         assert "Traceback (most recent call last):" not in line
         assert "Exception" not in line
         assert "Error" not in line
-        if check_mypy and all(test not in line for test in ignore_mypy):
+        if check_mypy and all(test not in line for test in ignore_mypy_errs_with):
             assert "error:" not in line
-        print(line)
     if assert_output is None:
-        assert line is None
+        assert not lines
     elif assert_output is not False:
-        assert assert_output in line
+        assert lines and assert_output in lines[-1]
 
 
 def call_coconut(args):

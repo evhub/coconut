@@ -358,7 +358,7 @@ class Compiler(Grammar):
 
     def wrap_comment(self, text):
         """Wraps a comment."""
-        return "#" + self.add_ref(text) + unwrapper
+        return "#" + self.add_ref(self.reformat(text)) + unwrapper
 
     def wrap_line_number(self, ln):
         """Wraps a line number."""
