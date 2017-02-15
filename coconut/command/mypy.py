@@ -47,6 +47,8 @@ def mypy_run(args):
 
     try:
         main(None)
+    except SystemExit:
+        pass
     except:
         traceback.print_exc()
 

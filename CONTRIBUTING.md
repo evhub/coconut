@@ -58,10 +58,12 @@ Contributing to Coconut is as simple as
             + Creates the `ArgumentParser` object used to parse Coconut command-line arguments.
         - `command.py`
             + Contains `Command`, whose `start` method is the main entry point for the Coconut command-line utility.
+        - `mypy.py`
+            + Contains objects necessary for Coconut's `--mypy` flag.
         - `util.py`
             + Contains utilities used by `command.py`, including `Prompt` for getting syntax-highlighted input, and `Runner` for executing compiled Python.
         - `watch.py`
-            + Contains classes necessary for Coconut's `--watch` flag.
+            + Contains objects necessary for Coconut's `--watch` flag.
     - compiler
         - `__init__.py`
             + Imports everything in `compiler.py`.
