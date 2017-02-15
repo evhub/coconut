@@ -25,7 +25,8 @@ import sys as _coconut_sys
 
 VERSION = "1.2.1"
 VERSION_NAME = "Colonel"
-DEVELOP = False
+# False for release, int >= 1 for develop
+DEVELOP = 1
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
