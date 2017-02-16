@@ -356,9 +356,11 @@ class Compiler(Grammar):
             out += "\n"
         return out
 
-    def wrap_comment(self, text):
+    def wrap_comment(self, text, reformat=True):
         """Wraps a comment."""
-        return "#" + self.add_ref(self.reformat(text)) + unwrapper
+        if reformat:
+            text = self.reformat(text)
+        return "#" + self.add_ref(text) + unwrapper
 
     def wrap_line_number(self, ln):
         """Wraps a line number."""
@@ -496,7 +498,7 @@ class Compiler(Grammar):
                                 out = ["\n".join(lines)]
                             out.append(c)
                         else:
-                            out.append(self.wrap_comment(hold[_comment]) + c)
+                            out.append(self.wrap_comment(hold[_comment], reformat=False) + c)
                         hold = None
                     else:
                         hold[_comment] += c
@@ -775,7 +777,7 @@ class Compiler(Grammar):
                 comment = " line " + str(ln)
         else:
             raise CoconutInternalException("attempted to add line number comment without --line-numbers or --keep-lines")
-        return self.wrap_comment(comment)
+        return self.wrap_comment(comment, reformat=False)
 
     def endline_repl(self, inputstring, add_to_line=True, **kwargs):
         """Adds in end line comments."""
