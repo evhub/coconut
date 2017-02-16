@@ -45,6 +45,7 @@ runnable_py = os.path.join(src, "runnable.py")
 coconut_snip = r"msg = '<success>'; pmsg = print$(msg); `pmsg`"
 
 ignore_mypy_errs_with = (
+    "tutorial",
     "already defined",
     "cannot determine type of",
     "decorator expected",
@@ -276,14 +277,21 @@ class TestCompilation(unittest.TestCase):
         def test_jobs_zero(self):
             run(["--jobs", "0"])
 
+    if sys.version_info >= (3, 4):
+        def test_mypy(self):
+            run(["--mypy", "--ignore-missing-imports"])
+
+    def test_strict(self):
+        run(["--strict"])
+
     def test_run(self):
         run(use_run_arg=True)
 
-    def test_standalone(self):
-        run(["--standalone"])
-
     def test_package(self):
         run(["--package"])
+
+    def test_standalone(self):
+        run(["--standalone"])
 
     def test_line_numbers(self):
         run(["--linenumbers"])
@@ -293,13 +301,6 @@ class TestCompilation(unittest.TestCase):
 
     def test_minify(self):
         run(["--minify"])
-
-    def test_strict(self):
-        run(["--strict"])
-
-    if sys.version_info >= (3, 4):
-        def test_mypy(self):
-            run(["--mypy", "--ignore-missing-imports"])
 
 
 class TestExternal(unittest.TestCase):
