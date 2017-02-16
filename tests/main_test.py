@@ -47,6 +47,7 @@ coconut_snip = r"msg = '<success>'; pmsg = print$(msg); `pmsg`"
 ignore_mypy_errs_with = (
     "already defined",
     "cannot determine type of",
+    "decorator expected",
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -297,9 +298,8 @@ class TestCompilation(unittest.TestCase):
         run(["--strict"])
 
     if sys.version_info >= (3, 4):
-
         def test_mypy(self):
-            run(["--mypy"])
+            run(["--mypy", "--ignore-missing-imports"])
 
 
 class TestExternal(unittest.TestCase):
