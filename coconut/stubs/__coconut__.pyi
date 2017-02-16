@@ -24,7 +24,7 @@ if sys.version_info >= (3,):
 
 else:
     import __builtin__ as _b
-    from future_builtins import *  # type: ignore
+    from future_builtins import *
     from io import open
 
     py_raw_input, py_xrange = _b.raw_input, _b.xrange
@@ -91,7 +91,9 @@ def _coconut_igetitem(
     ) -> Iterable[_T]: ...
 
 
-def _coconut_compose(*funcs: Callable) -> Callable[..., Any]: ...
+class _coconut_compose:
+    def __init__(self, *funcs: Any) -> None: ...
+    def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
 
 
 def _coconut_pipe(x: _T, f: Callable[[_T], _S]) -> _S: ...
