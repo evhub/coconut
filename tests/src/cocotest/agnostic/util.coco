@@ -578,7 +578,7 @@ if sys.version_info > (3, 5):
 
     def args_kwargs_func(args:List[Any]=[], kwargs:Dict[Any, Any]={}) -> None: pass
 else:
-    def args_kwargs_func(args:"List[Any]"=[], kwargs:"Dict[Any, Any]"={}) -> None: pass
+    def args_kwargs_func(args:"List"=[], kwargs:"Dict"={}) -> None: pass
 
 def anything_func(*args: int, **kwargs: int) -> None: pass
 
