@@ -45,12 +45,12 @@ runnable_py = os.path.join(src, "runnable.py")
 coconut_snip = r"msg = '<success>'; pmsg = print$(msg); `pmsg`"
 
 ignore_mypy_errs_with = (
-    "tutorial",
     "already defined",
     "cannot determine type of",
     "decorator expected",
-    "coconut_compose_",
-    "coconut_partial_",
+    "tutorial",
+    "_coconut_compose",
+    "_coconut_partial",
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
