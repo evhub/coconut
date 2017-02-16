@@ -49,6 +49,8 @@ ignore_mypy_errs_with = (
     "already defined",
     "cannot determine type of",
     "decorator expected",
+    "coconut_compose_",
+    "coconut_partial_",
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
