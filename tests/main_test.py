@@ -46,7 +46,7 @@ coconut_snip = r"msg = '<success>'; pmsg = print$(msg); `pmsg`"
 
 ignore_mypy_errs_with = (
     "already defined",
-    "cannot determine type of",
+    "Cannot determine type of",
     "decorator expected",
     "tutorial",
     "_coconut_compose",
