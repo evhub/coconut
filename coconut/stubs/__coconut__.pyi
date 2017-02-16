@@ -104,14 +104,18 @@ def _coconut_starpipe(xs: Iterable, f: Callable[..., _T]) -> _T: ...
 def _coconut_backstarpipe(f: Callable[..., _T], xs: Iterable) -> _T: ...
 
 
-def _coconut_bool_and(a: Any, b: Any) -> bool: ...
-def _coconut_bool_or(a: Any, b: Any) -> bool: ...
+def _coconut_bool_and(a, b) -> bool:
+    return a and b
+def _coconut_bool_or(a, b) -> bool:
+    return a or b
 
 
 @overload
-def _coconut_minus(a: _T) -> _T: ...
+def _coconut_minus(a):
+    return -a
 @overload
-def _coconut_minus(a: _T, b: _S) -> Union[_T, _S]: ...
+def _coconut_minus(a, b):
+    return a - b
 
 
 class count:
