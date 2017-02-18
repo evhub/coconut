@@ -20,6 +20,9 @@ from coconut.root import *  # NOQA
 import sys
 import platform
 
+import setuptools
+
+from coconut.exceptions import CoconutException
 from coconut.constants import all_reqs, req_vers
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -63,14 +66,6 @@ def everything_in(req_dict):
 
 requirements = get_reqs()
 
-if PY26:
-    requirements += get_reqs("py26")
-else:
-    requirements += get_reqs("non-py26")
-
-if PY2:
-    requirements += get_reqs("py2")
-
 extras = {
     "jupyter": get_reqs("jupyter"),
     "watch": get_reqs("watch"),
@@ -95,6 +90,20 @@ extras["dev"] = uniqueify(
     everything_in(extras)
     + get_reqs("dev")
 )
+
+if int(setuptools.__version__.split(".", 1)[0]) < 18:
+    if "bdist_wheel" in sys.argv:
+        raise CoconutException("bdist_wheel not supported for setuptools versions < 18", extra="run 'pip install --upgrade setuptools' to fix")
+    if PY26:
+        requirements += get_reqs("py26")
+    else:
+        requirements += get_reqs("non-py26")
+    if PY2:
+        requirements += get_reqs("py2")
+else:
+    extras[":python_version<'2.7'"] = get_reqs("py26")
+    extras[":python_version>='2.7'"] = get_reqs("non-py26")
+    extras[":python_version<'3'"] = get_reqs("py2")
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:

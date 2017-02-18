@@ -179,16 +179,20 @@ def handling_broken_process_pool():
 
 def kill_children():
     """Terminates all child processes."""
-    import psutil
-    master = psutil.Process()
-    children = master.children(recursive=True)
-    while children:
-        for child in children:
-            try:
-                child.terminate()
-            except psutil.NoSuchProcess:
-                pass  # process is already dead, so do nothing
+    try:
+        import psutil
+    except ImportError:
+        logger.warn("missing psutil; --jobs may not properly terminate", extra="run 'pip install coconut[jobs]' to fix")
+    else:
+        master = psutil.Process()
         children = master.children(recursive=True)
+        while children:
+            for child in children:
+                try:
+                    child.terminate()
+                except psutil.NoSuchProcess:
+                    pass  # process is already dead, so do nothing
+            children = master.children(recursive=True)
 
 
 def splitname(path):
