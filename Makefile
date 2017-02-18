@@ -1,11 +1,12 @@
 .PHONY: install
 install:
+	pip install "setuptools>=18.8.1"
 	pip install "pip>=7.1.2"
 	pip install .[tests]
 
 .PHONY: dev
 dev:
-	pip3 install --upgrade pip
+	pip3 install --upgrade setuptools pip
 	pip3 install --upgrade -e .[dev]
 	pre-commit install -f --install-hooks
 
@@ -41,8 +42,7 @@ wipe: clean
 	rm -rf *.egg-info
 
 .PHONY: build
-build: clean
-	pip3 install --upgrade setuptools
+build: clean dev
 	python3 setup.py sdist bdist_wheel
 
 .PHONY: upload
