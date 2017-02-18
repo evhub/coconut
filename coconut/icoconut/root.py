@@ -44,6 +44,19 @@ from coconut.command.util import Runner
 COMPILER = Compiler(target="sys")
 RUNNER = Runner(COMPILER)
 
+parse_block_memo = {}
+
+
+def memoized_parse_block(code):
+    """Memoized version of parse_block."""
+    if code in parse_block_memo:
+        return parse_block_memo[code]
+    else:
+        parsed = COMPILER.parse_block(code)
+        parse_block_memo[code] = parsed
+        return parsed
+
+
 #-----------------------------------------------------------------------------------------------------------------------
 # KERNEL:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -60,7 +73,7 @@ class CoconutCompiler(CachingCompiler, object):
     def ast_parse(self, source, *args, **kwargs):
         """Version of ast_parse that compiles Coconut code first."""
         try:
-            compiled = COMPILER.parse_block(source)
+            compiled = memoized_parse_block(source)
         except CoconutException as err:
             raise err.syntax_err()
         else:
@@ -78,7 +91,7 @@ class CoconutSplitter(IPythonInputSplitter, object):
     def _coconut_compile(self, source, *args, **kwargs):
         """Version of _compile that compiles Coconut code first."""
         try:
-            compiled = COMPILER.parse_block(source)
+            compiled = memoized_parse_block(source)
         except CoconutException as err:
             if source.endswith("\n\n"):
                 raise err.syntax_err()
