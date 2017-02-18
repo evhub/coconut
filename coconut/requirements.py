@@ -22,7 +22,6 @@ import platform
 
 import setuptools
 
-from coconut.exceptions import CoconutException
 from coconut.constants import all_reqs, req_vers
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -93,7 +92,7 @@ extras["dev"] = uniqueify(
 
 if int(setuptools.__version__.split(".", 1)[0]) < 18:
     if "bdist_wheel" in sys.argv:
-        raise CoconutException("bdist_wheel not supported for setuptools versions < 18", extra="run 'pip install --upgrade setuptools' to fix")
+        raise RuntimeError("bdist_wheel not supported for setuptools versions < 18 (run 'pip install --upgrade setuptools' to fix)")
     if PY26:
         requirements += get_reqs("py26")
     else:
