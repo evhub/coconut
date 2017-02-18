@@ -1,6 +1,5 @@
 .PHONY: install
 install:
-	pip install "setuptools>=18.8.1"
 	pip install "pip>=7.1.2"
 	pip install .[tests]
 
