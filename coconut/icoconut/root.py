@@ -67,6 +67,11 @@ def memoized_parse_block(code, none_if_not_found=False):
         return result
 
 
+def memoized_parse_sys(code):
+    """Memoized version of parse_sys."""
+    return COMPILER.header_proc(memoized_parse_block(code), header="sys", initial="none")
+
+
 #-----------------------------------------------------------------------------------------------------------------------
 # KERNEL:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -75,15 +80,10 @@ def memoized_parse_block(code, none_if_not_found=False):
 class CoconutCompiler(CachingCompiler, object):
     """IPython compiler for Coconut."""
 
-    def __init__(self, *args, **kwargs):
-        """Version of __init__ that remembers header futures."""
-        super(CoconutCompiler, self).__init__(*args, **kwargs)
-        super(CoconutCompiler, self).ast_parse(COMPILER.getheader("sys"))
-
     def ast_parse(self, source, *args, **kwargs):
         """Version of ast_parse that compiles Coconut code first."""
         try:
-            compiled = memoized_parse_block(source)
+            compiled = memoized_parse_sys(source)
         except CoconutException as err:
             raise err.syntax_err()
         else:
@@ -129,7 +129,7 @@ class CoconutShell(ZMQInteractiveShell, object):
 
     def run_cell(self, raw_cell, store_history=False, silent=False, shell_futures=None):
         """Version of run_cell that always uses shell_futures."""
-        return super(CoconutShell, self).run_cell(raw_cell, store_history, silent)
+        return super(CoconutShell, self).run_cell(raw_cell, store_history, silent, shell_futures=True)
 
     def user_expressions(self, expressions):
         """Version of user_expressions that compiles Coconut code first."""
