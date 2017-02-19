@@ -82,7 +82,7 @@ all_reqs = {
 
 req_vers = {
     "pyparsing": (2, 1, 10),
-    "pre-commit": (0, 12),
+    "pre-commit": (0, 13),
     "sphinx": (1, 5),
     "pygments": (2, 2),
     "recommonmark": (0, 4),
