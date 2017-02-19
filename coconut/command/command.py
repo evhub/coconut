@@ -472,7 +472,7 @@ class Command(object):
                 line = self.get_input(more=True)
                 if line is None:
                     return None
-                elif line.strip():
+                elif line:
                     code += "\n" + line
                 else:
                     break
