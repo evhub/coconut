@@ -35,6 +35,7 @@ from coconut.constants import (
     code_exts,
 )
 from coconut.compiler import Compiler
+from coconut.compiler.util import should_indent
 from coconut.command.util import Runner
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -100,11 +101,14 @@ class CoconutSplitter(IPythonInputSplitter, object):
 
     def _coconut_compile(self, source, *args, **kwargs):
         """Version of _compile that compiles Coconut code first."""
-        awaiting_input = "\n" in source.rstrip() and not source.endswith("\n\n")
+        awaiting_input = ("\n" in source.rstrip() or should_indent(source)) and not source.endswith("\n\n")
         try:
             compiled = memoized_parse_block(source, none_if_not_found=awaiting_input)
         except CoconutException as err:
-            raise err.syntax_err()
+            if source.endswith("\n\n"):
+                raise err.syntax_err()
+            else:
+                return None
         else:
             if compiled is None:
                 return None
