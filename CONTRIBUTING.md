@@ -1,6 +1,6 @@
 # Coconut Contributing Guidelines
 
-**Anyone is welcome to submit a pull request regardless of whether or not they have read this document.** The purpose of this document is simply to explain the contribution process and the internals of how Coconut works to make contributing easier.
+**Anyone is welcome to submit an issue or pull request regardless of whether or not they have read this document.** The purpose of this document is simply to explain the contribution process and the internals of how Coconut works to make contributing easier.
 
 ## Asking Questions
 
