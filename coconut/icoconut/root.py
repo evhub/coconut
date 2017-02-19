@@ -47,11 +47,13 @@ RUNNER = Runner(COMPILER)
 parse_block_memo = {}
 
 
-def memoized_parse_block(code):
+def memoized_parse_block(code, none_if_not_found=False):
     """Memoized version of parse_block."""
-    if code in parse_block_memo:
+    try:
         result = parse_block_memo[code]
-    else:
+    except KeyError:
+        if none_if_not_found:
+            return None
         try:
             parsed = COMPILER.parse_block(code)
         except Exception as err:
@@ -98,15 +100,16 @@ class CoconutSplitter(IPythonInputSplitter, object):
 
     def _coconut_compile(self, source, *args, **kwargs):
         """Version of _compile that compiles Coconut code first."""
+        awaiting_input = "\n" in source.rstrip() and not source.endswith("\n\n")
         try:
-            compiled = memoized_parse_block(source)
+            compiled = memoized_parse_block(source, none_if_not_found=awaiting_input)
         except CoconutException as err:
-            if source.endswith("\n\n"):
-                raise err.syntax_err()
-            else:
-                return None
+            raise err.syntax_err()
         else:
-            return self._python_compile(compiled)
+            if compiled is None:
+                return None
+            else:
+                return self._python_compile(compiled)
 
 
 class CoconutShell(ZMQInteractiveShell, object):
