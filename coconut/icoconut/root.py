@@ -48,13 +48,11 @@ RUNNER = Runner(COMPILER)
 parse_block_memo = {}
 
 
-def memoized_parse_block(code, none_if_not_found=False):
+def memoized_parse_block(code):
     """Memoized version of parse_block."""
     try:
         result = parse_block_memo[code]
     except KeyError:
-        if none_if_not_found:
-            return None
         try:
             parsed = COMPILER.parse_block(code)
         except Exception as err:
@@ -97,23 +95,25 @@ class CoconutSplitter(IPythonInputSplitter, object):
     def __init__(self, *args, **kwargs):
         """Version of __init__ that sets up Coconut code compilation."""
         super(CoconutSplitter, self).__init__(*args, **kwargs)
-        self._python_compile, self._compile = self._compile, self._coconut_compile
+        self._compile = self._coconut_compile
 
     def _coconut_compile(self, source, *args, **kwargs):
-        """Version of _compile that compiles Coconut code first."""
-        awaiting_input = ("\n" in source.rstrip() or should_indent(source)) and not source.endswith("\n\n")
-        try:
-            compiled = memoized_parse_block(source, none_if_not_found=awaiting_input)
-        except CoconutException as err:
-            if source.endswith("\n\n"):
-                raise err.syntax_err()
-            else:
+        """Version of _compile that compiles Coconut code.
+        None means that the code should not be run as is.
+        Any other value means that it can."""
+        if source.endswith("\n\n"):
+            return True
+        elif should_indent(source):
+            return None
+        elif "\n" not in source.rstrip():  # if at start
+            try:
+                memoized_parse_block(source)
+            except CoconutException:
                 return None
+            else:
+                return True
         else:
-            if compiled is None:
-                return None
-            else:
-                return self._python_compile(compiled)
+            return True
 
 
 class CoconutShell(ZMQInteractiveShell, object):
