@@ -91,7 +91,7 @@ class CoconutLexer(Python3Lexer):
         (r"0b[01_]+", Number.Integer),
         (r"0o[0-7_]+", Number.Integer),
         (r"0x[\da-fA-F_]+", Number.Integer),
-        (r"\d[\d_]*(\.\d[\d_]*)?", Number.Integer),
+        (r"\d[\d_]*(\.\d[\d_]*)?((e|E)[\d_]+)?(j|J)?", Number.Integer),
     ] + tokens["numbers"]
 
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tabideal, encoding=default_encoding):

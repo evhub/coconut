@@ -523,9 +523,12 @@ class Grammar(object):
     hexint = Combine(Word(hexnums) + ZeroOrMore(underscore.suppress() + Word(hexnums)))
 
     imag_j = CaselessLiteral("j") | fixto(CaselessLiteral("i"), "j")
-    basenum = Combine(integer + dot + (integer | FollowedBy(imag_j) | ~name) | Optional(integer) + dot + integer) | integer
+    basenum = Combine(
+        integer + dot + (integer | FollowedBy(imag_j) | ~name)
+        | Optional(integer) + dot + integer
+    ) | integer
     sci_e = Combine(CaselessLiteral("e") + Optional(plus | neg_minus))
-    numitem = Combine(basenum + Optional(sci_e + integer))
+    numitem = ~(Literal("0") + Word(nums + "_", exact=1)) + Combine(basenum + Optional(sci_e + integer))
     imag_num = Combine(numitem + imag_j)
     bin_num = Combine(CaselessLiteral("0b") + Optional(underscore.suppress()) + binint)
     oct_num = Combine(CaselessLiteral("0o") + Optional(underscore.suppress()) + octint)
