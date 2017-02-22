@@ -199,7 +199,7 @@ class Command(object):
             else:
                 package = None  # auto-decide package
 
-            with self.running_jobs():
+            with self.running_jobs(exit_on_error=not args.watch):
                 filepaths = self.compile_path(args.source, dest, package, args.run or args.interact, args.force)
             self.run_mypy(filepaths)
 
@@ -395,7 +395,7 @@ class Command(object):
                 self.jobs = jobs
 
     @contextmanager
-    def running_jobs(self):
+    def running_jobs(self, exit_on_error=True):
         """Initialize multiprocessing."""
         with self.handling_exceptions():
             if self.jobs == 0:
@@ -407,7 +407,8 @@ class Command(object):
                         yield
                 finally:
                     self.executor = None
-        self.exit_on_error()
+        if exit_on_error:
+            self.exit_on_error()
 
     def create_package(self, dirpath):
         """Sets up a package directory."""
