@@ -226,11 +226,14 @@ def call_output(cmd):
 
 def run_cmd(cmd, show_output=True, raise_errs=True):
     """Runs a console command."""
-    if not isinstance(cmd, list):
-        raise CoconutInternalException("console commands must be passed as lists")
+    if not cmd or not isinstance(cmd, list):
+        raise CoconutInternalException("console commands must be passed as non-empty lists")
     else:
-        if sys.version_info >= (3, 3):
+        try:
             import shutil
+        except ImportError:
+            pass
+        else:
             cmd[0] = shutil.which(cmd[0]) or cmd[0]
         logger.log_cmd(cmd)
         if show_output and raise_errs:
@@ -266,11 +269,11 @@ class Prompt(object):
 
     def __init__(self):
         """Set up the prompt."""
-        if style_env_var in os.environ:
-            self.set_style(os.environ[style_env_var])
-        elif prompt_toolkit is not None:
-            self.style = default_style
         if prompt_toolkit is not None:
+            if style_env_var in os.environ:
+                self.set_style(os.environ[style_env_var])
+            else:
+                self.style = default_style
             self.history = prompt_toolkit.history.InMemoryHistory()
 
     def set_style(self, style):
