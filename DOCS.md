@@ -271,7 +271,7 @@ In addition to function argument type annotation, Coconut also supports variable
 
 Coconut even supports `--mypy` in the interpreter, which will intelligently scan each new line of code, in the context of previous lines, for newly-introduced MyPy errors. For example:
 ```coconut
->>> a = count()[0]  # type: str
+>>> a: str = count()[0]
 <string>:14: error: Incompatible types in assignment (expression has type "int", variable has type "str")
 ```
 
@@ -1583,7 +1583,7 @@ Coconut provides a `recursive_iterator` decorator that provides significant opti
 
 1. your function either always `return`s an iterator or generates an iterator using `yield`,
 2. when called multiple times with the same arguments, your function produces the same iterator (your function is stateless),
-3. your function calls itself multiple times with the same arguments, and
+3. your function gets called multiple times with the same arguments, and
 4. all arguments passed to your function have a unique pickling (this should almost always be true).
 
 If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for `recursive_iterator`, or the corresponding criteria for Coconut's [tail call optimization](#tail-call-optimization), either of which should prevent such errors.

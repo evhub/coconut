@@ -33,7 +33,7 @@ Information on every Coconut release is chronicled on the [GitHub releases page]
 
 ### Help! I tried to write a recursive iterator and my Python segfaulted!
 
-No problem—just use Coconut's [`recursive_iterator`](http://coconut.readthedocs.io/en/master/DOCS.html#recursive_iterator) decorator and you should be fine. This is a [known Python issue](http://bugs.python.org/issue14010) but `recursive_iterator` will fix it for you.
+No problem—just use Coconut's [`recursive_iterator`](http://coconut.readthedocs.io/en/master/DOCS.html#recursive-iterator) decorator and you should be fine. This is a [known Python issue](http://bugs.python.org/issue14010) but `recursive_iterator` will fix it for you.
 
 ### If I'm already perfectly happy with Python, why should I learn Coconut?
 

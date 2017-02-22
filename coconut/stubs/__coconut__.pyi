@@ -18,17 +18,13 @@ _T = TypeVar('_T')
 _S = TypeVar('_S')
 
 
-if sys.version_info >= (3,):
-    import builtins as _b
-    ascii, filter, hex, map, oct, zip, open, chr, str, range = _b.ascii, _b.filter, _b.hex, _b.map, _b.oct, _b.zip, _b.open, _b.chr, _b.str, _b.range
-
-else:
+if sys.version_info < (3,):
     import __builtin__ as _b
     from future_builtins import *
     from io import open
 
     py_raw_input, py_xrange = _b.raw_input, _b.xrange
-    chr, str = _b.unichr, _b.unicode
+    # chr, str = _b.unichr, _b.unicode
 
     class range:
         def __init__(self,
@@ -44,6 +40,9 @@ else:
         def __hash__(self) -> int: ...
         def count(self, elem: int) -> int: ...
         def index(self, elem: int) -> int: ...
+else:
+    import builtins as _b
+    ascii, filter, hex, map, oct, zip, open, chr, str, range = _b.ascii, _b.filter, _b.hex, _b.map, _b.oct, _b.zip, _b.open, _b.chr, _b.str, _b.range
 
 
 py_chr, py_filter, py_hex, py_input, py_int, py_map, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate = _b.chr, _b.filter, _b.hex, _b.input, _b.int, _b.map, _b.oct, _b.open, _b.print, _b.range, _b.str, _b.zip, _b.filter, _b.reversed, _b.enumerate
