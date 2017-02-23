@@ -52,7 +52,7 @@ range(15) |> map$((*)$(2)) |> list
 ```
 - parallel programming
 ```coconut
-range(100) |> parallel_map$((x) -> x ** 2) |> list
+range(100) |> parallel_map$(pow$(2)) |> list
 ```
 - tail recursion optimization
 ```coconut

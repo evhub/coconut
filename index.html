@@ -76,8 +76,7 @@
 <li>destructuring assignment</li>
 </ul>
 <div class="highlight-coconut"><div class="highlight"><pre>
-<span class="k">match</span> <span class="p">[</span><span class="n">head</span><span class="p">]</span> <span class="o">+</span> <span class="n">tail</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">head</span><span class="p">,</span> <span class="n">tail</span><span class="p">)</span>
+<span class="p">{</span><span class="s2">&quot;list&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">rest</span><span class="p">}</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;list&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]}</span>
 </pre></div>
 </div>
 <ul class="simple">
@@ -112,7 +111,7 @@
 <li>parallel programming</li>
 </ul>
 <div class="highlight-coconut"><div class="highlight"><pre>
-<span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="nb">parallel_map</span><span class="o">$</span><span class="p">((</span><span class="n">x</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="nb">list</span>
+<span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="nb">parallel_map</span><span class="o">$</span><span class="p">(</span><span class="nb">pow</span><span class="o">$</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span> <span class="o">|&gt;</span> <span class="nb">list</span>
 </pre></div>
 </div>
 <ul class="simple">

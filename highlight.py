@@ -37,4 +37,5 @@ def highlight_examples():
 
 
 if __name__ == "__main__":
-    print(highlight_examples())
+    with open("examples.html", "w") as examples:
+        examples.write(highlight_examples())
