@@ -23,7 +23,7 @@ which will give you access to all the features of Coconut, which adds to Python 
 ```
 - partial application
 ```coconut
-range(10) |> map$((x) -> x ** 2) |> list
+range(10) |> map$(pow$(?, 2)) |> list
 ```
 - pattern-matching
 ```coconut
@@ -52,7 +52,7 @@ range(15) |> map$((*)$(2)) |> list
 ```
 - parallel programming
 ```coconut
-range(100) |> parallel_map$((**)$(2)) |> list
+range(100) |> parallel_map$((x) -> x ** 2) |> list
 ```
 - tail recursion optimization
 ```coconut

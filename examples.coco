@@ -1,0 +1,50 @@
+"hello, world!" |> print
+
+
+(x) -> x ** 2
+
+
+range(10) |> map$(pow$(?, 2)) |> list
+
+
+match [head] + tail in [0, 1, 2, 3]:
+    print(head, tail)
+
+
+{"list": [0] + rest} = {"list": [0, 1, 2, 3]}
+
+
+5 `mod` 3 == 2
+
+
+range(15) |> map$((*)$(2)) |> list
+
+
+(f .. g .. h)(x, y, z)
+
+
+(| first_elem() |) :: rest_elems()
+
+
+range(100) |> parallel_map$((x) -> x ** 2) |> list
+
+
+def factorial(n, acc=1):
+    case n:
+        match 0:
+            return acc
+        match _ is int if n > 0:
+            return factorial(n-1, acc*n)
+
+
+data Empty()
+data Leaf(n)
+data Node(l, r)
+
+def size(Empty()) = 0
+
+@addpattern(size)
+def size(Leaf(n)) = 1
+
+@addpattern(size)
+def size(Node(l, r)) = size(l) + size(r)
