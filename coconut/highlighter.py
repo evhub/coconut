@@ -22,6 +22,7 @@ from coconut.root import *  # NOQA
 from pygments.lexers import Python3Lexer, PythonConsoleLexer
 from pygments.token import Text, Operator, Keyword, Name, Number
 from pygments.lexer import words, bygroups
+from pygments.util import shebang_matches
 
 from coconut.constants import (
     builtins,
@@ -30,6 +31,7 @@ from coconut.constants import (
     default_encoding,
     code_exts,
     reserved_vars,
+    shebang_regex,
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -98,3 +100,6 @@ class CoconutLexer(Python3Lexer):
         """Initialize the Python syntax highlighter."""
         Python3Lexer.__init__(self, stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=default_encoding)
         self.original_add_filter, self.add_filter = self.add_filter, lenient_add_filter
+
+    def analyse_text(text):
+        return shebang_matches(text, shebang_regex)

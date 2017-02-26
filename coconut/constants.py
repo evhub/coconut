@@ -400,6 +400,8 @@ stub_dir = os.path.join(base_dir, "stubs")
 # HIGHLIGHTER CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
+shebang_regex = r'coconut(-run)?'
+
 builtins = (
     "reduce",
     "takewhile",
@@ -436,6 +438,11 @@ new_operators = (
     r"`",
     r"::",
     r"(?!\.\.\.)\.\.",
+    r"\|>",
+    r"<\|",
+    r"\|\*>",
+    r"<\*\|",
+    r"->",
     r"\u2192",
     r"\u21a6",
     r"\u21a4",
