@@ -516,6 +516,7 @@ class Grammar(object):
     for k in reserved_vars:
         base_name |= backslash.suppress() + Keyword(k)
     dotted_name = condense(name + ZeroOrMore(dot + name))
+    dotted_base_name = condense(base_name + ZeroOrMore(dot + base_name))
 
     integer = Combine(Word(nums) + ZeroOrMore(underscore.suppress() + Word(nums)))
     binint = Combine(Word("01") + ZeroOrMore(underscore.suppress() + Word("01")))
@@ -1060,10 +1061,10 @@ class Grammar(object):
     ) + rparen.suppress()
 
     return_typedef = Forward()
-    name_funcdef = trace(condense(name + parameters))
+    name_funcdef = trace(condense(dotted_name + parameters))
     op_tfpdef = unsafe_typedef_default | condense(name + Optional(default))
     op_funcdef_arg = name | condense(lparen.suppress() + op_tfpdef + rparen.suppress())
-    op_funcdef_name = backtick.suppress() + name + backtick.suppress()
+    op_funcdef_name = backtick.suppress() + dotted_name + backtick.suppress()
     op_funcdef = trace(attach(
         Group(Optional(op_funcdef_arg))
         + op_funcdef_name
@@ -1077,7 +1078,7 @@ class Grammar(object):
 
     name_match_funcdef = Forward()
     op_match_funcdef = Forward()
-    name_match_funcdef_ref = name + lparen.suppress() + match_args_list + match_guard + rparen.suppress()
+    name_match_funcdef_ref = dotted_name + lparen.suppress() + match_args_list + match_guard + rparen.suppress()
     op_match_funcdef_arg = Group(Optional(lparen.suppress()
                                           + Group(match + Optional(equals.suppress() + test))
                                           + rparen.suppress()))
@@ -1224,7 +1225,7 @@ class Grammar(object):
         comma + Optional(passthrough))))
 
     split_func_name_args_params = attach(
-        (start_marker + Keyword("def")).suppress() + base_name + lparen.suppress()
+        (start_marker + Keyword("def")).suppress() + dotted_base_name + lparen.suppress()
         + parameters_tokens + rparen.suppress(), split_func_name_args_params_handle)
 
 

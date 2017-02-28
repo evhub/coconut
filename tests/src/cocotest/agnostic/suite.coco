@@ -272,4 +272,7 @@ def suite_test():
         pass
     else:
         assert False
+    a = altclass()
+    assert a.func(1) == 1
+    assert a.zero(10) == 0
     return True

@@ -1292,7 +1292,8 @@ class Compiler(Grammar):
             tre_return_handle)
 
     def decoratable_normal_funcdef_stmt_handle(self, tokens):
-        """Determines if tail call optimization can be done and if so does it."""
+        """Determines if TCO or TRE can be done and if so does it.
+        Also handles dotted function names."""
         if len(tokens) == 1:
             decorators, funcdef = None, tokens[0]
         elif len(tokens) == 2:
@@ -1305,6 +1306,8 @@ class Compiler(Grammar):
         tre = False  # wether tre was done
         level = 0  # indentation level
         disabled_until_level = None  # whether inside of a def/try/with
+        attempt_tre = False  # whether to attempt tre at all
+        undotted_name = None  # the function __name__ if func_name is a dotted name
 
         raw_lines = funcdef.splitlines(True)
         def_stmt, raw_lines = raw_lines[0], raw_lines[1:]
@@ -1312,8 +1315,10 @@ class Compiler(Grammar):
             func_name, func_args, func_params = parse(self.split_func_name_args_params, def_stmt)
         except ParseBaseException as err:
             complain(self.make_parse_err(err, reformat=False, include_ln=False))
-            attempt_tre = False
         else:
+            if "." in func_name:
+                undotted_name = func_name.rsplit(".", 1)[-1]
+                def_stmt = def_stmt.replace(func_name, undotted_name)
             use_mock = func_args and func_args != func_params[1:-1]
             func_store = tre_store_var + "_" + str(self.tre_store_count)
             self.tre_store_count += 1
@@ -1372,6 +1377,8 @@ class Compiler(Grammar):
             out = "@_coconut_tco\n" + out
         if decorators:
             out = decorators + out
+        if undotted_name is not None:
+            out += func_name + " = " + undotted_name + "\n"
         return out
 
     def split_args_list(self, original, loc, tokens):

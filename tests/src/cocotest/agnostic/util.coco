@@ -599,3 +599,12 @@ def x_is_int_def_0(x is int = 0) = x
 def head_tail_def_none([head] + tail = [None]) = (head, tail)
 
 def kwd_only_x_is_int_def_0(*, x is int = 0) = x
+
+# Alternative Class Notation
+
+class altclass
+def altclass.func(self, x) = x
+def altclass.zero(self, x) =
+    if x == 0:
+        return 0
+    altclass.zero(self, x-1)
