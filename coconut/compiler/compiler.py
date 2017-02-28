@@ -1370,7 +1370,7 @@ class Compiler(Grammar):
                     + openindent + base + base_dedent
                     + ("\n" if "\n" not in base_dedent else "") + "return None"
                     + ("\n" if "\n" not in dedent else "") + closeindent + dedent
-                + func_store + " = " + func_name + "\n"
+                + func_store + " = " + (func_name if undotted_name is None else undotted_name) + "\n"
             )
         out = def_stmt + out
         if tco:
