@@ -277,4 +277,10 @@ def suite_test():
     assert a.zero(10) == 0
     with Vars.using():
         assert var_one == 1
+    try:
+        var_one
+    except NameError:
+        assert True
+    else:
+        assert False
     return True
