@@ -621,7 +621,7 @@ class Grammar(object):
 
     yield_from = Forward()
     dict_comp = Forward()
-    yield_classic = addspace(Keyword("yield") + testlist)
+    yield_classic = addspace(Keyword("yield") + Optional(testlist))
     yield_from_ref = Keyword("yield").suppress() + Keyword("from").suppress() + test
     yield_expr = yield_from | yield_classic
     dict_comp_ref = lbrace.suppress() + (test + colon.suppress() + test | dubstar_expr) + comp_for + rbrace.suppress()

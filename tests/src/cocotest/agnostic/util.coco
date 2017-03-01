@@ -608,3 +608,36 @@ def altclass.zero(self, x) =
     if x == 0:
         return 0
     altclass.zero(self, x-1)
+
+# Logic Stuff
+
+class Vars:
+    var_one = 1
+
+    @classmethod
+    def items(cls):
+        for name, var in vars(cls).items():
+            if not name.startswith("_"):
+                yield name, var
+    @classmethod
+    def use(cls):
+        """Put variables into the global namespace."""
+        for name, var in cls.items():
+            globals()[name] = var
+    @classmethod
+    @contextmanager
+    def using(cls):
+        """Temporarilty put variables into the global namespace."""
+        prevars = {}
+        for name, var in cls.items():
+            if name in globals():
+                prevars[name] = globals()[name]
+            globals()[name] = var
+        try:
+            yield
+        finally:
+            for name, var in cls.items():
+                if name in prevars:
+                    globals()[name] = prevars[name]
+                else:
+                    del globals()[name]

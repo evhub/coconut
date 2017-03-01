@@ -1333,7 +1333,8 @@ class Compiler(Grammar):
             if disabled_until_level is None:
                 if match_in(Keyword("yield"), body):
                     # we can't tco generators
-                    return tokens[0]
+                    lines = raw_lines
+                    break
                 elif match_in(Keyword("def") | Keyword("try") | Keyword("with"), body):
                     disabled_until_level = level
                 else:

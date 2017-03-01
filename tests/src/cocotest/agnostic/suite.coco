@@ -275,4 +275,6 @@ def suite_test():
     a = altclass()
     assert a.func(1) == 1
     assert a.zero(10) == 0
+    with Vars.using():
+        assert var_one == 1
     return True
