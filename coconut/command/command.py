@@ -199,7 +199,7 @@ class Command(object):
             else:
                 package = None  # auto-decide package
 
-            with self.running_jobs(exit_on_error=not (args.watch or args.interact)):
+            with self.running_jobs(exit_on_error=not args.watch):
                 filepaths = self.compile_path(args.source, dest, package, args.run or args.interact, args.force)
             self.run_mypy(filepaths)
 
