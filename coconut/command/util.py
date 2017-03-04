@@ -230,11 +230,11 @@ def run_cmd(cmd, show_output=True, raise_errs=True):
         raise CoconutInternalException("console commands must be passed as non-empty lists")
     else:
         try:
-            import shutil
+            from shutil import which
         except ImportError:
             pass
         else:
-            cmd[0] = shutil.which(cmd[0]) or cmd[0]
+            cmd[0] = which(cmd[0]) or cmd[0]
         logger.log_cmd(cmd)
         if show_output and raise_errs:
             return subprocess.check_call(cmd)

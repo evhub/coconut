@@ -621,24 +621,28 @@ class Vars:
             if not name.startswith("_"):
                 yield name, var
     @classmethod
-    def use(cls):
+    def use(cls, globs=None):
         """Put variables into the global namespace."""
+        if globs is None:
+            globs = globals()
         for name, var in cls.items():
-            globals()[name] = var
+            globs[name] = var
     @classmethod
     @contextmanager
-    def using(cls):
+    def using(cls, globs=None):
         """Temporarilty put variables into the global namespace."""
+        if globs is None:
+            globs = globals()
         prevars = {}
         for name, var in cls.items():
-            if name in globals():
-                prevars[name] = globals()[name]
-            globals()[name] = var
+            if name in globs:
+                prevars[name] = globs[name]
+            globs[name] = var
         try:
             yield
         finally:
             for name, var in cls.items():
                 if name in prevars:
-                    globals()[name] = prevars[name]
+                    globs[name] = prevars[name]
                 else:
-                    del globals()[name]
+                    del globs[name]
