@@ -224,22 +224,23 @@ def call_output(cmd):
             yield err.decode(get_encoding(sys.stderr))
 
 
-def run_cmd(cmd, show_output=True, raise_errs=True):
+def run_cmd(cmd, show_output=True, raise_errs=True, auto_which=True):
     """Runs a console command."""
     if not cmd or not isinstance(cmd, list):
         raise CoconutInternalException("console commands must be passed as non-empty lists")
     else:
-        try:
-            from shutil import which
-        except ImportError:
-            pass
-        else:
-            cmd[0] = which(cmd[0]) or cmd[0]
+        if auto_which:
+            try:
+                from shutil import which
+            except ImportError:
+                pass
+            else:
+                cmd[0] = which(cmd[0]) or cmd[0]
         logger.log_cmd(cmd)
         if show_output and raise_errs:
             return subprocess.check_call(cmd)
         elif raise_errs:
-            return subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+            return subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode(get_encoding(sys.stdout))
         elif show_output:
             return subprocess.call(cmd)
         else:
