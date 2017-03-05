@@ -37,11 +37,15 @@ base = os.path.dirname(os.path.relpath(__file__))
 src = os.path.join(base, "src")
 dest = os.path.join(base, "dest")
 
-pyston = os.path.join(os.curdir, "pyston")
 runnable_coco = os.path.join(src, "runnable.coco")
 runnable_py = os.path.join(src, "runnable.py")
 prisoner = os.path.join(os.curdir, "prisoner")
+pyston = os.path.join(os.curdir, "pyston")
 pyprover = os.path.join(os.curdir, "pyprover")
+
+prisoner_git = "https://github.com/evhub/prisoner.git"
+pyston_git = "https://github.com/evhub/pyston.git"
+pyprover_git = "https://github.com/evhub/pyprover.git"
 
 coconut_snip = r"msg = '<success>'; pmsg = print$(msg); `pmsg`"
 
@@ -211,13 +215,13 @@ def run(args=[], agnostic_target=None, use_run_arg=False):
 
 def comp_prisoner(args=[]):
     """Compiles evhub/prisoner."""
-    call(["git", "clone", "https://github.com/evhub/prisoner.git"])
+    call(["git", "clone", prisoner_git])
     call_coconut(["prisoner", "--strict"] + args)
 
 
 def comp_pyston(args=[]):
     """Compiles evhub/pyston."""
-    call(["git", "clone", "https://github.com/evhub/pyston.git"])
+    call(["git", "clone", pyston_git])
     call_coconut(["pyston"] + args)
 
 
@@ -228,8 +232,8 @@ def run_pyston():
 
 def comp_pyprover(args=[]):
     """Compiles evhub/pyprover."""
-    call(["git", "clone", "https://github.com/evhub/pyprover.git"])
-    call_coconut(["pyprover", "--strict"] + args)
+    call(["git", "clone", pyprover_git])
+    call_coconut(["pyprover-source", "pyprover", "--strict"] + args)
 
 
 def run_pyprover(args=[]):
