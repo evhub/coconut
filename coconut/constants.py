@@ -90,7 +90,7 @@ req_vers = {
     "psutil": (5, 1),
     "jupyter": (1, 0),
     "jupyter-console": (5, 1),
-    "ipython": (5, 2),
+    "ipython": (5, 3),
     "mypy": (0, 501),
     "prompt_toolkit": (1, 0),
     "futures": (3, 0),
