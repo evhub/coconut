@@ -213,25 +213,19 @@ def run_file(path):
         return runpy.run_path(path, run_name="__main__")
 
 
-def call_output(cmd, stderr_first=False, **kwargs):
+def call_output(cmd, **kwargs):
     """Run command and read output."""
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
-    while p.poll() is None:
-        stdout, stderr = p.communicate()
-        if stdout is not None:
-            stdout = stdout.decode(get_encoding(sys.stdout))
-        if stderr is not None:
-            stderr = stderr.decode(get_encoding(sys.stderr))
-        if stderr_first:
-            if stderr is not None:
-                yield stderr
-            if stdout is not None:
-                yield stdout
-        else:
-            if stdout is not None:
-                yield stdout
-            if stderr is not None:
-                yield stderr
+    retcode = p.poll()
+    stdout, stderr = [], []
+    while retcode is None:
+        out, err = p.communicate()
+        if out is not None:
+            stdout.append(out.decode(get_encoding(sys.stdout)))
+        if err is not None:
+            stderr.append(err.decode(get_encoding(sys.stderr)))
+        retcode = p.poll()
+    return stdout, stderr, retcode
 
 
 def run_cmd(cmd, show_output=True, raise_errs=True):
@@ -248,12 +242,11 @@ def run_cmd(cmd, show_output=True, raise_errs=True):
         logger.log_cmd(cmd)
         if show_output and raise_errs:
             return subprocess.check_call(cmd)
-        elif raise_errs:
-            return subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode(get_encoding(sys.stdout))
         elif show_output:
             return subprocess.call(cmd)
         else:
-            return "".join(call_output(cmd))
+            stdout, stderr, _ = call_output(cmd)
+            return "".join(stdout + stderr)
 
 
 def set_mypy_path(mypy_path):

@@ -72,31 +72,23 @@ def escape(inputstring):
     return inputstring.replace("$", "\\$").replace("`", "\\`")
 
 
-def call(cmd, assert_output=False, check_mypy=None, check_errors=None, **kwargs):
+def call(cmd, assert_output=False, check_mypy=False, check_errors=False, stderr_first=False, **kwargs):
     """Executes a shell command."""
-    if isinstance(cmd, str):
-        str_cmd = cmd
-        list_cmd = cmd.split()
-    else:
-        list_cmd = cmd
-        str_cmd = " ".join(cmd)
-    print("\n>", str_cmd)
+    print("\n>", (cmd if isinstance(cmd, str) else " ".join(cmd)))
     if assert_output is True:
         assert_output = "<success>"
-    doing_extras = any("extras" in arg for arg in list_cmd)
-    if check_mypy is None:
-        check_mypy = not doing_extras
-    if check_errors is None:
-        check_errors = not doing_extras
-    if doing_extras:
-        kwargs["stderr_first"] = True
-    lines = []
-    for line in "".join(call_output(cmd, **kwargs)).splitlines():
-        print(line)
-        lines.append(line)
+    stdout, stderr, retcode = call_output(cmd, **kwargs)
+    assert not retcode
+    if stderr_first:
+        out = stderr + stdout
+    else:
+        out = stdout + stderr
+    lines = "".join(out).splitlines()
     for line in lines:
-        assert "Traceback (most recent call last):" not in line
+        print(line)
+    for line in lines:
         if check_errors:
+            assert "Traceback (most recent call last):" not in line
             assert "Exception" not in line
             assert "Error" not in line
         if check_mypy and all(test not in line for test in ignore_mypy_errs_with):
@@ -107,14 +99,14 @@ def call(cmd, assert_output=False, check_mypy=None, check_errors=None, **kwargs)
         assert lines and assert_output in lines[-1]
 
 
-def call_coconut(args):
+def call_coconut(args, **kwargs):
     """Calls Coconut."""
     if "--jobs" not in args and platform.python_implementation() != "PyPy":
         args = ["--jobs", "sys"] + args
-    call(["coconut"] + args)
+    call(["coconut"] + args, **kwargs)
 
 
-def comp(path=None, folder=None, file=None, args=[]):
+def comp(path=None, folder=None, file=None, args=[], **kwargs):
     """Compiles a test file or directory."""
     paths = []
     if path is not None:
@@ -125,7 +117,7 @@ def comp(path=None, folder=None, file=None, args=[]):
     if file is not None:
         paths.append(file)
     source = os.path.join(src, *paths)
-    call_coconut([source, compdest] + args)
+    call_coconut([source, compdest] + args, **kwargs)
 
 
 @contextmanager
@@ -158,7 +150,7 @@ def using_dest():
 
 def comp_extras(args=[]):
     """Compiles extras.coco."""
-    comp(file="extras.coco", args=args)
+    comp(file="extras.coco", args=args, check_mypy=False, check_errors=False, stderr_first=True)
 
 
 def comp_runner(args=[]):
@@ -245,10 +237,11 @@ def run_pyston():
 def comp_pyprover(args=[]):
     """Compiles evhub/pyprover."""
     call(["git", "clone", pyprover_git])
+    call_coconut([os.path.join("pyprover", "setup.py"), "--strict"] + args)
     call_coconut([os.path.join("pyprover", "pyprover-source"), os.path.join("pyprover", "pyprover"), "--strict"] + args)
 
 
-def run_pyprover(args=[]):
+def run_pyprover():
     """Runs pyprover."""
     call(["pip", "install", "-e", pyprover])
     call(["python", os.path.join(pyprover, "pyprover", "tests.py")], assert_output=True)
