@@ -333,7 +333,7 @@ class TestExternal(unittest.TestCase):
 
     def test_pyprover(self):
         with remove_when_done(pyprover):
-            comp_pyrover()
+            comp_pyprover()
             run_pyprover()
 
     def test_pyston(self):
