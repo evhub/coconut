@@ -40,9 +40,7 @@ def mypy_run(args):
         stdout, stderr, exit_code = run(args)
     except BaseException:
         return traceback.format_exc()
-    lines = []
     for line in stdout.splitlines():
-        lines.append(line)
+        yield line, False
     for line in stderr.splitlines():
-        lines.append(line)
-    return "\n".join(lines)
+        yield line, True
