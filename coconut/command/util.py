@@ -360,7 +360,7 @@ class Runner(object):
             yield
         except SystemExit as err:
             self.exit(err.code)
-        except:
+        except BaseException:
             traceback.print_exc()
             if all_errors_exit:
                 self.exit(1)

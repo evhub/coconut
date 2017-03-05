@@ -49,7 +49,7 @@ def mypy_run(args):
         main(None)
     except SystemExit:
         pass
-    except:
+    except BaseException:
         traceback.print_exc()
 
     out = []
