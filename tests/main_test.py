@@ -150,7 +150,7 @@ def using_dest():
 
 def comp_extras(args=[]):
     """Compiles extras.coco."""
-    comp(file="extras.coco", args=args, check_mypy=False, check_errors=False, stderr_first=True)
+    comp(file="extras.coco", args=args)
 
 
 def comp_runner(args=[]):
@@ -185,7 +185,7 @@ def run_src():
 
 def run_extras():
     """Runs extras.py."""
-    call(["python", os.path.join(dest, "extras.py")], assert_output=True)
+    call(["python", os.path.join(dest, "extras.py")], assert_output=True, check_mypy=False, check_errors=False, stderr_first=True)
 
 
 def run(args=[], agnostic_target=None, use_run_arg=False):
@@ -205,13 +205,13 @@ def run(args=[], agnostic_target=None, use_run_arg=False):
                 comp_35(args)
         comp_agnostic(agnostic_args)
         if use_run_arg:
-            comp_runner(["--run"] + agnostic_args)
+            comp_runner(["--run"] + agnostic_args, assert_output=True)
         else:
             comp_runner(agnostic_args)
             run_src()
 
         if use_run_arg:
-            comp_extras(["--run"] + agnostic_args)
+            comp_extras(["--run"] + agnostic_args, assert_output=True, check_mypy=False, check_errors=False, stderr_first=True)
         else:
             comp_extras(agnostic_args)
             run_extras()

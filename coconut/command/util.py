@@ -216,8 +216,7 @@ def run_file(path):
 def call_output(cmd, **kwargs):
     """Run command and read output."""
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
-    retcode = p.poll()
-    stdout, stderr = [], []
+    stdout, stderr, retcode = [], [], None
     while retcode is None:
         out, err = p.communicate()
         if out is not None:
