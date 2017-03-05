@@ -91,7 +91,7 @@ req_vers = {
     "jupyter": (1, 0),
     "jupyter-console": (5, 1),
     "ipython": (5, 2),
-    "mypy": (0, 471),
+    "mypy": (0, 501),
     "prompt_toolkit": (1, 0),
     "futures": (3, 0),
     "argparse": (1, 4),
