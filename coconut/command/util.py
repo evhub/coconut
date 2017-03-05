@@ -213,9 +213,9 @@ def run_file(path):
         return runpy.run_path(path, run_name="__main__")
 
 
-def call_output(cmd):
+def call_output(cmd, **kwargs):
     """Run command and read output."""
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
     while p.poll() is None:
         out, err = p.communicate()
         if out is not None:
@@ -224,18 +224,17 @@ def call_output(cmd):
             yield err.decode(get_encoding(sys.stderr))
 
 
-def run_cmd(cmd, show_output=True, raise_errs=True, auto_which=True):
+def run_cmd(cmd, show_output=True, raise_errs=True):
     """Runs a console command."""
     if not cmd or not isinstance(cmd, list):
         raise CoconutInternalException("console commands must be passed as non-empty lists")
     else:
-        if auto_which:
-            try:
-                from shutil import which
-            except ImportError:
-                pass
-            else:
-                cmd[0] = which(cmd[0]) or cmd[0]
+        try:
+            from shutil import which
+        except ImportError:
+            pass
+        else:
+            cmd[0] = which(cmd[0]) or cmd[0]
         logger.log_cmd(cmd)
         if show_output and raise_errs:
             return subprocess.check_call(cmd)
