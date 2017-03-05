@@ -148,44 +148,44 @@ def using_dest():
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def comp_extras(args=[]):
+def comp_extras(args=[], **kwargs):
     """Compiles extras.coco."""
-    comp(file="extras.coco", args=args)
+    comp(file="extras.coco", args=args, **kwargs)
 
 
-def comp_runner(args=[]):
+def comp_runner(args=[], **kwargs):
     """Compiles runner.coco."""
-    comp(file="runner.coco", args=args)
+    comp(file="runner.coco", args=args, **kwargs)
 
 
-def comp_agnostic(args=[]):
+def comp_agnostic(args=[], **kwargs):
     """Compiles agnostic."""
-    comp(path="cocotest", folder="agnostic", args=args)
+    comp(path="cocotest", folder="agnostic", args=args, **kwargs)
 
 
-def comp_2(args=[]):
+def comp_2(args=[], **kwargs):
     """Compiles python2."""
-    comp(path="cocotest", folder="python2", args=["--target", "2"] + args)
+    comp(path="cocotest", folder="python2", args=["--target", "2"] + args, **kwargs)
 
 
-def comp_3(args=[]):
+def comp_3(args=[], **kwargs):
     """Compiles python3."""
-    comp(path="cocotest", folder="python3", args=["--target", "3"] + args)
+    comp(path="cocotest", folder="python3", args=["--target", "3"] + args, **kwargs)
 
 
-def comp_35(args=[]):
+def comp_35(args=[], **kwargs):
     """Compiles python35."""
-    comp(path="cocotest", folder="python35", args=["--target", "35"] + args)
+    comp(path="cocotest", folder="python35", args=["--target", "35"] + args, **kwargs)
 
 
-def run_src():
+def run_src(**kwargs):
     """Runs runner.py."""
-    call(["python", os.path.join(dest, "runner.py")], assert_output=True)
+    call(["python", os.path.join(dest, "runner.py")], assert_output=True, **kwargs)
 
 
-def run_extras():
+def run_extras(**kwargs):
     """Runs extras.py."""
-    call(["python", os.path.join(dest, "extras.py")], assert_output=True, check_mypy=False, check_errors=False, stderr_first=True)
+    call(["python", os.path.join(dest, "extras.py")], assert_output=True, check_mypy=False, check_errors=False, stderr_first=True, **kwargs)
 
 
 def run(args=[], agnostic_target=None, use_run_arg=False):
@@ -217,48 +217,48 @@ def run(args=[], agnostic_target=None, use_run_arg=False):
             run_extras()
 
 
-def comp_prisoner(args=[]):
+def comp_prisoner(args=[], **kwargs):
     """Compiles evhub/prisoner."""
     call(["git", "clone", prisoner_git])
-    call_coconut(["prisoner", "--strict"] + args)
+    call_coconut(["prisoner", "--strict"] + args, **kwargs)
 
 
-def comp_pyston(args=[]):
+def comp_pyston(args=[], **kwargs):
     """Compiles evhub/pyston."""
     call(["git", "clone", pyston_git])
-    call_coconut(["pyston"] + args)
+    call_coconut(["pyston"] + args, **kwargs)
 
 
-def run_pyston():
+def run_pyston(**kwargs):
     """Runs pyston."""
-    call(["python", os.path.join(pyston, "runner.py")], assert_output=True)
+    call(["python", os.path.join(pyston, "runner.py")], assert_output=True, **kwargs)
 
 
-def comp_pyprover(args=[]):
+def comp_pyprover(args=[], **kwargs):
     """Compiles evhub/pyprover."""
     call(["git", "clone", pyprover_git])
-    call_coconut([os.path.join("pyprover", "setup.py"), "--strict"] + args)
-    call_coconut([os.path.join("pyprover", "pyprover-source"), os.path.join("pyprover", "pyprover"), "--strict"] + args)
+    call_coconut([os.path.join("pyprover", "setup.py"), "--strict"] + args, **kwargs)
+    call_coconut([os.path.join("pyprover", "pyprover-source"), os.path.join("pyprover", "pyprover"), "--strict"] + args, **kwargs)
 
 
-def run_pyprover():
+def run_pyprover(**kwargs):
     """Runs pyprover."""
     call(["pip", "install", "-e", pyprover])
-    call(["python", os.path.join(pyprover, "pyprover", "tests.py")], assert_output=True)
+    call(["python", os.path.join(pyprover, "pyprover", "tests.py")], assert_output=True, **kwargs)
 
 
-def comp_all(args=[]):
+def comp_all(args=[], **kwargs):
     """Compile Coconut tests."""
     try:
         os.mkdir(dest)
     except Exception:
         pass
-    comp_2(args)
-    comp_3(args)
-    comp_35(args)
-    comp_agnostic(args)
-    comp_runner(args)
-    comp_extras(args)
+    comp_2(args, **kwargs)
+    comp_3(args, **kwargs)
+    comp_35(args, **kwargs)
+    comp_agnostic(args, **kwargs)
+    comp_runner(args, **kwargs)
+    comp_extras(args, **kwargs)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # TESTS:
