@@ -250,6 +250,7 @@ def comp_pyprover(args=[]):
 
 def run_pyprover(args=[]):
     """Runs pyprover."""
+    call(["pip", "install", "-e", pyprover])
     call(["python", os.path.join(pyprover, "pyprover", "tests.py")], assert_output=True)
 
 
