@@ -22,10 +22,11 @@ from coconut.root import *  # NOQA
 import unittest
 import sys
 import os
-import subprocess
 import shutil
 import platform
 from contextlib import contextmanager
+
+from coconut.command.util import run_cmd
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
@@ -79,8 +80,7 @@ def call(cmd, assert_output=False, check_mypy=None, **kwargs):
         check_mypy = all("extras" not in arg for arg in cmd)
     print("\n>", (cmd if isinstance(cmd, str) else " ".join(cmd)))
     lines = []
-    for raw_line in subprocess.Popen(cmd, stdout=subprocess.PIPE, **kwargs).stdout.readlines():
-        line = raw_line.rstrip().decode(sys.stdout.encoding)
+    for line in run_cmd(cmd, show_output=False).readlines():
         print(line)
         lines.append(line)
     for line in lines:
@@ -227,18 +227,18 @@ def comp_pyston(args=[]):
 
 def run_pyston():
     """Runs pyston."""
-    call(["python", os.path.join(os.curdir, "pyston", "runner.py")], assert_output=True)
+    call(["python", os.path.join(pyston, "runner.py")], assert_output=True)
 
 
 def comp_pyprover(args=[]):
     """Compiles evhub/pyprover."""
     call(["git", "clone", pyprover_git])
-    call_coconut(["pyprover-source", "pyprover", "--strict"] + args)
+    call_coconut([os.path.join("pyprover", "pyprover-source"), os.path.join("pyprover", "pyprover"), "--strict"] + args)
 
 
 def run_pyprover(args=[]):
     """Runs pyprover."""
-    call(["python", os.path.join(os.curdir, "pyprover", "tests.py")], assert_output=True)
+    call(["python", os.path.join(pyprover, "pyprover", "tests.py")], assert_output=True)
 
 
 def comp_all(args=[]):
