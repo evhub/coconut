@@ -80,7 +80,7 @@ def call(cmd, assert_output=False, check_mypy=None, **kwargs):
         check_mypy = all("extras" not in arg for arg in cmd)
     print("\n>", (cmd if isinstance(cmd, str) else " ".join(cmd)))
     lines = []
-    for line in run_cmd(cmd, show_output=False).readlines():
+    for line in run_cmd(cmd, show_output=False).splitlines():
         print(line)
         lines.append(line)
     for line in lines:
