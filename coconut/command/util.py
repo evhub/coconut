@@ -213,15 +213,25 @@ def run_file(path):
         return runpy.run_path(path, run_name="__main__")
 
 
-def call_output(cmd, **kwargs):
+def call_output(cmd, stderr_first=False, **kwargs):
     """Run command and read output."""
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
     while p.poll() is None:
-        out, err = p.communicate()
-        if out is not None:
-            yield out.decode(get_encoding(sys.stdout))
-        if err is not None:
-            yield err.decode(get_encoding(sys.stderr))
+        stdout, stderr = p.communicate()
+        if stdout is not None:
+            stdout = stdout.decode(get_encoding(sys.stdout))
+        if stderr is not None:
+            stderr = stderr.decode(get_encoding(sys.stderr))
+        if stderr_first:
+            if stderr is not None:
+                yield stderr
+            if stdout is not None:
+                yield stdout
+        else:
+            if stdout is not None:
+                yield stdout
+            if stderr is not None:
+                yield stderr
 
 
 def run_cmd(cmd, show_output=True, raise_errs=True):

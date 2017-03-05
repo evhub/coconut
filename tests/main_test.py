@@ -88,6 +88,8 @@ def call(cmd, assert_output=False, check_mypy=None, check_errors=None, **kwargs)
         check_mypy = not doing_extras
     if check_errors is None:
         check_errors = not doing_extras
+    if doing_extras:
+        kwargs["stderr_first"] = True
     lines = []
     for line in "".join(call_output(cmd, **kwargs)).splitlines():
         print(line)
