@@ -37,10 +37,11 @@ base = os.path.dirname(os.path.relpath(__file__))
 src = os.path.join(base, "src")
 dest = os.path.join(base, "dest")
 
-prisoner = os.path.join(os.curdir, "prisoner")
 pyston = os.path.join(os.curdir, "pyston")
 runnable_coco = os.path.join(src, "runnable.coco")
 runnable_py = os.path.join(src, "runnable.py")
+prisoner = os.path.join(os.curdir, "prisoner")
+pyprover = os.path.join(os.curdir, "pyprover")
 
 coconut_snip = r"msg = '<success>'; pmsg = print$(msg); `pmsg`"
 
@@ -225,6 +226,17 @@ def run_pyston():
     call(["python", os.path.join(os.curdir, "pyston", "runner.py")], assert_output=True)
 
 
+def comp_pyprover(args=[]):
+    """Compiles evhub/pyprover."""
+    call(["git", "clone", "https://github.com/evhub/pyprover.git"])
+    call_coconut(["pyprover", "--strict"] + args)
+
+
+def run_pyprover(args=[]):
+    """Runs pyprover."""
+    call(["python", os.path.join(os.curdir, "pyprover", "tests.py")], assert_output=True)
+
+
 def comp_all(args=[]):
     """Compile Coconut tests."""
     try:
@@ -314,6 +326,11 @@ class TestExternal(unittest.TestCase):
     def test_prisoner(self):
         with remove_when_done(prisoner):
             comp_prisoner()
+
+    def test_pyprover(self):
+        with remove_when_done(pyprover):
+            comp_pyrover()
+            run_pyprover()
 
     def test_pyston(self):
         with remove_when_done(pyston):
