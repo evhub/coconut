@@ -237,7 +237,7 @@ def run_pyston(**kwargs):
 def comp_pyprover(args=[], **kwargs):
     """Compiles evhub/pyprover."""
     call(["git", "clone", pyprover_git])
-    call_coconut([os.path.join("pyprover", "setup.py"), "--strict"] + args, **kwargs)
+    call_coconut([os.path.join("pyprover", "setup.coco"), "--strict"] + args, **kwargs)
     call_coconut([os.path.join("pyprover", "pyprover-source"), os.path.join("pyprover", "pyprover"), "--strict"] + args, **kwargs)
 
 
