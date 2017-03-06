@@ -78,7 +78,6 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=False, stderr_
     if assert_output is True:
         assert_output = "<success>"
     stdout, stderr, retcode = call_output(cmd, **kwargs)
-    assert not retcode
     if stderr_first:
         out = stderr + stdout
     else:
@@ -86,6 +85,7 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=False, stderr_
     lines = "".join(out).splitlines()
     for line in lines:
         print(line)
+    assert not retcode
     for line in lines:
         if check_errors:
             assert "Traceback (most recent call last):" not in line
