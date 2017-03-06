@@ -81,13 +81,13 @@ all_reqs = {
 }
 
 req_vers = {
-    "pyparsing": (2, 1, 10),
+    "pyparsing": (2, 2, 0),
     "pre-commit": (0, 13),
     "sphinx": (1, 5),
     "pygments": (2, 2),
     "recommonmark": (0, 4),
     "sphinx_bootstrap_theme": (0, 4),
-    "psutil": (5, 1),
+    "psutil": (5, 2),
     "jupyter": (1, 0),
     "jupyter-console": (5, 1),
     "ipython": (5, 3),

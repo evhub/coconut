@@ -5,8 +5,8 @@ install:
 
 .PHONY: dev
 dev:
-	pip3 install --upgrade setuptools pip
-	pip3 install --upgrade -e .[dev]
+	pip install --upgrade setuptools pip
+	pip install --upgrade -e .[dev]
 	pre-commit install -f --install-hooks
 
 .PHONY: format
