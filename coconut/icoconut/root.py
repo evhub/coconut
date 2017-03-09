@@ -19,6 +19,8 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
+import traceback
+
 from ipykernel.ipkernel import IPythonKernel
 from ipykernel.zmqshell import ZMQInteractiveShell
 from IPython.core.inputsplitter import IPythonInputSplitter
@@ -42,7 +44,7 @@ from coconut.command.util import Runner
 # GLOBALS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-COMPILER = Compiler(target="sys")
+COMPILER = Compiler(target="sys", line_numbers=True, keep_lines=True)
 RUNNER = Runner(COMPILER)
 
 parse_block_memo = {}
@@ -87,6 +89,15 @@ class CoconutCompiler(CachingCompiler, object):
             raise err.syntax_err()
         else:
             return super(CoconutCompiler, self).ast_parse(compiled, *args, **kwargs)
+
+    def cache(self, code, *args, **kwargs):
+        """Version of cache that compiles Coconut code first."""
+        try:
+            compiled = memoized_parse_sys(code)
+        except CoconutException:
+            traceback.print_exc()
+        else:
+            return super(CoconutCompiler, self).cache(compiled, *args, **kwargs)
 
 
 class CoconutSplitter(IPythonInputSplitter, object):
