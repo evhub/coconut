@@ -531,15 +531,17 @@ def fmap(func, obj):
     args = _coconut_map(func, obj)
     if _coconut.isinstance(obj, _coconut.map):
         return args
-    if _coconut.isinstance(obj, _coconut.str):
+    elif _coconut.isinstance(obj, _coconut.str):
         return "".join(args)
-    if _coconut.isinstance(obj, _coconut.dict):
+    elif _coconut.isinstance(obj, _coconut.dict):
         args = _coconut_zip(args, obj.values())
-    args, _args = _coconut_tee(args)
-    try:
-        return obj.__class__(*_args)
-    except _coconut.TypeError:
-        return obj.__class__(args)
+    else:
+        args, _args = _coconut_tee(args)
+        try:
+            return obj.__class__(*_args)
+        except _coconut.TypeError:
+            pass
+    return obj.__class__(args)
 _coconut_MatchError, _coconut_count, _coconut_enumerate, _coconut_reversed, _coconut_map, _coconut_tee, _coconut_zip, reduce, takewhile, dropwhile = MatchError, count, enumerate, reversed, map, tee, zip, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile
 '''
         else:
