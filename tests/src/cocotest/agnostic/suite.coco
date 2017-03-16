@@ -283,4 +283,7 @@ def suite_test():
         assert True
     else:
         assert False
+    assert Just(3) |> map$(-> _*2) |*> Just == Just(6) == Just(3) |> fmap$(-> _*2)
+    assert Nothing() |> map$(-> _*2) |*> Nothing == Nothing() == Nothing() |> fmap$(-> _*2)
+    assert Tuple(1, 2, 3) != Tuple(1, 2)
     return True

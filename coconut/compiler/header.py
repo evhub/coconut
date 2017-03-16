@@ -512,6 +512,9 @@ def datamaker(data_type):
 def consume(iterable, keep_last=0):
     """Fully exhaust iterable and return the last keep_last elements."""
     return _coconut.collections.deque(iterable, maxlen=keep_last)  # fastest way to exhaust an iterator
+def fmap(func, obj):
+    """Creates a copy of obj with func applied to its contents."""
+    return obj.__class__(*_coconut_map(func, obj))
 _coconut_MatchError, _coconut_count, _coconut_enumerate, _coconut_reversed, _coconut_map, _coconut_tee, reduce, takewhile, dropwhile = MatchError, count, enumerate, reversed, map, tee, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile
 '''
         else:

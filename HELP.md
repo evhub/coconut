@@ -505,6 +505,7 @@ data vector2(x, y):
 # Test cases:
 vector2(1, 2) |> print  # vector2(x=1, y=2)
 vector2(3, 4) |> abs |> print  # 5
+vector2(1, 2) |> fmap$(x -> x*2) |> print  # vector2(x=2, y=4)
 v = vector2(2, 3)
 v.x = 7  # AttributeError
 ```
@@ -515,6 +516,8 @@ data <name>(<attributes>):
     <body>
 ```
 where `<name>` and `<body>` are the same as the equivalent `class` definition, but `<attributes>` are the different attributes of the data type, in order that the constructor should take them as arguments. In this case, `vector2` is a data type of two attributes, `x` and `y`, with one defined method, `__abs__`, that computes the magnitude. As the test cases show, we can then create, print, but _not modify_ instances of `vector2`.
+
+One other thing to call attention to here is the use of `fmap`. `fmap` is a Coconut built-in that allows you to map functions over algebraic data types. In fact, Coconut's `data` types support iteration, so the standard `map` works on them, but it doesn't return another object of the same data type. Thus, `fmap` is simply `map` plus a call to the object's constructor.
 
 ### n-Vector Constructor
 

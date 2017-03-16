@@ -54,6 +54,7 @@
     1. [In-line `global` And `nonlocal` Assignment](#in-line-global-and-nonlocal-assignment)
     1. [Code Passthrough](#code-passthrough)
 1. [Built-Ins](#built-ins)
+    1. [Enhanced Built-Ins](#enhanced-built-ins)
     1. [`addpattern`](#addpattern)
     1. [`prepattern`](#prepattern)
     1. [`reduce`](#reduce)
@@ -62,8 +63,8 @@
     1. [`tee`](#tee)
     1. [`consume`](#consume)
     1. [`count`](#count)
-    1. [Enhanced Built-Ins](#enhanced-built-ins)
     1. [`datamaker`](#datamaker)
+    1. [`fmap`](#fmap)
     1. [`recursive_iterator`](#recursiveiterator)
     1. [`parallel_map`](#parallelmap)
     1. [`concurrent_map`](#concurrentmap)
@@ -1244,7 +1245,6 @@ data Node(left, right)
 ###### Python
 ```coconut_python
 import collections
-
 class Empty(collections.namedtuple("Empty", "")):
     __slots__ = ()
 class Leaf(collections.namedtuple("Leaf", "n")):
@@ -1289,6 +1289,27 @@ cdef f(x):
 
 ## Built-Ins
 
+### Enhanced Built-Ins
+
+Coconut's `map`, `zip`, `filter`, `reversed`, and `enumerate` objects are enhanced versions of their Python equivalents that support `reversed`, `repr`, optimized normal (and iterator) slicing (all but `filter`), `len` (all but `filter`), and have added attributes which subclasses can make use of to get at the original arguments to the object:
+
+- `map`: `_func`, `_iters`
+- `zip`: `_iters`
+- `filter`: `_func`, `_iter`
+- `reversed`: `_iter`
+- `enumerate`: `_iter`, `_start`
+
+##### Example
+
+###### Coconut
+```coconut
+map((+), range(5), range(6)) |> len |> print
+range(10) |> filter$((x) -> x < 5) |> reversed |> tuple |> print
+```
+
+###### Python
+_Can't be done without defining a custom `map` type. The full definition of `map` can be found in the Coconut header._
+
 ### `addpattern`
 
 Takes one argument that is a [pattern-matching function](#pattern-matching-functions), and returns a decorator that adds the patterns in the existing function to the new function being decorated, where the existing patterns are checked first, then the new. Roughly equivalent to:
@@ -1320,7 +1341,9 @@ _Can't be done without a complicated decorator definition and a long series of c
 
 ### `prepattern`
 
-Takes one argument that is a [pattern-matching function](#pattern-matching-functions), and returns a decorator that adds the patterns in the existing function to the new function being decorated, where the new patterns are checked first, then the existing. Equivalent to:
+Takes one argument that is a [pattern-matching function](#pattern-matching-functions), and returns a decorator that adds the patterns in the existing function to the new function being decorated, where the new patterns are checked first, then the existing.
+
+Equivalent to:
 ```
 def prepattern(base_func):
     """Decorator to add a new case to a pattern-matching function, where the new case is checked first."""
@@ -1477,7 +1500,9 @@ sliced = itertools.islice(temp, 5, None)
 
 ### `consume`
 
-Coconut provides the `consume` function to efficiently exhaust an iterator and thus perform any lazy evaluation contained within it. `consume` takes one optional argument, `keep_last`, that defaults to 0 and specifies how many, if any, items from the end to return as an iterable (`None` will keep all elements). Equivalent to:
+Coconut provides the `consume` function to efficiently exhaust an iterator and thus perform any lazy evaluation contained within it. `consume` takes one optional argument, `keep_last`, that defaults to 0 and specifies how many, if any, items from the end to return as an iterable (`None` will keep all elements).
+
+Equivalent to:
 ```coconut
 def consume(iterable, keep_last=0):
     """Fully exhaust iterable and return the last keep_last elements."""
@@ -1529,30 +1554,11 @@ count()$[10**100] |> print
 ###### Python
 _Can't be done quickly without Coconut's iterator slicing, which requires many complicated pieces. The necessary definitions in Python can be found in the Coconut header._
 
-### Enhanced Built-Ins
-
-Coconut's `map`, `zip`, `filter`, `reversed`, and `enumerate` objects are enhanced versions of their Python equivalents that support `reversed`, `repr`, optimized normal (and iterator) slicing (all but `filter`), `len` (all but `filter`), and have added attributes which subclasses can make use of to get at the original arguments to the object:
-
-- `map`: `_func`, `_iters`
-- `zip`: `_iters`
-- `filter`: `_func`, `_iter`
-- `reversed`: `_iter`
-- `enumerate`: `_iter`, `_start`
-
-##### Example
-
-###### Coconut
-```coconut
-map((+), range(5), range(6)) |> len |> print
-range(10) |> filter$((x) -> x < 5) |> reversed |> tuple |> print
-```
-
-###### Python
-_Can't be done without defining a custom `map` type. The full definition of `map` can be found in the Coconut header._
-
 ### `datamaker`
 
-Coconut provides the `datamaker` function to allow direct access to the base constructor of data types created with the Coconut `data` statement. This is particularly useful when writing alternative constructors for data types by overwriting `__new__`. Equivalent to:
+Coconut provides the `datamaker` function to allow direct access to the base constructor of data types created with the Coconut `data` statement. This is particularly useful when writing alternative constructors for data types by overwriting `__new__`.
+
+Equivalent to:
 ```coconut
 def datamaker(data_type):
     """Returns base data constructor of data_type."""
@@ -1563,18 +1569,50 @@ def datamaker(data_type):
 
 ###### Coconut
 ```coconut
-data trilen(h):
-    def __new__(cls, a, b):
-        return (a**2 + b**2)**0.5 |> datamaker(cls)
+data Tuple(elems):
+    def __new__(cls, *elems):
+        return elems |> datamaker(cls)
 ```
 
 ###### Python
 ```coconut_python
 import collections
-class trilen(collections.namedtuple("trilen", "h")):
+class Tuple(collections.namedtuple("Tuple", "elems")):
     __slots__ = ()
-    def __new__(cls, a, b):
-        return super(cls, cls).__new__(cls, (a**2 + b**2)**0.5)
+    def __new__(cls, *elems):
+        return super(cls, cls).__new__(cls, elems)
+```
+
+### `fmap`
+
+In functional programming, `fmap(func, obj)` takes a data type `obj` and returns a new data type with `func` mapped over the contents. Coconut's `fmap` function does the exact same thing in Coconut.
+
+Equivalent to:
+```coconut
+def fmap(func, obj):
+    """Creates a copy of obj with func applied to its contents."""
+    return obj |> map$(func) |*> obj.__class__
+```
+
+##### Example
+
+###### Coconut
+```coconut
+data Nothing()
+data Just(n)
+Just(3) |> fmap$(x -> x*2) == Just(6)
+Nothing() |> fmap$(x -> x*2) == Nothing()
+```
+
+###### Python
+```coconut_python
+import collections
+class Nothing(collections.namedtuple("Nothing", "")):
+    __slots__ = ()
+class Just(collections.namedtuple("Just", "n")):
+    __slots__ = ()
+Just(*map(lambda x: x*2, Just(3))) == Just(6)
+Nothing(*map(lambda x: x*2, Nothing())) == Nothing()
 ```
 
 ### `recursive_iterator`
