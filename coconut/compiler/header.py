@@ -105,14 +105,14 @@ def getheader(which, target="", usehash=None):
 import sys as _coconut_sys, os.path as _coconut_os_path
 _coconut_file_path = _coconut_os_path.dirname(_coconut_os_path.abspath(__file__))
 _coconut_sys.path.insert(0, _coconut_file_path)
-from __coconut__ import _coconut, _coconut_MatchError, _coconut_tail_call, _coconut_tco, _coconut_igetitem, _coconut_compose, _coconut_pipe, _coconut_starpipe, _coconut_backpipe, _coconut_backstarpipe, _coconut_bool_and, _coconut_bool_or, _coconut_minus, _coconut_tee, _coconut_map, _coconut_partial
+from __coconut__ import _coconut, _coconut_MatchError, _coconut_tail_call, _coconut_tco, _coconut_igetitem, _coconut_compose, _coconut_pipe, _coconut_starpipe, _coconut_backpipe, _coconut_backstarpipe, _coconut_bool_and, _coconut_bool_or, _coconut_minus, _coconut_map, _coconut_partial
 from __coconut__ import *
 _coconut_sys.path.remove(_coconut_file_path)
 '''
         elif which == "sys":
             header += r'''
 import sys as _coconut_sys
-from coconut.__coconut__ import _coconut, _coconut_MatchError, _coconut_tail_call, _coconut_tco, _coconut_igetitem, _coconut_compose, _coconut_pipe, _coconut_starpipe, _coconut_backpipe, _coconut_backstarpipe, _coconut_bool_and, _coconut_bool_or, _coconut_minus, _coconut_tee, _coconut_map, _coconut_partial
+from coconut.__coconut__ import _coconut, _coconut_MatchError, _coconut_tail_call, _coconut_tco, _coconut_igetitem, _coconut_compose, _coconut_pipe, _coconut_starpipe, _coconut_backpipe, _coconut_backstarpipe, _coconut_bool_and, _coconut_bool_or, _coconut_minus, _coconut_map, _coconut_partial
 from coconut.__coconut__ import *
 '''
         elif which == "__coconut__" or which == "code" or which == "file":
@@ -144,10 +144,10 @@ class _coconut(object):'''
         import collections.abc as abc'''
             if target.startswith("3"):
                 header += r'''
-    IndexError, NameError, ValueError, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, iter, len, list, map, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, zip, repr = IndexError, NameError, ValueError, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, iter, len, list, map, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, zip, repr'''
+    IndexError, NameError, TypeError, ValueError, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, iter, len, list, map, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, zip, repr = IndexError, NameError, TypeError, ValueError, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, iter, len, list, map, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, zip, repr'''
             else:
                 header += r'''
-    IndexError, NameError, ValueError, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, iter, len, list, map, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, zip, repr, bytearray = IndexError, NameError, ValueError, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, iter, len, list, map, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, zip, staticmethod(repr), bytearray'''
+    IndexError, NameError, TypeError, ValueError, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, iter, len, list, map, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, zip, repr, bytearray = IndexError, NameError, TypeError, ValueError, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, iter, len, list, map, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, zip, staticmethod(repr), bytearray'''
             header += r'''
 class MatchError(Exception):
     """Pattern-matching error."""
@@ -231,11 +231,11 @@ class reversed(object):
         if _coconut.isinstance(iterable, _coconut.range):
             return iterable[::-1]
         elif not _coconut.hasattr(iterable, "__reversed__") or _coconut.isinstance(iterable, (_coconut.list, _coconut.tuple)):
-            new_reversed = _coconut.object.__new__(cls)
-            new_reversed._iter = iterable
-            return new_reversed
+            return _coconut.object.__new__(cls)
         else:
             return _coconut.reversed(iterable)
+    def __init__(self, iterable):
+        self._iter = iterable
     def __iter__(self):
         return _coconut.reversed(self._iter)
     def __getitem__(self, index):
@@ -267,6 +267,8 @@ class reversed(object):
     def index(self, elem):
         """Find the index of elem in the reversed iterator."""
         return _coconut.len(self._iter) - self._iter.index(elem) - 1
+    def __fmap__(self, func):
+        return self.__class__(_coconut_map(func, self._iter))
 class map(_coconut.map):
     __slots__ = ("_func", "_iters")
     if hasattr(_coconut.map, "__doc__"):
@@ -292,6 +294,8 @@ class map(_coconut.map):
         return self.__reduce__()
     def __copy__(self):
         return self.__class__(self._func, *_coconut_map(_coconut.copy.copy, self._iters))
+    def __fmap__(self, func):
+        return self.__class__(_coconut_compose(func, self._func), *self._iters)
 class parallel_map(map):
     """Multiprocessing implementation of map using concurrent.futures.
     Requires arguments to be pickleable."""
@@ -336,6 +340,8 @@ class filter(_coconut.filter):
         return self.__reduce__()
     def __copy__(self):
         return self.__class__(self._func, _coconut.copy.copy(self._iter))
+    def __fmap__(self, func):
+        raise _coconut.TypeError("fmap not supported for filter objects")
 class zip(_coconut.zip):
     __slots__ = ("_iters",)
     if hasattr(_coconut.zip, "__doc__"):
@@ -361,6 +367,8 @@ class zip(_coconut.zip):
         return self.__reduce__()
     def __copy__(self):
         return self.__class__(*_coconut_map(_coconut.copy.copy, self._iters))
+    def __fmap__(self, func):
+        raise _coconut.TypeError("fmap not supported for zip objects")
 class enumerate(_coconut.enumerate):
     __slots__ = ("_iter", "_start")
     if hasattr(_coconut.enumerate, "__doc__"):
@@ -383,7 +391,9 @@ class enumerate(_coconut.enumerate):
     def __reduce_ex__(self, _):
         return self.__reduce__()
     def __copy__(self):
-        return self.__class__(_coconut.copy.copy(self._iter), self._start)'''
+        return self.__class__(_coconut.copy.copy(self._iter), self._start)
+    def __fmap__(self, func):
+        raise _coconut.TypeError("fmap not supported for enumerate objects")'''
             if target.startswith("3"):
                 header += r'''
 class count:'''
@@ -431,6 +441,8 @@ class count(object):'''
         return self.__class__(self._start, self._step)
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self._start == other._start and self._step == other._step
+    def __fmap__(self, func):
+        raise _coconut.TypeError("fmap not supported for count objects")
 def recursive_iterator(func):
     """Decorates a function by optimizing it for iterator recursion.
     Requires function arguments to be pickleable."""
@@ -488,7 +500,7 @@ class _coconut_partial(object):'''
             if i in self._argdict:
                 callargs.append(self._argdict[i])
             elif argind >= _coconut.len(args):
-                raise TypeError("expected at least " + _coconut.str(self._arglen - _coconut.len(self._argdict)) + " argument(s) to " + _coconut.repr(self))
+                raise _coconut.TypeError("expected at least " + _coconut.str(self._arglen - _coconut.len(self._argdict)) + " argument(s) to " + _coconut.repr(self))
             else:
                 callargs.append(args[argind])
                 argind += 1
@@ -514,8 +526,22 @@ def consume(iterable, keep_last=0):
     return _coconut.collections.deque(iterable, maxlen=keep_last)  # fastest way to exhaust an iterator
 def fmap(func, obj):
     """Creates a copy of obj with func applied to its contents."""
-    return obj.__class__(*_coconut_map(func, obj))
-_coconut_MatchError, _coconut_count, _coconut_enumerate, _coconut_reversed, _coconut_map, _coconut_tee, reduce, takewhile, dropwhile = MatchError, count, enumerate, reversed, map, tee, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile
+    if _coconut.hasattr(obj, "__fmap__"):
+        return obj.__fmap__(func)
+    args = _coconut_map(func, obj)
+    if _coconut.isinstance(obj, _coconut.map):
+        return args
+    elif _coconut.isinstance(obj, _coconut.str):
+        return "".join(args)
+    elif _coconut.isinstance(obj, _coconut.dict):
+        args = _coconut_zip(args, obj.values())
+    elif not _coconut.isinstance(obj, (_coconut.tuple, _coconut.list, _coconut.set, _coconut.frozenset)):
+        try:
+            return obj.__class__(*args)
+        except _coconut.TypeError:
+            pass
+    return obj.__class__(args)
+_coconut_MatchError, _coconut_count, _coconut_enumerate, _coconut_reversed, _coconut_map, _coconut_tee, _coconut_zip, reduce, takewhile, dropwhile = MatchError, count, enumerate, reversed, map, tee, zip, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile
 '''
         else:
             raise CoconutInternalException("invalid header type", which)
