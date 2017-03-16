@@ -1587,19 +1587,7 @@ class Tuple(collections.namedtuple("Tuple", "elems")):
 
 In functional programming, `fmap(func, obj)` takes a data type `obj` and returns a new data type with `func` mapped over the contents. Coconut's `fmap` function does the exact same thing in Coconut.
 
-For non-built-ins, equivalent to:
-```coconut
-def fmap(func, obj):
-    """Creates a copy of obj with func applied to its contents."""
-    if hasattr(obj, "__fmap__"):
-        return obj.__fmap__(func)
-    else:
-        args = obj |> map$(func)
-        try:
-            return obj.__class__(*args)
-        except TypeError:
-            return obj.__class__(args)
-```
+`fmap` can also be used on built-ins such as `str`, `list`, `set`, and `dict` as a variant of `map` that returns back an object of the same type. The behavior of `fmap` for a given object can be overridden by defining an `__fmap__(self, func)` method that will be called whenever `fmap` is invoked on that object.
 
 ##### Example
 
