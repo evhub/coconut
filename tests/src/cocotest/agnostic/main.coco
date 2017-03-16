@@ -320,8 +320,8 @@ def main_test():
     assert "abc" |> fmap$(x -> x+"!") == "a!b!c!"
     assert {1:"2", 2:"3"} |> fmap$(-> _+1) == {2:"2", 3:"3"}
     assert {1, 2, 3} |> fmap$(-> _+1) == {2, 3, 4}
-    assert map((+)$(1), (1, 2, 3)) |> fmap$((*)$(2)) == map((*)$(2)..(+)$(1), (1, 2, 3))
-    assert reversed((1, 2, 3)) |> fmap$((+)$(1)) == map((+)$(1), (1, 2, 3)) |> reversed
+    assert map((+)$(1), (1, 2, 3)) |> fmap$((*)$(2)) |> repr == map((*)$(2)..(+)$(1), (1, 2, 3)) |> repr
+    assert reversed((1, 2, 3)) |> fmap$((+)$(1)) |> repr == map((+)$(1), (1, 2, 3)) |> reversed |> repr
     return True
 
 def main(*args):

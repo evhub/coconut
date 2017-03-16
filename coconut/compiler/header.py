@@ -341,7 +341,7 @@ class filter(_coconut.filter):
     def __copy__(self):
         return self.__class__(self._func, _coconut.copy.copy(self._iter))
     def __fmap__(self, func):
-        raise _coconut.TypeError("fmap not supported for filter objects")
+        return _coconut_map(func, self)
 class zip(_coconut.zip):
     __slots__ = ("_iters",)
     if hasattr(_coconut.zip, "__doc__"):
@@ -368,7 +368,7 @@ class zip(_coconut.zip):
     def __copy__(self):
         return self.__class__(*_coconut_map(_coconut.copy.copy, self._iters))
     def __fmap__(self, func):
-        raise _coconut.TypeError("fmap not supported for zip objects")
+        return _coconut_map(func, self)
 class enumerate(_coconut.enumerate):
     __slots__ = ("_iter", "_start")
     if hasattr(_coconut.enumerate, "__doc__"):
@@ -393,7 +393,7 @@ class enumerate(_coconut.enumerate):
     def __copy__(self):
         return self.__class__(_coconut.copy.copy(self._iter), self._start)
     def __fmap__(self, func):
-        raise _coconut.TypeError("fmap not supported for enumerate objects")'''
+        return _coconut_map(func, self)'''
             if target.startswith("3"):
                 header += r'''
 class count:'''
@@ -442,7 +442,7 @@ class count(object):'''
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self._start == other._start and self._step == other._step
     def __fmap__(self, func):
-        raise _coconut.TypeError("fmap not supported for count objects")
+        return _coconut_map(func, self)
 def recursive_iterator(func):
     """Decorates a function by optimizing it for iterator recursion.
     Requires function arguments to be pickleable."""
