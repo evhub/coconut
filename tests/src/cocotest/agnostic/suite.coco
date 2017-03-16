@@ -286,4 +286,6 @@ def suite_test():
     assert Just(3) |> map$(-> _*2) |*> Just == Just(6) == Just(3) |> fmap$(-> _*2)
     assert Nothing() |> map$(-> _*2) |*> Nothing == Nothing() == Nothing() |> fmap$(-> _*2)
     assert Tuple(1, 2, 3) != Tuple(1, 2)
+    assert map(plus1, (1, 2, 3)) |> fmap$(times2) |> repr == map(times2..plus1, (1, 2, 3)) |> repr
+    assert reversed((1, 2, 3)) |> fmap$(plus1) |> repr == map(plus1, (1, 2, 3)) |> reversed |> repr
     return True

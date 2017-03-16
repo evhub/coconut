@@ -40,6 +40,7 @@ def chain2(a, b):
     yield from a
     yield from b
 def threeple(a, b, c) = (a, b, c)
+times2 = (*)$(2)
 
 # Partial Applications:
 sum_ = reduce$((+))
