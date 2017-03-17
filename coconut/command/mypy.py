@@ -22,6 +22,7 @@ from coconut.root import *  # NOQA
 import traceback
 
 from coconut.exceptions import CoconutException
+from coconut.terminal import printerr
 
 try:
     from mypy.api import run
@@ -39,8 +40,9 @@ def mypy_run(args):
     try:
         stdout, stderr, exit_code = run(args)
     except BaseException:
-        return traceback.format_exc()
-    for line in stdout.splitlines():
-        yield line, False
-    for line in stderr.splitlines():
-        yield line, True
+        printerr(traceback.format_exc())
+    else:
+        for line in stdout.splitlines():
+            yield line, False
+        for line in stderr.splitlines():
+            yield line, True
