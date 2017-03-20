@@ -469,3 +469,23 @@ py_syntax_version = 3.6
 mimetype = "text/x-python3"
 
 all_keywords = keywords + const_vars + reserved_vars
+
+#-----------------------------------------------------------------------------------------------------------------------
+# DOCUMENTATION CONSTANTS:
+#-----------------------------------------------------------------------------------------------------------------------
+
+without_toc = """
+=======
+"""
+
+with_toc = """
+=======
+
+.. toctree::
+   :maxdepth: 3
+
+   FAQ
+   HELP
+   DOCS
+   CONTRIBUTING
+"""

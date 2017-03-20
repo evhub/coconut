@@ -23,8 +23,20 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from coconut.root import *  # NOQA
 
+from coconut.constants import without_toc, with_toc
+
 from recommonmark.parser import CommonMarkParser
 from sphinx_bootstrap_theme import get_html_theme_path
+
+#-----------------------------------------------------------------------------------------------------------------------
+# README:
+#-----------------------------------------------------------------------------------------------------------------------
+
+with open("README.rst", "r") as readme_file:
+    readme = readme_file.read()
+
+with open("index.rst", "w") as index_file:
+    index_file.write(readme.replace(without_toc, with_toc))
 
 #-----------------------------------------------------------------------------------------------------------------------
 # DEFINITIONS:
@@ -41,8 +53,9 @@ author = "Evan Hubinger"
 version = VERSION
 release = VERSION_STR_TAG
 
-master_doc = "README"
+master_doc = "index"
 source_suffix = [".rst", ".md"]
 source_parsers = {
     ".md": CommonMarkParser
 }
+exclude_patterns = ["README.*"]
