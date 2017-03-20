@@ -21,12 +21,12 @@ test:
 .PHONY: docs
 docs: clean
 	sphinx-build -b html . ./docs
-	cp ./docs/README.html ./docs/index.html
 	pushd ./docs; zip -r ./docs.zip ./*; popd
+	rm -rf index.rst
 
 .PHONY: clean
 clean:
-	rm -rf ./docs ./dist ./build ./tests/dest
+	rm -rf ./docs ./dist ./build ./tests/dest index.rst
 	find . -name '*.pyc' -delete
 	find . -name '__pycache__' -delete
 

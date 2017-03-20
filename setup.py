@@ -33,20 +33,7 @@ from coconut.requirements import requirements, extras
 #-----------------------------------------------------------------------------------------------------------------------
 
 with open("README.rst", "r") as readme_file:
-    readme_lines = []
-    in_toc = False
-    for line in readme_file.readlines():
-        if line.startswith(".. toctree::"):
-            in_toc = True
-        elif in_toc and 0 < len(line.lstrip()) == len(line):
-            in_toc = False
-        if not in_toc:
-            readme_lines.append(line)
-    readme = "".join(readme_lines)
-
-#-----------------------------------------------------------------------------------------------------------------------
-# MAIN:
-#-----------------------------------------------------------------------------------------------------------------------
+    readme = readme_file.read()
 
 setuptools.setup(
     name="coconut" + ("-develop" if DEVELOP else ""),
