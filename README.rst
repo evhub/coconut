@@ -1,14 +1,6 @@
 Coconut
 =======
 
-.. toctree::
-   :maxdepth: 3
-
-   FAQ
-   HELP
-   DOCS
-   CONTRIBUTING
-
 Coconut (`coconut-lang.org`__) is a variant of Python_ built for **simple, elegant, Pythonic functional programming**.
 
 Coconut is developed on GitHub_ and hosted on PyPI_. Installing Coconut is as easy as opening a command prompt and entering::
