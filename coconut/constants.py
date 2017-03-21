@@ -377,7 +377,7 @@ watch_interval = .1  # seconds
 
 info_tabulation = 18  # offset for tabulated info messages
 
-version_long = main_sig + "Version " + VERSION_STR + " running on Python " + sys.version.split()[0]
+version_long = "Version " + VERSION_STR + " running on Python " + sys.version.split()[0]
 version_banner = "Coconut " + VERSION_STR
 if DEVELOP:
     version_tag = "develop"

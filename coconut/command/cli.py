@@ -27,6 +27,7 @@ from coconut.constants import (
     default_recursion_limit,
     style_env_var,
     default_style,
+    main_sig,
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -54,7 +55,7 @@ arguments.add_argument(
 arguments.add_argument(
     "-v", "--version",
     action="version",
-    version=version_long,
+    version=main_sig + version_long,
     help="print Coconut and Python version information")
 
 arguments.add_argument(
