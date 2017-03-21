@@ -39,6 +39,7 @@
     1. [Set Literals](#set-literals)
     1. [Imaginary Literals](#imaginary-literals)
     1. [Underscore Separators](#underscore-separators)
+1. [Dotted Function Definition](#dotted-function-definition)
 1. [Function Definition](#function-definition)
     1. [Tail Call Optimization](#tail-call-optimization)
     1. [Operator Functions](#operator-functions)
@@ -929,7 +930,7 @@ print(abs(3 + 4j))
 
 ### Underscore Separators
 
-Coconut allows for one underscore between digits and after base specifiers in numeric literals. These underscores are ignored and should only be used to increase code readability.
+Coconut allows for one underscore between digits and after base specifiers in numeric literals as specified in [PEP 515](https://www.python.org/dev/peps/pep-0515/). These underscores are ignored and should only be used to increase code readability.
 
 ##### Example
 
@@ -941,6 +942,25 @@ Coconut allows for one underscore between digits and after base specifiers in nu
 ###### Python
 ```coconut_python
 10000000.0
+```
+
+## Dotted Function Definition
+
+Coconut allows for function definition using a dotted name to assign a function as a method of an object as specified in [PEP 542](https://www.python.org/dev/peps/pep-0542/).
+
+##### Example
+
+###### Coconut
+```coconut
+def MyClass.my_method(self):
+    ...
+```
+
+###### Python
+```coconut_python
+def my_method(self):
+    ...
+MyClass.my_method = my_method
 ```
 
 ## Function Definition
