@@ -703,7 +703,7 @@ class Grammar(object):
         questionmark | dubstar + test | star + test | name + default | test
     ), comma))
     methodcaller_args = (
-        itemlist(condense(name + default | test), comma)
+        itemlist(condense(dubstar + test | star + test | name + default | test), comma)
         | op_item
     )
 

@@ -288,5 +288,6 @@ def suite_test():
     assert Tuple(1, 2, 3) != Tuple(1, 2)
     assert map(plus1, (1, 2, 3)) |> fmap$(times2) |> repr == map(times2..plus1, (1, 2, 3)) |> repr
     assert reversed((1, 2, 3)) |> fmap$(plus1) |> repr == map(plus1, (1, 2, 3)) |> reversed |> repr
-    assert identity_getitem()[1:2, 2:3] == (slice(1, 2), slice(2, 3)) == identity_getitem() |> .[1:2, 2:3]
+    assert ident[1:2, 2:3] == (slice(1, 2), slice(2, 3)) == ident |> .[1:2, 2:3]
+    assert ident.method(*(1,), **{"a": 2}) == ((1,), {"a": 1}) == ident |> .method(*(1,), **{"a": 2})
     return True
