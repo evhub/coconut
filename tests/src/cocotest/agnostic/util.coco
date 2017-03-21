@@ -575,6 +575,9 @@ def ret_none(n):
 
 def ret_args_kwargs(*args, **kwargs) = (args, kwargs)
 
+class identity_getitem:
+    def __getitem__(self, *args) = args
+
 # Typing
 
 import sys

@@ -715,6 +715,7 @@ class Grammar(object):
     slicetestgroup = Optional(test_no_chain, default="")
     sliceopgroup = unsafe_colon.suppress() + slicetestgroup
     subscriptgroup = attach(slicetestgroup + sliceopgroup + Optional(sliceopgroup) | test, subscriptgroup_handle)
+    subscriptgrouplist = itemlist(subscriptgroup, comma)
 
     testlist_comp = addspace((test | star_expr) + comp_for) | testlist_star_expr
     list_comp = condense(lbrack + Optional(testlist_comp) + rbrack)
@@ -733,7 +734,7 @@ class Grammar(object):
         + Optional(
             lparen + Optional(methodcaller_args) + rparen.suppress()
         ), attr_handle)
-    itemgetter_atom = attach(dot.suppress() + condense(Optional(dollar) + lbrack) + subscriptgroup + rbrack.suppress(), itemgetter_handle)
+    itemgetter_atom = attach(dot.suppress() + condense(Optional(dollar) + lbrack) + subscriptgrouplist + rbrack.suppress(), itemgetter_handle)
     set_literal = Forward()
     set_letter_literal = Forward()
     set_s = fixto(CaselessLiteral("s"), "s")
