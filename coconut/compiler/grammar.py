@@ -1211,7 +1211,7 @@ class Grammar(object):
     tco_return = attach(
         Keyword("return").suppress() + condense(
             (base_name | parens | brackets | braces | string)
-            + ZeroOrMore(dot + base_name | brackets)
+            + ZeroOrMore(dot + base_name | brackets | parens + ~end_marker)
         ) + parens + end_marker, tco_return_handle)
 
     rest_of_arg = ZeroOrMore(parens | brackets | braces | ~comma + ~rparen + any_char)
