@@ -65,7 +65,7 @@ and much more!
 At its very core, Coconut is a compiler that turns Coconut code into Python code. That means that anywhere where you can use a Python script, you can also use a compiled Coconut script. To access that core compiler, Coconut comes with a command-line utility, which can
 - compile single Coconut files or entire Coconut projects,
 - interpret Coconut code on-the-fly, and
-- hook into existing Python applications like IPython/ Jupyter.
+- hook into existing Python applications like IPython/Jupyter and MyPy.
 
 Installing Coconut, including all the features above, is drop-dead simple. Just
 
@@ -84,7 +84,7 @@ coconut -h
 ```
 which should display Coconut's command-line help.
 
-_Note: If you're having trouble installing Coconut, or if anything else mentioned in this tutorial doesn't seem to work for you, feel free to [open an issue](https://github.com/evhub/coconut/issues/new) and it'll be addressed as soon as possible._
+_Note: If you're having trouble installing Coconut, or if anything else mentioned in this tutorial doesn't seem to work for you, feel free to [ask for help on Gitter](https://gitter.im/evhub/coconut) and somebody will try to answer your question as soon as possible._
 
 ## Starting Out
 
@@ -160,7 +160,7 @@ The Coconut  compiler supports a large variety of different compilation options,
 
 Although all different types of programming can benefit from using more functional techniques, scientific computing, perhaps more than any other field, lends itself very well to functional programming, an observation the case studies in this tutorial are very good examples of. To that end, Coconut aims to provide extensive support for the established tools of scientific computing in Python.
 
-That means supporting IPython/ Jupyter, as modern Python programming, particularly in the sciences, has gravitated towards the use of [IPython](http://ipython.org/) (the python kernel for the [Jupyter](http://jupyter.org/) framework) instead of the classic Python shell. Coconut supports being used as a kernel for Jupyter notebooks and consoles, allowing Coconut code to be used alongside powerful IPython features such as `%magic` commands.
+That means supporting IPython/Jupyter, as modern Python programming, particularly in the sciences, has gravitated towards the use of [IPython](http://ipython.org/) (the python kernel for the [Jupyter](http://jupyter.org/) framework) instead of the classic Python shell. Coconut supports being used as a kernel for Jupyter notebooks and consoles, allowing Coconut code to be used alongside powerful IPython features such as `%magic` commands.
 
 To launch a Jupyter notebook with Coconut as the kernel, use the command
 ```
@@ -204,7 +204,7 @@ def factorial(n):
 0 |> factorial |> print  # 1
 3 |> factorial |> print  # 6
 ```
-Before we delve into what exactly is happening here, let's give it a run and make sure the test cases check out. If we were really writing a Coconut program, we'd want to save and compile an actual file, but since we're just playing around, let's try copy-pasting into the interpreter. Here, you should get `1`, `6`, and then two `TypeError`s.
+Before we delve into what exactly is happening here, let's give it a run and make sure the test cases check out. If we were really writing a Coconut program, we'd want to save and compile an actual file, but since we're just playing around, let's try copy-pasting into the interpreter. Here, you should get two `TypeErrors`, then `1`, then `6`.
 
 Now that we've verified it works, let's take a look at what's going on. Since the imperative approach is a fundamentally non-functional method, Coconut can't help us improve this example very much. Even here, though, the use of Coconut's infix notation (where the function is put in-between its arguments, surrounded in backticks) in `` n `isinstance` int `` makes the code slightly cleaner and easier to read.
 
