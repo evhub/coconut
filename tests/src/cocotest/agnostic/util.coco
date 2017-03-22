@@ -576,7 +576,7 @@ def ret_none(n):
 def ret_args_kwargs(*args, **kwargs) = (args, kwargs)
 
 class identity_operations:
-    def __getitem__(self, *args) = args
+    def __getitem__(self, args) = args
     def method(self, *args, **kwargs) = (args, kwargs)
 ident = identity_operations()
 
