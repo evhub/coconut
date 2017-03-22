@@ -423,6 +423,7 @@ builtins = (
     "py_input",
     "py_input",
     "py_int",
+    "py_object",
     "py_oct",
     "py_open",
     "py_print",
