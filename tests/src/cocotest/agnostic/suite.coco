@@ -70,7 +70,6 @@ def suite_test():
     assert not (1, 2) |> vector(1, 2).__eq__
     assert vector(vector(4, 3)) == vector(4, 3)
     assert not vector(4, 3) != vector(4, 3)
-    assert vector(4, 3) == (4, 3)
     assert triangle(3, 4, 5).is_right()
     assert (.)(triangle(3, 4, 5), "is_right")
     assert triangle(3, 4, 5) |> .is_right()
