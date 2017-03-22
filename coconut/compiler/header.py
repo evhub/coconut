@@ -531,7 +531,10 @@ class _coconut_stardata(tuple):
         return _coconut.tuple(self)
 def datamaker(data_type):
     """Returns base data constructor of passed data type."""
-    return _coconut.functools.partial(_coconut.super(data_type, data_type).__new__, data_type)
+    if _coconut.isinstance(data_type, _coconut.tuple) and _coconut.hasattr(data_type, "_make"):
+        return data_type._make
+    else:
+        return _coconut.functools.partial(_coconut.super(data_type, data_type).__new__, data_type)
 def consume(iterable, keep_last=0):
     """Fully exhaust iterable and return the last keep_last elements."""
     return _coconut.collections.deque(iterable, maxlen=keep_last)  # fastest way to exhaust an iterator

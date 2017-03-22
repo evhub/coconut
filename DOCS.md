@@ -1578,7 +1578,7 @@ _Can't be done quickly without Coconut's iterator slicing, which requires many c
 
 Coconut provides the `datamaker` function to allow direct access to the base constructor of data types created with the Coconut `data` statement. This is particularly useful when writing alternative constructors for data types by overwriting `__new__`.
 
-Equivalent to:
+For non-`data` objects, equivalent to:
 ```coconut
 def datamaker(data_type):
     """Returns base data constructor of data_type."""
