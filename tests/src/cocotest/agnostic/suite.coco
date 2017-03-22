@@ -69,6 +69,8 @@ def suite_test():
     assert not vector(1, 2) |> vector(3, 4).__eq__
     assert not (1, 2) |> vector(1, 2).__eq__
     assert vector(vector(4, 3)) == vector(4, 3)
+    assert not vector(4, 3) != vector(4, 3)
+    assert vector(4, 3) != (4, 3)
     assert triangle(3, 4, 5).is_right()
     assert (.)(triangle(3, 4, 5), "is_right")
     assert triangle(3, 4, 5) |> .is_right()
@@ -290,4 +292,8 @@ def suite_test():
     assert reversed((1, 2, 3)) |> fmap$(plus1) |> repr == map(plus1, (1, 2, 3)) |> reversed |> repr
     assert ident[1:2, 2:3] == (slice(1, 2), slice(2, 3)) == ident |> .[1:2, 2:3]
     assert ident.method(*(1,), **{"a": 2}) == ((1,), {"a": 2}) == ident |> .method(*(1,), **{"a": 2})
+    assert container(1) == container(1)
+    assert not container(1) != container(1)
+    assert container(1) != container(2)
+    assert not container(1) == container(2)
     return True

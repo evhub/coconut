@@ -575,10 +575,18 @@ def ret_none(n):
 
 def ret_args_kwargs(*args, **kwargs) = (args, kwargs)
 
+# Useful Classes
+
 class identity_operations:
     def __getitem__(self, args) = args
     def method(self, *args, **kwargs) = (args, kwargs)
 ident = identity_operations()
+
+class container:
+    def __init__(self, x):
+        self.x = x
+    def __eq__(self, other) =
+        isinstance(other, container) and self.x == other.x
 
 # Typing
 
