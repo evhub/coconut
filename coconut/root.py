@@ -50,6 +50,7 @@ from future_builtins import *
 chr, str = unichr, unicode
 from io import open
 class object(object):
+    __slots__ = ()
     if hasattr(object, "__doc__"):
         __doc__ = object.__doc__
     def __ne__(self, other):
