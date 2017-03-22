@@ -199,9 +199,10 @@ def is_null(item):
         return True
     else:
         return False
-data Tuple(elems):
+data Elems(elems):
     def __new__(cls, *elems) =
         elems |> datamaker(cls)
+data Tuple(*elems)
 
 # Factorial:
 def factorial1(value):

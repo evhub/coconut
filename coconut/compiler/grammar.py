@@ -222,21 +222,27 @@ def data_handle(tokens):
         name, attrs, stmts = tokens
     else:
         raise CoconutInternalException("invalid data tokens", tokens)
-    out = "class " + name + '(_coconut.collections.namedtuple("' + name + '", "' + attrs + '")):\n' + openindent
+    extra_stmt = "__slots__ = ()\n"
+    if attrs.startswith("*"):
+        inheritance = "_coconut_stardata"
+        extra_stmt += attrs[1:] + " = _coconut.property(_coconut_stardata.__getnewargs__)\n"
+    else:
+        inheritance = '_coconut.collections.namedtuple("' + name + '", "' + attrs + '")'
+    out = "class " + name + "(" + inheritance + "):\n" + openindent
     rest = None
     if "simple" in stmts.keys() and len(stmts) == 1:
-        out += "__slots__ = ()\n"
+        out += extra_stmt
         rest = stmts[0]
     elif "docstring" in stmts.keys() and len(stmts) == 1:
-        out += stmts[0] + "__slots__ = ()\n"
+        out += stmts[0] + extra_stmt
     elif "complex" in stmts.keys() and len(stmts) == 1:
-        out += "__slots__ = ()\n"
+        out += extra_stmt
         rest = "".join(stmts[0])
     elif "complex" in stmts.keys() and len(stmts) == 2:
-        out += stmts[0] + "__slots__ = ()\n"
+        out += stmts[0] + extra_stmt
         rest = "".join(stmts[1])
     elif "empty" in stmts.keys() and len(stmts) == 1:
-        out += "__slots__ = ()" + stmts[0]
+        out += extra_stmt.rstrip() + stmts[0]
     else:
         raise CoconutInternalException("invalid inner data tokens", stmts)
     if rest is not None and rest != "pass\n":
@@ -1109,7 +1115,7 @@ class Grammar(object):
         + (def_match_funcdef | math_match_funcdef)
     )
 
-    data_args = Optional(lparen.suppress() + Optional(itemlist(~underscore + name, comma)) + rparen.suppress())
+    data_args = Optional(lparen.suppress() + Optional(itemlist(~underscore + name, comma) | condense(star + name)) + rparen.suppress())
     data_suite = Group(colon.suppress() - (
         (newline.suppress() + indent.suppress() + Optional(docstring) + Group(OneOrMore(stmt)) + dedent.suppress())("complex")
         | (newline.suppress() + indent.suppress() + docstring + dedent.suppress() | docstring)("docstring")
