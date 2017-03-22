@@ -45,7 +45,7 @@ PY26 = _coconut_sys.version_info < (2, 7)
 PY3_HEADER = r'''py_chr, py_filter, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate = chr, filter, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate
 '''
 PY27_HEADER = PY3_HEADER + r'''py_raw_input, py_xrange = raw_input, xrange
-_coconut_NotImplemented, _coconut_raw_input, _coconut_xrange, _coconut_int, _coconut_long, _coconut_print, _coconut_str, _coconut_unicode, _coconut_repr = NotImplemented, raw_input, xrange, int, long, print, str, unicode, repr
+_coconut_NotImplemented, _coconut_raw_input, _coconut_xrange, _coconut_int, _coconut_long, _coconut_print, _coconut_str, _coconut_unicode, _coconut_repr, _coconut_object = NotImplemented, raw_input, xrange, int, long, print, str, unicode, repr, object
 from future_builtins import *
 chr, str = unichr, unicode
 from io import open
@@ -53,6 +53,9 @@ class object(object):
     __slots__ = ()
     if hasattr(object, "__doc__"):
         __doc__ = object.__doc__
+    class __metaclass__(type):
+        def __instancecheck__(cls, inst):
+            return _coconut.isinstance(inst,  _coconut_object)
     def __ne__(self, other):
         eq = self == other
         if eq is _coconut_NotImplemented:
