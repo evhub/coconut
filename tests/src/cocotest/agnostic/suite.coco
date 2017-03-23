@@ -338,6 +338,6 @@ def suite_test():
     assert var == "var"
     assert args == (1, 2)
     assert Pred(0, 1, 2) |> fmap$(-> _+1) == Pred(1, 2, 3)
-    assert Quant(0, 1, 2) |> fmap$(-> _+1) == Quant(0, 1, 2)
+    assert Quant(0, 1, 2) |> fmap$(-> _+1) == Quant(1, 2, 3)
     assert Tuple(0, 1, 2) != Pred(0, 1, 2) != Quant(0, 1, 2) != Tuple(0, 1, 2)
     return True
