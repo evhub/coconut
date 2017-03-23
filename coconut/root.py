@@ -53,9 +53,7 @@ class object(object):
     __slots__ = ()
     if hasattr(object, "__doc__"):
         __doc__ = object.__doc__
-    class __metaclass__(type):
-        def __instancecheck__(cls, inst):
-            return _coconut.isinstance(inst,  _coconut_object)
+    __class__ = object
     def __ne__(self, other):
         eq = self == other
         if eq is _coconut_NotImplemented:

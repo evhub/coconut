@@ -104,7 +104,6 @@ from coconut.compiler.util import (
     split_trailing_indent,
     match_in,
     transform,
-    join_args,
     parse,
 )
 from coconut.compiler.header import (
@@ -170,6 +169,51 @@ def gen_imports(path, impas):
         else:
             out.append("from " + imp_from + " import " + imp + " as " + impas)
     return out
+
+
+def split_args_list(tokens, loc):
+    """Splits function definition arguments."""
+    req_args, def_args, star_arg, kwd_args, dubstar_arg = [], [], None, [], None
+    pos = 0
+    for arg in tokens:
+        if len(arg) == 1:
+            if arg[0] == "*":
+                # star sep (pos = 3)
+                if pos >= 3:
+                    raise CoconutDeferredSyntaxError("invalid star seperator in function definition", loc)
+                pos = 3
+            else:
+                # pos arg (pos = 0)
+                if pos > 0:
+                    raise CoconutDeferredSyntaxError("invalid positional argument in function definition", loc)
+                req_args.append(arg[0])
+        elif len(arg) == 2:
+            if arg[0] == "*":
+                # star arg (pos = 2)
+                if pos >= 2:
+                    raise CoconutDeferredSyntaxError("invalid star argument in function definition", loc)
+                pos = 2
+                star_arg = arg[1]
+            elif arg[0] == "**":
+                # dub star arg (pos = 4)
+                if pos == 4:
+                    raise CoconutDeferredSyntaxError("invalid double star argument in function definition", loc)
+                pos = 4
+                dubstar_arg = arg[1]
+            else:
+                # kwd arg (pos = 1 or 3)
+                if pos <= 1:
+                    pos = 1
+                    def_args.append((arg[0], arg[1]))
+                elif pos <= 3:
+                    pos = 3
+                    kwd_args.append((arg[0], arg[1]))
+                else:
+                    raise CoconutDeferredSyntaxError("invalid default argument in function definition", loc)
+        else:
+            raise CoconutInternalException("invalid function definition argument", arg)
+    return req_args, def_args, star_arg, kwd_args, dubstar_arg
+
 
 # end: HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
@@ -246,9 +290,6 @@ class Compiler(Grammar):
         self.endline <<= attach(self.endline_ref, self.endline_handle)
         self.moduledoc_item <<= trace(attach(self.moduledoc, self.set_docstring))
         self.name <<= trace(attach(self.base_name, self.name_check))
-        self.atom_item <<= trace(attach(self.atom_item_ref, self.item_handle))
-        self.no_partial_atom_item <<= trace(attach(self.no_partial_atom_item_ref, self.item_handle))
-        self.simple_assign <<= trace(attach(self.simple_assign_ref, self.item_handle))
         self.set_literal <<= trace(attach(self.set_literal_ref, self.set_literal_handle))
         self.set_letter_literal <<= trace(attach(self.set_letter_literal_ref, self.set_letter_literal_handle))
         self.classlist <<= trace(attach(self.classlist_ref, self.classlist_handle))
@@ -263,9 +304,6 @@ class Compiler(Grammar):
         self.exec_stmt <<= trace(attach(self.exec_stmt_ref, self.exec_stmt_handle))
         self.stmt_lambdef <<= trace(attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle))
         self.decoratable_normal_funcdef_stmt <<= trace(attach(self.decoratable_normal_funcdef_stmt_ref, self.decoratable_normal_funcdef_stmt_handle))
-        self.function_call <<= trace(attach(self.function_call_tokens, self.function_call_handle))
-        self.pipe_expr <<= trace(attach(self.pipe_expr_ref, self.pipe_handle))
-        self.no_chain_pipe_expr <<= trace(attach(self.no_chain_pipe_expr_ref, self.pipe_handle))
         self.typedef <<= trace(attach(self.typedef_ref, self.typedef_handle))
         self.typedef_default <<= trace(attach(self.typedef_default_ref, self.typedef_handle))
         self.unsafe_typedef_default <<= trace(attach(self.unsafe_typedef_default_ref, self.unsafe_typedef_handle))
@@ -950,54 +988,6 @@ class Compiler(Grammar):
             out = self.wrap_line_number(self.adjust(lineno(loc, original))) + out
         return out
 
-    def item_handle(self, original, loc, tokens):
-        """Processes items."""
-        out = tokens.pop(0)
-        for trailer in tokens:
-            if isinstance(trailer, str):
-                out += trailer
-            elif len(trailer) == 1:
-                if trailer[0] == "$[]":
-                    out = "_coconut.functools.partial(_coconut_igetitem, " + out + ")"
-                elif trailer[0] == "$":
-                    out = "_coconut.functools.partial(_coconut.functools.partial, " + out + ")"
-                elif trailer[0] == "[]":
-                    out = "_coconut.functools.partial(_coconut.operator.getitem, " + out + ")"
-                elif trailer[0] == ".":
-                    out = "_coconut.functools.partial(_coconut.getattr, " + out + ")"
-                else:
-                    raise CoconutInternalException("invalid trailer symbol", trailer[0])
-            elif len(trailer) == 2:
-                if trailer[0] == "$(":
-                    args = trailer[1][1:-1]
-                    if args:
-                        out = "_coconut.functools.partial(" + out + ", " + args + ")"
-                    else:
-                        raise self.make_err(CoconutSyntaxError, "a partial application argument is required", original, loc)
-                elif trailer[0] == "$[":
-                    out = "_coconut_igetitem(" + out + ", " + trailer[1] + ")"
-                elif trailer[0] == "$(?":
-                    pos_args, star_args, kwd_args, dubstar_args = self.split_function_call(original, loc, trailer[1])
-                    extra_args_str = join_args(star_args, kwd_args, dubstar_args)
-                    argdict_pairs = []
-                    for i in range(len(pos_args)):
-                        if pos_args[i] != "?":
-                            argdict_pairs.append(str(i) + ": " + pos_args[i])
-                    if argdict_pairs or extra_args_str:
-                        out = ("_coconut_partial("
-                               + out
-                               + ", {" + ", ".join(argdict_pairs) + "}"
-                               + ", " + str(len(pos_args))
-                               + (", " if extra_args_str else "") + extra_args_str
-                               + ")")
-                    else:
-                        raise self.make_err(CoconutSyntaxError, "a non-? partial application argument is required", original, loc)
-                else:
-                    raise CoconutInternalException("invalid special trailer", trailer[0])
-            else:
-                raise CoconutInternalException("invalid trailer tokens", trailer)
-        return out
-
     def augassign_handle(self, tokens):
         """Processes assignments."""
         if len(tokens) == 3:
@@ -1160,7 +1150,7 @@ class Compiler(Grammar):
             raise CoconutInternalException("invalid match function definition tokens", tokens)
         matcher = Matcher(loc)
 
-        req_args, def_args, star_arg, kwd_args, dubstar_arg = self.split_args_list(original, loc, matches)
+        req_args, def_args, star_arg, kwd_args, dubstar_arg = split_args_list(matches, loc)
         matcher.match_function(match_to_args_var, match_to_kwargs_var, req_args + def_args, star_arg, kwd_args, dubstar_arg)
 
         if cond is not None:
@@ -1378,115 +1368,6 @@ class Compiler(Grammar):
         if undotted_name is not None:
             out += func_name + " = " + undotted_name + "\n"
         return out
-
-    def split_args_list(self, original, loc, tokens):
-        """Splits function definition arguments."""
-        req_args, def_args, star_arg, kwd_args, dubstar_arg = [], [], None, [], None
-        pos = 0
-        for arg in tokens:
-            if len(arg) == 1:
-                if arg[0] == "*":
-                    # star sep (pos = 3)
-                    if pos >= 3:
-                        raise self.make_err(CoconutSyntaxError, "invalid star seperator in function definition", original, loc)
-                    pos = 3
-                else:
-                    # pos arg (pos = 0)
-                    if pos > 0:
-                        raise self.make_err(CoconutSyntaxError, "invalid positional argument in function definition", original, loc)
-                    req_args.append(arg[0])
-            elif len(arg) == 2:
-                if arg[0] == "*":
-                    # star arg (pos = 2)
-                    if pos >= 2:
-                        raise self.make_err(CoconutSyntaxError, "invalid star argument in function definition", original, loc)
-                    pos = 2
-                    star_arg = arg[1]
-                elif arg[0] == "**":
-                    # dub star arg (pos = 4)
-                    if pos == 4:
-                        raise self.make_err(CoconutSyntaxError, "invalid double star argument in function definition", original, loc)
-                    pos = 4
-                    dubstar_arg = arg[1]
-                else:
-                    # kwd arg (pos = 1 or 3)
-                    if pos <= 1:
-                        pos = 1
-                        def_args.append((arg[0], arg[1]))
-                    elif pos <= 3:
-                        pos = 3
-                        kwd_args.append((arg[0], arg[1]))
-                    else:
-                        raise self.make_err(CoconutSyntaxError, "invalid default argument in function definition", original, loc)
-            else:
-                raise CoconutInternalException("invalid function definition argument", arg)
-        return req_args, def_args, star_arg, kwd_args, dubstar_arg
-
-    def split_function_call(self, original, loc, tokens):
-        """Split into positional arguments and keyword arguments."""
-        pos_args = []
-        star_args = []
-        kwd_args = []
-        dubstar_args = []
-        for arg in tokens:
-            argstr = "".join(arg)
-            if len(arg) == 1:
-                if kwd_args or dubstar_args:
-                    raise self.make_err(CoconutSyntaxError, "positional argument after keyword argument", original, loc)
-                pos_args.append(argstr)
-            elif len(arg) == 2:
-                if arg[0] == "*":
-                    if dubstar_args:
-                        raise self.make_err(CoconutSyntaxError, "star unpacking after double star unpacking", original, loc)
-                    star_args.append(argstr)
-                elif arg[0] == "**":
-                    dubstar_args.append(argstr)
-                else:
-                    kwd_args.append(argstr)
-            else:
-                raise CoconutInternalException("invalid function call argument", arg)
-        return pos_args, star_args, kwd_args, dubstar_args
-
-    def function_call_handle(self, original, loc, tokens):
-        """Properly order call arguments."""
-        return "(" + join_args(*self.split_function_call(original, loc, tokens)) + ")"
-
-    def pipe_item_split(self, original, loc, tokens):
-        """Split a partial trailer."""
-        if len(tokens) == 1:
-            return tokens[0]
-        elif len(tokens) == 2:
-            func, args = tokens
-            pos_args, star_args, kwd_args, dubstar_args = self.split_function_call(original, loc, args)
-            return func, join_args(pos_args, star_args), join_args(kwd_args, dubstar_args)
-        else:
-            raise CoconutInternalException("invalid partial trailer", tokens)
-
-    def pipe_handle(self, original, loc, tokens, **kwargs):
-        """Processes pipe calls."""
-        if set(kwargs) > set(("top",)):
-            complain(CoconutInternalException("unknown pipe_handle keyword arguments", kwargs))
-        top = kwargs.get("top", True)
-        if len(tokens) == 1:
-            func = self.pipe_item_split(original, loc, tokens.pop())
-            if top and isinstance(func, tuple):
-                return "_coconut.functools.partial(" + join_args(func) + ")"
-            else:
-                return func
-        else:
-            func = self.pipe_item_split(original, loc, tokens.pop())
-            op = tokens.pop()
-            if op == "|>" or op == "|*>":
-                star = "*" if op == "|*>" else ""
-                if isinstance(func, tuple):
-                    return func[0] + "(" + join_args((func[1], star + self.pipe_handle(original, loc, tokens), func[2])) + ")"
-                else:
-                    return "(" + func + ")(" + star + self.pipe_handle(original, loc, tokens) + ")"
-            elif op == "<|" or op == "<*|":
-                star = "*" if op == "<*|" else ""
-                return self.pipe_handle(original, loc, [[func], "|" + star + ">", [self.pipe_handle(original, loc, tokens, top=False)]])
-            else:
-                raise CoconutInternalException("invalid pipe operator", op)
 
     def unsafe_typedef_handle(self, tokens):
         """Handles unsafe type annotations."""

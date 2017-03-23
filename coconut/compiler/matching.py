@@ -482,10 +482,21 @@ class Matcher(object):
 
     def match_data(self, tokens, item):
         """Matches a data type."""
-        data_type, matches = tokens
+        if len(tokens) == 2:
+            data_type, matches = tokens
+            star_match = None
+        elif len(tokens) == 3:
+            data_type, matches, star_match = tokens
+        else:
+            raise CoconutInternalException("invalid data match tokens", tokens)
         self.add_check("_coconut.isinstance(" + item + ", " + data_type + ")")
-        self.add_check("_coconut.len(" + item + ") == " + str(len(matches)))
+        if star_match is None:
+            self.add_check("_coconut.len(" + item + ") == " + str(len(matches)))
+        elif len(matches):
+            self.add_check("_coconut.len(" + item + ") >= " + str(len(matches)))
         self.match_all_in(matches, item)
+        if star_match is not None:
+            self.match(star_match, item + "[" + str(len(matches)) + ":]")
 
     def match_paren(self, tokens, item):
         """Matches a paren."""

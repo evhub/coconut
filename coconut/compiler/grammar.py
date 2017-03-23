@@ -14,6 +14,7 @@ Description: Defines the Coconut grammar.
 # Table of Contents:
 #   - Imports
 #   - Setup
+#   - Helpers
 #   - Handlers
 #   - Main Grammar
 #   - Extra Grammar
@@ -53,7 +54,7 @@ from pyparsing import (
 
 from coconut.exceptions import (
     CoconutInternalException,
-    CoconutDeferredSyntaxError
+    CoconutDeferredSyntaxError,
 )
 from coconut.terminal import trace
 from coconut.constants import (
@@ -84,6 +85,7 @@ from coconut.compiler.util import (
     itemlist,
     longest,
     exprlist,
+    join_args,
 )
 
 # end: IMPORTS
@@ -100,6 +102,86 @@ Keyword.setDefaultKeywordChars(varchars)
 
 # end: SETUP
 #-----------------------------------------------------------------------------------------------------------------------
+# HELPERS:
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def split_function_call(tokens, loc):
+    """Split into positional arguments and keyword arguments."""
+    pos_args = []
+    star_args = []
+    kwd_args = []
+    dubstar_args = []
+    for arg in tokens:
+        argstr = "".join(arg)
+        if len(arg) == 1:
+            if kwd_args or dubstar_args:
+                raise CoconutDeferredSyntaxError("positional argument after keyword argument", loc)
+            pos_args.append(argstr)
+        elif len(arg) == 2:
+            if arg[0] == "*":
+                if dubstar_args:
+                    raise CoconutDeferredSyntaxError("star unpacking after double star unpacking", loc)
+                star_args.append(argstr)
+            elif arg[0] == "**":
+                dubstar_args.append(argstr)
+            else:
+                kwd_args.append(argstr)
+        else:
+            raise CoconutInternalException("invalid function call argument", arg)
+    return pos_args, star_args, kwd_args, dubstar_args
+
+
+def pipe_item_split(tokens, loc):
+    """Split a partial trailer."""
+    if len(tokens) == 1:
+        return tokens[0]
+    elif len(tokens) == 2:
+        func, args = tokens
+        pos_args, star_args, kwd_args, dubstar_args = split_function_call(args, loc)
+        return func, join_args(pos_args, star_args), join_args(kwd_args, dubstar_args)
+    else:
+        raise CoconutInternalException("invalid partial trailer", tokens)
+
+
+def infix_error(tokens):
+    """Raises inner infix error."""
+    raise CoconutInternalException("invalid inner infix tokens", tokens)
+
+
+def get_infix_items(tokens, callback=infix_error):
+    """Performs infix token processing."""
+    if len(tokens) < 3:
+        raise CoconutInternalException("invalid infix tokens", tokens)
+    else:
+        items = []
+        for item in tokens[0]:
+            items.append(item)
+        for item in tokens[2]:
+            items.append(item)
+        if len(tokens) > 3:
+            items.append(callback([[]] + tokens[3:]))
+        args = []
+        for arg in items:
+            if arg:
+                args.append(arg)
+        return tokens[1], args
+
+
+def case_to_match(tokens, item):
+    """Converts case tokens to match tokens."""
+    if len(tokens) == 2:
+        matches, stmts = tokens
+        return matches, item, stmts
+    elif len(tokens) == 3:
+        matches, cond, stmts = tokens
+        return matches, item, cond, stmts
+    else:
+        raise CoconutInternalException("invalid case match tokens", tokens)
+
+
+# end: HELPERS
+#-----------------------------------------------------------------------------------------------------------------------
 # HANDLERS:
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -110,6 +192,87 @@ def add_paren_handle(tokens):
         return "(" + tokens[0] + ")"
     else:
         raise CoconutInternalException("invalid tokens for parentheses adding", tokens)
+
+
+def function_call_handle(original, loc, tokens):
+    """Properly order call arguments."""
+    return "(" + join_args(*split_function_call(tokens, loc)) + ")"
+
+
+def item_handle(original, loc, tokens):
+    """Processes items."""
+    out = tokens.pop(0)
+    for trailer in tokens:
+        if isinstance(trailer, str):
+            out += trailer
+        elif len(trailer) == 1:
+            if trailer[0] == "$[]":
+                out = "_coconut.functools.partial(_coconut_igetitem, " + out + ")"
+            elif trailer[0] == "$":
+                out = "_coconut.functools.partial(_coconut.functools.partial, " + out + ")"
+            elif trailer[0] == "[]":
+                out = "_coconut.functools.partial(_coconut.operator.getitem, " + out + ")"
+            elif trailer[0] == ".":
+                out = "_coconut.functools.partial(_coconut.getattr, " + out + ")"
+            else:
+                raise CoconutInternalException("invalid trailer symbol", trailer[0])
+        elif len(trailer) == 2:
+            if trailer[0] == "$(":
+                args = trailer[1][1:-1]
+                if args:
+                    out = "_coconut.functools.partial(" + out + ", " + args + ")"
+                else:
+                    raise CoconutDeferredSyntaxError("a partial application argument is required", loc)
+            elif trailer[0] == "$[":
+                out = "_coconut_igetitem(" + out + ", " + trailer[1] + ")"
+            elif trailer[0] == "$(?":
+                pos_args, star_args, kwd_args, dubstar_args = split_function_call(trailer[1], loc)
+                extra_args_str = join_args(star_args, kwd_args, dubstar_args)
+                argdict_pairs = []
+                for i in range(len(pos_args)):
+                    if pos_args[i] != "?":
+                        argdict_pairs.append(str(i) + ": " + pos_args[i])
+                if argdict_pairs or extra_args_str:
+                    out = ("_coconut_partial("
+                           + out
+                           + ", {" + ", ".join(argdict_pairs) + "}"
+                           + ", " + str(len(pos_args))
+                           + (", " if extra_args_str else "") + extra_args_str
+                           + ")")
+                else:
+                    raise CoconutDeferredSyntaxError("a non-? partial application argument is required", loc)
+            else:
+                raise CoconutInternalException("invalid special trailer", trailer[0])
+        else:
+            raise CoconutInternalException("invalid trailer tokens", trailer)
+    return out
+
+
+def pipe_handle(original, loc, tokens, **kwargs):
+    """Processes pipe calls."""
+    if set(kwargs) > set(("top",)):
+        complain(CoconutInternalException("unknown pipe_handle keyword arguments", kwargs))
+    top = kwargs.get("top", True)
+    if len(tokens) == 1:
+        func = pipe_item_split(tokens.pop(), loc)
+        if top and isinstance(func, tuple):
+            return "_coconut.functools.partial(" + join_args(func) + ")"
+        else:
+            return func
+    else:
+        func = pipe_item_split(tokens.pop(), loc)
+        op = tokens.pop()
+        if op == "|>" or op == "|*>":
+            star = "*" if op == "|*>" else ""
+            if isinstance(func, tuple):
+                return func[0] + "(" + join_args((func[1], star + pipe_handle(original, loc, tokens), func[2])) + ")"
+            else:
+                return "(" + func + ")(" + star + pipe_handle(original, loc, tokens) + ")"
+        elif op == "<|" or op == "<*|":
+            star = "*" if op == "<*|" else ""
+            return pipe_handle(original, loc, [[func], "|" + star + ">", [pipe_handle(original, loc, tokens, top=False)]])
+        else:
+            raise CoconutInternalException("invalid pipe operator", op)
 
 
 def attr_handle(tokens):
@@ -141,34 +304,10 @@ def chain_handle(tokens):
         return "_coconut.itertools.chain.from_iterable(" + lazy_list_handle(tokens) + ")"
 
 
-def infix_error(tokens):
-    """Raises inner infix error."""
-    raise CoconutInternalException("invalid inner infix tokens", tokens)
-
-
 def infix_handle(tokens):
     """Processes infix calls."""
     func, args = get_infix_items(tokens, infix_handle)
     return "(" + func + ")(" + ", ".join(args) + ")"
-
-
-def get_infix_items(tokens, callback=infix_error):
-    """Performs infix token processing."""
-    if len(tokens) < 3:
-        raise CoconutInternalException("invalid infix tokens", tokens)
-    else:
-        items = []
-        for item in tokens[0]:
-            items.append(item)
-        for item in tokens[2]:
-            items.append(item)
-        if len(tokens) > 3:
-            items.append(callback([[]] + tokens[3:]))
-        args = []
-        for arg in items:
-            if arg:
-                args.append(arg)
-        return tokens[1], args
 
 
 def op_funcdef_handle(tokens):
@@ -228,7 +367,7 @@ def data_handle(original, loc, tokens):
             raise CoconutDeferredSyntaxError("data fields cannot start with an underscore", loc)
         elif arg.startswith("*"):
             if i != len(args) - 1:
-                raise CoconutDeferredSyntaxError("starred data field must come at end", loc)
+                raise CoconutDeferredSyntaxError("starred data field must come last", loc)
             starred_arg = arg[1:]
         else:
             base_args.append(arg)
@@ -236,7 +375,8 @@ def data_handle(original, loc, tokens):
     extra_stmts = "__slots__ = ()\n"
     if starred_arg is not None:
         attr_str += (" " if attr_str else "") + starred_arg
-        extra_stmts += r'''def __new__(_cls, {all_args}):
+        if base_args:
+            extra_stmts += r'''def __new__(_cls, {all_args}):
     {oind}return _coconut.tuple.__new__(_cls, {base_args_tuple} + {starred_arg})
 {cind}@_coconut.classmethod
 def _make(cls, iterable, new=_coconut.tuple.__new__, len=_coconut.len):
@@ -253,14 +393,33 @@ def _make(cls, iterable, new=_coconut.tuple.__new__, len=_coconut.len):
 def {starred_arg}(self):
     {oind}return self[{num_base_args}:]
 {cind}'''.format(
-            oind=openindent,
-            cind=closeindent,
-            starred_arg=starred_arg,
-            all_args=", ".join(args),
-            num_base_args=str(len(base_args)),
-            base_args_tuple="(" + ", ".join(base_args) + ("," if len(base_args) == 1 else "") + ")",
-            quoted_base_args_tuple='("' + '", "'.join(base_args) + '"' + ("," if len(base_args) == 1 else "") + ")",
-        )
+                oind=openindent,
+                cind=closeindent,
+                starred_arg=starred_arg,
+                all_args=", ".join(args),
+                num_base_args=str(len(base_args)),
+                base_args_tuple="(" + ", ".join(base_args) + ("," if len(base_args) == 1 else "") + ")",
+                quoted_base_args_tuple='("' + '", "'.join(base_args) + '"' + ("," if len(base_args) == 1 else "") + ")",
+            )
+        else:
+            extra_stmts += r'''def __new__(_cls, *{arg}):
+    {oind}return _coconut.tuple.__new__(_cls, {arg})
+{cind}@_coconut.classmethod
+def _make(cls, iterable, new=_coconut.tuple.__new__, len=None):
+    {oind}return new(cls, iterable)
+{cind}def _replace(_self, **kwds):
+    {oind}result = self._make(kwds.pop("{arg}", _self))
+    if kwds:
+        {oind}raise _coconut.ValueError("Got unexpected field names: %r" % kwds.keys())
+    {cind}return result
+{cind}@_coconut.property
+def {arg}(self):
+    {oind}return self[:]
+{cind}'''.format(
+                oind=openindent,
+                cind=closeindent,
+                arg=starred_arg,
+            )
     out = "class " + name + '(_coconut.collections.namedtuple("' + name + '", "' + attr_str + '")):\n' + openindent
     rest = None
     if "simple" in stmts.keys() and len(stmts) == 1:
@@ -329,18 +488,6 @@ def match_handle(original, loc, tokens, top=True):
     if stmts is not None:
         out += "if " + match_check_var + ":" + "\n" + openindent + "".join(stmts) + closeindent
     return out
-
-
-def case_to_match(tokens, item):
-    """Converts case tokens to match tokens."""
-    if len(tokens) == 2:
-        matches, stmts = tokens
-        return matches, item, stmts
-    elif len(tokens) == 3:
-        matches, cond, stmts = tokens
-        return matches, item, cond, stmts
-    else:
-        raise CoconutInternalException("invalid case match tokens", tokens)
 
 
 def case_handle(o, l, tokens):
@@ -732,12 +879,12 @@ class Grammar(object):
         | match + Optional(equals.suppress() + test)
     ), comma))))
 
-    function_call = Forward()
     function_call_tokens = lparen.suppress() + Optional(
         Group(attach(addspace(test + comp_for), add_paren_handle))
         | tokenlist(Group(dubstar + test | star + test | name + default | test), comma)
         | Group(op_item)
     ) + rparen.suppress()
+    function_call = attach(function_call_tokens, function_call_handle)
     questionmark_call_tokens = Group(tokenlist(Group(
         questionmark | dubstar + test | star + test | name + default | test
     ), comma))
@@ -825,15 +972,12 @@ class Grammar(object):
     complex_trailer = partial_trailer | complex_trailer_no_partial
     trailer = simple_trailer | complex_trailer
 
-    atom_item = Forward()
-    atom_item_ref = atom + ZeroOrMore(trailer)
-    no_partial_atom_item = Forward()
-    no_partial_atom_item_ref = atom + ZeroOrMore(complex_trailer_no_partial)
-    simple_assign = Forward()
-    simple_assign_ref = maybeparens(lparen,
-                                    (name | passthrough_atom)
-                                    + ZeroOrMore(ZeroOrMore(complex_trailer) + OneOrMore(simple_trailer)),
-                                    rparen)
+    atom_item = attach(atom + ZeroOrMore(trailer), item_handle)
+    no_partial_atom_item = attach(atom + ZeroOrMore(complex_trailer_no_partial), item_handle)
+    simple_assign = attach(maybeparens(lparen,
+                                       (name | passthrough_atom)
+                                       + ZeroOrMore(ZeroOrMore(complex_trailer) + OneOrMore(simple_trailer)),
+                                       rparen), item_handle)
     simple_assignlist = maybeparens(lparen, itemlist(simple_assign, comma), rparen)
 
     assignlist = Forward()
@@ -884,15 +1028,13 @@ class Grammar(object):
         | attach(Group(Optional(or_expr)) + infix_op + Group(Optional(no_chain_infix_expr)), infix_handle)
     )
 
-    pipe_expr = Forward()
     pipe_item = Group(no_partial_atom_item + partial_trailer_tokens) + pipe_op | Group(infix_expr) + pipe_op
     last_pipe_item = Group(longest(no_partial_atom_item + partial_trailer_tokens, infix_expr))
-    pipe_expr_ref = OneOrMore(pipe_item) + last_pipe_item
+    pipe_expr = attach(OneOrMore(pipe_item) + last_pipe_item, pipe_handle)
     expr <<= infix_expr + ~pipe_op | pipe_expr
-    no_chain_pipe_expr = Forward()
     no_chain_pipe_item = Group(no_partial_atom_item + partial_trailer_tokens) + pipe_op | Group(no_chain_infix_expr) + pipe_op
     no_chain_last_pipe_item = Group(longest(no_partial_atom_item + partial_trailer_tokens, no_chain_infix_expr))
-    no_chain_pipe_expr_ref = OneOrMore(no_chain_pipe_item) + no_chain_last_pipe_item
+    no_chain_pipe_expr = attach(OneOrMore(no_chain_pipe_item) + no_chain_last_pipe_item, pipe_handle)
     no_chain_expr <<= no_chain_infix_expr + ~pipe_op | no_chain_pipe_expr
 
     star_expr_ref = condense(star + expr)
@@ -1013,6 +1155,11 @@ class Grammar(object):
         + Optional(Group(OneOrMore(comma.suppress() + match)))
         + Optional(comma.suppress())
     )
+    matchlist_data = (
+        Optional(Group(OneOrMore(match + comma.suppress())), default=())
+        + star.suppress() + match
+        + Optional(comma.suppress())
+    ) | matchlist_list
 
     match_const = const_atom | condense(equals.suppress() + atom_item)
     matchlist_set = Group(Optional(tokenlist(match_const, comma)))
@@ -1043,7 +1190,7 @@ class Grammar(object):
         | iter_match
         | series_match
         | star_match
-        | (name + lparen.suppress() + matchlist_list + rparen.suppress())("data")
+        | (name + lparen.suppress() + matchlist_data + rparen.suppress())("data")
         | name("var")
     ))
     matchlist_trailer = base_match + OneOrMore(Keyword("as") + name | Keyword("is") + atom_item)
