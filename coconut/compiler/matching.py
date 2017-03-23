@@ -109,7 +109,7 @@ class Matcher(object):
 
     def duplicate(self):
         """Duplicates the matcher to others."""
-        other = Matcher(self.checkdefs, self.names, self.var_index)
+        other = Matcher(self.loc, self.checkdefs, self.names, self.var_index)
         other.insert_check(0, "not " + match_check_var)
         self.others.append(other)
         return other
