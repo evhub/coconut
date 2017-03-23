@@ -400,7 +400,7 @@ def {starred_arg}(self):
                 oind=openindent,
                 cind=closeindent,
                 name=name,
-                args_for_repr=", ".join(arg + "={" + arg.lstrip("*") + "}" for arg in args),
+                args_for_repr=", ".join(arg + "={" + arg.lstrip("*") + "!r}" for arg in args),
                 starred_arg=starred_arg,
                 all_args=", ".join(args),
                 num_base_args=str(len(base_args)),
