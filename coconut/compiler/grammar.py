@@ -384,6 +384,10 @@ def _make(cls, iterable, new=_coconut.tuple.__new__, len=_coconut.len):
     if len(result) < {num_base_args}:
         {oind}raise _coconut.TypeError("Expected at least 2 arguments, got %d" % len(result))
     {cind}return result
+{cind}def _asdict(self):
+    {oind}return _coconut.collections.OrderedDict((f, _coconut.getattr(self, f)) for f in self._fields)
+{cind}def __repr__(self):
+    {oind}return "{name}({args_for_repr})".format(**self._asdict())
 {cind}def _replace(_self, **kwds):
     {oind}result = _self._make(_coconut.tuple(_coconut.map(kwds.pop, {quoted_base_args_tuple}, _self)) + kwds.pop("{starred_arg}", self.{starred_arg}))
     if kwds:
@@ -395,6 +399,8 @@ def {starred_arg}(self):
 {cind}'''.format(
                 oind=openindent,
                 cind=closeindent,
+                name=name,
+                args_for_repr=", ".join(arg + "={" + arg.lstrip("*") + "}" for arg in args),
                 starred_arg=starred_arg,
                 all_args=", ".join(args),
                 num_base_args=str(len(base_args)),
@@ -407,6 +413,10 @@ def {starred_arg}(self):
 {cind}@_coconut.classmethod
 def _make(cls, iterable, new=_coconut.tuple.__new__, len=None):
     {oind}return new(cls, iterable)
+{cind}def _asdict(self):
+    {oind}return _coconut.collections.OrderedDict([("{arg}", self[:])]
+{cind}def __repr__(self):
+    {oind}return "{name}(*{arg}=%r)" % (self[:],)
 {cind}def _replace(_self, **kwds):
     {oind}result = self._make(kwds.pop("{arg}", _self))
     if kwds:
@@ -418,6 +428,7 @@ def {arg}(self):
 {cind}'''.format(
                 oind=openindent,
                 cind=closeindent,
+                name=name,
                 arg=starred_arg,
             )
     out = "class " + name + '(_coconut.collections.namedtuple("' + name + '", "' + attr_str + '")):\n' + openindent

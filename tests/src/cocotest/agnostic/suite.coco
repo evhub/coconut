@@ -313,22 +313,31 @@ def suite_test():
     assert container_(1) != container_(2)
     assert not container_(1) == container_(2)
     t = Tuple(1, 2)
+    assert repr(t) == "Tuple(elems=(1, 2))"
     assert t.elems == (1, 2)
+    assert isinstance(t.elems, tuple)
     assert t |> fmap$(-> _+1) == Tuple(2, 3)
     Tuple(x, y) = t
     assert x == 1 and y == 2
     p = Pred("name", 1, 2)
+    assert repr(p) == "Pred(name='name', args=(1, 2))"
     assert p.name == "name"
     assert p.args == (1, 2)
+    assert isinstance(p.args, tuple)
     Pred(name, *args) = p
     assert name == "name"
     assert args == (1, 2)
-    p = Quant("name", "var", 1, 2)
-    assert p.name == "name"
-    assert p.var == "var"
-    assert p.args == (1, 2)
-    Pred(name, var, *args) = p
+    q = Quant("name", "var", 1, 2)
+    assert repr(q) == "Quant(name='name', var='var', args=(1, 2))"
+    assert q.name == "name"
+    assert q.var == "var"
+    assert q.args == (1, 2)
+    assert isinstance(q.args, tuple)
+    Pred(name, var, *args) = q
     assert name == "name"
     assert var == "var"
     assert args == (1, 2)
+    assert Pred(0, 1, 2) |> fmap$(-> _+1) == Pred(1, 2, 3)
+    assert Quant(0, 1, 2) |> fmap$(-> _+1) == Quant(0, 1, 2)
+    assert Tuple(0, 1, 2) != Pred(0, 1, 2) != Quant(0, 1, 2) != Tuple(0, 1, 2)
     return True
