@@ -414,7 +414,7 @@ def {starred_arg}(self):
 def _make(cls, iterable, new=_coconut.tuple.__new__, len=None):
     {oind}return new(cls, iterable)
 {cind}def _asdict(self):
-    {oind}return _coconut.collections.OrderedDict([("{arg}", self[:])]
+    {oind}return _coconut.collections.OrderedDict([("{arg}", self[:])])
 {cind}def __repr__(self):
     {oind}return "{name}(*{arg}=%r)" % (self[:],)
 {cind}def _replace(_self, **kwds):
