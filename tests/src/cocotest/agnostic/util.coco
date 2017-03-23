@@ -592,7 +592,7 @@ class container_(object):
     def __init__(self, x):
         self.x = x
     def __eq__(self, other) =
-        isinstance(other, container) and self.x == other.x
+        isinstance(other, container_) and self.x == other.x
 
 # Typing
 

@@ -322,6 +322,21 @@ def main_test():
     assert {1, 2, 3} |> fmap$(-> _+1) == {2, 3, 4}
     assert [[1, 2, 3]] |> fmap$((+)$([0])) == [[0, 1, 2, 3]]
     assert range(3) |> fmap$(-> _ + 1) |> tuple == (1, 2, 3)
+    assert issubclass(int, py_int)
+    class pyobjsub(py_object)
+    class objsub(object)
+    assert issubclass(pyobjsub, object)
+    assert not issubclass(pyobjsub, objsub)
+    assert issubclass(objsub, object)
+    assert issubclass(objsub, py_object)
+    assert not issubclass(objsub, pyobjsub)
+    pos = pyobjsub()
+    os = objsub()
+    assert isinstance(pos, object)
+    assert not isinstance(pos, objsub)
+    assert isinstance(os, objsub)
+    assert isinstance(os, object)
+    assert not isinstance(os, pyobjsub)
     return True
 
 def main(*args):

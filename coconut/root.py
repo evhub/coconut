@@ -49,17 +49,28 @@ _coconut_NotImplemented, _coconut_raw_input, _coconut_xrange, _coconut_int, _coc
 from future_builtins import *
 chr, str = unichr, unicode
 from io import open
-class object(object):
+class _coconut_base_object(_coconut_object):
     __slots__ = ()
-    if hasattr(object, "__doc__"):
-        __doc__ = object.__doc__
-    __class__ = object
     def __ne__(self, other):
         eq = self == other
         if eq is _coconut_NotImplemented:
             return eq
         else:
             return not eq
+class object(_coconut_base_object):
+    __slots__ = ()
+    if hasattr(_coconut_object, "__doc__"):
+        __doc__ = _coconut_object.__doc__
+    class __metaclass__(type):
+        def __new__(cls, name, bases, dict):
+            if dict.get("__metaclass__") is not cls:
+                cls, bases = type, tuple(b if b is not _coconut_new_object else _coconut_base_object for b in bases)
+            return type.__new__(cls, name, bases, dict)
+        def __instancecheck__(cls, inst):
+            return _coconut.isinstance(inst, _coconut_object)
+        def __subclasscheck__(cls, subcls):
+            return _coconut.issubclass(subcls, _coconut_object)
+_coconut_new_object = object
 class range(object):
     __slots__ = ("_xrange",)
     if hasattr(_coconut_xrange, "__doc__"):
@@ -113,6 +124,8 @@ class int(_coconut_int):
     class __metaclass__(type):
         def __instancecheck__(cls, inst):
             return _coconut.isinstance(inst, (_coconut_int, _coconut_long))
+        def __subclasscheck__(cls, subcls):
+            return _coconut.issubclass(subcls, (_coconut_int, _coconut_long))
 from functools import wraps as _coconut_wraps
 @_coconut_wraps(_coconut_print)
 def print(*args, **kwargs):

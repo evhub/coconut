@@ -144,10 +144,10 @@ class _coconut(object):'''
         import collections.abc as abc'''
             if target.startswith("3"):
                 header += r'''
-    IndexError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr = IndexError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr'''
+    IndexError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr = IndexError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr'''
             else:
                 header += r'''
-    IndexError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr, bytearray = IndexError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, staticmethod(repr), bytearray'''
+    IndexError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr, bytearray = IndexError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, staticmethod(repr), bytearray'''
             header += r'''
 class MatchError(Exception):
     """Pattern-matching error."""
