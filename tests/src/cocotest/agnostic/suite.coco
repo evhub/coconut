@@ -333,7 +333,7 @@ def suite_test():
     assert q.var == "var"
     assert q.args == (1, 2)
     assert isinstance(q.args, tuple)
-    Pred(name, var, *args) = q
+    Quant(name, var, *args) = q
     assert name == "name"
     assert var == "var"
     assert args == (1, 2)
