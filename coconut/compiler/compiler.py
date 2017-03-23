@@ -30,7 +30,6 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import sys
-from contextlib import contextmanager
 
 from pyparsing import (
     ParseBaseException,
@@ -416,13 +415,10 @@ class Compiler(Grammar):
         else:
             return info[:2]
 
-    @contextmanager
-    def handle_deferred_syntax_errs(self, original, loc):
+    def make_syntax_err(self, err, original):
         """Handles CoconutDeferredSyntaxError."""
-        try:
-            yield
-        except CoconutDeferredSyntaxError as err:
-            raise self.make_err(CoconutSyntaxError, str(err), original, loc)
+        msg, loc = err.args
+        return self.make_err(CoconutSyntaxError, msg, original, loc)
 
     def make_parse_err(self, err, reformat=True, include_ln=True):
         """Make a CoconutParseError from a ParseBaseException."""
@@ -445,6 +441,8 @@ class Compiler(Grammar):
                 out = self.post(parsed, **postargs)
             except ParseBaseException as err:
                 raise self.make_parse_err(err)
+            except CoconutDeferredSyntaxError as err:
+                raise self.make_syntax_err(err, pre_procd)
             except RuntimeError as err:
                 raise CoconutException(str(err), extra="try again with --recursion-limit greater than the current "
                                        + str(sys.getrecursionlimit()))
@@ -1160,11 +1158,10 @@ class Compiler(Grammar):
             func, matches, cond = tokens
         else:
             raise CoconutInternalException("invalid match function definition tokens", tokens)
-        matcher = Matcher()
+        matcher = Matcher(loc)
 
         req_args, def_args, star_arg, kwd_args, dubstar_arg = self.split_args_list(original, loc, matches)
-        with self.handle_deferred_syntax_errs(original, loc):
-            matcher.match_function(match_to_args_var, match_to_kwargs_var, req_args + def_args, star_arg, kwd_args, dubstar_arg)
+        matcher.match_function(match_to_args_var, match_to_kwargs_var, req_args + def_args, star_arg, kwd_args, dubstar_arg)
 
         if cond is not None:
             matcher.add_guard(cond)

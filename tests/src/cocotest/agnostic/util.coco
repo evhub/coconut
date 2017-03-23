@@ -202,7 +202,6 @@ def is_null(item):
 data Elems(elems):
     def __new__(cls, *elems) =
         elems |> datamaker(cls)
-data Tuple(*elems)
 
 # Factorial:
 def factorial1(value):
@@ -589,6 +588,12 @@ class container:
     def __eq__(self, other) =
         isinstance(other, container) and self.x == other.x
 
+class container_(object):
+    def __init__(self, x):
+        self.x = x
+    def __eq__(self, other) =
+        isinstance(other, container) and self.x == other.x
+
 # Typing
 
 import sys
@@ -618,6 +623,8 @@ def x_is_int_def_0(x is int = 0) = x
 def head_tail_def_none([head] + tail = [None]) = (head, tail)
 
 def kwd_only_x_is_int_def_0(*, x is int = 0) = x
+
+def no_args_kwargs(*(), **{}) = True
 
 # Alternative Class Notation
 
@@ -664,3 +671,11 @@ class Vars:
                     globs[name] = prevars[name]
                 else:
                     del globs[name]
+
+# Starred Data
+
+data Tuple(*elems)
+
+data Pred(name, *args)
+
+data Quant(name, var, *args)

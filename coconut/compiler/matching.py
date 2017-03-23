@@ -82,6 +82,7 @@ class Matcher(object):
         "star": lambda self: self.match_star,
     }
     __slots__ = (
+        "loc",
         "position",
         "checkdefs",
         "names",
@@ -90,8 +91,9 @@ class Matcher(object):
         "guards",
     )
 
-    def __init__(self, checkdefs=None, names=None, var_index=0):
+    def __init__(self, loc, checkdefs=None, names=None, var_index=0):
         """Creates the matcher."""
+        self.loc = loc
         self.position = 0
         self.checkdefs = []
         if checkdefs is None:
@@ -231,11 +233,11 @@ class Matcher(object):
         if star_arg is not None:
             self.match(star_arg, args + "[" + str(len(match_args)) + ":]")
         self.match_in_kwargs(kwd_args, kwargs)
-        if dubstar_arg is None:
-            with self.incremented():
+        with self.incremented():
+            if dubstar_arg is None:
                 self.add_check("not " + kwargs)
-        else:
-            self.add_def(dubstar_arg + " = " + kwargs)
+            else:
+                self.match(dubstar_arg, kwargs)
 
     def match_in_args_kwargs(self, match_args, args, kwargs, allow_star_args=False):
         """Matches against args or kwargs."""
@@ -324,7 +326,7 @@ class Matcher(object):
                 with self.incremented():
                     self.match(match, tempvar)
             else:
-                raise CoconutDeferredSyntaxError("keyword-only pattern-matching function arguments must have names")
+                raise CoconutDeferredSyntaxError("keyword-only pattern-matching function arguments must have names", self.loc)
 
     def match_dict(self, tokens, item):
         """Matches a dictionary."""

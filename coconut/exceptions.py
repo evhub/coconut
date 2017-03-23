@@ -176,3 +176,11 @@ class CoconutInternalException(CoconutException):
 
 class CoconutDeferredSyntaxError(CoconutException):
     """Deferred Coconut SyntaxError."""
+
+    def __init__(self, message, loc):
+        """Creates the Coconut exception."""
+        self.args = (message, loc)
+
+    def message(self, message, loc):
+        """Uses arguments to create the message."""
+        return message

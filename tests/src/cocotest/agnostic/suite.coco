@@ -273,6 +273,19 @@ def suite_test():
         pass
     else:
         assert False
+    assert no_args_kwargs()
+    try:
+        no_args_kwargs(1)
+    except MatchError:
+        pass
+    else:
+        assert False
+    try:
+        no_args_kwargs(a=1)
+    except MatchError:
+        pass
+    else:
+        assert False
     a = altclass()
     assert a.func(1) == 1
     assert a.zero(10) == 0
@@ -295,8 +308,27 @@ def suite_test():
     assert not container(1) != container(1)
     assert container(1) != container(2)
     assert not container(1) == container(2)
+    assert container_(1) == container_(1)
+    assert not container_(1) != container_(1)
+    assert container_(1) != container_(2)
+    assert not container_(1) == container_(2)
     t = Tuple(1, 2)
     assert t.elems == (1, 2)
+    assert t |> fmap$(-> _+1) == Tuple(2, 3)
     Tuple(x, y) = t
     assert x == 1 and y == 2
+    p = Pred("name", 1, 2)
+    assert p.name == "name"
+    assert p.args == (1, 2)
+    Pred(name, *args) = p
+    assert name == "name"
+    assert args == (1, 2)
+    p = Quant("name", "var", 1, 2)
+    assert p.name == "name"
+    assert p.var == "var"
+    assert p.args == (1, 2)
+    Pred(name, var, *args) = p
+    assert name == "name"
+    assert var == "var"
+    assert args == (1, 2)
     return True
