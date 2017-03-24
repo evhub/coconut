@@ -135,6 +135,13 @@ class _coconut(object):'''
             header += r'''
     import collections, functools, imp, itertools, operator, types, copy, pickle
 '''
+            if not target:
+                header += r'''    if _coconut_sys.version_info < (2, 7):
+        collections.OrderedDict = dict
+'''
+            elif get_target_info(target) < (2, 7):
+                header += r'''    collections.OrderedDict = dict
+'''
             if target.startswith("2"):
                 header += r'''    abc = collections'''
             else:
