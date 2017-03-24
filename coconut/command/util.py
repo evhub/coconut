@@ -323,7 +323,7 @@ class Runner(object):
 
     def __init__(self, comp=None, exit=None, store=False, path=None):
         """Creates the executor."""
-        self.exit = sys.exit if exit is None else exit
+        self.exit = exit if exit is not None else sys.exit
         self.vars = self.build_vars(path)
         self.stored = [] if store else None
         if comp is not None:

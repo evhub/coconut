@@ -102,7 +102,7 @@ class Matcher(object):
             for checks, defs in checkdefs:
                 self.checkdefs.append((checks[:], defs[:]))
             self.set_position(-1)
-        self.names = {} if names is None else names
+        self.names = names if names is not None else {}
         self.var_index = var_index
         self.others = []
         self.guards = []

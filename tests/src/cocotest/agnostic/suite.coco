@@ -328,7 +328,7 @@ def suite_test():
     assert name == "name"
     assert args == (1, 2)
     q = Quant("name", "var", 1, 2)
-    assert repr(q) in ("Quant(name='name', var='var', *args=(1, 2))", "Quant(name=u'name', var='var', *args=(1, 2))")
+    assert repr(q) in ("Quant(name='name', var='var', *args=(1, 2))", "Quant(name=u'name', var=u'var', *args=(1, 2))")
     assert q.name == "name"
     assert q.var == "var"
     assert q.args == (1, 2)
