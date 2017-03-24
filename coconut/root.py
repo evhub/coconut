@@ -57,21 +57,7 @@ class _coconut_base_object(_coconut_object):
             return eq
         else:
             return not eq
-class object(_coconut_base_object):
-    __slots__ = ()
-    if hasattr(_coconut_object, "__doc__"):
-        __doc__ = _coconut_object.__doc__
-    class __metaclass__(type):
-        def __new__(cls, name, bases, dict):
-            if dict.get("__metaclass__") is not cls:
-                cls, bases = type, tuple(b if b is not _coconut_new_object else _coconut_base_object for b in bases)
-            return type.__new__(cls, name, bases, dict)
-        def __instancecheck__(cls, inst):
-            return _coconut.isinstance(inst, _coconut_object)
-        def __subclasscheck__(cls, subcls):
-            return _coconut.issubclass(subcls, _coconut_object)
-_coconut_new_object = object
-class range(object):
+class range(_coconut_base_object):
     __slots__ = ("_xrange",)
     if hasattr(_coconut_xrange, "__doc__"):
         __doc__ = _coconut_xrange.__doc__
@@ -115,6 +101,19 @@ class range(object):
         return self.__class__(*self._args)
     def __eq__(self, other):
         return _coconut.isinstance(other, self.__class__) and self._args == other._args
+class object(_coconut_base_object):
+    __slots__ = ()
+    if hasattr(_coconut_object, "__doc__"):
+        __doc__ = _coconut_object.__doc__
+    class __metaclass__(type):
+        def __new__(cls, name, bases, dict):
+            if dict.get("__metaclass__") is not cls:
+                cls, bases = type, tuple(b if b is not _coconut.object else _coconut_base_object for b in bases)
+            return type.__new__(cls, name, bases, dict)
+        def __instancecheck__(cls, inst):
+            return _coconut.isinstance(inst, _coconut_object)
+        def __subclasscheck__(cls, subcls):
+            return _coconut.issubclass(subcls, _coconut_object)
 from collections import Sequence as _coconut_Sequence
 _coconut_Sequence.register(range)
 class int(_coconut_int):
