@@ -320,7 +320,7 @@ def suite_test():
     Tuple(x, y) = t
     assert x == 1 and y == 2
     p = Pred("name", 1, 2)
-    assert repr(p) == "Pred(name='name', *args=(1, 2))"
+    assert repr(p) in ("Pred(name='name', *args=(1, 2))", "Pred(name=u'name', *args=(1, 2))")
     assert p.name == "name"
     assert p.args == (1, 2)
     assert isinstance(p.args, tuple)
@@ -328,7 +328,7 @@ def suite_test():
     assert name == "name"
     assert args == (1, 2)
     q = Quant("name", "var", 1, 2)
-    assert repr(q) == "Quant(name='name', var='var', *args=(1, 2))"
+    assert repr(q) in ("Quant(name='name', var='var', *args=(1, 2))", "Quant(name=u'name', var='var', *args=(1, 2))")
     assert q.name == "name"
     assert q.var == "var"
     assert q.args == (1, 2)
