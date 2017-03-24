@@ -78,7 +78,7 @@ def memoized_parse_sys(code):
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-class CoconutCompiler(CachingCompiler):
+class CoconutCompiler(CachingCompiler, object):
     """IPython compiler for Coconut."""
 
     def ast_parse(self, source, *args, **kwargs):
@@ -100,7 +100,7 @@ class CoconutCompiler(CachingCompiler):
             return super(CoconutCompiler, self).cache(compiled, *args, **kwargs)
 
 
-class CoconutSplitter(IPythonInputSplitter):
+class CoconutSplitter(IPythonInputSplitter, object):
     """IPython splitter for Coconut."""
 
     def __init__(self, *args, **kwargs):
@@ -127,7 +127,7 @@ class CoconutSplitter(IPythonInputSplitter):
             return True
 
 
-class CoconutShell(ZMQInteractiveShell):
+class CoconutShell(ZMQInteractiveShell, object):
     """IPython shell for Coconut."""
     input_splitter = CoconutSplitter(line_input_checker=True)
     input_transformer_manager = CoconutSplitter(line_input_checker=False)
@@ -160,7 +160,7 @@ class CoconutShell(ZMQInteractiveShell):
 InteractiveShellABC.register(CoconutShell)
 
 
-class CoconutKernel(IPythonKernel):
+class CoconutKernel(IPythonKernel, object):
     """Jupyter kernel for Coconut."""
     shell_class = CoconutShell
     implementation = "icoconut"
