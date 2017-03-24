@@ -248,7 +248,7 @@ def main_test():
     data abc(xyz)
     assert abc(10).xyz == 10
     class aclass
-    assert isinstance(aclass, object)
+    assert isinstance(aclass(), object)
     assert tee((1,2)) |*> (is)
     assert tee(f{1,2}) |*> (is)
     assert (x -> 2 / x)(4) == 1/2
