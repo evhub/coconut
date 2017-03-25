@@ -385,7 +385,7 @@ def _make(cls, iterable, new=_coconut.tuple.__new__, len=_coconut.len):
         {oind}raise _coconut.TypeError("Expected at least 2 arguments, got %d" % len(result))
     {cind}return result
 {cind}def _asdict(self):
-    {oind}return _coconut.collections.OrderedDict((f, _coconut.getattr(self, f)) for f in self._fields)
+    {oind}return _coconut.OrderedDict((f, _coconut.getattr(self, f)) for f in self._fields)
 {cind}def __repr__(self):
     {oind}return "{name}({args_for_repr})".format(**self._asdict())
 {cind}def _replace(_self, **kwds):
@@ -414,7 +414,7 @@ def {starred_arg}(self):
 def _make(cls, iterable, new=_coconut.tuple.__new__, len=None):
     {oind}return new(cls, iterable)
 {cind}def _asdict(self):
-    {oind}return _coconut.collections.OrderedDict([("{arg}", self[:])])
+    {oind}return _coconut.OrderedDict([("{arg}", self[:])])
 {cind}def __repr__(self):
     {oind}return "{name}(*{arg}=%r)" % (self[:],)
 {cind}def _replace(_self, **kwds):
