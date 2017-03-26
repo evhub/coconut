@@ -1216,7 +1216,7 @@ class Grammar(object):
         | (newline.suppress() + indent.suppress() + docstring + dedent.suppress() | docstring)("docstring")
         | simple_stmt("simple")
     ) | newline("empty"))
-    datadef_ref = condense(attach(Keyword("data").suppress() + name - data_args - data_suite, data_handle))
+    datadef_ref = Keyword("data").suppress() + name - data_args - data_suite
 
     simple_decorator = condense(dotted_name + Optional(function_call))("simple")
     complex_decorator = test("test")
