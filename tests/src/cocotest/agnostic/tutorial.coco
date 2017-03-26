@@ -236,7 +236,7 @@ data vector(*pts):
         match (v is vector,) in pts:
             return v  # vector(v) where v is a vector should return v
         else:
-            return pts |*> datamaker(cls)  # accesses base constructor
+            return pts |> datamaker(cls)  # accesses base constructor
 
 # Test cases:
 assert vector(1, 2, 3) |> str == "vector(*pts=(1, 2, 3))"
@@ -249,7 +249,7 @@ data vector(*pts):
         match (v is vector,) in pts:
             return v  # vector(v) where v is a vector should return v
         else:
-            return pts |*> datamaker(cls)  # accesses base constructor
+            return pts |> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
@@ -324,7 +324,7 @@ data vector(*pts):
         match (v is vector,) in pts:
             return v  # vector(v) where v is a vector should return v
         else:
-            return pts |*> datamaker(cls)  # accesses base constructor
+            return pts |> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
@@ -381,7 +381,7 @@ data vector(*pts):
         match (v is vector,) in pts:
             return v  # vector(v) where v is a vector should return v
         else:
-            return pts |*> datamaker(cls)  # accesses base constructor
+            return pts |> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
