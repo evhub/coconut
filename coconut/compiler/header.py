@@ -532,7 +532,7 @@ class _coconut_partial(object):'''
         return _coconut.repr(self.func) + "$(" + ", ".join(args) + ")"
 def datamaker(data_type):
     """Returns base data constructor of passed data type."""
-    if _coconut.isinstance(data_type, _coconut.tuple) and _coconut.hasattr(data_type, "_make"):
+    if _coconut.issubclass(data_type, _coconut.tuple) and _coconut.hasattr(data_type, "_make"):
         return data_type._make
     else:
         return _coconut.functools.partial(_coconut.super(data_type, data_type).__new__, data_type)
