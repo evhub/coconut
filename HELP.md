@@ -523,23 +523,25 @@ One other thing to call attention to here is the use of `fmap`. `fmap` is a Coco
 
 Now that we've got the 2-vector under our belt, let's move to back to our original, more complicated problem: n-vectors, that is, vectors of arbitrary length. We're going to try to make our n-vector support all the basic vector operations, but we'll start out with just the `data` definition and the constructor:
 ```coconut
-data vector(pts):
+data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        if len(pts) == 1 and pts[0] `isinstance` vector:
-            return pts[0]  # vector(v) where v is a vector should return v
+        match (v is vector,) in pts:
+            return v  # vector(v) where v is a vector should return v
         else:
-            return pts |> tuple |> datamaker(cls)  # accesses base constructor
+            return pts |*> datamaker(cls)  # accesses base constructor
 
 # Test cases:
-vector(1, 2, 3) |> print  # vector(pts=(1, 2, 3))
-vector(4, 5) |> vector |> print  # vector(pts=(4, 5))
+vector(1, 2, 3) |> print  # vector(*pts=(1, 2, 3))
+vector(4, 5) |> vector |> print  # vector(*pts=(4, 5))
 ```
 
-Copy, paste! The big new thing here is how to write `data` constructors. Since `data` types are immutable, `__init__` construction won't work. Instead, a different special method `__new__` is used, which must return the newly constructed instance, and unlike most methods, takes the class not the object as the first argument. Since `__new__` needs to return a fully constructed instance, in almost all cases access to the underlying `data` constructor will be necessary. To achieve this, Coconut provides the built-in function `datamaker`, which takes a data type, often the first argument to `__new__`, and returns its underlying `data` constructor.
+Copy, paste! The big new thing here is how to write `data` constructors. Since `data` types are immutable, `__init__` construction won't work. Instead, a different special method `__new__` is used, which must return the newly constructed instance, and unlike most methods, takes the class not the object as the first argument. Since `__new__` needs to return a fully constructed instance, in almost all cases it will be necessary to access the underlying `data` constructor. To achieve this, Coconut provides the built-in function `datamaker`, which takes a data type, often the first argument to `__new__`, and returns its underlying `data` constructor.
 
-In this case, the constructor checks whether nothing but another `vector` was passed, in which case it returns that, otherwise it returns the result of creating a tuple of the arguments and passing that to the underlying constructor, the form of which is `vector(pts)`, thus assigning the tuple to the `pts` attribute.
+In this case, the constructor checks whether nothing but another `vector` was passed, in which case it returns that, otherwise it returns the result of creating a tuple of the arguments and passing that to the underlying constructor, the form of which is `vector(*pts)`, since that is how we declared the data type.
+
+The other new construct used here is the `|*>`, or star-pipe, operator, which functions exactly like the normal pipe, except that instead of calling the function with one argument, it calls it with as many arguments as there are elements in the sequence passed into it. The difference between `|*>` and `|>` is exactly analogous to the difference between `f(args)` and `f(*args)`.
 
 ### n-Vector Methods
 
@@ -561,8 +563,6 @@ Next up is vector addition. The goal here is to add two vectors of equal length 
 ```
 
 There are a couple of new constructs here, but the main notable one is the destructuring assignment statement `vector(other_pts) = other` which showcases the syntax for pattern-matching against data types: it mimics exactly the original `data` declaration of that data type. In this case, `vector(other_pts) = other` will only match a vector, raising a `MatchError` otherwise, and if it does match a vector, will assign the vector's `pts` attribute to the variable `other_pts`.
-
-The other new construct used here is the `|*>`, or star-pipe, operator, which functions exactly like the normal pipe, except that instead of calling the function with one argument, it calls it with as many arguments as there are elements in the sequence passed into it. The difference between `|*>` and `|>` is exactly analogous to the difference between `f(args)` and `f(*args)`.
 
 Next is vector subtraction, which is just like vector addition, but with `(-)` instead of `(+)`:
 ```coconut
@@ -610,14 +610,14 @@ The first thing to note here is that unlike with addition and subtraction, where
 
 Finally, putting everything together:
 ```coconut
-data vector(pts):
+data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        if len(pts) == 1 and pts[0] `isinstance` vector:
-            return pts[0]  # vector(v) where v is a vector should return v
+        match (v is vector,) in pts:
+            return v  # vector(v) where v is a vector should return v
         else:
-            return pts |> tuple |> datamaker(cls)  # accesses base constructor
+            return pts |*> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
@@ -652,16 +652,16 @@ data vector(pts):
         self * other
 
 # Test cases:
-vector(1, 2, 3) |> print  # vector(pts=(1, 2, 3))
-vector(4, 5) |> vector |> print  # vector(pts=(4, 5))
+vector(1, 2, 3) |> print  # vector(*pts=(1, 2, 3))
+vector(4, 5) |> vector |> print  # vector(*pts=(4, 5))
 vector(3, 4) |> abs |> print  # 5
-vector(1, 2) + vector(2, 3) |> print  # vector(pts=(3, 5))
-vector(2, 2) - vector(0, 1) |> print  # vector(pts=(2, 1))
--vector(1, 3) |> print  # vector(pts=(-1, -3))
+vector(1, 2) + vector(2, 3) |> print  # vector(*pts=(3, 5))
+vector(2, 2) - vector(0, 1) |> print  # vector(*pts=(2, 1))
+-vector(1, 3) |> print  # vector(*pts=(-1, -3))
 (vector(1, 2) == "string") |> print  # False
 (vector(1, 2) == vector(3, 4)) |> print  # False
 (vector(2, 4) == vector(2, 4)) |> print  # True
-2*vector(1, 2) |> print  # vector(pts=(2, 4))
+2*vector(1, 2) |> print  # vector(*pts=(2, 4))
 vector(1, 2) * vector(1, 3) |> print  # 7
 ```
 
@@ -786,8 +786,8 @@ Now that we have a function that builds up all the points we need, it's time to 
 Tests:
 ```coconut
 # You'll need to bring in the vector class from earlier to make these work
-vector_field()$[0] |> print  # vector(pts=(0, 0))
-vector_field()$[2:3] |> list |> print  # [vector(pts=(1, 0))]
+vector_field()$[0] |> print  # vector(*pts=(0, 0))
+vector_field()$[2:3] |> list |> print  # [vector(*pts=(1, 0))]
 ```
 
 _Hint: Remember, the way we defined vector it takes the components as separate arguments, not a single tuple._
@@ -823,14 +823,14 @@ All we're doing is taking our `linearized_plane` and mapping `vector` over it, b
 
 Now that we've built all the functions we need for our vector field, it's time to put it all together and test it. Feel free to substitute in your versions of the functions below:
 ```coconut
-data vector(pts):
+data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        if len(pts) == 1 and pts[0] `isinstance` vector:
-            return pts[0]  # vector(v) where v is a vector should return v
+        match (v is vector,) in pts:
+            return v  # vector(v) where v is a vector should return v
         else:
-            return pts |> tuple |> datamaker(cls)  # accesses base constructor
+            return pts |*> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
@@ -874,8 +874,8 @@ diagonal_line(0) |> list |> print  # [(0, 0)]
 diagonal_line(1) |> list |> print  # [(0, 1), (1, 0)]
 linearized_plane()$[0] |> print  # (0, 0)
 linearized_plane()$[:3] |> list |> print  # [(0, 0), (0, 1), (1, 0)]
-vector_field()$[0] |> print  # vector(pts=(0, 0))
-vector_field()$[2:3] |> list |> print  # [vector(pts=(1, 0))]
+vector_field()$[0] |> print  # vector(*pts=(0, 0))
+vector_field()$[2:3] |> list |> print  # [vector(*pts=(1, 0))]
 ```
 
 Copy, paste! Once you've made sure everything is working correctly if you substituted in your own functions, take a look at the last 4 tests. You'll notice that they use a new notation, similar to the notation for partial application we saw earlier, but with brackets instead of parentheses. This is the notation for iterator slicing. Similar to how partial application was lazy function calling, iterator slicing is _lazy sequence slicing_. Like with partial application, it is helpful to think of `$` as the _lazy-ify_ operator, in this case turning normal Python slicing, which is evaluated immediately, into lazy iterator slicing, which is evaluated only when the elements in the slice are needed.
@@ -898,8 +898,8 @@ Vector division is just scalar division, so we're going to write a `__truediv__`
 
 Tests:
 ```coconut
-vector(3, 4) / 1 |> print  # vector(pts=(3.0, 4.0))
-vector(2, 4) / 2 |> print  # vector(pts=(1.0, 2.0))
+vector(3, 4) / 1 |> print  # vector(*pts=(3.0, 4.0))
+vector(2, 4) / 2 |> print  # vector(*pts=(1.0, 2.0))
 ```
 
 _Hint: Look back at how we implemented scalar multiplication._
@@ -936,8 +936,8 @@ Next up, `.unit`. We're going to write a `unit` method that takes just `self` as
 
 Tests:
 ```coconut
-vector(0, 1).unit() |> print  # vector(pts=(0.0, 1.0))
-vector(5, 0).unit() |> print  # vector(pts=(1.0, 0.0))
+vector(0, 1).unit() |> print  # vector(*pts=(0.0, 1.0))
+vector(5, 0).unit() |> print  # vector(*pts=(1.0, 0.0))
 ```
 
 <br>
@@ -1011,14 +1011,14 @@ And now it's time to put it all together. Feel free to substitute in your own ve
 ```coconut
 import math  # necessary for math.acos in .angle
 
-data vector(pts):
+data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        if len(pts) == 1 and pts[0] `isinstance` vector:
-            return pts[0]  # vector(v) where v is a vector should return v
+        match (v is vector,) in pts:
+            return v  # vector(v) where v is a vector should return v
         else:
-            return pts |> tuple |> datamaker(cls)  # accesses base constructor
+            return pts |*> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
@@ -1057,10 +1057,10 @@ data vector(pts):
     def angle(self, other is vector) = math.acos(self.unit() * other.unit())
 
 # Test cases:
-vector(3, 4) / 1 |> print  # vector(pts=(3.0, 4.0))
-vector(2, 4) / 2 |> print  # vector(pts=(1.0, 2.0))
-vector(0, 1).unit() |> print  # vector(pts=(0.0, 1.0))
-vector(5, 0).unit() |> print  # vector(pts=(1.0, 0.0))
+vector(3, 4) / 1 |> print  # vector(*pts=(3.0, 4.0))
+vector(2, 4) / 2 |> print  # vector(*pts=(1.0, 2.0))
+vector(0, 1).unit() |> print  # vector(*pts=(0.0, 1.0))
+vector(5, 0).unit() |> print  # vector(*pts=(1.0, 0.0))
 vector(2, 0).angle(vector(3, 0)) |> print  # 0.0
 print(vector(1, 0).angle(vector(0, 2)), math.pi/2)  # should be the same
 vector(1, 2).angle(5)  # MatchError

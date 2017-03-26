@@ -247,7 +247,10 @@ def main_test():
     assert derp()() == 15
     data abc(xyz)
     assert abc(10).xyz == 10
+    assert issubclass(abc, object)
+    assert isinstance(abc(10), object)
     class aclass
+    assert issubclass(aclass, object)
     assert isinstance(aclass(), object)
     assert tee((1,2)) |*> (is)
     assert tee(f{1,2}) |*> (is)

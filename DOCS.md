@@ -492,6 +492,8 @@ data <name>(<args>):
 ```
 `<name>` is the name of the new data type, `<args>` are the arguments to its constructor as well as the names of its attributes, and `<body>` contains the data type's methods.
 
+In addition to supporting standard `collections.namedtuple` subclassing when `<args>` is a list of names, Coconut also supports an extended version where `<args>` can contain a starred argument to collect extra parameters.
+
 Subclassing `data` types can be done easily by inheriting from them in a normal Python `class`, although to make the new subclass immutable, the line
 ```coconut
 __slots__ = ()

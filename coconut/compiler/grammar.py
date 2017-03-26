@@ -355,105 +355,6 @@ def math_funcdef_handle(tokens):
         raise CoconutInternalException("invalid assignment function definition tokens")
 
 
-def data_handle(original, loc, tokens):
-    """Processes data blocks."""
-    if len(tokens) == 3:
-        name, args, stmts = tokens
-    else:
-        raise CoconutInternalException("invalid data tokens", tokens)
-    base_args, starred_arg = [], None
-    for i, arg in enumerate(args):
-        if arg.startswith("_"):
-            raise CoconutDeferredSyntaxError("data fields cannot start with an underscore", loc)
-        elif arg.startswith("*"):
-            if i != len(args) - 1:
-                raise CoconutDeferredSyntaxError("starred data field must come last", loc)
-            starred_arg = arg[1:]
-        else:
-            base_args.append(arg)
-    attr_str = " ".join(base_args)
-    extra_stmts = "__slots__ = ()\n"
-    if starred_arg is not None:
-        attr_str += (" " if attr_str else "") + starred_arg
-        if base_args:
-            extra_stmts += r'''def __new__(_cls, {all_args}):
-    {oind}return _coconut.tuple.__new__(_cls, {base_args_tuple} + {starred_arg})
-{cind}@_coconut.classmethod
-def _make(cls, iterable, new=_coconut.tuple.__new__, len=_coconut.len):
-    {oind}result = new(cls, iterable)
-    if len(result) < {num_base_args}:
-        {oind}raise _coconut.TypeError("Expected at least 2 arguments, got %d" % len(result))
-    {cind}return result
-{cind}def _asdict(self):
-    {oind}return _coconut.OrderedDict((f, _coconut.getattr(self, f)) for f in self._fields)
-{cind}def __repr__(self):
-    {oind}return "{name}({args_for_repr})".format(**self._asdict())
-{cind}def _replace(_self, **kwds):
-    {oind}result = _self._make(_coconut.tuple(_coconut.map(kwds.pop, {quoted_base_args_tuple}, _self)) + kwds.pop("{starred_arg}", self.{starred_arg}))
-    if kwds:
-        {oind}raise _coconut.ValueError("Got unexpected field names: %r" % kwds.keys())
-    {cind}return result
-{cind}@_coconut.property
-def {starred_arg}(self):
-    {oind}return self[{num_base_args}:]
-{cind}'''.format(
-                oind=openindent,
-                cind=closeindent,
-                name=name,
-                args_for_repr=", ".join(arg + "={" + arg.lstrip("*") + "!r}" for arg in args),
-                starred_arg=starred_arg,
-                all_args=", ".join(args),
-                num_base_args=str(len(base_args)),
-                base_args_tuple="(" + ", ".join(base_args) + ("," if len(base_args) == 1 else "") + ")",
-                quoted_base_args_tuple='("' + '", "'.join(base_args) + '"' + ("," if len(base_args) == 1 else "") + ")",
-            )
-        else:
-            extra_stmts += r'''def __new__(_cls, *{arg}):
-    {oind}return _coconut.tuple.__new__(_cls, {arg})
-{cind}@_coconut.classmethod
-def _make(cls, iterable, new=_coconut.tuple.__new__, len=None):
-    {oind}return new(cls, iterable)
-{cind}def _asdict(self):
-    {oind}return _coconut.OrderedDict([("{arg}", self[:])])
-{cind}def __repr__(self):
-    {oind}return "{name}(*{arg}=%r)" % (self[:],)
-{cind}def _replace(_self, **kwds):
-    {oind}result = self._make(kwds.pop("{arg}", _self))
-    if kwds:
-        {oind}raise _coconut.ValueError("Got unexpected field names: %r" % kwds.keys())
-    {cind}return result
-{cind}@_coconut.property
-def {arg}(self):
-    {oind}return self[:]
-{cind}'''.format(
-                oind=openindent,
-                cind=closeindent,
-                name=name,
-                arg=starred_arg,
-            )
-    out = "class " + name + '(_coconut.collections.namedtuple("' + name + '", "' + attr_str + '")):\n' + openindent
-    rest = None
-    if "simple" in stmts.keys() and len(stmts) == 1:
-        out += extra_stmts
-        rest = stmts[0]
-    elif "docstring" in stmts.keys() and len(stmts) == 1:
-        out += stmts[0] + extra_stmts
-    elif "complex" in stmts.keys() and len(stmts) == 1:
-        out += extra_stmts
-        rest = "".join(stmts[0])
-    elif "complex" in stmts.keys() and len(stmts) == 2:
-        out += stmts[0] + extra_stmts
-        rest = "".join(stmts[1])
-    elif "empty" in stmts.keys() and len(stmts) == 1:
-        out += extra_stmts.rstrip() + stmts[0]
-    else:
-        raise CoconutInternalException("invalid inner data tokens", stmts)
-    if rest is not None and rest != "pass\n":
-        out += rest
-    out += closeindent
-    return out
-
-
 def decorator_handle(tokens):
     """Processes decorators."""
     defs = []
@@ -1306,6 +1207,7 @@ class Grammar(object):
         + (def_match_funcdef | math_match_funcdef)
     )
 
+    datadef = Forward()
     data_args = Group(Optional(lparen.suppress() + Optional(
         tokenlist(condense(Optional(star) + name), comma)
     ) + rparen.suppress()))
@@ -1314,7 +1216,7 @@ class Grammar(object):
         | (newline.suppress() + indent.suppress() + docstring + dedent.suppress() | docstring)("docstring")
         | simple_stmt("simple")
     ) | newline("empty"))
-    datadef = condense(attach(Keyword("data").suppress() + name - data_args - data_suite, data_handle))
+    datadef_ref = condense(attach(Keyword("data").suppress() + name - data_args - data_suite, data_handle))
 
     simple_decorator = condense(dotted_name + Optional(function_call))("simple")
     complex_decorator = test("test")

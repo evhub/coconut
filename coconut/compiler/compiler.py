@@ -290,6 +290,7 @@ class Compiler(Grammar):
         self.endline <<= attach(self.endline_ref, self.endline_handle)
         self.moduledoc_item <<= trace(attach(self.moduledoc, self.set_docstring))
         self.name <<= trace(attach(self.base_name, self.name_check))
+
         self.set_literal <<= trace(attach(self.set_literal_ref, self.set_literal_handle))
         self.set_letter_literal <<= trace(attach(self.set_letter_literal_ref, self.set_letter_literal_handle))
         self.classlist <<= trace(attach(self.classlist_ref, self.classlist_handle))
@@ -309,6 +310,8 @@ class Compiler(Grammar):
         self.unsafe_typedef_default <<= trace(attach(self.unsafe_typedef_default_ref, self.unsafe_typedef_handle))
         self.return_typedef <<= trace(attach(self.return_typedef_ref, self.typedef_handle))
         self.typed_assign_stmt <<= trace(attach(self.typed_assign_stmt_ref, self.typed_assign_stmt_handle))
+        self.datadef <<= trace(attach(self.datadef_ref, self.data_handle))
+
         self.u_string <<= attach(self.u_string_ref, self.u_string_check)
         self.f_string <<= attach(self.f_string_ref, self.f_string_check)
         self.matrix_at <<= attach(self.matrix_at_ref, self.matrix_at_check)
@@ -454,7 +457,7 @@ class Compiler(Grammar):
             return info[:2]
 
     def make_syntax_err(self, err, original):
-        """Handles CoconutDeferredSyntaxError."""
+        """Make a CoconutSyntaxError from a CoconutDeferredSyntaxError."""
         msg, loc = err.args
         return self.make_err(CoconutSyntaxError, msg, original, loc)
 
@@ -1033,6 +1036,109 @@ class Compiler(Grammar):
                 raise CoconutInternalException("invalid inner classlist token", tokens[0])
         else:
             raise CoconutInternalException("invalid classlist tokens", tokens)
+
+    def data_handle(self, original, loc, tokens):
+        """Processes data blocks."""
+        if len(tokens) == 3:
+            name, args, stmts = tokens
+        else:
+            raise CoconutInternalException("invalid data tokens", tokens)
+        base_args, starred_arg = [], None
+        for i, arg in enumerate(args):
+            if arg.startswith("_"):
+                raise CoconutDeferredSyntaxError("data fields cannot start with an underscore", loc)
+            elif arg.startswith("*"):
+                if i != len(args) - 1:
+                    raise CoconutDeferredSyntaxError("starred data field must come last", loc)
+                starred_arg = arg[1:]
+            else:
+                base_args.append(arg)
+        attr_str = " ".join(base_args)
+        extra_stmts = "__slots__ = ()\n"
+        if starred_arg is not None:
+            attr_str += (" " if attr_str else "") + starred_arg
+            if base_args:
+                extra_stmts += r'''def __new__(_cls, {all_args}):
+        {oind}return _coconut.tuple.__new__(_cls, {base_args_tuple} + {starred_arg})
+    {cind}@_coconut.classmethod
+    def _make(cls, iterable, new=_coconut.tuple.__new__, len=_coconut.len):
+        {oind}result = new(cls, iterable)
+        if len(result) < {num_base_args}:
+            {oind}raise _coconut.TypeError("Expected at least 2 arguments, got %d" % len(result))
+        {cind}return result
+    {cind}def _asdict(self):
+        {oind}return _coconut.OrderedDict((f, _coconut.getattr(self, f)) for f in self._fields)
+    {cind}def __repr__(self):
+        {oind}return "{name}({args_for_repr})".format(**self._asdict())
+    {cind}def _replace(_self, **kwds):
+        {oind}result = _self._make(_coconut.tuple(_coconut.map(kwds.pop, {quoted_base_args_tuple}, _self)) + kwds.pop("{starred_arg}", self.{starred_arg}))
+        if kwds:
+            {oind}raise _coconut.ValueError("Got unexpected field names: %r" % kwds.keys())
+        {cind}return result
+    {cind}@_coconut.property
+    def {starred_arg}(self):
+        {oind}return self[{num_base_args}:]
+    {cind}'''.format(
+                    oind=openindent,
+                    cind=closeindent,
+                    name=name,
+                    args_for_repr=", ".join(arg + "={" + arg.lstrip("*") + "!r}" for arg in args),
+                    starred_arg=starred_arg,
+                    all_args=", ".join(args),
+                    num_base_args=str(len(base_args)),
+                    base_args_tuple="(" + ", ".join(base_args) + ("," if len(base_args) == 1 else "") + ")",
+                    quoted_base_args_tuple='("' + '", "'.join(base_args) + '"' + ("," if len(base_args) == 1 else "") + ")",
+                )
+            else:
+                extra_stmts += r'''def __new__(_cls, *{arg}):
+        {oind}return _coconut.tuple.__new__(_cls, {arg})
+    {cind}@_coconut.classmethod
+    def _make(cls, iterable, new=_coconut.tuple.__new__, len=None):
+        {oind}return new(cls, iterable)
+    {cind}def _asdict(self):
+        {oind}return _coconut.OrderedDict([("{arg}", self[:])])
+    {cind}def __repr__(self):
+        {oind}return "{name}(*{arg}=%r)" % (self[:],)
+    {cind}def _replace(_self, **kwds):
+        {oind}result = self._make(kwds.pop("{arg}", _self))
+        if kwds:
+            {oind}raise _coconut.ValueError("Got unexpected field names: %r" % kwds.keys())
+        {cind}return result
+    {cind}@_coconut.property
+    def {arg}(self):
+        {oind}return self[:]
+    {cind}'''.format(
+                    oind=openindent,
+                    cind=closeindent,
+                    name=name,
+                    arg=starred_arg,
+                )
+        out = (
+            "class " + name + "("
+            '_coconut.collections.namedtuple("' + name + '", "' + attr_str + '")'
+            + (", _coconut.object" if not self.target.startswith("3") else "")
+            + "):\n" + openindent
+        )
+        rest = None
+        if "simple" in stmts.keys() and len(stmts) == 1:
+            out += extra_stmts
+            rest = stmts[0]
+        elif "docstring" in stmts.keys() and len(stmts) == 1:
+            out += stmts[0] + extra_stmts
+        elif "complex" in stmts.keys() and len(stmts) == 1:
+            out += extra_stmts
+            rest = "".join(stmts[0])
+        elif "complex" in stmts.keys() and len(stmts) == 2:
+            out += stmts[0] + extra_stmts
+            rest = "".join(stmts[1])
+        elif "empty" in stmts.keys() and len(stmts) == 1:
+            out += extra_stmts.rstrip() + stmts[0]
+        else:
+            raise CoconutInternalException("invalid inner data tokens", stmts)
+        if rest is not None and rest != "pass\n":
+            out += rest
+        out += closeindent
+        return out
 
     def import_handle(self, original, loc, tokens):
         """Universalizes imports."""
