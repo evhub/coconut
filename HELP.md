@@ -530,7 +530,7 @@ data vector(*pts):
         match (v is vector,) in pts:
             return v  # vector(v) where v is a vector should return v
         else:
-            return pts |> datamaker(cls)  # accesses base constructor
+            return pts |*> datamaker(cls)  # accesses base constructor
 
 # Test cases:
 vector(1, 2, 3) |> print  # vector(*pts=(1, 2, 3))
@@ -539,7 +539,7 @@ vector(4, 5) |> vector |> print  # vector(*pts=(4, 5))
 
 Copy, paste! The big new thing here is how to write `data` constructors. Since `data` types are immutable, `__init__` construction won't work. Instead, a different special method `__new__` is used, which must return the newly constructed instance, and unlike most methods, takes the class not the object as the first argument. Since `__new__` needs to return a fully constructed instance, in almost all cases it will be necessary to access the underlying `data` constructor. To achieve this, Coconut provides the built-in function `datamaker`, which takes a data type, often the first argument to `__new__`, and returns its underlying `data` constructor.
 
-In this case, the constructor checks whether nothing but another `vector` was passed, in which case it returns that, otherwise it returns the result of creating a tuple of the arguments and passing that to the underlying constructor, which takes an iterable and puts its values into the data type's fields.
+In this case, the constructor checks whether nothing but another `vector` was passed, in which case it returns that, otherwise it returns the result of creating a tuple of the arguments and passing that to the underlying constructor, the form of which is `vector(*pts)`, since that is how we declared the data type.
 
 The other new construct used here is the `|*>`, or star-pipe, operator, which functions exactly like the normal pipe, except that instead of calling the function with one argument, it calls it with as many arguments as there are elements in the sequence passed into it. The difference between `|*>` and `|>` is exactly analogous to the difference between `f(args)` and `f(*args)`.
 
@@ -618,7 +618,7 @@ data vector(*pts):
         match (v is vector,) in pts:
             return v  # vector(v) where v is a vector should return v
         else:
-            return pts |> datamaker(cls)  # accesses base constructor
+            return pts |*> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
@@ -832,7 +832,7 @@ data vector(*pts):
         match (v is vector,) in pts:
             return v  # vector(v) where v is a vector should return v
         else:
-            return pts |> datamaker(cls)  # accesses base constructor
+            return pts |*> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
@@ -1021,7 +1021,7 @@ data vector(*pts):
         match (v is vector,) in pts:
             return v  # vector(v) where v is a vector should return v
         else:
-            return pts |> datamaker(cls)  # accesses base constructor
+            return pts |*> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)

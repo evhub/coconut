@@ -529,11 +529,27 @@ class _coconut_partial(object):'''
                 args.append("?")
         for arg in self._stargs:
             args.append(_coconut.repr(arg))
-        return _coconut.repr(self.func) + "$(" + ", ".join(args) + ")"
+        return _coconut.repr(self.func) + "$(" + ", ".join(args) + ")"'''
+            if target.startswith("3"):
+                header += r'''
+class _coconut_datamaker:'''
+            else:
+                header += r'''
+class _coconut_datamaker(object):'''
+            header += r'''
+    __slots__ = ("data_type",)
+    def __init__(self, data_type):
+        self.data_type = data_type
+    def __call__(self, *args, **kwargs):
+        return self.data_type._make(args, **kwargs)
+    def __repr__(self):
+        return "datamaker(" + _coconut.repr(data_type) + ")"
+    def __reduce__(self):
+        return (_coconut_datamaker, (self.data_type,))
 def datamaker(data_type):
     """Returns base data constructor of passed data type."""
     if _coconut.hasattr(data_type, "_make") and (_coconut.issubclass(data_type, _coconut.tuple) or _coconut.isinstance(data_type, _coconut.tuple)):
-        return data_type._make
+        return _coconut_datamaker(data_type)
     else:
         return _coconut.functools.partial(_coconut.super(data_type, data_type).__new__, data_type)
 def consume(iterable, keep_last=0):
