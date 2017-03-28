@@ -1061,7 +1061,7 @@ class Compiler(Grammar):
                 extra_stmts += r'''def __new__(_cls, {all_args}):
         {oind}return _coconut.tuple.__new__(_cls, {base_args_tuple} + {starred_arg})
     {cind}@_coconut.classmethod
-    def _make(cls, iterable, new=_coconut.tuple.__new__, len=_coconut.len):
+    def _make(cls, iterable, {kwd_only}new=_coconut.tuple.__new__, len=_coconut.len):
         {oind}result = new(cls, iterable)
         if len(result) < {num_base_args}:
             {oind}raise _coconut.TypeError("Expected at least 2 arguments, got %d" % len(result))
@@ -1088,12 +1088,13 @@ class Compiler(Grammar):
                     num_base_args=str(len(base_args)),
                     base_args_tuple="(" + ", ".join(base_args) + ("," if len(base_args) == 1 else "") + ")",
                     quoted_base_args_tuple='("' + '", "'.join(base_args) + '"' + ("," if len(base_args) == 1 else "") + ")",
+                    kwd_only=("*, " if self.target.startswith("3") else ""),
                 )
             else:
                 extra_stmts += r'''def __new__(_cls, *{arg}):
         {oind}return _coconut.tuple.__new__(_cls, {arg})
     {cind}@_coconut.classmethod
-    def _make(cls, iterable, new=_coconut.tuple.__new__, len=None):
+    def _make(cls, iterable, {kwd_only}new=_coconut.tuple.__new__, len=None):
         {oind}return new(cls, iterable)
     {cind}def _asdict(self):
         {oind}return _coconut.OrderedDict([("{arg}", self[:])])
@@ -1112,6 +1113,7 @@ class Compiler(Grammar):
                     cind=closeindent,
                     name=name,
                     arg=starred_arg,
+                    kwd_only=("*, " if self.target.startswith("3") else ""),
                 )
         out = (
             "class " + name + "("
