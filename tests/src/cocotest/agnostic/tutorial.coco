@@ -255,12 +255,12 @@ data vector(*pts):
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
     def __add__(self, other) =
         """Add two vectors together."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((+), self.pts, other_pts) |*> vector
     def __sub__(self, other) =
         """Subtract one vector from another."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
@@ -268,14 +268,14 @@ data vector(*pts):
         self.pts |> map$((-)) |*> vector
     def __eq__(self, other):
         """Compare whether two vectors are equal."""
-        match vector(=self.pts) in other:
+        match vector(*=self.pts) in other:
             return True
         else:
             return False
     def __ne__(self, other) = not self == other
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
-        match vector(other_pts) in other:
+        match vector(*other_pts) in other:
             assert len(other_pts) == len(self.pts)
             return map((*), self.pts, other_pts) |> sum  # dot product
         else:
@@ -330,12 +330,12 @@ data vector(*pts):
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
     def __add__(self, other) =
         """Add two vectors together."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((+), self.pts, other_pts) |*> vector
     def __sub__(self, other) =
         """Subtract one vector from another."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
@@ -343,14 +343,14 @@ data vector(*pts):
         self.pts |> map$((-)) |*> vector
     def __eq__(self, other):
         """Compare whether two vectors are equal."""
-        match vector(=self.pts) in other:
+        match vector(*=self.pts) in other:
             return True
         else:
             return False
     def __ne__(self, other) = not self == other
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
-        match vector(other_pts) in other:
+        match vector(*other_pts) in other:
             assert len(other_pts) == len(self.pts)
             return map((*), self.pts, other_pts) |> sum  # dot product
         else:
@@ -387,12 +387,12 @@ data vector(*pts):
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
     def __add__(self, other) =
         """Add two vectors together."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((+), self.pts, other_pts) |*> vector
     def __sub__(self, other) =
         """Subtract one vector from another."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
@@ -400,14 +400,14 @@ data vector(*pts):
         self.pts |> map$((-)) |*> vector
     def __eq__(self, other):
         """Compare whether two vectors are equal."""
-        match vector(=self.pts) in other:
+        match vector(*=self.pts) in other:
             return True
         else:
             return False
     def __ne__(self, other) = not self == other
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
-        match vector(other_pts) in other:
+        match vector(*other_pts) in other:
             assert len(other_pts) == len(self.pts)
             return map((*), self.pts, other_pts) |> sum  # dot product
         else:

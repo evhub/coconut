@@ -557,18 +557,18 @@ Next up is vector addition. The goal here is to add two vectors of equal length 
 ```coconut
     def __add__(self, other) =
         """Add two vectors together."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((+), self.pts, other_pts) |*> vector
 ```
 
-There are a couple of new constructs here, but the main notable one is the destructuring assignment statement `vector(other_pts) = other` which showcases the syntax for pattern-matching against data types: it mimics exactly the original `data` declaration of that data type. In this case, `vector(other_pts) = other` will only match a vector, raising a `MatchError` otherwise, and if it does match a vector, will assign the vector's `pts` attribute to the variable `other_pts`.
+There are a couple of new constructs here, but the main notable one is the destructuring assignment statement `vector(*other_pts) = other` which showcases the syntax for pattern-matching against data types: it mimics exactly the original `data` declaration of that data type. In this case, `vector(*other_pts) = other` will only match a vector, raising a `MatchError` otherwise, and if it does match a vector, will assign the vector's `pts` attribute to the variable `other_pts`.
 
 Next is vector subtraction, which is just like vector addition, but with `(-)` instead of `(+)`:
 ```coconut
     def __sub__(self, other) =
         """Subtract one vector from another."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((-), self.pts, other_pts) |*> vector
 ```
@@ -584,7 +584,7 @@ Our next method will be equality. We're again going to use `data` pattern-matchi
 ```coconut
     def __eq__(self, other):
         """Compare whether two vectors are equal."""
-        match vector(=self.pts) in other:
+        match vector(*=self.pts) in other:
             return True
         else:
             return False
@@ -597,7 +597,7 @@ The last method we'll implement is multiplication. This one is a little bit tric
 ```coconut
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
-        match vector(other_pts) in other:
+        match vector(*other_pts) in other:
             assert len(other_pts) == len(self.pts)
             return map((*), self.pts, other_pts) |> sum  # dot product
         else:
@@ -624,12 +624,12 @@ data vector(*pts):
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
     def __add__(self, other) =
         """Add two vectors together."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((+), self.pts, other_pts) |*> vector
     def __sub__(self, other) =
         """Subtract one vector from another."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
@@ -637,14 +637,14 @@ data vector(*pts):
         self.pts |> map$((-)) |*> vector
     def __eq__(self, other):
         """Compare whether two vectors are equal."""
-        match vector(=self.pts) in other:
+        match vector(*=self.pts) in other:
             return True
         else:
             return False
     def __ne__(self, other) = not self == other
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
-        match vector(other_pts) in other:
+        match vector(*other_pts) in other:
             assert len(other_pts) == len(self.pts)
             return map((*), self.pts, other_pts) |> sum  # dot product
         else:
@@ -838,12 +838,12 @@ data vector(*pts):
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
     def __add__(self, other) =
         """Add two vectors together."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((+), self.pts, other_pts) |*> vector
     def __sub__(self, other) =
         """Subtract one vector from another."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
@@ -851,14 +851,14 @@ data vector(*pts):
         self.pts |> map$((-)) |*> vector
     def __eq__(self, other):
         """Compare whether two vectors are equal."""
-        match vector(=self.pts) in other:
+        match vector(*=self.pts) in other:
             return True
         else:
             return False
     def __ne__(self, other) = not self == other
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
-        match vector(other_pts) in other:
+        match vector(*other_pts) in other:
             assert len(other_pts) == len(self.pts)
             return map((*), self.pts, other_pts) |> sum  # dot product
         else:
@@ -1027,12 +1027,12 @@ data vector(*pts):
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
     def __add__(self, other) =
         """Add two vectors together."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((+), self.pts, other_pts) |*> vector
     def __sub__(self, other) =
         """Subtract one vector from another."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
@@ -1040,14 +1040,14 @@ data vector(*pts):
         self.pts |> map$((-)) |*> vector
     def __eq__(self, other):
         """Compare whether two vectors are equal."""
-        match vector(=self.pts) in other:
+        match vector(*=self.pts) in other:
             return True
         else:
             return False
     def __ne__(self, other) = not self == other
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
-        match vector(other_pts) in other:
+        match vector(*other_pts) in other:
             assert len(other_pts) == len(self.pts)
             return map((*), self.pts, other_pts) |> sum  # dot product
         else:
