@@ -343,3 +343,4 @@ def tco_test():
     assert recurse_n_times(10000)
     assert is_even(5000) and is_odd(5001)
     assert is_even_(5000) and is_odd_(5001)
+    return True
