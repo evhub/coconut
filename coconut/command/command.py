@@ -183,11 +183,11 @@ class Command(object):
                 raise CoconutException("source path must point to directory not file when --watch is enabled")
 
             if args.dest is None:
-                if args.nowrite:
+                if args.no_write:
                     dest = None  # no dest
                 else:
                     dest = True  # auto-generate dest
-            elif args.nowrite:
+            elif args.no_write:
                 raise CoconutException("destination path cannot be given when --nowrite is enabled")
             elif os.path.isfile(args.dest):
                 raise CoconutException("destination path must point to directory not file")
@@ -206,7 +206,7 @@ class Command(object):
             self.run_mypy(filepaths)
 
         elif (args.run
-              or args.nowrite
+              or args.no_write
               or args.force
               or args.package
               or args.standalone
