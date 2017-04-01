@@ -1397,9 +1397,6 @@ class Compiler(Grammar):
         else:
             raise CoconutInternalException("invalid function definition tokens", tokens)
 
-        if self.no_tco:
-            return (decorators if decorators is not None else "") + funcdef
-
         lines = []  # transformed
         tco = False  # whether tco was done
         tre = False  # wether tre was done
@@ -1423,39 +1420,42 @@ class Compiler(Grammar):
             self.tre_store_count += 1
             attempt_tre = True
 
-        for line in raw_lines:
-            body, indent = split_trailing_indent(line)
-            level += ind_change(body)
-            if disabled_until_level is not None:
-                if level <= disabled_until_level:
-                    disabled_until_level = None
-            if disabled_until_level is None:
-                if match_in(Keyword("yield"), body):
-                    # we can't tco generators
-                    lines = raw_lines
-                    break
-                elif match_in(Keyword("def") | Keyword("try") | Keyword("with"), body):
-                    disabled_until_level = level
-                else:
-                    base, comment = split_comment(body)
-                    # tco works with decorators, but not tre
-                    if decorators or not attempt_tre:
-                        tre_base = None
+        if self.no_tco:
+            lines = raw_lines
+        else:
+            for line in raw_lines:
+                body, indent = split_trailing_indent(line)
+                level += ind_change(body)
+                if disabled_until_level is not None:
+                    if level <= disabled_until_level:
+                        disabled_until_level = None
+                if disabled_until_level is None:
+                    if match_in(Keyword("yield"), body):
+                        # we can't tco generators
+                        lines = raw_lines
+                        break
+                    elif match_in(Keyword("def") | Keyword("try") | Keyword("with"), body):
+                        disabled_until_level = level
                     else:
-                        # attempt tre
-                        tre_base = transform(self.tre_return(func_name, func_args, func_store, use_mock=use_mock), base)
-                        if tre_base is not None:
-                            line = tre_base + comment + indent
-                            tre = True
-                            tco = True  # tre falls back on tco if the function is changed
-                    if tre_base is None:
-                        # attempt tco
-                        tco_base = transform(self.tco_return, base)
-                        if tco_base is not None:
-                            line = tco_base + comment + indent
-                            tco = True
-            lines.append(line)
-            level += ind_change(indent)
+                        base, comment = split_comment(body)
+                        # tco works with decorators, but not tre
+                        if decorators or not attempt_tre:
+                            tre_base = None
+                        else:
+                            # attempt tre
+                            tre_base = transform(self.tre_return(func_name, func_args, func_store, use_mock=use_mock), base)
+                            if tre_base is not None:
+                                line = tre_base + comment + indent
+                                tre = True
+                                tco = True  # tre falls back on tco if the function is changed
+                        if tre_base is None:
+                            # attempt tco
+                            tco_base = transform(self.tco_return, base)
+                            if tco_base is not None:
+                                line = tco_base + comment + indent
+                                tco = True
+                lines.append(line)
+                level += ind_change(indent)
 
         out = "".join(lines)
         if tre:
