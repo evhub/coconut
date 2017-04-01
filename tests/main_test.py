@@ -300,6 +300,12 @@ class TestCompilation(unittest.TestCase):
     def test_target(self):
         run(agnostic_target=(2 if PY2 else 3))
 
+    def test_line_numbers(self):
+        run(["--linenumbers"])
+
+    def test_keep_lines(self):
+        run(["--keeplines"])
+
     if platform.python_implementation() != "PyPy":
         def test_jobs_zero(self):
             run(["--jobs", "0"])
@@ -308,9 +314,6 @@ class TestCompilation(unittest.TestCase):
         def test_mypy(self):
             call(["coconut", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err, check_mypy=False)
             run(["--mypy", "--ignore-missing-imports"])
-
-    def test_strict(self):
-        run(["--strict"])
 
     def test_run(self):
         run(use_run_arg=True)
@@ -321,11 +324,11 @@ class TestCompilation(unittest.TestCase):
     def test_standalone(self):
         run(["--standalone"])
 
-    def test_line_numbers(self):
-        run(["--linenumbers"])
+    def test_strict(self):
+        run(["--strict"])
 
-    def test_keep_lines(self):
-        run(["--keeplines"])
+    def test_no_tco(self):
+        run(["--no-tco"])
 
     def test_minify(self):
         run(["--minify"])

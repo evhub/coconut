@@ -100,7 +100,7 @@ arguments.add_argument(
     help="execute compiled Python")
 
 arguments.add_argument(
-    "-n", "--nowrite",
+    "-n", "--no-write", "--nowrite",
     action="store_true",
     help="disable writing compiled Python")
 
@@ -118,6 +118,11 @@ arguments.add_argument(
     "-s", "--strict",
     action="store_true",
     help="enforce code cleanliness standards")
+
+arguments.add_argument(
+    "--no-tco", "--notco",
+    action="store_true",
+    help="disable tail call optimization for ease of debugging")
 
 arguments.add_argument(
     "-c", "--code",
@@ -151,7 +156,7 @@ arguments.add_argument(
     "--mypy",
     type=str,
     nargs=argparse.REMAINDER,
-    help="run MyPy on compiled Python (remaining args passed to MyPy) (implies --package)")
+    help="run MyPy on compiled Python (remaining args passed to MyPy) (implies --package --no-tco)")
 
 arguments.add_argument(
     "--tutorial",

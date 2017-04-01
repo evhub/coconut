@@ -153,16 +153,17 @@ class Command(object):
         if args.tutorial:
             launch_tutorial()
 
+        if args.mypy is not None:
+            self.set_mypy_args(args.mypy)
+
         self.setup(
             target=args.target,
             strict=args.strict,
             minify=args.minify,
             line_numbers=args.line_numbers,
             keep_lines=args.keep_lines,
+            no_tco=args.no_tco or self.mypy,
         )
-
-        if args.mypy is not None:
-            self.set_mypy_args(args.mypy)
 
         if args.source is not None:
             if args.interact and args.run:
@@ -192,6 +193,7 @@ class Command(object):
                 raise CoconutException("destination path must point to directory not file")
             else:
                 dest = args.dest
+
             if args.package or self.mypy:
                 package = True
             elif args.standalone:

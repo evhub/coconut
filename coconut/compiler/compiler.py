@@ -246,7 +246,7 @@ class Compiler(Grammar):
         """Creates a new compiler with the given parsing parameters."""
         self.setup(*args, **kwargs)
 
-    def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False):
+    def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False, no_tco=False):
         """Initializes parsing parameters."""
         if target is None:
             target = ""
@@ -257,11 +257,12 @@ class Compiler(Grammar):
         if target not in targets:
             raise CoconutException('unsupported target Python version "' + target
                                    + '" (supported targets are "' + '", "'.join(specific_targets) + '", or leave blank for universal)')
-        self.target, self.strict, self.minify, self.line_numbers, self.keep_lines = target, strict, minify, line_numbers, keep_lines
+        self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.no_tco = (
+            target, strict, minify, line_numbers, keep_lines, no_tco)
 
     def __reduce__(self):
         """Return pickling information."""
-        return (Compiler, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines))
+        return (Compiler, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.no_tco))
 
     def genhash(self, package, code):
         """Generates a hash from code."""
@@ -1395,6 +1396,9 @@ class Compiler(Grammar):
             decorators, funcdef = tokens
         else:
             raise CoconutInternalException("invalid function definition tokens", tokens)
+
+        if self.no_tco:
+            return (decorators if decorators is not None else "") + funcdef
 
         lines = []  # transformed
         tco = False  # whether tco was done

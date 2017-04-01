@@ -118,9 +118,10 @@ which will install the most recent working [development build](https://github.co
 
 ```
 coconut [-h] [-v] [-t version] [-i] [-p] [-a] [-l] [-k] [-w] [-r] [-n]
-        [-d] [-q] [-s] [-c code] [-j processes] [-f] [--minify]
-        [--jupyter ...] [--mypy ...] [--tutorial] [--documentation]
-        [--style name] [--recursion-limit limit] [--verbose]
+        [-d] [-q] [-s] [--no-tco] [-c code] [-j processes] [-f]
+        [--minify] [--jupyter ...] [--mypy ...] [--tutorial]
+        [--documentation] [--style name] [--recursion-limit limit]
+        [--verbose] [--trace]
         [source] [dest]
 ```
 
@@ -135,52 +136,55 @@ dest                destination directory for compiled files (defaults to
 #### Optional Arguments
 
 ```
--h, --help          show this help message and exit
--v, --version       print Coconut and Python version information
+-h, --help            show this help message and exit
+-v, --version         print Coconut and Python version information
 -t version, --target version
                     specify target Python version (defaults to universal)
--i, --interact      force the interpreter to start (otherwise starts if no
+-i, --interact        force the interpreter to start (otherwise starts if no
                     other command is given) (implies --run)
--p, --package       compile source as part of a package (defaults to only
+-p, --package         compile source as part of a package (defaults to only
                     if source is a directory)
--a, --standalone    compile source as standalone files (defaults to only
+-a, --standalone      compile source as standalone files (defaults to only
                     if source is a single file)
 -l, --line-numbers, --linenumbers
                     add line number comments for ease of debugging
 -k, --keep-lines, --keeplines
                     include source code in comments for ease of debugging
--w, --watch         watch a directory and recompile on changes
--r, --run           execute compiled Python
--n, --nowrite       disable writing compiled Python
--d, --display       print compiled Python
--q, --quiet         suppress all informational output (combine with
+-w, --watch           watch a directory and recompile on changes
+-r, --run             execute compiled Python
+-n, --no-write, --nowrite
+                    disable writing compiled Python
+-d, --display         print compiled Python
+-q, --quiet           suppress all informational output (combine with
                     --display to write runnable code to stdout)
--s, --strict        enforce code cleanliness standards
--c code, --code code
-                    run Coconut passed in as a string (can also be piped
+-s, --strict          enforce code cleanliness standards
+--no-tco, --notco     disable tail call optimization for ease of debugging
+-c code, --code code  run Coconut passed in as a string (can also be piped
                     into stdin)
 -j processes, --jobs processes
                     number of additional processes to use (defaults to 0)
                     (pass 'sys' to use machine default)
--f, --force         force overwriting of compiled Python (otherwise only
+-f, --force           force overwriting of compiled Python (otherwise only
                     overwrites when source code or compilation parameters
                     change)
---minify            reduce size of compiled Python
+--minify              reduce size of compiled Python
 --jupyter ..., --ipython ...
                     run Jupyter/IPython with Coconut as the kernel
                     (remaining args passed to Jupyter)
---mypy ...          run MyPy on compiled Python (remaining args passed to
-                    MyPy) (implies --package)
---tutorial          open the Coconut tutorial in the default web browser
---documentation     open the Coconut documentation in the default web
+--mypy ...            run MyPy on compiled Python (remaining args passed to
+                    MyPy) (implies --package --no-tco)
+--tutorial            open the Coconut tutorial in the default web browser
+--documentation       open the Coconut documentation in the default web
                     browser
---style name        Pygments syntax highlighting style (or 'none' to
+--style name          Pygments syntax highlighting style (or 'none' to
                     disable) (defaults to COCONUT_STYLE environment
                     variable, if it exists, otherwise 'default')
 --recursion-limit limit, --recursionlimit limit
                     set maximum recursion depth in compiler (defaults to
                     2000)
---verbose           print verbose debug output
+--verbose             print verbose debug output
+--trace               show verbose parsing data (only available in coconut-
+                    develop)
 ```
 
 ### Coconut Scripts
@@ -276,6 +280,8 @@ Coconut even supports `--mypy` in the interpreter, which will intelligently scan
 >>> a: str = count()[0]
 <string>:14: error: Incompatible types in assignment (expression has type "int", variable has type "str")
 ```
+
+_Note: Since [tail call optimization](#tail-call-optimization) prevents proper type-checking, `--mypy` implicitly disables it._
 
 ## Operators
 
@@ -977,6 +983,8 @@ Coconut will perform automatic tail call optimization and tail recursion elimina
 _Note: Tail call optimization (though not tail recursion elimination) will work even for 1) mutual recursion and 2) pattern-matching functions split across multiple definitions using [`addpattern`](#addpattern) or [`prepattern`](#prepattern)._
 
 If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for tail call optimization, or the corresponding criteria for [`recursive_iterator`](#recursive-iterator), either of which should prevent such errors.
+
+_Note: Tail call optimization and tail recursion elimination can be turned off by passing the `--no-tco` command-line option._
 
 ##### Example
 
@@ -1823,7 +1831,7 @@ Each _mode_ has two components: what parser it uses, and what header it prepends
 
 #### `setup`
 
-**coconut.convenience.setup**(_target, strict, minify, line\_numbers, keep\_lines_**)**
+**coconut.convenience.setup**(_target, strict, minify, line\_numbers, keep\_lines, no\_tco_**)**
 
 `setup` can be used to pass command line flags for use in `parse`. The possible values for each flag argument are:
 
@@ -1832,6 +1840,7 @@ Each _mode_ has two components: what parser it uses, and what header it prepends
 - _minify_: `False` (default) or `True`
 - _line\_numbers_: `False` (default) or `True`
 - _keep\_lines_: `False` (default) or `True`
+- _no\_tco_: `False` (default) or `True`
 
 #### `cmd`
 
