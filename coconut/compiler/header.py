@@ -175,11 +175,11 @@ def _coconut_tco(func):
         while True:
             if "_coconut_inside_tco" in kwargs:
                 del kwargs["_coconut_inside_tco"]
-                return call_func(*args, **kwargs)
+                return call_func(*args, **kwargs)  # pass --no-tco to clean up your traceback
             if hasattr(call_func, "_coconut_is_tco"):
                 kwargs["_coconut_inside_tco"] = call_func._coconut_is_tco
             try:
-                return call_func(*args, **kwargs)
+                return call_func(*args, **kwargs)  # pass --no-tco to clean up your traceback
             except _coconut_tail_call as tail_call:
                 call_func, args, kwargs = tail_call.func, tail_call.args, tail_call.kwargs
     tail_call_optimized_func._coconut_is_tco = True
