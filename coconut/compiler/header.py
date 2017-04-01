@@ -156,10 +156,10 @@ class _coconut(object):'''
         import collections.abc as abc'''
             if target.startswith("3"):
                 header += r'''
-    IndexError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr = IndexError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr'''
+    IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr = IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr'''
             else:
                 header += r'''
-    IndexError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr, bytearray = IndexError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, staticmethod(repr), bytearray'''
+    IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr, bytearray = IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, staticmethod(repr), bytearray'''
             header += r'''
 class MatchError(Exception):
     """Pattern-matching error."""
@@ -173,10 +173,13 @@ def _coconut_tco(func):
     def tail_call_optimized_func(*args, **kwargs):
         call_func = func
         while True:
-            if "_coconut_inside_tco" in kwargs:
+            try:
                 del kwargs["_coconut_inside_tco"]
+            except _coconut.KeyError:
+                pass
+            else:
                 return call_func(*args, **kwargs)  # pass --no-tco to clean up your traceback
-            if hasattr(call_func, "_coconut_is_tco"):
+            if _coconut.hasattr(call_func, "_coconut_is_tco"):
                 kwargs["_coconut_inside_tco"] = call_func._coconut_is_tco
             try:
                 return call_func(*args, **kwargs)  # pass --no-tco to clean up your traceback
@@ -462,9 +465,9 @@ def recursive_iterator(func):
     @_coconut.functools.wraps(func)
     def recursive_iterator_func(*args, **kwargs):
         hashable_args_kwargs = _coconut.pickle.dumps((args, kwargs), _coconut.pickle.HIGHEST_PROTOCOL)
-        if hashable_args_kwargs in tee_store:
+        try:
             to_tee = tee_store[hashable_args_kwargs]
-        else:
+        except _coconut.KeyError:
             to_tee = func(*args, **kwargs)
         tee_store[hashable_args_kwargs], to_return = _coconut_tee(to_tee)
         return to_return

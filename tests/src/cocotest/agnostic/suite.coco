@@ -222,9 +222,6 @@ def suite_test():
     assert vector(1, 2) |> .__eq__(other=vector(1, 2))
     assert fib() |> takewhile$((i) -> i < 4000000 ) |> filter$((i) -> i % 2 == 0 ) |> sum == 4613732
     assert loop([1,2])$[:4] |> list == [1, 2] * 2
-    assert recurse_n_times(10000)
-    assert is_even(5000) and is_odd(5001)
-    assert is_even_(5000) and is_odd_(5001)
     assert (def -> mod)()(5, 3) == 2
     assert sieve((2, 3, 4, 5)) |> list == [2, 3, 5]
     assert 11 == double_plus_one(5)
@@ -340,3 +337,9 @@ def suite_test():
     assert Pred(0, 1, 2) |> fmap$(-> _+1) == Pred(1, 2, 3)
     assert Quant(0, 1, 2) |> fmap$(-> _+1) == Quant(1, 2, 3)
     return True
+
+def tco_test():
+    """Exectues suite tests that rely on TCO."""
+    assert recurse_n_times(10000)
+    assert is_even(5000) and is_odd(5001)
+    assert is_even_(5000) and is_odd_(5001)
