@@ -1121,7 +1121,7 @@ class Compiler(Grammar):
                 )
         out = (
             "class " + name + "("
-            '(_coconut.collections.namedtuple("' + name + '", "' + attr_str + '")'
+            '_coconut.collections.namedtuple("' + name + '", "' + attr_str + '")'
             + (
                 ", " + inherit if inherit is not None
                 else ", _coconut.object" if not self.target.startswith("3")
