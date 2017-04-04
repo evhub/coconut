@@ -715,7 +715,7 @@ class Grammar(object):
 
     testlist = trace(itemlist(test, comma))
     testlist_star_expr = trace(itemlist(test | star_expr, comma))
-    multi_testlist = trace(addspace(OneOrMore(condense(test + comma)) + Optional(test)))
+    testlist_has_comma = trace(addspace(OneOrMore(condense(test + comma)) + Optional(test)))
 
     yield_from = Forward()
     dict_comp = Forward()
@@ -838,7 +838,7 @@ class Grammar(object):
     set_s = fixto(CaselessLiteral("s"), "s")
     set_f = fixto(CaselessLiteral("f"), "f")
     set_letter = set_s | set_f
-    setmaker = Group(addspace(test + comp_for)("comp") | multi_testlist("list") | test("test"))
+    setmaker = Group(addspace(test + comp_for)("comp") | testlist_has_comma("list") | test("test"))
     set_literal_ref = lbrace.suppress() + setmaker + rbrace.suppress()
     set_letter_literal_ref = set_letter + lbrace.suppress() + Optional(setmaker) + rbrace.suppress()
     lazy_items = Optional(test + ZeroOrMore(comma.suppress() + test) + Optional(comma.suppress()))
@@ -1141,7 +1141,7 @@ class Grammar(object):
     while_stmt = addspace(Keyword("while") - condense(test - suite - Optional(else_stmt)))
     for_stmt = addspace(Keyword("for") - assignlist - Keyword("in") - condense(testlist - suite - Optional(else_stmt)))
     except_clause = attach(Keyword("except").suppress() + (
-        multi_testlist("list") | test("test")
+        testlist_has_comma("list") | test("test")
     ) - Optional(Keyword("as").suppress() - name), except_handle)
     try_stmt = condense(Keyword("try") - suite + (
         Keyword("finally") - suite
@@ -1210,7 +1210,7 @@ class Grammar(object):
     datadef = Forward()
     data_args = Group(Optional(lparen.suppress() + Optional(
         tokenlist(condense(Optional(star) + name), comma)
-    ) + rparen.suppress()))
+    ) + rparen.suppress())) + Optional(Keyword("from").suppress() + testlist)
     data_suite = Group(colon.suppress() - (
         (newline.suppress() + indent.suppress() + Optional(docstring) + Group(OneOrMore(stmt)) + dedent.suppress())("complex")
         | (newline.suppress() + indent.suppress() + docstring + dedent.suppress() | docstring)("docstring")

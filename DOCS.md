@@ -493,18 +493,18 @@ The syntax for `data` blocks is a cross between the syntax for functions and the
 
 Coconut `data` blocks create immutable classes derived from `collections.namedtuple` and made immutable with `__slots__`. Coconut data statement syntax looks like:
 ```coconut
-data <name>(<args>):
+data <name>(<args>) [from <inherits>]:
     <body>
 ```
-`<name>` is the name of the new data type, `<args>` are the arguments to its constructor as well as the names of its attributes, and `<body>` contains the data type's methods.
+`<name>` is the name of the new data type, `<args>` are the arguments to its constructor as well as the names of its attributes, `<body>` contains the data type's methods, and `<inherits>` optionally contains any desired base classes.
 
 In addition to supporting standard `collections.namedtuple` subclassing when `<args>` is a list of names, Coconut also supports an extended version where `<args>` can contain a starred argument to collect extra parameters.
 
-Subclassing `data` types can be done easily by inheriting from them in a normal Python `class`, although to make the new subclass immutable, the line
+Subclassing `data` types can be done easily by inheriting from them either in another `data` statement or a normal Python `class`. If a normal `class` statement is used, making the new subclass immutable will require adding the line
 ```coconut
 __slots__ = ()
 ```
-will need to be added to the subclass before any method or attribute definitions.
+which will need to be put in the subclass body before any method or attribute definitions.
 
 ##### Rationale
 

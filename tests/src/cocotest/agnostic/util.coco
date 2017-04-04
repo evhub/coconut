@@ -202,6 +202,7 @@ def is_null(item):
 data Elems(elems):
     def __new__(cls, *elems) =
         elems |> datamaker(cls)
+data vector_with_id(x, y, i) from vector
 
 # Factorial:
 def factorial1(value):

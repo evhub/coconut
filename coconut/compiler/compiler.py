@@ -1042,6 +1042,9 @@ class Compiler(Grammar):
         """Processes data blocks."""
         if len(tokens) == 3:
             name, args, stmts = tokens
+            inherit = None
+        elif len(tokens) == 4:
+            name, args, inherit, stmts = tokens
         else:
             raise CoconutInternalException("invalid data tokens", tokens)
         base_args, starred_arg = [], None
@@ -1118,9 +1121,12 @@ class Compiler(Grammar):
                 )
         out = (
             "class " + name + "("
-            '_coconut.collections.namedtuple("' + name + '", "' + attr_str + '")'
-            + (", _coconut.object" if not self.target.startswith("3") else "")
-            + "):\n" + openindent
+            '(_coconut.collections.namedtuple("' + name + '", "' + attr_str + '")'
+            + (
+                ", " + inherit if inherit is not None
+                else ", _coconut.object" if not self.target.startswith("3")
+                else ""
+            ) + "):\n" + openindent
         )
         rest = None
         if "simple" in stmts.keys() and len(stmts) == 1:

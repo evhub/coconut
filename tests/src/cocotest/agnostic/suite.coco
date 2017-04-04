@@ -62,7 +62,7 @@ def suite_test():
     assert 12 |> next_mul_of $(5) == 15
     assert collatz(27)
     assert preop(1, 2).add() == 3
-    assert vector(3, 4) |> abs == 5
+    assert vector(3, 4) |> abs == 5 == vector_with_id(3, 4, 1) |> abs
     assert vector(1, 2) |> ((v) -> map(v., ("x", "y"))) |> tuple == (1, 2)
     assert vector(3, 1) |> vector(1, 2).transform |> ((v) -> map(v[], (0, 1))) |> tuple == (4, 3)
     assert vector(1, 2) |> vector(1, 2).__eq__
