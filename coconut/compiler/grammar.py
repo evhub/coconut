@@ -1150,7 +1150,7 @@ class Grammar(object):
             | Keyword("except") - suite
         ) - Optional(else_stmt) - Optional(Keyword("finally") - suite)
     ))
-    with_stmt = addspace(Keyword("with") - with_item_list - suite)
+    with_stmt = addspace(Keyword("with") - condense(with_item_list - suite))
     exec_stmt_ref = Keyword("exec").suppress() + lparen.suppress() + test + Optional(
         comma.suppress() + test + Optional(
             comma.suppress() + test + Optional(
