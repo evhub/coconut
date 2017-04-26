@@ -93,7 +93,7 @@ req_vers = {
     "ipython": (5, 3),
     "mypy": (0, 501),
     "prompt_toolkit": (1, 0),
-    "futures": (3, 0),
+    "futures": (3, 1),
     "argparse": (1, 4),
     "pytest": (3, 0),
     "watchdog": (0, 8),

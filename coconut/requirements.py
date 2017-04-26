@@ -116,11 +116,23 @@ def latest_version(req):
     return requests.get(url).json()["info"]["version"]
 
 
+def ver_tuple(ver_str):
+    """Convert a version string into a version tuple."""
+    out = []
+    for x in ver_str.split("."):
+        try:
+            x = int(x)
+        except ValueError:
+            pass
+        out.append(x)
+    return tuple(out)
+
+
 def print_new_versions():
     """Prints new requirement versions."""
     for req in everything_in(all_reqs):
         new_str = latest_version(req)
-        new_ver = tuple(int(x) for x in new_str.split("."))
+        new_ver = ver_tuple(new_str)
         updated = False
         for i, x in enumerate(req_vers[req]):
             if len(new_ver) <= i or x != new_ver[i]:
