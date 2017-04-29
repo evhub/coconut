@@ -96,6 +96,7 @@ class CoconutCompiler(CachingCompiler, object):
             compiled = memoized_parse_sys(code)
         except CoconutException:
             traceback.print_exc()
+            return None
         else:
             return super(CoconutCompiler, self).cache(compiled, *args, **kwargs)
 
