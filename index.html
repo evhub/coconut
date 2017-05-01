@@ -89,8 +89,8 @@
 <ul class="simple">
 <li>operator functions</li>
 </ul>
-<div class="highlight-coconut"><div class="highlight"><pre>
-<span class="nb">range</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="nb">map</span><span class="o">$</span><span class="p">((</span><span class="o">*</span><span class="p">)</span><span class="o">$</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span> <span class="o">|&gt;</span> <span class="nb">list</span>
+<div class="highlight-coconut"><div class="highlight"><pre><span></span><span class="n">product</span> <span class="o">=</span> <span class="nb">reduce</span><span class="o">$</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>
+<span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">product</span> <span class="o">|&gt;</span> <span class="nb">print</span>
 </pre></div>
 </div>
 <ul class="simple">
