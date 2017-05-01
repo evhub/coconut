@@ -426,7 +426,7 @@ def chain(*iterables):
 
 ###### Coconut
 ```coconut
-def N(n=0) = (n,) :: N(n+1) # no infinite loop because :: is lazy
+def N(n=0) = (n,) :: N(n+1)  # no infinite loop because :: is lazy
 
 (range(-10, 0) :: N())$[5:15] |> list |> print
 ```
@@ -522,14 +522,14 @@ Named tuple instances do not have per-instance dictionaries, so they are lightwe
 
 ###### Coconut
 ```coconut
-data vector(x, y):
+data vector2(x, y):
     def __abs__(self):
         return (self.x**2 + self.y**2)**.5
 
-v = vector(3, 4)
-v |> print # all data types come with a built-in __repr__
+v = vector2(3, 4)
+v |> print  # all data types come with a built-in __repr__
 v |> abs |> print
-v.x = 2 # this will fail because data objects are immutable
+v.x = 2  # this will fail because data objects are immutable
 ```
 _Showcases the syntax, features, and immutable nature of `data` types._
 ```coconut
@@ -571,12 +571,12 @@ _Showcases starred `data` declaration._
 ###### Python
 ```coconut_python
 import collections
-class vector(collections.namedtuple("vector", "x, y")):
+class vector2(collections.namedtuple("vector2", "x, y")):
     __slots__ = ()
     def __abs__(self):
         return (self.x**2 + self.y**2)**.5
 
-v = vector(3, 4)
+v = vector2(3, 4)
 print(v)
 print(abs(v))
 v.x = 2
@@ -699,8 +699,8 @@ When checking whether or not an object can be matched against in a particular fa
 def factorial(value):
     match 0 in value:
         return 1
-    else: match n is int in value if n > 0: # possible because of Coconut's
-        return n * factorial(n-1)           #   enhanced else statements
+    else: match n is int in value if n > 0:  # possible because of Coconut's
+        return n * factorial(n-1)            #   enhanced else statements
     else:
         raise TypeError("invalid argument to factorial of: "+repr(value))
 
@@ -728,7 +728,7 @@ _Showcases matching to data types. Values defined by the user with the `data` st
 data Empty()
 data Leaf(n)
 data Node(l, r)
-Tree = (Empty, Leaf, Node) # type union
+Tree = (Empty, Leaf, Node)  # type union
 
 def depth(Tree()) = 0
 
@@ -744,17 +744,15 @@ Node(Leaf(2), Node(Empty(), Leaf(3))) |> depth |> print
 ```
 _Showcases how the combination of data types and match statements can be used to powerful effect to replicate the usage of algebraic data types in other functional programming languages._
 ```coconut
-def duplicate_first(value):
-    match [x] + xs as l in value:
-        return [x] + l
-    else:
-        raise TypeError()
+def duplicate_first([x] + xs as l) =
+    [x] + l
 
 [1,2,3] |> duplicate_first |> print
 ```
 _Showcases head-tail splitting, one of the most common uses of pattern-matching, where a `+ <var>` (or `:: <var>` for any iterable) at the end of a list or tuple literal can be used to match the rest of the sequence._
 ```
-def sieve([head] :: tail) = [head] :: sieve(n for n in tail if n % head)
+def sieve([head] :: tail) =
+    [head] :: sieve(n for n in tail if n % head)
 
 @addpattern(sieve)
 def sieve((||)) = []
@@ -1443,16 +1441,16 @@ Apply _function_ of two arguments cumulatively to the items of _sequence_, from 
 
 ###### Coconut
 ```coconut
-prod = reduce$(*)
-range(1, 10) |> prod |> print
+product = reduce$(*)
+range(1, 10) |> product |> print
 ```
 
 ###### Python
 ```coconut_python
 import operator
 import functools
-prod = functools.partial(functools.reduce, operator.mul)
-print(prod(range(1, 10)))
+product = functools.partial(functools.reduce, operator.mul)
+print(product(range(1, 10)))
 ```
 
 ### `takewhile`
@@ -1688,8 +1686,8 @@ Coconut provides a `recursive_iterator` decorator that provides significant opti
 
 1. your function either always `return`s an iterator or generates an iterator using `yield`,
 2. when called multiple times with the same arguments, your function produces the same iterator (your function is stateless),
-3. your function gets called multiple times with the same arguments, and
-4. all arguments passed to your function have a unique pickling (this should almost always be true).
+3. your function gets called (usually calls itself) multiple times with the same arguments, and
+4. all arguments passed to your function have a unique pickling (usually true for most arguments).
 
 If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for `recursive_iterator`, or the corresponding criteria for Coconut's [tail call optimization](#tail-call-optimization), either of which should prevent such errors.
 

@@ -90,19 +90,29 @@ extras["dev"] = uniqueify(
     + get_reqs("dev")
 )
 
+
+def add_version_reqs(modern=True):
+    if modern:
+        global extras
+        extras[":python_version<'2.7'"] = get_reqs("py26")
+        extras[":python_version>='2.7'"] = get_reqs("non-py26")
+        extras[":python_version<'3'"] = get_reqs("py2")
+    else:
+        global requirements
+        if PY26:
+            requirements += get_reqs("py26")
+        else:
+            requirements += get_reqs("non-py26")
+        if PY2:
+            requirements += get_reqs("py2")
+
+
 if int(setuptools.__version__.split(".", 1)[0]) < 18:
     if "bdist_wheel" in sys.argv:
         raise RuntimeError("bdist_wheel not supported for setuptools versions < 18 (run 'pip install --upgrade setuptools' to fix)")
-    if PY26:
-        requirements += get_reqs("py26")
-    else:
-        requirements += get_reqs("non-py26")
-    if PY2:
-        requirements += get_reqs("py2")
+    add_version_reqs(modern=False)
 else:
-    extras[":python_version<'2.7'"] = get_reqs("py26")
-    extras[":python_version>='2.7'"] = get_reqs("non-py26")
-    extras[":python_version<'3'"] = get_reqs("py2")
+    add_version_reqs()
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:

@@ -16,7 +16,7 @@ def suite_test():
     assert all(same((1, 2, 3), [1, 2, 3]))
     assert chain2((|1, 2|), (|3, 4|)) |> list == [1, 2, 3, 4]
     assert threeple$(1, 2)(3) == (1, 2, 3)
-    assert 1 `range` 5 |> prod == 24
+    assert 1 `range` 5 |> product == 24
     assert plus1(4) == 5 == plus1_(4)
     assert 2 `plus1` == 3 == plus1(2)
     assert plus1(plus1(5)) == 7 == (plus1..plus1)(5)
@@ -78,6 +78,7 @@ def suite_test():
     assert factorial4(3) == 6
     assert factorial5(3) == 6
     assert fact(3) == 6 == fact_(3)
+    assert factorial(3) == 6
     assert factorial1(-1) is None
     assert factorial2(-1) is None
     assert factorial4(-1) is None

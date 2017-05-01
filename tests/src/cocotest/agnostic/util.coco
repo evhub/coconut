@@ -16,7 +16,7 @@ def a `join_with` (b=""):
     return b.join(a)
 
 # Basic Functions:
-prod = reduce$(*)
+product = reduce$(*)
 def zipwith(f, *args) = map((items) -> f(*items), zip(*args))
 zipsum = map$(sum)..zip
 plus1 = plus$(1)
@@ -243,6 +243,10 @@ match def fact(n) = fact(n, 1)
 match def fact(0, acc) = acc
 @addpattern(fact)
 match def fact(n, acc) = fact(n-1, acc*n)
+def factorial(0, acc=1) = acc
+@addpattern(factorial)
+def factorial(n is int, acc=1 if n > 0) =
+    factorial(n-1, acc*n)
 
 # Match Functions:
 def classify(value):

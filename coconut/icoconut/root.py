@@ -21,12 +21,6 @@ from coconut.root import *  # NOQA
 
 import traceback
 
-from ipykernel.ipkernel import IPythonKernel
-from ipykernel.zmqshell import ZMQInteractiveShell
-from IPython.core.inputsplitter import IPythonInputSplitter
-from IPython.core.interactiveshell import InteractiveShellABC
-from IPython.core.compilerop import CachingCompiler
-
 from coconut.exceptions import CoconutException
 from coconut.constants import (
     py_syntax_version,
@@ -39,6 +33,16 @@ from coconut.constants import (
 from coconut.compiler import Compiler
 from coconut.compiler.util import should_indent
 from coconut.command.util import Runner
+
+try:
+    from ipykernel.ipkernel import IPythonKernel
+    from ipykernel.zmqshell import ZMQInteractiveShell
+    from IPython.core.inputsplitter import IPythonInputSplitter
+    from IPython.core.interactiveshell import InteractiveShellABC
+    from IPython.core.compilerop import CachingCompiler
+except ImportError:
+    raise CoconutException("--ipython flag requires IPython library",
+                           extra="run 'pip install coconut[ipython]' to fix")
 
 #-----------------------------------------------------------------------------------------------------------------------
 # GLOBALS:
