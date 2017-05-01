@@ -548,6 +548,25 @@ def size(Node(l, r)) = size(l) + size(r)
 size(Node(Empty(), Leaf(10))) == 1
 ```
 _Showcases the algebraic nature of `data` types when combined with pattern-matching._
+```coconut
+data vector(*pts):
+    """Immutable arbitrary-length vector."""
+
+    def __abs__(self) =
+        self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
+
+    def __add__(self, other) =
+        vector(*other_pts) = other
+        assert len(other_pts) == len(self.pts)
+        map((+), self.pts, other_pts) |*> vector
+
+    def __neg__(self) =
+        self.pts |> map$((-)) |*> vector
+
+    def __sub__(self, other) =
+        self + -other
+```
+_Showcases starred `data` declaration._
 
 ###### Python
 ```coconut_python
@@ -583,6 +602,7 @@ def size(tree):
 
 size(Node(Empty(), Leaf(10))) == 1
 ```
+_Starred data declarations can't be done without a long sequence of method definitions. See the compiled code for the Python syntax._
 
 ### `match`
 
@@ -659,7 +679,8 @@ pattern ::= (
 - Checks (`=<var>`): will check that whatever is in that position is equal to the previously defined variable `<var>`.
 - Type Checks (`<var> is <types>`): will check that whatever is in that position is of type(s) `<types>` before binding the `<var>`.
 - Data Types (`<name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`.
-- Lists (`[<patterns>]`), Tuples (`(<patterns>)`), or Lazy lists (`(|<patterns>|)`): will only match a sequence (`collections.abc.Sequence`) of the same length, and will check the contents against `<patterns>`.
+- Lists (`[<patterns>]`), Tuples (`(<patterns>)`): will only match a sequence (`collections.abc.Sequence`) of the same length, and will check the contents against `<patterns>`.
+- Lazy lists (`(|<patterns>|)`): same as list or tuple matching, but checks iterable (`collections.abc.Iterable`) instead of sequence.
 - Dicts (`{<pairs>}`): will only match a mapping (`collections.abc.Mapping`) of the same length, and will check the contents against `<pairs>`.
 - Sets (`{<constants>}`): will only match a set (`collections.abc.Set`) of the same length and contents.
 - Head-Tail Splits (`<list/tuple> + <var>`): will match the beginning of the sequence against the `<list/tuple>`, then bind the rest to `<var>`, and make it the type of the construct used.
@@ -990,17 +1011,30 @@ _Note: Tail call optimization and tail recursion elimination can be turned off b
 
 ###### Coconut
 ```coconut
-# unlike in Python, this function will never hit a maximum recursion depth
+# unlike in Python, this function will never hit a maximum recursion depth error
 def factorial(n, acc=1):
-    if n == 0:
-        return acc
-    else:
-        return factorial(n-1, acc*n)
+    case n:
+        match 0:
+            return acc
+        match _ is int if n > 0:
+            return factorial(n-1, acc*n)
 ```
+_Showcases tail recursion elimination._
+```coconut
+# unlike in Python, neither of these functions will ever hit a maximum recursion depth error
+def is_even(0) = True
+@addpattern(is_even)
+def is_even(n is int if n > 0) = is_odd(n-1)
+
+def is_odd(0) = False
+@addpattern(is_odd)
+def is_odd(n is int if n > 0) = is_even(n-1)
+```
+_Showcases tail call optimization._
 
 ###### Python
 
-_Can't be done without rewriting the function._
+_Can't be done without rewriting the function(s)._
 
 ### Operator Functions
 
