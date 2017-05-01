@@ -533,9 +533,9 @@ v.x = 2 # this will fail because data objects are immutable
 ```
 _Showcases the syntax, features, and immutable nature of `data` types._
 ```coconut
-data Empty(): pass
-data Leaf(n): pass
-data Node(l, r): pass
+data Empty()
+data Leaf(n)
+data Node(l, r)
 
 def size(Empty()) = 0
 
