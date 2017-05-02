@@ -19,6 +19,7 @@ from coconut.root import *  # NOQA
 
 import sys
 import platform
+import os
 
 import setuptools
 
@@ -112,7 +113,7 @@ if int(setuptools.__version__.split(".", 1)[0]) < 18:
         raise RuntimeError("bdist_wheel not supported for setuptools versions < 18 (run 'pip install --upgrade setuptools' to fix)")
     add_version_reqs(modern=False)
 else:
-    add_version_reqs()
+    add_version_reqs(modern="CONDA_PREFIX" not in os.environ)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
