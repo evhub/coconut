@@ -20,12 +20,12 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 from coconut.constants import (
+    get_target_info,
     hash_prefix,
     tabideal,
     default_encoding,
 )
 from coconut.exceptions import CoconutInternalException
-from coconut.compiler.util import get_target_info
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:

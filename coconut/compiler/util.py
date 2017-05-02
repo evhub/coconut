@@ -61,11 +61,6 @@ def longest(*args):
         return matcher
 
 
-def get_target_info(target):
-    """Returns target information as a version tuple."""
-    return tuple(int(x) for x in target)
-
-
 def addskip(skips, skip):
     """Adds a line skip to the skips."""
     if skip < 1:

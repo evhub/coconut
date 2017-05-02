@@ -23,7 +23,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from coconut.root import *  # NOQA
 
-from coconut.constants import without_toc, with_toc
+from coconut.constants import (
+    without_toc,
+    with_toc,
+    version_str_tag,
+)
 
 from recommonmark.parser import CommonMarkParser
 from sphinx_bootstrap_theme import get_html_theme_path
@@ -51,7 +55,7 @@ project = "Coconut"
 copyright = "2015-2017, Evan Hubinger, licensed under Apache 2.0"
 author = "Evan Hubinger"
 version = VERSION
-release = VERSION_STR_TAG
+release = version_str_tag
 
 master_doc = "index"
 source_suffix = [".rst", ".md"]

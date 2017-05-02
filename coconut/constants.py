@@ -33,6 +33,28 @@ def fixpath(path):
     return os.path.normpath(os.path.realpath(path))
 
 
+def get_target_info(target):
+    """Returns target information as a version tuple."""
+    return tuple(int(x) for x in target)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# VERSION CONSTANTS:
+#-----------------------------------------------------------------------------------------------------------------------
+
+version_long = "Version " + VERSION_STR + " running on Python " + sys.version.split()[0]
+
+version_banner = "Coconut " + VERSION_STR
+
+if DEVELOP:
+    version_tag = "develop"
+else:
+    version_tag = "v" + VERSION
+
+version_str_tag = "v" + VERSION_STR
+
+version_tuple = VERSION.split(".")
+
 #-----------------------------------------------------------------------------------------------------------------------
 # INSTALLATION CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -133,45 +155,42 @@ classifiers = [
 ]
 
 search_terms = [
-    "functional programming language",
-    "functional programming",
     "functional",
-    "programming language",
+    "programming",
+    "language",
     "compiler",
     "match",
-    "matches",
-    "matching",
+    "pattern",
     "pattern-matching",
-    "pattern matching",
-    "algebraic data type",
-    "algebraic data types",
+    "algebraic",
     "data",
-    "data type",
-    "data types",
+    "type",
+    "types",
     "lambda",
     "lambdas",
+    "lazy",
+    "evaluation",
     "lazy list",
     "lazy lists",
-    "lazy evaluation",
-    "lazy",
-    "tail recursion",
-    "tail call",
-    "optimization",
+    "tail",
     "recursion",
+    "call",
     "recursive",
     "infix",
-    "function composition",
-    "partial application",
+    "function",
+    "composition",
+    "partial",
+    "application",
     "currying",
     "curry",
     "pipeline",
     "pipe",
-    "unicode operator",
-    "unicode operators",
+    "unicode",
+    "operator",
+    "operators",
     "frozenset literal",
-    "frozenset literals",
     "destructuring",
-    "destructuring assignment",
+    "assignment",
     "reduce",
     "takewhile",
     "dropwhile",
@@ -185,18 +204,19 @@ search_terms = [
     "addpattern",
     "prepattern",
     "recursive_iterator",
+    "iterator",
     "fmap",
-    "data keyword",
-    "match keyword",
-    "case keyword",
+    "case",
+    "keyword",
 ]
 
 script_names = [
     "coconut",
-    "coconut-" + VERSION_TAG.split("-", 1)[0],
     ("coconut-py2" if PY2 else "coconut-py3"),
     "coconut-py" + str(sys.version_info[0]) + str(sys.version_info[1]),
     ("coconut-develop" if DEVELOP else "coconut-release"),
+] + [
+    "coconut-v" + ".".join(version_tuple[:i]) for i in range(1, len(version_tuple) + 1)
 ]
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -216,17 +236,20 @@ hash_prefix = "# __coconut_hash__ = "
 hash_sep = "\x00"
 
 specific_targets = ("2", "27", "3", "33", "35", "36")
-targets = ("",) + specific_targets
 pseudo_targets = {
     "26": "2",
     "32": "3",
     "34": "33",
 }
-sys_target = str(sys.version_info[0]) + str(sys.version_info[1])
-if sys_target in pseudo_targets:
-    pseudo_targets["sys"] = pseudo_targets[sys_target]
+
+targets = ("",) + specific_targets
+_sys_target = str(sys.version_info[0]) + str(sys.version_info[1])
+if _sys_target in pseudo_targets:
+    pseudo_targets["sys"] = pseudo_targets[_sys_target]
+elif sys.version_info > get_target_info(specific_targets[-1]):
+    pseudo_targets["sys"] = specific_targets[-1]
 else:
-    pseudo_targets["sys"] = sys_target
+    pseudo_targets["sys"] = _sys_target
 
 default_encoding = "utf-8"
 
@@ -379,12 +402,6 @@ watch_interval = .1  # seconds
 
 info_tabulation = 18  # offset for tabulated info messages
 
-version_long = "Version " + VERSION_STR + " running on Python " + sys.version.split()[0]
-version_banner = "Coconut " + VERSION_STR
-if DEVELOP:
-    version_tag = "develop"
-else:
-    version_tag = VERSION_TAG
 tutorial_url = "http://coconut.readthedocs.io/en/" + version_tag + "/HELP.html"
 documentation_url = "http://coconut.readthedocs.io/en/" + version_tag + "/DOCS.html"
 
@@ -403,7 +420,7 @@ stub_dir = os.path.join(base_dir, "stubs")
 # HIGHLIGHTER CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-shebang_regex = r'coconut(-run)?'
+shebang_regex = r'coconut(?:-run)?'
 
 builtins = (
     "reduce",
@@ -481,6 +498,8 @@ py_syntax_version = 3.6
 mimetype = "text/x-python3"
 
 all_keywords = keywords + const_vars + reserved_vars
+
+conda_build_env_var = "CONDA_BUILD"
 
 #-----------------------------------------------------------------------------------------------------------------------
 # DOCUMENTATION CONSTANTS:

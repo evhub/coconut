@@ -30,6 +30,7 @@ from coconut.constants import (
     tutorial_url,
     documentation_url,
     code_exts,
+    conda_build_env_var,
 )
 from coconut.terminal import logger
 from coconut.compiler import Compiler
@@ -44,9 +45,9 @@ try:
     from ipykernel.zmqshell import ZMQInteractiveShell
 except ImportError:
     LOAD_MODULE = False
-    if os.environ.get("CONDA_BUILD"):
+    if os.environ.get(conda_build_env_var):
         # conda tries to import coconut.icoconut as a test even when IPython isn't available
-        logger.warn("Detected CONDA_BUILD; skipping coconut.icoconut loading")
+        logger.warn("Detected " + conda_build_env_var + "; skipping coconut.icoconut loading")
     else:
         raise CoconutException("--ipython flag requires IPython library",
                                extra="run 'pip install coconut[ipython]' to fix")

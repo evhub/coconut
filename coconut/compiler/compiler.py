@@ -41,6 +41,7 @@ from pyparsing import (
 )
 
 from coconut.constants import (
+    get_target_info,
     specific_targets,
     targets,
     pseudo_targets,
@@ -92,7 +93,6 @@ from coconut.compiler.grammar import (
     match_handle,
 )
 from coconut.compiler.util import (
-    get_target_info,
     addskip,
     count_end,
     paren_change,
