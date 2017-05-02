@@ -19,6 +19,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
+import os
 import traceback
 
 from coconut.exceptions import CoconutException
@@ -30,19 +31,28 @@ from coconut.constants import (
     documentation_url,
     code_exts,
 )
+from coconut.terminal import logger
 from coconut.compiler import Compiler
 from coconut.compiler.util import should_indent
 from coconut.command.util import Runner
 
 try:
-    from ipykernel.ipkernel import IPythonKernel
-    from ipykernel.zmqshell import ZMQInteractiveShell
     from IPython.core.inputsplitter import IPythonInputSplitter
     from IPython.core.interactiveshell import InteractiveShellABC
     from IPython.core.compilerop import CachingCompiler
+    from ipykernel.ipkernel import IPythonKernel
+    from ipykernel.zmqshell import ZMQInteractiveShell
 except ImportError:
-    raise CoconutException("--ipython flag requires IPython library",
-                           extra="run 'pip install coconut[ipython]' to fix")
+    if os.environ.get("CONDA_BUILD"):
+        # conda tries to import coconut.icoconut as a test even when IPython isn't available
+        logger.warn("Detected CONDA_BUILD; skipping coconut.icoconut loading")
+
+        class FakeClass:
+            pass
+        IPythonInputSplitter = InteractiveShellABC = CachingCompiler = IPythonKernel = ZMQInteractiveShell = FakeClass
+    else:
+        raise CoconutException("--ipython flag requires IPython library",
+                               extra="run 'pip install coconut[ipython]' to fix")
 
 #-----------------------------------------------------------------------------------------------------------------------
 # GLOBALS:

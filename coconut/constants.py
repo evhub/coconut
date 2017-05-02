@@ -56,8 +56,9 @@ all_reqs = {
     ],
     "jupyter": [
         "jupyter",
-        "jupyter-console",
         "ipython",
+        "ipykernel",
+        "jupyter-console",
     ],
     "mypy": [
         "mypy",
@@ -91,6 +92,7 @@ req_vers = {
     "jupyter": (1, 0),
     "jupyter-console": (5, 1),
     "ipython": (5, 3),
+    "ipykernel": (4, 6),
     "mypy": (0, 501),
     "prompt_toolkit": (1, 0),
     "futures": (3, 1),
