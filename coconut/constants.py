@@ -43,14 +43,12 @@ def get_target_info(target):
 #-----------------------------------------------------------------------------------------------------------------------
 
 version_long = "Version " + VERSION_STR + " running on Python " + sys.version.split()[0]
-
 version_banner = "Coconut " + VERSION_STR
 
 if DEVELOP:
     version_tag = "develop"
 else:
     version_tag = "v" + VERSION
-
 version_str_tag = "v" + VERSION_STR
 
 version_tuple = VERSION.split(".")
@@ -401,7 +399,6 @@ style_env_var = "COCONUT_STYLE"
 watch_interval = .1  # seconds
 
 info_tabulation = 18  # offset for tabulated info messages
-
 
 base_url = "http://coconut.readthedocs.io/en/" + version_tag
 tutorial_url = base_url + "/HELP.html"
