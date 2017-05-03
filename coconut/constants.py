@@ -524,3 +524,9 @@ with_toc = """
    DOCS
    CONTRIBUTING
 """
+
+project = "Coconut"
+copyright = "2015-2017, Evan Hubinger, licensed under Apache 2.0"
+author = "Evan Hubinger"
+
+highlight_language = "coconut"

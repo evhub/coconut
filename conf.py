@@ -24,9 +24,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from coconut.root import *  # NOQA
 
 from coconut.constants import (
+    version_str_tag,
     without_toc,
     with_toc,
-    version_str_tag,
 )
 
 from sphinx_bootstrap_theme import get_html_theme_path
@@ -47,16 +47,18 @@ with open("index.rst", "w") as index_file:
 # DEFINITIONS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-html_theme = "bootstrap"
-html_theme_path = get_html_theme_path()
+from coconut.constants import (  # NOQA
+    project,
+    copyright,
+    author,
+    highlight_language,
+)
 
-highlight_language = "coconut"
-
-project = "Coconut"
-copyright = "2015-2017, Evan Hubinger, licensed under Apache 2.0"
-author = "Evan Hubinger"
 version = VERSION
 release = version_str_tag
+
+html_theme = "bootstrap"
+html_theme_path = get_html_theme_path()
 
 master_doc = "index"
 exclude_patterns = ["README.*"]

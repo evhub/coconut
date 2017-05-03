@@ -47,7 +47,7 @@ except ImportError:
     LOAD_MODULE = False
     if os.environ.get(conda_build_env_var):
         # conda tries to import coconut.icoconut as a test even when IPython isn't available
-        logger.warn("Detected " + conda_build_env_var + "; skipping coconut.icoconut loading")
+        logger.warn("Missing IPython but detected " + conda_build_env_var + "; skipping coconut.icoconut loading")
     else:
         raise CoconutException("--ipython flag requires IPython library",
                                extra="run 'pip install coconut[ipython]' to fix")
