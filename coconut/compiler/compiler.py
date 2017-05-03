@@ -1060,7 +1060,7 @@ class Compiler(Grammar):
         attr_str = " ".join(base_args)
         extra_stmts = (
             '__slots__ = ()\n'
-            '__ne__ = object.__ne__\n'
+            '__ne__ = _coconut.object.__ne__\n'
         )
         if starred_arg is not None:
             attr_str += (" " if attr_str else "") + starred_arg
