@@ -12,7 +12,7 @@ This documentation covers all the technical details of the [Coconut Programming 
 
 Coconut is a variant of [Python](https://www.python.org/) built for **simple, elegant, Pythonic functional programming**. Coconut syntax is a strict superset of Python 3 syntax. That means users familiar with Python will already be familiar with most of Coconut.
 
-The Coconut compiler turns Coconut code into Python code. The primary method of accessing the Coconut compiler is through the Coconut command-line utility, which also features an interpreter for real-time compilation. In addition to the command-line utility, Coconut also supports the use of IPython/ Jupyter notebooks.
+The Coconut compiler turns Coconut code into Python code. The primary method of accessing the Coconut compiler is through the Coconut command-line utility, which also features an interpreter for real-time compilation. In addition to the command-line utility, Coconut also supports the use of IPython/Jupyter notebooks.
 
 While most of Coconut gets its inspiration simply from trying to make functional programming work in Python, additional inspiration came from [Haskell](https://www.haskell.org/), [CoffeeScript](http://coffeescript.org/), [F#](http://fsharp.org/), and [patterns.py](https://github.com/Suor/patterns).
 
@@ -177,7 +177,7 @@ It is recommended that you use the `--strict` (or `-s`) flag if you are starting
 
 ## Coconut Utilities
 
-### IPython/ Jupyter Support
+### IPython/Jupyter Support
 
 If you prefer [IPython](http://ipython.org/) (the python kernel for the [Jupyter](http://jupyter.org/) framework) to the normal Python shell, Coconut can be used as a Jupyter kernel or IPython extension.
 
@@ -1719,7 +1719,9 @@ with concurrent.futures.ThreadPoolExecutor() as executor:
 
 A `MatchError` is raised when a [destructuring assignment](#destructuring-assignment) statement fails, and thus `MatchError` is provided as a built-in for catching those errors. `MatchError` objects support two attributes, `pattern`, which is a string describing the failed pattern, and `value`, which is the object that failed to match that pattern.
 
-## `coconut.__coconut__` Module
+## Coconut Modules
+
+### `coconut.__coconut__`
 
 It is sometimes useful to be able to access Coconut built-ins from pure Python. To accomplish this, Coconut provides `coconut.__coconut__`, which behaves exactly like the `__coconut__.py` header file included when Coconut is compiled in package mode.
 
@@ -1728,11 +1730,11 @@ All Coconut built-ins are accessible from `coconut.__coconut__`. The recommended
 from coconut.__coconut__ import parallel_map
 ```
 
-## `coconut.convenience`
+### `coconut.convenience`
 
 It is sometimes useful to be able to use the Coconut compiler from code, instead of from the command line. The recommended way to do this is to use `from coconut.convenience import` and import whatever convenience functions you'll be using. Specifications of the different convenience functions are as follows.
 
-### `parse`
+#### `parse`
 
 **coconut.convenience.parse**(_code,_ **[**_mode_**]**)
 
@@ -1774,7 +1776,7 @@ Each _mode_ has two components: what parser it uses, and what header it prepends
         * Can parse any Coconut code and allows leading whitespace.
     + header: none
 
-### `setup`
+#### `setup`
 
 **coconut.convenience.setup**(_target, strict, minify, line\_numbers, keep\_lines, no\_tco_**)**
 
@@ -1787,13 +1789,13 @@ Each _mode_ has two components: what parser it uses, and what header it prepends
 - _keep\_lines_: `False` (default) or `True`
 - _no\_tco_: `False` (default) or `True`
 
-### `cmd`
+#### `cmd`
 
 **coconut.convenience.cmd**(_args_, **[**_interact_**]**)
 
 Executes the given _args_ as if they were fed to `coconut` on the command-line, with the exception that unless _interact_ is true or `-i` is passed, the interpreter will not be started. Additionally, since `parse` and `cmd` share the same convenience parsing object, any changes made to the parsing with `cmd` will work just as if they were made with `setup`.
 
-### `version`
+#### `version`
 
 **coconut.convenience.version**(**[**_which_**]**)
 
@@ -1805,6 +1807,6 @@ Retrieves a string containing information about the Coconut version. The optiona
 - `"tag"`: the version tag used in GitHub and documentation URLs
 - `"-v"`: the full string printed by `coconut -v`
 
-### `CoconutException`
+#### `CoconutException`
 
 If an error is encountered in a convenience function, a `CoconutException` instance may be raised. `coconut.convenience.CoconutException` is provided to allow catching such errors.
