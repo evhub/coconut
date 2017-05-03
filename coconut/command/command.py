@@ -259,7 +259,7 @@ class Command(object):
                 traceback.print_exc()
             self.register_error(errmsg=err.__class__.__name__)
 
-    def compile_path(self, path, write=True, package=None, run=False, force=False):
+    def compile_path(self, path, write=True, package=None, *args, **kwargs):
         """Compiles a path and returns paths to compiled files."""
         path = fixpath(path)
         if write is not None and write is not True:
@@ -267,7 +267,7 @@ class Command(object):
         if os.path.isfile(path):
             if package is None:
                 package = False
-            destpath = self.compile_file(path, write, package, run, force)
+            destpath = self.compile_file(path, write, package, *args, **kwargs)
             if destpath is None:
                 return []
             else:
@@ -275,11 +275,11 @@ class Command(object):
         elif os.path.isdir(path):
             if package is None:
                 package = True
-            return self.compile_folder(path, write, package, run, force)
+            return self.compile_folder(path, write, package, *args, **kwargs)
         else:
             raise CoconutException("could not find source path", path)
 
-    def compile_folder(self, directory, write=True, package=True, run=False, force=False):
+    def compile_folder(self, directory, write=True, package=True, *args, **kwargs):
         """Compiles a directory and returns paths to compiled files."""
         filepaths = []
         for dirpath, dirnames, filenames in os.walk(directory):
@@ -289,7 +289,7 @@ class Command(object):
                 writedir = os.path.join(write, os.path.relpath(dirpath, directory))
             for filename in filenames:
                 if os.path.splitext(filename)[1] in code_exts:
-                    destpath = self.compile_file(os.path.join(dirpath, filename), writedir, package, run, force)
+                    destpath = self.compile_file(os.path.join(dirpath, filename), writedir, package, *args, **kwargs)
                     if destpath is not None:
                         filepaths.append(destpath)
             for name in dirnames[:]:
@@ -299,7 +299,7 @@ class Command(object):
                     dirnames.remove(name)  # directories removed from dirnames won't appear in further os.walk iteration
         return filepaths
 
-    def compile_file(self, filepath, write=True, package=False, run=False, force=False):
+    def compile_file(self, filepath, write=True, package=False, *args, **kwargs):
         """Compiles a file and returns the compiled file's path."""
         if write is None:
             destpath = None
@@ -314,13 +314,11 @@ class Command(object):
             destpath = fixpath(base + ext)
             if filepath == destpath:
                 raise CoconutException("cannot compile " + showpath(filepath) + " to itself", extra="incorrect file extension")
-        self.compile(filepath, destpath, package, run, force)
+        self.compile(filepath, destpath, package, *args, **kwargs)
         return destpath
 
-    def compile(self, codepath, destpath=None, package=False, run=False, force=False):
+    def compile(self, codepath, destpath=None, package=False, run=False, force=False, show_unchanged=True):
         """Compiles a source Coconut file to a destination Python file."""
-        logger.show_tabulated("Compiling", showpath(codepath), "...")
-
         with openfile(codepath, "r") as opened:
             code = readfile(opened)
 
@@ -333,13 +331,15 @@ class Command(object):
 
         foundhash = None if force else self.hashashof(destpath, code, package)
         if foundhash:
-            logger.show_tabulated("Left unchanged", showpath(destpath), "(pass --force to override).")
+            if show_unchanged:
+                logger.show_tabulated("Left unchanged", showpath(destpath), "(pass --force to override).")
             if self.show:
                 print(foundhash)
             if run:
                 self.execute_file(destpath)
 
         else:
+            logger.show_tabulated("Compiling", showpath(codepath), "...")
 
             if package is True:
                 compile_method = "parse_package"
@@ -350,7 +350,7 @@ class Command(object):
 
             def callback(compiled):
                 if destpath is None:
-                    logger.show_tabulated("Finished", showpath(codepath), "without writing to file.")
+                    logger.show_tabulated("Compiled", showpath(codepath), "without writing to file.")
                 else:
                     with openfile(destpath, "w") as opened:
                         writefile(opened, compiled)
@@ -622,16 +622,18 @@ class Command(object):
         def recompile(path):
             if os.path.isfile(path) and os.path.splitext(path)[1] in code_exts:
                 with self.handling_exceptions():
-                    self.run_mypy(self.compile_path(path, write, package, run, force))
+                    self.run_mypy(self.compile_path(path, write, package, run, force, show_unchanged=False))
 
+        watcher = RecompilationWatcher(recompile)
         observer = Observer()
-        observer.schedule(RecompilationWatcher(recompile), source, recursive=True)
+        observer.schedule(watcher, source, recursive=True)
 
         with self.running_jobs():
             observer.start()
             try:
                 while True:
                     time.sleep(watch_interval)
+                    watcher.keep_watching()
             except KeyboardInterrupt:
                 logger.show("Got KeyboardInterrupt; stopping watcher.")
             finally:
