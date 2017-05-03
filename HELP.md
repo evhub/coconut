@@ -555,7 +555,6 @@ Our next method will be equality. We're again going to use `data` pattern-matchi
             return True
         else:
             return False
-    def __ne__(self, other) = not self == other
 ```
 
 The only new construct here is the use of `=self.pts` in the `match` statement. This construct is used to perform a check inside of the pattern-matching, making sure the `match` only succeeds if `other.pts == self.pts`.
@@ -608,7 +607,6 @@ data vector(*pts):
             return True
         else:
             return False
-    def __ne__(self, other) = not self == other
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
         match vector(*other_pts) in other:
@@ -822,7 +820,6 @@ data vector(*pts):
             return True
         else:
             return False
-    def __ne__(self, other) = not self == other
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
         match vector(*other_pts) in other:
@@ -1011,7 +1008,6 @@ data vector(*pts):
             return True
         else:
             return False
-    def __ne__(self, other) = not self == other
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
         match vector(*other_pts) in other:

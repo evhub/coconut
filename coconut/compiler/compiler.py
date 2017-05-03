@@ -1058,31 +1058,34 @@ class Compiler(Grammar):
             else:
                 base_args.append(arg)
         attr_str = " ".join(base_args)
-        extra_stmts = "__slots__ = ()\n"
+        extra_stmts = (
+            '__slots__ = ()\n'
+            '__ne__ = object.__ne__\n'
+        )
         if starred_arg is not None:
             attr_str += (" " if attr_str else "") + starred_arg
             if base_args:
                 extra_stmts += r'''def __new__(_cls, {all_args}):
-        {oind}return _coconut.tuple.__new__(_cls, {base_args_tuple} + {starred_arg})
-    {cind}@_coconut.classmethod
-    def _make(cls, iterable, {kwd_only}new=_coconut.tuple.__new__, len=_coconut.len):
-        {oind}result = new(cls, iterable)
-        if len(result) < {num_base_args}:
-            {oind}raise _coconut.TypeError("Expected at least 2 arguments, got %d" % len(result))
-        {cind}return result
-    {cind}def _asdict(self):
-        {oind}return _coconut.OrderedDict((f, _coconut.getattr(self, f)) for f in self._fields)
-    {cind}def __repr__(self):
-        {oind}return "{name}({args_for_repr})".format(**self._asdict())
-    {cind}def _replace(_self, **kwds):
-        {oind}result = _self._make(_coconut.tuple(_coconut.map(kwds.pop, {quoted_base_args_tuple}, _self)) + kwds.pop("{starred_arg}", self.{starred_arg}))
-        if kwds:
-            {oind}raise _coconut.ValueError("Got unexpected field names: %r" % kwds.keys())
-        {cind}return result
-    {cind}@_coconut.property
-    def {starred_arg}(self):
-        {oind}return self[{num_base_args}:]
-    {cind}'''.format(
+                    {oind}return _coconut.tuple.__new__(_cls, {base_args_tuple} + {starred_arg})
+                {cind}@_coconut.classmethod
+                def _make(cls, iterable, {kwd_only}new=_coconut.tuple.__new__, len=_coconut.len):
+                    {oind}result = new(cls, iterable)
+                    if len(result) < {num_base_args}:
+                        {oind}raise _coconut.TypeError("Expected at least 2 arguments, got %d" % len(result))
+                    {cind}return result
+                {cind}def _asdict(self):
+                    {oind}return _coconut.OrderedDict((f, _coconut.getattr(self, f)) for f in self._fields)
+                {cind}def __repr__(self):
+                    {oind}return "{name}({args_for_repr})".format(**self._asdict())
+                {cind}def _replace(_self, **kwds):
+                    {oind}result = _self._make(_coconut.tuple(_coconut.map(kwds.pop, {quoted_base_args_tuple}, _self)) + kwds.pop("{starred_arg}", self.{starred_arg}))
+                    if kwds:
+                        {oind}raise _coconut.ValueError("Got unexpected field names: %r" % kwds.keys())
+                    {cind}return result
+                {cind}@_coconut.property
+                def {starred_arg}(self):
+                    {oind}return self[{num_base_args}:]
+                {cind}'''.format(
                     oind=openindent,
                     cind=closeindent,
                     name=name,
@@ -1096,23 +1099,23 @@ class Compiler(Grammar):
                 )
             else:
                 extra_stmts += r'''def __new__(_cls, *{arg}):
-        {oind}return _coconut.tuple.__new__(_cls, {arg})
-    {cind}@_coconut.classmethod
-    def _make(cls, iterable, {kwd_only}new=_coconut.tuple.__new__, len=None):
-        {oind}return new(cls, iterable)
-    {cind}def _asdict(self):
-        {oind}return _coconut.OrderedDict([("{arg}", self[:])])
-    {cind}def __repr__(self):
-        {oind}return "{name}(*{arg}=%r)" % (self[:],)
-    {cind}def _replace(_self, **kwds):
-        {oind}result = self._make(kwds.pop("{arg}", _self))
-        if kwds:
-            {oind}raise _coconut.ValueError("Got unexpected field names: %r" % kwds.keys())
-        {cind}return result
-    {cind}@_coconut.property
-    def {arg}(self):
-        {oind}return self[:]
-    {cind}'''.format(
+                    {oind}return _coconut.tuple.__new__(_cls, {arg})
+                {cind}@_coconut.classmethod
+                def _make(cls, iterable, {kwd_only}new=_coconut.tuple.__new__, len=None):
+                    {oind}return new(cls, iterable)
+                {cind}def _asdict(self):
+                    {oind}return _coconut.OrderedDict([("{arg}", self[:])])
+                {cind}def __repr__(self):
+                    {oind}return "{name}(*{arg}=%r)" % (self[:],)
+                {cind}def _replace(_self, **kwds):
+                    {oind}result = self._make(kwds.pop("{arg}", _self))
+                    if kwds:
+                        {oind}raise _coconut.ValueError("Got unexpected field names: %r" % kwds.keys())
+                    {cind}return result
+                {cind}@_coconut.property
+                def {arg}(self):
+                    {oind}return self[:]
+                {cind}'''.format(
                     oind=openindent,
                     cind=closeindent,
                     name=name,

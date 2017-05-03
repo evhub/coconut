@@ -272,7 +272,6 @@ data vector(*pts):
             return True
         else:
             return False
-    def __ne__(self, other) = not self == other
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
         match vector(*other_pts) in other:
@@ -347,7 +346,6 @@ data vector(*pts):
             return True
         else:
             return False
-    def __ne__(self, other) = not self == other
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
         match vector(*other_pts) in other:
@@ -404,7 +402,6 @@ data vector(*pts):
             return True
         else:
             return False
-    def __ne__(self, other) = not self == other
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
         match vector(*other_pts) in other:
