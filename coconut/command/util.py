@@ -27,6 +27,7 @@ import subprocess
 import webbrowser
 from copy import copy
 from contextlib import contextmanager
+from select import select
 if PY26:
     import imp
 else:
@@ -255,6 +256,16 @@ def set_mypy_path(mypy_path):
         os.environ[mypy_path_env_var] = mypy_path
     elif mypy_path not in original.split(os.pathsep):
         os.environ[mypy_path_env_var] = mypy_path + os.pathsep + original
+
+
+def stdin_readable():
+    """Determines whether stdin has any data to read."""
+    if sys.stdin.isatty():
+        return False
+    try:
+        return bool(select([sys.stdin], [], [], 0)[0])
+    except OSError:
+        return True
 
 
 #-----------------------------------------------------------------------------------------------------------------------

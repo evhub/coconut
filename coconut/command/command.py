@@ -59,6 +59,7 @@ from coconut.command.util import (
     is_special_dir,
     launch_documentation,
     launch_tutorial,
+    stdin_readable,
 )
 from coconut.compiler.util import should_indent
 from coconut.compiler.header import gethash
@@ -216,13 +217,14 @@ class Command(object):
 
         if args.code is not None:
             self.execute(self.comp.parse_block(args.code))
-        stdin = not sys.stdin.isatty()  # check if input was piped in
-        if stdin:
+        read_stdin = False
+        if stdin_readable():
             self.execute(self.comp.parse_block(sys.stdin.read()))
+            read_stdin = True
         if args.jupyter is not None:
             self.start_jupyter(args.jupyter)
         if args.interact or (interact and not (
-                stdin
+                read_stdin
                 or args.source
                 or args.code
                 or args.tutorial
