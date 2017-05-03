@@ -41,6 +41,7 @@ from coconut.constants import (
     icoconut_kernel_dirs,
     minimum_recursion_limit,
     stub_dir,
+    exit_char,
 )
 from coconut.command.util import (
     openfile,
@@ -431,14 +432,19 @@ class Command(object):
 
     def get_input(self, more=False):
         """Prompts for code input."""
+        received = None
         try:
-            return self.prompt.input(more)
+            received = self.prompt.input(more)
         except KeyboardInterrupt:
             printerr("\nKeyboardInterrupt")
         except EOFError:
             print()
             self.exit_runner()
-        return None
+        else:
+            if received.startswith(exit_char):
+                self.exit_runner()
+                received = None
+        return received
 
     def start_running(self):
         """Starts running the Runner."""

@@ -402,8 +402,10 @@ watch_interval = .1  # seconds
 
 info_tabulation = 18  # offset for tabulated info messages
 
-tutorial_url = "http://coconut.readthedocs.io/en/" + version_tag + "/HELP.html"
-documentation_url = "http://coconut.readthedocs.io/en/" + version_tag + "/DOCS.html"
+
+base_url = "http://coconut.readthedocs.io/en/" + version_tag
+tutorial_url = base_url + "/HELP.html"
+documentation_url = base_url + "/DOCS.html"
 
 base_dir = os.path.dirname(os.path.abspath(fixpath(__file__)))
 
@@ -415,6 +417,8 @@ icoconut_kernel_dirs = [
 ]
 
 stub_dir = os.path.join(base_dir, "stubs")
+
+exit_char = "\x1a"
 
 #-----------------------------------------------------------------------------------------------------------------------
 # HIGHLIGHTER CONSTANTS:

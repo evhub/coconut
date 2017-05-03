@@ -18,11 +18,14 @@ format: dev
 test:
 	pytest --strict -s tests
 
-.PHONY: docs
-docs: clean
+.PHONY: sphinx
+sphinx: clean
 	sphinx-build -b html . ./docs
-	pushd ./docs; zip -r ./docs.zip ./*; popd
 	rm -rf index.rst
+
+.PHONY: docs
+docs: sphinx
+	pushd ./docs; zip -r ./docs.zip ./*; popd
 
 .PHONY: clean
 clean:

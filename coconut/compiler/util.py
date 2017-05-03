@@ -162,9 +162,9 @@ def split_leading_indent(line, max_indents=None):
     indent = ""
     while line.lstrip() != line or (
         (max_indents is None or max_indents > 0)
-        and (line.startswith(openindent) or line.startswith(closeindent))
+        and line.startswith((openindent, closeindent))
     ):
-        if max_indents is not None and (line.startswith(openindent) or line.startswith(closeindent)):
+        if max_indents is not None and line.startswith((openindent, closeindent)):
             max_indents -= 1
         indent += line[0]
         line = line[1:]

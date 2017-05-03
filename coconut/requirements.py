@@ -19,7 +19,6 @@ from coconut.root import *  # NOQA
 
 import sys
 import platform
-import os
 
 import setuptools
 
@@ -113,18 +112,18 @@ if int(setuptools.__version__.split(".", 1)[0]) < 18:
         raise RuntimeError("bdist_wheel not supported for setuptools versions < 18 (run 'pip install --upgrade setuptools' to fix)")
     add_version_reqs(modern=False)
 else:
-    add_version_reqs(modern="CONDA_PREFIX" not in os.environ)
+    add_version_reqs()
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def latest_version(req):
-    """Get the latest version of req from PyPI."""
+def all_versions(req):
+    """Get all versions of req from PyPI."""
     import requests
     url = "https://pypi.python.org/pypi/" + req + "/json"
-    return requests.get(url).json()["info"]["version"]
+    return tuple(requests.get(url).json()["releases"].keys())
 
 
 def ver_tuple(ver_str):
@@ -139,18 +138,27 @@ def ver_tuple(ver_str):
     return tuple(out)
 
 
+def newer(new_ver, old_ver):
+    """Determines if the first version tuple is newer than the second."""
+    for n, o in zip(new_ver, old_ver):
+        if not isinstance(n, int):
+            o = str(o)
+        if o < n:
+            return True
+        if o > n:
+            return False
+    return False
+
+
 def print_new_versions():
     """Prints new requirement versions."""
     for req in everything_in(all_reqs):
-        new_str = latest_version(req)
-        new_ver = ver_tuple(new_str)
-        updated = False
-        for i, x in enumerate(req_vers[req]):
-            if len(new_ver) <= i or x != new_ver[i]:
-                updated = True
-                break
-        if updated:
-            print(req + ": " + req_str(req_vers[req]) + " -> " + new_str)
+        new_versions = []
+        for ver_str in all_versions(req):
+            if newer(ver_tuple(ver_str), req_vers[req]):
+                new_versions.append(ver_str)
+        if new_versions:
+            print(req + ": " + req_str(req_vers[req]) + " -> " + ", ".join(new_versions))
 
 
 if __name__ == "__main__":
