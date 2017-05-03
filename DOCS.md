@@ -1,92 +1,14 @@
 # Coconut Documentation
 
-<!-- MarkdownTOC -->
-
-1. [Overview](#overview)
-1. [Compilation](#compilation)
-    1. [Installation](#installation)
-    1. [Usage](#usage)
-        1. [Positional Arguments](#positional-arguments)
-        1. [Optional Arguments](#optional-arguments)
-    1. [Coconut Scripts](#coconut-scripts)
-    1. [Naming Source Files](#naming-source-files)
-    1. [Compilation Modes](#compilation-modes)
-    1. [Compatible Python Versions](#compatible-python-versions)
-    1. [Allowable Targets](#allowable-targets)
-    1. [`strict` Mode](#strict-mode)
-    1. [IPython/ Jupyter Support](#ipython-jupyter-support)
-        1. [Kernel](#kernel)
-        1. [Extension](#extension)
-    1. [MyPy Integration](#mypy-integration)
-1. [Operators](#operators)
-    1. [Lambdas](#lambdas)
-    1. [Partial Application](#partial-application)
-    1. [Pipeline](#pipeline)
-    1. [Compose](#compose)
-    1. [Chain](#chain)
-    1. [Iterator Slicing](#iterator-slicing)
-    1. [Unicode Alternatives](#unicode-alternatives)
-1. [Keywords](#keywords)
-    1. [`data`](#data)
-    1. [`match`](#match)
-    1. [`case`](#case)
-    1. [Backslash-Escaping](#backslash-escaping)
-    1. [Reserved Variables](#reserved-variables)
-1. [Expressions](#expressions)
-    1. [Statement Lambdas](#statement-lambdas)
-    1. [Lazy Lists](#lazy-lists)
-    1. [Implicit Partial Application](#implicit-partial-application)
-    1. [Set Literals](#set-literals)
-    1. [Imaginary Literals](#imaginary-literals)
-    1. [Underscore Separators](#underscore-separators)
-1. [Dotted Function Definition](#dotted-function-definition)
-1. [Function Definition](#function-definition)
-    1. [Tail Call Optimization](#tail-call-optimization)
-    1. [Operator Functions](#operator-functions)
-    1. [Assignment Functions](#assignment-functions)
-    1. [Pattern-Matching Functions](#pattern-matching-functions)
-    1. [Infix Functions](#infix-functions)
-1. [Statements](#statements)
-    1. [Destructuring Assignment](#destructuring-assignment)
-    1. [Decorators](#decorators)
-    1. [`else` Statements](#else-statements)
-    1. [`except` Statements](#except-statements)
-    1. [Implicit `pass`](#implicit-pass)
-    1. [In-line `global` And `nonlocal` Assignment](#in-line-global-and-nonlocal-assignment)
-    1. [Code Passthrough](#code-passthrough)
-1. [Built-Ins](#built-ins)
-    1. [Enhanced Built-Ins](#enhanced-built-ins)
-    1. [`addpattern`](#addpattern)
-    1. [`prepattern`](#prepattern)
-    1. [`reduce`](#reduce)
-    1. [`takewhile`](#takewhile)
-    1. [`dropwhile`](#dropwhile)
-    1. [`tee`](#tee)
-    1. [`consume`](#consume)
-    1. [`count`](#count)
-    1. [`datamaker`](#datamaker)
-    1. [`fmap`](#fmap)
-    1. [`recursive_iterator`](#recursiveiterator)
-    1. [`parallel_map`](#parallelmap)
-    1. [`concurrent_map`](#concurrentmap)
-    1. [`MatchError`](#matcherror)
-1. [Coconut Utilities](#coconut-utilities)
-    1. [Syntax Highlighting](#syntax-highlighting)
-        1. [SublimeText](#sublimetext)
-        1. [Pygments](#pygments)
-    1. [`coconut.__coconut__`](#coconutcoconut)
-    1. [`coconut.convenience`](#coconutconvenience)
-        1. [`parse`](#parse)
-        1. [`setup`](#setup)
-        1. [`cmd`](#cmd)
-        1. [`version`](#version)
-        1. [`CoconutException`](#coconutexception)
-
-<!-- /MarkdownTOC -->
+```eval_rst
+.. contents::
+    :local:
+    :depth: 2
+```
 
 ## Overview
 
-This documentation covers all the technical details of the [Coconut Programming Language](http://evhub.github.io/coconut/), and is intended as a reference specification, not a tutorialized introduction. For a full introduction and tutorial of Coconut, see [the tutorial](http://coconut.readthedocs.io/en/master/HELP.html).
+This documentation covers all the technical details of the [Coconut Programming Language](http://evhub.github.io/coconut/), and is intended as a reference specification, not a tutorialized introduction. For a full introduction and tutorial of Coconut, see [the tutorial](HELP.html).
 
 Coconut is a variant of [Python](https://www.python.org/) built for **simple, elegant, Pythonic functional programming**. Coconut syntax is a strict superset of Python 3 syntax. That means users familiar with Python will already be familiar with most of Coconut.
 
@@ -112,7 +34,7 @@ Alternatively, if you want to test out Coconut's latest and greatest, enter
 ```
 pip install coconut-develop
 ```
-which will install the most recent working [development build](https://github.com/evhub/coconut/tree/develop) (optional dependency installation is also supported in the same manner as above if you want). For more information on the current development build, check out the [development version of this documentation](http://coconut.readthedocs.org/en/develop/DOCS.html). Be warned: `coconut-develop` is likely to be unstable—if you find a bug, please report it by [creating a new issue](https://github.com/evhub/coconut/issues/new).
+which will install the most recent working [development build](https://github.com/evhub/coconut/tree/develop) (optional dependency installation is also supported in the same manner as above if you want). For more information on the current development build, check out the [development version of this documentation](DOCS.html). Be warned: `coconut-develop` is likely to be unstable—if you find a bug, please report it by [creating a new issue](https://github.com/evhub/coconut/issues/new).
 
 ### Usage
 

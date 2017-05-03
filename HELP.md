@@ -1,42 +1,9 @@
 # Coconut Tutorial
 
-<!-- MarkdownTOC -->
-
-1. [Introduction](#introduction)
-    1. [Installation](#installation)
-1. [Starting Out](#starting-out)
-    1. [Using the Interpreter](#using-the-interpreter)
-    1. [Using the Compiler](#using-the-compiler)
-    1. [Using IPython/ Jupyter](#using-ipython-jupyter)
-    1. [Case Studies](#case-studies)
-1. [Case Study 1: `factorial`](#case-study-1-factorial)
-    1. [Imperative Method](#imperative-method)
-    1. [Recursive Method](#recursive-method)
-    1. [Iterative Method](#iterative-method)
-    1. [`addpattern` Method](#addpattern-method)
-1. [Case Study 2: `quick_sort`](#case-study-2-quicksort)
-    1. [Sorting a Sequence](#sorting-a-sequence)
-    1. [Sorting an Iterator](#sorting-an-iterator)
-1. [Case Study 3: `vector` Part I](#case-study-3-vector-part-i)
-    1. [2-Vector](#2-vector)
-    1. [n-Vector Constructor](#n-vector-constructor)
-    1. [n-Vector Methods](#n-vector-methods)
-1. [Case Study 4: `vector_field`](#case-study-4-vectorfield)
-    1. [`diagonal_line`](#diagonalline)
-    1. [`linearized_plane`](#linearizedplane)
-    1. [`vector_field`](#vectorfield)
-    1. [Applications](#applications)
-1. [Case Study 5: `vector` Part II](#case-study-5-vector-part-ii)
-    1. [`__truediv__`](#truediv)
-    1. [`.unit`](#unit)
-    1. [`.angle`](#angle)
-1. [Filling in the Gaps](#filling-in-the-gaps)
-    1. [Lazy Lists](#lazy-lists)
-    1. [Function Composition](#function-composition)
-    1. [Implicit Partials](#implicit-partials)
-    1. [Further Reading](#further-reading)
-
-<!-- /MarkdownTOC -->
+```eval_rst
+.. contents::
+    :local:
+```
 
 ## Introduction
 
@@ -117,7 +84,7 @@ hello, world!
 
 Of course, while being able to interpret Coconut code on-the-fly is a great thing, it wouldn't be very useful without the ability to write and compile larger programs. To that end, it's time to write our first Coconut program: "hello, world!" Coconut-style.
 
-First, we're going to need to create a file to put our code into. The recommended file extension for Coconut source files is `.coco`, so let's create the new file `hello_world.coco`. After you do that, you should take the time now to set up your text editor to properly highlight Coconut code. For instructions on how to do that, see the documentation on [Coconut syntax highlighting](http://coconut.readthedocs.io/en/master/DOCS.html#syntax-highlighting).
+First, we're going to need to create a file to put our code into. The recommended file extension for Coconut source files is `.coco`, so let's create the new file `hello_world.coco`. After you do that, you should take the time now to set up your text editor to properly highlight Coconut code. For instructions on how to do that, see the documentation on [Coconut syntax highlighting](DOCS.html#syntax-highlighting).
 
 Now let's put some code in our `hello_world.coco` file. Unlike in Python, where headers like
 ```coconut_python
@@ -176,7 +143,7 @@ or equivalently, `--ipython` can be substituted for `--jupyter` in either comman
 
 Because Coconut is built to be fundamentally _useful_, the best way to demo it is to show it in action. To that end, the majority of this tutorial will be showing how to apply Coconut to solve particular problems, which we'll call case studies.
 
-These case studies are not intended to provide a complete picture of all of Coconut's features. For that, see Coconut's comprehensive [documentation](http://coconut.readthedocs.io/en/master/DOCS.html). Instead, they are intended to show how Coconut can actually be used to solve practical programming problems.
+These case studies are not intended to provide a complete picture of all of Coconut's features. For that, see Coconut's comprehensive [documentation](DOCS.html). Instead, they are intended to show how Coconut can actually be used to solve practical programming problems.
 
 ## Case Study 1: `factorial`
 
@@ -1112,7 +1079,7 @@ iter$[]
 
 ### Further Reading
 
-And that's it for this tutorial! But that's hardly it for Coconut. All of the features examined in this tutorial, as well as a bunch of others, are documented in detail in Coconut's comprehensive [documentation](http://coconut.readthedocs.io/en/master/DOCS.html).
+And that's it for this tutorial! But that's hardly it for Coconut. All of the features examined in this tutorial, as well as a bunch of others, are documented in detail in Coconut's comprehensive [documentation](DOCS.html).
 
 Also, if you have any other questions not covered in this tutorial, feel free to ask around at Coconut's [Gitter](https://gitter.im/evhub/coconut), a GitHub-integrated chat room for Coconut developers.
 
