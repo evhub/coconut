@@ -140,25 +140,39 @@ def ver_tuple(ver_str):
 
 def newer(new_ver, old_ver):
     """Determines if the first version tuple is newer than the second."""
+    if old_ver == new_ver or old_ver + (0,) == new_ver:
+        return False
     for n, o in zip(new_ver, old_ver):
         if not isinstance(n, int):
             o = str(o)
         if o < n:
             return True
-        if o > n:
+        elif o > n:
             return False
-    return False
+    return None
 
 
-def print_new_versions():
+def print_new_versions(strict=False):
     """Prints new requirement versions."""
+    new_updates = []
+    same_updates = []
     for req in everything_in(all_reqs):
         new_versions = []
+        same_versions = []
         for ver_str in all_versions(req):
-            if newer(ver_tuple(ver_str), req_vers[req]):
+            comp = newer(ver_tuple(ver_str), req_vers[req])
+            if comp is True:
                 new_versions.append(ver_str)
+            elif not strict and comp is None:
+                same_versions.append(ver_str)
+        update_str = req + ": " + req_str(req_vers[req]) + " -> " + ", ".join(
+            new_versions + ["(" + v + ")" for v in same_versions]
+        )
         if new_versions:
-            print(req + ": " + req_str(req_vers[req]) + " -> " + ", ".join(new_versions))
+            new_updates.append(update_str)
+        elif same_versions:
+            same_updates.append(update_str)
+    print("\n".join(new_updates + same_updates))
 
 
 if __name__ == "__main__":

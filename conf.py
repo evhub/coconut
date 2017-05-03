@@ -27,7 +27,6 @@ from coconut.constants import (
     without_toc,
     with_toc,
     version_str_tag,
-    base_url,
 )
 
 from sphinx_bootstrap_theme import get_html_theme_path
@@ -74,14 +73,6 @@ default_role = "code"
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def resolve_url(url):
-    """Automatically replace document references."""
-    if url.startswith(("http://", "https://", "mailto:")):
-        return url
-    else:
-        return base_url + "/" + os.path.basename(url)
-
-
 class PatchedAutoStructify(AutoStructify, object):
     """AutoStructify by default can't handle contents directives."""
 
@@ -104,6 +95,6 @@ def setup(app):
     app.add_config_value("recommonmark_config", {
         "enable_auto_toc_tree": False,
         "enable_inline_math": False,
-        "url_resolver": resolve_url,
+        "enable_auto_doc_ref": False,
     }, True)
     app.add_transform(PatchedAutoStructify)
