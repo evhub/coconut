@@ -1657,7 +1657,7 @@ which will work just fine.
 **Coconut:**
 ```coconut
 @recursive_iterator
-def fib() = (1, 2) :: map((+), fib(), fib()$[1:])
+def fib() = (1, 1) :: map((+), fib(), fib()$[1:])
 ```
 
 **Python:**

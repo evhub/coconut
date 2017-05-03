@@ -529,7 +529,7 @@ def `pattern_abs_` (x) = x
 # Recursive iterator
 
 @recursive_iterator
-def fib() = (1, 2) :: map((+), fib(), fib()$[1:])
+def fib() = (1, 1) :: map((+), fib(), fib()$[1:])
 
 @recursive_iterator
 def loop(it) = it :: loop(it)

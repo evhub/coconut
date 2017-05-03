@@ -230,6 +230,7 @@ def suite_test():
     assert pattern_abs(-4) == 4 == pattern_abs_(-4)
     assert vector(1, 2) |> (==)$(vector(1, 2))
     assert vector(1, 2) |> .__eq__(other=vector(1, 2))
+    assert fib()$[1:4] == (1, 2, 3)
     assert fib() |> takewhile$((i) -> i < 4000000 ) |> filter$((i) -> i % 2 == 0 ) |> sum == 4613732
     assert loop([1,2])$[:4] |> list == [1, 2] * 2
     assert (def -> mod)()(5, 3) == 2
