@@ -101,7 +101,7 @@ all_reqs = {
     ],
 }
 
-req_vers = {
+min_versions = {
     "pyparsing": (2, 2, 0),
     "pre-commit": (0, 13),
     "sphinx": (1, 5),
@@ -121,6 +121,14 @@ req_vers = {
     "watchdog": (0, 8),
     "requests": (2, 13),
 }
+
+version_strictly = [
+    "pyparsing",
+    "sphinx",
+    "sphinx_bootstrap_theme",
+    "ipython",
+    "ipykernel",
+]
 
 classifiers = [
     "Development Status :: 5 - Production/Stable",

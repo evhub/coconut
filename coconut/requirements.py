@@ -22,25 +22,42 @@ import platform
 
 import setuptools
 
-from coconut.constants import all_reqs, req_vers
+from coconut.constants import (
+    all_reqs,
+    min_versions,
+    version_strictly,
+)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def req_str(req_ver):
+def ver_tuple_to_str(req_ver):
     """Converts a requirement version tuple into a version string."""
     return ".".join(str(x) for x in req_ver)
 
 
+def ver_str_to_tuple(ver_str):
+    """Convert a version string into a version tuple."""
+    out = []
+    for x in ver_str.split("."):
+        try:
+            x = int(x)
+        except ValueError:
+            pass
+        out.append(x)
+    return tuple(out)
+
+
 def get_reqs(which="main"):
-    """Gets requirements from all_reqs with req_vers."""
+    """Gets requirements from all_reqs with versions."""
     reqs = []
     for req in all_reqs[which]:
-        cur_ver = req_str(req_vers[req])
-        next_ver = req_str(req_vers[req][:-1]) + "." + str(req_vers[req][-1] + 1)
-        reqs.append(req + ">=" + cur_ver + ",<" + next_ver)
+        req_str = req + ">=" + ver_tuple_to_str(min_versions[req])
+        if req in version_strictly:
+            req_str += ",<" + ver_tuple_to_str(min_versions[req][:-1]) + "." + str(min_versions[req][-1] + 1)
+        reqs.append(req_str)
     return reqs
 
 
@@ -126,18 +143,6 @@ def all_versions(req):
     return tuple(requests.get(url).json()["releases"].keys())
 
 
-def ver_tuple(ver_str):
-    """Convert a version string into a version tuple."""
-    out = []
-    for x in ver_str.split("."):
-        try:
-            x = int(x)
-        except ValueError:
-            pass
-        out.append(x)
-    return tuple(out)
-
-
 def newer(new_ver, old_ver):
     """Determines if the first version tuple is newer than the second."""
     if old_ver == new_ver or old_ver + (0,) == new_ver:
@@ -160,12 +165,12 @@ def print_new_versions(strict=False):
         new_versions = []
         same_versions = []
         for ver_str in all_versions(req):
-            comp = newer(ver_tuple(ver_str), req_vers[req])
+            comp = newer(ver_str_to_tuple(ver_str), min_versions[req])
             if comp is True:
                 new_versions.append(ver_str)
             elif not strict and comp is None:
                 same_versions.append(ver_str)
-        update_str = req + ": " + req_str(req_vers[req]) + " -> " + ", ".join(
+        update_str = req + ": " + ver_tuple_to_str(min_versions[req]) + " -> " + ", ".join(
             new_versions + ["(" + v + ")" for v in same_versions]
         )
         if new_versions:
