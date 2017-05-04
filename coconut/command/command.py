@@ -219,6 +219,7 @@ class Command(object):
             self.execute(self.comp.parse_block(args.code))
         read_stdin = False
         if stdin_readable():
+            logger.log("Reading piped input from stdin...")
             self.execute(self.comp.parse_block(sys.stdin.read()))
             read_stdin = True
         if args.jupyter is not None:

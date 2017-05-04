@@ -265,7 +265,10 @@ def stdin_readable():
     try:
         return bool(select([sys.stdin], [], [], 0)[0])
     except OSError:
-        return True
+        pass
+    if not sys.stdout.isatty():
+        return False
+    return True
 
 
 #-----------------------------------------------------------------------------------------------------------------------

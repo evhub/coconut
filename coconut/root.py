@@ -113,8 +113,9 @@ class int(_coconut_int):
 from functools import wraps as _coconut_wraps
 @_coconut_wraps(_coconut_print)
 def print(*args, **kwargs):
-    if _coconut.hasattr(_coconut_sys.stdout, "encoding") and _coconut_sys.stdout.encoding is not None:
-        return _coconut_print(*(_coconut_unicode(x).encode(_coconut_sys.stdout.encoding) for x in args), **kwargs)
+    file = kwargs.get("file", _coconut_sys.stdout)
+    if _coconut.hasattr(file, "encoding") and file.encoding is not None:
+        return _coconut_print(*(_coconut_unicode(x).encode(file.encoding) for x in args), **kwargs)
     else:
         return _coconut_print(*(_coconut_unicode(x).encode() for x in args), **kwargs)
 @_coconut_wraps(_coconut_raw_input)
