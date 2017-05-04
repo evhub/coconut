@@ -343,7 +343,8 @@ reserved_vars = (  # can be backslash-escaped
     "await",
 )
 
-new_to_old_stdlib = {  # new_name: (old_name, before_version_info)
+py3_to_py2_stdlib = {
+    # new_name: (old_name, before_version_info)
     "builtins": ("__builtin__", (3,)),
     "configparser": ("ConfigParser", (3,)),
     "copyreg": ("copy_reg", (3,)),

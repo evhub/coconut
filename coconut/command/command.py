@@ -89,12 +89,11 @@ class Command(object):
         """Processes command-line arguments."""
         if run:
             args, argv = ["--run", "--quiet", "--target", "sys"], []
+            # for coconut-run, all args beyond the source file should stay in sys.argv
             for i in range(1, len(sys.argv)):
                 arg = sys.argv[i]
-                if arg.startswith("-"):
-                    args.append(arg)  # coconut option
-                else:
-                    args.append(arg)  # source file
+                args.append(arg)
+                if not arg.startswith("-"):  # is source file
                     argv = sys.argv[i:]
                     break
             sys.argv = argv
@@ -217,15 +216,15 @@ class Command(object):
 
         if args.code is not None:
             self.execute(self.comp.parse_block(args.code))
-        read_stdin = False
+        got_stdin = False
         if stdin_readable():
             logger.log("Reading piped input from stdin...")
             self.execute(self.comp.parse_block(sys.stdin.read()))
-            read_stdin = True
+            got_stdin = True
         if args.jupyter is not None:
             self.start_jupyter(args.jupyter)
         if args.interact or (interact and not (
-                read_stdin
+                got_stdin
                 or args.source
                 or args.code
                 or args.tutorial
@@ -271,10 +270,7 @@ class Command(object):
             if package is None:
                 package = False
             destpath = self.compile_file(path, write, package, *args, **kwargs)
-            if destpath is None:
-                return []
-            else:
-                return [destpath]
+            return [destpath] if destpath is not None else []
         elif os.path.isdir(path):
             if package is None:
                 package = True
@@ -332,7 +328,7 @@ class Command(object):
             if package is True:
                 self.create_package(destdir)
 
-        foundhash = None if force else self.hashashof(destpath, code, package)
+        foundhash = None if force else self.has_hash_of(destpath, code, package)
         if foundhash:
             if show_unchanged:
                 logger.show_tabulated("Left unchanged", showpath(destpath), "(pass --force to override).")
@@ -394,7 +390,7 @@ class Command(object):
             try:
                 jobs = int(jobs)
             except ValueError:
-                jobs = -1
+                jobs = -1  # will raise error below
             if jobs < 0:
                 raise CoconutException("--jobs must be an integer >= 0 or 'sys'")
             else:
@@ -423,7 +419,7 @@ class Command(object):
         with openfile(filepath, "w") as opened:
             writefile(opened, self.comp.getheader("__coconut__"))
 
-    def hashashof(self, destpath, code, package):
+    def has_hash_of(self, destpath, code, package):
         """Determines if a file has the hash of the code."""
         if destpath is not None and os.path.isfile(destpath):
             with openfile(destpath, "r") as opened:

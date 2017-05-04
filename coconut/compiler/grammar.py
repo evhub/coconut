@@ -768,8 +768,8 @@ class Grammar(object):
     default = condense(equals + test)
     arg_comma = comma | fixto(FollowedBy(rparen), "")
     typedef_ref = name + colon.suppress() + test + arg_comma
-    typedef_default_ref = name + colon.suppress() + test + Optional(default) + arg_comma
     unsafe_typedef_default_ref = name + colon.suppress() + test + Optional(default)
+    typedef_default_ref = unsafe_typedef_default_ref + arg_comma
     tfpdef = typedef | condense(name + arg_comma)
     tfpdef_default = typedef_default | condense(name + Optional(default) + arg_comma)
 

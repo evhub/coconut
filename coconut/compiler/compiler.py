@@ -68,7 +68,7 @@ from coconut.constants import (
     stmt_lambda_var,
     tre_mock_var,
     tre_store_var,
-    new_to_old_stdlib,
+    py3_to_py2_stdlib,
     default_recursion_limit,
     checksum,
     reserved_prefix,
@@ -685,37 +685,32 @@ class Compiler(Grammar):
     def ind_proc(self, inputstring, **kwargs):
         """Processes indentation."""
         lines = inputstring.splitlines()
-        new = []
-        levels = []
-        count = 0
-        current = None
-        skips = self.skips.copy()
+        new = []  # new lines
+        opens = []  # (line, col, adjusted ln) at which open parens were seen, newest first
+        current = None  # indentation level of previous line
+        levels = []  # indentation levels of all previous blocks, newest at end
+        skips = self.skips.copy()  # todo
 
-        for ln in range(len(lines)):
-            line = lines[ln]
-            ln += 1
+        for ln in range(1, len(lines) + 1):  # ln is 1-indexed
+            line = lines[ln - 1]  # lines is 0-indexed
             line_rstrip = line.rstrip()
             if line != line_rstrip:
                 if self.strict:
                     raise self.make_err(CoconutStyleError, "found trailing whitespace", line, len(line), self.adjust(ln))
-                else:
-                    line = line_rstrip
-            if new:
-                last = rem_comment(new[-1])
-            else:
-                last = None
-            if not line or line.lstrip().startswith("#"):
-                if count >= 0:
-                    new.append(line)
-                else:
+                line = line_rstrip
+            last = rem_comment(new[-1]) if new else None
+
+            if not line or line.lstrip().startswith("#"):  # blank line or comment
+                if opens:  # inside parens
                     skips = addskip(skips, self.adjust(ln))
-            elif last is not None and last.endswith("\\"):
+                else:
+                    new.append(line)
+            elif last is not None and last.endswith("\\"):  # backslash line continuation
                 if self.strict:
                     raise self.make_err(CoconutStyleError, "found backslash continuation", last, len(last), self.adjust(ln - 1))
-                else:
-                    skips = addskip(skips, self.adjust(ln))
-                    new[-1] = last[:-1] + " " + line
-            elif count < 0:
+                skips = addskip(skips, self.adjust(ln))
+                new[-1] = last[:-1] + " " + line
+            elif opens:  # inside parens
                 skips = addskip(skips, self.adjust(ln))
                 new[-1] = last + " " + line
             else:
@@ -737,17 +732,23 @@ class Compiler(Grammar):
                 elif current != check:
                     raise self.make_err(CoconutSyntaxError, "illegal dedent to unused indentation level", line, 0, self.adjust(ln))
                 new.append(line)
-            count += paren_change(line)
-            if count > 0:
-                raise self.make_err(CoconutSyntaxError, "unmatched close parentheses", new[-1], len(new[-1]), self.adjust(len(new)))
+
+            count = paren_change(line)  # (num close parens) - (num open parens)
+            if count > len(opens):
+                raise self.make_err(CoconutSyntaxError, "unmatched close parenthesis", new[-1], 0, self.adjust(len(new)))
+            elif count > 0:
+                opens = opens[-count:]  # pop an open for each extra close
+            else:
+                opens += [(new[-1], self.adjust(len(new)))] * (-count)
 
         self.skips = skips
         if new:
             last = rem_comment(new[-1])
             if last.endswith("\\"):
                 raise self.make_err(CoconutSyntaxError, "illegal final backslash continuation", new[-1], len(new[-1]), self.adjust(len(new)))
-            if count != 0:
-                raise self.make_err(CoconutSyntaxError, "unclosed open parentheses", new[-1], len(new[-1]), self.adjust(len(new)))
+            if opens:
+                line, adj_ln = opens[0]
+                raise self.make_err(CoconutSyntaxError, "unclosed open parenthesis", line, 0, adj_ln)
         new.append(closeindent * len(levels))
         return "\n".join(new)
 
@@ -901,7 +902,7 @@ class Compiler(Grammar):
                         if out and not out[-1].endswith("\n"):
                             out[-1] = out[-1].rstrip(" ")
                             if not self.minify:
-                                out[-1] += "  "  # enforce two spaces before comment
+                                out[-1] += "  "  # put two spaces before comment
                         out.append("#" + ref)
                         comment = None
                     else:
@@ -1163,6 +1164,7 @@ class Compiler(Grammar):
                 return ""
         else:
             raise CoconutInternalException("invalid import tokens", tokens)
+
         importmap = []  # [((imp | old_imp, imp, version_check), impas), ...]
         for imps in imports:
             if len(imps) == 1:
@@ -1176,8 +1178,8 @@ class Compiler(Grammar):
             for i in reversed(range(1, len(path) + 1)):
                 base, exts = ".".join(path[:i]), path[i:]
                 clean_base = base.replace("/", "")
-                if clean_base in new_to_old_stdlib:
-                    old_imp, version_check = new_to_old_stdlib[clean_base]
+                if clean_base in py3_to_py2_stdlib:
+                    old_imp, version_check = py3_to_py2_stdlib[clean_base]
                     if exts:
                         if "/" in base:
                             old_imp += "./"
@@ -1194,6 +1196,7 @@ class Compiler(Grammar):
             else:
                 paths = (imp,)
             importmap.append((paths, impas))
+
         stmts = []
         for paths, impas in importmap:
             if len(paths) == 1:
@@ -1491,7 +1494,7 @@ class Compiler(Grammar):
         return out
 
     def unsafe_typedef_handle(self, tokens):
-        """Handles unsafe type annotations."""
+        """Handles type annotations without a comma after them."""
         return self.typedef_handle(tokens.asList() + [","])
 
     def typedef_handle(self, tokens):
