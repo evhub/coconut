@@ -309,6 +309,7 @@ class Prompt(object):
     @handling_prompt_toolkit_errors
     def input(self, more=False):
         """Prompts for code input."""
+        sys.stdout.flush()
         if more:
             msg = more_prompt
         else:
