@@ -736,9 +736,10 @@ class Compiler(Grammar):
             count = paren_change(line)  # (num close parens) - (num open parens)
             if count > len(opens):
                 raise self.make_err(CoconutSyntaxError, "unmatched close parenthesis", new[-1], 0, self.adjust(len(new)))
-            elif count > 0:
-                opens = opens[-count:]  # pop an open for each extra close
-            else:
+            elif count > 0:  # closes > opens
+                for i in range(count):
+                    opens.pop()
+            elif count < 0:  # opens > closes
                 opens += [(new[-1], self.adjust(len(new)))] * (-count)
 
         self.skips = skips
