@@ -155,9 +155,9 @@ def handling_prompt_toolkit_errors(func):
         if self.style is not None:
             try:
                 return func(self, *args, **kwargs)
-            except (KeyboardInterrupt, EOFError):
-                raise
-            except (Exception, AssertionError):
+            except EOFError:
+                raise  # issubclass(EOFError, Exception), so we have to do this
+            except Exception:
                 logger.print_exc()
                 logger.show("Syntax highlighting failed; switching to --style none.")
                 self.style = None
@@ -204,7 +204,7 @@ def splitname(path):
 
 
 def run_file(path):
-    """Runs a module from a path."""
+    """Runs a module from a path and return its variables."""
     if PY26:
         dirpath, name = splitname(path)
         found = imp.find_module(name, [dirpath])

@@ -141,6 +141,8 @@ class Command(object):
         logger.quiet, logger.verbose = args.quiet, args.verbose
         if DEVELOP:
             logger.tracing = args.trace
+        logger.log("Command args:", args)
+
         if args.recursion_limit is not None:
             self.set_recursion_limit(args.recursion_limit)
         if args.jobs is not None:
@@ -530,28 +532,18 @@ class Command(object):
             self.mypy_args = list(mypy_args)
 
             for arg in self.mypy_args:
-                if arg == "--fast-parser":
-                    logger.warn("unnecessary --mypy argument", arg, extra="passed automatically if available")
-                elif arg == "--py2" or arg == "-2":
+                if arg == "--py2" or arg == "-2":
                     logger.warn("unnecessary --mypy argument", arg, extra="passed automatically when needed")
                 elif arg == "--python-version":
                     logger.warn("unnecessary --mypy argument", arg, extra="current --target passed as version automatically")
-
-            if "--fast-parser" not in self.mypy_args:
-                try:
-                    import typed_ast  # NOQA
-                except ImportError:
-                    if self.comp.target != "3":
-                        logger.warn("missing typed_ast; MyPy may not properly analyze type annotations",
-                                    extra="run 'pip install typed_ast' or pass '--target 3' to fix")
-                else:
-                    self.mypy_args.append("--fast-parser")
 
             if not ("--py2" in self.mypy_args or "-2" in self.mypy_args) and not self.comp.target.startswith("3"):
                 self.mypy_args.append("--py2")
 
             if "--python-version" not in self.mypy_args:
                 self.mypy_args += ["--python-version", ".".join(str(v) for v in self.comp.target_info_len2)]
+
+            logger.log("MyPy args:", self.mypy_args)
 
     def run_mypy(self, paths=[], code=None):
         """Run MyPy with arguments."""
@@ -606,7 +598,7 @@ class Command(object):
             elif args[0] == "notebook":
                 run_args = [jupyter, "notebook"] + args[1:]
             else:
-                raise CoconutException('first argument after --jupyter must be either "console" or "notebook"')
+                raise CoconutException("first argument after --jupyter must be either 'console' or 'notebook'")
             self.register_error(run_cmd(run_args, raise_errs=False), errmsg="Jupyter error")
 
     def watch(self, source, write=True, package=None, run=False, force=False):

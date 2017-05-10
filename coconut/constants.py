@@ -113,13 +113,13 @@ min_versions = {
     "jupyter-console": (5, 1),
     "ipython": (5, 3),
     "ipykernel": (4, 6),
-    "mypy": (0, 501),
+    "mypy": (0, 511),
     "prompt_toolkit": (1, 0),
     "futures": (3, 1),
     "argparse": (1, 4),
     "pytest": (3, 0),
     "watchdog": (0, 8),
-    "requests": (2, 13),
+    "requests": (2,),
 }
 
 version_strictly = [
