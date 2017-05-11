@@ -22,7 +22,6 @@ from coconut.root import *  # NOQA
 import sys
 import os
 import traceback
-import functools
 import subprocess
 import webbrowser
 from copy import copy
@@ -121,7 +120,7 @@ def rem_encoding(code):
     new_lines = []
     for i in range(min(2, len(old_lines))):
         line = old_lines[i]
-        if not (line.startswith("#") and "coding" in line):
+        if not (line.lstrip().startswith("#") and "coding" in line):
             new_lines.append(line)
     new_lines += old_lines[2:]
     return "\n".join(new_lines)
@@ -148,23 +147,6 @@ def interpret(code, in_vars):
     exec_func(code, in_vars)
 
 
-def handling_prompt_toolkit_errors(func):
-    """Handles prompt_toolkit and pygments errors."""
-    @functools.wraps(func)
-    def handles_prompt_toolkit_errors_func(self, *args, **kwargs):
-        if self.style is not None:
-            try:
-                return func(self, *args, **kwargs)
-            except EOFError:
-                raise  # issubclass(EOFError, Exception), so we have to do this
-            except Exception:
-                logger.print_exc()
-                logger.show("Syntax highlighting failed; switching to --style none.")
-                self.style = None
-        return func(self, *args, **kwargs)
-    return handles_prompt_toolkit_errors_func
-
-
 @contextmanager
 def handling_broken_process_pool():
     """Handles BrokenProcessPool error."""
@@ -183,7 +165,8 @@ def kill_children():
     try:
         import psutil
     except ImportError:
-        logger.warn("missing psutil; --jobs may not properly terminate", extra="run 'pip install coconut[jobs]' to fix")
+        logger.warn("missing psutil; --jobs may not properly terminate",
+                    extra="run 'pip install coconut[jobs]' to fix")
     else:
         master = psutil.Process()
         children = master.children(recursive=True)
@@ -204,7 +187,7 @@ def splitname(path):
 
 
 def run_file(path):
-    """Runs a module from a path and return its variables."""
+    """Run a module from a path and return its variables."""
     if PY26:
         dirpath, name = splitname(path)
         found = imp.find_module(name, [dirpath])
@@ -306,7 +289,6 @@ class Prompt(object):
         else:
             raise CoconutException("unrecognized pygments style", style, extra="use '--style list' to show all valid styles")
 
-    @handling_prompt_toolkit_errors
     def input(self, more=False):
         """Prompts for code input."""
         sys.stdout.flush()
@@ -314,12 +296,18 @@ class Prompt(object):
             msg = more_prompt
         else:
             msg = main_prompt
-        if self.style is None:
-            return input(msg)
-        elif prompt_toolkit is None:
-            raise CoconutInternalException("cannot highlight style without prompt_toolkit", self.style)
-        else:
-            return prompt_toolkit.prompt(msg, **self.prompt_kwargs())
+        if self.style is not None:
+            if prompt_toolkit is None:
+                raise CoconutInternalException("cannot highlight style without prompt_toolkit", self.style)
+            try:
+                return prompt_toolkit.prompt(msg, **self.prompt_kwargs())
+            except EOFError:
+                raise  # issubclass(EOFError, Exception), so we have to do this
+            except Exception:
+                logger.print_exc()
+                logger.show("Syntax highlighting failed; switching to --style none.")
+                self.style = None
+        return input(msg)
 
     def prompt_kwargs(self):
         """Gets prompt_toolkit.prompt keyword args."""

@@ -41,7 +41,7 @@ from coconut.constants import (
     icoconut_kernel_dirs,
     minimum_recursion_limit,
     stub_dir,
-    exit_char,
+    exit_chars,
 )
 from coconut.command.util import (
     openfile,
@@ -442,7 +442,7 @@ class Command(object):
             print()
             self.exit_runner()
         else:
-            if received.startswith(exit_char):
+            if received.startswith(exit_chars):
                 self.exit_runner()
                 received = None
         return received

@@ -424,7 +424,10 @@ icoconut_kernel_dirs = [
 
 stub_dir = os.path.join(base_dir, "stubs")
 
-exit_char = "\x1a"
+exit_chars = (
+    "\x04",  # Ctrl-D
+    "\x1a",  # Ctrl-Z
+)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # HIGHLIGHTER CONSTANTS:

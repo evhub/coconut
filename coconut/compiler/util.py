@@ -83,18 +83,18 @@ def count_end(teststr, testchar):
 
 
 def paren_change(inputstring):
-    """Determines the parenthetical change of level."""
+    """Determines the parenthetical change of level (num closes - num opens)."""
     count = 0
     for c in inputstring:
-        if c in downs:
+        if c in downs:  # open parens/brackets/braces
             count -= 1
-        elif c in ups:
+        elif c in ups:  # close parens/brackets/braces
             count += 1
     return count
 
 
 def ind_change(inputstring):
-    """Determines the change in indentation level."""
+    """Determines the change in indentation level (num opens - num closes)."""
     return inputstring.count(openindent) - inputstring.count(closeindent)
 
 
