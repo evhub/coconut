@@ -26,7 +26,6 @@ sphinx: clean
 .PHONY: docs
 docs: sphinx
 	pushd ./docs; zip -r ./docs.zip ./*; popd
-	rm -rf index.rst
 
 .PHONY: clean
 clean:
