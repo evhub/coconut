@@ -1,48 +1,15 @@
 # Coconut Tutorial
 
-<!-- MarkdownTOC -->
-
-1. [Introduction](#introduction)
-    1. [Installation](#installation)
-1. [Starting Out](#starting-out)
-    1. [Using the Interpreter](#using-the-interpreter)
-    1. [Using the Compiler](#using-the-compiler)
-    1. [Using IPython/ Jupyter](#using-ipython-jupyter)
-    1. [Case Studies](#case-studies)
-1. [Case Study 1: `factorial`](#case-study-1-factorial)
-    1. [Imperative Method](#imperative-method)
-    1. [Recursive Method](#recursive-method)
-    1. [Iterative Method](#iterative-method)
-    1. [`addpattern` Method](#addpattern-method)
-1. [Case Study 2: `quick_sort`](#case-study-2-quicksort)
-    1. [Sorting a Sequence](#sorting-a-sequence)
-    1. [Sorting an Iterator](#sorting-an-iterator)
-1. [Case Study 3: `vector` Part I](#case-study-3-vector-part-i)
-    1. [2-Vector](#2-vector)
-    1. [n-Vector Constructor](#n-vector-constructor)
-    1. [n-Vector Methods](#n-vector-methods)
-1. [Case Study 4: `vector_field`](#case-study-4-vectorfield)
-    1. [`diagonal_line`](#diagonalline)
-    1. [`linearized_plane`](#linearizedplane)
-    1. [`vector_field`](#vectorfield)
-    1. [Applications](#applications)
-1. [Case Study 5: `vector` Part II](#case-study-5-vector-part-ii)
-    1. [`__truediv__`](#truediv)
-    1. [`.unit`](#unit)
-    1. [`.angle`](#angle)
-1. [Filling in the Gaps](#filling-in-the-gaps)
-    1. [Lazy Lists](#lazy-lists)
-    1. [Function Composition](#function-composition)
-    1. [Implicit Partials](#implicit-partials)
-    1. [Further Reading](#further-reading)
-
-<!-- /MarkdownTOC -->
+```eval_rst
+.. contents::
+    :local:
+```
 
 ## Introduction
 
 Welcome to the tutorial for the [Coconut Programming Language](http://evhub.github.io/coconut/)! Coconut is a variant of [Python](https://www.python.org/) built for **simple, elegant, Pythonic functional programming**. But those are just words; what they mean in practice is that _all valid Python 3 is valid Coconut_ but Coconut builds on top of Python a suite of _simple, elegant utilities for functional programming_.
 
-Why use Coconut? Coconut is built to be fundamentally _useful_. Coconut enhances the repertoire of Python programmers to include the tools of modern functional programming, in such a way that those tools are _easy_ to use and immensely _powerful_; that is, _Coconut does to functional programming what Python did to imperative programming_. And Coconut code runs the same on _any Python version_, making the Python 2/3 split a thing of the past.
+Why use Coconut? Coconut is built to be useful. Coconut enhances the repertoire of Python programmers to include the tools of modern functional programming, in such a way that those tools are _easy_ to use and immensely _powerful;_ that is, Coconut does to functional programming what Python did to imperative programming. And Coconut code runs the same on _any Python version_, making the Python 2/3 split a thing of the past.
 
 Specifically, Coconut adds to Python _built-in, syntactical support_ for:
 - pattern-matching
@@ -65,7 +32,7 @@ and much more!
 At its very core, Coconut is a compiler that turns Coconut code into Python code. That means that anywhere where you can use a Python script, you can also use a compiled Coconut script. To access that core compiler, Coconut comes with a command-line utility, which can
 - compile single Coconut files or entire Coconut projects,
 - interpret Coconut code on-the-fly, and
-- hook into existing Python applications like IPython/ Jupyter.
+- hook into existing Python applications like IPython/Jupyter and MyPy.
 
 Installing Coconut, including all the features above, is drop-dead simple. Just
 
@@ -84,7 +51,7 @@ coconut -h
 ```
 which should display Coconut's command-line help.
 
-_Note: If you're having trouble installing Coconut, or if anything else mentioned in this tutorial doesn't seem to work for you, feel free to [open an issue](https://github.com/evhub/coconut/issues/new) and it'll be addressed as soon as possible._
+_Note: If you're having trouble installing Coconut, or if anything else mentioned in this tutorial doesn't seem to work for you, feel free to [ask for help on Gitter](https://gitter.im/evhub/coconut) and somebody will try to answer your question as soon as possible._
 
 ## Starting Out
 
@@ -117,7 +84,7 @@ hello, world!
 
 Of course, while being able to interpret Coconut code on-the-fly is a great thing, it wouldn't be very useful without the ability to write and compile larger programs. To that end, it's time to write our first Coconut program: "hello, world!" Coconut-style.
 
-First, we're going to need to create a file to put our code into. The recommended file extension for Coconut source files is `.coco`, so let's create the new file `hello_world.coco`. After you do that, you should take the time now to set up your text editor to properly highlight Coconut code. For instructions on how to do that, see the documentation on [Coconut syntax highlighting](http://coconut.readthedocs.io/en/master/DOCS.html#syntax-highlighting).
+First, we're going to need to create a file to put our code into. The recommended file extension for Coconut source files is `.coco`, so let's create the new file `hello_world.coco`. After you do that, you should take the time now to set up your text editor to properly highlight Coconut code. For instructions on how to do that, see the documentation on [Coconut syntax highlighting](DOCS.html#syntax-highlighting).
 
 Now let's put some code in our `hello_world.coco` file. Unlike in Python, where headers like
 ```coconut_python
@@ -160,7 +127,7 @@ The Coconut  compiler supports a large variety of different compilation options,
 
 Although all different types of programming can benefit from using more functional techniques, scientific computing, perhaps more than any other field, lends itself very well to functional programming, an observation the case studies in this tutorial are very good examples of. To that end, Coconut aims to provide extensive support for the established tools of scientific computing in Python.
 
-That means supporting IPython/ Jupyter, as modern Python programming, particularly in the sciences, has gravitated towards the use of [IPython](http://ipython.org/) (the python kernel for the [Jupyter](http://jupyter.org/) framework) instead of the classic Python shell. Coconut supports being used as a kernel for Jupyter notebooks and consoles, allowing Coconut code to be used alongside powerful IPython features such as `%magic` commands.
+That means supporting IPython/Jupyter, as modern Python programming, particularly in the sciences, has gravitated towards the use of [IPython](http://ipython.org/) (the python kernel for the [Jupyter](http://jupyter.org/) framework) instead of the classic Python shell. Coconut supports being used as a kernel for Jupyter notebooks and consoles, allowing Coconut code to be used alongside powerful IPython features such as `%magic` commands.
 
 To launch a Jupyter notebook with Coconut as the kernel, use the command
 ```
@@ -176,7 +143,7 @@ or equivalently, `--ipython` can be substituted for `--jupyter` in either comman
 
 Because Coconut is built to be fundamentally _useful_, the best way to demo it is to show it in action. To that end, the majority of this tutorial will be showing how to apply Coconut to solve particular problems, which we'll call case studies.
 
-These case studies are not intended to provide a complete picture of all of Coconut's features. For that, see Coconut's comprehensive [documentation](http://coconut.readthedocs.io/en/master/DOCS.html). Instead, they are intended to show how Coconut can actually be used to solve practical programming problems.
+These case studies are not intended to provide a complete picture of all of Coconut's features. For that, see Coconut's comprehensive [documentation](DOCS.html). Instead, they are intended to show how Coconut can actually be used to solve practical programming problems.
 
 ## Case Study 1: `factorial`
 
@@ -204,7 +171,7 @@ def factorial(n):
 0 |> factorial |> print  # 1
 3 |> factorial |> print  # 6
 ```
-Before we delve into what exactly is happening here, let's give it a run and make sure the test cases check out. If we were really writing a Coconut program, we'd want to save and compile an actual file, but since we're just playing around, let's try copy-pasting into the interpreter. Here, you should get `1`, `6`, and then two `TypeError`s.
+Before we delve into what exactly is happening here, let's give it a run and make sure the test cases check out. If we were really writing a Coconut program, we'd want to save and compile an actual file, but since we're just playing around, let's try copy-pasting into the interpreter. Here, you should get two `TypeErrors`, then `1`, then `6`.
 
 Now that we've verified it works, let's take a look at what's going on. Since the imperative approach is a fundamentally non-functional method, Coconut can't help us improve this example very much. Even here, though, the use of Coconut's infix notation (where the function is put in-between its arguments, surrounded in backticks) in `` n `isinstance` int `` makes the code slightly cleaner and easier to read.
 
@@ -505,6 +472,7 @@ data vector2(x, y):
 # Test cases:
 vector2(1, 2) |> print  # vector2(x=1, y=2)
 vector2(3, 4) |> abs |> print  # 5
+vector2(1, 2) |> fmap$(x -> x*2) |> print  # vector2(x=2, y=4)
 v = vector2(2, 3)
 v.x = 7  # AttributeError
 ```
@@ -516,27 +484,31 @@ data <name>(<attributes>):
 ```
 where `<name>` and `<body>` are the same as the equivalent `class` definition, but `<attributes>` are the different attributes of the data type, in order that the constructor should take them as arguments. In this case, `vector2` is a data type of two attributes, `x` and `y`, with one defined method, `__abs__`, that computes the magnitude. As the test cases show, we can then create, print, but _not modify_ instances of `vector2`.
 
+One other thing to call attention to here is the use of `fmap`. `fmap` is a Coconut built-in that allows you to map functions over algebraic data types. In fact, Coconut's `data` types support iteration, so the standard `map` works on them, but it doesn't return another object of the same data type. Thus, `fmap` is simply `map` plus a call to the object's constructor.
+
 ### n-Vector Constructor
 
 Now that we've got the 2-vector under our belt, let's move to back to our original, more complicated problem: n-vectors, that is, vectors of arbitrary length. We're going to try to make our n-vector support all the basic vector operations, but we'll start out with just the `data` definition and the constructor:
 ```coconut
-data vector(pts):
+data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        if len(pts) == 1 and pts[0] `isinstance` vector:
-            return pts[0]  # vector(v) where v is a vector should return v
+        match (v is vector,) in pts:
+            return v  # vector(v) where v is a vector should return v
         else:
-            return pts |> tuple |> datamaker(cls)  # accesses base constructor
+            return pts |*> datamaker(cls)  # accesses base constructor
 
 # Test cases:
-vector(1, 2, 3) |> print  # vector(pts=(1, 2, 3))
-vector(4, 5) |> vector |> print  # vector(pts=(4, 5))
+vector(1, 2, 3) |> print  # vector(*pts=(1, 2, 3))
+vector(4, 5) |> vector |> print  # vector(*pts=(4, 5))
 ```
 
-Copy, paste! The big new thing here is how to write `data` constructors. Since `data` types are immutable, `__init__` construction won't work. Instead, a different special method `__new__` is used, which must return the newly constructed instance, and unlike most methods, takes the class not the object as the first argument. Since `__new__` needs to return a fully constructed instance, in almost all cases access to the underlying `data` constructor will be necessary. To achieve this, Coconut provides the built-in function `datamaker`, which takes a data type, often the first argument to `__new__`, and returns its underlying `data` constructor.
+Copy, paste! The big new thing here is how to write `data` constructors. Since `data` types are immutable, `__init__` construction won't work. Instead, a different special method `__new__` is used, which must return the newly constructed instance, and unlike most methods, takes the class not the object as the first argument. Since `__new__` needs to return a fully constructed instance, in almost all cases it will be necessary to access the underlying `data` constructor. To achieve this, Coconut provides the built-in function `datamaker`, which takes a data type, often the first argument to `__new__`, and returns its underlying `data` constructor.
 
-In this case, the constructor checks whether nothing but another `vector` was passed, in which case it returns that, otherwise it returns the result of creating a tuple of the arguments and passing that to the underlying constructor, the form of which is `vector(pts)`, thus assigning the tuple to the `pts` attribute.
+In this case, the constructor checks whether nothing but another `vector` was passed, in which case it returns that, otherwise it returns the result of creating a tuple of the arguments and passing that to the underlying constructor, the form of which is `vector(*pts)`, since that is how we declared the data type.
+
+The other new construct used here is the `|*>`, or star-pipe, operator, which functions exactly like the normal pipe, except that instead of calling the function with one argument, it calls it with as many arguments as there are elements in the sequence passed into it. The difference between `|*>` and `|>` is exactly analogous to the difference between `f(args)` and `f(*args)`.
 
 ### n-Vector Methods
 
@@ -552,20 +524,18 @@ Next up is vector addition. The goal here is to add two vectors of equal length 
 ```coconut
     def __add__(self, other) =
         """Add two vectors together."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((+), self.pts, other_pts) |*> vector
 ```
 
-There are a couple of new constructs here, but the main notable one is the destructuring assignment statement `vector(other_pts) = other` which showcases the syntax for pattern-matching against data types: it mimics exactly the original `data` declaration of that data type. In this case, `vector(other_pts) = other` will only match a vector, raising a `MatchError` otherwise, and if it does match a vector, will assign the vector's `pts` attribute to the variable `other_pts`.
-
-The other new construct used here is the `|*>`, or star-pipe, operator, which functions exactly like the normal pipe, except that instead of calling the function with one argument, it calls it with as many arguments as there are elements in the sequence passed into it. The difference between `|*>` and `|>` is exactly analogous to the difference between `f(args)` and `f(*args)`.
+There are a couple of new constructs here, but the main notable one is the destructuring assignment statement `vector(*other_pts) = other` which showcases the syntax for pattern-matching against data types: it mimics exactly the original `data` declaration of that data type. In this case, `vector(*other_pts) = other` will only match a vector, raising a `MatchError` otherwise, and if it does match a vector, will assign the vector's `pts` attribute to the variable `other_pts`.
 
 Next is vector subtraction, which is just like vector addition, but with `(-)` instead of `(+)`:
 ```coconut
     def __sub__(self, other) =
         """Subtract one vector from another."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((-), self.pts, other_pts) |*> vector
 ```
@@ -581,7 +551,7 @@ Our next method will be equality. We're again going to use `data` pattern-matchi
 ```coconut
     def __eq__(self, other):
         """Compare whether two vectors are equal."""
-        match vector(=self.pts) in other:
+        match vector(*=self.pts) in other:
             return True
         else:
             return False
@@ -593,7 +563,7 @@ The last method we'll implement is multiplication. This one is a little bit tric
 ```coconut
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
-        match vector(other_pts) in other:
+        match vector(*other_pts) in other:
             assert len(other_pts) == len(self.pts)
             return map((*), self.pts, other_pts) |> sum  # dot product
         else:
@@ -607,25 +577,25 @@ The first thing to note here is that unlike with addition and subtraction, where
 
 Finally, putting everything together:
 ```coconut
-data vector(pts):
+data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        if len(pts) == 1 and pts[0] `isinstance` vector:
-            return pts[0]  # vector(v) where v is a vector should return v
+        match (v is vector,) in pts:
+            return v  # vector(v) where v is a vector should return v
         else:
-            return pts |> tuple |> datamaker(cls)  # accesses base constructor
+            return pts |*> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
     def __add__(self, other) =
         """Add two vectors together."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((+), self.pts, other_pts) |*> vector
     def __sub__(self, other) =
         """Subtract one vector from another."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
@@ -633,13 +603,13 @@ data vector(pts):
         self.pts |> map$((-)) |*> vector
     def __eq__(self, other):
         """Compare whether two vectors are equal."""
-        match vector(=self.pts) in other:
+        match vector(*=self.pts) in other:
             return True
         else:
             return False
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
-        match vector(other_pts) in other:
+        match vector(*other_pts) in other:
             assert len(other_pts) == len(self.pts)
             return map((*), self.pts, other_pts) |> sum  # dot product
         else:
@@ -649,16 +619,16 @@ data vector(pts):
         self * other
 
 # Test cases:
-vector(1, 2, 3) |> print  # vector(pts=(1, 2, 3))
-vector(4, 5) |> vector |> print  # vector(pts=(4, 5))
+vector(1, 2, 3) |> print  # vector(*pts=(1, 2, 3))
+vector(4, 5) |> vector |> print  # vector(*pts=(4, 5))
 vector(3, 4) |> abs |> print  # 5
-vector(1, 2) + vector(2, 3) |> print  # vector(pts=(3, 5))
-vector(2, 2) - vector(0, 1) |> print  # vector(pts=(2, 1))
--vector(1, 3) |> print  # vector(pts=(-1, -3))
+vector(1, 2) + vector(2, 3) |> print  # vector(*pts=(3, 5))
+vector(2, 2) - vector(0, 1) |> print  # vector(*pts=(2, 1))
+-vector(1, 3) |> print  # vector(*pts=(-1, -3))
 (vector(1, 2) == "string") |> print  # False
 (vector(1, 2) == vector(3, 4)) |> print  # False
 (vector(2, 4) == vector(2, 4)) |> print  # True
-2*vector(1, 2) |> print  # vector(pts=(2, 4))
+2*vector(1, 2) |> print  # vector(*pts=(2, 4))
 vector(1, 2) * vector(1, 3) |> print  # 7
 ```
 
@@ -783,8 +753,8 @@ Now that we have a function that builds up all the points we need, it's time to 
 Tests:
 ```coconut
 # You'll need to bring in the vector class from earlier to make these work
-vector_field()$[0] |> print  # vector(pts=(0, 0))
-vector_field()$[2:3] |> list |> print  # [vector(pts=(1, 0))]
+vector_field()$[0] |> print  # vector(*pts=(0, 0))
+vector_field()$[2:3] |> list |> print  # [vector(*pts=(1, 0))]
 ```
 
 _Hint: Remember, the way we defined vector it takes the components as separate arguments, not a single tuple._
@@ -820,25 +790,25 @@ All we're doing is taking our `linearized_plane` and mapping `vector` over it, b
 
 Now that we've built all the functions we need for our vector field, it's time to put it all together and test it. Feel free to substitute in your versions of the functions below:
 ```coconut
-data vector(pts):
+data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        if len(pts) == 1 and pts[0] `isinstance` vector:
-            return pts[0]  # vector(v) where v is a vector should return v
+        match (v is vector,) in pts:
+            return v  # vector(v) where v is a vector should return v
         else:
-            return pts |> tuple |> datamaker(cls)  # accesses base constructor
+            return pts |*> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
     def __add__(self, other) =
         """Add two vectors together."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((+), self.pts, other_pts) |*> vector
     def __sub__(self, other) =
         """Subtract one vector from another."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
@@ -846,13 +816,13 @@ data vector(pts):
         self.pts |> map$((-)) |*> vector
     def __eq__(self, other):
         """Compare whether two vectors are equal."""
-        match vector(=self.pts) in other:
+        match vector(*=self.pts) in other:
             return True
         else:
             return False
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
-        match vector(other_pts) in other:
+        match vector(*other_pts) in other:
             assert len(other_pts) == len(self.pts)
             return map((*), self.pts, other_pts) |> sum  # dot product
         else:
@@ -871,8 +841,8 @@ diagonal_line(0) |> list |> print  # [(0, 0)]
 diagonal_line(1) |> list |> print  # [(0, 1), (1, 0)]
 linearized_plane()$[0] |> print  # (0, 0)
 linearized_plane()$[:3] |> list |> print  # [(0, 0), (0, 1), (1, 0)]
-vector_field()$[0] |> print  # vector(pts=(0, 0))
-vector_field()$[2:3] |> list |> print  # [vector(pts=(1, 0))]
+vector_field()$[0] |> print  # vector(*pts=(0, 0))
+vector_field()$[2:3] |> list |> print  # [vector(*pts=(1, 0))]
 ```
 
 Copy, paste! Once you've made sure everything is working correctly if you substituted in your own functions, take a look at the last 4 tests. You'll notice that they use a new notation, similar to the notation for partial application we saw earlier, but with brackets instead of parentheses. This is the notation for iterator slicing. Similar to how partial application was lazy function calling, iterator slicing is _lazy sequence slicing_. Like with partial application, it is helpful to think of `$` as the _lazy-ify_ operator, in this case turning normal Python slicing, which is evaluated immediately, into lazy iterator slicing, which is evaluated only when the elements in the slice are needed.
@@ -895,8 +865,8 @@ Vector division is just scalar division, so we're going to write a `__truediv__`
 
 Tests:
 ```coconut
-vector(3, 4) / 1 |> print  # vector(pts=(3.0, 4.0))
-vector(2, 4) / 2 |> print  # vector(pts=(1.0, 2.0))
+vector(3, 4) / 1 |> print  # vector(*pts=(3.0, 4.0))
+vector(2, 4) / 2 |> print  # vector(*pts=(1.0, 2.0))
 ```
 
 _Hint: Look back at how we implemented scalar multiplication._
@@ -933,8 +903,8 @@ Next up, `.unit`. We're going to write a `unit` method that takes just `self` as
 
 Tests:
 ```coconut
-vector(0, 1).unit() |> print  # vector(pts=(0.0, 1.0))
-vector(5, 0).unit() |> print  # vector(pts=(1.0, 0.0))
+vector(0, 1).unit() |> print  # vector(*pts=(0.0, 1.0))
+vector(5, 0).unit() |> print  # vector(*pts=(1.0, 0.0))
 ```
 
 <br>
@@ -1008,25 +978,25 @@ And now it's time to put it all together. Feel free to substitute in your own ve
 ```coconut
 import math  # necessary for math.acos in .angle
 
-data vector(pts):
+data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        if len(pts) == 1 and pts[0] `isinstance` vector:
-            return pts[0]  # vector(v) where v is a vector should return v
+        match (v is vector,) in pts:
+            return v  # vector(v) where v is a vector should return v
         else:
-            return pts |> tuple |> datamaker(cls)  # accesses base constructor
+            return pts |*> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
     def __add__(self, other) =
         """Add two vectors together."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((+), self.pts, other_pts) |*> vector
     def __sub__(self, other) =
         """Subtract one vector from another."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
@@ -1034,13 +1004,13 @@ data vector(pts):
         self.pts |> map$((-)) |*> vector
     def __eq__(self, other):
         """Compare whether two vectors are equal."""
-        match vector(=self.pts) in other:
+        match vector(*=self.pts) in other:
             return True
         else:
             return False
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
-        match vector(other_pts) in other:
+        match vector(*other_pts) in other:
             assert len(other_pts) == len(self.pts)
             return map((*), self.pts, other_pts) |> sum  # dot product
         else:
@@ -1054,10 +1024,10 @@ data vector(pts):
     def angle(self, other is vector) = math.acos(self.unit() * other.unit())
 
 # Test cases:
-vector(3, 4) / 1 |> print  # vector(pts=(3.0, 4.0))
-vector(2, 4) / 2 |> print  # vector(pts=(1.0, 2.0))
-vector(0, 1).unit() |> print  # vector(pts=(0.0, 1.0))
-vector(5, 0).unit() |> print  # vector(pts=(1.0, 0.0))
+vector(3, 4) / 1 |> print  # vector(*pts=(3.0, 4.0))
+vector(2, 4) / 2 |> print  # vector(*pts=(1.0, 2.0))
+vector(0, 1).unit() |> print  # vector(*pts=(0.0, 1.0))
+vector(5, 0).unit() |> print  # vector(*pts=(1.0, 0.0))
 vector(2, 0).angle(vector(3, 0)) |> print  # 0.0
 print(vector(1, 0).angle(vector(0, 2)), math.pi/2)  # should be the same
 vector(1, 2).angle(5)  # MatchError
@@ -1105,7 +1075,7 @@ iter$[]
 
 ### Further Reading
 
-And that's it for this tutorial! But that's hardly it for Coconut. All of the features examined in this tutorial, as well as a bunch of others, are documented in detail in Coconut's comprehensive [documentation](http://coconut.readthedocs.io/en/master/DOCS.html).
+And that's it for this tutorial! But that's hardly it for Coconut. All of the features examined in this tutorial, as well as a bunch of others, are documented in detail in Coconut's comprehensive [documentation](DOCS.html).
 
 Also, if you have any other questions not covered in this tutorial, feel free to ask around at Coconut's [Gitter](https://gitter.im/evhub/coconut), a GitHub-integrated chat room for Coconut developers.
 

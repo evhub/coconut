@@ -16,7 +16,7 @@ def suite_test():
     assert all(same((1, 2, 3), [1, 2, 3]))
     assert chain2((|1, 2|), (|3, 4|)) |> list == [1, 2, 3, 4]
     assert threeple$(1, 2)(3) == (1, 2, 3)
-    assert 1 `range` 5 |> prod == 24
+    assert 1 `range` 5 |> product == 24
     assert plus1(4) == 5 == plus1_(4)
     assert 2 `plus1` == 3 == plus1(2)
     assert plus1(plus1(5)) == 7 == (plus1..plus1)(5)
@@ -62,13 +62,17 @@ def suite_test():
     assert 12 |> next_mul_of $(5) == 15
     assert collatz(27)
     assert preop(1, 2).add() == 3
-    assert vector(3, 4) |> abs == 5
+    assert vector(3, 4) |> abs == 5 == vector_with_id(3, 4, 1) |> abs
     assert vector(1, 2) |> ((v) -> map(v., ("x", "y"))) |> tuple == (1, 2)
     assert vector(3, 1) |> vector(1, 2).transform |> ((v) -> map(v[], (0, 1))) |> tuple == (4, 3)
     assert vector(1, 2) |> vector(1, 2).__eq__
     assert not vector(1, 2) |> vector(3, 4).__eq__
     assert not (1, 2) |> vector(1, 2).__eq__
     assert vector(vector(4, 3)) == vector(4, 3)
+    assert not vector(4, 3) != vector(4, 3)
+    assert not vector(1, 2) == (1, 2)
+    assert not vector(2, 3) != vector(2, 3)
+    assert vector(1, 2) != (1, 2)
     assert triangle(3, 4, 5).is_right()
     assert (.)(triangle(3, 4, 5), "is_right")
     assert triangle(3, 4, 5) |> .is_right()
@@ -77,6 +81,7 @@ def suite_test():
     assert factorial4(3) == 6
     assert factorial5(3) == 6
     assert fact(3) == 6 == fact_(3)
+    assert factorial(3) == 6
     assert factorial1(-1) is None
     assert factorial2(-1) is None
     assert factorial4(-1) is None
@@ -122,6 +127,12 @@ def suite_test():
     assert (5, 3) |*> mod == 2 == mod <*| (5, 3)
     assert Just(5) <| square <| plus1 == Just(26)
     assert Nothing() <| square <| plus1 == Nothing()
+    assert not Nothing() == ()
+    assert not Nothing() != Nothing()
+    assert Nothing() != ()
+    assert not Just(1) == (1,)
+    assert not Just(1) != Just(1)
+    assert Just(1) != (1,)
     assert head_tail([1,2,3]) == (1, [2,3])
     assert init_last([1,2,3]) == ([1,2], 3)
     assert last_two([1,2,3]) == (2, 3) == last_two_([1,2,3])
@@ -219,11 +230,9 @@ def suite_test():
     assert pattern_abs(-4) == 4 == pattern_abs_(-4)
     assert vector(1, 2) |> (==)$(vector(1, 2))
     assert vector(1, 2) |> .__eq__(other=vector(1, 2))
+    assert fib()$[1:4] |> tuple == (1, 2, 3)
     assert fib() |> takewhile$((i) -> i < 4000000 ) |> filter$((i) -> i % 2 == 0 ) |> sum == 4613732
     assert loop([1,2])$[:4] |> list == [1, 2] * 2
-    assert recurse_n_times(10000)
-    assert is_even(5000) and is_odd(5001)
-    assert is_even_(5000) and is_odd_(5001)
     assert (def -> mod)()(5, 3) == 2
     assert sieve((2, 3, 4, 5)) |> list == [2, 3, 5]
     assert 11 == double_plus_one(5)
@@ -272,4 +281,77 @@ def suite_test():
         pass
     else:
         assert False
+    assert no_args_kwargs()
+    try:
+        no_args_kwargs(1)
+    except MatchError:
+        pass
+    else:
+        assert False
+    try:
+        no_args_kwargs(a=1)
+    except MatchError:
+        pass
+    else:
+        assert False
+    a = altclass()
+    assert a.func(1) == 1
+    assert a.zero(10) == 0
+    with Vars.using(globals()):
+        assert var_one == 1
+    try:
+        var_one
+    except NameError:
+        assert True
+    else:
+        assert False
+    assert Just(3) |> map$(-> _*2) |*> Just == Just(6) == Just(3) |> fmap$(-> _*2)
+    assert Nothing() |> map$(-> _*2) |*> Nothing == Nothing() == Nothing() |> fmap$(-> _*2)
+    assert Elems(1, 2, 3) != Elems(1, 2)
+    assert map(plus1, (1, 2, 3)) |> fmap$(times2) |> repr == map(times2..plus1, (1, 2, 3)) |> repr
+    assert reversed((1, 2, 3)) |> fmap$(plus1) |> repr == map(plus1, (1, 2, 3)) |> reversed |> repr
+    assert ident[1:2, 2:3] == (slice(1, 2), slice(2, 3)) == ident |> .[1:2, 2:3]
+    assert ident.method(*(1,), **{"a": 2}) == ((1,), {"a": 2}) == ident |> .method(*(1,), **{"a": 2})
+    assert container(1) == container(1)
+    assert not container(1) != container(1)
+    assert container(1) != container(2)
+    assert not container(1) == container(2)
+    assert container_(1) == container_(1)
+    assert not container_(1) != container_(1)
+    assert container_(1) != container_(2)
+    assert not container_(1) == container_(2)
+    t = Tuple(1, 2)
+    assert repr(t) == "Tuple(*elems=(1, 2))"
+    assert t.elems == (1, 2)
+    assert isinstance(t.elems, tuple)
+    assert t |> fmap$(-> _+1) == Tuple(2, 3)
+    Tuple(x, y) = t
+    assert x == 1 and y == 2
+    p = Pred("name", 1, 2)
+    assert repr(p) in ("Pred(name='name', *args=(1, 2))", "Pred(name=u'name', *args=(1, 2))")
+    assert p.name == "name"
+    assert p.args == (1, 2)
+    assert isinstance(p.args, tuple)
+    Pred(name, *args) = p
+    assert name == "name"
+    assert args == (1, 2)
+    q = Quant("name", "var", 1, 2)
+    assert repr(q) in ("Quant(name='name', var='var', *args=(1, 2))", "Quant(name=u'name', var=u'var', *args=(1, 2))")
+    assert q.name == "name"
+    assert q.var == "var"
+    assert q.args == (1, 2)
+    assert isinstance(q.args, tuple)
+    Quant(name, var, *args) = q
+    assert name == "name"
+    assert var == "var"
+    assert args == (1, 2)
+    assert Pred(0, 1, 2) |> fmap$(-> _+1) == Pred(1, 2, 3)
+    assert Quant(0, 1, 2) |> fmap$(-> _+1) == Quant(1, 2, 3)
+    return True
+
+def tco_test():
+    """Exectues suite tests that rely on TCO."""
+    assert recurse_n_times(10000)
+    assert is_even(5000) and is_odd(5001)
+    assert is_even_(5000) and is_odd_(5001)
     return True

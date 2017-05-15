@@ -20,12 +20,12 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 from coconut.constants import (
+    get_target_info,
     hash_prefix,
     tabideal,
     default_encoding,
 )
 from coconut.exceptions import CoconutInternalException
-from coconut.compiler.util import get_target_info
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
@@ -105,14 +105,14 @@ def getheader(which, target="", usehash=None):
 import sys as _coconut_sys, os.path as _coconut_os_path
 _coconut_file_path = _coconut_os_path.dirname(_coconut_os_path.abspath(__file__))
 _coconut_sys.path.insert(0, _coconut_file_path)
-from __coconut__ import _coconut, _coconut_MatchError, _coconut_tail_call, _coconut_tco, _coconut_igetitem, _coconut_compose, _coconut_pipe, _coconut_starpipe, _coconut_backpipe, _coconut_backstarpipe, _coconut_bool_and, _coconut_bool_or, _coconut_minus, _coconut_tee, _coconut_map, _coconut_partial
+from __coconut__ import _coconut, _coconut_MatchError, _coconut_tail_call, _coconut_tco, _coconut_igetitem, _coconut_compose, _coconut_pipe, _coconut_starpipe, _coconut_backpipe, _coconut_backstarpipe, _coconut_bool_and, _coconut_bool_or, _coconut_minus, _coconut_map, _coconut_partial
 from __coconut__ import *
 _coconut_sys.path.remove(_coconut_file_path)
 '''
         elif which == "sys":
             header += r'''
 import sys as _coconut_sys
-from coconut.__coconut__ import _coconut, _coconut_MatchError, _coconut_tail_call, _coconut_tco, _coconut_igetitem, _coconut_compose, _coconut_pipe, _coconut_starpipe, _coconut_backpipe, _coconut_backstarpipe, _coconut_bool_and, _coconut_bool_or, _coconut_minus, _coconut_tee, _coconut_map, _coconut_partial
+from coconut.__coconut__ import _coconut, _coconut_MatchError, _coconut_tail_call, _coconut_tco, _coconut_igetitem, _coconut_compose, _coconut_pipe, _coconut_starpipe, _coconut_backpipe, _coconut_backstarpipe, _coconut_bool_and, _coconut_bool_or, _coconut_minus, _coconut_map, _coconut_partial
 from coconut.__coconut__ import *
 '''
         elif which == "__coconut__" or which == "code" or which == "file":
@@ -135,6 +135,18 @@ class _coconut(object):'''
             header += r'''
     import collections, functools, imp, itertools, operator, types, copy, pickle
 '''
+            if not target:
+                header += r'''    if _coconut_sys.version_info >= (2, 7):
+        OrderedDict = collections.OrderedDict
+    else:
+        OrderedDict = dict
+'''
+            elif get_target_info(target) >= (2, 7):
+                header += r'''    OrderedDict = collections.OrderedDict
+'''
+            else:
+                header += r'''    OrderedDict = dict
+'''
             if target.startswith("2"):
                 header += r'''    abc = collections'''
             else:
@@ -144,10 +156,10 @@ class _coconut(object):'''
         import collections.abc as abc'''
             if target.startswith("3"):
                 header += r'''
-    IndexError, NameError, ValueError, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, iter, len, list, map, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, zip, repr = IndexError, NameError, ValueError, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, iter, len, list, map, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, zip, repr'''
+    IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr = IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr'''
             else:
                 header += r'''
-    IndexError, NameError, ValueError, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, iter, len, list, map, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, zip, repr, bytearray = IndexError, NameError, ValueError, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, iter, len, list, map, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, zip, staticmethod(repr), bytearray'''
+    IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr, bytearray = IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, staticmethod(repr), bytearray'''
             header += r'''
 class MatchError(Exception):
     """Pattern-matching error."""
@@ -161,13 +173,16 @@ def _coconut_tco(func):
     def tail_call_optimized_func(*args, **kwargs):
         call_func = func
         while True:
-            if "_coconut_inside_tco" in kwargs:
+            try:
                 del kwargs["_coconut_inside_tco"]
-                return call_func(*args, **kwargs)
-            if hasattr(call_func, "_coconut_is_tco"):
+            except _coconut.KeyError:
+                pass
+            else:
+                return call_func(*args, **kwargs)  # pass --no-tco to clean up your traceback
+            if _coconut.hasattr(call_func, "_coconut_is_tco"):
                 kwargs["_coconut_inside_tco"] = call_func._coconut_is_tco
             try:
-                return call_func(*args, **kwargs)
+                return call_func(*args, **kwargs)  # pass --no-tco to clean up your traceback
             except _coconut_tail_call as tail_call:
                 call_func, args, kwargs = tail_call.func, tail_call.args, tail_call.kwargs
     tail_call_optimized_func._coconut_is_tco = True
@@ -231,11 +246,11 @@ class reversed(object):
         if _coconut.isinstance(iterable, _coconut.range):
             return iterable[::-1]
         elif not _coconut.hasattr(iterable, "__reversed__") or _coconut.isinstance(iterable, (_coconut.list, _coconut.tuple)):
-            new_reversed = _coconut.object.__new__(cls)
-            new_reversed._iter = iterable
-            return new_reversed
+            return _coconut.object.__new__(cls)
         else:
             return _coconut.reversed(iterable)
+    def __init__(self, iterable):
+        self._iter = iterable
     def __iter__(self):
         return _coconut.reversed(self._iter)
     def __getitem__(self, index):
@@ -267,6 +282,8 @@ class reversed(object):
     def index(self, elem):
         """Find the index of elem in the reversed iterator."""
         return _coconut.len(self._iter) - self._iter.index(elem) - 1
+    def __fmap__(self, func):
+        return self.__class__(_coconut_map(func, self._iter))
 class map(_coconut.map):
     __slots__ = ("_func", "_iters")
     if hasattr(_coconut.map, "__doc__"):
@@ -292,6 +309,8 @@ class map(_coconut.map):
         return self.__reduce__()
     def __copy__(self):
         return self.__class__(self._func, *_coconut_map(_coconut.copy.copy, self._iters))
+    def __fmap__(self, func):
+        return self.__class__(_coconut_compose(func, self._func), *self._iters)
 class parallel_map(map):
     """Multiprocessing implementation of map using concurrent.futures.
     Requires arguments to be pickleable."""
@@ -336,6 +355,8 @@ class filter(_coconut.filter):
         return self.__reduce__()
     def __copy__(self):
         return self.__class__(self._func, _coconut.copy.copy(self._iter))
+    def __fmap__(self, func):
+        return _coconut_map(func, self)
 class zip(_coconut.zip):
     __slots__ = ("_iters",)
     if hasattr(_coconut.zip, "__doc__"):
@@ -361,6 +382,8 @@ class zip(_coconut.zip):
         return self.__reduce__()
     def __copy__(self):
         return self.__class__(*_coconut_map(_coconut.copy.copy, self._iters))
+    def __fmap__(self, func):
+        return _coconut_map(func, self)
 class enumerate(_coconut.enumerate):
     __slots__ = ("_iter", "_start")
     if hasattr(_coconut.enumerate, "__doc__"):
@@ -383,7 +406,9 @@ class enumerate(_coconut.enumerate):
     def __reduce_ex__(self, _):
         return self.__reduce__()
     def __copy__(self):
-        return self.__class__(_coconut.copy.copy(self._iter), self._start)'''
+        return self.__class__(_coconut.copy.copy(self._iter), self._start)
+    def __fmap__(self, func):
+        return _coconut_map(func, self)'''
             if target.startswith("3"):
                 header += r'''
 class count:'''
@@ -431,6 +456,8 @@ class count(object):'''
         return self.__class__(self._start, self._step)
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self._start == other._start and self._step == other._step
+    def __fmap__(self, func):
+        return _coconut_map(func, self)
 def recursive_iterator(func):
     """Decorates a function by optimizing it for iterator recursion.
     Requires function arguments to be pickleable."""
@@ -438,9 +465,9 @@ def recursive_iterator(func):
     @_coconut.functools.wraps(func)
     def recursive_iterator_func(*args, **kwargs):
         hashable_args_kwargs = _coconut.pickle.dumps((args, kwargs), _coconut.pickle.HIGHEST_PROTOCOL)
-        if hashable_args_kwargs in tee_store:
+        try:
             to_tee = tee_store[hashable_args_kwargs]
-        else:
+        except _coconut.KeyError:
             to_tee = func(*args, **kwargs)
         tee_store[hashable_args_kwargs], to_return = _coconut_tee(to_tee)
         return to_return
@@ -488,7 +515,7 @@ class _coconut_partial(object):'''
             if i in self._argdict:
                 callargs.append(self._argdict[i])
             elif argind >= _coconut.len(args):
-                raise TypeError("expected at least " + _coconut.str(self._arglen - _coconut.len(self._argdict)) + " argument(s) to " + _coconut.repr(self))
+                raise _coconut.TypeError("expected at least " + _coconut.str(self._arglen - _coconut.len(self._argdict)) + " argument(s) to " + _coconut.repr(self))
             else:
                 callargs.append(args[argind])
                 argind += 1
@@ -505,14 +532,46 @@ class _coconut_partial(object):'''
                 args.append("?")
         for arg in self._stargs:
             args.append(_coconut.repr(arg))
-        return _coconut.repr(self.func) + "$(" + ", ".join(args) + ")"
-def datamaker(data_type):
-    """Returns base data constructor of passed data type."""
-    return _coconut.functools.partial(_coconut.super(data_type, data_type).__new__, data_type)
+        return _coconut.repr(self.func) + "$(" + ", ".join(args) + ")"'''
+            if target.startswith("3"):
+                header += r'''
+class datamaker:'''
+            else:
+                header += r'''
+class datamaker(object):'''
+            header += r'''
+    __slots__ = ("data_type",)
+    def __new__(cls, data_type):
+        if _coconut.hasattr(data_type, "_make") and (_coconut.issubclass(data_type, _coconut.tuple) or _coconut.isinstance(data_type, _coconut.tuple)):
+            return _coconut.object.__new__(cls)
+        else:
+            return _coconut.functools.partial(_coconut.super(data_type, data_type).__new__, data_type)
+    def __init__(self, data_type):
+        self.data_type = data_type
+    def __call__(self, *args, **kwargs):
+        return self.data_type._make(args, **kwargs)
+    def __repr__(self):
+        return "datamaker(" + _coconut.repr(data_type) + ")"
+    def __reduce__(self):
+        return (_coconut_datamaker, (self.data_type,))
 def consume(iterable, keep_last=0):
     """Fully exhaust iterable and return the last keep_last elements."""
     return _coconut.collections.deque(iterable, maxlen=keep_last)  # fastest way to exhaust an iterator
-_coconut_MatchError, _coconut_count, _coconut_enumerate, _coconut_reversed, _coconut_map, _coconut_tee, reduce, takewhile, dropwhile = MatchError, count, enumerate, reversed, map, tee, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile
+def fmap(func, obj):
+    """Creates a copy of obj with func applied to its contents."""
+    if _coconut.hasattr(obj, "__fmap__"):
+        return obj.__fmap__(func)
+    args = _coconut_map(func, obj)
+    if _coconut.isinstance(obj, _coconut.dict):
+        args = _coconut_zip(args, obj.values())
+    if _coconut.isinstance(obj, _coconut.tuple) and _coconut.hasattr(obj, "_make"):
+        return obj._make(args)
+    if _coconut.isinstance(obj, (_coconut.map, _coconut.range)):
+        return args
+    if _coconut.isinstance(obj, _coconut.str):
+        return "".join(args)
+    return obj.__class__(args)
+_coconut_MatchError, _coconut_count, _coconut_enumerate, _coconut_reversed, _coconut_map, _coconut_tee, _coconut_zip, reduce, takewhile, dropwhile = MatchError, count, enumerate, reversed, map, tee, zip, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile
 '''
         else:
             raise CoconutInternalException("invalid header type", which)

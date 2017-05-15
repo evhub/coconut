@@ -58,6 +58,7 @@ def get_match_names(match):
         names += get_match_names(match)
     return names
 
+
 #-----------------------------------------------------------------------------------------------------------------------
 # MATCHER:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -82,6 +83,7 @@ class Matcher(object):
         "star": lambda self: self.match_star,
     }
     __slots__ = (
+        "loc",
         "position",
         "checkdefs",
         "names",
@@ -90,8 +92,9 @@ class Matcher(object):
         "guards",
     )
 
-    def __init__(self, checkdefs=None, names=None, var_index=0):
+    def __init__(self, loc, checkdefs=None, names=None, var_index=0):
         """Creates the matcher."""
+        self.loc = loc
         self.position = 0
         self.checkdefs = []
         if checkdefs is None:
@@ -100,14 +103,14 @@ class Matcher(object):
             for checks, defs in checkdefs:
                 self.checkdefs.append((checks[:], defs[:]))
             self.set_position(-1)
-        self.names = {} if names is None else names
+        self.names = names if names is not None else {}
         self.var_index = var_index
         self.others = []
         self.guards = []
 
     def duplicate(self):
         """Duplicates the matcher to others."""
-        other = Matcher(self.checkdefs, self.names, self.var_index)
+        other = Matcher(self.loc, self.checkdefs, self.names, self.var_index)
         other.insert_check(0, "not " + match_check_var)
         self.others.append(other)
         return other
@@ -231,11 +234,11 @@ class Matcher(object):
         if star_arg is not None:
             self.match(star_arg, args + "[" + str(len(match_args)) + ":]")
         self.match_in_kwargs(kwd_args, kwargs)
-        if dubstar_arg is None:
-            with self.incremented():
+        with self.incremented():
+            if dubstar_arg is None:
                 self.add_check("not " + kwargs)
-        else:
-            self.add_def(dubstar_arg + " = " + kwargs)
+            else:
+                self.match(dubstar_arg, kwargs)
 
     def match_in_args_kwargs(self, match_args, args, kwargs, allow_star_args=False):
         """Matches against args or kwargs."""
@@ -324,7 +327,7 @@ class Matcher(object):
                 with self.incremented():
                     self.match(match, tempvar)
             else:
-                raise CoconutDeferredSyntaxError("keyword-only pattern-matching function arguments must have names")
+                raise CoconutDeferredSyntaxError("keyword-only pattern-matching function arguments must have names", self.loc)
 
     def match_dict(self, tokens, item):
         """Matches a dictionary."""
@@ -480,10 +483,21 @@ class Matcher(object):
 
     def match_data(self, tokens, item):
         """Matches a data type."""
-        data_type, matches = tokens
+        if len(tokens) == 2:
+            data_type, matches = tokens
+            star_match = None
+        elif len(tokens) == 3:
+            data_type, matches, star_match = tokens
+        else:
+            raise CoconutInternalException("invalid data match tokens", tokens)
         self.add_check("_coconut.isinstance(" + item + ", " + data_type + ")")
-        self.add_check("_coconut.len(" + item + ") == " + str(len(matches)))
+        if star_match is None:
+            self.add_check("_coconut.len(" + item + ") == " + str(len(matches)))
+        elif len(matches):
+            self.add_check("_coconut.len(" + item + ") >= " + str(len(matches)))
         self.match_all_in(matches, item)
+        if star_match is not None:
+            self.match(star_match, item + "[" + str(len(matches)) + ":]")
 
     def match_paren(self, tokens, item):
         """Matches a paren."""

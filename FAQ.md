@@ -1,23 +1,11 @@
-# Coconut Frequently Asked Questions
+# Coconut FAQ
 
-<!-- MarkdownTOC -->
+## Frequently Asked Questions
 
-1. [Can I use Python modules from Coconut and Coconut modules from Python?](#can-i-use-python-modules-from-coconut-and-coconut-modules-from-python)
-1. [What versions of Python does Coconut support?](#what-versions-of-python-does-coconut-support)
-1. [I saw that Coconut was recently updated. Where is the change log?](#i-saw-that-coconut-was-recently-updated-where-is-the-change-log)
-1. [Help! I tried to write a recursive iterator and my Python segfaulted!](#help-i-tried-to-write-a-recursive-iterator-and-my-python-segfaulted)
-1. [If I'm already perfectly happy with Python, why should I learn Coconut?](#if-im-already-perfectly-happy-with-python-why-should-i-learn-coconut)
-1. [How will I be able to debug my Python if I'm not the one writing it?](#how-will-i-be-able-to-debug-my-python-if-im-not-the-one-writing-it)
-1. [I don't like functional programming, should I still learn Coconut?](#i-dont-like-functional-programming-should-i-still-learn-coconut)
-1. [I don't know functional programming, should I still learn Coconut?](#i-dont-know-functional-programming-should-i-still-learn-coconut)
-1. [I don't know Python very well, should I still learn Coconut?](#i-dont-know-python-very-well-should-i-still-learn-coconut)
-1. [Why isn't Coconut purely functional?](#why-isnt-coconut-purely-functional)
-1. [Won't a transpiled language like Coconut be bad for the Python community?](#wont-a-transpiled-language-like-coconut-be-bad-for-the-python-community)
-1. [I want to contribute to Coconut, how do I get started?](#i-want-to-contribute-to-coconut-how-do-i-get-started)
-1. [Why the name Coconut?](#why-the-name-coconut)
-1. [Who developed Coconut?](#who-developed-coconut)
-
-<!-- /MarkdownTOC -->
+```eval_rst
+.. contents::
+    :local:
+```
 
 ### Can I use Python modules from Coconut and Coconut modules from Python?
 
@@ -25,7 +13,7 @@ Yes and yes! Coconut compiles to Python, so Coconut modules are accessible from 
 
 ### What versions of Python does Coconut support?
 
-Coconut supports any Python version `>= 2.6` on the `2.x` branch or `>= 3.2` on the `3.x` branch. See [compatible Python versions](http://coconut.readthedocs.io/en/master/DOCS.html#compatible-python-versions) for more information.
+Coconut supports any Python version `>= 2.6` on the `2.x` branch or `>= 3.2` on the `3.x` branch. See [compatible Python versions](DOCS.html#compatible-python-versions) for more information.
 
 ### I saw that Coconut was recently updated. Where is the change log?
 
@@ -33,7 +21,7 @@ Information on every Coconut release is chronicled on the [GitHub releases page]
 
 ### Help! I tried to write a recursive iterator and my Python segfaulted!
 
-No problem—just use Coconut's [`recursive_iterator`](http://coconut.readthedocs.io/en/master/DOCS.html#recursive_iterator) decorator and you should be fine. This is a [known Python issue](http://bugs.python.org/issue14010) but `recursive_iterator` will fix it for you.
+No problem—just use Coconut's [`recursive_iterator`](DOCS.html#recursive-iterator) decorator and you should be fine. This is a [known Python issue](http://bugs.python.org/issue14010) but `recursive_iterator` will fix it for you.
 
 ### If I'm already perfectly happy with Python, why should I learn Coconut?
 
@@ -49,7 +37,7 @@ Definitely! While Coconut is great for functional programming, it also has a bun
 
 ### I don't know functional programming, should I still learn Coconut?
 
-Yes, absolutely! Coconut's [tutorial](http://coconut.readthedocs.io/en/master/HELP.html) assumes absolutely no prior knowledge of functional programming, only Python. Because Coconut is not a purely functional programming language, and all valid Python is valid Coconut, Coconut is a great introduction to functional programming. If you learn Coconut, you'll be able to try out a new functional style of programming without having to abandon all the Python you already know and love.
+Yes, absolutely! Coconut's [tutorial](HELP.html) assumes absolutely no prior knowledge of functional programming, only Python. Because Coconut is not a purely functional programming language, and all valid Python is valid Coconut, Coconut is a great introduction to functional programming. If you learn Coconut, you'll be able to try out a new functional style of programming without having to abandon all the Python you already know and love.
 
 ### I don't know Python very well, should I still learn Coconut?
 
@@ -65,7 +53,7 @@ I certainly hope not! Unlike most transpiled languages, all valid Python is vali
 
 ### I want to contribute to Coconut, how do I get started?
 
-That's great! Coconut is completely open-source, and new contributors are always welcome. Check out Coconut's [contributing guidelines](http://coconut.readthedocs.io/en/master/CONTRIBUTING.html) for more information.
+That's great! Coconut is completely open-source, and new contributors are always welcome. Check out Coconut's [contributing guidelines](CONTRIBUTING.html) for more information.
 
 ### Why the name Coconut?
 
@@ -75,4 +63,4 @@ If you don't get the reference, the image above is from [Monty Python and the Ho
 
 ### Who developed Coconut?
 
-[Evan Hubinger](https://github.com/evhub) is an undergraduate student studying mathematics and computer science at [Harvey Mudd College](https://www.hmc.edu/). You can find him on LinkedIn at <https://www.linkedin.com/in/ehubinger>.
+[Evan Hubinger](https://github.com/evhub) is an undergraduate student studying mathematics and computer science at [Harvey Mudd College](https://www.hmc.edu/). He can be reached by asking a question on [Coconut's Gitter chat room](https://gitter.im/evhub/coconut), through email at <evanjhub@gmail.com>, or on [LinkedIn](https://www.linkedin.com/in/ehubinger).

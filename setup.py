@@ -64,6 +64,10 @@ setuptools.setup(
             "coconut_pycon = coconut.highlighter:CoconutPythonConsoleLexer",
         ]
     },
+    document_names={
+        "description": "README.rst",
+        "license": "LICENSE.txt",
+    },
     classifiers=classifiers,
     keywords=search_terms,
 )

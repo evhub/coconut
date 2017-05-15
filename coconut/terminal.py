@@ -70,6 +70,7 @@ def complain(error):
     else:
         logger.warn_err(error)
 
+
 #-----------------------------------------------------------------------------------------------------------------------
 # logger:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -124,6 +125,14 @@ class Logger(object):
         """Logs debug messages with main signature."""
         if self.verbose:
             self.display(messages, main_sig, debug=True)
+
+    def log_vars(self, message, variables, rem_vars=("self",)):
+        """Logs variables with given message."""
+        if self.verbose:
+            new_vars = dict(variables)
+            for v in rem_vars:
+                del new_vars[v]
+            printerr(message, new_vars)
 
     def get_error(self):
         """Properly formats the current error."""

@@ -218,8 +218,9 @@ data vector2(x, y):
         (self.x**2 + self.y**2)**0.5
 
 # Test cases:
-assert vector2(1, 2) |> repr == "vector2(x=1, y=2)"
+assert vector2(1, 2) |> str == "vector2(x=1, y=2)"
 assert vector2(3, 4) |> abs == 5
+vector2(1, 2) |> fmap$(x -> x*2) |> str == "vector2(x=2, y=4)"
 v = vector2(2, 3)
 try:
     v.x = 7
@@ -228,38 +229,38 @@ except AttributeError:
 else:
     assert False
 
-data vector(pts):
+data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        if len(pts) == 1 and pts[0] `isinstance` vector:
-            return pts[0]  # vector(v) where v is a vector should return v
+        match (v is vector,) in pts:
+            return v  # vector(v) where v is a vector should return v
         else:
-            return pts |> tuple |> datamaker(cls)  # accesses base constructor
+            return pts |*> datamaker(cls)  # accesses base constructor
 
 # Test cases:
-assert vector(1, 2, 3) |> repr == "vector(pts=(1, 2, 3))"
-assert vector(4, 5) |> vector |> repr == "vector(pts=(4, 5))"
+assert vector(1, 2, 3) |> str == "vector(*pts=(1, 2, 3))"
+assert vector(4, 5) |> vector |> str == "vector(*pts=(4, 5))"
 
-data vector(pts):
+data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        if len(pts) == 1 and pts[0] `isinstance` vector:
-            return pts[0]  # vector(v) where v is a vector should return v
+        match (v is vector,) in pts:
+            return v  # vector(v) where v is a vector should return v
         else:
-            return pts |> tuple |> datamaker(cls)  # accesses base constructor
+            return pts |*> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
     def __add__(self, other) =
         """Add two vectors together."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((+), self.pts, other_pts) |*> vector
     def __sub__(self, other) =
         """Subtract one vector from another."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
@@ -267,13 +268,13 @@ data vector(pts):
         self.pts |> map$((-)) |*> vector
     def __eq__(self, other):
         """Compare whether two vectors are equal."""
-        match vector(=self.pts) in other:
+        match vector(*=self.pts) in other:
             return True
         else:
             return False
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
-        match vector(other_pts) in other:
+        match vector(*other_pts) in other:
             assert len(other_pts) == len(self.pts)
             return map((*), self.pts, other_pts) |> sum  # dot product
         else:
@@ -283,16 +284,16 @@ data vector(pts):
         self * other
 
 # Test cases:
-assert vector(1, 2, 3) |> repr == "vector(pts=(1, 2, 3))"
-assert vector(4, 5) |> vector |> repr == "vector(pts=(4, 5))"
+assert vector(1, 2, 3) |> str == "vector(*pts=(1, 2, 3))"
+assert vector(4, 5) |> vector |> str == "vector(*pts=(4, 5))"
 assert vector(3, 4) |> abs == 5
-assert vector(1, 2) + vector(2, 3) |> repr == "vector(pts=(3, 5))"
-assert vector(2, 2) - vector(0, 1) |> repr == "vector(pts=(2, 1))"
-assert -vector(1, 3) |> repr == "vector(pts=(-1, -3))"
+assert vector(1, 2) + vector(2, 3) |> str == "vector(*pts=(3, 5))"
+assert vector(2, 2) - vector(0, 1) |> str == "vector(*pts=(2, 1))"
+assert -vector(1, 3) |> str == "vector(*pts=(-1, -3))"
 assert (vector(1, 2) == "string") is False
 assert (vector(1, 2) == vector(3, 4)) is False
 assert (vector(2, 4) == vector(2, 4)) is True
-assert 2*vector(1, 2) |> repr == "vector(pts=(2, 4))"
+assert 2*vector(1, 2) |> str == "vector(*pts=(2, 4))"
 assert vector(1, 2) * vector(1, 3) == 7
 
 def diagonal_line(n) = range(n+1) |> map$((i) -> (i, n-i))
@@ -312,28 +313,28 @@ assert linearized_plane()$[:3] |> list == [(0, 0), (0, 1), (1, 0)]
 def vector_field() = linearized_plane() |> map$((xy) -> vector(*xy))
 
 # You'll need to bring in the vector class from earlier to make these work
-assert vector_field()$[0] |> repr == "vector(pts=(0, 0))"
-assert vector_field()$[2:3] |> list |> repr == "[vector(pts=(1, 0))]"
+assert vector_field()$[0] |> str == "vector(*pts=(0, 0))"
+assert vector_field()$[2:3] |> list |> str == "[vector(*pts=(1, 0))]"
 
-data vector(pts):
+data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        if len(pts) == 1 and pts[0] `isinstance` vector:
-            return pts[0]  # vector(v) where v is a vector should return v
+        match (v is vector,) in pts:
+            return v  # vector(v) where v is a vector should return v
         else:
-            return pts |> tuple |> datamaker(cls)  # accesses base constructor
+            return pts |*> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
     def __add__(self, other) =
         """Add two vectors together."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((+), self.pts, other_pts) |*> vector
     def __sub__(self, other) =
         """Subtract one vector from another."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
@@ -341,13 +342,13 @@ data vector(pts):
         self.pts |> map$((-)) |*> vector
     def __eq__(self, other):
         """Compare whether two vectors are equal."""
-        match vector(=self.pts) in other:
+        match vector(*=self.pts) in other:
             return True
         else:
             return False
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
-        match vector(other_pts) in other:
+        match vector(*other_pts) in other:
             assert len(other_pts) == len(self.pts)
             return map((*), self.pts, other_pts) |> sum  # dot product
         else:
@@ -366,30 +367,30 @@ assert diagonal_line(0) |> list == [(0, 0)]
 assert diagonal_line(1) |> list == [(0, 1), (1, 0)]
 assert linearized_plane()$[0] == (0, 0)
 assert linearized_plane()$[:3] |> list == [(0, 0), (0, 1), (1, 0)]
-assert vector_field()$[0] |> repr == "vector(pts=(0, 0))"
-assert vector_field()$[2:3] |> list |> repr == "[vector(pts=(1, 0))]"
+assert vector_field()$[0] |> str == "vector(*pts=(0, 0))"
+assert vector_field()$[2:3] |> list |> str == "[vector(*pts=(1, 0))]"
 
 import math  # necessary for math.acos in .angle
 
-data vector(pts):
+data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        if len(pts) == 1 and pts[0] `isinstance` vector:
-            return pts[0]  # vector(v) where v is a vector should return v
+        match (v is vector,) in pts:
+            return v  # vector(v) where v is a vector should return v
         else:
-            return pts |> tuple |> datamaker(cls)  # accesses base constructor
+            return pts |*> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
     def __add__(self, other) =
         """Add two vectors together."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((+), self.pts, other_pts) |*> vector
     def __sub__(self, other) =
         """Subtract one vector from another."""
-        vector(other_pts) = other
+        vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
         map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
@@ -397,13 +398,13 @@ data vector(pts):
         self.pts |> map$((-)) |*> vector
     def __eq__(self, other):
         """Compare whether two vectors are equal."""
-        match vector(=self.pts) in other:
+        match vector(*=self.pts) in other:
             return True
         else:
             return False
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
-        match vector(other_pts) in other:
+        match vector(*other_pts) in other:
             assert len(other_pts) == len(self.pts)
             return map((*), self.pts, other_pts) |> sum  # dot product
         else:
@@ -417,10 +418,10 @@ data vector(pts):
     def angle(self, other is vector) = math.acos(self.unit() * other.unit())
 
 # Test cases:
-assert vector(3, 4) / 1 |> repr == "vector(pts=(3.0, 4.0))"
-assert vector(2, 4) / 2 |> repr == "vector(pts=(1.0, 2.0))"
-assert vector(0, 1).unit() |> repr == "vector(pts=(0.0, 1.0))"
-assert vector(5, 0).unit() |> repr == "vector(pts=(1.0, 0.0))"
+assert vector(3, 4) / 1 |> str == "vector(*pts=(3.0, 4.0))"
+assert vector(2, 4) / 2 |> str == "vector(*pts=(1.0, 2.0))"
+assert vector(0, 1).unit() |> str == "vector(*pts=(0.0, 1.0))"
+assert vector(5, 0).unit() |> str == "vector(*pts=(1.0, 0.0))"
 assert vector(2, 0).angle(vector(3, 0)) == 0.0
 assert vector(1, 0).angle(vector(0, 2)) == math.pi/2
 try:

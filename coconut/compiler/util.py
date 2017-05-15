@@ -61,11 +61,6 @@ def longest(*args):
         return matcher
 
 
-def get_target_info(target):
-    """Returns target information as a version tuple."""
-    return tuple(int(x) for x in target)
-
-
 def addskip(skips, skip):
     """Adds a line skip to the skips."""
     if skip < 1:
@@ -88,18 +83,18 @@ def count_end(teststr, testchar):
 
 
 def paren_change(inputstring):
-    """Determines the parenthetical change of level."""
+    """Determines the parenthetical change of level (num closes - num opens)."""
     count = 0
     for c in inputstring:
-        if c in downs:
+        if c in downs:  # open parens/brackets/braces
             count -= 1
-        elif c in ups:
+        elif c in ups:  # close parens/brackets/braces
             count += 1
     return count
 
 
 def ind_change(inputstring):
-    """Determines the change in indentation level."""
+    """Determines the change in indentation level (num opens - num closes)."""
     return inputstring.count(openindent) - inputstring.count(closeindent)
 
 
@@ -167,9 +162,9 @@ def split_leading_indent(line, max_indents=None):
     indent = ""
     while line.lstrip() != line or (
         (max_indents is None or max_indents > 0)
-        and (line.startswith(openindent) or line.startswith(closeindent))
+        and line.startswith((openindent, closeindent))
     ):
-        if max_indents is not None and (line.startswith(openindent) or line.startswith(closeindent)):
+        if max_indents is not None and line.startswith((openindent, closeindent)):
             max_indents -= 1
         indent += line[0]
         line = line[1:]

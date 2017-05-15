@@ -23,7 +23,7 @@ import sys as _coconut_sys
 # VERSION:
 #-----------------------------------------------------------------------------------------------------------------------
 
-VERSION = "1.2.2"
+VERSION = "1.2.3"
 VERSION_NAME = "Colonel"
 # False for release, int >= 1 for develop
 DEVELOP = False
@@ -36,19 +36,25 @@ if DEVELOP:
     VERSION += "-post_dev" + str(int(DEVELOP))
 __version__ = VERSION
 VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
-VERSION_TAG = "v" + VERSION
-VERSION_STR_TAG = "v" + VERSION_STR
 
 PY2 = _coconut_sys.version_info < (3,)
 PY26 = _coconut_sys.version_info < (2, 7)
 
-PY3_HEADER = r'''py_chr, py_filter, py_hex, py_input, py_int, py_map, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate = chr, filter, hex, input, int, map, oct, open, print, range, str, zip, filter, reversed, enumerate
+PY3_HEADER = r'''py_chr, py_filter, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate = chr, filter, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate
 '''
 PY27_HEADER = PY3_HEADER + r'''py_raw_input, py_xrange = raw_input, xrange
-_coconut_raw_input, _coconut_xrange, _coconut_int, _coconut_long, _coconut_print, _coconut_str, _coconut_unicode, _coconut_repr = raw_input, xrange, int, long, print, str, unicode, repr
+_coconut_NotImplemented, _coconut_raw_input, _coconut_xrange, _coconut_int, _coconut_long, _coconut_print, _coconut_str, _coconut_unicode, _coconut_repr = NotImplemented, raw_input, xrange, int, long, print, str, unicode, repr
 from future_builtins import *
 chr, str = unichr, unicode
 from io import open
+class object(object):
+    __slots__ = ()
+    def __ne__(self, other):
+        eq = self == other
+        if eq is _coconut_NotImplemented:
+            return eq
+        else:
+            return not eq
 class range(object):
     __slots__ = ("_xrange",)
     if hasattr(_coconut_xrange, "__doc__"):
@@ -102,11 +108,14 @@ class int(_coconut_int):
     class __metaclass__(type):
         def __instancecheck__(cls, inst):
             return _coconut.isinstance(inst, (_coconut_int, _coconut_long))
+        def __subclasscheck__(cls, subcls):
+            return _coconut.issubclass(subcls, (_coconut_int, _coconut_long))
 from functools import wraps as _coconut_wraps
 @_coconut_wraps(_coconut_print)
 def print(*args, **kwargs):
-    if _coconut.hasattr(_coconut_sys.stdout, "encoding") and _coconut_sys.stdout.encoding is not None:
-        return _coconut_print(*(_coconut_unicode(x).encode(_coconut_sys.stdout.encoding) for x in args), **kwargs)
+    file = kwargs.get("file", _coconut_sys.stdout)
+    if _coconut.hasattr(file, "encoding") and file.encoding is not None:
+        return _coconut_print(*(_coconut_unicode(x).encode(file.encoding) for x in args), **kwargs)
     else:
         return _coconut_print(*(_coconut_unicode(x).encode() for x in args), **kwargs)
 @_coconut_wraps(_coconut_raw_input)

@@ -22,10 +22,11 @@ from coconut.root import *  # NOQA
 import unittest
 import sys
 import os
-import subprocess
 import shutil
 import platform
 from contextlib import contextmanager
+
+from coconut.command.util import call_output
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
@@ -37,12 +38,20 @@ base = os.path.dirname(os.path.relpath(__file__))
 src = os.path.join(base, "src")
 dest = os.path.join(base, "dest")
 
-prisoner = os.path.join(os.curdir, "prisoner")
-pyston = os.path.join(os.curdir, "pyston")
 runnable_coco = os.path.join(src, "runnable.coco")
 runnable_py = os.path.join(src, "runnable.py")
+prisoner = os.path.join(os.curdir, "prisoner")
+pyston = os.path.join(os.curdir, "pyston")
+pyprover = os.path.join(os.curdir, "pyprover")
+
+prisoner_git = "https://github.com/evhub/prisoner.git"
+pyston_git = "https://github.com/evhub/pyston.git"
+pyprover_git = "https://github.com/evhub/pyprover.git"
 
 coconut_snip = r"msg = '<success>'; pmsg = print$(msg); `pmsg`"
+
+mypy_snip = r"a: str = count()[0]"
+mypy_snip_err = 'error: Incompatible types in assignment (expression has type "int", variable has type "str")'
 
 ignore_mypy_errs_with = (
     "already defined",
@@ -63,22 +72,25 @@ def escape(inputstring):
     return inputstring.replace("$", "\\$").replace("`", "\\`")
 
 
-def call(cmd, assert_output=False, check_mypy=None, **kwargs):
+def call(cmd, assert_output=False, check_mypy=False, check_errors=False, stderr_first=False, **kwargs):
     """Executes a shell command."""
+    print("\n>", (cmd if isinstance(cmd, str) else " ".join(cmd)))
     if assert_output is True:
         assert_output = "<success>"
-    if check_mypy is None:
-        check_mypy = all("extras" not in arg for arg in cmd)
-    print("\n>", (cmd if isinstance(cmd, str) else " ".join(cmd)))
-    lines = []
-    for raw_line in subprocess.Popen(cmd, stdout=subprocess.PIPE, **kwargs).stdout.readlines():
-        line = raw_line.rstrip().decode(sys.stdout.encoding)
-        print(line)
-        lines.append(line)
+    stdout, stderr, retcode = call_output(cmd, **kwargs)
+    if stderr_first:
+        out = stderr + stdout
+    else:
+        out = stdout + stderr
+    lines = "".join(out).splitlines()
     for line in lines:
-        assert "Traceback (most recent call last):" not in line
-        assert "Exception" not in line
-        assert "Error" not in line
+        print(line)
+    assert not retcode
+    for line in lines:
+        if check_errors:
+            assert "Traceback (most recent call last):" not in line
+            assert "Exception" not in line
+            assert "Error" not in line
         if check_mypy and all(test not in line for test in ignore_mypy_errs_with):
             assert "error:" not in line
     if assert_output is None:
@@ -87,14 +99,14 @@ def call(cmd, assert_output=False, check_mypy=None, **kwargs):
         assert lines and assert_output in lines[-1]
 
 
-def call_coconut(args):
+def call_coconut(args, **kwargs):
     """Calls Coconut."""
     if "--jobs" not in args and platform.python_implementation() != "PyPy":
         args = ["--jobs", "sys"] + args
-    call(["coconut"] + args)
+    call(["coconut"] + args, **kwargs)
 
 
-def comp(path=None, folder=None, file=None, args=[]):
+def comp(path=None, folder=None, file=None, args=[], **kwargs):
     """Compiles a test file or directory."""
     paths = []
     if path is not None:
@@ -105,7 +117,7 @@ def comp(path=None, folder=None, file=None, args=[]):
     if file is not None:
         paths.append(file)
     source = os.path.join(src, *paths)
-    call_coconut([source, compdest] + args)
+    call_coconut([source, compdest] + args, **kwargs)
 
 
 @contextmanager
@@ -136,44 +148,44 @@ def using_dest():
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def comp_extras(args=[]):
+def comp_extras(args=[], **kwargs):
     """Compiles extras.coco."""
-    comp(file="extras.coco", args=args)
+    comp(file="extras.coco", args=args, **kwargs)
 
 
-def comp_runner(args=[]):
+def comp_runner(args=[], **kwargs):
     """Compiles runner.coco."""
-    comp(file="runner.coco", args=args)
+    comp(file="runner.coco", args=args, **kwargs)
 
 
-def comp_agnostic(args=[]):
+def comp_agnostic(args=[], **kwargs):
     """Compiles agnostic."""
-    comp(path="cocotest", folder="agnostic", args=args)
+    comp(path="cocotest", folder="agnostic", args=args, **kwargs)
 
 
-def comp_2(args=[]):
+def comp_2(args=[], **kwargs):
     """Compiles python2."""
-    comp(path="cocotest", folder="python2", args=["--target", "2"] + args)
+    comp(path="cocotest", folder="python2", args=["--target", "2"] + args, **kwargs)
 
 
-def comp_3(args=[]):
+def comp_3(args=[], **kwargs):
     """Compiles python3."""
-    comp(path="cocotest", folder="python3", args=["--target", "3"] + args)
+    comp(path="cocotest", folder="python3", args=["--target", "3"] + args, **kwargs)
 
 
-def comp_35(args=[]):
+def comp_35(args=[], **kwargs):
     """Compiles python35."""
-    comp(path="cocotest", folder="python35", args=["--target", "35"] + args)
+    comp(path="cocotest", folder="python35", args=["--target", "35"] + args, **kwargs)
 
 
-def run_src():
+def run_src(**kwargs):
     """Runs runner.py."""
-    call(["python", os.path.join(dest, "runner.py")], assert_output=True)
+    call(["python", os.path.join(dest, "runner.py")], assert_output=True, **kwargs)
 
 
-def run_extras():
+def run_extras(**kwargs):
     """Runs extras.py."""
-    call(["python", os.path.join(dest, "extras.py")], assert_output=True)
+    call(["python", os.path.join(dest, "extras.py")], assert_output=True, check_mypy=False, check_errors=False, stderr_first=True, **kwargs)
 
 
 def run(args=[], agnostic_target=None, use_run_arg=False):
@@ -193,47 +205,60 @@ def run(args=[], agnostic_target=None, use_run_arg=False):
                 comp_35(args)
         comp_agnostic(agnostic_args)
         if use_run_arg:
-            comp_runner(["--run"] + agnostic_args)
+            comp_runner(["--run"] + agnostic_args, assert_output=True)
         else:
             comp_runner(agnostic_args)
             run_src()
 
         if use_run_arg:
-            comp_extras(["--run"] + agnostic_args)
+            comp_extras(["--run"] + agnostic_args, assert_output=True, check_mypy=False, check_errors=False, stderr_first=True)
         else:
             comp_extras(agnostic_args)
             run_extras()
 
 
-def comp_prisoner(args=[]):
+def comp_prisoner(args=[], **kwargs):
     """Compiles evhub/prisoner."""
-    call(["git", "clone", "https://github.com/evhub/prisoner.git"])
-    call_coconut(["prisoner", "--strict"] + args)
+    call(["git", "clone", prisoner_git])
+    call_coconut(["prisoner", "--strict"] + args, **kwargs)
 
 
-def comp_pyston(args=[]):
+def comp_pyston(args=[], **kwargs):
     """Compiles evhub/pyston."""
-    call(["git", "clone", "https://github.com/evhub/pyston.git"])
-    call_coconut(["pyston"] + args)
+    call(["git", "clone", pyston_git])
+    call_coconut(["pyston"] + args, **kwargs)
 
 
-def run_pyston():
+def run_pyston(**kwargs):
     """Runs pyston."""
-    call(["python", os.path.join(os.curdir, "pyston", "runner.py")], assert_output=True)
+    call(["python", os.path.join(pyston, "runner.py")], assert_output=True, **kwargs)
 
 
-def comp_all(args=[]):
+def comp_pyprover(args=[], **kwargs):
+    """Compiles evhub/pyprover."""
+    call(["git", "clone", pyprover_git])
+    call_coconut([os.path.join("pyprover", "setup.coco"), "--strict"] + args, **kwargs)
+    call_coconut([os.path.join("pyprover", "pyprover-source"), os.path.join("pyprover", "pyprover"), "--strict"] + args, **kwargs)
+
+
+def run_pyprover(**kwargs):
+    """Runs pyprover."""
+    call(["pip", "install", "-e", pyprover])
+    call(["python", os.path.join(pyprover, "pyprover", "tests.py")], assert_output=True, **kwargs)
+
+
+def comp_all(args=[], **kwargs):
     """Compile Coconut tests."""
     try:
         os.mkdir(dest)
     except Exception:
         pass
-    comp_2(args)
-    comp_3(args)
-    comp_35(args)
-    comp_agnostic(args)
-    comp_runner(args)
-    comp_extras(args)
+    comp_2(args, **kwargs)
+    comp_3(args, **kwargs)
+    comp_35(args, **kwargs)
+    comp_agnostic(args, **kwargs)
+    comp_runner(args, **kwargs)
+    comp_extras(args, **kwargs)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # TESTS:
@@ -275,16 +300,20 @@ class TestCompilation(unittest.TestCase):
     def test_target(self):
         run(agnostic_target=(2 if PY2 else 3))
 
+    def test_line_numbers(self):
+        run(["--linenumbers"])
+
+    def test_keep_lines(self):
+        run(["--keeplines"])
+
     if platform.python_implementation() != "PyPy":
         def test_jobs_zero(self):
             run(["--jobs", "0"])
 
     if sys.version_info >= (3, 4):
         def test_mypy(self):
+            call(["coconut", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err, check_mypy=False)
             run(["--mypy", "--ignore-missing-imports"])
-
-    def test_strict(self):
-        run(["--strict"])
 
     def test_run(self):
         run(use_run_arg=True)
@@ -295,11 +324,11 @@ class TestCompilation(unittest.TestCase):
     def test_standalone(self):
         run(["--standalone"])
 
-    def test_line_numbers(self):
-        run(["--linenumbers"])
+    def test_strict(self):
+        run(["--strict"])
 
-    def test_keep_lines(self):
-        run(["--keeplines"])
+    def test_no_tco(self):
+        run(["--no-tco"])
 
     def test_minify(self):
         run(["--minify"])
@@ -310,6 +339,11 @@ class TestExternal(unittest.TestCase):
     def test_prisoner(self):
         with remove_when_done(prisoner):
             comp_prisoner()
+
+    def test_pyprover(self):
+        with remove_when_done(pyprover):
+            comp_pyprover()
+            run_pyprover()
 
     def test_pyston(self):
         with remove_when_done(pyston):

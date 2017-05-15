@@ -19,17 +19,13 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
-import sys
 import traceback
-try:
-    from io import StringIO
-except ImportError:
-    from StringIO import StringIO
 
 from coconut.exceptions import CoconutException
+from coconut.terminal import printerr
 
 try:
-    from mypy.main import main
+    from mypy.api import run
 except ImportError:
     raise CoconutException("--mypy flag requires MyPy library",
                            extra="run 'pip install coconut[mypy]' to fix")
@@ -41,22 +37,12 @@ except ImportError:
 
 def mypy_run(args):
     """Runs mypy with given arguments and shows the result."""
-    argv, sys.argv = sys.argv, [""] + args
-    stdout, sys.stdout = sys.stdout, StringIO()
-    stderr, sys.stderr = sys.stderr, StringIO()
-
     try:
-        main(None)
-    except SystemExit:
-        pass
-    except:
-        traceback.print_exc()
-
-    out = []
-    for line in sys.stdout.getvalue().splitlines():
-        out.append((line, False))
-    for line in sys.stderr.getvalue().splitlines():
-        out.append((line, True))
-
-    sys.argv, sys.stdout, sys.stderr = argv, stdout, stderr
-    return out
+        stdout, stderr, exit_code = run(args)
+    except BaseException:
+        printerr(traceback.format_exc())
+    else:
+        for line in stdout.splitlines():
+            yield line, False
+        for line in stderr.splitlines():
+            yield line, True

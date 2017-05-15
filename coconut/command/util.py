@@ -22,11 +22,11 @@ from coconut.root import *  # NOQA
 import sys
 import os
 import traceback
-import functools
 import subprocess
 import webbrowser
 from copy import copy
 from contextlib import contextmanager
+from select import select
 if PY26:
     import imp
 else:
@@ -120,7 +120,7 @@ def rem_encoding(code):
     new_lines = []
     for i in range(min(2, len(old_lines))):
         line = old_lines[i]
-        if not (line.startswith("#") and "coding" in line):
+        if not (line.lstrip().startswith("#") and "coding" in line):
             new_lines.append(line)
     new_lines += old_lines[2:]
     return "\n".join(new_lines)
@@ -147,23 +147,6 @@ def interpret(code, in_vars):
     exec_func(code, in_vars)
 
 
-def handling_prompt_toolkit_errors(func):
-    """Handles prompt_toolkit and pygments errors."""
-    @functools.wraps(func)
-    def handles_prompt_toolkit_errors_func(self, *args, **kwargs):
-        if self.style is not None:
-            try:
-                return func(self, *args, **kwargs)
-            except (KeyboardInterrupt, EOFError):
-                raise
-            except (Exception, AssertionError):
-                logger.print_exc()
-                logger.show("Syntax highlighting failed; switching to --style none.")
-                self.style = None
-        return func(self, *args, **kwargs)
-    return handles_prompt_toolkit_errors_func
-
-
 @contextmanager
 def handling_broken_process_pool():
     """Handles BrokenProcessPool error."""
@@ -182,7 +165,8 @@ def kill_children():
     try:
         import psutil
     except ImportError:
-        logger.warn("missing psutil; --jobs may not properly terminate", extra="run 'pip install coconut[jobs]' to fix")
+        logger.warn("missing psutil; --jobs may not properly terminate",
+                    extra="run 'pip install coconut[jobs]' to fix")
     else:
         master = psutil.Process()
         children = master.children(recursive=True)
@@ -203,7 +187,7 @@ def splitname(path):
 
 
 def run_file(path):
-    """Runs a module from a path."""
+    """Run a module from a path and return its variables."""
     if PY26:
         dirpath, name = splitname(path)
         found = imp.find_module(name, [dirpath])
@@ -213,34 +197,39 @@ def run_file(path):
         return runpy.run_path(path, run_name="__main__")
 
 
-def call_output(cmd):
+def call_output(cmd, **kwargs):
     """Run command and read output."""
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    while p.poll() is None:
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
+    stdout, stderr, retcode = [], [], None
+    while retcode is None:
         out, err = p.communicate()
         if out is not None:
-            yield out.decode(get_encoding(sys.stdout))
+            stdout.append(out.decode(get_encoding(sys.stdout)))
         if err is not None:
-            yield err.decode(get_encoding(sys.stderr))
+            stderr.append(err.decode(get_encoding(sys.stderr)))
+        retcode = p.poll()
+    return stdout, stderr, retcode
 
 
 def run_cmd(cmd, show_output=True, raise_errs=True):
     """Runs a console command."""
-    if not isinstance(cmd, list):
-        raise CoconutInternalException("console commands must be passed as lists")
+    if not cmd or not isinstance(cmd, list):
+        raise CoconutInternalException("console commands must be passed as non-empty lists")
     else:
-        if sys.version_info >= (3, 3):
-            import shutil
-            cmd[0] = shutil.which(cmd[0]) or cmd[0]
+        try:
+            from shutil import which
+        except ImportError:
+            pass
+        else:
+            cmd[0] = which(cmd[0]) or cmd[0]
         logger.log_cmd(cmd)
         if show_output and raise_errs:
             return subprocess.check_call(cmd)
-        elif raise_errs:
-            return subprocess.check_output(cmd, stderr=subprocess.STDOUT)
         elif show_output:
             return subprocess.call(cmd)
         else:
-            return "".join(call_output(cmd))
+            stdout, stderr, _ = call_output(cmd)
+            return "".join(stdout + stderr)
 
 
 def set_mypy_path(mypy_path):
@@ -250,6 +239,19 @@ def set_mypy_path(mypy_path):
         os.environ[mypy_path_env_var] = mypy_path
     elif mypy_path not in original.split(os.pathsep):
         os.environ[mypy_path_env_var] = mypy_path + os.pathsep + original
+
+
+def stdin_readable():
+    """Determines whether stdin has any data to read."""
+    if sys.stdin.isatty():
+        return False
+    try:
+        return bool(select([sys.stdin], [], [], 0)[0])
+    except OSError:
+        pass
+    if not sys.stdout.isatty():
+        return False
+    return True
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -266,11 +268,11 @@ class Prompt(object):
 
     def __init__(self):
         """Set up the prompt."""
-        if style_env_var in os.environ:
-            self.set_style(os.environ[style_env_var])
-        elif prompt_toolkit is not None:
-            self.style = default_style
         if prompt_toolkit is not None:
+            if style_env_var in os.environ:
+                self.set_style(os.environ[style_env_var])
+            else:
+                self.style = default_style
             self.history = prompt_toolkit.history.InMemoryHistory()
 
     def set_style(self, style):
@@ -287,19 +289,25 @@ class Prompt(object):
         else:
             raise CoconutException("unrecognized pygments style", style, extra="use '--style list' to show all valid styles")
 
-    @handling_prompt_toolkit_errors
     def input(self, more=False):
         """Prompts for code input."""
+        sys.stdout.flush()
         if more:
             msg = more_prompt
         else:
             msg = main_prompt
-        if self.style is None:
-            return input(msg)
-        elif prompt_toolkit is None:
-            raise CoconutInternalException("cannot highlight style without prompt_toolkit", self.style)
-        else:
-            return prompt_toolkit.prompt(msg, **self.prompt_kwargs())
+        if self.style is not None:
+            if prompt_toolkit is None:
+                raise CoconutInternalException("cannot highlight style without prompt_toolkit", self.style)
+            try:
+                return prompt_toolkit.prompt(msg, **self.prompt_kwargs())
+            except EOFError:
+                raise  # issubclass(EOFError, Exception), so we have to do this
+            except Exception:
+                logger.print_exc()
+                logger.show("Syntax highlighting failed; switching to --style none.")
+                self.style = None
+        return input(msg)
 
     def prompt_kwargs(self):
         """Gets prompt_toolkit.prompt keyword args."""
@@ -318,7 +326,7 @@ class Runner(object):
 
     def __init__(self, comp=None, exit=None, store=False, path=None):
         """Creates the executor."""
-        self.exit = sys.exit if exit is None else exit
+        self.exit = exit if exit is not None else sys.exit
         self.vars = self.build_vars(path)
         self.stored = [] if store else None
         if comp is not None:
@@ -357,7 +365,7 @@ class Runner(object):
             yield
         except SystemExit as err:
             self.exit(err.code)
-        except:
+        except BaseException:
             traceback.print_exc()
             if all_errors_exit:
                 self.exit(1)

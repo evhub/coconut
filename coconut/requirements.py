@@ -22,25 +22,42 @@ import platform
 
 import setuptools
 
-from coconut.constants import all_reqs, req_vers
+from coconut.constants import (
+    all_reqs,
+    min_versions,
+    version_strictly,
+)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def req_str(req_ver):
+def ver_tuple_to_str(req_ver):
     """Converts a requirement version tuple into a version string."""
     return ".".join(str(x) for x in req_ver)
 
 
+def ver_str_to_tuple(ver_str):
+    """Convert a version string into a version tuple."""
+    out = []
+    for x in ver_str.split("."):
+        try:
+            x = int(x)
+        except ValueError:
+            pass
+        out.append(x)
+    return tuple(out)
+
+
 def get_reqs(which="main"):
-    """Gets requirements from all_reqs with req_vers."""
+    """Gets requirements from all_reqs with versions."""
     reqs = []
     for req in all_reqs[which]:
-        cur_ver = req_str(req_vers[req])
-        next_ver = req_str(req_vers[req][:-1]) + "." + str(req_vers[req][-1] + 1)
-        reqs.append(req + ">=" + cur_ver + ",<" + next_ver)
+        req_str = req + ">=" + ver_tuple_to_str(min_versions[req])
+        if req in version_strictly:
+            req_str += ",<" + ver_tuple_to_str(min_versions[req][:-1]) + "." + str(min_versions[req][-1] + 1)
+        reqs.append(req_str)
     return reqs
 
 
@@ -90,44 +107,77 @@ extras["dev"] = uniqueify(
     + get_reqs("dev")
 )
 
+
+def add_version_reqs(modern=True):
+    if modern:
+        global extras
+        extras[":python_version<'2.7'"] = get_reqs("py26")
+        extras[":python_version>='2.7'"] = get_reqs("non-py26")
+        extras[":python_version<'3'"] = get_reqs("py2")
+    else:
+        global requirements
+        if PY26:
+            requirements += get_reqs("py26")
+        else:
+            requirements += get_reqs("non-py26")
+        if PY2:
+            requirements += get_reqs("py2")
+
+
 if int(setuptools.__version__.split(".", 1)[0]) < 18:
     if "bdist_wheel" in sys.argv:
         raise RuntimeError("bdist_wheel not supported for setuptools versions < 18 (run 'pip install --upgrade setuptools' to fix)")
-    if PY26:
-        requirements += get_reqs("py26")
-    else:
-        requirements += get_reqs("non-py26")
-    if PY2:
-        requirements += get_reqs("py2")
+    add_version_reqs(modern=False)
 else:
-    extras[":python_version<'2.7'"] = get_reqs("py26")
-    extras[":python_version>='2.7'"] = get_reqs("non-py26")
-    extras[":python_version<'3'"] = get_reqs("py2")
+    add_version_reqs()
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def latest_version(req):
-    """Get the latest version of req from PyPI."""
+def all_versions(req):
+    """Get all versions of req from PyPI."""
     import requests
     url = "https://pypi.python.org/pypi/" + req + "/json"
-    return requests.get(url).json()["info"]["version"]
+    return tuple(requests.get(url).json()["releases"].keys())
 
 
-def print_new_versions():
+def newer(new_ver, old_ver):
+    """Determines if the first version tuple is newer than the second."""
+    if old_ver == new_ver or old_ver + (0,) == new_ver:
+        return False
+    for n, o in zip(new_ver, old_ver):
+        if not isinstance(n, int):
+            o = str(o)
+        if o < n:
+            return True
+        elif o > n:
+            return False
+    return None
+
+
+def print_new_versions(strict=False):
     """Prints new requirement versions."""
+    new_updates = []
+    same_updates = []
     for req in everything_in(all_reqs):
-        new_str = latest_version(req)
-        new_ver = tuple(int(x) for x in new_str.split("."))
-        updated = False
-        for i, x in enumerate(req_vers[req]):
-            if len(new_ver) <= i or x != new_ver[i]:
-                updated = True
-                break
-        if updated:
-            print(req + ": " + req_str(req_vers[req]) + " -> " + new_str)
+        new_versions = []
+        same_versions = []
+        for ver_str in all_versions(req):
+            comp = newer(ver_str_to_tuple(ver_str), min_versions[req])
+            if comp is True:
+                new_versions.append(ver_str)
+            elif not strict and comp is None:
+                same_versions.append(ver_str)
+        update_str = req + ": " + ver_tuple_to_str(min_versions[req]) + " -> " + ", ".join(
+            new_versions + ["(" + v + ")" for v in same_versions]
+        )
+        if new_versions:
+            new_updates.append(update_str)
+        elif same_versions:
+            same_updates.append(update_str)
+    print("\n".join(new_updates + same_updates))
 
 
 if __name__ == "__main__":

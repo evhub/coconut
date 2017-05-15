@@ -41,6 +41,8 @@ from coconut.constants import (
     icoconut_kernel_dirs,
     minimum_recursion_limit,
     stub_dir,
+    exit_chars,
+    coconut_run_args,
 )
 from coconut.command.util import (
     openfile,
@@ -58,6 +60,7 @@ from coconut.command.util import (
     is_special_dir,
     launch_documentation,
     launch_tutorial,
+    stdin_readable,
 )
 from coconut.compiler.util import should_indent
 from coconut.compiler.header import gethash
@@ -86,13 +89,12 @@ class Command(object):
     def start(self, run=False):
         """Processes command-line arguments."""
         if run:
-            args, argv = ["--run", "--quiet", "--target", "sys"], []
+            args, argv = coconut_run_args, []
+            # for coconut-run, all args beyond the source file should stay in sys.argv
             for i in range(1, len(sys.argv)):
                 arg = sys.argv[i]
-                if arg.startswith("-"):
-                    args.append(arg)  # coconut option
-                else:
-                    args.append(arg)  # source file
+                args.append(arg)
+                if not arg.startswith("-"):  # is source file
                     argv = sys.argv[i:]
                     break
             sys.argv = argv
@@ -140,6 +142,8 @@ class Command(object):
         logger.quiet, logger.verbose = args.quiet, args.verbose
         if DEVELOP:
             logger.tracing = args.trace
+        logger.log("Command args:", args)
+
         if args.recursion_limit is not None:
             self.set_recursion_limit(args.recursion_limit)
         if args.jobs is not None:
@@ -159,9 +163,12 @@ class Command(object):
             minify=args.minify,
             line_numbers=args.line_numbers,
             keep_lines=args.keep_lines,
+            no_tco=args.no_tco or args.mypy is not None,
         )
 
         if args.mypy is not None:
+            if args.no_tco:
+                logger.warn("extraneous --no-tco argument passed; --mypy implies --no-tco")
             self.set_mypy_args(args.mypy)
 
         if args.source is not None:
@@ -182,16 +189,17 @@ class Command(object):
                 raise CoconutException("source path must point to directory not file when --watch is enabled")
 
             if args.dest is None:
-                if args.nowrite:
+                if args.no_write:
                     dest = None  # no dest
                 else:
                     dest = True  # auto-generate dest
-            elif args.nowrite:
-                raise CoconutException("destination path cannot be given when --nowrite is enabled")
+            elif args.no_write:
+                raise CoconutException("destination path cannot be given when --no-write is enabled")
             elif os.path.isfile(args.dest):
                 raise CoconutException("destination path must point to directory not file")
             else:
                 dest = args.dest
+
             if args.package or self.mypy:
                 package = True
             elif args.standalone:
@@ -199,12 +207,12 @@ class Command(object):
             else:
                 package = None  # auto-decide package
 
-            with self.running_jobs():
+            with self.running_jobs(exit_on_error=not args.watch):
                 filepaths = self.compile_path(args.source, dest, package, args.run or args.interact, args.force)
             self.run_mypy(filepaths)
 
         elif (args.run
-              or args.nowrite
+              or args.no_write
               or args.force
               or args.package
               or args.standalone
@@ -213,13 +221,15 @@ class Command(object):
 
         if args.code is not None:
             self.execute(self.comp.parse_block(args.code))
-        stdin = not sys.stdin.isatty()  # check if input was piped in
-        if stdin:
+        got_stdin = False
+        if stdin_readable():
+            logger.log("Reading piped input from stdin...")
             self.execute(self.comp.parse_block(sys.stdin.read()))
+            got_stdin = True
         if args.jupyter is not None:
             self.start_jupyter(args.jupyter)
         if args.interact or (interact and not (
-                stdin
+                got_stdin
                 or args.source
                 or args.code
                 or args.tutorial
@@ -256,7 +266,7 @@ class Command(object):
                 traceback.print_exc()
             self.register_error(errmsg=err.__class__.__name__)
 
-    def compile_path(self, path, write=True, package=None, run=False, force=False):
+    def compile_path(self, path, write=True, package=None, *args, **kwargs):
         """Compiles a path and returns paths to compiled files."""
         path = fixpath(path)
         if write is not None and write is not True:
@@ -264,19 +274,16 @@ class Command(object):
         if os.path.isfile(path):
             if package is None:
                 package = False
-            destpath = self.compile_file(path, write, package, run, force)
-            if destpath is None:
-                return []
-            else:
-                return [destpath]
+            destpath = self.compile_file(path, write, package, *args, **kwargs)
+            return [destpath] if destpath is not None else []
         elif os.path.isdir(path):
             if package is None:
                 package = True
-            return self.compile_folder(path, write, package, run, force)
+            return self.compile_folder(path, write, package, *args, **kwargs)
         else:
             raise CoconutException("could not find source path", path)
 
-    def compile_folder(self, directory, write=True, package=True, run=False, force=False):
+    def compile_folder(self, directory, write=True, package=True, *args, **kwargs):
         """Compiles a directory and returns paths to compiled files."""
         filepaths = []
         for dirpath, dirnames, filenames in os.walk(directory):
@@ -286,7 +293,7 @@ class Command(object):
                 writedir = os.path.join(write, os.path.relpath(dirpath, directory))
             for filename in filenames:
                 if os.path.splitext(filename)[1] in code_exts:
-                    destpath = self.compile_file(os.path.join(dirpath, filename), writedir, package, run, force)
+                    destpath = self.compile_file(os.path.join(dirpath, filename), writedir, package, *args, **kwargs)
                     if destpath is not None:
                         filepaths.append(destpath)
             for name in dirnames[:]:
@@ -296,7 +303,7 @@ class Command(object):
                     dirnames.remove(name)  # directories removed from dirnames won't appear in further os.walk iteration
         return filepaths
 
-    def compile_file(self, filepath, write=True, package=False, run=False, force=False):
+    def compile_file(self, filepath, write=True, package=False, *args, **kwargs):
         """Compiles a file and returns the compiled file's path."""
         if write is None:
             destpath = None
@@ -311,13 +318,11 @@ class Command(object):
             destpath = fixpath(base + ext)
             if filepath == destpath:
                 raise CoconutException("cannot compile " + showpath(filepath) + " to itself", extra="incorrect file extension")
-        self.compile(filepath, destpath, package, run, force)
+        self.compile(filepath, destpath, package, *args, **kwargs)
         return destpath
 
-    def compile(self, codepath, destpath=None, package=False, run=False, force=False):
+    def compile(self, codepath, destpath=None, package=False, run=False, force=False, show_unchanged=True):
         """Compiles a source Coconut file to a destination Python file."""
-        logger.show_tabulated("Compiling", showpath(codepath), "...")
-
         with openfile(codepath, "r") as opened:
             code = readfile(opened)
 
@@ -328,15 +333,17 @@ class Command(object):
             if package is True:
                 self.create_package(destdir)
 
-        foundhash = None if force else self.hashashof(destpath, code, package)
+        foundhash = None if force else self.has_hash_of(destpath, code, package)
         if foundhash:
-            logger.show_tabulated("Left unchanged", showpath(destpath), "(pass --force to override).")
+            if show_unchanged:
+                logger.show_tabulated("Left unchanged", showpath(destpath), "(pass --force to override).")
             if self.show:
                 print(foundhash)
             if run:
                 self.execute_file(destpath)
 
         else:
+            logger.show_tabulated("Compiling", showpath(codepath), "...")
 
             if package is True:
                 compile_method = "parse_package"
@@ -347,7 +354,7 @@ class Command(object):
 
             def callback(compiled):
                 if destpath is None:
-                    logger.show_tabulated("Finished", showpath(codepath), "without writing to file.")
+                    logger.show_tabulated("Compiled", showpath(codepath), "without writing to file.")
                 else:
                     with openfile(destpath, "w") as opened:
                         writefile(opened, compiled)
@@ -388,14 +395,14 @@ class Command(object):
             try:
                 jobs = int(jobs)
             except ValueError:
-                jobs = -1
+                jobs = -1  # will raise error below
             if jobs < 0:
                 raise CoconutException("--jobs must be an integer >= 0 or 'sys'")
             else:
                 self.jobs = jobs
 
     @contextmanager
-    def running_jobs(self):
+    def running_jobs(self, exit_on_error=True):
         """Initialize multiprocessing."""
         with self.handling_exceptions():
             if self.jobs == 0:
@@ -407,7 +414,8 @@ class Command(object):
                         yield
                 finally:
                     self.executor = None
-        self.exit_on_error()
+        if exit_on_error:
+            self.exit_on_error()
 
     def create_package(self, dirpath):
         """Sets up a package directory."""
@@ -416,7 +424,7 @@ class Command(object):
         with openfile(filepath, "w") as opened:
             writefile(opened, self.comp.getheader("__coconut__"))
 
-    def hashashof(self, destpath, code, package):
+    def has_hash_of(self, destpath, code, package):
         """Determines if a file has the hash of the code."""
         if destpath is not None and os.path.isfile(destpath):
             with openfile(destpath, "r") as opened:
@@ -428,14 +436,19 @@ class Command(object):
 
     def get_input(self, more=False):
         """Prompts for code input."""
+        received = None
         try:
-            return self.prompt.input(more)
+            received = self.prompt.input(more)
         except KeyboardInterrupt:
             printerr("\nKeyboardInterrupt")
         except EOFError:
             print()
             self.exit_runner()
-        return None
+        else:
+            if received.startswith(exit_chars):
+                self.exit_runner()
+                received = None
+        return received
 
     def start_running(self):
         """Starts running the Runner."""
@@ -449,11 +462,14 @@ class Command(object):
         print('(type "exit()" or press Ctrl-D to end)')
         self.start_running()
         while self.running:
-            code = self.get_input()
-            if code:
-                compiled = self.handle_input(code)
-                if compiled:
-                    self.execute(compiled, use_eval=None)
+            try:
+                code = self.get_input()
+                if code:
+                    compiled = self.handle_input(code)
+                    if compiled:
+                        self.execute(compiled, use_eval=None)
+            except KeyboardInterrupt:
+                printerr("\nKeyboardInterrupt")
 
     def exit_runner(self, exit_code=0):
         """Exits the interpreter."""
@@ -519,28 +535,18 @@ class Command(object):
             self.mypy_args = list(mypy_args)
 
             for arg in self.mypy_args:
-                if arg == "--fast-parser":
-                    logger.warn("unnecessary --mypy argument", arg, extra="passed automatically if available")
-                elif arg == "--py2" or arg == "-2":
+                if arg == "--py2" or arg == "-2":
                     logger.warn("unnecessary --mypy argument", arg, extra="passed automatically when needed")
                 elif arg == "--python-version":
                     logger.warn("unnecessary --mypy argument", arg, extra="current --target passed as version automatically")
-
-            if "--fast-parser" not in self.mypy_args:
-                try:
-                    import typed_ast  # NOQA
-                except ImportError:
-                    if self.comp.target != "3":
-                        logger.warn("missing typed_ast; MyPy may not properly analyze type annotations",
-                                    extra="run 'pip install typed_ast' or pass '--target 3' to fix")
-                else:
-                    self.mypy_args.append("--fast-parser")
 
             if not ("--py2" in self.mypy_args or "-2" in self.mypy_args) and not self.comp.target.startswith("3"):
                 self.mypy_args.append("--py2")
 
             if "--python-version" not in self.mypy_args:
                 self.mypy_args += ["--python-version", ".".join(str(v) for v in self.comp.target_info_len2)]
+
+            logger.log("MyPy args:", self.mypy_args)
 
     def run_mypy(self, paths=[], code=None):
         """Run MyPy with arguments."""
@@ -595,7 +601,7 @@ class Command(object):
             elif args[0] == "notebook":
                 run_args = [jupyter, "notebook"] + args[1:]
             else:
-                raise CoconutException('first argument after --jupyter must be either "console" or "notebook"')
+                raise CoconutException("first argument after --jupyter must be either 'console' or 'notebook'")
             self.register_error(run_cmd(run_args, raise_errs=False), errmsg="Jupyter error")
 
     def watch(self, source, write=True, package=None, run=False, force=False):
@@ -610,16 +616,18 @@ class Command(object):
         def recompile(path):
             if os.path.isfile(path) and os.path.splitext(path)[1] in code_exts:
                 with self.handling_exceptions():
-                    self.run_mypy(self.compile_path(path, write, package, run, force))
+                    self.run_mypy(self.compile_path(path, write, package, run, force, show_unchanged=False))
 
+        watcher = RecompilationWatcher(recompile)
         observer = Observer()
-        observer.schedule(RecompilationWatcher(recompile), source, recursive=True)
+        observer.schedule(watcher, source, recursive=True)
 
         with self.running_jobs():
             observer.start()
             try:
                 while True:
                     time.sleep(watch_interval)
+                    watcher.keep_watching()
             except KeyboardInterrupt:
                 logger.show("Got KeyboardInterrupt; stopping watcher.")
             finally:
