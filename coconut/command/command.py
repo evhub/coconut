@@ -42,6 +42,7 @@ from coconut.constants import (
     minimum_recursion_limit,
     stub_dir,
     exit_chars,
+    coconut_run_args,
 )
 from coconut.command.util import (
     openfile,
@@ -88,7 +89,7 @@ class Command(object):
     def start(self, run=False):
         """Processes command-line arguments."""
         if run:
-            args, argv = ["--run", "--quiet", "--target", "sys"], []
+            args, argv = coconut_run_args, []
             # for coconut-run, all args beyond the source file should stay in sys.argv
             for i in range(1, len(sys.argv)):
                 arg = sys.argv[i]
@@ -166,6 +167,8 @@ class Command(object):
         )
 
         if args.mypy is not None:
+            if args.no_tco:
+                logger.warn("extraneous --no-tco argument passed; --mypy implies --no-tco")
             self.set_mypy_args(args.mypy)
 
         if args.source is not None:
@@ -191,7 +194,7 @@ class Command(object):
                 else:
                     dest = True  # auto-generate dest
             elif args.no_write:
-                raise CoconutException("destination path cannot be given when --nowrite is enabled")
+                raise CoconutException("destination path cannot be given when --no-write is enabled")
             elif os.path.isfile(args.dest):
                 raise CoconutException("destination path must point to directory not file")
             else:
