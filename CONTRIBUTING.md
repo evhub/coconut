@@ -133,37 +133,37 @@ Want to help out, but don't know what to work on? Head over to Coconut's [open i
 ## Release Process
 
 1. Preparation:
-    - Run `make check`
-    - Run `make format`
-    - Check [LGTM](https://lgtm.com/projects/g/evhub/coconut/) alerts
-    - Check changes in [`compiled-cocotest`](https://github.com/evhub/compiled-cocotest)
-    - Make sure [`coconut-develop`](https://pypi.python.org/pypi/coconut-develop) package looks good
-    - Run `make docs` and ensure local documentation looks good
-    - Make sure [develop documentation](http://coconut.readthedocs.io/en/develop/) looks good
-    - Make sure [Travis](https://travis-ci.org/evhub/coconut/builds) is passing
-    - Turn off `develop` in `root.py`
-    - Set `root.py` to new version number
-    - If major release, set `root.py` to new version name
+    1. Run `make check`
+    1. Run `make format`
+    1. Check [LGTM](https://lgtm.com/projects/g/evhub/coconut/) alerts
+    1. Check changes in [`compiled-cocotest`](https://github.com/evhub/compiled-cocotest)
+    1. Make sure [`coconut-develop`](https://pypi.python.org/pypi/coconut-develop) package looks good
+    1. Run `make docs` and ensure local documentation looks good
+    1. Make sure [develop documentation](http://coconut.readthedocs.io/en/develop/) looks good
+    1. Make sure [Travis](https://travis-ci.org/evhub/coconut/builds) is passing
+    1. Turn off `develop` in `root.py`
+    1. Set `root.py` to new version number
+    1. If major release, set `root.py` to new version name
 
 2. Pull Request:
-    - Create a pull request to merge `develop` into `master`
-    - Link contributors on pull request
-    - Wait until everything is passing
+    1. Create a pull request to merge `develop` into `master`
+    1. Link contributors on pull request
+    1. Wait until everything is passing
 
 3. Release:
-    - Release [`sublime-coconut`]https://github.com/evhub/sublime-coconut() first if applicable
-    - Merge pull request
-    - Release `master` on GitHub
-    - Fetch and switch to `master` locally
-    - Run `make upload`
-    - Run `make docs` and upload docs to PyPI
-    - Switch back to `develop` locally
-    - Update from master
-    - Turn on `develop` in `root`
-    - Run `make dev`
-    - Push to `develop`
-    - Update [website](https://github.com/evhub/coconut/tree/gh-pages) if it needs updating
-    - Wipe all updated versions on readthedocs
-    - Copy PyPI keywords to readthedocs tags
-    - Build all updated versions on readthedocs
-    - Close release milestone
+    1. Release [`sublime-coconut`]https://github.com/evhub/sublime-coconut() first if applicable
+    1. Merge pull request
+    1. Release `master` on GitHub
+    1. Fetch and switch to `master` locally
+    1. Run `make upload`
+    1. Run `make docs` and upload docs to PyPI
+    1. Switch back to `develop` locally
+    1. Update from master
+    1. Turn on `develop` in `root`
+    1. Run `make dev`
+    1. Push to `develop`
+    1. Update [website](https://github.com/evhub/coconut/tree/gh-pages) if it needs updating
+    1. Wipe all updated versions on readthedocs
+    1. Copy PyPI keywords to readthedocs tags
+    1. Build all updated versions on readthedocs
+    1. Close release milestone
