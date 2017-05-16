@@ -129,3 +129,41 @@ Want to help out, but don't know what to work on? Head over to Coconut's [open i
             - python35
                 - `py35_test.coco`
                     + Tests to be run only on Python 3.5 with `--target 3.5`.
+
+## Release Process
+
+1. Preparation:
+    - Run `make check`
+    - Run `make format`
+    - Check [LGTM](https://lgtm.com/projects/g/evhub/coconut/) alerts
+    - Check changes in [`compiled-cocotest`](https://github.com/evhub/compiled-cocotest)
+    - Make sure [`coconut-develop`](https://pypi.python.org/pypi/coconut-develop) package looks good
+    - Run `make docs` and ensure local documentation looks good
+    - Make sure [develop documentation](http://coconut.readthedocs.io/en/develop/) looks good
+    - Make sure [Travis](https://travis-ci.org/evhub/coconut/builds) is passing
+    - Turn off `develop` in `root.py`
+    - Set `root.py` to new version number
+    - If major release, set `root.py` to new version name
+
+2. Pull Request:
+    - Create a pull request to merge `develop` into `master`
+    - Link contributors on pull request
+    - Wait until everything is passing
+
+3. Release:
+    - Release [`sublime-coconut`]https://github.com/evhub/sublime-coconut() first if applicable
+    - Merge pull request
+    - Release `master` on GitHub
+    - Fetch and switch to `master` locally
+    - Run `make upload`
+    - Run `make docs` and upload docs to PyPI
+    - Switch back to `develop` locally
+    - Update from master
+    - Turn on `develop` in `root`
+    - Run `make dev`
+    - Push to `develop`
+    - Update [website](https://github.com/evhub/coconut/tree/gh-pages) if it needs updating
+    - Wipe all updated versions on readthedocs
+    - Copy PyPI keywords to readthedocs tags
+    - Build all updated versions on readthedocs
+    - Close release milestone
