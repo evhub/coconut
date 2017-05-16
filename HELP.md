@@ -343,7 +343,7 @@ Second, pattern-matching function definition. Pattern-matching function definiti
 
 Third, `addpattern`. `addpattern` takes one argument, a previously-defined pattern-matching function, and returns a decorator that decorates a new pattern-matching function by adding the new pattern as an additional case to the old patterns. Thus, `addpattern` can be thought of as doing exactly what it says—it adds a new pattern to an existing pattern-matching function.
 
-Finally, not only can we rewrite the imperative approach using `addpattern`, as we did above, we can also rewrite the recursive approach using `addpattern`, like so:
+Finally, not only can we rewrite the iterative approach using `addpattern`, as we did above, we can also rewrite the recursive approach using `addpattern`, like so:
 ```coconut
 def factorial(0) = 1
 
