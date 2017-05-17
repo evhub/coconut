@@ -152,7 +152,7 @@ Want to help out, but don't know what to work on? Head over to Coconut's [open i
 
 3. Release:
     1. Release [`sublime-coconut`]https://github.com/evhub/sublime-coconut() first if applicable
-    1. Merge pull request
+    1. Merge pull request and mark as resolved
     1. Release `master` on GitHub
     1. Fetch and switch to `master` locally
     1. Run `make upload`
