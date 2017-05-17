@@ -366,7 +366,7 @@ In the second case study, we will be implementing the [quick sort algorithm](htt
 
 ### Sorting a Sequence
 
-First up is `quick_sort` for lists. We're going to use a recursive `addpattern`-based approach to tackle this problem—a similar approach to the very last `factorial` function we wrote. That's because since we're not going to write `quick_sort` in a tail-recursive style, we can't use `tail_recursive`, and thus there's no reason to write the whole thing as one function and we might as well use `addpattern` to reduce the amount of indentation we're going to need. Without further ado, here's our implementation of `quick_sort` for lists:
+First up is `quick_sort` for lists. We're going to use a recursive `addpattern`-based approach to tackle this problem—a similar approach to the very last `factorial` function we wrote, using `addpattern` to reduce the amount of indentation we're going to need. Without further ado, here's our implementation of `quick_sort` for lists:
 ```coconut
 def quick_sort([]) = []
 
