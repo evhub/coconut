@@ -123,7 +123,7 @@ Compiling single files is not the only way to use the Coconut command-line utili
 
 The Coconut  compiler supports a large variety of different compilation options, the help for which can always be accessed by entering `coconut -h` into the command line. One of the most useful of these is `--linenumbers` (or `-l` for short). Using `--linenumbers` will add the line numbers of your source code as comments in the compiled code, allowing you to see what line in your source code corresponds to a line in the compiled code where an error is occurring, for ease of debugging.
 
-### Using IPython/ Jupyter
+### Using IPython/Jupyter
 
 Although all different types of programming can benefit from using more functional techniques, scientific computing, perhaps more than any other field, lends itself very well to functional programming, an observation the case studies in this tutorial are very good examples of. To that end, Coconut aims to provide extensive support for the established tools of scientific computing in Python.
 
