@@ -199,9 +199,9 @@ def quick_sort(l):
     """Sort the input iterator, using the quick sort algorithm, and without using any data until necessary."""
     match [head] :: tail in l:
         tail, tail_ = tee(tail)
-        yield from (quick_sort((x for x in tail if x < head))
+        yield from (quick_sort(x for x in tail if x < head)
             :: (head,)
-            :: quick_sort((x for x in tail_ if x >= head))
+            :: quick_sort(x for x in tail_ if x >= head)
             )
 
 # Test cases:

@@ -394,9 +394,9 @@ def quick_sort(l):
     """Sort the input iterator, using the quick sort algorithm, and without using any data until necessary."""
     match [head] :: tail in l:
         tail, tail_ = tee(tail)
-        yield from (quick_sort((x for x in tail if x < head))
+        yield from (quick_sort(x for x in tail if x < head)
             :: (head,)
-            :: quick_sort((x for x in tail_ if x >= head))
+            :: quick_sort(x for x in tail_ if x >= head)
             )
 
 # Test cases:
@@ -437,13 +437,13 @@ def quick_sort(l):
     """Sort the input iterator, using the quick sort algorithm, and without using any data until necessary."""
     match [head] :: tail in l:
         tail, tail_ = tee(tail)
-        yield from (quick_sort((x for x in tail if x < head))
+        yield from (quick_sort(x for x in tail if x < head)
             :: (head,)
-            :: quick_sort((x for x in tail_ if x >= head))
+            :: quick_sort(x for x in tail_ if x >= head)
             )
 ```
 
-The function first attempts to split `l` into an initial element and a remaining iterator. If `l` is the empty iterator, that match will fail, and it will fall through, yielding the empty iterator. Otherwise, we make a copy of the rest of the iterator, and yield the join of (the quick sort of all the remaining elements less than the initial element), (the initial element), and (the quick sort of all the remaining elements greater than the initial element).
+The function first attempts to split `l` into an initial element and a remaining iterator. If `l` is the empty iterator, that match will fail, and it will fall through, yielding the empty iterator (that's how the function handles the base case). Otherwise, we make a copy of the rest of the iterator, and yield the join of (the quick sort of all the remaining elements less than the initial element), (the initial element), and (the quick sort of all the remaining elements greater than the initial element).
 
 The advantages of the basic approach used here, heavy use of iterators and recursion, as opposed to the classical imperative approach, are numerous. First, our approach is more clear and more readable, since it is describing _what_ `quick_sort` is instead of _how_ `quick_sort` could be implemented. Second, our approach is _lazy_ in that our `quick_sort` won't evaluate any data until it needs it. Finally, and although this isn't relevant for `quick_sort` it is relevant in many other cases, an example of which we'll see later in this tutorial, our approach allows for working with _infinite_ series just like they were finite.
 
