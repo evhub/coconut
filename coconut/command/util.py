@@ -180,16 +180,18 @@ def kill_children():
 
 
 def splitname(path):
-    """Split a path into a directory and a name."""
+    """Split a path into a directory, name, and extensions."""
     dirpath, filename = os.path.split(path)
-    name = filename.split(os.path.extsep, 1)[0]
-    return dirpath, name
+    # we don't use os.path.splitext here because we want all extensions,
+    #  not just the last, to be put in exts
+    name, exts = filename.split(os.extsep, 1)
+    return dirpath, name, exts
 
 
 def run_file(path):
     """Run a module from a path and return its variables."""
     if PY26:
-        dirpath, name = splitname(path)
+        dirpath, name, _ = splitname(path)
         found = imp.find_module(name, [dirpath])
         module = imp.load_module("__main__", *found)
         return vars(module)
@@ -237,7 +239,7 @@ def set_mypy_path(mypy_path):
     original = os.environ.get(mypy_path_env_var)
     if original is None:
         os.environ[mypy_path_env_var] = mypy_path
-    elif mypy_path not in original.split(os.pathsep):
+    elif not original.startswith(mypy_path):
         os.environ[mypy_path_env_var] = mypy_path + os.pathsep + original
 
 
@@ -401,7 +403,7 @@ class Runner(object):
         with self.handling_errors(all_errors_exit):
             module_vars = run_file(path)
             self.vars.update(module_vars)
-            self.store("from " + os.path.basename(path) + " import *")
+            self.store("from " + splitname(path)[1] + " import *")
 
     def was_run_code(self, get_all=True):
         """Gets all the code that was run."""
