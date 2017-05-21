@@ -82,7 +82,7 @@ def count_end(teststr, testchar):
     return count
 
 
-def paren_change(inputstring, opens=closes, closes=opens):
+def paren_change(inputstring, opens=opens, closes=closes):
     """Determines the parenthetical change of level (num closes - num opens)."""
     count = 0
     for c in inputstring:
