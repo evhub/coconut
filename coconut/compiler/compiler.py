@@ -965,7 +965,7 @@ class Compiler(Grammar):
 # COMPILER HANDLERS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-    def set_docstring(self, original, loc, tokens):
+    def set_docstring(self, loc, tokens):
         """Sets the docstring."""
         if len(tokens) == 2:
             self.docstring = self.reformat(tokens[0]) + "\n\n"
@@ -1041,7 +1041,7 @@ class Compiler(Grammar):
         else:
             raise CoconutInternalException("invalid classlist tokens", tokens)
 
-    def data_handle(self, original, loc, tokens):
+    def data_handle(self, loc, tokens):
         """Processes data blocks."""
         if len(tokens) == 3:
             name, args, stmts = tokens
@@ -1229,7 +1229,7 @@ class Compiler(Grammar):
                     + raise_from_var + ".__cause__ = " + tokens[1] + "\n"
                     + "raise " + raise_from_var)
 
-    def dict_comp_handle(self, original, loc, tokens):
+    def dict_comp_handle(self, loc, tokens):
         """Processes Python 2.7 dictionary comprehension."""
         if len(tokens) != 3:
             raise CoconutInternalException("invalid dictionary comprehension tokens", tokens)
@@ -1256,7 +1256,7 @@ class Compiler(Grammar):
         """Processes match assign blocks."""
         if len(tokens) == 2:
             matches, item = tokens
-            out = match_handle(original, loc, [matches, item, None])
+            out = match_handle(loc, [matches, item, None])
             out += self.pattern_error(original, loc, match_to_var)
             return out
         else:
@@ -1379,7 +1379,7 @@ class Compiler(Grammar):
 
     def tre_return(self, func_name, func_args, func_store, use_mock=True):
         """Generates a tail recursion elimination grammar element."""
-        def tre_return_handle(original, loc, tokens):
+        def tre_return_handle(loc, tokens):
             if len(tokens) != 1:
                 raise CoconutInternalException("invalid tail recursion elimination tokens", tokens)
             else:

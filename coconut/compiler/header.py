@@ -66,13 +66,8 @@ def minify(compiled):
 
 
 def one_num_ver(target):
-    """Returns "2" for python 2, "3" for python 3, and "" for universal."""
-    if target.startswith("2"):
-        return "2"
-    elif target.startswith("3"):
-        return "3"
-    else:
-        return ""
+    """Returns the first number of the target version, if it has one."""
+    return target[:1]  # "2", "3", or ""
 
 
 def section(name, justify_len=80):

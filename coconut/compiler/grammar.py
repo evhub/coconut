@@ -194,12 +194,12 @@ def add_paren_handle(tokens):
         raise CoconutInternalException("invalid tokens for parentheses adding", tokens)
 
 
-def function_call_handle(original, loc, tokens):
+def function_call_handle(loc, tokens):
     """Properly order call arguments."""
     return "(" + join_args(*split_function_call(tokens, loc)) + ")"
 
 
-def item_handle(original, loc, tokens):
+def item_handle(loc, tokens):
     """Processes items."""
     out = tokens.pop(0)
     for trailer in tokens:
@@ -248,7 +248,7 @@ def item_handle(original, loc, tokens):
     return out
 
 
-def pipe_handle(original, loc, tokens, **kwargs):
+def pipe_handle(loc, tokens, **kwargs):
     """Processes pipe calls."""
     if set(kwargs) > set(("top",)):
         complain(CoconutInternalException("unknown pipe_handle keyword arguments", kwargs))
@@ -265,26 +265,28 @@ def pipe_handle(original, loc, tokens, **kwargs):
         if op == "|>" or op == "|*>":
             star = "*" if op == "|*>" else ""
             if isinstance(func, tuple):
-                return func[0] + "(" + join_args((func[1], star + pipe_handle(original, loc, tokens), func[2])) + ")"
+                return func[0] + "(" + join_args((func[1], star + pipe_handle(loc, tokens), func[2])) + ")"
             else:
-                return "(" + func + ")(" + star + pipe_handle(original, loc, tokens) + ")"
+                return "(" + func + ")(" + star + pipe_handle(loc, tokens) + ")"
         elif op == "<|" or op == "<*|":
             star = "*" if op == "<*|" else ""
-            return pipe_handle(original, loc, [[func], "|" + star + ">", [pipe_handle(original, loc, tokens, top=False)]])
+            return pipe_handle(loc, [[func], "|" + star + ">", [pipe_handle(loc, tokens, top=False)]])
         else:
             raise CoconutInternalException("invalid pipe operator", op)
 
 
-def attr_handle(tokens):
+def attr_handle(loc, tokens):
     """Processes attrgetter literals."""
     if len(tokens) == 1:
         return '_coconut.operator.attrgetter("' + tokens[0] + '")'
-    elif len(tokens) == 2 and tokens[1] == "(":
-        return '_coconut.operator.methodcaller("' + tokens[0] + '")'
-    elif len(tokens) == 3 and tokens[1] == "(":
-        return '_coconut.operator.methodcaller("' + tokens[0] + '", ' + tokens[2] + ")"
-    else:
-        raise CoconutInternalException("invalid attrgetter literal tokens", tokens)
+    elif len(tokens) > 0 and tokens[1] == "(":
+        if "." in tokens[0]:
+            raise CoconutDeferredSyntaxError("illegal attribute access in implicit methodcaller partial", loc)
+        elif len(tokens) == 2:
+            return '_coconut.operator.methodcaller("' + tokens[0] + '")'
+        elif len(tokens) == 3:
+            return '_coconut.operator.methodcaller("' + tokens[0] + '", ' + tokens[2] + ")"
+    raise CoconutInternalException("invalid attrgetter/methodcaller literal tokens", tokens)
 
 
 def lazy_list_handle(tokens):
@@ -339,7 +341,7 @@ def lambdef_handle(tokens):
         raise CoconutInternalException("invalid lambda tokens", tokens)
 
 
-def math_funcdef_suite_handle(original, location, tokens):
+def math_funcdef_suite_handle(tokens):
     """Processes assignment function definiton suites."""
     if len(tokens) < 1:
         raise CoconutInternalException("invalid assignment function definition suite tokens", tokens)
@@ -379,8 +381,19 @@ def else_handle(tokens):
         raise CoconutInternalException("invalid compound else statement tokens", tokens)
 
 
-def match_handle(original, loc, tokens, top=True):
+def match_handle(loc, tokens, **kwargs):
     """Processes match blocks."""
+    # we cannot add a default arg to match_handle otherwise pyparsing would pass
+    #  (original, loc, tokens) instead of just (loc, tokens), so we have to mimic
+    #  having a default argument of top=True like this instead
+    try:
+        top = kwargs["top"]
+        del kwargs["top"]
+    except KeyError:
+        top = True
+    if top:
+        raise CoconutInternalException("unknown keyword arguments to match_handle", kwargs)
+
     if len(tokens) == 3:
         matches, item, stmts = tokens
         cond = None
@@ -388,10 +401,12 @@ def match_handle(original, loc, tokens, top=True):
         matches, item, cond, stmts = tokens
     else:
         raise CoconutInternalException("invalid match statement tokens", tokens)
+
     matching = Matcher(loc)
     matching.match(matches, match_to_var)
     if cond:
         matching.add_guard(cond)
+
     out = ""
     if top:
         out += match_check_var + " = False\n"
@@ -402,7 +417,7 @@ def match_handle(original, loc, tokens, top=True):
     return out
 
 
-def case_handle(o, l, tokens):
+def case_handle(loc, tokens):
     """Processes case blocks."""
     if len(tokens) == 2:
         item, cases = tokens
@@ -411,10 +426,10 @@ def case_handle(o, l, tokens):
         item, cases, default = tokens
     else:
         raise CoconutInternalException("invalid top-level case tokens", tokens)
-    out = match_handle(o, l, case_to_match(cases[0], item))
+    out = match_handle(loc, case_to_match(cases[0], item))
     for case in cases[1:]:
         out += ("if not " + match_check_var + ":\n" + openindent
-                + match_handle(o, l, case_to_match(case, item), top=False) + closeindent)
+                + match_handle(loc, case_to_match(case, item), top=False) + closeindent)
     if default is not None:
         out += "if not " + match_check_var + default
     return out
@@ -828,7 +843,7 @@ class Grammar(object):
     string_atom = addspace(OneOrMore(string))
     passthrough_atom = trace(addspace(OneOrMore(passthrough)))
     attr_atom = attach(
-        dot.suppress() + name
+        dot.suppress() + dotted_name
         + Optional(
             lparen + Optional(methodcaller_args) + rparen.suppress()
         ), attr_handle)

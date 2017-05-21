@@ -458,6 +458,14 @@ class A:
 class B(A):
     pass
 
+# Nesting:
+class Nest:
+    class B:
+        class C:
+            d = "data"
+        c = C()
+    b = B()
+
 # Infinite Grid:
 
 data pt(x, y):

@@ -347,6 +347,8 @@ def suite_test():
     assert args == (1, 2)
     assert Pred(0, 1, 2) |> fmap$(-> _+1) == Pred(1, 2, 3)
     assert Quant(0, 1, 2) |> fmap$(-> _+1) == Quant(1, 2, 3)
+    a = Nest()
+    assert a.b.c.d == "data" == a |> .b.c.d
     return True
 
 def tco_test():
