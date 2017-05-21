@@ -286,7 +286,10 @@ def attr_handle(loc, tokens):
             return '_coconut.operator.methodcaller("' + tokens[0] + '")'
         elif len(tokens) == 3:
             return '_coconut.operator.methodcaller("' + tokens[0] + '", ' + tokens[2] + ")"
-    raise CoconutInternalException("invalid attrgetter/methodcaller literal tokens", tokens)
+        else:
+            raise CoconutInternalException("invalid methodcaller literal tokens", tokens)
+    else:
+        raise CoconutInternalException("invalid attrgetter literal tokens", tokens)
 
 
 def lazy_list_handle(tokens):
