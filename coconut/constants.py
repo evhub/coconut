@@ -8,7 +8,7 @@
 """
 Authors: Evan Hubinger, Fred Buchanan
 License: Apache 2.0
-Description: This file contains all the global constants used accross Coconut.
+Description: This file contains all the global constants used across Coconut.
 """
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -56,6 +56,14 @@ version_tuple = VERSION.split(".")
 #-----------------------------------------------------------------------------------------------------------------------
 # INSTALLATION CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
+
+package_name = "coconut" + ("-develop" if DEVELOP else "")
+
+author = "Evan Hubinger"
+author_email = "evanjhub@gmail.com"
+
+description = "Simple, elegant, Pythonic functional programming."
+website_url = "http://coconut-lang.org"
 
 all_reqs = {
     "main": [
@@ -224,6 +232,11 @@ script_names = [
 ] + [
     "coconut-v" + ".".join(version_tuple[:i]) for i in range(1, len(version_tuple) + 1)
 ]
+
+document_names = {
+    "description": "README.rst",
+    "license": "LICENSE.txt",
+}
 
 #-----------------------------------------------------------------------------------------------------------------------
 # COMPILER CONSTANTS:
@@ -538,6 +551,5 @@ with_toc = """
 
 project = "Coconut"
 copyright = "2015-2017, Evan Hubinger, licensed under Apache 2.0"
-author = "Evan Hubinger"
 
 highlight_language = "coconut"
