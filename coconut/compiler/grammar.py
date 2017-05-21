@@ -394,7 +394,7 @@ def match_handle(loc, tokens, **kwargs):
         del kwargs["top"]
     except KeyError:
         top = True
-    if top:
+    if kwargs:
         raise CoconutInternalException("unknown keyword arguments to match_handle", kwargs)
 
     if len(tokens) == 3:
