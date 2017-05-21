@@ -277,7 +277,7 @@ Copy, paste! This definition differs from the recursive definition only by one l
 return range(1, n+1) |> reduce$(*)
 ```
 
-Let's break down what's happening on this line. First, the `range` function constructs an iterator of all the numbers that need to be multiplied together. Then, it is piped into the function `reduce$(*)`, which does that multiplication. But how? What is `reduce$(*)`.
+Let's break down what's happening on this line. First, the `range` function constructs an iterator of all the numbers that need to be multiplied together. Then, it is piped into the function `reduce$(*)`, which does that multiplication. But how? What is `reduce$(*)`?
 
 We'll start with the base, the `reduce` function. `reduce` used to exist as a built-in in Python 2, and Coconut brings it back. `reduce` is a higher-order function that takes a function on two arguments as its first argument, and an iterator as its second argument, and applies that function to the given iterator by starting with the first element, and calling the function on the accumulated call so far and the next element, until the iterator is exhausted. Here's a visual representation:
 ```coconut
