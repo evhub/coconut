@@ -281,8 +281,8 @@ strwrapper = "\u25b6"  # right-pointing triangle
 lnwrapper = "\u23f4"  # left-pointing triangle
 unwrapper = "\u23f9"  # stop square
 
-downs = "([{"  # opens parenthetical
-ups = ")]}"  # closes parenthetical
+opens = "([{"  # opens parenthetical
+closes = ")]}"  # closes parenthetical
 holds = "'\""  # string open/close chars
 
 taberrfmt = 2  # spaces to indent exceptions

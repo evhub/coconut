@@ -618,8 +618,8 @@ class Compiler(Grammar):
         out = []
         found = None  # store of characters that might be the start of a passthrough
         hold = None  # the contents of the passthrough so far
-        count = None  # current parenthetical level
-        multiline = None
+        count = None  # current parenthetical level (num closes - num opens)
+        multiline = None  # if in a passthrough, is it a multiline passthrough
         skips = self.skips.copy()
 
         for x in range(len(inputstring) + 1):
@@ -629,7 +629,8 @@ class Compiler(Grammar):
                 c = inputstring[x]
 
             if hold is not None:
-                count += paren_change(c)
+                # we specify that we only care about parens, not brackets or braces
+                count += paren_change(c, opens="(", closes=")")
                 if count >= 0 and c == hold:
                     out.append(self.wrap_passthrough(found, multiline))
                     found = None
@@ -661,9 +662,9 @@ class Compiler(Grammar):
 
         if hold is not None or found is not None:
             raise self.make_err(CoconutSyntaxError, "unclosed passthrough", inputstring, x)
-        else:
-            self.skips = skips
-            return "".join(out)
+
+        self.skips = skips
+        return "".join(out)
 
     def leading(self, inputstring):
         """Counts leading whitespace."""
@@ -734,7 +735,7 @@ class Compiler(Grammar):
                     raise self.make_err(CoconutSyntaxError, "illegal dedent to unused indentation level", line, 0, self.adjust(ln))
                 new.append(line)
 
-            count = paren_change(line)  # (num close parens) - (num open parens)
+            count = paren_change(line)  # num closes - num opens
             if count > len(opens):
                 raise self.make_err(CoconutSyntaxError, "unmatched close parenthesis", new[-1], 0, self.adjust(len(new)))
             elif count > 0:  # closes > opens

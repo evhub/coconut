@@ -29,8 +29,8 @@ from pyparsing import (
 
 from coconut.terminal import logger, complain
 from coconut.constants import (
-    ups,
-    downs,
+    opens,
+    closes,
     openindent,
     closeindent,
     default_whitespace_chars,
@@ -82,13 +82,13 @@ def count_end(teststr, testchar):
     return count
 
 
-def paren_change(inputstring):
+def paren_change(inputstring, opens=closes, closes=opens):
     """Determines the parenthetical change of level (num closes - num opens)."""
     count = 0
     for c in inputstring:
-        if c in downs:  # open parens/brackets/braces
+        if c in opens:  # open parens/brackets/braces
             count -= 1
-        elif c in ups:  # close parens/brackets/braces
+        elif c in closes:  # close parens/brackets/braces
             count += 1
     return count
 

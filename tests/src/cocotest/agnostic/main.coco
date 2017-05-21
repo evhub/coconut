@@ -338,6 +338,7 @@ def main_test():
     assert isinstance(os, objsub)
     assert isinstance(os, object)
     assert not isinstance(os, pyobjsub)
+    assert [] == \([)\(])
     return True
 
 def test_tco(x) = test_tco(x)
