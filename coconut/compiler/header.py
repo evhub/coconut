@@ -28,7 +28,7 @@ from coconut.constants import (
 from coconut.exceptions import CoconutInternalException
 
 #-----------------------------------------------------------------------------------------------------------------------
-# MAIN:
+# UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
 
 
@@ -60,107 +60,110 @@ def minify(compiled):
     return compiled
 
 
+#-----------------------------------------------------------------------------------------------------------------------
+# HEADER GENERATION:
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def one_num_ver(target):
+    """Returns "2" for python 2, "3" for python 3, and "" for universal."""
+    if target.startswith("2"):
+        return "2"
+    elif target.startswith("3"):
+        return "3"
+    else:
+        return ""
+
+
+def section(name, justify_len=80):
+    """Generate a section break."""
+    line = "# " + name + ": "
+    return line + "-" * (justify_len - len(line)) + "\n\n"
+
+
+allowed_headers = ("none", "initial", "__coconut__", "package", "sys", "code", "file")
+
+
 def getheader(which, target="", usehash=None):
     """Generates the specified header."""
+    if which not in allowed_headers:
+        raise CoconutInternalException("invalid header type", which)
+
     if which == "none":
         return ""
-    elif which == "initial" or which == "__coconut__":
-        if target.startswith("2"):
-            header = '#!/usr/bin/env python2'
-        elif target.startswith('3'):
-            header = '#!/usr/bin/env python3'
-        else:
-            header = '#!/usr/bin/env python'
-        header += '''
-# -*- coding: ''' + default_encoding + ''' -*-
-'''
-        if usehash is not None:
-            header += hash_prefix + usehash + '\n'
-        if which == "__coconut__":
-            header += '# type: ignore\n'
-        header += '''
-# Compiled with Coconut version ''' + VERSION_STR + '''
 
-'''
-        if which == "__coconut__":
-            header += r'''"""Built-in Coconut utilities."""
+    # initial, __coconut__, package, sys, code, file
 
-'''
+    target_startswith = one_num_ver(target)
+
+    if which == "initial" or which == "__coconut__":
+        header = '''#!/usr/bin/env python{target_startswith}
+# -*- coding: {default_encoding} -*-
+{hash_line}{typing_line}
+# Compiled with Coconut version {VERSION_STR}
+
+{module_docstring}'''.format(
+            target_startswith=target_startswith,
+            default_encoding=default_encoding,
+            hash_line=(hash_prefix + usehash + "\n" if usehash is not None else ""),
+            typing_line=("# type: ignore\n" if which == "__coconut__" else ""),
+            VERSION_STR=VERSION_STR,
+            module_docstring=('"""Built-in Coconut utilities."""\n\n' if which == "__coconut__" else ""),
+        )
     elif usehash is not None:
         raise CoconutInternalException("can only add a hash to an initial or __coconut__ header, not", which)
     else:
         header = ""
-    if which != "initial":
-        header += r'''# Coconut Header: --------------------------------------------------------
 
-'''
-        if not target.startswith("3"):
-            header += r'''from __future__ import print_function, absolute_import, unicode_literals, division
-'''
-        elif get_target_info(target) >= (3, 5):
-            header += r'''from __future__ import generator_stop
-'''
-        if which == "package":
-            header += r'''
-import sys as _coconut_sys, os.path as _coconut_os_path
+    if which == "initial":
+        return header
+
+    # __coconut__, package, sys, code, file
+
+    target_info = get_target_info(target)
+
+    header += section("Coconut Header")
+
+    if target_startswith != "3":
+        header += "from __future__ import print_function, absolute_import, unicode_literals, division\n"
+    elif target_info >= (3, 5):
+        header += "from __future__ import generator_stop\n"
+
+    if which == "package":
+        return header + '''import sys as _coconut_sys, os.path as _coconut_os_path
 _coconut_file_path = _coconut_os_path.dirname(_coconut_os_path.abspath(__file__))
 _coconut_sys.path.insert(0, _coconut_file_path)
 from __coconut__ import _coconut, _coconut_MatchError, _coconut_tail_call, _coconut_tco, _coconut_igetitem, _coconut_compose, _coconut_pipe, _coconut_starpipe, _coconut_backpipe, _coconut_backstarpipe, _coconut_bool_and, _coconut_bool_or, _coconut_minus, _coconut_map, _coconut_partial
 from __coconut__ import *
 _coconut_sys.path.remove(_coconut_file_path)
-'''
-        elif which == "sys":
-            header += r'''
-import sys as _coconut_sys
+
+''' + section("Compiled Coconut")
+
+    if which == "sys":
+        return header + '''import sys as _coconut_sys
 from coconut.__coconut__ import _coconut, _coconut_MatchError, _coconut_tail_call, _coconut_tco, _coconut_igetitem, _coconut_compose, _coconut_pipe, _coconut_starpipe, _coconut_backpipe, _coconut_backstarpipe, _coconut_bool_and, _coconut_bool_or, _coconut_minus, _coconut_map, _coconut_partial
 from coconut.__coconut__ import *
 '''
-        elif which == "__coconut__" or which == "code" or which == "file":
-            header += r'''import sys as _coconut_sys
-'''
-            if target.startswith("3"):
-                header += PY3_HEADER
-            elif get_target_info(target) >= (2, 7):
-                header += PY27_HEADER
-            elif target.startswith("2"):
-                header += PY2_HEADER
-            else:
-                header += PYCHECK_HEADER
-            if target.startswith("3"):
-                header += r'''
-class _coconut:'''
-            else:
-                header += r'''
-class _coconut(object):'''
-            header += r'''
+
+    # __coconut__, code, file
+
+    header += "import sys as _coconut_sys\n"
+
+    if target_startswith == "3":
+        header += PY3_HEADER
+    elif target_info >= (2, 7):
+        header += PY27_HEADER
+    elif target_startswith == "2":
+        header += PY2_HEADER
+    else:
+        header += PYCHECK_HEADER
+
+    header += '''
+class _coconut{object}:
     import collections, functools, imp, itertools, operator, types, copy, pickle
-'''
-            if not target:
-                header += r'''    if _coconut_sys.version_info >= (2, 7):
-        OrderedDict = collections.OrderedDict
-    else:
-        OrderedDict = dict
-'''
-            elif get_target_info(target) >= (2, 7):
-                header += r'''    OrderedDict = collections.OrderedDict
-'''
-            else:
-                header += r'''    OrderedDict = dict
-'''
-            if target.startswith("2"):
-                header += r'''    abc = collections'''
-            else:
-                header += r'''    if _coconut_sys.version_info < (3, 3):
-        abc = collections
-    else:
-        import collections.abc as abc'''
-            if target.startswith("3"):
-                header += r'''
-    IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr = IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr'''
-            else:
-                header += r'''
-    IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr, bytearray = IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, staticmethod(repr), bytearray'''
-            header += r'''
+    {import_OrderedDict}
+    {import_collections_abc}
+    IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr{comma_bytearray} = IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, {static_repr}{comma_bytearray}
 class MatchError(Exception):
     """Pattern-matching error."""
     __slots__ = ("pattern", "value")
@@ -203,14 +206,8 @@ def _coconut_igetitem(iterable, index):
     elif (index.start is not None and index.start < 0) or (index.stop is not None and index.stop < 0) or (index.step is not None and index.step < 0):
         return _coconut.tuple(iterable)[index]
     else:
-        return _coconut.itertools.islice(iterable, index.start, index.stop, index.step)'''
-            if target.startswith("3"):
-                header += r'''
-class _coconut_compose:'''
-            else:
-                header += r'''
-class _coconut_compose(object):'''
-            header += r'''
+        return _coconut.itertools.islice(iterable, index.start, index.stop, index.step)
+class _coconut_compose{object}:
     __slots__ = ("funcs",)
     def __init__(self, *funcs):
         self.funcs = funcs
@@ -238,7 +235,7 @@ def tee(iterable, n=2):
         return (iterable,) + _coconut.tuple(_coconut.copy.copy(iterable) for i in range(n - 1))
     else:
         return _coconut.itertools.tee(iterable, n)
-class reversed(object):
+class reversed{object}:
     __slots__ = ("_iter",)
     if hasattr(_coconut.map, "__doc__"):
         __doc__ = _coconut.reversed.__doc__
@@ -325,15 +322,8 @@ class concurrent_map(map):
     """Multithreading implementation of map using concurrent.futures."""
     __slots__ = ()
     def __iter__(self):
-        from concurrent.futures import ThreadPoolExecutor'''
-            if get_target_info(target) >= (3, 5):
-                header += r'''
-        with ThreadPoolExecutor() as executor:'''
-            else:
-                header += r'''
-        from multiprocessing import cpu_count  # cpu_count() * 5 is the default Python 3 thread count
-        with ThreadPoolExecutor(cpu_count() * 5) as executor:'''
-            header += r'''
+        from concurrent.futures import ThreadPoolExecutor
+        {with_ThreadPoolExecutor} as executor:
             return _coconut.iter(_coconut.tuple(executor.map(self._func, *self._iters)))
     def __repr__(self):
         return "concurrent_" + _coconut_map.__repr__(self)
@@ -408,14 +398,8 @@ class enumerate(_coconut.enumerate):
     def __copy__(self):
         return self.__class__(_coconut.copy.copy(self._iter), self._start)
     def __fmap__(self, func):
-        return _coconut_map(func, self)'''
-            if target.startswith("3"):
-                header += r'''
-class count:'''
-            else:
-                header += r'''
-class count(object):'''
-            header += r'''
+        return _coconut_map(func, self)
+class count{object}:
     """count(start, step) returns an infinite iterator starting at start and increasing by step."""
     __slots__ = ("_start", "_step")
     def __init__(self, start=0, step=1):
@@ -461,7 +445,7 @@ class count(object):'''
 def recursive_iterator(func):
     """Decorates a function by optimizing it for iterator recursion.
     Requires function arguments to be pickleable."""
-    tee_store = {}
+    tee_store = {empty_dict}
     @_coconut.functools.wraps(func)
     def recursive_iterator_func(*args, **kwargs):
         hashable_args_kwargs = _coconut.pickle.dumps((args, kwargs), _coconut.pickle.HIGHEST_PROTOCOL)
@@ -488,14 +472,8 @@ def prepattern(base_func):
     """Decorator to add a new case to a pattern-matching function, where the new case is checked first."""
     def pattern_prepender(func):
         return addpattern(func)(base_func)
-    return pattern_prepender'''
-            if target.startswith("3"):
-                header += r'''
-class _coconut_partial:'''
-            else:
-                header += r'''
-class _coconut_partial(object):'''
-            header += r'''
+    return pattern_prepender
+class _coconut_partial{object}:
     __slots__ = ("func", "_argdict", "_arglen", "_stargs", "keywords")
     if hasattr(_coconut.functools.partial, "__doc__"):
         __doc__ = _coconut.functools.partial.__doc__
@@ -532,14 +510,8 @@ class _coconut_partial(object):'''
                 args.append("?")
         for arg in self._stargs:
             args.append(_coconut.repr(arg))
-        return _coconut.repr(self.func) + "$(" + ", ".join(args) + ")"'''
-            if target.startswith("3"):
-                header += r'''
-class datamaker:'''
-            else:
-                header += r'''
-class datamaker(object):'''
-            header += r'''
+        return _coconut.repr(self.func) + "$(" + ", ".join(args) + ")"
+class datamaker{object}:
     __slots__ = ("data_type",)
     def __new__(cls, data_type):
         if _coconut.hasattr(data_type, "_make") and (_coconut.issubclass(data_type, _coconut.tuple) or _coconut.isinstance(data_type, _coconut.tuple)):
@@ -572,12 +544,34 @@ def fmap(func, obj):
         return "".join(args)
     return obj.__class__(args)
 _coconut_MatchError, _coconut_count, _coconut_enumerate, _coconut_reversed, _coconut_map, _coconut_tee, _coconut_zip, reduce, takewhile, dropwhile = MatchError, count, enumerate, reversed, map, tee, zip, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile
-'''
-        else:
-            raise CoconutInternalException("invalid header type", which)
-        if which == "file" or which == "package":
-            header += r'''
-# Compiled Coconut: ------------------------------------------------------
+'''.format(
+        object=("(object)" if target_startswith != "3" else ""),
+        import_OrderedDict=(
+            '''if _coconut_sys.version_info >= (2, 7):
+        OrderedDict = collections.OrderedDict
+    else:
+        OrderedDict = dict''' if not target
+            else "OrderedDict = collections.OrderedDict" if target_info >= (2, 7)
+            else "OrderedDict = dict"
+        ),
+        import_collections_abc=(
+            "abc = collections" if target_startswith == "2"
+            else '''if _coconut_sys.version_info < (3, 3):
+        abc = collections
+    else:
+        import collections.abc as abc'''
+        ),
+        comma_bytearray=(", bytearray" if target_startswith != "3" else ""),
+        static_repr=("staticmethod(repr)" if target_startswith != "3" else "repr"),
+        with_ThreadPoolExecutor=(
+            '''with ThreadPoolExecutor()''' if target_info >= (3, 5)
+            else '''from multiprocessing import cpu_count  # cpu_count() * 5 is the default Python 3.5 thread count
+        with ThreadPoolExecutor(cpu_count() * 5)'''
+        ),
+        empty_dict="{}",
+    )
 
-'''
+    if which == "file":
+        header += section("Compiled Coconut")
+
     return header
