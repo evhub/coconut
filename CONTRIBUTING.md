@@ -81,6 +81,9 @@ Want to help out, but don't know what to work on? Head over to Coconut's [open i
             + Contains `Matcher`, which handles the compilation of all Coconut pattern-matching, including `match` statements, destructuring assignment, and pattern-matching functions.
         - `util.py`
             + Contains utilities for working with PyParsing objects that are primarily used by `grammar.py`.
+        - templates
+            - `header.py_template`
+                + Template for the main body of Coconut's header; use and formatting of this file is all in `header.py`.
     - icoconut
         - `__init__.py`
             + Imports everything from `icoconut/root.py`.
