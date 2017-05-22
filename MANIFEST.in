@@ -3,3 +3,4 @@ global-include *.rst
 global-include *.md
 global-include *.json
 global-include *.pyi
+global-include *.py_template
