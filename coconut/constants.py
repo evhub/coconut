@@ -242,6 +242,10 @@ document_names = {
 # COMPILER CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
+template_ext = ".py_template"
+
+default_encoding = "utf-8"
+
 packrat_cache_size = 512
 use_packrat = packrat_cache_size != 0
 
@@ -269,8 +273,6 @@ elif sys.version_info > get_target_info(specific_targets[-1]):
     pseudo_targets["sys"] = specific_targets[-1]
 else:
     pseudo_targets["sys"] = _sys_target
-
-default_encoding = "utf-8"
 
 default_whitespace_chars = " \t\f\v\xa0"
 varchars = string.ascii_letters + string.digits + "_"
