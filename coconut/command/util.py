@@ -71,7 +71,7 @@ from coconut.terminal import logger
 
 
 def openfile(filename, opentype="r+"):
-    """Returns an open file object."""
+    """Open a file using default_encoding."""
     return open(filename, opentype, encoding=default_encoding)  # using open from coconut.root
 
 

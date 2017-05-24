@@ -29,7 +29,6 @@ from coconut.constants import (
     template_ext,
 )
 from coconut.exceptions import CoconutInternalException
-from coconut.command.util import openfile, readfile
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -69,8 +68,8 @@ template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templat
 
 def get_template(template):
     """Read the given template file."""
-    with openfile(os.path.join(template_dir, template) + template_ext) as template_file:
-        return readfile(template_file)
+    with open(os.path.join(template_dir, template) + template_ext, "r") as template_file:
+        return template_file.read()
 
 
 def one_num_ver(target):

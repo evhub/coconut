@@ -429,9 +429,9 @@ class Command(object):
         if destpath is not None and os.path.isfile(destpath):
             with openfile(destpath, "r") as opened:
                 compiled = readfile(opened)
-                hashash = gethash(compiled)
-                if hashash is not None and hashash == self.comp.genhash(package, code):
-                    return compiled
+            hashash = gethash(compiled)
+            if hashash is not None and hashash == self.comp.genhash(package, code):
+                return compiled
         return None
 
     def get_input(self, more=False):
