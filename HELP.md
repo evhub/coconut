@@ -516,7 +516,7 @@ Now that we have a constructor for our n-vector, it's time to write its methods.
 ```coconut
     def __abs__(self) =
         """Return the magnitude of the vector."""
-        self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
+        return self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
 ```
 The basic algorithm here is map square over each element, sum them all, then square root the result. The one new construct used here is the use of a `?` in partial application, which simply allows skipping an argument from being partially applied and deferring it to when the function is called. In this case, the `?` lets us partially apply the exponent instead of the base in `pow` (we could also have equivalently used `(**)`).
 
