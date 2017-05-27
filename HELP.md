@@ -279,7 +279,7 @@ return range(1, n+1) |> reduce$(*)
 
 Let's break down what's happening on this line. First, the `range` function constructs an iterator of all the numbers that need to be multiplied together. Then, it is piped into the function `reduce$(*)`, which does that multiplication. But how? What is `reduce$(*)`?
 
-We'll start with the base, the `reduce` function. `reduce` used to exist as a built-in in Python 2, and Coconut brings it back. `reduce` is a higher-order function that takes a function on two arguments as its first argument, and an iterator as its second argument, and applies that function to the given iterator by starting with the first element, and calling the function on the accumulated call so far and the next element, until the iterator is exhausted. Here's a visual representation:
+We'll start with the base, the `reduce` function. `reduce` used to exist as a built-in in Python 2, and Coconut brings it back. `reduce` is a higher-order function that takes a function of two arguments as its first argument, and an iterator as its second argument, and applies that function to the given iterator by starting with the first element, and calling the function on the accumulated call so far and the next element, until the iterator is exhausted. Here's a visual representation:
 ```coconut
 reduce(f, (a, b, c, d))
 
@@ -335,7 +335,7 @@ def factorial(n is int if n > 0) =
 0 |> factorial |> print  # 1
 3 |> factorial |> print  # 6
 ```
-Copy, paste! This should work exactly like before, except now it raises `MatchError` as a fall through instead of `TypeError`. There are three major new concepts to talk about here: `addpattern`, of course, assignment funciton notation, and pattern-matching function definition—how both of the functions above are defined.
+Copy, paste! This should work exactly like before, except now it raises `MatchError` as a fall through instead of `TypeError`. There are three major new concepts to talk about here: `addpattern`, of course, assignment function notation, and pattern-matching function definition—how both of the functions above are defined.
 
 First, assignment function notation. This one's pretty straightforward. If a function is defined with an `=` instead of a `:`, the last line is required to be an expression, and is automatically returned.
 
