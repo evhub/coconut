@@ -80,6 +80,10 @@ def size(Node(l, r)) = size(l) + size(r)
 
 and much more!
 
+Like what you see? Don't forget to star Coconut on GitHub!
+
+<a class="github-button" href="https://github.com/evhub/coconut" data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star evhub/coconut on GitHub">Star</a>
+
 Ready to get started? Here are some links to help you out:
 - [Coconut's **tutorial**](http://coconut.readthedocs.org/en/master/HELP.html) will guide you through the process of starting to enhance your Python with Coconut in a straightforward, easy-to-follow way.
 - [Coconut's **documentation**](http://coconut.readthedocs.org/en/master/DOCS.html) is an extensive catalog of information on all of Coconut's features for whenever you see something that you want more information about.
