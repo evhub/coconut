@@ -1092,6 +1092,11 @@ class Grammar(object):
     ) | matchlist_list
 
     match_const = const_atom | condense(equals.suppress() + atom_item)
+    match_string = (
+        (string + plus.suppress() + name + plus.suppress() + string)("mstring")
+        | (string + plus.suppress() + name)("string")
+        | (name + plus.suppress() + string)("rstring")
+    )
     matchlist_set = Group(Optional(tokenlist(match_const, comma)))
     match_pair = Group(match_const + colon.suppress() + match)
     matchlist_dict = Group(Optional(tokenlist(match_pair, comma)))
@@ -1113,7 +1118,8 @@ class Grammar(object):
         | lparen.suppress() + matchlist_star + rparen.suppress()
     )("star")
     base_match = trace(Group(
-        match_const("const")
+        match_string
+        | match_const("const")
         | (lparen.suppress() + match + rparen.suppress())("paren")
         | (lbrace.suppress() + matchlist_dict + rbrace.suppress())("dict")
         | (Optional(set_s.suppress()) + lbrace.suppress() + matchlist_set + rbrace.suppress())("set")

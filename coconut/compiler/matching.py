@@ -72,6 +72,9 @@ class Matcher(object):
         "series": lambda self: self.match_sequence,
         "rseries": lambda self: self.match_rsequence,
         "mseries": lambda self: self.match_msequence,
+        "string": lambda self: self.match_string,
+        "rstring": lambda self: self.match_rstring,
+        "mstring": lambda self: self.match_mstring,
         "const": lambda self: self.match_const,
         "var": lambda self: self.match_var,
         "set": lambda self: self.match_set,
@@ -451,6 +454,37 @@ class Matcher(object):
         self.match_all_in(head_matches, item)
         for x in range(len(last_matches)):
             self.match(last_matches[x], item + "[" + str(x - len(last_matches)) + "]")
+
+    def match_string(self, tokens, item):
+        """Match prefix string."""
+        prefix, name = tokens
+        return self.match_mstring((prefix, name, None), item, use_bytes=prefix.startswith("b"))
+
+    def match_rstring(self, tokens, item):
+        """Match suffix string."""
+        name, suffix = tokens
+        return self.match_mstring((None, name, suffix), item, use_bytes=suffix.startswith("b"))
+
+    def match_mstring(self, tokens, item, use_bytes=None):
+        """Match prefix and suffix string."""
+        prefix, name, suffix = tokens
+        if use_bytes is None:
+            if prefix.startswith("b") or suffix.startswith("b"):
+                if prefix.startswith("b") and suffix.startswith("b"):
+                    use_bytes = True
+                else:
+                    raise CoconutDeferredSyntaxError("string literals and byte literals cannot be added in patterns", self.loc)
+        if use_bytes:
+            self.add_check("_coconut.isinstance(" + item + ", _coconut.bytes)")
+        else:
+            self.add_check("_coconut.isinstance(" + item + ", _coconut.str)")
+        if prefix is not None:
+            self.add_check(item + ".startswith(" + prefix + ")")
+        if suffix is not None:
+            self.add_check(item + ".endswith(" + suffix + ")")
+        self.add_def(name + " = " + item + "[" +
+                     ("" if prefix is None else "len(" + prefix + ")") + ":"
+                     + ("" if suffix is None else "-len(" + suffix + ")") + "]")
 
     def match_const(self, tokens, item):
         """Matches a constant."""

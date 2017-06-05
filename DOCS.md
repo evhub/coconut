@@ -584,19 +584,22 @@ pattern ::= (
     | "None" | "True" | "False"     # constants
     | "=" NAME                      # check
     | NUMBER                        # numbers
-    | STRING                        # strings
+    | STRING                        # stringsh
     | [pattern "as"] NAME           # capture
     | NAME "(" patterns ")"         # data types
+    | pattern "is" exprs            # type-checking
+    | pattern "and" pattern         # match all
+    | pattern "or" pattern          # match any
+    | "{" pattern_pairs "}"         # dictionaries
+    | ["s"] "{" pattern_consts "}"  # sets
     | "(" patterns ")"              # sequences can be in tuple form
     | "[" patterns "]"              #  or in list form
     | "(|" patterns "|)"            # lazy lists
-    | "{" pattern_pairs "}"         # dictionaries
-    | ["s"] "{" pattern_consts "}"  # sets
     | ("(" | "[")                   # star splits
-        patterns,
-        "*" middle,
         patterns
-      (")" | "]")                       # must both be parens or brackets
+        "*" middle
+        patterns
+      (")" | "]")
     | (                             # head-tail splits
         "(" patterns ")"
         | "[" patterns "]"
@@ -617,10 +620,9 @@ pattern ::= (
         | "[" patterns "]"
         | "(|" patterns "|)"
       ) "::" pattern
-    | pattern "is" exprs            # type-checking
-    | pattern "and" pattern         # match all
-    | pattern "or" pattern          # match any
-    )
+    | ([STRING "+"] NAME            # complex string matching
+        ["+" STRING])
+)
 ```
 
 ##### Semantic Specification
@@ -642,6 +644,7 @@ pattern ::= (
 - Init-Last Splits (`<var> + <list/tuple>`): exactly the same as head-tail splits, but on the end instead of the beginning of the sequence.
 - Head-Last Splits (`<list/tuple> + <var> + <list/tuple>`): the combination of a head-tail and an init-last split.
 - Iterator Splits (`<list/tuple/lazy list> :: <var>`): will match the beginning of an iterable (`collections.abc.Iterable`) against the `<list/tuple/lazy list>`, then bind the rest to `<var>` or check that the iterable is done.
+- Complex String Matching (`<string> + <var> + <string>`): matches strings that start and end with the given substrings, binding the middle to `<var>`.
 
 _Note: Like [iterator slicing](#iterator-slicing), iterator and lazy list matching make no guarantee that the original iterator matched against be preserved (to preserve the iterator, use Coconut's [`tee` function](#tee)._
 
