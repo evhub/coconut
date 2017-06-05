@@ -13,11 +13,19 @@ Yes and yes! Coconut compiles to Python, so Coconut modules are accessible from 
 
 ### What versions of Python does Coconut support?
 
-Coconut supports any Python version `>= 2.6` on the `2.x` branch or `>= 3.2` on the `3.x` branch. See [compatible Python versions](DOCS.html#compatible-python-versions) for more information.
+Coconut supports any Python version `>= 2.6` on the `2.x` branch or `>= 3.2` on the `3.x` branch. In fact, Coconut code is compiled to run the same on every one of those supported versions! See [compatible Python versions](DOCS.html#compatible-python-versions) for more information.
+
+### Does Coconut really let me turn Python 3 into version-independent Python?
+
+Yes! Coconut will compile Python 3 syntax, built-ins, and even imports to code that will work on any supported Python version (`2.6`, `2.7`, `>=3.2`). There a couple of caveats to this, statement, however: some constructs, like `async`, are for all intents and purposes impossible to recreate in lower Python versions, and require a particular `--target` to make them work. For a full list, see [compatible Python versions](DOCS.html#compatible-python-versions).
 
 ### I saw that Coconut was recently updated. Where is the change log?
 
 Information on every Coconut release is chronicled on the [GitHub releases page](https://github.com/evhub/coconut/releases). There you can find all of the new features and breaking changes introduced in each release.
+
+### Does Coconut support static type checking?
+
+Yes! Coconut compiles the [newest](https://www.python.org/dev/peps/pep-0526/), [fanciest](https://www.python.org/dev/peps/pep-0484/) type annotation syntax into version-independent type comments which can then by checked using Coconut's built-in [MyPy Integration](http://coconut.readthedocs.io/en/master/DOCS.html#mypy-integration).
 
 ### Help! I tried to write a recursive iterator and my Python segfaulted!
 
