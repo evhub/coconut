@@ -282,21 +282,37 @@ class count{object}:
     def __fmap__(self, func):
         return _coconut_map(func, self)
 def recursive_iterator(func):
-    """Decorates a function by optimizing it for iterator recursion.
-    Requires function arguments to be pickleable."""
+    """Decorates a function by optimizing it for iterator recursion."""
     tee_store = {empty_dict}
+    backup_tee_store = []
     @_coconut.functools.wraps(func)
     def recursive_iterator_func(*args, **kwargs):
-        hashable_args_kwargs = (args,  frozenset(kwargs))
+        key, use_backup = (args, frozenset(kwargs)), False
         try:
-            hash(hashable_args_kwargs)
+            hash(key)
         except _coconut.Exception:
-            hashable_args_kwargs = _coconut.pickle.dumps((args, kwargs), _coconut.pickle.HIGHEST_PROTOCOL)
-        try:
-            to_tee = tee_store[hashable_args_kwargs]
-        except _coconut.KeyError:
-            to_tee = func(*args, **kwargs)
-        tee_store[hashable_args_kwargs], to_return = _coconut_tee(to_tee)
+            try:
+                key = _coconut.pickle.dumps(key, _coconut.pickle.HIGHEST_PROTOCOL)
+            except _coconut.Exception:
+                use_backup = True
+        if use_backup:
+            to_tee, store_pos = None, None
+            for i, (k, v) in _coconut.enumerate(backup_tee_store):
+                if k == key:
+                    to_tee, store_pos = v, i
+            if to_tee is None:
+                to_tee = func(*args, **kwargs)
+            to_store, to_return = _coconut_tee(to_tee)
+            if store_pos is None:
+                backup_tee_store.append([key, to_store])
+            else:
+                backup_tee_store[store_pos][1] = to_store
+        else:
+            try:
+                to_tee = tee_store[key]
+            except _coconut.KeyError:
+                to_tee = func(*args, **kwargs)
+            tee_store[key], to_return = _coconut_tee(to_tee)
         return to_return
     return recursive_iterator_func
 def addpattern(base_func):

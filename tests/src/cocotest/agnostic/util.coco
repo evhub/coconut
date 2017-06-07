@@ -167,9 +167,21 @@ def is_odd_(0) = False
 @addpattern(is_odd_)
 def is_odd_(n) = is_even_(n-1)
 
-# Other TCO tests:
+# TCO and recursive_iterator tests:
+
 def tco_chain(it) =
     consume(it :: ["last"], keep_last=1)
+
+@recursive_iterator
+def partition(items, pivot, lprefix=[], rprefix=[]):
+    case items:
+        match [head]::tail:
+            if head < pivot:
+                return partition(tail, pivot, [head]::lprefix, rprefix)
+            else:
+                return partition(tail, pivot, lprefix, [head]::rprefix)
+        match []::_:
+            return lprefix, rprefix
 
 # Data Blocks:
 data preop(x, y):

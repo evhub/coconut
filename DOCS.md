@@ -1638,9 +1638,8 @@ Nothing(*map(lambda x: x*2, Nothing())) == Nothing()
 Coconut provides a `recursive_iterator` decorator that provides significant optimizations for any stateless, recursive function that returns an iterator. To use `recursive_iterator` on a function, it must meet the following criteria:
 
 1. your function either always `return`s an iterator or generates an iterator using `yield`,
-2. when called multiple times with the same arguments, your function produces the same iterator (your function is stateless),
-3. your function gets called (usually calls itself) multiple times with the same arguments, and
-4. all arguments passed to your function are hashable or have a unique pickling (almost always true).
+2. when called multiple times with the same arguments, your function produces the same iterator (your function is stateless), and
+3. your function gets called (usually calls itself) multiple times with the same arguments.
 
 If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for `recursive_iterator`, or the corresponding criteria for Coconut's [tail call optimization](#tail-call-optimization), either of which should prevent such errors.
 
