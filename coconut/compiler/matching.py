@@ -380,7 +380,7 @@ class Matcher(object):
             self.add_def(itervar + " = _coconut.tuple(" + item + ")")
         elif matches:
             itervar = self.get_temp_var()
-            if tail == wildacrd:
+            if tail == wildcard:
                 tail = item
             else:
                 self.add_def(tail + " = _coconut.iter(" + item + ")")

@@ -1404,7 +1404,7 @@ class Compiler(Grammar):
             tre_return_handle)
 
     @contextmanager
-    def complain_on_error(self):
+    def complain_on_err(self):
         """Complain about any parsing-related errors raised inside."""
         try:
             yield
@@ -1434,7 +1434,7 @@ class Compiler(Grammar):
         raw_lines = funcdef.splitlines(True)
         def_stmt, raw_lines = raw_lines[0], raw_lines[1:]
         func_name = None
-        with self.complain_on_error():
+        with self.complain_on_err():
             func_name, func_args, func_params = parse(self.split_func_name_args_params, def_stmt)
         if func_name is not None:
             if "." in func_name:
@@ -1467,7 +1467,7 @@ class Compiler(Grammar):
                         # tre does not work with decorators, though tco does
                         if not decorators and attempt_tre:
                             # attempt tre
-                            with self.complain_on_error():
+                            with self.complain_on_err():
                                 tre_base = transform(self.tre_return(func_name, func_args, func_store, use_mock=use_mock), base)
                             if tre_base is not None:
                                 line = tre_base + comment + indent
@@ -1476,7 +1476,7 @@ class Compiler(Grammar):
                         if tre_base is None:
                             # attempt tco
                             tco_base = None
-                            with self.complain_on_error():
+                            with self.complain_on_err():
                                 tco_base = transform(self.tco_return, base)
                             if tco_base is not None:
                                 line = tco_base + comment + indent
