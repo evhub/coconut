@@ -2,7 +2,7 @@ class _coconut{object}:
     import collections, functools, imp, itertools, operator, types, copy, pickle
     {import_OrderedDict}
     {import_collections_abc}
-    IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr{comma_bytearray} = IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, {static_repr}{comma_bytearray}
+    Exception, IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr{comma_bytearray} = Exception, IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, {static_repr}{comma_bytearray}
 class MatchError(Exception):
     """Pattern-matching error."""
     __slots__ = ("pattern", "value")
@@ -287,7 +287,11 @@ def recursive_iterator(func):
     tee_store = {empty_dict}
     @_coconut.functools.wraps(func)
     def recursive_iterator_func(*args, **kwargs):
-        hashable_args_kwargs = _coconut.pickle.dumps((args, kwargs), _coconut.pickle.HIGHEST_PROTOCOL)
+        hashable_args_kwargs = (args,  frozenset(kwargs))
+        try:
+            hash(hashable_args_kwargs)
+        except _coconut.Exception:
+            hashable_args_kwargs = _coconut.pickle.dumps((args, kwargs), _coconut.pickle.HIGHEST_PROTOCOL)
         try:
             to_tee = tee_store[hashable_args_kwargs]
         except _coconut.KeyError:

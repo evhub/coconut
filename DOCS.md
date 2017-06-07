@@ -1640,7 +1640,7 @@ Coconut provides a `recursive_iterator` decorator that provides significant opti
 1. your function either always `return`s an iterator or generates an iterator using `yield`,
 2. when called multiple times with the same arguments, your function produces the same iterator (your function is stateless),
 3. your function gets called (usually calls itself) multiple times with the same arguments, and
-4. all arguments passed to your function have a unique pickling (usually true for most arguments).
+4. all arguments passed to your function are hashable or have a unique pickling (almost always true).
 
 If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for `recursive_iterator`, or the corresponding criteria for Coconut's [tail call optimization](#tail-call-optimization), either of which should prevent such errors.
 

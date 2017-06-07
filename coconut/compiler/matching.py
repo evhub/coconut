@@ -483,8 +483,8 @@ class Matcher(object):
         if suffix is not None:
             self.add_check(item + ".endswith(" + suffix + ")")
         self.add_def(name + " = " + item + "[" +
-                     ("" if prefix is None else "len(" + prefix + ")") + ":"
-                     + ("" if suffix is None else "-len(" + suffix + ")") + "]")
+                     ("" if prefix is None else "_coconut.len(" + prefix + ")") + ":"
+                     + ("" if suffix is None else "-_coconut.len(" + suffix + ")") + "]")
 
     def match_const(self, tokens, item):
         """Matches a constant."""
