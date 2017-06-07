@@ -349,6 +349,7 @@ def suite_test():
     assert Quant(0, 1, 2) |> fmap$(-> _+1) == Quant(1, 2, 3)
     a = Nest()
     assert a.b.c.d == "data" == a |> .b.c.d
+    assert tco_chain([1, 2, 3]) == "last"
     return True
 
 def tco_test():

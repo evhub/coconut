@@ -30,6 +30,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import sys
+from contextlib import contextmanager
 
 from pyparsing import (
     ParseBaseException,
@@ -1069,7 +1070,7 @@ class Compiler(Grammar):
         if starred_arg is not None:
             attr_str += (" " if attr_str else "") + starred_arg
             if base_args:
-                extra_stmts += r'''def __new__(_cls, {all_args}):
+                extra_stmts += '''def __new__(_cls, {all_args}):
                     {oind}return _coconut.tuple.__new__(_cls, {base_args_tuple} + {starred_arg})
                 {cind}@_coconut.classmethod
                 def _make(cls, iterable, {kwd_only}new=_coconut.tuple.__new__, len=_coconut.len):
@@ -1102,7 +1103,7 @@ class Compiler(Grammar):
                     kwd_only=("*, " if self.target.startswith("3") else ""),
                 )
             else:
-                extra_stmts += r'''def __new__(_cls, *{arg}):
+                extra_stmts += '''def __new__(_cls, *{arg}):
                     {oind}return _coconut.tuple.__new__(_cls, {arg})
                 {cind}@_coconut.classmethod
                 def _make(cls, iterable, {kwd_only}new=_coconut.tuple.__new__, len=None):
@@ -1399,8 +1400,18 @@ class Compiler(Grammar):
                     + tco_recurse + "\n" + closeindent
                 )
         return attach(
-            (Keyword("return") + Keyword(func_name)).suppress() + self.function_call + self.end_marker.suppress(),
+            (Keyword("return") + Keyword(func_name)).suppress() + self.parens + self.end_marker.suppress(),
             tre_return_handle)
+
+    @contextmanager
+    def complain_on_error(self):
+        """Complain about any parsing-related errors raised inside."""
+        try:
+            yield
+        except ParseBaseException as err:
+            complain(self.make_parse_err(err, reformat=False, include_ln=False))
+        except CoconutException as err:
+            complain(err)
 
     def decoratable_normal_funcdef_stmt_handle(self, tokens):
         """Determines if TCO or TRE can be done and if so does it.
@@ -1422,11 +1433,10 @@ class Compiler(Grammar):
 
         raw_lines = funcdef.splitlines(True)
         def_stmt, raw_lines = raw_lines[0], raw_lines[1:]
-        try:
+        func_name = None
+        with self.complain_on_error():
             func_name, func_args, func_params = parse(self.split_func_name_args_params, def_stmt)
-        except ParseBaseException as err:
-            complain(self.make_parse_err(err, reformat=False, include_ln=False))
-        else:
+        if func_name is not None:
             if "." in func_name:
                 undotted_name = func_name.rsplit(".", 1)[-1]
                 def_stmt = def_stmt.replace(func_name, undotted_name)
@@ -1453,19 +1463,21 @@ class Compiler(Grammar):
                         disabled_until_level = level
                     else:
                         base, comment = split_comment(body)
-                        # tco works with decorators, but not tre
-                        if decorators or not attempt_tre:
-                            tre_base = None
-                        else:
+                        tre_base = None
+                        # tre does not work with decorators, though tco does
+                        if not decorators and attempt_tre:
                             # attempt tre
-                            tre_base = transform(self.tre_return(func_name, func_args, func_store, use_mock=use_mock), base)
+                            with self.complain_on_error():
+                                tre_base = transform(self.tre_return(func_name, func_args, func_store, use_mock=use_mock), base)
                             if tre_base is not None:
                                 line = tre_base + comment + indent
                                 tre = True
                                 tco = True  # tre falls back on tco if the function is changed
                         if tre_base is None:
                             # attempt tco
-                            tco_base = transform(self.tco_return, base)
+                            tco_base = None
+                            with self.complain_on_error():
+                                tco_base = transform(self.tco_return, base)
                             if tco_base is not None:
                                 line = tco_base + comment + indent
                                 tco = True

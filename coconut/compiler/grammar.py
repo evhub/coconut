@@ -631,8 +631,8 @@ class Grammar(object):
         base_name = ~Keyword(k) + base_name
     for k in reserved_vars:
         base_name |= backslash.suppress() + Keyword(k)
-    dotted_name = condense(name + ZeroOrMore(dot + name))
     dotted_base_name = condense(base_name + ZeroOrMore(dot + base_name))
+    dotted_name = condense(name + ZeroOrMore(dot + name))
 
     integer = Combine(Word(nums) + ZeroOrMore(underscore.suppress() + Word(nums)))
     binint = Combine(Word("01") + ZeroOrMore(underscore.suppress() + Word("01")))
