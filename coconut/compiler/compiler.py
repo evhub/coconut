@@ -181,7 +181,7 @@ def split_args_list(tokens, loc):
             if arg[0] == "*":
                 # star sep (pos = 3)
                 if pos >= 3:
-                    raise CoconutDeferredSyntaxError("invalid star seperator in function definition", loc)
+                    raise CoconutDeferredSyntaxError("invalid star separator in function definition", loc)
                 pos = 3
             else:
                 # pos arg (pos = 0)

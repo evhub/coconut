@@ -888,25 +888,26 @@ class Grammar(object):
         condense(lbrack + subscriptlist + rbrack)
         | condense(dot + name)
     )
-    partial_trailer = Group(fixto(dollar, "$(") + function_call)
-    partial_trailer_tokens = Group(dollar.suppress() + function_call_tokens)
-    complex_trailer_no_partial = (
-        condense(function_call)
+    no_partial_trailer = (
+        simple_trailer
+        | condense(function_call)
         | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())
         | Group(condense(dollar + lbrack + rbrack))
-        | Group(fixto(dollar + lparen, "$(?") + questionmark_call_tokens) + rparen.suppress()
-        | Group(dollar + ~lparen + ~lbrack)
         | Group(condense(lbrack + rbrack))
         | Group(dot + ~name + ~lbrack)
+        | Group(fixto(dollar + lparen, "$(?") + questionmark_call_tokens) + rparen.suppress()
+        | Group(dollar + ~lparen + ~lbrack)
     )
-    complex_trailer = partial_trailer | complex_trailer_no_partial
-    trailer = simple_trailer | complex_trailer
+    partial_trailer = Group(fixto(dollar, "$(") + function_call)
+    partial_trailer_tokens = Group(dollar.suppress() + function_call_tokens)
+    trailer = partial_trailer | no_partial_trailer
 
     atom_item = attach(atom + ZeroOrMore(trailer), item_handle)
-    no_partial_atom_item = attach(atom + ZeroOrMore(complex_trailer_no_partial), item_handle)
+    no_partial_atom_item = attach(atom + ZeroOrMore(no_partial_trailer), item_handle)
+
     simple_assign = attach(maybeparens(lparen,
                                        (name | passthrough_atom)
-                                       + ZeroOrMore(ZeroOrMore(complex_trailer) + OneOrMore(simple_trailer)),
+                                       + ZeroOrMore(ZeroOrMore(trailer) + OneOrMore(simple_trailer)),
                                        rparen), item_handle)
     simple_assignlist = maybeparens(lparen, itemlist(simple_assign, comma), rparen)
 
