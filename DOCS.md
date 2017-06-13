@@ -444,16 +444,18 @@ Coconut supports Unicode alternatives to many different operator symbols. The Un
 
 ### `data`
 
+Coconut's `data` keyword is used to create immutable, algebraic data types with built-in support for destructuring [pattern-matching](#match) and [`fmap`](#fmap).
+
 The syntax for `data` blocks is a cross between the syntax for functions and the syntax for classes. The first line looks like a function definition, but the rest of the body looks like a class, usually containing method definitions. This is because while `data` blocks actually end up as classes in Python, Coconut automatically creates a special, immutable constructor based on the given arguments.
 
-Coconut `data` blocks create immutable classes derived from `collections.namedtuple` and made immutable with `__slots__`. Coconut data statement syntax looks like:
+Coconut data statement syntax looks like:
 ```coconut
 data <name>(<args>) [from <inherits>]:
     <body>
 ```
-`<name>` is the name of the new data type, `<args>` are the arguments to its constructor as well as the names of its attributes, `<body>` contains the data type's methods, and `<inherits>` optionally contains any desired base classes.
+`<name>` is the name of the new data type, `<args>` are the arguments to its constructor as well as the names of its attributes, `<body>` contains the data type's methods, and `<inherits>` optionally contains any desired base classes. Coconut also supports an extended version where `<args>` can contain a starred argument to collect extra parameters.
 
-In addition to supporting standard `collections.namedtuple` subclassing when `<args>` is a list of names, Coconut also supports an extended version where `<args>` can contain a starred argument to collect extra parameters.
+Writing constructors for `data` types must be done using the `__new__` method instead of the `__init__` method. For helping to easily write `__new__` methods, Coconut provides the [datamaker](#datamaker) built-in.
 
 Subclassing `data` types can be done easily by inheriting from them either in another `data` statement or a normal Python `class`. If a normal `class` statement is used, making the new subclass immutable will require adding the line
 ```coconut
