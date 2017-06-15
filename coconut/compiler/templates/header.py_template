@@ -6,7 +6,7 @@ class _coconut{object}:
 class MatchError(Exception):
     """Pattern-matching error."""
     __slots__ = ("pattern", "value")
-class _coconut_tail_call(Exception):
+class _coconut_tail_call{object}:
     __slots__ = ("func", "args", "kwargs")
     def __init__(self, func, *args, **kwargs):
         self.func, self.args, self.kwargs = func, args, kwargs
@@ -23,10 +23,11 @@ def _coconut_tco(func):
                 return call_func(*args, **kwargs)  # pass --no-tco to clean up your traceback
             if _coconut.hasattr(call_func, "_coconut_is_tco"):
                 kwargs["_coconut_inside_tco"] = call_func._coconut_is_tco
-            try:
-                return call_func(*args, **kwargs)  # pass --no-tco to clean up your traceback
-            except _coconut_tail_call as tail_call:
-                call_func, args, kwargs = tail_call.func, tail_call.args, tail_call.kwargs
+            result = call_func(*args, **kwargs)  # pass --no-tco to clean up your traceback
+            if isinstance(result, _coconut_tail_call):
+                call_func, args, kwargs = result.func, result.args, result.kwargs
+            else:
+                return result
     tail_call_optimized_func._coconut_is_tco = True
     return tail_call_optimized_func
 def _coconut_igetitem(iterable, index):
@@ -324,7 +325,7 @@ def addpattern(base_func):
             try:
                 return base_func(*args, **kwargs)
             except _coconut_MatchError:
-                raise _coconut_tail_call(func, *args, **kwargs)
+                return _coconut_tail_call(func, *args, **kwargs)
         return add_pattern_func
     return pattern_adder
 def prepattern(base_func):

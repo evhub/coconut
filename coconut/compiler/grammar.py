@@ -529,9 +529,9 @@ def tco_return_handle(tokens):
     if len(tokens) != 2:
         raise CoconutInternalException("invalid tail-call-optimizable return statement tokens", tokens)
     elif tokens[1].startswith("()"):
-        return "raise _coconut_tail_call(" + tokens[0] + ")" + tokens[1][2:]  # tokens[1] contains \n
+        return "return _coconut_tail_call(" + tokens[0] + ")" + tokens[1][2:]  # tokens[1] contains \n
     else:
-        return "raise _coconut_tail_call(" + tokens[0] + ", " + tokens[1][1:]  # tokens[1] contains )\n
+        return "return _coconut_tail_call(" + tokens[0] + ", " + tokens[1][1:]  # tokens[1] contains )\n
 
 
 def split_func_name_args_params_handle(tokens):

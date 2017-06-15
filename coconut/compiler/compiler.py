@@ -1386,7 +1386,7 @@ class Compiler(Grammar):
                 raise CoconutInternalException("invalid tail recursion elimination tokens", tokens)
             else:
                 args = tokens[0][1:-1]  # strip parens
-                tco_recurse = "raise _coconut_tail_call(" + func_name + (", " + args if args else "") + ")"
+                tco_recurse = "return _coconut_tail_call(" + func_name + (", " + args if args else "") + ")"
                 if not func_args or func_args == args:
                     tre_recurse = "continue"
                 elif use_mock:
