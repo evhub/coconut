@@ -144,7 +144,7 @@ class map(_coconut.map):
     def __reduce_ex__(self, _):
         return self.__reduce__()
     def __copy__(self):
-        return self.__class__(self._func, *_coconut_map(_coconut.copy.copy, self._iters))
+        return self.__class__(self._func, *_coconut.map(_coconut.copy.copy, self._iters))
     def __fmap__(self, func):
         return self.__class__(_coconut_compose(func, self._func), *self._iters)
 class parallel_map(map):
@@ -210,7 +210,7 @@ class zip(_coconut.zip):
     def __reduce_ex__(self, _):
         return self.__reduce__()
     def __copy__(self):
-        return self.__class__(*_coconut_map(_coconut.copy.copy, self._iters))
+        return self.__class__(*_coconut.map(_coconut.copy.copy, self._iters))
     def __fmap__(self, func):
         return _coconut_map(func, self)
 class enumerate(_coconut.enumerate):
