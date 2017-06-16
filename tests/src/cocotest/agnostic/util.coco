@@ -167,12 +167,11 @@ def is_odd_(0) = False
 @addpattern(is_odd_)
 def is_odd_(n) = is_even_(n-1)
 
-# TCO and recursive_iterator tests:
+# TCO/TRE tests:
 
 def tco_chain(it) =
     consume(it :: ["last"], keep_last=1)
 
-@recursive_iterator
 def partition(items, pivot, lprefix=[], rprefix=[]):
     case items:
         match [head]::tail:
@@ -182,6 +181,14 @@ def partition(items, pivot, lprefix=[], rprefix=[]):
                 return partition(tail, pivot, lprefix, [head]::rprefix)
         match []::_:
             return lprefix, rprefix
+
+def myreduce(func, items):
+    print(func, items)
+    match [first]::tail1 in items:
+        match [second]::tail2 in tail1:
+            return myreduce(func, [func(first, second)]::tail2)
+        else:
+            return first
 
 # Data Blocks:
 data preop(x, y):

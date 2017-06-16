@@ -1356,6 +1356,11 @@ class Grammar(object):
         (start_marker + Keyword("def")).suppress() + dotted_base_name + lparen.suppress()
         + parameters_tokens + rparen.suppress(), split_func_name_args_params_handle)
 
+    stores_scope = (
+        Keyword("lambda")
+        | Keyword("for") + base_name + Keyword("in")
+    )
+
 
 # end: EXTRA GRAMMAR
 #-----------------------------------------------------------------------------------------------------------------------

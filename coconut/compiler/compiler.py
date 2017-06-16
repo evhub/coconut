@@ -105,6 +105,7 @@ from coconut.compiler.util import (
     split_trailing_indent,
     match_in,
     transform,
+    ignore_transform,
     parse,
 )
 from coconut.compiler.header import (
@@ -1386,6 +1387,10 @@ class Compiler(Grammar):
                 raise CoconutInternalException("invalid tail recursion elimination tokens", tokens)
             else:
                 args = tokens[0][1:-1]  # strip parens
+                # check if there is anything in the arguments that will store a reference
+                # to the current scope, and if so, abort TRE, since it can't handle that
+                if match_in(self.stores_scope, args):
+                    return ignore_transform
                 tco_recurse = "return _coconut_tail_call(" + func_name + (", " + args if args else "") + ")"
                 if not func_args or func_args == args:
                     tre_recurse = "continue"

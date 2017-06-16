@@ -202,6 +202,9 @@ def matches(grammar, text):
     return list(grammar.parseWithTabs().scanString(text))
 
 
+ignore_transform = object()
+
+
 def transform(grammar, text):
     """Transforms text by replacing matches to grammar."""
     results = []
@@ -209,8 +212,9 @@ def transform(grammar, text):
     for tokens, start, stop in grammar.parseWithTabs().scanString(text):
         if len(tokens) != 1:
             raise CoconutInternalException("invalid transform result tokens", tokens)
-        results.append(tokens[0])
-        intervals.append((start, stop))
+        if tokens[0] is not ignore_transform:
+            results.append(tokens[0])
+            intervals.append((start, stop))
 
     if not results:
         return None
