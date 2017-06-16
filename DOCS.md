@@ -1777,7 +1777,7 @@ Each _mode_ has two components: what parser it uses, and what header it prepends
     + header: none
 - `"debug"`:
     + parser: debug
-        * Can parse any Coconut code and allows leading whitespace.
+        * Can parse any Coconut code, allows leading whitespace, and has no trailing newline.
     + header: none
 
 #### `setup`

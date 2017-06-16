@@ -229,10 +229,15 @@ def item_handle(loc, tokens):
                 pos_args, star_args, kwd_args, dubstar_args = split_function_call(trailer[1], loc)
                 extra_args_str = join_args(star_args, kwd_args, dubstar_args)
                 argdict_pairs = []
+                has_question_mark = False
                 for i in range(len(pos_args)):
-                    if pos_args[i] != "?":
+                    if pos_args[i] == "?":
+                        has_question_mark = True
+                    else:
                         argdict_pairs.append(str(i) + ": " + pos_args[i])
-                if argdict_pairs or extra_args_str:
+                if not has_question_mark:
+                    raise CoconutInternalException("no question mark in question mark partial", trailer[1])
+                elif argdict_pairs or extra_args_str:
                     out = ("_coconut_partial("
                            + out
                            + ", {" + ", ".join(argdict_pairs) + "}"

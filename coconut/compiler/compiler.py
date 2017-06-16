@@ -1674,6 +1674,6 @@ class Compiler(Grammar):
 
     def parse_debug(self, inputstring):
         """Parses debug code."""
-        return self.parse(inputstring, self.file_parser, {"strip": True}, {"header": "none", "initial": "none"})
+        return self.parse(inputstring, self.file_parser, {"strip": True}, {"header": "none", "initial": "none", "final_endline": False})
 
 # end: ENDPOINTS

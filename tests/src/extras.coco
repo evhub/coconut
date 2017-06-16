@@ -39,14 +39,12 @@ def main():
         assert False
     setup()
     assert parse("abc") == parse("abc", "sys")
-    assert parse("abc", "single")
     assert parse("abc", "file")
     assert parse("abc", "package")
-    assert parse("abc", "block")
-    assert parse("abc", "eval")
-    assert parse("abc", "debug")
-    assert parse(" abc", "eval")
-    assert parse("x |> map$(f)", "single") == "map(f, x)\n"
+    assert parse("abc", "block") == "abc\n" == parse("abc", "single")
+    assert parse("abc", "eval") == "abc\n" == parse(" abc", "eval")
+    assert parse("abc", "debug") == "abc"
+    assert parse("x |> map$(f)", "debug") == "map(f, x)"
     try:
         parse(" abc", "file")
     except CoconutException:
