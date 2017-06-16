@@ -260,6 +260,11 @@ def comp_all(args=[], **kwargs):
     comp_runner(args, **kwargs)
     comp_extras(args, **kwargs)
 
+
+def run_runnable(args=[]):
+    """Call coconut-run on runnable_coco."""
+    call(["coconut-run"] + args + [runnable_coco, "--arg"], assert_output=True)
+
 #-----------------------------------------------------------------------------------------------------------------------
 # TESTS:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -278,10 +283,10 @@ class TestShell(unittest.TestCase):
 
     def test_runnable(self):
         with remove_when_done(runnable_py):
-            call(["coconut-run", runnable_coco, "--arg"], assert_output=True)
+            run_runnable()
 
     def test_runnable_nowrite(self):
-        call(["coconut-run", "-n", runnable_coco, "--arg"], assert_output=True)
+        run_runnable(["-n"])
 
     if IPY:
 
@@ -302,9 +307,6 @@ class TestCompilation(unittest.TestCase):
 
     def test_line_numbers(self):
         run(["--linenumbers"])
-
-    def test_keep_lines(self):
-        run(["--keeplines"])
 
     if platform.python_implementation() != "PyPy":
         def test_jobs_zero(self):
@@ -330,8 +332,14 @@ class TestCompilation(unittest.TestCase):
     def test_no_tco(self):
         run(["--no-tco"])
 
-    def test_minify(self):
-        run(["--minify"])
+    def test_simple_keep_lines(self):
+        run_runnable(["-n", "--keeplines"])
+
+    def test_simple_line_numbers_keep_lines(self):
+        run_runnable(["-n", "--linenumbers", "--keeplines"])
+
+    def test_simple_minify(self):
+        run_runnable(["-n", "--minify"])
 
 
 class TestExternal(unittest.TestCase):
