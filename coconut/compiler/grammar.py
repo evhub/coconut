@@ -894,11 +894,13 @@ class Grammar(object):
         | Group(condense(dollar + lbrack + rbrack))
         | Group(condense(lbrack + rbrack))
         | Group(dot + ~name + ~lbrack)
-        | Group(fixto(dollar + lparen, "$(?") + questionmark_call_tokens) + rparen.suppress()
         | Group(dollar + ~lparen + ~lbrack)
     )
     no_partial_trailer = simple_trailer | no_partial_complex_trailer
-    partial_trailer = Group(fixto(dollar, "$(") + function_call)
+    partial_trailer = (
+        Group(fixto(dollar, "$(") + function_call)
+        | Group(fixto(dollar + lparen, "$(?") + questionmark_call_tokens) + rparen.suppress()
+    )
     partial_trailer_tokens = Group(dollar.suppress() + function_call_tokens)
     complex_trailer = partial_trailer | no_partial_complex_trailer
     trailer = simple_trailer | complex_trailer

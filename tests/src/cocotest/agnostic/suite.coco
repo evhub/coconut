@@ -350,7 +350,7 @@ def suite_test():
     a = Nest()
     assert a.b.c.d == "data" == a |> .b.c.d
     assert tco_chain([1, 2, 3]) |> list == ["last"]
-    assert partition([1, 2, 3], 2) |> map$(tuple) |> list == [(1,), (3, 2)]
+    assert partition([1, 2, 3], 2) |> map$(tuple) |> list == [(1,), (3, 2)] == partition_([1, 2, 3], 2) |> map$(tuple) |> list
     assert myreduce((+), (1, 2, 3)) == 6
     return True
 

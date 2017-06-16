@@ -38,28 +38,15 @@ def main():
     else:
         assert False
     setup()
-    _sys = parse("abc", "sys")
-    assert _sys
-    assert _sys == parse("abc")
-    _single = parse("abc", "single")
-    assert _single
-    _file = parse("abc", "file")
-    assert _file
-    _package = parse("abc", "package")
-    assert _package
-    _block = parse("abc", "block")
-    assert _block
-    _eval = parse("abc", "eval")
-    assert _eval
-    _debug = parse("abc", "debug")
-    assert _debug
-    assert _single == parse("abc", "single")
-    assert _file == parse("abc", "file")
-    assert _package == parse("abc", "package")
-    assert _block == parse("abc", "block")
-    assert _eval == parse("abc", "eval")
-    assert _debug == parse("abc", "debug")
+    assert parse("abc") == parse("abc", "sys")
+    assert parse("abc", "single")
+    assert parse("abc", "file")
+    assert parse("abc", "package")
+    assert parse("abc", "block")
+    assert parse("abc", "eval")
+    assert parse("abc", "debug")
     assert parse(" abc", "eval")
+    assert parse("x |> map$(f)", "single") == "map(f, x)\n"
     try:
         parse(" abc", "file")
     except CoconutException:

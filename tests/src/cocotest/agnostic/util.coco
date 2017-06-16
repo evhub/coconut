@@ -181,6 +181,7 @@ def partition(items, pivot, lprefix=[], rprefix=[]):
                 return partition(tail, pivot, lprefix, [head]::rprefix)
         match []::_:
             return lprefix, rprefix
+partition_ = recursive_iterator(partition)
 
 def myreduce(func, items):
     print(func, items)
