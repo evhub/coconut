@@ -10,25 +10,17 @@ class _coconut_tail_call{object}:
     __slots__ = ("func", "args", "kwargs")
     def __init__(self, func, *args, **kwargs):
         self.func, self.args, self.kwargs = func, args, kwargs
+_coconut_tco_func_set = set()
 def _coconut_tco(func):
     @_coconut.functools.wraps(func)
     def tail_call_optimized_func(*args, **kwargs):
         call_func = func
         while True:
-            try:
-                del kwargs["_coconut_inside_tco"]
-            except _coconut.KeyError:
-                pass
-            else:
-                return call_func(*args, **kwargs)  # pass --no-tco to clean up your traceback
-            if _coconut.hasattr(call_func, "_coconut_is_tco"):
-                kwargs["_coconut_inside_tco"] = call_func._coconut_is_tco
             result = call_func(*args, **kwargs)  # pass --no-tco to clean up your traceback
-            if isinstance(result, _coconut_tail_call):
-                call_func, args, kwargs = result.func, result.args, result.kwargs
-            else:
+            if not isinstance(result, _coconut_tail_call) or call_func in _coconut_tco_func_set:
                 return result
-    tail_call_optimized_func._coconut_is_tco = True
+            call_func, args, kwargs = result.func, result.args, result.kwargs
+    _coconut_tco_func_set.add(tail_call_optimized_func)
     return tail_call_optimized_func
 def _coconut_igetitem(iterable, index):
     if isinstance(iterable, (_coconut_reversed, _coconut_map, _coconut.filter, _coconut.zip, _coconut_enumerate, _coconut_count, _coconut.abc.Sequence)):
