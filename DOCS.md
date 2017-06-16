@@ -80,7 +80,7 @@ dest                destination directory for compiled files (defaults to
 -q, --quiet           suppress all informational output (combine with
                     --display to write runnable code to stdout)
 -s, --strict          enforce code cleanliness standards
---no-tco, --notco     disable tail call optimization for ease of debugging
+--no-tco, --notco     disable tail call optimization
 -c code, --code code  run Coconut passed in as a string (can also be piped
                     into stdin)
 -j processes, --jobs processes
@@ -942,7 +942,7 @@ _Note: Tail call optimization (though not tail recursion elimination) will work 
 
 If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for tail call optimization, or the corresponding criteria for [`recursive_iterator`](#recursive-iterator), either of which should prevent such errors.
 
-_Note: Tail call optimization and tail recursion elimination can be turned off by passing the `--no-tco` command-line option._
+_Note: Tail call optimization can be turned off by passing the `--no-tco` command-line option, which is useful if you are having trouble reading your tracebacks or are encountering major performance issues._
 
 ##### Example
 

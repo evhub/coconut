@@ -59,6 +59,10 @@ The short answer is that Python isn't purely functional, and all valid Python is
 
 I certainly hope not! Unlike most transpiled languages, all valid Python is valid Coconut. Coconut's goal isn't to replace Python, but to _extend_ it. If a newbie learns Coconut, it won't mean they have a harder time learning Python, it'll mean they _already know_ Python. And not just any Python, the newest and greatest—Python 3. And of course, Coconut is perfectly interoperable with Python, and uses all the same libraries—thus, Coconut can't split the Python community, because the Coconut community _is_ the Python community.
 
+### I want to use Coconut in a production environment; how do I achieve maximum performance?
+
+If you want to make your compiled Coconut run as quickly as possible, there are two simple things you should always do: compile with `--no-tco` and compile with a `--target` specification for the exact version of Python you want to run your code on. Passing `--target` helps Coconut optimize the compiled code for the Python version you want, and, though [Tail Call Optimization](DOCS.html#tail-call-optimization) is useful, it will usually significantly slow down functions that use it, so disabling it will often provide a major performance boost.
+
 ### I want to contribute to Coconut, how do I get started?
 
 That's great! Coconut is completely open-source, and new contributors are always welcome. Check out Coconut's [contributing guidelines](CONTRIBUTING.html) for more information.
