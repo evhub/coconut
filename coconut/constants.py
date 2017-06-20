@@ -452,7 +452,7 @@ coconut_run_args = ["--run", "--quiet", "--target", "sys"]
 
 shebang_regex = r'coconut(?:-run)?'
 
-builtins = (
+coconut_specific_builtins = (
     "reduce",
     "takewhile",
     "dropwhile",

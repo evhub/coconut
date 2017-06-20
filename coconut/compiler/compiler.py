@@ -433,9 +433,9 @@ class Compiler(Grammar):
         else:
             raise CoconutInternalException("multiple tokens leftover", tokens)
 
-    def getheader(self, which, usehash=None):
+    def getheader(self, which, use_hash=None):
         """Gets a formatted header."""
-        return self.polish(getheader(which, self.target, usehash))
+        return self.polish(getheader(which, target=self.target, use_hash=use_hash, no_tco=self.no_tco))
 
     @property
     def target_info(self):
@@ -951,9 +951,9 @@ class Compiler(Grammar):
         """Processes using replprocs."""
         return self.apply_procs(self.replprocs, kwargs, inputstring, log=log)
 
-    def header_proc(self, inputstring, header="file", initial="initial", usehash=None, **kwargs):
+    def header_proc(self, inputstring, header="file", initial="initial", use_hash=None, **kwargs):
         """Adds the header."""
-        pre_header = getheader(initial, self.target, usehash)
+        pre_header = getheader(initial, self.target, use_hash)
         main_header = getheader(header, self.target)
         if self.minify:
             main_header = minify(main_header)
@@ -1643,10 +1643,10 @@ class Compiler(Grammar):
     def parse_file(self, inputstring, addhash=True):
         """Parses file code."""
         if addhash:
-            usehash = self.genhash(False, inputstring)
+            use_hash = self.genhash(False, inputstring)
         else:
-            usehash = None
-        return self.parse(inputstring, self.file_parser, {"nl_at_eof_check": True}, {"header": "file", "usehash": usehash})
+            use_hash = None
+        return self.parse(inputstring, self.file_parser, {"nl_at_eof_check": True}, {"header": "file", "use_hash": use_hash})
 
     def parse_exec(self, inputstring):
         """Parses exec code."""
@@ -1655,10 +1655,10 @@ class Compiler(Grammar):
     def parse_package(self, inputstring, addhash=True):
         """Parses package code."""
         if addhash:
-            usehash = self.genhash(True, inputstring)
+            use_hash = self.genhash(True, inputstring)
         else:
-            usehash = None
-        return self.parse(inputstring, self.file_parser, {"nl_at_eof_check": True}, {"header": "package", "usehash": usehash})
+            use_hash = None
+        return self.parse(inputstring, self.file_parser, {"nl_at_eof_check": True}, {"header": "package", "use_hash": use_hash})
 
     def parse_block(self, inputstring):
         """Parses block code."""

@@ -83,6 +83,14 @@ def section(name, justify_len=80):
     return line + "-" * (justify_len - len(line)) + "\n\n"
 
 
+class comment(object):
+    """When passed to str.format, allows {comment.<>} to serve as a comment."""
+
+    def __getattr__(self, attr):
+        """Return an empty string for all comment attributes."""
+        return ""
+
+
 #-----------------------------------------------------------------------------------------------------------------------
 # HEADER GENERATION:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -91,7 +99,7 @@ def section(name, justify_len=80):
 allowed_headers = ("none", "initial", "__coconut__", "package", "sys", "code", "file")
 
 
-def getheader(which, target="", usehash=None):
+def getheader(which, target="", usehash=None, no_tco=False):
     """Generates the specified header."""
     if which not in allowed_headers:
         raise CoconutInternalException("invalid header type", which)
@@ -166,7 +174,24 @@ from coconut.__coconut__ import *
         header += PYCHECK_HEADER
 
     header += get_template("header").format(
+        comment=comment(),
         object=("(object)" if target_startswith != "3" else ""),
+        def_tco=(r"""_coconut_tco_func_set = set()
+def _coconut_tco(func):
+    @_coconut.functools.wraps(func)
+    def tail_call_optimized_func(*args, **kwargs):
+        call_func = func
+        while True:
+            if call_func in _coconut_tco_func_set:
+                call_func = call_func._coconut_tco_func
+            result = call_func(*args, **kwargs)  # pass --no-tco to clean up your traceback
+            if not isinstance(result, _coconut_tail_call):
+                return result
+            call_func, args, kwargs = result.func, result.args, result.kwargs
+    tail_call_optimized_func._coconut_tco_func = func
+    _coconut_tco_func_set.add(tail_call_optimized_func)
+    return tail_call_optimized_func
+""" if not no_tco else ""),
         import_OrderedDict=(
             '''if _coconut_sys.version_info >= (2, 7):
         OrderedDict = collections.OrderedDict
@@ -189,6 +214,8 @@ from coconut.__coconut__ import *
             else '''from multiprocessing import cpu_count  # cpu_count() * 5 is the default Python 3.5 thread count
         with ThreadPoolExecutor(cpu_count() * 5)'''
         ),
+        tco_decorator=("@_coconut_tco\n" if not no_tco else ""),
+        tail_call_func_args_kwargs=("func(*args, **kwargs)" if no_tco else "_coconut_tail_call(func, *args, **kwargs)"),
         empty_dict="{}",
     )
 
