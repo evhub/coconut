@@ -152,7 +152,7 @@ from __coconut__ import _coconut, _coconut_MatchError, _coconut_tail_call{comma_
 from __coconut__ import *
 _coconut_sys.path.remove(_coconut_file_path)
 
-'''.format(comma_coconut_tco=", _coconut_tco") + section("Compiled Coconut")
+'''.format(comma_coconut_tco=", _coconut_tco" if not no_tco else "") + section("Compiled Coconut")
 
     if which == "sys":
         return header + '''import sys as _coconut_sys
