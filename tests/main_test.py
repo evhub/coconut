@@ -90,6 +90,7 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
     for line in lines:
         assert "CoconutInternalException" not in line, "CoconutInternalException in " + repr(line)
         assert "INTERNAL ERROR" not in line, "INTERNAL ERROR in " + repr(line)
+        assert "<unprintable" not in line, "Unprintable error in " + repr(line)
         if check_errors:
             assert "Traceback (most recent call last):" not in line, "Traceback in " + repr(line)
             assert "Exception" not in line, "Exception in " + repr(line)

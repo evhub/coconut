@@ -28,6 +28,7 @@ from coconut.constants import (
     closeindent,
     taberrfmt,
     default_encoding,
+    new_issue_url,
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -172,6 +173,13 @@ class CoconutStyleWarning(CoconutStyleError, CoconutWarning):
 
 class CoconutInternalException(CoconutException):
     """Internal Coconut exceptions."""
+
+    def message(self, message, item, extra):
+        """Creates the Coconut internal exception message."""
+        return (
+            super(CoconutInternalException, self).message(message, item, extra)
+            + " (you should report this at " + new_issue_url + ")"
+        )
 
 
 class CoconutDeferredSyntaxError(CoconutException):

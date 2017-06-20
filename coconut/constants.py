@@ -424,9 +424,11 @@ watch_interval = .1  # seconds
 
 info_tabulation = 18  # offset for tabulated info messages
 
-base_url = "http://coconut.readthedocs.io/en/" + version_tag
-tutorial_url = base_url + "/HELP.html"
-documentation_url = base_url + "/DOCS.html"
+rtfd_url = "http://coconut.readthedocs.io/en/" + version_tag
+tutorial_url = rtfd_url + "/HELP.html"
+documentation_url = rtfd_url + "/DOCS.html"
+
+new_issue_url = "https://github.com/evhub/coconut/issues/new"
 
 base_dir = os.path.dirname(os.path.abspath(fixpath(__file__)))
 
