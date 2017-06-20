@@ -10,21 +10,20 @@ class _coconut_tail_call{object}:
     __slots__ = ("func", "args", "kwargs")
     def __init__(self, func, *args, **kwargs):
         self.func, self.args, self.kwargs = func, args, kwargs
-_coconut_tco_func_dict = {empty_dict}
+_coconut_tco_func_set = set()
 def _coconut_tco(func):
     @_coconut.functools.wraps(func)
     def tail_call_optimized_func(*args, **kwargs):
         call_func = func
         while True:
-            try:
-                call_func = _coconut_tco_func_dict[call_func]
-            except _coconut.KeyError:
-                pass
+            if call_func in _coconut_tco_func_set:
+                call_func = call_func._coconut_tco_func
             result = call_func(*args, **kwargs)  # pass --no-tco to clean up your traceback
             if not isinstance(result, _coconut_tail_call):
                 return result
             call_func, args, kwargs = result.func, result.args, result.kwargs
-    _coconut_tco_func_dict[tail_call_optimized_func] = func
+    tail_call_optimized_func._coconut_tco_func = func
+    _coconut_tco_func_set.add(tail_call_optimized_func)
     return tail_call_optimized_func
 def _coconut_igetitem(iterable, index):
     if isinstance(iterable, (_coconut_reversed, _coconut_map, _coconut.filter, _coconut.zip, _coconut_enumerate, _coconut_count, _coconut.abc.Sequence)):
