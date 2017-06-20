@@ -87,6 +87,7 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
         print(line)
     assert not retcode
     for line in lines:
+        assert "CoconutInternalException" not in line
         assert "INTERNAL ERROR" not in line
         if check_errors:
             assert "Traceback (most recent call last):" not in line

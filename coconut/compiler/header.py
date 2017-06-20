@@ -178,20 +178,20 @@ from coconut.__coconut__ import *
         object=("(object)" if target_startswith != "3" else ""),
         # ._coconut_tco_func is used in main.coco, so don't remove it
         #  here without replacing its usage there
-        def_tco=(r'''_coconut_tco_func_set = set()
+        def_tco=(r'''_coconut_tco_func_dict = {}
 def _coconut_tco(func):
     @_coconut.functools.wraps(func)
     def tail_call_optimized_func(*args, **kwargs):
         call_func = func
         while True:
-            if call_func in _coconut_tco_func_set:
+            if _coconut.id(call_func) in _coconut_tco_func_dict and _coconut_tco_func_dict[_coconut.id(call_func)]() is call_func:
                 call_func = call_func._coconut_tco_func
             result = call_func(*args, **kwargs)  # pass --no-tco to clean up your traceback
             if not isinstance(result, _coconut_tail_call):
                 return result
             call_func, args, kwargs = result.func, result.args, result.kwargs
     tail_call_optimized_func._coconut_tco_func = func
-    _coconut_tco_func_set.add(tail_call_optimized_func)
+    _coconut_tco_func_dict[_coconut.id(tail_call_optimized_func)] = _coconut.weakref.ref(tail_call_optimized_func)
     return tail_call_optimized_func
 ''' if not no_tco else ""),
         import_OrderedDict=(

@@ -1,8 +1,8 @@
 class _coconut{object}:{comment.this_is_how_you_write_comments_in_this_file}
-    import collections, functools, imp, itertools, operator, types, copy, pickle
+    import collections, copy, functools, imp, itertools, operator, pickle, types, weakref
     {import_OrderedDict}
     {import_collections_abc}
-    Exception, IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr{comma_bytearray} = Exception, IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, {static_repr}{comma_bytearray}
+    Exception, IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr{comma_bytearray} = Exception, IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, {static_repr}{comma_bytearray}
 class MatchError(Exception):
     """Pattern-matching error."""
     __slots__ = ("pattern", "value")
