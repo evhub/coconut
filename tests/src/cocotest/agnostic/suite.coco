@@ -352,11 +352,11 @@ def suite_test():
     assert tco_chain([1, 2, 3]) |> list == ["last"]
     assert partition([1, 2, 3], 2) |> map$(tuple) |> list == [(1,), (3, 2)] == partition_([1, 2, 3], 2) |> map$(tuple) |> list
     assert myreduce((+), (1, 2, 3)) == 6
+    assert recurse_n_times(10000)
     return True
 
 def tco_test():
     """Exectues suite tests that rely on TCO."""
-    assert recurse_n_times(10000)
     assert is_even(5000) and is_odd(5001)
     assert is_even_(5000) and is_odd_(5001)
     return True

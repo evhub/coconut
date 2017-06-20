@@ -176,6 +176,8 @@ from coconut.__coconut__ import *
     header += get_template("header").format(
         comment=comment(),
         object=("(object)" if target_startswith != "3" else ""),
+        # ._coconut_tco_func is used in main.coco, so don't remove it
+        #  here without replacing its usage there
         def_tco=(r'''_coconut_tco_func_set = set()
 def _coconut_tco(func):
     @_coconut.functools.wraps(func)

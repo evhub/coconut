@@ -1391,7 +1391,10 @@ class Compiler(Grammar):
                 # to the current scope, and if so, abort TRE, since it can't handle that
                 if match_in(self.stores_scope, args):
                     return ignore_transform
-                tco_recurse = "return _coconut_tail_call(" + func_name + (", " + args if args else "") + ")"
+                if self.no_tco:
+                    tco_recurse = "return " + func_name + "(" + args + ")"
+                else:
+                    tco_recurse = "return _coconut_tail_call(" + func_name + (", " + args if args else "") + ")"
                 if not func_args or func_args == args:
                     tre_recurse = "continue"
                 elif use_mock:
@@ -1450,44 +1453,42 @@ class Compiler(Grammar):
             self.tre_store_count += 1
             attempt_tre = True
 
-        if self.no_tco:
-            lines = raw_lines
-        else:
-            for line in raw_lines:
-                body, indent = split_trailing_indent(line)
-                level += ind_change(body)
-                if disabled_until_level is not None:
-                    if level <= disabled_until_level:
-                        disabled_until_level = None
-                if disabled_until_level is None:
-                    if match_in(Keyword("yield"), body):
-                        # we can't tco generators
-                        lines = raw_lines
-                        break
-                    elif match_in(Keyword("def") | Keyword("try") | Keyword("with"), body):
-                        disabled_until_level = level
-                    else:
-                        base, comment = split_comment(body)
-                        tre_base = None
-                        # tre does not work with decorators, though tco does
-                        if not decorators and attempt_tre:
-                            # attempt tre
-                            with self.complain_on_err():
-                                tre_base = transform(self.tre_return(func_name, func_args, func_store, use_mock=use_mock), base)
-                            if tre_base is not None:
-                                line = tre_base + comment + indent
-                                tre = True
-                                tco = True  # tre falls back on tco if the function is changed
-                        if tre_base is None:
-                            # attempt tco
-                            tco_base = None
-                            with self.complain_on_err():
-                                tco_base = transform(self.tco_return, base)
-                            if tco_base is not None:
-                                line = tco_base + comment + indent
-                                tco = True
-                lines.append(line)
-                level += ind_change(indent)
+        for line in raw_lines:
+            body, indent = split_trailing_indent(line)
+            level += ind_change(body)
+            if disabled_until_level is not None:
+                if level <= disabled_until_level:
+                    disabled_until_level = None
+            if disabled_until_level is None:
+                if match_in(Keyword("yield"), body):
+                    # we can't tco or tre generators
+                    lines = raw_lines
+                    break
+                elif match_in(Keyword("def") | Keyword("try") | Keyword("with"), body):
+                    disabled_until_level = level
+                else:
+                    base, comment = split_comment(body)
+                    tre_base = None
+                    # tre does not work with decorators, though tco does
+                    if not decorators and attempt_tre:
+                        # attempt tre
+                        with self.complain_on_err():
+                            tre_base = transform(self.tre_return(func_name, func_args, func_store, use_mock=use_mock), base)
+                        if tre_base is not None:
+                            line = tre_base + comment + indent
+                            tre = True
+                            # when tco is available, tre falls back on it if the function is changed
+                            tco = not self.no_tco
+                    if tre_base is None and not self.no_tco:
+                        # attempt tco
+                        tco_base = None
+                        with self.complain_on_err():
+                            tco_base = transform(self.tco_return, base)
+                        if tco_base is not None:
+                            line = tco_base + comment + indent
+                            tco = True
+            lines.append(line)
+            level += ind_change(indent)
 
         out = "".join(lines)
         if tre:
