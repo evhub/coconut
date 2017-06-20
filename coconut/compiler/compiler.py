@@ -798,11 +798,11 @@ class Compiler(Grammar):
         return "\n".join(out)
 
     def endline_comment(self, ln):
-        """Gets an end line comment."""
+        """Gets an end line comment. CoconutInternalExceptions should always be caught and complained."""
         if self.keep_lines:
-            if ln < 0 or ln - 1 > len(self.original_lines):
+            if ln < 1 or ln - 1 > len(self.original_lines):
                 raise CoconutInternalException("out of bounds line number", ln)
-            elif ln - 1 == len(self.original_lines):
+            elif ln - 1 == len(self.original_lines):  # trim too large
                 lni = -1
             else:
                 lni = ln - 1
