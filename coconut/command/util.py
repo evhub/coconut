@@ -238,9 +238,14 @@ def set_mypy_path(mypy_path):
     """Prepends to MYPYPATH."""
     original = os.environ.get(mypy_path_env_var)
     if original is None:
-        os.environ[mypy_path_env_var] = mypy_path
+        new_mypy_path = mypy_path
     elif not original.startswith(mypy_path):
-        os.environ[mypy_path_env_var] = mypy_path + os.pathsep + original
+        new_mypy_path = mypy_path + os.pathsep + original
+    else:
+        new_mypy_path = None
+    if new_mypy_path is not None:
+        logger.log(mypy_path_env_var + ":", new_mypy_path)
+        os.environ[mypy_path_env_var] = new_mypy_path
 
 
 def stdin_readable():
