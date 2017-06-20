@@ -120,10 +120,10 @@ def getheader(which, target="", use_hash=None, no_tco=False):
 {module_docstring}'''.format(
             target_startswith=target_startswith,
             default_encoding=default_encoding,
-            hash_line=(hash_prefix + use_hash + "\n" if use_hash is not None else ""),
-            typing_line=("# type: ignore\n" if which == "__coconut__" else ""),
+            hash_line=hash_prefix + use_hash + "\n" if use_hash is not None else "",
+            typing_line="# type: ignore\n" if which == "__coconut__" else "",
             VERSION_STR=VERSION_STR,
-            module_docstring=('"""Built-in Coconut utilities."""\n\n' if which == "__coconut__" else ""),
+            module_docstring='"""Built-in Coconut utilities."""\n\n' if which == "__coconut__" else "",
         )
     elif use_hash is not None:
         raise CoconutInternalException("can only add a hash to an initial or __coconut__ header, not", which)
@@ -148,11 +148,11 @@ def getheader(which, target="", use_hash=None, no_tco=False):
         return header + '''import sys as _coconut_sys, os.path as _coconut_os_path
 _coconut_file_path = _coconut_os_path.dirname(_coconut_os_path.abspath(__file__))
 _coconut_sys.path.insert(0, _coconut_file_path)
-from __coconut__ import _coconut, _coconut_MatchError, _coconut_tail_call, _coconut_tco, _coconut_igetitem, _coconut_compose, _coconut_pipe, _coconut_starpipe, _coconut_backpipe, _coconut_backstarpipe, _coconut_bool_and, _coconut_bool_or, _coconut_minus, _coconut_map, _coconut_partial
+from __coconut__ import _coconut, _coconut_MatchError, _coconut_tail_call{comma_coconut_tco}, _coconut_igetitem, _coconut_compose, _coconut_pipe, _coconut_starpipe, _coconut_backpipe, _coconut_backstarpipe, _coconut_bool_and, _coconut_bool_or, _coconut_minus, _coconut_map, _coconut_partial
 from __coconut__ import *
 _coconut_sys.path.remove(_coconut_file_path)
 
-''' + section("Compiled Coconut")
+'''.format(comma_coconut_tco=", _coconut_tco") + section("Compiled Coconut")
 
     if which == "sys":
         return header + '''import sys as _coconut_sys
@@ -175,10 +175,10 @@ from coconut.__coconut__ import *
 
     header += get_template("header").format(
         comment=comment(),
-        object=("(object)" if target_startswith != "3" else ""),
+        object="(object)" if target_startswith != "3" else "",
         # ._coconut_tco_func is used in main.coco, so don't remove it
         #  here without replacing its usage there
-        def_tco=(r'''_coconut_tco_func_dict = {}
+        def_tco=r'''_coconut_tco_func_dict = {}
 def _coconut_tco(func):
     @_coconut.functools.wraps(func)
     def tail_call_optimized_func(*args, **kwargs):
@@ -193,31 +193,28 @@ def _coconut_tco(func):
     tail_call_optimized_func._coconut_tco_func = func
     _coconut_tco_func_dict[_coconut.id(tail_call_optimized_func)] = _coconut.weakref.ref(tail_call_optimized_func)
     return tail_call_optimized_func
-''' if not no_tco else ""),
+''' if not no_tco else "",
         import_OrderedDict=(
-            '''if _coconut_sys.version_info >= (2, 7):
+            r'''if _coconut_sys.version_info >= (2, 7):
         OrderedDict = collections.OrderedDict
     else:
         OrderedDict = dict''' if not target
             else "OrderedDict = collections.OrderedDict" if target_info >= (2, 7)
-            else "OrderedDict = dict"
-        ),
+            else "OrderedDict = dict"),
         import_collections_abc=(
-            "abc = collections" if target_startswith == "2"
-            else '''if _coconut_sys.version_info < (3, 3):
+            r'''if _coconut_sys.version_info < (3, 3):
         abc = collections
     else:
-        import collections.abc as abc'''
-        ),
-        comma_bytearray=(", bytearray" if target_startswith != "3" else ""),
-        static_repr=("staticmethod(repr)" if target_startswith != "3" else "repr"),
+        import collections.abc as abc''' if target_startswith != "2"
+            else "abc = collections"),
+        comma_bytearray=", bytearray" if target_startswith != "3" else "",
+        static_repr="staticmethod(repr)" if target_startswith != "3" else "repr",
         with_ThreadPoolExecutor=(
-            '''with ThreadPoolExecutor()''' if target_info >= (3, 5)
-            else '''from multiprocessing import cpu_count  # cpu_count() * 5 is the default Python 3.5 thread count
-        with ThreadPoolExecutor(cpu_count() * 5)'''
-        ),
-        tco_decorator_2ind=("@_coconut_tco\n" + " " * 8 if not no_tco else ""),
-        tail_call_func_args_kwargs=("func(*args, **kwargs)" if no_tco else "_coconut_tail_call(func, *args, **kwargs)"),
+            r'''from multiprocessing import cpu_count  # cpu_count() * 5 is the default Python 3.5 thread count
+        with ThreadPoolExecutor(cpu_count() * 5)''' if target_info < (3, 5)
+            else '''with ThreadPoolExecutor()'''),
+        tco_decorator="@_coconut_tco\n" + " " * 8 if not no_tco else "",
+        tail_call_func_args_kwargs="func(*args, **kwargs)" if no_tco else "_coconut_tail_call(func, *args, **kwargs)",
         empty_dict="{}",
     )
 
