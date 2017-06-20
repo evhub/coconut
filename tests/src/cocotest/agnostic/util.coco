@@ -193,7 +193,7 @@ def myreduce(func, items):
 
 def fake_recurse_n_times(n) =
     fake_recurse_n_times = recurse_n_times
-    return fake_recurse_n_times(n)
+    fake_recurse_n_times(n)
 
 # Data Blocks:
 data preop(x, y):
