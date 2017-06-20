@@ -72,7 +72,7 @@ def escape(inputstring):
     return inputstring.replace("$", "\\$").replace("`", "\\`")
 
 
-def call(cmd, assert_output=False, check_mypy=False, check_errors=False, stderr_first=False, **kwargs):
+def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_first=False, **kwargs):
     """Executes a shell command."""
     print("\n>", (cmd if isinstance(cmd, str) else " ".join(cmd)))
     if assert_output is True:
@@ -87,6 +87,7 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=False, stderr_
         print(line)
     assert not retcode
     for line in lines:
+        assert "INTERNAL ERROR" not in line
         if check_errors:
             assert "Traceback (most recent call last):" not in line
             assert "Exception" not in line
@@ -103,6 +104,8 @@ def call_coconut(args, **kwargs):
     """Calls Coconut."""
     if "--jobs" not in args and platform.python_implementation() != "PyPy":
         args = ["--jobs", "sys"] + args
+    if "--mypy" in args and "check_mypy" not in kwargs:
+        kwargs["check_mypy"] = True
     call(["coconut"] + args, **kwargs)
 
 
