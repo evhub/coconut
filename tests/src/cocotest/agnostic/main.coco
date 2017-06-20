@@ -349,6 +349,8 @@ def main_test():
         assert False
     return True
 
+def tco_func() = tco_func()
+
 def main(*args):
     """Asserts arguments and executes tests."""
     assert all(args)
@@ -361,7 +363,7 @@ def main(*args):
         assert non_py32_test
     from .suite import suite_test, tco_test
     assert suite_test()
-    if \(_coconut_tco_func_dict):
+    if hasattr(tco_func, "_coconut_tco_func"):
         assert tco_test()
     if sys.version_info < (3,):
         from .py2_test import py2_test
