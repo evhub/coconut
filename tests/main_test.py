@@ -82,23 +82,24 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
         out = stderr + stdout
     else:
         out = stdout + stderr
-    lines = "".join(out).splitlines()
+    out = "".join(out)
+    lines = out.splitlines()
     for line in lines:
         print(line)
-    assert not retcode
+    assert not retcode, "Command failed: " + repr(cmd)
     for line in lines:
-        assert "CoconutInternalException" not in line
-        assert "INTERNAL ERROR" not in line
+        assert "CoconutInternalException" not in line, out
+        assert "INTERNAL ERROR" not in line, out
         if check_errors:
-            assert "Traceback (most recent call last):" not in line
-            assert "Exception" not in line
-            assert "Error" not in line
+            assert "Traceback (most recent call last):" not in line, out
+            assert "Exception" not in line, out
+            assert "Error" not in line, out
         if check_mypy and all(test not in line for test in ignore_mypy_errs_with):
-            assert "error:" not in line
+            assert "error:" not in line, out
     if assert_output is None:
-        assert not lines
+        assert not lines, "Expected nothing; got:\n" + out
     elif assert_output is not False:
-        assert lines and assert_output in lines[-1]
+        assert lines and assert_output in lines[-1], "Expected " + repr(assert_output) + "; got:\n" + out
 
 
 def call_coconut(args, **kwargs):
