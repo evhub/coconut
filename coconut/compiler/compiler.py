@@ -1402,7 +1402,7 @@ class Compiler(Grammar):
                     "if " + func_name + " is " + func_store + ":\n" + openindent
                     + tre_recurse + "\n" + closeindent
                     + "else:\n" + openindent
-                    + tco_recurse + "\n" + closeindent
+                    + tco_recurse + closeindent
                 )
         return attach(
             (Keyword("return") + Keyword(func_name)).suppress() + self.parens + self.end_marker.suppress(),
@@ -1434,11 +1434,11 @@ class Compiler(Grammar):
         level = 0  # indentation level
         disabled_until_level = None  # whether inside of a def/try/with
         attempt_tre = False  # whether to attempt tre at all
+        func_name = None  # the name of the function, None if attempt_tre == False
         undotted_name = None  # the function __name__ if func_name is a dotted name
 
         raw_lines = funcdef.splitlines(True)
         def_stmt, raw_lines = raw_lines[0], raw_lines[1:]
-        func_name = None
         with self.complain_on_err():
             func_name, func_args, func_params = parse(self.split_func_name_args_params, def_stmt)
         if func_name is not None:
