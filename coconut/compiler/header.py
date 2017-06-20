@@ -99,7 +99,7 @@ class comment(object):
 allowed_headers = ("none", "initial", "__coconut__", "package", "sys", "code", "file")
 
 
-def getheader(which, target="", usehash=None, no_tco=False):
+def getheader(which, target="", use_hash=None, no_tco=False):
     """Generates the specified header."""
     if which not in allowed_headers:
         raise CoconutInternalException("invalid header type", which)
@@ -120,12 +120,12 @@ def getheader(which, target="", usehash=None, no_tco=False):
 {module_docstring}'''.format(
             target_startswith=target_startswith,
             default_encoding=default_encoding,
-            hash_line=(hash_prefix + usehash + "\n" if usehash is not None else ""),
+            hash_line=(hash_prefix + use_hash + "\n" if use_hash is not None else ""),
             typing_line=("# type: ignore\n" if which == "__coconut__" else ""),
             VERSION_STR=VERSION_STR,
             module_docstring=('"""Built-in Coconut utilities."""\n\n' if which == "__coconut__" else ""),
         )
-    elif usehash is not None:
+    elif use_hash is not None:
         raise CoconutInternalException("can only add a hash to an initial or __coconut__ header, not", which)
     else:
         header = ""
@@ -176,7 +176,7 @@ from coconut.__coconut__ import *
     header += get_template("header").format(
         comment=comment(),
         object=("(object)" if target_startswith != "3" else ""),
-        def_tco=(r"""_coconut_tco_func_set = set()
+        def_tco=(r'''_coconut_tco_func_set = set()
 def _coconut_tco(func):
     @_coconut.functools.wraps(func)
     def tail_call_optimized_func(*args, **kwargs):
@@ -191,7 +191,7 @@ def _coconut_tco(func):
     tail_call_optimized_func._coconut_tco_func = func
     _coconut_tco_func_set.add(tail_call_optimized_func)
     return tail_call_optimized_func
-""" if not no_tco else ""),
+''' if not no_tco else ""),
         import_OrderedDict=(
             '''if _coconut_sys.version_info >= (2, 7):
         OrderedDict = collections.OrderedDict
@@ -214,7 +214,7 @@ def _coconut_tco(func):
             else '''from multiprocessing import cpu_count  # cpu_count() * 5 is the default Python 3.5 thread count
         with ThreadPoolExecutor(cpu_count() * 5)'''
         ),
-        tco_decorator=("@_coconut_tco\n" if not no_tco else ""),
+        tco_decorator_2ind=("@_coconut_tco\n" + " " * 8 if not no_tco else ""),
         tail_call_func_args_kwargs=("func(*args, **kwargs)" if no_tco else "_coconut_tail_call(func, *args, **kwargs)"),
         empty_dict="{}",
     )
