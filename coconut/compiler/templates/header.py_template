@@ -6,10 +6,6 @@ class _coconut{object}:{comment.this_is_how_you_write_comments_in_this_file}
 class MatchError(Exception):
     """Pattern-matching error."""
     __slots__ = ("pattern", "value")
-class _coconut_tail_call{object}:
-    __slots__ = ("func", "args", "kwargs")
-    def __init__(self, func, *args, **kwargs):
-        self.func, self.args, self.kwargs = func, args, kwargs
 {def_tco}def _coconut_igetitem(iterable, index):
     if isinstance(iterable, (_coconut_reversed, _coconut_map, _coconut.filter, _coconut.zip, _coconut_enumerate, _coconut_count, _coconut.abc.Sequence)):
         return iterable[index]

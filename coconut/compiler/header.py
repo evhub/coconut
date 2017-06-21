@@ -83,6 +83,11 @@ def section(name, justify_len=80):
     return line + "-" * (justify_len - len(line)) + "\n\n"
 
 
+#-----------------------------------------------------------------------------------------------------------------------
+# FORMAT DICTIONARY:
+#-----------------------------------------------------------------------------------------------------------------------
+
+
 class comment(object):
     """When passed to str.format, allows {comment.<>} to serve as a comment."""
 
@@ -91,109 +96,21 @@ class comment(object):
         return ""
 
 
-#-----------------------------------------------------------------------------------------------------------------------
-# HEADER GENERATION:
-#-----------------------------------------------------------------------------------------------------------------------
-
-
-allowed_headers = ("none", "initial", "__coconut__", "package", "sys", "code", "file")
-
-
-def getheader(which, target="", use_hash=None, no_tco=False):
-    """Generates the specified header."""
-    if which not in allowed_headers:
-        raise CoconutInternalException("invalid header type", which)
-
-    if which == "none":
-        return ""
-
-    # initial, __coconut__, package, sys, code, file
-
+def process_header_args(which, target, use_hash, no_tco):
+    """Creates the dictionary passed to str.format in the header, target_startswith, and target_info."""
     target_startswith = one_num_ver(target)
-
-    if which == "initial" or which == "__coconut__":
-        header = '''#!/usr/bin/env python{target_startswith}
-# -*- coding: {default_encoding} -*-
-{hash_line}{typing_line}
-# Compiled with Coconut version {VERSION_STR}
-
-{module_docstring}'''.format(
-            target_startswith=target_startswith,
-            default_encoding=default_encoding,
-            hash_line=hash_prefix + use_hash + "\n" if use_hash is not None else "",
-            typing_line="# type: ignore\n" if which == "__coconut__" else "",
-            VERSION_STR=VERSION_STR,
-            module_docstring='"""Built-in Coconut utilities."""\n\n' if which == "__coconut__" else "",
-        )
-    elif use_hash is not None:
-        raise CoconutInternalException("can only add a hash to an initial or __coconut__ header, not", which)
-    else:
-        header = ""
-
-    if which == "initial":
-        return header
-
-    # __coconut__, package, sys, code, file
-
     target_info = get_target_info(target)
-
-    header += section("Coconut Header")
-
-    if target_startswith != "3":
-        header += "from __future__ import print_function, absolute_import, unicode_literals, division\n"
-    elif target_info >= (3, 5):
-        header += "from __future__ import generator_stop\n"
-
-    if which == "package":
-        return header + '''import sys as _coconut_sys, os.path as _coconut_os_path
-_coconut_file_path = _coconut_os_path.dirname(_coconut_os_path.abspath(__file__))
-_coconut_sys.path.insert(0, _coconut_file_path)
-from __coconut__ import _coconut, _coconut_MatchError, _coconut_tail_call{comma_coconut_tco}, _coconut_igetitem, _coconut_compose, _coconut_pipe, _coconut_starpipe, _coconut_backpipe, _coconut_backstarpipe, _coconut_bool_and, _coconut_bool_or, _coconut_minus, _coconut_map, _coconut_partial
-from __coconut__ import *
-_coconut_sys.path.remove(_coconut_file_path)
-
-'''.format(comma_coconut_tco=", _coconut_tco" if not no_tco else "") + section("Compiled Coconut")
-
-    if which == "sys":
-        return header + '''import sys as _coconut_sys
-from coconut.__coconut__ import _coconut, _coconut_MatchError, _coconut_tail_call{comma_coconut_tco}, _coconut_igetitem, _coconut_compose, _coconut_pipe, _coconut_starpipe, _coconut_backpipe, _coconut_backstarpipe, _coconut_bool_and, _coconut_bool_or, _coconut_minus, _coconut_map, _coconut_partial
-from coconut.__coconut__ import *
-'''.format(comma_coconut_tco=", _coconut_tco" if not no_tco else "")
-
-    # __coconut__, code, file
-
-    header += "import sys as _coconut_sys\n"
-
-    if target_startswith == "3":
-        header += PY3_HEADER
-    elif target_info >= (2, 7):
-        header += PY27_HEADER
-    elif target_startswith == "2":
-        header += PY2_HEADER
-    else:
-        header += PYCHECK_HEADER
-
-    header += get_template("header").format(
+    format_dict = dict(
         comment=comment(),
+        empty_dict="{}",
+        target_startswith=target_startswith,
+        default_encoding=default_encoding,
+        hash_line=hash_prefix + use_hash + "\n" if use_hash is not None else "",
+        typing_line="# type: ignore\n" if which == "__coconut__" else "",
+        VERSION_STR=VERSION_STR,
+        module_docstring='"""Built-in Coconut utilities."""\n\n' if which == "__coconut__" else "",
+        comma_tco=", _coconut_tail_call, _coconut_tco" if not no_tco else "",
         object="(object)" if target_startswith != "3" else "",
-        # ._coconut_tco_func is used in main.coco, so don't remove it
-        #  here without replacing its usage there
-        def_tco=r'''_coconut_tco_func_dict = {}
-def _coconut_tco(func):
-    @_coconut.functools.wraps(func)
-    def tail_call_optimized_func(*args, **kwargs):
-        call_func = func
-        while True:
-            if _coconut.id(call_func) in _coconut_tco_func_dict and _coconut_tco_func_dict[_coconut.id(call_func)]() is call_func:
-                call_func = call_func._coconut_tco_func
-            result = call_func(*args, **kwargs)  # pass --no-tco to clean up your traceback
-            if not isinstance(result, _coconut_tail_call):
-                return result
-            call_func, args, kwargs = result.func, result.args, result.kwargs
-    tail_call_optimized_func._coconut_tco_func = func
-    _coconut_tco_func_dict[_coconut.id(tail_call_optimized_func)] = _coconut.weakref.ref(tail_call_optimized_func)
-    return tail_call_optimized_func
-''' if not no_tco else "",
         import_OrderedDict=(
             r'''if _coconut_sys.version_info >= (2, 7):
         OrderedDict = collections.OrderedDict
@@ -215,8 +132,107 @@ def _coconut_tco(func):
             else '''with ThreadPoolExecutor()'''),
         tco_decorator="@_coconut_tco\n" + " " * 8 if not no_tco else "",
         tail_call_func_args_kwargs="func(*args, **kwargs)" if no_tco else "_coconut_tail_call(func, *args, **kwargs)",
-        empty_dict="{}",
     )
+    # ._coconut_tco_func is used in main.coco, so don't remove it
+    #  here without replacing its usage there
+    format_dict["def_tco"] = "" if no_tco else '''class _coconut_tail_call{object}:
+    __slots__ = ("func", "args", "kwargs")
+    def __init__(self, func, *args, **kwargs):
+        self.func, self.args, self.kwargs = func, args, kwargs
+_coconut_tco_func_dict = {empty_dict}
+def _coconut_tco(func):
+    @_coconut.functools.wraps(func)
+    def tail_call_optimized_func(*args, **kwargs):
+        call_func = func
+        while True:
+            if _coconut.id(call_func) in _coconut_tco_func_dict and _coconut_tco_func_dict[_coconut.id(call_func)]() is call_func:
+                call_func = call_func._coconut_tco_func
+            result = call_func(*args, **kwargs)  # pass --no-tco to clean up your traceback
+            if not isinstance(result, _coconut_tail_call):
+                return result
+            call_func, args, kwargs = result.func, result.args, result.kwargs
+    tail_call_optimized_func._coconut_tco_func = func
+    _coconut_tco_func_dict[_coconut.id(tail_call_optimized_func)] = _coconut.weakref.ref(tail_call_optimized_func)
+    return tail_call_optimized_func
+'''.format(**format_dict)
+    return format_dict, target_startswith, target_info
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# HEADER GENERATION:
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+allowed_headers = ("none", "initial", "__coconut__", "package", "sys", "code", "file")
+
+
+def getheader(which, target="", use_hash=None, no_tco=False):
+    print(no_tco)
+    """Generates the specified header."""
+    if which not in allowed_headers:
+        raise CoconutInternalException("invalid header type", which)
+
+    if which == "none":
+        return ""
+
+    # initial, __coconut__, package, sys, code, file
+
+    format_dict, target_startswith, target_info = process_header_args(which, target, use_hash, no_tco)
+
+    if which == "initial" or which == "__coconut__":
+        header = '''#!/usr/bin/env python{target_startswith}
+# -*- coding: {default_encoding} -*-
+{hash_line}{typing_line}
+# Compiled with Coconut version {VERSION_STR}
+
+{module_docstring}'''.format(**format_dict)
+    elif use_hash is not None:
+        raise CoconutInternalException("can only add a hash to an initial or __coconut__ header, not", which)
+    else:
+        header = ""
+
+    if which == "initial":
+        return header
+
+    # __coconut__, package, sys, code, file
+
+    header += section("Coconut Header")
+
+    if target_startswith != "3":
+        header += "from __future__ import print_function, absolute_import, unicode_literals, division\n"
+    elif target_info >= (3, 5):
+        header += "from __future__ import generator_stop\n"
+
+    if which == "package":
+        return header + '''import sys as _coconut_sys, os.path as _coconut_os_path
+_coconut_file_path = _coconut_os_path.dirname(_coconut_os_path.abspath(__file__))
+_coconut_sys.path.insert(0, _coconut_file_path)
+from __coconut__ import _coconut, _coconut_MatchError{comma_tco}, _coconut_igetitem, _coconut_compose, _coconut_pipe, _coconut_starpipe, _coconut_backpipe, _coconut_backstarpipe, _coconut_bool_and, _coconut_bool_or, _coconut_minus, _coconut_map, _coconut_partial
+from __coconut__ import *
+_coconut_sys.path.remove(_coconut_file_path)
+
+'''.format(**format_dict) + section("Compiled Coconut")
+
+    if which == "sys":
+        return header + '''import sys as _coconut_sys
+from coconut.__coconut__ import _coconut, _coconut_MatchError{comma_tco}, _coconut_igetitem, _coconut_compose, _coconut_pipe, _coconut_starpipe, _coconut_backpipe, _coconut_backstarpipe, _coconut_bool_and, _coconut_bool_or, _coconut_minus, _coconut_map, _coconut_partial
+from coconut.__coconut__ import *
+'''.format(**format_dict)
+
+    # __coconut__, code, file
+
+    header += "import sys as _coconut_sys\n"
+
+    if target_startswith == "3":
+        header += PY3_HEADER
+    elif target_info >= (2, 7):
+        header += PY27_HEADER
+    elif target_startswith == "2":
+        header += PY2_HEADER
+    else:
+        header += PYCHECK_HEADER
+
+    header += get_template("header").format(**format_dict)
 
     if which == "file":
         header += section("Compiled Coconut")

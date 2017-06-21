@@ -433,9 +433,12 @@ class Compiler(Grammar):
         else:
             raise CoconutInternalException("multiple tokens leftover", tokens)
 
-    def getheader(self, which, use_hash=None):
+    def getheader(self, which, use_hash=None, polish=True):
         """Gets a formatted header."""
-        return self.polish(getheader(which, target=self.target, use_hash=use_hash, no_tco=self.no_tco))
+        header = getheader(which, target=self.target, use_hash=use_hash, no_tco=self.no_tco)
+        if polish:
+            header = self.polish(header)
+        return header
 
     @property
     def target_info(self):
@@ -953,8 +956,8 @@ class Compiler(Grammar):
 
     def header_proc(self, inputstring, header="file", initial="initial", use_hash=None, **kwargs):
         """Adds the header."""
-        pre_header = getheader(initial, self.target, use_hash)
-        main_header = getheader(header, self.target)
+        pre_header = self.getheader(initial, use_hash=use_hash, polish=False)
+        main_header = self.getheader(header, polish=False)
         if self.minify:
             main_header = minify(main_header)
         return pre_header + self.docstring + main_header + inputstring
