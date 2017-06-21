@@ -1,4 +1,4 @@
-class _coconut{object}:{comment.this_is_how_you_write_comments_in_this_file}
+class _coconut{object}:{comment.everything_here_must_be_copied_to_stub_file}
     import collections, copy, functools, imp, itertools, operator, pickle, types, weakref
     {import_OrderedDict}
     {import_collections_abc}

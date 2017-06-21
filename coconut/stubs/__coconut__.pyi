@@ -57,12 +57,17 @@ parallel_map = concurrent_map = _coconut_map = map
 
 class _coconut:
     import collections, functools, imp, itertools, operator, types, copy, pickle
-    IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, repr = IndexError, NameError, ValueError, map, zip, dict, frozenset, getattr, hasattr, hash, isinstance, iter, len, list, min, max, next, object, range, reversed, set, slice, str, sum, super, tuple, repr
+    Exception, IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip = Exception, IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip
     if sys.version_info < (3, 3):
         abc = collections
     else:
-        bytearray, repr = bytearray, repr
         import collections.abc as abc  # type: ignore
+    if sys.version_info >= (3,):
+        bytearray = bytearray
+    if sys.version_info >= (2, 7):
+        OrderedDict = collections.OrderedDict
+    else:
+        OrderedDict = dict
 
 
 class MatchError(Exception): ...
@@ -80,12 +85,12 @@ addpattern = prepattern = _coconut_tco
 @overload
 def _coconut_igetitem(
     iterable: Iterable[_T],
-    index: int
+    index: int,
     ) -> _T: ...
 @overload
 def _coconut_igetitem(
     iterable: Iterable[_T],
-    index: slice
+    index: slice,
     ) -> Iterable[_T]: ...
 
 
@@ -131,7 +136,7 @@ def datamaker(data_type: Any) -> Callable: ...
 
 def consume(
     iterable: Iterable[_T],
-    keep_last: Optional[int] = ...
+    keep_last: Optional[int] = ...,
     ) -> Iterable[_T]: ...
 
 
@@ -140,3 +145,6 @@ class _coconut_partial:
     keywords = ...  # type: Dict[Text, Any]
     def __init__(self, func: Callable, argdict: Dict[int, Any], arglen: int, *args, **kwargs) -> None: ...
     def __call__(self, *args, **kwargs) -> Any: ...
+
+
+def fmap(func: Callable, obj: _T) -> _T: ...
