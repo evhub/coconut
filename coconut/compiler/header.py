@@ -167,7 +167,6 @@ allowed_headers = ("none", "initial", "__coconut__", "package", "sys", "code", "
 
 
 def getheader(which, target="", use_hash=None, no_tco=False):
-    print(no_tco)
     """Generates the specified header."""
     if which not in allowed_headers:
         raise CoconutInternalException("invalid header type", which)
