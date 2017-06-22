@@ -19,6 +19,10 @@ Coconut supports any Python version `>= 2.6` on the `2.x` branch or `>= 3.2` on 
 
 Yes! Coconut will compile Python 3 syntax, built-ins, and even imports to code that will work on any supported Python version (`2.6`, `2.7`, `>=3.2`). There a couple of caveats to this, statement, however: some constructs, like `async`, are for all intents and purposes impossible to recreate in lower Python versions, and require a particular `--target` to make them work. For a full list, see [compatible Python versions](DOCS.html#compatible-python-versions).
 
+### How do I release a Coconut package on PyPI?
+
+Since Coconut just compiles to Python, releasing a Coconut package on PyPI is exactly the same as releasing a Python package, with an extra compilation step. Just write your package in Coconut, run `coconut` on the source code, and upload the compiled code to PyPI. You can even mix Python and Coconut code, since the compiler will only touch `.coco` files. If you want to see an example of a PyPI package written in Coconut, including a [Makefile](https://github.com/evhub/pyprover/blob/master/Makefile) with the exact compiler commands being used, check out [pyprover](https://github.com/evhub/pyprover).
+
 ### I saw that Coconut was recently updated. Where is the change log?
 
 Information on every Coconut release is chronicled on the [GitHub releases page](https://github.com/evhub/coconut/releases). There you can find all of the new features and breaking changes introduced in each release.
