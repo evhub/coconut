@@ -56,10 +56,6 @@ mypy_snip_err = 'error: Incompatible types in assignment (expression has type "i
 ignore_mypy_errs_with = (
     "already defined",
     "Cannot determine type of",
-    "decorator expected",
-    "tutorial",
-    "_coconut_compose",
-    "_coconut_partial",
 )
 
 #-----------------------------------------------------------------------------------------------------------------------

@@ -28,7 +28,7 @@ def sqrt_(x) = x**0.5
 square = (**)$(?, 2)
 plus1sq = square..plus1
 sqplus1 = plus1
-sqplus1 ..= square
+sqplus1 ..= square  # type: ignore
 plus1sq_ = (x) -> x |> plus1 |> square
 sqplus1_ = (x) -> x |> square |> plus1
 clean = (s) -> s.strip()
@@ -230,7 +230,7 @@ def is_null(item):
 data Elems(elems):
     def __new__(cls, *elems) =
         elems |> datamaker(cls)
-data vector_with_id(x, y, i) from vector
+data vector_with_id(x, y, i) from vector  # type: ignore
 
 # Factorial:
 def factorial1(value):
