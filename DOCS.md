@@ -243,7 +243,7 @@ _Note: Since [tail call optimization](#tail-call-optimization) prevents proper t
 
 ### Lambdas
 
-Coconut provides the simple, clean `->` operator as an alternative to Python's `lambda` statements. The syntax for the `->` operator is `(arguments) -> expression`. The operator has the same precedence as the old statement, which means it will often be necessary to surround the lambda in parentheses.
+Coconut provides the simple, clean `->` operator as an alternative to Python's `lambda` statements. The syntax for the `->` operator is `(parameters) -> expression` (or `parameter -> expression` for one-argument lambdas). The operator has the same precedence as the old statement, which means it will often be necessary to surround the lambda in parentheses.
 
 Additionally, Coconut also supports an implicit usage of the `->` operator of the form `(-> expression)`, which is equivalent to `((_=None) -> expression)`, which allows an implicit lambda to be used both when no arguments are required, and when one argument (assigned to `_`) is required.
 
@@ -326,6 +326,8 @@ Coconut uses pipe operators for pipeline-style function application. All the ope
 (<|)    => pipe backward
 (<*|)   => multiple-argument pipe backward
 ```
+
+Additionally, all pipe operators support a lambda as the second argument, despite lambdas having a lower precedence. Thus, `10 |> x -> x**2` is valid, though the body of the lambda will still capture all following pipe operators.
 
 ##### Example
 
