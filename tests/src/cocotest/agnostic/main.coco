@@ -347,6 +347,8 @@ def main_test():
     assert ab == "ab"
     match "a" + b in 5:
         assert False
+    assert 400 == 10 |> x -> x*2 |> x -> x**2
+    assert 100 == 10 |> x -> x*2 |> y -> x**2
     return True
 
 def tco_func() = tco_func()

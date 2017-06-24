@@ -734,7 +734,7 @@ class Grammar(object):
     dubstar_expr = Forward()
     comp_for = Forward()
     test_no_chain = Forward()
-    test_nocond = Forward()
+    test_no_cond = Forward()
 
     testlist = trace(itemlist(test, comma))
     testlist_star_expr = trace(itemlist(test | star_expr, comma))
@@ -967,12 +967,21 @@ class Grammar(object):
         | attach(Group(Optional(or_expr)) + infix_op + Group(Optional(no_chain_infix_expr)), infix_handle)
     )
 
+    lambdef = Forward()
+    lambdef_no_chain = Forward()
+
     pipe_item = Group(no_partial_atom_item + partial_trailer_tokens) + pipe_op | Group(infix_expr) + pipe_op
-    last_pipe_item = Group(longest(no_partial_atom_item + partial_trailer_tokens, infix_expr))
+    last_pipe_item = Group(
+        attach(lambdef, add_paren_handle)
+        | longest(no_partial_atom_item + partial_trailer_tokens, infix_expr)
+    )
     pipe_expr = attach(OneOrMore(pipe_item) + last_pipe_item, pipe_handle)
     expr <<= infix_expr + ~pipe_op | pipe_expr
     no_chain_pipe_item = Group(no_partial_atom_item + partial_trailer_tokens) + pipe_op | Group(no_chain_infix_expr) + pipe_op
-    no_chain_last_pipe_item = Group(longest(no_partial_atom_item + partial_trailer_tokens, no_chain_infix_expr))
+    no_chain_last_pipe_item = Group(
+        attach(lambdef_no_chain, add_paren_handle)
+        | longest(no_partial_atom_item + partial_trailer_tokens, no_chain_infix_expr)
+    )
     no_chain_pipe_expr = attach(OneOrMore(no_chain_pipe_item) + no_chain_last_pipe_item, pipe_handle)
     no_chain_expr <<= no_chain_infix_expr + ~pipe_op | no_chain_pipe_expr
 
@@ -1022,12 +1031,12 @@ class Grammar(object):
         )
     )
 
-    lambdef = trace(addspace(lambdef_base + test) | stmt_lambdef)
-    lambdef_nocond = trace(addspace(lambdef_base + test_nocond))
-    lambdef_no_chain = trace(addspace(lambdef_base + test_no_chain))
+    lambdef <<= trace(addspace(lambdef_base + test) | stmt_lambdef)
+    lambdef_no_chain <<= trace(addspace(lambdef_base + test_no_chain))
+    lambdef_no_cond = trace(addspace(lambdef_base + test_no_cond))
 
     test <<= trace(lambdef | addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test)))
-    test_nocond <<= trace(lambdef_nocond | test_item)
+    test_no_cond <<= trace(lambdef_no_cond | test_item)
     test_no_chain <<= trace(
         lambdef_no_chain
         | addspace(
@@ -1049,7 +1058,7 @@ class Grammar(object):
     base_comp_for = addspace(Keyword("for") + assignlist + Keyword("in") + test_item + Optional(comp_iter))
     async_comp_for_ref = addspace(Keyword("async") + base_comp_for)
     comp_for <<= async_comp_for | base_comp_for
-    comp_if = addspace(Keyword("if") + test_nocond + Optional(comp_iter))
+    comp_if = addspace(Keyword("if") + test_no_cond + Optional(comp_iter))
     comp_iter <<= comp_for | comp_if
 
     complex_raise_stmt = Forward()
