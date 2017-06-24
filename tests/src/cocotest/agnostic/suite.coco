@@ -19,10 +19,10 @@ def suite_test():
     assert 1 `range` 5 |> product == 24
     assert plus1(4) == 5 == plus1_(4)
     assert 2 `plus1` == 3 == plus1(2)
-    assert plus1(plus1(5)) == 7 == (plus1..plus1)(5)
+    assert plus1(plus1(5)) == 7 == plus1..plus1(5)
     assert `sqrt` 16 == 4 == `sqrt_` 16
     assert `square` 3 == 9
-    assert sqplus1(3) == 10 == (plus1..square)(3)
+    assert sqplus1(3) == 10 == plus1..square(3)
     assert parallel_map(sqplus1, range(3)) |> tuple == (1, 2, 5)
     assert 3 `plus1sq` == 16 == 3 `plus1sq_`
     assert 3 `sqplus1` == 10 == 3 `sqplus1_`
@@ -239,7 +239,7 @@ def suite_test():
     assert 15 == assign_func_1((*), 3, 5)
     assert 15 == assign_func_2((*), 3, 5)
     assert 20 == (..)(minus$(2), mul$(2), plus$(1))(10)
-    assert 20 == (minus$(2) .. mul$(2) .. plus$(1))(10)
+    assert 20 == minus$(2) .. mul$(2) .. plus$(1) (10)
     assert does_raise_exc(raise_exc)
     assert ret_none(10) is None
     assert (2, 3, 5) |*> ret_args_kwargs$(1, ?, ?, 4, ?, *(6, 7), a="k") == ((1, 2, 3, 4, 5, 6, 7), {"a": "k"})
@@ -354,10 +354,12 @@ def suite_test():
     assert myreduce((+), (1, 2, 3)) == 6
     assert recurse_n_times(10000)
     assert fake_recurse_n_times(10000)
+    a = A()
+    assert (not)..a.true() is False
     return True
 
 def tco_test():
-    """Exectues suite tests that rely on TCO."""
+    """Executes suite tests that rely on TCO."""
     assert is_even(5000) and is_odd(5001)
     assert is_even_(5000) and is_odd_(5001)
     return True

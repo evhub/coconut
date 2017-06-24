@@ -278,7 +278,7 @@ print(list(dubsums))
 
 ### Partial Application
 
-Coconut uses a `$` sign right after a function's name but before the open parenthesis used to call the function to denote partial application. It has the same precedence as subscription.
+Coconut uses a `$` sign right after a function's name but before the open parenthesis used to call the function to denote partial application. It has the same precedence as a normal function call.
 
 Coconut's partial application also supports the use of a `?` to skip partially applying an argument, deferring filling in that argument until the partially-applied function is called. This is useful if you want to partially apply argument(s) that aren't first in the argument order.
 
@@ -346,7 +346,7 @@ print(sq(operator.add(1, 2)))
 
 ### Compose
 
-Coconut uses the `..` operator for function composition. It has a precedence in-between subscription and exponentiation. The in-place operator is `..=`.
+Coconut uses the `..` operator for function composition. It has lower precedence than attribute access (`.`), slicing (`[]`), etc., except for function calling, which it has higher precedence than. Thus, `a.b..c.d` is equivalent to `(a.b)..(c.d)`, while `f..g(x)` is equivalent to `(f..g)(x)`. The in-place operator is `..=`.
 
 ##### Example
 
@@ -394,7 +394,7 @@ _Can't be done without a complicated iterator comprehension in place of the lazy
 
 ### Iterator Slicing
 
-Coconut uses a `$` sign right after an iterator before a slice to perform iterator slicing. Coconut's iterator slicing works much the same as Python's sequence slicing, and looks much the same as Coconut's partial application, but with brackets instead of parentheses. It has the same precedence as subscription.
+Coconut uses a `$` sign right after an iterator before a slice to perform iterator slicing. Coconut's iterator slicing works much the same as Python's sequence slicing, and looks much the same as Coconut's partial application, but with brackets instead of parentheses. It has the same precedence as normal slicing.
 
 Iterator slicing works just like sequence slicing, including support for negative indices and slices, and support for `slice` objects in the same way as can be done with normal slicing. Iterator slicing makes no guarantee, however, that the original iterator passed to it be preserved (to preserve the iterator, use Coconut's [`tee` function](#tee)).
 
@@ -1098,7 +1098,7 @@ _Can't be done without a long series of checks at the top of the function. See t
 
 ### Infix Functions
 
-Coconut allows for infix function calling, where a function is surrounded by backticks and then can have arguments placed in front of or behind it. Backtick calling has a precedence in-between chaining and piping.
+Coconut allows for infix function calling, where an expression that evaluates to a function is surrounded by backticks and then can have arguments placed in front of or behind it. Backtick calling has a precedence in-between chaining and piping.
 
 Coconut also supports infix function definition to make defining functions that are intended for infix usage simpler. The syntax for infix function definition is
 ```coconut
