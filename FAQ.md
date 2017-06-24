@@ -35,6 +35,12 @@ Yes! Coconut compiles the [newest](https://www.python.org/dev/peps/pep-0526/), [
 
 No problem—just use Coconut's [`recursive_iterator`](DOCS.html#recursive-iterator) decorator and you should be fine. This is a [known Python issue](http://bugs.python.org/issue14010) but `recursive_iterator` will fix it for you.
 
+### How do I split an expression across multiple lines in Coconut?
+
+Coconut uses the exact same line continuation syntax as Python. That means both backslash line continuation and implied line continuation inside of parentheses, brackets, or braces will all work. Passing `--strict` will enforce the [PEP 8](https://www.python.org/dev/peps/pep-0008/) convention, which avoid backslash continuation in favor of implied parenthetical continuation. From PEP 8:
+
+> The preferred way of wrapping long lines is by using Python's implied line continuation inside parentheses, brackets and braces. Long lines can be broken over multiple lines by wrapping expressions in parentheses. These should be used in preference to using a backslash for line continuation.
+
 ### If I'm already perfectly happy with Python, why should I learn Coconut?
 
 You're exactly the person Coconut was built for! Coconut lets you keep doing the thing you do well—write Python—without having to worry about annoyances like version compatibility, while also allowing you to do new cool things you might never have thought were possible before like pattern-matching and lazy evaluation. If you've ever used a functional programming language before, you'll know that functional code is often much simpler, cleaner, and more readable (but not always, which is why Coconut isn't purely functional). Python is a wonderful imperative language, but when it comes to modern functional programming—which, in Python's defense, it wasn't designed for—Python falls short, and Coconut corrects that shortfall.
