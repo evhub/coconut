@@ -971,7 +971,7 @@ class Grammar(object):
     lambdef = Forward()
     lambdef_no_chain = Forward()
 
-    infix_op = condense(backtick.suppress() + (chain_expr | lambdef) + backtick.suppress())
+    infix_op = condense(backtick.suppress() + (lambdef | chain_expr) + backtick.suppress())
     
     infix_expr = Forward()
     infix_expr <<= (
