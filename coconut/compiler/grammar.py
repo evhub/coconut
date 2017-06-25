@@ -968,32 +968,32 @@ class Grammar(object):
 
     pipe_op = pipeline | starpipe | backpipe | backstarpipe
 
+    lambdef = Forward()
+    lambdef_no_chain = Forward()
+
+    infix_op = condense(backtick.suppress() + (chain_expr | lambdef) + backtick.suppress())
+    
     infix_expr = Forward()
-    infix_op = condense(backtick.suppress() + test + backtick.suppress())
     infix_expr <<= (
         chain_expr + ~backtick
         | attach(Group(Optional(chain_expr)) + infix_op + Group(Optional(infix_expr)), infix_handle)
     )
     no_chain_infix_expr = Forward()
-    no_chain_infix_op = condense(backtick.suppress() + test_no_chain + backtick.suppress())
     no_chain_infix_expr <<= (
         or_expr + ~backtick
-        | attach(Group(Optional(or_expr)) + no_chain_infix_op + Group(Optional(no_chain_infix_expr)), infix_handle)
+        | attach(Group(Optional(or_expr)) + infix_op + Group(Optional(no_chain_infix_expr)), infix_handle)
     )
-
-    lambdef = Forward()
-    lambdef_no_chain = Forward()
 
     pipe_item = Group(no_partial_atom_item + partial_trailer_tokens) + pipe_op | Group(infix_expr) + pipe_op
     last_pipe_item = Group(
-        attach(lambdef, add_paren_handle)
+        lambdef
         | longest(no_partial_atom_item + partial_trailer_tokens, infix_expr)
     )
     pipe_expr = attach(OneOrMore(pipe_item) + last_pipe_item, pipe_handle)
     expr <<= infix_expr + ~pipe_op | pipe_expr
     no_chain_pipe_item = Group(no_partial_atom_item + partial_trailer_tokens) + pipe_op | Group(no_chain_infix_expr) + pipe_op
     no_chain_last_pipe_item = Group(
-        attach(lambdef_no_chain, add_paren_handle)
+        lambdef_no_chain
         | longest(no_partial_atom_item + partial_trailer_tokens, no_chain_infix_expr)
     )
     no_chain_pipe_expr = attach(OneOrMore(no_chain_pipe_item) + no_chain_last_pipe_item, pipe_handle)
