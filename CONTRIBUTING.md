@@ -160,7 +160,7 @@ After you've tested your changes locally, you'll want to add more permanent test
     1. Wait until everything is passing
 
 3. Release:
-    1. Release [`sublime-coconut`]https://github.com/evhub/sublime-coconut) first if applicable
+    1. Release [`sublime-coconut`](https://github.com/evhub/sublime-coconut) first if applicable
     1. Merge pull request and mark as resolved
     1. Release `master` on GitHub
     1. Fetch and switch to `master` locally
