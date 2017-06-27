@@ -282,7 +282,10 @@ def pipe_handle(loc, tokens, **kwargs):
 def comp_pipe_handle(tokens):
     """Processes pipe function composition."""
     # thoughts: reverse _coconut_compose
-    raise NotImplementedError()
+    if len(tokens) == 1:
+        return tokens[0]
+    else:
+        raise NotImplementedError()
 
 
 def attr_handle(loc, tokens):
