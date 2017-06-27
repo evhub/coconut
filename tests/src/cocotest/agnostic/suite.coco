@@ -356,6 +356,7 @@ def suite_test():
     assert fake_recurse_n_times(10000)
     a = A()
     assert (not)..a.true() is False
+    assert 10 % 4 % 3 == 2 == 10 `mod` 4 `mod` 3
     return True
 
 def tco_test():

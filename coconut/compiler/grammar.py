@@ -86,6 +86,7 @@ from coconut.compiler.util import (
     longest,
     exprlist,
     join_args,
+    disable_inside,
 )
 
 # end: IMPORTS
@@ -150,22 +151,20 @@ def infix_error(tokens):
 
 
 def get_infix_items(tokens, callback=infix_error):
-    """Performs infix token processing."""
+    """Performs infix token processing.
+    Uses a callback that takes infix tokens and returns a string to handle inner infix calls."""
     if len(tokens) < 3:
         raise CoconutInternalException("invalid infix tokens", tokens)
     else:
-        items = []
-        for item in tokens[0]:
-            items.append(item)
-        for item in tokens[2]:
-            items.append(item)
-        if len(tokens) > 3:
-            items.append(callback([[]] + tokens[3:]))
-        args = []
-        for arg in items:
-            if arg:
-                args.append(arg)
-        return tokens[1], args
+        if not isinstance(tokens, list):
+            tokens = tokens.asList()
+        (arg1, func, arg2), tokens = tokens[:3], tokens[3:]
+        args = arg1 + arg2
+        while tokens:
+            args = [callback([args, func, []])]
+            (func, newarg), tokens = tokens[:2], tokens[2:]
+            args += newarg
+        return func, args
 
 
 def case_to_match(tokens, item):
@@ -280,6 +279,12 @@ def pipe_handle(loc, tokens, **kwargs):
             raise CoconutInternalException("invalid pipe operator", op)
 
 
+def comp_pipe_handle(tokens):
+    """Processes pipe function composition."""
+    # thoughts: reverse _coconut_compose
+    raise NotImplementedError()
+
+
 def attr_handle(loc, tokens):
     """Processes attrgetter literals."""
     if len(tokens) == 1:
@@ -316,7 +321,7 @@ def chain_handle(tokens):
 
 def infix_handle(tokens):
     """Processes infix calls."""
-    func, args = get_infix_items(tokens, infix_handle)
+    func, args = get_infix_items(tokens, callback=infix_handle)
     return "(" + func + ")(" + ", ".join(args) + ")"
 
 
@@ -597,12 +602,14 @@ class Grammar(object):
     starpipe = Literal("|*>") | fixto(Literal("*\u21a6"), "|*>")
     backpipe = Literal("<|") | fixto(Literal("\u21a4"), "<|")
     backstarpipe = Literal("<*|") | fixto(Literal("\u21a4*"), "<*|")
+    dotdot = ~Literal("...") + ~Literal("..>") + Literal("..") | ~Literal("\u2218>") + fixto(Literal("\u2218"), "..")
+    comp_pipe = Literal("..>") | fixto(Literal("\u2218>"), "..>")
+    comp_backpipe = Literal("<..") | fixto(Literal("<\u2218"), "<..")
     amp = Literal("&") | fixto(Literal("\u2227") | Literal("\u2229"), "&")
     caret = Literal("^") | fixto(Literal("\u22bb") | Literal("\u2295"), "^")
     unsafe_bar = ~Literal("|>") + ~Literal("|*>") + Literal("|") | fixto(Literal("\u2228") | Literal("\u222a"), "|")
     bar = ~rbanana + unsafe_bar
     percent = Literal("%")
-    dotdot = ~Literal("...") + Literal("..") | fixto(Literal("\u2218"), "..")
     dollar = Literal("$")
     ellipses = fixto(Literal("...") | Literal("\u2026"), "...")
     lshift = Literal("<<") | fixto(Literal("\xab"), "<<")
@@ -629,6 +636,10 @@ class Grammar(object):
     div_dubslash = dubslash | fixto(Combine(Literal("\xf7") + slash), "//")
     matrix_at_ref = at | fixto(Literal("\xd7"), "@")
     matrix_at = Forward()
+
+    test = Forward()
+    test_no_chain, dubcolon = disable_inside(test, dubcolon)
+    test_no_infix, backtick = disable_inside(test, backtick)
 
     name = Forward()
     base_name = Regex(r"\b(?![0-9])\w+\b", re.U)
@@ -698,7 +709,8 @@ class Grammar(object):
         | Combine(starpipe + equals)
         | Combine(backpipe + equals)
         | Combine(backstarpipe + equals)
-        | Combine(dotdot + equals)
+        | Combine(dotdot + equals | fixto(comp_backpipe, ".."))
+        | Combine(comp_pipe + equals)
         | Combine(dubcolon + equals)
         | Combine(div_dubslash + equals)
         | Combine(div_slash + equals)
@@ -727,13 +739,10 @@ class Grammar(object):
     await_keyword = Forward()
     await_keyword_ref = Keyword("await")
 
-    test = Forward()
     expr = Forward()
-    no_chain_expr = Forward()
     star_expr = Forward()
     dubstar_expr = Forward()
     comp_for = Forward()
-    test_no_chain = Forward()
     test_no_cond = Forward()
 
     testlist = trace(itemlist(test, comma))
@@ -754,7 +763,8 @@ class Grammar(object):
         | fixto(starpipe, "_coconut_starpipe")
         | fixto(backpipe, "_coconut_backpipe")
         | fixto(backstarpipe, "_coconut_backstarpipe")
-        | fixto(dotdot, "_coconut_compose")
+        | fixto(dotdot | comp_backpipe, "_coconut_compose")
+        | fixto(comp_pipe, "_coconut_comp_pipe")
         | fixto(Keyword("and"), "_coconut_bool_and")
         | fixto(Keyword("or"), "_coconut_bool_or")
         | fixto(minus, "_coconut_minus")
@@ -966,38 +976,37 @@ class Grammar(object):
 
     chain_expr = attach(or_expr + ZeroOrMore(dubcolon.suppress() + or_expr), chain_handle)
 
-    pipe_op = pipeline | starpipe | backpipe | backstarpipe
+    infix_op = condense(backtick.suppress() + test_no_infix + backtick.suppress())
 
     infix_expr = Forward()
-    infix_op = condense(backtick.suppress() + test + backtick.suppress())
     infix_expr <<= (
         chain_expr + ~backtick
-        | attach(Group(Optional(chain_expr)) + infix_op + Group(Optional(infix_expr)), infix_handle)
-    )
-    no_chain_infix_expr = Forward()
-    no_chain_infix_op = condense(backtick.suppress() + test_no_chain + backtick.suppress())
-    no_chain_infix_expr <<= (
-        or_expr + ~backtick
-        | attach(Group(Optional(or_expr)) + no_chain_infix_op + Group(Optional(no_chain_infix_expr)), infix_handle)
+        | attach(
+            Group(Optional(chain_expr))
+            + OneOrMore(
+                infix_op + Group(Optional(chain_expr))
+            ), infix_handle)
     )
 
     lambdef = Forward()
-    lambdef_no_chain = Forward()
 
-    pipe_item = Group(no_partial_atom_item + partial_trailer_tokens) + pipe_op | Group(infix_expr) + pipe_op
+    comp_pipe_op = comp_pipe | comp_backpipe
+    comp_pipe_expr = attach(
+        infix_expr + ZeroOrMore(comp_pipe_op + infix_expr)
+        + Optional(comp_pipe_op + lambdef), comp_pipe_handle)
+
+    pipe_op = pipeline | starpipe | backpipe | backstarpipe
+    pipe_item = Group(no_partial_atom_item + partial_trailer_tokens) + pipe_op | Group(comp_pipe_expr) + pipe_op
     last_pipe_item = Group(
-        attach(lambdef, add_paren_handle)
-        | longest(no_partial_atom_item + partial_trailer_tokens, infix_expr)
+        lambdef
+        | longest(no_partial_atom_item + partial_trailer_tokens, comp_pipe_expr)
     )
-    pipe_expr = attach(OneOrMore(pipe_item) + last_pipe_item, pipe_handle)
-    expr <<= infix_expr + ~pipe_op | pipe_expr
-    no_chain_pipe_item = Group(no_partial_atom_item + partial_trailer_tokens) + pipe_op | Group(no_chain_infix_expr) + pipe_op
-    no_chain_last_pipe_item = Group(
-        attach(lambdef_no_chain, add_paren_handle)
-        | longest(no_partial_atom_item + partial_trailer_tokens, no_chain_infix_expr)
+    pipe_expr = (
+        comp_pipe_expr + ~pipe_op
+        | attach(OneOrMore(pipe_item) + last_pipe_item, pipe_handle)
     )
-    no_chain_pipe_expr = attach(OneOrMore(no_chain_pipe_item) + no_chain_last_pipe_item, pipe_handle)
-    no_chain_expr <<= no_chain_infix_expr + ~pipe_op | no_chain_pipe_expr
+
+    expr <<= pipe_expr
 
     star_expr_ref = condense(star + expr)
     dubstar_expr_ref = condense(dubstar + expr)
@@ -1006,10 +1015,6 @@ class Grammar(object):
     not_test = addspace(ZeroOrMore(Keyword("not")) + comparison)
     and_test = exprlist(not_test, Keyword("and"))
     test_item = trace(exprlist(and_test, Keyword("or")))
-    no_chain_comparison = exprlist(no_chain_expr, comp_op)
-    no_chain_not_test = addspace(ZeroOrMore(Keyword("not")) + no_chain_comparison)
-    no_chain_and_test = exprlist(no_chain_not_test, Keyword("and"))
-    no_chain_test_item = trace(exprlist(no_chain_and_test, Keyword("or")))
 
     small_stmt = Forward()
     unsafe_small_stmt = Forward()
@@ -1046,17 +1051,10 @@ class Grammar(object):
     )
 
     lambdef <<= trace(addspace(lambdef_base + test) | stmt_lambdef)
-    lambdef_no_chain <<= trace(addspace(lambdef_base + test_no_chain))
     lambdef_no_cond = trace(addspace(lambdef_base + test_no_cond))
 
     test <<= trace(lambdef | addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test)))
     test_no_cond <<= trace(lambdef_no_cond | test_item)
-    test_no_chain <<= trace(
-        lambdef_no_chain
-        | addspace(
-            no_chain_test_item + Optional(Keyword("if") + no_chain_test_item + Keyword("else") + test_no_chain)
-        )
-    )
 
     async_comp_for = Forward()
     classlist_ref = Optional(

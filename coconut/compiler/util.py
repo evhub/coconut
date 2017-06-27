@@ -19,12 +19,16 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
+from contextlib import contextmanager
+
 from pyparsing import (
     replaceWith,
     ZeroOrMore,
     Optional,
     SkipTo,
     CharsNotIn,
+    Token,
+    ParseException,
 )
 
 from coconut.terminal import logger, complain
@@ -237,3 +241,59 @@ def transform(grammar, text):
     if stop is not None:
         raise CoconutInternalException("failed to properly split text to be transformed")
     return "".join(out)
+
+
+class CustomToken(Token):
+    """Custom PyParsing token."""
+
+    def __init__(self):
+        super(CustomToken, self).__init__()
+        self.name = self.__class__.__name__
+        self.mayReturnEmpty = True
+        self.mayIndexError = False
+        self.skipWhitespace = False
+        self.errmsg = self.name + " did not match"
+
+
+class Function(CustomToken):
+    """PyParsing token that matches iff the given function returns True."""
+
+    def __init__(self, func):
+        super(Function, self).__init__()
+        self.func = func
+
+    def parseImpl(self, instring, loc, doActions=True):
+        if self.func():
+            return loc, ()
+        else:
+            raise ParseException(instring, loc, self.errmsg, self)
+
+
+class Wrap(CustomToken):
+    """PyParsing token that wraps the given item in the given context manager."""
+
+    def __init__(self, item, wrapper):
+        super(Wrap, self).__init__()
+        self.item, self.wrapper = item, wrapper
+
+    def parseImpl(self, instring, loc, doActions=True):
+        with self.wrapper():
+            return self.item._parse(instring, loc, doActions)
+
+
+def disable_inside(item, elem):
+    """Prevent elem from matching inside of item.
+    Returns (item with elem disabled, a new version of elem)."""
+    level = [0]  # number of wrapped items deep we are; in a list to allow modification
+
+    @contextmanager
+    def manage_item():
+        level[0] += 1
+        try:
+            yield
+        finally:
+            level[0] -= 1
+
+    def control_elem():
+        return level[0] == 0
+    return Wrap(item, manage_item), Function(control_elem) + elem

@@ -33,9 +33,10 @@ class _coconut_compose{object}:
             arg = f(arg)
         return arg
     def __repr__(self):
-        return "..".join(_coconut.repr(f) for f in self.funcs)
+        return " <.. ".join(_coconut.repr(f) for f in self.funcs)
     def __reduce__(self):
         return (_coconut_compose, self.funcs)
+def _coconut_comp_pipe(g, f): return _coconut_compose(f, g)
 def _coconut_pipe(x, f): return f(x)
 def _coconut_starpipe(xs, f): return f(*xs)
 def _coconut_backpipe(f, x): return f(x)
