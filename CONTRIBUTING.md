@@ -18,6 +18,12 @@ Contributing to Coconut is as simple as
 
 Want to help out, but don't know what to work on? Head over to Coconut's [open issues](https://github.com/evhub/coconut/issues) and look for ones labeled "contributor friendly." Contributor friendly issues are those that require less intimate knowledge of Coconut's inner workings, and are thus possible for new contributors to work on.
 
+## Testing New Changes
+
+First, you'll want to set up a local copy of Coconut's recommended development environment. For that, just run `git checkout develop` and `make dev`. That should switch you to the `develop` branch, install all possible dependencies, bind the `coconut` command to your local copy, and set up [pre-commit](http://pre-commit.com/), which will check your code for errors for you whenever you `git commit`. Then, you should be able to just use the Coconut command-line for basic testing.
+
+After you've tested your changes locally, you'll want to add more permanent tests to Coconut's test suite. Coconut's test suite is primarily written in Coconut itself, so testing new features just means using them inside of one of Coconut's `.coco` test files, with some `assert` statements to check validity.
+
 ## File Layout
 
 - `DOCS.md`
@@ -154,7 +160,7 @@ Want to help out, but don't know what to work on? Head over to Coconut's [open i
     1. Wait until everything is passing
 
 3. Release:
-    1. Release [`sublime-coconut`]https://github.com/evhub/sublime-coconut() first if applicable
+    1. Release [`sublime-coconut`](https://github.com/evhub/sublime-coconut) first if applicable
     1. Merge pull request and mark as resolved
     1. Release `master` on GitHub
     1. Fetch and switch to `master` locally
