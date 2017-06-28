@@ -314,7 +314,7 @@ class Prompt(object):
                 raise  # issubclass(EOFError, Exception), so we have to do this
             except Exception:
                 logger.print_exc()
-                logger.show("Syntax highlighting failed; switching to --style none.")
+                logger.show_sig("Syntax highlighting failed; switching to --style none.")
                 self.style = None
         return input(msg)
 

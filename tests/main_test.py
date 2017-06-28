@@ -297,7 +297,7 @@ class TestShell(unittest.TestCase):
             call(["ipython", "--ext", "coconut", "-c", '%coconut ' + coconut_snip], assert_output=True)
 
         def test_jupyter(self):
-            call(["coconut", "--jupyter"])
+            call(["coconut", "--jupyter"], assert_output="Coconut: Successfully installed Coconut Jupyter kernel.")
 
 
 class TestCompilation(unittest.TestCase):

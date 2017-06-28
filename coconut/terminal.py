@@ -107,27 +107,32 @@ class Logger(object):
             print(full_message)
 
     def show(self, *messages):
-        """Prints messages with main signature."""
+        """Prints messages if not --quiet."""
+        if not self.quiet:
+            self.display(messages)
+
+    def show_sig(self, *messages):
+        """Prints messages with main signature if not --quiet."""
         if not self.quiet:
             self.display(messages, main_sig)
 
     def show_error(self, *messages):
-        """Prints error messages with main signature."""
+        """Prints error messages with main signature if not --quiet."""
         if not self.quiet:
             self.display(messages, main_sig, debug=True)
 
     def log(self, *messages):
-        """Logs debug messages if in verbose mode."""
+        """Logs debug messages if --verbose."""
         if self.verbose:
             printerr(*messages)
 
-    def log_show(self, *messages):
-        """Logs debug messages with main signature."""
+    def log_sig(self, *messages):
+        """Logs debug messages with main signature if --verbose."""
         if self.verbose:
             self.display(messages, main_sig, debug=True)
 
     def log_vars(self, message, variables, rem_vars=("self",)):
-        """Logs variables with given message."""
+        """Logs variables with given message if --verbose."""
         if self.verbose:
             new_vars = dict(variables)
             for v in rem_vars:

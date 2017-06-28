@@ -441,7 +441,8 @@ class Command(object):
         try:
             received = self.prompt.input(more)
         except KeyboardInterrupt:
-            printerr("\nKeyboardInterrupt")
+            print()
+            printerr("KeyboardInterrupt")
         except EOFError:
             print()
             self.exit_runner()
@@ -459,8 +460,8 @@ class Command(object):
 
     def start_prompt(self):
         """Starts the interpreter."""
-        print("Coconut Interpreter:")
-        print('(type "exit()" or press Ctrl-D to end)')
+        logger.show("Coconut Interpreter:")
+        logger.show('(enter exit() or press Ctrl-D to end)')
         self.start_running()
         while self.running:
             try:
@@ -577,6 +578,7 @@ class Command(object):
         else:
             jupyter = "jupyter"
 
+        # always install kernels if given no args, otherwise only if there's a kernel missing
         do_install = not args
         if not do_install:
             kernel_list = run_cmd([jupyter, "kernelspec", "list"], show_output=False, raise_errs=False)
@@ -597,7 +599,7 @@ class Command(object):
                         self.register_error(errmsg="Jupyter error")
                         success = False
             if success:
-                logger.show("Successfully installed Coconut Jupyter kernel.")
+                logger.show_sig("Successfully installed Coconut Jupyter kernel.")
 
         if args:
             if args[0] == "console":
@@ -621,7 +623,7 @@ class Command(object):
 
         source = fixpath(source)
 
-        print()
+        logger.show()
         logger.show_tabulated("Watching", showpath(source), "(press Ctrl-C to end)...")
 
         def recompile(path):
@@ -640,7 +642,7 @@ class Command(object):
                     time.sleep(watch_interval)
                     watcher.keep_watching()
             except KeyboardInterrupt:
-                logger.show("Got KeyboardInterrupt; stopping watcher.")
+                logger.show_sig("Got KeyboardInterrupt; stopping watcher.")
             finally:
                 observer.stop()
                 observer.join()

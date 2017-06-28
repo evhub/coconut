@@ -274,9 +274,9 @@ def disable_inside(item, elem):
 
     @contextmanager
     def manage_elem(self, instring, loc):
-        if level[0] != 0:
-            raise ParseException(instring, loc, self.errmsg, self)
-        else:
+        if level[0] == 0:
             yield
+        else:
+            raise ParseException(instring, loc, self.errmsg, self)
 
     return Wrap(item, manage_item), Wrap(elem, manage_elem)

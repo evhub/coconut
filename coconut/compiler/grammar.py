@@ -279,10 +279,10 @@ def pipe_handle(loc, tokens, **kwargs):
 
 def comp_pipe_handle(tokens):
     """Processes pipe function composition."""
-    # thoughts: reverse _coconut_compose
     if len(tokens) == 1:
         return tokens[0]
     else:
+        # thoughts: reverse _coconut_compose
         raise NotImplementedError()
 
 
