@@ -243,42 +243,20 @@ def transform(grammar, text):
     return "".join(out)
 
 
-class CustomToken(Token):
-    """Custom PyParsing token."""
-
-    def __init__(self):
-        super(CustomToken, self).__init__()
-        self.name = self.__class__.__name__
-        self.mayReturnEmpty = True
-        self.mayIndexError = False
-        self.skipWhitespace = False
-        self.errmsg = self.name + " did not match"
-
-
-class Function(CustomToken):
-    """PyParsing token that matches iff the given function returns True."""
-
-    def __init__(self, func):
-        super(Function, self).__init__()
-        self.func = func
-
-    def parseImpl(self, instring, loc, doActions=True):
-        if self.func():
-            return loc, ()
-        else:
-            raise ParseException(instring, loc, self.errmsg, self)
-
-
-class Wrap(CustomToken):
+class Wrap(Token):
     """PyParsing token that wraps the given item in the given context manager."""
 
     def __init__(self, item, wrapper):
         super(Wrap, self).__init__()
+        self.name = self.__class__.__name__
+        self.skipWhitespace = False
+        self.errmsg = item.errmsg = " (Wrapped)"
+        self.mayReturnEmpty, self.mayIndexError = item.mayReturnEmpty, item.mayIndexError
         self.item, self.wrapper = item, wrapper
 
     def parseImpl(self, instring, loc, doActions=True):
-        with self.wrapper():
-            return self.item._parse(instring, loc, doActions)
+        with self.wrapper(self, instring, loc):
+            return self.item.parseImpl(instring, loc, doActions)
 
 
 def disable_inside(item, elem):
@@ -287,13 +265,18 @@ def disable_inside(item, elem):
     level = [0]  # number of wrapped items deep we are; in a list to allow modification
 
     @contextmanager
-    def manage_item():
+    def manage_item(self, instring, loc):
         level[0] += 1
         try:
             yield
         finally:
             level[0] -= 1
 
-    def control_elem():
-        return level[0] == 0
-    return Wrap(item, manage_item), Function(control_elem) + elem
+    @contextmanager
+    def manage_elem(self, instring, loc):
+        if level[0] != 0:
+            raise ParseException(instring, loc, self.errmsg, self)
+        else:
+            yield
+
+    return Wrap(item, manage_item), Wrap(elem, manage_elem)
