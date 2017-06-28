@@ -156,14 +156,12 @@ def get_infix_items(tokens, callback=infix_error):
     if len(tokens) < 3:
         raise CoconutInternalException("invalid infix tokens", tokens)
     else:
-        if not isinstance(tokens, list):
-            tokens = tokens.asList()
         (arg1, func, arg2), tokens = tokens[:3], tokens[3:]
-        args = arg1 + arg2
+        args = list(arg1) + list(arg2)
         while tokens:
             args = [callback([args, func, []])]
             (func, newarg), tokens = tokens[:2], tokens[2:]
-            args += newarg
+            args += list(newarg)
         return func, args
 
 
