@@ -49,8 +49,8 @@ except ImportError:
         # conda tries to import coconut.icoconut as a test even when IPython isn't available
         logger.warn("Missing IPython but detected " + conda_build_env_var + "; skipping coconut.icoconut loading")
     else:
-        raise CoconutException("--ipython flag requires IPython library",
-                               extra="run 'pip install coconut[ipython]' to fix")
+        raise CoconutException("--jupyter flag requires Jupyter library",
+                               extra="run 'pip install coconut[jupyter]' to fix")
 else:
     LOAD_MODULE = True
 
@@ -125,20 +125,13 @@ if LOAD_MODULE:
             self._compile = self._coconut_compile
 
         def _coconut_compile(self, source, *args, **kwargs):
-            """Version of _compile that compiles Coconut code.
+            """Version of _compile that checks Coconut code.
             None means that the code should not be run as is.
             Any other value means that it can."""
             if source.endswith("\n\n"):
                 return True
             elif should_indent(source):
                 return None
-            elif "\n" not in source.rstrip():  # if at start
-                try:
-                    memoized_parse_block(source)
-                except CoconutException:
-                    return None
-                else:
-                    return True
             else:
                 return True
 

@@ -214,7 +214,9 @@ def call_output(cmd, **kwargs):
 
 
 def run_cmd(cmd, show_output=True, raise_errs=True):
-    """Runs a console command."""
+    """Runs a console command.
+    When show_output=True, prints output and returns exit code, otherwise returns output.
+    When raise_errs=True, raises an error if command fails."""
     if not cmd or not isinstance(cmd, list):
         raise CoconutInternalException("console commands must be passed as non-empty lists")
     else:

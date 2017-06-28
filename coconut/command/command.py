@@ -38,6 +38,7 @@ from coconut.constants import (
     code_exts,
     comp_ext,
     watch_interval,
+    icoconut_kernel_names,
     icoconut_kernel_dirs,
     minimum_recursion_limit,
     stub_dir,
@@ -567,7 +568,7 @@ class Command(object):
 
     def start_jupyter(self, args):
         """Starts Jupyter with the Coconut kernel."""
-        install_func = functools.partial(run_cmd, show_output=logger.verbose or not args)
+        install_func = functools.partial(run_cmd, show_output=logger.verbose)
 
         try:
             install_func(["jupyter", "--version"])
@@ -576,17 +577,27 @@ class Command(object):
         else:
             jupyter = "jupyter"
 
-        for icoconut_kernel_dir in icoconut_kernel_dirs:
-            install_args = [jupyter, "kernelspec", "install", icoconut_kernel_dir, "--replace"]
-            try:
-                install_func(install_args)
-            except CalledProcessError:
-                user_install_args = install_args + ["--user"]
+        do_install = not args
+        if not do_install:
+            kernel_list = run_cmd([jupyter, "kernelspec", "list"], show_output=False, raise_errs=False)
+            do_install = any(ker not in kernel_list for ker in icoconut_kernel_names)
+
+        if do_install:
+            success = True
+            for icoconut_kernel_dir in icoconut_kernel_dirs:
+                install_args = [jupyter, "kernelspec", "install", icoconut_kernel_dir, "--replace"]
                 try:
-                    install_func(user_install_args)
+                    install_func(install_args)
                 except CalledProcessError:
-                    logger.warn("kernel install failed on command'", " ".join(install_args))
-                    self.register_error(errmsg="Jupyter error")
+                    user_install_args = install_args + ["--user"]
+                    try:
+                        install_func(user_install_args)
+                    except CalledProcessError:
+                        logger.warn("kernel install failed on command'", " ".join(install_args))
+                        self.register_error(errmsg="Jupyter error")
+                        success = False
+            if success:
+                logger.show("Successfully installed Coconut Jupyter kernel.")
 
         if args:
             if args[0] == "console":

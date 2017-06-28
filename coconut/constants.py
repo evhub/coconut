@@ -111,21 +111,21 @@ all_reqs = {
 
 min_versions = {
     "pyparsing": (2, 2, 0),
-    "pre-commit": (0, 13),
+    "pre-commit": (0, 14),
     "sphinx": (1, 5),
     "pygments": (2, 2),
     "recommonmark": (0, 4),
-    "sphinx_bootstrap_theme": (0, 4),
+    "sphinx_bootstrap_theme": (0, 5),
     "psutil": (5, 2),
     "jupyter": (1, 0),
     "jupyter-console": (5, 1),
-    "ipython": (5, 3),
+    "ipython": (5, 4),
     "ipykernel": (4, 6),
     "mypy": (0, 511),
     "prompt_toolkit": (1, 0),
     "futures": (3, 1),
     "argparse": (1, 4),
-    "pytest": (3, 0),
+    "pytest": (3,),
     "watchdog": (0, 8),
     "requests": (2,),
 }
@@ -433,11 +433,16 @@ new_issue_url = "https://github.com/evhub/coconut/issues/new"
 
 base_dir = os.path.dirname(os.path.abspath(fixpath(__file__)))
 
+icoconut_kernel_names = [
+    "coconut",
+    "coconut2",
+    "coconut3",
+]
+
 icoconut_dir = os.path.join(base_dir, "icoconut")
 icoconut_kernel_dirs = [
-    os.path.join(icoconut_dir, "coconut"),
-    os.path.join(icoconut_dir, "coconut2"),
-    os.path.join(icoconut_dir, "coconut3"),
+    os.path.join(icoconut_dir, kernel_name)
+    for kernel_name in icoconut_kernel_names
 ]
 
 stub_dir = os.path.join(base_dir, "stubs")
