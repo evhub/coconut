@@ -981,7 +981,7 @@ class Grammar(object):
 
     infix_expr = Forward()
     infix_expr <<= (
-        chain_expr + ~unsafe_backtick
+        chain_expr + ~backtick
         | attach(
             Group(Optional(chain_expr))
             + OneOrMore(

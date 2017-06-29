@@ -253,9 +253,9 @@ class Wrap(Token):
         self.skipWhitespace, self.mayReturnEmpty, self.mayIndexError = item.skipWhitespace, item.mayReturnEmpty, item.mayIndexError
         self.item, self.wrapper = item, wrapper
 
-    def parseImpl(self, instring, loc, doActions=True):
+    def parseImpl(self, instring, loc, *args, **kwargs):
         with self.wrapper(self, instring, loc):
-            return self.item.parseImpl(instring, loc, doActions)
+            return self.item.parseImpl(instring, loc, *args, **kwargs)
 
 
 def disable_inside(item, elem):
