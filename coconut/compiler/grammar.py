@@ -579,9 +579,9 @@ class Grammar(object):
     star = ~dubstar + Literal("*")
     at = Literal("@")
     arrow = Literal("->") | fixto(Literal("\u2192"), "->")
-    dubcolon = Literal("::")
+    unsafe_dubcolon = Literal("::")
     unsafe_colon = Literal(":")
-    colon = ~dubcolon + unsafe_colon
+    colon = ~unsafe_dubcolon + unsafe_colon
     semicolon = Literal(";")
     eq = Literal("==")
     equals = ~eq + Literal("=")
@@ -618,7 +618,7 @@ class Grammar(object):
     tilde = Literal("~") | fixto(~Literal("\xac=") + Literal("\xac"), "~")
     underscore = Literal("_")
     pound = Literal("#")
-    backtick = Literal("`")
+    unsafe_backtick = Literal("`")
     dubbackslash = Literal("\\\\")
     backslash = ~dubbackslash + Literal("\\")
     questionmark = Literal("?")
@@ -639,8 +639,8 @@ class Grammar(object):
     matrix_at = Forward()
 
     test = Forward()
-    test_no_chain, dubcolon = disable_inside(test, dubcolon)
-    test_no_infix, backtick = disable_inside(test, backtick)
+    test_no_chain, dubcolon = disable_inside(test, unsafe_dubcolon)
+    test_no_infix, backtick = disable_inside(test, unsafe_backtick)
 
     name = Forward()
     base_name = Regex(r"\b(?![0-9])\w+\b", re.U)
@@ -712,7 +712,7 @@ class Grammar(object):
         | Combine(backstarpipe + equals)
         | Combine(dotdot + equals | fixto(comp_backpipe, ".."))
         | Combine(comp_pipe + equals)
-        | Combine(dubcolon + equals)
+        | Combine(unsafe_dubcolon + equals)
         | Combine(div_dubslash + equals)
         | Combine(div_slash + equals)
         | Combine(exp_dubstar + equals)
@@ -770,7 +770,7 @@ class Grammar(object):
         | fixto(Keyword("or"), "_coconut_bool_or")
         | fixto(minus, "_coconut_minus")
         | fixto(dot, "_coconut.getattr")
-        | fixto(dubcolon, "_coconut.itertools.chain")
+        | fixto(unsafe_dubcolon, "_coconut.itertools.chain")
         | fixto(dollar, "_coconut.functools.partial")
         | fixto(exp_dubstar, "_coconut.operator.pow")
         | fixto(mul_star, "_coconut.operator.mul")
@@ -981,7 +981,7 @@ class Grammar(object):
 
     infix_expr = Forward()
     infix_expr <<= (
-        chain_expr + ~backtick
+        chain_expr + ~unsafe_backtick
         | attach(
             Group(Optional(chain_expr))
             + OneOrMore(
@@ -1141,7 +1141,7 @@ class Grammar(object):
         | (name + plus.suppress() + (match_list | match_tuple))("rseries")
     )
     iter_match = (
-        ((match_list | match_tuple | match_lazy) + dubcolon.suppress() + name)
+        ((match_list | match_tuple | match_lazy) + unsafe_dubcolon.suppress() + name)
         | match_lazy
     )("iter")
     star_match = (
@@ -1218,7 +1218,7 @@ class Grammar(object):
     name_funcdef = trace(condense(dotted_name + parameters))
     op_tfpdef = unsafe_typedef_default | condense(name + Optional(default))
     op_funcdef_arg = name | condense(lparen.suppress() + op_tfpdef + rparen.suppress())
-    op_funcdef_name = backtick.suppress() + dotted_name + backtick.suppress()
+    op_funcdef_name = unsafe_backtick.suppress() + dotted_name + unsafe_backtick.suppress()
     op_funcdef = trace(attach(
         Group(Optional(op_funcdef_arg))
         + op_funcdef_name

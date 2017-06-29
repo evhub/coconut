@@ -8,7 +8,7 @@
 """
 Author: Evan Hubinger
 License: Apache 2.0
-Description: Utilites for use in the compiler.
+Description: Utilities for use in the compiler.
 """
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -249,9 +249,8 @@ class Wrap(Token):
     def __init__(self, item, wrapper):
         super(Wrap, self).__init__()
         self.name = self.__class__.__name__
-        self.skipWhitespace = False
         self.errmsg = item.errmsg = " (Wrapped)"
-        self.mayReturnEmpty, self.mayIndexError = item.mayReturnEmpty, item.mayIndexError
+        self.skipWhitespace, self.mayReturnEmpty, self.mayIndexError = item.skipWhitespace, item.mayReturnEmpty, item.mayIndexError
         self.item, self.wrapper = item, wrapper
 
     def parseImpl(self, instring, loc, doActions=True):
