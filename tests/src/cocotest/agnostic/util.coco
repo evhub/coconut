@@ -34,9 +34,10 @@ sqplus1_3 <..= square  # type: ignore
 
 plus1sq_4 = plus1 ..> square
 sqplus1_4 = square
-sqplus1_4 <..= plus1  # type: ignore
+sqplus1_4 ..>= plus1  # type: ignore
 
 square_times2_plus1 = square ..> times2 ..> plus1
+plus1_cube = plus1 ..> x -> x**3
 
 # Basic Functions:
 product = reduce$(*)

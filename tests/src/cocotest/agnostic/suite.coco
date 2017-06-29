@@ -365,6 +365,7 @@ def suite_test():
     assert (not)..a.true() is False
     assert 10 % 4 % 3 == 2 == 10 `mod` 4 `mod` 3
     assert square_times2_plus1(3) == 19
+    assert plus1_cube(2) == 27
     return True
 
 def tco_test():
