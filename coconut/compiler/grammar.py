@@ -277,13 +277,24 @@ def pipe_handle(loc, tokens, **kwargs):
             raise CoconutInternalException("invalid pipe operator", op)
 
 
-def comp_pipe_handle(tokens):
+def comp_pipe_handle(loc, tokens):
     """Processes pipe function composition."""
-    if len(tokens) == 1:
-        return tokens[0]
+    if len(tokens) < 3 or len(tokens) % 2 != 1:
+        raise CoconutInternalException("invalid composition pipe tokens", tokens)
     else:
-        # thoughts: reverse _coconut_compose
-        raise NotImplementedError()
+        funcs, using_op = [tokens[0]], tokens[1]
+        for i in range(1, len(tokens), 2):
+            op, fn = tokens[i], tokens[i + 1]
+            if op != using_op:
+                raise CoconutDeferredSyntaxError("invalid mixing of function composition pipe operators with different directions", loc)
+            funcs.append(fn)
+        if using_op == "..>":
+            pass
+        elif using_op == "<..":
+            funcs.reverse()
+        else:
+            raise CoconutInternalException("invalid composition pipe operator", op)
+        return "_coconut_compose(" + ", ".join(funcs) + ")"
 
 
 def attr_handle(loc, tokens):
@@ -523,7 +534,7 @@ def compose_item_handle(tokens):
     elif len(tokens) == 1:
         return tokens[0]
     else:
-        return "_coconut_compose(" + ", ".join(tokens) + ")"
+        return "_coconut_compose(" + ", ".join(reversed(tokens)) + ")"
 
 
 def make_suite_handle(tokens):
@@ -599,13 +610,13 @@ class Grammar(object):
     minus = ~Literal("->") + Literal("-")
     dubslash = Literal("//")
     slash = ~dubslash + Literal("/")
-    pipeline = Literal("|>") | fixto(Literal("\u21a6"), "|>")
-    starpipe = Literal("|*>") | fixto(Literal("*\u21a6"), "|*>")
-    backpipe = Literal("<|") | fixto(Literal("\u21a4"), "<|")
-    backstarpipe = Literal("<*|") | fixto(Literal("\u21a4*"), "<*|")
+    pipe = Literal("|>") | fixto(Literal("\u21a6"), "|>")
+    star_pipe = Literal("|*>") | fixto(Literal("*\u21a6"), "|*>")
+    back_pipe = Literal("<|") | fixto(Literal("\u21a4"), "<|")
+    back_star_pipe = Literal("<*|") | fixto(Literal("\u21a4*"), "<*|")
     dotdot = ~Literal("...") + ~Literal("..>") + Literal("..") | ~Literal("\u2218>") + fixto(Literal("\u2218"), "..")
     comp_pipe = Literal("..>") | fixto(Literal("\u2218>"), "..>")
-    comp_backpipe = Literal("<..") | fixto(Literal("<\u2218"), "<..")
+    comp_back_pipe = Literal("<..") | fixto(Literal("<\u2218"), "<..")
     amp = Literal("&") | fixto(Literal("\u2227") | Literal("\u2229"), "&")
     caret = Literal("^") | fixto(Literal("\u22bb") | Literal("\u2295"), "^")
     unsafe_bar = ~Literal("|>") + ~Literal("|*>") + Literal("|") | fixto(Literal("\u2228") | Literal("\u222a"), "|")
@@ -623,7 +634,7 @@ class Grammar(object):
     backslash = ~dubbackslash + Literal("\\")
     questionmark = Literal("?")
 
-    lt = ~Literal("<<") + ~Literal("<=") + Literal("<")
+    lt = ~Literal("<<") + ~Literal("<=") + ~Literal("<..") + Literal("<")
     gt = ~Literal(">>") + ~Literal(">=") + Literal(">")
     le = Literal("<=") | fixto(Literal("\u2264"), "<=")
     ge = Literal(">=") | fixto(Literal("\u2265"), ">=")
@@ -706,11 +717,11 @@ class Grammar(object):
     docstring = condense(moduledoc)
 
     augassign = (
-        Combine(pipeline + equals)
-        | Combine(starpipe + equals)
-        | Combine(backpipe + equals)
-        | Combine(backstarpipe + equals)
-        | Combine(dotdot + equals | fixto(comp_backpipe, ".."))
+        Combine(pipe + equals)
+        | Combine(star_pipe + equals)
+        | Combine(back_pipe + equals)
+        | Combine(back_star_pipe + equals)
+        | Combine((dotdot | fixto(comp_back_pipe, "..")) + equals)
         | Combine(comp_pipe + equals)
         | Combine(unsafe_dubcolon + equals)
         | Combine(div_dubslash + equals)
@@ -760,12 +771,12 @@ class Grammar(object):
     test_expr = yield_expr | testlist_star_expr
 
     op_item = (
-        fixto(pipeline, "_coconut_pipe")
-        | fixto(starpipe, "_coconut_starpipe")
-        | fixto(backpipe, "_coconut_backpipe")
-        | fixto(backstarpipe, "_coconut_backstarpipe")
-        | fixto(dotdot | comp_backpipe, "_coconut_compose")
-        | fixto(comp_pipe, "_coconut_comp_pipe")
+        fixto(pipe, "_coconut_pipe")
+        | fixto(star_pipe, "_coconut_star_pipe")
+        | fixto(back_pipe, "_coconut_back_pipe")
+        | fixto(back_star_pipe, "_coconut_back_star_pipe")
+        | fixto(dotdot | comp_back_pipe, "_coconut_back_compose")
+        | fixto(comp_pipe, "_coconut_compose")
         | fixto(Keyword("and"), "_coconut_bool_and")
         | fixto(Keyword("or"), "_coconut_bool_or")
         | fixto(minus, "_coconut_minus")
@@ -991,12 +1002,14 @@ class Grammar(object):
 
     lambdef = Forward()
 
-    comp_pipe_op = comp_pipe | comp_backpipe
-    comp_pipe_expr = attach(
-        infix_expr + ZeroOrMore(comp_pipe_op + infix_expr)
-        + Optional(comp_pipe_op + lambdef), comp_pipe_handle)
+    comp_pipe_op = comp_pipe | comp_back_pipe
+    comp_pipe_expr = (
+        infix_expr + ~comp_pipe_op
+        | attach(OneOrMore(infix_expr + comp_pipe_op)
+                 + (lambdef | infix_expr), comp_pipe_handle)
+    )
 
-    pipe_op = pipeline | starpipe | backpipe | backstarpipe
+    pipe_op = pipe | star_pipe | back_pipe | back_star_pipe
     pipe_item = Group(no_partial_atom_item + partial_trailer_tokens) + pipe_op | Group(comp_pipe_expr) + pipe_op
     last_pipe_item = Group(
         lambdef

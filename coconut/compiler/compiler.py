@@ -1015,9 +1015,9 @@ class Compiler(Grammar):
             elif op == "<*|=":
                 out += name + " = " + name + "(*(" + item + "))"
             elif op == "..=":
-                out += name + " = _coconut_compose(" + name + ", (" + item + "))"
-            elif op == "..>=":
                 out += name + " = _coconut_compose((" + item + "), " + name + ")"
+            elif op == "..>=":
+                out += name + " = _coconut_compose(" + name + ", (" + item + "))"
             elif op == "::=":
                 ichain_var = lazy_chain_var + "_" + str(self.ichain_count)  # necessary to prevent a segfault caused by self-reference
                 out += ichain_var + " = " + name + "\n"

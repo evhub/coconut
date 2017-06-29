@@ -28,19 +28,19 @@ class _coconut_compose{object}:
     def __init__(self, *funcs):
         self.funcs = funcs
     def __call__(self, *args, **kwargs):
-        arg = self.funcs[-1](*args, **kwargs)
-        for f in self.funcs[-2::-1]:
+        arg = self.funcs[0](*args, **kwargs)
+        for f in self.funcs[1:]:
             arg = f(arg)
         return arg
     def __repr__(self):
-        return " <.. ".join(_coconut.repr(f) for f in self.funcs)
+        return " ..> ".join(_coconut.repr(f) for f in self.funcs)
     def __reduce__(self):
         return (_coconut_compose, self.funcs)
-def _coconut_comp_pipe(g, f): return _coconut_compose(f, g)
+def _coconut_back_compose(*funcs): return _coconut_compose(*_coconut.reversed(funcs))
 def _coconut_pipe(x, f): return f(x)
-def _coconut_starpipe(xs, f): return f(*xs)
-def _coconut_backpipe(f, x): return f(x)
-def _coconut_backstarpipe(f, xs): return f(*xs)
+def _coconut_star_pipe(xs, f): return f(*xs)
+def _coconut_back_pipe(f, x): return f(x)
+def _coconut_back_star_pipe(f, xs): return f(*xs)
 def _coconut_bool_and(a, b): return a and b
 def _coconut_bool_or(a, b): return a or b
 def _coconut_minus(*args): return _coconut.operator.neg(*args) if len(args) < 2 else _coconut.operator.sub(*args)

@@ -6,7 +6,7 @@ def suite_test():
     assert "1" `plus` "1" == "11" == "1" `(+)` "1"
     assert 3 `mod` 6 == 3 == 3 `(%)` 6
     assert 5 `mod` 4 == 1 == 5 `mod_` 4
-    assert 5 `mod` 2 `plus` 2 == 1 == 5 `(%)` 2 `(+)` 2
+    assert 5 `mod` 2 `plus` 2 == 3 == 5 `(%)` 2 `(+)` 2
     assert "11" `base` 2 == 3
     assert "10A" `int` 12 == 154
     assert ["1", "2"] `join_with` ", " == "1, 2"
@@ -22,10 +22,15 @@ def suite_test():
     assert plus1(plus1(5)) == 7 == plus1..plus1(5)
     assert `sqrt` 16 == 4 == `sqrt_` 16
     assert `square` 3 == 9
-    assert sqplus1(3) == 10 == plus1..square(3)
-    assert parallel_map(sqplus1, range(3)) |> tuple == (1, 2, 5)
-    assert 3 `plus1sq` == 16 == 3 `plus1sq_`
-    assert 3 `sqplus1` == 10 == 3 `sqplus1_`
+    def test_sqplus1_plus1sq(sqplus1, plus1sq):
+        assert sqplus1(3) == 10 == plus1..square(3)
+        assert parallel_map(sqplus1, range(3)) |> tuple == (1, 2, 5)
+        assert 3 `plus1sq` == 16
+        assert 3 `sqplus1` == 10
+    test_sqplus1_plus1sq(sqplus1_1, plus1sq_1)
+    test_sqplus1_plus1sq(sqplus1_2, plus1sq_2)
+    test_sqplus1_plus1sq(sqplus1_3, plus1sq_3)
+    test_sqplus1_plus1sq(sqplus1_4, plus1sq_4)
     assert 3 |> plus1 |> square == 16 == 3 |> plus1_ |> square
     assert reduce((|>), [3, plus1, square]) == 16 == pipe(pipe(3, plus1), square)
     assert reduce((..), [sqrt, square, plus1])(3) == 4 == compose(compose(sqrt, square), plus1)(3)
@@ -76,16 +81,18 @@ def suite_test():
     assert triangle(3, 4, 5).is_right()
     assert (.)(triangle(3, 4, 5), "is_right")
     assert triangle(3, 4, 5) |> .is_right()
-    assert factorial1(3) == 6
-    assert factorial2(3) == 6
-    assert factorial4(3) == 6
-    assert factorial5(3) == 6
-    assert fact(3) == 6 == fact_(3)
-    assert factorial(3) == 6
-    assert factorial1(-1) is None
-    assert factorial2(-1) is None
-    assert factorial4(-1) is None
-    assert factorial5(-1) is None
+    def test_factorial(factorial, test_none=True):
+        assert factorial(0) == 1 == factorial(1)
+        assert factorial(3) == 6
+        if test_none:
+            assert factorial(-1) is None
+    test_factorial(factorial1)
+    test_factorial(factorial2)
+    test_factorial(factorial4)
+    test_factorial(factorial5)
+    test_factorial(fact, test_none=False)
+    test_factorial(fact_, test_none=False)
+    test_factorial(factorial, test_none=False)
     assert factorial3([2,3]) == [2,6] == factorial3((2,3))
     assert classify(()) == "empty tuple"
     assert classify([]) == "empty list"
@@ -357,6 +364,7 @@ def suite_test():
     a = A()
     assert (not)..a.true() is False
     assert 10 % 4 % 3 == 2 == 10 `mod` 4 `mod` 3
+    assert square_times2_plus1(3) == 19
     return True
 
 def tco_test():
