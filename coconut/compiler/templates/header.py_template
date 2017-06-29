@@ -26,7 +26,12 @@ class MatchError(Exception):
 class _coconut_compose{object}:
     __slots__ = ("funcs",)
     def __init__(self, *funcs):
-        self.funcs = funcs
+        self.funcs = []
+        for fn in funcs:
+            if isinstance(fn, _coconut_compose):
+                self.funcs += fn.funcs
+            else:
+                self.funcs.append(fn)
     def __call__(self, *args, **kwargs):
         arg = self.funcs[0](*args, **kwargs)
         for f in self.funcs[1:]:
@@ -124,9 +129,9 @@ class map(_coconut.map):
     def __copy__(self):
         return self.__class__(self._func, *_coconut.map(_coconut.copy.copy, self._iters))
     def __fmap__(self, func):
-        return self.__class__(_coconut_compose(func, self._func), *self._iters)
+        return self.__class__(_coconut_compose(self._func, func), *self._iters)
 class parallel_map(map):
-    """Multiprocessing implementation of map using concurrent.futures.
+    """Multi-process implementation of map using concurrent.futures.
     Requires arguments to be pickleable."""
     __slots__ = ()
     def __iter__(self):
@@ -136,7 +141,7 @@ class parallel_map(map):
     def __repr__(self):
         return "parallel_" + _coconut_map.__repr__(self)
 class concurrent_map(map):
-    """Multithreading implementation of map using concurrent.futures."""
+    """Multi-thread implementation of map using concurrent.futures."""
     __slots__ = ()
     def __iter__(self):
         from concurrent.futures import ThreadPoolExecutor
@@ -366,15 +371,14 @@ def consume(iterable, keep_last=0):
     """Fully exhaust iterable and return the last keep_last elements."""
     return _coconut.collections.deque(iterable, maxlen=keep_last)  # fastest way to exhaust an iterator
 def fmap(func, obj):
-    """Creates a copy of obj with func applied to its contents."""
+    """Creates a copy of obj with func applied to its contents.
+    Override by defining __fmap__."""
     if _coconut.hasattr(obj, "__fmap__"):
         return obj.__fmap__(func)
-    args = _coconut_map(func, obj)
-    if _coconut.isinstance(obj, _coconut.dict):
-        args = _coconut_zip(args, obj.values())
+    args = _coconut_map(func, obj.items()) if _coconut.isinstance(obj, _coconut.abc.Mapping) else _coconut_map(func, obj)
     if _coconut.isinstance(obj, _coconut.tuple) and _coconut.hasattr(obj, "_make"):
         return obj._make(args)
-    if _coconut.isinstance(obj, (_coconut.map, _coconut.range)):
+    if _coconut.isinstance(obj, (_coconut.map, _coconut.range, _coconut.abc.Iterator)):
         return args
     if _coconut.isinstance(obj, _coconut.str):
         return "".join(args)

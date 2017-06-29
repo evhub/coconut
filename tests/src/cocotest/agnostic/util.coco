@@ -37,6 +37,7 @@ sqplus1_4 = square
 sqplus1_4 ..>= plus1  # type: ignore
 
 square_times2_plus1 = square ..> times2 ..> plus1
+square_times2_plus1_ = plus1 <.. times2 <.. square
 plus1_cube = plus1 ..> x -> x**3
 
 # Basic Functions:

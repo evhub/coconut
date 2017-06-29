@@ -321,10 +321,10 @@ def main_test():
     assert [1, 2, 3] |> fmap$(x -> x+1) == [2, 3, 4]
     assert (1, 2, 3) |> fmap$(x -> x+1) == (2, 3, 4)
     assert "abc" |> fmap$(x -> x+"!") == "a!b!c!"
-    assert {1:"2", 2:"3"} |> fmap$(-> _+1) == {2:"2", 3:"3"}
+    assert {1:"2", 2:"3"} |> fmap$((k, v) -> (k+1, v+"!")) == {2:"2!", 3:"3!"}
     assert {1, 2, 3} |> fmap$(-> _+1) == {2, 3, 4}
     assert [[1, 2, 3]] |> fmap$((+)$([0])) == [[0, 1, 2, 3]]
-    assert range(3) |> fmap$(-> _ + 1) |> tuple == (1, 2, 3)
+    assert range(3) |> fmap$(-> _+1) |> tuple == (1, 2, 3) == (|1, 2, 3|) |> fmap$(-> _+1) |> tuple
     assert issubclass(int, py_int)
     class pyobjsub(py_object)
     class objsub(object)
