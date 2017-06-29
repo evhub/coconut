@@ -111,6 +111,13 @@ def process_header_args(which, target, use_hash, no_tco):
         module_docstring='"""Built-in Coconut utilities."""\n\n' if which == "__coconut__" else "",
         comma_tco=", _coconut_tail_call, _coconut_tco" if not no_tco else "",
         object="(object)" if target_startswith != "3" else "",
+        import_pickle=(
+            r'''if _coconut_sys.version_info < (3,):
+        import cPickle as pickle
+    else:
+        import pickle''' if not target
+            else "import cPickle as pickle" if target_info < (3,)
+            else "import pickle"),
         import_OrderedDict=(
             r'''if _coconut_sys.version_info >= (2, 7):
         OrderedDict = collections.OrderedDict

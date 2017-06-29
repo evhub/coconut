@@ -1,5 +1,6 @@
 class _coconut{object}:{comment.everything_here_must_be_copied_to_stub_file}
-    import collections, copy, functools, imp, itertools, operator, pickle, types, weakref
+    import collections, copy, functools, imp, itertools, operator, types, weakref
+    {import_pickle}
     {import_OrderedDict}
     {import_collections_abc}
     Exception, IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr{comma_bytearray} = Exception, IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, {static_repr}{comma_bytearray}
@@ -299,7 +300,8 @@ def recursive_iterator(func):
         return to_return
     return recursive_iterator_func
 def addpattern(base_func):
-    """Decorator to add a new case to a pattern-matching function, where the new case is checked last."""
+    """Decorator to add a new case to a pattern-matching function,
+    where the new case is checked last."""
     def pattern_adder(func):
         {tco_decorator}@_coconut.functools.wraps(func)
         def add_pattern_func(*args, **kwargs):
@@ -310,7 +312,8 @@ def addpattern(base_func):
         return add_pattern_func
     return pattern_adder
 def prepattern(base_func):
-    """Decorator to add a new case to a pattern-matching function, where the new case is checked first."""
+    """Decorator to add a new case to a pattern-matching function,
+    where the new case is checked first."""
     def pattern_prepender(func):
         return addpattern(func)(base_func)
     return pattern_prepender

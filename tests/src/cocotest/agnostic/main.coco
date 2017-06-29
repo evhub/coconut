@@ -356,7 +356,6 @@ def tco_func() = tco_func()
 
 def main(*args):
     """Asserts arguments and executes tests."""
-    print()
     assert all(args)
     sys.stdout.write(".")
     assert main_test()
@@ -385,4 +384,4 @@ def main(*args):
             assert py35_test()
     sys.stdout.write(".")
     from . import tutorial
-    print("<success>")
+    print("\n<success>")

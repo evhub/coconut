@@ -139,8 +139,8 @@ def set_to_tuple(tokens):
         raise CoconutInternalException("invalid set maker item", tokens[0])
 
 
-def gen_imports(path, impas):
-    """Generates import statements."""
+def single_import(path, impas):
+    """Generates import statements from a fully qualified import and the name to bind it to."""
     out = []
     parts = path.split("./")  # denotes from ... import ...
     if len(parts) == 1:
@@ -171,6 +171,61 @@ def gen_imports(path, impas):
         else:
             out.append("from " + imp_from + " import " + imp + " as " + impas)
     return out
+
+
+def universal_import(imports, imp_from=None, target=""):
+    """Generates code for a universal import of imports from imp_from on target.
+    imports = [[imp1], [imp2, as], ...]"""
+    importmap = []  # [((imp | old_imp, imp, version_check), impas), ...]
+    for imps in imports:
+        if len(imps) == 1:
+            imp, impas = imps[0], imps[0]
+        else:
+            imp, impas = imps
+        if imp_from is not None:
+            imp = imp_from + "./" + imp  # marker for from ... import ...
+        old_imp = None
+        path = imp.split(".")
+        for i in reversed(range(1, len(path) + 1)):
+            base, exts = ".".join(path[:i]), path[i:]
+            clean_base = base.replace("/", "")
+            if clean_base in py3_to_py2_stdlib:
+                old_imp, version_check = py3_to_py2_stdlib[clean_base]
+                if exts:
+                    if "/" in base:
+                        old_imp += "./"
+                    else:
+                        old_imp += "."
+                    old_imp += ".".join(exts)
+                break
+        if old_imp is None:
+            paths = (imp,)
+        elif target.startswith("2"):
+            paths = (old_imp,)
+        elif not target or get_target_info(target) < version_check:
+            paths = (old_imp, imp, version_check)
+        else:
+            paths = (imp,)
+        importmap.append((paths, impas))
+
+    stmts = []
+    for paths, impas in importmap:
+        if len(paths) == 1:
+            more_stmts = single_import(paths[0], impas)
+            stmts.extend(more_stmts)
+        else:
+            first, second, version_check = paths
+            stmts.append("if _coconut_sys.version_info < " + str(version_check) + ":")
+            first_stmts = single_import(first, impas)
+            first_stmts[0] = openindent + first_stmts[0]
+            first_stmts[-1] += closeindent
+            stmts.extend(first_stmts)
+            stmts.append("else:")
+            second_stmts = single_import(second, impas)
+            second_stmts[0] = openindent + second_stmts[0]
+            second_stmts[-1] += closeindent
+            stmts.extend(second_stmts)
+    return "\n".join(stmts)
 
 
 def split_args_list(tokens, loc):
@@ -1174,57 +1229,7 @@ class Compiler(Grammar):
                 return ""
         else:
             raise CoconutInternalException("invalid import tokens", tokens)
-
-        importmap = []  # [((imp | old_imp, imp, version_check), impas), ...]
-        for imps in imports:
-            if len(imps) == 1:
-                imp, impas = imps[0], imps[0]
-            else:
-                imp, impas = imps
-            if imp_from is not None:
-                imp = imp_from + "./" + imp  # marker for from ... import ...
-            old_imp = None
-            path = imp.split(".")
-            for i in reversed(range(1, len(path) + 1)):
-                base, exts = ".".join(path[:i]), path[i:]
-                clean_base = base.replace("/", "")
-                if clean_base in py3_to_py2_stdlib:
-                    old_imp, version_check = py3_to_py2_stdlib[clean_base]
-                    if exts:
-                        if "/" in base:
-                            old_imp += "./"
-                        else:
-                            old_imp += "."
-                        old_imp += ".".join(exts)
-                    break
-            if old_imp is None:
-                paths = (imp,)
-            elif self.target.startswith("2"):
-                paths = (old_imp,)
-            elif not self.target or self.target_info < version_check:
-                paths = (old_imp, imp, version_check)
-            else:
-                paths = (imp,)
-            importmap.append((paths, impas))
-
-        stmts = []
-        for paths, impas in importmap:
-            if len(paths) == 1:
-                more_stmts = gen_imports(paths[0], impas)
-                stmts.extend(more_stmts)
-            else:
-                first, second, version_check = paths
-                stmts.append("if _coconut_sys.version_info < " + str(version_check) + ":")
-                first_stmts = gen_imports(first, impas)
-                first_stmts[0] = openindent + first_stmts[0]
-                first_stmts[-1] += closeindent
-                stmts.extend(first_stmts)
-                stmts.append("else:")
-                second_stmts = gen_imports(second, impas)
-                second_stmts[0] = openindent + second_stmts[0]
-                second_stmts[-1] += closeindent
-                stmts.extend(second_stmts)
-        return "\n".join(stmts)
+        return universal_import(imports, imp_from=imp_from, target=self.target)
 
     def complex_raise_stmt_handle(self, tokens):
         """Processes Python 3 raise from statement."""
