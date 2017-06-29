@@ -560,6 +560,6 @@ with_toc = """
 """
 
 project = "Coconut"
-copyright = "2015-2017, Evan Hubinger, licensed under Apache 2.0"
+copyright = "2015-2017 Evan Hubinger, licensed under Apache 2.0"
 
 highlight_language = "coconut"

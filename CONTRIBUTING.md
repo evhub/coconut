@@ -1,6 +1,8 @@
 # Coconut Contributing Guidelines
 
-**Anyone is welcome to submit an issue or pull request regardless of whether or not they have read this document.** The purpose of this document is simply to explain the contribution process and the internals of how Coconut works to make contributing easier.
+_By contributing to Coconut, you consent to your contribution being released under [Coconut's Apache 2.0 license](https://github.com/evhub/coconut/blob/develop/LICENSE.txt)._
+
+**Anyone is welcome to submit an issue or pull request!** The purpose of this document is simply to explain the contribution process and the internals of how Coconut works to make contributing easier.
 
 ## Asking Questions
 

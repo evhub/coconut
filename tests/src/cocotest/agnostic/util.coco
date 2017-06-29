@@ -712,7 +712,7 @@ class Vars:
     @classmethod
     @contextmanager
     def using(cls, globs=None):
-        """Temporarilty put variables into the global namespace."""
+        """Temporarily put variables into the global namespace."""
         if globs is None:
             globs = globals()
         prevars = {}
