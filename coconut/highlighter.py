@@ -32,6 +32,7 @@ from coconut.constants import (
     code_exts,
     reserved_vars,
     shebang_regex,
+    magic_methods,
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -82,10 +83,10 @@ class CoconutLexer(Python3Lexer):
         (r'def(?=\s*\()', Keyword),
         (r'\?', Keyword),
     ] + tokens["root"]
-    tokens["keywords"] = tokens["keywords"] + [
+    tokens["keywords"] += [
         (words(reserved_vars, prefix=r"(?<!\\)", suffix=r"\b"), Keyword),
     ]
-    tokens["builtins"] = tokens["builtins"] + [
+    tokens["builtins"] += [
         (words(coconut_specific_builtins, suffix=r"\b"), Name.Builtin),
         (r"MatchError\b", Name.Exception),
     ]
@@ -95,6 +96,9 @@ class CoconutLexer(Python3Lexer):
         (r"0x[\da-fA-F_]+", Number.Integer),
         (r"\d[\d_]*(\.\d[\d_]*)?((e|E)[\d_]+)?(j|J)?", Number.Integer),
     ] + tokens["numbers"]
+    tokens["magicfuncs"] += [
+        (words(magic_methods, suffix=r"\b"), Name.Function.Magic),
+    ]
 
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tabideal, encoding=default_encoding):
         """Initialize the Python syntax highlighter."""

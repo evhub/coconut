@@ -461,6 +461,10 @@ coconut_run_args = ["--run", "--quiet", "--target", "sys"]
 
 shebang_regex = r'coconut(?:-run)?'
 
+magic_methods = (
+    "__fmap__",
+)
+
 coconut_specific_builtins = (
     "reduce",
     "takewhile",

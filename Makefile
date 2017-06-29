@@ -14,9 +14,14 @@ format: dev
 	pre-commit autoupdate
 	pre-commit run --allow-unstaged-config --all-files
 
-.PHONY: test
-test:
+.PHONY: test-all
+test-all:
 	pytest --strict -s tests
+
+.PHONY: test-basic
+test-basic:
+	python3 ./tests
+	python3 ./tests/dest/runner.py
 
 .PHONY: sphinx
 sphinx: clean
@@ -54,4 +59,4 @@ upload: build
 
 .PHONY: check
 check:
-	python ./coconut/requirements.py
+	python3 ./coconut/requirements.py

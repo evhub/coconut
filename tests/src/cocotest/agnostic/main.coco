@@ -357,22 +357,22 @@ def tco_func() = tco_func()
 def main(*args):
     """Asserts arguments and executes tests."""
     assert all(args)
-    sys.stdout.write(".")
+    print(".", end="", flush=True)
     assert main_test()
-    sys.stdout.write(".")
+    print(".", end="", flush=True)
     if sys.version_info >= (2, 7):
         from .specific import non_py26_test
         assert non_py26_test()
     if not (3,) <= sys.version_info < (3, 3):
         from .specific import non_py32_test
         assert non_py32_test
-    sys.stdout.write(".")
+    print(".", end="", flush=True)
     from .suite import suite_test, tco_test
     assert suite_test()
-    sys.stdout.write(".")
+    print(".", end="", flush=True)
     if hasattr(tco_func, "_coconut_tco_func"):
         assert tco_test()
-    sys.stdout.write(".")
+    print(".", end="", flush=True)
     if sys.version_info < (3,):
         from .py2_test import py2_test
         assert py2_test()
@@ -382,6 +382,6 @@ def main(*args):
         if sys.version_info >= (3, 5):
             from .py35_test import py35_test
             assert py35_test()
-    sys.stdout.write(".")
+    print(".", end="", flush=True)
     from . import tutorial
     print("\n<success>")
