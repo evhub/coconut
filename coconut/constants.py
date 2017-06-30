@@ -178,8 +178,8 @@ search_terms = [
     "pattern-matching",
     "algebraic",
     "data",
-    "type",
-    "types",
+    "data type",
+    "data types",
     "lambda",
     "lambdas",
     "lazy",
@@ -203,7 +203,9 @@ search_terms = [
     "unicode",
     "operator",
     "operators",
-    "frozenset literal",
+    "frozenset",
+    "literal",
+    "syntax",
     "destructuring",
     "assignment",
     "reduce",
@@ -223,7 +225,6 @@ search_terms = [
     "fmap",
     "starmap",
     "case",
-    "keyword",
 ]
 
 script_names = [

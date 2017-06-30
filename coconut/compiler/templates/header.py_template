@@ -406,7 +406,7 @@ def fmap(func, obj):
     Override by defining .__fmap__(func)."""
     if _coconut.hasattr(obj, "__fmap__"):
         return obj.__fmap__(func)
-    args = _coconut_map(func, obj.items()) if _coconut.isinstance(obj, _coconut.abc.Mapping) else _coconut_map(func, obj)
+    args = _coconut_starmap(func, obj.items()) if _coconut.isinstance(obj, _coconut.abc.Mapping) else _coconut_map(func, obj)
     if _coconut.isinstance(obj, _coconut.tuple) and _coconut.hasattr(obj, "_make"):
         return obj._make(args)
     if _coconut.isinstance(obj, (_coconut.map, _coconut.range, _coconut.abc.Iterator)):
