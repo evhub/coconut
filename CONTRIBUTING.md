@@ -22,7 +22,9 @@ Want to help out, but don't know what to work on? Head over to Coconut's [open i
 
 ## Testing New Changes
 
-First, you'll want to set up a local copy of Coconut's recommended development environment. For that, just run `git checkout develop` and `make dev`. That should switch you to the `develop` branch, install all possible dependencies, bind the `coconut` command to your local copy, and set up [pre-commit](http://pre-commit.com/), which will check your code for errors for you whenever you `git commit`. Then, you should be able to just use the Coconut command-line for basic testing.
+First, you'll want to set up a local copy of Coconut's recommended development environment. For that, just run `git checkout develop` and `make dev`. That should switch you to the `develop` branch, install all possible dependencies, bind the `coconut` command to your local copy, and set up [pre-commit](http://pre-commit.com/), which will check your code for errors for you whenever you `git commit`.
+
+Then, you should be able to use the Coconut command-line for trying out simple things, and to run a paired-down version of the test suite locally, just `make test-basic`.
 
 After you've tested your changes locally, you'll want to add more permanent tests to Coconut's test suite. Coconut's test suite is primarily written in Coconut itself, so testing new features just means using them inside of one of Coconut's `.coco` test files, with some `assert` statements to check validity.
 
@@ -35,7 +37,7 @@ After you've tested your changes locally, you'll want to add more permanent test
 - `HELP.md`
     + Markdown file containing Coconut's tutorial. The tutorial should be a streamlined introduction to Coconut and all of its most important features.
 - `Makefile`
-    + Contains targets for installing Coconut, building the documentation, checking for dependency updates, etc. The target `make dev` will automatically install the full Coconut developer environment.
+    + Contains targets for installing Coconut, building the documentation, checking for dependency updates, etc.
 - `setup.py`
     + Using information from `requirements.py` and `constants.py` to install Coconut. Also reads `README.rst` to generate the PyPI description.
 - `conf.py`

@@ -221,6 +221,7 @@ search_terms = [
     "recursive_iterator",
     "iterator",
     "fmap",
+    "starmap",
     "case",
     "keyword",
 ]
@@ -479,6 +480,7 @@ coconut_specific_builtins = (
     "recursive_iterator",
     "concurrent_map",
     "fmap",
+    "starmap",
     "py_chr",
     "py_filter",
     "py_hex",

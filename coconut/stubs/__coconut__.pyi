@@ -48,7 +48,7 @@ py_chr, py_filter, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open,
 
 
 from functools import reduce
-from itertools import takewhile, dropwhile, tee
+from itertools import takewhile, dropwhile, tee, starmap
 
 
 _coconut_tee = tee
@@ -56,7 +56,7 @@ parallel_map = concurrent_map = _coconut_map = map
 
 
 class _coconut:
-    import collections, functools, imp, itertools, operator, types, copy, pickle
+    import collections, copy, functools, imp, itertools, operator, types, weakref, pickle
     Exception, IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip = Exception, IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip
     if sys.version_info < (3, 3):
         abc = collections
