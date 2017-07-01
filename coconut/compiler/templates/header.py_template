@@ -379,7 +379,7 @@ class starmap(_coconut.itertools.starmap):
     if hasattr(_coconut.itertools.starmap, "__doc__"):
         __doc__ = _coconut.itertools.starmap.__doc__
     def __new__(cls, function, iterable):
-        new_map = _coconut.itertools.starmap.__new__(cls, function, *iterables)
+        new_map = _coconut.itertools.starmap.__new__(cls, function, iterable)
         new_map._func, new_map._iter = function, iterable
         return new_map
     def __getitem__(self, index):
