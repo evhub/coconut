@@ -167,8 +167,8 @@ class CoconutWarning(CoconutException):
     """Base Coconut warning."""
 
 
-class CoconutStyleWarning(CoconutWarning):
-    """Coconut --strict warning."""
+class CoconutSyntaxWarning(CoconutSyntaxError, CoconutWarning):
+    """CoconutWarning with CoconutSyntaxError semantics."""
 
 
 class CoconutInternalException(CoconutException):

@@ -81,7 +81,7 @@ from coconut.exceptions import (
     CoconutStyleError,
     CoconutTargetError,
     CoconutInternalException,
-    CoconutStyleWarning,
+    CoconutSyntaxWarning,
     CoconutDeferredSyntaxError,
     clean,
 )
@@ -415,7 +415,7 @@ class Compiler(Grammar):
         if self.strict:
             raise self.make_err(CoconutStyleError, *args, **kwargs)
         else:
-            logger.warn_err(self.make_err(CoconutStyleWarning, *args, **kwargs))
+            logger.warn_err(self.make_err(CoconutSyntaxWarning, *args, **kwargs))
 
     def add_ref(self, ref):
         """Adds a reference and returns the identifier."""
