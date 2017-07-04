@@ -262,7 +262,7 @@ data vector(*pts):
         """Subtract one vector from another."""
         vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
-        map(-, self.pts, other_pts) |*> vector
+        map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
         """Retrieve the negative of the vector."""
         self.pts |> map$(-) |*> vector
@@ -336,7 +336,7 @@ data vector(*pts):
         """Subtract one vector from another."""
         vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
-        map(-, self.pts, other_pts) |*> vector
+        map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
         """Retrieve the negative of the vector."""
         self.pts |> map$(-) |*> vector
@@ -392,7 +392,7 @@ data vector(*pts):
         """Subtract one vector from another."""
         vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
-        map(-, self.pts, other_pts) |*> vector
+        map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
         """Retrieve the negative of the vector."""
         self.pts |> map$(-) |*> vector
