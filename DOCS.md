@@ -280,7 +280,7 @@ print(list(dubsums))
 
 Coconut uses a `$` sign right after a function's name but before the open parenthesis used to call the function to denote partial application.
 
-Coconut's partial application also supports the use of a `?` to skip partially applying an argument, deferring filling in that argument until the partially-applied function is called. This is useful if you want to partially apply argument(s) that aren't first in the argument order.
+Coconut's partial application also supports the use of a `?` to skip partially applying an argument, deferring filling in that argument until the partially-applied function is called. This is useful if you want to partially apply arguments that aren't first in the argument order.
 
 ##### Rationale
 

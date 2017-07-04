@@ -6,4 +6,5 @@ import cocotest
 from cocotest.main import main
 
 if __name__ == "__main__":
+    print(".", end="")  # .
     main(cocotest.__doc__)
