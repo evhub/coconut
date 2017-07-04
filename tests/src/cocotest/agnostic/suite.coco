@@ -368,6 +368,11 @@ def suite_test():
     assert plus1_cube(2) == 27
     assert square ..> times2 ..> plus1 |> repr == square ..> (times2 ..> plus1) |> repr
     assert (square ..> times2 ..> plus1).funcs == [square, times2, plus1]
+    assert range(1, 5) |> map$(range) |> starmap$(toprint) |> tuple == ('0', '0 1', '0 1 2', '0 1 2 3')
+    assert range(1, 5) |> map$(range) |> starmap$(toprint) |> fmap$(.strip(" 0")) |> tuple == ("", "1", "1 2", "1 2 3")
+    assert () |> starmap$(toprint) |> len == 0
+    assert [(1, 2)] |> starmap$(toprint) |> .[0] == "1 2"
+    assert [(1, 2), (2, 3), (3, 4)] |> starmap$(toprint) |> .[1:] |> list == ["2 3", "3 4"]
     return True
 
 def tco_test():

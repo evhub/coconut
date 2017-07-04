@@ -400,7 +400,7 @@ class starmap(_coconut.itertools.starmap):
     def __copy__(self):
         return self.__class__(self._func, _coconut.copy.copy(self._iter))
     def __fmap__(self, func):
-        return self.__class__(_coconut_compose(self._func, func), *self._iters)
+        return self.__class__(_coconut_compose(self._func, func), self._iter)
 def fmap(func, obj):
     """fmap(func, obj) creates a copy of obj with func applied to its contents.
     Override by defining .__fmap__(func)."""

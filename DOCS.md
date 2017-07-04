@@ -1639,6 +1639,36 @@ Just(*map(lambda x: x*2, Just(3))) == Just(6)
 Nothing(*map(lambda x: x*2, Nothing())) == Nothing()
 ```
 
+### `starmap`
+
+Coconut provides a modified version of `itertools.starmap` that supports `reversed`, `repr`, optimized normal (and iterator) slicing, `len`, and `_func` and `_iter` attributes.
+
+##### Python Docs
+
+**starmap**(_function, iterable_)
+
+Make an iterator that computes the function using arguments obtained from the iterable. Used instead of `map()` when argument parameters are already grouped in tuples from a single iterable (the data has been "pre-zipped"). The difference between `map()` and `starmap()` parallels the distinction between `function(a,b)` and `function(*c)`. Roughly equivalent to:
+
+```coconut_python
+def starmap(function, iterable):
+    # starmap(pow, [(2,5), (3,2), (10,3)]) --> 32 9 1000
+    for args in iterable:
+        yield function(*args)
+```
+
+##### Example
+
+**Coconut:**
+```coconut
+range(1, 5) |> map$(range) |> starmap$(print) |> consume
+```
+
+**Python:**
+```coconut_python
+import itertools, collections
+collections.deque(itertools.starmap(print, map(range, range(1, 5))), maxlen=0)
+```
+
 ### `recursive_iterator`
 
 Coconut provides a `recursive_iterator` decorator that provides significant optimizations for any stateless, recursive function that returns an iterator. To use `recursive_iterator` on a function, it must meet the following criteria:

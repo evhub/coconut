@@ -262,10 +262,10 @@ data vector(*pts):
         """Subtract one vector from another."""
         vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
-        map((-), self.pts, other_pts) |*> vector
+        map(-, self.pts, other_pts) |*> vector
     def __neg__(self) =
         """Retrieve the negative of the vector."""
-        self.pts |> map$((-)) |*> vector
+        self.pts |> map$(-) |*> vector
     def __eq__(self, other):
         """Compare whether two vectors are equal."""
         match vector(*=self.pts) in other:
@@ -296,7 +296,7 @@ assert (vector(2, 4) == vector(2, 4)) is True
 assert 2*vector(1, 2) |> str == "vector(*pts=(2, 4))"
 assert vector(1, 2) * vector(1, 3) == 7
 
-def diagonal_line(n) = range(n+1) |> map$((i) -> (i, n-i))
+def diagonal_line(n) = range(n+1) |> map$(i -> (i, n-i))
 
 assert diagonal_line(0) `isinstance` (list, tuple) is False
 assert diagonal_line(0) |> list == [(0, 0)]
@@ -310,7 +310,7 @@ def linearized_plane(n=0) = diagonal_line(n) :: linearized_plane(n+1)
 assert linearized_plane()$[0] == (0, 0)
 assert linearized_plane()$[:3] |> list == [(0, 0), (0, 1), (1, 0)]
 
-def vector_field() = linearized_plane() |> map$((xy) -> vector(*xy))
+def vector_field() = linearized_plane() |> starmap$(vector)
 
 # You'll need to bring in the vector class from earlier to make these work
 assert vector_field()$[0] |> str == "vector(*pts=(0, 0))"
@@ -336,10 +336,10 @@ data vector(*pts):
         """Subtract one vector from another."""
         vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
-        map((-), self.pts, other_pts) |*> vector
+        map(-, self.pts, other_pts) |*> vector
     def __neg__(self) =
         """Retrieve the negative of the vector."""
-        self.pts |> map$((-)) |*> vector
+        self.pts |> map$(-) |*> vector
     def __eq__(self, other):
         """Compare whether two vectors are equal."""
         match vector(*=self.pts) in other:
@@ -357,9 +357,9 @@ data vector(*pts):
         """Necessary to make scalar multiplication commutative."""
         self * other
 
-def diagonal_line(n) = range(n+1) |> map$((i) -> (i, n-i))
+def diagonal_line(n) = range(n+1) |> map$(i -> (i, n-i))
 def linearized_plane(n=0) = diagonal_line(n) :: linearized_plane(n+1)
-def vector_field() = linearized_plane() |> map$((xy) -> vector(*xy))
+def vector_field() = linearized_plane() |> starmap$(vector)
 
 # Test cases:
 assert diagonal_line(0) `isinstance` (list, tuple) is False
@@ -392,10 +392,10 @@ data vector(*pts):
         """Subtract one vector from another."""
         vector(*other_pts) = other
         assert len(other_pts) == len(self.pts)
-        map((-), self.pts, other_pts) |*> vector
+        map(-, self.pts, other_pts) |*> vector
     def __neg__(self) =
         """Retrieve the negative of the vector."""
-        self.pts |> map$((-)) |*> vector
+        self.pts |> map$(-) |*> vector
     def __eq__(self, other):
         """Compare whether two vectors are equal."""
         match vector(*=self.pts) in other:
@@ -413,7 +413,7 @@ data vector(*pts):
         """Necessary to make scalar multiplication commutative."""
         self * other
      # New one-line functions necessary for finding the angle between vectors:
-    def __truediv__(self, other) = self.pts |> map$((x) -> x/other) |*> vector
+    def __truediv__(self, other) = self.pts |> map$(x -> x/other) |*> vector
     def unit(self) = self / abs(self)
     def angle(self, other is vector) = math.acos(self.unit() * other.unit())
 

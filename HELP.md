@@ -544,7 +544,7 @@ One thing to note here is that unlike the other operator functions, `(-)` can ei
 ```coconut
     def __neg__(self) =
         """Retrieve the negative of the vector."""
-        self.pts |> map$((-)) |*> vector
+        self.pts |> map$(-) |*> vector
 ```
 
 Our next method will be equality. We're again going to use `data` pattern-matching to implement this, but this time inside of a `match` statement instead of with destructuring assignment, since we want to `return False` not raise an error if the match fails. Here's the code:
@@ -600,7 +600,7 @@ data vector(*pts):
         map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
         """Retrieve the negative of the vector."""
-        self.pts |> map$((-)) |*> vector
+        self.pts |> map$(-) |*> vector
     def __eq__(self, other):
         """Compare whether two vectors are equal."""
         match vector(*=self.pts) in other:
@@ -700,7 +700,7 @@ _Hint: the `n`th diagonal should contain `n+1` elements, so try starting with `r
 
 That wasn't so bad, now was it? Now, let's take a look at my solution:
 ```coconut
-def diagonal_line(n) = range(n+1) |> map$((i) -> (i, n-i))
+def diagonal_line(n) = range(n+1) |> map$(i -> (i, n-i))
 ```
 Pretty simple, huh? We take `range(n+1)`, and use `map` to transform it into the right sequence of tuples.
 
@@ -757,7 +757,7 @@ vector_field()$[0] |> print  # vector(*pts=(0, 0))
 vector_field()$[2:3] |> list |> print  # [vector(*pts=(1, 0))]
 ```
 
-_Hint: Remember, the way we defined vector it takes the components as separate arguments, not a single tuple._
+_Hint: Remember, the way we defined vector it takes the components as separate arguments, not a single tuple. You may find the `starmap` built-in useful in dealing with that._
 
 <br>
 <br>
@@ -782,9 +782,9 @@ _Hint: Remember, the way we defined vector it takes the components as separate a
 
 We're making good progress! Before we move on, check your solution against mine:
 ```coconut
-def vector_field() = linearized_plane() |> map$((xy) -> vector(*xy))
+def vector_field() = linearized_plane() |> starmap$(vector)
 ```
-All we're doing is taking our `linearized_plane` and mapping `vector` over it, but making sure to call vector with each element of the tuple as a separate argument.
+All we're doing is taking our `linearized_plane` and mapping `vector` over it, but using `starmap` instead of `map` so that `vector` gets called with each element of the tuple as a separate argument.
 
 ### Applications
 
@@ -813,7 +813,7 @@ data vector(*pts):
         map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
         """Retrieve the negative of the vector."""
-        self.pts |> map$((-)) |*> vector
+        self.pts |> map$(-) |*> vector
     def __eq__(self, other):
         """Compare whether two vectors are equal."""
         match vector(*=self.pts) in other:
@@ -831,9 +831,9 @@ data vector(*pts):
         """Necessary to make scalar multiplication commutative."""
         self * other
 
-def diagonal_line(n) = range(n+1) |> map$((i) -> (i, n-i))
+def diagonal_line(n) = range(n+1) |> map$(i -> (i, n-i))
 def linearized_plane(n=0) = diagonal_line(n) :: linearized_plane(n+1)
-def vector_field() = linearized_plane() |> map$((xy) -> vector(*xy))
+def vector_field() = linearized_plane() |> map$(xy -> vector(*xy))
 
 # Test cases:
 diagonal_line(0) `isinstance` (list, tuple) |> print  # False (should be an iterator)
@@ -894,7 +894,7 @@ _Hint: Look back at how we implemented scalar multiplication._
 
 Here's my solution for you to check against:
 ```coconut
-    def __truediv__(self, other) = self.pts |> map$((x) -> x/other) |*> vector
+    def __truediv__(self, other) = self.pts |> map$(x -> x/other) |*> vector
 ```
 
 ### `.unit`
@@ -1001,7 +1001,7 @@ data vector(*pts):
         map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
         """Retrieve the negative of the vector."""
-        self.pts |> map$((-)) |*> vector
+        self.pts |> map$(-) |*> vector
     def __eq__(self, other):
         """Compare whether two vectors are equal."""
         match vector(*=self.pts) in other:
@@ -1019,7 +1019,7 @@ data vector(*pts):
         """Necessary to make scalar multiplication commutative."""
         self * other
      # New one-line functions necessary for finding the angle between vectors:
-    def __truediv__(self, other) = self.pts |> map$((x) -> x/other) |*> vector
+    def __truediv__(self, other) = self.pts |> map$(x -> x/other) |*> vector
     def unit(self) = self / abs(self)
     def angle(self, other is vector) = math.acos(self.unit() * other.unit())
 
