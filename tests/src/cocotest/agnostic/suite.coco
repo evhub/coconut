@@ -22,13 +22,14 @@ def suite_test():
     assert plus1(plus1(5)) == 7 == plus1..plus1(5)
     assert `sqrt` 16 == 4 == `sqrt_` 16
     assert `square` 3 == 9
-    def test_sqplus1_plus1sq(sqplus1, plus1sq):
+    def test_sqplus1_plus1sq(sqplus1, plus1sq, parallel=True):
         assert sqplus1(3) == 10 == plus1..square(3)
-        assert parallel_map(sqplus1, range(3)) |> tuple == (1, 2, 5)
+        if parallel:
+            assert parallel_map(sqplus1, range(3)) |> tuple == (1, 2, 5)
         assert 3 `plus1sq` == 16
         assert 3 `sqplus1` == 10
     test_sqplus1_plus1sq(sqplus1_1, plus1sq_1)
-    test_sqplus1_plus1sq(sqplus1_2, plus1sq_2)
+    test_sqplus1_plus1sq(sqplus1_2, plus1sq_2, parallel=False)
     test_sqplus1_plus1sq(sqplus1_3, plus1sq_3)
     test_sqplus1_plus1sq(sqplus1_4, plus1sq_4)
     assert 3 |> plus1 |> square == 16 == 3 |> plus1_ |> square

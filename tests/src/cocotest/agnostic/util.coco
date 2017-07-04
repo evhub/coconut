@@ -202,7 +202,6 @@ def partition(items, pivot, lprefix=[], rprefix=[]):
 partition_ = recursive_iterator(partition)
 
 def myreduce(func, items):
-    print(func, items)
     match [first]::tail1 in items:
         match [second]::tail2 in tail1:
             return myreduce(func, [func(first, second)]::tail2)
