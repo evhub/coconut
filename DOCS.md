@@ -319,7 +319,7 @@ print(list(expnums))
 
 ### Pipeline
 
-Coconut uses pipe operators for pipeline-style function application. All the operators have a precedence in-between infix calls and comparisons, and are left-associative. All operators also support in-place versions. The different operators are:
+Coconut uses pipe operators for pipeline-style function application. All the operators have a precedence in-between function composition pipes and comparisons, and are left-associative. All operators also support in-place versions. The different operators are:
 ```coconut
 (|>)    => pipe forward
 (|*>)   => multiple-argument pipe forward
@@ -346,7 +346,13 @@ print(sq(operator.add(1, 2)))
 
 ### Compose
 
-Coconut uses the `..` operator for function composition. It has lower precedence than attribute access (`.`), slicing (`[]`), etc., except for function calling, which it has higher precedence than. Thus, `a.b..c.d` is equivalent to `(a.b)..(c.d)`, while `f..g(x)` is equivalent to `(f..g)(x)`. The in-place operator is `..=`.
+Coconut has three different function composition operators: `..`, `..>`, and `<..`. Both `..` and `<..` use math-style "backwards" function composition, where the first function is called last, while `..>` uses "forwards" function composition, where first function is called first.
+
+The `..>` and `<..` function composition pipe operators cannot be used together in the same expression (unlike normal pipes) and have precedence in-between infix calls and normal pipes.
+
+The `..` operator has lower precedence than attribute access (`.`), slicing (`[]`), etc., except for function calling, which it has higher precedence than. Thus, `a.b..c.d` is equivalent to `(a.b)..(c.d)`, while `f..g(x)` is equivalent to `(f..g)(x)`.
+
+The in-place composition operators are `..=` (or equivalently `<..=`) and `..>=`.
 
 ##### Example
 

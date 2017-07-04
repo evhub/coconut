@@ -167,12 +167,12 @@ class CoconutWarning(CoconutException):
     """Base Coconut warning."""
 
 
-class CoconutStyleWarning(CoconutStyleError, CoconutWarning):
+class CoconutStyleWarning(CoconutWarning):
     """Coconut --strict warning."""
 
 
 class CoconutInternalException(CoconutException):
-    """Internal Coconut exceptions."""
+    """Internal Coconut exception."""
 
     def message(self, message, item, extra):
         """Creates the Coconut internal exception message."""
