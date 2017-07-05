@@ -552,8 +552,8 @@ class Command(object):
 
     def run_mypy(self, paths=[], code=None):
         """Run MyPy with arguments."""
-        set_mypy_path(stub_dir)
         if self.mypy:
+            set_mypy_path(stub_dir)
             from coconut.command.mypy import mypy_run
             args = paths + self.mypy_args
             if code is not None:
