@@ -629,7 +629,8 @@ class Command(object):
         def recompile(path):
             if os.path.isfile(path) and os.path.splitext(path)[1] in code_exts:
                 with self.handling_exceptions():
-                    self.run_mypy(self.compile_path(path, write, package, run, force, show_unchanged=False))
+                    filepaths = self.compile_path(path, write, package, run, force, show_unchanged=False)
+                    self.run_mypy(filepaths)
 
         watcher = RecompilationWatcher(recompile)
         observer = Observer()
