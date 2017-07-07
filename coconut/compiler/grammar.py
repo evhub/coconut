@@ -1165,7 +1165,7 @@ class Grammar(object):
         match_string
         | match_const("const")
         | (lparen.suppress() + match + rparen.suppress())("paren")
-        | (lbrace.suppress() + matchlist_dict + rbrace.suppress())("dict")
+        | (lbrace.suppress() + matchlist_dict + Optional(dubstar.suppress() + name) + rbrace.suppress())("dict")
         | (Optional(set_s.suppress()) + lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
         | iter_match
         | series_match
@@ -1395,7 +1395,7 @@ class Grammar(object):
         comma + Optional(passthrough))))
 
     split_func_name_args_params = attach(
-        (start_marker + Keyword("def")).suppress() + dotted_base_name + lparen.suppress()
+        (start_marker - Keyword("def")).suppress() + dotted_base_name + lparen.suppress()
         + parameters_tokens + rparen.suppress(), split_func_name_args_params_handle)
 
     stores_scope = (

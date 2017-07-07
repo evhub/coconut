@@ -401,6 +401,10 @@ class Compiler(Grammar):
         else:
             return self.repl_proc(snip, log=False, add_to_line=False)
 
+    def eval_now(self, code):
+        """Reformats and evaluates a code snippet and returns code for the result."""
+        return ascii(eval(self.reformat(code)))
+
     def make_err(self, errtype, message, original, loc, ln=None, reformat=True, *args, **kwargs):
         """Generates an error of the specified type."""
         if ln is None:
@@ -1616,7 +1620,11 @@ class Compiler(Grammar):
 
     def star_assign_item_check(self, original, loc, tokens):
         """Checks for Python 3 starred assignment."""
-        return self.check_py("3", "starred assignment (use pattern-matching version to produce universal code)", original, loc, tokens)
+        return self.check_py("3", "starred assignment (add 'match' to front to produce universal code)", original, loc, tokens)
+
+    def star_expr_check(self, original, loc, tokens):
+        """Checks for Python 3.5 star unpacking."""
+        return self.check_py("35", "star unpacking (add 'match' to front to produce universal code)", original, loc, tokens)
 
     def matrix_at_check(self, original, loc, tokens):
         """Checks for Python 3.5 matrix multiplication."""
@@ -1633,10 +1641,6 @@ class Compiler(Grammar):
     def await_keyword_check(self, original, loc, tokens):
         """Checks for Python 3.5 await expression."""
         return self.check_py("35", "await expression", original, loc, tokens)
-
-    def star_expr_check(self, original, loc, tokens):
-        """Checks for Python 3.5 star unpacking."""
-        return self.check_py("35", "star unpacking", original, loc, tokens)
 
     def f_string_check(self, original, loc, tokens):
         """Checks for Python 3.6 format strings."""

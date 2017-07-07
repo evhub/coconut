@@ -334,13 +334,24 @@ class Matcher(object):
 
     def match_dict(self, tokens, item):
         """Matches a dictionary."""
-        (matches,) = tokens
+        if len(tokens) == 1:
+            matches, rest = tokens[0], None
+        else:
+            matches, rest = tokens
         self.add_check("_coconut.isinstance(" + item + ", _coconut.abc.Mapping)")
-        self.add_check("_coconut.len(" + item + ") == " + str(len(matches)))
+        if rest is None:
+            self.add_check("_coconut.len(" + item + ") == " + str(len(matches)))
+        match_keys = []
         for x in range(len(matches)):
             k, v = matches[x]
             self.add_check(k + " in " + item)
             self.match(v, item + "[" + k + "]")
+            match_keys.append(k)
+        if rest is not None and rest != wildcard:
+            self.add_def(rest
+                         + " = dict((k, v) for (k, v) in "
+                         + item + ".items() if k not in set(("
+                         + ", ".join(match_keys) + ("," if len(match_keys) == 1 else "") + ")))")
 
     def match_sequence(self, tokens, item):
         """Matches a sequence."""

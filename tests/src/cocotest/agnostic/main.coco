@@ -350,6 +350,13 @@ def main_test():
     assert 400 == 10 |> x -> x*2 |> x -> x**2
     assert 100 == 10 |> x -> x*2 |> y -> x**2
     assert 3 == 1 `(x, y) -> x + y` 2
+    match {"a": a, **rest} = {"a": 2, "b": 3}
+    assert a == 2
+    assert rest == {"b": 3}
+    _ = None
+    match {"a": a **_} = {"a": 4, "b": 5}
+    assert a == 4
+    assert _ is None
     return True
 
 def tco_func() = tco_func()

@@ -20,7 +20,7 @@ test-all:
 
 .PHONY: test-basic
 test-basic:
-	python3 ./tests
+	python3 ./tests --force
 	python3 ./tests/dest/runner.py
 
 .PHONY: sphinx
