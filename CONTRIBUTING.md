@@ -1,8 +1,10 @@
 # Coconut Contributing Guidelines
 
-_By contributing to Coconut, you consent to your contribution being released under [Coconut's Apache 2.0 license](https://github.com/evhub/coconut/blob/develop/LICENSE.txt)._
+**By contributing to Coconut, you consent to your contribution being released under [Coconut's Apache 2.0 license](https://github.com/evhub/coconut/blob/develop/LICENSE.txt).**
 
 **Anyone is welcome to submit an issue or pull request!** The purpose of this document is simply to explain the contribution process and the internals of how Coconut works to make contributing easier.
+
+_Note: If you are considering contributing to Coconut, you'll be doing so on the [`develop` branch](https://github.com/evhub/coconut/tree/develop), which means you should be viewing [the `develop` version of the Contributing Guidelines](http://coconut.readthedocs.io/en/develop/CONTRIBUTING.html), if you aren't doing so already._
 
 ## Asking Questions
 
