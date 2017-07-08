@@ -115,8 +115,8 @@ all_reqs = {
 min_versions = {
     "pyparsing": (2, 2, 0),
     "cPyparsing": (2, 2, 0, 1),
-    "pre-commit": (0, 14),
-    "sphinx": (1, 5),
+    "pre-commit": (0, 15),
+    "sphinx": (1, 6),
     "pygments": (2, 2),
     "recommonmark": (0, 4),
     "sphinx_bootstrap_theme": (0, 5),

@@ -27,6 +27,8 @@ import functools
 from contextlib import contextmanager
 from subprocess import CalledProcessError
 
+from coconut.pyparsing import PYPARSING
+
 from coconut.compiler import Compiler
 from coconut.exceptions import (
     CoconutException,
@@ -143,6 +145,8 @@ class Command(object):
         logger.quiet, logger.verbose = args.quiet, args.verbose
         if DEVELOP:
             logger.tracing = args.trace
+
+        logger.log("Using " + PYPARSING + ".")
         logger.log("Command args:", args)
 
         if args.recursion_limit is not None:
