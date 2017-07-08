@@ -57,6 +57,7 @@ from coconut.constants import (
     tutorial_url,
     documentation_url,
     reserved_vars,
+    num_added_tb_layers,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -375,7 +376,12 @@ class Runner(object):
         except SystemExit as err:
             self.exit(err.code)
         except BaseException:
-            traceback.print_exc()
+            etype, value, tb = sys.exc_info()
+            for i in range(num_added_tb_layers):
+                if tb is None:
+                    break
+                tb = tb.tb_next
+            traceback.print_exception(etype, value, tb)
             if all_errors_exit:
                 self.exit(1)
 
