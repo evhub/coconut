@@ -34,7 +34,6 @@ from coconut.constants import (
     classifiers,
     search_terms,
     script_names,
-    document_names,
 )
 from coconut.requirements import requirements, extras
 
@@ -74,7 +73,6 @@ setuptools.setup(
             "coconut_pycon = coconut.highlighter:CoconutPythonConsoleLexer",
         ]
     },
-    document_names=document_names,
     classifiers=classifiers,
     keywords=search_terms,
 )
