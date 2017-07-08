@@ -33,6 +33,7 @@ from coconut.command.util import call_output
 #-----------------------------------------------------------------------------------------------------------------------
 
 IPY = (PY2 and not PY26) or sys.version_info >= (3, 3)
+PYPY = platform.python_implementation() == "PyPy"
 
 base = os.path.dirname(os.path.relpath(__file__))
 src = os.path.join(base, "src")
@@ -102,7 +103,7 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
 
 def call_coconut(args, **kwargs):
     """Calls Coconut."""
-    if "--jobs" not in args and platform.python_implementation() != "PyPy":
+    if "--jobs" not in args and not PYPY and not PY26:
         args = ["--jobs", "sys"] + args
     if "--mypy" in args and "check_mypy" not in kwargs:
         kwargs["check_mypy"] = True
@@ -311,7 +312,7 @@ class TestCompilation(unittest.TestCase):
     def test_line_numbers(self):
         run(["--linenumbers"])
 
-    if platform.python_implementation() != "PyPy":
+    if not PYPY and not PY26:
         def test_jobs_zero(self):
             run(["--jobs", "0"])
 
