@@ -80,6 +80,10 @@ def everything_in(req_dict):
 # SETUP:
 #-----------------------------------------------------------------------------------------------------------------------
 
+PYPY = platform.python_implementation() == "PyPy"
+PY33 = sys.version_info >= (3, 3)
+PY34 = sys.version_info >= (3, 4)
+
 requirements = get_reqs()
 
 extras = {
@@ -95,9 +99,9 @@ extras["all"] = everything_in(extras)
 
 extras["tests"] = uniqueify(
     get_reqs("tests")
-    + (extras["jobs"] if platform.python_implementation() != "PyPy" else [])
-    + (extras["jupyter"] if (PY2 and not PY26) or sys.version_info >= (3, 3) else [])
-    + (extras["mypy"] if sys.version_info >= (3, 4) else [])
+    + (extras["jobs"] + get_reqs("cPyparsing") if not PYPY else [])
+    + (extras["jupyter"] if (PY2 and not PY26) or PY33 else [])
+    + (extras["mypy"] if PY34 else [])
 )
 
 extras["docs"] = unique_wrt(get_reqs("docs"), requirements)
@@ -106,6 +110,8 @@ extras["dev"] = uniqueify(
     everything_in(extras)
     + get_reqs("dev")
 )
+
+extras["cPyparsing"] = get_reqs("cPyparsing")
 
 
 def add_version_reqs(modern=True):

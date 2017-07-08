@@ -21,7 +21,7 @@ from coconut.root import *  # NOQA
 
 from contextlib import contextmanager
 
-from pyparsing import (
+from coconut.pyparsing import (
     replaceWith,
     ZeroOrMore,
     Optional,

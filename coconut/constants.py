@@ -107,10 +107,14 @@ all_reqs = {
     "tests": [
         "pytest",
     ],
+    "cPyparsing": [
+        "cPyparsing",
+    ],
 }
 
 min_versions = {
     "pyparsing": (2, 2, 0),
+    "cPyparsing": (2, 2, 0, 1),
     "pre-commit": (0, 14),
     "sphinx": (1, 5),
     "pygments": (2, 2),

@@ -24,17 +24,33 @@ Since Coconut is hosted on the [Python Package Index](https://pypi.python.org/py
 ```
 pip install coconut
 ```
-which will install Coconut and its required dependencies. Coconut also has some optional dependencies, which can be installed by entering
+which will install Coconut and its required dependencies.
+
+Coconut also has optional dependencies, which can be installed by entering
 ```
-pip install coconut[all]
+pip install coconut[name_of_optional_dependency]
 ```
-which will enable the use of Coconut's `--jobs`, `--watch`, `--jupyter`, and `--mypy` flags. To install the optional dependencies only for a particular flag, simply put the flag name in place of `all`.
+or, to install multiple optional dependencies,
+```
+pip install coocnut[opt_dep_1,opt_dep_2]
+```
+The full list of optional dependencies is:
+
+- `all`: alias for `jupyter,watch,jobs,mypy`; this is the recommended way to install a feature-complete version of Coconut,
+- `jupyter/ipython`: enables use of the `--jupyter` / `--ipython` flag,
+- `watch`: enables use of the `--watch` flag,
+- `jobs`: improves use of the `--jobs` flag,
+- `mypy`: enables use of the `--mypy` flag,
+- `cPyparsing`: significantly speeds up compilation if your platform supports it by making use of [`cPyparsing`](https://github.com/evhub/cpyparsing),
+- `tests`: everything necessary to run Coconut's test suite,
+- `docs`: everything necessary to build Coconut's documentation, and
+- `dev`: everything necessary to develop on Coconut, including all of the dependencies above.
 
 Alternatively, if you want to test out Coconut's latest and greatest, enter
 ```
 pip install coconut-develop
 ```
-which will install the most recent working [development build](https://github.com/evhub/coconut/tree/develop) (optional dependency installation is also supported in the same manner as above if you want). For more information on the current development build, check out the [development version of this documentation](DOCS.html). Be warned: `coconut-develop` is likely to be unstable—if you find a bug, please report it by [creating a new issue](https://github.com/evhub/coconut/issues/new).
+which will install the most recent working version from Coconut's [`develop` branch](https://github.com/evhub/coconut/tree/develop). Optional dependency installation is supported in the same manner as above. For more information on the current development build, check out the [development version of this documentation](http://coconut.readthedocs.io/en/develop/DOCS.html). Be warned: `coconut-develop` is likely to be unstable—if you find a bug, please report it by [creating a new issue](https://github.com/evhub/coconut/issues/new).
 
 ### Usage
 

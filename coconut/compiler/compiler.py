@@ -32,7 +32,7 @@ from coconut.root import *  # NOQA
 import sys
 from contextlib import contextmanager
 
-from pyparsing import (
+from coconut.pyparsing import (
     ParseBaseException,
     col,
     line as getline,

@@ -26,9 +26,9 @@ import logging
 import time
 from contextlib import contextmanager
 
-from pyparsing import lineno, col, ParserElement
+from coconut.pyparsing import lineno, col, ParserElement
 if DEVELOP:
-    from pyparsing import _trim_arity
+    from coconut.pyparsing import _trim_arity
 
 from coconut.constants import (
     info_tabulation,
