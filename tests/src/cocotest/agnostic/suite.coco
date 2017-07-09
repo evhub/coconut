@@ -375,6 +375,7 @@ def suite_test():
     assert [(1, 2)] |> starmap$(toprint) |> .[0] == "1 2"
     assert [(1, 2), (2, 3), (3, 4)] |> starmap$(toprint) |> .[1:] |> list == ["2 3", "3 4"]
     assert none_to_ten() == 10 == any_to_ten(1, 2, 3)
+    assert int_map(plus1, range(5)) == [1, 2, 3, 4, 5]
     return True
 
 def tco_test():

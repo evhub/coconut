@@ -915,13 +915,22 @@ where `typing` is the Python 3.5 built-in [`typing` module](https://docs.python.
 
 **Coconut:**
 ```coconut
-arr: int[] = [1, 2, 3]
+def int_map(
+    f: int -> int,
+    xs: int[],
+) -> int[] =
+    xs |> map$(f) |> list
 ```
 
 **Python:**
 ```coconut_python
 import typing
-arr = [1, 2, 3]  # type: typing.Sequence[int]
+def int_map(
+    f,  # type: typing.Callable[[int], int]
+    xs,  # type: typing.Sequence[int]
+):
+    # type: (...) -> typing.Sequence[int]
+    return list(map(f, xs))
 ```
 
 ### Set Literals
