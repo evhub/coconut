@@ -1,5 +1,5 @@
 -   repo: git://github.com/pre-commit/pre-commit-hooks.git
-    sha: 5bf6c09bfa1297d3692cadd621ef95f1284e33c0
+    sha: v0.8.0
     hooks:
     -   id: check-added-large-files
     -   id: check-byte-order-marker
