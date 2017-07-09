@@ -909,6 +909,20 @@ Additionally, Coconut adds special syntax for making type annotations easier and
 -> <ret>
     => typing.Callable[..., <ret>]
 ```
+where `typing` is the Python 3.5 built-in [`typing` module](https://docs.python.org/3/library/typing.html).
+
+##### Example
+
+**Coconut:**
+```coconut
+arr: int[] = [1, 2, 3]
+```
+
+**Python:**
+```coconut_python
+import typing
+arr = [1, 2, 3]  # type: typing.Sequence[int]
+```
 
 ### Set Literals
 

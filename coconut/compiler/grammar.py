@@ -212,6 +212,8 @@ def item_handle(loc, tokens):
                 out = "_coconut.functools.partial(_coconut.operator.getitem, " + out + ")"
             elif trailer[0] == ".":
                 out = "_coconut.functools.partial(_coconut.getattr, " + out + ")"
+            elif trailer[0] == "type:[]":
+                out = "_coconut.typing.Sequence[" + out + "]"
             else:
                 raise CoconutInternalException("invalid trailer symbol", trailer[0])
         elif len(trailer) == 2:
@@ -924,6 +926,7 @@ class Grammar(object):
         | func_atom
     )
 
+    typedef_sequence = Forward()
     simple_trailer = (
         condense(lbrack + subscriptlist + rbrack)
         | condense(dot + name)
@@ -932,8 +935,10 @@ class Grammar(object):
         condense(function_call)
         | Group(dollar + ~lparen + ~lbrack)
     )
+    typedef_sequence_ref = Group(fixto(lbrack + rbrack, "type:[]"))
     no_call_or_partial_complex_trailer = (
-        Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())
+        typedef_sequence
+        | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())
         | Group(condense(dollar + lbrack + rbrack))
         | Group(condense(lbrack + rbrack))
         | Group(dot + ~name + ~lbrack)
@@ -1085,7 +1090,12 @@ class Grammar(object):
         | Optional(atom_item)
     )
     typedef_callable = attach(typedef_callable_params + arrow.suppress() + typedef_test, typedef_callable_handle)
-    _typedef_test, typedef_callable = disable_outside(test, typedef_callable)
+    _typedef_test, typedef_callable, _typedef_sequence = disable_outside(
+        test,
+        typedef_callable,
+        typedef_sequence_ref,
+    )
+    typedef_sequence <<= _typedef_sequence
     typedef_test <<= _typedef_test
 
     test <<= trace(

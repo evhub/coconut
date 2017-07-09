@@ -65,7 +65,7 @@ sum_ = reduce$((+))
 add = zipwith$((+))
 
 # Quick-Sorts:
-def qsort1(l):
+def qsort1(l: int[]):
     '''Non-Functional Quick Sort.'''
     if len(l) == 0:
         return []
@@ -80,7 +80,7 @@ def qsort1(l):
             else:
                 larges.append(x)
         return qsort1(smalls) + [split] + qsort1(larges)
-def qsort2(l):
+def qsort2(l: int[]):
     """Functional Quick Sort."""
     if not l:
         return []
@@ -102,7 +102,7 @@ def qsort3(l):
                 )
     except StopIteration:
         return iter(())
-def qsort4(l):
+def qsort4(l: int[]):
     """Match Quick Sort."""
     match [] in l:
         return l

@@ -91,6 +91,7 @@ def _coconut_igetitem(
     iterable: Iterable[_T],
     index: int,
     ) -> _T: ...
+@overload
 def _coconut_igetitem(
     iterable: Iterable[_T],
     index: slice,
@@ -99,10 +100,12 @@ def _coconut_igetitem(
 
 @overload
 def _coconut_compose(g: Callable[..., _T], f: Callable[[_T], _S]) -> Callable[..., _S]: ...
+@overload
 def _coconut_compose(*funcs: Callable) -> Callable: ...
 
 @overload
 def _coconut_back_compose(f: Callable[[_T], _S], g: Callable[..., _T]) -> Callable[..., _S]: ...
+@overload
 def _coconut_back_compose(*funcs: Callable) -> Callable: ...
 
 
@@ -120,11 +123,12 @@ def _coconut_bool_or(a, b) -> bool:
     return a or b
 
 
-@overload
-def _coconut_minus(a):
-    return -a
-def _coconut_minus(a, b):
-    return a - b
+def _coconut_minus(a, *rest):
+    if not rest:
+        return -a
+    for b in rest:
+        a -= b
+    return a
 
 
 class count:
