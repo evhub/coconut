@@ -115,7 +115,7 @@ all_reqs = {
 min_versions = {
     "pyparsing": (2, 2, 0),
     "cPyparsing": (2, 2, 0, 1, 1),
-    "pre-commit": (0, 15, 0),
+    "pre-commit": (0, 15, 2),
     "sphinx": (1, 6),
     "pygments": (2, 2),
     "recommonmark": (0, 4),
@@ -140,7 +140,6 @@ version_strictly = [
     "sphinx_bootstrap_theme",
     "ipython",
     "ipykernel",
-    "pre-commit",
 ]
 
 classifiers = [
