@@ -97,10 +97,9 @@ class Command(object):
             # for coconut-run, all args beyond the source file should be wrapped in an --argv
             for i in range(1, len(sys.argv)):
                 arg = sys.argv[i]
-                if arg.startswith("-"):  # coconut flag
-                    args.append(arg)
-                else:  # source file
-                    argv = sys.argv[i:]
+                args.append(arg)
+                if not arg.startswith("-"):  # source file
+                    argv = sys.argv[i + 1:]
                     break
             args += ["--argv"] + argv
         else:
