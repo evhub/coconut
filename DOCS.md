@@ -127,7 +127,7 @@ dest                destination directory for compiled files (defaults to
 
 ### Coconut Scripts
 
-To run a Coconut file as a script, Coconut provides the command `coconut-run` as an alias for `coconut --run --quiet` that also passes all additional command-line arguments to the script being run. `coconut-run` will quietly compile the file if it's been changed or use the existing compiled Python if it hasn't and then run that. `coconut-run` can be used in a Unix shebang to create a Coconut script with the following line:
+To run a Coconut file as a script, Coconut provides the command `coconut-run` as an alias for `coconut --run --quiet --target sys` that also passes all additional command-line arguments to the script being run. `coconut-run` will quietly compile the file if it's been changed or use the existing compiled Python if it hasn't and then run that. `coconut-run` can be used in a Unix shebang to create a Coconut script with the following line:
 ```bash
 #!/usr/bin/env coconut-run
 ```
@@ -241,11 +241,9 @@ The line magic `%load_ext coconut` will load Coconut as an extension, providing 
 
 ### MyPy Integration
 
-Coconut has the ability to integrate with [MyPy](http://mypy-lang.org/) to provide optional static type-checking, including for all Coconut built-ins.
+Coconut has the ability to integrate with [MyPy](http://mypy-lang.org/) to provide optional static type-checking, including for all Coconut built-ins. Simply pass `--mypy` to enable MyPy integration, though be careful to pass it only as the last argument, since all arguments after `--mypy` are passed to `mypy`, not Coconut.
 
-Simply pass `--mypy` (be careful to pass it only as the last argument), use [standard Python 3 type annotation syntax](https://www.python.org/dev/peps/pep-0484/), and Coconut will take care of the rest. By default, Coconut compiles Python 3 type annotations into `mypy --py2` compatible type comments. If you want to keep the Python 3 type annotations instead, simply pass `--target 3`.
-
-In addition to function argument type annotation, Coconut also supports variable type annotation using the [new Python 3.6 syntax](https://www.python.org/dev/peps/pep-0526/), which compiles to `mypy --py2` compatible type comments unless `--target 3.6` is specified.
+To explicitly annotate your code with types for MyPy to check, Coconut supports [Python 3 function type annotations](https://www.python.org/dev/peps/pep-0484/), [Python 3.6 variable type annotations](https://www.python.org/dev/peps/pep-0526/), and even Coconut's own [enhanced type annotation syntax](#enhanced-type-annotations). By default, all type annotations are compiled to Python-2-compatible type comments, which means all of the above works on any Python version.
 
 Coconut even supports `--mypy` in the interpreter, which will intelligently scan each new line of code, in the context of previous lines, for newly-introduced MyPy errors. For example:
 ```coconut
@@ -892,6 +890,24 @@ mod$ <| 5 <| 3
 ```coconut_python
 "123"[1]
 mod(5, 3)
+```
+
+### Enhanced Type Annotations
+
+Since Coconut is a superset of Python 3 syntax, it supports [Python 3 function type annotation syntax](https://www.python.org/dev/peps/pep-0484/) and [Python 3.6 variable type annotation syntax](https://www.python.org/dev/peps/pep-0526/). By default, Coconut compiles all type annotations into Python-2-compatible type comments. If you want to keep the type annotations instead, simply pass a `--target` that supports them.
+
+Additionally, Coconut adds special syntax for making type annotations easier and simpler to write. When inside of a type annotation, Coconut treats certain syntax constructs differently, compiling them to type annotations instead of what they would normally represent. Specifically, Coconut applies the following transformations:
+```coconut
+<type>[]
+    => typing.Sequence[<type>]
+() -> <ret>
+    => typing.Callable[[], <ret>]
+<arg> -> <ret>
+    => typing.Callable[[<arg>], <ret>]
+(<args>) -> <ret>
+    => typing.Callable[[<args>], <ret>]
+-> <ret>
+    => typing.Callable[..., <ret>]
 ```
 
 ### Set Literals

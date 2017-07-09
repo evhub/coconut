@@ -9,14 +9,14 @@ def rand_list(n):
 
 # Infix Functions:
 plus = (+)
-mod = (%)
+mod: (int, int) -> int = (%)
 def (a: int) `mod_` (b: int) -> int = a % b
 base = int
 def a `join_with` (b=""):
     return b.join(a)
 
 # Composable Functions:
-plus1 = plus$(1)
+plus1: int -> int = plus$(1)
 square = (**)$(?, 2)
 times2 = (*)$(2)
 
@@ -737,3 +737,8 @@ data Tuple(*elems)
 data Pred(name, *args)
 
 data Quant(name, var, *args)
+
+# Type-Checking Tests
+
+any_to_ten: -> int = (*args, **kwargs) -> 10
+none_to_ten: () -> int = () -> 10

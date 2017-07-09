@@ -319,7 +319,7 @@ class Compiler(Grammar):
             target, strict, minify, line_numbers, keep_lines, no_tco)
 
     def __reduce__(self):
-        """Return pickling information."""
+        """Returns pickling information."""
         return (Compiler, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.no_tco))
 
     def genhash(self, package, code):

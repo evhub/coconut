@@ -57,7 +57,10 @@ parallel_map = concurrent_map = _coconut_map = map
 
 
 class _coconut:
-    import collections, copy, functools, imp, itertools, operator, types, weakref, pickle
+    # The real _coconut doesn't import typing,
+    # but since that only matters when type-checking,
+    # in which case this file is used instead, it's fine.
+    import typing, collections, copy, functools, imp, itertools, operator, types, weakref, pickle
     Exception, IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip = Exception, IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip
     if sys.version_info < (3, 3):
         abc = collections
@@ -88,7 +91,6 @@ def _coconut_igetitem(
     iterable: Iterable[_T],
     index: int,
     ) -> _T: ...
-@overload
 def _coconut_igetitem(
     iterable: Iterable[_T],
     index: slice,
@@ -97,12 +99,10 @@ def _coconut_igetitem(
 
 @overload
 def _coconut_compose(g: Callable[..., _T], f: Callable[[_T], _S]) -> Callable[..., _S]: ...
-@overload
 def _coconut_compose(*funcs: Callable) -> Callable: ...
 
 @overload
 def _coconut_back_compose(f: Callable[[_T], _S], g: Callable[..., _T]) -> Callable[..., _S]: ...
-@overload
 def _coconut_back_compose(*funcs: Callable) -> Callable: ...
 
 
@@ -123,7 +123,6 @@ def _coconut_bool_or(a, b) -> bool:
 @overload
 def _coconut_minus(a):
     return -a
-@overload
 def _coconut_minus(a, b):
     return a - b
 

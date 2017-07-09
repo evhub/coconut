@@ -27,7 +27,7 @@ from coconut.pyparsing import (
     Optional,
     SkipTo,
     CharsNotIn,
-    Token,
+    ParseElementEnhance,
     ParseException,
 )
 
@@ -243,24 +243,25 @@ def transform(grammar, text):
     return "".join(out)
 
 
-class Wrap(Token):
+class Wrap(ParseElementEnhance):
     """PyParsing token that wraps the given item in the given context manager."""
 
     def __init__(self, item, wrapper):
-        super(Wrap, self).__init__()
-        self.name = self.__class__.__name__
-        self.errmsg = item.errmsg = " (Wrapped)"
-        self.skipWhitespace, self.mayReturnEmpty, self.mayIndexError = item.skipWhitespace, item.mayReturnEmpty, item.mayIndexError
-        self.item, self.wrapper = item, wrapper
+        super(Wrap, self).__init__(item)
+        self.errmsg = item.errmsg + " (Wrapped)"
+        self.wrapper = wrapper
 
     def parseImpl(self, instring, loc, *args, **kwargs):
         with self.wrapper(self, instring, loc):
-            return self.item.parseImpl(instring, loc, *args, **kwargs)
+            return super(Wrap, self).parseImpl(instring, loc, *args, **kwargs)
 
 
-def disable_inside(item, elem):
-    """Prevent elem from matching inside of item.
-    Returns (item with elem disabled, a new version of elem)."""
+def disable_inside(item, *elems, **kwargs):
+    """Prevent elems from matching inside of item.
+    Returns (item with elem disabled, *new versions of elems)."""
+    _invert = kwargs.get("_invert", False)
+    assert set(kwargs.keys()) <= set(("_invert",))
+
     level = [0]  # number of wrapped items deep we are; in a list to allow modification
 
     @contextmanager
@@ -271,11 +272,21 @@ def disable_inside(item, elem):
         finally:
             level[0] -= 1
 
+    yield Wrap(item, manage_item)
+
     @contextmanager
     def manage_elem(self, instring, loc):
-        if level[0] == 0:
+        if level[0] == 0 if not _invert else level[0] > 0:
             yield
         else:
             raise ParseException(instring, loc, self.errmsg, self)
 
-    return Wrap(item, manage_item), Wrap(elem, manage_elem)
+    for elem in elems:
+        yield Wrap(elem, manage_elem)
+
+
+def disable_outside(item, *elems):
+    """Prevent elems from matching outside of item.
+    Returns (item with elem disabled, *new versions of elems)."""
+    for wrapped in disable_inside(item, *elems, **{"_invert": True}):
+        yield wrapped

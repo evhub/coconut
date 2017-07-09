@@ -87,6 +87,7 @@ from coconut.compiler.util import (
     exprlist,
     join_args,
     disable_inside,
+    disable_outside,
 )
 
 # end: IMPORTS
@@ -364,6 +365,16 @@ def lambdef_handle(tokens):
         return "lambda " + tokens[0] + ":"
     else:
         raise CoconutInternalException("invalid lambda tokens", tokens)
+
+
+def typedef_callable_handle(tokens):
+    """Processes -> to Callable inside type annotations."""
+    if len(tokens) == 1:
+        return '_coconut.typing.Callable[..., ' + tokens[0] + ']'
+    elif len(tokens) == 2:
+        return '_coconut.typing.Callable[[' + tokens[0] + '], ' + tokens[1] + ']'
+    else:
+        raise CoconutInternalException("invalid Callable typedef tokens", tokens)
 
 
 def math_funcdef_suite_handle(tokens):
@@ -810,10 +821,12 @@ class Grammar(object):
     typedef = Forward()
     typedef_default = Forward()
     unsafe_typedef_default = Forward()
+    typedef_test = Forward()
+
     default = condense(equals + test)
     arg_comma = comma | fixto(FollowedBy(rparen), "")
-    typedef_ref = name + colon.suppress() + test + arg_comma
-    unsafe_typedef_default_ref = name + colon.suppress() + test + Optional(default)
+    typedef_ref = name + colon.suppress() + typedef_test + arg_comma
+    unsafe_typedef_default_ref = name + colon.suppress() + typedef_test + Optional(default)
     typedef_default_ref = unsafe_typedef_default_ref + arg_comma
     tfpdef = typedef | condense(name + arg_comma)
     tfpdef_default = typedef_default | condense(name + Optional(default) + arg_comma)
@@ -959,7 +972,7 @@ class Grammar(object):
     augassign_stmt = Forward()
     typed_assign_stmt = Forward()
     augassign_stmt_ref = simple_assign + augassign + test_expr
-    typed_assign_stmt_ref = simple_assign + colon.suppress() + test + Optional(equals.suppress() + test_expr)
+    typed_assign_stmt_ref = simple_assign + colon.suppress() + typedef_test + Optional(equals.suppress() + test_expr)
     basic_stmt = trace(addspace(ZeroOrMore(assignlist + equals) + test_expr))
 
     compose_item = (
@@ -1067,7 +1080,19 @@ class Grammar(object):
     lambdef <<= trace(addspace(lambdef_base + test) | stmt_lambdef)
     lambdef_no_cond = trace(addspace(lambdef_base + test_no_cond))
 
-    test <<= trace(lambdef | addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test)))
+    typedef_callable_params = (
+        lparen.suppress() + Optional(testlist, default="") + rparen.suppress()
+        | Optional(atom_item)
+    )
+    typedef_callable = attach(typedef_callable_params + arrow.suppress() + typedef_test, typedef_callable_handle)
+    _typedef_test, typedef_callable = disable_outside(test, typedef_callable)
+    typedef_test <<= _typedef_test
+
+    test <<= trace(
+        typedef_callable
+        | lambdef
+        | addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test))
+    )
     test_no_cond <<= trace(lambdef_no_cond | test_item)
 
     async_comp_for = Forward()
