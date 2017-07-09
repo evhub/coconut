@@ -23,9 +23,14 @@ try:
     from cPyparsing import *  # NOQA
     if DEVELOP:
         from cPyparsing import _trim_arity  # NOQA
-    PYPARSING = "Cython cPyparsing"
+
+    from cPyparsing import __version__
+    PYPARSING = "Cython cPyparsing v" + __version__
+
 except ImportError:
     from pyparsing import *  # NOQA
     if DEVELOP:
         from pyparsing import _trim_arity  # NOQA
-    PYPARSING = "Python pyparsing"
+
+    from pyparsing import __version__
+    PYPARSING = "Python pyparsing v" + __version__

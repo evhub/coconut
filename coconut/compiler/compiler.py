@@ -403,7 +403,13 @@ class Compiler(Grammar):
 
     def eval_now(self, code):
         """Reformats and evaluates a code snippet and returns code for the result."""
-        return ascii(eval(self.reformat(code)))
+        result = eval(self.reformat(code))
+        if result is True or result is False or result is None or isinstance(result, int):
+            return repr(result)
+        elif isinstance(result, (bytes, str)):
+            return ("b" if isinstance(result, bytes) else "") + self.wrap_str_of(result)
+        else:
+            return None
 
     def make_err(self, errtype, message, original, loc, ln=None, reformat=True, *args, **kwargs):
         """Generates an error of the specified type."""

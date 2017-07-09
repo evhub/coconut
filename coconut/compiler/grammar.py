@@ -927,6 +927,8 @@ class Grammar(object):
     )
 
     typedef_sequence = Forward()
+    typedef_sequence_ref = Group(fixto(lbrack + rbrack, "type:[]"))
+
     simple_trailer = (
         condense(lbrack + subscriptlist + rbrack)
         | condense(dot + name)
@@ -935,7 +937,6 @@ class Grammar(object):
         condense(function_call)
         | Group(dollar + ~lparen + ~lbrack)
     )
-    typedef_sequence_ref = Group(fixto(lbrack + rbrack, "type:[]"))
     no_call_or_partial_complex_trailer = (
         typedef_sequence
         | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())
@@ -1114,7 +1115,7 @@ class Grammar(object):
         )
     )
     class_suite = suite | attach(newline, class_suite_handle)
-    classdef = condense(addspace(Keyword("class") - name) + classlist + class_suite)
+    classdef = condense(addspace(Keyword("class") - name) - classlist - class_suite)
     comp_iter = Forward()
     base_comp_for = addspace(Keyword("for") + assignlist + Keyword("in") + test_item + Optional(comp_iter))
     async_comp_for_ref = addspace(Keyword("async") + base_comp_for)
@@ -1319,7 +1320,7 @@ class Grammar(object):
         | (newline.suppress() + indent.suppress() + docstring + dedent.suppress() | docstring)("docstring")
         | simple_stmt("simple")
     ) | newline("empty"))
-    datadef_ref = Keyword("data").suppress() + name - data_args - data_suite
+    datadef_ref = Keyword("data").suppress() - name - data_args - data_suite
 
     simple_decorator = condense(dotted_name + Optional(function_call))("simple")
     complex_decorator = test("test")
@@ -1420,22 +1421,24 @@ class Grammar(object):
         ) + parens + end_marker, tco_return_handle)
 
     rest_of_arg = ZeroOrMore(parens | brackets | braces | ~comma + ~rparen + any_char)
-    tfpdef_tokens = base_name + Optional(originalTextFor(colon + rest_of_arg))
-    tfpdef_default_tokens = base_name + Optional(originalTextFor((equals | colon) + rest_of_arg))
-    parameters_tokens = Group(Optional(tokenlist(Group(
-        dubstar + tfpdef_tokens
-        | star + Optional(tfpdef_tokens)
-        | tfpdef_default_tokens
-    ) + Optional(passthrough.suppress()),
-        comma + Optional(passthrough))))
+    tfpdef_tokens = base_name - Optional(originalTextFor(colon - rest_of_arg))
+    tfpdef_default_tokens = base_name - Optional(originalTextFor((equals | colon) - rest_of_arg))
+    parameters_tokens = Group(Optional(tokenlist(
+        Group(
+            dubstar - tfpdef_tokens
+            | star - Optional(tfpdef_tokens)
+            | tfpdef_default_tokens
+        ) + Optional(passthrough.suppress()),
+        comma + Optional(passthrough)
+    )))
 
     split_func_name_args_params = attach(
-        (start_marker - Keyword("def")).suppress() + dotted_base_name + lparen.suppress()
-        + parameters_tokens + rparen.suppress(), split_func_name_args_params_handle)
+        (start_marker - Keyword("def")).suppress() - dotted_base_name - lparen.suppress()
+        - parameters_tokens - rparen.suppress(), split_func_name_args_params_handle)
 
     stores_scope = (
         Keyword("lambda")
-        | Keyword("for") + base_name + Keyword("in")
+        | Keyword("for") - base_name - Keyword("in")
     )
 
 

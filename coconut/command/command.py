@@ -46,6 +46,7 @@ from coconut.constants import (
     stub_dir,
     exit_chars,
     coconut_run_args,
+    verbose_mypy_args,
 )
 from coconut.command.util import (
     openfile,
@@ -551,6 +552,11 @@ class Command(object):
 
             if "--python-version" not in self.mypy_args:
                 self.mypy_args += ["--python-version", ".".join(str(v) for v in self.comp.target_info_len2)]
+
+            if logger.verbose:
+                for arg in verbose_mypy_args:
+                    if arg not in self.mypy_args:
+                        self.mypy_args.append(arg)
 
             logger.log("MyPy args:", self.mypy_args)
 

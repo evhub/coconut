@@ -117,9 +117,9 @@ def _coconut_star_pipe(xs: Iterable, f: Callable[..., _T]) -> _T: ...
 def _coconut_back_star_pipe(f: Callable[..., _T], xs: Iterable) -> _T: ...
 
 
-def _coconut_bool_and(a, b) -> bool:
+def _coconut_bool_and(a, b):
     return a and b
-def _coconut_bool_or(a, b) -> bool:
+def _coconut_bool_or(a, b):
     return a or b
 
 

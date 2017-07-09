@@ -458,6 +458,13 @@ coconut_run_args = ["--run", "--quiet", "--target", "sys"]
 
 num_added_tb_layers = 3  # how many frames to remove when printing a tb
 
+verbose_mypy_args = [
+    "--warn-incomplete-stub",
+    "--warn-redundant-casts",
+    "--warn-return-any",
+    "--warn-unused-ignores",
+]
+
 #-----------------------------------------------------------------------------------------------------------------------
 # HIGHLIGHTER CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
