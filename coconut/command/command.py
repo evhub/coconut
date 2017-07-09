@@ -94,14 +94,15 @@ class Command(object):
         """Processes command-line arguments."""
         if run:
             args, argv = coconut_run_args, []
-            # for coconut-run, all args beyond the source file should stay in sys.argv
+            # for coconut-run, all args beyond the source file should be wrapped in an --argv
             for i in range(1, len(sys.argv)):
                 arg = sys.argv[i]
-                args.append(arg)
-                if not arg.startswith("-"):  # is source file
+                if arg.startswith("-"):  # coconut flag
+                    args.append(arg)
+                else:  # source file
                     argv = sys.argv[i:]
                     break
-            sys.argv = argv
+            args += ["--argv"] + argv
         else:
             args = None
         self.cmd(args)
@@ -109,12 +110,12 @@ class Command(object):
     def cmd(self, args=None, interact=True):
         """Processes command-line arguments."""
         if args is None:
-            args = arguments.parse_args()
+            parsed_args = arguments.parse_args()
         else:
-            args = arguments.parse_args(args)
+            parsed_args = arguments.parse_args(args)
         self.exit_code = 0
         with self.handling_exceptions():
-            self.use_args(args, interact)
+            self.use_args(parsed_args, interact, original_args=args)
         self.exit_on_error()
 
     def setup(self, *args, **kwargs):
@@ -141,17 +142,23 @@ class Command(object):
         else:
             sys.setrecursionlimit(limit)
 
-    def use_args(self, args, interact=True):
+    def use_args(self, args, interact=True, original_args=None):
         """Handles command-line arguments."""
         logger.quiet, logger.verbose = args.quiet, args.verbose
         if DEVELOP:
             logger.tracing = args.trace
 
         logger.log("Using " + PYPARSING + ".")
-        logger.log("Command args:", args)
+        if original_args is not None:
+            logger.log("Directly passed args:", original_args)
+        logger.log("Parsed args:", args)
 
         if args.recursion_limit is not None:
             self.set_recursion_limit(args.recursion_limit)
+        if args.argv is not None:
+            # if not args.run:
+            #     raise CoconutException("--argv requires --run")
+            sys.argv = list(args.argv)
         if args.jobs is not None:
             self.set_jobs(args.jobs)
         if args.display:

@@ -159,6 +159,12 @@ arguments.add_argument(
     help="run MyPy on compiled Python (remaining args passed to MyPy) (implies --package --no-tco)")
 
 arguments.add_argument(
+    "--argv",
+    type=str,
+    nargs=argparse.REMAINDER,
+    help="pass remaining args to Coconut script being run (requires --run)")
+
+arguments.add_argument(
     "--tutorial",
     action="store_true",
     help="open the Coconut tutorial in the default web browser")

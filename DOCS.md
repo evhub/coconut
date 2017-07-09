@@ -57,9 +57,9 @@ which will install the most recent working version from Coconut's [`develop` bra
 ```
 coconut [-h] [-v] [-t version] [-i] [-p] [-a] [-l] [-k] [-w] [-r] [-n]
         [-d] [-q] [-s] [--no-tco] [-c code] [-j processes] [-f]
-        [--minify] [--jupyter ...] [--mypy ...] [--tutorial]
-        [--documentation] [--style name] [--recursion-limit limit]
-        [--verbose] [--trace]
+        [--minify] [--jupyter ...] [--mypy ...] [--argv ...]
+        [--tutorial] [--documentation] [--style name]
+        [--recursion-limit limit] [--verbose] [--trace]
         [source] [dest]
 ```
 
@@ -77,52 +77,54 @@ dest                destination directory for compiled files (defaults to
 -h, --help            show this help message and exit
 -v, --version         print Coconut and Python version information
 -t version, --target version
-                    specify target Python version (defaults to universal)
+                      specify target Python version (defaults to universal)
 -i, --interact        force the interpreter to start (otherwise starts if no
-                    other command is given) (implies --run)
+                      other command is given) (implies --run)
 -p, --package         compile source as part of a package (defaults to only
-                    if source is a directory)
+                      if source is a directory)
 -a, --standalone      compile source as standalone files (defaults to only
-                    if source is a single file)
+                      if source is a single file)
 -l, --line-numbers, --linenumbers
-                    add line number comments for ease of debugging
+                      add line number comments for ease of debugging
 -k, --keep-lines, --keeplines
-                    include source code in comments for ease of debugging
+                      include source code in comments for ease of debugging
 -w, --watch           watch a directory and recompile on changes
 -r, --run             execute compiled Python
 -n, --no-write, --nowrite
-                    disable writing compiled Python
+                      disable writing compiled Python
 -d, --display         print compiled Python
 -q, --quiet           suppress all informational output (combine with
-                    --display to write runnable code to stdout)
+                      --display to write runnable code to stdout)
 -s, --strict          enforce code cleanliness standards
 --no-tco, --notco     disable tail call optimization
 -c code, --code code  run Coconut passed in as a string (can also be piped
-                    into stdin)
+                      into stdin)
 -j processes, --jobs processes
-                    number of additional processes to use (defaults to 0)
-                    (pass 'sys' to use machine default)
+                      number of additional processes to use (defaults to 0)
+                      (pass 'sys' to use machine default)
 -f, --force           force overwriting of compiled Python (otherwise only
-                    overwrites when source code or compilation parameters
-                    change)
+                      overwrites when source code or compilation parameters
+                      change)
 --minify              reduce size of compiled Python
 --jupyter ..., --ipython ...
-                    run Jupyter/IPython with Coconut as the kernel
-                    (remaining args passed to Jupyter)
+                      run Jupyter/IPython with Coconut as the kernel
+                      (remaining args passed to Jupyter)
 --mypy ...            run MyPy on compiled Python (remaining args passed to
-                    MyPy) (implies --package --no-tco)
+                      MyPy) (implies --package --no-tco)
+--argv ...            pass remaining args to Coconut script being run
+                      (requires --run)
 --tutorial            open the Coconut tutorial in the default web browser
 --documentation       open the Coconut documentation in the default web
-                    browser
+                      browser
 --style name          Pygments syntax highlighting style (or 'none' to
-                    disable) (defaults to COCONUT_STYLE environment
-                    variable, if it exists, otherwise 'default')
+                      disable) (defaults to COCONUT_STYLE environment
+                      variable, if it exists, otherwise 'default')
 --recursion-limit limit, --recursionlimit limit
-                    set maximum recursion depth in compiler (defaults to
-                    2000)
+                      set maximum recursion depth in compiler (defaults to
+                      2000)
 --verbose             print verbose debug output
 --trace               show verbose parsing data (only available in coconut-
-                    develop)
+                      develop)
 ```
 
 ### Coconut Scripts
