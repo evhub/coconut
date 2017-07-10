@@ -119,9 +119,11 @@ python hello_world.py
 ```
 which should produce `hello, world!` as the output.
 
+_Note: You can compile and run your code all in one step if you use Coconut's `--run` option._
+
 Compiling single files is not the only way to use the Coconut command-line utility, however. We can also compile all the Coconut files in a given directory simply by passing that directory as the first argument, which will get rid of the need to run the same Coconut header code in each file by storing it in a `__coconut__.py` file in the same directory.
 
-The Coconut  compiler supports a large variety of different compilation options, the help for which can always be accessed by entering `coconut -h` into the command line. One of the most useful of these is `--linenumbers` (or `-l` for short). Using `--linenumbers` will add the line numbers of your source code as comments in the compiled code, allowing you to see what line in your source code corresponds to a line in the compiled code where an error is occurring, for ease of debugging.
+The Coconut  compiler supports a large variety of different compilation options, the help for which can always be accessed by entering `coconut -h` into the command line. One of the most useful of these is `--line-numbers` (or `-l` for short). Using `--line-numbers` will add the line numbers of your source code as comments in the compiled code, allowing you to see what line in your source code corresponds to a line in the compiled code where an error occurred, for ease of debugging.
 
 ### Using IPython/Jupyter
 
@@ -253,7 +255,7 @@ Copy, paste! This new `factorial` function is equivalent to the original version
 
 ### Iterative Method
 
-The final, and other functional, approach, is the iterative one. Iterative approaches avoid the need for state change and loops by using higher-order functions, those that take other functions as their arguments, like `map` and `reduce`, to abstract out the basic operations being performed. In Coconut, the iterative approach to the `factorial` problem is:
+The other main functional approach is the iterative one. Iterative approaches avoid the need for state change and loops by using higher-order functions, those that take other functions as their arguments, like `map` and `reduce`, to abstract out the basic operations being performed. In Coconut, the iterative approach to the `factorial` problem is:
 ```coconut
 def factorial(n):
     """Compute n! where n is an integer >= 0."""

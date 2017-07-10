@@ -98,7 +98,7 @@ class Command(object):
             for i in range(1, len(sys.argv)):
                 arg = sys.argv[i]
                 args.append(arg)
-                if not arg.startswith("-"):  # source file
+                if not arg.startswith("-"):  # was source file
                     argv = sys.argv[i + 1:]
                     break
             args += ["--argv"] + argv
@@ -154,10 +154,6 @@ class Command(object):
 
         if args.recursion_limit is not None:
             self.set_recursion_limit(args.recursion_limit)
-        if args.argv is not None:
-            # if not args.run:
-            #     raise CoconutException("--argv requires --run")
-            sys.argv = list(args.argv)
         if args.jobs is not None:
             self.set_jobs(args.jobs)
         if args.display:
@@ -188,6 +184,7 @@ class Command(object):
                 logger.warn("extraneous --run argument passed; --interact implies --run")
             if args.package and self.mypy:
                 logger.warn("extraneous --package argument passed; --mypy implies --package")
+
             if args.standalone and args.package:
                 raise CoconutException("cannot compile as both --package and --standalone")
             if args.standalone and self.mypy:
@@ -199,6 +196,11 @@ class Command(object):
                     raise CoconutException("source path must point to file not directory when --run (implied by --interact) is enabled")
             if args.watch and os.path.isfile(args.source):
                 raise CoconutException("source path must point to directory not file when --watch is enabled")
+
+            if args.argv is not None:
+                if not args.run:
+                    raise CoconutException("--argv requires --run")
+                sys.argv = [args.source] + list(args.argv)
 
             if args.dest is None:
                 if args.no_write:
@@ -228,7 +230,8 @@ class Command(object):
               or args.force
               or args.package
               or args.standalone
-              or args.watch):
+              or args.watch
+              or args.argv is not None):
             raise CoconutException("a source file/folder must be specified when options that depend on the source are enabled")
 
         if args.code is not None:

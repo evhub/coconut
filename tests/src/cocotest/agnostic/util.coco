@@ -564,7 +564,9 @@ def coercive_add(a is int, b) = a + int(b)
 def coercive_add(a is str, b) = a + str(b)
 
 @addpattern(ident)
-def still_ident(x) = "foo"
+def still_ident(x) =
+    """docstring"""
+    "foo"
 
 @prepattern(ident)
 def not_ident(x) = "bar"
@@ -638,7 +640,7 @@ def ret_args_kwargs(*args, **kwargs) = (args, kwargs)
 class identity_operations:
     def __getitem__(self, args) = args
     def method(self, *args, **kwargs) = (args, kwargs)
-ident = identity_operations()
+identity = identity_operations()
 
 class container:
     def __init__(self, x):

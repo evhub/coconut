@@ -318,8 +318,8 @@ def suite_test():
     assert Elems(1, 2, 3) != Elems(1, 2)
     assert map(plus1, (1, 2, 3)) |> fmap$(times2) |> repr == map(times2..plus1, (1, 2, 3)) |> repr
     assert reversed((1, 2, 3)) |> fmap$(plus1) |> repr == map(plus1, (1, 2, 3)) |> reversed |> repr
-    assert ident[1:2, 2:3] == (slice(1, 2), slice(2, 3)) == ident |> .[1:2, 2:3]
-    assert ident.method(*(1,), **{"a": 2}) == ((1,), {"a": 2}) == ident |> .method(*(1,), **{"a": 2})
+    assert identity[1:2, 2:3] == (slice(1, 2), slice(2, 3)) == identity |> .[1:2, 2:3]
+    assert identity.method(*(1,), **{"a": 2}) == ((1,), {"a": 2}) == identity |> .method(*(1,), **{"a": 2})
     assert container(1) == container(1)
     assert not container(1) != container(1)
     assert container(1) != container(2)
@@ -376,6 +376,7 @@ def suite_test():
     assert [(1, 2), (2, 3), (3, 4)] |> starmap$(toprint) |> .[1:] |> list == ["2 3", "3 4"]
     assert none_to_ten() == 10 == any_to_ten(1, 2, 3)
     assert int_map(plus1, range(5)) == [1, 2, 3, 4, 5]
+    assert still_ident.__doc__ == "docstring"
     return True
 
 def tco_test():
