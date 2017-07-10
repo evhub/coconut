@@ -113,8 +113,8 @@ dest                destination directory for compiled files (defaults to
                       MyPy) (implies --package --no-tco)
 --argv ...            set sys.argv to source plus remaining args for use in
                       Coconut script being run
---tutorial            open the Coconut tutorial in the default web browser
---documentation       open the Coconut documentation in the default web
+--tutorial            open Coconut's tutorial in the default web browser
+--documentation       open Coconut's documentation in the default web
                       browser
 --style name          Pygments syntax highlighting style (or 'none' to
                       disable) (defaults to COCONUT_STYLE environment
@@ -123,7 +123,7 @@ dest                destination directory for compiled files (defaults to
                       set maximum recursion depth in compiler (defaults to
                       2000)
 --verbose             print verbose debug output
---trace               show verbose parsing data (only available in coconut-
+--trace               print verbose parsing data (only available in coconut-
                       develop)
 ```
 

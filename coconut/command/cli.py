@@ -167,12 +167,12 @@ arguments.add_argument(
 arguments.add_argument(
     "--tutorial",
     action="store_true",
-    help="open the Coconut tutorial in the default web browser")
+    help="open Coconut's tutorial in the default web browser")
 
 arguments.add_argument(
     "--documentation",
     action="store_true",
-    help="open the Coconut documentation in the default web browser")
+    help="open Coconut's documentation in the default web browser")
 
 arguments.add_argument(
     "--style",
@@ -196,4 +196,4 @@ if DEVELOP:
     arguments.add_argument(
         "--trace",
         action="store_true",
-        help="show verbose parsing data (only available in coconut-develop)")
+        help="print verbose parsing data (only available in coconut-develop)")
