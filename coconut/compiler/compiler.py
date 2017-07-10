@@ -1538,11 +1538,16 @@ class Compiler(Grammar):
         """Handles type annotations without a comma after them."""
         return self.typedef_handle(tokens.asList() + [","])
 
+    def wrap_typedef(self, typedef):
+        """Wrap a type definition in a string to defer it.
+        Used for function type annotations on Python 3, the only ones evaluated at runtime."""
+        return self.wrap_str_of(self.reformat(typedef))
+
     def typedef_handle(self, tokens):
         """Handles Python 3 type annotations."""
         if len(tokens) == 1:  # return typedef
             if self.target.startswith("3"):
-                return " -> " + tokens[0] + ":"
+                return " -> " + self.wrap_typedef(tokens[0]) + ":"
             else:
                 return ":\n" + self.wrap_comment(" type: (...) -> " + tokens[0])
         else:  # argument typedef
@@ -1554,7 +1559,7 @@ class Compiler(Grammar):
             else:
                 raise CoconutInternalException("invalid type annotation tokens", tokens)
             if self.target.startswith("3"):
-                return varname + ": " + typedef + default + comma
+                return varname + ": " + self.wrap_typedef(typedef) + default + comma
             else:
                 return varname + default + comma + self.wrap_passthrough(self.wrap_comment(" type: " + typedef) + "\n" + " " * self.tabideal)
 
