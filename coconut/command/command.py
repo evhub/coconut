@@ -179,6 +179,10 @@ class Command(object):
                 logger.warn("extraneous --no-tco argument passed; --mypy implies --no-tco")
             self.set_mypy_args(args.mypy)
 
+        if args.argv is not None:
+            sys.argv = [args.source if args.source is not None else ""]
+            sys.argv.extend(args.argv)
+
         if args.source is not None:
             if args.interact and args.run:
                 logger.warn("extraneous --run argument passed; --interact implies --run")
@@ -196,11 +200,6 @@ class Command(object):
                     raise CoconutException("source path must point to file not directory when --run (implied by --interact) is enabled")
             if args.watch and os.path.isfile(args.source):
                 raise CoconutException("source path must point to directory not file when --watch is enabled")
-
-            if args.argv is not None:
-                if not args.run:
-                    raise CoconutException("--argv requires --run")
-                sys.argv = [args.source] + list(args.argv)
 
             if args.dest is None:
                 if args.no_write:
@@ -230,8 +229,7 @@ class Command(object):
               or args.force
               or args.package
               or args.standalone
-              or args.watch
-              or args.argv is not None):
+              or args.watch):
             raise CoconutException("a source file/folder must be specified when options that depend on the source are enabled")
 
         if args.code is not None:

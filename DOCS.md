@@ -111,8 +111,8 @@ dest                destination directory for compiled files (defaults to
                       (remaining args passed to Jupyter)
 --mypy ...            run MyPy on compiled Python (remaining args passed to
                       MyPy) (implies --package --no-tco)
---argv ...            pass remaining args to Coconut script being run
-                      (requires --run)
+--argv ...            set sys.argv to source plus remaining args for use in
+                      Coconut script being run
 --tutorial            open the Coconut tutorial in the default web browser
 --documentation       open the Coconut documentation in the default web
                       browser

@@ -162,7 +162,7 @@ arguments.add_argument(
     "--argv",
     type=str,
     nargs=argparse.REMAINDER,
-    help="pass remaining args to Coconut script being run (requires --run)")
+    help="set sys.argv to source plus remaining args for use in Coconut script being run")
 
 arguments.add_argument(
     "--tutorial",
