@@ -199,7 +199,7 @@ If the `--strict` (or `-s`) flag is enabled, Coconut will throw errors on variou
 - semicolons at end of lines,
 - use of the Python-style `lambda` statement,
 - use of `u` to denote Unicode strings, and
-- use of backslash continuations (use parenthetical continuation instead).
+- use of backslash continuations (use [parenthetical continuation](#enhanced-parenthetical-continuation) instead).
 
 It is recommended that you use the `--strict` (or `-s`) flag if you are starting a new Coconut project, as it will help you write cleaner code.
 
@@ -906,7 +906,7 @@ mod(5, 3)
 
 ### Enhanced Type Annotations
 
-Since Coconut is a superset of Python 3 syntax, it supports [Python 3 function type annotation syntax](https://www.python.org/dev/peps/pep-0484/) and [Python 3.6 variable type annotation syntax](https://www.python.org/dev/peps/pep-0526/). By default, Coconut compiles all type annotations into Python-2-compatible type comments. If you want to keep the type annotations instead, simply pass a `--target` that supports them.
+Since Coconut syntax is a superset of Python 3 syntax, it supports [Python 3 function type annotation syntax](https://www.python.org/dev/peps/pep-0484/) and [Python 3.6 variable type annotation syntax](https://www.python.org/dev/peps/pep-0526/). By default, Coconut compiles all type annotations into Python-2-compatible type comments. If you want to keep the type annotations instead, simply pass a `--target` that supports them.
 
 _Note: When compiling type annotations to Python 3 syntax, Coconut will wrap every annotation in a string when in a position where Python would otherwise evaluate it (Python 3 function annotation), so that all type annotations are only ever evaluated at compile time, never at run time._
 
@@ -1380,6 +1380,34 @@ Coconut supports the ability to pass arbitrary code through the compiler without
 ```coconut_python
 cdef f(x):
     return g(x)
+```
+
+### Enhanced Parenthetical Continuation
+
+Since Coconut syntax is a superset of Python 3 syntax, Coconut supports the same line continuation syntax as Python. That means both backslash line continuation and implied line continuation inside of parentheses, brackets, or braces will all work.
+
+In Python, however, there are some cases (such as multiple `with` statements) where only backslash continuation, and not parenthetical continuation, is supported. Coconut adds support for parenthetical continuation in all these cases.
+
+Supporting parenthetical continuation everywhere allows the [PEP 8](https://www.python.org/dev/peps/pep-0008/) convention, which avoids backslash continuation in favor of implied parenthetical continuation, to always be possible to follow. From PEP 8:
+
+> The preferred way of wrapping long lines is by using Python's implied line continuation inside parentheses, brackets and braces. Long lines can be broken over multiple lines by wrapping expressions in parentheses. These should be used in preference to using a backslash for line continuation.
+
+_Note: Passing `--strict` will enforce the PEP 8 convention by disallowing backslash continuations._
+
+##### Example
+
+**Coconut:**
+```coconut
+with (open('/path/to/some/file/you/want/to/read') as file_1,
+      open('/path/to/some/file/being/written', 'w') as file_2):
+    file_2.write(file_1.read())
+```
+
+**Python:**
+```coconut_python
+with open('/path/to/some/file/you/want/to/read') as file_1, \
+     open('/path/to/some/file/being/written', 'w') as file_2:
+    file_2.write(file_1.read())
 ```
 
 ## Built-Ins

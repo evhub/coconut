@@ -30,6 +30,10 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
+from coconut.constants import author as __author__  # NOQA
+
+__version__ = VERSION  # NOQA
+
 #-----------------------------------------------------------------------------------------------------------------------
 # IPYTHON:
 #-----------------------------------------------------------------------------------------------------------------------

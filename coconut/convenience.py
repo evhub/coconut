@@ -63,12 +63,12 @@ setup = CLI.setup
 
 
 PARSERS = {
-    "single": lambda comp: comp.parse_single,
-    "file": lambda comp: comp.parse_file,
+    "sys": lambda comp: comp.parse_sys,
     "exec": lambda comp: comp.parse_exec,
+    "file": lambda comp: comp.parse_file,
     "package": lambda comp: comp.parse_package,
     "block": lambda comp: comp.parse_block,
-    "sys": lambda comp: comp.parse_sys,
+    "single": lambda comp: comp.parse_single,
     "eval": lambda comp: comp.parse_eval,
     "debug": lambda comp: comp.parse_debug,
 }

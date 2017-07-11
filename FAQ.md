@@ -37,9 +37,7 @@ No problem—just use Coconut's [`recursive_iterator`](DOCS.html#recursive-itera
 
 ### How do I split an expression across multiple lines in Coconut?
 
-Coconut uses the exact same line continuation syntax as Python. That means both backslash line continuation and implied line continuation inside of parentheses, brackets, or braces will all work. Passing `--strict` will enforce the [PEP 8](https://www.python.org/dev/peps/pep-0008/) convention, which avoid backslash continuation in favor of implied parenthetical continuation. From PEP 8:
-
-> The preferred way of wrapping long lines is by using Python's implied line continuation inside parentheses, brackets and braces. Long lines can be broken over multiple lines by wrapping expressions in parentheses. These should be used in preference to using a backslash for line continuation.
+Since Coconut syntax is a superset of Python 3 syntax, Coconut supports the same line continuation syntax as Python. That means both backslash line continuation and implied line continuation inside of parentheses, brackets, or braces will all work. Parenthetical continuation is the recommended method, and Coconut even supports an [enhanced version of it](DOCS.html#enhanced-parenthetical-continuation).
 
 ### If I'm already perfectly happy with Python, why should I learn Coconut?
 

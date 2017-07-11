@@ -34,7 +34,6 @@ DEVELOP = 27
 
 if DEVELOP:
     VERSION += "-post_dev" + str(int(DEVELOP))
-__version__ = VERSION
 VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
 
 PY2 = _coconut_sys.version_info < (3,)
