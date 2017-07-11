@@ -56,7 +56,11 @@ def printerr(*args):
 def format_error(err_type, err_value, err_trace=None):
     """Properly formats the specified error."""
     if err_trace is None:
-        err_name, err_msg = "".join(traceback.format_exception_only(err_type, err_value)).strip().split(": ", 1)
+        err_parts = "".join(traceback.format_exception_only(err_type, err_value)).strip().split(": ", 1)
+        if len(err_parts) == 1:
+            err_name, err_msg = err_parts[0], ""
+        else:
+            err_name, err_msg = err_parts
         err_name = err_name.split(".")[-1]
         return err_name + ": " + err_msg
     else:

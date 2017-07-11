@@ -313,7 +313,7 @@ class Prompt(object):
                 return prompt_toolkit.prompt(msg, **self.prompt_kwargs())
             except EOFError:
                 raise  # issubclass(EOFError, Exception), so we have to do this
-            except Exception:
+            except (Exception, AssertionError):
                 logger.print_exc()
                 logger.show_sig("Syntax highlighting failed; switching to --style none.")
                 self.style = None
