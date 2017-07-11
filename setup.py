@@ -35,7 +35,10 @@ from coconut.constants import (
     search_terms,
     script_names,
 )
-from coconut.requirements import requirements, extras
+from coconut.requirements import (
+    requirements,
+    extras,
+)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # SETUP:

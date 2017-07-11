@@ -130,12 +130,17 @@ def add_version_reqs(modern=True):
             requirements += get_reqs("py2")
 
 
-if int(setuptools.__version__.split(".", 1)[0]) < 18:
+try:
+    modern_setuptools = int(setuptools.__version__.split(".", 1)[0]) >= 18
+except BaseException:
+    modern_setuptools = False
+
+if modern_setuptools:
+    add_version_reqs()
+else:
     if "bdist_wheel" in sys.argv:
         raise RuntimeError("bdist_wheel not supported for setuptools versions < 18 (run 'pip install --upgrade setuptools' to fix)")
     add_version_reqs(modern=False)
-else:
-    add_version_reqs()
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:

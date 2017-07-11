@@ -214,7 +214,7 @@ def call_output(cmd, **kwargs):
     return stdout, stderr, retcode
 
 
-def run_cmd(cmd, show_output=True, raise_errs=True):
+def run_cmd(cmd, show_output=True, raise_errs=True, **kwargs):
     """Runs a console command.
     When show_output=True, prints output and returns exit code, otherwise returns output.
     When raise_errs=True, raises an error if command fails."""
@@ -229,11 +229,11 @@ def run_cmd(cmd, show_output=True, raise_errs=True):
             cmd[0] = which(cmd[0]) or cmd[0]
         logger.log_cmd(cmd)
         if show_output and raise_errs:
-            return subprocess.check_call(cmd)
+            return subprocess.check_call(cmd, **kwargs)
         elif show_output:
-            return subprocess.call(cmd)
+            return subprocess.call(cmd, **kwargs)
         else:
-            stdout, stderr, _ = call_output(cmd)
+            stdout, stderr, _ = call_output(cmd, **kwargs)
             return "".join(stdout + stderr)
 
 
