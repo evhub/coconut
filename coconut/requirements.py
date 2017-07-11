@@ -131,7 +131,7 @@ def add_version_reqs(modern=True):
 try:
     import setuptools
     modern_setuptools = int(setuptools.__version__.split(".", 1)[0]) >= 18
-except BaseException:
+except Exception:
     modern_setuptools = False
 
 if modern_setuptools:
