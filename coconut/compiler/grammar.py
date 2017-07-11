@@ -31,7 +31,6 @@ from coconut.root import *  # NOQA
 import re
 
 from coconut.pyparsing import (
-    __version__ as pyparsing_version,
     CaselessLiteral,
     Combine,
     Forward,
@@ -57,7 +56,7 @@ from coconut.exceptions import (
     CoconutInternalException,
     CoconutDeferredSyntaxError,
 )
-from coconut.terminal import logger, trace
+from coconut.terminal import trace
 from coconut.constants import (
     openindent,
     closeindent,
@@ -74,11 +73,6 @@ from coconut.constants import (
     use_packrat,
     packrat_cache_size,
     varchars,
-    min_versions,
-)
-from coconut.requirements import (
-    ver_str_to_tuple,
-    newer,
 )
 from coconut.compiler.matching import Matcher
 from coconut.compiler.util import (
@@ -100,12 +94,6 @@ from coconut.compiler.util import (
 #-----------------------------------------------------------------------------------------------------------------------
 # SETUP:
 #-----------------------------------------------------------------------------------------------------------------------
-
-if newer(
-    min_versions["pyparsing"],
-    ver_str_to_tuple(pyparsing_version),
-):
-    logger.warn("outdated pyparsing v" + __version__ + "; Coconut requires at least v" + min_versions["pyparsing"])
 
 if use_packrat:
     ParserElement.enablePackrat(packrat_cache_size)

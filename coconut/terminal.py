@@ -254,7 +254,7 @@ class Logger(object):
                     return _trim_arity(handler)(s, l, t)
                 except CoconutException:
                     raise
-                except Exception:
+                except (Exception, AssertionError):
                     traceback.print_exc()
                     raise CoconutInternalException("error calling handler " + handler.__name__ + " with tokens", t)
             return wrapped_handler

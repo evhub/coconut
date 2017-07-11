@@ -36,12 +36,12 @@ try:
 except ImportError:
     readline = None
 
-if PY26 or (3,) <= sys.version_info < (3, 3):
-    prompt_toolkit = None
-else:
+try:
     import prompt_toolkit
     import pygments
     from coconut.highlighter import CoconutLexer
+except ImportError:
+    prompt_toolkit = None
 
 from coconut.constants import (
     fixpath,

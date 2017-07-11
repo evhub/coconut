@@ -38,11 +38,15 @@ from coconut.constants import (
 from coconut.requirements import (
     requirements,
     extras,
+    modern_setuptools,
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
 # SETUP:
 #-----------------------------------------------------------------------------------------------------------------------
+
+if not modern_setuptools and "bdist_wheel" in sys.argv:
+    raise RuntimeError("bdist_wheel not supported for setuptools versions < 18 (run 'pip install --upgrade setuptools' to fix)")
 
 with open("README.rst", "r") as readme_file:
     readme = readme_file.read()

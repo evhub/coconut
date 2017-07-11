@@ -20,8 +20,6 @@ from coconut.root import *  # NOQA
 import sys
 import platform
 
-import setuptools
-
 from coconut.constants import (
     all_reqs,
     min_versions,
@@ -131,6 +129,7 @@ def add_version_reqs(modern=True):
 
 
 try:
+    import setuptools
     modern_setuptools = int(setuptools.__version__.split(".", 1)[0]) >= 18
 except BaseException:
     modern_setuptools = False
@@ -138,8 +137,6 @@ except BaseException:
 if modern_setuptools:
     add_version_reqs()
 else:
-    if "bdist_wheel" in sys.argv:
-        raise RuntimeError("bdist_wheel not supported for setuptools versions < 18 (run 'pip install --upgrade setuptools' to fix)")
     add_version_reqs(modern=False)
 
 #-----------------------------------------------------------------------------------------------------------------------
