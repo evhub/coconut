@@ -1015,7 +1015,7 @@ Coconut will perform automatic tail call optimization and tail recursion elimina
 1. it must directly return (using either `return` or [assignment function notation](#assignment-functions)) a call to itself (tail recursion elimination, the most powerful optimization) or another function (tail call optimization).
 2. it must not be a generator (uses `yield`) or an asynchronous function (uses `async`).
 
-_Note: Tail call optimization (though not tail recursion elimination) will work even for 1) mutual recursion and 2) pattern-matching functions split across multiple definitions using [`addpattern`](#addpattern) or [`prepattern`](#prepattern)._
+_Note: Tail call optimization (though not tail recursion elimination) will work even for 1) mutual recursion and 2) pattern-matching functions split across multiple definitions using [`addpattern`](#addpattern)._
 
 If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for tail call optimization, or the corresponding criteria for [`recursive_iterator`](#recursive-iterator), either of which should prevent such errors.
 
@@ -1429,32 +1429,6 @@ def factorial(0) = 1
 
 @addpattern(factorial)
 def factorial(n) = n * factorial(n - 1)
-```
-
-**Python:**
-_Can't be done without a complicated decorator definition and a long series of checks for each pattern-matching. See the compiled code for the Python syntax._
-
-### `prepattern`
-
-Takes one argument that is a [pattern-matching function](#pattern-matching-functions), and returns a decorator that adds the patterns in the existing function to the new function being decorated, where the new patterns are checked first, then the existing.
-
-Equivalent to:
-```
-def prepattern(base_func):
-    """Decorator to add a new case to a pattern-matching function, where the new case is checked first."""
-    def pattern_prepender(func):
-        return addpattern(func)(base_func)
-    return pattern_prepender
-```
-
-##### Example
-
-**Coconut:**
-```
-def factorial(n) = n * factorial(n - 1)
-
-@prepattern(factorial)
-def factorial(0) = 1
 ```
 
 **Python:**

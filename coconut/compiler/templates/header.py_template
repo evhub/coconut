@@ -316,12 +316,6 @@ def addpattern(base_func):
                 return {tail_call_func_args_kwargs}
         return add_pattern_func
     return pattern_adder
-def prepattern(base_func):
-    """Decorator to add a new case to a pattern-matching function,
-    where the new case is checked first."""
-    def pattern_prepender(func):
-        return addpattern(func)(base_func)
-    return pattern_prepender
 class _coconut_partial{object}:
     __slots__ = ("func", "_argdict", "_arglen", "_stargs", "keywords")
     if hasattr(_coconut.functools.partial, "__doc__"):
