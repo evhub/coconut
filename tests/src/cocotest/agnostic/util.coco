@@ -752,3 +752,11 @@ any_to_ten: -> int = (*args, **kwargs) -> 10
 none_to_ten: () -> int = () -> 10
 
 def int_map(f: int->int, xs: int[]) -> int[]: return list(map(f, xs))
+
+# Context managers
+
+def context_produces(out):
+    @contextmanager
+    def manager():
+        yield out
+    return manager()

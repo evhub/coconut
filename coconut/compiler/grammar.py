@@ -770,8 +770,8 @@ class Grammar(object):
     comp_for = Forward()
     test_no_cond = Forward()
 
-    testlist = trace(itemlist(test, comma))
-    testlist_star_expr = trace(itemlist(test | star_expr, comma))
+    testlist = trace(itemlist(test, comma, suppress_trailing=False))
+    testlist_star_expr = trace(itemlist(test | star_expr, comma, suppress_trailing=False))
     testlist_has_comma = trace(addspace(OneOrMore(condense(test + comma)) + Optional(test)))
 
     yield_from = Forward()
@@ -780,7 +780,12 @@ class Grammar(object):
     yield_from_ref = Keyword("yield").suppress() + Keyword("from").suppress() + test
     yield_expr = yield_from | yield_classic
     dict_comp_ref = lbrace.suppress() + (test + colon.suppress() + test | dubstar_expr) + comp_for + rbrace.suppress()
-    dict_item = condense(lbrace + Optional(itemlist(addspace(condense(test + colon) + test) | dubstar_expr, comma)) + rbrace)
+    dict_item = condense(
+        lbrace
+        + Optional(itemlist(
+            addspace(condense(test + colon) + test) | dubstar_expr,
+            comma))
+        + rbrace)
     test_expr = yield_expr | testlist_star_expr
 
     op_item = (
@@ -861,7 +866,12 @@ class Grammar(object):
         questionmark | dubstar + test | star + test | name + default | test
     ), comma))
     methodcaller_args = (
-        itemlist(condense(dubstar + test | star + test | name + default | test), comma)
+        itemlist(condense(
+            dubstar + test
+            | star + test
+            | name + default
+            | test
+        ), comma)
         | op_item
     )
 
@@ -877,11 +887,8 @@ class Grammar(object):
 
     testlist_comp = addspace((test | star_expr) + comp_for) | testlist_star_expr
     list_comp = condense(lbrack + Optional(testlist_comp) + rbrack)
-    func_atom = (
-        name
-        | condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
-        | lparen.suppress() + op_item + rparen.suppress()
-    )
+    paren_atom = condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
+    op_atom = lparen.suppress() + op_item + rparen.suppress()
     keyword_atom = Keyword(const_vars[0])
     for x in range(1, len(const_vars)):
         keyword_atom |= Keyword(const_vars[x])
@@ -903,6 +910,7 @@ class Grammar(object):
     set_letter_literal_ref = set_letter + lbrace.suppress() + Optional(setmaker) + rbrace.suppress()
     lazy_items = Optional(test + ZeroOrMore(comma.suppress() + test) + Optional(comma.suppress()))
     lazy_list = attach(lbanana.suppress() + lazy_items + rbanana.suppress(), lazy_list_handle)
+
     const_atom = (
         keyword_atom
         | number
@@ -919,6 +927,11 @@ class Grammar(object):
         | set_literal
         | set_letter_literal
         | lazy_list
+    )
+    func_atom = (
+        name
+        | paren_atom
+        | op_atom
     )
     atom = (
         known_atom
@@ -966,14 +979,14 @@ class Grammar(object):
                                        (name | passthrough_atom)
                                        + ZeroOrMore(ZeroOrMore(complex_trailer) + OneOrMore(simple_trailer)),
                                        rparen), item_handle)
-    simple_assignlist = maybeparens(lparen, itemlist(simple_assign, comma), rparen)
+    simple_assignlist = maybeparens(lparen, itemlist(simple_assign, comma, suppress_trailing=False), rparen)
 
     assignlist = Forward()
     star_assign_item = Forward()
     base_assign_item = condense(simple_assign | lparen + assignlist + rparen | lbrack + assignlist + rbrack)
     star_assign_item_ref = condense(star + base_assign_item)
     assign_item = star_assign_item | base_assign_item
-    assignlist <<= trace(itemlist(assign_item, comma))
+    assignlist <<= trace(itemlist(assign_item, comma, suppress_trailing=False))
 
     augassign_stmt = Forward()
     typed_assign_stmt = Forward()
