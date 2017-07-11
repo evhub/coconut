@@ -357,8 +357,12 @@ def main_test():
     match {"a": a **_} = {"a": 4, "b": 5}
     assert a == 4
     assert _ is None
-    one, = [1]
-    assert one == 1 == (1,)[0]
+    assert a = 1,
+    (x,) = a
+    assert x == 1 == a[0]
+    assert (10,)[0] == 10
+    x, x = 1, 2
+    assert x == 2
     return True
 
 def tco_func() = tco_func()
