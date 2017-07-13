@@ -357,7 +357,8 @@ def main_test():
     match {"a": a **_} = {"a": 4, "b": 5}
     assert a == 4
     assert _ is None
-    assert a = 1,
+    a = 1,
+    assert a == (1,)
     (x,) = a
     assert x == 1 == a[0]
     assert (10,)[0] == 10
