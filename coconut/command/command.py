@@ -93,7 +93,7 @@ class Command(object):
     def start(self, run=False):
         """Processes command-line arguments."""
         if run:
-            args, argv = coconut_run_args, []
+            args, argv = list(coconut_run_args), []
             # for coconut-run, all args beyond the source file should be wrapped in an --argv
             for i in range(1, len(sys.argv)):
                 arg = sys.argv[i]

@@ -34,3 +34,21 @@ except ImportError:
 
     from pyparsing import __version__
     PYPARSING = "Python pyparsing v" + __version__
+
+from coconut.constants import (
+    use_packrat,
+    packrat_cache_size,
+    default_whitespace_chars,
+    varchars,
+)
+
+#-----------------------------------------------------------------------------------------------------------------------
+# SETUP:
+#-----------------------------------------------------------------------------------------------------------------------
+
+if use_packrat:
+    ParserElement.enablePackrat(packrat_cache_size)
+
+ParserElement.setDefaultWhitespaceChars(default_whitespace_chars)
+
+Keyword.setDefaultKeywordChars(varchars)

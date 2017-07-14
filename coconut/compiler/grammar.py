@@ -13,7 +13,6 @@ Description: Defines the Coconut grammar.
 
 # Table of Contents:
 #   - Imports
-#   - Setup
 #   - Helpers
 #   - Handlers
 #   - Main Grammar
@@ -65,14 +64,10 @@ from coconut.constants import (
     keywords,
     const_vars,
     reserved_vars,
-    default_whitespace_chars,
     decorator_var,
     match_to_var,
     match_check_var,
     lazy_item_var,
-    use_packrat,
-    packrat_cache_size,
-    varchars,
 )
 from coconut.compiler.matching import Matcher
 from coconut.compiler.util import (
@@ -91,18 +86,6 @@ from coconut.compiler.util import (
 )
 
 # end: IMPORTS
-#-----------------------------------------------------------------------------------------------------------------------
-# SETUP:
-#-----------------------------------------------------------------------------------------------------------------------
-
-if use_packrat:
-    ParserElement.enablePackrat(packrat_cache_size)
-
-ParserElement.setDefaultWhitespaceChars(default_whitespace_chars)
-
-Keyword.setDefaultKeywordChars(varchars)
-
-# end: SETUP
 #-----------------------------------------------------------------------------------------------------------------------
 # HELPERS:
 #-----------------------------------------------------------------------------------------------------------------------

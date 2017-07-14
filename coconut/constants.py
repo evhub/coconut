@@ -66,50 +66,50 @@ description = "Simple, elegant, Pythonic functional programming."
 website_url = "http://coconut-lang.org"
 
 all_reqs = {
-    "main": [
+    "main": (
         "pyparsing",
-    ],
-    "non-py26": [
+    ),
+    "non-py26": (
         "pygments",
         "prompt_toolkit",
-    ],
-    "py2": [
+    ),
+    "py2": (
         "futures",
-    ],
-    "py26": [
+    ),
+    "py26": (
         "argparse",
-    ],
-    "jobs": [
+    ),
+    "jobs": (
         "psutil",
-    ],
-    "jupyter": [
+    ),
+    "jupyter": (
         "jupyter",
         "ipython",
         "ipykernel",
         "jupyter-console",
-    ],
-    "mypy": [
+    ),
+    "mypy": (
         "mypy",
-    ],
-    "watch": [
+    ),
+    "watch": (
         "watchdog",
-    ],
-    "dev": [
+    ),
+    "dev": (
         "pre-commit",
         "requests",
-    ],
-    "docs": [
+    ),
+    "docs": (
         "sphinx",
         "pygments",
         "recommonmark",
         "sphinx_bootstrap_theme",
-    ],
-    "tests": [
+    ),
+    "tests": (
         "pytest",
-    ],
-    "cPyparsing": [
+    ),
+    "cPyparsing": (
         "cPyparsing",
-    ],
+    ),
 }
 
 min_versions = {
@@ -125,7 +125,7 @@ min_versions = {
     "jupyter-console": (5, 1),
     "ipython": (5, 4),
     "ipykernel": (4, 6),
-    "mypy": (0, 511),
+    "mypy": (0, 520),
     "prompt_toolkit": (1, 0),
     "futures": (3, 1),
     "argparse": (1, 4),
@@ -134,13 +134,13 @@ min_versions = {
     "requests": (2,),
 }
 
-version_strictly = [
+version_strictly = (
     "pyparsing",
     "sphinx",
     "sphinx_bootstrap_theme",
     "ipython",
     "ipykernel",
-]
+)
 
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -240,15 +240,23 @@ script_names = [
 ]
 
 #-----------------------------------------------------------------------------------------------------------------------
+# PYPARSING CONSTANTS:
+#-----------------------------------------------------------------------------------------------------------------------
+
+packrat_cache_size = 512
+use_packrat = packrat_cache_size != 0
+
+default_whitespace_chars = " \t\f\v\xa0"
+
+varchars = string.ascii_letters + string.digits + "_"
+
+#-----------------------------------------------------------------------------------------------------------------------
 # COMPILER CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
 template_ext = ".py_template"
 
 default_encoding = "utf-8"
-
-packrat_cache_size = 512
-use_packrat = packrat_cache_size != 0
 
 default_recursion_limit = 2000
 minimum_recursion_limit = 100
@@ -274,9 +282,6 @@ elif sys.version_info > get_target_info(specific_targets[-1]):
     pseudo_targets["sys"] = specific_targets[-1]
 else:
     pseudo_targets["sys"] = _sys_target
-
-default_whitespace_chars = " \t\f\v\xa0"
-varchars = string.ascii_letters + string.digits + "_"
 
 openindent = "\u204b"  # reverse pilcrow
 closeindent = "\xb6"  # pilcrow
@@ -434,17 +439,17 @@ new_issue_url = "https://github.com/evhub/coconut/issues/new"
 
 base_dir = os.path.dirname(os.path.abspath(fixpath(__file__)))
 
-icoconut_kernel_names = [
+icoconut_kernel_names = (
     "coconut",
     "coconut2",
     "coconut3",
-]
+)
 
 icoconut_dir = os.path.join(base_dir, "icoconut")
-icoconut_kernel_dirs = [
+icoconut_kernel_dirs = tuple(
     os.path.join(icoconut_dir, kernel_name)
     for kernel_name in icoconut_kernel_names
-]
+)
 
 stub_dir = os.path.join(base_dir, "stubs")
 
@@ -453,16 +458,16 @@ exit_chars = (
     "\x1a",  # Ctrl-Z
 )
 
-coconut_run_args = ["--run", "--quiet", "--target", "sys"]
+coconut_run_args = ("--run", "--quiet", "--target", "sys")
 
 num_added_tb_layers = 3  # how many frames to remove when printing a tb
 
-verbose_mypy_args = [
+verbose_mypy_args = (
     "--warn-incomplete-stub",
     "--warn-redundant-casts",
     "--warn-return-any",
     "--warn-unused-ignores",
-]
+)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # HIGHLIGHTER CONSTANTS:
