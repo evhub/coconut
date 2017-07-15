@@ -211,19 +211,26 @@ class Logger(object):
     def log_trace(self, tag, original, loc, tokens=None):
         """Formats and displays a trace if tracing."""
         if self.tracing:
-            original = str(original)
-            loc = int(loc)
-            tag = str(tag)
-            if " " in tag:
-                tag = "..."
-            out = ["[" + tag + "]"]
-            if tokens is not None:
-                if not isinstance(tokens, Exception) and len(tokens) == 1 and isinstance(tokens[0], str):
-                    out.append(ascii(tokens[0]))
-                else:
-                    out.append(str(tokens))
-            out.append("(line " + str(lineno(loc, original)) + ", col " + str(col(loc, original)) + ")")
-            printerr(*out)
+            tag, original, loc = str(tag), str(original), int(loc)
+            if "{" not in tag:
+                out = ["[" + tag + "]"]
+                add_line_col = True
+                if tokens is not None:
+                    if isinstance(tokens, Exception):
+                        msg = str(tokens)
+                        if "{" in msg:
+                            head, middle = msg.split("{", 1)
+                            middle, tail = middle.rsplit("}", 1)
+                            msg = head + "{...}" + tail
+                        out.append(msg)
+                        add_line_col = False
+                    elif len(tokens) == 1 and isinstance(tokens[0], str):
+                        out.append(ascii(tokens[0]))
+                    else:
+                        out.append(str(tokens))
+                if add_line_col:
+                    out.append("(line:" + str(lineno(loc, original)) + ", col:" + str(col(loc, original)) + ")")
+                printerr(*out)
 
     def _trace_start_action(self, original, loc, expr):
         self.log_trace(expr, original, loc)
