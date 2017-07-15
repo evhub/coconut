@@ -97,7 +97,7 @@ extras["all"] = everything_in(extras)
 
 extras["tests"] = uniqueify(
     get_reqs("tests")
-    + (extras["jobs"] + get_reqs("cPyparsing") if not PYPY and not PY26 else [])
+    + (extras["jobs"] + get_reqs("cPyparsing") if not PYPY else [])
     + (extras["jupyter"] if (PY2 and not PY26) or PY33 else [])
     + (extras["mypy"] if PY34 else [])
 )
