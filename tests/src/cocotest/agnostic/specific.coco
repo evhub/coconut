@@ -1,4 +1,4 @@
-from .util import mod
+from .util import mod, context_produces
 
 def non_py26_test():
     """Tests for any non-py26 version."""
@@ -11,6 +11,12 @@ def non_py26_test():
     exec("b = mod(5, 3)", globals(), test)
     assert test["b"] == 2
     assert 5.bit_length() == 3
+    with (
+        context_produces(1) as one,
+        context_produces(2) as two,
+    ):
+        assert one == 1
+        assert two == 2
     return True
 
 def non_py32_test():

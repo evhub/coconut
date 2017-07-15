@@ -44,7 +44,7 @@ def main_test():
     \\def backslash_test():
         return (x) -> x
     assert \(1) == 1 == backslash_test()(1)
-    assert (\(
+    assert True is (\(
             "hello"
         ) == "hello" == \(
             'hello'
