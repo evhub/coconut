@@ -233,7 +233,7 @@ search_terms = (
 script_names = (
     "coconut",
     ("coconut-py2" if PY2 else "coconut-py3"),
-    "coconut-py" + str(sys.version_info[0]) + str(sys.version_info[1]),
+    "coconut-py" + str(sys.version_info[0]) + "." + str(sys.version_info[1]),
     ("coconut-develop" if DEVELOP else "coconut-release"),
 ) + tuple(
     "coconut-v" + ".".join(version_tuple[:i]) for i in range(1, len(version_tuple) + 1)
