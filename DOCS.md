@@ -1021,7 +1021,7 @@ _Note: Tail call optimization (though not tail recursion elimination) will work 
 
 If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for tail call optimization, or the corresponding criteria for [`recursive_iterator`](#recursive-iterator), either of which should prevent such errors.
 
-_Note: Tail call optimization (though not tail recursion elimination) can be turned off by passing the `--no-tco` command-line option, which is useful if you are having trouble reading your tracebacks and/or need maximum performance._
+_Note: Tail call optimization (though not tail recursion elimination) will be turned off if you pass the `--no-tco` command-line option, which is useful if you are having trouble reading your tracebacks and/or need maximum performance._
 
 ##### Example
 
