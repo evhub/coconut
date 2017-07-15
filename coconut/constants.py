@@ -402,7 +402,7 @@ py3_to_py2_stdlib = {
     "urllib.parse": ("urllib2", (3,)),
     "urllib.error": ("urllib2", (3,)),
     "io.StringIO": ("StringIO.StringIO", (3,)),
-    "io.BytesIO": ("BytesIO.BytesIO", (3,)),
+    "io.BytesIO": ("cStringIO.StringIO", (3,)),
     "pickle": ("cPickle", (3,)),
     "collections.abc": ("collections", (3, 3)),
 }

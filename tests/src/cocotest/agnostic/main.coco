@@ -364,6 +364,11 @@ def main_test():
     assert (10,)[0] == 10
     x, x = 1, 2
     assert x == 2
+    from io import StringIO, BytesIO
+    s = StringIO("derp")
+    assert s.read() == "derp"
+    b = BytesIO(b"herp")
+    assert b.read() == b"herp"
     return True
 
 def tco_func() = tco_func()
