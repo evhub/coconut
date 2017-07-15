@@ -147,9 +147,7 @@ def single_import(path, impas):
         imp, = parts
         if impas == imp:
             out.append("import " + imp)
-        elif "." not in impas:
-            out.append("import " + imp + " as " + impas)
-        else:
+        elif "." in impas:
             fake_mods = impas.split(".")
             out.append("import " + imp + " as " + import_as_var)
             for i in range(1, len(fake_mods)):
@@ -164,6 +162,10 @@ def single_import(path, impas):
                     openindent + mod_name + ' = _coconut.imp.new_module("' + mod_name + '")' + closeindent * 2
                 ))
             out.append(".".join(fake_mods) + " = " + import_as_var)
+        elif "." in imp and imp.rsplit(".", 1)[-1] == impas:
+            out.append("from " + imp.rsplit(".", 1)[0] + " import " + impas)
+        else:
+            out.append("import " + imp + " as " + impas)
     else:
         imp_from, imp = parts
         if impas == imp:
