@@ -372,6 +372,7 @@ class Compiler(Grammar):
         self.return_typedef <<= trace(attach(self.return_typedef_ref, self.typedef_handle))
         self.typed_assign_stmt <<= trace(attach(self.typed_assign_stmt_ref, self.typed_assign_stmt_handle))
         self.datadef <<= trace(attach(self.datadef_ref, self.data_handle))
+        self.with_stmt <<= trace(attach(self.with_stmt_ref, self.with_stmt_handle))
 
         self.u_string <<= attach(self.u_string_ref, self.u_string_check)
         self.f_string <<= attach(self.f_string_ref, self.f_string_check)
@@ -1580,6 +1581,20 @@ class Compiler(Grammar):
         else:
             raise CoconutInternalException("invalid variable type annotation tokens", tokens)
 
+    def with_stmt_handle(self, tokens):
+        """Handles with statements."""
+        if len(tokens) == 2:
+            withs, body = tokens
+            if len(withs) == 1 or self.target_info >= (2, 7):
+                return "with " + ", ".join(withs) + body
+            else:
+                return (
+                    "".join("with " + expr + ":\n" + openindent for expr in withs[:-1])
+                    + "with " + withs[-1] + body
+                    + closeindent * (len(withs) - 1)
+                )
+        else:
+            raise CoconutInternalException("invalid with statement tokens", tokens)
 
 # end: COMPILER HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------

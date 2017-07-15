@@ -1147,8 +1147,6 @@ class Grammar(object):
     global_stmt = addspace(Keyword("global") - namelist)
     nonlocal_stmt_ref = addspace(Keyword("nonlocal") - namelist)
     del_stmt = addspace(Keyword("del") - simple_assignlist)
-    with_item = addspace(test - Optional(Keyword("as") - name))
-    with_item_list = maybeparens(lparen, condense(itemlist(with_item, comma)), rparen)
 
     matchlist_list = Group(Optional(tokenlist(match, comma)))
     matchlist_tuple = Group(Optional(
@@ -1250,7 +1248,6 @@ class Grammar(object):
             | Keyword("except") - suite
         ) - Optional(else_stmt) - Optional(Keyword("finally") - suite)
     ))
-    with_stmt = addspace(Keyword("with") - condense(with_item_list - suite))
     exec_stmt_ref = Keyword("exec").suppress() + lparen.suppress() + test + Optional(
         comma.suppress() + test + Optional(
             comma.suppress() + test + Optional(
@@ -1258,6 +1255,11 @@ class Grammar(object):
             )
         )
     ) + rparen.suppress()
+
+    with_item = addspace(test - Optional(Keyword("as") - name))
+    with_item_list = Group(maybeparens(lparen, tokenlist(with_item, comma), rparen))
+    with_stmt_ref = Keyword("with").suppress() - with_item_list - suite
+    with_stmt = Forward()
 
     return_typedef = Forward()
     name_funcdef = trace(condense(dotted_name + parameters))

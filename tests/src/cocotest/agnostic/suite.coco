@@ -377,6 +377,12 @@ def suite_test():
     assert none_to_ten() == 10 == any_to_ten(1, 2, 3)
     assert int_map(plus1_, range(5)) == [1, 2, 3, 4, 5]
     assert still_ident.__doc__ == "docstring"
+    with (
+        context_produces(1) as one,
+        context_produces(2) as two,
+    ):
+        assert one == 1
+        assert two == 2
     return True
 
 def tco_test():
