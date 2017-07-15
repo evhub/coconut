@@ -16,7 +16,7 @@ def a `join_with` (b=""):
     return b.join(a)
 
 # Composable Functions:
-plus1: int -> int = plus$(1)
+plus1 = plus$(1)
 square = (**)$(?, 2)
 times2 = (*)$(2)
 
