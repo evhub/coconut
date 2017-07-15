@@ -51,7 +51,7 @@ else:
     version_tag = "v" + VERSION
 version_str_tag = "v" + VERSION_STR
 
-version_tuple = VERSION.split(".")
+version_tuple = tuple(VERSION.split("."))
 
 #-----------------------------------------------------------------------------------------------------------------------
 # INSTALLATION CONSTANTS:
@@ -142,7 +142,7 @@ version_strictly = (
     "ipykernel",
 )
 
-classifiers = [
+classifiers = (
     "Development Status :: 5 - Production/Stable",
     "License :: OSI Approved :: Apache Software License",
     "Intended Audience :: Developers",
@@ -170,9 +170,9 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Framework :: IPython",
-]
+)
 
-search_terms = [
+search_terms = (
     "functional",
     "programming",
     "language",
@@ -228,16 +228,16 @@ search_terms = [
     "fmap",
     "starmap",
     "case",
-]
+)
 
-script_names = [
+script_names = (
     "coconut",
     ("coconut-py2" if PY2 else "coconut-py3"),
     "coconut-py" + str(sys.version_info[0]) + str(sys.version_info[1]),
     ("coconut-develop" if DEVELOP else "coconut-release"),
-] + [
+) + tuple(
     "coconut-v" + ".".join(version_tuple[:i]) for i in range(1, len(version_tuple) + 1)
-]
+)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # PYPARSING CONSTANTS:
@@ -411,7 +411,7 @@ py3_to_py2_stdlib = {
 # COMMAND CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-code_exts = [".coco", ".coc", ".coconut"]  # in order of preference
+code_exts = (".coco", ".coc", ".coconut")  # in order of preference
 comp_ext = ".py"
 
 main_sig = "Coconut: "

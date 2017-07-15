@@ -81,6 +81,6 @@ setuptools.setup(
             "coconut_pycon = coconut.highlighter:CoconutPythonConsoleLexer",
         ]
     },
-    classifiers=classifiers,
-    keywords=search_terms,
+    classifiers=list(classifiers),
+    keywords=list(search_terms),
 )
