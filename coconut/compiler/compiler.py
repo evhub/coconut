@@ -139,51 +139,63 @@ def set_to_tuple(tokens):
         raise CoconutInternalException("invalid set maker item", tokens[0])
 
 
-def single_import(path, impas):
+def import_stmt(imp_from, imp, imp_as):
+    """Generate an import statement."""
+    return (
+        ("from " + imp_from + " " if imp_from is not None else "")
+        + "import " + imp
+        + (" as " + imp_as if imp_as is not None else "")
+    )
+
+
+def single_import(path, imp_as):
     """Generates import statements from a fully qualified import and the name to bind it to."""
     out = []
+
     parts = path.split("./")  # denotes from ... import ...
     if len(parts) == 1:
-        imp, = parts
-        if impas == imp:
-            out.append("import " + imp)
-        elif "." in impas:
-            fake_mods = impas.split(".")
-            out.append("import " + imp + " as " + import_as_var)
-            for i in range(1, len(fake_mods)):
-                mod_name = ".".join(fake_mods[:i])
-                out.extend((
-                    "try:",
-                    openindent + mod_name,
-                    closeindent + "except:",
-                    openindent + mod_name + ' = _coconut.imp.new_module("' + mod_name + '")',
-                    closeindent + "else:",
-                    openindent + "if not _coconut.isinstance(" + mod_name + ", _coconut.types.ModuleType):",
-                    openindent + mod_name + ' = _coconut.imp.new_module("' + mod_name + '")' + closeindent * 2
-                ))
-            out.append(".".join(fake_mods) + " = " + import_as_var)
-        elif "." in imp and imp.rsplit(".", 1)[-1] == impas:
-            out.append("from " + imp.rsplit(".", 1)[0] + " import " + impas)
-        else:
-            out.append("import " + imp + " as " + impas)
+        imp_from, imp = None, parts[0]
     else:
         imp_from, imp = parts
-        if impas == imp:
-            out.append("from " + imp_from + " import " + imp)
-        else:
-            out.append("from " + imp_from + " import " + imp + " as " + impas)
+
+    if imp == imp_as:
+        imp_as = None
+    elif imp.endswith("." + imp_as):
+        if imp_from is None:
+            imp_from = ""
+        imp_from += imp.rsplit("." + imp_as, 1)[0]
+        imp, imp_as = imp_as, None
+
+    if imp_as is not None and "." in imp_as:
+        fake_mods = imp_as.split(".")
+        out.append(import_stmt(imp_from, imp, import_as_var))
+        for i in range(1, len(fake_mods)):
+            mod_name = ".".join(fake_mods[:i])
+            out.extend((
+                "try:",
+                openindent + mod_name,
+                closeindent + "except:",
+                openindent + mod_name + ' = _coconut.imp.new_module("' + mod_name + '")',
+                closeindent + "else:",
+                openindent + "if not _coconut.isinstance(" + mod_name + ", _coconut.types.ModuleType):",
+                openindent + mod_name + ' = _coconut.imp.new_module("' + mod_name + '")' + closeindent * 2
+            ))
+        out.append(".".join(fake_mods) + " = " + import_as_var)
+    else:
+        out.append(import_stmt(imp_from, imp, imp_as))
+
     return out
 
 
 def universal_import(imports, imp_from=None, target=""):
     """Generates code for a universal import of imports from imp_from on target.
     imports = [[imp1], [imp2, as], ...]"""
-    importmap = []  # [((imp | old_imp, imp, version_check), impas), ...]
+    importmap = []  # [((imp | old_imp, imp, version_check), imp_as), ...]
     for imps in imports:
         if len(imps) == 1:
-            imp, impas = imps[0], imps[0]
+            imp, imp_as = imps[0], imps[0]
         else:
-            imp, impas = imps
+            imp, imp_as = imps
         if imp_from is not None:
             imp = imp_from + "./" + imp  # marker for from ... import ...
         old_imp = None
@@ -194,10 +206,9 @@ def universal_import(imports, imp_from=None, target=""):
             if clean_base in py3_to_py2_stdlib:
                 old_imp, version_check = py3_to_py2_stdlib[clean_base]
                 if exts:
-                    if "/" in base:
-                        old_imp += "./"
-                    else:
-                        old_imp += "."
+                    old_imp += "."
+                    if "/" in base and "/" not in old_imp:
+                        old_imp += "/"  # marker for from ... import ...
                     old_imp += ".".join(exts)
                 break
         if old_imp is None:
@@ -208,22 +219,22 @@ def universal_import(imports, imp_from=None, target=""):
             paths = (old_imp, imp, version_check)
         else:
             paths = (imp,)
-        importmap.append((paths, impas))
+        importmap.append((paths, imp_as))
 
     stmts = []
-    for paths, impas in importmap:
+    for paths, imp_as in importmap:
         if len(paths) == 1:
-            more_stmts = single_import(paths[0], impas)
+            more_stmts = single_import(paths[0], imp_as)
             stmts.extend(more_stmts)
         else:
             first, second, version_check = paths
             stmts.append("if _coconut_sys.version_info < " + str(version_check) + ":")
-            first_stmts = single_import(first, impas)
+            first_stmts = single_import(first, imp_as)
             first_stmts[0] = openindent + first_stmts[0]
             first_stmts[-1] += closeindent
             stmts.extend(first_stmts)
             stmts.append("else:")
-            second_stmts = single_import(second, impas)
+            second_stmts = single_import(second, imp_as)
             second_stmts[0] = openindent + second_stmts[0]
             second_stmts[-1] += closeindent
             stmts.extend(second_stmts)

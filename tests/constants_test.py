@@ -19,7 +19,10 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
+import sys
+import os
 import unittest
+from importlib import import_module
 
 from coconut import constants
 
@@ -60,3 +63,14 @@ class TestConstants(unittest.TestCase):
                 assert not isinstance(value, list), "Constant " + name + " should be tuple, not list"
                 assert not isinstance(value, set), "Constant " + name + " should be frozenset, not set"
                 assert_hashable_or_dict(name, value)
+
+    def test_imports(self):
+        for new_imp, (old_imp, ver_cutoff) in constants.py3_to_py2_stdlib.items():
+            if new_imp == "dbm.gnu" and os.name == "nt":
+                pass  # don't test unix-specific dbm.gnu on windows
+            elif "/" in old_imp:
+                pass  # don't test from ... import ..., since import_module can't do it
+            elif sys.version_info >= ver_cutoff:
+                assert import_module(new_imp), "Failed to import " + new_imp
+            else:
+                assert import_module(old_imp), "Failed to import " + old_imp

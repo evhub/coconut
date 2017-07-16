@@ -572,7 +572,7 @@ print(v)
 print(abs(v))
 v.x = 2
 ```
-```coconut
+```coconut_python
 import collections
 class Empty(collections.namedtuple("Empty", "")):
     __slots__ = ()
@@ -940,7 +940,7 @@ def int_map(
 
 **Python:**
 ```coconut_python
-import typing
+import typing  # unlike this typing import, Coconut produces universal code
 def int_map(
     f,  # type: typing.Callable[[int], int]
     xs,  # type: typing.Sequence[int]
