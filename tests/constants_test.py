@@ -31,6 +31,13 @@ else:
 from coconut import constants
 
 #-----------------------------------------------------------------------------------------------------------------------
+# CONSTANTS:
+#-----------------------------------------------------------------------------------------------------------------------
+
+WINDOWS = os.name == "nt"
+PYPY = platform.python_implementation() == "PyPy"
+
+#-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -83,12 +90,12 @@ class TestConstants(unittest.TestCase):
             if "/" in old_imp:
                 new_imp, old_imp = new_imp.split(".", 1)[0], old_imp.split("./", 1)[0]
             if (
-                # don't test unix-specific dbm.gnu on windows
-                new_imp == "dbm.gnu" and os.name == "nt"
+                # don't test unix-specific dbm.gnu on Windows or PyPy
+                new_imp == "dbm.gnu" and (WINDOWS or PYPY)
                 # don't test ttk on Python 2.6
                 or PY26 and old_imp == "ttk"
                 # don't test tkinter on PyPy
-                or platform.python_implementation() == "PyPy" and new_imp.startswith("tkinter")
+                or PYPY and new_imp.startswith("tkinter")
             ):
                 pass
             elif sys.version_info >= ver_cutoff:
