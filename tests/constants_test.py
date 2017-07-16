@@ -21,6 +21,7 @@ from coconut.root import *  # NOQA
 
 import sys
 import os
+import platform
 import unittest
 if PY26:
     import_module = __import__
@@ -86,6 +87,8 @@ class TestConstants(unittest.TestCase):
                 new_imp == "dbm.gnu" and os.name == "nt"
                 # don't test ttk on Python 2.6
                 or PY26 and old_imp == "ttk"
+                # don't test tkinter on PyPy
+                or platform.python_implementation() == "PyPy" and new_imp.startswith("tkinter")
             ):
                 pass
             elif sys.version_info >= ver_cutoff:
