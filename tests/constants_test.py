@@ -22,7 +22,10 @@ from coconut.root import *  # NOQA
 import sys
 import os
 import unittest
-from importlib import import_module
+if PY26:
+    import_module = __import__
+else:
+    from importlib import import_module
 
 from coconut import constants
 
@@ -50,6 +53,16 @@ def assert_hashable_or_dict(name, obj):
         assert is_hashable(obj), "Constant " + name + " contains unhashable values"
 
 
+def is_importable(name):
+    """Determine if name can be imported."""
+    try:
+        import_module(name)
+    except ImportError:
+        return False
+    else:
+        return True
+
+
 #-----------------------------------------------------------------------------------------------------------------------
 # TESTS:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -66,11 +79,16 @@ class TestConstants(unittest.TestCase):
 
     def test_imports(self):
         for new_imp, (old_imp, ver_cutoff) in constants.py3_to_py2_stdlib.items():
-            if new_imp == "dbm.gnu" and os.name == "nt":
-                pass  # don't test unix-specific dbm.gnu on windows
-            elif "/" in old_imp:
-                pass  # don't test from ... import ..., since import_module can't do it
+            if "/" in old_imp:
+                new_imp, old_imp = new_imp.split(".", 1)[0], old_imp.split("./", 1)[0]
+            if (
+                # don't test unix-specific dbm.gnu on windows
+                new_imp == "dbm.gnu" and os.name == "nt"
+                # don't test ttk on Python 2.6
+                or PY26 and old_imp == "ttk"
+            ):
+                pass
             elif sys.version_info >= ver_cutoff:
-                assert import_module(new_imp), "Failed to import " + new_imp
+                assert is_importable(new_imp), "Failed to import " + new_imp
             else:
-                assert import_module(old_imp), "Failed to import " + old_imp
+                assert is_importable(old_imp), "Failed to import " + old_imp
