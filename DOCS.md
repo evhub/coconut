@@ -1843,7 +1843,10 @@ A `MatchError` is raised when a [destructuring assignment](#destructuring-assign
 
 It is sometimes useful to be able to access Coconut built-ins from pure Python. To accomplish this, Coconut provides `coconut.__coconut__`, which behaves exactly like the `__coconut__.py` header file included when Coconut is compiled in package mode.
 
-All Coconut built-ins are accessible from `coconut.__coconut__`. The recommended way to import them is to use `from coconut.__coconut__ import` and import whatever built-ins you'll be using. For example:
+All Coconut built-ins are accessible from `coconut.__coconut__`. The recommended way to import them is to use `from coconut.__coconut__ import` and import whatever built-ins you'll be using.
+
+##### Example
+
 ```coconut_python
 from coconut.__coconut__ import parallel_map
 ```
@@ -1854,9 +1857,11 @@ It is sometimes useful to be able to use the Coconut compiler from code, instead
 
 #### `parse`
 
-**coconut.convenience.parse**(_code,_ **[**_mode_**]**)
+**coconut.convenience.parse**(**[**_code,_ **[**_mode_**]]**)
 
 Likely the most useful of the convenience functions, `parse` takes Coconut code as input and outputs the equivalent compiled Python code. The second argument, _mode_, is used to indicate the context for the parsing.
+
+If _code_ is not passed, `parse` will output just the given _mode_'s header, which can be executed to set up an execution environment in which future code can be parsed and executed without a header.
 
 Each _mode_ has two components: what parser it uses, and what header it prepends. The parser determines what Coconut code is allowed as input, and the header determines how the compiled Python can be used. Possible values of _mode_ are:
 
@@ -1893,6 +1898,15 @@ Each _mode_ has two components: what parser it uses, and what header it prepends
     + parser: debug
         * Can parse any Coconut code, allows leading whitespace, and has no trailing newline.
     + header: none
+
+##### Example
+
+```coconut_python
+from coconut.convenience import parse
+exec(parse())
+while True:
+    exec(parse(input(), mode="block"))
+```
 
 #### `setup`
 
