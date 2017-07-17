@@ -267,6 +267,37 @@ _Note: Since [tail call optimization](#tail-call-optimization) prevents proper t
 
 ## Operators
 
+In order of precedence, highest first, the operators supported in Coconut are:
+```
+================= ==========================
+Symbol(s)         Associativity
+================= ==========================
+..                n/a won't capture call
+**                right
++, -, ~           unary
+*, /, //, %, @    left
++, -              left
+<<, >>            left
+&                 left
+^                 left
+|                 left
+::                n/a lazy
+a `b` c           left captures lambda
+??                left short-circuit
+..>, <..          n/a captures lambda
+|>, <|, |*>, <*|  left captures lambda
+==, !=, <, >,
+  <=, >=,
+  in, not in,
+  is, is not      n/a
+not               unary
+and               left short-circuit
+or                left short-circuit
+a if b else c     ternary left short-circuit
+->                right
+================= ==========================
+```
+
 ### Lambdas
 
 Coconut provides the simple, clean `->` operator as an alternative to Python's `lambda` statements. The syntax for the `->` operator is `(parameters) -> expression` (or `parameter -> expression` for one-argument lambdas). The operator has the same precedence as the old statement, which means it will often be necessary to surround the lambda in parentheses, and is right-associative.
@@ -374,7 +405,7 @@ print(sq(operator.add(1, 2)))
 
 Coconut has three different function composition operators: `..`, `..>`, and `<..`. Both `..` and `<..` use math-style "backwards" function composition, where the first function is called last, while `..>` uses "forwards" function composition, where first function is called first.
 
-The `..>` and `<..` function composition pipe operators cannot be used together in the same expression (unlike normal pipes) and have precedence in-between infix calls and normal pipes.
+The `..>` and `<..` function composition pipe operators cannot be used together in the same expression (unlike normal pipes) and have precedence in-between `None`-coalescing and normal pipes.
 
 The `..` operator has lower precedence than attribute access (`.`), slicing (`[]`), etc., except for function calling, which it has higher precedence than. Thus, `a.b..c.d` is equivalent to `(a.b)..(c.d)`, while `f..g(x)` is equivalent to `(f..g)(x)`.
 
@@ -441,6 +472,24 @@ map((x)->x*2, range(10**100))$[-1] |> print
 
 **Python:**
 _Can't be done without a complicated iterator slicing function and inspection of custom objects. The necessary definitions in Python can be found in the Coconut header._
+
+### None Coalescing
+
+Coconut provides `??` as a `None`-coalescing operator, similar to the `??` null-coalescing operator in C#. The `None`-coalescing operator evaluates to its left operand if that operand is not `None`, otherwise its right operand. The `None`-coalescing operator is short-circuiting, such that if the left operand is not `None`, it will not evaluate the right operand.
+
+The `None`-coalescing operator has a precedence in-between infix function calls and composition pipes, and is left-associative. The in-place operator is `??=`.
+
+##### Example
+
+**Coconut:**
+```coconut
+could_be_none() ?? calculate_default_value()
+```
+
+**Python:**
+```coconut_python
+(lambda result: result if result is not None else calculate_default_value())(could_be_none())
+```
 
 ### Unicode Alternatives
 
@@ -949,6 +998,66 @@ def int_map(
     return list(map(f, xs))
 ```
 
+### Operator Functions
+
+Coconut uses a simple operator function short-hand: surround an operator with parentheses to retrieve its function. Similarly to iterator comprehensions, if the operator function is the only argument to a function, the parentheses of the function call can also serve as the parentheses for the operator function.
+
+##### Rationale
+
+A very common thing to do in functional programming is to make use of function versions of built-in operators: currying them, composing them, and piping them. To make this easy, Coconut provides a short-hand syntax to access operator functions.
+
+##### Full List
+
+```coconut
+(|>)        => # pipe forward
+(|*>)       => # multi-arg pipe forward
+(<|)        => # pipe backward
+(<*|)       => # multi-arg pipe backward
+(..), (<..) => # backward function composition
+(..>)       => # forward function composition
+(.)         => (getattr)
+(::)        => (itertools.chain) # will not evaluate its arguments lazily
+($)         => (functools.partial)
+(+)         => (operator.add)
+(-)         => # 1 arg: operator.neg, 2 args: operator.sub
+(*)         => (operator.mul)
+(**)        => (operator.pow)
+(/)         => (operator.truediv)
+(//)        => (operator.floordiv)
+(%)         => (operator.mod)
+(&)         => (operator.and_)
+(^)         => (operator.xor)
+(|)         => (operator.or_)
+(<<)        => (operator.lshift)
+(>>)        => (operator.rshift)
+(<)         => (operator.lt)
+(>)         => (operator.gt)
+(==)        => (operator.eq)
+(<=)        => (operator.le)
+(>=)        => (operator.ge)
+(!=)        => (operator.ne)
+(~)         => (operator.inv)
+(@)         => (operator.matmul)
+(not)       => (operator.not_)
+(and)       => # boolean and
+(or)        => # boolean or
+(is)        => (operator.is_)
+(in)        => (operator.contains)
+```
+
+##### Example
+
+**Coconut:**
+```coconut
+(range(0, 5), range(5, 10)) |*> map$(+) |> list |> print
+```
+
+**Python:**
+```coconut_python
+import operator
+print(list(map(operator.add, range(0, 5), range(5, 10))))
+```
+
 ### Set Literals
 
 Coconut allows an optional `s` to be prepended in front of Python set literals. While in most cases this does nothing, in the case of the empty set it lets Coconut know that it is an empty set and not an empty dictionary. Additionally, an `f` is also supported, in which case a Python `frozenset` will be generated instead of a normal set.
@@ -1051,66 +1160,6 @@ _Showcases tail call optimization._
 **Python:**
 _Can't be done without rewriting the function(s)._
 
-### Operator Functions
-
-Coconut uses a simple operator function short-hand: surround an operator with parentheses to retrieve its function. Similarly to iterator comprehensions, if the operator function is the only argument to a function, the parentheses of the function call can also serve as the parentheses for the operator function.
-
-##### Rationale
-
-A very common thing to do in functional programming is to make use of function versions of built-in operators: currying them, composing them, and piping them. To make this easy, Coconut provides a short-hand syntax to access operator functions.
-
-##### Full List
-
-```coconut
-(|>)        => # pipe forward
-(|*>)       => # multi-arg pipe forward
-(<|)        => # pipe backward
-(<*|)       => # multi-arg pipe backward
-(..), (<..) => # backward function composition
-(..>)       => # forward function composition
-(.)         => (getattr)
-(::)        => (itertools.chain) # will not evaluate its arguments lazily
-($)         => (functools.partial)
-(+)         => (operator.add)
-(-)         => # 1 arg: operator.neg, 2 args: operator.sub
-(*)         => (operator.mul)
-(**)        => (operator.pow)
-(/)         => (operator.truediv)
-(//)        => (operator.floordiv)
-(%)         => (operator.mod)
-(&)         => (operator.and_)
-(^)         => (operator.xor)
-(|)         => (operator.or_)
-(<<)        => (operator.lshift)
-(>>)        => (operator.rshift)
-(<)         => (operator.lt)
-(>)         => (operator.gt)
-(==)        => (operator.eq)
-(<=)        => (operator.le)
-(>=)        => (operator.ge)
-(!=)        => (operator.ne)
-(~)         => (operator.inv)
-(@)         => (operator.matmul)
-(not)       => (operator.not_)
-(and)       => # boolean and
-(or)        => # boolean or
-(is)        => (operator.is_)
-(in)        => (operator.contains)
-```
-
-##### Example
-
-**Coconut:**
-```coconut
-(range(0, 5), range(5, 10)) |*> map$(+) |> list |> print
-```
-
-**Python:**
-```coconut_python
-import operator
-print(list(map(operator.add, range(0, 5), range(5, 10))))
-```
-
 ### Assignment Functions
 
 Coconut allows for assignment function definition that automatically returns the last line of the function body. An assignment function is constructed by substituting `=` for `:` after the function definition line. Thus, the syntax for assignment function definition is either
@@ -1176,7 +1225,7 @@ _Can't be done without a long series of checks at the top of the function. See t
 
 ### Infix Functions
 
-Coconut allows for infix function calling, where an expression that evaluates to a function is surrounded by backticks and then can have arguments placed in front of or behind it. Infix calling has a precedence in-between chaining and piping, and is left-associative.
+Coconut allows for infix function calling, where an expression that evaluates to a function is surrounded by backticks and then can have arguments placed in front of or behind it. Infix calling has a precedence in-between chaining and `None`-coalescing, and is left-associative.
 
 Coconut also supports infix function definition to make defining functions that are intended for infix usage simpler. The syntax for infix function definition is
 ```coconut
@@ -1407,9 +1456,10 @@ with (open('/path/to/some/file/you/want/to/read') as file_1,
 
 **Python:**
 ```coconut_python
-with open('/path/to/some/file/you/want/to/read') as file_1, \
-     open('/path/to/some/file/being/written', 'w') as file_2:
-    file_2.write(file_1.read())
+# split into two with statements for Python 2.6 compatibility
+with open('/path/to/some/file/you/want/to/read') as file_1:
+    with open('/path/to/some/file/being/written', 'w') as file_2:
+        file_2.write(file_1.read())
 ```
 
 ## Built-Ins

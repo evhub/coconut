@@ -625,7 +625,7 @@ def minus(a, b) = b - a
 # Exception Functions
 
 def raise_exc():
-    raise Exception()
+    raise Exception("raise_exc")
 
 def does_raise_exc(func):
     try:

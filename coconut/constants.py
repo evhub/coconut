@@ -228,6 +228,9 @@ search_terms = (
     "fmap",
     "starmap",
     "case",
+    "none",
+    "coalesce",
+    "coalescing",
 )
 
 script_names = (
@@ -305,7 +308,6 @@ match_to_kwargs_var = match_to_var + "_kwargs"
 match_check_var = reserved_prefix + "_match_check"
 match_temp_var = reserved_prefix + "_match_temp"
 match_err_var = reserved_prefix + "_match_err"
-lazy_item_var = reserved_prefix + "_lazy_item"
 lazy_chain_var = reserved_prefix + "_lazy_chain"
 import_as_var = reserved_prefix + "_import"
 yield_from_var = reserved_prefix + "_yield_from"
@@ -314,6 +316,7 @@ raise_from_var = reserved_prefix + "_raise_from"
 stmt_lambda_var = reserved_prefix + "_lambda"
 tre_mock_var = reserved_prefix + "_mock_func"
 tre_store_var = reserved_prefix + "_recursive_func"
+none_coalesce_var = reserved_prefix + "_none_coalesce_item"
 
 wildcard = "_"  # for pattern-matching
 
@@ -518,6 +521,7 @@ new_operators = (
     r"\|\*>",
     r"<\*\|",
     r"->",
+    r"\?\?",
     "\u2192",  # ->
     "\\*?\u21a6",  # |>
     "\u21a4\\*?",  # <|

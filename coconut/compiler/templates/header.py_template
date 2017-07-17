@@ -49,6 +49,7 @@ def _coconut_back_pipe(f, x): return f(x)
 def _coconut_back_star_pipe(f, xs): return f(*xs)
 def _coconut_bool_and(a, b): return a and b
 def _coconut_bool_or(a, b): return a or b
+def _coconut_none_coalesce(a, b): return a if a is not None else b
 def _coconut_minus(a, *rest):
     if not rest:
         return -a

@@ -67,7 +67,7 @@ from coconut.constants import (
     decorator_var,
     match_to_var,
     match_check_var,
-    lazy_item_var,
+    none_coalesce_var,
 )
 from coconut.compiler.matching import Matcher
 from coconut.compiler.util import (
@@ -283,6 +283,18 @@ def comp_pipe_handle(loc, tokens):
         return "_coconut_compose(" + ", ".join(funcs) + ")"
 
 
+def none_coalesce_handle(tokens):
+    """Processes the None-coalescing operator."""
+    if len(tokens) == 1:
+        return tokens[0]
+    else:
+        return "(lambda {x}: {b} if {x} is None else {x})({a})".format(
+            x=none_coalesce_var,
+            a=tokens[0],
+            b=none_coalesce_handle(tokens[1:]),
+        )
+
+
 def attr_handle(loc, tokens):
     """Processes attrgetter literals."""
     if len(tokens) == 1:
@@ -305,7 +317,7 @@ def lazy_list_handle(tokens):
     if len(tokens) == 0:
         return "_coconut.iter(())"
     else:
-        return ("(" + lazy_item_var + "() for " + lazy_item_var + " in ("
+        return ("(f() for f in ("
                 + "lambda: " + ", lambda: ".join(tokens) + ("," if len(tokens) == 1 else "") + "))")
 
 
@@ -628,7 +640,8 @@ class Grammar(object):
     unsafe_backtick = Literal("`")
     dubbackslash = Literal("\\\\")
     backslash = ~dubbackslash + Literal("\\")
-    questionmark = Literal("?")
+    dubquestion = Literal("??")
+    questionmark = ~dubquestion + Literal("?")
 
     lt = ~Literal("<<") + ~Literal("<=") + ~Literal("<..") + Literal("<")
     gt = ~Literal(">>") + ~Literal(">=") + Literal(">")
@@ -733,6 +746,7 @@ class Grammar(object):
         | Combine(lshift + equals)
         | Combine(rshift + equals)
         | Combine(matrix_at + equals)
+        | Combine(dubquestion + equals)
     )
 
     comp_op = (le | ge | ne | lt | gt | eq
@@ -780,6 +794,7 @@ class Grammar(object):
         | fixto(comp_pipe, "_coconut_compose")
         | fixto(Keyword("and"), "_coconut_bool_and")
         | fixto(Keyword("or"), "_coconut_bool_or")
+        | fixto(dubquestion, "_coconut_none_coalesce")
         | fixto(minus, "_coconut_minus")
         | fixto(dot, "_coconut.getattr")
         | fixto(unsafe_dubcolon, "_coconut.itertools.chain")
@@ -1015,13 +1030,15 @@ class Grammar(object):
             ), infix_handle)
     )
 
+    none_coalesce_expr = attach(infix_expr + ZeroOrMore(dubquestion.suppress() + infix_expr), none_coalesce_handle)
+
     lambdef = Forward()
 
     comp_pipe_op = comp_pipe | comp_back_pipe
     comp_pipe_expr = (
-        infix_expr + ~comp_pipe_op
-        | attach(OneOrMore(infix_expr + comp_pipe_op)
-                 + (lambdef | infix_expr), comp_pipe_handle)
+        none_coalesce_expr + ~comp_pipe_op
+        | attach(OneOrMore(none_coalesce_expr + comp_pipe_op)
+                 + (lambdef | none_coalesce_expr), comp_pipe_handle)
     )
 
     pipe_op = pipe | star_pipe | back_pipe | back_star_pipe

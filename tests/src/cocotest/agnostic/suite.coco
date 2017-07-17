@@ -383,6 +383,13 @@ def suite_test():
     ):
         assert one == 1
         assert two == 2
+    assert 1 ?? raise_exc() == 1
+    try:
+        assert None ?? raise_exc()
+    except Exception as err:
+        assert str(err) == "raise_exc"
+    else:
+        assert False
     return True
 
 def tco_test():

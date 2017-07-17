@@ -369,6 +369,26 @@ def main_test():
     assert s.read() == "derp"
     b = BytesIO(b"herp")
     assert b.read() == b"herp"
+    assert 1 ?? 2 == 1 == (??)(1, 2)
+    assert None ?? 2 == 2 == (??)(None, 2)
+    timeout = None
+    local_timeout = 60
+    global_timeout = 300
+    assert timeout ?? local_timeout ?? global_timeout == 60
+    local_timeout = None
+    assert timeout ?? local_timeout ?? global_timeout == 300
+    timeout ??= 10
+    assert timeout == 10
+    global_timeout ??= 10
+    assert global_timeout == 300
+    assert (not None ?? True) is False
+    assert 1 == None ?? 1
+    assert 'foo' in None ?? ['foo', 'bar']
+    assert 3 == 1 + (None ?? 2)
+    requested_quantity = 0
+    default_quantity = 1
+    price = 100
+    assert 0 == (requested_quantity ?? default_quantity) * price
     return True
 
 def tco_func() = tco_func()

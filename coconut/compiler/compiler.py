@@ -1093,12 +1093,15 @@ class Compiler(Grammar):
                 out += name + " = " + name + "((" + item + "))"
             elif op == "<*|=":
                 out += name + " = " + name + "(*(" + item + "))"
-            elif op == "..=":
+            elif op == "..=":  # also <..=
                 out += name + " = _coconut_compose((" + item + "), " + name + ")"
             elif op == "..>=":
                 out += name + " = _coconut_compose(" + name + ", (" + item + "))"
+            elif op == "??=":
+                out += name + " = " + item + " if " + name + " is None else " + name
             elif op == "::=":
-                ichain_var = lazy_chain_var + "_" + str(self.ichain_count)  # necessary to prevent a segfault caused by self-reference
+                # this is necessary to prevent a segfault caused by self-reference
+                ichain_var = lazy_chain_var + "_" + str(self.ichain_count)
                 out += ichain_var + " = " + name + "\n"
                 out += name + " = _coconut.itertools.chain.from_iterable(" + lazy_list_handle([ichain_var, "(" + item + ")"]) + ")"
                 self.ichain_count += 1
