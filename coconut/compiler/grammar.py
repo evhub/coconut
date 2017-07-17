@@ -287,6 +287,11 @@ def none_coalesce_handle(tokens):
     """Processes the None-coalescing operator."""
     if len(tokens) == 1:
         return tokens[0]
+    elif tokens[0].isalnum():
+        return "{b} if {a} is None else {a}".format(
+            a=tokens[0],
+            b=none_coalesce_handle(tokens[1:]),
+        )
     else:
         return "(lambda {x}: {b} if {x} is None else {x})({a})".format(
             x=none_coalesce_var,

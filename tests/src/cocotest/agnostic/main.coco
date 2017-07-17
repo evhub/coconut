@@ -374,9 +374,14 @@ def main_test():
     timeout = None
     local_timeout = 60
     global_timeout = 300
+    def ret_timeout() = timeout
+    def ret_local_timeout() = local_timeout
+    def ret_global_timeout() = global_timeout
     assert timeout ?? local_timeout ?? global_timeout == 60
+    assert ret_timeout() ?? ret_local_timeout() ?? ret_global_timeout() == 60
     local_timeout = None
     assert timeout ?? local_timeout ?? global_timeout == 300
+    assert ret_timeout() ?? ret_local_timeout() ?? ret_global_timeout() == 300
     timeout ??= 10
     assert timeout == 10
     global_timeout ??= 10
