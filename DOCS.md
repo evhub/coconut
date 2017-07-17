@@ -26,6 +26,8 @@ pip install coconut
 ```
 which will install Coconut and its required dependencies.
 
+_Note: If you have an old version of Coconut installed and you want to upgrade, run `pip install --upgrade coconut` instead._
+
 Coconut also has optional dependencies, which can be installed by entering
 ```
 pip install coconut[name_of_optional_dependency]
