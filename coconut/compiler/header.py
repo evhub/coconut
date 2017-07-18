@@ -29,7 +29,7 @@ from coconut.constants import (
     template_ext,
     justify_len,
 )
-from coconut.exceptions import CoconutInternalException
+from coconut.exceptions import internal_assert
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -57,8 +57,7 @@ def minify(compiled):
                 while line.startswith(" "):
                     line = line[1:]
                     ind += 1
-                if ind % tabideal != 0:
-                    raise CoconutInternalException("invalid indentation in", line)
+                internal_assert(ind % tabideal == 0, "invalid indentation in", line)
                 out.append(" " * (ind // tabideal) + line)
         compiled = "\n".join(out) + "\n"
     return compiled
@@ -177,8 +176,7 @@ allowed_headers = ("none", "initial", "__coconut__", "package", "sys", "code", "
 
 def getheader(which, target="", use_hash=None, no_tco=False):
     """Generates the specified header."""
-    if which not in allowed_headers:
-        raise CoconutInternalException("invalid header type", which)
+    internal_assert(which in allowed_headers, "invalid header type", which)
 
     if which == "none":
         return ""

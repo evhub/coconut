@@ -495,8 +495,7 @@ def subscriptgroup_handle(tokens):
     """Processes subscriptgroups."""
     if 0 < len(tokens) <= 3:
         args = []
-        for x in range(len(tokens)):
-            arg = tokens[x]
+        for arg in tokens:
             if not arg:
                 arg = "None"
             args.append(arg)

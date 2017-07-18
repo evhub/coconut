@@ -39,7 +39,10 @@ from coconut.constants import (
     closeindent,
     default_whitespace_chars,
 )
-from coconut.exceptions import CoconutInternalException
+from coconut.exceptions import (
+    CoconutInternalException,
+    internal_assert,
+)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
@@ -56,13 +59,11 @@ skip_whitespace = SkipTo(CharsNotIn(default_whitespace_chars)).suppress()
 
 def longest(*args):
     """Match the longest of the given grammar elements."""
-    if len(args) < 2:
-        raise CoconutInternalException("longest expected at least two args")
-    else:
-        matcher = args[0] + skip_whitespace
-        for elem in args[1:]:
-            matcher ^= elem + skip_whitespace
-        return matcher
+    internal_assert(len(args) >= 2, "longest expected at least two args")
+    matcher = args[0] + skip_whitespace
+    for elem in args[1:]:
+        matcher ^= elem + skip_whitespace
+    return matcher
 
 
 def addskip(skips, skip):
@@ -214,8 +215,7 @@ def transform(grammar, text):
     results = []
     intervals = []
     for tokens, start, stop in grammar.parseWithTabs().scanString(text):
-        if len(tokens) != 1:
-            raise CoconutInternalException("invalid transform result tokens", tokens)
+        internal_assert(len(tokens) == 1, "invalid transform result tokens", tokens)
         if tokens[0] is not ignore_transform:
             results.append(tokens[0])
             intervals.append((start, stop))
@@ -260,7 +260,7 @@ def disable_inside(item, *elems, **kwargs):
     """Prevent elems from matching inside of item.
     Returns (item with elem disabled, *new versions of elems)."""
     _invert = kwargs.get("_invert", False)
-    assert set(kwargs.keys()) <= set(("_invert",))
+    internal_assert(set(kwargs.keys()) <= set(("_invert",)), "excess keyword arguments passed to disable_inside")
 
     level = [0]  # number of wrapped items deep we are; in a list to allow modification
 

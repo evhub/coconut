@@ -59,11 +59,12 @@ from coconut.constants import (
     documentation_url,
     reserved_vars,
     num_added_tb_layers,
+    minimum_recursion_limit,
 )
 from coconut.exceptions import (
     CoconutException,
-    CoconutInternalException,
     get_encoding,
+    internal_assert,
 )
 from coconut.terminal import logger
 
@@ -219,23 +220,21 @@ def run_cmd(cmd, show_output=True, raise_errs=True, **kwargs):
     """Runs a console command.
     When show_output=True, prints output and returns exit code, otherwise returns output.
     When raise_errs=True, raises an error if command fails."""
-    if not cmd or not isinstance(cmd, list):
-        raise CoconutInternalException("console commands must be passed as non-empty lists")
+    internal_assert(cmd and isinstance(cmd, list), "console commands must be passed as non-empty lists")
+    try:
+        from shutil import which
+    except ImportError:
+        pass
     else:
-        try:
-            from shutil import which
-        except ImportError:
-            pass
-        else:
-            cmd[0] = which(cmd[0]) or cmd[0]
-        logger.log_cmd(cmd)
-        if show_output and raise_errs:
-            return subprocess.check_call(cmd, **kwargs)
-        elif show_output:
-            return subprocess.call(cmd, **kwargs)
-        else:
-            stdout, stderr, _ = call_output(cmd, **kwargs)
-            return "".join(stdout + stderr)
+        cmd[0] = which(cmd[0]) or cmd[0]
+    logger.log_cmd(cmd)
+    if show_output and raise_errs:
+        return subprocess.check_call(cmd, **kwargs)
+    elif show_output:
+        return subprocess.call(cmd, **kwargs)
+    else:
+        stdout, stderr, _ = call_output(cmd, **kwargs)
+        return "".join(stdout + stderr)
 
 
 def set_mypy_path(mypy_path):
@@ -263,6 +262,14 @@ def stdin_readable():
     if not sys.stdout.isatty():
         return False
     return True
+
+
+def set_recursion_limit(limit):
+    """Sets the Python recursion limit."""
+    if limit < minimum_recursion_limit:
+        raise CoconutException("--recursion-limit must be at least " + str(minimum_recursion_limit))
+    else:
+        sys.setrecursionlimit(limit)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -308,8 +315,7 @@ class Prompt(object):
         else:
             msg = main_prompt
         if self.style is not None:
-            if prompt_toolkit is None:
-                raise CoconutInternalException("cannot highlight style without prompt_toolkit", self.style)
+            internal_assert(prompt_toolkit is not None, "cannot highlight style without prompt_toolkit", self.style)
             try:
                 return prompt_toolkit.prompt(msg, **self.prompt_kwargs())
             except EOFError:
@@ -379,7 +385,7 @@ class Runner(object):
             self.exit(err.code)
         except BaseException:
             etype, value, tb = sys.exc_info()
-            for i in range(num_added_tb_layers):
+            for _ in range(num_added_tb_layers):
                 if tb is None:
                     break
                 tb = tb.tb_next

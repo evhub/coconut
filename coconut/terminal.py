@@ -41,6 +41,7 @@ from coconut.exceptions import (
     CoconutInternalException,
     CoconutException,
     debug_clean,
+    internal_assert,
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -194,10 +195,8 @@ class Logger(object):
 
     def show_tabulated(self, begin, middle, end):
         """Shows a tabulated message."""
-        if len(begin) < info_tabulation:
-            self.show(begin + " " * (info_tabulation - len(begin)) + middle + " " + end)
-        else:
-            raise CoconutInternalException("info message too long", begin)
+        internal_assert(len(begin) < info_tabulation, "info message too long", begin)
+        self.show(begin + " " * (info_tabulation - len(begin)) + middle + " " + end)
 
     def log_tag(self, tag, code, multiline=False):
         """Logs a tagged message if tracing."""

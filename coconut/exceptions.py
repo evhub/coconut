@@ -59,6 +59,19 @@ def debug_clean(inputline, strip=True):
     return clean(inputline, strip, False, "backslashreplace")
 
 
+def internal_assert(condition, message=None, item=None, extra=None):
+    """Raise InternalException if condition is False.
+    If condition is a function, execute it on DEVELOP only."""
+    if DEVELOP and callable(condition):
+        condition = condition()
+    if message is None:
+        message = "assertion failed"
+        if item is None:
+            item = condition
+    if not condition:
+        raise CoconutInternalException(message, item, extra)
+
+
 #-----------------------------------------------------------------------------------------------------------------------
 # EXCEPTIONS:
 #----------------------------------------------------------------------------------------------------------------------

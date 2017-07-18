@@ -42,7 +42,6 @@ from coconut.constants import (
     watch_interval,
     icoconut_kernel_names,
     icoconut_kernel_dirs,
-    minimum_recursion_limit,
     stub_dir,
     exit_chars,
     coconut_run_args,
@@ -65,6 +64,7 @@ from coconut.command.util import (
     launch_documentation,
     launch_tutorial,
     stdin_readable,
+    set_recursion_limit,
 )
 from coconut.compiler.util import should_indent
 from coconut.compiler.header import gethash
@@ -134,13 +134,6 @@ class Command(object):
                 kill_children()
             sys.exit(self.exit_code)
 
-    def set_recursion_limit(self, limit):
-        """Sets the Python recursion limit."""
-        if limit < minimum_recursion_limit:
-            raise CoconutException("--recursion-limit must be at least " + str(minimum_recursion_limit))
-        else:
-            sys.setrecursionlimit(limit)
-
     def use_args(self, args, interact=True, original_args=None):
         """Handles command-line arguments."""
         logger.quiet, logger.verbose = args.quiet, args.verbose
@@ -153,7 +146,7 @@ class Command(object):
         logger.log("Parsed args:", args)
 
         if args.recursion_limit is not None:
-            self.set_recursion_limit(args.recursion_limit)
+            set_recursion_limit(args.recursion_limit)
         if args.jobs is not None:
             self.set_jobs(args.jobs)
         if args.display:
