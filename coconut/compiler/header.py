@@ -27,6 +27,7 @@ from coconut.constants import (
     tabideal,
     default_encoding,
     template_ext,
+    justify_len,
 )
 from coconut.exceptions import CoconutInternalException
 
@@ -77,7 +78,7 @@ def one_num_ver(target):
     return target[:1]  # "2", "3", or ""
 
 
-def section(name, justify_len=80):
+def section(name):
     """Generate a section break."""
     line = "# " + name + ": "
     return line + "-" * (justify_len - len(line)) + "\n\n"
@@ -109,7 +110,6 @@ def process_header_args(which, target, use_hash, no_tco):
         typing_line="# type: ignore\n" if which == "__coconut__" else "",
         VERSION_STR=VERSION_STR,
         module_docstring='"""Built-in Coconut utilities."""\n\n' if which == "__coconut__" else "",
-        comma_tco=", _coconut_tail_call, _coconut_tco" if not no_tco else "",
         object="(object)" if target_startswith != "3" else "",
         import_pickle=(
             r'''if _coconut_sys.version_info < (3,):
@@ -139,6 +139,7 @@ def process_header_args(which, target, use_hash, no_tco):
             else '''with ThreadPoolExecutor()'''),
         tco_decorator="@_coconut_tco\n" + " " * 8 if not no_tco else "",
         tail_call_func_args_kwargs="func(*args, **kwargs)" if no_tco else "_coconut_tail_call(func, *args, **kwargs)",
+        comma_tco=", _coconut_tail_call, _coconut_tco" if not no_tco else "",
     )
     format_dict["underscore_imports"] = "_coconut, _coconut_MatchError{comma_tco}, _coconut_igetitem, _coconut_compose, _coconut_back_compose, _coconut_pipe, _coconut_star_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial".format(**format_dict)
     # ._coconut_tco_func is used in main.coco, so don't remove it

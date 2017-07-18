@@ -18,6 +18,8 @@ Contributing to Coconut is as simple as
 2. making changes to the [`develop` branch](https://github.com/evhub/coconut/tree/develop), and
 3. proposing a pull request.
 
+_Note: Don't forget to add yourself to the "Authors:" section in the docstrings of any files you modify!_
+
 ## Contributor Friendly Issues
 
 Want to help out, but don't know what to work on? Head over to Coconut's [open issues](https://github.com/evhub/coconut/issues) and look for ones labeled "contributor friendly." Contributor friendly issues are those that require less intimate knowledge of Coconut's inner workings, and are thus possible for new contributors to work on.
