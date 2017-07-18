@@ -248,6 +248,9 @@ data Elems(elems):
     def __new__(cls, *elems) =
         elems |> datamaker(cls)
 data vector_with_id(x, y, i) from vector  # type: ignore
+data vector2(x=0, y=0):
+    def __abs__(self):
+        return (self.x**2 + self.y**2)**.5
 
 # Factorial:
 def factorial1(value):
@@ -738,13 +741,17 @@ class Vars:
                 else:
                     del globs[name]
 
-# Starred Data
+# Complex Data
 
 data Tuple(*elems)
 
 data Pred(name, *args)
-
 data Quant(name, var, *args)
+
+data Point(x=0, y=0)
+data RadialVector(mag, angle=0)
+
+data ABC(a, b=1, *c)
 
 # Type-Checking Tests
 

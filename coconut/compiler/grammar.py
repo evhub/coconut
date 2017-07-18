@@ -1333,7 +1333,10 @@ class Grammar(object):
 
     datadef = Forward()
     data_args = Group(Optional(lparen.suppress() + Optional(
-        tokenlist(condense(Optional(star) + name), comma)
+        tokenlist(condense(
+            name + Optional(default)
+            | star + name
+        ), comma)
     ) + rparen.suppress())) + Optional(Keyword("from").suppress() + testlist)
     data_suite = Group(colon.suppress() - (
         (newline.suppress() + indent.suppress() + Optional(docstring) + Group(OneOrMore(stmt)) + dedent.suppress())("complex")

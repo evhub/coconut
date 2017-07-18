@@ -538,7 +538,9 @@ Coconut data statement syntax looks like:
 data <name>(<args>) [from <inherits>]:
     <body>
 ```
-`<name>` is the name of the new data type, `<args>` are the arguments to its constructor as well as the names of its attributes, `<body>` contains the data type's methods, and `<inherits>` optionally contains any desired base classes. Coconut also supports an extended version where `<args>` can contain a starred argument to collect extra parameters.
+`<name>` is the name of the new data type, `<args>` are the arguments to its constructor as well as the names of its attributes, `<body>` contains the data type's methods, and `<inherits>` optionally contains any desired base classes.
+
+Coconut allows data fields in `<args>` to have defaults attached to them, and supports a starred parameter at the end to collect extra arguments.
 
 Writing constructors for `data` types must be done using the `__new__` method instead of the `__init__` method. For helping to easily write `__new__` methods, Coconut provides the [datamaker](#datamaker) built-in.
 
@@ -564,7 +566,7 @@ Named tuple instances do not have per-instance dictionaries, so they are lightwe
 
 **Coconut:**
 ```coconut
-data vector2(x, y):
+data vector2(x=0, y=0):
     def __abs__(self):
         return (self.x**2 + self.y**2)**.5
 
@@ -572,8 +574,9 @@ v = vector2(3, 4)
 v |> print  # all data types come with a built-in __repr__
 v |> abs |> print
 v.x = 2  # this will fail because data objects are immutable
+vector2() |> print
 ```
-_Showcases the syntax, features, and immutable nature of `data` types._
+_Showcases the syntax, features, and immutable nature of `data` types, as well as the use of default arguments._
 ```coconut
 data Empty()
 data Leaf(n)
@@ -613,8 +616,10 @@ _Showcases starred `data` declaration._
 **Python:**
 ```coconut_python
 import collections
-class vector2(collections.namedtuple("vector2", "x, y")):
+class vector2(collections.namedtuple("vector2", "x, y"), object):
     __slots__ = ()
+    def __new__(cls, x=0, y=0):
+        return super(vector2, cls).__new__((x, y))
     def __abs__(self):
         return (self.x**2 + self.y**2)**.5
 
@@ -625,11 +630,11 @@ v.x = 2
 ```
 ```coconut_python
 import collections
-class Empty(collections.namedtuple("Empty", "")):
+class Empty(collections.namedtuple("Empty", ""), object):
     __slots__ = ()
-class Leaf(collections.namedtuple("Leaf", "n")):
+class Leaf(collections.namedtuple("Leaf", "n"), object):
     __slots__ = ()
-class Node(collections.namedtuple("Node", "l, r")):
+class Node(collections.namedtuple("Node", "l, r"), object):
     __slots__ = ()
 
 def size(tree):
@@ -1393,11 +1398,11 @@ data Node(left, right)
 **Python:**
 ```coconut_python
 import collections
-class Empty(collections.namedtuple("Empty", "")):
+class Empty(collections.namedtuple("Empty", ""), object):
     __slots__ = ()
-class Leaf(collections.namedtuple("Leaf", "n")):
+class Leaf(collections.namedtuple("Leaf", "n"), object):
     __slots__ = ()
-class Node(collections.namedtuple("Node", "l, r")):
+class Node(collections.namedtuple("Node", "l, r"), object):
     __slots__ = ()
 ```
 
@@ -1730,7 +1735,7 @@ data Tuple(elems):
 **Python:**
 ```coconut_python
 import collections
-class Tuple(collections.namedtuple("Tuple", "elems")):
+class Tuple(collections.namedtuple("Tuple", "elems"), object):
     __slots__ = ()
     def __new__(cls, *elems):
         return super(cls, cls).__new__(cls, elems)
@@ -1762,9 +1767,9 @@ Nothing() |> fmap$(x -> x*2) == Nothing()
 list(map(lambda x: x+1, [1, 2, 3])) == [2, 3, 4]
 
 import collections
-class Nothing(collections.namedtuple("Nothing", "")):
+class Nothing(collections.namedtuple("Nothing", ""), object):
     __slots__ = ()
-class Just(collections.namedtuple("Just", "n")):
+class Just(collections.namedtuple("Just", "n"), object):
     __slots__ = ()
 
 Just(*map(lambda x: x*2, Just(3))) == Just(6)

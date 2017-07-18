@@ -390,6 +390,59 @@ def suite_test():
         assert str(err) == "raise_exc"
     else:
         assert False
+    p = Point()
+    assert p.x == 0 == p.y
+    assert repr(p) == "Point(x=0, y=0)"
+    p = Point(1)
+    assert p.x == 1
+    assert p.y == 0
+    assert repr(p) == "Point(x=1, y=0)"
+    p = Point(2, 3)
+    assert p.x == 2
+    assert p.y == 3
+    assert repr(p) == "Point(x=2, y=3)"
+    try:
+        RadialVector()
+    except TypeError:
+        pass
+    else:
+        assert False
+    rv = RadialVector(1)
+    assert rv.mag == 1
+    assert rv.angle == 0
+    assert repr(rv) == "RadialVector(mag=1, angle=0)"
+    try:
+        ABC()
+    except TypeError:
+        pass
+    else:
+        assert False
+    abc = ABC(2)
+    assert abc.a == 2
+    assert abc.b == 1
+    assert abc.c == ()
+    assert repr(abc) == "ABC(a=2, b=1, *c=())"
+    abc = ABC(3, 4, 5)
+    assert abc.a == 3
+    assert abc.b == 4
+    assert abc.c == (5,)
+    assert repr(abc) == "ABC(a=3, b=4, *c=(5,))"
+    abc = ABC(5, 6, 7, 8)
+    assert abc.a == 5
+    assert abc.b == 6
+    assert abc.c == (7, 8)
+    assert repr(abc) == "ABC(a=5, b=6, *c=(7, 8))"
+    v = vector2(3, 4)
+    assert repr(v) == "vector2(x=3, y=4)"
+    assert abs(v) == 5
+    try:
+        v.x = 2
+    except AttributeError:
+        pass
+    else:
+        assert False
+    v = vector2()
+    assert repr(v) == "vector2(x=0, y=0)"
     return True
 
 def tco_test():

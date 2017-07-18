@@ -1140,7 +1140,11 @@ class Compiler(Grammar):
             name, args, inherit, stmts = tokens
         else:
             raise CoconutInternalException("invalid data tokens", tokens)
-        base_args, starred_arg = [], None
+
+        base_args = []  # names of all the non-starred args
+        req_args = 0  # number of required arguments
+        starred_arg = None  # starred arg if there is one else None
+        saw_defaults = False  # whether there have been any default args so far
         for i, arg in enumerate(args):
             if arg.startswith("_"):
                 raise CoconutDeferredSyntaxError("data fields cannot start with an underscore", loc)
@@ -1149,7 +1153,15 @@ class Compiler(Grammar):
                     raise CoconutDeferredSyntaxError("starred data field must come last", loc)
                 starred_arg = arg[1:]
             else:
+                if "=" in arg:
+                    arg = arg.split("=", 1)[0]
+                    saw_defaults = True
+                elif saw_defaults:
+                    raise CoconutDeferredSyntaxError("data fields with defaults must come after data fields without", loc)
+                else:
+                    req_args += 1
                 base_args.append(arg)
+
         attr_str = " ".join(base_args)
         extra_stmts = (
             '__slots__ = ()\n'
@@ -1163,8 +1175,8 @@ class Compiler(Grammar):
                 {cind}@_coconut.classmethod
                 def _make(cls, iterable, {kwd_only}new=_coconut.tuple.__new__, len=_coconut.len):
                     {oind}result = new(cls, iterable)
-                    if len(result) < {num_base_args}:
-                        {oind}raise _coconut.TypeError("Expected at least 2 arguments, got %d" % len(result))
+                    if len(result) < {req_args}:
+                        {oind}raise _coconut.TypeError("Expected at least {req_args} argument(s), got %d" % len(result))
                     {cind}return result
                 {cind}def _asdict(self):
                     {oind}return _coconut.OrderedDict((f, _coconut.getattr(self, f)) for f in self._fields)
@@ -1182,9 +1194,10 @@ class Compiler(Grammar):
                     oind=openindent,
                     cind=closeindent,
                     name=name,
-                    args_for_repr=", ".join(arg + "={" + arg.lstrip("*") + "!r}" for arg in args),
+                    args_for_repr=", ".join(arg + "={" + arg.lstrip("*") + "!r}" for arg in base_args + ["*" + starred_arg]),
                     starred_arg=starred_arg,
                     all_args=", ".join(args),
+                    req_args=req_args,
                     num_base_args=str(len(base_args)),
                     base_args_tuple="(" + ", ".join(base_args) + ("," if len(base_args) == 1 else "") + ")",
                     quoted_base_args_tuple='("' + '", "'.join(base_args) + '"' + ("," if len(base_args) == 1 else "") + ")",
@@ -1215,6 +1228,16 @@ class Compiler(Grammar):
                     arg=starred_arg,
                     kwd_only=("*, " if self.target.startswith("3") else ""),
                 )
+        elif saw_defaults:
+            extra_stmts += '''def __new__(_cls, {all_args}):
+                {oind}return _coconut.tuple.__new__(_cls, {args_tuple})
+            {cind}'''.format(
+                oind=openindent,
+                cind=closeindent,
+                all_args=", ".join(args),
+                args_tuple="(" + ", ".join(base_args) + ("," if len(base_args) == 1 else "") + ")",
+            )
+
         out = (
             "class " + name + "("
             '_coconut.collections.namedtuple("' + name + '", "' + attr_str + '")'
