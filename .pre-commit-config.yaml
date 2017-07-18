@@ -19,6 +19,7 @@
         - --in-place
         - --aggressive
         - --aggressive
+        - --experimental
         - --ignore=W503,E501,E722
     -   id: flake8
         args:
