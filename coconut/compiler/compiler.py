@@ -750,22 +750,20 @@ class Compiler(Grammar):
         self.skips = skips
         return "".join(out)
 
-    def leading(self, inputstring):
+    def leading_whitespace(self, inputstring):
         """Counts leading whitespace."""
         count = 0
-        for x in range(len(inputstring)):
-            if inputstring[x] == " ":
-                if self.indchar is None:
-                    self.indchar = " "
+        for i, c in enumerate(inputstring):
+            if c == " ":
                 count += 1
-            elif inputstring[x] == "\t":
-                if self.indchar is None:
-                    self.indchar = "\t"
-                count += tabworth - (x % tabworth)
+            elif c == "\t":
+                count += tabworth - (i % tabworth)
             else:
                 break
-            if self.indchar != inputstring[x]:
-                self.strict_err_or_warn("found mixing of tabs and spaces", inputstring, x)
+            if self.indchar is None:
+                self.indchar = c
+            elif c != self.indchar:
+                self.strict_err_or_warn("found mixing of tabs and spaces", inputstring, i)
         return count
 
     def ind_proc(self, inputstring, **kwargs):
@@ -800,7 +798,7 @@ class Compiler(Grammar):
                 skips = addskip(skips, self.adjust(ln))
                 new[-1] = last + " " + line
             else:
-                check = self.leading(line)
+                check = self.leading_whitespace(line)
                 if current is None:
                     if check:
                         raise self.make_err(CoconutSyntaxError, "illegal initial indent", line, 0, self.adjust(ln))
@@ -823,7 +821,7 @@ class Compiler(Grammar):
             if count > len(opens):
                 raise self.make_err(CoconutSyntaxError, "unmatched close parenthesis", new[-1], 0, self.adjust(len(new)))
             elif count > 0:  # closes > opens
-                for i in range(count):
+                for _ in range(count):
                     opens.pop()
             elif count < 0:  # opens > closes
                 opens += [(new[-1], self.adjust(len(new)))] * (-count)

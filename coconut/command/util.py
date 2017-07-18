@@ -32,9 +32,10 @@ if PY26:
 else:
     import runpy
 try:
-    import readline  # improves built-in input
+    # just importing readline improves built-in input()
+    import readline  # NOQA
 except ImportError:
-    readline = None
+    pass
 
 try:
     import prompt_toolkit
@@ -344,12 +345,8 @@ class Runner(object):
             self.run(comp.getheader("code"), store=False)
             self.fix_pickle()
 
-    def store(self, line):
-        """Stores a line."""
-        if self.stored is not None:
-            self.stored.append(line)
-
-    def build_vars(self, path=None):
+    @staticmethod
+    def build_vars(path=None):
         """Builds initial vars."""
         init_vars = {
             "__name__": "__main__",
@@ -360,6 +357,11 @@ class Runner(object):
         if path is not None:
             init_vars["__file__"] = fixpath(path)
         return init_vars
+
+    def store(self, line):
+        """Stores a line."""
+        if self.stored is not None:
+            self.stored.append(line)
 
     def fix_pickle(self):
         """Fixes pickling of Coconut header objects."""

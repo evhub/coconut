@@ -216,8 +216,8 @@ class Matcher(object):
 
     def match_all_in(self, matches, item):
         """Matches all matches to elements of item."""
-        for x in range(len(matches)):
-            self.match(matches[x], item + "[" + str(x) + "]")
+        for i, match in enumerate(matches):
+            self.match(match, item + "[" + str(i) + "]")
 
     def check_len_in(self, min_len, max_len, item):
         """Checks that the length of item is in range(min_len, max_len+1)."""
@@ -231,7 +231,7 @@ class Matcher(object):
         else:
             self.add_check(str(min_len) + " <= _coconut.len(" + item + ") <= " + str(max_len))
 
-    def match_function(self, args, kwargs, match_args=[], star_arg=None, kwd_args=[], dubstar_arg=None):
+    def match_function(self, args, kwargs, match_args=(), star_arg=None, kwd_args=(), dubstar_arg=None):
         """Matches a pattern-matching function."""
         self.match_in_args_kwargs(match_args, args, kwargs, allow_star_args=star_arg is not None)
         if star_arg is not None:
@@ -248,28 +248,28 @@ class Matcher(object):
         req_len = 0
         arg_checks = {}
         to_match = []  # [(increment, match, against)]
-        for x in range(len(match_args)):
-            if isinstance(match_args[x], tuple):
-                (match, default) = match_args[x]
+        for i, arg in enumerate(match_args):
+            if isinstance(arg, tuple):
+                (match, default) = arg
             else:
-                match, default = match_args[x], None
+                match, default = arg, None
             names = get_match_names(match)
             if default is None:
                 if not names:
-                    req_len = x + 1
-                    to_match.append((False, match, args + "[" + str(x) + "]"))
+                    req_len = i + 1
+                    to_match.append((False, match, args + "[" + str(i) + "]"))
                 else:
-                    arg_checks[x] = (
-                        # if x < req_len
+                    arg_checks[i] = (
+                        # if i < req_len
                         " and ".join('"' + name + '" not in ' + kwargs for name in names),
-                        # if x >= req_len
-                        "_coconut.sum((_coconut.len(" + args + ") > " + str(x) + ", "
+                        # if i >= req_len
+                        "_coconut.sum((_coconut.len(" + args + ") > " + str(i) + ", "
                         + ", ".join('"' + name + '" in ' + kwargs for name in names)
                         + ")) == 1",
                     )
                     tempvar = self.get_temp_var()
                     self.add_def(tempvar + " = "
-                                 + args + "[" + str(x) + "] if _coconut.len(" + args + ") > " + str(x) + " else "
+                                 + args + "[" + str(i) + "] if _coconut.len(" + args + ") > " + str(i) + " else "
                                  + "".join(kwargs + '.pop("' + name + '") if "' + name + '" in ' + kwargs + " else "
                                            for name in names[:-1])
                                  + kwargs + '.pop("' + names[-1] + '")'
@@ -278,20 +278,20 @@ class Matcher(object):
             else:
                 if not names:
                     tempvar = self.get_temp_var()
-                    self.add_def(tempvar + " = " + args + "[" + str(x) + "] if _coconut.len(" + args + ") > " + str(x) + " else " + default)
+                    self.add_def(tempvar + " = " + args + "[" + str(i) + "] if _coconut.len(" + args + ") > " + str(i) + " else " + default)
                     to_match.append((True, match, tempvar))
                 else:
-                    arg_checks[x] = (
-                        # if x < req_len
+                    arg_checks[i] = (
+                        # if i < req_len
                         None,
-                        # if x >= req_len
-                        "_coconut.sum((_coconut.len(" + args + ") > " + str(x) + ", "
+                        # if i >= req_len
+                        "_coconut.sum((_coconut.len(" + args + ") > " + str(i) + ", "
                         + ", ".join('"' + name + '" in ' + kwargs for name in names)
                         + ")) <= 1",
                     )
                     tempvar = self.get_temp_var()
                     self.add_def(tempvar + " = "
-                                 + args + "[" + str(x) + "] if _coconut.len(" + args + ") > " + str(x) + " else "
+                                 + args + "[" + str(i) + "] if _coconut.len(" + args + ") > " + str(i) + " else "
                                  + "".join(kwargs + '.pop("' + name + '") if "' + name + '" in ' + kwargs + " else "
                                            for name in names)
                                  + default
@@ -300,9 +300,8 @@ class Matcher(object):
 
         max_len = None if allow_star_args else len(match_args)
         self.check_len_in(req_len, max_len, args)
-        for x in arg_checks:
-            lt_check, ge_check = arg_checks[x]
-            if x < req_len:
+        for i, (lt_check, ge_check) in enumerate(arg_checks):
+            if i < req_len:
                 if lt_check is not None:
                     self.add_check(lt_check)
             else:
@@ -342,8 +341,7 @@ class Matcher(object):
         if rest is None:
             self.add_check("_coconut.len(" + item + ") == " + str(len(matches)))
         match_keys = []
-        for x in range(len(matches)):
-            k, v = matches[x]
+        for k, v in matches:
             self.add_check(k + " in " + item)
             self.match(v, item + "[" + k + "]")
             match_keys.append(k)
@@ -453,8 +451,8 @@ class Matcher(object):
                 self.add_def(front + " = _coconut.list(" + item + splice + ")")
             else:
                 raise CoconutInternalException("invalid series match type", series_type)
-        for x in range(len(matches)):
-            self.match(matches[x], item + "[" + str(x - len(matches)) + "]")
+        for i, match in enumerate(matches):
+            self.match(match, item + "[" + str(i - len(matches)) + "]")
 
     def match_msequence(self, tokens, item):
         """Matches a middle sequence."""
@@ -477,8 +475,8 @@ class Matcher(object):
             else:
                 raise CoconutInternalException("invalid series match type", series_type)
         self.match_all_in(head_matches, item)
-        for x in range(len(last_matches)):
-            self.match(last_matches[x], item + "[" + str(x - len(last_matches)) + "]")
+        for i, match in enumerate(last_matches):
+            self.match(match, item + "[" + str(i - len(last_matches)) + "]")
 
     def match_string(self, tokens, item):
         """Match prefix string."""

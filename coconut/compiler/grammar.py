@@ -213,11 +213,11 @@ def item_handle(loc, tokens):
                 extra_args_str = join_args(star_args, kwd_args, dubstar_args)
                 argdict_pairs = []
                 has_question_mark = False
-                for i in range(len(pos_args)):
-                    if pos_args[i] == "?":
+                for i, arg in enumerate(pos_args):
+                    if arg == "?":
                         has_question_mark = True
                     else:
-                        argdict_pairs.append(str(i) + ": " + pos_args[i])
+                        argdict_pairs.append(str(i) + ": " + arg)
                 if not has_question_mark:
                     raise CoconutInternalException("no question mark in question mark partial", trailer[1])
                 elif argdict_pairs or extra_args_str:
@@ -399,15 +399,15 @@ def decorator_handle(tokens):
     """Processes decorators."""
     defs = []
     decorates = []
-    for x in range(len(tokens)):
-        if "simple" in tokens[x].keys() and len(tokens[x]) == 1:
-            decorates.append("@" + tokens[x][0])
-        elif "test" in tokens[x].keys() and len(tokens[x]) == 1:
-            varname = decorator_var + "_" + str(x)
-            defs.append(varname + " = " + tokens[x][0])
+    for i, tok in enumerate(tokens):
+        if "simple" in tok.keys() and len(tok) == 1:
+            decorates.append("@" + tok[0])
+        elif "test" in tok.keys() and len(tok) == 1:
+            varname = decorator_var + "_" + str(i)
+            defs.append(varname + " = " + tok[0])
             decorates.append("@" + varname)
         else:
-            raise CoconutInternalException("invalid decorator tokens", tokens[x])
+            raise CoconutInternalException("invalid decorator tokens", tok)
     return "\n".join(defs + decorates) + "\n"
 
 
