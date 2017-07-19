@@ -1,7 +1,7 @@
 Coconut
 =======
 
-Coconut (`coconut-lang.org`__) is a **variant of Python_** built for simple, elegant, Pythonic **functional programming**.
+Coconut (`coconut-lang.org`__) is a variant of Python_ that **adds on top of Python syntax** new features for simple, elegant, Pythonic **functional programming**.
 
 Coconut is developed on GitHub_ and hosted on PyPI_. Installing Coconut is as easy as opening a command prompt and entering::
 
