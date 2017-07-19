@@ -1432,7 +1432,7 @@ class Compiler(Grammar):
                 "def " + name + params + ":\n" + body
             )
         else:
-            params.insert(0, name)
+            params.insert(0, name)  # construct match tokens
             self.stmt_lambdas.append(
                 self.name_match_funcdef_handle(original, loc, params) + body
             )

@@ -153,7 +153,8 @@ def _coconut_tco(func):
     def tail_call_optimized_func(*args, **kwargs):
         call_func = func
         while True:
-            if _coconut.id(call_func) in _coconut_tco_func_dict and _coconut_tco_func_dict[_coconut.id(call_func)]() is call_func:
+            wkref = _coconut_tco_func_dict.get(_coconut.id(call_func))
+            if wkref is not None and wkref() is call_func:
                 call_func = call_func._coconut_tco_func
             result = call_func(*args, **kwargs)  # pass --no-tco to clean up your traceback
             if not isinstance(result, _coconut_tail_call):
