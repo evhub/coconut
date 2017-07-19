@@ -300,7 +300,8 @@ class Matcher(object):
 
         max_len = None if allow_star_args else len(match_args)
         self.check_len_in(req_len, max_len, args)
-        for i, (lt_check, ge_check) in enumerate(arg_checks):
+        for i in sorted(arg_checks):
+            lt_check, ge_check = arg_checks[i]
             if i < req_len:
                 if lt_check is not None:
                     self.add_check(lt_check)
