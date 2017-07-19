@@ -85,8 +85,8 @@ Like what you see? Don't forget to star Coconut on GitHub!
 <a class="github-button" href="https://github.com/evhub/coconut" data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star evhub/coconut on GitHub">Star</a>
 
 Ready to get started? Here are some links to help you out:
-- [Coconut's **tutorial**](http://coconut.readthedocs.org/en/master/HELP.html) will guide you through the process of starting to enhance your Python with Coconut in a straightforward, easy-to-follow way.
-- [Coconut's **documentation**](http://coconut.readthedocs.org/en/master/DOCS.html) is an extensive catalog of information on all of Coconut's features for whenever you see something that you want more information about.
-- [The Coconut FAQ](http://coconut.readthedocs.org/en/master/FAQ.html) should hopefully answer any questions you might have about who Coconut is built for and whether or not you should use it.
+- [Coconut's **tutorial**](http://coconut.readthedocs.io/en/master/HELP.html) will guide you through the process of starting to enhance your Python with Coconut in a straightforward, easy-to-follow way.
+- [Coconut's **documentation**](http://coconut.readthedocs.io/en/master/DOCS.html) is an extensive catalog of information on all of Coconut's features for whenever you see something that you want more information about.
+- [The Coconut FAQ](http://coconut.readthedocs.io/en/master/FAQ.html) should hopefully answer any questions you might have about who Coconut is built for and whether or not you should use it.
 - [Creating a new issue](https://github.com/evhub/coconut/issues/new) is the best way for you to get help if you're having a problem with Coconut—just detail the problem in the issue and it will be addressed as soon as possible.
 - [Coconut's chat room](https://gitter.im/evhub/coconut) is a great place if you want to pose any general questions, concerns, or comments you have about Coconut to other Coconut developers.
