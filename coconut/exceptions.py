@@ -21,7 +21,10 @@ from coconut.root import *  # NOQA
 
 import sys
 
-from coconut.pyparsing import lineno
+from coconut.pyparsing import (
+    lineno,
+    ParseException,
+)
 
 from coconut.constants import (
     openindent,
@@ -109,11 +112,15 @@ class CoconutException(Exception):
         return self.__class__.__name__ + "(" + ", ".join(self.args) + ")"
 
 
-class CoconutSyntaxError(CoconutException):
+class CoconutSyntaxError(CoconutException, ParseException):
     """Coconut SyntaxError."""
 
     def __init__(self, message, source=None, point=None, ln=None):
         """Creates the Coconut SyntaxError."""
+        if source is None:
+            ParseException.__init__(self, message)
+        else:
+            ParseException.__init__(self, source, point, message)
         self.args = (message, source, point, ln)
 
     def message(self, message, source, point, ln):
@@ -195,11 +202,12 @@ class CoconutInternalException(CoconutException):
         )
 
 
-class CoconutDeferredSyntaxError(CoconutException):
+class CoconutDeferredSyntaxError(CoconutException, ParseException):
     """Deferred Coconut SyntaxError."""
 
     def __init__(self, message, loc):
         """Creates the Coconut exception."""
+        ParseException.__init__(self, message)
         self.args = (message, loc)
 
     def message(self, message, loc):

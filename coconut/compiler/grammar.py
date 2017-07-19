@@ -1058,15 +1058,15 @@ class Grammar(object):
     partial_atom_tokens = no_partial_atom_item + partial_trailer_tokens
     pipe_item = (
         # we need the pipe_op since comp_pipe_expr is a superset of the others
-        Group(partial_atom_tokens("partial")) + pipe_op
-        | Group(attr_atom_tokens("attr_atom")) + pipe_op
+        Group(attr_atom_tokens("attr_atom")) + pipe_op
+        | Group(partial_atom_tokens("partial")) + pipe_op
         | Group(comp_pipe_expr("expr")) + pipe_op
     )
     last_pipe_item = Group(
         lambdef
         | longest(
-            partial_atom_tokens("partial"),
             attr_atom_tokens("attr_atom"),
+            partial_atom_tokens("partial"),
             comp_pipe_expr("expr"),
         )
     )
