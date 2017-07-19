@@ -24,6 +24,7 @@ from contextlib import contextmanager
 from coconut.exceptions import (
     CoconutInternalException,
     CoconutDeferredSyntaxError,
+    internal_assert,
 )
 from coconut.constants import (
     match_temp_var,
@@ -513,7 +514,7 @@ class Matcher(object):
 
     def match_const(self, tokens, item):
         """Matches a constant."""
-        (match,) = tokens
+        match, = tokens
         if match in const_vars:
             self.add_check(item + " is " + match)
         else:
@@ -521,7 +522,7 @@ class Matcher(object):
 
     def match_var(self, tokens, item):
         """Matches a variable."""
-        (setvar,) = tokens
+        setvar, = tokens
         if setvar != wildcard:
             if setvar in self.names:
                 self.add_check(self.names[setvar] + " == " + item)
@@ -531,10 +532,7 @@ class Matcher(object):
 
     def match_set(self, tokens, item):
         """Matches a set."""
-        if len(tokens) == 1:
-            match = tokens[0]
-        else:
-            raise CoconutInternalException("invalid set match tokens", tokens)
+        match, = tokens
         self.add_check("_coconut.isinstance(" + item + ", _coconut.abc.Set)")
         self.add_check("_coconut.len(" + item + ") == " + str(len(match)))
         for const in match:
@@ -560,28 +558,26 @@ class Matcher(object):
 
     def match_paren(self, tokens, item):
         """Matches a paren."""
-        (match,) = tokens
+        match, = tokens
         return self.match(match, item)
 
     def match_trailer(self, tokens, item):
         """Matches typedefs and as patterns."""
-        if len(tokens) <= 1 or len(tokens) % 2 != 1:
-            raise CoconutInternalException("invalid trailer match tokens", tokens)
-        else:
-            match, trailers = tokens[0], tokens[1:]
-            for i in range(0, len(trailers), 2):
-                op, arg = trailers[i], trailers[i + 1]
-                if op == "is":
-                    self.add_check("_coconut.isinstance(" + item + ", " + arg + ")")
-                elif op == "as":
-                    if arg in self.names:
-                        self.add_check(self.names[arg] + " == " + item)
-                    elif arg != wildcard:
-                        self.add_def(arg + " = " + item)
-                        self.names[arg] = item
-                else:
-                    raise CoconutInternalException("invalid trailer match operation", op)
-            self.match(match, item)
+        internal_assert(len(tokens) > 1 and len(tokens) % 2 == 1, "invalid trailer match tokens", tokens)
+        match, trailers = tokens[0], tokens[1:]
+        for i in range(0, len(trailers), 2):
+            op, arg = trailers[i], trailers[i + 1]
+            if op == "is":
+                self.add_check("_coconut.isinstance(" + item + ", " + arg + ")")
+            elif op == "as":
+                if arg in self.names:
+                    self.add_check(self.names[arg] + " == " + item)
+                elif arg != wildcard:
+                    self.add_def(arg + " = " + item)
+                    self.names[arg] = item
+            else:
+                raise CoconutInternalException("invalid trailer match operation", op)
+        self.match(match, item)
 
     def match_and(self, tokens, item):
         """Matches and."""

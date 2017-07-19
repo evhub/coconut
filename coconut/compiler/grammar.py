@@ -119,16 +119,39 @@ def split_function_call(tokens, loc):
     return pos_args, star_args, kwd_args, dubstar_args
 
 
-def pipe_item_split(tokens, loc):
-    """Split a partial trailer."""
+def attr_atom_split(tokens):
+    """Split attr_atom_tokens into (attr_or_method_name, method_args_or_none_if_attr)."""
     if len(tokens) == 1:
-        return tokens[0]
-    elif len(tokens) == 2:
+        return tokens[0], None
+    elif len(tokens) >= 2 and tokens[1] == "(":
+        if len(tokens) == 2:
+            return tokens[0], ""
+        elif len(tokens) == 3:
+            return tokens[0], tokens[2]
+        else:
+            raise CoconutInternalException("invalid methodcaller literal tokens", tokens)
+    else:
+        raise CoconutInternalException("invalid attrgetter literal tokens", tokens)
+
+
+def pipe_item_split(tokens, loc):
+    """Process a pipe item, which could be a partial, an attribute access, a method call, or an expression.
+    Return (expr,) for expression, (func, pos_args, kwd_args) for partial, and (name, args) for attr/method."""
+    if isinstance(tokens, list):  # artificial tokens
+        internal_assert(len(tokens) == 1, "invalid artificial pipe item tokens", tokens)
+        return tokens[0],
+    elif "expr" in tokens.keys():
+        internal_assert(len(tokens) == 1)
+        return tokens[0],
+    elif "partial" in tokens.keys():
         func, args = tokens
         pos_args, star_args, kwd_args, dubstar_args = split_function_call(args, loc)
         return func, join_args(pos_args, star_args), join_args(kwd_args, dubstar_args)
+    elif "attr_atom" in tokens.keys():
+        name, args = attr_atom_split(tokens)
+        return name, args
     else:
-        raise CoconutInternalException("invalid partial trailer", tokens)
+        raise CoconutInternalException("invalid pipe item tokens", tokens)
 
 
 def infix_error(tokens):
@@ -200,10 +223,9 @@ def item_handle(loc, tokens):
         elif len(trailer) == 2:
             if trailer[0] == "$(":
                 args = trailer[1][1:-1]
-                if args:
-                    out = "_coconut.functools.partial(" + out + ", " + args + ")"
-                else:
+                if not args:
                     raise CoconutDeferredSyntaxError("a partial application argument is required", loc)
+                out = "_coconut.functools.partial(" + out + ", " + args + ")"
             elif trailer[0] == "$[":
                 out = "_coconut_igetitem(" + out + ", " + trailer[1] + ")"
             elif trailer[0] == "$(?":
@@ -239,23 +261,39 @@ def pipe_handle(loc, tokens, **kwargs):
     internal_assert(set(kwargs) <= set(("top",)), "unknown pipe_handle keyword arguments", kwargs)
     top = kwargs.get("top", True)
     if len(tokens) == 1:
-        func = pipe_item_split(tokens.pop(), loc)
-        if top and isinstance(func, tuple):
-            return "_coconut.functools.partial(" + join_args(func) + ")"
+        item = tokens.pop()
+        if not top:  # defer to other pipe_handle call
+            return item
+        split_item = pipe_item_split(item, loc)
+        if len(split_item) == 1:  # expr
+            return split_item[0]
+        elif len(split_item) == 3:  # partial
+            return "_coconut.split_itemtools.partial(" + join_args(split_item) + ")"
+        elif len(split_item) == 2:  # attr_atom
+            return attr_atom_handle(loc, split_item)
         else:
-            return func
+            raise CoconutInternalException("invalid split pipe item", split_item)
     else:
-        func = pipe_item_split(tokens.pop(), loc)
-        op = tokens.pop()
+        item, op = tokens.pop(), tokens.pop()
         if op == "|>" or op == "|*>":
+            split_item = pipe_item_split(item, loc)
             star = "*" if op == "|*>" else ""
-            if isinstance(func, tuple):
-                return func[0] + "(" + join_args((func[1], star + pipe_handle(loc, tokens), func[2])) + ")"
+            if len(split_item) == 1:  # expr
+                return "(" + split_item[0] + ")(" + star + pipe_handle(loc, tokens) + ")"
+            elif len(split_item) == 3:  # partial
+                return split_item[0] + "(" + join_args((split_item[1], star + pipe_handle(loc, tokens), split_item[2])) + ")"
+            elif len(split_item) == 2:  # attr_atom
+                if star:
+                    raise CoconutDeferredSyntaxError("cannot star pipe into attribute access or method call", loc)
+                return "(" + pipe_handle(loc, tokens) + ")." + split_item[0] + ("(" + split_item[1] + ")" if split_item[1] is not None else "")
             else:
-                return "(" + func + ")(" + star + pipe_handle(loc, tokens) + ")"
+                raise CoconutInternalException("invalid split pipe item", split_item)
         elif op == "<|" or op == "<*|":
             star = "*" if op == "<*|" else ""
-            return pipe_handle(loc, [[func], "|" + star + ">", [pipe_handle(loc, tokens, top=False)]])
+            inner_item = pipe_handle(loc, tokens, top=False)
+            if isinstance(inner_item, str):
+                inner_item = [inner_item]  # artificial pipe item
+            return pipe_handle(loc, [item, "|" + star + ">", inner_item])
         else:
             raise CoconutInternalException("invalid pipe operator", op)
 
@@ -267,7 +305,7 @@ def comp_pipe_handle(loc, tokens):
     for i in range(1, len(tokens), 2):
         op, fn = tokens[i], tokens[i + 1]
         if op != using_op:
-            raise CoconutDeferredSyntaxError("invalid mixing of function composition pipe operators with different directions", loc)
+            raise CoconutDeferredSyntaxError("cannot mix function composition pipe operators with different directions", loc)
         funcs.append(fn)
     if using_op == "..>":
         pass
@@ -295,23 +333,17 @@ def none_coalesce_handle(tokens):
         )
 
 
-def attr_handle(loc, tokens):
+def attr_atom_handle(loc, tokens):
     """Processes attrgetter literals."""
-    if len(tokens) == 1:
-        return '_coconut.operator.attrgetter("' + tokens[0] + '")'
-    elif len(tokens) > 0 and tokens[1] == "(":
-        if "." in tokens[0]:
-            raise CoconutDeferredSyntaxError("illegal attribute access in implicit methodcaller partial", loc)
-        elif len(tokens) == 2:
-            internal_assert(tokens[1] == "(")
-            return '_coconut.operator.methodcaller("' + tokens[0] + '")'
-        elif len(tokens) == 3:
-            internal_assert(tokens[1] == "(")
-            return '_coconut.operator.methodcaller("' + tokens[0] + '", ' + tokens[2] + ")"
-        else:
-            raise CoconutInternalException("invalid methodcaller literal tokens", tokens)
+    name, args = attr_atom_split(tokens)
+    if args is None:
+        return '_coconut.operator.attrgetter("' + name + '")'
+    elif "." in name:
+        raise CoconutDeferredSyntaxError("cannot have attribute access in implicit methodcaller partial", loc)
+    elif args == "":
+        return '_coconut.operator.methodcaller("' + tokens[0] + '")'
     else:
-        raise CoconutInternalException("invalid attrgetter literal tokens", tokens)
+        return '_coconut.operator.methodcaller("' + tokens[0] + '", ' + tokens[2] + ")"
 
 
 def lazy_list_handle(tokens):
@@ -877,7 +909,7 @@ class Grammar(object):
     attr_atom_tokens = dot.suppress() + dotted_name + Optional(
         lparen + Optional(methodcaller_args) + rparen.suppress()
     )
-    attr_atom = attach(attr_atom_tokens, attr_handle)
+    attr_atom = attach(attr_atom_tokens, attr_atom_handle)
     itemgetter_atom = attach(dot.suppress() + condense(Optional(dollar) + lbrack) + subscriptgrouplist + rbrack.suppress(), itemgetter_handle)
     set_literal = Forward()
     set_letter_literal = Forward()
@@ -1023,16 +1055,19 @@ class Grammar(object):
     )
 
     pipe_op = pipe | star_pipe | back_pipe | back_star_pipe
+    partial_atom_tokens = no_partial_atom_item + partial_trailer_tokens
     pipe_item = (
         # we need the pipe_op since comp_pipe_expr is a superset of the others
-        Group(no_partial_atom_item + partial_trailer_tokens) + pipe_op
-        | Group(comp_pipe_expr) + pipe_op
+        Group(partial_atom_tokens("partial")) + pipe_op
+        | Group(attr_atom_tokens("attr_atom")) + pipe_op
+        | Group(comp_pipe_expr("expr")) + pipe_op
     )
     last_pipe_item = Group(
         lambdef
         | longest(
-            no_partial_atom_item + partial_trailer_tokens,
-            comp_pipe_expr,
+            partial_atom_tokens("partial"),
+            attr_atom_tokens("attr_atom"),
+            comp_pipe_expr("expr"),
         )
     )
     pipe_expr = (

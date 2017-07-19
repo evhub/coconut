@@ -81,6 +81,7 @@ def suite_test():
     assert vector(1, 2) != (1, 2)
     assert triangle(3, 4, 5).is_right()
     assert (.)(triangle(3, 4, 5), "is_right")
+    assert .is_right()(triangle(3, 4, 5))
     assert triangle(3, 4, 5) |> .is_right()
     def test_factorial(factorial, test_none=True):
         assert factorial(0) == 1 == factorial(1)
@@ -319,7 +320,9 @@ def suite_test():
     assert map(plus1, (1, 2, 3)) |> fmap$(times2) |> repr == map(times2..plus1, (1, 2, 3)) |> repr
     assert reversed((1, 2, 3)) |> fmap$(plus1) |> repr == map(plus1, (1, 2, 3)) |> reversed |> repr
     assert identity[1:2, 2:3] == (slice(1, 2), slice(2, 3)) == identity |> .[1:2, 2:3]
-    assert identity.method(*(1,), **{"a": 2}) == ((1,), {"a": 2}) == identity |> .method(*(1,), **{"a": 2})
+    assert identity.method(*(1,), **{"a": 2}) == ((1,), {"a": 2})
+    assert .method(*(1,), **{"a": 2})(identity) == ((1,), {"a": 2})
+    assert identity |> .method(*(1,), **{"a": 2}) == ((1,), {"a": 2})
     assert container(1) == container(1)
     assert not container(1) != container(1)
     assert container(1) != container(2)
@@ -356,7 +359,9 @@ def suite_test():
     assert Pred(0, 1, 2) |> fmap$(-> _+1) == Pred(1, 2, 3)
     assert Quant(0, 1, 2) |> fmap$(-> _+1) == Quant(1, 2, 3)
     a = Nest()
-    assert a.b.c.d == "data" == a |> .b.c.d
+    assert a.b.c.d == "data"
+    assert (.b.c.d)(a) == "data"
+    assert a |> .b.c.d == "data"
     assert tco_chain([1, 2, 3]) |> list == ["last"]
     assert partition([1, 2, 3], 2) |> map$(tuple) |> list == [(1,), (3, 2)] == partition_([1, 2, 3], 2) |> map$(tuple) |> list
     assert myreduce((+), (1, 2, 3)) == 6

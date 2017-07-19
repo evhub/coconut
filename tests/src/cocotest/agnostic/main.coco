@@ -57,7 +57,9 @@ def main_test():
     \\ assert True
     class one_line_class: pass
     assert isinstance(one_line_class(), one_line_class)
-    assert "" |> .join <| ["1","2","3"] == "123" == "". <| "join" <| ["1","2","3"]
+    assert (.join)("")(["1", "2", "3"]) == "123"
+    assert "" |> .join <| ["1","2","3"] == "123"
+    assert "". <| "join" <| ["1","2","3"] == "123"
     assert 1 |> [1,2,3][] == 2 == 1 |> [1,2,3]$[]
     assert 1 |> "123"[] == "2" == 1 |> "123"$[]
     assert (| -1, 0, |) :: range(1, 5) |> list == [-1, 0, 1, 2, 3, 4]
@@ -213,7 +215,7 @@ def main_test():
     assert count(1,3)[1] == 4
     assert len <| map((x) -> x, [1, 2]) == 2
     assert repr("hello") == "'hello'" == ascii("hello")
-    assert count(1,3) |> .index(1) == 0
+    assert count(1,3) |> .index(1) == 0 == .index(1)(count(1, 3))
     assert count(1).__copy__()$[0] == 1
     assert map((+), count(1), count(1)).__copy__()$[0] == 2
     assert zip(count(1), count(1)).__copy__()$[0] |> tuple == (1, 1)
