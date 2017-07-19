@@ -511,6 +511,7 @@ class Nest:
     class B:
         class C:
             d = "data"
+            def m() = "method"
         c = C()
     b = B()
 
