@@ -54,6 +54,7 @@ from coconut.pyparsing import (
 from coconut.exceptions import (
     CoconutInternalException,
     CoconutDeferredSyntaxError,
+    internal_assert,
 )
 from coconut.terminal import trace
 from coconut.constants import (
@@ -137,16 +138,14 @@ def infix_error(tokens):
 def get_infix_items(tokens, callback=infix_error):
     """Performs infix token processing.
     Uses a callback that takes infix tokens and returns a string to handle inner infix calls."""
-    if len(tokens) < 3:
-        raise CoconutInternalException("invalid infix tokens", tokens)
-    else:
-        (arg1, func, arg2), tokens = tokens[:3], tokens[3:]
-        args = list(arg1) + list(arg2)
-        while tokens:
-            args = [callback([args, func, []])]
-            (func, newarg), tokens = tokens[:2], tokens[2:]
-            args += list(newarg)
-        return func, args
+    internal_assert(len(tokens) >= 3, "invalid infix tokens", tokens)
+    (arg1, func, arg2), tokens = tokens[:3], tokens[3:]
+    args = list(arg1) + list(arg2)
+    while tokens:
+        args = [callback([args, func, []])]
+        (func, newarg), tokens = tokens[:2], tokens[2:]
+        args += list(newarg)
+    return func, args
 
 
 def case_to_match(tokens, item):
@@ -169,10 +168,8 @@ def case_to_match(tokens, item):
 
 def add_paren_handle(tokens):
     """Adds parentheses."""
-    if len(tokens) == 1:
-        return "(" + tokens[0] + ")"
-    else:
-        raise CoconutInternalException("invalid tokens for parentheses adding", tokens)
+    internal_assert(len(tokens) == 1, "invalid tokens for parentheses adding", tokens)
+    return "(" + tokens[0] + ")"
 
 
 def function_call_handle(loc, tokens):
@@ -238,8 +235,7 @@ def item_handle(loc, tokens):
 
 def pipe_handle(loc, tokens, **kwargs):
     """Processes pipe calls."""
-    if set(kwargs) > set(("top",)):
-        complain(CoconutInternalException("unknown pipe_handle keyword arguments", kwargs))
+    internal_assert(set(kwargs) <= set(("top",)), "unknown pipe_handle keyword arguments", kwargs)
     top = kwargs.get("top", True)
     if len(tokens) == 1:
         func = pipe_item_split(tokens.pop(), loc)
@@ -265,22 +261,20 @@ def pipe_handle(loc, tokens, **kwargs):
 
 def comp_pipe_handle(loc, tokens):
     """Processes pipe function composition."""
-    if len(tokens) < 3 or len(tokens) % 2 != 1:
-        raise CoconutInternalException("invalid composition pipe tokens", tokens)
+    internal_assert(len(tokens) >= 3 and len(tokens) % 2 == 1, "invalid composition pipe tokens", tokens)
+    funcs, using_op = [tokens[0]], tokens[1]
+    for i in range(1, len(tokens), 2):
+        op, fn = tokens[i], tokens[i + 1]
+        if op != using_op:
+            raise CoconutDeferredSyntaxError("invalid mixing of function composition pipe operators with different directions", loc)
+        funcs.append(fn)
+    if using_op == "..>":
+        pass
+    elif using_op == "<..":
+        funcs.reverse()
     else:
-        funcs, using_op = [tokens[0]], tokens[1]
-        for i in range(1, len(tokens), 2):
-            op, fn = tokens[i], tokens[i + 1]
-            if op != using_op:
-                raise CoconutDeferredSyntaxError("invalid mixing of function composition pipe operators with different directions", loc)
-            funcs.append(fn)
-        if using_op == "..>":
-            pass
-        elif using_op == "<..":
-            funcs.reverse()
-        else:
-            raise CoconutInternalException("invalid composition pipe operator", op)
-        return "_coconut_compose(" + ", ".join(funcs) + ")"
+        raise CoconutInternalException("invalid composition pipe operator", op)
+    return "_coconut_compose(" + ", ".join(funcs) + ")"
 
 
 def none_coalesce_handle(tokens):
@@ -308,8 +302,10 @@ def attr_handle(loc, tokens):
         if "." in tokens[0]:
             raise CoconutDeferredSyntaxError("illegal attribute access in implicit methodcaller partial", loc)
         elif len(tokens) == 2:
+            internal_assert(tokens[1] == "(")
             return '_coconut.operator.methodcaller("' + tokens[0] + '")'
         elif len(tokens) == 3:
+            internal_assert(tokens[1] == "(")
             return '_coconut.operator.methodcaller("' + tokens[0] + '", ' + tokens[2] + ")"
         else:
             raise CoconutInternalException("invalid methodcaller literal tokens", tokens)
@@ -381,18 +377,14 @@ def typedef_callable_handle(tokens):
 
 def math_funcdef_suite_handle(tokens):
     """Processes assignment function definiton suites."""
-    if len(tokens) < 1:
-        raise CoconutInternalException("invalid assignment function definition suite tokens", tokens)
-    else:
-        return "\n" + openindent + "".join(tokens[:-1]) + "return " + tokens[-1] + closeindent
+    internal_assert(len(tokens) >= 1, "invalid assignment function definition suite tokens", tokens)
+    return "\n" + openindent + "".join(tokens[:-1]) + "return " + tokens[-1] + closeindent
 
 
 def math_funcdef_handle(tokens):
     """Processes assignment function definition."""
-    if len(tokens) == 2:
-        return tokens[0] + ("" if tokens[1].startswith("\n") else " ") + tokens[1]
-    else:
-        raise CoconutInternalException("invalid assignment function definition tokens")
+    internal_assert(len(tokens) == 2, "invalid assignment function definition tokens", tokens)
+    return tokens[0] + ("" if tokens[1].startswith("\n") else " ") + tokens[1]
 
 
 def decorator_handle(tokens):
@@ -413,10 +405,8 @@ def decorator_handle(tokens):
 
 def else_handle(tokens):
     """Processes compound else statements."""
-    if len(tokens) == 1:
-        return "\n" + openindent + tokens[0] + closeindent
-    else:
-        raise CoconutInternalException("invalid compound else statement tokens", tokens)
+    internal_assert(len(tokens) == 1, "invalid compound else statement tokens", tokens)
+    return "\n" + openindent + tokens[0] + closeindent
 
 
 def match_handle(loc, tokens, **kwargs):
@@ -429,8 +419,7 @@ def match_handle(loc, tokens, **kwargs):
         del kwargs["top"]
     except KeyError:
         top = True
-    if kwargs:
-        raise CoconutInternalException("unknown keyword arguments to match_handle", kwargs)
+    internal_assert(not kwargs, "unknown keyword arguments to match_handle", kwargs)
 
     if len(tokens) == 3:
         matches, item, stmts = tokens
@@ -493,40 +482,34 @@ def except_handle(tokens):
 
 def subscriptgroup_handle(tokens):
     """Processes subscriptgroups."""
-    if 0 < len(tokens) <= 3:
-        args = []
-        for arg in tokens:
-            if not arg:
-                arg = "None"
-            args.append(arg)
-        if len(args) == 1:
-            return args[0]
-        else:
-            return "_coconut.slice(" + ", ".join(args) + ")"
+    internal_assert(0 < len(tokens) <= 3, "invalid slice args", tokens)
+    args = []
+    for arg in tokens:
+        if not arg:
+            arg = "None"
+        args.append(arg)
+    if len(args) == 1:
+        return args[0]
     else:
-        raise CoconutInternalException("invalid slice args", tokens)
+        return "_coconut.slice(" + ", ".join(args) + ")"
 
 
 def itemgetter_handle(tokens):
     """Processes implicit itemgetter partials."""
-    if len(tokens) != 2:
-        raise CoconutInternalException("invalid implicit itemgetter args", tokens)
+    internal_assert(len(tokens) == 2, "invalid implicit itemgetter args", tokens)
+    op, args = tokens
+    if op == "[":
+        return "_coconut.operator.itemgetter(" + args + ")"
+    elif op == "$[":
+        return "_coconut.functools.partial(_coconut_igetitem, index=" + args + ")"
     else:
-        op, args = tokens
-        if op == "[":
-            return "_coconut.operator.itemgetter(" + args + ")"
-        elif op == "$[":
-            return "_coconut.functools.partial(_coconut_igetitem, index=" + args + ")"
-        else:
-            raise CoconutInternalException("invalid implicit itemgetter type", op)
+        raise CoconutInternalException("invalid implicit itemgetter type", op)
 
 
 def class_suite_handle(tokens):
     """Processes implicit pass in class suite."""
-    if len(tokens) != 1:
-        raise CoconutInternalException("invalid implicit pass in class suite tokens", tokens)
-    else:
-        return ": pass" + tokens[0]
+    internal_assert(len(tokens) == 1, "invalid implicit pass in class suite tokens", tokens)
+    return ": pass" + tokens[0]
 
 
 def namelist_handle(tokens):
@@ -552,17 +535,14 @@ def compose_item_handle(tokens):
 def make_suite_handle(tokens):
     """Makes simple statements into suites.
     Necessary because multiline lambdas count on every statement having its own line to work."""
-    if len(tokens) != 1:
-        raise CoconutInternalException("invalid simple suite tokens", tokens)
-    else:
-        return "\n" + openindent + tokens[0] + closeindent
+    internal_assert(len(tokens) == 1, "invalid simple suite tokens", tokens)
+    return "\n" + openindent + tokens[0] + closeindent
 
 
 def tco_return_handle(tokens):
     """Handles tail-call-optimizable return statements."""
-    if len(tokens) != 2:
-        raise CoconutInternalException("invalid tail-call-optimizable return statement tokens", tokens)
-    elif tokens[1].startswith("()"):
+    internal_assert(len(tokens) == 2, "invalid tail-call-optimizable return statement tokens", tokens)
+    if tokens[1].startswith("()"):
         return "return _coconut_tail_call(" + tokens[0] + ")" + tokens[1][2:]  # tokens[1] contains \n
     else:
         return "return _coconut_tail_call(" + tokens[0] + ", " + tokens[1][1:]  # tokens[1] contains )\n
@@ -570,23 +550,21 @@ def tco_return_handle(tokens):
 
 def split_func_name_args_params_handle(tokens):
     """Handles splitting a function into name, params, and args."""
-    if len(tokens) != 2:
-        raise CoconutInternalException("invalid function definition splitting tokens", tokens)
-    else:
-        func_name = tokens[0]
-        func_args = []
-        func_params = []
-        for arg in tokens[1]:
-            if len(arg) > 1 and arg[0] in ("*", "**"):
-                func_args.append(arg[1])
-            elif arg[0] != "*":
-                func_args.append(arg[0])
-            func_params.append("".join(arg))
-        return [
-            func_name,
-            ", ".join(func_args),
-            "(" + ", ".join(func_params) + ")"
-        ]
+    internal_assert(len(tokens) == 2, "invalid function definition splitting tokens", tokens)
+    func_name = tokens[0]
+    func_args = []
+    func_params = []
+    for arg in tokens[1]:
+        if len(arg) > 1 and arg[0] in ("*", "**"):
+            func_args.append(arg[1])
+        elif arg[0] != "*":
+            func_args.append(arg[0])
+        func_params.append("".join(arg))
+    return [
+        func_name,
+        ", ".join(func_args),
+        "(" + ", ".join(func_params) + ")"
+    ]
 
 # end: HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
@@ -832,9 +810,10 @@ class Grammar(object):
     unsafe_typedef_default = Forward()
     typedef_test = Forward()
 
-    default = condense(equals + test)
+    # we include arg_comma to ensure the pattern matches the whole arg
     arg_comma = comma | fixto(FollowedBy(rparen), "")
     typedef_ref = name + colon.suppress() + typedef_test + arg_comma
+    default = condense(equals + test)
     unsafe_typedef_default_ref = name + colon.suppress() + typedef_test + Optional(default)
     typedef_default_ref = unsafe_typedef_default_ref + arg_comma
     tfpdef = typedef | condense(name + arg_comma)
@@ -842,9 +821,9 @@ class Grammar(object):
 
     match = Forward()
     args_list = trace(addspace(ZeroOrMore(condense(
-        dubstar + tfpdef
+        dubstar + tfpdef  # tfpdef ends with arg_comma
         | star + (tfpdef | arg_comma)
-        | tfpdef_default
+        | tfpdef_default  # as does tfpdef_default
     ))))
     parameters = condense(lparen + args_list + rparen)
     var_args_list = trace(Optional(itemlist(condense(
@@ -942,7 +921,7 @@ class Grammar(object):
     )
 
     typedef_sequence = Forward()
-    typedef_sequence_ref = Group(fixto(lbrack + rbrack, "type:[]"))
+    typedef_sequence_ref = Group(fixto(lbrack + rbrack, "type:[]"))  # type:[] tells the compiler this is a typedef_sequence
 
     simple_trailer = (
         condense(lbrack + subscriptlist + rbrack)
@@ -950,18 +929,18 @@ class Grammar(object):
     )
     call_trailer = (
         condense(function_call)
-        | Group(dollar + ~lparen + ~lbrack)
+        | Group(dollar + ~lparen + ~lbrack)  # keep $ to tell the compiler this is a partial application implicit partial
     )
     no_call_or_partial_complex_trailer = (
         typedef_sequence
-        | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())
-        | Group(condense(dollar + lbrack + rbrack))
-        | Group(condense(lbrack + rbrack))
-        | Group(dot + ~name + ~lbrack)
+        | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())  # keep $[ to tell the compiler this is iterator slicing
+        | Group(condense(dollar + lbrack + rbrack))  # keep $[] to tell the compiler this is an iterator slicing implicit partial
+        | Group(condense(lbrack + rbrack))  # keep [] to tell the compiler this is a slicing implicit partial
+        | Group(dot + ~name + ~lbrack)  # keep . to tell the compiler this is a getattr implicit partial
     )
     partial_trailer = (
-        Group(fixto(dollar, "$(") + function_call)
-        | Group(fixto(dollar + lparen, "$(?") + questionmark_call_tokens) + rparen.suppress()
+        Group(fixto(dollar, "$(") + function_call)  # $( tells the compiler this is a partial application
+        | Group(fixto(dollar + lparen, "$(?") + questionmark_call_tokens) + rparen.suppress()  # $(? is the same for question-mark partials
     )
     partial_trailer_tokens = Group(dollar.suppress() + function_call_tokens)
 
@@ -1046,7 +1025,11 @@ class Grammar(object):
     )
 
     pipe_op = pipe | star_pipe | back_pipe | back_star_pipe
-    pipe_item = Group(no_partial_atom_item + partial_trailer_tokens) + pipe_op | Group(comp_pipe_expr) + pipe_op
+    pipe_item = Group(
+        # we need the pipe_op since comp_pipe_expr is a superset
+        no_partial_atom_item + partial_trailer_tokens + pipe_op
+        | comp_pipe_expr + pipe_op
+    )
     last_pipe_item = Group(
         lambdef
         | longest(no_partial_atom_item + partial_trailer_tokens, comp_pipe_expr)

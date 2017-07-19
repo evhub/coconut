@@ -13,7 +13,6 @@ Description: Compiles Coconut code into Python code.
 
 # Table of Contents:
 #   - Imports
-#   - Setup
 #   - Handlers
 #   - Compiler
 #   - Processors
@@ -70,7 +69,6 @@ from coconut.constants import (
     tre_mock_var,
     tre_store_var,
     py3_to_py2_stdlib,
-    default_recursion_limit,
     checksum,
     reserved_prefix,
 )
@@ -84,6 +82,7 @@ from coconut.exceptions import (
     CoconutSyntaxWarning,
     CoconutDeferredSyntaxError,
     clean,
+    internal_assert,
 )
 from coconut.terminal import logger, trace, complain
 from coconut.compiler.matching import Matcher
@@ -115,23 +114,14 @@ from coconut.compiler.header import (
 
 # end: IMPORTS
 #-----------------------------------------------------------------------------------------------------------------------
-# SETUP:
-#-----------------------------------------------------------------------------------------------------------------------
-
-if sys.getrecursionlimit() < default_recursion_limit:
-    sys.setrecursionlimit(default_recursion_limit)
-
-# end: SETUP
-#-----------------------------------------------------------------------------------------------------------------------
 # HANDLERS:
 #-----------------------------------------------------------------------------------------------------------------------
 
 
 def set_to_tuple(tokens):
     """Converts set literal tokens to tuples."""
-    if len(tokens) != 1:
-        raise CoconutInternalException("invalid set maker tokens", tokens)
-    elif "comp" in tokens.keys() or "list" in tokens.keys():
+    internal_assert(len(tokens) == 1, "invalid set maker tokens", tokens)
+    if "comp" in tokens.keys() or "list" in tokens.keys():
         return "(" + tokens[0] + ")"
     elif "test" in tokens.keys():
         return "(" + tokens[0] + ",)"
@@ -507,10 +497,8 @@ class Compiler(Grammar):
 
     def post(self, tokens, **kwargs):
         """Performs post-processing."""
-        if len(tokens) == 1:
-            return self.apply_procs(self.postprocs, kwargs, tokens[0])
-        else:
-            raise CoconutInternalException("multiple tokens leftover", tokens)
+        internal_assert(len(tokens) == 1, "multiple tokens leftover", tokens)
+        return self.apply_procs(self.postprocs, kwargs, tokens[0])
 
     def getheader(self, which, use_hash=None, polish=True):
         """Gets a formatted header."""
@@ -1050,17 +1038,14 @@ class Compiler(Grammar):
 
     def set_docstring(self, loc, tokens):
         """Sets the docstring."""
-        if len(tokens) == 2:
-            self.docstring = self.reformat(tokens[0]) + "\n\n"
-            return tokens[1]
-        else:
-            raise CoconutInternalException("invalid docstring tokens", tokens)
+        internal_assert(len(tokens) == 2, "invalid docstring tokens", tokens)
+        self.docstring = self.reformat(tokens[0]) + "\n\n"
+        return tokens[1]
 
     def yield_from_handle(self, tokens):
         """Processes Python 3.3 yield from."""
-        if len(tokens) != 1:
-            raise CoconutInternalException("invalid yield from tokens", tokens)
-        elif self.target_info < (3, 3):
+        internal_assert(len(tokens) == 1, "invalid yield from tokens", tokens)
+        if self.target_info < (3, 3):
             return (yield_from_var + " = " + tokens[0]
                     + "\nfor " + yield_item_var + " in " + yield_from_var + ":\n"
                     + openindent + "yield " + yield_item_var + "\n" + closeindent)
@@ -1069,8 +1054,7 @@ class Compiler(Grammar):
 
     def endline_handle(self, original, loc, tokens):
         """Inserts line number comments when in line_numbers mode."""
-        if len(tokens) != 1:
-            raise CoconutInternalException("invalid endline tokens", tokens)
+        internal_assert(len(tokens) == 1, "invalid endline tokens", tokens)
         out = tokens[0]
         if self.minify:
             out = out.splitlines(True)[0]  # if there are multiple new lines, take only the first one
@@ -1080,34 +1064,32 @@ class Compiler(Grammar):
 
     def augassign_handle(self, tokens):
         """Processes assignments."""
-        if len(tokens) == 3:
-            name, op, item = tokens
-            out = ""
-            if op == "|>=":
-                out += name + " = (" + item + ")(" + name + ")"
-            elif op == "|*>=":
-                out += name + " = (" + item + ")(*" + name + ")"
-            elif op == "<|=":
-                out += name + " = " + name + "((" + item + "))"
-            elif op == "<*|=":
-                out += name + " = " + name + "(*(" + item + "))"
-            elif op == "..=":  # also <..=
-                out += name + " = _coconut_compose((" + item + "), " + name + ")"
-            elif op == "..>=":
-                out += name + " = _coconut_compose(" + name + ", (" + item + "))"
-            elif op == "??=":
-                out += name + " = " + item + " if " + name + " is None else " + name
-            elif op == "::=":
-                # this is necessary to prevent a segfault caused by self-reference
-                ichain_var = lazy_chain_var + "_" + str(self.ichain_count)
-                out += ichain_var + " = " + name + "\n"
-                out += name + " = _coconut.itertools.chain.from_iterable(" + lazy_list_handle([ichain_var, "(" + item + ")"]) + ")"
-                self.ichain_count += 1
-            else:
-                out += name + " " + op + " " + item
-            return out
+        internal_assert(len(tokens) == 3, "invalid assignment tokens", tokens)
+        name, op, item = tokens
+        out = ""
+        if op == "|>=":
+            out += name + " = (" + item + ")(" + name + ")"
+        elif op == "|*>=":
+            out += name + " = (" + item + ")(*" + name + ")"
+        elif op == "<|=":
+            out += name + " = " + name + "((" + item + "))"
+        elif op == "<*|=":
+            out += name + " = " + name + "(*(" + item + "))"
+        elif op == "..=":  # also <..=
+            out += name + " = _coconut_compose((" + item + "), " + name + ")"
+        elif op == "..>=":
+            out += name + " = _coconut_compose(" + name + ", (" + item + "))"
+        elif op == "??=":
+            out += name + " = " + item + " if " + name + " is None else " + name
+        elif op == "::=":
+            # this is necessary to prevent a segfault caused by self-reference
+            ichain_var = lazy_chain_var + "_" + str(self.ichain_count)
+            out += ichain_var + " = " + name + "\n"
+            out += name + " = _coconut.itertools.chain.from_iterable(" + lazy_list_handle([ichain_var, "(" + item + ")"]) + ")"
+            self.ichain_count += 1
         else:
-            raise CoconutInternalException("invalid assignment tokens", tokens)
+            out += name + " " + op + " " + item
+        return out
 
     def classlist_handle(self, original, loc, tokens):
         """Processes class inheritance lists."""
@@ -1281,9 +1263,8 @@ class Compiler(Grammar):
 
     def complex_raise_stmt_handle(self, tokens):
         """Processes Python 3 raise from statement."""
-        if len(tokens) != 2:
-            raise CoconutInternalException("invalid raise from tokens", tokens)
-        elif self.target.startswith("3"):
+        internal_assert(len(tokens) == 2, "invalid raise from tokens", tokens)
+        if self.target.startswith("3"):
             return "raise " + tokens[0] + " from " + tokens[1]
         else:
             return (raise_from_var + " = " + tokens[0] + "\n"
@@ -1292,9 +1273,8 @@ class Compiler(Grammar):
 
     def dict_comp_handle(self, loc, tokens):
         """Processes Python 2.7 dictionary comprehension."""
-        if len(tokens) != 3:
-            raise CoconutInternalException("invalid dictionary comprehension tokens", tokens)
-        elif self.target.startswith("3"):
+        internal_assert(len(tokens) == 3, "invalid dictionary comprehension tokens", tokens)
+        if self.target.startswith("3"):
             key, val, comp = tokens
             return "{" + key + ": " + val + " " + comp + "}"
         else:
@@ -1315,13 +1295,11 @@ class Compiler(Grammar):
 
     def destructuring_stmt_handle(self, original, loc, tokens):
         """Processes match assign blocks."""
-        if len(tokens) == 2:
-            matches, item = tokens
-            out = match_handle(loc, [matches, item, None])
-            out += self.pattern_error(original, loc, match_to_var)
-            return out
-        else:
-            raise CoconutInternalException("invalid destructuring assignment tokens", tokens)
+        internal_assert(len(tokens) == 2, "invalid destructuring assignment tokens", tokens)
+        matches, item = tokens
+        out = match_handle(loc, [matches, item, None])
+        out += self.pattern_error(original, loc, match_to_var)
+        return out
 
     def name_match_funcdef_handle(self, original, loc, tokens):
         """Processes match defs."""
@@ -1363,11 +1341,8 @@ class Compiler(Grammar):
 
     def set_literal_handle(self, tokens):
         """Converts set literals to the right form for the target Python."""
-        if len(tokens) != 1:
-            raise CoconutInternalException("invalid set literal tokens", tokens)
-        elif len(tokens[0]) != 1:
-            raise CoconutInternalException("invalid set literal item", tokens[0])
-        elif self.target_info < (2, 7):
+        internal_assert(len(tokens) == 1 and len(tokens[0]) == 1, "invalid set literal tokens", tokens)
+        if self.target_info < (2, 7):
             return "_coconut.set(" + set_to_tuple(tokens[0]) + ")"
         else:
             return "{" + tokens[0][0] + "}"
@@ -1384,9 +1359,8 @@ class Compiler(Grammar):
                 raise CoconutInternalException("invalid set type", set_type)
         elif len(tokens) == 2:
             set_type, set_items = tokens
-            if len(set_items) != 1:
-                raise CoconutInternalException("invalid set literal item", tokens[0])
-            elif set_type == "s":
+            internal_assert(len(set_items) == 1, "invalid set literal item", tokens[0])
+            if set_type == "s":
                 return self.set_literal_handle([set_items])
             elif set_type == "f":
                 return "_coconut.frozenset(" + set_to_tuple(set_items) + ")"
@@ -1397,9 +1371,8 @@ class Compiler(Grammar):
 
     def exec_stmt_handle(self, tokens):
         """Handles Python-3-style exec statements."""
-        if len(tokens) < 1 or len(tokens) > 3:
-            raise CoconutInternalException("invalid exec statement tokens", tokens)
-        elif self.target.startswith("2"):
+        internal_assert(1 <= len(tokens) <= 3, "invalid exec statement tokens", tokens)
+        if self.target.startswith("2"):
             out = "exec " + tokens[0]
             if len(tokens) > 1:
                 out += " in " + ", ".join(tokens[1:])
@@ -1441,30 +1414,28 @@ class Compiler(Grammar):
     def tre_return(self, func_name, func_args, func_store, use_mock=True):
         """Generates a tail recursion elimination grammar element."""
         def tre_return_handle(loc, tokens):
-            if len(tokens) != 1:
-                raise CoconutInternalException("invalid tail recursion elimination tokens", tokens)
+            internal_assert(len(tokens) == 1, "invalid tail recursion elimination tokens", tokens)
+            args = tokens[0][1:-1]  # strip parens
+            # check if there is anything in the arguments that will store a reference
+            # to the current scope, and if so, abort TRE, since it can't handle that
+            if match_in(self.stores_scope, args):
+                return ignore_transform
+            if self.no_tco:
+                tco_recurse = "return " + func_name + "(" + args + ")"
             else:
-                args = tokens[0][1:-1]  # strip parens
-                # check if there is anything in the arguments that will store a reference
-                # to the current scope, and if so, abort TRE, since it can't handle that
-                if match_in(self.stores_scope, args):
-                    return ignore_transform
-                if self.no_tco:
-                    tco_recurse = "return " + func_name + "(" + args + ")"
-                else:
-                    tco_recurse = "return _coconut_tail_call(" + func_name + (", " + args if args else "") + ")"
-                if not func_args or func_args == args:
-                    tre_recurse = "continue"
-                elif use_mock:
-                    tre_recurse = func_args + " = " + tre_mock_var + "(" + args + ")" + "\ncontinue"
-                else:
-                    tre_recurse = func_args + " = " + args + "\ncontinue"
-                return (
-                    "if " + func_name + " is " + func_store + ":\n" + openindent
-                    + tre_recurse + "\n" + closeindent
-                    + "else:\n" + openindent
-                    + tco_recurse + closeindent
-                )
+                tco_recurse = "return _coconut_tail_call(" + func_name + (", " + args if args else "") + ")"
+            if not func_args or func_args == args:
+                tre_recurse = "continue"
+            elif use_mock:
+                tre_recurse = func_args + " = " + tre_mock_var + "(" + args + ")" + "\ncontinue"
+            else:
+                tre_recurse = func_args + " = " + args + "\ncontinue"
+            return (
+                "if " + func_name + " is " + func_store + ":\n" + openindent
+                + tre_recurse + "\n" + closeindent
+                + "else:\n" + openindent
+                + tco_recurse + closeindent
+            )
         return attach(
             (Keyword("return") + Keyword(func_name)).suppress() + self.parens + self.end_marker.suppress(),
             tre_return_handle)
@@ -1618,18 +1589,16 @@ class Compiler(Grammar):
 
     def with_stmt_handle(self, tokens):
         """Handles with statements."""
-        if len(tokens) == 2:
-            withs, body = tokens
-            if len(withs) == 1 or self.target_info >= (2, 7):
-                return "with " + ", ".join(withs) + body
-            else:
-                return (
-                    "".join("with " + expr + ":\n" + openindent for expr in withs[:-1])
-                    + "with " + withs[-1] + body
-                    + closeindent * (len(withs) - 1)
-                )
+        internal_assert(len(tokens) == 2, "invalid with statement tokens", tokens)
+        withs, body = tokens
+        if len(withs) == 1 or self.target_info >= (2, 7):
+            return "with " + ", ".join(withs) + body
         else:
-            raise CoconutInternalException("invalid with statement tokens", tokens)
+            return (
+                "".join("with " + expr + ":\n" + openindent for expr in withs[:-1])
+                + "with " + withs[-1] + body
+                + closeindent * (len(withs) - 1)
+            )
 
 # end: COMPILER HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1638,9 +1607,8 @@ class Compiler(Grammar):
 
     def check_strict(self, name, original, loc, tokens):
         """Checks that syntax meets --strict requirements."""
-        if len(tokens) != 1:
-            raise CoconutInternalException("invalid " + name + " tokens", tokens)
-        elif self.strict:
+        internal_assert(len(tokens) == 1, "invalid " + name + " tokens", tokens)
+        if self.strict:
             raise self.make_err(CoconutStyleError, "found " + name, original, loc)
         else:
             return tokens[0]
@@ -1659,18 +1627,16 @@ class Compiler(Grammar):
 
     def check_py(self, version, name, original, loc, tokens):
         """Checks for Python-version-specific syntax."""
-        if len(tokens) != 1:
-            raise CoconutInternalException("invalid " + name + " tokens", tokens)
-        elif self.target_info < get_target_info(version):
+        internal_assert(len(tokens) == 1, "invalid " + name + " tokens", tokens)
+        if self.target_info < get_target_info(version):
             raise self.make_err(CoconutTargetError, "found Python " + ".".join(version) + " " + name, original, loc, target=version)
         else:
             return tokens[0]
 
     def name_check(self, original, loc, tokens):
         """Checks for Python 3 exec function."""
-        if len(tokens) != 1:
-            raise CoconutInternalException("invalid name tokens", tokens)
-        elif tokens[0] == "exec":
+        internal_assert(len(tokens) == 1, "invalid name tokens", tokens)
+        if tokens[0] == "exec":
             return self.check_py("3", "exec function", original, loc, tokens)
         elif tokens[0].startswith(reserved_prefix):
             raise self.make_err(CoconutSyntaxError, "variable names cannot start with reserved prefix " + reserved_prefix, original, loc)

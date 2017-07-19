@@ -261,8 +261,11 @@ template_ext = ".py_template"
 
 default_encoding = "utf-8"
 
-default_recursion_limit = 2000
 minimum_recursion_limit = 100
+default_recursion_limit = 2000
+
+if sys.getrecursionlimit() < default_recursion_limit:
+    sys.setrecursionlimit(default_recursion_limit)
 
 # used for generating __coconut_hash__
 from zlib import crc32 as checksum  # NOQA
