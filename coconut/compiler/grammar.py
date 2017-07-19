@@ -28,6 +28,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import re
+from functools import reduce
 
 from coconut.pyparsing import (
     CaselessLiteral,
@@ -870,16 +871,13 @@ class Grammar(object):
     list_comp = condense(lbrack + Optional(testlist_comp) + rbrack)
     paren_atom = condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
     op_atom = lparen.suppress() + op_item + rparen.suppress()
-    keyword_atom = Keyword(const_vars[0])
-    for x in range(1, len(const_vars)):
-        keyword_atom |= Keyword(const_vars[x])
+    keyword_atom = reduce(lambda acc, x: acc | Keyword(x), const_vars)
     string_atom = addspace(OneOrMore(string))
     passthrough_atom = trace(addspace(OneOrMore(passthrough)))
-    attr_atom = attach(
-        dot.suppress() + dotted_name
-        + Optional(
-            lparen + Optional(methodcaller_args) + rparen.suppress()
-        ), attr_handle)
+    attr_atom_tokens = dot.suppress() + dotted_name + Optional(
+        lparen + Optional(methodcaller_args) + rparen.suppress()
+    )
+    attr_atom = attach(attr_atom_tokens, attr_handle)
     itemgetter_atom = attach(dot.suppress() + condense(Optional(dollar) + lbrack) + subscriptgrouplist + rbrack.suppress(), itemgetter_handle)
     set_literal = Forward()
     set_letter_literal = Forward()
@@ -1025,14 +1023,17 @@ class Grammar(object):
     )
 
     pipe_op = pipe | star_pipe | back_pipe | back_star_pipe
-    pipe_item = Group(
-        # we need the pipe_op since comp_pipe_expr is a superset
-        no_partial_atom_item + partial_trailer_tokens + pipe_op
-        | comp_pipe_expr + pipe_op
+    pipe_item = (
+        # we need the pipe_op since comp_pipe_expr is a superset of the others
+        Group(no_partial_atom_item + partial_trailer_tokens) + pipe_op
+        | Group(comp_pipe_expr) + pipe_op
     )
     last_pipe_item = Group(
         lambdef
-        | longest(no_partial_atom_item + partial_trailer_tokens, comp_pipe_expr)
+        | longest(
+            no_partial_atom_item + partial_trailer_tokens,
+            comp_pipe_expr,
+        )
     )
     pipe_expr = (
         comp_pipe_expr + ~pipe_op
