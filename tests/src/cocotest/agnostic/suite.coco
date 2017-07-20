@@ -81,7 +81,7 @@ def suite_test():
     assert vector(1, 2) != (1, 2)
     assert triangle(3, 4, 5).is_right()
     assert (.)(triangle(3, 4, 5), "is_right")
-    assert .is_right()(triangle(3, 4, 5))
+    assert (.is_right())(triangle(3, 4, 5))
     assert triangle(3, 4, 5) |> .is_right()
     def test_factorial(factorial, test_none=True):
         assert factorial(0) == 1 == factorial(1)
@@ -321,7 +321,7 @@ def suite_test():
     assert reversed((1, 2, 3)) |> fmap$(plus1) |> repr == map(plus1, (1, 2, 3)) |> reversed |> repr
     assert identity[1:2, 2:3] == (slice(1, 2), slice(2, 3)) == identity |> .[1:2, 2:3]
     assert identity.method(*(1,), **{"a": 2}) == ((1,), {"a": 2})
-    assert .method(*(1,), **{"a": 2})(identity) == ((1,), {"a": 2})
+    assert (.method(*(1,), **{"a": 2}))(identity) == ((1,), {"a": 2})
     assert identity |> .method(*(1,), **{"a": 2}) == ((1,), {"a": 2})
     assert container(1) == container(1)
     assert not container(1) != container(1)
@@ -365,7 +365,6 @@ def suite_test():
     assert a.b.c.m() == "method"
     assert a |> .b.c ..> .m() == "method"
     assert a |> .b.c |> .m() == "method"
-    assert a |> .b.c.m() == "method"
     assert tco_chain([1, 2, 3]) |> list == ["last"]
     assert partition([1, 2, 3], 2) |> map$(tuple) |> list == [(1,), (3, 2)] == partition_([1, 2, 3], 2) |> map$(tuple) |> list
     assert myreduce((+), (1, 2, 3)) == 6

@@ -1,7 +1,11 @@
 import sys
 
 from coconut.__coconut__ import consume as coc_consume
-from coconut.exceptions import CoconutStyleError, CoconutSyntaxError
+from coconut.exceptions import (
+    CoconutSyntaxError,
+    CoconutStyleError,
+    CoconutSyntaxError,
+)
 from coconut.convenience import (
     CoconutException,
     cmd,
@@ -28,13 +32,13 @@ def main():
     try:
         version("other")
     except CoconutException:
-        assert True
+        pass
     else:
         assert False
     try:
         raise CoconutException("derp").syntax_err()
     except SyntaxError:
-        assert True
+        pass
     else:
         assert False
     setup()
@@ -49,43 +53,43 @@ def main():
     try:
         parse(" abc", "file")
     except CoconutException:
-        assert True
+        pass
     else:
         assert False
     try:
         parse("'")
     except CoconutException:
-        assert True
+        pass
     else:
         assert False
     try:
         parse("(")
     except CoconutException:
-        assert True
+        pass
     else:
         assert False
     try:
         parse("\\(")
     except CoconutException:
-        assert True
+        pass
     else:
         assert False
     try:
         parse("if a:\n  b\n c")
     except CoconutException:
-        assert True
+        pass
     else:
         assert False
     try:
         parse("$")
     except CoconutException:
-        assert True
+        pass
     else:
         assert False
     try:
         parse("_coconut")
     except CoconutException:
-        assert True
+        pass
     else:
         assert False
     assert parse("def f(x):\n \t pass")
@@ -97,68 +101,74 @@ def main():
     try:
         parse("def f(x):\n \t pass")
     except CoconutStyleError:
-        assert True
+        pass
     else:
         assert False
     try:
         parse("lambda x: x")
     except CoconutStyleError:
-        assert True
+        pass
     else:
         assert False
     try:
         parse("u''")
     except CoconutStyleError:
-        assert True
+        pass
     else:
         assert False
     try:
         parse("def f(x):\\\n pass")
     except CoconutStyleError:
-        assert True
+        pass
     else:
         assert False
     try:
         parse("abc ")
     except CoconutStyleError:
-        assert True
+        pass
     else:
         assert False
     try:
         parse("abc", "file")
     except CoconutStyleError:
-        assert True
+        pass
     else:
         assert False
     try:
         parse("a=1;")
     except CoconutStyleError:
-        assert True
+        pass
     else:
         assert False
     setup()
     try:
         cmd("-f")
     except SystemExit:
-        assert True
+        pass
     else:
         assert False
     try:
         cmd("-pa .")
     except SystemExit:
-        assert True
+        pass
     else:
         assert False
     try:
         cmd("-n . .")
     except SystemExit:
-        assert True
+        pass
     else:
         assert False
     try:
         parse("f''")
     except CoconutException:
-        assert True
+        pass
+    else:
+        assert False
+    try:
+        parse("f$()")
+    except CoconutSyntaxError:
+        pass
     else:
         assert False
     setup(target="3.6")

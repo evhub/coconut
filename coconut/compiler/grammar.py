@@ -119,8 +119,8 @@ def split_function_call(tokens, loc):
     return pos_args, star_args, kwd_args, dubstar_args
 
 
-def attr_atom_split(tokens):
-    """Split attr_atom_tokens into (attr_or_method_name, method_args_or_none_if_attr)."""
+def attrgetter_atom_split(tokens):
+    """Split attrgetter_atom_tokens into (attr_or_method_name, method_args_or_none_if_attr)."""
     if len(tokens) == 1:
         return tokens[0], None
     elif len(tokens) >= 2 and tokens[1] == "(":
@@ -147,8 +147,8 @@ def pipe_item_split(tokens, loc):
         func, args = tokens
         pos_args, star_args, kwd_args, dubstar_args = split_function_call(args, loc)
         return func, join_args(pos_args, star_args), join_args(kwd_args, dubstar_args)
-    elif "attr_atom" in tokens.keys():
-        name, args = attr_atom_split(tokens)
+    elif "attrgetter" in tokens.keys():
+        name, args = attrgetter_atom_split(tokens)
         return name, args
     else:
         raise CoconutInternalException("invalid pipe item tokens", tokens)
@@ -269,8 +269,8 @@ def pipe_handle(loc, tokens, **kwargs):
             return split_item[0]
         elif len(split_item) == 3:  # partial
             return "_coconut.split_itemtools.partial(" + join_args(split_item) + ")"
-        elif len(split_item) == 2:  # attr_atom
-            return attr_atom_handle(loc, split_item)
+        elif len(split_item) == 2:  # attrgetter_atom
+            return attrgetter_atom_handle(loc, split_item)
         else:
             raise CoconutInternalException("invalid split pipe item", split_item)
     else:
@@ -282,7 +282,7 @@ def pipe_handle(loc, tokens, **kwargs):
                 return "(" + split_item[0] + ")(" + star + pipe_handle(loc, tokens) + ")"
             elif len(split_item) == 3:  # partial
                 return split_item[0] + "(" + join_args((split_item[1], star + pipe_handle(loc, tokens), split_item[2])) + ")"
-            elif len(split_item) == 2:  # attr_atom
+            elif len(split_item) == 2:  # attrgetter_atom
                 if star:
                     raise CoconutDeferredSyntaxError("cannot star pipe into attribute access or method call", loc)
                 return "(" + pipe_handle(loc, tokens) + ")." + split_item[0] + ("(" + split_item[1] + ")" if split_item[1] is not None else "")
@@ -333,9 +333,9 @@ def none_coalesce_handle(tokens):
         )
 
 
-def attr_atom_handle(loc, tokens):
+def attrgetter_atom_handle(loc, tokens):
     """Processes attrgetter literals."""
-    name, args = attr_atom_split(tokens)
+    name, args = attrgetter_atom_split(tokens)
     if args is None:
         return '_coconut.operator.attrgetter("' + name + '")'
     elif "." in name:
@@ -906,11 +906,6 @@ class Grammar(object):
     keyword_atom = reduce(lambda acc, x: acc | Keyword(x), const_vars)
     string_atom = addspace(OneOrMore(string))
     passthrough_atom = trace(addspace(OneOrMore(passthrough)))
-    attr_atom_tokens = dot.suppress() + dotted_name + Optional(
-        lparen + Optional(methodcaller_args) + rparen.suppress()
-    )
-    attr_atom = attach(attr_atom_tokens, attr_atom_handle)
-    itemgetter_atom = attach(dot.suppress() + condense(Optional(dollar) + lbrack) + subscriptgrouplist + rbrack.suppress(), itemgetter_handle)
     set_literal = Forward()
     set_letter_literal = Forward()
     set_s = fixto(CaselessLiteral("s"), "s")
@@ -930,8 +925,6 @@ class Grammar(object):
     known_atom = trace(
         const_atom
         | ellipses
-        | attr_atom
-        | itemgetter_atom
         | list_comp
         | dict_comp
         | dict_item
@@ -982,9 +975,23 @@ class Grammar(object):
     complex_trailer = partial_trailer | no_partial_complex_trailer
     trailer = simple_trailer | complex_trailer
 
-    atom_item = attach(atom + ZeroOrMore(trailer), item_handle)
-    no_partial_atom_item = attach(atom + ZeroOrMore(no_partial_trailer), item_handle)
-    no_call_atom_item = attach(atom + ZeroOrMore(no_call_trailer), item_handle)
+    attrgetter_atom_tokens = dot.suppress() + dotted_name + Optional(
+        lparen + Optional(methodcaller_args) + rparen.suppress()
+    )
+    attrgetter_atom = attach(attrgetter_atom_tokens, attrgetter_atom_handle)
+    itemgetter_atom = attach(dot.suppress() + condense(Optional(dollar) + lbrack)
+                             + subscriptgrouplist + rbrack.suppress(), itemgetter_handle)
+    implicit_partial_atom = attrgetter_atom | itemgetter_atom
+
+    atom_item = (
+        implicit_partial_atom
+        | attach(atom + ZeroOrMore(trailer), item_handle)
+    )
+    no_call_atom_item = (
+        implicit_partial_atom
+        | attach(atom + ZeroOrMore(no_call_trailer), item_handle)
+    )
+    partial_atom_tokens = attach(atom + ZeroOrMore(no_partial_trailer), item_handle) + partial_trailer_tokens
 
     simple_assign = attach(maybeparens(lparen,
                                        (name | passthrough_atom)
@@ -1055,17 +1062,17 @@ class Grammar(object):
     )
 
     pipe_op = pipe | star_pipe | back_pipe | back_star_pipe
-    partial_atom_tokens = no_partial_atom_item + partial_trailer_tokens
     pipe_item = (
-        # we need the pipe_op since comp_pipe_expr is a superset of the others
-        Group(attr_atom_tokens("attr_atom")) + pipe_op
+        # we need the pipe_op since either atom could otherwise be the start of an expression
+        Group(attrgetter_atom_tokens("attrgetter")) + pipe_op
         | Group(partial_atom_tokens("partial")) + pipe_op
         | Group(comp_pipe_expr("expr")) + pipe_op
     )
     last_pipe_item = Group(
-        lambdef
+        lambdef("expr")
         | longest(
-            attr_atom_tokens("attr_atom"),
+            # we need longest since either atom could otherwise be the start of an expression
+            attrgetter_atom_tokens("attrgetter"),
             partial_atom_tokens("partial"),
             comp_pipe_expr("expr"),
         )

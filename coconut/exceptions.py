@@ -21,10 +21,7 @@ from coconut.root import *  # NOQA
 
 import sys
 
-from coconut.pyparsing import (
-    lineno,
-    ParseException,
-)
+from coconut.pyparsing import lineno
 
 from coconut.constants import (
     openindent,
@@ -59,7 +56,7 @@ def clean(inputline, strip=True, rem_indents=True, encoding_errors="replace"):
 
 def debug_clean(inputline, strip=True):
     """Call clean with debug parameters."""
-    return clean(inputline, strip, False, "backslashreplace")
+    return clean(inputline, strip, rem_indents=False, encoding_errors="backslashreplace")
 
 
 def internal_assert(condition, message=None, item=None, extra=None):
@@ -112,15 +109,11 @@ class CoconutException(Exception):
         return self.__class__.__name__ + "(" + ", ".join(self.args) + ")"
 
 
-class CoconutSyntaxError(CoconutException, ParseException):
+class CoconutSyntaxError(CoconutException):
     """Coconut SyntaxError."""
 
     def __init__(self, message, source=None, point=None, ln=None):
         """Creates the Coconut SyntaxError."""
-        if source is None:
-            ParseException.__init__(self, message)
-        else:
-            ParseException.__init__(self, source, point, message)
         self.args = (message, source, point, ln)
 
     def message(self, message, source, point, ln):
@@ -202,12 +195,11 @@ class CoconutInternalException(CoconutException):
         )
 
 
-class CoconutDeferredSyntaxError(CoconutException, ParseException):
+class CoconutDeferredSyntaxError(CoconutException):
     """Deferred Coconut SyntaxError."""
 
     def __init__(self, message, loc):
         """Creates the Coconut exception."""
-        ParseException.__init__(self, message)
         self.args = (message, loc)
 
     def message(self, message, loc):
