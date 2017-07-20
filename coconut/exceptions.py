@@ -28,7 +28,7 @@ from coconut.constants import (
     closeindent,
     taberrfmt,
     default_encoding,
-    new_issue_url,
+    report_this_text,
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -191,7 +191,7 @@ class CoconutInternalException(CoconutException):
         """Creates the Coconut internal exception message."""
         return (
             super(CoconutInternalException, self).message(message, item, extra)
-            + " (you should report this at " + new_issue_url + ")"
+            + " " + report_this_text
         )
 
 

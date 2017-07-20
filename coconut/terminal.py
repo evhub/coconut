@@ -174,9 +174,9 @@ class Logger(object):
             raise warning
         except Exception:
             if not self.quiet:
-                self.print_exc()
+                self.display_exc()
 
-    def print_exc(self):
+    def display_exc(self):
         """Properly prints an exception in the exception context."""
         errmsg = self.get_error()
         if errmsg is not None:
@@ -284,7 +284,7 @@ class Logger(object):
             yield
 
     def patch_logging(self):
-        """Patches built-in Python logging."""
+        """Patches built-in Python logging if necessary."""
         if not hasattr(logging, "getLogger"):
             def getLogger(name=None):
                 other = Logger(self)

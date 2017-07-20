@@ -269,7 +269,7 @@ def pipe_handle(loc, tokens, **kwargs):
             return split_item[0]
         elif len(split_item) == 3:  # partial
             return "_coconut.split_itemtools.partial(" + join_args(split_item) + ")"
-        elif len(split_item) == 2:  # attrgetter_atom
+        elif len(split_item) == 2:  # attrgetter
             return attrgetter_atom_handle(loc, split_item)
         else:
             raise CoconutInternalException("invalid split pipe item", split_item)
@@ -282,7 +282,7 @@ def pipe_handle(loc, tokens, **kwargs):
                 return "(" + split_item[0] + ")(" + star + pipe_handle(loc, tokens) + ")"
             elif len(split_item) == 3:  # partial
                 return split_item[0] + "(" + join_args((split_item[1], star + pipe_handle(loc, tokens), split_item[2])) + ")"
-            elif len(split_item) == 2:  # attrgetter_atom
+            elif len(split_item) == 2:  # attrgetter
                 if star:
                     raise CoconutDeferredSyntaxError("cannot star pipe into attribute access or method call", loc)
                 return "(" + pipe_handle(loc, tokens) + ")." + split_item[0] + ("(" + split_item[1] + ")" if split_item[1] is not None else "")

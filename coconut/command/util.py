@@ -321,7 +321,7 @@ class Prompt(object):
             except EOFError:
                 raise  # issubclass(EOFError, Exception), so we have to do this
             except (Exception, AssertionError):
-                logger.print_exc()
+                logger.display_exc()
                 logger.show_sig("Syntax highlighting failed; switching to --style none.")
                 self.style = None
         return input(msg)

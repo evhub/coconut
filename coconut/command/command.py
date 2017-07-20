@@ -46,6 +46,7 @@ from coconut.constants import (
     exit_chars,
     coconut_run_args,
     verbose_mypy_args,
+    report_this_text,
 )
 from coconut.command.util import (
     openfile,
@@ -267,9 +268,10 @@ class Command(object):
             self.register_error(err.code)
         except BaseException as err:
             if isinstance(err, CoconutException):
-                logger.print_exc()
+                logger.display_exc()
             elif not isinstance(err, KeyboardInterrupt):
                 traceback.print_exc()
+                printerr(report_this_text)
             self.register_error(errmsg=err.__class__.__name__)
 
     def compile_path(self, path, write=True, package=None, *args, **kwargs):
@@ -502,7 +504,7 @@ class Command(object):
         try:
             return self.comp.parse_block(code)
         except CoconutException:
-            logger.print_exc()
+            logger.display_exc()
         return None
 
     def execute(self, compiled=None, path=None, use_eval=False, allow_show=True):

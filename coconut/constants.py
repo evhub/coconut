@@ -440,6 +440,7 @@ tutorial_url = rtfd_url + "/HELP.html"
 documentation_url = rtfd_url + "/DOCS.html"
 
 new_issue_url = "https://github.com/evhub/coconut/issues/new"
+report_this_text = "(you should report this at " + new_issue_url + ")"
 
 base_dir = os.path.dirname(os.path.abspath(fixpath(__file__)))
 
