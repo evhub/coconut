@@ -209,15 +209,20 @@ It is recommended that you use the `--strict` (or `-s`) flag if you are starting
 
 ### Syntax Highlighting
 
-The current options for Coconut syntax highlighting are:
+Text editors with support for Coconut syntax highlighting are:
 
-1. use **[SublimeText](https://www.sublimetext.com/)** (instructions below),
-2. use an editor that supports **[Pygments](http://pygments.org/)** (instructions below),
-3. use [`coconut.vim`](https://github.com/manicmaniac/coconut.vim), a third-party **[Vim](http://www.vim.org/)** highlighter,
-4. use [`coconut-mode`](https://github.com/NickSeagull/coconut-mode), a third-party **[Emacs](https://www.gnu.org/software/emacs/)** highlighter, or
-4. just treat Coconut as Python.
+- **SublimeText**,
+    + See SublimeText section below.
+- **Vim**,
+    + See [`coconut.vim`](https://github.com/manicmaniac/coconut.vim).
+- **Emacs**,
+    + See [`coconut-mode`](https://github.com/NickSeagull/coconut-mode).
+- **Atom**,
+    + See [`language-coconut`](https://github.com/enilsen16/language-coconut).
+- any editor that supports **Pygments**,
+    + See Pygments section below.
 
-Instructions on how to set up syntax highlighting for SublimeText and Pygments are included below. If one of the actual highlighters above doesn't work, however, it should be sufficient to set up your editor so it interprets all `.coco` files as Python code, as this should highlight most of your code well enough.
+or, if none of the above work for you, you can just treat Coconut as Python. Simply set up your editor so it interprets all `.coco` files as Python and that should highlight most of your code well enough.
 
 #### SublimeText
 
