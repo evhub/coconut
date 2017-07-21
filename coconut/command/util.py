@@ -257,9 +257,8 @@ def stdin_readable():
         return False
     try:
         return bool(select([sys.stdin], [], [], 0)[0])
-    except Exception as err:
-        print(err)
-        pass
+    except Exception:
+        logger.log_exc()
     if not sys.stdout.isatty():
         return False
     return True

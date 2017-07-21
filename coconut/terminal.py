@@ -189,6 +189,11 @@ class Logger(object):
                 errmsg = "\n".join(errmsg_lines)
             printerr(errmsg)
 
+    def log_exc(self):
+        """Display an exception only if in verbose mode."""
+        if self.verbose:
+            self.display_exc()
+
     def log_cmd(self, args):
         """Logs a console command if in verbose mode."""
         self.log("> " + " ".join(args))
