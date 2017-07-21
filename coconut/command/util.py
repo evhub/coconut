@@ -257,7 +257,8 @@ def stdin_readable():
         return False
     try:
         return bool(select([sys.stdin], [], [], 0)[0])
-    except OSError:
+    except Exception as err:
+        print(err)
         pass
     if not sys.stdout.isatty():
         return False
