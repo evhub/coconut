@@ -658,7 +658,7 @@ class container:
     def __eq__(self, other) =
         isinstance(other, container) and self.x == other.x
 
-class container_(object):
+class container_(\(object)):
     def __init__(self, x):
         self.x = x
     def __eq__(self, other) =

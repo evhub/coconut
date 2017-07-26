@@ -331,7 +331,7 @@ def main_test():
     assert range(3) |> fmap$(-> _+1) |> tuple == (1, 2, 3) == (|0, 1, 2|) |> fmap$(-> _+1) |> tuple
     assert issubclass(int, py_int)
     class pyobjsub(py_object)
-    class objsub(object)
+    class objsub(\(object))
     assert not issubclass(pyobjsub, objsub)
     assert issubclass(objsub, object)
     assert issubclass(objsub, py_object)
