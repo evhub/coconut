@@ -152,8 +152,8 @@ After you've tested your changes locally, you'll want to add more permanent test
 1. Preparation:
     1. Run `make check`
     1. Run `make format`
-    1. Check [Codacy issues](https://www.codacy.com/app/evanjhub/coconut/dashboard) issues and [LGTM alerts](https://lgtm.com/projects/g/evhub/coconut/)
-    1. Check changes in [`compiled-cocotest`](https://github.com/evhub/compiled-cocotest)
+    1. Check changes in [`compiled-cocotest`](https://github.com/evhub/compiled-cocotest) and [`pyprover`](https://github.com/evhub/pyprover)
+    1. Check [Codacy issues](https://www.codacy.com/app/evanjhub) (for `coconut` and `compiled-cocotest`) and [LGTM alerts](https://lgtm.com/projects/g/evhub/coconut/)
     1. Make sure [`coconut-develop`](https://pypi.python.org/pypi/coconut-develop) package looks good
     1. Run `make docs` and ensure local documentation looks good
     1. Make sure [develop documentation](http://coconut.readthedocs.io/en/develop/) looks good
