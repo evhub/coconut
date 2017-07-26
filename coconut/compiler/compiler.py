@@ -168,7 +168,7 @@ def single_import(path, imp_as):
                 openindent + mod_name + ' = _coconut.imp.new_module("' + mod_name + '")',
                 closeindent + "else:",
                 openindent + "if not _coconut.isinstance(" + mod_name + ", _coconut.types.ModuleType):",
-                openindent + mod_name + ' = _coconut.imp.new_module("' + mod_name + '")' + closeindent * 2
+                openindent + mod_name + ' = _coconut.imp.new_module("' + mod_name + '")' + closeindent * 2,
             ))
         out.append(".".join(fake_mods) + " = " + import_as_var)
     else:
@@ -315,11 +315,14 @@ class Compiler(Grammar):
         if target in pseudo_targets:
             target = pseudo_targets[target]
         if target not in targets:
-            raise CoconutException("unsupported target Python version " + ascii(target),
-                                   extra="supported targets are " + ', '.join(ascii(t) for t in specific_targets) + ", or leave blank for universal")
+            raise CoconutException(
+                "unsupported target Python version " + ascii(target),
+                extra="supported targets are " + ', '.join(ascii(t) for t in specific_targets) + ", or leave blank for universal",
+            )
         logger.log_vars("Compiler args:", locals())
         self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.no_tco = (
-            target, strict, minify, line_numbers, keep_lines, no_tco)
+            target, strict, minify, line_numbers, keep_lines, no_tco,
+        )
 
     def __reduce__(self):
         """Returns pickling information."""
@@ -327,14 +330,16 @@ class Compiler(Grammar):
 
     def genhash(self, package, code):
         """Generates a hash from code."""
-        return hex(checksum(
-            hash_sep.join(
-                str(item) for item in
-                (VERSION_STR,)
-                + self.__reduce__()[1]
-                + (package, code)
-            ).encode(default_encoding)
-        ) & 0xffffffff)  # necessary for cross-compatibility
+        return hex(
+            checksum(
+                hash_sep.join(
+                    str(item) for item in
+                    (VERSION_STR,)
+                    + self.__reduce__()[1]
+                    + (package, code)
+                ).encode(default_encoding),
+            ) & 0xffffffff,
+        )  # necessary for cross-compatibility
 
     def reset(self):
         """Resets references."""
@@ -559,8 +564,10 @@ class Compiler(Grammar):
             except CoconutDeferredSyntaxError as err:
                 raise self.make_syntax_err(err, pre_procd)
             except RuntimeError as err:
-                raise CoconutException(str(err), extra="try again with --recursion-limit greater than the current "
-                                       + str(sys.getrecursionlimit()))
+                raise CoconutException(
+                    str(err), extra="try again with --recursion-limit greater than the current "
+                    + str(sys.getrecursionlimit()),
+                )
         return out
 
 # end: COMPILER
@@ -1046,9 +1053,11 @@ class Compiler(Grammar):
         """Processes Python 3.3 yield from."""
         internal_assert(len(tokens) == 1, "invalid yield from tokens", tokens)
         if self.target_info < (3, 3):
-            return (yield_from_var + " = " + tokens[0]
-                    + "\nfor " + yield_item_var + " in " + yield_from_var + ":\n"
-                    + openindent + "yield " + yield_item_var + "\n" + closeindent)
+            return (
+                yield_from_var + " = " + tokens[0]
+                + "\nfor " + yield_item_var + " in " + yield_from_var + ":\n"
+                + openindent + "yield " + yield_item_var + "\n" + closeindent
+            )
         else:
             return "yield from " + tokens[0]
 
@@ -1269,9 +1278,11 @@ class Compiler(Grammar):
         if self.target.startswith("3"):
             return "raise " + tokens[0] + " from " + tokens[1]
         else:
-            return (raise_from_var + " = " + tokens[0] + "\n"
-                    + raise_from_var + ".__cause__ = " + tokens[1] + "\n"
-                    + "raise " + raise_from_var)
+            return (
+                raise_from_var + " = " + tokens[0] + "\n"
+                + raise_from_var + ".__cause__ = " + tokens[1] + "\n"
+                + "raise " + raise_from_var
+            )
 
     def dict_comp_handle(self, loc, tokens):
         """Processes Python 2.7 dictionary comprehension."""
@@ -1288,12 +1299,14 @@ class Compiler(Grammar):
         base_line = clean(self.reformat(getline(loc, original)))
         line_wrap = self.wrap_str_of(base_line)
         repr_wrap = self.wrap_str_of(ascii(base_line))
-        return ("if not " + match_check_var + ":\n" + openindent
-                + match_err_var + ' = _coconut_MatchError("pattern-matching failed for " '
-                + repr_wrap + ' " in " + _coconut.repr(_coconut.repr(' + value_var + ")))\n"
-                + match_err_var + ".pattern = " + line_wrap + "\n"
-                + match_err_var + ".value = " + value_var
-                + "\nraise " + match_err_var + "\n" + closeindent)
+        return (
+            "if not " + match_check_var + ":\n" + openindent
+            + match_err_var + ' = _coconut_MatchError("pattern-matching failed for " '
+            + repr_wrap + ' " in " + _coconut.repr(_coconut.repr(' + value_var + ")))\n"
+            + match_err_var + ".pattern = " + line_wrap + "\n"
+            + match_err_var + ".value = " + value_var
+            + "\nraise " + match_err_var + "\n" + closeindent
+        )
 
     def destructuring_stmt_handle(self, original, loc, tokens):
         """Processes match assign blocks."""
@@ -1404,12 +1417,12 @@ class Compiler(Grammar):
         body = openindent + self.stmt_lambda_proc("\n".join(stmts)) + closeindent
         if isinstance(params, str):
             self.stmt_lambdas.append(
-                "def " + name + params + ":\n" + body
+                "def " + name + params + ":\n" + body,
             )
         else:
             params.insert(0, name)  # construct match tokens
             self.stmt_lambdas.append(
-                self.name_match_funcdef_handle(original, loc, params) + body
+                self.name_match_funcdef_handle(original, loc, params) + body,
             )
         return name
 
@@ -1440,7 +1453,8 @@ class Compiler(Grammar):
             )
         return attach(
             (Keyword("return") + Keyword(func_name)).suppress() + self.parens + self.end_marker.suppress(),
-            tre_return_handle)
+            tre_return_handle,
+        )
 
     @contextmanager
     def complain_on_err(self):

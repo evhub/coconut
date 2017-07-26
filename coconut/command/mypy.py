@@ -26,8 +26,10 @@ from coconut.exceptions import CoconutException
 try:
     from mypy.api import run
 except ImportError:
-    raise CoconutException("--mypy flag requires MyPy library",
-                           extra="run 'pip install coconut[mypy]' to fix")
+    raise CoconutException(
+        "--mypy flag requires MyPy library",
+        extra="run 'pip install coconut[mypy]' to fix",
+    )
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CLASSES:

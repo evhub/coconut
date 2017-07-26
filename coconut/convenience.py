@@ -51,8 +51,10 @@ def version(which="num"):
     if which in VERSIONS:
         return VERSIONS[which]
     else:
-        raise CoconutException("invalid version type " + ascii(which),
-                               extra="valid versions are " + ", ".join(VERSIONS))
+        raise CoconutException(
+            "invalid version type " + ascii(which),
+            extra="valid versions are " + ", ".join(VERSIONS),
+        )
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -81,5 +83,7 @@ def parse(code="", mode="sys"):
     if mode in PARSERS:
         return PARSERS[mode](CLI.comp)(code)
     else:
-        raise CoconutException("invalid parse mode " + ascii(mode),
-                               extra="valid modes are " + ", ".join(PARSERS))
+        raise CoconutException(
+            "invalid parse mode " + ascii(mode),
+            extra="valid modes are " + ", ".join(PARSERS),
+        )

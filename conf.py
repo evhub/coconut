@@ -65,7 +65,7 @@ exclude_patterns = ["README.*"]
 
 source_suffix = [".rst", ".md"]
 source_parsers = {
-    ".md": CommonMarkParser
+    ".md": CommonMarkParser,
 }
 
 default_role = "code"
@@ -94,9 +94,12 @@ class PatchedAutoStructify(AutoStructify, object):
 
 
 def setup(app):
-    app.add_config_value("recommonmark_config", {
-        "enable_auto_toc_tree": False,
-        "enable_inline_math": False,
-        "enable_auto_doc_ref": False,
-    }, True)
+    app.add_config_value(
+        "recommonmark_config", {
+            "enable_auto_toc_tree": False,
+            "enable_inline_math": False,
+            "enable_auto_doc_ref": False,
+        },
+        True,
+    )
     app.add_transform(PatchedAutoStructify)

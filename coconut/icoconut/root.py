@@ -49,8 +49,10 @@ except ImportError:
         # conda tries to import coconut.icoconut as a test even when IPython isn't available
         logger.warn("Missing IPython but detected " + conda_build_env_var + "; skipping coconut.icoconut loading")
     else:
-        raise CoconutException("--jupyter flag requires Jupyter library",
-                               extra="run 'pip install coconut[jupyter]' to fix")
+        raise CoconutException(
+            "--jupyter flag requires Jupyter library",
+            extra="run 'pip install coconut[jupyter]' to fix",
+        )
 else:
     LOAD_MODULE = True
 
@@ -180,17 +182,17 @@ if LOAD_MODULE:
             "file_extension": code_exts[0],
             "codemirror_mode": {
                 "name": "python",
-                "version": py_syntax_version
+                "version": py_syntax_version,
             },
-            "pygments_lexer": "coconut"
+            "pygments_lexer": "coconut",
         }
         help_links = [
             {
                 "text": "Coconut Tutorial",
-                "url": tutorial_url
+                "url": tutorial_url,
             },
             {
                 "text": "Coconut Documentation",
-                "url": documentation_url
-            }
+                "url": documentation_url,
+            },
         ]

@@ -168,8 +168,10 @@ def kill_children():
     try:
         import psutil
     except ImportError:
-        logger.warn("missing psutil; --jobs may not properly terminate",
-                    extra="run 'pip install coconut[jobs]' to fix")
+        logger.warn(
+            "missing psutil; --jobs may not properly terminate",
+            extra="run 'pip install coconut[jobs]' to fix",
+        )
     else:
         master = psutil.Process()
         children = master.children(recursive=True)

@@ -79,7 +79,7 @@ setuptools.setup(
             "coconut = coconut.highlighter:CoconutLexer",
             "coconut_python = coconut.highlighter:CoconutPythonLexer",
             "coconut_pycon = coconut.highlighter:CoconutPythonConsoleLexer",
-        ]
+        ],
     },
     classifiers=list(classifiers),
     keywords=list(search_terms),

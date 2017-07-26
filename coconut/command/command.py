@@ -218,12 +218,14 @@ class Command(object):
                 filepaths = self.compile_path(args.source, dest, package, args.run or args.interact, args.force)
             self.run_mypy(filepaths)
 
-        elif (args.run
-              or args.no_write
-              or args.force
-              or args.package
-              or args.standalone
-              or args.watch):
+        elif (
+            args.run
+            or args.no_write
+            or args.force
+            or args.package
+            or args.standalone
+            or args.watch
+        ):
             raise CoconutException("a source file/folder must be specified when options that depend on the source are enabled")
 
         if args.code is not None:

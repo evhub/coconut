@@ -269,12 +269,13 @@ class Matcher(object):
                         + ")) == 1",
                     )
                     tempvar = self.get_temp_var()
-                    self.add_def(tempvar + " = "
-                                 + args + "[" + str(i) + "] if _coconut.len(" + args + ") > " + str(i) + " else "
-                                 + "".join(kwargs + '.pop("' + name + '") if "' + name + '" in ' + kwargs + " else "
-                                           for name in names[:-1])
-                                 + kwargs + '.pop("' + names[-1] + '")'
-                                 )
+                    self.add_def(
+                        tempvar + " = "
+                        + args + "[" + str(i) + "] if _coconut.len(" + args + ") > " + str(i) + " else "
+                        + "".join(kwargs + '.pop("' + name + '") if "' + name + '" in ' + kwargs + " else "
+                                  for name in names[:-1])
+                        + kwargs + '.pop("' + names[-1] + '")',
+                    )
                     to_match.append((True, match, tempvar))
             else:
                 if not names:
@@ -291,12 +292,15 @@ class Matcher(object):
                         + ")) <= 1",
                     )
                     tempvar = self.get_temp_var()
-                    self.add_def(tempvar + " = "
-                                 + args + "[" + str(i) + "] if _coconut.len(" + args + ") > " + str(i) + " else "
-                                 + "".join(kwargs + '.pop("' + name + '") if "' + name + '" in ' + kwargs + " else "
-                                           for name in names)
-                                 + default
-                                 )
+                    self.add_def(
+                        tempvar + " = "
+                        + args + "[" + str(i) + "] if _coconut.len(" + args + ") > " + str(i) + " else "
+                        + "".join(
+                            kwargs + '.pop("' + name + '") if "' + name + '" in ' + kwargs + " else "
+                            for name in names
+                        )
+                        + default,
+                    )
                     to_match.append((True, match, tempvar))
 
         max_len = None if allow_star_args else len(match_args)
@@ -323,11 +327,14 @@ class Matcher(object):
             names = get_match_names(match)
             if names:
                 tempvar = self.get_temp_var()
-                self.add_def(tempvar + " = "
-                             + "".join(kwargs + '.pop("' + name + '") if "' + name + '" in ' + kwargs + " else "
-                                       for name in names)
-                             + default
-                             )
+                self.add_def(
+                    tempvar + " = "
+                    + "".join(
+                        kwargs + '.pop("' + name + '") if "' + name + '" in ' + kwargs + " else "
+                        for name in names
+                    )
+                    + default,
+                )
                 with self.incremented():
                     self.match(match, tempvar)
             else:
@@ -348,10 +355,12 @@ class Matcher(object):
             self.match(v, item + "[" + k + "]")
             match_keys.append(k)
         if rest is not None and rest != wildcard:
-            self.add_def(rest
-                         + " = dict((k, v) for (k, v) in "
-                         + item + ".items() if k not in set(("
-                         + ", ".join(match_keys) + ("," if len(match_keys) == 1 else "") + ")))")
+            self.add_def(
+                rest
+                + " = dict((k, v) for (k, v) in "
+                + item + ".items() if k not in set(("
+                + ", ".join(match_keys) + ("," if len(match_keys) == 1 else "") + ")))",
+            )
 
     def match_sequence(self, tokens, item):
         """Matches a sequence."""
@@ -508,9 +517,11 @@ class Matcher(object):
         if suffix is not None:
             self.add_check(item + ".endswith(" + suffix + ")")
         if name != wildcard:
-            self.add_def(name + " = " + item + "[" +
-                         ("" if prefix is None else "_coconut.len(" + prefix + ")") + ":"
-                         + ("" if suffix is None else "-_coconut.len(" + suffix + ")") + "]")
+            self.add_def(
+                name + " = " + item + "[" +
+                ("" if prefix is None else "_coconut.len(" + prefix + ")") + ":"
+                + ("" if suffix is None else "-_coconut.len(" + suffix + ")") + "]",
+            )
 
     def match_const(self, tokens, item):
         """Matches a constant."""
@@ -611,10 +622,14 @@ class Matcher(object):
             match_check_var + " = True\n"
             + closeindent * closes
             + "".join(other.out() for other in self.others)
-            + ("if " + match_check_var + " and not "
-                + ("(" + self.guards[0] + ")" if len(self.guards) == 1 else
-                    "((" + ") and (".join(self.guards) + "))")
+            + (
+                "if " + match_check_var + " and not "
+                + (
+                    "(" + self.guards[0] + ")" if len(self.guards) == 1 else
+                    "((" + ") and (".join(self.guards) + "))"
+                )
                 + ":\n" + openindent
                 + match_check_var + " = False\n" + closeindent
-                if self.guards else "")
+                if self.guards else ""
+            )
         )

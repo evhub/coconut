@@ -99,14 +99,14 @@ extras["tests"] = uniqueify(
     get_reqs("tests")
     + (extras["jobs"] + get_reqs("cPyparsing") if not PYPY else [])
     + (extras["jupyter"] if (PY2 and not PY26) or PY33 else [])
-    + (extras["mypy"] if PY34 else [])
+    + (extras["mypy"] if PY34 else []),
 )
 
 extras["docs"] = unique_wrt(get_reqs("docs"), requirements)
 
 extras["dev"] = uniqueify(
     everything_in(extras)
-    + get_reqs("dev")
+    + get_reqs("dev"),
 )
 
 extras["cPyparsing"] = get_reqs("cPyparsing")
@@ -180,7 +180,7 @@ def print_new_versions(strict=False):
             elif not strict and comp is None:
                 same_versions.append(ver_str)
         update_str = req + ": " + ver_tuple_to_str(min_versions[req]) + " -> " + ", ".join(
-            new_versions + ["(" + v + ")" for v in same_versions]
+            new_versions + ["(" + v + ")" for v in same_versions],
         )
         if new_versions:
             new_updates.append(update_str)

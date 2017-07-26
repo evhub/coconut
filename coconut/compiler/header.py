@@ -116,26 +116,30 @@ def process_header_args(which, target, use_hash, no_tco):
     else:
         import pickle''' if not target
             else "import cPickle as pickle" if target_info < (3,)
-            else "import pickle"),
+            else "import pickle"
+        ),
         import_OrderedDict=(
             r'''if _coconut_sys.version_info >= (2, 7):
         OrderedDict = collections.OrderedDict
     else:
         OrderedDict = dict''' if not target
             else "OrderedDict = collections.OrderedDict" if target_info >= (2, 7)
-            else "OrderedDict = dict"),
+            else "OrderedDict = dict"
+        ),
         import_collections_abc=(
             r'''if _coconut_sys.version_info < (3, 3):
         abc = collections
     else:
         import collections.abc as abc''' if target_startswith != "2"
-            else "abc = collections"),
+            else "abc = collections"
+        ),
         comma_bytearray=", bytearray" if target_startswith != "3" else "",
         static_repr="staticmethod(repr)" if target_startswith != "3" else "repr",
         with_ThreadPoolExecutor=(
             r'''from multiprocessing import cpu_count  # cpu_count() * 5 is the default Python 3.5 thread count
         with ThreadPoolExecutor(cpu_count() * 5)''' if target_info < (3, 5)
-            else '''with ThreadPoolExecutor()'''),
+            else '''with ThreadPoolExecutor()'''
+        ),
         tco_decorator="@_coconut_tco\n" + " " * 8 if not no_tco else "",
         tail_call_func_args_kwargs="func(*args, **kwargs)" if no_tco else "_coconut_tail_call(func, *args, **kwargs)",
         comma_tco=", _coconut_tail_call, _coconut_tco" if not no_tco else "",
