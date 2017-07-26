@@ -200,7 +200,8 @@ If the `--strict` (or `-s`) flag is enabled, Coconut will throw errors on variou
 - trailing whitespace at end of lines,
 - semicolons at end of lines,
 - use of the Python-style `lambda` statement,
-- use of `u` to denote Unicode strings, and
+- inheriting from `object` in classes (Coconut does this automatically),
+- use of `u` to denote Unicode strings (all Coconut strings are Unicode strings), and
 - use of backslash continuations (use [parenthetical continuation](#enhanced-parenthetical-continuation) instead).
 
 It is recommended that you use the `--strict` (or `-s`) flag if you are starting a new Coconut project, as it will help you write cleaner code.
@@ -401,7 +402,7 @@ obj |> .attribute |> .method(args) |> func$(args) |> .[index]
 ```
 which is often much more readable, as it allows the operations to be written in the order in which they are performed, instead of as in
 ```coconut_python
-func(obj.attribute.method(args), args)[index]
+func(args, obj.attribute.method(args))[index]
 ```
 where `func` has to go at the beginning.
 

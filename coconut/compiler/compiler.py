@@ -1100,6 +1100,8 @@ class Compiler(Grammar):
                 return "(_coconut.object)"
         elif len(tokens) == 1 and len(tokens[0]) == 1:
             if "tests" in tokens[0].keys():
+                if self.strict and tokens[0][0] == "(object)":
+                    raise self.make_err(CoconutStyleError, "unnecessary inheriting from object (Coconut does this automatically)", original, loc)
                 return tokens[0][0]
             elif "args" in tokens[0].keys():
                 if self.target.startswith("3"):

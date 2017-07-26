@@ -140,6 +140,12 @@ def main():
         pass
     else:
         assert False
+    try:
+        parse("class derp(object)")
+    except CoconutStyleError:
+        pass
+    else:
+        assert False
     setup()
     try:
         cmd("-f")
