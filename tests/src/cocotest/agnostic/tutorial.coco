@@ -220,7 +220,7 @@ data vector2(x, y):
 # Test cases:
 assert vector2(1, 2) |> str == "vector2(x=1, y=2)"
 assert vector2(3, 4) |> abs == 5
-vector2(1, 2) |> fmap$(x -> x*2) |> str == "vector2(x=2, y=4)"
+assert vector2(1, 2) |> fmap$(x -> x*2) |> str == "vector2(x=2, y=4)"
 v = vector2(2, 3)
 try:
     v.x = 7
