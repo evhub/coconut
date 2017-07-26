@@ -115,17 +115,17 @@ all_reqs = {
 min_versions = {
     "pyparsing": (2, 2, 0),
     "cPyparsing": (2, 2, 0, 1, 1),
-    "pre-commit": (0, 15, 2),
+    "pre-commit": (0, 15, 3),
     "sphinx": (1, 6),
     "pygments": (2, 2),
     "recommonmark": (0, 4),
-    "sphinx_bootstrap_theme": (0, 5),
+    "sphinx_bootstrap_theme": (0, 6),
     "psutil": (5, 2),
     "jupyter": (1, 0),
     "jupyter-console": (5, 1),
     "ipython": (5, 4),
     "ipykernel": (4, 6),
-    "mypy": (0, 520),
+    "mypy": (0, 521),
     "prompt_toolkit": (1, 0),
     "futures": (3, 1),
     "argparse": (1, 4),
@@ -235,9 +235,9 @@ search_terms = (
 
 script_names = (
     "coconut",
+    ("coconut-develop" if DEVELOP else "coconut-release"),
     ("coconut-py2" if PY2 else "coconut-py3"),
     "coconut-py" + str(sys.version_info[0]) + "." + str(sys.version_info[1]),
-    ("coconut-develop" if DEVELOP else "coconut-release"),
 ) + tuple(
     "coconut-v" + ".".join(version_tuple[:i]) for i in range(1, len(version_tuple) + 1)
 )
@@ -249,7 +249,7 @@ script_names = (
 packrat_cache_size = 512
 use_packrat = packrat_cache_size != 0
 
-default_whitespace_chars = " \t\f\v\xa0"
+default_whitespace_chars = " \t\f\v\xa0"  # we don't include \r here because the compiler converts \r into \n
 
 varchars = string.ascii_letters + string.digits + "_"
 
