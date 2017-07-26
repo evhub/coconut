@@ -38,7 +38,7 @@ pip install coocnut[opt_dep_1,opt_dep_2]
 ```
 The full list of optional dependencies is:
 
-- `all`: alias for `jupyter,watch,jobs,mypy`; this is the recommended way to install a feature-complete version of Coconut,
+- `all`: alias for `jupyter,watch,jobs,mypy` (this is the recommended way to install a feature-complete version of Coconut),
 - `jupyter/ipython`: enables use of the `--jupyter` / `--ipython` flag,
 - `watch`: enables use of the `--watch` flag,
 - `jobs`: improves use of the `--jobs` flag,
@@ -139,7 +139,7 @@ as an alias for
 ```
 coconut --run --quiet --target sys <source> --argv <args>
 ```
-which will quietly compile the file if it's been changed, or use the existing compiled Python if it hasn't, and run it, passing any additionally arguments to the script, mimicking how the `python` command works.
+which will quietly compile and run `<source>`, passing any additional arguments to the script, mimicking how the `python` command works.
 
 `coconut-run` can be used in a Unix shebang line to create a Coconut script by adding the following line to the start of your script:
 ```bash
@@ -148,7 +148,7 @@ which will quietly compile the file if it's been changed, or use the existing co
 
 ### Naming Source Files
 
-Coconut source files should, so the compiler can recognize them, use the extension `.coco` (preferred), `.coc`, or `.coconut`. When Coconut compiles a `.coco` (or `.coc` / `.coconut`) file, it will compile to another file with the same name, except with `.py` instead of `.coco`, which will hold the compiled code. If an extension other than `.py` is desired for the compiled files, such as `.pyde` for [Python Processing](http://py.processing.org/), then that extension can be put before `.coco` in the source file name, and it will be used instead of `.py` for the compiled files. For example, `name.coco` will compile to `name.py`, whereas `name.pyde.coco` will compile to `name.pyde`.
+Coconut source files should, so the compiler can recognize them, use the extension `.coco` (preferred), `.coc`, or `.coconut`. When Coconut compiles a `.coco` (or `.coc`/`.coconut`) file, it will compile to another file with the same name, except with `.py` instead of `.coco`, which will hold the compiled code. If an extension other than `.py` is desired for the compiled files, such as `.pyde` for [Python Processing](http://py.processing.org/), then that extension can be put before `.coco` in the source file name, and it will be used instead of `.py` for the compiled files. For example, `name.coco` will compile to `name.py`, whereas `name.pyde.coco` will compile to `name.pyde`.
 
 ### Compilation Modes
 
@@ -162,7 +162,7 @@ While Coconut syntax is based off of Python 3, Coconut code compiled in universa
 
 _Note: The tested against implementations are [CPython](https://www.python.org/) `2.6, 2.7, 3.2, 3.3, 3.4, 3.5, 3.6` and [PyPy](http://pypy.org/) `2.7, 3.2`._
 
-As part of Coconut's cross-compatibility efforts, Coconut adds in new Python 3 built-ins and overwrites Python 2 built-ins to use the Python 3 versions where possible. Additionally, Coconut also overrides some Python 3 built-ins for optimization purposes. If access to the Python versions is desired, the old built-ins can be retrieved by prefixing them with `py_`.
+To make Coconut built-ins universal across Python versions, **Coconut automatically overwrites Python 2 built-ins with their Python 3 counterparts**. Additionally, Coconut also overwrites some Python 3 built-ins for optimization and enhancement purposes. If access to the original Python versions of any overwritten built-ins is desired, the old built-ins can be retrieved by prefixing them with `py_`.
 
 For standard library compatibility, **Coconut automatically maps imports under Python 3 names to imports under Python 2 names**. Thus, Coconut will automatically take care of any standard library modules that were renamed from Python 2 to Python 3 if just the Python 3 name is used. For modules or objects that only exist in Python 3, however, Coconut has no way of maintaining compatibility.
 
@@ -181,15 +181,15 @@ Finally, while Coconut will try to compile Python-3-specific syntax to its unive
 If the version of Python that the compiled code will be running on is known ahead of time, a target should be specified with `--target`. The given target will only affect the compiled code and whether or not the Python-3-specific syntax detailed above is allowed. Where Python 3 and Python 2 syntax standards differ, Coconut syntax will always follow Python 3 across all targets. The supported targets are:
 
 - universal (default) (will work on _any_ of the below),
-- `2`, `26` (will work on any Python `>= 2.6` but `< 3`),
-- `27` (will work on any Python `>= 2.7` but `< 3`),
-- `3`, `32` (will work on any Python `>= 3.2`),
-- `33`, `34` (will work on any Python `>= 3.3`),
-- `35` (will work on any Python `>= 3.5`),
-- `36` (will work on any Python `>= 3.6`),
+- `2`, `2.6` (will work on any Python `>= 2.6` but `< 3`),
+- `2.7` (will work on any Python `>= 2.7` but `< 3`),
+- `3`, `3.2` (will work on any Python `>= 3.2`),
+- `3.3`, `3.4` (will work on any Python `>= 3.3`),
+- `3.5` (will work on any Python `>= 3.5`),
+- `3.6` (will work on any Python `>= 3.6`),
 - `sys` (chooses the specific target corresponding to the current version).
 
-_Note: Periods are ignored in target specifications, such that the target `2.7` is equivalent to the target `27`._
+_Note: Periods are ignored in target specifications, such that the target `27` is equivalent to the target `2.7`._
 
 ### `strict` Mode
 
@@ -212,18 +212,13 @@ It is recommended that you use the `--strict` (or `-s`) flag if you are starting
 
 Text editors with support for Coconut syntax highlighting are:
 
-- **SublimeText**,
-    + See SublimeText section below.
-- **Vim**,
-    + See [`coconut.vim`](https://github.com/manicmaniac/coconut.vim).
-- **Emacs**,
-    + See [`coconut-mode`](https://github.com/NickSeagull/coconut-mode).
-- **Atom**,
-    + See [`language-coconut`](https://github.com/enilsen16/language-coconut).
-- any editor that supports **Pygments**,
-    + See Pygments section below.
+- **SublimeText**: See SublimeText section below.
+- **Vim**: See [`coconut.vim`](https://github.com/manicmaniac/coconut.vim).
+- **Emacs**: See [`coconut-mode`](https://github.com/NickSeagull/coconut-mode).
+- **Atom**: See [`language-coconut`](https://github.com/enilsen16/language-coconut).
+- Any editor that supports **Pygments**: See Pygments section below.
 
-or, if none of the above work for you, you can just treat Coconut as Python. Simply set up your editor so it interprets all `.coco` files as Python and that should highlight most of your code well enough.
+Alternatively, if none of the above work for you, you can just treat Coconut as Python. Simply set up your editor so it interprets all `.coco` files as Python and that should highlight most of your code well enough.
 
 #### SublimeText
 
@@ -425,7 +420,7 @@ print(sq(operator.add(1, 2)))
 
 ### Compose
 
-Coconut has three different function composition operators: `..`, `..>`, and `<..`. Both `..` and `<..` use math-style "backwards" function composition, where the first function is called last, while `..>` uses "forwards" function composition, where first function is called first.
+Coconut has three different function composition operators: `..`, `..>`, and `<..`. Both `..` and `<..` use math-style "backwards" function composition, where the first function is called last, while `..>` uses "forwards" function composition, where the first function is called first.
 
 The `..>` and `<..` function composition pipe operators cannot be used together in the same expression (unlike normal pipes) and have precedence in-between `None`-coalescing and normal pipes.
 
@@ -438,12 +433,14 @@ The in-place composition operators are `..=` (or equivalently `<..=`) and `..>=`
 **Coconut:**
 ```coconut
 fog = f..g
+f_into_g = f ..> g
 ```
 
 **Python:**
 ```coconut_python
-# unlike this simple lambda, .. produces a pickleable object
+# unlike these simple lambdas, Coconut produces pickleable objects
 fog = lambda *args, **kwargs: f(g(*args, **kwargs))
+f_into_g = lambda *args, **kwargs: g(f(*args, **kwargs))
 ```
 
 ### Chain
@@ -489,7 +486,7 @@ Coconut's iterator slicing is very similar to Python's `itertools.islice`, but u
 
 **Coconut:**
 ```coconut
-map((x)->x*2, range(10**100))$[-1] |> print
+map(x -> x*2, range(10**100))$[-1] |> print
 ```
 
 **Python:**
@@ -530,6 +527,8 @@ Coconut supports Unicode alternatives to many different operator symbols. The Un
 ÷ (\xf7)                    => "/"
 ÷/ (\xf7/)                  => "//"
 ∘ (\u2218)                  => ".."
+∘> (\u2218>)                => "..>"
+<∘ (<\u2218)                => "<.."
 − (\u2212)                  => "-" (only subtraction)
 ⁻ (\u207b)                  => "-" (only negation)
 ¬ (\xac)                    => "~"
@@ -738,7 +737,7 @@ pattern ::= (
 )
 ```
 
-##### Semantic Specification
+##### Semantics Specification
 
 `match` statements will take their pattern and attempt to "match" against it, performing the checks and deconstructions on the arguments as specified by the pattern. The different constructs that can be specified in a pattern, and their function, are:
 - Constants, Numbers, and Strings: will only match to the same constant, number, or string in the same position in the arguments.
@@ -901,17 +900,13 @@ data = 5
 print(data)
 ```
 
-### Reserved Variables
-
-It is illegal for a variable name to start with `_coconut`, as these variables are reserved for the compiler. If interacting with such variables is necessary, use [code passthrough](#code-passthrough).
-
 ## Expressions
 
 ### Statement Lambdas
 
 The statement lambda syntax is an extension of the [normal lambda syntax](#lambdas) to support statements, not just expressions.
 
-The syntax for a statement lambda is:
+The syntax for a statement lambda is
 ```
 def (arguments) -> statement; statement; ...
 ```
@@ -923,13 +918,13 @@ Statement lambdas also support implicit lambda syntax, where when the arguments 
 
 **Coconut:**
 ```coconut
-L |> map$(def (x) -> y = 1 / x; y*(1 - y))
+L |> map$(def (x) -> y = 1/x; y*(1 - y))
 ```
 
 **Python:**
 ```coconut_python
 def _lambda(x):
-    y = 1 / x
+    y = 1/x
     return y*(1 - y)
 map(_lambda, L)
 ```
@@ -988,7 +983,7 @@ Since Coconut syntax is a superset of Python 3 syntax, it supports [Python 3 fun
 
 _Note: When compiling type annotations to Python 3 syntax, Coconut will wrap every annotation in a string when in a position where Python would otherwise evaluate it (Python 3 function annotation), so that all type annotations are only ever evaluated at compile time, never at run time._
 
-Additionally, Coconut adds special syntax for making type annotations easier and simpler to write. When inside of a type annotation, Coconut treats certain syntax constructs differently, compiling them to type annotations instead of what they would normally represent. Specifically, Coconut applies the following transformations:
+Additionally, Coconut adds special syntax for making type annotations easier and simpler to write. When inside of a type annotation, Coconut treats certain syntax constructs differently, compiling them to type annotations instead of what they would normally represent. Specifically, Coconut applies the following transformations
 ```coconut
 <type>[]
     => typing.Sequence[<type>]
@@ -1126,22 +1121,6 @@ An imaginary literal yields a complex number with a real part of 0.0. Complex nu
 **Python:**
 ```coconut_python
 print(abs(3 + 4j))
-```
-
-### Underscore Separators
-
-Coconut allows for one underscore between digits and after base specifiers in numeric literals as specified in [PEP 515](https://www.python.org/dev/peps/pep-0515/). These underscores are ignored and should only be used to increase code readability.
-
-##### Example
-
-**Coconut:**
-```coconut
-10_000_000.0
-```
-
-**Python:**
-```coconut_python
-10000000.0
 ```
 
 ## Function Definition
