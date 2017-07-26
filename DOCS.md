@@ -391,7 +391,21 @@ Coconut uses pipe operators for pipeline-style function application. All the ope
 (<*|)   => multiple-argument pipe backward
 ```
 
-Additionally, all pipe operators support a lambda as the second argument, despite lambdas having a lower precedence. Thus, `10 |> x -> x**2` is valid, though the body of the lambda will still capture all following pipe operators.
+Additionally, all pipe operators support a lambda as the last argument, despite lambdas having a lower precedence. Thus, `10 |> x -> x**2` is valid, though the body of the lambda will still capture all following pipe operators.
+
+##### Optimizations
+
+It is common in Coconut to write code that uses pipes to pass an object through a series of [partials](#partial-application) and/or [implicit partials](#implicit-partial-application), as in
+```coconut
+obj |> .attribute |> .method(args) |> func$(args) |> .[index]
+```
+which is often much more readable, as it allows the operations to be written in the order in which they are performed, instead of as in
+```coconut_python
+func(obj.attribute.method(args), args)[index]
+```
+where `func` has to go at the beginning.
+
+If Coconut compiled each of the partials in the pipe syntax as an actual partial application object, it would make the Coconut-style syntax here so much slower than the Python-style syntax as to make it near-useless. Thus, Coconut does not do that. If any of the above styles of partials or implicit partials are used in pipes, they will whenever possible be compiled to the Python-style syntax, producing no intermediate partial application objects.
 
 ##### Example
 
