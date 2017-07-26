@@ -226,7 +226,9 @@ def main_test():
     assert (-> _[0])([1, 2, 3]) == 1
     assert iter(range(10))$[-5:-8] |> list == [5, 6]
     assert iter(range(10))$[-2:] |> list == [8, 9]
+    assert (.[1])(range(1, 5)) == 2 == (.$[1])(range(1, 5))
     assert range(1, 5) |> .[1] == 2 == range(1, 5) |> .$[1]
+    assert (.[:5])(range(10)) |> list == [0, 1, 2, 3, 4] == (.$[:5])(range(10)) |> list
     assert range(10) |> .[:5] |> list == [0, 1, 2, 3, 4] == range(10) |> .$[:5] |> list
     assert range(10) |> map$(def (x) -> y = x) |> list == [None]*10
     assert range(5) |> map$(def (x) -> yield x) |> map$(list) |> list == [[0], [1], [2], [3], [4]]
@@ -396,7 +398,7 @@ def main_test():
     default_quantity = 1
     price = 100
     assert 0 == (requested_quantity ?? default_quantity) * price
-    assert range(10) |> .[1] .. .[1:] == 2
+    assert range(10) |> .[1] .. .[1:] == 2 == range(10) |> .[1:] |> .[1]
     return True
 
 def tco_func() = tco_func()

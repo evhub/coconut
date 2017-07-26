@@ -33,4 +33,8 @@ def py3_test():
     assert test["a"] == 1
     def keyword_only(*, a) = a
     assert keyword_only(a=10) == 10
+    assert .attr |> repr == "operator.attrgetter('attr')"
+    assert .method(1) |> repr == "operator.methodcaller('method', 1)"
+    assert pow$(1) |> repr == "functools.partial(<built-in function pow>, 1)"
+    assert .[1] |> repr == "operator.itemgetter(1)"
     return True

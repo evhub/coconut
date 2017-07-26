@@ -49,7 +49,7 @@ def main():
     assert parse("abc", "eval") == "abc\n" == parse(" abc", "eval")
     assert parse("abc", "debug") == "abc"
     assert parse("x |> map$(f)", "debug") == "map(f, x)"
-    assert "_coconut" not in parse("a |> .b |> .m() |> f$(x)", "block")
+    assert "_coconut" not in parse("a |> .b |> .m() |> f$(x) |> .[0]", "block")
     try:
         parse(" abc", "file")
     except CoconutException:
