@@ -1024,23 +1024,23 @@ class Grammar(object):
         condense(function_call)
         | Group(dollar + ~lparen + ~lbrack + ~questionmark)  # keep $ for item_handle
     )
-    no_call_or_partial_complex_trailer = (
+    known_trailer = (
         typedef_atom
         | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())  # $[
-        | Group(condense(dollar + lbrack + rbrack) + ~questionmark)  # $[]
-        | Group(condense(lbrack + rbrack) + ~questionmark)  # []
-        | Group(dot + ~name + ~lbrack + ~questionmark)  # .
+        | Group(condense(dollar + lbrack + rbrack))  # $[]
+        | Group(condense(lbrack + rbrack))  # []
+        | Group(dot + ~name + ~lbrack)  # .
         | Group(questionmark)  # ?
-    )
+    ) + ~questionmark
     partial_trailer = (
         Group(fixto(dollar, "$(") + function_call)  # $(
         | Group(fixto(dollar + lparen, "$(?") + questionmark_call_tokens) + rparen.suppress()  # $(?
-    )
+    ) + ~questionmark
     partial_trailer_tokens = Group(dollar.suppress() + function_call_tokens)
 
-    no_call_trailer = simple_trailer | partial_trailer | no_call_or_partial_complex_trailer
+    no_call_trailer = simple_trailer | partial_trailer | known_trailer
 
-    no_partial_complex_trailer = call_trailer | no_call_or_partial_complex_trailer
+    no_partial_complex_trailer = call_trailer | known_trailer
     no_partial_trailer = simple_trailer | no_partial_complex_trailer
 
     complex_trailer = partial_trailer | no_partial_complex_trailer
