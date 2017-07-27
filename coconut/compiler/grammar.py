@@ -231,10 +231,10 @@ def item_handle(loc, tokens):
                 # short-circuit the rest of the evaluation
                 rest_of_trailers = tokens[i + 1:]
                 if len(rest_of_trailers) == 0:
-                    raise CoconutDeferredSyntaxError("None-short-circuiting ? operator must have something after it", loc)
+                    raise CoconutDeferredSyntaxError("None-coalescing ? must have something after it", loc)
                 not_none_tokens = ["x"]
                 not_none_tokens.extend(rest_of_trailers)
-                return "(lambda x: x if x is None else " + item_handle(loc, not_none_tokens) + ")(" + out + ")"
+                return "(lambda x: None if x is None else " + item_handle(loc, not_none_tokens) + ")(" + out + ")"
             else:
                 raise CoconutInternalException("invalid trailer symbol", trailer[0])
         elif len(trailer) == 2:
@@ -867,8 +867,8 @@ class Grammar(object):
         | fixto(minus, "_coconut_minus")
         | fixto(dot, "_coconut.getattr")
         | fixto(unsafe_dubcolon, "_coconut.itertools.chain")
-        | fixto(dollar, "_coconut.functools.partial")
         | fixto(dollar + lbrack + rbrack, "_coconut_igetitem")
+        | fixto(dollar, "_coconut.functools.partial")
         | fixto(exp_dubstar, "_coconut.operator.pow")
         | fixto(mul_star, "_coconut.operator.mul")
         | fixto(div_dubslash, "_coconut.operator.floordiv")
@@ -1027,8 +1027,8 @@ class Grammar(object):
     no_call_or_partial_complex_trailer = (
         typedef_atom
         | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())  # $[
-        | Group(condense(dollar + lbrack + rbrack))  # $[]
-        | Group(condense(lbrack + rbrack))  # []
+        | Group(condense(dollar + lbrack + rbrack) + ~questionmark)  # $[]
+        | Group(condense(lbrack + rbrack) + ~questionmark)  # []
         | Group(dot + ~name + ~lbrack + ~questionmark)  # .
         | Group(questionmark)  # ?
     )

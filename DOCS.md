@@ -494,20 +494,22 @@ _Can't be done without a complicated iterator slicing function and inspection of
 
 ### None Coalescing
 
-Coconut provides `??` as a `None`-coalescing operator, similar to the `??` null-coalescing operator in C#. The `None`-coalescing operator evaluates to its left operand if that operand is not `None`, otherwise its right operand. The `None`-coalescing operator is short-circuiting, such that if the left operand is not `None`, it will not evaluate the right operand.
+Coconut provides `??` as a `None`-coalescing operator, similar to the `??` null-coalescing operator in C#. The `None`-coalescing operator evaluates to its left operand if that operand is not `None`, otherwise its right operand. The `None`-coalescing operator is short-circuiting, such that if the left operand is not `None`, it will not evaluate the right operand. The `None`-coalescing operator has a precedence in-between infix function calls and composition pipes, and is left-associative. The in-place operator is `??=`.
 
-The `None`-coalescing operator has a precedence in-between infix function calls and composition pipes, and is left-associative. The in-place operator is `??=`.
+Coconut also allows a single `?` before attribute access, function calling, partial application, and (iterator) indexing to short-circuit the rest of the evaluation if everything so far evaluates to `None`. Thus, `a?.b` is equivalent to `a.b if a is not None else a`.
 
 ##### Example
 
 **Coconut:**
 ```coconut
 could_be_none() ?? calculate_default_value()
+could_be_none()?.attr[index].method()
 ```
 
 **Python:**
 ```coconut_python
 (lambda result: result if result is not None else calculate_default_value())(could_be_none())
+(lambda result: None if result is None else result.attr[index].method())(could_be_none())
 ```
 
 ### Unicode Alternatives
