@@ -43,7 +43,7 @@ plus1_cube = plus1 ..> x -> x**3
 # Basic Functions:
 product = reduce$(*)
 def zipwith(f, *args) = map((items) -> f(*items), zip(*args))
-zipsum = map$(sum)..zip
+zipsum: int$[]$[] -> int$[] = map$(sum)..zip
 ident = (x) -> x
 @ ident .. ident
 def plus1_(x: int) -> int = x + 1
@@ -65,7 +65,7 @@ sum_ = reduce$((+))
 add = zipwith$((+))
 
 # Quick-Sorts:
-def qsort1(l: int[]):
+def qsort1(l: int[]) -> int[]:
     '''Non-Functional Quick Sort.'''
     if len(l) == 0:
         return []
@@ -80,7 +80,7 @@ def qsort1(l: int[]):
             else:
                 larges.append(x)
         return qsort1(smalls) + [split] + qsort1(larges)
-def qsort2(l: int[]):
+def qsort2(l: int[]) -> int[]:
     """Functional Quick Sort."""
     if not l:
         return []
@@ -90,7 +90,7 @@ def qsort2(l: int[]):
                 + [head] # The pivot is a list
                 + qsort2([x for x in tail if x > head])
                 )
-def qsort3(l):
+def qsort3(l: int$[]) -> int$[]:
     """Iterator Quick Sort."""
     try:
         tail, tail_ = l |> iter |> tee
@@ -102,7 +102,7 @@ def qsort3(l):
                 )
     except StopIteration:
         return iter(())
-def qsort4(l: int[]):
+def qsort4(l: int[]) -> int[]:
     """Match Quick Sort."""
     match [] in l:
         return l
@@ -111,7 +111,7 @@ def qsort4(l: int[]):
                 + [head] # The pivot is a list
                 + qsort4([x for x in tail if x > head])
                 )
-def qsort5(l):
+def qsort5(l: int$[]) -> int$[]:
     """Iterator Match Quick Sort."""
     match (head,) :: tail in l:
         tail, tail_ = tee(tail)
@@ -143,7 +143,7 @@ def N__(n=0):
 def preN(it):
     it ::= N()
     return it
-def map_iter(func, args):
+def map_iter(func: ->, args):
     match (| x |) :: xs in args:
         return (| func(x) |) :: map_iter(func, xs)
 
@@ -512,6 +512,7 @@ class Nest:
         class C:
             d = "data"
             def m(self) = "method"
+            none = None
         c = C()
     b = B()
 
@@ -594,21 +595,21 @@ def `pattern_abs_` (x) = x
 # Recursive iterator
 
 @recursive_iterator
-def fib() = (1, 1) :: map((+), fib(), fib()$[1:])
+def fib() -> int$[] = (1, 1) :: map((+), fib(), fib()$[1:])
 
 @recursive_iterator
 def loop(it) = it :: loop(it)
 
 # Sieve Example
 
-def sieve((||)) = []
+def sieve((||)) -> int$[] = []
 
 @prepattern(sieve)
-def sieve([head] :: tail) = [head] :: sieve(n for n in tail if n % head)
+def sieve([head] :: tail) -> int$[] = [head] :: sieve(n for n in tail if n % head)
 
 # "Assignment function" definitions
 
-def double_plus_one(x) =
+def double_plus_one(x: int) -> int =
     x *= 2
     x + 1
 

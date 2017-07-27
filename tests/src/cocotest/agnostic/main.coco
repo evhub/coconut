@@ -36,7 +36,8 @@ def main_test():
     assert map(pow$(2), 0 `range` 5) |> list == [1,2,4,8,16]
     iter1 = range(0,10)
     iter1, iter2 = tee(iter1)
-    assert iter1$[2:8] |> list == iter2$[2:8] |> list
+    assert iter1$[2:8] |> list == [2, 3, 4, 5, 6, 7] == ($[])(iter1, slice(2, 8)) |> list
+    assert iter2$[2:8] |> list == [2, 3, 4, 5, 6, 7] == ($[])(iter2, slice(2, 8)) |> list
     \data = 5
     assert \data == 5
     \\data = 3
@@ -216,7 +217,7 @@ def main_test():
     assert len <| map((x) -> x, [1, 2]) == 2
     assert repr("hello") == "'hello'" == ascii("hello")
     assert count(1,3) |> .index(1) == 0 == (.index(1))(count(1, 3))
-    assert count(1).__copy__()$[0] == 1
+    assert count(1).__copy__()$[0] == 1 == ($[])(count(1), 0)
     assert map((+), count(1), count(1)).__copy__()$[0] == 2
     assert zip(count(1), count(1)).__copy__()$[0] |> tuple == (1, 1)
     assert tee(count()) |> map$((t) -> isinstance(t, count)) |> all
@@ -224,8 +225,8 @@ def main_test():
     assert tee([1, 2, 3]) |> map$((t) -> isinstance(t, list)) |> all
     assert (-> 5)() == 5
     assert (-> _[0])([1, 2, 3]) == 1
-    assert iter(range(10))$[-5:-8] |> list == [5, 6]
-    assert iter(range(10))$[-2:] |> list == [8, 9]
+    assert iter(range(10))$[-5:-8] |> list == [5, 6] == ($[])(iter(range(10)), slice(-5, -8)) |> list
+    assert iter(range(10))$[-2:] |> list == [8, 9] == ($[])(iter(range(10)), slice(-2, None)) |> list
     assert (.[1])(range(1, 5)) == 2 == (.$[1])(range(1, 5))
     assert range(1, 5) |> .[1] == 2 == range(1, 5) |> .$[1]
     assert (.[:5])(range(10)) |> list == [0, 1, 2, 3, 4] == (.$[:5])(range(10)) |> list
@@ -399,6 +400,10 @@ def main_test():
     price = 100
     assert 0 == (requested_quantity ?? default_quantity) * price
     assert range(10) |> .[1] .. .[1:] == 2 == range(10) |> .[1:] |> .[1]
+    assert None?.herp(derp) is None
+    assert None?[herp].derp is None
+    assert None?(derp)[herp] is None
+    assert None?$(herp)(derp) is None
     return True
 
 def tco_func() = tco_func()

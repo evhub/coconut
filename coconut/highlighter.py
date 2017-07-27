@@ -81,7 +81,6 @@ class CoconutLexer(Python3Lexer):
         (r"|".join(new_operators), Operator),
         (r'(?<!\\)(data)((?:\s|\\\s)+)', bygroups(Keyword, Text), py_str("classname")),
         (r'def(?=\s*\()', Keyword),
-        (r'\?', Keyword),
     ] + tokens["root"]
     tokens["keywords"] += [
         (words(reserved_vars, prefix=r"(?<!\\)", suffix=r"\b"), Keyword),

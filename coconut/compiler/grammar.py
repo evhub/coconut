@@ -211,7 +211,7 @@ def function_call_handle(loc, tokens):
 def item_handle(loc, tokens):
     """Processes items."""
     out = tokens.pop(0)
-    for trailer in tokens:
+    for i, trailer in enumerate(tokens):
         if isinstance(trailer, str):
             out += trailer
         elif len(trailer) == 1:
@@ -225,10 +225,22 @@ def item_handle(loc, tokens):
                 out = "_coconut.functools.partial(_coconut.getattr, " + out + ")"
             elif trailer[0] == "type:[]":
                 out = "_coconut.typing.Sequence[" + out + "]"
+            elif trailer[0] == "type:$[]":
+                out = "_coconut.typing.Iterable[" + out + "]"
+            elif trailer[0] == "?":
+                # short-circuit the rest of the evaluation
+                rest_of_trailers = tokens[i + 1:]
+                if len(rest_of_trailers) == 0:
+                    raise CoconutDeferredSyntaxError("None-short-circuiting ? operator must have something after it", loc)
+                not_none_tokens = ["x"]
+                not_none_tokens.extend(rest_of_trailers)
+                return "(lambda x: x if x is None else " + item_handle(loc, not_none_tokens) + ")(" + out + ")"
             else:
                 raise CoconutInternalException("invalid trailer symbol", trailer[0])
         elif len(trailer) == 2:
-            if trailer[0] == "$(":
+            if trailer[0] == "$[":
+                out = "_coconut_igetitem(" + out + ", " + trailer[1] + ")"
+            elif trailer[0] == "$(":
                 args = trailer[1][1:-1]
                 if not args:
                     raise CoconutDeferredSyntaxError("a partial application argument is required", loc)
@@ -856,6 +868,7 @@ class Grammar(object):
         | fixto(dot, "_coconut.getattr")
         | fixto(unsafe_dubcolon, "_coconut.itertools.chain")
         | fixto(dollar, "_coconut.functools.partial")
+        | fixto(dollar + lbrack + rbrack, "_coconut_igetitem")
         | fixto(exp_dubstar, "_coconut.operator.pow")
         | fixto(mul_star, "_coconut.operator.mul")
         | fixto(div_dubslash, "_coconut.operator.floordiv")
@@ -997,8 +1010,11 @@ class Grammar(object):
         | func_atom
     )
 
-    typedef_sequence = Forward()
-    typedef_sequence_ref = Group(fixto(lbrack + rbrack, "type:[]"))  # type:[] tells the compiler this is a typedef_sequence
+    typedef_atom = Forward()
+    typedef_atom_ref = (
+        Group(fixto(lbrack + rbrack, "type:[]"))  # type:[] is for item_handle
+        | Group(fixto(dollar + lbrack + rbrack, "type:$[]"))  # for item_handle
+    )
 
     simple_trailer = (
         condense(lbrack + subscriptlist + rbrack)
@@ -1006,18 +1022,19 @@ class Grammar(object):
     )
     call_trailer = (
         condense(function_call)
-        | Group(dollar + ~lparen + ~lbrack)  # keep $ to tell the compiler this is a partial application implicit partial
+        | Group(dollar + ~lparen + ~lbrack + ~questionmark)  # keep $ for item_handle
     )
     no_call_or_partial_complex_trailer = (
-        typedef_sequence
-        | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())  # keep $[ to tell the compiler this is iterator slicing
-        | Group(condense(dollar + lbrack + rbrack))  # keep $[] to tell the compiler this is an iterator slicing implicit partial
-        | Group(condense(lbrack + rbrack))  # keep [] to tell the compiler this is a slicing implicit partial
-        | Group(dot + ~name + ~lbrack)  # keep . to tell the compiler this is a getattr implicit partial
+        typedef_atom
+        | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())  # $[
+        | Group(condense(dollar + lbrack + rbrack))  # $[]
+        | Group(condense(lbrack + rbrack))  # []
+        | Group(dot + ~name + ~lbrack + ~questionmark)  # .
+        | Group(questionmark)  # ?
     )
     partial_trailer = (
-        Group(fixto(dollar, "$(") + function_call)  # $( tells the compiler this is a partial application
-        | Group(fixto(dollar + lparen, "$(?") + questionmark_call_tokens) + rparen.suppress()  # $(? is the same for question-mark partials
+        Group(fixto(dollar, "$(") + function_call)  # $(
+        | Group(fixto(dollar + lparen, "$(?") + questionmark_call_tokens) + rparen.suppress()  # $(?
     )
     partial_trailer_tokens = Group(dollar.suppress() + function_call_tokens)
 
@@ -1203,12 +1220,12 @@ class Grammar(object):
         | Optional(atom_item)
     )
     typedef_callable = attach(typedef_callable_params + arrow.suppress() + typedef_test, typedef_callable_handle)
-    _typedef_test, typedef_callable, _typedef_sequence = disable_outside(
+    _typedef_test, typedef_callable, _typedef_atom = disable_outside(
         test,
         typedef_callable,
-        typedef_sequence_ref,
+        typedef_atom_ref,
     )
-    typedef_sequence <<= _typedef_sequence
+    typedef_atom <<= _typedef_atom
     typedef_test <<= _typedef_test
 
     test <<= trace(

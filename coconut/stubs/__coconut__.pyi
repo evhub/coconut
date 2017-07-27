@@ -123,6 +123,10 @@ def _coconut_bool_or(a, b):
     return a or b
 
 
+def _coconut_none_coalesce(a, b):
+    return a if a is not None else b
+
+
 def _coconut_minus(a, *rest):
     if not rest:
         return -a
