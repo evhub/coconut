@@ -602,10 +602,10 @@ def loop(it) = it :: loop(it)
 
 # Sieve Example
 
-def sieve((||)) -> int$[] = []
+def sieve((||)) = []
 
 @prepattern(sieve)
-def sieve([head] :: tail) -> int$[] = [head] :: sieve(n for n in tail if n % head)
+def sieve([head] :: tail) = [head] :: sieve(n for n in tail if n % head)
 
 # "Assignment function" definitions
 
