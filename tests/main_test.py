@@ -35,6 +35,7 @@ from coconut.command.util import call_output
 
 IPY = (PY2 and not PY26) or sys.version_info >= (3, 3)
 PYPY = platform.python_implementation() == "PyPy"
+WINDOWS = os.name == "nt"
 
 base = os.path.dirname(os.path.relpath(__file__))
 src = os.path.join(base, "src")
@@ -67,7 +68,10 @@ ignore_mypy_errs_with = (
 
 def escape(inputstring):
     """Performs basic shell escaping."""
-    return inputstring.replace("$", "\\$").replace("`", "\\`")
+    if WINDOWS:
+        return inputstring.replace("<", "^<").replace(">", "^>").replace("|", "^|")
+    else:
+        return '"' + inputstring.replace("$", "\\$").replace("`", "\\`").replace('"', '\\"') + '"'
 
 
 def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_first=False, **kwargs):
@@ -285,7 +289,7 @@ class TestShell(unittest.TestCase):
         call(["coconut", "-s", "-c", coconut_snip], assert_output=True)
 
     def test_pipe(self):
-        call('echo "' + escape(coconut_snip) + '" | coconut -s', shell=True, assert_output=True)
+        call('echo ' + escape(coconut_snip) + "| coconut -s", shell=True, assert_output=True)
 
     def test_convenience(self):
         call(["python", "-c", 'from coconut.convenience import parse; exec(parse("' + coconut_snip + '"))'], assert_output=True)

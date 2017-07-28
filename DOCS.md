@@ -195,8 +195,8 @@ _Note: Periods are ignored in target specifications, such that the target `27` i
 
 If the `--strict` (or `-s`) flag is enabled, Coconut will throw errors on various style problems. These are
 - mixing of tabs and spaces (without `--strict` will show a Warning),
-- missing new line at end of file (without `--strict` will show a Warning),
 - use of `from __future__` imports (without `--strict` will show a Warning)
+- missing new line at end of file,
 - trailing whitespace at end of lines,
 - semicolons at end of lines,
 - use of the Python-style `lambda` statement,
