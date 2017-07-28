@@ -404,6 +404,7 @@ def main_test():
     assert None?[herp].derp is None
     assert None?(derp)[herp] is None
     assert None?$(herp)(derp) is None
+    assert "a b c" == (" ". ?? "not gonna happen")("join")("abc")
     return True
 
 def tco_func() = tco_func()

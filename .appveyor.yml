@@ -1,3 +1,7 @@
+pull_requests:
+  do_not_increment_build_number: true
+shallow_clone: true
+
 image: Visual Studio 2015
 
 environment:
@@ -20,8 +24,6 @@ environment:
     - PYTHON: "C:\\Python36"
       PYTHON_VERSION: "3.6.x"
       PYTHON_ARCH: "32"
-
-notifications: false
 
 install:
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;c:\\MinGW\\bin;%PATH%"

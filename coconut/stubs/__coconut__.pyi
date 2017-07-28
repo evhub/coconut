@@ -58,7 +58,7 @@ parallel_map = concurrent_map = _coconut_map = map
 
 class _coconut:
     # The real _coconut doesn't import typing,
-    # but since that only matters when type-checking,
+    # but since typing is only used in type-checking,
     # in which case this file is used instead, it's fine.
     import typing, collections, copy, functools, imp, itertools, operator, types, weakref, pickle
     Exception, IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip = Exception, IndexError, KeyError, NameError, TypeError, ValueError, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip
