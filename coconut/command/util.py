@@ -255,18 +255,6 @@ def set_mypy_path(mypy_path):
 
 def stdin_readable():
     """Determines whether stdin has any data to read."""
-    debug = {
-        "stdin isatty": sys.stdin.isatty(),
-        "stdin encoding": sys.stdin.encoding,
-        "stdout isatty": sys.stdout.isatty(),
-    }
-    try:
-        debug["select"] = select([sys.stdin], [], [], 0)[0]
-        debug["bool select"] = bool(debug["select"])
-    except Exception:
-        traceback.print_exc()
-    print("DEBUG INFO:", debug)
-
     if sys.stdin.isatty():
         return False
     try:
@@ -284,8 +272,7 @@ def set_recursion_limit(limit):
     """Sets the Python recursion limit."""
     if limit < minimum_recursion_limit:
         raise CoconutException("--recursion-limit must be at least " + str(minimum_recursion_limit))
-    else:
-        sys.setrecursionlimit(limit)
+    sys.setrecursionlimit(limit)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
