@@ -26,6 +26,7 @@ import shutil
 import platform
 from contextlib import contextmanager
 
+from coconut.terminal import logger
 from coconut.command.util import call_output
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -131,10 +132,13 @@ def remove_when_done(path):
     try:
         yield
     finally:
-        if os.path.isdir(path):
-            shutil.rmtree(path)
-        elif os.path.isfile(path):
-            os.remove(path)
+        try:
+            if os.path.isdir(path):
+                shutil.rmtree(path)
+            elif os.path.isfile(path):
+                os.remove(path)
+        except OSError as err:
+            logger.display_exc()
 
 
 @contextmanager

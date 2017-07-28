@@ -255,12 +255,26 @@ def set_mypy_path(mypy_path):
 
 def stdin_readable():
     """Determines whether stdin has any data to read."""
+    debug = {
+        "stdin isatty": sys.stdin.isatty(),
+        "stdin encoding": sys.stdin.encoding,
+        "stdout isatty": sys.stdout.isatty(),
+    }
+    try:
+        debug["select"] = select([sys.stdin], [], [], 0)[0]
+        debug["bool select"] = bool(debug["select"])
+    except Exception:
+        traceback.print_exc()
+    print("DEBUG INFO:", debug)
+
     if sys.stdin.isatty():
         return False
     try:
         return bool(select([sys.stdin], [], [], 0)[0])
     except Exception:
         logger.log_exc()
+    if sys.stdin.encoding is None:
+        return True
     if not sys.stdout.isatty():
         return False
     return True
