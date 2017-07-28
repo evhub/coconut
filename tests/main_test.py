@@ -67,11 +67,12 @@ ignore_mypy_errs_with = (
 
 
 def escape(inputstring):
-    """Performs basic shell escaping."""
+    """Performs basic shell escaping.
+    Not by any means complete, should only be used on coconut_snip."""
     if WINDOWS:
-        return inputstring.replace("<", "^<").replace(">", "^>").replace("|", "^|")
+        return inputstring.replace("<", "^^^<").replace(">", "^^^>")
     else:
-        return '"' + inputstring.replace("$", "\\$").replace("`", "\\`").replace('"', '\\"') + '"'
+        return '"' + inputstring.replace("$", "\\$").replace("`", "\\`") + '"'
 
 
 def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_first=False, **kwargs):
