@@ -123,7 +123,7 @@ def input(*args, **kwargs):
 @_coconut_wraps(_coconut_repr)
 def repr(obj):
     if isinstance(obj, _coconut_unicode):
-        return _coconut_repr(obj)[1:]
+        return _coconut_unicode(_coconut_repr(obj)[1:])
     if isinstance(obj, _coconut_str):
         return "b" + _coconut_unicode(_coconut_repr(obj))
     return _coconut_unicode(_coconut_repr(obj))
