@@ -33,6 +33,7 @@ from coconut.constants import (
     reserved_vars,
     shebang_regex,
     magic_methods,
+    template_ext,
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -50,7 +51,7 @@ class CoconutPythonLexer(Python3Lexer):
     """Coconut-style Python syntax highlighter."""
     name = "coconut_python"
     aliases = ["coconut_python", "coconut_py", "coconut_python3", "coconut_py3"]
-    filenames = []
+    filenames = ["*" + template_ext]
 
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tabideal, encoding=default_encoding):
         """Initialize the Python syntax highlighter."""
