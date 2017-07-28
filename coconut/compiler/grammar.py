@@ -1092,7 +1092,8 @@ class Grammar(object):
         atom_item + ~dotdot
         | attach(
             attach(
-                OneOrMore(atom_item + dotdot.suppress()) + no_call_atom_item, compose_item_handle
+                OneOrMore(atom_item + dotdot.suppress()) + no_call_atom_item,
+                compose_item_handle,
             ) + ZeroOrMore(trailer),
             item_handle,
         )

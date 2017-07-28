@@ -1,3 +1,5 @@
+image: Visual Studio 2015
+
 environment:
   matrix:
     - PYTHON: "C:\\Python266"
@@ -15,11 +17,15 @@ environment:
     - PYTHON: "C:\\Python35"
       PYTHON_VERSION: "3.5.x"
       PYTHON_ARCH: "32"
+    - PYTHON: "C:\\Python36"
+      PYTHON_VERSION: "3.6.x"
+      PYTHON_ARCH: "32"
 
 notifications: false
 
 install:
-  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;c:\\MinGW\\bin;%PATH%"
+  - "copy c:\\MinGW\\bin\\mingw32-make.exe c:\\MinGW\\bin\\make.exe"
   - pip install --user "pip==7.1.2"
   - make install
 
