@@ -16,9 +16,11 @@ environment:
       PYTHON_VERSION: "3.5.x"
       PYTHON_ARCH: "32"
 
+notifications: false
+
 install:
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
-  - pip install "pip==7.1.2"
+  - pip install --user "pip==7.1.2"
   - make install
 
 build: false
