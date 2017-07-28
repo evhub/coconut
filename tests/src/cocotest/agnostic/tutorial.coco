@@ -55,14 +55,15 @@ def factorial(n):
     try:
         0 = n  # destructuring assignment
     except MatchError:
-        try:
-            _ is int = n  # also destructuring assignment
-        except MatchError:
-            pass
-        else: if n > 0:  # in Coconut, if, match, and try are allowed after else
-            return n * factorial(n-1)
+        pass
     else:
         return 1
+    try:
+        _ is int = n  # also destructuring assignment
+    except MatchError:
+        pass
+    else: if n > 0:  # in Coconut, if, match, and try are allowed after else
+        return n * factorial(n-1)
     raise TypeError("the argument to factorial must be an integer >= 0")
 
 # Test cases:
@@ -196,7 +197,7 @@ assert [4,3,2,1,0] |> quick_sort == [0,1,2,3,4]
 assert [3,0,4,2,1] |> quick_sort == [0,1,2,3,4]
 
 def quick_sort(l):
-    """Sort the input iterator, using the quick sort algorithm, and without using any data until necessary."""
+    """Sort the input iterator using the quick sort algorithm."""
     match [head] :: tail in l:
         tail, tail_ = tee(tail)
         yield from (quick_sort(x for x in tail if x < head)
@@ -233,7 +234,7 @@ data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        match (v is vector,) in pts:
+        match [v is vector] in pts:
             return v  # vector(v) where v is a vector should return v
         else:
             return pts |*> datamaker(cls)  # accesses base constructor
@@ -246,32 +247,24 @@ data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        match (v is vector,) in pts:
+        match [v is vector] in pts:
             return v  # vector(v) where v is a vector should return v
         else:
             return pts |*> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
-    def __add__(self, other) =
+    def __add__(self, vector(*other_pts)
+                if len(other_pts) == len(self.pts)) =
         """Add two vectors together."""
-        vector(*other_pts) = other
-        assert len(other_pts) == len(self.pts)
         map((+), self.pts, other_pts) |*> vector
-    def __sub__(self, other) =
+    def __sub__(self, vector(*other_pts)
+                if len(other_pts) == len(self.pts)) =
         """Subtract one vector from another."""
-        vector(*other_pts) = other
-        assert len(other_pts) == len(self.pts)
         map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
         """Retrieve the negative of the vector."""
         self.pts |> map$(-) |*> vector
-    def __eq__(self, other):
-        """Compare whether two vectors are equal."""
-        match vector(*=self.pts) in other:
-            return True
-        else:
-            return False
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
         match vector(*other_pts) in other:
@@ -320,32 +313,24 @@ data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        match (v is vector,) in pts:
+        match [v is vector] in pts:
             return v  # vector(v) where v is a vector should return v
         else:
             return pts |*> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
-    def __add__(self, other) =
+    def __add__(self, vector(*other_pts)
+                if len(other_pts) == len(self.pts)) =
         """Add two vectors together."""
-        vector(*other_pts) = other
-        assert len(other_pts) == len(self.pts)
         map((+), self.pts, other_pts) |*> vector
-    def __sub__(self, other) =
+    def __sub__(self, vector(*other_pts)
+                if len(other_pts) == len(self.pts)) =
         """Subtract one vector from another."""
-        vector(*other_pts) = other
-        assert len(other_pts) == len(self.pts)
         map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
         """Retrieve the negative of the vector."""
         self.pts |> map$(-) |*> vector
-    def __eq__(self, other):
-        """Compare whether two vectors are equal."""
-        match vector(*=self.pts) in other:
-            return True
-        else:
-            return False
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
         match vector(*other_pts) in other:
@@ -376,32 +361,24 @@ data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        match (v is vector,) in pts:
+        match [v is vector] in pts:
             return v  # vector(v) where v is a vector should return v
         else:
             return pts |*> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
-    def __add__(self, other) =
+    def __add__(self, vector(*other_pts)
+                if len(other_pts) == len(self.pts)) =
         """Add two vectors together."""
-        vector(*other_pts) = other
-        assert len(other_pts) == len(self.pts)
         map((+), self.pts, other_pts) |*> vector
-    def __sub__(self, other) =
+    def __sub__(self, vector(*other_pts)
+                if len(other_pts) == len(self.pts)) =
         """Subtract one vector from another."""
-        vector(*other_pts) = other
-        assert len(other_pts) == len(self.pts)
         map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
         """Retrieve the negative of the vector."""
         self.pts |> map$(-) |*> vector
-    def __eq__(self, other):
-        """Compare whether two vectors are equal."""
-        match vector(*=self.pts) in other:
-            return True
-        else:
-            return False
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
         match vector(*other_pts) in other:

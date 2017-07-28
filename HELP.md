@@ -211,14 +211,15 @@ def factorial(n):
     try:
         0 = n  # destructuring assignment
     except MatchError:
-        try:
-            _ is int = n  # also destructuring assignment
-        except MatchError:
-            pass
-        else: if n > 0:  # in Coconut, if, match, and try are allowed after else
-            return n * factorial(n-1)
+        pass
     else:
         return 1
+    try:
+        _ is int = n  # also destructuring assignment
+    except MatchError:
+        pass
+    else: if n > 0:  # in Coconut, if, match, and try are allowed after else
+        return n * factorial(n-1)
     raise TypeError("the argument to factorial must be an integer >= 0")
 
 # Test cases:
@@ -393,7 +394,7 @@ Copy, paste! Only one new feature here: head-tail pattern-matching. Here, we see
 Now it's time to try `quick_sort` for iterators. Our method for tackling this problem is going to be a combination of the recursive and iterative approaches we used for the `factorial` problem, in that we're going to be lazily building up an iterator, and we're going to be doing it recursively. Here's the code:
 ```coconut
 def quick_sort(l):
-    """Sort the input iterator, using the quick sort algorithm, and without using any data until necessary."""
+    """Sort the input iterator using the quick sort algorithm."""
     match [head] :: tail in l:
         tail, tail_ = tee(tail)
         yield from (quick_sort(x for x in tail if x < head)
@@ -436,7 +437,7 @@ Finally, although it's not a new construct, since it exists in Python 3, the use
 Putting it all together, here's our `quick_sort` function again:
 ```coconut
 def quick_sort(l):
-    """Sort the input iterator, using the quick sort algorithm, and without using any data until necessary."""
+    """Sort the input iterator using the quick sort algorithm."""
     match [head] :: tail in l:
         tail, tail_ = tee(tail)
         yield from (quick_sort(x for x in tail if x < head)
@@ -496,7 +497,7 @@ data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        match (v is vector,) in pts:
+        match [v is vector] in pts:
             return v  # vector(v) where v is a vector should return v
         else:
             return pts |*> datamaker(cls)  # accesses base constructor
@@ -508,7 +509,7 @@ vector(4, 5) |> vector |> print  # vector(*pts=(4, 5))
 
 Copy, paste! The big new thing here is how to write `data` constructors. Since `data` types are immutable, `__init__` construction won't work. Instead, a different special method `__new__` is used, which must return the newly constructed instance, and unlike most methods, takes the class not the object as the first argument. Since `__new__` needs to return a fully constructed instance, in almost all cases it will be necessary to access the underlying `data` constructor. To achieve this, Coconut provides the built-in function `datamaker`, which takes a data type, often the first argument to `__new__`, and returns its underlying `data` constructor.
 
-In this case, the constructor checks whether nothing but another `vector` was passed, in which case it returns that, otherwise it returns the result of creating a tuple of the arguments and passing that to the underlying constructor, the form of which is `vector(*pts)`, since that is how we declared the data type.
+In this case, the constructor checks whether nothing but another `vector` was passed, in which case it returns that, otherwise it returns the result of passing the arguments to the underlying constructor, the form of which is `vector(*pts)`, since that is how we declared the data type. We use sequence pattern-matching to determine whether we were passed a single vector, which is just a list or tuple of patterns to match against the contents of the sequence.
 
 The other new construct used here is the `|*>`, or star-pipe, operator, which functions exactly like the normal pipe, except that instead of calling the function with one argument, it calls it with as many arguments as there are elements in the sequence passed into it. The difference between `|*>` and `|>` is exactly analogous to the difference between `f(args)` and `f(*args)`.
 
@@ -524,21 +525,19 @@ The basic algorithm here is map square over each element, sum them all, then squ
 
 Next up is vector addition. The goal here is to add two vectors of equal length by adding their components. To do this, we're going to make use of Coconut's ability to perform pattern-matching, or in this case destructuring assignment, to data types, like so:
 ```coconut
-    def __add__(self, other) =
+    def __add__(self, vector(*other_pts)
+                if len(other_pts) == len(self.pts)) =
         """Add two vectors together."""
-        vector(*other_pts) = other
-        assert len(other_pts) == len(self.pts)
         map((+), self.pts, other_pts) |*> vector
 ```
 
-There are a couple of new constructs here, but the main notable one is the destructuring assignment statement `vector(*other_pts) = other` which showcases the syntax for pattern-matching against data types: it mimics exactly the original `data` declaration of that data type. In this case, `vector(*other_pts) = other` will only match a vector, raising a `MatchError` otherwise, and if it does match a vector, will assign the vector's `pts` attribute to the variable `other_pts`.
+There are a couple of new constructs here, but the main notable one is the pattern-matching `vector(*other_pts)` which showcases the syntax for pattern-matching against data types: it mimics exactly the original `data` declaration of that data type. In this case, `vector(*other_pts)` will only match a vector, raising a `MatchError` otherwise, and if it does match a vector, will assign the vector's `pts` attribute to the variable `other_pts`.
 
 Next is vector subtraction, which is just like vector addition, but with `(-)` instead of `(+)`:
 ```coconut
-    def __sub__(self, other) =
+    def __sub__(self, vector(*other_pts)
+                if len(other_pts) == len(self.pts)) =
         """Subtract one vector from another."""
-        vector(*other_pts) = other
-        assert len(other_pts) == len(self.pts)
         map((-), self.pts, other_pts) |*> vector
 ```
 
@@ -548,18 +547,6 @@ One thing to note here is that unlike the other operator functions, `(-)` can ei
         """Retrieve the negative of the vector."""
         self.pts |> map$(-) |*> vector
 ```
-
-Our next method will be equality. We're again going to use `data` pattern-matching to implement this, but this time inside of a `match` statement instead of with destructuring assignment, since we want to `return False` not raise an error if the match fails. Here's the code:
-```coconut
-    def __eq__(self, other):
-        """Compare whether two vectors are equal."""
-        match vector(*=self.pts) in other:
-            return True
-        else:
-            return False
-```
-
-The only new construct here is the use of `=self.pts` in the `match` statement. This construct is used to perform a check inside of the pattern-matching, making sure the `match` only succeeds if `other.pts == self.pts`.
 
 The last method we'll implement is multiplication. This one is a little bit tricky, since mathematically, there are a whole bunch of different ways to multiply vectors. For our purposes, we're just going to look at two: between two vectors of equal length, we want to compute the dot product, defined as the sum of the corresponding elements multiplied together, and between a vector and a scalar, we want to compute the scalar multiple, which is just each element multiplied by that scalar. Here's our implementation:
 ```coconut
@@ -583,32 +570,24 @@ data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        match (v is vector,) in pts:
+        match [v is vector] in pts:
             return v  # vector(v) where v is a vector should return v
         else:
             return pts |*> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
-    def __add__(self, other) =
+    def __add__(self, vector(*other_pts)
+                if len(other_pts) == len(self.pts)) =
         """Add two vectors together."""
-        vector(*other_pts) = other
-        assert len(other_pts) == len(self.pts)
         map((+), self.pts, other_pts) |*> vector
-    def __sub__(self, other) =
+    def __sub__(self, vector(*other_pts)
+                if len(other_pts) == len(self.pts)) =
         """Subtract one vector from another."""
-        vector(*other_pts) = other
-        assert len(other_pts) == len(self.pts)
         map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
         """Retrieve the negative of the vector."""
         self.pts |> map$(-) |*> vector
-    def __eq__(self, other):
-        """Compare whether two vectors are equal."""
-        match vector(*=self.pts) in other:
-            return True
-        else:
-            return False
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
         match vector(*other_pts) in other:
@@ -642,7 +621,7 @@ For the final case study, instead of me writing the code, and you looking at it,
 
 _The bonus challenge for this section is to write each of the functions we'll be defining in just one line. Try using assignment functions to help with that!_
 
-With that out of the way, it's time to introduce the general goal of this case study. We want to write a program that will allow us to produce infinite vector fields that we can iterate over and apply operations to. And in our case, we'll say we only care about vectors with positive components.
+First, let's introduce the general goal of this case study. We want to write a program that will allow us to produce infinite vector fields that we can iterate over and apply operations to. And in our case, we'll say we only care about vectors with positive components.
 
 Our first step, therefore, is going to be creating a field of all the points with positive `x` and `y` values—that is, the first quadrant of the `x-y` plane, which looks something like this:
 ```
@@ -657,13 +636,7 @@ Our first step, therefore, is going to be creating a field of all the points wit
 
 But since we want to be able to iterate over that plane, we're going to need to linearize it somehow, and the easiest way to do that is to split it up into diagonals, and traverse the first diagonal, then the second diagonal, and so on, like this:
 ```
-...
-
-(0,2)<  ...
-      \_
-(0,1)<  (1,1)<  ...
-      \_      \_
-(0,0) > (1,0) > (2,0) > ...
+(0, 0), (1, 0), (0, 1), (2, 0), (1, 1), (0, 2), ...
 ```
 
 ### `diagonal_line`
@@ -796,32 +769,24 @@ data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        match (v is vector,) in pts:
+        match [v is vector] in pts:
             return v  # vector(v) where v is a vector should return v
         else:
             return pts |*> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
-    def __add__(self, other) =
+    def __add__(self, vector(*other_pts)
+                if len(other_pts) == len(self.pts)) =
         """Add two vectors together."""
-        vector(*other_pts) = other
-        assert len(other_pts) == len(self.pts)
         map((+), self.pts, other_pts) |*> vector
-    def __sub__(self, other) =
+    def __sub__(self, vector(*other_pts)
+                if len(other_pts) == len(self.pts)) =
         """Subtract one vector from another."""
-        vector(*other_pts) = other
-        assert len(other_pts) == len(self.pts)
         map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
         """Retrieve the negative of the vector."""
         self.pts |> map$(-) |*> vector
-    def __eq__(self, other):
-        """Compare whether two vectors are equal."""
-        match vector(*=self.pts) in other:
-            return True
-        else:
-            return False
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
         match vector(*other_pts) in other:
@@ -984,32 +949,24 @@ data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        match (v is vector,) in pts:
+        match [v is vector] in pts:
             return v  # vector(v) where v is a vector should return v
         else:
             return pts |*> datamaker(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
-    def __add__(self, other) =
+    def __add__(self, vector(*other_pts)
+                if len(other_pts) == len(self.pts)) =
         """Add two vectors together."""
-        vector(*other_pts) = other
-        assert len(other_pts) == len(self.pts)
         map((+), self.pts, other_pts) |*> vector
-    def __sub__(self, other) =
+    def __sub__(self, vector(*other_pts)
+                if len(other_pts) == len(self.pts)) =
         """Subtract one vector from another."""
-        vector(*other_pts) = other
-        assert len(other_pts) == len(self.pts)
         map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
         """Retrieve the negative of the vector."""
         self.pts |> map$(-) |*> vector
-    def __eq__(self, other):
-        """Compare whether two vectors are equal."""
-        match vector(*=self.pts) in other:
-            return True
-        else:
-            return False
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
         match vector(*other_pts) in other:
