@@ -459,6 +459,7 @@ class Compiler(Grammar):
     def wrap_str_of(self, text):
         """Wraps a string of a string."""
         text_repr = ascii(text)
+        internal_assert(text_repr[0] == text_repr[-1] and text_repr[0] in ("'", '"'), "cannot wrap str of", text)
         return self.wrap_str(text_repr[1:-1], text_repr[-1])
 
     def wrap_passthrough(self, text, multiline=True):
