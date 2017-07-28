@@ -10,20 +10,18 @@ class MatchError(Exception):
 {def_tco}def _coconut_igetitem(iterable, index):
     if isinstance(iterable, (_coconut_reversed, _coconut_map, _coconut.filter, _coconut.zip, _coconut_enumerate, _coconut_count, _coconut.abc.Sequence)):
         return iterable[index]
-    elif not _coconut.isinstance(index, _coconut.slice):
+    if not _coconut.isinstance(index, _coconut.slice):
         if index < 0:
             return _coconut.collections.deque(iterable, maxlen=-index)[0]
-        else:
-            return _coconut.next(_coconut.itertools.islice(iterable, index, index + 1))
-    elif index.start is not None and index.start < 0 and (index.stop is None or index.stop < 0) and index.step is None:
+        return _coconut.next(_coconut.itertools.islice(iterable, index, index + 1))
+    if index.start is not None and index.start < 0 and (index.stop is None or index.stop < 0) and index.step is None:
         queue = _coconut.collections.deque(iterable, maxlen=-index.start)
         if index.stop is not None:
             queue = _coconut.tuple(queue)[:index.stop - index.start]
         return queue
-    elif (index.start is not None and index.start < 0) or (index.stop is not None and index.stop < 0) or (index.step is not None and index.step < 0):
+    if (index.start is not None and index.start < 0) or (index.stop is not None and index.stop < 0) or (index.step is not None and index.step < 0):
         return _coconut.tuple(iterable)[index]
-    else:
-        return _coconut.itertools.islice(iterable, index.start, index.stop, index.step)
+    return _coconut.itertools.islice(iterable, index.start, index.stop, index.step)
 class _coconut_compose{object}:
     __slots__ = ("funcs",)
     def __init__(self, *funcs):
@@ -60,10 +58,9 @@ def _coconut_minus(a, *rest):
 def tee(iterable, n=2):
     if n >= 0 and _coconut.isinstance(iterable, (_coconut.tuple, _coconut.frozenset)):
         return (iterable,) * n
-    elif n > 0 and (_coconut.hasattr(iterable, "__copy__") or _coconut.isinstance(iterable, _coconut.abc.Sequence)):
+    if n > 0 and (_coconut.hasattr(iterable, "__copy__") or _coconut.isinstance(iterable, _coconut.abc.Sequence)):
         return (iterable,) + _coconut.tuple(_coconut.copy.copy(iterable) for i in range(n - 1))
-    else:
-        return _coconut.itertools.tee(iterable, n)
+    return _coconut.itertools.tee(iterable, n)
 class reversed{object}:
     __slots__ = ("_iter",)
     if hasattr(_coconut.map, "__doc__"):
@@ -71,10 +68,9 @@ class reversed{object}:
     def __new__(cls, iterable):
         if _coconut.isinstance(iterable, _coconut.range):
             return iterable[::-1]
-        elif not _coconut.hasattr(iterable, "__reversed__") or _coconut.isinstance(iterable, (_coconut.list, _coconut.tuple)):
+        if not _coconut.hasattr(iterable, "__reversed__") or _coconut.isinstance(iterable, (_coconut.list, _coconut.tuple)):
             return _coconut.object.__new__(cls)
-        else:
-            return _coconut.reversed(iterable)
+        return _coconut.reversed(iterable)
     def __init__(self, iterable):
         self._iter = iterable
     def __iter__(self):
@@ -82,8 +78,7 @@ class reversed{object}:
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
             return _coconut_igetitem(self._iter, _coconut.slice(-(index.start + 1) if index.start is not None else None, -(index.stop + 1) if index.stop else None, -(index.step if index.step is not None else 1)))
-        else:
-            return _coconut_igetitem(self._iter, -(index + 1))
+        return _coconut_igetitem(self._iter, -(index + 1))
     def __reversed__(self):
         return self._iter
     def __len__(self):
@@ -121,8 +116,7 @@ class map(_coconut.map):
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
             return self.__class__(self._func, *(_coconut_igetitem(i, index) for i in self._iters))
-        else:
-            return self._func(*(_coconut_igetitem(i, index) for i in self._iters))
+        return self._func(*(_coconut_igetitem(i, index) for i in self._iters))
     def __reversed__(self):
         return self.__class__(self._func, *(_coconut_reversed(i) for i in self._iters))
     def __len__(self):
@@ -187,8 +181,7 @@ class zip(_coconut.zip):
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
             return self.__class__(*(_coconut_igetitem(i, index) for i in self._iters))
-        else:
-            return _coconut.tuple(_coconut_igetitem(i, index) for i in self._iters)
+        return _coconut.tuple(_coconut_igetitem(i, index) for i in self._iters)
     def __reversed__(self):
         return self.__class__(*(_coconut_reversed(i) for i in self._iters))
     def __len__(self):
@@ -214,8 +207,7 @@ class enumerate(_coconut.enumerate):
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
             return self.__class__(_coconut_igetitem(self._iter, index), self._start + (0 if index.start is None else index.start if index.start >= 0 else len(self._iter) + index.start))
-        else:
-            return (self._start + index, _coconut_igetitem(self._iter, index))
+        return (self._start + index, _coconut_igetitem(self._iter, index))
     def __len__(self):
         return _coconut.len(self._iter)
     def __repr__(self):
@@ -243,14 +235,12 @@ class count{object}:
         if _coconut.isinstance(index, _coconut.slice) and (index.start is None or index.start >= 0) and (index.stop is None or index.stop >= 0):
             if index.stop is None:
                 return self.__class__(self._start + (index.start if index.start is not None else 0), self._step * (index.step if index.step is not None else 1))
-            elif _coconut.isinstance(self._start, _coconut.int) and _coconut.isinstance(self._step, _coconut.int):
+            if _coconut.isinstance(self._start, _coconut.int) and _coconut.isinstance(self._step, _coconut.int):
                 return _coconut.range(self._start + self._step * (index.start if index.start is not None else 0), self._start + self._step * index.stop, self._step * (index.step if index.step is not None else 1))
-            else:
-                return _coconut_map(self.__getitem__, _coconut.range(index.start if index.start is not None else 0, index.stop, index.step if index.step is not None else 1))
-        elif index >= 0:
+            return _coconut_map(self.__getitem__, _coconut.range(index.start if index.start is not None else 0, index.stop, index.step if index.step is not None else 1))
+        if index >= 0:
             return self._start + self._step * index
-        else:
-            raise _coconut.IndexError("count indices must be positive")
+        raise _coconut.IndexError("count indices must be positive")
     def count(self, elem):
         """Count the number of times elem appears in the count."""
         return int(elem in self)
@@ -356,8 +346,7 @@ class datamaker{object}:
     def __new__(cls, data_type):
         if _coconut.hasattr(data_type, "_make") and (_coconut.issubclass(data_type, _coconut.tuple) or _coconut.isinstance(data_type, _coconut.tuple)):
             return _coconut.object.__new__(cls)
-        else:
-            return _coconut.functools.partial(_coconut.super(data_type, data_type).__new__, data_type)
+        return _coconut.functools.partial(_coconut.super(data_type, data_type).__new__, data_type)
     def __init__(self, data_type):
         self.data_type = data_type
     def __call__(self, *args, **kwargs):
@@ -380,8 +369,7 @@ class starmap(_coconut.itertools.starmap):
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
             return self.__class__(self._func, _coconut_igetitem(self._iter, index))
-        else:
-            return self._func(*_coconut_igetitem(self._iter, index))
+        return self._func(*_coconut_igetitem(self._iter, index))
     def __reversed__(self):
         return self.__class__(self._func, *_coconut_reversed(self._iter))
     def __len__(self):

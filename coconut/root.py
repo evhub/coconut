@@ -52,8 +52,16 @@ class object(object):
         eq = self == other
         if eq is _coconut_NotImplemented:
             return eq
-        else:
-            return not eq
+        return not eq
+class int(_coconut_int):
+    __slots__ = ()
+    if hasattr(_coconut_int, "__doc__"):
+        __doc__ = _coconut_int.__doc__
+    class __metaclass__(type):
+        def __instancecheck__(cls, inst):
+            return _coconut.isinstance(inst, (_coconut_int, _coconut_long))
+        def __subclasscheck__(cls, subcls):
+            return _coconut.issubclass(subcls, (_coconut_int, _coconut_long))
 class range(object):
     __slots__ = ("_xrange",)
     if hasattr(_coconut_xrange, "__doc__"):
@@ -77,7 +85,7 @@ class range(object):
             return self._xrange[index]
     def count(self, elem):
         """Count the number of times elem appears in the range."""
-        return int(elem in self._xrange)
+        return _coconut_int(elem in self._xrange)
     def index(self, elem):
         """Find the index of elem in the range."""
         if elem not in self._xrange: raise _coconut.ValueError(_coconut.repr(elem) + " is not in range")
@@ -100,35 +108,25 @@ class range(object):
         return _coconut.isinstance(other, self.__class__) and self._args == other._args
 from collections import Sequence as _coconut_Sequence
 _coconut_Sequence.register(range)
-class int(_coconut_int):
-    __slots__ = ()
-    if hasattr(_coconut_int, "__doc__"):
-        __doc__ = _coconut_int.__doc__
-    class __metaclass__(type):
-        def __instancecheck__(cls, inst):
-            return _coconut.isinstance(inst, (_coconut_int, _coconut_long))
-        def __subclasscheck__(cls, subcls):
-            return _coconut.issubclass(subcls, (_coconut_int, _coconut_long))
 from functools import wraps as _coconut_wraps
 @_coconut_wraps(_coconut_print)
 def print(*args, **kwargs):
     file = kwargs.get("file", _coconut_sys.stdout)
     if _coconut.hasattr(file, "encoding") and file.encoding is not None:
         return _coconut_print(*(_coconut_unicode(x).encode(file.encoding) for x in args), **kwargs)
-    else:
-        return _coconut_print(*(_coconut_unicode(x).encode() for x in args), **kwargs)
+    return _coconut_print(*(_coconut_unicode(x).encode() for x in args), **kwargs)
 @_coconut_wraps(_coconut_raw_input)
 def input(*args, **kwargs):
     if _coconut.hasattr(_coconut_sys.stdout, "encoding") and _coconut_sys.stdout.encoding is not None:
         return _coconut_raw_input(*args, **kwargs).decode(_coconut_sys.stdout.encoding)
-    else:
-        return _coconut_raw_input(*args, **kwargs).decode()
+    return _coconut_raw_input(*args, **kwargs).decode()
 @_coconut_wraps(_coconut_repr)
 def repr(obj):
     if isinstance(obj, _coconut_unicode):
         return _coconut_repr(obj)[1:]
-    else:
-        return _coconut_repr(obj)
+    if isinstance(obj, _coconut_str):
+        return "b" + _coconut_repr(obj)
+    return _coconut_repr(obj)
 ascii = repr
 def raw_input(*args):
     """Coconut uses Python 3 "input" instead of Python 2 "raw_input"."""
