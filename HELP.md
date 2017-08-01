@@ -209,13 +209,18 @@ Although this example is very basic, pattern-matching is both one of Coconut's m
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
     try:
-        0 = n  # destructuring assignment
+        # The only value that can be assigned to 0 is 0, since 0 is an
+        # immutable constant; thus, this assignment fails if n is not 0.
+        0 = n
     except MatchError:
         pass
     else:
         return 1
     try:
-        x is int = n  # also destructuring assignment
+        # This attempts to assign n to x, which has been declared to be
+        # an int; since only an int can be assigned to an int, this
+        # fails if n is not an int.
+        x is int = n
     except MatchError:
         pass
     else: if x > 0:  # in Coconut, if, match, and try are allowed after else
@@ -229,19 +234,19 @@ def factorial(n):
 3 |> factorial |> print  # 6
 ```
 
-First, copy and paste! While this destructuring assignment equivalent should work, it is much more cumbersome than `match` statements when you expect that they'll fail, which is why `match` statement syntax exists. But the destructuring assignment equivalent illuminates what exactly the pattern-matching is doing, by making it clear that `match` statements are really just fancy destructuring assignment statements, which _are really just fancy normal assignment statements_. In fact, to be explicit about using destructuring assignment instead of normal assignment, the `match` keyword can be put before a destructuring assignment statement to signify it as such.
+First, copy and paste! While this destructuring assignment equivalent should work, it is much more cumbersome than `match` statements when you expect that they'll fail, which is why `match` statement syntax exists. But the destructuring assignment equivalent illuminates what exactly the pattern-matching is doing, by making it clear that `match` statements are really just fancy destructuring assignment statements. In fact, to be explicit about using destructuring assignment instead of normal assignment, the `match` keyword can be put before a destructuring assignment statement to signify it as such.
 
 It will be helpful to, as we continue to use Coconut's pattern-matching and destructuring assignment statements in further examples, think _assignment_ whenever you see the keyword `match`.
 
-Up until now, for the recursive method, we have only dealt with pattern-matching, but there's actually another way that Coconut allows us to improve our `factorial` function. Coconut performs automatic tail call optimization, which means that whenever a function directly returns a call to another function, Coconut will optimize away the additional call. Thus, we can improve our `factorial` function by rewriting it to use a tail call:
+Next, one easy improvement we can make to our `factorial` function is to make use of the wildcard pattern `_`. We don't actually need to assign `x` as a new variable, since it has the same value as `n`, so if we use `_` instead of `x`, Coconut won't ever actually assign the variable. Thus, we can rewrite our `factorial` function as:
 ```coconut
-def factorial(n, acc=1):
+def factorial(n):
     """Compute n! where n is an integer >= 0."""
     case n:
         match 0:
-            return acc
-        match x is int if x > 0:
-            return factorial(x-1, acc*x)
+            return 1
+        match _ is int if n > 0:
+            return n * factorial(n-1)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
 
@@ -252,7 +257,28 @@ def factorial(n, acc=1):
 3 |> factorial |> print  # 6
 ```
 
-Copy, paste! This new `factorial` function is equivalent to the original version, with the exception that it will never raise a `RuntimeError` due to reaching Python's maximum recursion depth, since Coconut will optimize away the recursive tail call.
+Copy, paste! This new `factorial` function should behave exactly the same as before.
+
+Up until now, for the recursive method, we have only dealt with pattern-matching, but there's actually another way that Coconut allows us to improve our `factorial` function. Coconut performs automatic tail call optimization, which means that whenever a function directly returns a call to another function, Coconut will optimize away the additional call. Thus, we can improve our `factorial` function by rewriting it to use a tail call:
+```coconut
+def factorial(n, acc=1):
+    """Compute n! where n is an integer >= 0."""
+    case n:
+        match 0:
+            return acc
+        match _ is int if n > 0:
+            return factorial(n-1, acc*n)
+    else:
+        raise TypeError("the argument to factorial must be an integer >= 0")
+
+# Test cases:
+-1 |> factorial |> print  # TypeError
+0.5 |> factorial |> print  # TypeError
+0 |> factorial |> print  # 1
+3 |> factorial |> print  # 6
+```
+
+Copy, paste! This new `factorial` function is equivalent to the original version, with the exception that it will never raise a `RuntimeError` due to reaching Python's maximum recursion depth, since Coconut will optimize away the tail call.
 
 ### Iterative Method
 
@@ -263,8 +289,8 @@ def factorial(n):
     case n:
         match 0:
             return 1
-        match x is int if x > 0:
-            return range(1, x+1) |> reduce$(*)
+        match _ is int if n > 0:
+            return range(1, n+1) |> reduce$(*)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
 
@@ -317,8 +343,8 @@ def factorial(n):
     case n:
         match 0:
             return 1
-        match x is int if x > 0:
-            return range(1, x+1) |> reduce$(*)
+        match _ is int if n > 0:
+            return range(1, n+1) |> reduce$(*)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
 ```
@@ -401,6 +427,7 @@ def quick_sort(l):
             :: (head,)
             :: quick_sort(x for x in tail_ if x >= head)
             )
+    # We implicitly return an empty iterator here if the match falls through.
 
 # Test cases:
 [] |> quick_sort |> list |> print  # []
@@ -444,6 +471,7 @@ def quick_sort(l):
             :: (head,)
             :: quick_sort(x for x in tail_ if x >= head)
             )
+    # We implicitly return an empty iterator here if the match falls through.
 ```
 
 The function first attempts to split `l` into an initial element and a remaining iterator. If `l` is the empty iterator, that match will fail, and it will fall through, yielding the empty iterator (that's how the function handles the base case). Otherwise, we make a copy of the rest of the iterator, and yield the join of (the quick sort of all the remaining elements less than the initial element), (the initial element), and (the quick sort of all the remaining elements greater than the initial element).
@@ -732,7 +760,7 @@ vector_field()$[0] |> print  # vector(*pts=(0, 0))
 vector_field()$[2:3] |> list |> print  # [vector(*pts=(1, 0))]
 ```
 
-_Hint: Remember, the way we defined vector it takes the components as separate arguments, not a single tuple. You may find the `starmap` built-in useful in dealing with that._
+_Hint: Remember, the way we defined vector it takes the components as separate arguments, not a single tuple. You may find the [`starmap` built-in](DOCS.html#starmap) useful in dealing with that._
 
 <br>
 <br>
@@ -800,7 +828,7 @@ data vector(*pts):
 
 def diagonal_line(n) = range(n+1) |> map$(i -> (i, n-i))
 def linearized_plane(n=0) = diagonal_line(n) :: linearized_plane(n+1)
-def vector_field() = linearized_plane() |> map$(xy -> vector(*xy))
+def vector_field() = linearized_plane() |> starmap$(vector)
 
 # Test cases:
 diagonal_line(0) `isinstance` (list, tuple) |> print  # False (should be an iterator)
@@ -1033,6 +1061,17 @@ iter$[]
 .[slice]
 .$[slice]
 ```
+
+### Type Annotations
+
+For many people, one of the big downsides of Python is the fact that it is dynamically-typed. In Python, this problem is addressed by [MyPy](http://mypy-lang.org/), a static type analyzer for Python, which can check Python-3-style type annotations such as
+```coconut_python
+def plus1(x: int) -> int:
+    return x + 1
+a: int = plus1(10)
+```
+
+Unfortunately, in Python, such type annotation syntax only exists in Python 3. Not to worry in Coconut, however, which compiles Python-3-style type annotations to universally compatible type comments. Not only that, but Coconut has built-in [MyPy integration](DOCS.html#mypy-integration) for automatically type-checking your code, and its own [enhanced type annotation syntax](DOCS.html#enhanced-type-annotations) for more easily expressing complex types.
 
 ### Further Reading
 

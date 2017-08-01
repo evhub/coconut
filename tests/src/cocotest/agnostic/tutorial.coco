@@ -53,18 +53,49 @@ assert 3 |> factorial == 6
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
     try:
-        0 = n  # destructuring assignment
+        # The only value that can be assigned to 0 is 0, since 0 is an
+        # immutable constant; thus, this assignment fails if n is not 0.
+        0 = n
     except MatchError:
         pass
     else:
         return 1
     try:
-        x is int = n  # also destructuring assignment
+        # This attempts to assign n to x, which has been declared to be
+        # an int; since only an int can be assigned to an int, this
+        # fails if n is not an int.
+        x is int = n
     except MatchError:
         pass
     else: if x > 0:  # in Coconut, if, match, and try are allowed after else
-        return x * factorial(n-1)
+        return x * factorial(x-1)
     raise TypeError("the argument to factorial must be an integer >= 0")
+
+# Test cases:
+try:
+    -1 |> factorial
+except TypeError:
+    assert True
+else:
+    assert False
+try:
+    0.5 |> factorial
+except TypeError:
+    assert True
+else:
+    assert False
+assert 0 |> factorial == 1
+assert 3 |> factorial == 6
+
+def factorial(n):
+    """Compute n! where n is an integer >= 0."""
+    case n:
+        match 0:
+            return 1
+        match _ is int if n > 0:
+            return n * factorial(n-1)
+    else:
+        raise TypeError("the argument to factorial must be an integer >= 0")
 
 # Test cases:
 try:
@@ -87,8 +118,8 @@ def factorial(n, acc=1):
     case n:
         match 0:
             return acc
-        match x is int if x > 0:
-            return factorial(x-1, acc*x)
+        match _ is int if n > 0:
+            return factorial(n-1, acc*n)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
 
@@ -113,8 +144,8 @@ def factorial(n):
     case n:
         match 0:
             return 1
-        match x is int if x > 0:
-            return range(1, x+1) |> reduce$(*)
+        match _ is int if n > 0:
+            return range(1, n+1) |> reduce$(*)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
 
@@ -204,6 +235,7 @@ def quick_sort(l):
             :: (head,)
             :: quick_sort(x for x in tail_ if x >= head)
             )
+    # We implicitly return an empty iterator here if the match falls through.
 
 # Test cases:
 assert [] |> quick_sort |> list == []
