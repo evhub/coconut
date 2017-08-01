@@ -470,7 +470,7 @@ class Command(object):
     def start_prompt(self):
         """Starts the interpreter."""
         logger.show("Coconut Interpreter:")
-        logger.show('(enter exit() or press Ctrl-D to end)')
+        logger.show("(type 'exit()' or press Ctrl-D to end)")
         self.start_running()
         while self.running:
             try:

@@ -224,9 +224,9 @@ Alternatively, if none of the above work for you, you can just treat Coconut as 
 
 Coconut syntax highlighting for SublimeText requires that [Package Control](https://packagecontrol.io/installation), the standard package manager for SublimeText, be installed. Once that is done, simply:
 
-1. open the SublimeText command palette by pressing `Ctrl+Shift+P`,
-2. enter and select `Package Control: Install Package`, and
-3. finally enter and select `Coconut`.
+1. open the SublimeText command palette by pressing `Ctrl+Shift+P` (or `Cmd+Shift+P` on Mac),
+2. type and enter `Package Control: Install Package`, and
+3. finally type and enter `Coconut`.
 
 To make sure everything is working properly, open a `.coco` file, and make sure `Coconut` appears in the bottom right-hand corner. If something else appears, like `Plain Text`, click on it, select `Open all with current extension as...` at the top of the resulting menu, and then select `Coconut`.
 
@@ -1044,7 +1044,7 @@ A very common thing to do in functional programming is to make use of function v
 (..), (<..) => # backward function composition
 (..>)       => # forward function composition
 (.)         => (getattr)
-(::)        => (itertools.chain) # will not evaluate its arguments lazily
+(::)        => (itertools.chain)  # will not evaluate its arguments lazily
 ($)         => (functools.partial)
 ($[])       => # iterator slicing operator
 (+)         => (operator.add)
@@ -1668,7 +1668,7 @@ Equivalent to:
 ```coconut
 def consume(iterable, keep_last=0):
     """Fully exhaust iterable and return the last keep_last elements."""
-    return collections.deque(iterable, maxlen=keep_last) # fastest way to exhaust an iterator
+    return collections.deque(iterable, maxlen=keep_last)  # fastest way to exhaust an iterator
 ```
 
 ##### Rationale

@@ -75,7 +75,7 @@ That means that if you're familiar with Python, you're already familiar with a g
 
 ```coconut_pycon
 >>> "hello, world!"
-hello, world!
+'hello, world!'
 >>> 1 + 1
 2
 ```
@@ -145,7 +145,7 @@ or equivalently, `--ipython` can be substituted for `--jupyter` in either comman
 
 Because Coconut is built to be fundamentally _useful_, the best way to demo it is to show it in action. To that end, the majority of this tutorial will be showing how to apply Coconut to solve particular problems, which we'll call case studies.
 
-These case studies are not intended to provide a complete picture of all of Coconut's features. For that, see Coconut's comprehensive [documentation](DOCS.html). Instead, they are intended to show how Coconut can actually be used to solve practical programming problems.
+These case studies are not intended to provide a complete picture of all of Coconut's features. For that, see Coconut's [documentation](DOCS.html). Instead, they are intended to show how Coconut can actually be used to solve practical programming problems.
 
 ## Case Study 1: `factorial`
 
@@ -186,8 +186,8 @@ def factorial(n):
     case n:
         match 0:
             return 1
-        match _ is int if n > 0:
-            return n * factorial(n-1)
+        match x is int if x > 0:
+            return x * factorial(x-1)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
 
@@ -202,7 +202,7 @@ Copy and paste the code and tests into the interpreter. You should get the same 
 
 Let's take a look at the specifics of the syntax in this example. The first thing we see is `case n`. This statement starts a `case` block, in which only `match` statements can occur. Each `match` statement will attempt to match its given pattern against the value in the `case` block. Only the first successful match inside of any given `case` block will be executed. When a match is successful, any variable bindings in that match will also be performed. Additionally, as is true in this case, `match` statements can also have `if` guards that will check the given condition before the match is considered final. Finally, after the `case` block, an `else` statement is allowed, which will only be executed if no `match` statement is.
 
-Specifically, in this example, the first `match` statement checks whether `n` matches to `0`. If it does, it executes `return 1`. Then the second `match` statement checks whether `n` matches to `_ is int`, which performs an `isinstance` check on `n` against `int`, then checks whether `n > 0`, and if those are true, executes `return n * factorial(n-1)`. If neither of those two statements are executed, the `else` statement triggers and executes `raise TypeError("the argument to factorial must be an integer >= 0")`.
+Specifically, in this example, the first `match` statement checks whether `n` matches to `0`. If it does, it executes `return 1`. Then the second `match` statement checks whether `n` matches to `x is int`, which checks that `n` is an `int` (using `isinstance`) and assigns `x = n` if so, then checks whether `x > 0`, and if so, executes `return x * factorial(x-1)`. If neither of those two statements are executed, the `else` statement triggers and executes `raise TypeError("the argument to factorial must be an integer >= 0")`.
 
 Although this example is very basic, pattern-matching is both one of Coconut's most powerful and most complicated features. As a general intuitive guide, it is helpful to think _assignment_ whenever you see the keyword `match`. A good way to showcase this is that all `match` statements can be converted into equivalent destructuring assignment statements, which are also valid Coconut. In this case, the destructuring assignment equivalent to the `factorial` function above would be:
 ```coconut
@@ -215,11 +215,11 @@ def factorial(n):
     else:
         return 1
     try:
-        _ is int = n  # also destructuring assignment
+        x is int = n  # also destructuring assignment
     except MatchError:
         pass
-    else: if n > 0:  # in Coconut, if, match, and try are allowed after else
-        return n * factorial(n-1)
+    else: if x > 0:  # in Coconut, if, match, and try are allowed after else
+        return x * factorial(x-1)
     raise TypeError("the argument to factorial must be an integer >= 0")
 
 # Test cases:
@@ -240,8 +240,8 @@ def factorial(n, acc=1):
     case n:
         match 0:
             return acc
-        match _ is int if n > 0:
-            return factorial(n-1, acc*n)
+        match x is int if x > 0:
+            return factorial(x-1, acc*x)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
 
@@ -263,8 +263,8 @@ def factorial(n):
     case n:
         match 0:
             return 1
-        match _ is int if n > 0:
-            return range(1, n+1) |> reduce$(*)
+        match x is int if x > 0:
+            return range(1, x+1) |> reduce$(*)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
 
@@ -317,8 +317,8 @@ def factorial(n):
     case n:
         match 0:
             return 1
-        match _ is int if n > 0:
-            return range(1, n+1) |> reduce$(*)
+        match x is int if x > 0:
+            return range(1, x+1) |> reduce$(*)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
 ```
@@ -342,7 +342,7 @@ Copy, paste! This should work exactly like before, except now it raises `MatchEr
 
 First, assignment function notation. This one's pretty straightforward. If a function is defined with an `=` instead of a `:`, the last line is required to be an expression, and is automatically returned.
 
-Second, pattern-matching function definition. Pattern-matching function definition does exactly that—pattern-matches against all the arguments that are passed to the function. There are a couple of things to watch out for when using pattern-matching function definition, however. First, that if the pattern doesn't match (if for example the wrong number of arguments are passed), your function will raise a `MatchError`, and second, that keyword arguments aren't allowed. Finally, like destructuring assignment, if you want to be more explicit about using pattern-matching function definition, you can add a `match` before the `def`.
+Second, pattern-matching function definition. Pattern-matching function definition does exactly that—pattern-matches against all the arguments that are passed to the function. Unlike normal function definition, however, if the pattern doesn't match (if for example the wrong number of arguments are passed), your function will raise a `MatchError`. Finally, like destructuring assignment, if you want to be more explicit about using pattern-matching function definition, you can add a `match` before the `def`.
 
 Third, `addpattern`. `addpattern` takes one argument, a previously-defined pattern-matching function, and returns a decorator that decorates a new pattern-matching function by adding the new pattern as an additional case to the old patterns. Thus, `addpattern` can be thought of as doing exactly what it says—it adds a new pattern to an existing pattern-matching function.
 
@@ -1036,7 +1036,7 @@ iter$[]
 
 ### Further Reading
 
-And that's it for this tutorial! But that's hardly it for Coconut. All of the features examined in this tutorial, as well as a bunch of others, are documented in detail in Coconut's comprehensive [documentation](DOCS.html).
+And that's it for this tutorial! But that's hardly it for Coconut. All of the features examined in this tutorial, as well as a bunch of others, are documented in detail in Coconut's [documentation](DOCS.html).
 
 Also, if you have any other questions not covered in this tutorial, feel free to ask around at Coconut's [Gitter](https://gitter.im/evhub/coconut), a GitHub-integrated chat room for Coconut developers.
 
