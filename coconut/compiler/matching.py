@@ -362,12 +362,13 @@ class Matcher(object):
                 self.match(v, key_var)
         if rest is not None and rest != wildcard:
             match_keys = [k for k, v in matches]
-            self.add_def(
-                rest
-                + " = dict((k, v) for (k, v) in "
-                + item + ".items() if k not in set(("
-                + ", ".join(match_keys) + ("," if len(match_keys) == 1 else "") + ")))",
-            )
+            with self.incremented():
+                self.add_def(
+                    rest + " = dict((k, v) for k, v in "
+                    + item + ".items() if k not in set(("
+                    + ", ".join(match_keys) + ("," if len(match_keys) == 1 else "")
+                    + ")))",
+                )
 
     def match_sequence(self, tokens, item):
         """Matches a sequence."""
