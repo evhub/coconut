@@ -408,8 +408,7 @@ class Command(object):
                 jobs = -1  # will raise error below
             if jobs < 0:
                 raise CoconutException("--jobs must be an integer >= 0 or 'sys'")
-            else:
-                self.jobs = jobs
+            self.jobs = jobs
 
     @contextmanager
     def running_jobs(self, exit_on_error=True):

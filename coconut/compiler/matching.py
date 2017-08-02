@@ -196,7 +196,7 @@ class Matcher(object):
         self.set_position(self.position - by)
 
     @contextmanager
-    def incremented(self, by=1):
+    def down_a_level(self, by=1):
         """Increment then decrement."""
         self.increment(by)
         try:
@@ -242,7 +242,7 @@ class Matcher(object):
         if star_arg is not None:
             self.match(star_arg, args + "[" + str(len(match_args)) + ":]")
         self.match_in_kwargs(kwd_args, kwargs)
-        with self.incremented():
+        with self.down_a_level():
             if dubstar_arg is None:
                 self.add_check("not " + kwargs)
             else:
@@ -252,7 +252,7 @@ class Matcher(object):
         """Matches against args or kwargs."""
         req_len = 0
         arg_checks = {}
-        to_match = []  # [(increment, match, against)]
+        to_match = []  # [(move_down, match, against)]
         for i, arg in enumerate(match_args):
             if isinstance(arg, tuple):
                 (match, default) = arg
@@ -318,9 +318,9 @@ class Matcher(object):
                 if ge_check is not None:
                     self.add_check(ge_check)
 
-        for increment, match, against in to_match:
-            if increment:
-                with self.incremented():
+        for move_down, match, against in to_match:
+            if move_down:
+                with self.down_a_level():
                     self.match(match, against)
             else:
                 self.match(match, against)
@@ -339,7 +339,7 @@ class Matcher(object):
                     )
                     + default,
                 )
-                with self.incremented():
+                with self.down_a_level():
                     self.match(match, tempvar)
             else:
                 raise CoconutDeferredSyntaxError("keyword-only pattern-matching function arguments must have names", self.loc)
@@ -359,12 +359,12 @@ class Matcher(object):
         for i, (k, v) in enumerate(matches):
             key_var = self.get_temp_var()
             self.add_def(key_var + " = " + item + ".get(" + k + ", " + sentinel_var + ")")
-            with self.incremented():
+            with self.down_a_level():
                 self.add_check(key_var + " is not " + sentinel_var)
                 self.match(v, key_var)
         if rest is not None and rest != wildcard:
             match_keys = [k for k, v in matches]
-            with self.incremented():
+            with self.down_a_level():
                 self.add_def(
                     rest + " = dict((k, v) for k, v in "
                     + item + ".items() if k not in set(("
@@ -420,7 +420,7 @@ class Matcher(object):
             if tail != wildcard:
                 self.add_def(tail + " = " + item)
         if itervar is not None:
-            with self.incremented():
+            with self.down_a_level():
                 self.add_check("_coconut.len(" + itervar + ") == " + str(len(matches)))
                 self.match_all_in(matches, itervar)
 
@@ -443,7 +443,7 @@ class Matcher(object):
         else:
             itervar = self.get_temp_var()
             self.add_def(itervar + " = _coconut.list(" + item + ")")
-            with self.incremented():
+            with self.down_a_level():
                 req_length = (len(head_matches) if head_matches is not None else 0) + (len(last_matches) if last_matches is not None else 0)
                 self.add_check("_coconut.len(" + itervar + ") >= " + str(req_length))
                 if middle != wildcard:
