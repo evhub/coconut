@@ -352,8 +352,9 @@ class Matcher(object):
         self.add_check("_coconut.isinstance(" + item + ", _coconut.abc.Mapping)")
         if rest is None:
             self.add_check("_coconut.len(" + item + ") == " + str(len(matches)))
-        for i, (k, v) in enumerate(matches):
+        if matches:
             self.add_def(sentinel_var + " = _coconut.object()")
+        for i, (k, v) in enumerate(matches):
             key_var = match_dict_var + "_" + str(i)
             self.add_def(key_var + " = " + item + ".get(" + k + ", " + sentinel_var + ")")
             with self.incremented():
