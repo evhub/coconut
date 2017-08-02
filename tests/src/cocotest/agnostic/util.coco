@@ -294,6 +294,7 @@ match def fact(n, acc) = fact(n-1, acc*n)
 def factorial(0, acc=1) = acc
 @addpattern(factorial)
 def factorial(n is int, acc=1 if n > 0) =
+    """this is a docstring"""
     factorial(n-1, acc*n)
 
 # Match Functions:
@@ -469,7 +470,9 @@ def last_two_(_ + [a, b]):
     return a, b
 match def htsplit([head] + tail) = [head, tail]
 def htsplit_([head] + tail) = [head, tail]
-match def (x is int) `iadd` (y is int) = x + y
+match def (x is int) `iadd` (y is int) =
+    """this is a docstring"""
+    x + y
 def (x is int) `iadd_` (y is int) = x + y
 match def strmul(a is str, x is int):
     return a * x

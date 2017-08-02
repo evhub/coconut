@@ -455,6 +455,7 @@ def suite_test():
         assert False
     v = vector2()
     assert repr(v) == "vector2(x=0, y=0)"
+    assert factorial.__doc__ == "this is a docstring" == iadd.__doc__
     return True
 
 def tco_test():
