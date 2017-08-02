@@ -260,7 +260,7 @@ def stdin_readable():
     except Exception:
         logger.log_exc()
     try:
-        return sys.stdin.isatty()
+        return not sys.stdin.isatty()
     except Exception:
         logger.log_exc()
     return False
