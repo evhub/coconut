@@ -227,6 +227,8 @@ def item_handle(loc, tokens):
                 out = "_coconut.typing.Sequence[" + out + "]"
             elif trailer[0] == "type:$[]":
                 out = "_coconut.typing.Iterable[" + out + "]"
+            elif trailer[0] == "type:?":
+                out = "_coconut.typing.Optional[" + out + "]"
             elif trailer[0] == "?":
                 # short-circuit the rest of the evaluation
                 rest_of_trailers = tokens[i + 1:]
@@ -1014,6 +1016,7 @@ class Grammar(object):
     typedef_atom_ref = (
         Group(fixto(lbrack + rbrack, "type:[]"))  # type:[] is for item_handle
         | Group(fixto(dollar + lbrack + rbrack, "type:$[]"))  # for item_handle
+        | Group(fixto(questionmark + ~questionmark, "type:?"))  # for item_handle
     )
 
     simple_trailer = (
@@ -1024,9 +1027,8 @@ class Grammar(object):
         condense(function_call)
         | Group(dollar + ~lparen + ~lbrack + ~questionmark)  # keep $ for item_handle
     )
-    known_trailer = (
-        typedef_atom
-        | Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())  # $[
+    known_trailer = typedef_atom | (
+        Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())  # $[
         | Group(condense(dollar + lbrack + rbrack))  # $[]
         | Group(condense(lbrack + rbrack))  # []
         | Group(dot + ~name + ~lbrack)  # .

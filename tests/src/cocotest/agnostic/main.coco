@@ -376,12 +376,12 @@ def main_test():
     assert b.read() == b"herp"
     assert 1 ?? 2 == 1 == (??)(1, 2)
     assert None ?? 2 == 2 == (??)(None, 2)
-    timeout = None
-    local_timeout = 60
-    global_timeout = 300
-    def ret_timeout() = timeout
-    def ret_local_timeout() = local_timeout
-    def ret_global_timeout() = global_timeout
+    timeout: int? = None
+    local_timeout: int? = 60
+    global_timeout: int = 300
+    def ret_timeout() -> int? = timeout
+    def ret_local_timeout() -> int? = local_timeout
+    def ret_global_timeout() -> int = global_timeout
     assert timeout ?? local_timeout ?? global_timeout == 60
     assert ret_timeout() ?? ret_local_timeout() ?? ret_global_timeout() == 60
     local_timeout = None
@@ -395,8 +395,8 @@ def main_test():
     assert 1 == None ?? 1
     assert 'foo' in None ?? ['foo', 'bar']
     assert 3 == 1 + (None ?? 2)
-    requested_quantity = 0
-    default_quantity = 1
+    requested_quantity: int? = 0
+    default_quantity: int = 1
     price = 100
     assert 0 == (requested_quantity ?? default_quantity) * price
     assert range(10) |> .[1] .. .[1:] == 2 == range(10) |> .[1:] |> .[1]
@@ -405,6 +405,8 @@ def main_test():
     assert None?(derp)[herp] is None
     assert None?$(herp)(derp) is None
     assert "a b c" == (" ". ?? "not gonna happen")("join")("abc")
+    a: int[]? = None
+    assert a is None
     return True
 
 def tco_func() = tco_func()

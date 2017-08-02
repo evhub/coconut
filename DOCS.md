@@ -989,6 +989,8 @@ _Note: When compiling type annotations to Python 3 syntax, Coconut will wrap eve
 
 Additionally, Coconut adds special syntax for making type annotations easier and simpler to write. When inside of a type annotation, Coconut treats certain syntax constructs differently, compiling them to type annotations instead of what they would normally represent. Specifically, Coconut applies the following transformations
 ```coconut
+<type>?
+    => typing.Optional[<type>]
 <type>[]
     => typing.Sequence[<type>]
 <type>$[]
