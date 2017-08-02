@@ -255,16 +255,16 @@ def set_mypy_path(mypy_path):
 
 def stdin_readable():
     """Determines whether stdin has any data to read."""
-    if sys.stdin.isatty():
+    try:
+        if sys.stdin.isatty():
+            return False
+    except Exception:
+        logger.log_exc()
         return False
     try:
         return bool(select([sys.stdin], [], [], 0)[0])
     except Exception:
         logger.log_exc()
-    if sys.stdin.encoding is None:
-        return True
-    if not sys.stdout.isatty():
-        return False
     return True
 
 
