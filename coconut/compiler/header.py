@@ -246,6 +246,6 @@ from coconut.__coconut__ import *
     header += get_template("header").format(**format_dict)
 
     if which == "file":
-        header += section("Compiled Coconut")
+        header += "\n" + section("Compiled Coconut")
 
     return header
