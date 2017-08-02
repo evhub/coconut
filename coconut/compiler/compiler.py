@@ -1737,4 +1737,9 @@ class Compiler(Grammar):
         """Parses debug code."""
         return self.parse(inputstring, self.file_parser, {"strip": True}, {"header": "none", "initial": "none", "final_endline": False})
 
+    def warm_up(self):
+        """Warm up the compiler by running something through it."""
+        result = self.parse_debug("")
+        internal_assert(result == "", "compiler warm-up should produce no code; instead got", result)
+
 # end: ENDPOINTS

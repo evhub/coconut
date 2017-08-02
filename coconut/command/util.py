@@ -67,6 +67,7 @@ from coconut.exceptions import (
     internal_assert,
 )
 from coconut.terminal import logger
+from coconut import __coconut__
 
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
@@ -373,7 +374,6 @@ class Runner(object):
 
     def fix_pickle(self):
         """Fixes pickling of Coconut header objects."""
-        from coconut import __coconut__
         for var in self.vars:
             if not var.startswith("__") and var in dir(__coconut__):
                 self.vars[var] = getattr(__coconut__, var)

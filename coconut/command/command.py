@@ -463,7 +463,7 @@ class Command(object):
 
     def start_running(self):
         """Starts running the Runner."""
-        self.comp.bind()
+        self.comp.warm_up()
         self.check_runner()
         self.running = True
 
