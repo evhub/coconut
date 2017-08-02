@@ -33,7 +33,6 @@ from coconut.constants import (
     closeindent,
     match_check_var,
     const_vars,
-    match_dict_var,
     sentinel_var,
 )
 from coconut.compiler.util import paren_join
@@ -97,6 +96,7 @@ class Matcher(object):
         "var_index",
         "others",
         "guards",
+        "use_sentinel",
     )
 
     def __init__(self, loc, checkdefs=None, names=None, var_index=0):
@@ -114,6 +114,7 @@ class Matcher(object):
         self.var_index = var_index
         self.others = []
         self.guards = []
+        self.use_sentinel = False
 
     def duplicate(self):
         """Duplicates the matcher to others."""
@@ -352,10 +353,11 @@ class Matcher(object):
         self.add_check("_coconut.isinstance(" + item + ", _coconut.abc.Mapping)")
         if rest is None:
             self.add_check("_coconut.len(" + item + ") == " + str(len(matches)))
+
         if matches:
-            self.add_def(sentinel_var + " = _coconut.object()")
+            self.use_sentinel = True
         for i, (k, v) in enumerate(matches):
-            key_var = match_dict_var + "_" + str(i)
+            key_var = self.get_temp_var()
             self.add_def(key_var + " = " + item + ".get(" + k + ", " + sentinel_var + ")")
             with self.incremented():
                 self.add_check(key_var + " is not " + sentinel_var)
@@ -619,6 +621,8 @@ class Matcher(object):
 
     def out(self):
         out = ""
+        if self.use_sentinel:
+            out += sentinel_var + " = _coconut.object()\n"
         closes = 0
         for checks, defs in self.checkdefs:
             if checks:

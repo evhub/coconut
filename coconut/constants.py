@@ -307,14 +307,6 @@ justify_len = 79  # ideal line length
 
 reserved_prefix = "_coconut"
 decorator_var = reserved_prefix + "_decorator"
-match_to_var = reserved_prefix + "_match_to"
-match_to_args_var = match_to_var + "_args"
-match_to_kwargs_var = match_to_var + "_kwargs"
-match_check_var = reserved_prefix + "_match_check"
-match_temp_var = reserved_prefix + "_match_temp"
-match_err_var = reserved_prefix + "_match_err"
-match_dict_var = reserved_prefix + "_match_key"
-sentinel_var = reserved_prefix + "_sentinel"
 lazy_chain_var = reserved_prefix + "_lazy_chain"
 import_as_var = reserved_prefix + "_import"
 yield_from_var = reserved_prefix + "_yield_from"
@@ -324,6 +316,14 @@ stmt_lambda_var = reserved_prefix + "_lambda"
 tre_mock_var = reserved_prefix + "_mock_func"
 tre_store_var = reserved_prefix + "_recursive_func"
 none_coalesce_var = reserved_prefix + "_none_coalesce_item"
+sentinel_var = reserved_prefix + "_sentinel"
+# prefer Matcher.get_temp_var to proliferating more match vars here
+match_to_var = reserved_prefix + "_match_to"
+match_to_args_var = match_to_var + "_args"
+match_to_kwargs_var = match_to_var + "_kwargs"
+match_check_var = reserved_prefix + "_match_check"
+match_temp_var = reserved_prefix + "_match_temp"
+match_err_var = reserved_prefix + "_match_err"
 
 wildcard = "_"  # for pattern-matching
 
