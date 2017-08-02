@@ -156,7 +156,9 @@ def single_import(path, imp_as):
         imp_from += imp.rsplit("." + imp_as, 1)[0]
         imp, imp_as = imp_as, None
 
-    if imp_as is not None and "." in imp_as:
+    if imp_from is None and imp == "sys":
+        out.append((imp_as if imp_as is not None else imp) + " = _coconut_sys")
+    elif imp_as is not None and "." in imp_as:
         fake_mods = imp_as.split(".")
         out.append(import_stmt(imp_from, imp, import_as_var))
         for i in range(1, len(fake_mods)):

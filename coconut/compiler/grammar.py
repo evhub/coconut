@@ -1428,10 +1428,12 @@ class Grammar(object):
 
     name_match_funcdef = Forward()
     op_match_funcdef = Forward()
+    op_match_funcdef_arg = Group(Optional(
+        lparen.suppress()
+        + Group(match + Optional(equals.suppress() + test))
+        + rparen.suppress(),
+    ))
     name_match_funcdef_ref = dotted_name + lparen.suppress() + match_args_list + match_guard + rparen.suppress()
-    op_match_funcdef_arg = Group(Optional(lparen.suppress()
-                                          + Group(match + Optional(equals.suppress() + test))
-                                          + rparen.suppress()))
     op_match_funcdef_ref = op_match_funcdef_arg + op_funcdef_name + op_match_funcdef_arg + match_guard
     base_match_funcdef = trace(Keyword("def").suppress() + (op_match_funcdef | name_match_funcdef))
     def_match_funcdef = trace(condense(base_match_funcdef + colon.suppress() + nocolon_suite))
