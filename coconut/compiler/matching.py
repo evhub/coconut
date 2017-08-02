@@ -36,6 +36,7 @@ from coconut.constants import (
     match_dict_var,
     sentinel_var,
 )
+from coconut.compiler.util import paren_join
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -619,7 +620,7 @@ class Matcher(object):
         closes = 0
         for checks, defs in self.checkdefs:
             if checks:
-                out += "if (" + (") and (").join(checks) + "):\n" + openindent
+                out += "if " + paren_join(checks, "and") + ":\n" + openindent
                 closes += 1
             if defs:
                 out += "\n".join(defs) + "\n"
@@ -628,12 +629,9 @@ class Matcher(object):
             + closeindent * closes
             + "".join(other.out() for other in self.others)
             + (
-                "if " + match_check_var + " and not "
-                + (
-                    "(" + self.guards[0] + ")" if len(self.guards) == 1 else
-                    "((" + ") and (".join(self.guards) + "))"
-                )
-                + ":\n" + openindent
+                "if " + match_check_var + " and not ("
+                + paren_join(self.guards, "and")
+                + "):\n" + openindent
                 + match_check_var + " = False\n" + closeindent
                 if self.guards else ""
             )

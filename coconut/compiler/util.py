@@ -54,6 +54,11 @@ def join_args(*arglists):
     return ", ".join(arg for args in arglists for arg in args if arg)
 
 
+def paren_join(items, sep):
+    """Join items by sep with parens around individual items but not the whole."""
+    return items[0] if len(items) == 1 else "(" + (") " + sep + " (").join(items) + ")"
+
+
 skip_whitespace = SkipTo(CharsNotIn(default_whitespace_chars)).suppress()
 
 

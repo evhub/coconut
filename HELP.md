@@ -64,7 +64,7 @@ coconut
 and you should see something like
 ```coconut
 Coconut Interpreter:
-(type "exit()" or press Ctrl-D to end)
+(type 'exit()' or press Ctrl-D to end)
 >>>
 ```
 which is Coconut's way of telling you you're ready to start entering code for it to evaluate. So let's do that!
