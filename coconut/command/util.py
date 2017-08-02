@@ -316,7 +316,7 @@ class Prompt(object):
         else:
             msg = main_prompt
         if self.style is not None:
-            internal_assert(prompt_toolkit is not None, "cannot highlight style without prompt_toolkit", self.style)
+            internal_assert(prompt_toolkit is not None, "without prompt_toolkit cannot highlight style", self.style)
             try:
                 return prompt_toolkit.prompt(msg, **self.prompt_kwargs())
             except EOFError:
