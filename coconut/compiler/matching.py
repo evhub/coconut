@@ -33,6 +33,8 @@ from coconut.constants import (
     closeindent,
     match_check_var,
     const_vars,
+    match_dict_var,
+    sentinel_var,
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -349,12 +351,15 @@ class Matcher(object):
         self.add_check("_coconut.isinstance(" + item + ", _coconut.abc.Mapping)")
         if rest is None:
             self.add_check("_coconut.len(" + item + ") == " + str(len(matches)))
-        match_keys = []
-        for k, v in matches:
-            self.add_check(k + " in " + item)
-            self.match(v, item + "[" + k + "]")
-            match_keys.append(k)
+        for i, (k, v) in enumerate(matches):
+            self.add_def(sentinel_var + " = _coconut.object()")
+            key_var = match_dict_var + "_" + str(i)
+            self.add_def(key_var + " = " + item + ".get(" + k + ", " + sentinel_var + ")")
+            with self.incremented():
+                self.add_check(key_var + " is not " + sentinel_var)
+                self.match(v, key_var)
         if rest is not None and rest != wildcard:
+            match_keys = [k for k, v in matches]
             self.add_def(
                 rest
                 + " = dict((k, v) for (k, v) in "
