@@ -20,8 +20,8 @@ test-all:
 
 .PHONY: test-basic
 test-basic:
-	python3 ./tests --force
-	python3 ./tests/dest/runner.py
+	python ./tests --force
+	python ./tests/dest/runner.py
 
 .PHONY: sphinx
 sphinx: clean
@@ -50,13 +50,13 @@ wipe: clean
 
 .PHONY: build
 build: clean dev
-	python3 setup.py sdist bdist_wheel
+	python setup.py sdist bdist_wheel
 
 .PHONY: upload
 upload: build
-	pip3 install --upgrade twine
+	pip install --upgrade twine
 	twine upload dist/*
 
 .PHONY: check
 check:
-	python3 ./coconut/requirements.py
+	python ./coconut/requirements.py
