@@ -25,6 +25,6 @@
         args:
         - --ignore=W503,E501,E265,E402,F405,E305
 -   repo: https://github.com/asottile/add-trailing-comma
-    sha: v0.6.3
+    sha: v0.6.4
     hooks:
     -   id: add-trailing-comma
