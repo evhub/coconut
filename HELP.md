@@ -43,7 +43,7 @@ Installing Coconut, including all the features above, is drop-dead simple. Just
 pip install coconut
 ```
 
-_Note: Try re-running the above command with the `--user` option if you are encountering errors. Be sure that the `coconut` installation location (on UNIX `/usr/local/bin` if you didn't use `--user` or `${HOME}/.local/bin/` if you did) is in your `PATH` environment variable. If you are still encountering errors installing Coconut with `pip`, you can also install Coconut with `conda` by following the [conda installation instructions in the documentation](DOCS.html#using-conda)._
+_Note: Try re-running the above command with the `--user` option if you are encountering errors. Be sure that Coconut's installation location (on UNIX `/usr/local/bin` if you didn't use `--user` or `${HOME}/.local/bin/` if you did) is in your `PATH` environment variable. If you are still encountering errors installing Coconut with `pip`, you can also install Coconut with `conda` by following the [conda installation instructions in the documentation](DOCS.html#using-conda)._
 
 To check that your installation is functioning properly, try entering into the command line
 ```

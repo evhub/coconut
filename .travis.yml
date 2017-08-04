@@ -12,8 +12,21 @@ python:
 - '3.5'
 - '3.6'
 - pypy3
+env: USE_CONDA=false
+matrix:
+  include:
+    - python: '3.6'
+      env: USE_CONDA=true
 install:
-- pip install "pip==7.1.2"
+- if [ $USE_CONDA == "false" ]; then
+  pip install "pip==7.1.2";
+  fi
+- if [ $USE_CONDA == "true" ]; then
+  pip install conda;
+  conda install conda-build>=3;
+  conda skeleton pypi coconut;
+  conda build coconut;
+  fi
 - make install
 script:
 - make test-all
