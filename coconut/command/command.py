@@ -77,7 +77,7 @@ from coconut.command.cli import arguments
 
 
 class Command(object):
-    """The Coconut command-line interface."""
+    """Coconut command-line interface."""
     comp = None  # current coconut.compiler.Compiler
     show = False  # corresponds to --display flag
     runner = None  # the current Runner
@@ -88,11 +88,11 @@ class Command(object):
     mypy_args = None  # corresponds to --mypy flag
 
     def __init__(self):
-        """Creates the CLI."""
+        """Create the CLI."""
         self.prompt = Prompt()
 
     def start(self, run=False):
-        """Processes command-line arguments."""
+        """Process command-line arguments."""
         if run:
             args, argv = list(coconut_run_args), []
             # for coconut-run, all args beyond the source file should be wrapped in an --argv
@@ -108,7 +108,7 @@ class Command(object):
         self.cmd(args)
 
     def cmd(self, args=None, interact=True):
-        """Processes command-line arguments."""
+        """Process command-line arguments."""
         if args is None:
             parsed_args = arguments.parse_args()
         else:
@@ -119,14 +119,14 @@ class Command(object):
         self.exit_on_error()
 
     def setup(self, *args, **kwargs):
-        """Sets parameters for the compiler."""
+        """Set parameters for the compiler."""
         if self.comp is None:
             self.comp = Compiler(*args, **kwargs)
         else:
             self.comp.setup(*args, **kwargs)
 
     def exit_on_error(self):
-        """Exits if exit_code is abnormal."""
+        """Exit if exit_code is abnormal."""
         if self.exit_code:
             if self.errmsg is not None:
                 logger.show_error("Exiting due to " + self.errmsg + ".")
@@ -136,7 +136,7 @@ class Command(object):
             sys.exit(self.exit_code)
 
     def use_args(self, args, interact=True, original_args=None):
-        """Handles command-line arguments."""
+        """Handle command-line arguments."""
         logger.quiet, logger.verbose = args.quiet, args.verbose
         if DEVELOP:
             logger.tracing = args.trace
@@ -251,7 +251,7 @@ class Command(object):
             self.watch(args.source, dest, package, args.run, args.force)
 
     def register_error(self, code=1, errmsg=None):
-        """Updates the exit code."""
+        """Update the exit code."""
         if errmsg is not None:
             if self.errmsg is None:
                 self.errmsg = errmsg
@@ -262,7 +262,7 @@ class Command(object):
 
     @contextmanager
     def handling_exceptions(self):
-        """Performs proper exception handling."""
+        """Perform proper exception handling."""
         try:
             with handling_broken_process_pool():
                 yield
@@ -277,7 +277,7 @@ class Command(object):
             self.register_error(errmsg=err.__class__.__name__)
 
     def compile_path(self, path, write=True, package=None, *args, **kwargs):
-        """Compiles a path and returns paths to compiled files."""
+        """Compile a path and returns paths to compiled files."""
         path = fixpath(path)
         if write is not None and write is not True:
             write = fixpath(write)
@@ -294,7 +294,7 @@ class Command(object):
             raise CoconutException("could not find source path", path)
 
     def compile_folder(self, directory, write=True, package=True, *args, **kwargs):
-        """Compiles a directory and returns paths to compiled files."""
+        """Compile a directory and returns paths to compiled files."""
         filepaths = []
         for dirpath, dirnames, filenames in os.walk(directory):
             if write is None or write is True:
@@ -314,7 +314,7 @@ class Command(object):
         return filepaths
 
     def compile_file(self, filepath, write=True, package=False, *args, **kwargs):
-        """Compiles a file and returns the compiled file's path."""
+        """Compile a file and returns the compiled file's path."""
         if write is None:
             destpath = None
         elif write is True:
@@ -332,7 +332,7 @@ class Command(object):
         return destpath
 
     def compile(self, codepath, destpath=None, package=False, run=False, force=False, show_unchanged=True):
-        """Compiles a source Coconut file to a destination Python file."""
+        """Compile a source Coconut file to a destination Python file."""
         with openfile(codepath, "r") as opened:
             code = readfile(opened)
 
@@ -398,7 +398,7 @@ class Command(object):
             future.add_done_callback(callback_wrapper)
 
     def set_jobs(self, jobs):
-        """Sets --jobs."""
+        """Set --jobs."""
         if jobs == "sys":
             self.jobs = None
         else:
@@ -427,14 +427,14 @@ class Command(object):
             self.exit_on_error()
 
     def create_package(self, dirpath):
-        """Sets up a package directory."""
+        """Set up a package directory."""
         dirpath = fixpath(dirpath)
         filepath = os.path.join(dirpath, "__coconut__.py")
         with openfile(filepath, "w") as opened:
             writefile(opened, self.comp.getheader("__coconut__"))
 
     def has_hash_of(self, destpath, code, package):
-        """Determines if a file has the hash of the code."""
+        """Determine if a file has the hash of the code."""
         if destpath is not None and os.path.isfile(destpath):
             with openfile(destpath, "r") as opened:
                 compiled = readfile(opened)
@@ -444,7 +444,7 @@ class Command(object):
         return None
 
     def get_input(self, more=False):
-        """Prompts for code input."""
+        """Prompt for code input."""
         received = None
         try:
             received = self.prompt.input(more)
@@ -461,13 +461,13 @@ class Command(object):
         return received
 
     def start_running(self):
-        """Starts running the Runner."""
+        """Start running the Runner."""
         self.comp.warm_up()
         self.check_runner()
         self.running = True
 
     def start_prompt(self):
-        """Starts the interpreter."""
+        """Start the interpreter."""
         logger.show("Coconut Interpreter:")
         logger.show("(type 'exit()' or press Ctrl-D to end)")
         self.start_running()
@@ -482,12 +482,12 @@ class Command(object):
                 printerr("\nKeyboardInterrupt")
 
     def exit_runner(self, exit_code=0):
-        """Exits the interpreter."""
+        """Exit the interpreter."""
         self.register_error(exit_code)
         self.running = False
 
     def handle_input(self, code):
-        """Compiles Coconut interpreter input."""
+        """Compile Coconut interpreter input."""
         if not self.prompt.multiline:
             if not should_indent(code):
                 try:
@@ -509,7 +509,7 @@ class Command(object):
         return None
 
     def execute(self, compiled=None, path=None, use_eval=False, allow_show=True):
-        """Executes compiled code."""
+        """Execute compiled code."""
         self.check_runner()
         if compiled is not None:
             if allow_show and self.show:
@@ -520,12 +520,12 @@ class Command(object):
             self.run_mypy(code=self.runner.was_run_code())
 
     def execute_file(self, destpath):
-        """Executes compiled file."""
+        """Execute compiled file."""
         self.check_runner()
         self.runner.run_file(destpath)
 
     def check_runner(self):
-        """Makes sure there is a runner."""
+        """Make sure there is a runner."""
         if os.getcwd() not in sys.path:
             sys.path.append(os.getcwd())
         if self.runner is None:
@@ -537,7 +537,7 @@ class Command(object):
         return self.mypy_args is not None
 
     def set_mypy_args(self, mypy_args=None):
-        """Sets MyPy arguments."""
+        """Set MyPy arguments."""
         if mypy_args is None:
             self.mypy_args = None
         else:
@@ -581,7 +581,7 @@ class Command(object):
                     self.mypy_errs.append(line)
 
     def start_jupyter(self, args):
-        """Starts Jupyter with the Coconut kernel."""
+        """Start Jupyter with the Coconut kernel."""
         install_func = functools.partial(run_cmd, show_output=logger.verbose)
 
         try:
@@ -631,7 +631,7 @@ class Command(object):
             self.register_error(run_cmd(run_args, raise_errs=False), errmsg="Jupyter error")
 
     def watch(self, source, write=True, package=None, run=False, force=False):
-        """Watches a source and recompiles on change."""
+        """Watch a source and recompiles on change."""
         from coconut.command.watch import Observer, RecompilationWatcher
 
         source = fixpath(source)

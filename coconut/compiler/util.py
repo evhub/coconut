@@ -50,7 +50,7 @@ from coconut.exceptions import (
 
 
 def join_args(*arglists):
-    """Joins split argument tokens."""
+    """Join split argument tokens."""
     return ", ".join(arg for args in arglists for arg in args if arg)
 
 
@@ -72,7 +72,7 @@ def longest(*args):
 
 
 def addskip(skips, skip):
-    """Adds a line skip to the skips."""
+    """Add a line skip to the skips."""
     if skip < 1:
         complain(CoconutInternalException("invalid skip of line " + str(skip)))
     elif skip in skips:
@@ -83,7 +83,7 @@ def addskip(skips, skip):
 
 
 def count_end(teststr, testchar):
-    """Counts instances of testchar at end of teststr."""
+    """Count instances of testchar at end of teststr."""
     count = 0
     x = len(teststr) - 1
     while x >= 0 and teststr[x] == testchar:
@@ -93,7 +93,7 @@ def count_end(teststr, testchar):
 
 
 def paren_change(inputstring, opens=opens, closes=closes):
-    """Determines the parenthetical change of level (num closes - num opens)."""
+    """Determine the parenthetical change of level (num closes - num opens)."""
     count = 0
     for c in inputstring:
         if c in opens:  # open parens/brackets/braces
@@ -104,54 +104,54 @@ def paren_change(inputstring, opens=opens, closes=closes):
 
 
 def ind_change(inputstring):
-    """Determines the change in indentation level (num opens - num closes)."""
+    """Determine the change in indentation level (num opens - num closes)."""
     return inputstring.count(openindent) - inputstring.count(closeindent)
 
 
 def attach(item, action):
-    """Attaches a parse action to an item."""
+    """Attach a parse action to an item."""
     return item.copy().addParseAction(logger.wrap_handler(action))
 
 
 def fixto(item, output):
-    """Forces an item to result in a specific output."""
+    """Force an item to result in a specific output."""
     return attach(item, replaceWith(output))
 
 
 def addspace(item):
-    """Condenses and adds space to the tokenized output."""
+    """Condense and adds space to the tokenized output."""
     return attach(item, " ".join)
 
 
 def condense(item):
-    """Condenses the tokenized output."""
+    """Condense the tokenized output."""
     return attach(item, "".join)
 
 
 def maybeparens(lparen, item, rparen):
-    """Wraps an item in optional parentheses."""
+    """Wrap an item in optional parentheses."""
     return lparen.suppress() + item + rparen.suppress() | item
 
 
 def tokenlist(item, sep, suppress=True):
-    """Creates a list of tokens matching the item."""
+    """Create a list of tokens matching the item."""
     if suppress:
         sep = sep.suppress()
     return item + ZeroOrMore(sep + item) + Optional(sep)
 
 
 def itemlist(item, sep, suppress_trailing=True):
-    """Creates a list of items seperated by seps."""
+    """Create a list of items seperated by seps."""
     return condense(item + ZeroOrMore(addspace(sep + item)) + Optional(sep.suppress() if suppress_trailing else sep))
 
 
 def exprlist(expr, op):
-    """Creates a list of exprs seperated by ops."""
+    """Create a list of exprs seperated by ops."""
     return addspace(expr + ZeroOrMore(op + expr))
 
 
 def rem_comment(line):
-    """Removes a comment from a line."""
+    """Remove a comment from a line."""
     return line.split("#", 1)[0].rstrip()
 
 
@@ -162,7 +162,7 @@ def should_indent(code):
 
 
 def split_comment(line):
-    """Splits a line into base and comment."""
+    """Split line into base and comment."""
     base = rem_comment(line)
     return base, line[len(base):]
 
@@ -196,19 +196,19 @@ def split_trailing_indent(line, max_indents=None):
 
 
 def parse(grammar, text):
-    """Parses text using grammar."""
+    """Parse text using grammar."""
     return grammar.parseWithTabs().parseString(text)
 
 
 def match_in(grammar, text):
-    """Determines if there is a match for grammar in text."""
+    """Determine if there is a match for grammar in text."""
     for result in grammar.parseWithTabs().scanString(text):
         return True
     return False
 
 
 def matches(grammar, text):
-    """Finds all matches for grammar in text."""
+    """Find all matches for grammar in text."""
     return list(grammar.parseWithTabs().scanString(text))
 
 
@@ -216,7 +216,7 @@ ignore_transform = object()
 
 
 def transform(grammar, text):
-    """Transforms text by replacing matches to grammar."""
+    """Transform text by replacing matches to grammar."""
     results = []
     intervals = []
     for tokens, start, stop in grammar.parseWithTabs().scanString(text):
@@ -257,13 +257,16 @@ class Wrap(ParseElementEnhance):
         self.wrapper = wrapper
 
     def parseImpl(self, instring, loc, *args, **kwargs):
+        """Wrapper around ParseElementEnhance.parseImpl."""
         with self.wrapper(self, instring, loc):
             return super(Wrap, self).parseImpl(instring, loc, *args, **kwargs)
 
 
 def disable_inside(item, *elems, **kwargs):
     """Prevent elems from matching inside of item.
-    Returns (item with elem disabled, *new versions of elems)."""
+
+    Returns (item with elem disabled, *new versions of elems).
+    """
     _invert = kwargs.get("_invert", False)
     internal_assert(set(kwargs.keys()) <= set(("_invert",)), "excess keyword arguments passed to disable_inside")
 
@@ -292,6 +295,8 @@ def disable_inside(item, *elems, **kwargs):
 
 def disable_outside(item, *elems):
     """Prevent elems from matching outside of item.
-    Returns (item with elem disabled, *new versions of elems)."""
+
+    Returns (item with elem disabled, *new versions of elems).
+    """
     for wrapped in disable_inside(item, *elems, **{"_invert": True}):
         yield wrapped

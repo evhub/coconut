@@ -139,7 +139,7 @@ def import_stmt(imp_from, imp, imp_as):
 
 
 def single_import(path, imp_as):
-    """Generates import statements from a fully qualified import and the name to bind it to."""
+    """Generate import statements from a fully qualified import and the name to bind it to."""
     out = []
 
     parts = path.split("./")  # denotes from ... import ...
@@ -180,7 +180,7 @@ def single_import(path, imp_as):
 
 
 def universal_import(imports, imp_from=None, target=""):
-    """Generates code for a universal import of imports from imp_from on target.
+    """Generate code for a universal import of imports from imp_from on target.
     imports = [[imp1], [imp2, as], ...]"""
     importmap = []  # [((imp | old_imp, imp, version_check), imp_as), ...]
     for imps in imports:
@@ -327,11 +327,11 @@ class Compiler(Grammar):
         )
 
     def __reduce__(self):
-        """Returns pickling information."""
+        """Return pickling information."""
         return (Compiler, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.no_tco))
 
     def genhash(self, package, code):
-        """Generates a hash from code."""
+        """Generate a hash from code."""
         return hex(
             checksum(
                 hash_sep.join(
@@ -406,14 +406,14 @@ class Compiler(Grammar):
         return adj_ln
 
     def reformat(self, snip, index=None):
-        """Post processes a preprocessed snippet."""
+        """Post process a preprocessed snippet."""
         if index is not None:
             return self.reformat(snip), len(self.reformat(snip[:index]))
         else:
             return self.repl_proc(snip, log=False, add_to_line=False)
 
     def eval_now(self, code):
-        """Reformats and evaluates a code snippet and returns code for the result."""
+        """Reformat and evaluates a code snippet and returns code for the result."""
         result = eval(self.reformat(code))
         if result is True or result is False or result is None or isinstance(result, int):
             return repr(result)
@@ -423,7 +423,7 @@ class Compiler(Grammar):
             return None
 
     def make_err(self, errtype, message, original, loc, ln=None, reformat=True, *args, **kwargs):
-        """Generates an error of the specified type."""
+        """Generate an error of the specified type."""
         if ln is None:
             ln = self.adjust(lineno(loc, original))
         errstr, index = getline(loc, original), col(loc, original) - 1
@@ -439,7 +439,7 @@ class Compiler(Grammar):
             logger.warn_err(self.make_err(CoconutSyntaxWarning, *args, **kwargs))
 
     def add_ref(self, ref):
-        """Adds a reference and returns the identifier."""
+        """Add a reference and returns the identifier."""
         try:
             index = self.refs.index(ref)
         except ValueError:
@@ -448,24 +448,24 @@ class Compiler(Grammar):
         return str(index)
 
     def get_ref(self, index):
-        """Retrieves a reference."""
+        """Retrieve a reference."""
         try:
             return self.refs[int(index)]
         except (IndexError, ValueError):
             raise CoconutInternalException("invalid reference", index)
 
     def wrap_str(self, text, strchar, multiline=False):
-        """Wraps a string."""
+        """Wrap a string."""
         return strwrapper + self.add_ref((text, strchar, multiline)) + unwrapper
 
     def wrap_str_of(self, text):
-        """Wraps a string of a string."""
+        """Wrap a string of a string."""
         text_repr = ascii(text)
         internal_assert(text_repr[0] == text_repr[-1] and text_repr[0] in ("'", '"'), "cannot wrap str of", text)
         return self.wrap_str(text_repr[1:-1], text_repr[-1])
 
     def wrap_passthrough(self, text, multiline=True):
-        """Wraps a passthrough."""
+        """Wrap a passthrough."""
         if not multiline:
             text = text.lstrip()
         if multiline:
@@ -478,17 +478,17 @@ class Compiler(Grammar):
         return out
 
     def wrap_comment(self, text, reformat=True):
-        """Wraps a comment."""
+        """Wrap a comment."""
         if reformat:
             text = self.reformat(text)
         return "#" + self.add_ref(text) + unwrapper
 
     def wrap_line_number(self, ln):
-        """Wraps a line number."""
+        """Wrap a line number."""
         return "#" + self.add_ref(ln) + lnwrapper
 
     def apply_procs(self, procs, kwargs, inputstring, log=True):
-        """Applies processors to inputstring."""
+        """Apply processors to inputstring."""
         for get_proc in procs:
             proc = get_proc(self)
             inputstring = proc(inputstring, **kwargs)
@@ -497,19 +497,19 @@ class Compiler(Grammar):
         return inputstring
 
     def pre(self, inputstring, **kwargs):
-        """Performs pre-processing."""
+        """Perform pre-processing."""
         out = self.apply_procs(self.preprocs, kwargs, str(inputstring))
         if self.line_numbers or self.keep_lines:
             logger.log_tag("skips", list(sorted(self.skips)))
         return out
 
     def post(self, tokens, **kwargs):
-        """Performs post-processing."""
+        """Perform post-processing."""
         internal_assert(len(tokens) == 1, "multiple tokens leftover", tokens)
         return self.apply_procs(self.postprocs, kwargs, tokens[0])
 
     def getheader(self, which, use_hash=None, polish=True):
-        """Gets a formatted header."""
+        """Get a formatted header."""
         header = getheader(which, target=self.target, use_hash=use_hash, no_tco=self.no_tco)
         if polish:
             header = self.polish(header)
@@ -517,12 +517,12 @@ class Compiler(Grammar):
 
     @property
     def target_info(self):
-        """Returns information on the current target as a version tuple."""
+        """Return information on the current target as a version tuple."""
         return get_target_info(self.target)
 
     @property
     def target_info_len2(self):
-        """Returns target_info as a length 2 tuple."""
+        """Return target_info as a length 2 tuple."""
         info = self.target_info
         if not info:
             return (2, 7)
@@ -555,7 +555,7 @@ class Compiler(Grammar):
         return CoconutParseError(None, err_line, err_index, err_lineno)
 
     def parse(self, inputstring, parser, preargs, postargs):
-        """Uses the parser to parse the inputstring."""
+        """Use the parser to parse the inputstring."""
         self.reset()
         with logger.gather_parsing_stats():
             try:
@@ -579,7 +579,7 @@ class Compiler(Grammar):
 #-----------------------------------------------------------------------------------------------------------------------
 
     def prepare(self, inputstring, strip=False, nl_at_eof_check=False, **kwargs):
-        """Prepares a string for processing."""
+        """Prepare a string for processing."""
         if self.strict and nl_at_eof_check and not inputstring.endswith("\n"):
             end_index = len(inputstring) - 1 if inputstring else 0
             raise self.make_err(CoconutStyleError, "missing new line at end of file", inputstring, end_index)
@@ -592,7 +592,7 @@ class Compiler(Grammar):
         return inputstring
 
     def str_proc(self, inputstring, **kwargs):
-        """Processes strings and comments."""
+        """Process strings and comments."""
         out = []
         found = None  # store of characters that might be the start of a string
         hold = None
@@ -696,7 +696,7 @@ class Compiler(Grammar):
             return "".join(out)
 
     def passthrough_proc(self, inputstring, **kwargs):
-        """Processes python passthroughs."""
+        """Process python passthroughs."""
         out = []
         found = None  # store of characters that might be the start of a passthrough
         hold = None  # the contents of the passthrough so far
@@ -749,7 +749,7 @@ class Compiler(Grammar):
         return "".join(out)
 
     def leading_whitespace(self, inputstring):
-        """Counts leading whitespace."""
+        """Count leading whitespace."""
         count = 0
         for i, c in enumerate(inputstring):
             if c == " ":
@@ -765,7 +765,7 @@ class Compiler(Grammar):
         return count
 
     def ind_proc(self, inputstring, **kwargs):
-        """Processes indentation."""
+        """Process indentation."""
         lines = inputstring.splitlines()
         new = []  # new lines
         opens = []  # (line, col, adjusted ln) at which open parens were seen, newest first
@@ -836,7 +836,7 @@ class Compiler(Grammar):
         return "\n".join(new)
 
     def stmt_lambda_proc(self, inputstring, **kwargs):
-        """Adds statement lambda definitions."""
+        """Add statement lambda definitions."""
         out = []
         for line in inputstring.splitlines():
             for i in range(len(self.stmt_lambdas)):
@@ -853,7 +853,7 @@ class Compiler(Grammar):
         return 1 if self.minify else tabideal
 
     def reind_proc(self, inputstring, **kwargs):
-        """Adds back indentation."""
+        """Add back indentation."""
         out = []
         level = 0
 
@@ -876,7 +876,7 @@ class Compiler(Grammar):
         return "\n".join(out)
 
     def endline_comment(self, ln):
-        """Gets an end line comment. CoconutInternalExceptions should always be caught and complained."""
+        """Get an end line comment. CoconutInternalExceptions should always be caught and complained."""
         if self.keep_lines:
             if ln < 1 or ln - 1 > len(self.original_lines):
                 raise CoconutInternalException("out of bounds line number", ln)
@@ -904,7 +904,7 @@ class Compiler(Grammar):
         return self.wrap_comment(comment, reformat=False)
 
     def endline_repl(self, inputstring, add_to_line=True, **kwargs):
-        """Adds in end line comments."""
+        """Add in end line comments."""
         if self.line_numbers or self.keep_lines:
             out = []
             ln = 1
@@ -932,7 +932,7 @@ class Compiler(Grammar):
             return inputstring
 
     def passthrough_repl(self, inputstring, **kwargs):
-        """Adds back passthroughs."""
+        """Add back passthroughs."""
         out = []
         index = None
         for x in range(len(inputstring) + 1):
@@ -966,7 +966,7 @@ class Compiler(Grammar):
         return "".join(out)
 
     def str_repl(self, inputstring, **kwargs):
-        """Adds back strings."""
+        """Add back strings."""
         out = []
         comment = None
         string = None
@@ -1026,11 +1026,11 @@ class Compiler(Grammar):
         return "".join(out)
 
     def repl_proc(self, inputstring, log=True, **kwargs):
-        """Processes using replprocs."""
+        """Process using replprocs."""
         return self.apply_procs(self.replprocs, kwargs, inputstring, log=log)
 
     def header_proc(self, inputstring, header="file", initial="initial", use_hash=None, **kwargs):
-        """Adds the header."""
+        """Add the header."""
         pre_header = self.getheader(initial, use_hash=use_hash, polish=False)
         main_header = self.getheader(header, polish=False)
         if self.minify:
@@ -1047,13 +1047,13 @@ class Compiler(Grammar):
 #-----------------------------------------------------------------------------------------------------------------------
 
     def set_docstring(self, loc, tokens):
-        """Sets the docstring."""
+        """Set the docstring."""
         internal_assert(len(tokens) == 2, "invalid docstring tokens", tokens)
         self.docstring = self.reformat(tokens[0]) + "\n\n"
         return tokens[1]
 
     def yield_from_handle(self, tokens):
-        """Processes Python 3.3 yield from."""
+        """Process Python 3.3 yield from."""
         internal_assert(len(tokens) == 1, "invalid yield from tokens", tokens)
         if self.target_info < (3, 3):
             return (
@@ -1065,7 +1065,7 @@ class Compiler(Grammar):
             return "yield from " + tokens[0]
 
     def endline_handle(self, original, loc, tokens):
-        """Inserts line number comments when in line_numbers mode."""
+        """Insert line number comments when in line_numbers mode."""
         internal_assert(len(tokens) == 1, "invalid endline tokens", tokens)
         out = tokens[0]
         if self.minify:
@@ -1075,7 +1075,7 @@ class Compiler(Grammar):
         return out
 
     def augassign_handle(self, tokens):
-        """Processes assignments."""
+        """Process assignments."""
         internal_assert(len(tokens) == 3, "invalid assignment tokens", tokens)
         name, op, item = tokens
         out = ""
@@ -1104,7 +1104,7 @@ class Compiler(Grammar):
         return out
 
     def classlist_handle(self, original, loc, tokens):
-        """Processes class inheritance lists."""
+        """Process class inheritance lists."""
         if len(tokens) == 0:
             if self.target.startswith("3"):
                 return ""
@@ -1126,7 +1126,7 @@ class Compiler(Grammar):
             raise CoconutInternalException("invalid classlist tokens", tokens)
 
     def data_handle(self, loc, tokens):
-        """Processes data blocks."""
+        """Process data blocks."""
         if len(tokens) == 3:
             name, args, stmts = tokens
             inherit = None
@@ -1276,7 +1276,7 @@ class Compiler(Grammar):
         return universal_import(imports, imp_from=imp_from, target=self.target)
 
     def complex_raise_stmt_handle(self, tokens):
-        """Processes Python 3 raise from statement."""
+        """Process Python 3 raise from statement."""
         internal_assert(len(tokens) == 2, "invalid raise from tokens", tokens)
         if self.target.startswith("3"):
             return "raise " + tokens[0] + " from " + tokens[1]
@@ -1288,7 +1288,7 @@ class Compiler(Grammar):
             )
 
     def dict_comp_handle(self, loc, tokens):
-        """Processes Python 2.7 dictionary comprehension."""
+        """Process Python 2.7 dictionary comprehension."""
         internal_assert(len(tokens) == 3, "invalid dictionary comprehension tokens", tokens)
         if self.target.startswith("3"):
             key, val, comp = tokens
@@ -1298,7 +1298,7 @@ class Compiler(Grammar):
             return "dict(((" + key + "), (" + val + ")) " + comp + ")"
 
     def pattern_error(self, original, loc, value_var):
-        """Constructs a pattern-matching error message."""
+        """Construct a pattern-matching error message."""
         base_line = clean(self.reformat(getline(loc, original)))
         line_wrap = self.wrap_str_of(base_line)
         repr_wrap = self.wrap_str_of(ascii(base_line))
@@ -1312,7 +1312,7 @@ class Compiler(Grammar):
         )
 
     def destructuring_stmt_handle(self, original, loc, tokens):
-        """Processes match assign blocks."""
+        """Process match assign blocks."""
         internal_assert(len(tokens) == 2, "invalid destructuring assignment tokens", tokens)
         matches, item = tokens
         out = match_handle(loc, [matches, item, None])
@@ -1320,7 +1320,7 @@ class Compiler(Grammar):
         return out
 
     def name_match_funcdef_handle(self, original, loc, tokens):
-        """Processes match defs. Result must be passed to insert_docstring_handle."""
+        """Process match defs. Result must be passed to insert_docstring_handle."""
         if len(tokens) == 2:
             func, matches = tokens
             cond = None
@@ -1349,7 +1349,7 @@ class Compiler(Grammar):
         return before_docstring, after_docstring
 
     def op_match_funcdef_handle(self, original, loc, tokens):
-        """Processes infix match defs. Result must be passed to insert_docstring_handle."""
+        """Process infix match defs. Result must be passed to insert_docstring_handle."""
         if len(tokens) == 3:
             func, args = get_infix_items(tokens)
             cond = None
@@ -1372,7 +1372,7 @@ class Compiler(Grammar):
             return "{" + tokens[0][0] + "}"
 
     def set_letter_literal_handle(self, tokens):
-        """Processes set literals."""
+        """Process set literals."""
         if len(tokens) == 1:
             set_type = tokens[0]
             if set_type == "s":
@@ -1394,7 +1394,7 @@ class Compiler(Grammar):
             raise CoconutInternalException("invalid set literal tokens", tokens)
 
     def exec_stmt_handle(self, tokens):
-        """Handles Python-3-style exec statements."""
+        """Process Python-3-style exec statements."""
         internal_assert(1 <= len(tokens) <= 3, "invalid exec statement tokens", tokens)
         if self.target.startswith("2"):
             out = "exec " + tokens[0]
@@ -1411,7 +1411,7 @@ class Compiler(Grammar):
         return stmt_lambda_var + "_" + str(index)
 
     def stmt_lambdef_handle(self, original, loc, tokens):
-        """Handles multi-line lambdef statements."""
+        """Process multi-line lambdef statements."""
         if len(tokens) == 2:
             params, stmts = tokens
         elif len(tokens) == 3:
@@ -1431,12 +1431,13 @@ class Compiler(Grammar):
         else:
             params.insert(0, name)  # construct match tokens
             self.stmt_lambdas.append(
-                self.name_match_funcdef_handle(original, loc, params) + body,
+                "".join(self.name_match_funcdef_handle(original, loc, params))
+                + body,
             )
         return name
 
     def tre_return(self, func_name, func_args, func_store, use_mock=True):
-        """Generates a tail recursion elimination grammar element."""
+        """Generate a tail recursion elimination grammar element."""
         def tre_return_handle(loc, tokens):
             internal_assert(len(tokens) == 1, "invalid tail recursion elimination tokens", tokens)
             args = tokens[0][1:-1]  # strip parens
@@ -1569,7 +1570,7 @@ class Compiler(Grammar):
         return out
 
     def unsafe_typedef_handle(self, tokens):
-        """Handles type annotations without a comma after them."""
+        """Process type annotations without a comma after them."""
         return self.typedef_handle(tokens.asList() + [","])
 
     def wrap_typedef(self, typedef):
@@ -1578,7 +1579,7 @@ class Compiler(Grammar):
         return self.wrap_str_of(self.reformat(typedef))
 
     def typedef_handle(self, tokens):
-        """Handles Python 3 type annotations."""
+        """Process Python 3 type annotations."""
         if len(tokens) == 1:  # return typedef
             if self.target.startswith("3"):
                 return " -> " + self.wrap_typedef(tokens[0]) + ":"
@@ -1598,7 +1599,7 @@ class Compiler(Grammar):
                 return varname + default + comma + self.wrap_passthrough(self.wrap_comment(" type: " + typedef) + "\n" + " " * self.tabideal)
 
     def typed_assign_stmt_handle(self, tokens):
-        """Handles Python 3.6 variable type annotations."""
+        """Process Python 3.6 variable type annotations."""
         if len(tokens) == 2:
             if self.target_info >= (3, 6):
                 return tokens[0] + ": " + tokens[1]
@@ -1613,7 +1614,7 @@ class Compiler(Grammar):
             raise CoconutInternalException("invalid variable type annotation tokens", tokens)
 
     def with_stmt_handle(self, tokens):
-        """Handles with statements."""
+        """Process with statements."""
         internal_assert(len(tokens) == 2, "invalid with statement tokens", tokens)
         withs, body = tokens
         if len(withs) == 1 or self.target_info >= (2, 7):
@@ -1631,7 +1632,7 @@ class Compiler(Grammar):
 #-----------------------------------------------------------------------------------------------------------------------
 
     def check_strict(self, name, original, loc, tokens):
-        """Checks that syntax meets --strict requirements."""
+        """Check that syntax meets --strict requirements."""
         internal_assert(len(tokens) == 1, "invalid " + name + " tokens", tokens)
         if self.strict:
             raise self.make_err(CoconutStyleError, "found " + name, original, loc)
@@ -1639,19 +1640,19 @@ class Compiler(Grammar):
             return tokens[0]
 
     def lambdef_check(self, original, loc, tokens):
-        """Checks for Python-style lambdas."""
+        """Check for Python-style lambdas."""
         return self.check_strict("Python-style lambda", original, loc, tokens)
 
     def endline_semicolon_check(self, original, loc, tokens):
-        """Checks for semicolons at the end of lines."""
+        """Check for semicolons at the end of lines."""
         return self.check_strict("semicolon at end of line", original, loc, tokens)
 
     def u_string_check(self, original, loc, tokens):
-        """Checks for Python2-style unicode strings."""
+        """Check for Python2-style unicode strings."""
         return self.check_strict("Python-2-style unicode string", original, loc, tokens)
 
     def check_py(self, version, name, original, loc, tokens):
-        """Checks for Python-version-specific syntax."""
+        """Check for Python-version-specific syntax."""
         internal_assert(len(tokens) == 1, "invalid " + name + " tokens", tokens)
         if self.target_info < get_target_info(version):
             raise self.make_err(CoconutTargetError, "found Python " + ".".join(version) + " " + name, original, loc, target=version)
@@ -1659,7 +1660,7 @@ class Compiler(Grammar):
             return tokens[0]
 
     def name_check(self, original, loc, tokens):
-        """Checks for Python 3 exec function."""
+        """Check for Python 3 exec function."""
         internal_assert(len(tokens) == 1, "invalid name tokens", tokens)
         if tokens[0] == "exec":
             return self.check_py("3", "exec function", original, loc, tokens)
@@ -1669,35 +1670,35 @@ class Compiler(Grammar):
             return tokens[0]
 
     def nonlocal_check(self, original, loc, tokens):
-        """Checks for Python 3 nonlocal statement."""
+        """Check for Python 3 nonlocal statement."""
         return self.check_py("3", "nonlocal statement", original, loc, tokens)
 
     def star_assign_item_check(self, original, loc, tokens):
-        """Checks for Python 3 starred assignment."""
+        """Check for Python 3 starred assignment."""
         return self.check_py("3", "starred assignment (add 'match' to front to produce universal code)", original, loc, tokens)
 
     def star_expr_check(self, original, loc, tokens):
-        """Checks for Python 3.5 star unpacking."""
+        """Check for Python 3.5 star unpacking."""
         return self.check_py("35", "star unpacking (add 'match' to front to produce universal code)", original, loc, tokens)
 
     def matrix_at_check(self, original, loc, tokens):
-        """Checks for Python 3.5 matrix multiplication."""
+        """Check for Python 3.5 matrix multiplication."""
         return self.check_py("35", "matrix multiplication", original, loc, tokens)
 
     def async_keyword_check(self, original, loc, tokens):
-        """Checks for Python 3.5 async statement."""
+        """Check for Python 3.5 async statement."""
         return self.check_py("35", "async statement", original, loc, tokens)
 
     def async_comp_check(self, original, loc, tokens):
-        """Checks for Python 3.6 async comprehension."""
+        """Check for Python 3.6 async comprehension."""
         return self.check_py("36", "async comprehension", original, loc, tokens)
 
     def await_keyword_check(self, original, loc, tokens):
-        """Checks for Python 3.5 await expression."""
+        """Check for Python 3.5 await expression."""
         return self.check_py("35", "await expression", original, loc, tokens)
 
     def f_string_check(self, original, loc, tokens):
-        """Checks for Python 3.6 format strings."""
+        """Check for Python 3.6 format strings."""
         return self.check_py("36", "format string", original, loc, tokens)
 
 # end: CHECKING HANDLERS
@@ -1706,11 +1707,11 @@ class Compiler(Grammar):
 #-----------------------------------------------------------------------------------------------------------------------
 
     def parse_single(self, inputstring):
-        """Parses line code."""
+        """Parse line code."""
         return self.parse(inputstring, self.single_parser, {}, {"header": "none", "initial": "none"})
 
     def parse_file(self, inputstring, addhash=True):
-        """Parses file code."""
+        """Parse file code."""
         if addhash:
             use_hash = self.genhash(False, inputstring)
         else:
@@ -1718,11 +1719,11 @@ class Compiler(Grammar):
         return self.parse(inputstring, self.file_parser, {"nl_at_eof_check": True}, {"header": "file", "use_hash": use_hash})
 
     def parse_exec(self, inputstring):
-        """Parses exec code."""
+        """Parse exec code."""
         return self.parse(inputstring, self.file_parser, {}, {"header": "file", "initial": "none"})
 
     def parse_package(self, inputstring, addhash=True):
-        """Parses package code."""
+        """Parse package code."""
         if addhash:
             use_hash = self.genhash(True, inputstring)
         else:
@@ -1730,19 +1731,19 @@ class Compiler(Grammar):
         return self.parse(inputstring, self.file_parser, {"nl_at_eof_check": True}, {"header": "package", "use_hash": use_hash})
 
     def parse_block(self, inputstring):
-        """Parses block code."""
+        """Parse block code."""
         return self.parse(inputstring, self.file_parser, {}, {"header": "none", "initial": "none"})
 
     def parse_sys(self, inputstring):
-        """Parses module code."""
+        """Parse module code."""
         return self.parse(inputstring, self.file_parser, {}, {"header": "sys", "initial": "none"})
 
     def parse_eval(self, inputstring):
-        """Parses eval code."""
+        """Parse eval code."""
         return self.parse(inputstring, self.eval_parser, {"strip": True}, {"header": "none", "initial": "none"})
 
     def parse_debug(self, inputstring):
-        """Parses debug code."""
+        """Parse debug code."""
         return self.parse(inputstring, self.file_parser, {"strip": True}, {"header": "none", "initial": "none", "final_endline": False})
 
     def warm_up(self):

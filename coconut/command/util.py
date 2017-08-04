@@ -80,30 +80,30 @@ def openfile(filename, opentype="r+"):
 
 
 def writefile(openedfile, newcontents):
-    """Sets the contents of a file."""
+    """Set the contents of a file."""
     openedfile.seek(0)
     openedfile.truncate()
     openedfile.write(newcontents)
 
 
 def readfile(openedfile):
-    """Reads the contents of a file."""
+    """Read the contents of a file."""
     openedfile.seek(0)
     return str(openedfile.read())
 
 
 def launch_tutorial():
-    """Opens the Coconut tutorial."""
+    """Open the Coconut tutorial."""
     webbrowser.open(tutorial_url, 2)
 
 
 def launch_documentation():
-    """Opens the Coconut documentation."""
+    """Open the Coconut documentation."""
     webbrowser.open(documentation_url, 2)
 
 
 def showpath(path):
-    """Formats a path for displaying."""
+    """Format a path for displaying."""
     if logger.verbose:
         return os.path.abspath(path)
     else:
@@ -114,12 +114,12 @@ def showpath(path):
 
 
 def is_special_dir(dirname):
-    """Determines if a directory name is a special directory."""
+    """Determine if a directory name is a special directory."""
     return dirname == os.curdir or dirname == os.pardir
 
 
 def rem_encoding(code):
-    """Removes encoding declarations from compiled code so it can be passed to exec."""
+    """Remove encoding declarations from compiled code so it can be passed to exec."""
     old_lines = code.splitlines()
     new_lines = []
     for i in range(min(2, len(old_lines))):
@@ -153,7 +153,7 @@ def interpret(code, in_vars):
 
 @contextmanager
 def handling_broken_process_pool():
-    """Handles BrokenProcessPool error."""
+    """Handle BrokenProcessPool error."""
     if sys.version_info < (3, 3):
         yield
     else:
@@ -165,7 +165,7 @@ def handling_broken_process_pool():
 
 
 def kill_children():
-    """Terminates all child processes."""
+    """Terminate all child processes."""
     try:
         import psutil
     except ImportError:
@@ -220,9 +220,11 @@ def call_output(cmd, **kwargs):
 
 
 def run_cmd(cmd, show_output=True, raise_errs=True, **kwargs):
-    """Runs a console command.
+    """Run a console command.
+
     When show_output=True, prints output and returns exit code, otherwise returns output.
-    When raise_errs=True, raises an error if command fails."""
+    When raise_errs=True, raises an error if command fails.
+    """
     internal_assert(cmd and isinstance(cmd, list), "console commands must be passed as non-empty lists")
     try:
         from shutil import which
@@ -241,7 +243,7 @@ def run_cmd(cmd, show_output=True, raise_errs=True, **kwargs):
 
 
 def set_mypy_path(mypy_path):
-    """Prepends to MYPYPATH."""
+    """Prepend to MYPYPATH."""
     original = os.environ.get(mypy_path_env_var)
     if original is None:
         new_mypy_path = mypy_path
@@ -255,7 +257,7 @@ def set_mypy_path(mypy_path):
 
 
 def stdin_readable():
-    """Determines whether stdin has any data to read."""
+    """Determine whether stdin has any data to read."""
     if os.name != "nt":
         try:
             return bool(select([sys.stdin], [], [], 0)[0])
@@ -269,7 +271,7 @@ def stdin_readable():
 
 
 def set_recursion_limit(limit):
-    """Sets the Python recursion limit."""
+    """Set the Python recursion limit."""
     if limit < minimum_recursion_limit:
         raise CoconutException("--recursion-limit must be at least " + str(minimum_recursion_limit))
     sys.setrecursionlimit(limit)
@@ -311,7 +313,7 @@ class Prompt(object):
             raise CoconutException("unrecognized pygments style", style, extra="use '--style list' to show all valid styles")
 
     def input(self, more=False):
-        """Prompts for code input."""
+        """Prompt for code input."""
         sys.stdout.flush()
         if more:
             msg = more_prompt
@@ -330,7 +332,7 @@ class Prompt(object):
         return input(msg)
 
     def prompt_kwargs(self):
-        """Gets prompt_toolkit.prompt keyword args."""
+        """Get prompt_toolkit.prompt keyword args."""
         return {
             "history": self.history,
             "multiline": self.multiline,
@@ -345,7 +347,7 @@ class Runner(object):
     """Compiled Python executor."""
 
     def __init__(self, comp=None, exit=None, store=False, path=None):
-        """Creates the executor."""
+        """Create the executor."""
         self.exit = exit if exit is not None else sys.exit
         self.vars = self.build_vars(path)
         self.stored = [] if store else None
@@ -356,7 +358,7 @@ class Runner(object):
 
     @staticmethod
     def build_vars(path=None):
-        """Builds initial vars."""
+        """Build initial vars."""
         init_vars = {
             "__name__": "__main__",
             "__package__": None,
@@ -368,19 +370,19 @@ class Runner(object):
         return init_vars
 
     def store(self, line):
-        """Stores a line."""
+        """Store a line."""
         if self.stored is not None:
             self.stored.append(line)
 
     def fix_pickle(self):
-        """Fixes pickling of Coconut header objects."""
+        """Fix pickling of Coconut header objects."""
         for var in self.vars:
             if not var.startswith("__") and var in dir(__coconut__):
                 self.vars[var] = getattr(__coconut__, var)
 
     @contextmanager
     def handling_errors(self, all_errors_exit=False):
-        """Handles execution errors."""
+        """Handle execution errors."""
         try:
             yield
         except SystemExit as err:
@@ -396,11 +398,11 @@ class Runner(object):
                 self.exit(1)
 
     def update_vars(self, global_vars):
-        """Adds Coconut built-ins to given vars."""
+        """Add Coconut built-ins to given vars."""
         global_vars.update(self.vars)
 
     def run(self, code, use_eval=None, path=None, all_errors_exit=False, store=True):
-        """Executes Python code."""
+        """Execute Python code."""
         if use_eval is None:
             run_func = interpret
         elif use_eval is True:
@@ -421,7 +423,7 @@ class Runner(object):
             return result
 
     def run_file(self, path, all_errors_exit=True):
-        """Executes a Python file."""
+        """Execute a Python file."""
         path = fixpath(path)
         with self.handling_errors(all_errors_exit):
             module_vars = run_file(path)
@@ -429,7 +431,7 @@ class Runner(object):
             self.store("from " + splitname(path)[1] + " import *")
 
     def was_run_code(self, get_all=True):
-        """Gets all the code that was run."""
+        """Get all the code that was run."""
         if self.stored is None:
             return ""
         else:
@@ -442,13 +444,13 @@ class multiprocess_wrapper(object):
     """Wrapper for a method that needs to be multiprocessed."""
 
     def __init__(self, base, method):
-        """Creates new multiprocessable method."""
+        """Create new multiprocessable method."""
         self.recursion = sys.getrecursionlimit()
         self.logger = copy(logger)
         self.base, self.method = base, method
 
     def __call__(self, *args, **kwargs):
-        """Sets up new process then calls the method."""
+        """Set up new process then calls the method."""
         sys.setrecursionlimit(self.recursion)
         logger.copy_from(self.logger)
         return getattr(self.base, self.method)(*args, **kwargs)

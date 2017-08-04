@@ -37,7 +37,7 @@ from coconut.exceptions import internal_assert
 
 
 def gethash(compiled):
-    """Retrieves a hash from a header."""
+    """Retrieve a hash from a header."""
     lines = compiled.splitlines()
     if len(lines) < 3 or not lines[2].startswith(hash_prefix):
         return None
@@ -46,7 +46,10 @@ def gethash(compiled):
 
 
 def minify(compiled):
-    """Performs basic minifications (fails on non-tabideal indentation or a string with a #)."""
+    """Perform basic minifications.
+
+    Fails on non-tabideal indentation or a string with a #.
+    """
     compiled = compiled.strip()
     if compiled:
         out = []
@@ -73,7 +76,7 @@ def get_template(template):
 
 
 def one_num_ver(target):
-    """Returns the first number of the target version, if it has one."""
+    """Return the first number of the target version, if it has one."""
     return target[:1]  # "2", "3", or ""
 
 
@@ -97,7 +100,7 @@ class comment(object):
 
 
 def process_header_args(which, target, use_hash, no_tco):
-    """Creates the dictionary passed to str.format in the header, target_startswith, and target_info."""
+    """Create the dictionary passed to str.format in the header, target_startswith, and target_info."""
     target_startswith = one_num_ver(target)
     target_info = get_target_info(target)
     format_dict = dict(
@@ -180,7 +183,7 @@ allowed_headers = ("none", "initial", "__coconut__", "package", "sys", "code", "
 
 
 def getheader(which, target="", use_hash=None, no_tco=False):
-    """Generates the specified header."""
+    """Generate the specified header."""
     internal_assert(which in allowed_headers, "invalid header type", which)
 
     if which == "none":

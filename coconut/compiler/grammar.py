@@ -162,13 +162,15 @@ def pipe_item_split(tokens, loc):
 
 
 def infix_error(tokens):
-    """Raises inner infix error."""
+    """Raise inner infix error."""
     raise CoconutInternalException("invalid inner infix tokens", tokens)
 
 
 def get_infix_items(tokens, callback=infix_error):
-    """Performs infix token processing.
-    Uses a callback that takes infix tokens and returns a string to handle inner infix calls."""
+    """Perform infix token processing.
+
+    Takes a callback that (takes infix tokens and returns a string) to handle inner infix calls.
+    """
     internal_assert(len(tokens) >= 3, "invalid infix tokens", tokens)
     (arg1, func, arg2), tokens = tokens[:3], tokens[3:]
     args = list(arg1) + list(arg2)
@@ -180,7 +182,7 @@ def get_infix_items(tokens, callback=infix_error):
 
 
 def case_to_match(tokens, item):
-    """Converts case tokens to match tokens."""
+    """Convert case tokens to match tokens."""
     if len(tokens) == 2:
         matches, stmts = tokens
         return matches, item, stmts
@@ -198,7 +200,7 @@ def case_to_match(tokens, item):
 
 
 def add_paren_handle(tokens):
-    """Adds parentheses."""
+    """Add parentheses."""
     internal_assert(len(tokens) == 1, "invalid tokens for parentheses adding", tokens)
     return "(" + tokens[0] + ")"
 
@@ -209,7 +211,7 @@ def function_call_handle(loc, tokens):
 
 
 def item_handle(loc, tokens):
-    """Processes items."""
+    """Process trailers."""
     out = tokens.pop(0)
     for i, trailer in enumerate(tokens):
         if isinstance(trailer, str):
@@ -280,7 +282,7 @@ def item_handle(loc, tokens):
 
 
 def pipe_handle(loc, tokens, **kwargs):
-    """Processes pipe calls."""
+    """Process pipe calls."""
     internal_assert(set(kwargs) <= set(("top",)), "unknown pipe_handle keyword arguments", kwargs)
     top = kwargs.get("top", True)
     if len(tokens) == 1:
@@ -348,7 +350,7 @@ def pipe_handle(loc, tokens, **kwargs):
 
 
 def comp_pipe_handle(loc, tokens):
-    """Processes pipe function composition."""
+    """Process pipe function composition."""
     internal_assert(len(tokens) >= 3 and len(tokens) % 2 == 1, "invalid composition pipe tokens", tokens)
     funcs, using_op = [tokens[0]], tokens[1]
     for i in range(1, len(tokens), 2):
@@ -366,7 +368,7 @@ def comp_pipe_handle(loc, tokens):
 
 
 def none_coalesce_handle(tokens):
-    """Processes the None-coalescing operator."""
+    """Process the None-coalescing operator."""
     if len(tokens) == 1:
         return tokens[0]
     elif tokens[0].isalnum():
@@ -383,7 +385,7 @@ def none_coalesce_handle(tokens):
 
 
 def attrgetter_atom_handle(loc, tokens):
-    """Processes attrgetter literals."""
+    """Process attrgetter literals."""
     name, args = attrgetter_atom_split(tokens)
     if args is None:
         return '_coconut.operator.attrgetter("' + name + '")'
@@ -396,7 +398,7 @@ def attrgetter_atom_handle(loc, tokens):
 
 
 def lazy_list_handle(tokens):
-    """Processes lazy lists."""
+    """Process lazy lists."""
     if len(tokens) == 0:
         return "_coconut.iter(())"
     else:
@@ -407,7 +409,7 @@ def lazy_list_handle(tokens):
 
 
 def chain_handle(tokens):
-    """Processes chain calls."""
+    """Process chain calls."""
     if len(tokens) == 1:
         return tokens[0]
     else:
@@ -415,13 +417,13 @@ def chain_handle(tokens):
 
 
 def infix_handle(tokens):
-    """Processes infix calls."""
+    """Process infix calls."""
     func, args = get_infix_items(tokens, callback=infix_handle)
     return "(" + func + ")(" + ", ".join(args) + ")"
 
 
 def op_funcdef_handle(tokens):
-    """Processes infix defs."""
+    """Process infix defs."""
     func, base_args = get_infix_items(tokens)
     args = []
     for arg in base_args[:-1]:
@@ -440,7 +442,7 @@ def op_funcdef_handle(tokens):
 
 
 def lambdef_handle(tokens):
-    """Processes lambda calls."""
+    """Process lambda calls."""
     if len(tokens) == 0:
         return "lambda:"
     elif len(tokens) == 1:
@@ -450,7 +452,7 @@ def lambdef_handle(tokens):
 
 
 def typedef_callable_handle(tokens):
-    """Processes -> to Callable inside type annotations."""
+    """Process -> to Callable inside type annotations."""
     if len(tokens) == 1:
         return '_coconut.typing.Callable[..., ' + tokens[0] + ']'
     elif len(tokens) == 2:
@@ -460,19 +462,19 @@ def typedef_callable_handle(tokens):
 
 
 def math_funcdef_suite_handle(tokens):
-    """Processes assignment function definiton suites."""
+    """Process assignment function definiton suites."""
     internal_assert(len(tokens) >= 1, "invalid assignment function definition suite tokens", tokens)
     return "\n" + openindent + "".join(tokens[:-1]) + "return " + tokens[-1] + closeindent
 
 
 def math_funcdef_handle(tokens):
-    """Processes assignment function definition."""
+    """Process assignment function definition."""
     internal_assert(len(tokens) == 2, "invalid assignment function definition tokens", tokens)
     return tokens[0] + ("" if tokens[1].startswith("\n") else " ") + tokens[1]
 
 
 def decorator_handle(tokens):
-    """Processes decorators."""
+    """Process decorators."""
     defs = []
     decorates = []
     for i, tok in enumerate(tokens):
@@ -488,13 +490,13 @@ def decorator_handle(tokens):
 
 
 def else_handle(tokens):
-    """Processes compound else statements."""
+    """Process compound else statements."""
     internal_assert(len(tokens) == 1, "invalid compound else statement tokens", tokens)
     return "\n" + openindent + tokens[0] + closeindent
 
 
 def match_handle(loc, tokens, **kwargs):
-    """Processes match blocks."""
+    """Process match blocks."""
     # we cannot add a default arg to match_handle otherwise pyparsing would pass
     #  (original, loc, tokens) instead of just (loc, tokens), so we have to mimic
     #  having a default argument of top=True like this instead
@@ -529,7 +531,7 @@ def match_handle(loc, tokens, **kwargs):
 
 
 def case_handle(loc, tokens):
-    """Processes case blocks."""
+    """Process case blocks."""
     if len(tokens) == 2:
         item, cases = tokens
         default = None
@@ -549,7 +551,7 @@ def case_handle(loc, tokens):
 
 
 def except_handle(tokens):
-    """Processes except statements."""
+    """Process except statements."""
     if len(tokens) == 1:
         errs, asname = tokens[0], None
     elif len(tokens) == 2:
@@ -567,7 +569,7 @@ def except_handle(tokens):
 
 
 def subscriptgroup_handle(tokens):
-    """Processes subscriptgroups."""
+    """Process subscriptgroups."""
     internal_assert(0 < len(tokens) <= 3, "invalid slice args", tokens)
     args = []
     for arg in tokens:
@@ -581,7 +583,7 @@ def subscriptgroup_handle(tokens):
 
 
 def itemgetter_handle(tokens):
-    """Processes implicit itemgetter partials."""
+    """Process implicit itemgetter partials."""
     internal_assert(len(tokens) == 2, "invalid implicit itemgetter args", tokens)
     op, args = tokens
     if op == "[":
@@ -593,13 +595,13 @@ def itemgetter_handle(tokens):
 
 
 def class_suite_handle(tokens):
-    """Processes implicit pass in class suite."""
+    """Process implicit pass in class suite."""
     internal_assert(len(tokens) == 1, "invalid implicit pass in class suite tokens", tokens)
     return ": pass" + tokens[0]
 
 
 def namelist_handle(tokens):
-    """Handles inline nonlocal and global statements."""
+    """Process inline nonlocal and global statements."""
     if len(tokens) == 1:
         return tokens[0]
     elif len(tokens) == 2:
@@ -609,7 +611,7 @@ def namelist_handle(tokens):
 
 
 def compose_item_handle(tokens):
-    """Handles function composition."""
+    """Process function composition."""
     if len(tokens) < 1:
         raise CoconutInternalException("invalid function composition tokens", tokens)
     elif len(tokens) == 1:
@@ -619,14 +621,17 @@ def compose_item_handle(tokens):
 
 
 def make_suite_handle(tokens):
-    """Makes simple statements into suites.
-    Necessary because multiline lambdas count on every statement having its own line to work."""
+    """Make simple statements into suites.
+
+    Necessary because multiline lambdas and pattern-matching function
+    definition count on every statement having its own line to work.
+    """
     internal_assert(len(tokens) == 1, "invalid simple suite tokens", tokens)
     return "\n" + openindent + tokens[0] + closeindent
 
 
 def tco_return_handle(tokens):
-    """Handles tail-call-optimizable return statements."""
+    """Process tail-call-optimizable return statements."""
     internal_assert(len(tokens) == 2, "invalid tail-call-optimizable return statement tokens", tokens)
     if tokens[1].startswith("()"):
         return "return _coconut_tail_call(" + tokens[0] + ")" + tokens[1][2:]  # tokens[1] contains \n
@@ -635,7 +640,7 @@ def tco_return_handle(tokens):
 
 
 def split_func_name_args_params_handle(tokens):
-    """Handles splitting a function into name, params, and args."""
+    """Process splitting a function into name, params, and args."""
     internal_assert(len(tokens) == 2, "invalid function definition splitting tokens", tokens)
     func_name = tokens[0]
     func_args = []
@@ -654,7 +659,7 @@ def split_func_name_args_params_handle(tokens):
 
 
 def insert_docstring_handle(tokens):
-    """Inserts a docstring, if present, into match function definition."""
+    """Insert a docstring, if present, into match function definition."""
     if len(tokens) == 2:
         (func, insert_after_docstring), body = tokens
         docstring = None
@@ -677,7 +682,7 @@ def insert_docstring_handle(tokens):
 
 
 class Grammar(object):
-    """Contains Coconut grammar definitions."""
+    """Coconut grammar specification."""
 
     comma = Literal(",")
     dubstar = Literal("**")

@@ -31,7 +31,7 @@ CLI = Command()
 
 
 def cmd(args, interact=False):
-    """Processes command-line arguments."""
+    """Process command-line arguments."""
     if isinstance(args, (str, bytes)):
         args = args.split()
     return CLI.cmd(args=args, interact=interact)
@@ -47,7 +47,7 @@ VERSIONS = {
 
 
 def version(which="num"):
-    """Gets the Coconut version."""
+    """Get the Coconut version."""
     if which in VERSIONS:
         return VERSIONS[which]
     else:
@@ -77,7 +77,7 @@ PARSERS = {
 
 
 def parse(code="", mode="sys"):
-    """Parses Coconut code."""
+    """Parse Coconut code."""
     if CLI.comp is None:
         setup()
     if mode in PARSERS:
