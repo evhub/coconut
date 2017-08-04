@@ -21,6 +21,7 @@ from coconut.constants import (
     all_reqs,
     min_versions,
     version_strictly,
+    using_modern_setuptools,
     PYPY,
     PY34,
     IPY,
@@ -124,16 +125,7 @@ def add_version_reqs(modern=True):
             requirements += get_reqs("py2")
 
 
-try:
-    import setuptools
-    modern_setuptools = int(setuptools.__version__.split(".", 1)[0]) >= 18
-except Exception:
-    modern_setuptools = False
-
-if modern_setuptools:
-    add_version_reqs()
-else:
-    add_version_reqs(modern=False)
+add_version_reqs(using_modern_setuptools)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:

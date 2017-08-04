@@ -28,9 +28,9 @@ pip install coconut
 ```
 which will install Coconut and its required dependencies.
 
-Try re-running the above command with the `--user` option if you are encountering errors. If you cannot access the `coconut` command, be sure that Coconut's installation location is in your `PATH` environment variable. On UNIX, that is `/usr/local/bin` (without `--user`) or `${HOME}/.local/bin/` (with `--user`).
-
 _Note: If you have an old version of Coconut installed and you want to upgrade, run `pip install --upgrade coconut` instead._
+
+If you are encountering errors running `pip install coconut`, try re-running it with the `--user` option. If `pip install coconut` works, but you cannot access the `coconut` command, be sure that Coconut's installation location is in your `PATH` environment variable. On UNIX, that is `/usr/local/bin` (without `--user`) or `${HOME}/.local/bin/` (with `--user`).
 
 #### Using Conda
 

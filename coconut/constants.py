@@ -64,6 +64,12 @@ IPY = (PY2 and not PY26) or (PY33 if not WINDOWS else PY34)
 # INSTALLATION CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
+try:
+    import setuptools
+    using_modern_setuptools = int(setuptools.__version__.split(".", 1)[0]) >= 18
+except Exception:
+    using_modern_setuptools = False
+
 package_name = "coconut" + ("-develop" if DEVELOP else "")
 
 author = "Evan Hubinger"
