@@ -20,7 +20,7 @@ matrix:
 install:
 # if USE_CONDA == true:
 - if [[ $USE_CONDA == "true" ]]; then
-  rm -rf coconut; fi
+  rm -rf ./coconut setup.py; fi
 - if [[ $USE_CONDA == "true" ]]; then
   wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh; fi
 - if [[ $USE_CONDA == "true" ]]; then
@@ -30,7 +30,9 @@ install:
 - if [[ $USE_CONDA == "true" ]]; then
   conda config --set always_yes yes; fi
 - if [[ $USE_CONDA == "true" ]]; then
-  conda install "conda-build>=3.0.8"; fi
+  conda install "conda-build>=3"; fi
+- if [[ $USE_CONDA == "true" ]]; then
+  conda config --add channels conda-forge; fi
 - if [[ $USE_CONDA == "true" ]]; then
   conda skeleton pypi coconut-develop; fi
 - if [[ $USE_CONDA == "true" ]]; then
