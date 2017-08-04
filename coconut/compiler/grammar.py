@@ -652,6 +652,24 @@ def split_func_name_args_params_handle(tokens):
         "(" + ", ".join(func_params) + ")",
     ]
 
+
+def insert_docstring_handle(tokens):
+    """Inserts a docstring, if present, into match function definition."""
+    if len(tokens) == 2:
+        (func, insert_after_docstring), body = tokens
+        docstring = None
+    elif len(tokens) == 3:
+        (func, insert_after_docstring), docstring, body = tokens
+    else:
+        raise CoconutInternalException("invalid docstring insertion tokens", tokens)
+    return (
+        func
+        + (docstring if docstring is not None else "")
+        + insert_after_docstring
+        + body
+    )
+
+
 # end: HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN GRAMMAR:
@@ -1436,13 +1454,25 @@ class Grammar(object):
     name_match_funcdef_ref = dotted_name + lparen.suppress() + match_args_list + match_guard + rparen.suppress()
     op_match_funcdef_ref = op_match_funcdef_arg + op_funcdef_name + op_match_funcdef_arg + match_guard
     base_match_funcdef = trace(Keyword("def").suppress() + (op_match_funcdef | name_match_funcdef))
-    def_match_funcdef = trace(condense(base_match_funcdef + colon.suppress() + nocolon_suite))
+    def_match_funcdef = trace(attach(
+        base_match_funcdef
+        + colon.suppress()
+        + (
+            attach(simple_stmt, make_suite_handle)
+            | newline.suppress() + indent.suppress()
+            + Optional(docstring)
+            + attach(condense(OneOrMore(stmt)), make_suite_handle)
+            + dedent.suppress()
+        ),
+        insert_docstring_handle,
+    ))
     match_funcdef = Optional(Keyword("match").suppress()) + def_match_funcdef
 
     testlist_stmt = condense(testlist + newline)
+    math_funcdef_body = ZeroOrMore(~(testlist_stmt + dedent) + stmt) - testlist_stmt
     math_funcdef_suite = attach(
         testlist_stmt
-        | (newline - indent).suppress() - ZeroOrMore(~(testlist_stmt + dedent) + stmt) - testlist_stmt - dedent.suppress(),
+        | (newline - indent).suppress() - math_funcdef_body - dedent.suppress(),
         math_funcdef_suite_handle,
     )
     end_func_equals = return_typedef + equals.suppress() | fixto(equals, ":")
@@ -1450,9 +1480,19 @@ class Grammar(object):
         condense(addspace(Keyword("def") + base_funcdef) + end_func_equals) - math_funcdef_suite,
         math_funcdef_handle,
     ))
-    math_match_funcdef = trace(
-        Optional(Keyword("match").suppress()) + condense(base_match_funcdef + equals.suppress() - math_funcdef_suite),
-    )
+    math_match_funcdef = Optional(Keyword("match").suppress()) + trace(attach(
+        base_match_funcdef
+        + equals.suppress()
+        - Optional(docstring)
+        - (
+            attach(testlist_stmt, math_funcdef_suite_handle)
+            | newline.suppress() - indent.suppress()
+            - Optional(docstring)
+            - attach(math_funcdef_body, math_funcdef_suite_handle)
+            - dedent.suppress()
+        ),
+        insert_docstring_handle,
+    ))
 
     async_funcdef = addspace(async_keyword + (funcdef | math_funcdef))
     async_stmt = addspace(async_keyword + (with_stmt | for_stmt))
@@ -1551,7 +1591,8 @@ class Grammar(object):
     ))
     stmt <<= trace(compound_stmt | simple_stmt)
     base_suite <<= condense(newline + indent - OneOrMore(stmt) - dedent)
-    nocolon_suite <<= trace(base_suite | attach(simple_stmt, make_suite_handle))
+    simple_suite = attach(simple_stmt, make_suite_handle)
+    nocolon_suite <<= trace(base_suite | simple_suite)
     suite <<= condense(colon + nocolon_suite)
     line = trace(newline | stmt)
 

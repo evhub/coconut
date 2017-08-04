@@ -1320,7 +1320,7 @@ class Compiler(Grammar):
         return out
 
     def name_match_funcdef_handle(self, original, loc, tokens):
-        """Processes match defs."""
+        """Processes match defs. Result must be passed to insert_docstring_handle."""
         if len(tokens) == 2:
             func, matches = tokens
             cond = None
@@ -1335,15 +1335,21 @@ class Compiler(Grammar):
 
         if cond is not None:
             matcher.add_guard(cond)
-        return (
-            "def " + func + "(*" + match_to_args_var + ", **" + match_to_kwargs_var + "):\n" + openindent
-            + match_check_var + " = False\n"
+
+        before_docstring = (
+            "def " + func
+            + "(*" + match_to_args_var + ", **" + match_to_kwargs_var + "):\n"
+            + openindent
+        )
+        after_docstring = (
+            match_check_var + " = False\n"
             + matcher.out()
             + self.pattern_error(original, loc, match_to_args_var) + closeindent
         )
+        return before_docstring, after_docstring
 
     def op_match_funcdef_handle(self, original, loc, tokens):
-        """Processes infix match defs."""
+        """Processes infix match defs. Result must be passed to insert_docstring_handle."""
         if len(tokens) == 3:
             func, args = get_infix_items(tokens)
             cond = None
