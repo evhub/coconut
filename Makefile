@@ -26,7 +26,7 @@ test-basic:
 .PHONY: sphinx
 sphinx: clean
 	sphinx-build -b html . ./docs
-	rm -rf index.rst
+	rm -f index.rst
 
 .PHONY: docs
 docs: sphinx

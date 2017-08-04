@@ -20,13 +20,31 @@ While most of Coconut gets its inspiration simply from trying to make functional
 
 ### Installation
 
-Since Coconut is hosted on the [Python Package Index](https://pypi.python.org/pypi/coconut), it can be installed easily using `pip`. Simply install [Python](https://www.python.org/downloads/), open up a command-line prompt, and enter
+#### Using Pip
+
+Since Coconut is hosted on the [Python Package Index](https://pypi.python.org/pypi/coconut), it can be installed easily using `pip`. Simply [install Python](https://www.python.org/downloads/), open up a command-line prompt, and enter
 ```
 pip install coconut
 ```
 which will install Coconut and its required dependencies.
 
+Try re-running the above command with the `--user` option if you are encountering errors. Be sure that the `coconut` installation location is in your `PATH` environment variable. On UNIX, that is `/usr/local/bin` (without `--user`) or `${HOME}/.local/bin/` (with `--user`).
+
 _Note: If you have an old version of Coconut installed and you want to upgrade, run `pip install --upgrade coconut` instead._
+
+#### Using Conda
+
+If you prefer to use [`conda`](https://conda.io/docs/) instead of `pip` to manage your Python packages, you can also install Coconut using `conda`. Just [install `conda`](https://conda.io/miniconda.html), open up a command-line prompt, and enter
+```
+conda install conda-build>=3
+conda skeleton pypi coconut
+conda build coconut
+```
+which will update your `conda-build` to a version that understands Coconut's PyPI metadata, create a recipe out of Coconut's PyPI package, and then build that recipe.
+
+_Note: To use `conda` to install `coconut-develop` instead, just replace `coconut` with `coconut-develop` in the last two commands above._
+
+#### Optional Dependencies
 
 Coconut also has optional dependencies, which can be installed by entering
 ```
@@ -36,6 +54,7 @@ or, to install multiple optional dependencies,
 ```
 pip install coocnut[opt_dep_1,opt_dep_2]
 ```
+
 The full list of optional dependencies is:
 
 - `all`: alias for `jupyter,watch,jobs,mypy` (this is the recommended way to install a feature-complete version of Coconut),
@@ -47,6 +66,8 @@ The full list of optional dependencies is:
 - `tests`: everything necessary to run Coconut's test suite,
 - `docs`: everything necessary to build Coconut's documentation, and
 - `dev`: everything necessary to develop on Coconut, including all of the dependencies above.
+
+#### Develop Version
 
 Alternatively, if you want to test out Coconut's latest and greatest, enter
 ```
