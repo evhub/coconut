@@ -1088,9 +1088,9 @@ class Compiler(Grammar):
         elif op == "<*|=":
             out += name + " = " + name + "(*(" + item + "))"
         elif op == "..=":  # also <..=
-            out += name + " = _coconut_compose((" + item + "), " + name + ")"
+            out += name + " = _coconut_forward_compose((" + item + "), " + name + ")"
         elif op == "..>=":
-            out += name + " = _coconut_compose(" + name + ", (" + item + "))"
+            out += name + " = _coconut_forward_compose(" + name + ", (" + item + "))"
         elif op == "??=":
             out += name + " = " + item + " if " + name + " is None else " + name
         elif op == "::=":

@@ -364,7 +364,7 @@ def comp_pipe_handle(loc, tokens):
         funcs.reverse()
     else:
         raise CoconutInternalException("invalid composition pipe operator", op)
-    return "_coconut_compose(" + ", ".join(funcs) + ")"
+    return "_coconut_forward_compose(" + ", ".join(funcs) + ")"
 
 
 def none_coalesce_handle(tokens):
@@ -617,7 +617,7 @@ def compose_item_handle(tokens):
     elif len(tokens) == 1:
         return tokens[0]
     else:
-        return "_coconut_compose(" + ", ".join(reversed(tokens)) + ")"
+        return "_coconut_forward_compose(" + ", ".join(reversed(tokens)) + ")"
 
 
 def make_suite_handle(tokens):
@@ -885,7 +885,7 @@ class Grammar(object):
         | fixto(back_pipe, "_coconut_back_pipe")
         | fixto(back_star_pipe, "_coconut_back_star_pipe")
         | fixto(dotdot | comp_back_pipe, "_coconut_back_compose")
-        | fixto(comp_pipe, "_coconut_compose")
+        | fixto(comp_pipe, "_coconut_forward_compose")
         | fixto(Keyword("and"), "_coconut_bool_and")
         | fixto(Keyword("or"), "_coconut_bool_or")
         | fixto(dubquestion, "_coconut_none_coalesce")

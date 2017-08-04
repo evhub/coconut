@@ -22,12 +22,12 @@ class MatchError(Exception):
     if (index.start is not None and index.start < 0) or (index.stop is not None and index.stop < 0) or (index.step is not None and index.step < 0):
         return _coconut.tuple(iterable)[index]
     return _coconut.itertools.islice(iterable, index.start, index.stop, index.step)
-class _coconut_compose{object}:
+class _coconut_forward_compose{object}:
     __slots__ = ("funcs",)
     def __init__(self, *funcs):
         self.funcs = []
         for fn in funcs:
-            if isinstance(fn, _coconut_compose):
+            if isinstance(fn, _coconut_forward_compose):
                 self.funcs += fn.funcs
             else:
                 self.funcs.append(fn)
@@ -39,8 +39,8 @@ class _coconut_compose{object}:
     def __repr__(self):
         return " ..> ".join(_coconut.repr(f) for f in self.funcs)
     def __reduce__(self):
-        return (_coconut_compose, _coconut.tuple(self.funcs))
-def _coconut_back_compose(*funcs): return _coconut_compose(*_coconut.reversed(funcs))
+        return (_coconut_forward_compose, _coconut.tuple(self.funcs))
+def _coconut_back_compose(*funcs): return _coconut_forward_compose(*_coconut.reversed(funcs))
 def _coconut_pipe(x, f): return f(x)
 def _coconut_star_pipe(xs, f): return f(*xs)
 def _coconut_back_pipe(f, x): return f(x)
@@ -130,7 +130,7 @@ class map(_coconut.map):
     def __copy__(self):
         return self.__class__(self._func, *_coconut.map(_coconut.copy.copy, self._iters))
     def __fmap__(self, func):
-        return self.__class__(_coconut_compose(self._func, func), *self._iters)
+        return self.__class__(_coconut_forward_compose(self._func, func), *self._iters)
 class parallel_map(map):
     """Multi-process implementation of map using concurrent.futures.
     Requires arguments to be pickleable."""
@@ -383,7 +383,7 @@ class starmap(_coconut.itertools.starmap):
     def __copy__(self):
         return self.__class__(self._func, _coconut.copy.copy(self._iter))
     def __fmap__(self, func):
-        return self.__class__(_coconut_compose(self._func, func), self._iter)
+        return self.__class__(_coconut_forward_compose(self._func, func), self._iter)
 def fmap(func, obj):
     """fmap(func, obj) creates a copy of obj with func applied to its contents.
     Override by defining .__fmap__(func)."""
