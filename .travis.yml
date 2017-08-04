@@ -42,7 +42,7 @@ install:
 - if [[ $USE_CONDA == "true" ]]; then
   conda install --use-local coconut-develop; fi
 - if [[ $USE_CONDA == "true" ]]; then
-  pip install pytest ipython<6; fi
+  pip install pytest "ipython<6"; fi
 # if USE_CONDA == false:
 - if [[ $USE_CONDA == "false" ]]; then
   pip install "pip==7.1.2"; fi
