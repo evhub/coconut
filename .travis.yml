@@ -17,6 +17,8 @@ matrix:
   include:
     - python: '2.7'
       env: USE_CONDA=true
+  allow_failures:
+    - env: USE_CONDA=true
 install:
 # if USE_CONDA == true:
 - if [[ $USE_CONDA == "true" ]]; then
@@ -40,7 +42,7 @@ install:
 - if [[ $USE_CONDA == "true" ]]; then
   conda install --use-local coconut-develop; fi
 - if [[ $USE_CONDA == "true" ]]; then
-  pip install pytest; fi
+  pip install pytest ipython; fi
 # if USE_CONDA == false:
 - if [[ $USE_CONDA == "false" ]]; then
   pip install "pip==7.1.2"; fi
