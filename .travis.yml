@@ -30,7 +30,7 @@ install:
 - if [[ $USE_CONDA == "true" ]]; then
   conda config --set always_yes yes; fi
 - if [[ $USE_CONDA == "true" ]]; then
-  conda install "conda-build>=3.0.1"; fi
+  conda install "conda-build>=3.0.9"; fi
 - if [[ $USE_CONDA == "true" ]]; then
   conda skeleton pypi coconut-develop; fi
 - if [[ $USE_CONDA == "true" ]]; then
