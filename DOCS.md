@@ -39,10 +39,11 @@ If you prefer to use [`conda`](https://conda.io/docs/) instead of `pip` to manag
 conda install "conda-build>=3"
 conda skeleton pypi coconut
 conda build coconut
+conda install --use-local coconut
 ```
 which will update your `conda-build` to a version that understands Coconut's PyPI metadata, create a recipe out of Coconut's PyPI package, and then build that recipe.
 
-_Note: To use `conda` to install `coconut-develop` instead, just replace `coconut` with `coconut-develop` in the last two commands above._
+_Note: To use `conda` to install `coconut-develop` instead, just replace `coconut` with `coconut-develop` in the last three commands above._
 
 #### Optional Dependencies
 
