@@ -20,8 +20,6 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import sys
-import os
-import platform
 import unittest
 if PY26:
     import_module = __import__
@@ -29,13 +27,10 @@ else:
     from importlib import import_module
 
 from coconut import constants
-
-#-----------------------------------------------------------------------------------------------------------------------
-# CONSTANTS:
-#-----------------------------------------------------------------------------------------------------------------------
-
-WINDOWS = os.name == "nt"
-PYPY = platform.python_implementation() == "PyPy"
+from coconut.constants import (
+    WINDOWS,
+    PYPY,
+)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:

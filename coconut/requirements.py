@@ -17,13 +17,13 @@ Description: Coconut installation requirements.
 
 from coconut.root import *  # NOQA
 
-import sys
-import platform
-
 from coconut.constants import (
     all_reqs,
     min_versions,
     version_strictly,
+    PYPY,
+    PY34,
+    IPY,
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -78,10 +78,6 @@ def everything_in(req_dict):
 # SETUP:
 #-----------------------------------------------------------------------------------------------------------------------
 
-PYPY = platform.python_implementation() == "PyPy"
-PY33 = sys.version_info >= (3, 3)
-PY34 = sys.version_info >= (3, 4)
-
 requirements = get_reqs()
 
 extras = {
@@ -98,7 +94,7 @@ extras["all"] = everything_in(extras)
 extras["tests"] = uniqueify(
     get_reqs("tests")
     + (extras["jobs"] + get_reqs("cPyparsing") if not PYPY else [])
-    + (extras["jupyter"] if (PY2 and not PY26) or PY33 else [])
+    + (extras["jupyter"] if IPY else [])
     + (extras["mypy"] if PY34 else []),
 )
 

@@ -44,7 +44,7 @@ def get_encoding(fileobj):
 
 
 def clean(inputline, strip=True, rem_indents=True, encoding_errors="replace"):
-    """Cleans and strips a line."""
+    """Clean and strips a line."""
     stdout_encoding = get_encoding(sys.stdout)
     inputline = str(inputline)
     if rem_indents:

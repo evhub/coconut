@@ -20,7 +20,6 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import sys
-import os
 import string
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -29,12 +28,12 @@ import string
 
 
 def fixpath(path):
-    """Uniformly formats a path."""
+    """Uniformly format a path."""
     return os.path.normpath(os.path.realpath(path))
 
 
 def get_target_info(target):
-    """Returns target information as a version tuple."""
+    """Return target information as a version tuple."""
     return tuple(int(x) for x in target)
 
 
@@ -52,6 +51,12 @@ else:
 version_str_tag = "v" + VERSION_STR
 
 version_tuple = tuple(VERSION.split("."))
+
+WINDOWS = os.name == "nt"
+PYPY = platform.python_implementation() == "PyPy"
+PY33 = sys.version_info >= (3, 3)
+PY34 = sys.version_info >= (3, 4)
+IPY = (PY2 and not PY26) or (PY33 if not WINDOWS else PY34)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # INSTALLATION CONSTANTS:

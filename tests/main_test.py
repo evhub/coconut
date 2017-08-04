@@ -23,19 +23,19 @@ import unittest
 import sys
 import os
 import shutil
-import platform
 from contextlib import contextmanager
 
 from coconut.terminal import logger
 from coconut.command.util import call_output
+from coconut.constants import (
+    WINDOWS,
+    PYPY,
+    IPY,
+)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
-
-IPY = (PY2 and not PY26) or sys.version_info >= (3, 3)
-PYPY = platform.python_implementation() == "PyPy"
-WINDOWS = os.name == "nt"
 
 base = os.path.dirname(os.path.relpath(__file__))
 src = os.path.join(base, "src")
@@ -371,5 +371,5 @@ class TestExternal(unittest.TestCase):
     def test_pyston(self):
         with remove_when_done(pyston):
             comp_pyston()
-            if PY2 and platform.python_implementation() == "PyPy":
+            if PY2 and PYPY:
                 run_pyston()

@@ -60,6 +60,7 @@ from coconut.constants import (
     reserved_vars,
     num_added_tb_layers,
     minimum_recursion_limit,
+    WINDOWS,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -258,7 +259,7 @@ def set_mypy_path(mypy_path):
 
 def stdin_readable():
     """Determine whether stdin has any data to read."""
-    if os.name != "nt":
+    if not WINDOWS:
         try:
             return bool(select([sys.stdin], [], [], 0)[0])
         except Exception:
