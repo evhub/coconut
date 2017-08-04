@@ -147,7 +147,7 @@ def all_versions(req):
     return tuple(requests.get(url).json()["releases"].keys())
 
 
-def newer(new_ver, old_ver):
+def newer(new_ver, old_ver, strict=False):
     """Determines if the first version tuple is newer than the second.
     True if newer, False if older, None if difference is after specified version parts."""
     if old_ver == new_ver or old_ver + (0,) == new_ver:
@@ -159,7 +159,7 @@ def newer(new_ver, old_ver):
             return True
         elif o > n:
             return False
-    return None
+    return not strict
 
 
 def print_new_versions(strict=False):
@@ -170,10 +170,9 @@ def print_new_versions(strict=False):
         new_versions = []
         same_versions = []
         for ver_str in all_versions(req):
-            comp = newer(ver_str_to_tuple(ver_str), min_versions[req])
-            if comp is True:
+            if newer(ver_str_to_tuple(ver_str), min_versions[req], strict=True):
                 new_versions.append(ver_str)
-            elif not strict and comp is None:
+            elif not strict and newer(ver_str_to_tuple(ver_str), min_versions[req]):
                 same_versions.append(ver_str)
         update_str = req + ": " + ver_tuple_to_str(min_versions[req]) + " -> " + ", ".join(
             new_versions + ["(" + v + ")" for v in same_versions],

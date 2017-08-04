@@ -39,6 +39,8 @@ install:
   conda build coconut-develop; fi
 - if [[ $USE_CONDA == "true" ]]; then
   conda install --use-local coconut-develop; fi
+- if [[ $USE_CONDA == "true" ]]; then
+  pip install pytest; fi
 # if USE_CONDA == false:
 - if [[ $USE_CONDA == "false" ]]; then
   pip install "pip==7.1.2"; fi
