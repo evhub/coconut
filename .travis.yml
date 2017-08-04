@@ -28,14 +28,14 @@ install:
 - if [[ $USE_CONDA == "true" ]]; then
   export PATH="$HOME/miniconda/bin:$PATH"; fi
 - if [[ $USE_CONDA == "true" ]]; then
-  conda install conda-build>=3; fi
+  conda install "conda-build>=3"; fi
 - if [[ $USE_CONDA == "true" ]]; then
   conda skeleton pypi coconut-develop; fi
 - if [[ $USE_CONDA == "true" ]]; then
   conda build coconut-develop; fi
 # if USE_CONDA == false:
 - if [[ $USE_CONDA == "false" ]]; then
-  pip install pip==7.1.2; fi
+  pip install "pip==7.1.2"; fi
 - if [[ $USE_CONDA == "false" ]]; then
   make install; fi
 script:

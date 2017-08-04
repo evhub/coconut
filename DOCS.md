@@ -36,7 +36,7 @@ _Note: If you have an old version of Coconut installed and you want to upgrade, 
 
 If you prefer to use [`conda`](https://conda.io/docs/) instead of `pip` to manage your Python packages, you can also install Coconut using `conda`. Just [install `conda`](https://conda.io/miniconda.html), open up a command-line prompt, and enter
 ```
-conda install conda-build>=3
+conda install "conda-build>=3"
 conda skeleton pypi coconut
 conda build coconut
 ```
