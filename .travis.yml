@@ -28,6 +28,8 @@ install:
 - if [[ $USE_CONDA == "true" ]]; then
   export PATH="$HOME/miniconda/bin:$PATH"; fi
 - if [[ $USE_CONDA == "true" ]]; then
+  conda config --set always_yes yes; fi
+- if [[ $USE_CONDA == "true" ]]; then
   conda install "conda-build>=3"; fi
 - if [[ $USE_CONDA == "true" ]]; then
   conda skeleton pypi coconut-develop; fi
