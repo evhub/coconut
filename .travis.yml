@@ -18,15 +18,18 @@ matrix:
     - python: '2.7'
       env: USE_CONDA=true
 install:
-- if [ $USE_CONDA == "false" ]; then
+- if [[ $USE_CONDA == "false" ]]; then
   pip install pip==7.1.2;
   make install;
   fi
-- if [ $USE_CONDA == "true" ]; then
-  pip install conda;
+- if [[ $USE_CONDA == "true" ]]; then
+  rm -rf coconut;
+  wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
+  bash miniconda.sh -b -p $HOME/miniconda;
+  export PATH="$HOME/miniconda/bin:$PATH";
   conda install conda-build>=3;
-  conda skeleton pypi coconut;
-  conda build coconut;
+  conda skeleton pypi coconut-develop;
+  conda build coconut-develop;
   fi
 script:
 - make test-all
@@ -39,3 +42,4 @@ deploy:
     distributions: sdist bdist_wheel
     repo: evhub/coconut
     branch: develop
+    condition: $USE_CONDA == "false"
