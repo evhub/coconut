@@ -15,11 +15,12 @@ python:
 env: USE_CONDA=false
 matrix:
   include:
-    - python: '3.6'
+    - python: '2.7'
       env: USE_CONDA=true
 install:
 - if [ $USE_CONDA == "false" ]; then
-  pip install "pip==7.1.2";
+  pip install pip==7.1.2;
+  make install;
   fi
 - if [ $USE_CONDA == "true" ]; then
   pip install conda;
@@ -27,7 +28,6 @@ install:
   conda skeleton pypi coconut;
   conda build coconut;
   fi
-- make install
 script:
 - make test-all
 deploy:
