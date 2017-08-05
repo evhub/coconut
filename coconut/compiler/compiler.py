@@ -346,6 +346,7 @@ class Compiler(Grammar):
     def reset(self):
         """Resets references."""
         self.indchar = None
+        self.comments = {}
         self.refs = []
         self.skips = set()
         self.docstring = ""
@@ -357,6 +358,7 @@ class Compiler(Grammar):
     def bind(self):
         """Binds reference objects to the proper parse actions."""
         self.endline <<= attach(self.endline_ref, self.endline_handle)
+        self.comment <<= attach(self.comment_ref, self.comment_handle)
         self.moduledoc_item <<= trace(attach(self.moduledoc, self.set_docstring))
         self.name <<= trace(attach(self.base_name, self.name_check))
 
@@ -900,7 +902,7 @@ class Compiler(Grammar):
             else:
                 comment = " line " + str(ln)
         else:
-            raise CoconutInternalException("attempted to add line number comment without --line-numbers or --keep-lines")
+            return ""
         return self.wrap_comment(comment, reformat=False)
 
     def endline_repl(self, inputstring, reformating=False, **kwargs):
@@ -910,7 +912,6 @@ class Compiler(Grammar):
         for line in inputstring.splitlines():
             add_one_to_ln = False
             try:
-                empty_line = not line.rstrip() or line.lstrip().startswith("#")
                 if line.endswith(lnwrapper):
                     line, index = line[:-1].rsplit("#", 1)
                     ln = self.get_ref(index)
@@ -918,12 +919,10 @@ class Compiler(Grammar):
                         raise CoconutInternalException("invalid reference for a line number", ln)
                     line = line.rstrip()
                     add_one_to_ln = True
-                if (
-                    reformating
-                    and not empty_line
-                    and (self.line_numbers or self.keep_lines)
-                ):
-                    line += self.ln_comment(ln)
+                if line.rstrip() and not line.lstrip().startswith("#"):
+                    line += self.comments.get(ln, "")
+                    if not reformating:
+                        line += self.ln_comment(ln)
             except CoconutInternalException as err:
                 complain(err)
             out.append(line)
@@ -1072,6 +1071,13 @@ class Compiler(Grammar):
         if self.minify:
             out = out.splitlines(True)[0]  # if there are multiple new lines, take only the first one
         return self.wrap_line_number(self.adjust(lineno(loc, original))) + out
+
+    def comment_handle(self, original, loc, tokens):
+        """Store comment in comments."""
+        internal_assert(len(tokens) == 1, "invalid comment tokens", tokens)
+        ln = self.adjust(lineno(loc, original))
+        self.comments[ln] = tokens[0]
+        return ""
 
     def augassign_handle(self, tokens):
         """Process assignments."""

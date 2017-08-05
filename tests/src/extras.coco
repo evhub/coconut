@@ -50,6 +50,7 @@ def main():
     assert parse("abc", "debug") == "abc"
     assert parse("x |> map$(f)", "debug") == "map(f, x)"
     assert "_coconut" not in parse("a |> .b |> .m() |> f$(x) |> .[0]", "block")
+    assert parse("abc # derp", "debug") == "abc  # derp"
     try:
         parse(" abc", "file")
     except CoconutException:
@@ -97,6 +98,12 @@ def main():
     assert parse("u''")
     assert parse("def f(x):\\\n pass")
     assert parse("abc ")
+    setup(line_numbers=True)
+    assert parse("abc", "debug") == "abc  # line 1"
+    setup(keep_lines=True)
+    assert parse("abc", "debug") == "abc  # abc"
+    setup(line_numbers=True, keep_lines=True)
+    assert parse("abc", "debug") == "abc  # line 1: abc"
     setup(strict=True)
     try:
         parse("def f(x):\n \t pass")

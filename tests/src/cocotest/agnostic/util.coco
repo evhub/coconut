@@ -179,11 +179,11 @@ def is_odd(n) =
 
 def is_even_(0) = True
 @addpattern(is_even_)
-def is_even_(n) = is_odd_(n-1)
+def is_even_(n) = is_odd_(n-1)  # type: ignore
 
 def is_odd_(0) = False
 @addpattern(is_odd_)
-def is_odd_(n) = is_even_(n-1)
+def is_odd_(n) = is_even_(n-1)  # type: ignore
 
 # TCO/TRE tests:
 
@@ -290,10 +290,10 @@ match def fact(n) = fact(n, 1)
 @addpattern(fact)
 match def fact(0, acc) = acc
 @addpattern(fact)
-match def fact(n, acc) = fact(n-1, acc*n)
+match def fact(n, acc) = fact(n-1, acc*n)  # type: ignore
 def factorial(0, acc=1) = acc
 @addpattern(factorial)
-def factorial(n is int, acc=1 if n > 0) =
+def factorial(n is int, acc=1 if n > 0) =  # type: ignore
     """this is a docstring"""
     factorial(n-1, acc*n)
 
@@ -571,11 +571,11 @@ def prepattern(base_func):
 
 def add_int_or_str_1(x is int) = x + 1
 @addpattern(add_int_or_str_1)
-def add_int_or_str_1(x is str) = x + "1"
+def add_int_or_str_1(x is str) = x + "1"  # type: ignore
 
 def coercive_add(a is int, b) = a + int(b)
 @addpattern(coercive_add)
-def coercive_add(a is str, b) = a + str(b)
+def coercive_add(a is str, b) = a + str(b)  # type: ignore
 
 @addpattern(ident)
 def still_ident(x) =
@@ -589,11 +589,11 @@ def not_ident(x) = "bar"
 
 def pattern_abs(x if x < 0) = -x
 @addpattern(pattern_abs)
-def pattern_abs(x) = x
+def pattern_abs(x) = x  # type: ignore
 
 def `pattern_abs_` (x) if x < 0 = -x
 @addpattern(pattern_abs_)
-def `pattern_abs_` (x) = x
+def `pattern_abs_` (x) = x  # type: ignore
 
 # Recursive iterator
 
@@ -608,7 +608,7 @@ def loop(it) = it :: loop(it)
 def sieve((||)) = []
 
 @prepattern(sieve)
-def sieve([head] :: tail) = [head] :: sieve(n for n in tail if n % head)
+def sieve([head] :: tail) = [head] :: sieve(n for n in tail if n % head)  # type: ignore
 
 # "Assignment function" definitions
 
@@ -684,7 +684,7 @@ def anything_func(*args: int, **kwargs: int) -> None: pass
 
 def fact_(0, acc=1) = acc
 @addpattern(fact_)
-def fact_(n is int, acc=1 if n > 0) = fact_(n-1, acc*n)
+def fact_(n is int, acc=1 if n > 0) = fact_(n-1, acc*n)  # type: ignore
 
 def x_is_int(x is int) = x
 

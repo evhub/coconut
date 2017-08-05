@@ -788,8 +788,9 @@ class Grammar(object):
 
     moduledoc_item = Forward()
     unwrap = Literal(unwrapper)
+    comment = Forward()
+    comment_ref = Combine(pound + integer + unwrap)
     string_item = Combine(Literal(strwrapper) + integer + unwrap)
-    comment = Combine(pound + integer + unwrap)
     passthrough = Combine(backslash + integer + unwrap)
     passthrough_block = Combine(fixto(dubbackslash, "\\") + integer + unwrap)
 
