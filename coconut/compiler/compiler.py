@@ -410,7 +410,7 @@ class Compiler(Grammar):
         if index is not None:
             return self.reformat(snip), len(self.reformat(snip[:index]))
         else:
-            return self.repl_proc(snip, log=False, add_to_line=False)
+            return self.repl_proc(snip, reformating=True, log=False)
 
     def eval_now(self, code):
         """Reformat and evaluates a code snippet and returns code for the result."""
@@ -875,7 +875,7 @@ class Compiler(Grammar):
             complain(CoconutInternalException("non-zero final indentation level", level))
         return "\n".join(out)
 
-    def endline_comment(self, ln):
+    def ln_comment(self, ln):
         """Get an end line comment. CoconutInternalExceptions should always be caught and complained."""
         if self.keep_lines:
             if ln < 1 or ln - 1 > len(self.original_lines):
@@ -903,33 +903,34 @@ class Compiler(Grammar):
             raise CoconutInternalException("attempted to add line number comment without --line-numbers or --keep-lines")
         return self.wrap_comment(comment, reformat=False)
 
-    def endline_repl(self, inputstring, add_to_line=True, **kwargs):
+    def endline_repl(self, inputstring, reformating=False, **kwargs):
         """Add in end line comments."""
-        if self.line_numbers or self.keep_lines:
-            out = []
-            ln = 1
-            fix = False
-            for line in inputstring.splitlines():
-                try:
-                    if line.endswith(lnwrapper):
-                        line, index = line[:-1].rsplit("#", 1)
-                        ln = self.get_ref(index)
-                        if not isinstance(ln, int):
-                            raise CoconutInternalException("invalid reference for a line number", ln)
-                        line = line.rstrip()
-                        fix = True
-                    elif fix:
-                        ln += 1
-                        fix = False
-                    if add_to_line and line and not line.lstrip().startswith("#"):
-                        line += self.endline_comment(ln)
-                except CoconutInternalException as err:
-                    complain(err)
+        out = []
+        ln = 1
+        fix = False
+        for line in inputstring.splitlines():
+            try:
+                if line.endswith(lnwrapper):
+                    line, index = line[:-1].rsplit("#", 1)
+                    ln = self.get_ref(index)
+                    if not isinstance(ln, int):
+                        raise CoconutInternalException("invalid reference for a line number", ln)
+                    line = line.rstrip()
+                    fix = True
+                elif fix:
+                    ln += 1
                     fix = False
-                out.append(line)
-            return "\n".join(out)
-        else:
-            return inputstring
+                if (
+                    reformating
+                    and (self.line_numbers or self.keep_lines)
+                    and line and not line.lstrip().startswith("#")
+                ):
+                    line += self.ln_comment(ln)
+            except CoconutInternalException as err:
+                complain(err)
+                fix = False
+            out.append(line)
+        return "\n".join(out)
 
     def passthrough_repl(self, inputstring, **kwargs):
         """Add back passthroughs."""
@@ -1065,14 +1066,12 @@ class Compiler(Grammar):
             return "yield from " + tokens[0]
 
     def endline_handle(self, original, loc, tokens):
-        """Insert line number comments when in line_numbers mode."""
+        """Add line number information to end of line."""
         internal_assert(len(tokens) == 1, "invalid endline tokens", tokens)
         out = tokens[0]
         if self.minify:
             out = out.splitlines(True)[0]  # if there are multiple new lines, take only the first one
-        if self.line_numbers or self.keep_lines:
-            out = self.wrap_line_number(self.adjust(lineno(loc, original))) + out
-        return out
+        return self.wrap_line_number(self.adjust(lineno(loc, original))) + out
 
     def augassign_handle(self, tokens):
         """Process assignments."""
