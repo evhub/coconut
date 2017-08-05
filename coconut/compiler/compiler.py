@@ -904,32 +904,32 @@ class Compiler(Grammar):
         return self.wrap_comment(comment, reformat=False)
 
     def endline_repl(self, inputstring, reformating=False, **kwargs):
-        """Add in end line comments."""
+        """Add end of line comments."""
         out = []
         ln = 1
-        fix = False
         for line in inputstring.splitlines():
+            add_one_to_ln = False
             try:
+                empty_line = not line.rstrip() or line.lstrip().startswith("#")
                 if line.endswith(lnwrapper):
                     line, index = line[:-1].rsplit("#", 1)
                     ln = self.get_ref(index)
                     if not isinstance(ln, int):
                         raise CoconutInternalException("invalid reference for a line number", ln)
                     line = line.rstrip()
-                    fix = True
-                elif fix:
-                    ln += 1
-                    fix = False
+                    add_one_to_ln = True
                 if (
                     reformating
+                    and not empty_line
                     and (self.line_numbers or self.keep_lines)
-                    and line and not line.lstrip().startswith("#")
                 ):
                     line += self.ln_comment(ln)
             except CoconutInternalException as err:
                 complain(err)
-                fix = False
             out.append(line)
+            if add_one_to_ln:
+                ln += 1
+                add_one_to_ln = False
         return "\n".join(out)
 
     def passthrough_repl(self, inputstring, **kwargs):
