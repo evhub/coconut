@@ -251,9 +251,12 @@ def main_test():
         return (def -> herpaderp + herp)
     assert derp()() == 15
     data abc(xyz)
-    assert abc(10).xyz == 10
+    data abc_(xyz: int)
+    assert abc(10).xyz == 10 == abc_(10).xyz
     assert issubclass(abc, object)
+    assert issubclass(abc_, object)
     assert isinstance(abc(10), object)
+    assert isinstance(abc_(10), object)
     class aclass
     assert issubclass(aclass, object)
     assert isinstance(aclass(), object)

@@ -23,6 +23,11 @@ test-basic:
 	python ./tests --force
 	python ./tests/dest/runner.py
 
+.PHONY: test-run
+test-run:
+	python ./tests
+	python ./tests/dest/runner.py
+
 .PHONY: sphinx
 sphinx: clean
 	sphinx-build -b html . ./docs

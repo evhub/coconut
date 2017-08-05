@@ -751,12 +751,19 @@ class Vars:
 data Tuple(*elems)
 
 data Pred(name, *args)
+data Pred_(name: str, *args)
+
 data Quant(name, var, *args)
+data Quant_(name: str, var:str, *args)
 
 data Point(x=0, y=0)
+data Point_(x:int=0, y:int=0)
+
 data RadialVector(mag, angle=0)
+data RadialVector_(mag:int, angle:int=0)
 
 data ABC(a, b=1, *c)
+data ABC_(a:int, b:int=1, *c)
 
 # Type-Checking Tests
 

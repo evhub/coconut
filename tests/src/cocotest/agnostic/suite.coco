@@ -341,25 +341,33 @@ def suite_test():
     Tuple(x, y) = t
     assert x == 1 and y == 2
     p = Pred("name", 1, 2)
+    p_ = Pred_("name", 1, 2)
+    assert p.name == "name" == p_.name
+    assert p.args == (1, 2) == p_.args
     assert repr(p) in ("Pred(name='name', *args=(1, 2))", "Pred(name=u'name', *args=(1, 2))")
-    assert p.name == "name"
-    assert p.args == (1, 2)
-    assert isinstance(p.args, tuple)
-    Pred(name, *args) = p
-    assert name == "name"
-    assert args == (1, 2)
+    assert repr(p_) in ("Pred_(name='name', *args=(1, 2))", "Pred_(name=u'name', *args=(1, 2))")
+    for Pred_test, p_test in [(Pred, p), (Pred_, p_)]:
+        assert isinstance(p_test.args, tuple)
+        Pred_test(name, *args) = p_test
+        assert name == "name"
+        assert args == (1, 2)
     q = Quant("name", "var", 1, 2)
+    q_ = Quant_("name", "var", 1, 2)
+    assert q.name == "name" == q_.name
+    assert q.var == "var" == q_.var
+    assert q.args == (1, 2) == q_.args
     assert repr(q) in ("Quant(name='name', var='var', *args=(1, 2))", "Quant(name=u'name', var=u'var', *args=(1, 2))")
-    assert q.name == "name"
-    assert q.var == "var"
-    assert q.args == (1, 2)
-    assert isinstance(q.args, tuple)
-    Quant(name, var, *args) = q
-    assert name == "name"
-    assert var == "var"
-    assert args == (1, 2)
+    assert repr(q_) in ("Quant_(name='name', var='var', *args=(1, 2))", "Quant_(name=u'name', var=u'var', *args=(1, 2))")
+    for Quant_test, q_test in [(Quant, q), (Quant_, q_)]:
+        assert isinstance(q_test.args, tuple)
+        Quant_test(name, var, *args) = q_test
+        assert name == "name"
+        assert var == "var"
+        assert args == (1, 2)
     assert Pred(0, 1, 2) |> fmap$(-> _+1) == Pred(1, 2, 3)
+    assert Pred_(0, 1, 2) |> fmap$(-> _+1) == Pred_(1, 2, 3)
     assert Quant(0, 1, 2) |> fmap$(-> _+1) == Quant(1, 2, 3)
+    assert Quant_(0, 1, 2) |> fmap$(-> _+1) == Quant_(1, 2, 3)
     a = Nest()
     assert a.b.c.d == "data"
     assert (.b.c.d)(a) == "data"
@@ -402,48 +410,57 @@ def suite_test():
         assert str(err) == "raise_exc"
     else:
         assert False
-    p = Point()
-    assert p.x == 0 == p.y
-    assert repr(p) == "Point(x=0, y=0)"
-    p = Point(1)
-    assert p.x == 1
-    assert p.y == 0
-    assert repr(p) == "Point(x=1, y=0)"
-    p = Point(2, 3)
-    assert p.x == 2
-    assert p.y == 3
-    assert repr(p) == "Point(x=2, y=3)"
+    for u, Point_test in [("", Point), ("_", Point_)]:
+        p = Point_test()
+        assert p.x == 0 == p.y
+        assert repr(p) == "Point{u}(x=0, y=0)".format(u=u)
+        p = Point_test(1)
+        assert p.x == 1
+        assert p.y == 0
+        assert repr(p) == "Point{u}(x=1, y=0)".format(u=u)
+        p = Point_test(2, 3)
+        assert p.x == 2
+        assert p.y == 3
+        assert repr(p) == "Point{u}(x=2, y=3)".format(u=u)
     try:
         RadialVector()
     except TypeError:
-        pass
+        try:
+            RadialVector_()
+        except TypeError:
+            pass
+        else:
+            assert False
     else:
         assert False
     rv = RadialVector(1)
-    assert rv.mag == 1
-    assert rv.angle == 0
+    rv_ = RadialVector_(1)
+    assert rv.mag == 1 == rv_.mag
+    assert rv.angle == 0 == rv_.angle
     assert repr(rv) == "RadialVector(mag=1, angle=0)"
-    try:
-        ABC()
-    except TypeError:
-        pass
-    else:
-        assert False
-    abc = ABC(2)
-    assert abc.a == 2
-    assert abc.b == 1
-    assert abc.c == ()
-    assert repr(abc) == "ABC(a=2, b=1, *c=())"
-    abc = ABC(3, 4, 5)
-    assert abc.a == 3
-    assert abc.b == 4
-    assert abc.c == (5,)
-    assert repr(abc) == "ABC(a=3, b=4, *c=(5,))"
-    abc = ABC(5, 6, 7, 8)
-    assert abc.a == 5
-    assert abc.b == 6
-    assert abc.c == (7, 8)
-    assert repr(abc) == "ABC(a=5, b=6, *c=(7, 8))"
+    assert repr(rv_) == "RadialVector_(mag=1, angle=0)"
+    for u, ABC_test in [("", ABC), ("_", ABC_)]:
+        try:
+            ABC_test()
+        except TypeError:
+            pass
+        else:
+            assert False
+        abc = ABC_test(2)
+        assert abc.a == 2
+        assert abc.b == 1
+        assert abc.c == ()
+        assert repr(abc) == "ABC{u}(a=2, b=1, *c=())".format(u=u)
+        abc = ABC_test(3, 4, 5)
+        assert abc.a == 3
+        assert abc.b == 4
+        assert abc.c == (5,)
+        assert repr(abc) == "ABC{u}(a=3, b=4, *c=(5,))".format(u=u)
+        abc = ABC_test(5, 6, 7, 8)
+        assert abc.a == 5
+        assert abc.b == 6
+        assert abc.c == (7, 8)
+        assert repr(abc) == "ABC{u}(a=5, b=6, *c=(7, 8))".format(u=u)
     v = vector2(3, 4)
     assert repr(v) == "vector2(x=3, y=4)"
     assert abs(v) == 5

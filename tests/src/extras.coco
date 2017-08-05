@@ -98,6 +98,7 @@ def main():
     assert parse("u''")
     assert parse("def f(x):\\\n pass")
     assert parse("abc ")
+    assert parse("abc # derp", "debug") == "abc  # derp"
     setup(line_numbers=True)
     assert parse("abc", "debug") == "abc  # line 1"
     setup(keep_lines=True)

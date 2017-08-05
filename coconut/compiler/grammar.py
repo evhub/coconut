@@ -141,11 +141,9 @@ def pipe_item_split(tokens, loc):
         - (func, pos_args, kwd_args) for partial,
         - (name, args) for attr/method, and
         - (op, args) for itemgetter."""
-    if isinstance(tokens, list):  # artificial tokens
-        internal_assert(len(tokens) == 1, "invalid artificial pipe item tokens", tokens)
-        return "expr", (tokens[0],)
-    elif "expr" in tokens.keys():
-        internal_assert(len(tokens) == 1)
+    # list implies artificial tokens, which must be expr
+    if isinstance(tokens, list) or "expr" in tokens.keys():
+        internal_assert(len(tokens) == 1, "invalid expr pipe item tokens", tokens)
         return "expr", (tokens[0],)
     elif "partial" in tokens.keys():
         func, args = tokens
@@ -1511,13 +1509,13 @@ class Grammar(object):
     )
 
     datadef = Forward()
-    data_args = Group(Optional(lparen.suppress() + Optional(
-        tokenlist(
-            condense(
-                name + Optional(default)
-                | star + name,
-            ),
-            comma,
+    data_args = Group(Optional(lparen.suppress() + ZeroOrMore(
+        Group(
+            (name + arg_comma.suppress())("name")
+            | (name + equals.suppress() + test + arg_comma.suppress())("default")
+            | (star.suppress() + name + arg_comma.suppress())("star")
+            | (name + colon.suppress() + typedef_test + equals.suppress() + test + arg_comma.suppress())("type default")
+            | (name + colon.suppress() + typedef_test + arg_comma.suppress())("type"),
         ),
     ) + rparen.suppress())) + Optional(Keyword("from").suppress() + testlist)
     data_suite = Group(colon.suppress() - (

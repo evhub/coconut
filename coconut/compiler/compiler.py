@@ -412,7 +412,7 @@ class Compiler(Grammar):
         if index is not None:
             return self.reformat(snip), len(self.reformat(snip[:index]))
         else:
-            return self.repl_proc(snip, reformating=True, log=False)
+            return self.repl_proc(snip, reformatting=True, log=False)
 
     def eval_now(self, code):
         """Reformat and evaluates a code snippet and returns code for the result."""
@@ -604,9 +604,9 @@ class Compiler(Grammar):
         _contents = 0  # the contents of the string so far
         _start = 1  # the string of characters that started the string
         _stop = 2  # store of characters that might be the end of the string
-        x = 0
         skips = self.skips.copy()
 
+        x = 0
         while x <= len(inputstring):
             if x == len(inputstring):
                 c = "\n"
@@ -773,7 +773,7 @@ class Compiler(Grammar):
         opens = []  # (line, col, adjusted ln) at which open parens were seen, newest first
         current = None  # indentation level of previous line
         levels = []  # indentation levels of all previous blocks, newest at end
-        skips = self.skips.copy()  # todo
+        skips = self.skips.copy()
 
         for ln in range(1, len(lines) + 1):  # ln is 1-indexed
             line = lines[ln - 1]  # lines is 0-indexed
@@ -905,7 +905,7 @@ class Compiler(Grammar):
             return ""
         return self.wrap_comment(comment, reformat=False)
 
-    def endline_repl(self, inputstring, reformating=False, **kwargs):
+    def endline_repl(self, inputstring, reformatting=False, **kwargs):
         """Add end of line comments."""
         out = []
         ln = 1
@@ -914,15 +914,19 @@ class Compiler(Grammar):
             try:
                 if line.endswith(lnwrapper):
                     line, index = line[:-1].rsplit("#", 1)
-                    ln = self.get_ref(index)
-                    if not isinstance(ln, int):
+                    new_ln = self.get_ref(index)
+                    if not isinstance(new_ln, int):
                         raise CoconutInternalException("invalid reference for a line number", ln)
+                    elif new_ln < ln:
+                        raise CoconutInternalException("line number decreased", (ln, new_ln))
+                    else:
+                        ln = new_ln
                     line = line.rstrip()
                     add_one_to_ln = True
-                if line.rstrip() and not line.lstrip().startswith("#"):
+                if not reformatting or add_one_to_ln:
                     line += self.comments.get(ln, "")
-                    if not reformating:
-                        line += self.ln_comment(ln)
+                if not reformatting and line.rstrip() and not line.lstrip().startswith("#"):
+                    line += self.ln_comment(ln)
             except CoconutInternalException as err:
                 complain(err)
             out.append(line)
@@ -1076,6 +1080,7 @@ class Compiler(Grammar):
         """Store comment in comments."""
         internal_assert(len(tokens) == 1, "invalid comment tokens", tokens)
         ln = self.adjust(lineno(loc, original))
+        internal_assert(lambda: ln not in self.comments, "multiple comments on line", ln)
         self.comments[ln] = tokens[0]
         return ""
 
@@ -1133,33 +1138,59 @@ class Compiler(Grammar):
     def data_handle(self, loc, tokens):
         """Process data blocks."""
         if len(tokens) == 3:
-            name, args, stmts = tokens
+            name, original_args, stmts = tokens
             inherit = None
         elif len(tokens) == 4:
-            name, args, inherit, stmts = tokens
+            name, original_args, inherit, stmts = tokens
         else:
             raise CoconutInternalException("invalid data tokens", tokens)
 
+        all_args = []  # string definitions for all args
         base_args = []  # names of all the non-starred args
         req_args = 0  # number of required arguments
         starred_arg = None  # starred arg if there is one else None
         saw_defaults = False  # whether there have been any default args so far
-        for i, arg in enumerate(args):
-            if arg.startswith("_"):
-                raise CoconutDeferredSyntaxError("data fields cannot start with an underscore", loc)
-            elif arg.startswith("*"):
-                if i != len(args) - 1:
-                    raise CoconutDeferredSyntaxError("starred data field must come last", loc)
-                starred_arg = arg[1:]
+        types = {}  # arg position to typedef for arg
+        for i, arg in enumerate(original_args):
+
+            star, default, typedef = False, None, None
+            if "name" in arg.keys():
+                internal_assert(len(arg) == 1)
+                argname = arg[0]
+            elif "default" in arg.keys():
+                internal_assert(len(arg) == 2)
+                argname, default = arg
+            elif "star" in arg.keys():
+                internal_assert(len(arg) == 1)
+                star, argname = True, arg[0]
+            elif "type" in arg.keys():
+                internal_assert(len(arg) == 2)
+                argname, typedef = arg
+            elif "type default" in arg.keys():
+                internal_assert(len(arg) == 3)
+                argname, typedef, default = arg
             else:
-                if "=" in arg:
-                    arg = arg.split("=", 1)[0]
+                raise CoconutInternalException("invalid data arg tokens", arg)
+
+            if argname.startswith("_"):
+                raise CoconutDeferredSyntaxError("data fields cannot start with an underscore", loc)
+            if star:
+                if i != len(original_args) - 1:
+                    raise CoconutDeferredSyntaxError("starred data field must come last", loc)
+                starred_arg = argname
+            else:
+                if default:
                     saw_defaults = True
                 elif saw_defaults:
                     raise CoconutDeferredSyntaxError("data fields with defaults must come after data fields without", loc)
                 else:
                     req_args += 1
-                base_args.append(arg)
+                base_args.append(argname)
+            if typedef:
+                internal_assert(not star, "invalid typedef in starred data field", typedef)
+                types[i] = typedef
+            arg_str = ("*" if star else "") + argname + ("=" + default if default else "")
+            all_args.append(arg_str)
 
         attr_str = " ".join(base_args)
         extra_stmts = (
@@ -1195,7 +1226,7 @@ class Compiler(Grammar):
                     name=name,
                     args_for_repr=", ".join(arg + "={" + arg.lstrip("*") + "!r}" for arg in base_args + ["*" + starred_arg]),
                     starred_arg=starred_arg,
-                    all_args=", ".join(args),
+                    all_args=", ".join(all_args),
                     req_args=req_args,
                     num_base_args=str(len(base_args)),
                     base_args_tuple="(" + ", ".join(base_args) + ("," if len(base_args) == 1 else "") + ")",
@@ -1233,14 +1264,19 @@ class Compiler(Grammar):
             {cind}'''.format(
                 oind=openindent,
                 cind=closeindent,
-                all_args=", ".join(args),
+                all_args=", ".join(all_args),
                 args_tuple="(" + ", ".join(base_args) + ("," if len(base_args) == 1 else "") + ")",
             )
 
         out = (
             "class " + name + "("
-            '_coconut.collections.namedtuple("' + name + '", "' + attr_str + '")'
             + (
+                '_coconut.collections.namedtuple("' + name + '", "' + attr_str + '")' if not types
+                else '_coconut_NamedTuple("' + name + '", [' + ", ".join(
+                    '("' + argname + '", ' + self.wrap_typedef(types.get(i, "_coconut.typing.Any")) + ")"
+                    for i, argname in enumerate(base_args + ([starred_arg] if starred_arg is not None else []))
+                ) + "])"
+            ) + (
                 ", " + inherit if inherit is not None
                 else ", _coconut.object" if not self.target.startswith("3")
                 else ""
