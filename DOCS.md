@@ -588,7 +588,7 @@ data <name>(<args>) [from <inherits>]:
 ```
 `<name>` is the name of the new data type, `<args>` are the arguments to its constructor as well as the names of its attributes, `<body>` contains the data type's methods, and `<inherits>` optionally contains any desired base classes.
 
-Coconut allows data fields in `<args>` to have defaults attached to them, and supports a starred parameter at the end to collect extra arguments.
+Coconut allows data fields in `<args>` to have defaults and/or [type annotations](#enhanced-type-annotations) attached to them, and supports a starred parameter at the end to collect extra arguments.
 
 Writing constructors for `data` types must be done using the `__new__` method instead of the `__init__` method. For helping to easily write `__new__` methods, Coconut provides the [datamaker](#datamaker) built-in.
 
@@ -614,7 +614,7 @@ Named tuple instances do not have per-instance dictionaries, so they are lightwe
 
 **Coconut:**
 ```coconut
-data vector2(x=0, y=0):
+data vector2(x:int=0, y:int=0):
     def __abs__(self):
         return (self.x**2 + self.y**2)**.5
 
@@ -624,7 +624,7 @@ v |> abs |> print
 v.x = 2  # this will fail because data objects are immutable
 vector2() |> print
 ```
-_Showcases the syntax, features, and immutable nature of `data` types, as well as the use of default arguments._
+_Showcases the syntax, features, and immutable nature of `data` types, as well as the use of default arguments and type annotations._
 ```coconut
 data Empty()
 data Leaf(n)
@@ -663,8 +663,8 @@ _Showcases starred `data` declaration._
 
 **Python:**
 ```coconut_python
-import collections
-class vector2(collections.namedtuple("vector2", "x, y"), object):
+import typing
+class vector2(typing.NamedTuple("vector2", [("x", int), ("y", int)]), object):
     __slots__ = ()
     def __new__(cls, x=0, y=0):
         return super(vector2, cls).__new__((x, y))
