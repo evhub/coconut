@@ -440,8 +440,9 @@ class Compiler(Grammar):
         else:
             logger.warn_err(self.make_err(CoconutSyntaxWarning, *args, **kwargs))
 
-    def add_ref(self, ref):
+    def add_ref(self, reftype, data):
         """Add a reference and returns the identifier."""
+        ref = (reftype, data)
         try:
             index = self.refs.index(ref)
         except ValueError:
@@ -449,16 +450,18 @@ class Compiler(Grammar):
             index = len(self.refs) - 1
         return str(index)
 
-    def get_ref(self, index):
+    def get_ref(self, reftype, index):
         """Retrieve a reference."""
         try:
-            return self.refs[int(index)]
+            got_reftype, data = self.refs[int(index)]
         except (IndexError, ValueError):
-            raise CoconutInternalException("invalid reference", index)
+            raise CoconutInternalException("no reference at invalid index", index)
+        internal_assert(got_reftype == reftype, "wanted " + reftype + " reference; got " + got_reftype + " reference")
+        return data
 
     def wrap_str(self, text, strchar, multiline=False):
         """Wrap a string."""
-        return strwrapper + self.add_ref((text, strchar, multiline)) + unwrapper
+        return strwrapper + self.add_ref("str", (text, strchar, multiline)) + unwrapper
 
     def wrap_str_of(self, text):
         """Wrap a string of a string."""
@@ -474,7 +477,7 @@ class Compiler(Grammar):
             out = "\\"
         else:
             out = "\\\\"
-        out += self.add_ref(text) + unwrapper
+        out += self.add_ref("passthrough", text) + unwrapper
         if not multiline:
             out += "\n"
         return out
@@ -483,11 +486,11 @@ class Compiler(Grammar):
         """Wrap a comment."""
         if reformat:
             text = self.reformat(text)
-        return "#" + self.add_ref(text) + unwrapper
+        return "#" + self.add_ref("comment", text) + unwrapper
 
     def wrap_line_number(self, ln):
         """Wrap a line number."""
-        return "#" + self.add_ref(ln) + lnwrapper
+        return "#" + self.add_ref("ln", ln) + lnwrapper
 
     def apply_procs(self, procs, kwargs, inputstring, log=True):
         """Apply processors to inputstring."""
@@ -910,29 +913,23 @@ class Compiler(Grammar):
         out = []
         ln = 1
         for line in inputstring.splitlines():
-            add_one_to_ln = False
             try:
+                had_ln = False
                 if line.endswith(lnwrapper):
                     line, index = line[:-1].rsplit("#", 1)
-                    new_ln = self.get_ref(index)
-                    if not isinstance(new_ln, int):
-                        raise CoconutInternalException("invalid reference for a line number", ln)
-                    elif new_ln < ln:
+                    new_ln = self.get_ref("ln", index)
+                    if new_ln < ln:
                         raise CoconutInternalException("line number decreased", (ln, new_ln))
-                    else:
-                        ln = new_ln
+                    ln = new_ln
                     line = line.rstrip()
-                    add_one_to_ln = True
-                if not reformatting or add_one_to_ln:
+                    had_ln = True
+                if not reformatting or had_ln:
                     line += self.comments.get(ln, "")
                 if not reformatting and line.rstrip() and not line.lstrip().startswith("#"):
                     line += self.ln_comment(ln)
             except CoconutInternalException as err:
                 complain(err)
             out.append(line)
-            if add_one_to_ln:
-                ln += 1
-                add_one_to_ln = False
         return "\n".join(out)
 
     def passthrough_repl(self, inputstring, **kwargs):
@@ -946,9 +943,7 @@ class Compiler(Grammar):
                     if c is not None and c in nums:
                         index += c
                     elif c == unwrapper and index:
-                        ref = self.get_ref(index)
-                        if not isinstance(ref, str):
-                            raise CoconutInternalException("invalid reference for a passthrough", ref)
+                        ref = self.get_ref("passthrough", index)
                         out.append(ref)
                         index = None
                     elif c != "\\" or index:
@@ -983,9 +978,7 @@ class Compiler(Grammar):
                     if c is not None and c in nums:
                         comment += c
                     elif c == unwrapper and comment:
-                        ref = self.get_ref(comment)
-                        if not isinstance(ref, str):
-                            raise CoconutInternalException("invalid reference for a comment", ref)
+                        ref = self.get_ref("comment", comment)
                         if out and not out[-1].endswith("\n"):
                             out[-1] = out[-1].rstrip(" ")
                             if not self.minify:
@@ -998,9 +991,7 @@ class Compiler(Grammar):
                     if c is not None and c in nums:
                         string += c
                     elif c == unwrapper and string:
-                        ref = self.get_ref(string)
-                        if not isinstance(ref, tuple):
-                            raise CoconutInternalException("invalid reference for a str", ref)
+                        ref = self.get_ref("str", string)
                         text, strchar, multiline = ref
                         if multiline:
                             out.append(strchar * 3 + text + strchar * 3)
@@ -1071,10 +1062,15 @@ class Compiler(Grammar):
     def endline_handle(self, original, loc, tokens):
         """Add line number information to end of line."""
         internal_assert(len(tokens) == 1, "invalid endline tokens", tokens)
-        out = tokens[0]
+        lines = tokens[0].splitlines(True)
         if self.minify:
-            out = out.splitlines(True)[0]  # if there are multiple new lines, take only the first one
-        return self.wrap_line_number(self.adjust(lineno(loc, original))) + out
+            lines = lines[0]
+        out = []
+        ln = lineno(loc, original)
+        for endline in lines:
+            out.append(self.wrap_line_number(self.adjust(ln)) + endline)
+            ln += 1
+        return "".join(out)
 
     def comment_handle(self, original, loc, tokens):
         """Store comment in comments."""
