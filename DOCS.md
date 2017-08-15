@@ -590,7 +590,7 @@ data <name>(<args>) [from <inherits>]:
 
 Coconut allows data fields in `<args>` to have defaults and/or [type annotations](#enhanced-type-annotations) attached to them, and supports a starred parameter at the end to collect extra arguments.
 
-Writing constructors for `data` types must be done using the `__new__` method instead of the `__init__` method. For helping to easily write `__new__` methods, Coconut provides the [datamaker](#datamaker) built-in.
+Writing constructors for `data` types must be done using the `__new__` method instead of the `__init__` method. For helping to easily write `__new__` methods, Coconut provides the [makedata](#makedata) built-in.
 
 Subclassing `data` types can be done easily by inheriting from them either in another `data` statement or a normal Python `class`. If a normal `class` statement is used, making the new subclass immutable will require adding the line
 ```coconut
@@ -1774,18 +1774,24 @@ count()$[10**100] |> print
 **Python:**
 _Can't be done quickly without Coconut's iterator slicing, which requires many complicated pieces. The necessary definitions in Python can be found in the Coconut header._
 
-### `datamaker`
+### `makedata`
 
-Coconut provides the `datamaker` function to allow direct access to the base constructor of data types created with the Coconut `data` statement. This is particularly useful when writing alternative constructors for data types by overwriting `__new__`.
+Coconut provides the `makedata` function to allow direct access to the base constructor of data types created with the Coconut `data` statement. This is particularly useful when writing alternative constructors for data types by overwriting `__new__`.
 
-For `data` objects, `datamaker` always returns a constructor that always behaves as the underlying data type's original constructor, exactly as the data type was declared.
+`makedata` takes the data type to call as the first argument, and the arguments for constructing that data type as the rest of the arguments. For `data` objects, `makedata` behaves as the underlying data type's original constructor, exactly as the data type was declared. For non-`data` objects, `makedata` is equivalent to:
+```coconut
+def makedata(data_type, *args, **kwargs):
+    """Returns base data constructor of data_type."""
+    return super(data_type, data_type).__new__(data_type, *args, **kwargs)
+```
 
-For non-`data` objects, equivalent to:
+**DEPRECATED:** Coconut also has a `datamaker` built-in, which partially applies `makedata`; `datamaker` is defined as:
 ```coconut
 def datamaker(data_type):
-    """Returns base data constructor of data_type."""
-    return super(data_type, data_type).__new__$(data_type)
+    """Get the original constructor of the given data type or class."""
+    return makedata$(data_type)
 ```
+_Note: Passing `--strict` disables deprecated features._
 
 ##### Example
 
@@ -1793,7 +1799,7 @@ def datamaker(data_type):
 ```coconut
 data Tuple(elems):
     def __new__(cls, *elems):
-        return elems |> datamaker(cls)
+        return elems |> makedata$(cls)
 ```
 
 **Python:**

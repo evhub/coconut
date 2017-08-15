@@ -223,6 +223,13 @@ def fake_recurse_n_times(n) =
     fake_recurse_n_times(n)
 
 # Data Blocks:
+try:
+    datamaker
+except NameError:
+    def datamaker(data_type):
+        """Get the original constructor of the given data type or class."""
+        return makedata$(data_type)
+
 data preop(x, y):
     def add(self):
         return self.x + self.y

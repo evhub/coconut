@@ -530,14 +530,14 @@ data vector(*pts):
         match [v is vector] in pts:
             return v  # vector(v) where v is a vector should return v
         else:
-            return pts |*> datamaker(cls)  # accesses base constructor
+            return pts |*> makedata$(cls)  # accesses base constructor
 
 # Test cases:
 vector(1, 2, 3) |> print  # vector(*pts=(1, 2, 3))
 vector(4, 5) |> vector |> print  # vector(*pts=(4, 5))
 ```
 
-Copy, paste! The big new thing here is how to write `data` constructors. Since `data` types are immutable, `__init__` construction won't work. Instead, a different special method `__new__` is used, which must return the newly constructed instance, and unlike most methods, takes the class not the object as the first argument. Since `__new__` needs to return a fully constructed instance, in almost all cases it will be necessary to access the underlying `data` constructor. To achieve this, Coconut provides the [built-in `datamaker` function](DOCS.html/datamaker), which takes a data type, often the first argument to `__new__`, and returns its underlying `data` constructor.
+Copy, paste! The big new thing here is how to write `data` constructors. Since `data` types are immutable, `__init__` construction won't work. Instead, a different special method `__new__` is used, which must return the newly constructed instance, and unlike most methods, takes the class not the object as the first argument. Since `__new__` needs to return a fully constructed instance, in almost all cases it will be necessary to access the underlying `data` constructor. To achieve this, Coconut provides the [built-in `makedata` function](DOCS.html/makedata), which takes a data type and calls its underlying `data` constructor with the rest of the arguments.
 
 In this case, the constructor checks whether nothing but another `vector` was passed, in which case it returns that, otherwise it returns the result of passing the arguments to the underlying constructor, the form of which is `vector(*pts)`, since that is how we declared the data type. We use sequence pattern-matching to determine whether we were passed a single vector, which is just a list or tuple of patterns to match against the contents of the sequence.
 
@@ -603,7 +603,7 @@ data vector(*pts):
         match [v is vector] in pts:
             return v  # vector(v) where v is a vector should return v
         else:
-            return pts |*> datamaker(cls)  # accesses base constructor
+            return pts |*> makedata$(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
@@ -802,7 +802,7 @@ data vector(*pts):
         match [v is vector] in pts:
             return v  # vector(v) where v is a vector should return v
         else:
-            return pts |*> datamaker(cls)  # accesses base constructor
+            return pts |*> makedata$(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
@@ -982,7 +982,7 @@ data vector(*pts):
         match [v is vector] in pts:
             return v  # vector(v) where v is a vector should return v
         else:
-            return pts |*> datamaker(cls)  # accesses base constructor
+            return pts |*> makedata$(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)

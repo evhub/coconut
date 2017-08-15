@@ -155,11 +155,16 @@ def process_header_args(which, target, use_hash, no_tco, strict):
         ),
         def_prepattern=(
             r'''def prepattern(base_func):
-    """DEPRECATED: Decorator to add a new case to a pattern-matching function,
-    where the new case is checked first."""
+    """DEPRECATED: Use addpattern instead."""
     def pattern_prepender(func):
         return addpattern(func)(base_func)
     return pattern_prepender
+''' if strict else ""
+        ),
+        def_datamaker=(
+            r'''def datamaker(data_type):
+    """DEPRECATED: Use makedata instead."""
+    return _coconut.functools.partial(makedata, data_type)
 ''' if strict else ""
         ),
     )
