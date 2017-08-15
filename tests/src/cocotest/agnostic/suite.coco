@@ -42,7 +42,7 @@ def suite_test():
             )
     assert clean("   ab cd ef   ") == "ab cd ef" == "   ab cd ef   " |> clean
     assert add2 <| 2 <| 3 == 5
-    for qsort in [qsort1, qsort2, qsort3, qsort4, qsort5]:
+    for qsort in [qsort1, qsort2, qsort3, qsort4, qsort5, qsort6]:
         to_sort = rand_list(10)
         assert to_sort |> qsort |> tuple == to_sort |> sorted |> tuple
     assert repeat(3)$[2] == 3 == repeat_(3)$[2]

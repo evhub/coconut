@@ -121,6 +121,14 @@ def qsort5(l: int$[]) -> int$[]:
             )
     else:
         return iter(())
+def qsort6(l: int$[]) -> int$[]:
+    match [head] :: tail in l:
+        tail = reiterable(tail)
+        yield from (
+            qsort6(x for x in tail if x <= head)
+            :: (head,)
+            :: qsort6(x for x in tail if x > head)
+        )
 
 # Infinite Iterators:
 def repeat(elem):

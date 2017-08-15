@@ -244,6 +244,7 @@ search_terms = (
     "none",
     "coalesce",
     "coalescing",
+    "reiterable",
 )
 
 script_names = (
@@ -513,6 +514,7 @@ coconut_specific_builtins = (
     "concurrent_map",
     "fmap",
     "starmap",
+    "reiterable",
     "py_chr",
     "py_filter",
     "py_hex",

@@ -34,10 +34,10 @@ def main_test():
     assert repr(3) == "3" == ascii(3)
     assert 5 |> (-)$(2) |> (*)$(2) == -6
     assert map(pow$(2), 0 `range` 5) |> list == [1,2,4,8,16]
-    iter1 = range(0,10)
-    iter1, iter2 = tee(iter1)
-    assert iter1$[2:8] |> list == [2, 3, 4, 5, 6, 7] == ($[])(iter1, slice(2, 8)) |> list
-    assert iter2$[2:8] |> list == [2, 3, 4, 5, 6, 7] == ($[])(iter2, slice(2, 8)) |> list
+    range10 = range(0,10)
+    reiter_range10 = reiterable(range10)
+    for iter1, iter2 in [tee(range10), tee(iter(range10)), (reiter_range10, reiter_range10)]:
+        assert iter1$[2:8] |> list == [2, 3, 4, 5, 6, 7] == ($[])(iter1, slice(2, 8)) |> list
     \data = 5
     assert \data == 5
     \\data = 3
@@ -410,6 +410,8 @@ def main_test():
     assert "a b c" == (" ". ?? "not gonna happen")("join")("abc")
     a: int[]? = None
     assert a is None
+    assert range(5) |> iter |> reiterable |> .[1] == 1
+    assert range(5) |> reiterable |> fmap$(-> _ + 1) |> list == [1, 2, 3, 4, 5]
     return True
 
 def tco_func() = tco_func()
