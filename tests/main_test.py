@@ -57,6 +57,7 @@ mypy_snip = r"a: str = count()[0]"
 mypy_snip_err = 'error: Incompatible types in assignment (expression has type "int", variable has type "str")'
 
 ignore_mypy_errs_with = (
+    "tutorial.py",
     "No overload variant of",
 )
 
