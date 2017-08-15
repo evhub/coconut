@@ -1040,10 +1040,10 @@ class Grammar(object):
     )
 
     typedef_atom = Forward()
-    typedef_atom_ref = (
-        Group(fixto(lbrack + rbrack, "type:[]"))  # type:[] is for item_handle
-        | Group(fixto(dollar + lbrack + rbrack, "type:$[]"))  # for item_handle
-        | Group(fixto(questionmark + ~questionmark, "type:?"))  # for item_handle
+    typedef_atom_ref = (  # use special type signifier for item_handle
+        Group(fixto(lbrack + rbrack, "type:[]"))
+        | Group(fixto(dollar + lbrack + rbrack, "type:$[]"))
+        | Group(fixto(questionmark + ~questionmark, "type:?"))
     )
 
     simple_trailer = (
