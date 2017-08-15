@@ -1,4 +1,6 @@
 import sys
+import functools
+import itertools
 from typing import (
     TypeVar,
     Callable,
@@ -19,9 +21,17 @@ _S = TypeVar('_S')
 
 
 if sys.version_info < (3,):
+    import io
+    import future_builtins
     import __builtin__ as _b
-    from future_builtins import *
-    from io import open
+
+    open = io.open
+    ascii = future_builtins.ascii
+    filter = future_builtins.filter
+    hex = future_builtins.hex
+    map = future_builtins.map
+    oct = future_builtins.oct
+    zip = future_builtins.zip
 
     py_raw_input, py_xrange = _b.raw_input, _b.xrange
 
@@ -47,8 +57,10 @@ else:
 py_chr, py_filter, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate = _b.chr, _b.filter, _b.hex, _b.input, _b.int, _b.map, _b.object, _b.oct, _b.open, _b.print, _b.range, _b.str, _b.zip, _b.filter, _b.reversed, _b.enumerate
 
 
-from functools import reduce
-from itertools import takewhile, dropwhile, tee, starmap
+takewhile = itertools.takewhile
+dropwhile = itertools.dropwhile
+tee = itertools.tee
+starmap = itertools.starmap
 
 
 _coconut_tee = tee
@@ -67,7 +79,7 @@ class _coconut:
     if sys.version_info < (3, 3):
         abc = collections
     else:
-        import collections.abc as abc
+        abc = collections.abc
     if sys.version_info >= (3,):
         bytearray = bytearray
     if sys.version_info >= (2, 7):
@@ -138,6 +150,9 @@ def _coconut_minus(a, *rest):
     for b in rest:
         a -= b
     return a
+
+
+def reiterable(iterable: Iterable[_T]) -> Iterable[_T]: ...
 
 
 class count:

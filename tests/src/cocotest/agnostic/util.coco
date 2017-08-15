@@ -79,16 +79,16 @@ def qsort1(l: int[]) -> int[]:
                 smalls.append(x)
             else:
                 larges.append(x)
-        return qsort1(smalls) + [split] + qsort1(larges)
+        return list..qsort1(smalls) + [split] + list..qsort1(larges)
 def qsort2(l: int[]) -> int[]:
     """Functional Quick Sort."""
     if not l:
         return []
     else:
-        head, tail = l[0], l[1:] # Python Pattern-Matching
-        return (qsort2([x for x in tail if x <= head])
+        head, tail = l[0], l[1:]# Python Pattern-Matching
+        return (list..qsort2([x for x in tail if x <= head])
                 + [head] # The pivot is a list
-                + qsort2([x for x in tail if x > head])
+                + list..qsort2([x for x in tail if x > head])
                 )
 def qsort3(l: int$[]) -> int$[]:
     """Iterator Quick Sort."""
@@ -99,18 +99,20 @@ def qsort3(l: int$[]) -> int$[]:
         return (qsort3((x for x in tail if x <= head))
                 :: (head,) # The pivot is a tuple
                 :: qsort3((x for x in tail_ if x > head))
-                )
+                )  # type: ignore
     except StopIteration:
         return iter(())
 def qsort4(l: int[]) -> int[]:
     """Match Quick Sort."""
-    match [] in l:
-        return l
-    match [head] + tail in l:
-        return (qsort4([x for x in tail if x <= head])
-                + [head] # The pivot is a list
-                + qsort4([x for x in tail if x > head])
-                )
+    case l:
+        match []:
+            return l
+        match [head] + tail:
+            return (list..qsort4([x for x in tail if x <= head])
+                    + [head] # The pivot is a list
+                    + list..qsort4([x for x in tail if x > head])
+                    )
+    return None
 def qsort5(l: int$[]) -> int$[]:
     """Iterator Match Quick Sort."""
     match (head,) :: tail in l:
@@ -118,7 +120,7 @@ def qsort5(l: int$[]) -> int$[]:
         return (qsort5((x for x in tail if x <= head))
             :: (head,) # The pivot is a tuple
             :: qsort5((x for x in tail_ if x > head))
-            )
+            )  # type: ignore
     else:
         return iter(())
 def qsort6(l: int$[]) -> int$[]:
@@ -128,7 +130,7 @@ def qsort6(l: int$[]) -> int$[]:
             qsort6(x for x in tail if x <= head)
             :: (head,)
             :: qsort6(x for x in tail if x > head)
-        )
+        )  # type: ignore
 
 # Infinite Iterators:
 def repeat(elem):
@@ -294,7 +296,7 @@ def factorial5(value):
     else:
         return None
     raise TypeError()
-match def fact(n) = fact(n, 1)
+match def fact(n) = fact(n, 1)  # type: ignore
 @addpattern(fact)  # type: ignore
 match def fact(0, acc) = acc
 @addpattern(fact)  # type: ignore
@@ -623,7 +625,7 @@ def loop(it) = it :: loop(it)
 
 def sieve((||)) = []
 
-@prepattern(sieve)
+@prepattern(sieve)  # type: ignore
 def sieve([head] :: tail) = [head] :: sieve(n for n in tail if n % head)  # type: ignore
 
 # "Assignment function" definitions
@@ -693,11 +695,12 @@ class counter:
 
 import sys
 if sys.version_info > (3, 5):
+    import typing
     from typing import Any, List, Dict
 
     def args_kwargs_func(args:List[Any]=[], kwargs:Dict[Any, Any]={}) -> None: pass
 else:
-    def args_kwargs_func(args:"List"=[], kwargs:"Dict"={}) -> None: pass
+    def args_kwargs_func(args=[], kwargs={}) -> None: pass
 
 def anything_func(*args: int, **kwargs: int) -> None: pass
 

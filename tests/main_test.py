@@ -57,8 +57,7 @@ mypy_snip = r"a: str = count()[0]"
 mypy_snip_err = 'error: Incompatible types in assignment (expression has type "int", variable has type "str")'
 
 ignore_mypy_errs_with = (
-    "already defined",
-    "Cannot determine type of",
+    "No overload variant of",
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -92,7 +91,8 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
     assert not retcode, "Command failed: " + repr(cmd)
     for line in lines:
         assert "CoconutInternalException" not in line, "CoconutInternalException in " + repr(line)
-        assert "INTERNAL ERROR" not in line, "MyPy INTERNAL ERROR in " + repr(line)
+        # TODO: Re-enable when https://github.com/python/mypy/issues/3574 is fixed.
+        # assert "INTERNAL ERROR" not in line, "MyPy INTERNAL ERROR in " + repr(line)
         assert "<unprintable" not in line, "Unprintable error in " + repr(line)
         assert "*** glibc detected ***" not in line, "C error in " + repr(line)
         if check_errors:
