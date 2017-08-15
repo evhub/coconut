@@ -473,6 +473,20 @@ def suite_test():
     v = vector2()
     assert repr(v) == "vector2(x=0, y=0)"
     assert factorial.__doc__ == "this is a docstring" == iadd.__doc__
+    assert list_type((|1,2|)) == "at least 2"
+    assert list_type((|1|)) == "at least 1"
+    assert list_type((| |)) == "empty"
+    cnt = counter()
+    case cnt.inc():
+        match 1:
+            assert False
+        match ():
+            assert False
+        match None:
+            pass
+    else:
+        assert False
+    assert cnt.count == 1
     return True
 
 def tco_test():

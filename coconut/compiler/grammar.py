@@ -179,14 +179,14 @@ def get_infix_items(tokens, callback=infix_error):
     return func, args
 
 
-def case_to_match(tokens, item):
+def case_to_match(tokens):
     """Convert case tokens to match tokens."""
     if len(tokens) == 2:
         matches, stmts = tokens
-        return matches, item, stmts
+        return matches, None, stmts
     elif len(tokens) == 3:
         matches, cond, stmts = tokens
-        return matches, item, cond, stmts
+        return matches, None, cond, stmts
     else:
         raise CoconutInternalException("invalid case match tokens", tokens)
 
@@ -521,7 +521,8 @@ def match_handle(loc, tokens, **kwargs):
     out = ""
     if top:
         out += match_check_var + " = False\n"
-    out += match_to_var + " = " + item + "\n"
+    if item is not None:  # case statement
+        out += match_to_var + " = " + item + "\n"
     out += matching.out()
     if stmts is not None:
         out += "if " + match_check_var + ":" + "\n" + openindent + "".join(stmts) + closeindent
@@ -537,11 +538,14 @@ def case_handle(loc, tokens):
         item, cases, default = tokens
     else:
         raise CoconutInternalException("invalid top-level case tokens", tokens)
-    out = match_handle(loc, case_to_match(cases[0], item))
+    out = (
+        match_to_var + " = " + item + "\n"
+        + match_handle(loc, case_to_match(cases[0]))
+    )
     for case in cases[1:]:
         out += (
             "if not " + match_check_var + ":\n" + openindent
-            + match_handle(loc, case_to_match(case, item), top=False) + closeindent
+            + match_handle(loc, case_to_match(case), top=False) + closeindent
         )
     if default is not None:
         out += "if not " + match_check_var + default

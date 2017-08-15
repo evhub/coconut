@@ -387,6 +387,14 @@ def one_to_five(l):
         return m
     else:
         return False
+def list_type(xs):
+    case reiterable(xs):
+        match [fst, snd] :: tail:
+            return "at least 2"
+        match [fst] :: tail:
+            return "at least 1"
+        match (| |):
+            return "empty"
 
 # Unicode Functions:
 square_u = (x) → x ↑ 2
@@ -675,6 +683,11 @@ class container_(\(object)):
         self.x = x
     def __eq__(self, other) =
         isinstance(other, container_) and self.x == other.x
+
+class counter:
+    count = 0
+    def inc(self):
+        self.count += 1
 
 # Typing
 

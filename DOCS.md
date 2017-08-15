@@ -505,7 +505,7 @@ _Can't be done without a complicated iterator comprehension in place of the lazy
 
 Coconut uses a `$` sign right after an iterator before a slice to perform iterator slicing. Coconut's iterator slicing works much the same as Python's sequence slicing, and looks much the same as Coconut's partial application, but with brackets instead of parentheses.
 
-Iterator slicing works just like sequence slicing, including support for negative indices and slices, and support for `slice` objects in the same way as can be done with normal slicing. Iterator slicing makes no guarantee, however, that the original iterator passed to it be preserved (to preserve the iterator, use Coconut's [`tee` function](#tee)).
+Iterator slicing works just like sequence slicing, including support for negative indices and slices, and support for `slice` objects in the same way as can be done with normal slicing. Iterator slicing makes no guarantee, however, that the original iterator passed to it be preserved (to preserve the iterator, use Coconut's [`tee`](#tee) or [`reiterable`](#reiterable) built-in).
 
 Coconut's iterator slicing is very similar to Python's `itertools.islice`, but unlike `itertools.islice`, Coconut's iterator slicing supports negative indices, and will preferentially call an object's `__getitem__`, if it exists. Coconut's iterator slicing is also optimized to work well with all of Coconut's built-in objects, only computing the elements of each that are actually necessary to extract the desired slice.
 
@@ -788,7 +788,7 @@ pattern ::= (
 - Iterator Splits (`<list/tuple/lazy list> :: <var>`): will match the beginning of an iterable (`collections.abc.Iterable`) against the `<list/tuple/lazy list>`, then bind the rest to `<var>` or check that the iterable is done.
 - Complex String Matching (`<string> + <var> + <string>`): matches strings that start and end with the given substrings, binding the middle to `<var>`.
 
-_Note: Like [iterator slicing](#iterator-slicing), iterator and lazy list matching make no guarantee that the original iterator matched against be preserved (to preserve the iterator, use Coconut's [`tee` function](#tee))._
+_Note: Like [iterator slicing](#iterator-slicing), iterator and lazy list matching make no guarantee that the original iterator matched against be preserved (to preserve the iterator, use Coconut's [`tee`](#tee) or [`reiterable`](#reiterable) built-in)._
 
 When checking whether or not an object can be matched against in a particular fashion, Coconut makes use of Python's abstract base classes. Therefore, to enable proper matching for a custom object, register it with the proper abstract base classes.
 
@@ -1686,6 +1686,26 @@ import itertools
 original, temp = itertools.tee(original)
 sliced = itertools.islice(temp, 5, None)
 ```
+
+### `reiterable`
+
+Sometimes, when an iterator may need to be iterated over an arbitrary number of times, `tee` can be cumbersome to use. For such cases, Coconut provides `reiterable`, which wraps the given iterator such that whenever an attempt to iterate over it is made, it iterates over a `tee` instead of the original.
+
+##### Example
+
+**Coconut:**
+```coconut
+def list_type(xs):
+    case reiterable(xs):
+        match [fst, snd] :: tail:
+            return "at least 2"
+        match [fst] :: tail:
+            return "at least 1"
+        match (| |):
+            return "empty"
+```
+
+**Python:** _Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._
 
 ### `consume`
 

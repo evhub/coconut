@@ -424,10 +424,10 @@ Now it's time to try `quick_sort` for iterators. Our method for tackling this pr
 def quick_sort(l):
     """Sort the input iterator using the quick sort algorithm."""
     match [head] :: tail in l:
-        tail, tail_ = tee(tail)
+        tail = reiterable(tail)
         yield from (quick_sort(x for x in tail if x < head)
             :: (head,)
-            :: quick_sort(x for x in tail_ if x >= head)
+            :: quick_sort(x for x in tail if x >= head)
             )
     # We implicitly return an empty iterator here if the match falls through.
 
@@ -459,7 +459,7 @@ else:
 ```
 that avoids the need for an additional level of indentation when only one `match` is being performed.
 
-The third new construct is the [Coconut built-in `tee`](DOCS.html#tee). `tee` solves a problem for functional programming created by the implementation of Python's iterators: whenever an element of an iterator is accessed, it's lost. `tee` solves this problem by splitting an iterator in two (or more if the optional argument `n` is passed) independent iterators that both use the same underlying iterator to access their data, thus when an element of one is accessed, it isn't lost in the other.
+The third new construct is the [Coconut built-in `reiterable`](DOCS.html#reiterable). There is a problem in doing immutable functional programming with Python iterators: whenever an element of an iterator is accessed, it's lost. `reiterable` solves this problem by allowing the iterable it's called on to be iterated over multiple times while still yielding the same result each time
 
 Finally, although it's not a new construct, since it exists in Python 3, the use of `yield from` here deserves a mention. In Python, `yield` is the statement used to construct iterators, functioning much like `return`, with the exception that multiple `yield`s can be encountered, and each one will produce another element. `yield from` is very similar, except instead of adding a single element to the produced iterator, it adds another whole iterator.
 
@@ -468,10 +468,10 @@ Putting it all together, here's our `quick_sort` function again:
 def quick_sort(l):
     """Sort the input iterator using the quick sort algorithm."""
     match [head] :: tail in l:
-        tail, tail_ = tee(tail)
+        tail = reiterable(tail)
         yield from (quick_sort(x for x in tail if x < head)
             :: (head,)
-            :: quick_sort(x for x in tail_ if x >= head)
+            :: quick_sort(x for x in tail if x >= head)
             )
     # We implicitly return an empty iterator here if the match falls through.
 ```
