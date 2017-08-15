@@ -22,11 +22,13 @@ test-all:
 test-basic:
 	python ./tests --force
 	python ./tests/dest/runner.py
+	python ./tests/dest/extras.py
 
 .PHONY: test-run
 test-run:
 	python ./tests
 	python ./tests/dest/runner.py
+	python ./tests/dest/extras.py
 
 .PHONY: sphinx
 sphinx: clean

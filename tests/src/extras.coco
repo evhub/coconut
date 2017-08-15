@@ -107,11 +107,12 @@ def main():
     assert parse("abc", "debug") == "abc  # abc"
     setup(line_numbers=True, keep_lines=True)
     assert parse("abc", "debug") == "abc  # line 1: abc"
-    assert "prepattern" in parse()
-    assert "datamaker" in parse()
+    setup()
+    assert "prepattern" in parse("\n", mode="file")
+    assert "datamaker" in parse("\n", mode="file")
     setup(strict=True)
-    assert "prepattern" not in parse()
-    assert "datamaker" not in parse()
+    assert "prepattern" not in parse("\n", mode="file")
+    assert "datamaker" not in parse("\n", mode="file")
     try:
         parse("def f(x):\n \t pass")
     except CoconutStyleError:
@@ -221,4 +222,6 @@ def main():
     print("<success>")
 
 if __name__ == "__main__":
+    print("Expect Coconut errors below from running extras:")
+    print("(but make sure you get a <success> after them)")
     main()
