@@ -36,8 +36,14 @@ def main_test():
     assert map(pow$(2), 0 `range` 5) |> list == [1,2,4,8,16]
     range10 = range(0,10)
     reiter_range10 = reiterable(range10)
-    for iter1, iter2 in [tee(range10), tee(iter(range10)), (reiter_range10, reiter_range10)]:
-        assert iter1$[2:8] |> list == [2, 3, 4, 5, 6, 7] == ($[])(iter1, slice(2, 8)) |> list
+    reiter_iter_range10 = reiterable(iter(range10))
+    for iter1, iter2 in [
+        tee(range10),
+        tee(iter(range10)),
+        (reiter_range10, reiter_range10),
+        (reiter_iter_range10, reiter_iter_range10),
+    ]:
+        assert iter1$[2:8] |> list == [2, 3, 4, 5, 6, 7] == ($[])(iter2, slice(2, 8)) |> list, (iter1, iter2)
     \data = 5
     assert \data == 5
     \\data = 3

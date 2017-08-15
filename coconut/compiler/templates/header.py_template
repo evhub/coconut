@@ -60,7 +60,7 @@ def tee(iterable, n=2):
     if n >= 0 and _coconut.isinstance(iterable, (_coconut.tuple, _coconut.frozenset)):
         return (iterable,) * n
     if n > 0 and (_coconut.hasattr(iterable, "__copy__") or _coconut.isinstance(iterable, _coconut.abc.Sequence)):
-        return (iterable,) + _coconut.tuple(_coconut.copy.copy(iterable) for i in range(n - 1))
+        return (iterable,) + _coconut.tuple(_coconut.copy.copy(iterable) for i in _coconut.range(n - 1))
     return _coconut.itertools.tee(iterable, n)
 class reiterable{object}:
     """Allows an iterator to be iterated over multiple times."""
@@ -69,7 +69,7 @@ class reiterable{object}:
         self._iter = iterable
     def __iter__(self):
         self._iter, out = _coconut_tee(self._iter)
-        return out
+        return _coconut.iter(out)
     def __getitem__(self, index):
         return _coconut_igetitem(_coconut.iter(self), index)
     def __reversed__(self):
@@ -287,7 +287,7 @@ def recursive_iterator(func):
     tee_store, backup_tee_store = {empty_dict}, []
     @_coconut.functools.wraps(func)
     def recursive_iterator_func(*args, **kwargs):
-        key, use_backup = (args, frozenset(kwargs)), False
+        key, use_backup = (args, _coconut.frozenset(kwargs)), False
         try:
             hash(key)
         except _coconut.Exception:
