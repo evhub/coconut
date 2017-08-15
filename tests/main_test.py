@@ -201,7 +201,7 @@ def run_src(**kwargs):
 
 def run_extras(**kwargs):
     """Runs extras.py."""
-    call(["python", os.path.join(dest, "extras.py")], assert_output=True, check_mypy=False, check_errors=False, stderr_first=True, **kwargs)
+    call(["python", os.path.join(dest, "extras.py")], assert_output=True, check_errors=False, stderr_first=True, **kwargs)
 
 
 def run(args=[], agnostic_target=None, use_run_arg=False):
@@ -227,7 +227,7 @@ def run(args=[], agnostic_target=None, use_run_arg=False):
             run_src()
 
         if use_run_arg:
-            comp_extras(["--run"] + agnostic_args, assert_output=True, check_mypy=False, check_errors=False, stderr_first=True)
+            comp_extras(["--run"] + agnostic_args, assert_output=True, check_errors=False, stderr_first=True)
         else:
             comp_extras(agnostic_args)
             run_extras()

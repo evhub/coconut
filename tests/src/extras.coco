@@ -1,28 +1,30 @@
 import sys
 
-from coconut.__coconut__ import consume as coc_consume
+from coconut.__coconut__ import consume as coc_consume  # type: ignore
+
 from coconut.exceptions import (
     CoconutSyntaxError,
     CoconutStyleError,
     CoconutSyntaxError,
-)
+)  # type: ignore
+
 from coconut.convenience import (
     CoconutException,
     cmd,
     version,
     setup,
     parse,
-)
+)  # type: ignore
 
 IPY = sys.version_info >= (3, 3) or (sys.version_info < (3,) and sys.version_info >= (2, 7))
 if IPY:
-    from coconut.icoconut import CoconutKernel
+    from coconut.icoconut import CoconutKernel  # type: ignore
 else:
     CoconutKernel = None
 
 def main():
     if IPY:
-        import coconut.highlighter
+        import coconut.highlighter  # type: ignore
     assert consume(range(10), keep_last=1)[0] == 9 == coc_consume(range(10), keep_last=1)[0]
     assert version() == version("num")
     assert version("name")
