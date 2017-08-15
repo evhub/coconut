@@ -59,6 +59,8 @@ mypy_snip_err = 'error: Incompatible types in assignment (expression has type "i
 ignore_mypy_errs_with = (
     "tutorial.py",
     "No overload variant of",
+    # TODO: Re-enable when https://github.com/python/mypy/issues/3574 is fixed.
+    "INTERNAL ERROR",
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -92,8 +94,6 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
     assert not retcode, "Command failed: " + repr(cmd)
     for line in lines:
         assert "CoconutInternalException" not in line, "CoconutInternalException in " + repr(line)
-        # TODO: Re-enable when https://github.com/python/mypy/issues/3574 is fixed.
-        # assert "INTERNAL ERROR" not in line, "MyPy INTERNAL ERROR in " + repr(line)
         assert "<unprintable" not in line, "Unprintable error in " + repr(line)
         assert "*** glibc detected ***" not in line, "C error in " + repr(line)
         if check_errors:
@@ -101,6 +101,7 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
             assert "Exception" not in line, "Exception in " + repr(line)
             assert "Error" not in line, "Error in " + repr(line)
         if check_mypy and all(test not in line for test in ignore_mypy_errs_with):
+            assert "INTERNAL ERROR" not in line, "MyPy INTERNAL ERROR in " + repr(line)
             assert "error:" not in line, "MyPy error in " + repr(line)
     last_line = lines[-1] if lines else ""
     if assert_output is None:
