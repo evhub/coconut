@@ -77,7 +77,7 @@ PARSERS = {
 
 
 def parse(code="", mode="sys"):
-    """Parse Coconut code."""
+    """Compile Coconut code."""
     if CLI.comp is None:
         setup()
     if mode in PARSERS:

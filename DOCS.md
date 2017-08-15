@@ -227,7 +227,7 @@ If the `--strict` (or `-s`) flag is enabled, Coconut will throw errors on variou
 - use of `u` to denote Unicode strings (all Coconut strings are Unicode strings), and
 - use of backslash continuations (use [parenthetical continuation](#enhanced-parenthetical-continuation) instead).
 
-It is recommended that you use the `--strict` (or `-s`) flag if you are starting a new Coconut project, as it will help you write cleaner code.
+Additionally, `--strict` disables deprecated features, making them entirely unavailable to code compiled with `--strict`. It is recommended that you use the `--strict` (or `-s`) flag if you are starting a new Coconut project, as it will help you write cleaner code.
 
 ## Integrations
 
@@ -1540,6 +1540,17 @@ def addpattern(base_func):
         return add_pattern_func
     return pattern_adder
 ```
+
+**DEPRECATED:** Coconut also has a `prepattern` built-in, which adds patterns in the opposite order of `addpattern`; `prepattern` is defined as:
+```coconut
+def prepattern(base_func):
+    """Decorator to add a new case to a pattern-matching function,
+    where the new case is checked first."""
+    def pattern_prepender(func):
+        return addpattern(func)(base_func)
+    return pattern_prepender
+```
+_Note: Passing `--strict` disables deprecated features._
 
 ##### Example
 

@@ -323,7 +323,7 @@ def addpattern(base_func):
                 return {tail_call_func_args_kwargs}
         return add_pattern_func
     return pattern_adder
-class _coconut_partial{object}:
+{def_prepattern}class _coconut_partial{object}:
     __slots__ = ("func", "_argdict", "_arglen", "_stargs", "keywords")
     if hasattr(_coconut.functools.partial, "__doc__"):
         __doc__ = _coconut.functools.partial.__doc__

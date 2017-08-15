@@ -105,7 +105,9 @@ def main():
     assert parse("abc", "debug") == "abc  # abc"
     setup(line_numbers=True, keep_lines=True)
     assert parse("abc", "debug") == "abc  # line 1: abc"
+    assert "prepattern" in parse()
     setup(strict=True)
+    assert "prepattern" not in parse()
     try:
         parse("def f(x):\n \t pass")
     except CoconutStyleError:

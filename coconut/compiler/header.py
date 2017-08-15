@@ -99,7 +99,7 @@ class comment(object):
         return ""
 
 
-def process_header_args(which, target, use_hash, no_tco):
+def process_header_args(which, target, use_hash, no_tco, strict):
     """Create the dictionary passed to str.format in the header, target_startswith, and target_info."""
     target_startswith = one_num_ver(target)
     target_info = get_target_info(target)
@@ -153,6 +153,15 @@ def process_header_args(which, target, use_hash, no_tco):
             if target_info < (3, 6)
             else "from typing import NamedTuple as _coconut_NamedTuple"
         ),
+        def_prepattern=(
+            r'''def prepattern(base_func):
+    """DEPRECATED: Decorator to add a new case to a pattern-matching function,
+    where the new case is checked first."""
+    def pattern_prepender(func):
+        return addpattern(func)(base_func)
+    return pattern_prepender
+''' if strict else ""
+        ),
     )
     format_dict["underscore_imports"] = "_coconut, _coconut_NamedTuple, _coconut_MatchError{comma_tco}, _coconut_igetitem, _coconut_forward_compose, _coconut_back_compose, _coconut_pipe, _coconut_star_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial".format(**format_dict)
     # ._coconut_tco_func is used in main.coco, so don't remove it
@@ -189,7 +198,7 @@ def _coconut_tco(func):
 allowed_headers = ("none", "initial", "__coconut__", "package", "sys", "code", "file")
 
 
-def getheader(which, target="", use_hash=None, no_tco=False):
+def getheader(which, target="", use_hash=None, no_tco=False, strict=False):
     """Generate the specified header."""
     internal_assert(which in allowed_headers, "invalid header type", which)
 
@@ -198,7 +207,7 @@ def getheader(which, target="", use_hash=None, no_tco=False):
 
     # initial, __coconut__, package, sys, code, file
 
-    format_dict, target_startswith, target_info = process_header_args(which, target, use_hash, no_tco)
+    format_dict, target_startswith, target_info = process_header_args(which, target, use_hash, no_tco, strict)
 
     if which == "initial" or which == "__coconut__":
         header = '''#!/usr/bin/env python{target_startswith}

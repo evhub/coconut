@@ -515,7 +515,13 @@ class Compiler(Grammar):
 
     def getheader(self, which, use_hash=None, polish=True):
         """Get a formatted header."""
-        header = getheader(which, target=self.target, use_hash=use_hash, no_tco=self.no_tco)
+        header = getheader(
+            which,
+            use_hash=use_hash,
+            target=self.target,
+            no_tco=self.no_tco,
+            strict=self.strict,
+        )
         if polish:
             header = self.polish(header)
         return header
