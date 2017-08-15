@@ -178,12 +178,12 @@ def is_odd(n) =
     is_even(n-1)
 
 def is_even_(0) = True
-@addpattern(is_even_)
-def is_even_(n) = is_odd_(n-1)  # type: ignore
+@addpattern(is_even_)  # type: ignore
+def is_even_(n) = is_odd_(n-1)
 
 def is_odd_(0) = False
-@addpattern(is_odd_)
-def is_odd_(n) = is_even_(n-1)  # type: ignore
+@addpattern(is_odd_)  # type: ignore
+def is_odd_(n) = is_even_(n-1)
 
 # TCO/TRE tests:
 
@@ -287,13 +287,13 @@ def factorial5(value):
         return None
     raise TypeError()
 match def fact(n) = fact(n, 1)
-@addpattern(fact)
+@addpattern(fact)  # type: ignore
 match def fact(0, acc) = acc
-@addpattern(fact)
-match def fact(n, acc) = fact(n-1, acc*n)  # type: ignore
+@addpattern(fact)  # type: ignore
+match def fact(n, acc) = fact(n-1, acc*n)
 def factorial(0, acc=1) = acc
-@addpattern(factorial)
-def factorial(n is int, acc=1 if n > 0) =  # type: ignore
+@addpattern(factorial)  # type: ignore
+def factorial(n is int, acc=1 if n > 0) =
     """this is a docstring"""
     factorial(n-1, acc*n)
 
@@ -570,12 +570,12 @@ def prepattern(base_func):
     return pattern_prepender
 
 def add_int_or_str_1(x is int) = x + 1
-@addpattern(add_int_or_str_1)
-def add_int_or_str_1(x is str) = x + "1"  # type: ignore
+@addpattern(add_int_or_str_1)  # type: ignore
+def add_int_or_str_1(x is str) = x + "1"
 
 def coercive_add(a is int, b) = a + int(b)
-@addpattern(coercive_add)
-def coercive_add(a is str, b) = a + str(b)  # type: ignore
+@addpattern(coercive_add)  # type: ignore
+def coercive_add(a is str, b) = a + str(b)
 
 @addpattern(ident)
 def still_ident(x) =
@@ -588,12 +588,12 @@ def not_ident(x) = "bar"
 # Pattern-matching functions with guards
 
 def pattern_abs(x if x < 0) = -x
-@addpattern(pattern_abs)
-def pattern_abs(x) = x  # type: ignore
+@addpattern(pattern_abs)  # type: ignore
+def pattern_abs(x) = x
 
 def `pattern_abs_` (x) if x < 0 = -x
-@addpattern(pattern_abs_)
-def `pattern_abs_` (x) = x  # type: ignore
+@addpattern(pattern_abs_)  # type: ignore
+def `pattern_abs_` (x) = x
 
 # Recursive iterator
 
@@ -683,8 +683,8 @@ def anything_func(*args: int, **kwargs: int) -> None: pass
 # Enhanced Pattern-Matching
 
 def fact_(0, acc=1) = acc
-@addpattern(fact_)
-def fact_(n is int, acc=1 if n > 0) = fact_(n-1, acc*n)  # type: ignore
+@addpattern(fact_)  # type: ignore
+def fact_(n is int, acc=1 if n > 0) = fact_(n-1, acc*n)
 
 def x_is_int(x is int) = x
 

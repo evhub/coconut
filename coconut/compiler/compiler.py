@@ -911,10 +911,10 @@ class Compiler(Grammar):
     def endline_repl(self, inputstring, reformatting=False, **kwargs):
         """Add end of line comments."""
         out = []
-        ln = 1
+        ln = 1  # line number
         for line in inputstring.splitlines():
+            add_one_to_ln = False
             try:
-                had_ln = False
                 if line.endswith(lnwrapper):
                     line, index = line[:-1].rsplit("#", 1)
                     new_ln = self.get_ref("ln", index)
@@ -922,14 +922,16 @@ class Compiler(Grammar):
                         raise CoconutInternalException("line number decreased", (ln, new_ln))
                     ln = new_ln
                     line = line.rstrip()
-                    had_ln = True
-                if not reformatting or had_ln:
+                    add_one_to_ln = True
+                if not reformatting or add_one_to_ln:  # add_one_to_ln here is a proxy for whether there was a ln comment or not
                     line += self.comments.get(ln, "")
                 if not reformatting and line.rstrip() and not line.lstrip().startswith("#"):
                     line += self.ln_comment(ln)
             except CoconutInternalException as err:
                 complain(err)
             out.append(line)
+            if add_one_to_ln:
+                ln += 1
         return "\n".join(out)
 
     def passthrough_repl(self, inputstring, **kwargs):

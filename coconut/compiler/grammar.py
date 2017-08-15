@@ -796,6 +796,8 @@ class Grammar(object):
     endline_ref = condense(OneOrMore(Literal("\n")))
     lineitem = Combine(Optional(comment) + endline)
     newline = condense(OneOrMore(lineitem))
+    newline_suppressed = OneOrMore(Combine(Optional(comment_ref) + endline_ref)).suppress()
+
     start_marker = StringStart()
     moduledoc_marker = condense(ZeroOrMore(lineitem) - Optional(moduledoc_item))
     end_marker = StringEnd()
@@ -1375,7 +1377,7 @@ class Grammar(object):
     else_suite = condense(colon + trace(attach(simple_compound_stmt, else_handle))) | suite
     else_stmt = condense(Keyword("else") - else_suite)
 
-    full_suite = colon.suppress() + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
+    full_suite = colon.suppress() + Group((newline_suppressed + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
     full_match = trace(attach(
         Keyword("match").suppress() + match + Keyword("in").suppress() - test - match_guard - full_suite,
         match_handle,
@@ -1389,7 +1391,7 @@ class Grammar(object):
         Keyword("match").suppress() - match - Optional(Keyword("if").suppress() - test) - full_suite,
     ))
     case_stmt = attach(
-        Keyword("case").suppress() + test - colon.suppress() - newline.suppress()
+        Keyword("case").suppress() + test - colon.suppress() - newline_suppressed
         - indent.suppress() - Group(OneOrMore(case_match))
         - dedent.suppress() - Optional(Keyword("else").suppress() - else_suite),
         case_handle,
@@ -1463,7 +1465,7 @@ class Grammar(object):
         + colon.suppress()
         + (
             attach(simple_stmt, make_suite_handle)
-            | newline.suppress() + indent.suppress()
+            | newline_suppressed + indent.suppress()
             + Optional(docstring)
             + attach(condense(OneOrMore(stmt)), make_suite_handle)
             + dedent.suppress()
@@ -1490,7 +1492,7 @@ class Grammar(object):
         - Optional(docstring)
         - (
             attach(testlist_stmt, math_funcdef_suite_handle)
-            | newline.suppress() - indent.suppress()
+            | newline_suppressed - indent.suppress()
             - Optional(docstring)
             - attach(math_funcdef_body, math_funcdef_suite_handle)
             - dedent.suppress()
@@ -1519,15 +1521,15 @@ class Grammar(object):
         ),
     ) + rparen.suppress())) + Optional(Keyword("from").suppress() + testlist)
     data_suite = Group(colon.suppress() - (
-        (newline.suppress() + indent.suppress() + Optional(docstring) + Group(OneOrMore(stmt)) + dedent.suppress())("complex")
-        | (newline.suppress() + indent.suppress() + docstring + dedent.suppress() | docstring)("docstring")
+        (newline_suppressed + indent.suppress() + Optional(docstring) + Group(OneOrMore(stmt)) + dedent.suppress())("complex")
+        | (newline_suppressed + indent.suppress() + docstring + dedent.suppress() | docstring)("docstring")
         | simple_stmt("simple")
     ) | newline("empty"))
     datadef_ref = Keyword("data").suppress() + name - data_args - data_suite
 
     simple_decorator = condense(dotted_name + Optional(function_call))("simple")
     complex_decorator = test("test")
-    decorators = attach(OneOrMore(at.suppress() - Group(longest(simple_decorator, complex_decorator)) - newline.suppress()), decorator_handle)
+    decorators = attach(OneOrMore(at.suppress() - Group(longest(simple_decorator, complex_decorator)) - newline_suppressed), decorator_handle)
 
     decoratable_normal_funcdef_stmt = Forward()
     normal_funcdef_stmt = (
