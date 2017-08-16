@@ -36,13 +36,10 @@ If you are encountering errors running `pip install coconut`, try re-running it 
 
 If you prefer to use [`conda`](https://conda.io/docs/) instead of `pip` to manage your Python packages, you can also install Coconut using `conda`. Just [install `conda`](https://conda.io/miniconda.html), open up a command-line prompt, and enter
 ```
-conda install "conda-build>=3"
 conda config --add channels conda-forge
-conda skeleton pypi coconut
-conda build coconut
-conda install --use-local coconut
+conda install coconut
 ```
-which will properly create and build a `conda` recipe out of Coconut's PyPI package.
+which will properly create and build a `conda` recipe out of [Coconut's `conda-forge` feedstock](https://github.com/conda-forge/coconut-feedstock).
 
 _Note: To use `conda` to install `coconut-develop` instead, just replace `coconut` with `coconut-develop` in the last three commands above._
 
@@ -299,33 +296,33 @@ _Note: Sometimes, MyPy will not know how to handle certain Coconut constructs, s
 
 In order of precedence, highest first, the operators supported in Coconut are:
 ```
-================= ==========================
-Symbol(s)         Associativity
-================= ==========================
-..                n/a won't capture call
-**                right
-+, -, ~           unary
-*, /, //, %, @    left
-+, -              left
-<<, >>            left
-&                 left
-^                 left
-|                 left
-::                n/a lazy
-a `b` c           left captures lambda
-??                left short-circuit
-..>, <..          n/a captures lambda
-|>, <|, |*>, <*|  left captures lambda
+===================== ==========================
+Symbol(s)             Associativity
+===================== ==========================
+..                    n/a won't capture call
+**                    right
++, -, ~               unary
+*, /, //, %, @        left
++, -                  left
+<<, >>                left
+&                     left
+^                     left
+|                     left
+::                    n/a lazy
+a `b` c               left captures lambda
+??                    left short-circuit
+..>, <.., ..*>, <*..  n/a captures lambda
+|>, <|, |*>, <*|      left captures lambda
 ==, !=, <, >,
   <=, >=,
   in, not in,
-  is, is not      n/a
-not               unary
-and               left short-circuit
-or                left short-circuit
-a if b else c     ternary left short-circuit
-->                right
-================= ==========================
+  is, is not          n/a
+not                   unary
+and                   left short-circuit
+or                    left short-circuit
+a if b else c         ternary left short-circuit
+->                    right
+===================== ==========================
 ```
 
 ### Lambdas
@@ -447,13 +444,13 @@ print(sq(operator.add(1, 2)))
 
 ### Compose
 
-Coconut has three different function composition operators: `..`, `..>`, and `<..`. Both `..` and `<..` use math-style "backwards" function composition, where the first function is called last, while `..>` uses "forwards" function composition, where the first function is called first.
+Coconut has three basic function composition operators: `..`, `..>`, and `<..`. Both `..` and `<..` use math-style "backwards" function composition, where the first function is called last, while `..>` uses "forwards" function composition, where the first function is called first.
 
-The `..>` and `<..` function composition pipe operators cannot be used together in the same expression (unlike normal pipes) and have precedence in-between `None`-coalescing and normal pipes.
+The `..>` and `<..` function composition pipe operators also have `..*>` and `<*..` forms which are, respectively, the equivalents of `|*>` and `<*|`. Forwards and backwards function composition pipes cannot be used together in the same expression (unlike normal pipes) and have precedence in-between `None`-coalescing and normal pipes.
 
 The `..` operator has lower precedence than attribute access (`.`), slicing (`[]`), etc., except for function calling, which it has higher precedence than. Thus, `a.b..c.d` is equivalent to `(a.b)..(c.d)`, while `f..g(x)` is equivalent to `(f..g)(x)`.
 
-The in-place composition operators are `..=` (or equivalently `<..=`) and `..>=`.
+The in-place function composition operators are `..=`, `..>=`, `<..=`, `..*>=`, and `<*..=`.
 
 ##### Example
 
@@ -558,6 +555,8 @@ Coconut supports Unicode alternatives to many different operator symbols. The Un
 ∘ (\u2218)                  => ".."
 ∘> (\u2218>)                => "..>"
 <∘ (<\u2218)                => "<.."
+∘*> (\u2218*>)              => "..*>"
+<*∘ (<*\u2218)              => "<*.."
 − (\u2212)                  => "-" (only subtraction)
 ⁻ (\u207b)                  => "-" (only negation)
 ¬ (\xac)                    => "~"
@@ -1070,6 +1069,8 @@ A very common thing to do in functional programming is to make use of function v
 (<*|)       => # multi-arg pipe backward
 (..), (<..) => # backward function composition
 (..>)       => # forward function composition
+(<*..)      => # multi-arg backward function composition
+(..*>)      => # multi-arg forward function composition
 (.)         => (getattr)
 (::)        => (itertools.chain)  # will not evaluate its arguments lazily
 ($)         => (functools.partial)

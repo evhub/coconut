@@ -183,4 +183,5 @@ After you've tested your changes locally, you'll want to add more permanent test
     1. Wipe all updated versions on readthedocs
     1. Copy PyPI keywords to readthedocs tags
     1. Build all updated versions on readthedocs
+    1. Submit PR to update [Coconut's `conda-forge` feedstock](https://github.com/conda-forge/coconut-feedstock)
     1. Close release milestone
