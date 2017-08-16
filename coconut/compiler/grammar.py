@@ -192,15 +192,15 @@ def case_to_match(tokens):
 
 
 def comp_pipe_info(op):
-    """Returns (direction, star) where True is forwards and False is backwards."""
+    """Returns (direction, star) where direction is 'forwards' or 'backwards'."""
     if op == "..>":
-        return True, False
+        return "forwards", False
     elif op == "<..":
-        return False, False
+        return "backwards", False
     elif op == "..*>":
-        return True, True
+        return "forwards", True
     elif op == "<*..":
-        return False, True
+        return "backwards", True
     else:
         raise CoconutInternalException("invalid function composition pipe operator", op)
 
@@ -364,17 +364,23 @@ def pipe_handle(loc, tokens, **kwargs):
 def comp_pipe_handle(loc, tokens):
     """Process pipe function composition."""
     internal_assert(len(tokens) >= 3 and len(tokens) % 2 == 1, "invalid composition pipe tokens", tokens)
-    func = tokens[0]
-    funcstars = []
+    funcs = [tokens[0]]
+    stars = []
     direction = None
     for i in range(1, len(tokens), 2):
         op, fn = tokens[i], tokens[i + 1]
         new_direction, star = comp_pipe_info(op)
         if direction is None:
             direction = new_direction
-        elif new_direction is not direction:
+        elif new_direction != direction:
             raise CoconutDeferredSyntaxError("cannot mix function composition pipe operators with different directions", loc)
-        funcstars.append((fn, star))
+        funcs.append(fn)
+        stars.append(star)
+    if direction == "backwards":
+        funcs.reverse()
+        stars.reverse()
+    func = funcs.pop(0)
+    funcstars = zip(funcs, stars)
     return "_coconut_base_compose(" + func + ", " + ", ".join("({}, {})".format(f, star) for f, star in funcstars) + ")"
 
 
@@ -843,8 +849,9 @@ class Grammar(object):
         | Combine(star_pipe + equals)
         | Combine(back_pipe + equals)
         | Combine(back_star_pipe + equals)
-        | Combine((dotdot | fixto(comp_back_pipe, "..")) + equals)
+        | Combine(dotdot + equals)
         | Combine(comp_pipe + equals)
+        | Combine(comp_back_pipe + equals)
         | Combine(comp_star_pipe + equals)
         | Combine(comp_back_star_pipe + equals)
         | Combine(unsafe_dubcolon + equals)

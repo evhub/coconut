@@ -1101,7 +1101,7 @@ class Compiler(Grammar):
             out += name + " = " + name + "((" + item + "))"
         elif op == "<*|=":
             out += name + " = " + name + "(*(" + item + "))"
-        elif op == "..=":  # also <..=
+        elif op == "..=" or op == "<..=":
             out += name + " = _coconut_forward_compose((" + item + "), " + name + ")"
         elif op == "..>=":
             out += name + " = _coconut_forward_compose(" + name + ", (" + item + "))"

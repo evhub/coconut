@@ -55,8 +55,11 @@ sqplus1_all_ ..*>= plus1_all  # type: ignore
 square_times2_plus1_all = square_all ..*> times2_all ..*> plus1_all
 square_times2_plus1_all_ = plus1_all <*.. times2_all <*.. square_all
 
-plus1_square_times2_all = (..*>)(square_all, times2_all, plus1_all)
-plus1_square_times2_all_ = (<*..)(plus1_all, times2_all, square_all)
+plus1_square_times2_all = (..*>)(plus1_all, square_all, times2_all)
+plus1_square_times2_all_ = (<*..)(times2_all, square_all, plus1_all)
+
+plus1sqsum_all = plus1_all ..*> square_all ..> sum
+plus1sqsum_all_ = sum <.. square_all <*.. plus1_all
 
 # Basic Functions:
 product = reduce$(*)

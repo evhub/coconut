@@ -23,11 +23,11 @@ def suite_test():
     assert `sqrt` 16 == 4 == `sqrt_` 16
     assert `square` 3 == 9
     def test_sqplus1_plus1sq(sqplus1, plus1sq, parallel=True):
-        assert sqplus1(3) == 10 == plus1..square(3)
+        assert sqplus1(3) == 10 == plus1..square(3), sqplus1
         if parallel:
-            assert parallel_map(sqplus1, range(3)) |> tuple == (1, 2, 5)
-        assert 3 `plus1sq` == 16
-        assert 3 `sqplus1` == 10
+            assert parallel_map(sqplus1, range(3)) |> tuple == (1, 2, 5), sqplus1
+        assert 3 `plus1sq` == 16, plus1sq
+        assert 3 `sqplus1` == 10, sqplus1
     test_sqplus1_plus1sq(sqplus1_1, plus1sq_1)
     test_sqplus1_plus1sq(sqplus1_2, plus1sq_2, parallel=False)
     test_sqplus1_plus1sq(sqplus1_3, plus1sq_3)
@@ -387,7 +387,6 @@ def suite_test():
     assert square_times2_plus1(3) == 19 == square_times2_plus1_(3)
     assert plus1_cube(2) == 27
     assert square ..> times2 ..> plus1 |> repr == square ..> (times2 ..> plus1) |> repr
-    assert (square ..> times2 ..> plus1).funcs == [square, times2, plus1]
     assert range(1, 5) |> map$(range) |> starmap$(toprint) |> tuple == ('0', '0 1', '0 1 2', '0 1 2 3')
     assert range(1, 5) |> map$(range) |> starmap$(toprint) |> fmap$(.strip(" 0")) |> tuple == ("", "1", "1 2", "1 2 3")
     assert () |> starmap$(toprint) |> len == 0
@@ -490,6 +489,7 @@ def suite_test():
     assert sqplus1_all(1, 2, 3) |> list == [2, 5, 10] == sqplus1_all_(1, 2, 3) |> list
     assert square_times2_plus1_all(1, 2) |> list == [3, 9] == square_times2_plus1_all_(1, 2) |> list
     assert plus1_square_times2_all(1, 2) |> list == [8, 18] == plus1_square_times2_all_(1, 2) |> list
+    assert plus1sqsum_all(1, 2) == 13 == plus1sqsum_all_(1, 2)
     return True
 
 def tco_test():
