@@ -40,9 +40,28 @@ square_times2_plus1 = square ..> times2 ..> plus1
 square_times2_plus1_ = plus1 <.. times2 <.. square
 plus1_cube = plus1 ..> x -> x**3
 
+def plus1_all(*args) = map(plus1, args)
+def square_all(*args) = map(square, args)
+def times2_all(*args) = map(times2, args)
+
+plus1sq_all = square_all <*.. plus1_all
+sqplus1_all = plus1_all
+sqplus1_all <*..= square_all  # type: ignore
+
+plus1sq_all_ = plus1_all ..*> square_all
+sqplus1_all_ = square_all
+sqplus1_all_ ..*>= plus1_all  # type: ignore
+
+square_times2_plus1_all = square_all ..*> times2_all ..*> plus1_all
+square_times2_plus1_all_ = plus1_all <*.. times2_all <*.. square_all
+
+plus1_square_times2_all = (..*>)(square_all, times2_all, plus1_all)
+plus1_square_times2_all_ = (<*..)(plus1_all, times2_all, square_all)
+
 # Basic Functions:
 product = reduce$(*)
 def zipwith(f, *args) = map((items) -> f(*items), zip(*args))
+def zipwith_(f, *args) = starmap$(f)..zip(*args)
 zipsum: int$[]$[] -> int$[] = map$(sum)..zip
 ident = (x) -> x
 @ ident .. ident
@@ -63,6 +82,7 @@ def toprint(*args) = " ".join(str(a) for a in args)
 # Partial Applications:
 sum_ = reduce$((+))
 add = zipwith$((+))
+add_ = zipwith_$(+)
 
 # Quick-Sorts:
 def qsort1(l: int[]) -> int[]:

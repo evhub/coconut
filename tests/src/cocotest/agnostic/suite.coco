@@ -36,10 +36,9 @@ def suite_test():
     assert reduce((|>), [3, plus1, square]) == 16 == pipe(pipe(3, plus1), square)
     assert reduce((..), [sqrt, square, plus1])(3) == 4 == compose(compose(sqrt, square), plus1)(3)
     assert sum_([1,7,3,5]) == 16
-    assert (add([1,2,3], [10,20,30]) |> list
-            == [11,22,33]
-            == zipsum([1,2,3], [10,20,30]) |> list
-            )
+    assert add([1,2,3], [10,20,30]) |> list == [11,22,33]
+    assert add_([1,2,3], [10,20,30]) |> list == [11,22,33]
+    assert zipsum([1,2,3], [10,20,30]) |> list == [11,22,33]
     assert clean("   ab cd ef   ") == "ab cd ef" == "   ab cd ef   " |> clean
     assert add2 <| 2 <| 3 == 5
     for qsort in [qsort1, qsort2, qsort3, qsort4, qsort5, qsort6]:
@@ -58,7 +57,7 @@ def suite_test():
             == range(0,10)$[:5:] |> list
             )
     assert (range(-10, 0) :: N())$[5:15] |> sum == -5 == chain(range(-10, 0), N())$[5:15] |> sum
-    assert add(repeat(1), N())$[:5] |> list == [1,2,3,4,5] == add(repeat(1), N_())$[:5] |> list
+    assert add(repeat(1), N())$[:5] |> list == [1,2,3,4,5] == add_(repeat(1), N_())$[:5] |> list
     assert sum(N()$[5:]$[:5]) == 35 == sum(N_()$[5:]$[:5])
     assert N()$[](slice(5, 10)) |> list == [5,6,7,8,9] == list(range(0, 15))[](slice(5, 10))
     assert N()$[slice(5, 10)] |> list == [5,6,7,8,9] == list(range(0, 15))[slice(5, 10)]
@@ -487,6 +486,10 @@ def suite_test():
     else:
         assert False
     assert cnt.count == 1
+    assert plus1sq_all(1, 2, 3) |> list == [4, 9, 16] == plus1sq_all_(1, 2, 3) |> list
+    assert sqplus1_all(1, 2, 3) |> list == [2, 5, 10] == sqplus1_all_(1, 2, 3) |> list
+    assert square_times2_plus1_all(1, 2) |> list == [3, 9] == square_times2_plus1_all_(1, 2) |> list
+    assert plus1_square_times2_all(1, 2) |> list == [8, 18] == plus1_square_times2_all_(1, 2) |> list
     return True
 
 def tco_test():

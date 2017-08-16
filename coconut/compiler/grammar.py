@@ -191,6 +191,20 @@ def case_to_match(tokens):
         raise CoconutInternalException("invalid case match tokens", tokens)
 
 
+def comp_pipe_info(op):
+    """Returns (direction, star) where True is forwards and False is backwards."""
+    if op == "..>":
+        return True, False
+    elif op == "<..":
+        return False, False
+    elif op == "..*>":
+        return True, True
+    elif op == "<*..":
+        return False, True
+    else:
+        raise CoconutInternalException("invalid function composition pipe operator", op)
+
+
 # end: HELPERS
 #-----------------------------------------------------------------------------------------------------------------------
 # HANDLERS:
@@ -350,19 +364,18 @@ def pipe_handle(loc, tokens, **kwargs):
 def comp_pipe_handle(loc, tokens):
     """Process pipe function composition."""
     internal_assert(len(tokens) >= 3 and len(tokens) % 2 == 1, "invalid composition pipe tokens", tokens)
-    funcs, using_op = [tokens[0]], tokens[1]
+    func = tokens[0]
+    funcstars = []
+    direction = None
     for i in range(1, len(tokens), 2):
         op, fn = tokens[i], tokens[i + 1]
-        if op != using_op:
+        new_direction, star = comp_pipe_info(op)
+        if direction is None:
+            direction = new_direction
+        elif new_direction is not direction:
             raise CoconutDeferredSyntaxError("cannot mix function composition pipe operators with different directions", loc)
-        funcs.append(fn)
-    if using_op == "..>":
-        pass
-    elif using_op == "<..":
-        funcs.reverse()
-    else:
-        raise CoconutInternalException("invalid composition pipe operator", op)
-    return "_coconut_forward_compose(" + ", ".join(funcs) + ")"
+        funcstars.append((fn, star))
+    return "_coconut_base_compose(" + func + ", " + ", ".join("({}, {})".format(f, star) for f, star in funcstars) + ")"
 
 
 def none_coalesce_handle(tokens):
@@ -715,9 +728,14 @@ class Grammar(object):
     star_pipe = Literal("|*>") | fixto(Literal("*\u21a6"), "|*>")
     back_pipe = Literal("<|") | fixto(Literal("\u21a4"), "<|")
     back_star_pipe = Literal("<*|") | fixto(Literal("\u21a4*"), "<*|")
-    dotdot = ~Literal("...") + ~Literal("..>") + Literal("..") | ~Literal("\u2218>") + fixto(Literal("\u2218"), "..")
+    dotdot = (
+        ~Literal("...") + ~Literal("..>") + ~Literal("..*>") + Literal("..")
+        | ~Literal("\u2218>") + ~Literal("\u2218*>") + fixto(Literal("\u2218"), "..")
+    )
     comp_pipe = Literal("..>") | fixto(Literal("\u2218>"), "..>")
     comp_back_pipe = Literal("<..") | fixto(Literal("<\u2218"), "<..")
+    comp_star_pipe = Literal("..*>") | fixto(Literal("\u2218*>"), "..*>")
+    comp_back_star_pipe = Literal("<*..") | fixto(Literal("<*\u2218"), "<*..")
     amp = Literal("&") | fixto(Literal("\u2227") | Literal("\u2229"), "&")
     caret = Literal("^") | fixto(Literal("\u22bb") | Literal("\u2295"), "^")
     unsafe_bar = ~Literal("|>") + ~Literal("|*>") + Literal("|") | fixto(Literal("\u2228") | Literal("\u222a"), "|")
@@ -827,6 +845,8 @@ class Grammar(object):
         | Combine(back_star_pipe + equals)
         | Combine((dotdot | fixto(comp_back_pipe, "..")) + equals)
         | Combine(comp_pipe + equals)
+        | Combine(comp_star_pipe + equals)
+        | Combine(comp_back_star_pipe + equals)
         | Combine(unsafe_dubcolon + equals)
         | Combine(div_dubslash + equals)
         | Combine(div_slash + equals)
@@ -890,6 +910,8 @@ class Grammar(object):
         | fixto(back_star_pipe, "_coconut_back_star_pipe")
         | fixto(dotdot | comp_back_pipe, "_coconut_back_compose")
         | fixto(comp_pipe, "_coconut_forward_compose")
+        | fixto(comp_star_pipe, "_coconut_forward_star_compose")
+        | fixto(comp_back_star_pipe, "_coconut_back_star_compose")
         | fixto(Keyword("and"), "_coconut_bool_and")
         | fixto(Keyword("or"), "_coconut_bool_or")
         | fixto(dubquestion, "_coconut_none_coalesce")
@@ -1165,7 +1187,7 @@ class Grammar(object):
 
     lambdef = Forward()
 
-    comp_pipe_op = comp_pipe | comp_back_pipe
+    comp_pipe_op = comp_pipe | comp_back_pipe | comp_star_pipe | comp_back_star_pipe
     comp_pipe_expr = (
         none_coalesce_expr + ~comp_pipe_op
         | attach(

@@ -1048,7 +1048,7 @@ Function composition also gets rid of the need for lots of parentheses when chai
 plus1..square(3) == 10
 ```
 
-_Note: Coconut also supports the function composition pipe operators `..>` and `<..`._
+_Note: Coconut also supports the function composition pipe operators `..>`, `<..`, `..*>`, and `<*..`._
 
 ### Implicit Partials
 
