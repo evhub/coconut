@@ -381,7 +381,7 @@ def comp_pipe_handle(loc, tokens):
         stars.reverse()
     func = funcs.pop(0)
     funcstars = zip(funcs, stars)
-    return "_coconut_base_compose(" + func + ", " + ", ".join("({}, {})".format(f, star) for f, star in funcstars) + ")"
+    return "_coconut_base_compose(" + func + ", " + ", ".join("(%s, %s)" % (f, star) for f, star in funcstars) + ")"
 
 
 def none_coalesce_handle(tokens):
