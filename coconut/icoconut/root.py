@@ -171,6 +171,7 @@ if LOAD_MODULE:
     class CoconutKernel(IPythonKernel, object):
         """Jupyter kernel for Coconut."""
         shell_class = CoconutShell
+        use_experimental_completions = False
         implementation = "icoconut"
         implementation_version = VERSION
         language = "coconut"
@@ -196,4 +197,3 @@ if LOAD_MODULE:
                 "url": documentation_url,
             },
         ]
-        use_experimental_completions = False

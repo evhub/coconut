@@ -151,6 +151,7 @@ version_strictly = (
     "pyparsing",
     "sphinx",
     "sphinx_bootstrap_theme",
+    "ipython",
 )
 
 classifiers = (
