@@ -224,6 +224,7 @@ search_terms = (
     "destructuring",
     "assignment",
     "reduce",
+    "fold",
     "takewhile",
     "dropwhile",
     "tee",
@@ -245,6 +246,7 @@ search_terms = (
     "coalesce",
     "coalescing",
     "reiterable",
+    "scan",
 )
 
 script_names = (
@@ -515,6 +517,7 @@ coconut_specific_builtins = (
     "fmap",
     "starmap",
     "reiterable",
+    "scan",
     "py_chr",
     "py_filter",
     "py_hex",

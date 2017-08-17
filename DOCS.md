@@ -1748,7 +1748,7 @@ collections.deque(map(print, map(lambda x: x**2, range(10))), maxlen=0)
 
 ### `count`
 
-Coconut provides a modified version of `itertools.count` that supports `in`, normal slicing, optimized iterator slicing, `count` and `index` sequence methods, `repr`, and `_start` and `_step` attributes as a built-in under the name `count`.
+Coconut provides a modified version of `itertools.count` that supports `in`, normal slicing, optimized iterator slicing, `count` and `index` sequence methods, `repr`, and `start` and `step` attributes as a built-in under the name `count`.
 
 ##### Python Docs
 
@@ -1875,6 +1875,52 @@ range(1, 5) |> map$(range) |> starmap$(print) |> consume
 ```coconut_python
 import itertools, collections
 collections.deque(itertools.starmap(print, map(range, range(1, 5))), maxlen=0)
+```
+
+### `scan`
+
+Coconut provides a modified version of `itertools.accumulate` with opposite argument order as `scan` that also supports `repr`, `len`, and `func` and `iter` attributes. `scan` works exactly like [`reduce`](#reduce), except that instead of only returning the last accumulated value, it returns an iterator of all the intermediate values.
+
+##### Python Docs
+
+**scan**(_func, iterable_)
+
+Make an iterator that returns accumulated results of some function of two arguments. Elements of the input iterable may be any type that can be accepted as arguments to func. (For example, with the operation of addition, elements may be any addable type including Decimal or Fraction.) If the input iterable is empty, the output iterable will also be empty.
+
+Roughly equivalent to:
+```coconut_python
+def scan(func, iterable):
+    'Return running totals'
+    # scan(operator.add, [1,2,3,4,5]) --> 1 3 6 10 15
+    # scan(operator.mul, [1,2,3,4,5]) --> 1 2 6 24 120
+    it = iter(iterable)
+    try:
+        total = next(it)
+    except StopIteration:
+        return
+    yield total
+    for element in it:
+        total = func(total, element)
+        yield total
+```
+
+##### Example
+
+**Coconut:**
+```coconut
+input_data = [3, 4, 6, 2, 1, 9, 0, 7, 5, 8]
+running_max = input_data |> scan$(max) |> list
+```
+
+**Python:**
+```coconut_python
+input_data = [3, 4, 6, 2, 1, 9, 0, 7, 5, 8]
+running_max = []
+max_so_far = input_data[0]
+for x in input_data:
+    if x > max_so_far:
+        max_so_far = x
+    running_max.append(x)
 ```
 
 ### `recursive_iterator`

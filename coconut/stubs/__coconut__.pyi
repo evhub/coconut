@@ -63,6 +63,9 @@ tee = itertools.tee
 starmap = itertools.starmap
 
 
+def scan(func: Callable[[_T, _T], _T], iterable: Iterable[_T]) -> Iterable[_T]: ...
+
+
 _coconut_tee = tee
 _coconut_starmap = starmap
 parallel_map = concurrent_map = _coconut_map = map
