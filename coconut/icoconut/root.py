@@ -196,3 +196,4 @@ if LOAD_MODULE:
                 "url": documentation_url,
             },
         ]
+        use_experimental_completions = False
