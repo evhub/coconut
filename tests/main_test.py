@@ -166,7 +166,7 @@ def using_dest():
 
 def comp_extras(args=[], **kwargs):
     """Compiles extras.coco."""
-    comp(file="extras.coco", check_mypy=False, args=args, **kwargs)
+    comp(file="extras.coco", args=args, **kwargs)
 
 
 def comp_runner(args=[], **kwargs):

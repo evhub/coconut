@@ -21,24 +21,24 @@ square = (**)$(?, 2)
 times2 = (*)$(2)
 
 # Function Compositions:
-plus1sq_1 = square..plus1
+plus1sq_1 = square..plus1  # type: ignore
 sqplus1_1 = plus1
 sqplus1_1 ..= square  # type: ignore
 
 plus1sq_2 = (x) -> x |> plus1 |> square
 sqplus1_2 = (x) -> x |> square |> plus1
 
-plus1sq_3 = square <.. plus1
+plus1sq_3 = square <.. plus1  # type: ignore
 sqplus1_3 = plus1
 sqplus1_3 <..= square  # type: ignore
 
-plus1sq_4 = plus1 ..> square
+plus1sq_4 = plus1 ..> square  # type: ignore
 sqplus1_4 = square
 sqplus1_4 ..>= plus1  # type: ignore
 
-square_times2_plus1 = square ..> times2 ..> plus1
-square_times2_plus1_ = plus1 <.. times2 <.. square
-plus1_cube = plus1 ..> x -> x**3
+square_times2_plus1 = square ..> times2 ..> plus1  # type: ignore
+square_times2_plus1_ = plus1 <.. times2 <.. square  # type: ignore
+plus1_cube = plus1 ..> x -> x**3  # type: ignore
 
 def plus1_all(*args) = map(plus1, args)
 def square_all(*args) = map(square, args)
