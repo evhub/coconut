@@ -56,7 +56,7 @@ coconut_snip = r"msg = '<success>'; pmsg = print$(msg); `pmsg`"
 mypy_snip = r"a: str = count()[0]"
 mypy_snip_err = 'error: Incompatible types in assignment (expression has type "int", variable has type "str")'
 
-mypy_args = ["--follow-imports", "silent"]
+mypy_args = ["--follow-imports", "silent", "--ignore-missing-imports"]
 
 ignore_mypy_errs_with = (
     "tutorial.py",
