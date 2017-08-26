@@ -12,42 +12,9 @@ python:
 - '3.5'
 - '3.6'
 - pypy3
-env: USE_CONDA=false
-matrix:
-  include:
-    - python: '2.7'
-      env: USE_CONDA=true
-  allow_failures:
-    - env: USE_CONDA=true
 install:
-# if USE_CONDA == true:
-- if [[ $USE_CONDA == "true" ]]; then
-  rm -rf ./coconut setup.py; fi
-- if [[ $USE_CONDA == "true" ]]; then
-  wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh; fi
-- if [[ $USE_CONDA == "true" ]]; then
-  bash miniconda.sh -b -p $HOME/miniconda; fi
-- if [[ $USE_CONDA == "true" ]]; then
-  export PATH="$HOME/miniconda/bin:$PATH"; fi
-- if [[ $USE_CONDA == "true" ]]; then
-  conda config --set always_yes yes; fi
-- if [[ $USE_CONDA == "true" ]]; then
-  conda install "conda-build>=3"; fi
-- if [[ $USE_CONDA == "true" ]]; then
-  conda config --add channels conda-forge; fi
-- if [[ $USE_CONDA == "true" ]]; then
-  conda skeleton pypi coconut-develop; fi
-- if [[ $USE_CONDA == "true" ]]; then
-  conda build coconut-develop; fi
-- if [[ $USE_CONDA == "true" ]]; then
-  conda install --use-local coconut-develop; fi
-- if [[ $USE_CONDA == "true" ]]; then
-  pip install pytest jupyter "ipython<6"; fi
-# if USE_CONDA == false:
-- if [[ $USE_CONDA == "false" ]]; then
-  pip install "pip==7.1.2"; fi
-- if [[ $USE_CONDA == "false" ]]; then
-  make install; fi
+- pip install "pip==7.1.2"
+- make install
 script:
 - make test-all
 deploy:
@@ -59,4 +26,3 @@ deploy:
     distributions: sdist bdist_wheel
     repo: evhub/coconut
     branch: develop
-    condition: $USE_CONDA == "false"

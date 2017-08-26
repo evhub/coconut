@@ -332,7 +332,7 @@ class TestCompilation(unittest.TestCase):
     if sys.version_info >= (3, 4):
         def test_mypy(self):
             call(["coconut", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err, check_mypy=False)
-            run(["--mypy", "--ignore-missing-imports"])
+            run(["--mypy", "--ignore-missing-imports", "--follow-imports", "silent"])
 
     def test_run(self):
         run(use_run_arg=True)

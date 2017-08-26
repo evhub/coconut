@@ -20,7 +20,7 @@ IPY = sys.version_info >= (3, 3) or (sys.version_info < (3,) and sys.version_inf
 if IPY:
     from coconut.icoconut import CoconutKernel  # type: ignore
 else:
-    CoconutKernel = None
+    CoconutKernel = None  # type: ignore
 
 def main():
     if IPY:
