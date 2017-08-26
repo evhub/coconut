@@ -314,15 +314,15 @@ class groupsof{object}:
     """groupsof(n, iterable) returns an iterator that returns groups of length n.
     If the length of the iterable is not divisible by n, the last group may be of size < n.
     """
-    __slots__ = ("_grp_size", "_iter")
-    def __init__(self, grp_size, iterable):
-        self._grp_size, self._iterable = grp_size, iterable
+    __slots__ = ("_grp_size", "_iterable")
+    def __init__(self, n, iterable):
+        self._grp_size, self._iterable = n, iterable
     def __iter__(self):
         loop = True
         iterator = iter(self._iterable)
         while loop:
             group = [next(iterator)]
-            for _ in range(1, n):
+            for _ in range(1, self._grp_size):
                 try:
                     group.append(next(iterator))
                 except StopIteration:
