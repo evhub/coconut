@@ -192,6 +192,8 @@ def main():
         pass
     else:
         assert False
+    setup(target="2.7")
+    assert parse("from io import BytesIO", mode="debug") == "from io import BytesIO"
     setup(target="3.6")
     assert parse("f''")
     if CoconutKernel is not None:

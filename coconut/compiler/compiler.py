@@ -106,6 +106,7 @@ from coconut.compiler.util import (
     transform,
     ignore_transform,
     parse,
+    get_target_info_len2,
 )
 from coconut.compiler.header import (
     minify,
@@ -205,11 +206,15 @@ def universal_import(imports, imp_from=None, target=""):
                 break
         if old_imp is None:
             paths = (imp,)
-        elif target.startswith("2"):
-            paths = (old_imp,)
-        elif not target or get_target_info(target) < version_check:
+        elif not target:  # universal compatibility
             paths = (old_imp, imp, version_check)
-        else:
+        elif get_target_info_len2(target, lowest=True) >= version_check:  # if lowest is above, we can safely use new
+            paths = (imp,)
+        elif target.startswith("2"):  # "2" and "27" can safely use old
+            paths = (old_imp,)
+        elif get_target_info(target) < version_check:  # "3" should be compatible with all 3+
+            paths = (old_imp, imp, version_check)
+        else:  # "35" and above can safely use new
             paths = (imp,)
         importmap.append((paths, imp_as))
 
@@ -534,20 +539,7 @@ class Compiler(Grammar):
     @property
     def target_info_len2(self):
         """Return target_info as a length 2 tuple."""
-        info = self.target_info
-        if not info:
-            return (2, 7)
-        elif len(info) == 1:
-            if info == (2,):
-                return (2, 7)
-            elif info == (3,):
-                return (3, 4)
-            else:
-                raise CoconutInternalException("invalid target info", info)
-        elif len(info) == 2:
-            return info
-        else:
-            return info[:2]
+        return get_target_info_len2(self.target)
 
     def make_syntax_err(self, err, original):
         """Make a CoconutSyntaxError from a CoconutDeferredSyntaxError."""

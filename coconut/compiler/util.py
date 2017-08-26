@@ -38,6 +38,7 @@ from coconut.constants import (
     openindent,
     closeindent,
     default_whitespace_chars,
+    get_target_info,
 )
 from coconut.exceptions import (
     CoconutInternalException,
@@ -47,6 +48,25 @@ from coconut.exceptions import (
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
 #-----------------------------------------------------------------------------------------------------------------------
+
+
+def get_target_info_len2(target, lowest=False):
+    """By default, gets the highest version supported by the target before the next target.
+    If lowest is passed, instead gets the lowest version supported by the target."""
+    target_info = get_target_info(target)
+    if not target_info:
+        return (2, 6) if lowest else (2, 7)
+    elif len(target_info) == 1:
+        if target_info == (2,):
+            return (2, 6) if lowest else (2, 7)
+        elif target_info == (3,):
+            return (3, 2) if lowest else (3, 4)
+        else:
+            raise CoconutInternalException("invalid target info", target_info)
+    elif len(target_info) == 2:
+        return target_info
+    else:
+        return target_info[:2]
 
 
 def join_args(*arglists):
