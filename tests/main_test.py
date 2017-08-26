@@ -56,6 +56,8 @@ coconut_snip = r"msg = '<success>'; pmsg = print$(msg); `pmsg`"
 mypy_snip = r"a: str = count()[0]"
 mypy_snip_err = 'error: Incompatible types in assignment (expression has type "int", variable has type "str")'
 
+mypy_args = ["--follow-imports", "silent"]
+
 ignore_mypy_errs_with = (
     "tutorial.py",
     "No overload variant of",
@@ -332,7 +334,7 @@ class TestCompilation(unittest.TestCase):
     if sys.version_info >= (3, 4):
         def test_mypy(self):
             call(["coconut", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err, check_mypy=False)
-            run(["--mypy", "--ignore-missing-imports", "--follow-imports", "silent"])
+            run(["--mypy"] + mypy_args)
 
     def test_run(self):
         run(use_run_arg=True)
