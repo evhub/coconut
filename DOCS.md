@@ -1658,6 +1658,29 @@ import itertools
 positives = itertools.dropwhile(numiter, lambda x: x<0)
 ```
 
+### `groupsof`
+
+Coconut provides the `groupsof` built-in to iterate over fixed-length groups of items from an iterable.
+
+##### Example
+
+**Coconut:**
+```coconut
+pairs = groupsof(2, numiter)
+```
+
+**Python:**
+```coconut_python
+pairs = []
+group = []
+for item in numiter:
+    group.append(item)
+    if len(group) == 2:
+        pairs.append(tuple(group))
+if group:
+    pairs.append(tuple(group))
+```
+
 ### `tee`
 
 Coconut provides an optimized version of `itertools.tee` as a built-in under the name `tee`.
