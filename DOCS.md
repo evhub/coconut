@@ -1677,6 +1677,7 @@ for item in numiter:
     group.append(item)
     if len(group) == 2:
         pairs.append(tuple(group))
+        group = []
 if group:
     pairs.append(tuple(group))
 ```
