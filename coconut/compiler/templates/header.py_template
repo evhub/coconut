@@ -327,14 +327,15 @@ class groupsof{object}:
         loop = True
         iterator = iter(self._iter)
         while loop:
-            group = [next(iterator)]
-            for _ in range(1, self._grp_size):
+            group = []
+            for _ in range(0, self._grp_size):
                 try:
                     group.append(next(iterator))
                 except StopIteration:
                     loop = False
                     break
-            yield tuple(group)
+            if group:
+                yield tuple(group)
     def __len__(self):
         return _coconut.len(self._iter)
     def __repr__(self):
