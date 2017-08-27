@@ -310,6 +310,42 @@ class count{object}:
         return isinstance(other, self.__class__) and self.start == other.start and self.step == other.step
     def __fmap__(self, func):
         return _coconut_map(func, self)
+class groupsof{object}:
+    """groupsof(n, iterable) returns an iterator that returns groups of length n.
+    If the length of the iterable is not divisible by n, the last group may be of size < n.
+    """
+    __slots__ = ("_grp_size", "_iter")
+    def __init__(self, n, iterable):
+        self._iter = iterable
+        try:
+            self._grp_size = int(n)
+        except ValueError:
+            raise TypeError("group size must be an int: %s" % (n, ))
+        if self._grp_size <= 0:
+            raise ValueError("group size (%s) must be positive" % (self._grp_size, ))
+    def __iter__(self):
+        loop = True
+        iterator = iter(self._iter)
+        while loop:
+            group = []
+            for _ in range(0, self._grp_size):
+                try:
+                    group.append(next(iterator))
+                except StopIteration:
+                    loop = False
+                    break
+            if group:
+                yield tuple(group)
+    def __len__(self):
+        return _coconut.len(self._iter)
+    def __repr__(self):
+        return "groupsof(%r)" % (_coconut.repr(self._iter), )
+    def __reduce__(self):
+        return (self.__class__, (self._grp_size, self._iter))
+    def __copy__(self):
+        return self.__class__(self._grp_size, _coconut.copy.copy(self._iter))
+    def __fmap__(self, func):
+        return _coconut_map(func, self)
 def recursive_iterator(func):
     """Decorator that optimizes a function for iterator recursion."""
     tee_store, backup_tee_store = {empty_dict}, []
