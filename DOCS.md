@@ -1660,20 +1660,20 @@ positives = itertools.dropwhile(numiter, lambda x: x<0)
 
 ### `groupsof`
 
-Coconut provides the `groupsof` built-in to iterate over fixed-length groups of items from an iterable. For example, `groupsof(2, range(1, 11))` returns an iterator that will return the integers 1 - 10 in pairs as tuples.
+Coconut provides the `groupsof` built-in to split an iterable into groups of a specific length. Specifically, `groupsof(n, iterable)` will split `iterable` into tuples of length `n`, with only the last tuple potentially of size `< n` if the length of `iterable` is not divisible by `n`.
 
 ##### Example
 
 **Coconut:**
 ```coconut
-pairs = groupsof(2, numiter)
+pairs = range(1, 11) |> groupsof$(2)
 ```
 
 **Python:**
 ```coconut_python
 pairs = []
 group = []
-for item in numiter:
+for item in range(1, 11):
     group.append(item)
     if len(group) == 2:
         pairs.append(tuple(group))
