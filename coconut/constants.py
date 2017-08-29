@@ -248,6 +248,7 @@ search_terms = (
     "coalescing",
     "reiterable",
     "scan",
+    "groupsof",
 )
 
 script_names = (
@@ -519,6 +520,7 @@ coconut_specific_builtins = (
     "starmap",
     "reiterable",
     "scan",
+    "groupsof",
     "py_chr",
     "py_filter",
     "py_hex",
