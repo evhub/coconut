@@ -15,9 +15,11 @@ Yes and yes! Coconut compiles to Python, so Coconut modules are accessible from 
 
 Coconut supports any Python version `>= 2.6` on the `2.x` branch or `>= 3.2` on the `3.x` branch. In fact, Coconut code is compiled to run the same on every one of those supported versions! See [compatible Python versions](DOCS.html#compatible-python-versions) for more information.
 
-### Does Coconut really let me turn Python 3 into version-independent Python?
+### Can Coconut be used to convert Python from one version to another?
 
-Yes! Coconut will compile Python 3 syntax, built-ins, and even imports to code that will work on any supported Python version (`2.6`, `2.7`, `>=3.2`). There a couple of caveats to this, statement, however: some constructs, like `async`, are for all intents and purposes impossible to recreate in lower Python versions, and require a particular `--target` to make them work. For a full list, see [compatible Python versions](DOCS.html#compatible-python-versions).
+Yes! But only in the backporting direction: Coconut can convert Python 3 to Python 2, but not the other way around. Coconut really can, though, turn Python 3 code into version-independent Python. Coconut will compile Python 3 syntax, built-ins, and even imports to code that will work on any supported Python version (`2.6`, `2.7`, `>=3.2`).
+
+There a couple of caveats to this, however: some constructs, like `async`, are for all intents and purposes impossible to recreate in lower Python versions, and require a particular `--target` to make them work. For a full list, see [compatible Python versions](DOCS.html#compatible-python-versions).
 
 ### How do I release a Coconut package on PyPI?
 
