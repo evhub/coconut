@@ -1,4 +1,5 @@
 import sys
+import os
 
 from coconut.__coconut__ import consume as coc_consume  # type: ignore
 
@@ -16,7 +17,7 @@ from coconut.convenience import (
     parse,
 )  # type: ignore
 
-IPY = sys.version_info >= (3, 3) or (sys.version_info < (3,) and sys.version_info >= (2, 7))
+IPY = os.name != "nt" and (sys.version_info >= (3, 3) or (sys.version_info < (3,) and sys.version_info >= (2, 7)))
 if IPY:
     from coconut.icoconut import CoconutKernel  # type: ignore
 else:
