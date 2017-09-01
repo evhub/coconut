@@ -25,6 +25,7 @@ from coconut.constants import (
     PYPY,
     PY34,
     IPY,
+    WINDOWS,
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -96,7 +97,7 @@ extras["tests"] = uniqueify(
     get_reqs("tests")
     + (extras["jobs"] + get_reqs("cPyparsing") if not PYPY else [])
     + (extras["jupyter"] if IPY else [])
-    + (extras["mypy"] if PY34 else []),
+    + (extras["mypy"] if PY34 and not WINDOWS else []),
 )
 
 extras["docs"] = unique_wrt(get_reqs("docs"), requirements)

@@ -31,6 +31,7 @@ from coconut.constants import (
     WINDOWS,
     PYPY,
     IPY,
+    PY34,
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -331,7 +332,7 @@ class TestCompilation(unittest.TestCase):
         def test_jobs_zero(self):
             run(["--jobs", "0"])
 
-    if sys.version_info >= (3, 4):
+    if PY34 and not WINDOWS:
         def test_mypy(self):
             call(["coconut", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err, check_mypy=False)
             run(["--mypy"] + mypy_args)
