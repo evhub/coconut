@@ -28,7 +28,6 @@ environment:
 install:
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;c:\\MinGW\\bin;%PATH%"
   - "copy c:\\MinGW\\bin\\mingw32-make.exe c:\\MinGW\\bin\\make.exe"
-  - pip install --user "pip==7.1.2"
   - make install
 
 build: false
