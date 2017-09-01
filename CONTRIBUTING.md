@@ -157,7 +157,7 @@ After you've tested your changes locally, you'll want to add more permanent test
     1. Make sure [`coconut-develop`](https://pypi.python.org/pypi/coconut-develop) package looks good
     1. Run `make docs` and ensure local documentation looks good
     1. Make sure [develop documentation](http://coconut.readthedocs.io/en/develop/) looks good
-    1. Make sure [Travis](https://travis-ci.org/evhub/coconut/builds) is passing
+    1. Make sure [Travis](https://travis-ci.org/evhub/coconut/builds) and [AppVeyor](https://ci.appveyor.com/project/evhub/coconut) are passing
     1. Turn off `develop` in `root.py`
     1. Set `root.py` to new version number
     1. If major release, set `root.py` to new version name
