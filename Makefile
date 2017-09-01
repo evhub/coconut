@@ -12,7 +12,7 @@ dev:
 .PHONY: format
 format: dev
 	pre-commit autoupdate
-	pre-commit run --allow-unstaged-config --all-files
+	pre-commit run --all-files
 
 .PHONY: test-all
 test-all:

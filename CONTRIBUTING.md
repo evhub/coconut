@@ -150,7 +150,7 @@ After you've tested your changes locally, you'll want to add more permanent test
 ## Release Process
 
 1. Preparation:
-    1. Run `make check`
+    1. Run `make check` and update dependencies as necessary
     1. Run `make format`
     1. Check changes in [`compiled-cocotest`](https://github.com/evhub/compiled-cocotest) and [`pyprover`](https://github.com/evhub/pyprover)
     1. Check [Codacy issues](https://www.codacy.com/app/evanjhub) (for `coconut` and `compiled-cocotest`) and [LGTM alerts](https://lgtm.com/projects/g/evhub/coconut/)
