@@ -1,7 +1,6 @@
 -   repo: git://github.com/pre-commit/pre-commit-hooks.git
-    sha: v0.9.1
+    sha: v0.9.2
     hooks:
-    -   id: check-added-large-files
     -   id: check-byte-order-marker
     -   id: check-merge-conflict
     -   id: check-case-conflict
