@@ -135,7 +135,7 @@ min_versions = {
     "sphinx_bootstrap_theme": (0, 6),
     "psutil": (5, 3),
     "jupyter": (1, 0),
-    "jupyter-console": (5, 1),
+    "jupyter-console": (5, 2),
     "ipython": (5, 4),
     "ipykernel": (4, 6),
     "mypy": (0, 521),
