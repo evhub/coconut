@@ -332,7 +332,7 @@ class TestCompilation(unittest.TestCase):
         def test_jobs_zero(self):
             run(["--jobs", "0"])
 
-    if PY34 and not WINDOWS:
+    if PY34 and not WINDOWS and not PYPY:
         def test_mypy(self):
             call(["coconut", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err, check_mypy=False)
             run(["--mypy"] + mypy_args)
