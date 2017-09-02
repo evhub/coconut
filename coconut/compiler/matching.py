@@ -356,7 +356,7 @@ class Matcher(object):
 
         if matches:
             self.use_sentinel = True
-        for i, (k, v) in enumerate(matches):
+        for k, v in matches:
             key_var = self.get_temp_var()
             self.add_def(key_var + " = " + item + ".get(" + k + ", " + sentinel_var + ")")
             with self.down_a_level():
