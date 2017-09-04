@@ -16,8 +16,6 @@ after which the entire world of Coconut will be at your disposal. To help you ge
 - Gitter_: For any questions, concerns, or comments about anything Coconut-related, ask around at Coconut's Gitter, a GitHub-integrated chat room for Coconut developers.
 - Releases_: Want to know what's been added in recent Coconut versions? Check out the release log for all the new features and fixes.
 
-*Note: If the above documentation links are not working, try the* |mirror|_ *.*
-
 __ Coconut_
 .. _Coconut: http://coconut-lang.org/
 .. _Python: https://www.python.org/
@@ -28,5 +26,3 @@ __ Coconut_
 .. _GitHub: https://github.com/evhub/coconut
 .. _Gitter: https://gitter.im/evhub/coconut
 .. _Releases: https://github.com/evhub/coconut/releases
-.. _mirror: http://pythonhosted.org/coconut/
-.. |mirror| replace:: *mirror*
