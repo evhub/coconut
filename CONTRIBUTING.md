@@ -173,7 +173,6 @@ After you've tested your changes locally, you'll want to add more permanent test
     1. Release `master` on GitHub
     1. Fetch and switch to `master` locally
     1. Run `make upload`
-    1. Run `make docs` and upload docs to PyPI
     1. Switch back to `develop` locally
     1. Update from master
     1. Turn on `develop` in `root`
