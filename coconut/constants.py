@@ -129,13 +129,16 @@ min_versions = {
     "pyparsing": (2, 2, 0),
     "cPyparsing": (2, 2, 0, 1, 1),
     "pre-commit": (0, 18),
+    # Don't upgrade this, it breaks on master!
     "sphinx": (1, 6, 2),
     "pygments": (2, 2),
     "recommonmark": (0, 4),
+    # Don't upgrade this, it breaks on master!
     "sphinx_bootstrap_theme": (0, 4),
     "psutil": (5, 3),
     "jupyter": (1, 0),
     "jupyter-console": (5, 2),
+    # We can't upgrade this, it breaks on Python 2.
     "ipython": (5, 4),
     "ipykernel": (4, 6),
     "mypy": (0, 521),
