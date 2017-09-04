@@ -8,7 +8,7 @@
 """
 Author: Evan Hubinger
 License: Apache 2.0
-Description: Utilites for use in the compiler.
+Description: Utilities for use in the compiler.
 """
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -19,32 +19,64 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
-from pyparsing import (
+from contextlib import contextmanager
+
+from coconut.pyparsing import (
     replaceWith,
     ZeroOrMore,
     Optional,
     SkipTo,
     CharsNotIn,
+    ParseElementEnhance,
+    ParseException,
 )
 
 from coconut.terminal import logger, complain
 from coconut.constants import (
-    ups,
-    downs,
+    opens,
+    closes,
     openindent,
     closeindent,
     default_whitespace_chars,
+    get_target_info,
 )
-from coconut.exceptions import CoconutInternalException
+from coconut.exceptions import (
+    CoconutInternalException,
+    internal_assert,
+)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
 #-----------------------------------------------------------------------------------------------------------------------
 
 
+def get_target_info_len2(target, lowest=False):
+    """By default, gets the highest version supported by the target before the next target.
+    If lowest is passed, instead gets the lowest version supported by the target."""
+    target_info = get_target_info(target)
+    if not target_info:
+        return (2, 6) if lowest else (2, 7)
+    elif len(target_info) == 1:
+        if target_info == (2,):
+            return (2, 6) if lowest else (2, 7)
+        elif target_info == (3,):
+            return (3, 2) if lowest else (3, 4)
+        else:
+            raise CoconutInternalException("invalid target info", target_info)
+    elif len(target_info) == 2:
+        return target_info
+    else:
+        return target_info[:2]
+
+
 def join_args(*arglists):
-    """Joins split argument tokens."""
+    """Join split argument tokens."""
     return ", ".join(arg for args in arglists for arg in args if arg)
+
+
+def paren_join(items, sep):
+    """Join items by sep with parens around individual items but not the whole."""
+    return items[0] if len(items) == 1 else "(" + (") " + sep + " (").join(items) + ")"
 
 
 skip_whitespace = SkipTo(CharsNotIn(default_whitespace_chars)).suppress()
@@ -52,17 +84,15 @@ skip_whitespace = SkipTo(CharsNotIn(default_whitespace_chars)).suppress()
 
 def longest(*args):
     """Match the longest of the given grammar elements."""
-    if len(args) < 2:
-        raise CoconutInternalException("longest expected at least two args")
-    else:
-        matcher = args[0] + skip_whitespace
-        for elem in args[1:]:
-            matcher ^= elem + skip_whitespace
-        return matcher
+    internal_assert(len(args) >= 2, "longest expected at least two args")
+    matcher = args[0] + skip_whitespace
+    for elem in args[1:]:
+        matcher ^= elem + skip_whitespace
+    return matcher
 
 
 def addskip(skips, skip):
-    """Adds a line skip to the skips."""
+    """Add a line skip to the skips."""
     if skip < 1:
         complain(CoconutInternalException("invalid skip of line " + str(skip)))
     elif skip in skips:
@@ -73,7 +103,7 @@ def addskip(skips, skip):
 
 
 def count_end(teststr, testchar):
-    """Counts instances of testchar at end of teststr."""
+    """Count instances of testchar at end of teststr."""
     count = 0
     x = len(teststr) - 1
     while x >= 0 and teststr[x] == testchar:
@@ -82,66 +112,66 @@ def count_end(teststr, testchar):
     return count
 
 
-def paren_change(inputstring):
-    """Determines the parenthetical change of level (num closes - num opens)."""
+def paren_change(inputstring, opens=opens, closes=closes):
+    """Determine the parenthetical change of level (num closes - num opens)."""
     count = 0
     for c in inputstring:
-        if c in downs:  # open parens/brackets/braces
+        if c in opens:  # open parens/brackets/braces
             count -= 1
-        elif c in ups:  # close parens/brackets/braces
+        elif c in closes:  # close parens/brackets/braces
             count += 1
     return count
 
 
 def ind_change(inputstring):
-    """Determines the change in indentation level (num opens - num closes)."""
+    """Determine the change in indentation level (num opens - num closes)."""
     return inputstring.count(openindent) - inputstring.count(closeindent)
 
 
 def attach(item, action):
-    """Attaches a parse action to an item."""
+    """Attach a parse action to an item."""
     return item.copy().addParseAction(logger.wrap_handler(action))
 
 
 def fixto(item, output):
-    """Forces an item to result in a specific output."""
+    """Force an item to result in a specific output."""
     return attach(item, replaceWith(output))
 
 
 def addspace(item):
-    """Condenses and adds space to the tokenized output."""
+    """Condense and adds space to the tokenized output."""
     return attach(item, " ".join)
 
 
 def condense(item):
-    """Condenses the tokenized output."""
+    """Condense the tokenized output."""
     return attach(item, "".join)
 
 
 def maybeparens(lparen, item, rparen):
-    """Wraps an item in optional parentheses."""
+    """Wrap an item in optional parentheses."""
     return lparen.suppress() + item + rparen.suppress() | item
 
 
 def tokenlist(item, sep, suppress=True):
-    """Creates a list of tokens matching the item."""
+    """Create a list of tokens matching the item."""
     if suppress:
         sep = sep.suppress()
     return item + ZeroOrMore(sep + item) + Optional(sep)
 
 
-def itemlist(item, sep):
-    """Creates a list of items seperated by seps."""
-    return condense(item + ZeroOrMore(addspace(sep + item)) + Optional(sep))
+def itemlist(item, sep, suppress_trailing=True):
+    """Create a list of items seperated by seps."""
+    return condense(item + ZeroOrMore(addspace(sep + item)) + Optional(sep.suppress() if suppress_trailing else sep))
 
 
 def exprlist(expr, op):
-    """Creates a list of exprs seperated by ops."""
+    """Create a list of exprs seperated by ops."""
     return addspace(expr + ZeroOrMore(op + expr))
 
 
 def rem_comment(line):
-    """Removes a comment from a line."""
+    """Remove a comment from a line."""
     return line.split("#", 1)[0].rstrip()
 
 
@@ -152,7 +182,7 @@ def should_indent(code):
 
 
 def split_comment(line):
-    """Splits a line into base and comment."""
+    """Split line into base and comment."""
     base = rem_comment(line)
     return base, line[len(base):]
 
@@ -186,31 +216,34 @@ def split_trailing_indent(line, max_indents=None):
 
 
 def parse(grammar, text):
-    """Parses text using grammar."""
+    """Parse text using grammar."""
     return grammar.parseWithTabs().parseString(text)
 
 
 def match_in(grammar, text):
-    """Determines if there is a match for grammar in text."""
+    """Determine if there is a match for grammar in text."""
     for result in grammar.parseWithTabs().scanString(text):
         return True
     return False
 
 
 def matches(grammar, text):
-    """Finds all matches for grammar in text."""
+    """Find all matches for grammar in text."""
     return list(grammar.parseWithTabs().scanString(text))
 
 
+ignore_transform = object()
+
+
 def transform(grammar, text):
-    """Transforms text by replacing matches to grammar."""
+    """Transform text by replacing matches to grammar."""
     results = []
     intervals = []
     for tokens, start, stop in grammar.parseWithTabs().scanString(text):
-        if len(tokens) != 1:
-            raise CoconutInternalException("invalid transform result tokens", tokens)
-        results.append(tokens[0])
-        intervals.append((start, stop))
+        internal_assert(len(tokens) == 1, "invalid transform result tokens", tokens)
+        if tokens[0] is not ignore_transform:
+            results.append(tokens[0])
+            intervals.append((start, stop))
 
     if not results:
         return None
@@ -233,3 +266,57 @@ def transform(grammar, text):
     if stop is not None:
         raise CoconutInternalException("failed to properly split text to be transformed")
     return "".join(out)
+
+
+class Wrap(ParseElementEnhance):
+    """PyParsing token that wraps the given item in the given context manager."""
+
+    def __init__(self, item, wrapper):
+        super(Wrap, self).__init__(item)
+        self.errmsg = item.errmsg + " (Wrapped)"
+        self.wrapper = wrapper
+
+    def parseImpl(self, instring, loc, *args, **kwargs):
+        """Wrapper around ParseElementEnhance.parseImpl."""
+        with self.wrapper(self, instring, loc):
+            return super(Wrap, self).parseImpl(instring, loc, *args, **kwargs)
+
+
+def disable_inside(item, *elems, **kwargs):
+    """Prevent elems from matching inside of item.
+
+    Returns (item with elem disabled, *new versions of elems).
+    """
+    _invert = kwargs.get("_invert", False)
+    internal_assert(set(kwargs.keys()) <= set(("_invert",)), "excess keyword arguments passed to disable_inside")
+
+    level = [0]  # number of wrapped items deep we are; in a list to allow modification
+
+    @contextmanager
+    def manage_item(self, instring, loc):
+        level[0] += 1
+        try:
+            yield
+        finally:
+            level[0] -= 1
+
+    yield Wrap(item, manage_item)
+
+    @contextmanager
+    def manage_elem(self, instring, loc):
+        if level[0] == 0 if not _invert else level[0] > 0:
+            yield
+        else:
+            raise ParseException(instring, loc, self.errmsg, self)
+
+    for elem in elems:
+        yield Wrap(elem, manage_elem)
+
+
+def disable_outside(item, *elems):
+    """Prevent elems from matching outside of item.
+
+    Returns (item with elem disabled, *new versions of elems).
+    """
+    for wrapped in disable_inside(item, *elems, **{"_invert": True}):
+        yield wrapped

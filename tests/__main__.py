@@ -30,9 +30,12 @@ from tests.main_test import comp_all
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def main():
+def main(args=None):
     """Compile everything with given arguments."""
-    comp_all(sys.argv[1:])
+    if args is None:
+        args = sys.argv[1:]
+    print("Compiling Coconut test suite with args %r." % args)
+    comp_all(args)
 
 
 if __name__ == "__main__":

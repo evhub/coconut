@@ -34,9 +34,16 @@ def main_test():
     assert repr(3) == "3" == ascii(3)
     assert 5 |> (-)$(2) |> (*)$(2) == -6
     assert map(pow$(2), 0 `range` 5) |> list == [1,2,4,8,16]
-    iter1 = range(0,10)
-    iter1, iter2 = tee(iter1)
-    assert iter1$[2:8] |> list == iter2$[2:8] |> list
+    range10 = range(0,10)
+    reiter_range10 = reiterable(range10)
+    reiter_iter_range10 = reiterable(iter(range10))
+    for iter1, iter2 in [
+        tee(range10),
+        tee(iter(range10)),
+        (reiter_range10, reiter_range10),
+        (reiter_iter_range10, reiter_iter_range10),
+    ]:
+        assert iter1$[2:8] |> list == [2, 3, 4, 5, 6, 7] == ($[])(iter2, slice(2, 8)) |> list, (iter1, iter2)
     \data = 5
     assert \data == 5
     \\data = 3
@@ -44,7 +51,7 @@ def main_test():
     \\def backslash_test():
         return (x) -> x
     assert \(1) == 1 == backslash_test()(1)
-    assert (\(
+    assert True is (\(
             "hello"
         ) == "hello" == \(
             'hello'
@@ -57,7 +64,9 @@ def main_test():
     \\ assert True
     class one_line_class: pass
     assert isinstance(one_line_class(), one_line_class)
-    assert "" |> .join <| ["1","2","3"] == "123" == "". <| "join" <| ["1","2","3"]
+    assert (.join)("")(["1", "2", "3"]) == "123"
+    assert "" |> .join <| ["1","2","3"] == "123"
+    assert "". <| "join" <| ["1","2","3"] == "123"
     assert 1 |> [1,2,3][] == 2 == 1 |> [1,2,3]$[]
     assert 1 |> "123"[] == "2" == 1 |> "123"$[]
     assert (| -1, 0, |) :: range(1, 5) |> list == [-1, 0, 1, 2, 3, 4]
@@ -150,8 +159,8 @@ def main_test():
     assert zip(count(), count())$[10**9] |> tuple == (10**9, 10**9) == zip(count(), count())[10**9] |> tuple
     assert count(1.5, 0.5)$[0] == 1.5 == (1.5,2,2.5,3)$[0]
     assert count(1.5, 0.5)$[1:3] |> tuple == (2,2.5) == (1.5,2,2.5,3)$[1:3] |> tuple
-    assert iter((0,1,2,3,4))$[::2] |> tuple == (0,2,4)
-    assert iter((0,1,2,3,4))$[::-1] |> tuple == (4,3,2,1,0)
+    assert iter((0,1,2,3,4))$[::2] |> tuple == (0,2,4), (iter((0,1,2,3,4)), iter((0,1,2,3,4))$[::2], iter((0,1,2,3,4))$[::2] |> tuple)
+    assert iter((0,1,2,3,4))$[::-1] |> tuple == (4,3,2,1,0), (iter((0,1,2,3,4)), iter((0,1,2,3,4))$[::-1], iter((0,1,2,3,4))$[::-1] |> tuple)
     assert {x:x for x in range(5)} == {0:0, 1:1, 2:2, 3:3, 4:4}
     match x = 12
     assert x == 12
@@ -213,8 +222,8 @@ def main_test():
     assert count(1,3)[1] == 4
     assert len <| map((x) -> x, [1, 2]) == 2
     assert repr("hello") == "'hello'" == ascii("hello")
-    assert count(1,3) |> .index(1) == 0
-    assert count(1).__copy__()$[0] == 1
+    assert count(1,3) |> .index(1) == 0 == (.index(1))(count(1, 3))
+    assert count(1).__copy__()$[0] == 1 == ($[])(count(1), 0)
     assert map((+), count(1), count(1)).__copy__()$[0] == 2
     assert zip(count(1), count(1)).__copy__()$[0] |> tuple == (1, 1)
     assert tee(count()) |> map$((t) -> isinstance(t, count)) |> all
@@ -222,9 +231,11 @@ def main_test():
     assert tee([1, 2, 3]) |> map$((t) -> isinstance(t, list)) |> all
     assert (-> 5)() == 5
     assert (-> _[0])([1, 2, 3]) == 1
-    assert iter(range(10))$[-5:-8] |> list == [5, 6]
-    assert iter(range(10))$[-2:] |> list == [8, 9]
+    assert iter(range(10))$[-5:-8] |> list == [5, 6] == ($[])(iter(range(10)), slice(-5, -8)) |> list
+    assert iter(range(10))$[-2:] |> list == [8, 9] == ($[])(iter(range(10)), slice(-2, None)) |> list
+    assert (.[1])(range(1, 5)) == 2 == (.$[1])(range(1, 5))
     assert range(1, 5) |> .[1] == 2 == range(1, 5) |> .$[1]
+    assert (.[:5])(range(10)) |> list == [0, 1, 2, 3, 4] == (.$[:5])(range(10)) |> list
     assert range(10) |> .[:5] |> list == [0, 1, 2, 3, 4] == range(10) |> .$[:5] |> list
     assert range(10) |> map$(def (x) -> y = x) |> list == [None]*10
     assert range(5) |> map$(def (x) -> yield x) |> map$(list) |> list == [[0], [1], [2], [3], [4]]
@@ -246,9 +257,12 @@ def main_test():
         return (def -> herpaderp + herp)
     assert derp()() == 15
     data abc(xyz)
-    assert abc(10).xyz == 10
+    data abc_(xyz: int)
+    assert abc(10).xyz == 10 == abc_(10).xyz
     assert issubclass(abc, object)
+    assert issubclass(abc_, object)
     assert isinstance(abc(10), object)
+    assert isinstance(abc_(10), object)
     class aclass
     assert issubclass(aclass, object)
     assert isinstance(aclass(), object)
@@ -305,6 +319,15 @@ def main_test():
     assert (range10 |> reversed).count(10) == 0
     assert (range10 |> reversed).index(3)
 
+    assert range(1,11) |> groupsof$(1) |> list == [(1,),(2,),(3,),(4,),(5,),(6,),(7,),(8,),(9,),(10,)]
+    assert range(1,11) |> groupsof$(2) |> list == [(1,2),(3,4),(5,6),(7,8),(9,10)]
+    assert range(1,11) |> groupsof$(2.5) |> list == [(1,2),(3,4),(5,6),(7,8),(9,10)]
+    assert range(1,11) |> groupsof$(3) |> list == [(1,2,3),(4,5,6),(7,8,9),(10,)]
+    assert range(1,11) |> groupsof$(4) |> list == [(1,2,3,4),(5,6,7,8),(9,10)]
+    assert_raises(() -> range(1,11) |> groupsof$("A"), TypeError)
+    assert_raises(() -> range(1,11) |> groupsof$(0), ValueError)
+    assert_raises(() -> range(1,11) |> groupsof$(-1), ValueError)
+
     assert range(1, 3) |> enumerate |> list == [(0, 1), (1, 2)]
     assert range(2) |> enumerate$(start=1) |> list == [(1, 0), (2, 1)]
     assert range(10) |> enumerate |> len == 10
@@ -321,13 +344,13 @@ def main_test():
     assert [1, 2, 3] |> fmap$(x -> x+1) == [2, 3, 4]
     assert (1, 2, 3) |> fmap$(x -> x+1) == (2, 3, 4)
     assert "abc" |> fmap$(x -> x+"!") == "a!b!c!"
-    assert {1:"2", 2:"3"} |> fmap$(-> _+1) == {2:"2", 3:"3"}
+    assert {1:"2", 2:"3"} |> fmap$((k, v) -> (k+1, v+"!")) == {2:"2!", 3:"3!"}
     assert {1, 2, 3} |> fmap$(-> _+1) == {2, 3, 4}
     assert [[1, 2, 3]] |> fmap$((+)$([0])) == [[0, 1, 2, 3]]
-    assert range(3) |> fmap$(-> _ + 1) |> tuple == (1, 2, 3)
+    assert range(3) |> fmap$(-> _+1) |> tuple == (1, 2, 3) == (|0, 1, 2|) |> fmap$(-> _+1) |> tuple
     assert issubclass(int, py_int)
     class pyobjsub(py_object)
-    class objsub(object)
+    class objsub(\(object))
     assert not issubclass(pyobjsub, objsub)
     assert issubclass(objsub, object)
     assert issubclass(objsub, py_object)
@@ -338,24 +361,110 @@ def main_test():
     assert isinstance(os, objsub)
     assert isinstance(os, object)
     assert not isinstance(os, pyobjsub)
+    assert [] == \([)\(])
+    "a" + b + "c" = "abc"
+    assert b == "b"
+    "a" + bc = "abc"
+    assert bc == "bc"
+    ab + "c" = "abc"
+    assert ab == "ab"
+    match "a" + b in 5:
+        assert False
+    assert 400 == 10 |> x -> x*2 |> x -> x**2
+    assert 100 == 10 |> x -> x*2 |> y -> x**2
+    assert 3 == 1 `(x, y) -> x + y` 2
+    match {"a": a, **rest} = {"a": 2, "b": 3}
+    assert a == 2
+    assert rest == {"b": 3}
+    _ = None
+    match {"a": a **_} = {"a": 4, "b": 5}
+    assert a == 4
+    assert _ is None
+    a = 1,
+    assert a == (1,)
+    (x,) = a
+    assert x == 1 == a[0]
+    assert (10,)[0] == 10
+    x, x = 1, 2
+    assert x == 2
+    from io import StringIO, BytesIO
+    s = StringIO("derp")
+    assert s.read() == "derp"
+    b = BytesIO(b"herp")
+    assert b.read() == b"herp"
+    assert 1 ?? 2 == 1 == (??)(1, 2)
+    assert None ?? 2 == 2 == (??)(None, 2)
+    timeout: int? = None
+    local_timeout: int? = 60
+    global_timeout: int = 300
+    def ret_timeout() -> int? = timeout
+    def ret_local_timeout() -> int? = local_timeout
+    def ret_global_timeout() -> int = global_timeout
+    assert timeout ?? local_timeout ?? global_timeout == 60
+    assert ret_timeout() ?? ret_local_timeout() ?? ret_global_timeout() == 60
+    local_timeout = None
+    assert timeout ?? local_timeout ?? global_timeout == 300
+    assert ret_timeout() ?? ret_local_timeout() ?? ret_global_timeout() == 300
+    timeout ??= 10
+    assert timeout == 10
+    global_timeout ??= 10
+    assert global_timeout == 300
+    assert (not None ?? True) is False
+    assert 1 == None ?? 1
+    assert 'foo' in None ?? ['foo', 'bar']
+    assert 3 == 1 + (None ?? 2)
+    requested_quantity: int? = 0
+    default_quantity: int = 1
+    price = 100
+    assert 0 == (requested_quantity ?? default_quantity) * price
+    assert range(10) |> .[1] .. .[1:] == 2 == range(10) |> .[1:] |> .[1]
+    assert None?.herp(derp) is None
+    assert None?[herp].derp is None
+    assert None?(derp)[herp] is None
+    assert None?$(herp)(derp) is None
+    assert "a b c" == (" ". ?? "not gonna happen")("join")("abc")
+    a: int[]? = None
+    assert a is None
+    assert range(5) |> iter |> reiterable |> .[1] == 1
+    assert range(5) |> reiterable |> fmap$(-> _ + 1) |> list == [1, 2, 3, 4, 5]
+    assert (+) ..*> (+) |> repr == "<built-in function add> ..*> <built-in function add>"
+    assert scan((+), [1,2,3,4,5]) |> list == [1,3,6,10,15]
+    assert scan((*), [1,2,3,4,5]) |> list == [1,2,6,24,120]
+    input_data = [3, 4, 6, 2, 1, 9, 0, 7, 5, 8]
+    assert input_data |> scan$(*) |> list == [3, 12, 72, 144, 144, 1296, 0, 0, 0, 0]
+    assert input_data |> scan$(max) |> list == [3, 4, 6, 6, 6, 9, 9, 9, 9, 9]
     return True
 
-def test_tco(x) = test_tco(x)
+def tco_func() = tco_func()
+
+def assert_raises(c, exc):
+    """Test whether callable c raises an exception of type exc."""
+    try:
+        c()
+    except exc:
+        return True
+    else:
+        raise AssertionError("%s failed to raise %s exception" % (c, exc))
 
 def main(*args):
     """Asserts arguments and executes tests."""
     assert all(args)
+    print(".", end="")  # ..
     assert main_test()
+    print(".", end="")  # ...
     if sys.version_info >= (2, 7):
         from .specific import non_py26_test
         assert non_py26_test()
     if not (3,) <= sys.version_info < (3, 3):
         from .specific import non_py32_test
         assert non_py32_test
+    print(".", end="")  # ....
     from .suite import suite_test, tco_test
     assert suite_test()
-    if hasattr(test_tco, "_coconut_is_tco"):
+    print(".", end="")  # .....
+    if hasattr(tco_func, "_coconut_tco_func"):
         assert tco_test()
+    print(".", end="")  # ......
     if sys.version_info < (3,):
         from .py2_test import py2_test
         assert py2_test()
@@ -365,5 +474,6 @@ def main(*args):
         if sys.version_info >= (3, 5):
             from .py35_test import py35_test
             assert py35_test()
+    print(".", end="")  # .......
     from . import tutorial
-    print("<success>")
+    print("\n<success>")

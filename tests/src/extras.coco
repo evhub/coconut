@@ -1,24 +1,31 @@
 import sys
+import os
 
-from coconut.__coconut__ import consume as coc_consume
-from coconut.exceptions import CoconutStyleError, CoconutSyntaxError
+from coconut.__coconut__ import consume as coc_consume  # type: ignore
+
+from coconut.exceptions import (
+    CoconutSyntaxError,
+    CoconutStyleError,
+    CoconutSyntaxError,
+)  # type: ignore
+
 from coconut.convenience import (
     CoconutException,
     cmd,
     version,
     setup,
     parse,
-)
+)  # type: ignore
 
-IPY = sys.version_info >= (3, 3) or (sys.version_info < (3,) and sys.version_info >= (2, 7))
+IPY = os.name != "nt" and (sys.version_info >= (3, 3) or (sys.version_info < (3,) and sys.version_info >= (2, 7)))
 if IPY:
-    from coconut.icoconut import CoconutKernel
+    from coconut.icoconut import CoconutKernel  # type: ignore
 else:
-    CoconutKernel = None
+    CoconutKernel = None  # type: ignore
 
 def main():
     if IPY:
-        import coconut.highlighter
+        import coconut.highlighter  # type: ignore
     assert consume(range(10), keep_last=1)[0] == 9 == coc_consume(range(10), keep_last=1)[0]
     assert version() == version("num")
     assert version("name")
@@ -28,78 +35,65 @@ def main():
     try:
         version("other")
     except CoconutException:
-        assert True
+        pass
     else:
         assert False
     try:
         raise CoconutException("derp").syntax_err()
     except SyntaxError:
-        assert True
+        pass
     else:
         assert False
     setup()
-    _sys = parse("abc", "sys")
-    assert _sys
-    assert _sys == parse("abc")
-    _single = parse("abc", "single")
-    assert _single
-    _file = parse("abc", "file")
-    assert _file
-    _package = parse("abc", "package")
-    assert _package
-    _block = parse("abc", "block")
-    assert _block
-    _eval = parse("abc", "eval")
-    assert _eval
-    _debug = parse("abc", "debug")
-    assert _debug
-    assert _single == parse("abc", "single")
-    assert _file == parse("abc", "file")
-    assert _package == parse("abc", "package")
-    assert _block == parse("abc", "block")
-    assert _eval == parse("abc", "eval")
-    assert _debug == parse("abc", "debug")
-    assert parse(" abc", "eval")
+    assert parse("abc") == parse("abc", "sys")
+    assert parse("abc", "file")
+    assert parse("abc", "package")
+    assert parse("abc", "block") == "abc\n" == parse("abc", "single")
+    assert parse("abc", "eval") == "abc\n" == parse(" abc", "eval")
+    assert parse("abc", "debug") == "abc"
+    assert parse("x |> map$(f)", "debug") == "map(f, x)"
+    assert "_coconut" not in parse("a |> .b |> .m() |> f$(x) |> .[0]", "block")
+    assert parse("abc # derp", "debug") == "abc  # derp"
     try:
         parse(" abc", "file")
     except CoconutException:
-        assert True
+        pass
     else:
         assert False
     try:
         parse("'")
     except CoconutException:
-        assert True
+        pass
     else:
         assert False
     try:
         parse("(")
     except CoconutException:
-        assert True
+        pass
     else:
         assert False
     try:
         parse("\\(")
     except CoconutException:
-        assert True
+        pass
     else:
         assert False
     try:
         parse("if a:\n  b\n c")
     except CoconutException:
-        assert True
+        pass
     else:
         assert False
     try:
         parse("$")
     except CoconutException:
-        assert True
+        pass
     else:
         assert False
     try:
         parse("_coconut")
     except CoconutException:
-        assert True
+        pass
     else:
         assert False
     assert parse("def f(x):\n \t pass")
@@ -107,74 +101,100 @@ def main():
     assert parse("u''")
     assert parse("def f(x):\\\n pass")
     assert parse("abc ")
+    assert parse("abc # derp", "debug") == "abc  # derp"
+    setup(line_numbers=True)
+    assert parse("abc", "debug") == "abc  # line 1"
+    setup(keep_lines=True)
+    assert parse("abc", "debug") == "abc  # abc"
+    setup(line_numbers=True, keep_lines=True)
+    assert parse("abc", "debug") == "abc  # line 1: abc"
+    setup()
+    assert "prepattern" in parse("\n", mode="file")
+    assert "datamaker" in parse("\n", mode="file")
     setup(strict=True)
+    assert "prepattern" not in parse("\n", mode="file")
+    assert "datamaker" not in parse("\n", mode="file")
     try:
         parse("def f(x):\n \t pass")
     except CoconutStyleError:
-        assert True
+        pass
     else:
         assert False
     try:
         parse("lambda x: x")
     except CoconutStyleError:
-        assert True
+        pass
     else:
         assert False
     try:
         parse("u''")
     except CoconutStyleError:
-        assert True
+        pass
     else:
         assert False
     try:
         parse("def f(x):\\\n pass")
     except CoconutStyleError:
-        assert True
+        pass
     else:
         assert False
     try:
         parse("abc ")
     except CoconutStyleError:
-        assert True
+        pass
     else:
         assert False
     try:
         parse("abc", "file")
     except CoconutStyleError:
-        assert True
+        pass
     else:
         assert False
     try:
         parse("a=1;")
     except CoconutStyleError:
-        assert True
+        pass
+    else:
+        assert False
+    try:
+        parse("class derp(object)")
+    except CoconutStyleError:
+        pass
     else:
         assert False
     setup()
     try:
         cmd("-f")
     except SystemExit:
-        assert True
+        pass
     else:
         assert False
     try:
         cmd("-pa .")
     except SystemExit:
-        assert True
+        pass
     else:
         assert False
     try:
         cmd("-n . .")
     except SystemExit:
-        assert True
+        pass
     else:
         assert False
     try:
         parse("f''")
     except CoconutException:
-        assert True
+        pass
     else:
         assert False
+    try:
+        parse("f$()")
+    except CoconutSyntaxError:
+        pass
+    else:
+        assert False
+    setup(target="2.7")
+    assert parse("from io import BytesIO", mode="debug") == "from io import BytesIO"
     setup(target="3.6")
     assert parse("f''")
     if CoconutKernel is not None:
@@ -205,4 +225,6 @@ def main():
     print("<success>")
 
 if __name__ == "__main__":
+    print("Expect Coconut errors below from running extras:")
+    print("(but make sure you get a <success> after them)")
     main()

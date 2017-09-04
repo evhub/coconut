@@ -25,13 +25,15 @@ from pygments.lexer import words, bygroups
 from pygments.util import shebang_matches
 
 from coconut.constants import (
-    builtins,
+    coconut_specific_builtins,
     new_operators,
     tabideal,
     default_encoding,
     code_exts,
     reserved_vars,
     shebang_regex,
+    magic_methods,
+    template_ext,
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -49,7 +51,7 @@ class CoconutPythonLexer(Python3Lexer):
     """Coconut-style Python syntax highlighter."""
     name = "coconut_python"
     aliases = ["coconut_python", "coconut_py", "coconut_python3", "coconut_py3"]
-    filenames = []
+    filenames = ["*" + template_ext]
 
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tabideal, encoding=default_encoding):
         """Initialize the Python syntax highlighter."""
@@ -80,13 +82,12 @@ class CoconutLexer(Python3Lexer):
         (r"|".join(new_operators), Operator),
         (r'(?<!\\)(data)((?:\s|\\\s)+)', bygroups(Keyword, Text), py_str("classname")),
         (r'def(?=\s*\()', Keyword),
-        (r'\?', Keyword),
     ] + tokens["root"]
-    tokens["keywords"] = tokens["keywords"] + [
+    tokens["keywords"] += [
         (words(reserved_vars, prefix=r"(?<!\\)", suffix=r"\b"), Keyword),
     ]
-    tokens["builtins"] = tokens["builtins"] + [
-        (words(builtins, suffix=r"\b"), Name.Builtin),
+    tokens["builtins"] += [
+        (words(coconut_specific_builtins, suffix=r"\b"), Name.Builtin),
         (r"MatchError\b", Name.Exception),
     ]
     tokens["numbers"] = [
@@ -95,6 +96,9 @@ class CoconutLexer(Python3Lexer):
         (r"0x[\da-fA-F_]+", Number.Integer),
         (r"\d[\d_]*(\.\d[\d_]*)?((e|E)[\d_]+)?(j|J)?", Number.Integer),
     ] + tokens["numbers"]
+    tokens["magicfuncs"] += [
+        (words(magic_methods, suffix=r"\b"), Name.Function.Magic),
+    ]
 
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tabideal, encoding=default_encoding):
         """Initialize the Python syntax highlighter."""

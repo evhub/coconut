@@ -22,13 +22,14 @@ from coconut.root import *  # NOQA
 import traceback
 
 from coconut.exceptions import CoconutException
-from coconut.terminal import printerr
 
 try:
     from mypy.api import run
 except ImportError:
-    raise CoconutException("--mypy flag requires MyPy library",
-                           extra="run 'pip install coconut[mypy]' to fix")
+    raise CoconutException(
+        "--mypy flag requires MyPy library",
+        extra="run 'pip install coconut[mypy]' to fix",
+    )
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CLASSES:
@@ -40,7 +41,7 @@ def mypy_run(args):
     try:
         stdout, stderr, exit_code = run(args)
     except BaseException:
-        printerr(traceback.format_exc())
+        traceback.print_exc()
     else:
         for line in stdout.splitlines():
             yield line, False

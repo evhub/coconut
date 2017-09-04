@@ -25,24 +25,40 @@ from coconut.root import *  # NOQA
 
 import setuptools
 
-from coconut.constants import classifiers, search_terms, script_names
-from coconut.requirements import requirements, extras
+from coconut.constants import (
+    package_name,
+    author,
+    author_email,
+    description,
+    website_url,
+    classifiers,
+    search_terms,
+    script_names,
+    using_modern_setuptools,
+)
+from coconut.requirements import (
+    requirements,
+    extras,
+)
 
 #-----------------------------------------------------------------------------------------------------------------------
-# README:
+# SETUP:
 #-----------------------------------------------------------------------------------------------------------------------
+
+if not using_modern_setuptools and "bdist_wheel" in sys.argv:
+    raise RuntimeError("bdist_wheel not supported for setuptools versions < 18 (run 'pip install --upgrade setuptools' to fix)")
 
 with open("README.rst", "r") as readme_file:
     readme = readme_file.read()
 
 setuptools.setup(
-    name="coconut" + ("-develop" if DEVELOP else ""),
+    name=package_name,
     version=VERSION,
-    description="Simple, elegant, Pythonic functional programming.",
+    description=description,
     long_description=readme,
-    url="http://coconut-lang.org",
-    author="Evan Hubinger",
-    author_email="evanjhub@gmail.com",
+    url=website_url,
+    author=author,
+    author_email=author_email,
     install_requires=requirements,
     extras_require=extras,
     packages=setuptools.find_packages(exclude=[
@@ -50,6 +66,7 @@ setuptools.setup(
         "tests",
     ]),
     include_package_data=True,
+    zip_safe=False,
     entry_points={
         "console_scripts": [
             script + " = coconut.main:main"
@@ -62,12 +79,8 @@ setuptools.setup(
             "coconut = coconut.highlighter:CoconutLexer",
             "coconut_python = coconut.highlighter:CoconutPythonLexer",
             "coconut_pycon = coconut.highlighter:CoconutPythonConsoleLexer",
-        ]
+        ],
     },
-    document_names={
-        "description": "README.rst",
-        "license": "LICENSE.txt",
-    },
-    classifiers=classifiers,
-    keywords=search_terms,
+    classifiers=list(classifiers),
+    keywords=list(search_terms),
 )

@@ -8,7 +8,7 @@
 """
 Authors: Evan Hubinger, Fred Buchanan
 License: Apache 2.0
-Description: This file contains all the global constants used accross Coconut.
+Description: This file contains all the global constants used across Coconut.
 """
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -22,6 +22,7 @@ from coconut.root import *  # NOQA
 import sys
 import os
 import string
+import platform
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -29,12 +30,12 @@ import string
 
 
 def fixpath(path):
-    """Uniformly formats a path."""
+    """Uniformly format a path."""
     return os.path.normpath(os.path.realpath(path))
 
 
 def get_target_info(target):
-    """Returns target information as a version tuple."""
+    """Return target information as a version tuple."""
     return tuple(int(x) for x in target)
 
 
@@ -51,86 +52,109 @@ else:
     version_tag = "v" + VERSION
 version_str_tag = "v" + VERSION_STR
 
-version_tuple = VERSION.split(".")
+version_tuple = tuple(VERSION.split("."))
+
+WINDOWS = os.name == "nt"
+PYPY = platform.python_implementation() == "PyPy"
+PY33 = sys.version_info >= (3, 3)
+PY34 = sys.version_info >= (3, 4)
+IPY = (PY2 and not PY26) or (PY33 if not WINDOWS else PY34)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # INSTALLATION CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
+try:
+    import setuptools
+    using_modern_setuptools = int(setuptools.__version__.split(".", 1)[0]) >= 18
+except Exception:
+    using_modern_setuptools = False
+
+package_name = "coconut" + ("-develop" if DEVELOP else "")
+
+author = "Evan Hubinger"
+author_email = "evanjhub@gmail.com"
+
+description = "Simple, elegant, Pythonic functional programming."
+website_url = "http://coconut-lang.org"
+
 all_reqs = {
-    "main": [
+    "main": (
         "pyparsing",
-    ],
-    "non-py26": [
+    ),
+    "non-py26": (
         "pygments",
         "prompt_toolkit",
-    ],
-    "py2": [
+    ),
+    "py2": (
         "futures",
-    ],
-    "py26": [
+    ),
+    "py26": (
         "argparse",
-    ],
-    "jobs": [
+    ),
+    "jobs": (
         "psutil",
-    ],
-    "jupyter": [
+    ),
+    "jupyter": (
         "jupyter",
         "ipython",
         "ipykernel",
         "jupyter-console",
-    ],
-    "mypy": [
+    ),
+    "mypy": (
         "mypy",
-    ],
-    "watch": [
+    ),
+    "watch": (
         "watchdog",
-    ],
-    "dev": [
+    ),
+    "dev": (
         "pre-commit",
         "requests",
-    ],
-    "docs": [
+    ),
+    "docs": (
         "sphinx",
         "pygments",
         "recommonmark",
         "sphinx_bootstrap_theme",
-    ],
-    "tests": [
+    ),
+    "tests": (
         "pytest",
-    ],
+    ),
+    "cPyparsing": (
+        "cPyparsing",
+    ),
 }
 
 min_versions = {
     "pyparsing": (2, 2, 0),
-    "pre-commit": (0, 13),
-    "sphinx": (1, 5),
+    "cPyparsing": (2, 2, 0, 1, 1),
+    "pre-commit": (0, 18),
+    "sphinx": (1, 6),
     "pygments": (2, 2),
     "recommonmark": (0, 4),
-    "sphinx_bootstrap_theme": (0, 4),
-    "psutil": (5, 2),
+    "sphinx_bootstrap_theme": (0, 6),
+    "psutil": (5, 3),
     "jupyter": (1, 0),
-    "jupyter-console": (5, 1),
-    "ipython": (5, 3),
+    "jupyter-console": (5, 2),
+    "ipython": (5, 4),
     "ipykernel": (4, 6),
-    "mypy": (0, 511),
+    "mypy": (0, 521),
     "prompt_toolkit": (1, 0),
     "futures": (3, 1),
     "argparse": (1, 4),
-    "pytest": (3, 0),
+    "pytest": (3,),
     "watchdog": (0, 8),
     "requests": (2,),
 }
 
-version_strictly = [
+version_strictly = (
     "pyparsing",
     "sphinx",
     "sphinx_bootstrap_theme",
     "ipython",
-    "ipykernel",
-]
+)
 
-classifiers = [
+classifiers = (
     "Development Status :: 5 - Production/Stable",
     "License :: OSI Approved :: Apache Software License",
     "Intended Audience :: Developers",
@@ -158,9 +182,9 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Framework :: IPython",
-]
+)
 
-search_terms = [
+search_terms = (
     "functional",
     "programming",
     "language",
@@ -170,8 +194,8 @@ search_terms = [
     "pattern-matching",
     "algebraic",
     "data",
-    "type",
-    "types",
+    "data type",
+    "data types",
     "lambda",
     "lambdas",
     "lazy",
@@ -185,6 +209,7 @@ search_terms = [
     "infix",
     "function",
     "composition",
+    "compose",
     "partial",
     "application",
     "currying",
@@ -194,10 +219,13 @@ search_terms = [
     "unicode",
     "operator",
     "operators",
-    "frozenset literal",
+    "frozenset",
+    "literal",
+    "syntax",
     "destructuring",
     "assignment",
     "reduce",
+    "fold",
     "takewhile",
     "dropwhile",
     "tee",
@@ -207,33 +235,55 @@ search_terms = [
     "concurrent_map",
     "MatchError",
     "datamaker",
+    "makedata",
     "addpattern",
     "prepattern",
     "recursive_iterator",
     "iterator",
     "fmap",
+    "starmap",
     "case",
-    "keyword",
-]
+    "none",
+    "coalesce",
+    "coalescing",
+    "reiterable",
+    "scan",
+    "groupsof",
+)
 
-script_names = [
+script_names = (
     "coconut",
-    ("coconut-py2" if PY2 else "coconut-py3"),
-    "coconut-py" + str(sys.version_info[0]) + str(sys.version_info[1]),
     ("coconut-develop" if DEVELOP else "coconut-release"),
-] + [
+    ("coconut-py2" if PY2 else "coconut-py3"),
+    "coconut-py" + str(sys.version_info[0]) + "." + str(sys.version_info[1]),
+) + tuple(
     "coconut-v" + ".".join(version_tuple[:i]) for i in range(1, len(version_tuple) + 1)
-]
+)
 
 #-----------------------------------------------------------------------------------------------------------------------
-# COMPILER CONSTANTS:
+# PYPARSING CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
 packrat_cache_size = 512
 use_packrat = packrat_cache_size != 0
 
-default_recursion_limit = 2000
+default_whitespace_chars = " \t\f\v\xa0"  # we don't include \r here because the compiler converts \r into \n
+
+varchars = string.ascii_letters + string.digits + "_"
+
+#-----------------------------------------------------------------------------------------------------------------------
+# COMPILER CONSTANTS:
+#-----------------------------------------------------------------------------------------------------------------------
+
+template_ext = ".py_template"
+
+default_encoding = "utf-8"
+
 minimum_recursion_limit = 100
+default_recursion_limit = 2000
+
+if sys.getrecursionlimit() < default_recursion_limit:
+    sys.setrecursionlimit(default_recursion_limit)
 
 # used for generating __coconut_hash__
 from zlib import crc32 as checksum  # NOQA
@@ -257,34 +307,24 @@ elif sys.version_info > get_target_info(specific_targets[-1]):
 else:
     pseudo_targets["sys"] = _sys_target
 
-default_encoding = "utf-8"
-
-default_whitespace_chars = " \t\f\v\xa0"
-varchars = string.ascii_letters + string.digits + "_"
-
 openindent = "\u204b"  # reverse pilcrow
 closeindent = "\xb6"  # pilcrow
 strwrapper = "\u25b6"  # right-pointing triangle
 lnwrapper = "\u23f4"  # left-pointing triangle
 unwrapper = "\u23f9"  # stop square
 
-downs = "([{"  # opens parenthetical
-ups = ")]}"  # closes parenthetical
+opens = "([{"  # opens parenthetical
+closes = ")]}"  # closes parenthetical
 holds = "'\""  # string open/close chars
 
 taberrfmt = 2  # spaces to indent exceptions
 tabideal = 4  # spaces to indent code for displaying
 tabworth = 8  # worth of \t in spaces for parsing (8 = Python standard)
 
+justify_len = 79  # ideal line length
+
 reserved_prefix = "_coconut"
 decorator_var = reserved_prefix + "_decorator"
-match_to_var = reserved_prefix + "_match_to"
-match_to_args_var = match_to_var + "_args"
-match_to_kwargs_var = match_to_var + "_kwargs"
-match_check_var = reserved_prefix + "_match_check"
-match_temp_var = reserved_prefix + "_match_temp"
-match_err_var = reserved_prefix + "_match_err"
-lazy_item_var = reserved_prefix + "_lazy_item"
 lazy_chain_var = reserved_prefix + "_lazy_chain"
 import_as_var = reserved_prefix + "_import"
 yield_from_var = reserved_prefix + "_yield_from"
@@ -293,6 +333,15 @@ raise_from_var = reserved_prefix + "_raise_from"
 stmt_lambda_var = reserved_prefix + "_lambda"
 tre_mock_var = reserved_prefix + "_mock_func"
 tre_store_var = reserved_prefix + "_recursive_func"
+none_coalesce_var = reserved_prefix + "_none_coalesce_item"
+sentinel_var = reserved_prefix + "_sentinel"
+# prefer Matcher.get_temp_var to proliferating more match vars here
+match_to_var = reserved_prefix + "_match_to"
+match_to_args_var = match_to_var + "_args"
+match_to_kwargs_var = match_to_var + "_kwargs"
+match_check_var = reserved_prefix + "_match_check"
+match_temp_var = reserved_prefix + "_match_temp"
+match_err_var = reserved_prefix + "_match_err"
 
 wildcard = "_"  # for pattern-matching
 
@@ -357,13 +406,9 @@ py3_to_py2_stdlib = {
     "tkinter": ("Tkinter", (3,)),
     "http.cookiejar": ("cookielib", (3,)),
     "http.cookies": ("Cookie", (3,)),
-    "html.entites": ("htmlentitydefs", (3,)),
+    "html.entities": ("htmlentitydefs", (3,)),
     "html.parser": ("HTMLParser", (3,)),
     "http.client": ("httplib", (3,)),
-    "email.mime.multipart": ("email.MIMEMultipart", (3,)),
-    "email.mime.nonmultipart": ("email.MIMENonMultipart", (3,)),
-    "email.mime.text": ("email.MIMEText", (3,)),
-    "email.mime.base": ("email.MIMEBase", (3,)),
     "tkinter.tix": ("Tix", (3,)),
     "tkinter.ttk": ("ttk", (3,)),
     "tkinter.constants": ("Tkconstants", (3,)),
@@ -380,16 +425,17 @@ py3_to_py2_stdlib = {
     "urllib.request": ("urllib2", (3,)),
     "urllib.parse": ("urllib2", (3,)),
     "urllib.error": ("urllib2", (3,)),
-    "io.StringIO": ("StringIO.StringIO", (3,)),
-    "io.BytesIO": ("BytesIO.BytesIO", (3,)),
+    "pickle": ("cPickle", (3,)),
     "collections.abc": ("collections", (3, 3)),
+    "io.StringIO": ("StringIO./StringIO", (2, 7)),  # ./ denotes from ... import ...
+    "io.BytesIO": ("cStringIO./StringIO", (2, 7)),
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
 # COMMAND CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-code_exts = [".coco", ".coc", ".coconut"]  # in order of preference
+code_exts = (".coco", ".coc", ".coconut")  # in order of preference
 comp_ext = ".py"
 
 main_sig = "Coconut: "
@@ -409,18 +455,26 @@ watch_interval = .1  # seconds
 
 info_tabulation = 18  # offset for tabulated info messages
 
-base_url = "http://coconut.readthedocs.io/en/" + version_tag
-tutorial_url = base_url + "/HELP.html"
-documentation_url = base_url + "/DOCS.html"
+rtfd_url = "http://coconut.readthedocs.io/en/" + version_tag
+tutorial_url = rtfd_url + "/HELP.html"
+documentation_url = rtfd_url + "/DOCS.html"
+
+new_issue_url = "https://github.com/evhub/coconut/issues/new"
+report_this_text = "(you should report this at " + new_issue_url + ")"
 
 base_dir = os.path.dirname(os.path.abspath(fixpath(__file__)))
 
+icoconut_kernel_names = (
+    "coconut",
+    "coconut2",
+    "coconut3",
+)
+
 icoconut_dir = os.path.join(base_dir, "icoconut")
-icoconut_kernel_dirs = [
-    os.path.join(icoconut_dir, "coconut"),
-    os.path.join(icoconut_dir, "coconut2"),
-    os.path.join(icoconut_dir, "coconut3"),
-]
+icoconut_kernel_dirs = tuple(
+    os.path.join(icoconut_dir, kernel_name)
+    for kernel_name in icoconut_kernel_names
+)
 
 stub_dir = os.path.join(base_dir, "stubs")
 
@@ -429,7 +483,16 @@ exit_chars = (
     "\x1a",  # Ctrl-Z
 )
 
-coconut_run_args = ["--run", "--quiet", "--target", "sys"]
+coconut_run_args = ("--run", "--quiet", "--target", "sys")
+
+num_added_tb_layers = 3  # how many frames to remove when printing a tb
+
+verbose_mypy_args = (
+    "--warn-incomplete-stub",
+    "--warn-redundant-casts",
+    "--warn-return-any",
+    "--warn-unused-ignores",
+)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # HIGHLIGHTER CONSTANTS:
@@ -437,20 +500,27 @@ coconut_run_args = ["--run", "--quiet", "--target", "sys"]
 
 shebang_regex = r'coconut(?:-run)?'
 
-builtins = (
+magic_methods = (
+    "__fmap__",
+)
+
+coconut_specific_builtins = (
     "reduce",
     "takewhile",
     "dropwhile",
     "tee",
     "count",
-    "datamaker",
+    "makedata",
     "consume",
     "parallel_map",
     "addpattern",
-    "prepattern",
     "recursive_iterator",
     "concurrent_map",
     "fmap",
+    "starmap",
+    "reiterable",
+    "scan",
+    "groupsof",
     "py_chr",
     "py_filter",
     "py_hex",
@@ -474,35 +544,36 @@ new_operators = (
     r"\$",
     r"`",
     r"::",
-    r"(?!\.\.\.)\.\.",
+    r"(?:<\*?)?(?!\.\.\.)\.\.(?:\*?>)?",  # ..
     r"\|>",
     r"<\|",
     r"\|\*>",
     r"<\*\|",
     r"->",
-    r"\u2192",
-    r"\u21a6",
-    r"\u21a4",
-    r"\u22c5",
-    r"\u2191",
-    r"\xf7",
-    r"\u2212",
-    r"\u207b",
-    r"\xac",
-    r"\u2260",
-    r"\u2264",
-    r"\u2265",
-    r"\u2227",
-    r"\u2229",
-    r"\u2228",
-    r"\u222a",
-    r"\u22bb",
-    r"\u2295",
-    r"\xab",
-    r"\xbb",
-    r"\xd7",
-    r"\u2026",
-    r"\u2218",
+    r"\?\??",
+    "\u2192",  # ->
+    "\\*?\u21a6",  # |>
+    "\u21a4\\*?",  # <|
+    "<?\*?\u2218\*?>?",  # ..
+    "\u22c5",  # *
+    "\u2191",  # **
+    "\xf7",  # /
+    "\u2212",  # -
+    "\u207b",  # -
+    "\xac=?",  # ~!
+    "\u2260",  # !=
+    "\u2264",  # <=
+    "\u2265",  # >=
+    "\u2227",  # &
+    "\u2229",  # &
+    "\u2228",  # |
+    "\u222a",  # |
+    "\u22bb",  # ^
+    "\u2295",  # ^
+    "\xab",  # <<
+    "\xbb",  # >>
+    "\xd7",  # @
+    "\u2026",  # ...
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -537,7 +608,6 @@ with_toc = """
 """
 
 project = "Coconut"
-copyright = "2015-2017, Evan Hubinger, licensed under Apache 2.0"
-author = "Evan Hubinger"
+copyright = "2015-2017 Evan Hubinger, licensed under Apache 2.0"
 
 highlight_language = "coconut"

@@ -1,3 +1,5 @@
+from io import StringIO
+
 from .util import mod
 
 def non_py26_test():
@@ -18,3 +20,6 @@ def non_py32_test():
     assert {range(8): True}[range(8)]
     assert range(1, 2) == range(1, 2)
     assert range(1, 2) != range(3, 4)
+    fakefile = StringIO()
+    print("herpaderp", file=fakefile, flush=True)
+    assert fakefile.getvalue() == "herpaderp\n"

@@ -43,7 +43,7 @@ Installing Coconut, including all the features above, is drop-dead simple. Just
 pip install coconut
 ```
 
-_Note: Try re-running the above command with the `--user` option if you are encountering errors. Be sure that the `coconut` installation location (`/usr/local/bin` or `${HOME}/.local/bin/` on UNIX machines) is in your PATH environment variable._
+_Note: Try re-running the above command with the `--user` option if you are encountering errors. Be sure that Coconut's installation location (on UNIX `/usr/local/bin` if you didn't use `--user` or `${HOME}/.local/bin/` if you did) is in your `PATH` environment variable. If you are still encountering errors installing Coconut with `pip`, you can also install Coconut with `conda` by following the [conda installation instructions in the documentation](DOCS.html#using-conda)._
 
 To check that your installation is functioning properly, try entering into the command line
 ```
@@ -64,7 +64,7 @@ coconut
 and you should see something like
 ```coconut
 Coconut Interpreter:
-(type "exit()" or press Ctrl-D to end)
+(type 'exit()' or press Ctrl-D to end)
 >>>
 ```
 which is Coconut's way of telling you you're ready to start entering code for it to evaluate. So let's do that!
@@ -75,7 +75,7 @@ That means that if you're familiar with Python, you're already familiar with a g
 
 ```coconut_pycon
 >>> "hello, world!"
-hello, world!
+'hello, world!'
 >>> 1 + 1
 2
 ```
@@ -119,9 +119,11 @@ python hello_world.py
 ```
 which should produce `hello, world!` as the output.
 
+_Note: You can compile and run your code all in one step if you use Coconut's `--run` option._
+
 Compiling single files is not the only way to use the Coconut command-line utility, however. We can also compile all the Coconut files in a given directory simply by passing that directory as the first argument, which will get rid of the need to run the same Coconut header code in each file by storing it in a `__coconut__.py` file in the same directory.
 
-The Coconut  compiler supports a large variety of different compilation options, the help for which can always be accessed by entering `coconut -h` into the command line. One of the most useful of these is `--linenumbers` (or `-l` for short). Using `--linenumbers` will add the line numbers of your source code as comments in the compiled code, allowing you to see what line in your source code corresponds to a line in the compiled code where an error is occurring, for ease of debugging.
+The Coconut  compiler supports a large variety of different compilation options, the help for which can always be accessed by entering `coconut -h` into the command line. One of the most useful of these is `--line-numbers` (or `-l` for short). Using `--line-numbers` will add the line numbers of your source code as comments in the compiled code, allowing you to see what line in your source code corresponds to a line in the compiled code where an error occurred, for ease of debugging.
 
 ### Using IPython/Jupyter
 
@@ -143,7 +145,7 @@ or equivalently, `--ipython` can be substituted for `--jupyter` in either comman
 
 Because Coconut is built to be fundamentally _useful_, the best way to demo it is to show it in action. To that end, the majority of this tutorial will be showing how to apply Coconut to solve particular problems, which we'll call case studies.
 
-These case studies are not intended to provide a complete picture of all of Coconut's features. For that, see Coconut's comprehensive [documentation](DOCS.html). Instead, they are intended to show how Coconut can actually be used to solve practical programming problems.
+These case studies are not intended to provide a complete picture of all of Coconut's features. For that, see Coconut's [documentation](DOCS.html). Instead, they are intended to show how Coconut can actually be used to solve practical programming problems.
 
 ## Case Study 1: `factorial`
 
@@ -184,8 +186,8 @@ def factorial(n):
     case n:
         match 0:
             return 1
-        match _ is int if n > 0:
-            return n * factorial(n-1)
+        match x is int if x > 0:
+            return x * factorial(x-1)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
 
@@ -200,23 +202,29 @@ Copy and paste the code and tests into the interpreter. You should get the same 
 
 Let's take a look at the specifics of the syntax in this example. The first thing we see is `case n`. This statement starts a `case` block, in which only `match` statements can occur. Each `match` statement will attempt to match its given pattern against the value in the `case` block. Only the first successful match inside of any given `case` block will be executed. When a match is successful, any variable bindings in that match will also be performed. Additionally, as is true in this case, `match` statements can also have `if` guards that will check the given condition before the match is considered final. Finally, after the `case` block, an `else` statement is allowed, which will only be executed if no `match` statement is.
 
-Specifically, in this example, the first `match` statement checks whether `n` matches to `0`. If it does, it executes `return 1`. Then the second `match` statement checks whether `n` matches to `_ is int`, which performs an `isinstance` check on `n` against `int`, then checks whether `n > 0`, and if those are true, executes `return n * factorial(n-1)`. If neither of those two statements are executed, the `else` statement triggers and executes `raise TypeError("the argument to factorial must be an integer >= 0")`.
+Specifically, in this example, the first `match` statement checks whether `n` matches to `0`. If it does, it executes `return 1`. Then the second `match` statement checks whether `n` matches to `x is int`, which checks that `n` is an `int` (using `isinstance`) and assigns `x = n` if so, then checks whether `x > 0`, and if so, executes `return x * factorial(x-1)`. If neither of those two statements are executed, the `else` statement triggers and executes `raise TypeError("the argument to factorial must be an integer >= 0")`.
 
 Although this example is very basic, pattern-matching is both one of Coconut's most powerful and most complicated features. As a general intuitive guide, it is helpful to think _assignment_ whenever you see the keyword `match`. A good way to showcase this is that all `match` statements can be converted into equivalent destructuring assignment statements, which are also valid Coconut. In this case, the destructuring assignment equivalent to the `factorial` function above would be:
 ```coconut
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
     try:
-        0 = n  # destructuring assignment
+        # The only value that can be assigned to 0 is 0, since 0 is an
+        # immutable constant; thus, this assignment fails if n is not 0.
+        0 = n
     except MatchError:
-        try:
-            _ is int = n  # also destructuring assignment
-        except MatchError:
-            pass
-        else: if n > 0:  # in Coconut, if, match, and try are allowed after else
-            return n * factorial(n-1)
+        pass
     else:
         return 1
+    try:
+        # This attempts to assign n to x, which has been declared to be
+        # an int; since only an int can be assigned to an int, this
+        # fails if n is not an int.
+        x is int = n
+    except MatchError:
+        pass
+    else: if x > 0:  # in Coconut, if, match, and try are allowed after else
+        return x * factorial(x-1)
     raise TypeError("the argument to factorial must be an integer >= 0")
 
 # Test cases:
@@ -226,9 +234,30 @@ def factorial(n):
 3 |> factorial |> print  # 6
 ```
 
-First, copy and paste! While this destructuring assignment equivalent should work, it is much more cumbersome than `match` statements when you expect that they'll fail, which is why `match` statement syntax exists. But the destructuring assignment equivalent illuminates what exactly the pattern-matching is doing, by making it clear that `match` statements are really just fancy destructuring assignment statements, which _are really just fancy normal assignment statements_. In fact, to be explicit about using destructuring assignment instead of normal assignment, the `match` keyword can be put before a destructuring assignment statement to signify it as such.
+First, copy and paste! While this destructuring assignment equivalent should work, it is much more cumbersome than `match` statements when you expect that they'll fail, which is why `match` statement syntax exists. But the destructuring assignment equivalent illuminates what exactly the pattern-matching is doing, by making it clear that `match` statements are really just fancy destructuring assignment statements. In fact, to be explicit about using destructuring assignment instead of normal assignment, the `match` keyword can be put before a destructuring assignment statement to signify it as such.
 
 It will be helpful to, as we continue to use Coconut's pattern-matching and destructuring assignment statements in further examples, think _assignment_ whenever you see the keyword `match`.
+
+Next, one easy improvement we can make to our `factorial` function is to make use of the wildcard pattern `_`. We don't actually need to assign `x` as a new variable, since it has the same value as `n`, so if we use `_` instead of `x`, Coconut won't ever actually assign the variable. Thus, we can rewrite our `factorial` function as:
+```coconut
+def factorial(n):
+    """Compute n! where n is an integer >= 0."""
+    case n:
+        match 0:
+            return 1
+        match _ is int if n > 0:
+            return n * factorial(n-1)
+    else:
+        raise TypeError("the argument to factorial must be an integer >= 0")
+
+# Test cases:
+-1 |> factorial |> print  # TypeError
+0.5 |> factorial |> print  # TypeError
+0 |> factorial |> print  # 1
+3 |> factorial |> print  # 6
+```
+
+Copy, paste! This new `factorial` function should behave exactly the same as before.
 
 Up until now, for the recursive method, we have only dealt with pattern-matching, but there's actually another way that Coconut allows us to improve our `factorial` function. Coconut performs automatic tail call optimization, which means that whenever a function directly returns a call to another function, Coconut will optimize away the additional call. Thus, we can improve our `factorial` function by rewriting it to use a tail call:
 ```coconut
@@ -249,11 +278,11 @@ def factorial(n, acc=1):
 3 |> factorial |> print  # 6
 ```
 
-Copy, paste! This new `factorial` function is equivalent to the original version, with the exception that it will never raise a `RuntimeError` due to reaching Python's maximum recursion depth, since Coconut will optimize away the recursive tail call.
+Copy, paste! This new `factorial` function is equivalent to the original version, with the exception that it will never raise a `RuntimeError` due to reaching Python's maximum recursion depth, since Coconut will optimize away the tail call.
 
 ### Iterative Method
 
-The final, and other functional, approach, is the iterative one. Iterative approaches avoid the need for state change and loops by using higher-order functions, those that take other functions as their arguments, like `map` and `reduce`, to abstract out the basic operations being performed. In Coconut, the iterative approach to the `factorial` problem is:
+The other main functional approach is the iterative one. Iterative approaches avoid the need for state change and loops by using higher-order functions, those that take other functions as their arguments, like `map` and `reduce`, to abstract out the basic operations being performed. In Coconut, the iterative approach to the `factorial` problem is:
 ```coconut
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
@@ -277,9 +306,9 @@ Copy, paste! This definition differs from the recursive definition only by one l
 return range(1, n+1) |> reduce$(*)
 ```
 
-Let's break down what's happening on this line. First, the `range` function constructs an iterator of all the numbers that need to be multiplied together. Then, it is piped into the function `reduce$(*)`, which does that multiplication. But how? What is `reduce$(*)`.
+Let's break down what's happening on this line. First, the `range` function constructs an iterator of all the numbers that need to be multiplied together. Then, it is piped into the function `reduce$(*)`, which does that multiplication. But how? What is `reduce$(*)`?
 
-We'll start with the base, the `reduce` function. `reduce` used to exist as a built-in in Python 2, and Coconut brings it back. `reduce` is a higher-order function that takes a function on two arguments as its first argument, and an iterator as its second argument, and applies that function to the given iterator by starting with the first element, and calling the function on the accumulated call so far and the next element, until the iterator is exhausted. Here's a visual representation:
+We'll start with the base, the `reduce` function. `reduce` used to exist as a built-in in Python 2, and Coconut brings it back. `reduce` is a higher-order function that takes a function of two arguments as its first argument, and an iterator as its second argument, and applies that function to the given iterator by starting with the first element, and calling the function on the accumulated call so far and the next element, until the iterator is exhausted. Here's a visual representation:
 ```coconut
 reduce(f, (a, b, c, d))
 
@@ -295,9 +324,11 @@ return acc
 
 Now let's take a look at what we do to `reduce` to make it multiply all the numbers we feed into it together. The Coconut code that we saw for that was `reduce$(*)`. There are two different Coconut constructs being used here: the operator function for multiplication in the form of `(*)`, and partial application in the form of `$`.
 
-First, the operator function. In Coconut, a function form of any operator can be retrieved by surrounding that operator in parentheses. In this case, `(*)` is roughly equivalent to `lambda x, y: x*y`, but much cleaner and neater. In Coconut's lambda syntax, `(*)` is also equivalent to `(x, y) -> x*y`, which we will use from now on for all lambdas, even though both are legal Coconut, because Python's `lambda` statement is too ugly and bulky to use regularly. In fact, if Coconut's `--strict` mode is enabled, which will force your code to obey certain cleanliness standards, it will raise an error whenever Python `lambda` statements are used.
+First, the operator function. In Coconut, a function form of any operator can be retrieved by surrounding that operator in parentheses. In this case, `(*)` is roughly equivalent to `lambda x, y: x*y`, but much cleaner and neater. In Coconut's lambda syntax, `(*)` is also equivalent to `(x, y) -> x*y`, which we will use from now on for all lambdas, even though both are legal Coconut, because Python's `lambda` statement is too ugly and bulky to use regularly.
 
-Second, the partial application. Think of partial application as _lazy function calling_, and `$` as the _lazy-ify_ operator, where lazy just means "don't evaluate this until you need to". In Coconut, if a function call is prefixed by a `$`, like in this example, instead of actually performing the function call, a new function is returned with the given arguments already provided to it, so that when it is then called, it will be called with both the partially-applied arguments and the new arguments, in that order. In this case, `reduce$(*)` is equivalent to `(*args, **kwargs) -> reduce((*), *args, **kwargs)`.
+_Note: If Coconut's `--strict` mode is enabled, which will force your code to obey certain cleanliness standards, it will raise an error whenever Python `lambda` statements are used._
+
+Second, the partial application. Think of partial application as _lazy function calling_, and `$` as the _lazy-ify_ operator, where lazy just means "don't evaluate this until you need to." In Coconut, if a function call is prefixed by a `$`, like in this example, instead of actually performing the function call, a new function is returned with the given arguments already provided to it, so that when it is then called, it will be called with both the partially-applied arguments and the new arguments, in that order. In this case, `reduce$(*)` is roughly equivalent to `(*args, **kwargs) -> reduce((*), *args, **kwargs)`.
 
 Putting it all together, we can see how the single line of code
 ```coconut
@@ -320,7 +351,7 @@ def factorial(n):
         raise TypeError("the argument to factorial must be an integer >= 0")
 ```
 
-By making use of the built-in Coconut function `addpattern`, we can take that from three indentation levels down to one. Take a look:
+By making use of the [Coconut built-in `addpattern`](DOCS.html#addpattern), we can take that from three indentation levels down to one. Take a look:
 ```
 def factorial(0) = 1
 
@@ -335,11 +366,11 @@ def factorial(n is int if n > 0) =
 0 |> factorial |> print  # 1
 3 |> factorial |> print  # 6
 ```
-Copy, paste! This should work exactly like before, except now it raises `MatchError` as a fall through instead of `TypeError`. There are three major new concepts to talk about here: `addpattern`, of course, assignment funciton notation, and pattern-matching function definition—how both of the functions above are defined.
+Copy, paste! This should work exactly like before, except now it raises `MatchError` as a fall through instead of `TypeError`. There are three major new concepts to talk about here: `addpattern`, of course, assignment function notation, and pattern-matching function definition—how both of the functions above are defined.
 
 First, assignment function notation. This one's pretty straightforward. If a function is defined with an `=` instead of a `:`, the last line is required to be an expression, and is automatically returned.
 
-Second, pattern-matching function definition. Pattern-matching function definition does exactly that—pattern-matches against all the arguments that are passed to the function. There are a couple of things to watch out for when using pattern-matching function definition, however. First, that if the pattern doesn't match (if for example the wrong number of arguments are passed), your function will raise a `MatchError`, and second, that keyword arguments aren't allowed. Finally, like destructuring assignment, if you want to be more explicit about using pattern-matching function definition, you can add a `match` before the `def`.
+Second, pattern-matching function definition. Pattern-matching function definition does exactly that—pattern-matches against all the arguments that are passed to the function. Unlike normal function definition, however, if the pattern doesn't match (if for example the wrong number of arguments are passed), your function will raise a `MatchError`. Finally, like destructuring assignment, if you want to be more explicit about using pattern-matching function definition, you can add a `match` before the `def`.
 
 Third, `addpattern`. `addpattern` takes one argument, a previously-defined pattern-matching function, and returns a decorator that decorates a new pattern-matching function by adding the new pattern as an additional case to the old patterns. Thus, `addpattern` can be thought of as doing exactly what it says—it adds a new pattern to an existing pattern-matching function.
 
@@ -391,13 +422,14 @@ Copy, paste! Only one new feature here: head-tail pattern-matching. Here, we see
 Now it's time to try `quick_sort` for iterators. Our method for tackling this problem is going to be a combination of the recursive and iterative approaches we used for the `factorial` problem, in that we're going to be lazily building up an iterator, and we're going to be doing it recursively. Here's the code:
 ```coconut
 def quick_sort(l):
-    """Sort the input iterator, using the quick sort algorithm, and without using any data until necessary."""
+    """Sort the input iterator using the quick sort algorithm."""
     match [head] :: tail in l:
-        tail, tail_ = tee(tail)
-        yield from (quick_sort((x for x in tail if x < head))
+        tail = reiterable(tail)
+        yield from (quick_sort(x for x in tail if x < head)
             :: (head,)
-            :: quick_sort((x for x in tail_ if x >= head))
+            :: quick_sort(x for x in tail if x >= head)
             )
+    # We implicitly return an empty iterator here if the match falls through.
 
 # Test cases:
 [] |> quick_sort |> list |> print  # []
@@ -427,23 +459,24 @@ else:
 ```
 that avoids the need for an additional level of indentation when only one `match` is being performed.
 
-The third new construct is the built-in function `tee`. `tee` solves a problem for functional programming created by the implementation of Python's iterators: whenever an element of an iterator is accessed, it's lost. `tee` solves this problem by splitting an iterator in two (or more if the optional argument `n` is passed) independent iterators that both use the same underlying iterator to access their data, thus when an element of one is accessed, it isn't lost in the other.
+The third new construct is the [Coconut built-in `reiterable`](DOCS.html#reiterable). There is a problem in doing immutable functional programming with Python iterators: whenever an element of an iterator is accessed, it's lost. `reiterable` solves this problem by allowing the iterable it's called on to be iterated over multiple times while still yielding the same result each time
 
 Finally, although it's not a new construct, since it exists in Python 3, the use of `yield from` here deserves a mention. In Python, `yield` is the statement used to construct iterators, functioning much like `return`, with the exception that multiple `yield`s can be encountered, and each one will produce another element. `yield from` is very similar, except instead of adding a single element to the produced iterator, it adds another whole iterator.
 
 Putting it all together, here's our `quick_sort` function again:
 ```coconut
 def quick_sort(l):
-    """Sort the input iterator, using the quick sort algorithm, and without using any data until necessary."""
+    """Sort the input iterator using the quick sort algorithm."""
     match [head] :: tail in l:
-        tail, tail_ = tee(tail)
-        yield from (quick_sort((x for x in tail if x < head))
+        tail = reiterable(tail)
+        yield from (quick_sort(x for x in tail if x < head)
             :: (head,)
-            :: quick_sort((x for x in tail_ if x >= head))
+            :: quick_sort(x for x in tail if x >= head)
             )
+    # We implicitly return an empty iterator here if the match falls through.
 ```
 
-The function first attempts to split `l` into an initial element and a remaining iterator. If `l` is the empty iterator, that match will fail, and it will fall through, yielding the empty iterator. Otherwise, we make a copy of the rest of the iterator, and yield the join of (the quick sort of all the remaining elements less than the initial element), (the initial element), and (the quick sort of all the remaining elements greater than the initial element).
+The function first attempts to split `l` into an initial element and a remaining iterator. If `l` is the empty iterator, that match will fail, and it will fall through, yielding the empty iterator (that's how the function handles the base case). Otherwise, we make a copy of the rest of the iterator, and yield the join of (the quick sort of all the remaining elements less than the initial element), (the initial element), and (the quick sort of all the remaining elements greater than the initial element).
 
 The advantages of the basic approach used here, heavy use of iterators and recursion, as opposed to the classical imperative approach, are numerous. First, our approach is more clear and more readable, since it is describing _what_ `quick_sort` is instead of _how_ `quick_sort` could be implemented. Second, our approach is _lazy_ in that our `quick_sort` won't evaluate any data until it needs it. Finally, and although this isn't relevant for `quick_sort` it is relevant in many other cases, an example of which we'll see later in this tutorial, our approach allows for working with _infinite_ series just like they were finite.
 
@@ -484,7 +517,7 @@ data <name>(<attributes>):
 ```
 where `<name>` and `<body>` are the same as the equivalent `class` definition, but `<attributes>` are the different attributes of the data type, in order that the constructor should take them as arguments. In this case, `vector2` is a data type of two attributes, `x` and `y`, with one defined method, `__abs__`, that computes the magnitude. As the test cases show, we can then create, print, but _not modify_ instances of `vector2`.
 
-One other thing to call attention to here is the use of `fmap`. `fmap` is a Coconut built-in that allows you to map functions over algebraic data types. In fact, Coconut's `data` types support iteration, so the standard `map` works on them, but it doesn't return another object of the same data type. Thus, `fmap` is simply `map` plus a call to the object's constructor.
+One other thing to call attention to here is the use of the [Coconut built-in `fmap`](DOCS.html#fmap). `fmap` allows you to map functions over algebraic data types. In fact, Coconut's `data` types support iteration, so the standard `map` works on them, but it doesn't return another object of the same data type. Thus, `fmap` is simply `map` plus a call to the object's constructor.
 
 ### n-Vector Constructor
 
@@ -494,19 +527,19 @@ data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        match (v is vector,) in pts:
+        match [v is vector] in pts:
             return v  # vector(v) where v is a vector should return v
         else:
-            return pts |*> datamaker(cls)  # accesses base constructor
+            return pts |*> makedata$(cls)  # accesses base constructor
 
 # Test cases:
 vector(1, 2, 3) |> print  # vector(*pts=(1, 2, 3))
 vector(4, 5) |> vector |> print  # vector(*pts=(4, 5))
 ```
 
-Copy, paste! The big new thing here is how to write `data` constructors. Since `data` types are immutable, `__init__` construction won't work. Instead, a different special method `__new__` is used, which must return the newly constructed instance, and unlike most methods, takes the class not the object as the first argument. Since `__new__` needs to return a fully constructed instance, in almost all cases it will be necessary to access the underlying `data` constructor. To achieve this, Coconut provides the built-in function `datamaker`, which takes a data type, often the first argument to `__new__`, and returns its underlying `data` constructor.
+Copy, paste! The big new thing here is how to write `data` constructors. Since `data` types are immutable, `__init__` construction won't work. Instead, a different special method `__new__` is used, which must return the newly constructed instance, and unlike most methods, takes the class not the object as the first argument. Since `__new__` needs to return a fully constructed instance, in almost all cases it will be necessary to access the underlying `data` constructor. To achieve this, Coconut provides the [built-in `makedata` function](DOCS.html/makedata), which takes a data type and calls its underlying `data` constructor with the rest of the arguments.
 
-In this case, the constructor checks whether nothing but another `vector` was passed, in which case it returns that, otherwise it returns the result of creating a tuple of the arguments and passing that to the underlying constructor, the form of which is `vector(*pts)`, since that is how we declared the data type.
+In this case, the constructor checks whether nothing but another `vector` was passed, in which case it returns that, otherwise it returns the result of passing the arguments to the underlying constructor, the form of which is `vector(*pts)`, since that is how we declared the data type. We use sequence pattern-matching to determine whether we were passed a single vector, which is just a list or tuple of patterns to match against the contents of the sequence.
 
 The other new construct used here is the `|*>`, or star-pipe, operator, which functions exactly like the normal pipe, except that instead of calling the function with one argument, it calls it with as many arguments as there are elements in the sequence passed into it. The difference between `|*>` and `|>` is exactly analogous to the difference between `f(args)` and `f(*args)`.
 
@@ -522,21 +555,19 @@ The basic algorithm here is map square over each element, sum them all, then squ
 
 Next up is vector addition. The goal here is to add two vectors of equal length by adding their components. To do this, we're going to make use of Coconut's ability to perform pattern-matching, or in this case destructuring assignment, to data types, like so:
 ```coconut
-    def __add__(self, other) =
+    def __add__(self, vector(*other_pts)
+                if len(other_pts) == len(self.pts)) =
         """Add two vectors together."""
-        vector(*other_pts) = other
-        assert len(other_pts) == len(self.pts)
         map((+), self.pts, other_pts) |*> vector
 ```
 
-There are a couple of new constructs here, but the main notable one is the destructuring assignment statement `vector(*other_pts) = other` which showcases the syntax for pattern-matching against data types: it mimics exactly the original `data` declaration of that data type. In this case, `vector(*other_pts) = other` will only match a vector, raising a `MatchError` otherwise, and if it does match a vector, will assign the vector's `pts` attribute to the variable `other_pts`.
+There are a couple of new constructs here, but the main notable one is the pattern-matching `vector(*other_pts)` which showcases the syntax for pattern-matching against data types: it mimics exactly the original `data` declaration of that data type. In this case, `vector(*other_pts)` will only match a vector, raising a `MatchError` otherwise, and if it does match a vector, will assign the vector's `pts` attribute to the variable `other_pts`.
 
 Next is vector subtraction, which is just like vector addition, but with `(-)` instead of `(+)`:
 ```coconut
-    def __sub__(self, other) =
+    def __sub__(self, vector(*other_pts)
+                if len(other_pts) == len(self.pts)) =
         """Subtract one vector from another."""
-        vector(*other_pts) = other
-        assert len(other_pts) == len(self.pts)
         map((-), self.pts, other_pts) |*> vector
 ```
 
@@ -544,20 +575,8 @@ One thing to note here is that unlike the other operator functions, `(-)` can ei
 ```coconut
     def __neg__(self) =
         """Retrieve the negative of the vector."""
-        self.pts |> map$((-)) |*> vector
+        self.pts |> map$(-) |*> vector
 ```
-
-Our next method will be equality. We're again going to use `data` pattern-matching to implement this, but this time inside of a `match` statement instead of with destructuring assignment, since we want to `return False` not raise an error if the match fails. Here's the code:
-```coconut
-    def __eq__(self, other):
-        """Compare whether two vectors are equal."""
-        match vector(*=self.pts) in other:
-            return True
-        else:
-            return False
-```
-
-The only new construct here is the use of `=self.pts` in the `match` statement. This construct is used to perform a check inside of the pattern-matching, making sure the `match` only succeeds if `other.pts == self.pts`.
 
 The last method we'll implement is multiplication. This one is a little bit tricky, since mathematically, there are a whole bunch of different ways to multiply vectors. For our purposes, we're just going to look at two: between two vectors of equal length, we want to compute the dot product, defined as the sum of the corresponding elements multiplied together, and between a vector and a scalar, we want to compute the scalar multiple, which is just each element multiplied by that scalar. Here's our implementation:
 ```coconut
@@ -581,32 +600,24 @@ data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        match (v is vector,) in pts:
+        match [v is vector] in pts:
             return v  # vector(v) where v is a vector should return v
         else:
-            return pts |*> datamaker(cls)  # accesses base constructor
+            return pts |*> makedata$(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
-    def __add__(self, other) =
+    def __add__(self, vector(*other_pts)
+                if len(other_pts) == len(self.pts)) =
         """Add two vectors together."""
-        vector(*other_pts) = other
-        assert len(other_pts) == len(self.pts)
         map((+), self.pts, other_pts) |*> vector
-    def __sub__(self, other) =
+    def __sub__(self, vector(*other_pts)
+                if len(other_pts) == len(self.pts)) =
         """Subtract one vector from another."""
-        vector(*other_pts) = other
-        assert len(other_pts) == len(self.pts)
         map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
         """Retrieve the negative of the vector."""
-        self.pts |> map$((-)) |*> vector
-    def __eq__(self, other):
-        """Compare whether two vectors are equal."""
-        match vector(*=self.pts) in other:
-            return True
-        else:
-            return False
+        self.pts |> map$(-) |*> vector
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
         match vector(*other_pts) in other:
@@ -640,7 +651,7 @@ For the final case study, instead of me writing the code, and you looking at it,
 
 _The bonus challenge for this section is to write each of the functions we'll be defining in just one line. Try using assignment functions to help with that!_
 
-With that out of the way, it's time to introduce the general goal of this case study. We want to write a program that will allow us to produce infinite vector fields that we can iterate over and apply operations to. And in our case, we'll say we only care about vectors with positive components.
+First, let's introduce the general goal of this case study. We want to write a program that will allow us to produce infinite vector fields that we can iterate over and apply operations to. And in our case, we'll say we only care about vectors with positive components.
 
 Our first step, therefore, is going to be creating a field of all the points with positive `x` and `y` values—that is, the first quadrant of the `x-y` plane, which looks something like this:
 ```
@@ -655,13 +666,7 @@ Our first step, therefore, is going to be creating a field of all the points wit
 
 But since we want to be able to iterate over that plane, we're going to need to linearize it somehow, and the easiest way to do that is to split it up into diagonals, and traverse the first diagonal, then the second diagonal, and so on, like this:
 ```
-...
-
-(0,2)<  ...
-      \_
-(0,1)<  (1,1)<  ...
-      \_      \_
-(0,0) > (1,0) > (2,0) > ...
+(0, 0), (1, 0), (0, 1), (2, 0), (1, 1), (0, 2), ...
 ```
 
 ### `diagonal_line`
@@ -700,7 +705,7 @@ _Hint: the `n`th diagonal should contain `n+1` elements, so try starting with `r
 
 That wasn't so bad, now was it? Now, let's take a look at my solution:
 ```coconut
-def diagonal_line(n) = range(n+1) |> map$((i) -> (i, n-i))
+def diagonal_line(n) = range(n+1) |> map$(i -> (i, n-i))
 ```
 Pretty simple, huh? We take `range(n+1)`, and use `map` to transform it into the right sequence of tuples.
 
@@ -757,7 +762,7 @@ vector_field()$[0] |> print  # vector(*pts=(0, 0))
 vector_field()$[2:3] |> list |> print  # [vector(*pts=(1, 0))]
 ```
 
-_Hint: Remember, the way we defined vector it takes the components as separate arguments, not a single tuple._
+_Hint: Remember, the way we defined vector it takes the components as separate arguments, not a single tuple. You may find the [Coconut built-in `starmap`](DOCS.html#starmap) useful in dealing with that._
 
 <br>
 <br>
@@ -782,9 +787,9 @@ _Hint: Remember, the way we defined vector it takes the components as separate a
 
 We're making good progress! Before we move on, check your solution against mine:
 ```coconut
-def vector_field() = linearized_plane() |> map$((xy) -> vector(*xy))
+def vector_field() = linearized_plane() |> starmap$(vector)
 ```
-All we're doing is taking our `linearized_plane` and mapping `vector` over it, but making sure to call vector with each element of the tuple as a separate argument.
+All we're doing is taking our `linearized_plane` and mapping `vector` over it, but using `starmap` instead of `map` so that `vector` gets called with each element of the tuple as a separate argument.
 
 ### Applications
 
@@ -794,32 +799,24 @@ data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        match (v is vector,) in pts:
+        match [v is vector] in pts:
             return v  # vector(v) where v is a vector should return v
         else:
-            return pts |*> datamaker(cls)  # accesses base constructor
+            return pts |*> makedata$(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
-    def __add__(self, other) =
+    def __add__(self, vector(*other_pts)
+                if len(other_pts) == len(self.pts)) =
         """Add two vectors together."""
-        vector(*other_pts) = other
-        assert len(other_pts) == len(self.pts)
         map((+), self.pts, other_pts) |*> vector
-    def __sub__(self, other) =
+    def __sub__(self, vector(*other_pts)
+                if len(other_pts) == len(self.pts)) =
         """Subtract one vector from another."""
-        vector(*other_pts) = other
-        assert len(other_pts) == len(self.pts)
         map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
         """Retrieve the negative of the vector."""
-        self.pts |> map$((-)) |*> vector
-    def __eq__(self, other):
-        """Compare whether two vectors are equal."""
-        match vector(*=self.pts) in other:
-            return True
-        else:
-            return False
+        self.pts |> map$(-) |*> vector
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
         match vector(*other_pts) in other:
@@ -831,9 +828,9 @@ data vector(*pts):
         """Necessary to make scalar multiplication commutative."""
         self * other
 
-def diagonal_line(n) = range(n+1) |> map$((i) -> (i, n-i))
+def diagonal_line(n) = range(n+1) |> map$(i -> (i, n-i))
 def linearized_plane(n=0) = diagonal_line(n) :: linearized_plane(n+1)
-def vector_field() = linearized_plane() |> map$((xy) -> vector(*xy))
+def vector_field() = linearized_plane() |> starmap$(vector)
 
 # Test cases:
 diagonal_line(0) `isinstance` (list, tuple) |> print  # False (should be an iterator)
@@ -894,7 +891,7 @@ _Hint: Look back at how we implemented scalar multiplication._
 
 Here's my solution for you to check against:
 ```coconut
-    def __truediv__(self, other) = self.pts |> map$((x) -> x/other) |*> vector
+    def __truediv__(self, other) = self.pts |> map$(x -> x/other) |*> vector
 ```
 
 ### `.unit`
@@ -982,32 +979,24 @@ data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        match (v is vector,) in pts:
+        match [v is vector] in pts:
             return v  # vector(v) where v is a vector should return v
         else:
-            return pts |*> datamaker(cls)  # accesses base constructor
+            return pts |*> makedata$(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
         self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
-    def __add__(self, other) =
+    def __add__(self, vector(*other_pts)
+                if len(other_pts) == len(self.pts)) =
         """Add two vectors together."""
-        vector(*other_pts) = other
-        assert len(other_pts) == len(self.pts)
         map((+), self.pts, other_pts) |*> vector
-    def __sub__(self, other) =
+    def __sub__(self, vector(*other_pts)
+                if len(other_pts) == len(self.pts)) =
         """Subtract one vector from another."""
-        vector(*other_pts) = other
-        assert len(other_pts) == len(self.pts)
         map((-), self.pts, other_pts) |*> vector
     def __neg__(self) =
         """Retrieve the negative of the vector."""
-        self.pts |> map$((-)) |*> vector
-    def __eq__(self, other):
-        """Compare whether two vectors are equal."""
-        match vector(*=self.pts) in other:
-            return True
-        else:
-            return False
+        self.pts |> map$(-) |*> vector
     def __mul__(self, other):
         """Scalar multiplication and dot product."""
         match vector(*other_pts) in other:
@@ -1019,7 +1008,7 @@ data vector(*pts):
         """Necessary to make scalar multiplication commutative."""
         self * other
      # New one-line functions necessary for finding the angle between vectors:
-    def __truediv__(self, other) = self.pts |> map$((x) -> x/other) |*> vector
+    def __truediv__(self, other) = self.pts |> map$(x -> x/other) |*> vector
     def unit(self) = self / abs(self)
     def angle(self, other is vector) = math.acos(self.unit() * other.unit())
 
@@ -1056,8 +1045,10 @@ zipsum = map$(sum)..zip
 
 Function composition also gets rid of the need for lots of parentheses when chaining function calls, like so:
 ```coconut
-(plus1..square)(3) == 10
+plus1..square(3) == 10
 ```
+
+_Note: Coconut also supports the function composition pipe operators `..>`, `<..`, `..*>`, and `<*..`._
 
 ### Implicit Partials
 
@@ -1073,10 +1064,21 @@ iter$[]
 .$[slice]
 ```
 
+### Type Annotations
+
+For many people, one of the big downsides of Python is the fact that it is dynamically-typed. In Python, this problem is addressed by [MyPy](http://mypy-lang.org/), a static type analyzer for Python, which can check Python-3-style type annotations such as
+```coconut_python
+def plus1(x: int) -> int:
+    return x + 1
+a: int = plus1(10)
+```
+
+Unfortunately, in Python, such type annotation syntax only exists in Python 3. Not to worry in Coconut, however, which compiles Python-3-style type annotations to universally compatible type comments. Not only that, but Coconut has built-in [MyPy integration](DOCS.html#mypy-integration) for automatically type-checking your code, and its own [enhanced type annotation syntax](DOCS.html#enhanced-type-annotations) for more easily expressing complex types.
+
 ### Further Reading
 
-And that's it for this tutorial! But that's hardly it for Coconut. All of the features examined in this tutorial, as well as a bunch of others, are documented in detail in Coconut's comprehensive [documentation](DOCS.html).
+And that's it for this tutorial! But that's hardly it for Coconut. All of the features examined in this tutorial, as well as a bunch of others, are detailed in Coconut's [documentation](DOCS.html).
 
 Also, if you have any other questions not covered in this tutorial, feel free to ask around at Coconut's [Gitter](https://gitter.im/evhub/coconut), a GitHub-integrated chat room for Coconut developers.
 
-Finally, Coconut is a new, growing language, and if you'd like to get involved in the development of Coconut, all the code is available completely open-source on Coconut's [GitHub](https://github.com/evhub/coconut). Contributing is a simple as forking the code, making your changes, and proposing a pull request.
+Finally, Coconut is a new, growing language, and if you'd like to get involved in the development of Coconut, all the code is available completely open-source on Coconut's [GitHub](https://github.com/evhub/coconut). Contributing is a simple as forking the code, making your changes, and proposing a pull request! See Coconuts [contributing guidelines](CONTRIBUTING.html) for more information.

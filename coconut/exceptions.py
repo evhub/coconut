@@ -21,13 +21,14 @@ from coconut.root import *  # NOQA
 
 import sys
 
-from pyparsing import lineno
+from coconut.pyparsing import lineno
 
 from coconut.constants import (
     openindent,
     closeindent,
     taberrfmt,
     default_encoding,
+    report_this_text,
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -43,7 +44,7 @@ def get_encoding(fileobj):
 
 
 def clean(inputline, strip=True, rem_indents=True, encoding_errors="replace"):
-    """Cleans and strips a line."""
+    """Clean and strips a line."""
     stdout_encoding = get_encoding(sys.stdout)
     inputline = str(inputline)
     if rem_indents:
@@ -55,7 +56,20 @@ def clean(inputline, strip=True, rem_indents=True, encoding_errors="replace"):
 
 def debug_clean(inputline, strip=True):
     """Call clean with debug parameters."""
-    return clean(inputline, strip, False, "backslashreplace")
+    return clean(inputline, strip, rem_indents=False, encoding_errors="backslashreplace")
+
+
+def internal_assert(condition, message=None, item=None, extra=None):
+    """Raise InternalException if condition is False.
+    If condition is a function, execute it on DEVELOP only."""
+    if DEVELOP and callable(condition):
+        condition = condition()
+    if message is None:
+        message = "assertion failed"
+        if item is None:
+            item = condition
+    if not condition:
+        raise CoconutInternalException(message, item, extra)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -166,12 +180,19 @@ class CoconutWarning(CoconutException):
     """Base Coconut warning."""
 
 
-class CoconutStyleWarning(CoconutStyleError, CoconutWarning):
-    """Coconut --strict warning."""
+class CoconutSyntaxWarning(CoconutSyntaxError, CoconutWarning):
+    """CoconutWarning with CoconutSyntaxError semantics."""
 
 
 class CoconutInternalException(CoconutException):
-    """Internal Coconut exceptions."""
+    """Internal Coconut exception."""
+
+    def message(self, message, item, extra):
+        """Creates the Coconut internal exception message."""
+        return (
+            super(CoconutInternalException, self).message(message, item, extra)
+            + " " + report_this_text
+        )
 
 
 class CoconutDeferredSyntaxError(CoconutException):

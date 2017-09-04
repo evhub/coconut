@@ -31,7 +31,7 @@ CLI = Command()
 
 
 def cmd(args, interact=False):
-    """Processes command-line arguments."""
+    """Process command-line arguments."""
     if isinstance(args, (str, bytes)):
         args = args.split()
     return CLI.cmd(args=args, interact=interact)
@@ -47,12 +47,14 @@ VERSIONS = {
 
 
 def version(which="num"):
-    """Gets the Coconut version."""
+    """Get the Coconut version."""
     if which in VERSIONS:
         return VERSIONS[which]
     else:
-        raise CoconutException("invalid version type " + ascii(which),
-                               extra="valid versions are " + ", ".join(VERSIONS))
+        raise CoconutException(
+            "invalid version type " + ascii(which),
+            extra="valid versions are " + ", ".join(VERSIONS),
+        )
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -63,23 +65,25 @@ setup = CLI.setup
 
 
 PARSERS = {
-    "single": lambda comp: comp.parse_single,
-    "file": lambda comp: comp.parse_file,
+    "sys": lambda comp: comp.parse_sys,
     "exec": lambda comp: comp.parse_exec,
+    "file": lambda comp: comp.parse_file,
     "package": lambda comp: comp.parse_package,
     "block": lambda comp: comp.parse_block,
-    "sys": lambda comp: comp.parse_sys,
+    "single": lambda comp: comp.parse_single,
     "eval": lambda comp: comp.parse_eval,
     "debug": lambda comp: comp.parse_debug,
 }
 
 
-def parse(code, mode="sys"):
-    """Parses Coconut code."""
+def parse(code="", mode="sys"):
+    """Compile Coconut code."""
     if CLI.comp is None:
         setup()
     if mode in PARSERS:
         return PARSERS[mode](CLI.comp)(code)
     else:
-        raise CoconutException("invalid parse mode " + ascii(mode),
-                               extra="valid modes are " + ", ".join(PARSERS))
+        raise CoconutException(
+            "invalid parse mode " + ascii(mode),
+            extra="valid modes are " + ", ".join(PARSERS),
+        )

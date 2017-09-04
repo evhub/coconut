@@ -40,12 +40,12 @@ from coconut.command import Command
 
 
 def main():
-    """Starts Coconut."""
+    """Starts coconut."""
     Command().start()
 
 
 def main_run():
-    """Starts Coconut with the --run and --quiet options."""
+    """Starts coconut-run."""
     Command().start(run=True)
 
 

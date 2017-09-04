@@ -30,6 +30,10 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
+from coconut.constants import author as __author__  # NOQA
+
+__version__ = VERSION  # NOQA
+
 #-----------------------------------------------------------------------------------------------------------------------
 # IPYTHON:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -62,7 +66,7 @@ def load_ipython_extension(ipython):
                 code = cell
             compiled = parse(code)
         except CoconutException:
-            logger.print_exc()
+            logger.display_exc()
         else:
             ipython.run_cell(compiled, shell_futures=False)
     ipython.register_magic_function(magic, "line_cell", "coconut")

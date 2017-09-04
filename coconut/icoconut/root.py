@@ -49,8 +49,10 @@ except ImportError:
         # conda tries to import coconut.icoconut as a test even when IPython isn't available
         logger.warn("Missing IPython but detected " + conda_build_env_var + "; skipping coconut.icoconut loading")
     else:
-        raise CoconutException("--ipython flag requires IPython library",
-                               extra="run 'pip install coconut[ipython]' to fix")
+        raise CoconutException(
+            "--jupyter flag requires Jupyter library",
+            extra="run 'pip install coconut[jupyter]' to fix",
+        )
 else:
     LOAD_MODULE = True
 
@@ -125,20 +127,13 @@ if LOAD_MODULE:
             self._compile = self._coconut_compile
 
         def _coconut_compile(self, source, *args, **kwargs):
-            """Version of _compile that compiles Coconut code.
+            """Version of _compile that checks Coconut code.
             None means that the code should not be run as is.
             Any other value means that it can."""
             if source.endswith("\n\n"):
                 return True
             elif should_indent(source):
                 return None
-            elif "\n" not in source.rstrip():  # if at start
-                try:
-                    memoized_parse_block(source)
-                except CoconutException:
-                    return None
-                else:
-                    return True
             else:
                 return True
 
@@ -176,6 +171,7 @@ if LOAD_MODULE:
     class CoconutKernel(IPythonKernel, object):
         """Jupyter kernel for Coconut."""
         shell_class = CoconutShell
+        use_experimental_completions = False
         implementation = "icoconut"
         implementation_version = VERSION
         language = "coconut"
@@ -187,17 +183,17 @@ if LOAD_MODULE:
             "file_extension": code_exts[0],
             "codemirror_mode": {
                 "name": "python",
-                "version": py_syntax_version
+                "version": py_syntax_version,
             },
-            "pygments_lexer": "coconut"
+            "pygments_lexer": "coconut",
         }
         help_links = [
             {
                 "text": "Coconut Tutorial",
-                "url": tutorial_url
+                "url": tutorial_url,
             },
             {
                 "text": "Coconut Documentation",
-                "url": documentation_url
-            }
+                "url": documentation_url,
+            },
         ]

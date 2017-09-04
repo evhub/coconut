@@ -13,10 +13,9 @@ python:
 - '3.6'
 - pypy3
 install:
-- pip install "pip==7.1.2"
-- make
+- make install
 script:
-- make test
+- make test-all
 deploy:
   provider: pypi
   user: evhub-develop

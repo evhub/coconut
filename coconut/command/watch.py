@@ -23,10 +23,13 @@ from coconut.exceptions import CoconutException
 
 try:
     from watchdog.events import FileSystemEventHandler
+    # import Observer to provide it for others to import
     from watchdog.observers import Observer  # NOQA
 except ImportError:
-    raise CoconutException("--watch flag requires watchdog library",
-                           extra="run 'pip install coconut[watch]' to fix")
+    raise CoconutException(
+        "--watch flag requires watchdog library",
+        extra="run 'pip install coconut[watch]' to fix",
+    )
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CLASSES:

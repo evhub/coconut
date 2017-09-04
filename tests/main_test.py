@@ -23,16 +23,20 @@ import unittest
 import sys
 import os
 import shutil
-import platform
 from contextlib import contextmanager
 
+from coconut.terminal import logger
 from coconut.command.util import call_output
+from coconut.constants import (
+    WINDOWS,
+    PYPY,
+    IPY,
+    PY34,
+)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
-
-IPY = (PY2 and not PY26) or sys.version_info >= (3, 3)
 
 base = os.path.dirname(os.path.relpath(__file__))
 src = os.path.join(base, "src")
@@ -53,13 +57,13 @@ coconut_snip = r"msg = '<success>'; pmsg = print$(msg); `pmsg`"
 mypy_snip = r"a: str = count()[0]"
 mypy_snip_err = 'error: Incompatible types in assignment (expression has type "int", variable has type "str")'
 
+mypy_args = ["--follow-imports", "silent", "--ignore-missing-imports"]
+
 ignore_mypy_errs_with = (
-    "already defined",
-    "Cannot determine type of",
-    "decorator expected",
-    "tutorial",
-    "_coconut_compose",
-    "_coconut_partial",
+    "tutorial.py",
+    "No overload variant of",
+    # TODO: Re-enable when https://github.com/python/mypy/issues/3574 is fixed.
+    "INTERNAL ERROR",
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -68,11 +72,15 @@ ignore_mypy_errs_with = (
 
 
 def escape(inputstring):
-    """Performs basic shell escaping."""
-    return inputstring.replace("$", "\\$").replace("`", "\\`")
+    """Performs basic shell escaping.
+    Not by any means complete, should only be used on coconut_snip."""
+    if WINDOWS:
+        return inputstring.replace("<", "^^^<").replace(">", "^^^>")
+    else:
+        return '"' + inputstring.replace("$", "\\$").replace("`", "\\`") + '"'
 
 
-def call(cmd, assert_output=False, check_mypy=False, check_errors=False, stderr_first=False, **kwargs):
+def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_first=False, **kwargs):
     """Executes a shell command."""
     print("\n>", (cmd if isinstance(cmd, str) else " ".join(cmd)))
     if assert_output is True:
@@ -82,27 +90,35 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=False, stderr_
         out = stderr + stdout
     else:
         out = stdout + stderr
-    lines = "".join(out).splitlines()
+    out = "".join(out)
+    lines = out.splitlines()
     for line in lines:
         print(line)
-    assert not retcode
+    assert not retcode, "Command failed: " + repr(cmd)
     for line in lines:
+        assert "CoconutInternalException" not in line, "CoconutInternalException in " + repr(line)
+        assert "<unprintable" not in line, "Unprintable error in " + repr(line)
+        assert "*** glibc detected ***" not in line, "C error in " + repr(line)
         if check_errors:
-            assert "Traceback (most recent call last):" not in line
-            assert "Exception" not in line
-            assert "Error" not in line
+            assert "Traceback (most recent call last):" not in line, "Traceback in " + repr(line)
+            assert "Exception" not in line, "Exception in " + repr(line)
+            assert "Error" not in line, "Error in " + repr(line)
         if check_mypy and all(test not in line for test in ignore_mypy_errs_with):
-            assert "error:" not in line
+            assert "INTERNAL ERROR" not in line, "MyPy INTERNAL ERROR in " + repr(line)
+            assert "error:" not in line, "MyPy error in " + repr(line)
+    last_line = lines[-1] if lines else ""
     if assert_output is None:
-        assert not lines
+        assert not last_line, "Expected nothing; got " + repr(last_line)
     elif assert_output is not False:
-        assert lines and assert_output in lines[-1]
+        assert assert_output in last_line, "Expected " + repr(assert_output) + "; got " + repr(last_line)
 
 
 def call_coconut(args, **kwargs):
     """Calls Coconut."""
-    if "--jobs" not in args and platform.python_implementation() != "PyPy":
+    if "--jobs" not in args and not PYPY and not PY26:
         args = ["--jobs", "sys"] + args
+    if "--mypy" in args and "check_mypy" not in kwargs:
+        kwargs["check_mypy"] = True
     call(["coconut"] + args, **kwargs)
 
 
@@ -126,10 +142,13 @@ def remove_when_done(path):
     try:
         yield
     finally:
-        if os.path.isdir(path):
-            shutil.rmtree(path)
-        elif os.path.isfile(path):
-            os.remove(path)
+        try:
+            if os.path.isdir(path):
+                shutil.rmtree(path)
+            elif os.path.isfile(path):
+                os.remove(path)
+        except OSError as err:
+            logger.display_exc()
 
 
 @contextmanager
@@ -185,7 +204,7 @@ def run_src(**kwargs):
 
 def run_extras(**kwargs):
     """Runs extras.py."""
-    call(["python", os.path.join(dest, "extras.py")], assert_output=True, check_mypy=False, check_errors=False, stderr_first=True, **kwargs)
+    call(["python", os.path.join(dest, "extras.py")], assert_output=True, check_errors=False, stderr_first=True, **kwargs)
 
 
 def run(args=[], agnostic_target=None, use_run_arg=False):
@@ -211,7 +230,7 @@ def run(args=[], agnostic_target=None, use_run_arg=False):
             run_src()
 
         if use_run_arg:
-            comp_extras(["--run"] + agnostic_args, assert_output=True, check_mypy=False, check_errors=False, stderr_first=True)
+            comp_extras(["--run"] + agnostic_args, assert_output=True, check_errors=False, stderr_first=True)
         else:
             comp_extras(agnostic_args)
             run_extras()
@@ -260,6 +279,11 @@ def comp_all(args=[], **kwargs):
     comp_runner(args, **kwargs)
     comp_extras(args, **kwargs)
 
+
+def run_runnable(args=[]):
+    """Call coconut-run on runnable_coco."""
+    call(["coconut-run"] + args + [runnable_coco, "--arg"], assert_output=True)
+
 #-----------------------------------------------------------------------------------------------------------------------
 # TESTS:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -271,25 +295,26 @@ class TestShell(unittest.TestCase):
         call(["coconut", "-s", "-c", coconut_snip], assert_output=True)
 
     def test_pipe(self):
-        call('echo "' + escape(coconut_snip) + '" | coconut -s', shell=True, assert_output=True)
+        call('echo ' + escape(coconut_snip) + "| coconut -s", shell=True, assert_output=True)
 
     def test_convenience(self):
         call(["python", "-c", 'from coconut.convenience import parse; exec(parse("' + coconut_snip + '"))'], assert_output=True)
 
     def test_runnable(self):
         with remove_when_done(runnable_py):
-            call(["coconut-run", runnable_coco, "--arg"], assert_output=True)
+            run_runnable()
 
     def test_runnable_nowrite(self):
-        call(["coconut-run", "-n", runnable_coco, "--arg"], assert_output=True)
+        run_runnable(["-n"])
 
     if IPY:
 
-        def test_ipython(self):
-            call(["ipython", "--ext", "coconut", "-c", '%coconut ' + coconut_snip], assert_output=True)
+        if not WINDOWS:
+            def test_ipython(self):
+                call(["ipython", "--ext", "coconut", "-c", '%coconut ' + coconut_snip], assert_output=True)
 
         def test_jupyter(self):
-            call(["coconut", "--jupyter"])
+            call(["coconut", "--jupyter"], assert_output="Coconut: Successfully installed Coconut Jupyter kernel.")
 
 
 class TestCompilation(unittest.TestCase):
@@ -303,17 +328,14 @@ class TestCompilation(unittest.TestCase):
     def test_line_numbers(self):
         run(["--linenumbers"])
 
-    def test_keep_lines(self):
-        run(["--keeplines"])
-
-    if platform.python_implementation() != "PyPy":
+    if not PYPY and not PY26:
         def test_jobs_zero(self):
             run(["--jobs", "0"])
 
-    if sys.version_info >= (3, 4):
+    if PY34 and not WINDOWS and not PYPY:
         def test_mypy(self):
             call(["coconut", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err, check_mypy=False)
-            run(["--mypy", "--ignore-missing-imports"])
+            run(["--mypy"] + mypy_args)
 
     def test_run(self):
         run(use_run_arg=True)
@@ -330,8 +352,14 @@ class TestCompilation(unittest.TestCase):
     def test_no_tco(self):
         run(["--no-tco"])
 
-    def test_minify(self):
-        run(["--minify"])
+    def test_simple_keep_lines(self):
+        run_runnable(["-n", "--keeplines"])
+
+    def test_simple_line_numbers_keep_lines(self):
+        run_runnable(["-n", "--linenumbers", "--keeplines"])
+
+    def test_simple_minify(self):
+        run_runnable(["-n", "--minify"])
 
 
 class TestExternal(unittest.TestCase):
@@ -348,5 +376,5 @@ class TestExternal(unittest.TestCase):
     def test_pyston(self):
         with remove_when_done(pyston):
             comp_pyston()
-            if PY2 and platform.python_implementation() == "PyPy":
+            if PY2 and PYPY:
                 run_pyston()

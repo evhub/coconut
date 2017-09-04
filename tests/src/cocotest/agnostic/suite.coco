@@ -6,7 +6,7 @@ def suite_test():
     assert "1" `plus` "1" == "11" == "1" `(+)` "1"
     assert 3 `mod` 6 == 3 == 3 `(%)` 6
     assert 5 `mod` 4 == 1 == 5 `mod_` 4
-    assert 5 `mod` 2 `plus` 2 == 1 == 5 `(%)` 2 `(+)` 2
+    assert 5 `mod` 2 `plus` 2 == 3 == 5 `(%)` 2 `(+)` 2
     assert "11" `base` 2 == 3
     assert "10A" `int` 12 == 154
     assert ["1", "2"] `join_with` ", " == "1, 2"
@@ -19,26 +19,31 @@ def suite_test():
     assert 1 `range` 5 |> product == 24
     assert plus1(4) == 5 == plus1_(4)
     assert 2 `plus1` == 3 == plus1(2)
-    assert plus1(plus1(5)) == 7 == (plus1..plus1)(5)
+    assert plus1(plus1(5)) == 7 == plus1..plus1(5)
     assert `sqrt` 16 == 4 == `sqrt_` 16
     assert `square` 3 == 9
-    assert sqplus1(3) == 10 == (plus1..square)(3)
-    assert parallel_map(sqplus1, range(3)) |> tuple == (1, 2, 5)
-    assert 3 `plus1sq` == 16 == 3 `plus1sq_`
-    assert 3 `sqplus1` == 10 == 3 `sqplus1_`
+    def test_sqplus1_plus1sq(sqplus1, plus1sq, parallel=True):
+        assert sqplus1(3) == 10 == plus1..square(3), sqplus1
+        if parallel:
+            assert parallel_map(sqplus1, range(3)) |> tuple == (1, 2, 5), sqplus1
+        assert 3 `plus1sq` == 16, plus1sq
+        assert 3 `sqplus1` == 10, sqplus1
+    test_sqplus1_plus1sq(sqplus1_1, plus1sq_1)
+    test_sqplus1_plus1sq(sqplus1_2, plus1sq_2, parallel=False)
+    test_sqplus1_plus1sq(sqplus1_3, plus1sq_3)
+    test_sqplus1_plus1sq(sqplus1_4, plus1sq_4)
     assert 3 |> plus1 |> square == 16 == 3 |> plus1_ |> square
     assert reduce((|>), [3, plus1, square]) == 16 == pipe(pipe(3, plus1), square)
     assert reduce((..), [sqrt, square, plus1])(3) == 4 == compose(compose(sqrt, square), plus1)(3)
     assert sum_([1,7,3,5]) == 16
-    assert (add([1,2,3], [10,20,30]) |> list
-            == [11,22,33]
-            == zipsum([1,2,3], [10,20,30]) |> list
-            )
+    assert add([1,2,3], [10,20,30]) |> list == [11,22,33]
+    assert add_([1,2,3], [10,20,30]) |> list == [11,22,33]
+    assert zipsum([1,2,3], [10,20,30]) |> list == [11,22,33]
     assert clean("   ab cd ef   ") == "ab cd ef" == "   ab cd ef   " |> clean
     assert add2 <| 2 <| 3 == 5
-    for qsort in [qsort1, qsort2, qsort3, qsort4, qsort5]:
+    for qsort in [qsort1, qsort2, qsort3, qsort4, qsort5, qsort6]:
         to_sort = rand_list(10)
-        assert to_sort |> qsort |> tuple == to_sort |> sorted |> tuple
+        assert to_sort |> qsort |> tuple == to_sort |> sorted |> tuple, qsort
     assert repeat(3)$[2] == 3 == repeat_(3)$[2]
     assert sum_(repeat(1)$[:5]) == 5 == sum_(repeat_(1)$[:5])
     assert (sum_(takewhile((x)-> x<5, N()))
@@ -52,7 +57,7 @@ def suite_test():
             == range(0,10)$[:5:] |> list
             )
     assert (range(-10, 0) :: N())$[5:15] |> sum == -5 == chain(range(-10, 0), N())$[5:15] |> sum
-    assert add(repeat(1), N())$[:5] |> list == [1,2,3,4,5] == add(repeat(1), N_())$[:5] |> list
+    assert add(repeat(1), N())$[:5] |> list == [1,2,3,4,5] == add_(repeat(1), N_())$[:5] |> list
     assert sum(N()$[5:]$[:5]) == 35 == sum(N_()$[5:]$[:5])
     assert N()$[](slice(5, 10)) |> list == [5,6,7,8,9] == list(range(0, 15))[](slice(5, 10))
     assert N()$[slice(5, 10)] |> list == [5,6,7,8,9] == list(range(0, 15))[slice(5, 10)]
@@ -75,17 +80,20 @@ def suite_test():
     assert vector(1, 2) != (1, 2)
     assert triangle(3, 4, 5).is_right()
     assert (.)(triangle(3, 4, 5), "is_right")
+    assert (.is_right())(triangle(3, 4, 5))
     assert triangle(3, 4, 5) |> .is_right()
-    assert factorial1(3) == 6
-    assert factorial2(3) == 6
-    assert factorial4(3) == 6
-    assert factorial5(3) == 6
-    assert fact(3) == 6 == fact_(3)
-    assert factorial(3) == 6
-    assert factorial1(-1) is None
-    assert factorial2(-1) is None
-    assert factorial4(-1) is None
-    assert factorial5(-1) is None
+    def test_factorial(factorial, test_none=True):
+        assert factorial(0) == 1 == factorial(1)
+        assert factorial(3) == 6
+        if test_none:
+            assert factorial(-1) is None
+    test_factorial(factorial1)
+    test_factorial(factorial2)
+    test_factorial(factorial4)
+    test_factorial(factorial5)
+    test_factorial(fact, test_none=False)
+    test_factorial(fact_, test_none=False)
+    test_factorial(factorial, test_none=False)
     assert factorial3([2,3]) == [2,6] == factorial3((2,3))
     assert classify(()) == "empty tuple"
     assert classify([]) == "empty list"
@@ -239,7 +247,7 @@ def suite_test():
     assert 15 == assign_func_1((*), 3, 5)
     assert 15 == assign_func_2((*), 3, 5)
     assert 20 == (..)(minus$(2), mul$(2), plus$(1))(10)
-    assert 20 == (minus$(2) .. mul$(2) .. plus$(1))(10)
+    assert 20 == minus$(2) .. mul$(2) .. plus$(1) (10)
     assert does_raise_exc(raise_exc)
     assert ret_none(10) is None
     assert (2, 3, 5) |*> ret_args_kwargs$(1, ?, ?, 4, ?, *(6, 7), a="k") == ((1, 2, 3, 4, 5, 6, 7), {"a": "k"})
@@ -310,8 +318,12 @@ def suite_test():
     assert Elems(1, 2, 3) != Elems(1, 2)
     assert map(plus1, (1, 2, 3)) |> fmap$(times2) |> repr == map(times2..plus1, (1, 2, 3)) |> repr
     assert reversed((1, 2, 3)) |> fmap$(plus1) |> repr == map(plus1, (1, 2, 3)) |> reversed |> repr
-    assert ident[1:2, 2:3] == (slice(1, 2), slice(2, 3)) == ident |> .[1:2, 2:3]
-    assert ident.method(*(1,), **{"a": 2}) == ((1,), {"a": 2}) == ident |> .method(*(1,), **{"a": 2})
+    assert identity[1:2, 2:3] == (slice(1, 2), slice(2, 3))
+    assert identity |> .[1:2, 2:3] == (slice(1, 2), slice(2, 3))
+    assert (.[1:2, 2:3])(identity) == (slice(1, 2), slice(2, 3))
+    assert identity.method(*(1,), **{"a": 2}) == ((1,), {"a": 2})
+    assert (.method(*(1,), **{"a": 2}))(identity) == ((1,), {"a": 2})
+    assert identity |> .method(*(1,), **{"a": 2}) == ((1,), {"a": 2})
     assert container(1) == container(1)
     assert not container(1) != container(1)
     assert container(1) != container(2)
@@ -328,30 +340,160 @@ def suite_test():
     Tuple(x, y) = t
     assert x == 1 and y == 2
     p = Pred("name", 1, 2)
+    p_ = Pred_("name", 1, 2)
+    assert p.name == "name" == p_.name
+    assert p.args == (1, 2) == p_.args
     assert repr(p) in ("Pred(name='name', *args=(1, 2))", "Pred(name=u'name', *args=(1, 2))")
-    assert p.name == "name"
-    assert p.args == (1, 2)
-    assert isinstance(p.args, tuple)
-    Pred(name, *args) = p
-    assert name == "name"
-    assert args == (1, 2)
+    assert repr(p_) in ("Pred_(name='name', *args=(1, 2))", "Pred_(name=u'name', *args=(1, 2))")
+    for Pred_test, p_test in [(Pred, p), (Pred_, p_)]:
+        assert isinstance(p_test.args, tuple)
+        Pred_test(name, *args) = p_test
+        assert name == "name"
+        assert args == (1, 2)
     q = Quant("name", "var", 1, 2)
+    q_ = Quant_("name", "var", 1, 2)
+    assert q.name == "name" == q_.name
+    assert q.var == "var" == q_.var
+    assert q.args == (1, 2) == q_.args
     assert repr(q) in ("Quant(name='name', var='var', *args=(1, 2))", "Quant(name=u'name', var=u'var', *args=(1, 2))")
-    assert q.name == "name"
-    assert q.var == "var"
-    assert q.args == (1, 2)
-    assert isinstance(q.args, tuple)
-    Quant(name, var, *args) = q
-    assert name == "name"
-    assert var == "var"
-    assert args == (1, 2)
+    assert repr(q_) in ("Quant_(name='name', var='var', *args=(1, 2))", "Quant_(name=u'name', var=u'var', *args=(1, 2))")
+    for Quant_test, q_test in [(Quant, q), (Quant_, q_)]:
+        assert isinstance(q_test.args, tuple)
+        Quant_test(name, var, *args) = q_test
+        assert name == "name"
+        assert var == "var"
+        assert args == (1, 2)
     assert Pred(0, 1, 2) |> fmap$(-> _+1) == Pred(1, 2, 3)
+    assert Pred_(0, 1, 2) |> fmap$(-> _+1) == Pred_(1, 2, 3)
     assert Quant(0, 1, 2) |> fmap$(-> _+1) == Quant(1, 2, 3)
+    assert Quant_(0, 1, 2) |> fmap$(-> _+1) == Quant_(1, 2, 3)
+    a = Nest()
+    assert a.b.c.d == "data"
+    assert (.b.c.d)(a) == "data"
+    assert a |> .b.c.d == "data"
+    assert a.b.c.m() == "method"
+    assert a |> .b.c ..> .m() == "method"
+    assert a |> .b.c |> .m() == "method"
+    assert a?.b?.c?.m?() == "method"
+    assert a.b.c.none?.derp.herp is None
+    assert tco_chain([1, 2, 3]) |> list == ["last"]
+    assert partition([1, 2, 3], 2) |> map$(tuple) |> list == [(1,), (3, 2)] == partition_([1, 2, 3], 2) |> map$(tuple) |> list
+    assert myreduce((+), (1, 2, 3)) == 6
+    assert recurse_n_times(10000)
+    assert fake_recurse_n_times(10000)
+    a = A()
+    assert (not)..a.true() is False
+    assert 10 % 4 % 3 == 2 == 10 `mod` 4 `mod` 3
+    assert square_times2_plus1(3) == 19 == square_times2_plus1_(3)
+    assert plus1_cube(2) == 27
+    assert square ..> times2 ..> plus1 |> repr == square ..> (times2 ..> plus1) |> repr
+    assert range(1, 5) |> map$(range) |> starmap$(toprint) |> tuple == ('0', '0 1', '0 1 2', '0 1 2 3')
+    assert range(1, 5) |> map$(range) |> starmap$(toprint) |> fmap$(.strip(" 0")) |> tuple == ("", "1", "1 2", "1 2 3")
+    assert () |> starmap$(toprint) |> len == 0
+    assert [(1, 2)] |> starmap$(toprint) |> .[0] == "1 2"
+    assert [(1, 2), (2, 3), (3, 4)] |> starmap$(toprint) |> .[1:] |> list == ["2 3", "3 4"]
+    assert none_to_ten() == 10 == any_to_ten(1, 2, 3)
+    assert int_map(plus1_, range(5)) == [1, 2, 3, 4, 5]
+    assert still_ident.__doc__ == "docstring"
+    with (
+        context_produces(1) as one,
+        context_produces(2) as two,
+    ):
+        assert one == 1
+        assert two == 2
+    assert 1 ?? raise_exc() == 1
+    try:
+        assert None ?? raise_exc()
+    except Exception as err:
+        assert str(err) == "raise_exc"
+    else:
+        assert False
+    for u, Point_test in [("", Point), ("_", Point_)]:
+        p = Point_test()
+        assert p.x == 0 == p.y
+        assert repr(p) == "Point{u}(x=0, y=0)".format(u=u)
+        p = Point_test(1)
+        assert p.x == 1
+        assert p.y == 0
+        assert repr(p) == "Point{u}(x=1, y=0)".format(u=u)
+        p = Point_test(2, 3)
+        assert p.x == 2
+        assert p.y == 3
+        assert repr(p) == "Point{u}(x=2, y=3)".format(u=u)
+    try:
+        RadialVector()
+    except TypeError:
+        try:
+            RadialVector_()
+        except TypeError:
+            pass
+        else:
+            assert False
+    else:
+        assert False
+    rv = RadialVector(1)
+    rv_ = RadialVector_(1)
+    assert rv.mag == 1 == rv_.mag
+    assert rv.angle == 0 == rv_.angle
+    assert repr(rv) == "RadialVector(mag=1, angle=0)"
+    assert repr(rv_) == "RadialVector_(mag=1, angle=0)"
+    for u, ABC_test in [("", ABC), ("_", ABC_)]:
+        try:
+            ABC_test()
+        except TypeError:
+            pass
+        else:
+            assert False
+        abc = ABC_test(2)
+        assert abc.a == 2
+        assert abc.b == 1
+        assert abc.c == ()
+        assert repr(abc) == "ABC{u}(a=2, b=1, *c=())".format(u=u)
+        abc = ABC_test(3, 4, 5)
+        assert abc.a == 3
+        assert abc.b == 4
+        assert abc.c == (5,)
+        assert repr(abc) == "ABC{u}(a=3, b=4, *c=(5,))".format(u=u)
+        abc = ABC_test(5, 6, 7, 8)
+        assert abc.a == 5
+        assert abc.b == 6
+        assert abc.c == (7, 8)
+        assert repr(abc) == "ABC{u}(a=5, b=6, *c=(7, 8))".format(u=u)
+    v = vector2(3, 4)
+    assert repr(v) == "vector2(x=3, y=4)"
+    assert abs(v) == 5
+    try:
+        v.x = 2
+    except AttributeError:
+        pass
+    else:
+        assert False
+    v = vector2()
+    assert repr(v) == "vector2(x=0, y=0)"
+    assert factorial.__doc__ == "this is a docstring" == iadd.__doc__
+    assert list_type((|1,2|)) == "at least 2"
+    assert list_type((|1|)) == "at least 1"
+    assert list_type((| |)) == "empty"
+    cnt = counter()
+    case cnt.inc():
+        match 1:
+            assert False
+        match ():
+            assert False
+        match None:
+            pass
+    else:
+        assert False
+    assert cnt.count == 1
+    assert plus1sq_all(1, 2, 3) |> list == [4, 9, 16] == plus1sq_all_(1, 2, 3) |> list
+    assert sqplus1_all(1, 2, 3) |> list == [2, 5, 10] == sqplus1_all_(1, 2, 3) |> list
+    assert square_times2_plus1_all(1, 2) |> list == [3, 9] == square_times2_plus1_all_(1, 2) |> list
+    assert plus1_square_times2_all(1, 2) |> list == [8, 18] == plus1_square_times2_all_(1, 2) |> list
+    assert plus1sqsum_all(1, 2) == 13 == plus1sqsum_all_(1, 2)
     return True
 
 def tco_test():
-    """Exectues suite tests that rely on TCO."""
-    assert recurse_n_times(10000)
+    """Executes suite tests that rely on TCO."""
     assert is_even(5000) and is_odd(5001)
     assert is_even_(5000) and is_odd_(5001)
     return True

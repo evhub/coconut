@@ -1,17 +1,29 @@
 -   repo: git://github.com/pre-commit/pre-commit-hooks.git
-    sha: 5bf6c09bfa1297d3692cadd621ef95f1284e33c0
+    sha: v0.9.2
     hooks:
-    -   id: check-added-large-files
     -   id: check-byte-order-marker
-    -   id: end-of-file-fixer
+    -   id: check-merge-conflict
+    -   id: check-case-conflict
+    -   id: check-ast
+    -   id: check-json
+    -   id: check-yaml
     -   id: trailing-whitespace
+    -   id: end-of-file-fixer
     -   id: debug-statements
+    -   id: pretty-format-json
+        args:
+        - --autofix
     -   id: autopep8-wrapper
         args:
         - --in-place
         - --aggressive
         - --aggressive
+        - --experimental
         - --ignore=W503,E501,E722
     -   id: flake8
         args:
         - --ignore=W503,E501,E265,E402,F405,E305
+-   repo: https://github.com/asottile/add-trailing-comma
+    sha: v0.6.4
+    hooks:
+    -   id: add-trailing-comma

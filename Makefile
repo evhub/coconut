@@ -12,16 +12,28 @@ dev:
 .PHONY: format
 format: dev
 	pre-commit autoupdate
-	pre-commit run --allow-unstaged-config --all-files
+	pre-commit run --all-files
 
-.PHONY: test
-test:
+.PHONY: test-all
+test-all:
 	pytest --strict -s tests
+
+.PHONY: test-basic
+test-basic:
+	python ./tests --force
+	python ./tests/dest/runner.py
+	python ./tests/dest/extras.py
+
+.PHONY: test-run
+test-run:
+	python ./tests
+	python ./tests/dest/runner.py
+	python ./tests/dest/extras.py
 
 .PHONY: sphinx
 sphinx: clean
 	sphinx-build -b html . ./docs
-	rm -rf index.rst
+	rm -f index.rst
 
 .PHONY: docs
 docs: sphinx
@@ -45,11 +57,11 @@ wipe: clean
 
 .PHONY: build
 build: clean dev
-	python3 setup.py sdist bdist_wheel
+	python setup.py sdist bdist_wheel
 
 .PHONY: upload
 upload: build
-	pip3 install --upgrade twine
+	pip install --upgrade twine
 	twine upload dist/*
 
 .PHONY: check
