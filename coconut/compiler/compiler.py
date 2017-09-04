@@ -583,7 +583,7 @@ class Compiler(Grammar):
 
     def prepare(self, inputstring, strip=False, nl_at_eof_check=False, **kwargs):
         """Prepare a string for processing."""
-        if self.strict and nl_at_eof_check and not inputstring.endswith("\n"):
+        if self.strict and nl_at_eof_check and inputstring and not inputstring.endswith("\n"):
             end_index = len(inputstring) - 1 if inputstring else 0
             raise self.make_err(CoconutStyleError, "missing new line at end of file", inputstring, end_index)
         original_lines = inputstring.splitlines()
