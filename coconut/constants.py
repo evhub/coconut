@@ -129,7 +129,7 @@ min_versions = {
     "pyparsing": (2, 2, 0),
     "cPyparsing": (2, 2, 0, 1, 1),
     "pre-commit": (0, 18),
-    "sphinx": (1, 6),
+    "sphinx": (1, 6, 2),
     "pygments": (2, 2),
     "recommonmark": (0, 4),
     "sphinx_bootstrap_theme": (0, 6),
