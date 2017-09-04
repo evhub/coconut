@@ -54,7 +54,8 @@ if ver_str_to_tuple(__version__) < min_versions["pyparsing"]:
     raise ImportError(
         "Coconut requires pyparsing version >= " + req_ver_str
         + "; got version " + __version__
-        + " (run 'pip install --upgrade pyparsing' to fix)",
+        + " (run 'pip install --upgrade pyparsing' or"
+        + " 'pip install --upgrade cPyparsing' to fix)",
     )
 
 if use_packrat:
