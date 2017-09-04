@@ -30,14 +30,10 @@ test-run:
 	python ./tests/dest/runner.py
 	python ./tests/dest/extras.py
 
-.PHONY: sphinx
-sphinx: clean
+.PHONY: docs
+docs: clean
 	sphinx-build -b html . ./docs
 	rm -f index.rst
-
-.PHONY: docs
-docs: sphinx
-	pushd ./docs; zip -r ./docs.zip ./*; popd
 
 .PHONY: clean
 clean:
