@@ -490,6 +490,7 @@ def suite_test():
     assert square_times2_plus1_all(1, 2) |> list == [3, 9] == square_times2_plus1_all_(1, 2) |> list
     assert plus1_square_times2_all(1, 2) |> list == [8, 18] == plus1_square_times2_all_(1, 2) |> list
     assert plus1sqsum_all(1, 2) == 13 == plus1sqsum_all_(1, 2)
+    assert sum_list_range(10) == 45
     return True
 
 def tco_test():
