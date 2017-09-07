@@ -413,14 +413,7 @@ Coconut uses pipe operators for pipeline-style function application. All the ope
 
 Additionally, all pipe operators support a lambda as the last argument, despite lambdas having a lower precedence. Thus, `10 |> x -> x**2` is valid, though the body of the lambda will still capture all following pipe operators.
 
-To visually spread operations using the pipe operators over several lines of code, it is necessary to wrap the entire chain in parentheses:
-```coconut
-(range(10)
-    |> filter$((x) -> (x % 2) == 1)
-    |> map$((x) -> 3 * x)
-    |> list
-    )
-```
+_Note: To visually spread operations across several lines, just use [parenthetical continuation](#enhanced-parenthetical-continuation)._
 
 ##### Optimizations
 
