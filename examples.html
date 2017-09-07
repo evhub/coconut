@@ -1,10 +1,10 @@
 <div class="highlight"><pre><span></span><span class="s2">&quot;hello, world!&quot;</span> <span class="o">|&gt;</span> <span class="nb">print</span>
 
 
-<span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="o">**</span> <span class="mi">2</span>
+<span class="n">x</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="o">**</span> <span class="mi">2</span>
 
 
-<span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="nb">map</span><span class="o">$</span><span class="p">(</span><span class="nb">pow</span><span class="o">$</span><span class="p">(</span><span class="k">?</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span> <span class="o">|&gt;</span> <span class="nb">list</span>
+<span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="nb">map</span><span class="o">$</span><span class="p">(</span><span class="nb">pow</span><span class="o">$</span><span class="p">(</span><span class="o">?</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span> <span class="o">|&gt;</span> <span class="nb">list</span>
 
 
 <span class="k">match</span> <span class="p">[</span><span class="n">head</span><span class="p">]</span> <span class="o">+</span> <span class="n">tail</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]:</span>
@@ -17,10 +17,10 @@
 <span class="mi">5</span> <span class="o">`</span><span class="n">mod</span><span class="o">`</span> <span class="mi">3</span> <span class="o">==</span> <span class="mi">2</span>
 
 
-<span class="nb">range</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="nb">map</span><span class="o">$</span><span class="p">((</span><span class="o">*</span><span class="p">)</span><span class="o">$</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span> <span class="o">|&gt;</span> <span class="nb">list</span>
+<span class="n">product</span> <span class="o">=</span> <span class="nb">reduce</span><span class="o">$</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>
 
 
-<span class="p">(</span><span class="n">f</span> <span class="o">..</span> <span class="n">g</span> <span class="o">..</span> <span class="n">h</span><span class="p">)(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+<span class="p">(</span><span class="n">f</span><span class="o">..</span><span class="n">g</span><span class="o">..</span><span class="n">h</span><span class="p">)(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
 
 
 <span class="p">(</span><span class="o">|</span> <span class="n">first_elem</span><span class="p">()</span> <span class="o">|</span><span class="p">)</span> <span class="o">::</span> <span class="n">rest_elems</span><span class="p">()</span>

@@ -1,7 +1,7 @@
 "hello, world!" |> print
 
 
-(x) -> x ** 2
+x -> x ** 2
 
 
 range(10) |> map$(pow$(?, 2)) |> list
@@ -17,10 +17,10 @@ match [head] + tail in [0, 1, 2, 3]:
 5 `mod` 3 == 2
 
 
-range(15) |> map$((*)$(2)) |> list
+product = reduce$(*)
 
 
-(f .. g .. h)(x, y, z)
+(f..g..h)(x, y, z)
 
 
 (| first_elem() |) :: rest_elems()

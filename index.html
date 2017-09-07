@@ -54,21 +54,21 @@
 <li>pipeline-style programming</li>
 </ul>
 <div class="highlight-coconut"><div class="highlight"><pre>
-<span></span><span class="s2">&quot;hello, world!&quot;</span> <span class="o">|&gt;</span> <span class="nb">print</span>
+<span class="s2">&quot;hello, world!&quot;</span> <span class="o">|&gt;</span> <span class="nb">print</span>
 </pre></div>
 </div>
 <ul class="simple">
 <li>prettier lambdas</li>
 </ul>
 <div class="highlight-coconut"><div class="highlight"><pre>
-<span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="o">**</span> <span class="mi">2</span>
+<span class="n">x</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="o">**</span> <span class="mi">2</span>
 </pre></div>
 </div>
 <ul class="simple">
 <li>partial application</li>
 </ul>
 <div class="highlight-coconut"><div class="highlight"><pre>
-<span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="nb">map</span><span class="o">$</span><span class="p">(</span><span class="nb">pow</span><span class="o">$</span><span class="p">(</span><span class="k">?</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span> <span class="o">|&gt;</span> <span class="nb">list</span>
+<span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="nb">map</span><span class="o">$</span><span class="p">(</span><span class="nb">pow</span><span class="o">$</span><span class="p">(</span><span class="o">?</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span> <span class="o">|&gt;</span> <span class="nb">list</span>
 </pre></div>
 </div>
 <ul class="simple">
@@ -96,14 +96,15 @@
 <ul class="simple">
 <li>operator functions</li>
 </ul>
-<div class="highlight-coconut"><div class="highlight"><pre><span></span><span class="n">product</span> <span class="o">=</span> <span class="nb">reduce</span><span class="o">$</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>
+<div class="highlight-coconut"><div class="highlight"><pre>
+<span class="n">product</span> <span class="o">=</span> <span class="nb">reduce</span><span class="o">$</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>
 </pre></div>
 </div>
 <ul class="simple">
 <li>function composition</li>
 </ul>
 <div class="highlight-coconut"><div class="highlight"><pre>
-<span class="p">(</span><span class="n">f</span> <span class="o">..</span> <span class="n">g</span> <span class="o">..</span> <span class="n">h</span><span class="p">)(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+<span class="p">(</span><span class="n">f</span><span class="o">..</span><span class="n">g</span><span class="o">..</span><span class="n">h</span><span class="p">)(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
 </pre></div>
 </div>
 <ul class="simple">
