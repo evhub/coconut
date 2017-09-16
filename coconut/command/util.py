@@ -241,7 +241,7 @@ def run_cmd(cmd, show_output=True, raise_errs=True, **kwargs):
     else:
         stdout, stderr, retcode = call_output(cmd, **kwargs)
         if retcode and raise_errs:
-            raise subprocess.CalledProcessError(retcode, cmd, stdout, stderr)
+            raise subprocess.CalledProcessError(retcode, cmd, output=stdout, stderr=stderr)
         return "".join(stdout + stderr)
 
 
