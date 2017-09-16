@@ -354,7 +354,7 @@ def recursive_iterator(func):
             hash(key)
         except _coconut.Exception:
             try:
-                key = _coconut.pickle.dumps(key, _coconut.pickle.HIGHEST_PROTOCOL)
+                key = _coconut.pickle.dumps(key, -1)
             except _coconut.Exception:
                 use_backup = True
         if use_backup:
