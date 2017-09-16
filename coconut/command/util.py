@@ -239,7 +239,9 @@ def run_cmd(cmd, show_output=True, raise_errs=True, **kwargs):
     elif show_output:
         return subprocess.call(cmd, **kwargs)
     else:
-        stdout, stderr, _ = call_output(cmd, **kwargs)
+        stdout, stderr, retcode = call_output(cmd, **kwargs)
+        if retcode and raise_errs:
+            raise subprocess.CalledProcessError(retcode, cmd, stdout, stderr)
         return "".join(stdout + stderr)
 
 
