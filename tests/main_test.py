@@ -315,6 +315,7 @@ class TestShell(unittest.TestCase):
 
         def test_jupyter(self):
             call(["coconut", "--jupyter"], assert_output="Coconut: Successfully installed Coconut Jupyter kernel.")
+            call(["jupyter", "kernelspec", "list"], assert_output="coconut")
 
 
 class TestCompilation(unittest.TestCase):
