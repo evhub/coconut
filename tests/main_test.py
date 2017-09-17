@@ -32,6 +32,7 @@ from coconut.constants import (
     PYPY,
     IPY,
     PY34,
+    icoconut_kernel_names,
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -315,7 +316,11 @@ class TestShell(unittest.TestCase):
 
         def test_jupyter(self):
             call(["coconut", "--jupyter"], assert_output="Coconut: Successfully installed Coconut Jupyter kernel.")
-            call(["jupyter", "kernelspec", "list"], assert_output="coconut")
+            stdout, stderr, retcode = call_output(["jupyter", "kernelspec", "list"])
+            stdout, stderr = "".join(stdout), "".join(stderr)
+            assert not retcode and not stderr, stderr
+            for kernel in icoconut_kernel_names:
+                assert kernel in stdout
 
 
 class TestCompilation(unittest.TestCase):
