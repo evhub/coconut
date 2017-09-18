@@ -37,13 +37,6 @@ try:
 except ImportError:
     pass
 
-try:
-    import prompt_toolkit
-    import pygments
-    from coconut.highlighter import CoconutLexer
-except ImportError:
-    prompt_toolkit = None
-
 from coconut.constants import (
     fixpath,
     default_encoding,
@@ -66,9 +59,22 @@ from coconut.exceptions import (
     CoconutException,
     get_encoding,
     internal_assert,
+    complain,
 )
 from coconut.terminal import logger
 from coconut import __coconut__
+
+try:
+    import prompt_toolkit
+    import pygments
+    from coconut.highlighter import CoconutLexer
+except ImportError:
+    prompt_toolkit = None
+except KeyError:
+    complain(ImportError(
+        "detected outdated pygments version (run 'pip install --upgrade pygments' to fix)",
+    ))
+    prompt_toolkit = None
 
 #-----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
