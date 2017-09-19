@@ -59,9 +59,11 @@ from coconut.exceptions import (
     CoconutException,
     get_encoding,
     internal_assert,
+)
+from coconut.terminal import (
+    logger,
     complain,
 )
-from coconut.terminal import logger
 from coconut import __coconut__
 
 try:
