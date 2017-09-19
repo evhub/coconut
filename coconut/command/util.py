@@ -248,9 +248,10 @@ def run_cmd(cmd, show_output=True, raise_errs=True, **kwargs):
         return subprocess.call(cmd, **kwargs)
     else:
         stdout, stderr, retcode = call_output(cmd, **kwargs)
+        output = "".join(stdout + stderr)
         if retcode and raise_errs:
-            raise subprocess.CalledProcessError(retcode, cmd, output=stdout, stderr=stderr)
-        return "".join(stdout + stderr)
+            raise subprocess.CalledProcessError(retcode, cmd, output=output)
+        return output
 
 
 def set_mypy_path(mypy_path):
