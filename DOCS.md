@@ -1239,10 +1239,14 @@ print(binexp(5))
 
 ### Pattern-Matching Functions
 
-Coconut supports pattern-matching on the arguments to a function in that function's definition. The syntax for pattern-matching function definition is
+Coconut pattern-matching functions are just normal functions where the arguments are patterns to be matched against instead of variables to be assigned to. The syntax for pattern-matching function definition is
 ```coconut
-[match] def <name>(<pattern> [= <default>], ... [if <cond>]):
+[match] def <name>(<arg>, <arg>, ... [if <cond>]):
     <body>
+```
+where `<arg>` is defined as
+```coconut
+[*|**] <pattern> [= <default>]
 ```
 where `<name>` is the name of the function, `<cond>` is an optional additional check, `<body>` is the body of the function, `<pattern>` is defined by Coconut's [`match` statement](#match), and `<default>` is the optional default if no argument is passed. The `match` keyword at the beginning is optional, but is sometimes necessary to disambiguate pattern-matching function definition from normal function definition, which will always take precedence.
 
