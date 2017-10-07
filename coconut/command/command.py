@@ -310,7 +310,7 @@ class Command(object):
                 if not is_special_dir(name) and name.startswith("."):
                     if logger.verbose:
                         logger.show_tabulated("Skipped directory", name, "(explicitly pass as source to override).")
-                    dirnames.remove(name)  # directories removed from dirnames won't appear in further os.walk iteration
+                    dirnames.remove(name)  # directories removed from dirnames won't appear in further os.walk iterations
         return filepaths
 
     def compile_file(self, filepath, write=True, package=False, *args, **kwargs):
@@ -320,6 +320,7 @@ class Command(object):
         elif write is True:
             destpath = filepath
         else:
+            # add the name of file to the destination path
             destpath = os.path.join(write, os.path.basename(filepath))
         if destpath is not None:
             base, ext = os.path.splitext(os.path.splitext(destpath)[0])
@@ -640,9 +641,16 @@ class Command(object):
         logger.show_tabulated("Watching", showpath(source), "(press Ctrl-C to end)...")
 
         def recompile(path):
+            path = fixpath(path)
             if os.path.isfile(path) and os.path.splitext(path)[1] in code_exts:
                 with self.handling_exceptions():
-                    filepaths = self.compile_path(path, write, package, run, force, show_unchanged=False)
+                    if write is True or write is None:
+                        writedir = write
+                    else:
+                        # correct the compilation path based on the relative position of path to source
+                        dirpath = os.path.dirname(path)
+                        writedir = os.path.join(write, os.path.relpath(dirpath, source))
+                    filepaths = self.compile_path(path, writedir, package, run, force, show_unchanged=False)
                     self.run_mypy(filepaths)
 
         watcher = RecompilationWatcher(recompile)
