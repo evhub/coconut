@@ -2114,7 +2114,7 @@ while True:
 
 #### `setup`
 
-**coconut.convenience.setup**(_target, strict, minify, line\_numbers, keep\_lines, no\_tco_**)**
+**coconut.convenience.setup**(_target, strict, minify, line\_numbers, keep\_lines, no\_tco_)
 
 `setup` can be used to pass command line flags for use in `parse`. The possible values for each flag argument are:
 
