@@ -53,6 +53,7 @@ from coconut.constants import (
     reserved_vars,
     num_added_tb_layers,
     minimum_recursion_limit,
+    oserror_retcode,
     WINDOWS,
 )
 from coconut.exceptions import (
@@ -232,7 +233,7 @@ def run_cmd(cmd, show_output=True, raise_errs=True, **kwargs):
     """Run a console command.
 
     When show_output=True, prints output and returns exit code, otherwise returns output.
-    When raise_errs=True, raises an error if command fails.
+    When raise_errs=True, raises a subprocess.CalledProcessError if the command fails.
     """
     internal_assert(cmd and isinstance(cmd, list), "console commands must be passed as non-empty lists")
     try:
@@ -242,16 +243,25 @@ def run_cmd(cmd, show_output=True, raise_errs=True, **kwargs):
     else:
         cmd[0] = which(cmd[0]) or cmd[0]
     logger.log_cmd(cmd)
-    if show_output and raise_errs:
-        return subprocess.check_call(cmd, **kwargs)
-    elif show_output:
-        return subprocess.call(cmd, **kwargs)
-    else:
-        stdout, stderr, retcode = call_output(cmd, **kwargs)
-        output = "".join(stdout + stderr)
-        if retcode and raise_errs:
-            raise subprocess.CalledProcessError(retcode, cmd, output=output)
-        return output
+    try:
+        if show_output and raise_errs:
+            return subprocess.check_call(cmd, **kwargs)
+        elif show_output:
+            return subprocess.call(cmd, **kwargs)
+        else:
+            stdout, stderr, retcode = call_output(cmd, **kwargs)
+            output = "".join(stdout + stderr)
+            if retcode and raise_errs:
+                raise subprocess.CalledProcessError(retcode, cmd, output=output)
+            return output
+    except OSError:
+        logger.log_exc()
+        if raise_errs:
+            raise subprocess.CalledProcessError(oserror_retcode, cmd)
+        elif show_output:
+            return oserror_retcode
+        else:
+            return ""
 
 
 def set_mypy_path(mypy_path):

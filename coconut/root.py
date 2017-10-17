@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "1.3.0"
 VERSION_NAME = "Dead Parrot"
 # False for release, int >= 1 for develop
-DEVELOP = 4
+DEVELOP = 5
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
