@@ -131,7 +131,7 @@ min_versions = {
     "pre-commit": (1,),
     "pygments": (2, 2),
     "recommonmark": (0, 4),
-    "psutil": (5, 3),
+    "psutil": (5,),
     "jupyter": (1, 0),
     "jupyter-console": (5, 2),
     "ipykernel": (4, 6),
