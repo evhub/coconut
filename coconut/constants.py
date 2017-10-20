@@ -135,7 +135,7 @@ min_versions = {
     "jupyter": (1, 0),
     "jupyter-console": (5, 2),
     "ipykernel": (4, 6),
-    "mypy": (0, 530),
+    "mypy": (0, 540),
     "prompt_toolkit": (1, 0),
     "futures": (3, 1),
     "argparse": (1, 4),
