@@ -1,10 +1,11 @@
 repos:
 -   repo: git://github.com/pre-commit/pre-commit-hooks.git
-    sha: v0.9.5
+    sha: v1.1.1
     hooks:
     -   id: check-byte-order-marker
     -   id: check-merge-conflict
     -   id: check-case-conflict
+    -   id: check-vcs-permalinks
     -   id: check-ast
     -   id: check-json
     -   id: check-yaml
