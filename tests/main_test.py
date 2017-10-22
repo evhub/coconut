@@ -62,7 +62,6 @@ mypy_args = ["--follow-imports", "silent", "--ignore-missing-imports"]
 
 ignore_mypy_errs_with = (
     "tutorial.py",
-    "No overload variant of",
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -332,7 +331,7 @@ class TestShell(unittest.TestCase):
                 assert kernel in stdout
             call(
                 ["coconut", "--jupyter", "console"],
-                assert_output="Jupyter error",
+                assert_output=("shutting down", "Jupyter error"),
                 check_errors=False,
                 allow_fail=True,
             )

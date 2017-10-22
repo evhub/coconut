@@ -28,17 +28,17 @@ sqplus1_1 ..= square  # type: ignore
 plus1sq_2 = (x) -> x |> plus1 |> square
 sqplus1_2 = (x) -> x |> square |> plus1
 
-plus1sq_3 = square <.. plus1  # type: ignore
+plus1sq_3 = square <.. plus1
 sqplus1_3 = plus1
 sqplus1_3 <..= square  # type: ignore
 
-plus1sq_4 = plus1 ..> square  # type: ignore
+plus1sq_4 = plus1 ..> square
 sqplus1_4 = square
 sqplus1_4 ..>= plus1  # type: ignore
 
-square_times2_plus1 = square ..> times2 ..> plus1  # type: ignore
-square_times2_plus1_ = plus1 <.. times2 <.. square  # type: ignore
-plus1_cube = plus1 ..> x -> x**3  # type: ignore
+square_times2_plus1 = square ..> times2 ..> plus1
+square_times2_plus1_ = plus1 <.. times2 <.. square
+plus1_cube = plus1 ..> x -> x**3
 
 def plus1_all(*args) = map(plus1, args)
 def square_all(*args) = map(square, args)
@@ -46,11 +46,11 @@ def times2_all(*args) = map(times2, args)
 
 plus1sq_all = square_all <*.. plus1_all
 sqplus1_all = plus1_all
-sqplus1_all <*..= square_all  # type: ignore
+sqplus1_all <*..= square_all
 
 plus1sq_all_ = plus1_all ..*> square_all
 sqplus1_all_ = square_all
-sqplus1_all_ ..*>= plus1_all  # type: ignore
+sqplus1_all_ ..*>= plus1_all
 
 square_times2_plus1_all = square_all ..*> times2_all ..*> plus1_all
 square_times2_plus1_all_ = plus1_all <*.. times2_all <*.. square_all
@@ -65,7 +65,7 @@ plus1sqsum_all_ = sum <.. square_all <*.. plus1_all
 product = reduce$(*)
 def zipwith(f, *args) = map((items) -> f(*items), zip(*args))
 def zipwith_(f, *args) = starmap$(f)..zip(*args)
-zipsum: int$[]$[] -> int$[] = map$(sum)..zip
+zipsum = map$(sum)..zip  # type: ignore
 ident = (x) -> x
 @ ident .. ident
 def plus1_(x: int) -> int = x + 1
@@ -649,7 +649,7 @@ def `pattern_abs_` (x) = x
 # Recursive iterator
 
 @recursive_iterator
-def fib() -> int$[] = (1, 1) :: map((+), fib(), fib()$[1:])
+def fib() = (1, 1) :: map((+), fib(), fib()$[1:])
 
 @recursive_iterator
 def loop(it) = it :: loop(it)

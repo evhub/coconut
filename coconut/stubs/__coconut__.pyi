@@ -36,7 +36,7 @@ if sys.version_info < (3,):
 
     py_raw_input, py_xrange = _b.raw_input, _b.xrange
 
-    class range:
+    class range(Iterable[int]):
         def __init__(self,
             start: Optional[int] = ...,
             stop: Optional[int] = ...,
@@ -167,7 +167,7 @@ def _coconut_minus(a, *rest):
 def reiterable(iterable: Iterable[_T]) -> Iterable[_T]: ...
 
 
-class count:
+class count(Iterable[int]):
     def __init__(self, start: int = ..., step: int = ...) -> None: ...
     def __iter__(self) -> Iterator[int]: ...
     def __contains__(self, elem: int) -> bool: ...

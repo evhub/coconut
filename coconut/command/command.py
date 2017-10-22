@@ -187,6 +187,8 @@ class Command(object):
                 raise CoconutException("cannot compile as both --package and --standalone")
             if args.standalone and self.mypy:
                 raise CoconutException("cannot compile as both --package (implied by --mypy) and --standalone")
+            if args.no_write and self.mypy:
+                raise CoconutException("cannot compile with --no-write when using --mypy")
             if (args.run or args.interact) and os.path.isdir(args.source):
                 if args.run:
                     raise CoconutException("source path must point to file not directory when --run is enabled")
