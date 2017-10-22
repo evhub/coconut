@@ -79,11 +79,17 @@ def escape(inputstring):
         return '"' + inputstring.replace("$", "\\$").replace("`", "\\`") + '"'
 
 
-def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_first=False, **kwargs):
+def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_first=False, allow_fail=False, **kwargs):
     """Executes a shell command."""
     print("\n>", (cmd if isinstance(cmd, str) else " ".join(cmd)))
-    if assert_output is True:
-        assert_output = "<success>"
+    if assert_output is False:
+        assert_output = ("",)
+    elif assert_output is True:
+        assert_output = ("<success>",)
+    elif isinstance(assert_output, str):
+        assert_output = (assert_output,)
+    else:
+        assert_output = tuple(x if x is not True else "<success>" for x in assert_output)
     stdout, stderr, retcode = call_output(cmd, **kwargs)
     if stderr_first:
         out = stderr + stdout
@@ -93,7 +99,8 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
     lines = out.splitlines()
     for line in lines:
         print(line)
-    assert not retcode, "Command failed: " + repr(cmd)
+    if not allow_fail:
+        assert not retcode, "Command failed: " + repr(cmd)
     for line in lines:
         assert "CoconutInternalException" not in line, "CoconutInternalException in " + repr(line)
         assert "<unprintable" not in line, "Unprintable error in " + repr(line)
@@ -108,8 +115,8 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
     last_line = lines[-1] if lines else ""
     if assert_output is None:
         assert not last_line, "Expected nothing; got " + repr(last_line)
-    elif assert_output is not False:
-        assert assert_output in last_line, "Expected " + repr(assert_output) + "; got " + repr(last_line)
+    else:
+        assert any(x in last_line for x in assert_output), "Expected " + ", ".join(assert_output) + "; got " + repr(last_line)
 
 
 def call_coconut(args, **kwargs):
@@ -308,9 +315,13 @@ class TestShell(unittest.TestCase):
 
     if IPY:
 
-        if not WINDOWS:
-            def test_ipython_extension(self):
-                call(["ipython", "--ext", "coconut", "-c", '%coconut ' + coconut_snip], assert_output=True)
+        def test_ipython_extension(self):
+            call(
+                ["ipython", "--ext", "coconut", "-c", r'%coconut ' + coconut_snip],
+                assert_output=(True,) + (("Jupyter error",) if WINDOWS else ()),
+                check_errors=not WINDOWS,
+                allow_fail=WINDOWS,
+            )
 
         def test_jupyter_kernel(self):
             call(["coconut", "--jupyter"], assert_output="Coconut: Successfully installed Coconut Jupyter kernel.")
@@ -319,7 +330,13 @@ class TestShell(unittest.TestCase):
             assert not retcode and not stderr, stderr
             for kernel in icoconut_kernel_names:
                 assert kernel in stdout
-            call(["coconut", "--jupyter", "console"], stdin=["\x04"])
+            call(
+                ["coconut", "--jupyter", "console"],
+                stdin=["\x04", "y\n"],
+                assert_output=("shutting down",) + (("Jupyter error",) if WINDOWS else ()),
+                check_errors=not WINDOWS,
+                allow_fail=WINDOWS,
+            )
 
 
 class TestCompilation(unittest.TestCase):
