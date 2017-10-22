@@ -63,8 +63,6 @@ mypy_args = ["--follow-imports", "silent", "--ignore-missing-imports"]
 ignore_mypy_errs_with = (
     "tutorial.py",
     "No overload variant of",
-    # TODO: Re-enable when https://github.com/python/mypy/issues/3574 is fixed.
-    "INTERNAL ERROR",
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -311,16 +309,17 @@ class TestShell(unittest.TestCase):
     if IPY:
 
         if not WINDOWS:
-            def test_ipython(self):
+            def test_ipython_extension(self):
                 call(["ipython", "--ext", "coconut", "-c", '%coconut ' + coconut_snip], assert_output=True)
 
-        def test_jupyter(self):
+        def test_jupyter_kernel(self):
             call(["coconut", "--jupyter"], assert_output="Coconut: Successfully installed Coconut Jupyter kernel.")
             stdout, stderr, retcode = call_output(["jupyter", "kernelspec", "list"])
             stdout, stderr = "".join(stdout), "".join(stderr)
             assert not retcode and not stderr, stderr
             for kernel in icoconut_kernel_names:
                 assert kernel in stdout
+            call(["coconut", "--jupyter", "console"], stdin=["\x04"])
 
 
 class TestCompilation(unittest.TestCase):
