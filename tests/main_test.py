@@ -317,7 +317,8 @@ class TestShell(unittest.TestCase):
         def test_ipython_extension(self):
             call(
                 ["ipython", "--ext", "coconut", "-c", r'%coconut ' + coconut_snip],
-                assert_output=(True,) + (("Jupyter error", "RuntimeWarning") if WINDOWS else ()),
+                assert_output=(True,) + (("Jupyter error",) if WINDOWS else ()),
+                stderr_first=WINDOWS,
                 check_errors=not WINDOWS,
                 allow_fail=WINDOWS,
             )
