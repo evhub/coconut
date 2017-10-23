@@ -337,6 +337,7 @@ tre_mock_var = reserved_prefix + "_mock_func"
 tre_store_var = reserved_prefix + "_recursive_func"
 none_coalesce_var = reserved_prefix + "_none_coalesce_item"
 sentinel_var = reserved_prefix + "_sentinel"
+
 # prefer Matcher.get_temp_var to proliferating more match vars here
 match_to_var = reserved_prefix + "_match_to"
 match_to_args_var = match_to_var + "_args"
@@ -429,7 +430,8 @@ py3_to_py2_stdlib = {
     "urllib.error": ("urllib2", (3,)),
     "pickle": ("cPickle", (3,)),
     "collections.abc": ("collections", (3, 3)),
-    "io.StringIO": ("StringIO./StringIO", (2, 7)),  # ./ denotes from ... import ...
+    # ./ denotes from ... import ...
+    "io.StringIO": ("StringIO./StringIO", (2, 7)),
     "io.BytesIO": ("cStringIO./StringIO", (2, 7)),
 }
 
@@ -493,7 +495,8 @@ verbose_mypy_args = (
     "--warn-incomplete-stub",
     "--warn-redundant-casts",
     "--warn-return-any",
-    "--warn-unused-ignores",
+    "--warn-unused-configs",
+    "--show-error-context",
 )
 
 oserror_retcode = 127
