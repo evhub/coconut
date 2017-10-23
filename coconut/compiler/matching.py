@@ -372,6 +372,15 @@ class Matcher(object):
                     + ")))",
                 )
 
+    def match_series(self, name, series_type, item):
+        """Assign name to item converted into the given series_type."""
+        if series_type == "(":
+            self.add_def(name + " = _coconut.tuple(" + item + ")")
+        elif series_type == "[":
+            self.add_def(name + " = _coconut.list(" + item + ")")
+        else:
+            raise CoconutInternalException("invalid series match type", series_type)
+
     def match_sequence(self, tokens, item):
         """Matches a sequence."""
         tail = None
@@ -389,12 +398,7 @@ class Matcher(object):
                     splice = "[" + str(len(matches)) + ":]"
                 else:
                     splice = ""
-                if series_type == "(":
-                    self.add_def(tail + " = _coconut.tuple(" + item + splice + ")")
-                elif series_type == "[":
-                    self.add_def(tail + " = _coconut.list(" + item + splice + ")")
-                else:
-                    raise CoconutInternalException("invalid series match type", series_type)
+                self.match_series(tail, series_type, item + splice)
         self.match_all_in(matches, item)
 
     def match_iterator(self, tokens, item):
@@ -466,12 +470,7 @@ class Matcher(object):
                 splice = "[:" + str(-len(matches)) + "]"
             else:
                 splice = ""
-            if series_type == "(":
-                self.add_def(front + " = _coconut.tuple(" + item + splice + ")")
-            elif series_type == "[":
-                self.add_def(front + " = _coconut.list(" + item + splice + ")")
-            else:
-                raise CoconutInternalException("invalid series match type", series_type)
+            self.match_series(front, series_type, item + splice)
         for i, match in enumerate(matches):
             self.match(match, item + "[" + str(i - len(matches)) + "]")
 
@@ -489,12 +488,7 @@ class Matcher(object):
                 splice = "[:" + str(-len(last_matches)) + "]"
             else:
                 splice = ""
-            if series_type == "(":
-                self.add_def(middle + " = _coconut.tuple(" + item + splice + ")")
-            elif series_type == "[":
-                self.add_def(middle + " = _coconut.list(" + item + splice + ")")
-            else:
-                raise CoconutInternalException("invalid series match type", series_type)
+            self.match_series(middle, series_type, item + splice)
         self.match_all_in(head_matches, item)
         for i, match in enumerate(last_matches):
             self.match(match, item + "[" + str(i - len(last_matches)) + "]")
