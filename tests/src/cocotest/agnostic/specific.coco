@@ -1,4 +1,4 @@
-from io import StringIO
+from io import StringIO  # type: ignore
 
 from .util import mod
 
