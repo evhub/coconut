@@ -470,7 +470,8 @@ def suite_test():
         assert False
     v = vector2()
     assert repr(v) == "vector2(x=0, y=0)"
-    assert factorial.__doc__ == "this is a docstring" == iadd.__doc__
+    for obj in (factorial, iadd, collatz, recurse_n_times):
+        assert obj.__doc__ == "this is a docstring", obj
     assert list_type((|1,2|)) == "at least 2"
     assert list_type((|1|)) == "at least 1"
     assert list_type((| |)) == "empty"

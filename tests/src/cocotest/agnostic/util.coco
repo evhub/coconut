@@ -189,6 +189,7 @@ def next_mul_of(n, x):
         return next_mul_of(n, x+1)
 
 def collatz(n):
+    """this is a docstring"""
     if n == 1:
         return True
     elif n%2 == 0:
@@ -197,6 +198,7 @@ def collatz(n):
         return collatz(3*n+1)
 
 def recurse_n_times(n) =
+    """this is a docstring"""
     if not n:
         return True
     recurse_n_times(n-1)

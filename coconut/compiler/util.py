@@ -215,6 +215,13 @@ def split_trailing_indent(line, max_indents=None):
     return line, indent
 
 
+def split_leading_trailing_indent(line, max_indents=None):
+    """Split leading and trailing indent."""
+    leading_indent, line = split_leading_indent(line, max_indents)
+    line, trailing_indent = split_trailing_indent(line, max_indents)
+    return leading_indent, line, trailing_indent
+
+
 def parse(grammar, text):
     """Parse text using grammar."""
     return grammar.parseWithTabs().parseString(text)
@@ -227,7 +234,7 @@ def match_in(grammar, text):
     return False
 
 
-def matches(grammar, text):
+def all_matches(grammar, text):
     """Find all matches for grammar in text."""
     return list(grammar.parseWithTabs().scanString(text))
 

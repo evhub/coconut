@@ -102,6 +102,7 @@ from coconut.compiler.util import (
     attach,
     split_leading_indent,
     split_trailing_indent,
+    split_leading_trailing_indent,
     match_in,
     transform,
     ignore_transform,
@@ -872,7 +873,8 @@ class Compiler(Grammar):
             line, indent = split_trailing_indent(line)
             level += ind_change(indent)
 
-            out.append(line + comment)
+            line = (line + comment).rstrip()
+            out.append(line)
 
         if level != 0:
             complain(CoconutInternalException("non-zero final indentation level", level))
@@ -1517,6 +1519,15 @@ class Compiler(Grammar):
         except CoconutException as err:
             complain(err)
 
+    def split_docstring(self, block):
+        """Split a code block into a docstring and a body."""
+        first_line, rest_of_lines = block.split("\n", 1)
+        raw_first_line = split_leading_trailing_indent(rem_comment(first_line))[1]
+        if match_in(self.just_a_string, raw_first_line):
+            return first_line, rest_of_lines
+        else:
+            return None, block
+
     def decoratable_normal_funcdef_stmt_handle(self, tokens):
         """Determines if TCO or TRE can be done and if so does it.
         Also handles dotted function names."""
@@ -1588,11 +1599,11 @@ class Compiler(Grammar):
 
         out = "".join(lines)
         if tre:
-            indent, base = split_leading_indent(out, 1)
-            base, dedent = split_trailing_indent(base, 1)
+            indent, base, dedent = split_leading_trailing_indent(out, 1)
             base, base_dedent = split_trailing_indent(base)
+            docstring, base = self.split_docstring(base)
             out = (
-                indent + (
+                indent + (docstring + "\n" if docstring is not None else "") + (
                     "def " + tre_mock_var + func_params + ": return " + func_args + "\n"
                     if use_mock else ""
                 ) + "while True:\n"
