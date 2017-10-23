@@ -50,7 +50,7 @@ def suite_test():
             == 10
             == dropwhile((>)$(0), (range(-10, 0) :: N()))$[:5] |> sum
             )
-    assert "ABCDEFG" |> ((s) -> map(s[], (1, 3, 5))) |> sum_ == "BDF"
+    assert "ABCDEFG" |> ((s) -> map(s[], (1, 3, 5))) |> sum_ == "BDF"  # type: ignore
     assert N()$[10:15] |> list == [10,11,12,13,14] == N_()$[10:15] |> list
     assert (N() |> takewhile$((>)$(5)) |> list
             == [0,1,2,3,4]
@@ -68,8 +68,8 @@ def suite_test():
     assert collatz(27)
     assert preop(1, 2).add() == 3
     assert vector(3, 4) |> abs == 5 == vector_with_id(3, 4, 1) |> abs
-    assert vector(1, 2) |> ((v) -> map(v., ("x", "y"))) |> tuple == (1, 2)
-    assert vector(3, 1) |> vector(1, 2).transform |> ((v) -> map(v[], (0, 1))) |> tuple == (4, 3)
+    assert vector(1, 2) |> ((v) -> map(v., ("x", "y"))) |> tuple == (1, 2)  # type: ignore
+    assert vector(3, 1) |> vector(1, 2).transform |> ((v) -> map(v[], (0, 1))) |> tuple == (4, 3)  # type: ignore
     assert vector(1, 2) |> vector(1, 2).__eq__
     assert not vector(1, 2) |> vector(3, 4).__eq__
     assert not (1, 2) |> vector(1, 2).__eq__
