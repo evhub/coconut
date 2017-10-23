@@ -566,12 +566,12 @@ class Command(object):
 
             logger.log("MyPy args:", self.mypy_args)
 
-    def run_mypy(self, paths=[], code=None):
+    def run_mypy(self, paths=(), code=None):
         """Run MyPy with arguments."""
         if self.mypy:
             set_mypy_path(stub_dir)
             from coconut.command.mypy import mypy_run
-            args = paths + self.mypy_args
+            args = list(paths) + self.mypy_args
             if code is not None:
                 args += ["-c", code]
             for line, is_err in mypy_run(args):

@@ -109,24 +109,20 @@ extras["dev"] = uniqueify(
 
 extras["cPyparsing"] = get_reqs("cPyparsing")
 
+if using_modern_setuptools:
+    # modern method for adding version-dependent requirements
+    extras[":python_version<'2.7'"] = get_reqs("py26")
+    extras[":python_version>='2.7'"] = get_reqs("non-py26")
+    extras[":python_version<'3'"] = get_reqs("py2")
 
-def add_version_reqs(modern=True):
-    if modern:
-        global extras
-        extras[":python_version<'2.7'"] = get_reqs("py26")
-        extras[":python_version>='2.7'"] = get_reqs("non-py26")
-        extras[":python_version<'3'"] = get_reqs("py2")
+else:
+    # old method for adding version-dependent requirements
+    if PY26:
+        requirements += get_reqs("py26")
     else:
-        global requirements
-        if PY26:
-            requirements += get_reqs("py26")
-        else:
-            requirements += get_reqs("non-py26")
-        if PY2:
-            requirements += get_reqs("py2")
-
-
-add_version_reqs(using_modern_setuptools)
+        requirements += get_reqs("non-py26")
+    if PY2:
+        requirements += get_reqs("py2")
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MAIN:
