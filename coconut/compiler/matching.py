@@ -372,8 +372,8 @@ class Matcher(object):
                     + ")))",
                 )
 
-    def match_series(self, name, series_type, item):
-        """Assign name to item converted into the given series_type."""
+    def assign_to_series(self, name, series_type, item):
+        """Assign name to item converted to the given series_type."""
         if series_type == "(":
             self.add_def(name + " = _coconut.tuple(" + item + ")")
         elif series_type == "[":
@@ -398,7 +398,7 @@ class Matcher(object):
                     splice = "[" + str(len(matches)) + ":]"
                 else:
                     splice = ""
-                self.match_series(tail, series_type, item + splice)
+                self.assign_to_series(tail, series_type, item + splice)
         self.match_all_in(matches, item)
 
     def match_iterator(self, tokens, item):
@@ -470,7 +470,7 @@ class Matcher(object):
                 splice = "[:" + str(-len(matches)) + "]"
             else:
                 splice = ""
-            self.match_series(front, series_type, item + splice)
+            self.assign_to_series(front, series_type, item + splice)
         for i, match in enumerate(matches):
             self.match(match, item + "[" + str(i - len(matches)) + "]")
 
@@ -488,7 +488,7 @@ class Matcher(object):
                 splice = "[:" + str(-len(last_matches)) + "]"
             else:
                 splice = ""
-            self.match_series(middle, series_type, item + splice)
+            self.assign_to_series(middle, series_type, item + splice)
         self.match_all_in(head_matches, item)
         for i, match in enumerate(last_matches):
             self.match(match, item + "[" + str(i - len(last_matches)) + "]")
