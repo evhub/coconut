@@ -1683,6 +1683,8 @@ class Grammar(object):
         | Keyword("for") - base_name - Keyword("in")
     )
 
+    just_a_string = start_marker + string + end_marker
+
 
 # end: EXTRA GRAMMAR
 #-----------------------------------------------------------------------------------------------------------------------
