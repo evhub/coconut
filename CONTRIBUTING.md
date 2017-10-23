@@ -182,5 +182,6 @@ After you've tested your changes locally, you'll want to add more permanent test
     1. Wipe all updated versions on [readthedocs](https://readthedocs.org/projects/coconut/versions/)
     1. Copy [PyPI](https://pypi.python.org/pypi/coconut) keywords to readthedocs tags
     1. Build all updated versions on [readthedocs](https://readthedocs.org/projects/coconut/builds/)
-    1. Submit PR to update [Coconut's `conda-forge` feedstock](https://github.com/conda-forge/coconut-feedstock)
+    1. Download latest [PyPI](https://pypi.python.org/pypi/coconut) `.tar.gz` file and hash it with `openssl sha256 coconut-<version>.tar.gz`
+    1. Submit PR to update [Coconut's `conda-forge` feedstock](https://github.com/conda-forge/coconut-feedstock) using that hash
     1. Close release milestone
