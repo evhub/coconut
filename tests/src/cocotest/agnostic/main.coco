@@ -435,6 +435,8 @@ def main_test():
     input_data = [3, 4, 6, 2, 1, 9, 0, 7, 5, 8]
     assert input_data |> scan$(*) |> list == [3, 12, 72, 144, 144, 1296, 0, 0, 0, 0]
     assert input_data |> scan$(max) |> list == [3, 4, 6, 6, 6, 9, 9, 9, 9, 9]
+    a: str = "test"
+    assert a == "test" and isinstance(a, str)
     return True
 
 def tco_func() = tco_func()
