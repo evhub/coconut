@@ -26,6 +26,7 @@ if sys.version_info < (3,):
     import future_builtins
     import __builtin__ as _b
 
+    str = unicode
     open = io.open
     ascii = future_builtins.ascii
     filter = future_builtins.filter
