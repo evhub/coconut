@@ -51,7 +51,7 @@ pip install coconut[name_of_optional_dependency]
 ```
 or, to install multiple optional dependencies,
 ```
-pip install coocnut[opt_dep_1,opt_dep_2]
+pip install coconut[opt_dep_1,opt_dep_2]
 ```
 
 The full list of optional dependencies is:
