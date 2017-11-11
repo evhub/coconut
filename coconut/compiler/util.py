@@ -150,7 +150,7 @@ def condense(item):
 
 def maybeparens(lparen, item, rparen):
     """Wrap an item in optional parentheses."""
-    return lparen.suppress() + item + rparen.suppress() | item
+    return item | lparen.suppress() + item + rparen.suppress()
 
 
 def tokenlist(item, sep, suppress=True):

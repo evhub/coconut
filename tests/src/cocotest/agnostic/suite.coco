@@ -401,6 +401,8 @@ def suite_test():
     ):
         assert one == 1
         assert two == 2
+    with (context_produces(1)) as one:
+        assert one == 1
     assert 1 ?? raise_exc() == 1
     try:
         assert None ?? raise_exc()
