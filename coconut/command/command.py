@@ -66,6 +66,7 @@ from coconut.command.util import (
     launch_tutorial,
     stdin_readable,
     set_recursion_limit,
+    canparse,
 )
 from coconut.compiler.util import should_indent
 from coconut.compiler.header import gethash
@@ -99,7 +100,8 @@ class Command(object):
             for i in range(1, len(sys.argv)):
                 arg = sys.argv[i]
                 args.append(arg)
-                if not arg.startswith("-"):  # was source file
+                # if arg is source file, put everything else in argv
+                if not arg.startswith("-") and canparse(arguments, args[:-1]):
                     argv = sys.argv[i + 1:]
                     break
             args += ["--argv"] + argv

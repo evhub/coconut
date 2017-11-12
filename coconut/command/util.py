@@ -299,6 +299,24 @@ def set_recursion_limit(limit):
     sys.setrecursionlimit(limit)
 
 
+def _raise_ValueError(msg):
+    raise ValueError(msg)
+
+
+def canparse(argparser, args):
+    """Determines if argparser can parse args."""
+    old_error_method = argparser.error
+    argparser.error = _raise_ValueError
+    try:
+        argparser.parse_args(args)
+    except ValueError:
+        return False
+    else:
+        return True
+    finally:
+        argparser.error = old_error_method
+
+
 #-----------------------------------------------------------------------------------------------------------------------
 # CLASSES:
 #-----------------------------------------------------------------------------------------------------------------------

@@ -382,6 +382,9 @@ class TestCompilation(unittest.TestCase):
     def test_simple_minify(self):
         run_runnable(["-n", "--minify"])
 
+    def test_simple_target(self):
+        run_runnable(["-n", "-t", "sys"])
+
 
 class TestExternal(unittest.TestCase):
 
