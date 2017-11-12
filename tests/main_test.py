@@ -332,6 +332,10 @@ class TestShell(unittest.TestCase):
                 assert kernel in stdout
             call(
                 ["coconut", "--jupyter", "console"],
+                stdin=[
+                    "\x04",  # Ctrl-D to exit
+                    "y\n",  # y to accept exit prompt
+                ],
                 assert_output=("shutting down", "Jupyter error"),
                 check_errors=False,
                 allow_fail=True,

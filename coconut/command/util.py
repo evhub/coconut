@@ -215,12 +215,21 @@ def run_file(path):
         return runpy.run_path(path, run_name="__main__")
 
 
-def call_output(cmd, **kwargs):
+def iterate_then_repeat(iterate, repeat=None):
+    """Iterate through an iterable then always repeat some value."""
+    for x in iterate:
+        yield x
+    while True:
+        yield repeat
+
+
+def call_output(cmd, stdin=(), **kwargs):
     """Run command and read output."""
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
     stdout, stderr, retcode = [], [], None
+    stdin_iter = iterate_then_repeat(stdin)
     while retcode is None:
-        out, err = p.communicate()
+        out, err = p.communicate(next(stdin_iter))
         if out is not None:
             stdout.append(out.decode(get_encoding(sys.stdout)))
         if err is not None:

@@ -45,6 +45,7 @@ from coconut.constants import (
     stub_dir,
     exit_chars,
     coconut_run_args,
+    coconut_run_verbose_args,
     verbose_mypy_args,
     report_this_text,
 )
@@ -95,7 +96,7 @@ class Command(object):
     def start(self, run=False):
         """Process command-line arguments."""
         if run:
-            args, argv = list(coconut_run_args), []
+            args, argv = [], []
             # for coconut-run, all args beyond the source file should be wrapped in an --argv
             for i in range(1, len(sys.argv)):
                 arg = sys.argv[i]
@@ -104,6 +105,10 @@ class Command(object):
                 if not arg.startswith("-") and canparse(arguments, args[:-1]):
                     argv = sys.argv[i + 1:]
                     break
+            if "--verbose" in args:
+                args = list(coconut_run_verbose_args) + args
+            else:
+                args = list(coconut_run_args) + args
             args += ["--argv"] + argv
         else:
             args = None

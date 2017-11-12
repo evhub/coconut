@@ -487,7 +487,8 @@ exit_chars = (
     "\x1a",  # Ctrl-Z
 )
 
-coconut_run_args = ("--run", "--quiet", "--target", "sys")
+coconut_run_verbose_args = ("--run", "--target", "sys")
+coconut_run_args = coconut_run_verbose_args + ("--quiet",)
 
 num_added_tb_layers = 3  # how many frames to remove when printing a tb
 
