@@ -131,10 +131,14 @@ class Logger(object):
         if self.verbose:
             printerr(*messages)
 
-    def log_sig(self, *messages):
-        """Logs debug messages with main signature if --verbose."""
+    def log_prefix(self, prefix, *messages):
+        """Logs debug messages with the given signature if --verbose."""
         if self.verbose:
-            self.display(messages, main_sig, debug=True)
+            self.display(messages, prefix, debug=True)
+
+    def log_sig(self, *messages):
+        """Logs debug messages with the main signature if --verbose."""
+        self.log_prefix(main_sig, *messages)
 
     def log_vars(self, message, variables, rem_vars=("self",)):
         """Logs variables with given message if --verbose."""
@@ -190,12 +194,12 @@ class Logger(object):
             printerr(errmsg)
 
     def log_exc(self):
-        """Display an exception only if in verbose mode."""
+        """Display an exception only if --verbose."""
         if self.verbose:
             self.display_exc()
 
     def log_cmd(self, args):
-        """Logs a console command if in verbose mode."""
+        """Logs a console command if --verbose."""
         self.log("> " + " ".join(args))
 
     def show_tabulated(self, begin, middle, end):
@@ -274,7 +278,7 @@ class Logger(object):
 
     @contextmanager
     def gather_parsing_stats(self):
-        """Times parsing if in verbose mode."""
+        """Times parsing if --verbose."""
         if self.verbose:
             start_time = time.clock()
             try:

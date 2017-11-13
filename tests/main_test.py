@@ -39,6 +39,8 @@ from coconut.constants import (
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
+logger.verbose = True
+
 base = os.path.dirname(os.path.relpath(__file__))
 src = os.path.join(base, "src")
 dest = os.path.join(base, "dest")
@@ -96,8 +98,6 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
         out = stdout + stderr
     out = "".join(out)
     lines = out.splitlines()
-    for line in lines:
-        print(line)
     if not allow_fail:
         assert not retcode, "Command failed: " + repr(cmd)
     for line in lines:
@@ -333,6 +333,7 @@ class TestShell(unittest.TestCase):
             call(
                 ["coconut", "--jupyter", "console"],
                 stdin=[
+                    "",  # wait until prompt
                     "\x04",  # Ctrl-D to exit
                     "y\n",  # y to accept exit prompt
                 ],

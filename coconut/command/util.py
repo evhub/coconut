@@ -229,11 +229,18 @@ def call_output(cmd, stdin=(), **kwargs):
     stdout, stderr, retcode = [], [], None
     stdin_iter = iterate_then_repeat(stdin)
     while retcode is None:
-        out, err = p.communicate(next(stdin_iter))
+        next_stdin = next(stdin_iter)
+        if next_stdin is not None:
+            logger.log_prefix("<0 ", next_stdin)
+        out, err = p.communicate(next_stdin)
         if out is not None:
-            stdout.append(out.decode(get_encoding(sys.stdout)))
+            out = out.decode(get_encoding(sys.stdout))
+            logger.log_prefix("1> ", out)
+            stdout.append(out)
         if err is not None:
-            stderr.append(err.decode(get_encoding(sys.stderr)))
+            err = err.decode(get_encoding(sys.stderr))
+            logger.log_prefix("2> ", err)
+            stderr.append(err)
         retcode = p.poll()
     return stdout, stderr, retcode
 
