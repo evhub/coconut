@@ -227,20 +227,20 @@ def call_output(cmd, stdin=(), **kwargs):
     """Run command and read output."""
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
     stdout, stderr, retcode = [], [], None
-    stdin_iter = iterate_then_repeat(stdin)
+    stdin_iter = iterate_then_repeat((stdin,) if isinstance(stdin, str) else stdin)
     while retcode is None:
         next_stdin = next(stdin_iter)
         if next_stdin is not None:
             logger.log_prefix("<0 ", next_stdin)
-        out, err = p.communicate(next_stdin)
-        if out is not None:
-            out = out.decode(get_encoding(sys.stdout))
+        raw_out, raw_err = p.communicate(next_stdin)
+        out = raw_out.decode(get_encoding(sys.stdout)) if raw_out else ""
+        if out:
             logger.log_prefix("1> ", out)
-            stdout.append(out)
-        if err is not None:
-            err = err.decode(get_encoding(sys.stderr))
+        stdout.append(out)
+        err = raw_err.decode(get_encoding(sys.stderr)) if raw_err else ""
+        if err:
             logger.log_prefix("2> ", err)
-            stderr.append(err)
+        stderr.append(err)
         retcode = p.poll()
     return stdout, stderr, retcode
 
