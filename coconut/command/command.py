@@ -240,12 +240,12 @@ class Command(object):
         if args.code is not None:
             self.execute(self.comp.parse_block(args.code))
         got_stdin = False
-        if stdin_readable():
+        if args.jupyter is not None:
+            self.start_jupyter(args.jupyter)
+        elif stdin_readable():
             logger.log("Reading piped input from stdin...")
             self.execute(self.comp.parse_block(sys.stdin.read()))
             got_stdin = True
-        if args.jupyter is not None:
-            self.start_jupyter(args.jupyter)
         if args.interact or (interact and not (
                 got_stdin
                 or args.source

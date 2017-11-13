@@ -215,32 +215,26 @@ def run_file(path):
         return runpy.run_path(path, run_name="__main__")
 
 
-def iterate_then_repeat(iterate, repeat=None):
-    """Iterate through an iterable then always repeat some value."""
-    for x in iterate:
-        yield x
-    while True:
-        yield repeat
-
-
-def call_output(cmd, stdin=(), **kwargs):
+def call_output(cmd, stdin=None, **kwargs):
     """Run command and read output."""
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
     stdout, stderr, retcode = [], [], None
-    stdin_iter = iterate_then_repeat((stdin,) if isinstance(stdin, str) else stdin)
     while retcode is None:
-        next_stdin = next(stdin_iter)
-        if next_stdin is not None:
-            logger.log_prefix("<0 ", next_stdin)
-        raw_out, raw_err = p.communicate(next_stdin)
+        if stdin is not None:
+            logger.log_prefix("<0 ", stdin.rstrip())
+        raw_out, raw_err = p.communicate(stdin)
+        stdin = None
+
         out = raw_out.decode(get_encoding(sys.stdout)) if raw_out else ""
         if out:
-            logger.log_prefix("1> ", out)
+            logger.log_prefix("1> ", out.rstrip())
         stdout.append(out)
+
         err = raw_err.decode(get_encoding(sys.stderr)) if raw_err else ""
         if err:
-            logger.log_prefix("2> ", err)
+            logger.log_prefix("2> ", err.rstrip())
         stderr.append(err)
+
         retcode = p.poll()
     return stdout, stderr, retcode
 
