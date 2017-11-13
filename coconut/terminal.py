@@ -106,7 +106,9 @@ class Logger(object):
                 str(msg) for msg in messages
             ).splitlines(True)
         )
-        if debug is True:
+        if not full_message:
+            full_message = sig.rstrip()
+        if debug:
             printerr(full_message)
         else:
             print(full_message)
