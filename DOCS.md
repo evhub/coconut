@@ -727,7 +727,7 @@ pattern ::= (
     | "None" | "True" | "False"     # constants
     | "=" NAME                      # check
     | NUMBER                        # numbers
-    | STRING                        # stringsh
+    | STRING                        # strings
     | [pattern "as"] NAME           # capture
     | NAME "(" patterns ")"         # data types
     | pattern "is" exprs            # type-checking
