@@ -239,6 +239,12 @@ def universal_import(imports, imp_from=None, target=""):
     return "\n".join(stmts)
 
 
+def imported_names(imports):
+    """Yields all the names imported by imports = [[imp1], [imp2, as], ...]."""
+    for imp in imports:
+        yield imp[-1]
+
+
 def split_args_list(tokens, loc):
     """Splits function definition arguments."""
     req_args, def_args, star_arg, kwd_args, dubstar_arg = [], [], None, [], None
@@ -359,6 +365,8 @@ class Compiler(Grammar):
         self.ichain_count = 0
         self.tre_store_count = 0
         self.stmt_lambdas = []
+        if self.strict:
+            self.unused_imports = set()
         self.bind()
 
     def bind(self):
@@ -575,6 +583,9 @@ class Compiler(Grammar):
                     str(err), extra="try again with --recursion-limit greater than the current "
                     + str(sys.getrecursionlimit()),
                 )
+        if self.strict:
+            for name in self.unused_imports:
+                logger.warn("found unused import", name, "disable --strict to dismiss")
         return out
 
 # end: COMPILER
@@ -1316,6 +1327,8 @@ class Compiler(Grammar):
                 return ""
         else:
             raise CoconutInternalException("invalid import tokens", tokens)
+        if self.strict:
+            self.unused_imports.update(imported_names(imports))
         return universal_import(imports, imp_from=imp_from, target=self.target)
 
     def complex_raise_stmt_handle(self, tokens):
@@ -1712,8 +1725,10 @@ class Compiler(Grammar):
             return tokens[0]
 
     def name_check(self, original, loc, tokens):
-        """Check for Python 3 exec function."""
+        """Check the given base name."""
         internal_assert(len(tokens) == 1, "invalid name tokens", tokens)
+        if self.strict:
+            self.unused_imports.discard(tokens[0])
         if tokens[0] == "exec":
             return self.check_py("3", "exec function", original, loc, tokens)
         elif tokens[0].startswith(reserved_prefix):
