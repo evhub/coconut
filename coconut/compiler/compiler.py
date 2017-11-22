@@ -242,7 +242,7 @@ def universal_import(imports, imp_from=None, target=""):
 def imported_names(imports):
     """Yields all the names imported by imports = [[imp1], [imp2, as], ...]."""
     for imp in imports:
-        yield imp[-1]
+        yield imp[-1].split(".", 1)[0]
 
 
 def split_args_list(tokens, loc):
