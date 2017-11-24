@@ -119,6 +119,7 @@ all_reqs = {
     ),
     "tests": (
         "pytest",
+        "pexpect",
     ),
     "cPyparsing": (
         "cPyparsing",
@@ -135,11 +136,12 @@ min_versions = {
     "jupyter": (1, 0),
     "jupyter-console": (5, 2),
     "ipykernel": (4, 6),
-    "mypy": (0, 540),
+    "mypy": (0, 550),
     "prompt_toolkit": (1, 0),
     "futures": (3, 1),
     "argparse": (1, 4),
     "pytest": (3,),
+    "pexpect": (4,),
     "watchdog": (0, 8),
     "requests": (2,),
     # We can't upgrade this; it breaks on Python 2.

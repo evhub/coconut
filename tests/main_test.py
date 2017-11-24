@@ -25,6 +25,8 @@ import os
 import shutil
 from contextlib import contextmanager
 
+import pexpect
+
 from coconut.terminal import logger
 from coconut.command.util import call_output
 from coconut.constants import (
@@ -313,7 +315,6 @@ class TestShell(unittest.TestCase):
         run_runnable(["-n"])
 
     if IPY:
-
         def test_ipython_extension(self):
             call(
                 ["ipython", "--ext", "coconut", "-c", r'%coconut ' + coconut_snip],
@@ -323,20 +324,21 @@ class TestShell(unittest.TestCase):
                 allow_fail=WINDOWS,
             )
 
-        def test_jupyter_kernel(self):
+        def test_kernel_installation(self):
             call(["coconut", "--jupyter"], assert_output="Coconut: Successfully installed Coconut Jupyter kernel.")
             stdout, stderr, retcode = call_output(["jupyter", "kernelspec", "list"])
             stdout, stderr = "".join(stdout), "".join(stderr)
             assert not retcode and not stderr, stderr
             for kernel in icoconut_kernel_names:
                 assert kernel in stdout
-            call(
-                ["coconut", "--jupyter", "console", "--no-confirm-exit", "--simple-prompt"],
-                stdin="exit()\n",
-                assert_output=("shutting down", "Jupyter error"),
-                check_errors=False,
-                allow_fail=True,
-            )
+
+        if not WINDOWS:
+            def test_jupyter_console(self):
+                p = pexpect.spawn("coconut --jupyter console --no-confirm-exit")
+                p.sendline("exit()")
+                p.expect("Shutting down kernel|shutting down|Jupyter error")
+                if p.isalive():
+                    p.terminate()
 
 
 class TestCompilation(unittest.TestCase):
