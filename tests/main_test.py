@@ -332,7 +332,7 @@ class TestShell(unittest.TestCase):
             for kernel in icoconut_kernel_names:
                 assert kernel in stdout
 
-        if not WINDOWS:
+        if not WINDOWS and not PYPY:
             def test_jupyter_console(self):
                 p = pexpect.spawn("coconut --jupyter console --no-confirm-exit")
                 p.sendline("exit()")
