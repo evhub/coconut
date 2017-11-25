@@ -402,6 +402,6 @@ class TestExternal(unittest.TestCase):
 
     def test_pyston(self):
         with remove_when_done(pyston):
-            comp_pyston()
+            comp_pyston(["--no-tco"])
             if PY2 and PYPY:
                 run_pyston()
