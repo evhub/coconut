@@ -307,6 +307,15 @@ class TestShell(unittest.TestCase):
     def test_convenience(self):
         call(["python", "-c", 'from coconut.convenience import parse; exec(parse("' + coconut_snip + '"))'], assert_output=True)
 
+    def test_import_hook(self):
+        sys.path.append(src)
+        try:
+            with remove_when_done(runnable_py):
+                import runnable
+        finally:
+            sys.path.remove(src)
+        assert runnable.success == "<success>"
+
     def test_runnable(self):
         with remove_when_done(runnable_py):
             run_runnable()

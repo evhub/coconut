@@ -30,7 +30,14 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
+import sys
+import os.path
+
 from coconut.constants import author as __author__  # NOQA
+from coconut.constants import (
+    code_exts,
+    coconut_import_hook_args,
+)
 
 __version__ = VERSION  # NOQA
 
@@ -49,10 +56,11 @@ def load_ipython_extension(ipython):
             newvars[var] = val
     ipython.push(newvars)
 
-    # add magic function
+    # import here to avoid circular dependencies
     from coconut.convenience import cmd, parse, CoconutException
     from coconut.terminal import logger
 
+    # add magic function
     def magic(line, cell=None):
         """Provides %coconut and %%coconut magics."""
         try:
@@ -62,7 +70,7 @@ def load_ipython_extension(ipython):
                 # first line in block is cmd, rest is code
                 line = line.strip()
                 if line:
-                    cmd(line)
+                    cmd(line, interact=False)
                 code = cell
             compiled = parse(code)
         except CoconutException:
@@ -70,3 +78,46 @@ def load_ipython_extension(ipython):
         else:
             ipython.run_cell(compiled, shell_futures=False)
     ipython.register_magic_function(magic, "line_cell", "coconut")
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# IMPORTER:
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+class CoconutImporter(object):
+    """Finder and loader for compiling Coconut files at import time."""
+
+    def run_compiler(self, path):
+        """Run the Coconut compiler on the given path."""
+        # import here to avoid circular dependencies
+        from coconut.convenience import cmd
+        cmd([path] + list(coconut_import_hook_args))
+
+    def find_module(self, fullname, path=None):
+        """Searches for a Coconut file of the given name and compiles it."""
+        basepaths = [""] + list(sys.path)
+        if fullname.startswith("."):
+            if path is None:
+                # we can't do a relative import if there's no package path
+                return None
+            fullname = fullname[1:]
+            basepaths.append(path)
+        fullpath = os.path.join(*fullname.split("."))
+        for head in basepaths:
+            path = os.path.join(head, fullpath)
+            for ext in code_exts:
+                filepath = path + ext
+                dirpath = os.path.join(path, "__init__" + ext)
+                if os.path.exists(filepath):
+                    self.run_compiler(filepath)
+                    # Coconut file was found and compiled, now let Python import it
+                    return None
+                if os.path.exists(dirpath):
+                    self.run_compiler(path)
+                    # Coconut package was found and compiled, now let Python import it
+                    return None
+        return None
+
+
+sys.meta_path.insert(0, CoconutImporter())
