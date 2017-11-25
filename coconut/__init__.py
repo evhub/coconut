@@ -88,7 +88,8 @@ def load_ipython_extension(ipython):
 class CoconutImporter(object):
     """Finder and loader for compiling Coconut files at import time."""
 
-    def run_compiler(self, path):
+    @staticmethod
+    def run_compiler(path):
         """Run the Coconut compiler on the given path."""
         # import here to avoid circular dependencies
         from coconut.convenience import cmd

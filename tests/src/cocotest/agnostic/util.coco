@@ -154,12 +154,22 @@ def qsort6(l: int$[]) -> int$[]:
             :: (head,)
             :: qsort6(x for x in tail if x > head)
         )  # type: ignore
-def qsort7([]) = []
-@addpattern(qsort7)
+
+def empty_list_base_case([]) = []
+
+@addpattern(empty_list_base_case)
 def qsort7([head] + tail) =
     qsort7(left) + [head] + qsort7(right) where:
         left = [x for x in tail if x <= head]
         right = [x for x in tail if x > head]
+
+@addpattern(empty_list_base_case)
+def qsort8(l) =
+    qsort8(left) + [mid] + qsort8(right) where:
+        midpt = len(l)//2
+        mid, rest = l[midpt], l[:midpt] + l[midpt+1:]
+        left = [x for x in rest if x < mid]
+        right = [x for x in rest if x >= mid]
 
 # Infinite Iterators:
 def repeat(elem):
@@ -840,9 +850,12 @@ def int_map(f: int->int, xs: int[]) -> int[]: return list(map(f, xs))
 def sum_list_range(n: int) -> int = sum([i for i in range(1, n)])
 
 # Context managers
-
 def context_produces(out):
     @contextmanager
     def manager():
         yield out
     return manager()
+
+# Where statements
+def sum2(ab) = a + b where:
+    a, b = ab

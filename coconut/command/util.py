@@ -24,12 +24,11 @@ import os
 import traceback
 import subprocess
 import webbrowser
+import imp
 from copy import copy
 from contextlib import contextmanager
 from select import select
-if PY26:
-    import imp
-else:
+if not PY26:
     import runpy
 try:
     # just importing readline improves built-in input()
@@ -396,9 +395,9 @@ class Prompt(object):
 class Runner(object):
     """Compiled Python executor."""
 
-    def __init__(self, comp=None, exit=None, store=False, path=None):
+    def __init__(self, comp=None, exit=sys.exit, store=False, path=None):
         """Create the executor."""
-        self.exit = exit if exit is not None else sys.exit
+        self.exit = exit
         self.vars = self.build_vars(path)
         self.stored = [] if store else None
         if comp is not None:
@@ -412,11 +411,13 @@ class Runner(object):
         init_vars = {
             "__name__": "__main__",
             "__package__": None,
+            "reload": imp.reload,
         }
-        for var in reserved_vars:
-            init_vars[var] = None
         if path is not None:
             init_vars["__file__"] = fixpath(path)
+        # put reserved_vars in for auto-completion purposes
+        for var in reserved_vars:
+            init_vars[var] = None
         return init_vars
 
     def store(self, line):
