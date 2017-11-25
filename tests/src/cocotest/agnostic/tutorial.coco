@@ -216,9 +216,9 @@ def quick_sort([]) = []
 @addpattern(quick_sort)
 def quick_sort([head] + tail) =
     """Sort the input sequence using the quick sort algorithm."""
-    (quick_sort([x for x in tail if x < head])
-        + [head]
-        + quick_sort([x for x in tail if x >= head]))
+    quick_sort(left) + [head] + quick_sort(right) where:
+        left = [x for x in tail if x < head]
+        right = [x for x in tail if x >= head]
 
 # Test cases:
 assert [] |> quick_sort == []
@@ -231,10 +231,9 @@ def quick_sort(l):
     """Sort the input iterator using the quick sort algorithm."""
     match [head] :: tail in l:
         tail = reiterable(tail)
-        yield from (quick_sort(x for x in tail if x < head)
-            :: (head,)
-            :: quick_sort(x for x in tail if x >= head)
-            )
+        yield from quick_sort(left) :: [head] :: quick_sort(right) where:
+            left = (x for x in tail if x < head)
+            right = (x for x in tail if x >= head)
     # We implicitly return an empty iterator here if the match falls through.
 
 # Test cases:

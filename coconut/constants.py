@@ -253,6 +253,8 @@ search_terms = (
     "reiterable",
     "scan",
     "groupsof",
+    "where",
+    "statement",
 )
 
 script_names = (
@@ -395,6 +397,7 @@ reserved_vars = (  # can be backslash-escaped
     "case",
     "async",
     "await",
+    "where",
 )
 
 py3_to_py2_stdlib = {

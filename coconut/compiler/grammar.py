@@ -478,10 +478,16 @@ def typedef_callable_handle(tokens):
         raise CoconutInternalException("invalid Callable typedef tokens", tokens)
 
 
-def math_funcdef_suite_handle(tokens):
-    """Process assignment function definiton suites."""
-    internal_assert(len(tokens) >= 1, "invalid assignment function definition suite tokens", tokens)
-    return "\n" + openindent + "".join(tokens[:-1]) + "return " + tokens[-1] + closeindent
+def make_suite_handle(tokens):
+    """Make simple statements into suites."""
+    internal_assert(len(tokens) == 1, "invalid simple suite tokens", tokens)
+    return "\n" + openindent + tokens[0] + closeindent
+
+
+def implicit_return_handle(tokens):
+    """Add an implicit return."""
+    internal_assert(len(tokens) == 1, "invalid implicit return tokens", tokens)
+    return "return " + tokens[0]
 
 
 def math_funcdef_handle(tokens):
@@ -641,16 +647,6 @@ def compose_item_handle(tokens):
         return "_coconut_forward_compose(" + ", ".join(reversed(tokens)) + ")"
 
 
-def make_suite_handle(tokens):
-    """Make simple statements into suites.
-
-    Necessary because multiline lambdas and pattern-matching function
-    definition count on every statement having its own line to work.
-    """
-    internal_assert(len(tokens) == 1, "invalid simple suite tokens", tokens)
-    return "\n" + openindent + tokens[0] + closeindent
-
-
 def tco_return_handle(tokens):
     """Process tail-call-optimizable return statements."""
     internal_assert(len(tokens) == 2, "invalid tail-call-optimizable return statement tokens", tokens)
@@ -694,6 +690,21 @@ def insert_docstring_handle(tokens):
         + insert_after_docstring
         + body
     )
+
+
+def where_stmt_handle(tokens):
+    """Process a where statement."""
+    internal_assert(len(tokens) == 2, "invalid where statement tokens", tokens)
+    stmt, suite = tokens
+    stmts = []
+    all_names = []
+    for assignment in suite:
+        internal_assert(len(assignment) == 2, "invalid where statement assignment tokens", assignment)
+        names, expr = assignment
+        all_names.extend(names)
+        stmts.append(", ".join(names) + " = " + expr)
+    stmts += [stmt, "del " + ", ".join(all_names)]
+    return "\n".join(stmts) + "\n"
 
 
 # end: HANDLERS
@@ -1506,12 +1517,23 @@ class Grammar(object):
     ))
     match_funcdef = Optional(Keyword("match").suppress()) + def_match_funcdef
 
-    testlist_stmt = condense(testlist + newline)
-    math_funcdef_body = ZeroOrMore(~(testlist_stmt + dedent) + stmt) - testlist_stmt
-    math_funcdef_suite = attach(
-        testlist_stmt
-        | (newline - indent).suppress() - math_funcdef_body - dedent.suppress(),
-        math_funcdef_suite_handle,
+    where_assignlist = Group(maybeparens(lparen, tokenlist(name, comma), rparen))
+    where_assign_stmt = Group(where_assignlist + equals.suppress() + test_expr) + newline.suppress()
+    where_suite = colon.suppress() + Group(
+        newline.suppress() + indent.suppress() - OneOrMore(where_assign_stmt) - dedent.suppress()
+        | where_assign_stmt,
+    )
+    where_stmt = attach(unsafe_small_stmt + Keyword("where").suppress() + where_suite, where_stmt_handle)
+
+    implicit_return = attach(testlist, implicit_return_handle)
+    implicit_return_stmt = (
+        attach(implicit_return + Keyword("where").suppress() + where_suite, where_stmt_handle)
+        | condense(implicit_return + newline)
+    )
+    math_funcdef_body = ZeroOrMore(~(implicit_return_stmt + dedent) + stmt) - implicit_return_stmt
+    math_funcdef_suite = (
+        attach(implicit_return_stmt, make_suite_handle)
+        | condense(newline - indent - math_funcdef_body - dedent)
     )
     end_func_equals = return_typedef + equals.suppress() | fixto(equals, ":")
     math_funcdef = trace(attach(
@@ -1523,10 +1545,10 @@ class Grammar(object):
         + equals.suppress()
         - Optional(docstring)
         - (
-            attach(testlist_stmt, math_funcdef_suite_handle)
+            attach(implicit_return_stmt, make_suite_handle)
             | newline.suppress() - indent.suppress()
             - Optional(docstring)
-            - attach(math_funcdef_body, math_funcdef_suite_handle)
+            - attach(math_funcdef_body, make_suite_handle)
             - dedent.suppress()
         ),
         insert_docstring_handle,
@@ -1596,6 +1618,7 @@ class Grammar(object):
         | while_stmt
         | for_stmt
         | async_stmt
+        | where_stmt
         | simple_compound_stmt,
     )
     endline_semicolon = Forward()

@@ -154,6 +154,12 @@ def qsort6(l: int$[]) -> int$[]:
             :: (head,)
             :: qsort6(x for x in tail if x > head)
         )  # type: ignore
+def qsort7([]) = []
+@addpattern(qsort7)
+def qsort7([head] + tail) =
+    qsort7(left) + [head] + qsort7(right) where:
+        left = [x for x in tail if x <= head]
+        right = [x for x in tail if x > head]
 
 # Infinite Iterators:
 def repeat(elem):

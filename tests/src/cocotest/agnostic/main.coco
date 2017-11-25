@@ -437,6 +437,37 @@ def main_test():
     assert input_data |> scan$(max) |> list == [3, 4, 6, 6, 6, 9, 9, 9, 9, 9]
     a: str = "test"
     assert a == "test" and isinstance(a, str)
+    where = ten where:
+        ten = 10
+    assert where == 10 == \where
+    assert true where: true = True
+    try:
+        true
+    except NameError:
+        pass
+    else:
+        assert False, true
+    assert a + b + c == 10 where:
+        a, b = 2, 3
+        c = 5
+    try:
+        a
+    except NameError:
+        pass
+    else:
+        assert False, a
+    try:
+        b
+    except NameError:
+        pass
+    else:
+        assert False, b
+    try:
+        c
+    except NameError:
+        pass
+    else:
+        assert False, c
     return True
 
 def tco_func() = tco_func()

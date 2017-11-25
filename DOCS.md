@@ -39,8 +39,6 @@ conda install coconut
 ```
 which will properly create and build a `conda` recipe out of [Coconut's `conda-forge` feedstock](https://github.com/conda-forge/coconut-feedstock).
 
-_Note: To use `conda` to install `coconut-develop` instead, just replace `coconut` with `coconut-develop` in the last three commands above._
-
 ### Optional Dependencies
 
 Coconut also has optional dependencies, which can be installed by entering
@@ -193,6 +191,7 @@ To make Coconut built-ins universal across Python versions, **Coconut automatica
 For standard library compatibility, **Coconut automatically maps imports under Python 3 names to imports under Python 2 names**. Thus, Coconut will automatically take care of any standard library modules that were renamed from Python 2 to Python 3 if just the Python 3 name is used. For modules or objects that only exist in Python 3, however, Coconut has no way of maintaining compatibility.
 
 Finally, while Coconut will try to compile Python-3-specific syntax to its universal equivalent, the following constructs have no equivalent in Python 2, and require the specification of a target of at least `3` to be used:
+
 - destructuring assignment with `*`s (use Coconut pattern-matching instead),
 - the `nonlocal` keyword,
 - `exec` used in a context where it must be a function,
@@ -219,7 +218,14 @@ _Note: Periods are ignored in target specifications, such that the target `27` i
 
 ### `strict` Mode
 
-If the `--strict` (or `-s`) flag is enabled, Coconut will throw errors on various style problems. These are
+If the `--strict` (`-s` for short) flag is enabled, Coconut will perform additional checks on the code being compiled. It is recommended that you use the `--strict` flag if you are starting a new Coconut project, as it will help you write cleaner code. Specifically, the extra checks done by `--strict` are
+
+- warning about unused imports,
+- throwing errors on various style problems (see list below), and
+- disabling deprecated features (making them entirely unavailable to code compiled with `--strict`).
+
+The style issues which will cause `--strict` to throw an error are:
+
 - mixing of tabs and spaces (without `--strict` will show a Warning),
 - use of `from __future__` imports (without `--strict` will show a Warning)
 - missing new line at end of file,
@@ -228,9 +234,7 @@ If the `--strict` (or `-s`) flag is enabled, Coconut will throw errors on variou
 - use of the Python-style `lambda` statement,
 - inheriting from `object` in classes (Coconut does this automatically),
 - use of `u` to denote Unicode strings (all Coconut strings are Unicode strings), and
-- use of backslash continuations (use [parenthetical continuation](#enhanced-parenthetical-continuation) instead).
-
-Additionally, `--strict` disables deprecated features, making them entirely unavailable to code compiled with `--strict`. It is recommended that you use the `--strict` (or `-s`) flag if you are starting a new Coconut project, as it will help you write cleaner code.
+- use of backslash continuation (use [parenthetical continuation](#enhanced-parenthetical-continuation) instead).
 
 ## Integrations
 
@@ -920,9 +924,35 @@ def classify_sequence(value):
 **Python:**
 _Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._
 
+### `where`
+
+Coconut's `where` statement is extremely straightforward. The syntax for a `where` statement is just
+```
+<stmt> where:
+    <body>
+```
+where `<body>` is composed entirely of assignment statements. Then, the `where` statement just executes `<stmt>` in the context of `<body>`. Specifically, each assignment statement in `<body>` is executed, then `<stmt>` is evaluated, and finally the new variables that were created are removed.
+
+##### Example
+
+**Coconut:**
+```coconut
+c = a + b where:
+    a = 1
+    b = 2
+```
+
+**Python:**
+```coconut_python
+a = 1
+b = 2
+c = a + b
+del a, b
+```
+
 ### Backslash-Escaping
 
-In Coconut, the keywords `data`, `match`, `case`, `async` (keyword in Python 3.5), and `await` (keyword in Python 3.5) are also valid variable names. While Coconut can disambiguate these two use cases, when using one of these keywords as a variable name, a backslash is allowed in front to be explicit about using a keyword as a variable name.
+In Coconut, the keywords `data`, `match`, `case`, `where`, `async` (keyword in Python 3.5), and `await` (keyword in Python 3.5) are also valid variable names. While Coconut can disambiguate these two use cases, when using one of these keywords as a variable name, a backslash is allowed in front to be explicit about using a keyword as a variable name (in particular, to let syntax highlighters know).
 
 ##### Example
 

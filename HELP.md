@@ -23,7 +23,7 @@ Specifically, Coconut adds to Python _built-in, syntactical support_ for:
 - pipeline-style programming
 - operator functions
 - tail call optimization
-- parallel programming
+- where statements
 
 and much more!
 
@@ -407,9 +407,9 @@ def quick_sort([]) = []
 @addpattern(quick_sort)
 def quick_sort([head] + tail) =
     """Sort the input sequence using the quick sort algorithm."""
-    (quick_sort([x for x in tail if x < head])
-        + [head]
-        + quick_sort([x for x in tail if x >= head]))
+    quick_sort(left) + [head] + quick_sort(right) where:
+        left = [x for x in tail if x < head]
+        right = [x for x in tail if x >= head]
 
 # Test cases:
 [] |> quick_sort |> print  # []
@@ -418,7 +418,11 @@ def quick_sort([head] + tail) =
 [4,3,2,1,0] |> quick_sort |> print  # [0,1,2,3,4]
 [3,0,4,2,1] |> quick_sort |> print  # [0,1,2,3,4]
 ```
-Copy, paste! Only one new feature here: head-tail pattern-matching. Here, we see the head-tail pattern `[head] + tail`, which more generally just follow the form of a list or tuple added to a variable. When this appears in any pattern-matching context, the value being matched against will be treated as a sequence, the list or tuple matched against the beginning of that sequence, and the rest of it bound to the variable. In this case, we use the head-tail pattern to remove the head so we can use it as the pivot for splitting the rest of the list.
+Copy, paste! Two new feature here: head-tail pattern-matching and `where` statements.
+
+First, `where` statements are extremely straightforward. In fact, I bet you've already figured out what they do from the code above. A `where` statement is just a way to compute something in the context of some set of assignment statements.
+
+Second, head-tail pattern-matching, which you can see here as `[head] + tail`, simply follows the form of a list or tuple added to a variable. When this appears in any pattern-matching context, the value being matched against will be treated as a sequence, the list or tuple matched against the beginning of that sequence, and the rest of it bound to the variable. In this case, we use the head-tail pattern to remove the head so we can use it as the pivot for splitting the rest of the list.
 
 ### Sorting an Iterator
 
@@ -428,10 +432,9 @@ def quick_sort(l):
     """Sort the input iterator using the quick sort algorithm."""
     match [head] :: tail in l:
         tail = reiterable(tail)
-        yield from (quick_sort(x for x in tail if x < head)
-            :: (head,)
-            :: quick_sort(x for x in tail if x >= head)
-            )
+        yield from quick_sort(left) :: [head] :: quick_sort(right) where:
+            left = (x for x in tail if x < head)
+            right = (x for x in tail if x >= head)
     # We implicitly return an empty iterator here if the match falls through.
 
 # Test cases:
@@ -472,10 +475,9 @@ def quick_sort(l):
     """Sort the input iterator using the quick sort algorithm."""
     match [head] :: tail in l:
         tail = reiterable(tail)
-        yield from (quick_sort(x for x in tail if x < head)
-            :: (head,)
-            :: quick_sort(x for x in tail if x >= head)
-            )
+        yield from quick_sort(left) :: [head] :: quick_sort(right) where:
+            left = (x for x in tail if x < head)
+            right = (x for x in tail if x >= head)
     # We implicitly return an empty iterator here if the match falls through.
 ```
 
@@ -1026,11 +1028,11 @@ vector(1, 2).angle(5)  # MatchError
 ```
 _One note of warning here: be careful not to leave a blank line when substituting in your methods, or the interpreter will cut off the code for the `vector` there. This isn't a problem in normal Coconut code, only here because we're copy-and-pasting into the command line._
 
-Copy, paste! If everything is working, I'd recommend going back to playing around with `vector_field` [applications](#applications) using our new methods.
+Copy, paste! If everything is working, you can try going back to playing around with `vector_field` [applications](#applications) using our new methods.
 
 ## Filling in the Gaps
 
-And with that, this tutorial is out of case studies—but that doesn't mean Coconut is out of features! In this last section, we'll touch on three of the most important features of Coconut that we managed to miss in our case studies: lazy lists, function composition, and implicit partials.
+And with that, this tutorial is out of case studies—but that doesn't mean Coconut is out of features! In this last section, we'll touch on some of the other useful features of Coconut that we managed to miss in the case studies.
 
 ### Lazy Lists
 
