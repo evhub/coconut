@@ -14,19 +14,15 @@ format: dev
 	pre-commit autoupdate
 	pre-commit run --all-files
 
+# test-all takes a very long time and should usually only be run by Travis
 .PHONY: test-all
 test-all:
 	pytest --strict -s tests
 
+# for quickly testing nearly everything locally, just use test-basic
 .PHONY: test-basic
 test-basic:
 	python ./tests --force
-	python ./tests/dest/runner.py
-	python ./tests/dest/extras.py
-
-.PHONY: test-run
-test-run:
-	python ./tests
 	python ./tests/dest/runner.py
 	python ./tests/dest/extras.py
 

@@ -18,7 +18,7 @@ Contributing to Coconut is as simple as
 2. making changes to the [`develop` branch](https://github.com/evhub/coconut/tree/develop), and
 3. proposing a pull request.
 
-_Note: Don't forget to add yourself to the "Authors:" section in the docstrings of any files you modify!_
+_Note: Don't forget to add yourself to the "Authors:" section in the moduledocs of any files you modify!_
 
 ## Contributor Friendly Issues
 
