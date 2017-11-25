@@ -71,8 +71,7 @@ which is Coconut's way of telling you you're ready to start entering code for it
 
 In case you missed it earlier, _all valid Python 3 is valid Coconut_. That doesn't mean compiled Coconut will only run on Python 3—in fact, compiled Coconut will run the same on any Python version—but it does mean that only Python 3 code is guaranteed to compile as Coconut code.
 
-That means that if you're familiar with Python, you're already familiar with a good deal of Coconut's core syntax and Coconut's entire standard library. To show that, let's try entering some basic Python into the Coconut interpreter.
-
+That means that if you're familiar with Python, you're already familiar with a good deal of Coconut's core syntax and Coconut's entire standard library. To show that, let's try entering some basic Python into the Coconut interpreter. For example:
 ```coconut_pycon
 >>> "hello, world!"
 'hello, world!'
@@ -80,11 +79,11 @@ That means that if you're familiar with Python, you're already familiar with a g
 2
 ```
 
-### Using the Compiler
+### Writing Coconut Files
 
 Of course, while being able to interpret Coconut code on-the-fly is a great thing, it wouldn't be very useful without the ability to write and compile larger programs. To that end, it's time to write our first Coconut program: "hello, world!" Coconut-style.
 
-First, we're going to need to create a file to put our code into. The recommended file extension for Coconut source files is `.coco`, so let's create the new file `hello_world.coco`. After you do that, you should take the time now to set up your text editor to properly highlight Coconut code. For instructions on how to do that, see the documentation on [Coconut syntax highlighting](DOCS.html#syntax-highlighting).
+First, we're going to need to create a file to put our code into. The file extension for Coconut source files is `.coco`, so let's create the new file `hello_world.coco`. After you do that, you should take the time now to set up your text editor to properly highlight Coconut code. For instructions on how to do that, see the documentation on [Coconut syntax highlighting](DOCS.html#syntax-highlighting).
 
 Now let's put some code in our `hello_world.coco` file. Unlike in Python, where headers like
 ```coconut_python
@@ -104,7 +103,9 @@ and while that will work in Coconut, equally as valid is to use a pipeline-style
 ```
 which should let you see very clearly how Coconut's `|>` operator enables pipeline-style programming: it allows an object to be passed along from function to function, with a different operation performed at each step. In this case, we are piping the object `"hello, world!"` into the operation `print`. Now let's save our simple "hello, world!" program, and try to run it.
 
-Compiling Coconut files and projects with the Coconut command-line utility is incredibly simple. Just type
+### Using the Compiler
+
+Compiling Coconut files and projects with the Coconut command-line utility is incredibly simple. Just `cd` into the directory of your `hello_world.coco` file and type
 ```
 coconut hello_world.coco
 ```
@@ -124,6 +125,8 @@ _Note: You can compile and run your code all in one step if you use Coconut's `-
 Compiling single files is not the only way to use the Coconut command-line utility, however. We can also compile all the Coconut files in a given directory simply by passing that directory as the first argument, which will get rid of the need to run the same Coconut header code in each file by storing it in a `__coconut__.py` file in the same directory.
 
 The Coconut  compiler supports a large variety of different compilation options, the help for which can always be accessed by entering `coconut -h` into the command line. One of the most useful of these is `--line-numbers` (or `-l` for short). Using `--line-numbers` will add the line numbers of your source code as comments in the compiled code, allowing you to see what line in your source code corresponds to a line in the compiled code where an error occurred, for ease of debugging.
+
+_Note: If you don't need the full control of the Coconut compiler, you can also [access your Coconut code just by importing it](DOCS.html#automatic-compilation), either from the Coconut interpreter, or in any Python file where you have previously imported Coconut itself (via `import coconut`)._
 
 ### Using IPython/Jupyter
 
