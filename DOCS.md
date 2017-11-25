@@ -16,11 +16,9 @@ The Coconut compiler turns Coconut code into Python code. The primary method of 
 
 While most of Coconut gets its inspiration simply from trying to make functional programming work in Python, additional inspiration came from [Haskell](https://www.haskell.org/), [CoffeeScript](http://coffeescript.org/), [F#](http://fsharp.org/), and [patterns.py](https://github.com/Suor/patterns).
 
-## Compilation
+## Installation
 
-### Installation
-
-#### Using Pip
+### Using Pip
 
 Since Coconut is hosted on the [Python Package Index](https://pypi.python.org/pypi/coconut), it can be installed easily using `pip`. Simply [install Python](https://www.python.org/downloads/), open up a command-line prompt, and enter
 ```
@@ -32,7 +30,7 @@ _Note: If you have an old version of Coconut installed and you want to upgrade, 
 
 If you are encountering errors running `pip install coconut`, try re-running it with the `--user` option. If `pip install coconut` works, but you cannot access the `coconut` command, be sure that Coconut's installation location is in your `PATH` environment variable. On UNIX, that is `/usr/local/bin` (without `--user`) or `${HOME}/.local/bin/` (with `--user`).
 
-#### Using Conda
+### Using Conda
 
 If you prefer to use [`conda`](https://conda.io/docs/) instead of `pip` to manage your Python packages, you can also install Coconut using `conda`. Just [install `conda`](https://conda.io/miniconda.html), open up a command-line prompt, and enter
 ```
@@ -43,7 +41,7 @@ which will properly create and build a `conda` recipe out of [Coconut's `conda-f
 
 _Note: To use `conda` to install `coconut-develop` instead, just replace `coconut` with `coconut-develop` in the last three commands above._
 
-#### Optional Dependencies
+### Optional Dependencies
 
 Coconut also has optional dependencies, which can be installed by entering
 ```
@@ -66,13 +64,15 @@ The full list of optional dependencies is:
 - `docs`: everything necessary to build Coconut's documentation, and
 - `dev`: everything necessary to develop on Coconut, including all of the dependencies above.
 
-#### Develop Version
+### Develop Version
 
 Alternatively, if you want to test out Coconut's latest and greatest, enter
 ```
 pip install coconut-develop
 ```
 which will install the most recent working version from Coconut's [`develop` branch](https://github.com/evhub/coconut/tree/develop). Optional dependency installation is supported in the same manner as above. For more information on the current development build, check out the [development version of this documentation](http://coconut.readthedocs.io/en/develop/DOCS.html). Be warned: `coconut-develop` is likely to be unstable—if you find a bug, please report it by [creating a new issue](https://github.com/evhub/coconut/issues/new).
+
+## Compilation
 
 ### Usage
 
@@ -149,6 +149,10 @@ dest                destination directory for compiled files (defaults to
                       develop)
 ```
 
+### Automatic Compilation
+
+If you don't care very much about the exact compilation parameters you want to use, automatic compilation is a way to let Coconut take care of everything for you. If you make sure to `import coconut` before you import anything else, Coconut will check each of your imports to see if you are attempting to import a Coconut file and, if so, automatically compile it for you. Note that, for Coconut to know what file you are trying to import, it will need to be accessible via `sys.path`, just like a normal import. Automatic compilation always compiles modules and packages in-place, and always uses `--target sys`.
+
 ### Coconut Scripts
 
 To run a Coconut file as a script, Coconut provides the command
@@ -207,7 +211,7 @@ If the version of Python that the compiled code will be running on is known ahea
 - `3.3`, `3.4` (will work on any Python `>= 3.3`),
 - `3.5` (will work on any Python `>= 3.5`),
 - `3.6` (will work on any Python `>= 3.6`),
-- `sys` (chooses the specific target corresponding to the current version).
+- `sys` (chooses the target corresponding to the current Python version).
 
 _Note: Periods are ignored in target specifications, such that the target `27` is equivalent to the target `2.7`._
 

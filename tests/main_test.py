@@ -27,7 +27,7 @@ from contextlib import contextmanager
 
 import pexpect
 
-from coconut.terminal import logger
+from coconut.terminal import logger, Logger
 from coconut.command.util import call_output
 from coconut.constants import (
     WINDOWS,
@@ -168,6 +168,17 @@ def using_dest():
         os.mkdir(dest)
     with remove_when_done(dest):
         yield
+
+
+@contextmanager
+def using_logger():
+    """Use a temporary logger, then restore the old logger."""
+    saved_logger = Logger(logger)
+    try:
+        yield
+    finally:
+        logger.copy_from(saved_logger)
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 # RUNNER:
@@ -311,7 +322,8 @@ class TestShell(unittest.TestCase):
         sys.path.append(src)
         try:
             with remove_when_done(runnable_py):
-                import runnable
+                with using_logger():
+                    import runnable
         finally:
             sys.path.remove(src)
         assert runnable.success == "<success>"
