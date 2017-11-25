@@ -695,15 +695,8 @@ def insert_docstring_handle(tokens):
 def where_stmt_handle(tokens):
     """Process a where statement."""
     internal_assert(len(tokens) == 2, "invalid where statement tokens", tokens)
-    stmt, suite = tokens
-    stmts = []
-    all_names = []
-    for assignment in suite:
-        internal_assert(len(assignment) == 2, "invalid where statement assignment tokens", assignment)
-        names, expr = assignment
-        all_names.extend(names)
-        stmts.append(", ".join(names) + " = " + expr)
-    stmts += [stmt, "del " + ", ".join(all_names)]
+    base_stmt, assignment_stmts = tokens
+    stmts = list(assignment_stmts) + [base_stmt]
     return "\n".join(stmts) + "\n"
 
 
@@ -1247,8 +1240,8 @@ class Grammar(object):
     and_test = exprlist(not_test, Keyword("and"))
     test_item = trace(exprlist(and_test, Keyword("or")))
 
-    small_stmt = Forward()
-    unsafe_small_stmt = Forward()
+    simple_stmt_item = Forward()
+    unsafe_simple_stmt_item = Forward()
     simple_stmt = Forward()
     simple_compound_stmt = Forward()
     stmt = Forward()
@@ -1267,7 +1260,7 @@ class Grammar(object):
 
     stmt_lambdef = Forward()
     match_guard = Optional(Keyword("if").suppress() + test)
-    closing_stmt = longest(testlist("tests"), unsafe_small_stmt)
+    closing_stmt = longest(testlist("tests"), unsafe_simple_stmt_item)
     stmt_lambdef_params = Optional(
         attach(name, add_paren_handle)
         | parameters
@@ -1277,8 +1270,8 @@ class Grammar(object):
     stmt_lambdef_ref = (
         Keyword("def").suppress() + stmt_lambdef_params + arrow.suppress()
         + (
-            Group(OneOrMore(small_stmt + semicolon.suppress())) + Optional(closing_stmt)
-            | Group(ZeroOrMore(small_stmt + semicolon.suppress())) + closing_stmt
+            Group(OneOrMore(simple_stmt_item + semicolon.suppress())) + Optional(closing_stmt)
+            | Group(ZeroOrMore(simple_stmt_item + semicolon.suppress())) + closing_stmt
         )
     )
 
@@ -1517,13 +1510,11 @@ class Grammar(object):
     ))
     match_funcdef = Optional(Keyword("match").suppress()) + def_match_funcdef
 
-    where_assignlist = Group(maybeparens(lparen, tokenlist(name, comma), rparen))
-    where_assign_stmt = Group(where_assignlist + equals.suppress() + test_expr) + newline.suppress()
     where_suite = colon.suppress() + Group(
-        newline.suppress() + indent.suppress() - OneOrMore(where_assign_stmt) - dedent.suppress()
-        | where_assign_stmt,
+        newline.suppress() + indent.suppress() - OneOrMore(simple_stmt) - dedent.suppress()
+        | simple_stmt,
     )
-    where_stmt = attach(unsafe_small_stmt + Keyword("where").suppress() + where_suite, where_stmt_handle)
+    where_stmt = attach(unsafe_simple_stmt_item + Keyword("where").suppress() + where_suite, where_stmt_handle)
 
     implicit_return = attach(testlist, implicit_return_handle)
     implicit_return_stmt = (
@@ -1638,16 +1629,16 @@ class Grammar(object):
         | augassign_stmt
         | typed_assign_stmt
     )
-    unsafe_small_stmt <<= trace(special_stmt | longest(basic_stmt, destructuring_stmt))
-    end_small_stmt = FollowedBy(semicolon | newline)
-    small_stmt <<= trace(
+    unsafe_simple_stmt_item <<= trace(special_stmt | longest(basic_stmt, destructuring_stmt))
+    end_simple_stmt_item = FollowedBy(semicolon | newline)
+    simple_stmt_item <<= trace(
         special_stmt
-        | basic_stmt + end_small_stmt
-        | destructuring_stmt + end_small_stmt,
+        | basic_stmt + end_simple_stmt_item
+        | destructuring_stmt + end_simple_stmt_item,
     )
     simple_stmt <<= trace(condense(
-        small_stmt
-        + ZeroOrMore(fixto(semicolon, "\n") + small_stmt)
+        simple_stmt_item
+        + ZeroOrMore(fixto(semicolon, "\n") + simple_stmt_item)
         + (newline | endline_semicolon),
     ))
     stmt <<= trace(compound_stmt | simple_stmt)

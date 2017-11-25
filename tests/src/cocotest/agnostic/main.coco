@@ -441,33 +441,8 @@ def main_test():
         ten = 10
     assert where == 10 == \where
     assert true where: true = True
-    try:
-        true
-    except NameError:
-        pass
-    else:
-        assert False, true
-    assert a + b + c == 10 where:
-        a, b = 2, 3
-        c = 5
-    try:
-        a
-    except NameError:
-        pass
-    else:
-        assert False, a
-    try:
-        b
-    except NameError:
-        pass
-    else:
-        assert False, b
-    try:
-        c
-    except NameError:
-        pass
-    else:
-        assert False, c
+    assert a == 5 where:
+        {"a": a} = {"a": 5}
     return True
 
 def tco_func() = tco_func()

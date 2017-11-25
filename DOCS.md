@@ -931,7 +931,7 @@ Coconut's `where` statement is extremely straightforward. The syntax for a `wher
 <stmt> where:
     <body>
 ```
-where `<body>` is composed entirely of assignment statements. Then, the `where` statement just executes `<stmt>` in the context of `<body>`. Specifically, each assignment statement in `<body>` is executed, then `<stmt>` is evaluated, and finally the new variables that were created are removed.
+where `<body>` is composed entirely of assignment statements. The `where` statement just executes each assignment statement in `<body>` then evaluates the base `<stmt>`.
 
 ##### Example
 
@@ -947,7 +947,6 @@ c = a + b where:
 a = 1
 b = 2
 c = a + b
-del a, b
 ```
 
 ### Backslash-Escaping
