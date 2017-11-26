@@ -32,7 +32,6 @@ from functools import reduce
 
 from coconut.pyparsing import (
     CaselessLiteral,
-    Combine,
     Forward,
     Group,
     Keyword,
@@ -73,6 +72,7 @@ from coconut.constants import (
 )
 from coconut.compiler.matching import Matcher
 from coconut.compiler.util import (
+    CombineNode as Combine,
     attach,
     fixto,
     addspace,

@@ -19,6 +19,8 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
+import traceback
+from functools import partial
 from contextlib import contextmanager
 
 from coconut.pyparsing import (
@@ -29,6 +31,10 @@ from coconut.pyparsing import (
     CharsNotIn,
     ParseElementEnhance,
     ParseException,
+    ParseResults,
+    Combine,
+    _trim_arity,
+    _ParseResultsWithOffset,
 )
 
 from coconut.terminal import logger, complain
@@ -41,12 +47,139 @@ from coconut.constants import (
     get_target_info,
 )
 from coconut.exceptions import (
+    CoconutException,
     CoconutInternalException,
     internal_assert,
 )
 
+
 #-----------------------------------------------------------------------------------------------------------------------
-# FUNCTIONS:
+# COMPUTATION GRAPH:
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def evaluate_tokens(tokens):
+    """Evaluate the given tokens in the computation graph."""
+    if isinstance(tokens, ComputationNode):
+        return tokens.evaluate()
+    elif isinstance(tokens, ParseResults):
+        toklist, name, asList, modal = tokens.__getnewargs__()
+        new_toklist = [evaluate_tokens(toks) for toks in toklist]
+        new_tokdict = {}
+        for name, occurrences in tokens._ParseResults__tokdict.items():
+            new_occurences = []
+            for value, position in occurrences:
+                new_value = evaluate_tokens(value)
+                new_occurences.append(_ParseResultsWithOffset(new_value, position))
+            new_tokdict[name] = occurrences
+        new_tokens = ParseResults(new_toklist, name, asList, modal)
+        new_tokens._ParseResults__accumNames.update(tokens._ParseResults__accumNames)
+        new_tokens._ParseResults__tokdict.update(new_tokdict)
+        return new_tokens
+    elif isinstance(tokens, (list, tuple)):
+        return [evaluate_tokens(inner_toks) for inner_toks in tokens]
+    elif isinstance(tokens, str):
+        return tokens
+    else:
+        raise CoconutInternalException("invalid computation graph tokens", tokens)
+
+
+class ComputationNode(object):
+    """A single node in the computation graph."""
+    result = no_result = object()
+
+    def __new__(cls, action, original, loc, tokens, simple=False):
+        if simple and len(tokens) == 1:
+            return tokens[0]
+        else:
+            self = super(ComputationNode, cls).__new__(cls)
+            self.action, self.original, self.loc, self.tokens = action, original, loc, tokens
+            return self
+
+    @property
+    def name(self):
+        """Get the name of the action."""
+        return self.action.__name__
+
+    def evaluate(self):
+        """Evaluate the computation graph with this node as the root."""
+        if self.result is self.no_result:
+            self.compute_result()
+        return self.result
+
+    def compute_result(self):
+        evaluated_toks = evaluate_tokens(self.tokens)
+        logger.log_trace(self.name, self.original, self.loc, evaluated_toks, repr(self.tokens))
+        try:
+            self.result = _trim_arity(self.action)(
+                self.original,
+                self.loc,
+                evaluated_toks,
+            )
+        except CoconutException:
+            raise
+        except (Exception, AssertionError):
+            traceback.print_exc()
+            raise CoconutInternalException("error computing action " + self.name + " with tokens", evaluated_toks)
+
+    def __repr__(self):
+        inner_repr = "\n".join("\t" + line for line in repr(self.tokens).splitlines())
+        return self.name + "(\n" + inner_repr + "\n)"
+
+
+class CombineNode(Combine):
+    """Modified Combine to work with the computation graph."""
+
+    def _action(self, original, loc, tokens):
+        combined_tokens = super(CombineNode, self).postParse(original, loc, tokens)
+        internal_assert(len(combined_tokens) == 1, "Combine produced multiple tokens", combined_tokens)
+        return combined_tokens[0]
+
+    def postParse(self, original, loc, tokens):
+        return ComputationNode(self._action, original, loc, tokens)
+
+
+def add_action(item, action):
+    """Set the parse action for the given item."""
+    return item.copy().addParseAction(action)
+
+
+def attach(item, action, simple=False):
+    """Set the parse action for the given item to create a node in the computation graph."""
+    return add_action(item, partial(ComputationNode, action, simple=simple))
+
+
+def unpack(tokens):
+    """Evaluate and unpack the given computation graph."""
+    logger.log_tag("unpack", tokens)
+    result = evaluate_tokens(tokens)
+    if isinstance(result, str):
+        return result
+    else:
+        internal_assert(len(result) == 1, "multiple tokens leftover", result)
+        return result[0]
+
+
+def parse(grammar, text):
+    """Parse text using grammar."""
+    return unpack(grammar.parseWithTabs().parseString(text))
+
+
+def all_matches(grammar, text):
+    """Find all matches for grammar in text."""
+    for tokens, start, stop in grammar.parseWithTabs().scanString(text):
+        yield unpack(tokens), start, stop
+
+
+def match_in(grammar, text):
+    """Determine if there is a match for grammar in text."""
+    for result in grammar.parseWithTabs().scanString(text):
+        return True
+    return False
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# UTILITIES:
 #-----------------------------------------------------------------------------------------------------------------------
 
 
@@ -128,24 +261,19 @@ def ind_change(inputstring):
     return inputstring.count(openindent) - inputstring.count(closeindent)
 
 
-def attach(item, action):
-    """Attach a parse action to an item."""
-    return item.copy().addParseAction(logger.wrap_handler(action))
-
-
 def fixto(item, output):
     """Force an item to result in a specific output."""
-    return attach(item, replaceWith(output))
+    return add_action(item, replaceWith(output))
 
 
 def addspace(item):
     """Condense and adds space to the tokenized output."""
-    return attach(item, " ".join)
+    return attach(item, " ".join, simple=True)
 
 
 def condense(item):
     """Condense the tokenized output."""
-    return attach(item, "".join)
+    return attach(item, "".join, simple=True)
 
 
 def maybeparens(lparen, item, rparen):
@@ -222,23 +350,6 @@ def split_leading_trailing_indent(line, max_indents=None):
     return leading_indent, line, trailing_indent
 
 
-def parse(grammar, text):
-    """Parse text using grammar."""
-    return grammar.parseWithTabs().parseString(text)
-
-
-def match_in(grammar, text):
-    """Determine if there is a match for grammar in text."""
-    for result in grammar.parseWithTabs().scanString(text):
-        return True
-    return False
-
-
-def all_matches(grammar, text):
-    """Find all matches for grammar in text."""
-    return list(grammar.parseWithTabs().scanString(text))
-
-
 ignore_transform = object()
 
 
@@ -246,10 +357,9 @@ def transform(grammar, text):
     """Transform text by replacing matches to grammar."""
     results = []
     intervals = []
-    for tokens, start, stop in grammar.parseWithTabs().scanString(text):
-        internal_assert(len(tokens) == 1, "invalid transform result tokens", tokens)
-        if tokens[0] is not ignore_transform:
-            results.append(tokens[0])
+    for result, start, stop in all_matches(grammar, text):
+        if result is not ignore_transform:
+            results.append(result)
             intervals.append((start, stop))
 
     if not results:
