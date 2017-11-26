@@ -293,6 +293,9 @@ def item_handle(loc, tokens):
     return out
 
 
+item_handle.simple = True
+
+
 def pipe_handle(loc, tokens, **kwargs):
     """Process pipe calls."""
     internal_assert(set(kwargs) <= set(("top",)), "unknown pipe_handle keyword arguments", kwargs)
@@ -401,6 +404,9 @@ def none_coalesce_handle(tokens):
         )
 
 
+none_coalesce_handle.simple = True
+
+
 def attrgetter_atom_handle(loc, tokens):
     """Process attrgetter literals."""
     name, args = attrgetter_atom_split(tokens)
@@ -431,6 +437,9 @@ def chain_handle(tokens):
         return tokens[0]
     else:
         return "_coconut.itertools.chain.from_iterable(" + lazy_list_handle(tokens) + ")"
+
+
+chain_handle.simple = True
 
 
 def infix_handle(tokens):
@@ -637,6 +646,9 @@ def namelist_handle(tokens):
         raise CoconutInternalException("invalid in-line nonlocal / global tokens", tokens)
 
 
+namelist_handle.simple = True
+
+
 def compose_item_handle(tokens):
     """Process function composition."""
     if len(tokens) < 1:
@@ -645,6 +657,9 @@ def compose_item_handle(tokens):
         return tokens[0]
     else:
         return "_coconut_forward_compose(" + ", ".join(reversed(tokens)) + ")"
+
+
+compose_item_handle.simple = True
 
 
 def tco_return_handle(tokens):
