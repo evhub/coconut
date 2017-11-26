@@ -44,7 +44,7 @@ def get_encoding(fileobj):
 
 
 def clean(inputline, strip=True, rem_indents=True, encoding_errors="replace"):
-    """Clean and strips a line."""
+    """Clean and strip a line."""
     stdout_encoding = get_encoding(sys.stdout)
     inputline = str(inputline)
     if rem_indents:
@@ -54,9 +54,9 @@ def clean(inputline, strip=True, rem_indents=True, encoding_errors="replace"):
     return inputline.encode(stdout_encoding, encoding_errors).decode(stdout_encoding)
 
 
-def debug_clean(inputline, strip=True):
-    """Call clean with debug parameters."""
-    return clean(inputline, strip, rem_indents=False, encoding_errors="backslashreplace")
+def displayable(inputstr, strip=True):
+    """Make a string displayable with minimal loss of information."""
+    return clean(str(inputstr), strip, rem_indents=False, encoding_errors="backslashreplace")
 
 
 def internal_assert(condition, message=None, item=None, extra=None):

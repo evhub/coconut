@@ -33,16 +33,20 @@ from coconut.constants import (
 
 try:
     from cPyparsing import *  # NOQA
-    from cPyparsing import __version__
-    if DEVELOP:
-        from cPyparsing import _trim_arity  # NOQA
+    from cPyparsing import (  # NOQA
+        _trim_arity,
+        _ParseResultsWithOffset,
+        __version__,
+    )
     PYPARSING = "Cython cPyparsing v" + __version__
 
 except ImportError:
     from pyparsing import *  # NOQA
-    from pyparsing import __version__
-    if DEVELOP:
-        from pyparsing import _trim_arity  # NOQA
+    from pyparsing import (  # NOQA
+        _trim_arity,
+        _ParseResultsWithOffset,
+        __version__,
+    )
     PYPARSING = "Python pyparsing v" + __version__
 
 #-----------------------------------------------------------------------------------------------------------------------

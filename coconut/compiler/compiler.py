@@ -522,10 +522,10 @@ class Compiler(Grammar):
             logger.log_tag("skips", list(sorted(self.skips)))
         return out
 
-    def post(self, tokens, **kwargs):
+    def post(self, result, **kwargs):
         """Perform post-processing."""
-        internal_assert(len(tokens) == 1, "multiple tokens leftover", tokens)
-        return self.apply_procs(self.postprocs, kwargs, tokens[0])
+        internal_assert(isinstance(result, str), "got non-string parse result", result)
+        return self.apply_procs(self.postprocs, kwargs, result)
 
     def getheader(self, which, use_hash=None, polish=True):
         """Get a formatted header."""

@@ -21,14 +21,15 @@ from coconut.root import *  # NOQA
 
 import sys
 import traceback
-import functools
 import logging
 import time
 from contextlib import contextmanager
 
-from coconut.pyparsing import lineno, col, ParserElement
-if DEVELOP:
-    from coconut.pyparsing import _trim_arity
+from coconut.pyparsing import (
+    lineno,
+    col,
+    ParserElement,
+)
 
 from coconut.constants import (
     info_tabulation,
@@ -38,9 +39,7 @@ from coconut.constants import (
 )
 from coconut.exceptions import (
     CoconutWarning,
-    CoconutInternalException,
-    CoconutException,
-    debug_clean,
+    displayable,
     internal_assert,
 )
 
@@ -214,20 +213,20 @@ class Logger(object):
         if self.tracing:
             tagstr = "[" + str(tag) + "]"
             if multiline:
-                printerr(tagstr + "\n" + debug_clean(code))
+                printerr(tagstr + "\n" + displayable(code))
             else:
                 printerr(tagstr, ascii(code))
 
-    def log_trace(self, tag, original, loc, tokens=None):
+    def log_trace(self, tag, original, loc, tokens=None, extra=None):
         """Formats and displays a trace if tracing."""
         if self.tracing:
-            tag, original, loc = str(tag), str(original), int(loc)
+            tag, original, loc = displayable(tag), displayable(original), int(loc)
             if "{" not in tag:
                 out = ["[" + tag + "]"]
                 add_line_col = True
                 if tokens is not None:
                     if isinstance(tokens, Exception):
-                        msg = str(tokens)
+                        msg = displayable(str(tokens))
                         if "{" in msg:
                             head, middle = msg.split("{", 1)
                             middle, tail = middle.rsplit("}", 1)
@@ -237,9 +236,11 @@ class Logger(object):
                     elif len(tokens) == 1 and isinstance(tokens[0], str):
                         out.append(ascii(tokens[0]))
                     else:
-                        out.append(str(tokens))
+                        out.append(ascii(tokens))
                 if add_line_col:
                     out.append("(line:" + str(lineno(loc, original)) + ", col:" + str(col(loc, original)) + ")")
+                if extra is not None:
+                    out.append("from " + displayable(extra))
                 printerr(*out)
 
     def _trace_start_action(self, original, loc, expr):
@@ -260,23 +261,6 @@ class Logger(object):
                 self._trace_exc_action,
             )
         return item
-
-    def wrap_handler(self, handler):
-        """Wraps a handler to catch errors (only enabled in develop)."""
-        if DEVELOP and handler.__name__ not in ("<lambda>", "join"):  # not addspace, condense, or fixto
-            @functools.wraps(handler)
-            def wrapped_handler(s, l, t):
-                self.log_trace(handler.__name__, s, l, t)
-                try:
-                    return _trim_arity(handler)(s, l, t)
-                except CoconutException:
-                    raise
-                except (Exception, AssertionError):
-                    traceback.print_exc()
-                    raise CoconutInternalException("error calling handler " + handler.__name__ + " with tokens", t)
-            return wrapped_handler
-        else:
-            return handler
 
     @contextmanager
     def gather_parsing_stats(self):
