@@ -244,7 +244,7 @@ class Logger(object):
                 printerr(*out)
 
     def _trace_start_action(self, original, loc, expr):
-        self.log_trace(expr, original, loc)
+        pass  # we'd rather log after the action when we know its result
 
     def _trace_success_action(self, original, start_loc, end_loc, expr, tokens):
         self.log_trace(expr, original, start_loc, tokens)
