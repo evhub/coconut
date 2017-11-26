@@ -234,7 +234,7 @@ def quick_sort(l):
         yield from quick_sort(left) :: [head] :: quick_sort(right) where:
             left = (x for x in tail if x < head)
             right = (x for x in tail if x >= head)
-    # We implicitly return an empty iterator here if the match falls through.
+    # By yielding nothing if the match falls through, we implicitly return an empty iterator.
 
 # Test cases:
 assert [] |> quick_sort |> list == []

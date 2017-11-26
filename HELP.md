@@ -435,7 +435,7 @@ def quick_sort(l):
         yield from quick_sort(left) :: [head] :: quick_sort(right) where:
             left = (x for x in tail if x < head)
             right = (x for x in tail if x >= head)
-    # We implicitly return an empty iterator here if the match falls through.
+    # By yielding nothing if the match falls through, we implicitly return an empty iterator.
 
 # Test cases:
 [] |> quick_sort |> list |> print  # []
@@ -478,7 +478,7 @@ def quick_sort(l):
         yield from quick_sort(left) :: [head] :: quick_sort(right) where:
             left = (x for x in tail if x < head)
             right = (x for x in tail if x >= head)
-    # We implicitly return an empty iterator here if the match falls through.
+    # By yielding nothing if the match falls through, we implicitly return an empty iterator.
 ```
 
 The function first attempts to split `l` into an initial element and a remaining iterator. If `l` is the empty iterator, that match will fail, and it will fall through, yielding the empty iterator (that's how the function handles the base case). Otherwise, we make a copy of the rest of the iterator, and yield the join of (the quick sort of all the remaining elements less than the initial element), (the initial element), and (the quick sort of all the remaining elements greater than the initial element).

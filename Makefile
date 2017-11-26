@@ -26,6 +26,13 @@ test-basic:
 	python ./tests/dest/runner.py
 	python ./tests/dest/extras.py
 
+# same as test-basic but includes verbose output for better debugging
+.PHONY: test-verbose
+test-verbose:
+	python ./tests --force --verbose
+	python ./tests/dest/runner.py
+	python ./tests/dest/extras.py
+
 .PHONY: docs
 docs: clean
 	sphinx-build -b html . ./docs

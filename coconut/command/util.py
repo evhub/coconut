@@ -214,7 +214,7 @@ def run_file(path):
         return runpy.run_path(path, run_name="__main__")
 
 
-def call_output(cmd, stdin=None, **kwargs):
+def call_output(cmd, stdin=None, encoding_errors="replace", **kwargs):
     """Run command and read output."""
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
     stdout, stderr, retcode = [], [], None
@@ -224,12 +224,12 @@ def call_output(cmd, stdin=None, **kwargs):
         raw_out, raw_err = p.communicate(stdin)
         stdin = None
 
-        out = raw_out.decode(get_encoding(sys.stdout)) if raw_out else ""
+        out = raw_out.decode(get_encoding(sys.stdout), encoding_errors) if raw_out else ""
         if out:
             logger.log_prefix("1> ", out.rstrip())
         stdout.append(out)
 
-        err = raw_err.decode(get_encoding(sys.stderr)) if raw_err else ""
+        err = raw_err.decode(get_encoding(sys.stderr), encoding_errors) if raw_err else ""
         if err:
             logger.log_prefix("2> ", err.rstrip())
         stderr.append(err)
