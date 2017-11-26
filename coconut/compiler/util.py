@@ -86,15 +86,27 @@ def evaluate_tokens(tokens):
 
 class ComputationNode(object):
     """A single node in the computation graph."""
+    list_of_originals = []
     result = no_result = object()
 
     def __new__(cls, action, original, loc, tokens, simple=False):
+        """Create a ComputionNode to return from a parse action."""
         if simple and len(tokens) == 1:
-            return tokens[0]
+            return tokens[0]  # could be a ComputationNode, so we can't have an __init__
         else:
             self = super(ComputationNode, cls).__new__(cls)
-            self.action, self.original, self.loc, self.tokens = action, original, loc, tokens
+            self.action, self.loc, self.tokens = action, loc, tokens
+            try:
+                self.index_of_original = self.list_of_originals.index(original)
+            except ValueError:
+                self.index_of_original = len(self.list_of_originals)
+                self.list_of_originals.append(original)
             return self
+
+    @property
+    def original(self):
+        """Get the original from the originals memo."""
+        return self.list_of_originals[self.index_of_original]
 
     @property
     def name(self):
@@ -102,14 +114,16 @@ class ComputationNode(object):
         return self.action.__name__
 
     def evaluate(self):
-        """Evaluate the computation graph with this node as the root."""
+        """Get the result of evaluating the computation graph at this node."""
         if self.result is self.no_result:
             self.compute_result()
         return self.result
 
     def compute_result(self):
+        """Evaluate the computation graph at this node and assign the result to self.result."""
         evaluated_toks = evaluate_tokens(self.tokens)
-        logger.log_trace(self.name, self.original, self.loc, evaluated_toks, repr(self.tokens))
+        if logger.tracing:  # repr(self.tokens) is very expensive, so we should only call it if we are actually tracing
+            logger.log_trace(self.name, self.original, self.loc, evaluated_toks, repr(self.tokens))
         try:
             self.result = _trim_arity(self.action)(
                 self.original,
@@ -123,6 +137,7 @@ class ComputationNode(object):
             raise CoconutInternalException("error computing action " + self.name + " with tokens", evaluated_toks)
 
     def __repr__(self):
+        """Get a representation of the entire computation graph below this node."""
         inner_repr = "\n".join("\t" + line for line in repr(self.tokens).splitlines())
         return self.name + "(\n" + inner_repr + "\n)"
 
@@ -131,12 +146,14 @@ class CombineNode(Combine):
     """Modified Combine to work with the computation graph."""
 
     def _action(self, original, loc, tokens):
+        """Implement the parse action for Combine."""
         combined_tokens = super(CombineNode, self).postParse(original, loc, tokens)
         internal_assert(len(combined_tokens) == 1, "Combine produced multiple tokens", combined_tokens)
         return combined_tokens[0]
 
     def postParse(self, original, loc, tokens):
-        return ComputationNode(self._action, original, loc, tokens)
+        """Create a ComputationNode for Combine."""
+        return ComputationNode(self._action, original, loc, tokens, simple=True)
 
 
 def add_action(item, action):
@@ -144,8 +161,10 @@ def add_action(item, action):
     return item.copy().addParseAction(action)
 
 
-def attach(item, action, simple=False):
+def attach(item, action, simple=None):
     """Set the parse action for the given item to create a node in the computation graph."""
+    if simple is None:
+        simple = getattr(action, "simple", False)
     return add_action(item, partial(ComputationNode, action, simple=simple))
 
 
