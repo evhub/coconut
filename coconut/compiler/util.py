@@ -86,8 +86,9 @@ def evaluate_tokens(tokens):
 
 class ComputationNode(object):
     """A single node in the computation graph."""
+    __slots__ = ("action", "loc", "tokens", "index_of_original", "result")
     list_of_originals = []
-    result = no_result = object()
+    no_result = object()
 
     def __new__(cls, action, original, loc, tokens, simple=False):
         """Create a ComputionNode to return from a parse action."""
@@ -95,6 +96,7 @@ class ComputationNode(object):
             return tokens[0]  # could be a ComputationNode, so we can't have an __init__
         else:
             self = super(ComputationNode, cls).__new__(cls)
+            self.result = cls.no_result
             self.action, self.loc, self.tokens = action, loc, tokens
             try:
                 self.index_of_original = self.list_of_originals.index(original)
@@ -117,6 +119,7 @@ class ComputationNode(object):
         """Get the result of evaluating the computation graph at this node."""
         if self.result is self.no_result:
             self.compute_result()
+        internal_assert(self.result is not self.no_result, "got no result computing action " + self.name + " of graph", self.tokens)
         return self.result
 
     def compute_result(self):
@@ -134,7 +137,7 @@ class ComputationNode(object):
             raise
         except (Exception, AssertionError):
             traceback.print_exc()
-            raise CoconutInternalException("error computing action " + self.name + " with tokens", evaluated_toks)
+            raise CoconutInternalException("error computing action " + self.name + " of tokens", evaluated_toks)
 
     def __repr__(self):
         """Get a representation of the entire computation graph below this node."""
@@ -144,6 +147,7 @@ class ComputationNode(object):
 
 class CombineNode(Combine):
     """Modified Combine to work with the computation graph."""
+    __slots__ = ()
 
     def _action(self, original, loc, tokens):
         """Implement the parse action for Combine."""
