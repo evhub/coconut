@@ -90,7 +90,7 @@ class ComputationNode(object):
     list_of_originals = []
     no_result = object()
 
-    def __new__(cls, action, original, loc, tokens, simple=False):
+    def __new__(cls, action, original, loc, tokens, simple=False, greedy=False):
         """Create a ComputionNode to return from a parse action."""
         if simple and len(tokens) == 1:
             return tokens[0]  # could be a ComputationNode, so we can't have an __init__
@@ -103,7 +103,10 @@ class ComputationNode(object):
             except ValueError:
                 self.index_of_original = len(self.list_of_originals)
                 self.list_of_originals.append(original)
-            return self
+            if greedy:
+                return self.evaluate()
+            else:
+                return self
 
     @property
     def original(self):
@@ -149,7 +152,7 @@ class CombineNode(Combine):
     """Modified Combine to work with the computation graph."""
     __slots__ = ()
 
-    def _action(self, original, loc, tokens):
+    def _combine(self, original, loc, tokens):
         """Implement the parse action for Combine."""
         combined_tokens = super(CombineNode, self).postParse(original, loc, tokens)
         internal_assert(len(combined_tokens) == 1, "Combine produced multiple tokens", combined_tokens)
@@ -157,7 +160,7 @@ class CombineNode(Combine):
 
     def postParse(self, original, loc, tokens):
         """Create a ComputationNode for Combine."""
-        return ComputationNode(self._action, original, loc, tokens, simple=True)
+        return ComputationNode(self._combine, original, loc, tokens, simple=True)
 
 
 def add_action(item, action):
@@ -165,11 +168,11 @@ def add_action(item, action):
     return item.copy().addParseAction(action)
 
 
-def attach(item, action, simple=None):
+def attach(item, action, simple=None, greedy=False):
     """Set the parse action for the given item to create a node in the computation graph."""
     if simple is None:
         simple = getattr(action, "simple", False)
-    return add_action(item, partial(ComputationNode, action, simple=simple))
+    return add_action(item, partial(ComputationNode, action, simple=simple, greedy=greedy))
 
 
 def unpack(tokens):
