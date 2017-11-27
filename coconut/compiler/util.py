@@ -60,7 +60,11 @@ from coconut.exceptions import (
 
 def evaluate_tokens(tokens):
     """Evaluate the given tokens in the computation graph."""
-    if isinstance(tokens, ComputationNode):
+    if isinstance(tokens, str):
+        return tokens
+    elif isinstance(tokens, (list, tuple)):
+        return [evaluate_tokens(inner_toks) for inner_toks in tokens]
+    elif isinstance(tokens, ComputationNode):
         return tokens.evaluate()
     elif isinstance(tokens, ParseResults):
         toklist, name, asList, modal = tokens.__getnewargs__()
@@ -76,10 +80,6 @@ def evaluate_tokens(tokens):
         new_tokens._ParseResults__accumNames.update(tokens._ParseResults__accumNames)
         new_tokens._ParseResults__tokdict.update(new_tokdict)
         return new_tokens
-    elif isinstance(tokens, (list, tuple)):
-        return [evaluate_tokens(inner_toks) for inner_toks in tokens]
-    elif isinstance(tokens, str):
-        return tokens
     else:
         raise CoconutInternalException("invalid computation graph tokens", tokens)
 
@@ -122,14 +122,14 @@ class ComputationNode(object):
         """Get the result of evaluating the computation graph at this node."""
         if self.result is self.no_result:
             self.compute_result()
-        internal_assert(self.result is not self.no_result, "got no result computing action " + self.name + " of graph", self.tokens)
+            internal_assert(self.result is not self.no_result, "got no result computing action " + self.name + " of graph", self.tokens)
         return self.result
 
     def compute_result(self):
         """Evaluate the computation graph at this node and assign the result to self.result."""
         evaluated_toks = evaluate_tokens(self.tokens)
-        if logger.tracing:  # repr(self.tokens) is very expensive, so we should only call it if we are actually tracing
-            logger.log_trace(self.name, self.original, self.loc, evaluated_toks, repr(self.tokens))
+        if logger.tracing:  # avoid the overhead of the call if we're not tracing
+            logger.log_trace(self.name, self.original, self.loc, evaluated_toks, self.tokens)
         try:
             self.result = _trim_arity(self.action)(
                 self.original,

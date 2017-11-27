@@ -24,8 +24,7 @@ from coconut.requirements import (
     ver_tuple_to_str,
 )
 from coconut.constants import (
-    use_packrat,
-    packrat_cache_size,
+    packrat_cache,
     default_whitespace_chars,
     varchars,
     min_versions,
@@ -62,8 +61,8 @@ if ver_str_to_tuple(__version__) < min_versions["pyparsing"]:
         + " 'pip install --upgrade cPyparsing' to fix)",
     )
 
-if use_packrat:
-    ParserElement.enablePackrat(packrat_cache_size)
+if packrat_cache:
+    ParserElement.enablePackrat(packrat_cache)
 
 ParserElement.setDefaultWhitespaceChars(default_whitespace_chars)
 

@@ -270,8 +270,7 @@ script_names = (
 # PYPARSING CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-packrat_cache_size = 512
-use_packrat = packrat_cache_size != 0
+packrat_cache = 512
 
 default_whitespace_chars = " \t\f\v\xa0"  # we don't include \r here because the compiler converts \r into \n
 
