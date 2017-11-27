@@ -85,6 +85,7 @@ from coconut.compiler.util import (
     join_args,
     disable_inside,
     disable_outside,
+    final,
 )
 
 # end: IMPORTS
@@ -1661,7 +1662,7 @@ class Grammar(object):
     simple_suite = attach(simple_stmt, make_suite_handle)
     nocolon_suite <<= trace(base_suite | simple_suite)
     suite <<= condense(colon + nocolon_suite)
-    line = trace(newline | stmt)
+    line = trace(final(newline | stmt))
 
     single_input = trace(condense(Optional(line) - ZeroOrMore(newline)))
     file_input = trace(condense(moduledoc_marker - ZeroOrMore(line)))

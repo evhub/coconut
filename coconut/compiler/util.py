@@ -175,6 +175,11 @@ def attach(item, action, simple=None, greedy=False):
     return add_action(item, partial(ComputationNode, action, simple=simple, greedy=greedy))
 
 
+def final(item):
+    """Designate an item as having no backtracking."""
+    return add_action(item, evaluate_tokens)
+
+
 def unpack(tokens):
     """Evaluate and unpack the given computation graph."""
     logger.log_tag("unpack", tokens)
