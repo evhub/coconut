@@ -1662,6 +1662,7 @@ class Grammar(object):
     simple_suite = attach(simple_stmt, make_suite_handle)
     nocolon_suite <<= trace(base_suite | simple_suite)
     suite <<= condense(colon + nocolon_suite)
+
     line = trace(final(newline | stmt))
 
     single_input = trace(condense(Optional(line) - ZeroOrMore(newline)))

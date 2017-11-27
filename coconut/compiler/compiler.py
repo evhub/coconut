@@ -372,6 +372,7 @@ class Compiler(Grammar):
     def bind(self):
         """Binds reference objects to the proper parse actions."""
         self.endline <<= attach(self.endline_ref, self.endline_handle)
+        # comments are evaluated greedily because we need to know about them even if we're going to suppress them
         self.comment <<= trace(attach(self.comment_ref, self.comment_handle, greedy=True))
         self.moduledoc_item <<= trace(attach(self.moduledoc, self.set_docstring))
         self.name <<= trace(attach(self.base_name, self.name_check))

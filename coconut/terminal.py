@@ -35,7 +35,7 @@ from coconut.constants import (
     info_tabulation,
     main_sig,
     taberrfmt,
-    use_packrat,
+    packrat_cache,
 )
 from coconut.exceptions import (
     CoconutWarning,
@@ -240,7 +240,7 @@ class Logger(object):
                 if add_line_col:
                     out.append("(line:" + str(lineno(loc, original)) + ", col:" + str(col(loc, original)) + ")")
                 if extra is not None:
-                    out.append("from " + displayable(extra))
+                    out.append("from " + ascii(extra))
                 printerr(*out)
 
     def _trace_start_action(self, original, loc, expr):
@@ -272,7 +272,7 @@ class Logger(object):
             finally:
                 elapsed_time = time.clock() - start_time
                 printerr("Time while parsing:", elapsed_time, "seconds")
-                if use_packrat:
+                if packrat_cache:
                     hits, misses = ParserElement.packrat_cache_stats
                     printerr("Packrat parsing stats:", hits, "hits;", misses, "misses")
         else:
