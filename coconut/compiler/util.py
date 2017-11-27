@@ -45,6 +45,7 @@ from coconut.constants import (
     closeindent,
     default_whitespace_chars,
     get_target_info,
+    use_computation_graph,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -91,7 +92,10 @@ class ComputationNode(object):
     no_result = object()
 
     def __new__(cls, action, original, loc, tokens, simple=False, greedy=False):
-        """Create a ComputionNode to return from a parse action."""
+        """Create a ComputionNode to return from a parse action.
+
+        If simple, then don't call the action if there is only one token.
+        If greedy, then never defer the action until later."""
         if simple and len(tokens) == 1:
             return tokens[0]  # could be a ComputationNode, so we can't have an __init__
         else:
@@ -148,19 +152,24 @@ class ComputationNode(object):
         return self.name + "(\n" + inner_repr + "\n)"
 
 
-class CombineNode(Combine):
-    """Modified Combine to work with the computation graph."""
-    __slots__ = ()
+if use_computation_graph:
 
-    def _combine(self, original, loc, tokens):
-        """Implement the parse action for Combine."""
-        combined_tokens = super(CombineNode, self).postParse(original, loc, tokens)
-        internal_assert(len(combined_tokens) == 1, "Combine produced multiple tokens", combined_tokens)
-        return combined_tokens[0]
+    class CombineNode(Combine):
+        """Modified Combine to work with the computation graph."""
+        __slots__ = ()
 
-    def postParse(self, original, loc, tokens):
-        """Create a ComputationNode for Combine."""
-        return ComputationNode(self._combine, original, loc, tokens, simple=True)
+        def _combine(self, original, loc, tokens):
+            """Implement the parse action for Combine."""
+            combined_tokens = super(CombineNode, self).postParse(original, loc, tokens)
+            internal_assert(len(combined_tokens) == 1, "Combine produced multiple tokens", combined_tokens)
+            return combined_tokens[0]
+
+        def postParse(self, original, loc, tokens):
+            """Create a ComputationNode for Combine."""
+            return ComputationNode(self._combine, original, loc, tokens, simple=True)
+
+else:
+    CombineNode = Combine
 
 
 def add_action(item, action):
@@ -170,25 +179,28 @@ def add_action(item, action):
 
 def attach(item, action, simple=None, greedy=False):
     """Set the parse action for the given item to create a node in the computation graph."""
-    if simple is None:
-        simple = getattr(action, "simple", False)
-    return add_action(item, partial(ComputationNode, action, simple=simple, greedy=greedy))
+    if use_computation_graph:
+        if simple is None:
+            simple = getattr(action, "simple", False)
+        action = partial(ComputationNode, action, simple=simple, greedy=greedy)
+    return add_action(item, action)
 
 
 def final(item):
     """Designate an item as having no backtracking."""
-    return add_action(item, evaluate_tokens)
+    if use_computation_graph:
+        item = add_action(item, evaluate_tokens)
+    return item
 
 
 def unpack(tokens):
     """Evaluate and unpack the given computation graph."""
     logger.log_tag("unpack", tokens)
-    result = evaluate_tokens(tokens)
-    if isinstance(result, str):
-        return result
-    else:
-        internal_assert(len(result) == 1, "multiple tokens leftover", result)
-        return result[0]
+    if use_computation_graph:
+        tokens = evaluate_tokens(tokens)
+    if isinstance(tokens, ParseResults) and len(tokens) == 1:
+        tokens = tokens[0]
+    return tokens
 
 
 def parse(grammar, text):

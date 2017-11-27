@@ -280,6 +280,8 @@ varchars = string.ascii_letters + string.digits + "_"
 # COMPILER CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
+use_computation_graph = True
+
 template_ext = ".py_template"
 
 default_encoding = "utf-8"
