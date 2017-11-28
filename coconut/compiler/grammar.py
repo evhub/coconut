@@ -1657,12 +1657,12 @@ class Grammar(object):
         + ZeroOrMore(fixto(semicolon, "\n") + simple_stmt_item)
         + (newline | endline_semicolon),
     ))
-    stmt <<= trace(final(compound_stmt | simple_stmt))
+    stmt <<= trace(compound_stmt | simple_stmt)
     base_suite <<= condense(newline + indent - OneOrMore(stmt) - dedent)
     simple_suite = attach(simple_stmt, make_suite_handle)
-    nocolon_suite <<= trace(base_suite | simple_suite)
+    nocolon_suite <<= trace(final(base_suite | simple_suite))
     suite <<= condense(colon + nocolon_suite)
-    line = trace(newline | stmt)
+    line = trace(final(newline | stmt))
 
     single_input = trace(condense(Optional(line) - ZeroOrMore(newline)))
     file_input = trace(condense(moduledoc_marker - ZeroOrMore(line)))
