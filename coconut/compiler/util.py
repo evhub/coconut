@@ -53,7 +53,6 @@ from coconut.exceptions import (
     internal_assert,
 )
 
-
 #-----------------------------------------------------------------------------------------------------------------------
 # COMPUTATION GRAPH:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -187,7 +186,7 @@ def attach(item, action, simple=None, greedy=False):
 
 
 def final(item):
-    """Designate an item as having no backtracking."""
+    """Collapse the computation graph upon parsing the given item."""
     if use_computation_graph:
         item = add_action(item, evaluate_tokens)
     return item
@@ -402,6 +401,7 @@ def transform(grammar, text):
     intervals = []
     for result, start, stop in all_matches(grammar, text):
         if result is not ignore_transform:
+            internal_assert(isinstance(result, str), "got non-string transform result", result)
             results.append(result)
             intervals.append((start, stop))
 
