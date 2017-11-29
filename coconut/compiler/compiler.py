@@ -414,7 +414,13 @@ class Compiler(Grammar):
 
     def adjust(self, ln):
         """Adjusts a line number."""
-        return ln - sum(i < ln for i in self.skips)
+        adj_ln = 0
+        i = 0
+        while i < ln:
+            adj_ln += 1
+            if adj_ln not in self.skips:
+                i += 1
+        return adj_ln
 
     def reformat(self, snip, index=None):
         """Post process a preprocessed snippet."""
