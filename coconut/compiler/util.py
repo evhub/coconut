@@ -131,7 +131,7 @@ class ComputationNode(object):
     def compute_result(self):
         """Evaluate the computation graph at this node and assign the result to self.result."""
         evaluated_toks = evaluate_tokens(self.tokens)
-        if logger.tracing:  # avoid the overhead of the call if we're not tracing
+        if logger.tracing:  # avoid the overhead of the call when not tracing
             logger.log_trace(self.name, self.original, self.loc, evaluated_toks, self.tokens)
         try:
             self.result = _trim_arity(self.action)(

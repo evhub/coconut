@@ -110,3 +110,4 @@ ENV/
 tests/dest/
 docs/
 index.rst
+profile.json

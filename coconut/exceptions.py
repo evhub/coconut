@@ -64,11 +64,11 @@ def internal_assert(condition, message=None, item=None, extra=None):
     If condition is a function, execute it on DEVELOP only."""
     if DEVELOP and callable(condition):
         condition = condition()
-    if message is None:
-        message = "assertion failed"
-        if item is None:
-            item = condition
     if not condition:
+        if message is None:
+            message = "assertion failed"
+            if item is None:
+                item = condition
         raise CoconutInternalException(message, item, extra)
 
 

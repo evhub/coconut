@@ -414,13 +414,7 @@ class Compiler(Grammar):
 
     def adjust(self, ln):
         """Adjusts a line number."""
-        adj_ln = 0
-        i = 0
-        while i < ln:
-            adj_ln += 1
-            if adj_ln not in self.skips:
-                i += 1
-        return adj_ln
+        return ln - sum(i < ln for i in self.skips)
 
     def reformat(self, snip, index=None):
         """Post process a preprocessed snippet."""
@@ -520,7 +514,7 @@ class Compiler(Grammar):
         """Perform pre-processing."""
         out = self.apply_procs(self.preprocs, kwargs, str(inputstring))
         if self.line_numbers or self.keep_lines:
-            logger.log_tag("skips", list(sorted(self.skips)))
+            logger.log_tag("skips", lambda: list(sorted(self.skips)))
         return out
 
     def post(self, result, **kwargs):

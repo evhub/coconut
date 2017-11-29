@@ -1660,7 +1660,7 @@ class Grammar(object):
     stmt <<= trace(compound_stmt | simple_stmt)
     base_suite <<= condense(newline + indent - OneOrMore(stmt) - dedent)
     simple_suite = attach(simple_stmt, make_suite_handle)
-    nocolon_suite <<= trace(final(base_suite | simple_suite))
+    nocolon_suite <<= trace(base_suite | simple_suite)
     suite <<= condense(colon + nocolon_suite)
     line = trace(final(newline | stmt))
 

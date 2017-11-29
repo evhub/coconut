@@ -10,3 +10,4 @@ prune docs
 prune .mypy_cache
 prune *.egg-info
 exclude index.rst
+exclude profile.json
