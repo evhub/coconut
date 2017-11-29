@@ -40,7 +40,7 @@ docs: clean
 
 .PHONY: clean
 clean:
-	rm -rf ./docs ./dist ./build ./tests/dest index.rst
+	rm -rf ./docs ./dist ./build ./tests/dest index.rst profile.json
 	find . -name '*.pyc' -delete
 	find . -name '__pycache__' -delete
 
@@ -66,3 +66,11 @@ upload: build
 .PHONY: check
 check:
 	python ./coconut/requirements.py
+
+.PHONY: profile
+profile:
+	vprof -c pmh "coconut tests/src/cocotest/agnostic tests/dest/cocotest --force" --output-file ./profile.json
+
+.PHONY: view-profile
+view-profile:
+	vprof --input-file ./profile.json

@@ -394,7 +394,7 @@ class Matcher(object):
         else:
             self.add_check("_coconut.len(" + item + ") >= " + str(len(matches)))
             if tail != wildcard:
-                if len(matches):
+                if len(matches) > 0:
                     splice = "[" + str(len(matches)) + ":]"
                 else:
                     splice = ""

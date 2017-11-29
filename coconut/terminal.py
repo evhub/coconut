@@ -211,6 +211,8 @@ class Logger(object):
     def log_tag(self, tag, code, multiline=False):
         """Logs a tagged message if tracing."""
         if self.tracing:
+            if callable(code):
+                code = code()
             tagstr = "[" + str(tag) + "]"
             if multiline:
                 printerr(tagstr + "\n" + displayable(code))
