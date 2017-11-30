@@ -131,7 +131,7 @@ class ComputationNode(object):
     def compute_result(self):
         """Evaluate the computation graph at this node and assign the result to self.result."""
         evaluated_toks = evaluate_tokens(self.tokens)
-        if logger.tracing:  # avoid the overhead of the call when not tracing
+        if logger.tracing:  # avoid the overhead of the call if not tracing
             logger.log_trace(self.name, self.original, self.loc, evaluated_toks, self.tokens)
         try:
             self.result = _trim_arity(self.action)(
@@ -270,8 +270,8 @@ def addskip(skips, skip):
     """Add a line skip to the skips."""
     if skip < 1:
         complain(CoconutInternalException("invalid skip of line " + str(skip)))
-    elif skip in skips:
-        complain(CoconutInternalException("duplicate skip of line " + str(skip)))
+    elif DEVELOP and skip in skips:  # avoid the overhead of the check if not in develop
+        raise CoconutInternalException("duplicate skip of line " + str(skip))
     else:
         skips.add(skip)
     return skips
