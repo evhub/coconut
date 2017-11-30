@@ -360,7 +360,7 @@ class Compiler(Grammar):
         self.indchar = None
         self.comments = {}
         self.refs = []
-        self.skips = set()
+        self.skips = []
         self.docstring = ""
         self.ichain_count = 0
         self.tre_store_count = 0
@@ -412,15 +412,24 @@ class Compiler(Grammar):
         self.endline_semicolon <<= attach(self.endline_semicolon_ref, self.endline_semicolon_check)
         self.async_comp_for <<= attach(self.async_comp_for_ref, self.async_comp_check)
 
+    @property
+    def sorted_skips(self):
+        self.skips.sort()
+        return self.skips
+
     def adjust(self, ln):
         """Adjusts a line number."""
         adj_ln = ln
-        need_unskipped = sum(1 for i in self.skips if i <= ln)
-        while need_unskipped:
-            adj_ln += 1
-            if adj_ln not in self.skips:
-                need_unskipped -= 1
-        return adj_ln
+        need_unskipped = 0
+        for i in self.sorted_skips:
+            if i <= ln:
+                need_unskipped += 1
+            elif adj_ln + need_unskipped < i:
+                break
+            else:
+                need_unskipped -= i - adj_ln - 1
+                adj_ln = i
+        return adj_ln + need_unskipped
 
     def reformat(self, snip, index=None):
         """Post process a preprocessed snippet."""
@@ -520,7 +529,7 @@ class Compiler(Grammar):
         """Perform pre-processing."""
         out = self.apply_procs(self.preprocs, kwargs, str(inputstring))
         if self.line_numbers or self.keep_lines:
-            logger.log_tag("skips", lambda: list(sorted(self.skips)))
+            logger.log_tag("skips", self.sorted_skips)
         return out
 
     def post(self, result, **kwargs):
