@@ -245,9 +245,6 @@ class Logger(object):
                     out.append("from " + ascii(extra))
                 printerr(*out)
 
-    def _trace_start_action(self, original, loc, expr):
-        pass  # we'd rather log after the action when we know its result
-
     def _trace_success_action(self, original, start_loc, end_loc, expr, tokens):
         self.log_trace(expr, original, start_loc, tokens)
 
@@ -257,11 +254,12 @@ class Logger(object):
     def trace(self, item):
         """Traces a parse element (only enabled in develop)."""
         if DEVELOP:
-            item = item.setDebugActions(
-                self._trace_start_action,
+            item.debugActions = (
+                None,  # no start action
                 self._trace_success_action,
                 self._trace_exc_action,
             )
+            item.debug = True
         return item
 
     @contextmanager
