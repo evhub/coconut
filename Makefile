@@ -69,7 +69,7 @@ check:
 
 .PHONY: profile
 profile:
-	vprof -c pmh "coconut tests/src/cocotest/agnostic tests/dest/cocotest --force" --output-file ./profile.json
+	vprof -c mh "coconut tests/src/cocotest/agnostic tests/dest/cocotest --force" --output-file ./profile.json
 
 .PHONY: view-profile
 view-profile:

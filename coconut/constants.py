@@ -110,6 +110,7 @@ all_reqs = {
     "dev": (
         "pre-commit",
         "requests",
+        "vprof",
     ),
     "docs": (
         "sphinx",
@@ -144,6 +145,7 @@ min_versions = {
     "pexpect": (4,),
     "watchdog": (0, 8),
     "requests": (2,),
+    "vprof": (0, 37),
     # We can't upgrade this; it breaks on Python 2.
     "ipython": (5, 4),
     # Don't upgrade these; they break on master!
