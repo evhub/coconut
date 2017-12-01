@@ -529,7 +529,7 @@ class Compiler(Grammar):
         """Perform pre-processing."""
         out = self.apply_procs(self.preprocs, kwargs, str(inputstring))
         if self.line_numbers or self.keep_lines:
-            logger.log_tag("skips", self.sorted_skips)
+            logger.log_tag("skips", lambda: self.sorted_skips)
         return out
 
     def post(self, result, **kwargs):
@@ -627,7 +627,7 @@ class Compiler(Grammar):
         _contents = 0  # the contents of the string so far
         _start = 1  # the string of characters that started the string
         _stop = 2  # store of characters that might be the end of the string
-        skips = self.skips.copy()
+        skips = self.skips[:]
 
         x = 0
         while x <= len(inputstring):
@@ -727,7 +727,7 @@ class Compiler(Grammar):
         hold = None  # the contents of the passthrough so far
         count = None  # current parenthetical level (num closes - num opens)
         multiline = None  # if in a passthrough, is it a multiline passthrough
-        skips = self.skips.copy()
+        skips = self.skips[:]
 
         for x in range(len(inputstring) + 1):
             if x == len(inputstring):
@@ -796,7 +796,7 @@ class Compiler(Grammar):
         opens = []  # (line, col, adjusted ln) at which open parens were seen, newest first
         current = None  # indentation level of previous line
         levels = []  # indentation levels of all previous blocks, newest at end
-        skips = self.skips.copy()
+        skips = self.skips[:]
 
         for ln in range(1, len(lines) + 1):  # ln is 1-indexed
             line = lines[ln - 1]  # lines is 0-indexed
