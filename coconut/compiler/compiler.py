@@ -360,7 +360,7 @@ class Compiler(Grammar):
         self.indchar = None
         self.comments = {}
         self.refs = []
-        self.skips = []
+        self.set_skips([])
         self.docstring = ""
         self.ichain_count = 0
         self.tre_store_count = 0
@@ -412,9 +412,21 @@ class Compiler(Grammar):
         self.endline_semicolon <<= attach(self.endline_semicolon_ref, self.endline_semicolon_check)
         self.async_comp_for <<= attach(self.async_comp_for_ref, self.async_comp_check)
 
+    def copy_skips(self):
+        """Copy the line skips."""
+        return self.skips[:]
+
+    def set_skips(self, skips):
+        """Set the line skips."""
+        self.skips = skips
+        self.skips_are_sorted = False
+
     @property
     def sorted_skips(self):
-        self.skips.sort()
+        """Get sorted line skips."""
+        if not self.skips_are_sorted:
+            self.skips.sort()
+            self.skips_are_sorted = True
         return self.skips
 
     def adjust(self, ln):
@@ -627,7 +639,7 @@ class Compiler(Grammar):
         _contents = 0  # the contents of the string so far
         _start = 1  # the string of characters that started the string
         _stop = 2  # store of characters that might be the end of the string
-        skips = self.skips[:]
+        skips = self.copy_skips()
 
         x = 0
         while x <= len(inputstring):
@@ -717,7 +729,7 @@ class Compiler(Grammar):
         if hold is not None or found is not None:
             raise self.make_err(CoconutSyntaxError, "unclosed string", inputstring, x, reformat=False)
         else:
-            self.skips = skips
+            self.set_skips(skips)
             return "".join(out)
 
     def passthrough_proc(self, inputstring, **kwargs):
@@ -727,7 +739,7 @@ class Compiler(Grammar):
         hold = None  # the contents of the passthrough so far
         count = None  # current parenthetical level (num closes - num opens)
         multiline = None  # if in a passthrough, is it a multiline passthrough
-        skips = self.skips[:]
+        skips = self.copy_skips()
 
         for x in range(len(inputstring) + 1):
             if x == len(inputstring):
@@ -770,7 +782,7 @@ class Compiler(Grammar):
         if hold is not None or found is not None:
             raise self.make_err(CoconutSyntaxError, "unclosed passthrough", inputstring, x)
 
-        self.skips = skips
+        self.set_skips(skips)
         return "".join(out)
 
     def leading_whitespace(self, inputstring):
@@ -796,7 +808,7 @@ class Compiler(Grammar):
         opens = []  # (line, col, adjusted ln) at which open parens were seen, newest first
         current = None  # indentation level of previous line
         levels = []  # indentation levels of all previous blocks, newest at end
-        skips = self.skips[:]
+        skips = self.copy_skips()
 
         for ln in range(1, len(lines) + 1):  # ln is 1-indexed
             line = lines[ln - 1]  # lines is 0-indexed
@@ -849,7 +861,7 @@ class Compiler(Grammar):
             elif count < 0:  # opens > closes
                 opens += [(new[-1], self.adjust(len(new)))] * (-count)
 
-        self.skips = skips
+        self.set_skips(skips)
         if new:
             last = rem_comment(new[-1])
             if last.endswith("\\"):
