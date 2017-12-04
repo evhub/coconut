@@ -29,6 +29,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import sys
+import re
 from contextlib import contextmanager
 
 from coconut.pyparsing import (
@@ -418,22 +419,14 @@ class Compiler(Grammar):
 
     def set_skips(self, skips):
         """Set the line skips."""
+        skips.sort()
         self.skips = skips
-        self.skips_are_sorted = False
-
-    @property
-    def sorted_skips(self):
-        """Get sorted line skips."""
-        if not self.skips_are_sorted:
-            self.skips.sort()
-            self.skips_are_sorted = True
-        return self.skips
 
     def adjust(self, ln):
         """Adjusts a line number."""
         adj_ln = ln
         need_unskipped = 0
-        for i in self.sorted_skips:
+        for i in self.skips:
             if i <= ln:
                 need_unskipped += 1
             elif adj_ln + need_unskipped < i:
@@ -451,12 +444,14 @@ class Compiler(Grammar):
             return self.repl_proc(snip, reformatting=True, log=False)
 
     def eval_now(self, code):
-        """Reformat and evaluates a code snippet and returns code for the result."""
+        """Reformat and evaluate a code snippet and return code for the result."""
         result = eval(self.reformat(code))
-        if result is True or result is False or result is None or isinstance(result, int):
+        if result is None or isinstance(result, (bool, int, float, complex)):
             return repr(result)
-        elif isinstance(result, (bytes, str)):
-            return ("b" if isinstance(result, bytes) else "") + self.wrap_str_of(result)
+        elif isinstance(result, bytes):
+            return "b" + self.wrap_str_of(result)
+        elif isinstance(result, str):
+            return self.wrap_str_of(result)
         else:
             return None
 
@@ -541,7 +536,7 @@ class Compiler(Grammar):
         """Perform pre-processing."""
         out = self.apply_procs(self.preprocs, kwargs, str(inputstring))
         if self.line_numbers or self.keep_lines:
-            logger.log_tag("skips", lambda: self.sorted_skips)
+            logger.log_tag("skips", self.skips)
         return out
 
     def post(self, result, **kwargs):
@@ -607,7 +602,7 @@ class Compiler(Grammar):
                 )
         if self.strict:
             for name in self.unused_imports:
-                logger.warn("found unused import", name, "disable --strict to dismiss")
+                logger.warn("found unused import", name, extra="disable --strict to dismiss")
         return out
 
 # end: COMPILER
@@ -643,10 +638,11 @@ class Compiler(Grammar):
 
         x = 0
         while x <= len(inputstring):
-            if x == len(inputstring):
-                c = "\n"
-            else:
+            try:
                 c = inputstring[x]
+            except IndexError:
+                internal_assert(x == len(inputstring), "invalid index in str_proc", x)
+                c = "\n"
 
             if hold is not None:
                 if len(hold) == 1:  # hold == [_comment]
@@ -742,10 +738,11 @@ class Compiler(Grammar):
         skips = self.copy_skips()
 
         for x in range(len(inputstring) + 1):
-            if x == len(inputstring):
-                c = "\n"
-            else:
+            try:
                 c = inputstring[x]
+            except IndexError:
+                internal_assert(x == len(inputstring), "invalid index in passthrough_proc", x)
+                c = "\n"
 
             if hold is not None:
                 # we specify that we only care about parens, not brackets or braces
@@ -874,11 +871,15 @@ class Compiler(Grammar):
 
     def stmt_lambda_proc(self, inputstring, **kwargs):
         """Add statement lambda definitions."""
+        regexes = []
+        for i in range(len(self.stmt_lambdas)):
+            name = self.stmt_lambda_name(i)
+            regex = re.compile(r"\b{}\b".format(name))
+            regexes.append(regex)
         out = []
         for line in inputstring.splitlines():
-            for i in range(len(self.stmt_lambdas)):
-                name = self.stmt_lambda_name(i)
-                if match_in(Keyword(name), line):
+            for i, regex in enumerate(regexes):
+                if re.search(regex, line):
                     indent, line = split_leading_indent(line)
                     out.append(indent + self.stmt_lambdas[i])
             out.append(line)
@@ -1006,7 +1007,12 @@ class Compiler(Grammar):
         string = None
 
         for x in range(len(inputstring) + 1):
-            c = inputstring[x] if x != len(inputstring) else None
+            try:
+                c = inputstring[x]
+            except IndexError:
+                internal_assert(x == len(inputstring), "invalid index in str_repl", x)
+                c = None
+
             try:
 
                 if comment is not None:
@@ -1602,11 +1608,11 @@ class Compiler(Grammar):
                 if level <= disabled_until_level:
                     disabled_until_level = None
             if disabled_until_level is None:
-                if match_in(Keyword("yield"), body):
+                if re.search(r"\byield\b", body):
                     # we can't tco or tre generators
                     lines = raw_lines
                     break
-                elif match_in(Keyword("def") | Keyword("try") | Keyword("with"), body):
+                elif re.search(r"\b(?:def|try|with)\b", body):
                     disabled_until_level = level
                 else:
                     base, comment = split_comment(body)

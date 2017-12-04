@@ -67,9 +67,13 @@ upload: build
 check:
 	python ./coconut/requirements.py
 
-.PHONY: profile
-profile:
-	vprof -c mh "coconut tests/src/cocotest/agnostic tests/dest/cocotest --force" --output-file ./profile.json
+.PHONY: profile-code
+profile-code:
+	vprof -c h "coconut tests/src/cocotest/agnostic tests/dest/cocotest --force" --output-file ./profile.json
+
+.PHONY: profile-memory
+profile-memory:
+	vprof -m h "coconut tests/src/cocotest/agnostic tests/dest/cocotest --force" --output-file ./profile.json
 
 .PHONY: view-profile
 view-profile:

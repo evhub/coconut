@@ -62,10 +62,6 @@ def evaluate_tokens(tokens):
     """Evaluate the given tokens in the computation graph."""
     if isinstance(tokens, str):
         return tokens
-    elif isinstance(tokens, (list, tuple)):
-        return [evaluate_tokens(inner_toks) for inner_toks in tokens]
-    elif isinstance(tokens, ComputationNode):
-        return tokens.evaluate()
     elif isinstance(tokens, ParseResults):
         toklist, name, asList, modal = tokens.__getnewargs__()
         new_toklist = [evaluate_tokens(toks) for toks in toklist]
@@ -80,6 +76,10 @@ def evaluate_tokens(tokens):
         new_tokens._ParseResults__accumNames.update(tokens._ParseResults__accumNames)
         new_tokens._ParseResults__tokdict.update(new_tokdict)
         return new_tokens
+    elif isinstance(tokens, ComputationNode):
+        return tokens.evaluate()
+    elif isinstance(tokens, (list, tuple)):
+        return [evaluate_tokens(inner_toks) for inner_toks in tokens]
     else:
         raise CoconutInternalException("invalid computation graph tokens", tokens)
 
@@ -319,7 +319,7 @@ def condense(item):
 
 
 def maybeparens(lparen, item, rparen):
-    """Wrap an item in optional parentheses."""
+    """Wrap an item in optional parentheses, only applying them if necessary."""
     return item | lparen.suppress() + item + rparen.suppress()
 
 
@@ -360,10 +360,10 @@ def split_comment(line):
 def split_leading_indent(line, max_indents=None):
     """Split line into leading indent and main."""
     indent = ""
-    while line.lstrip() != line or (
+    while (
         (max_indents is None or max_indents > 0)
         and line.startswith((openindent, closeindent))
-    ):
+    ) or line.lstrip() != line:
         if max_indents is not None and line.startswith((openindent, closeindent)):
             max_indents -= 1
         indent += line[0]
@@ -374,10 +374,10 @@ def split_leading_indent(line, max_indents=None):
 def split_trailing_indent(line, max_indents=None):
     """Split line into leading indent and main."""
     indent = ""
-    while line.rstrip() != line or (
+    while (
         (max_indents is None or max_indents > 0)
-        and (line.endswith(openindent) or line.endswith(closeindent))
-    ):
+        and line.endswith((openindent, closeindent))
+    ) or line.rstrip() != line:
         if max_indents is not None and (line.endswith(openindent) or line.endswith(closeindent)):
             max_indents -= 1
         indent = line[-1] + indent
