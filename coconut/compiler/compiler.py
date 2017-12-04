@@ -420,6 +420,7 @@ class Compiler(Grammar):
     def set_skips(self, skips):
         """Set the line skips."""
         skips.sort()
+        internal_assert(lambda: len(set(skips)) == len(skips), "duplicate line skip(s) in skips", skips)
         self.skips = skips
 
     def adjust(self, ln):
