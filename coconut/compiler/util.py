@@ -270,8 +270,6 @@ def addskip(skips, skip):
     """Add a line skip to the skips."""
     if skip < 1:
         complain(CoconutInternalException("invalid skip of line " + str(skip)))
-    elif DEVELOP and skip in skips:  # avoid the overhead of the check if not in develop
-        raise CoconutInternalException("duplicate skip of line " + str(skip))
     else:
         skips.append(skip)
     return skips
