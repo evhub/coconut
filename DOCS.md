@@ -205,7 +205,7 @@ Finally, while Coconut will try to compile Python-3-specific syntax to its unive
 
 If the version of Python that the compiled code will be running on is known ahead of time, a target should be specified with `--target`. The given target will only affect the compiled code and whether or not the Python-3-specific syntax detailed above is allowed. Where Python 3 and Python 2 syntax standards differ, Coconut syntax will always follow Python 3 across all targets. The supported targets are:
 
-- universal (default) (will work on _any_ of the below),
+- `universal` (default) (will work on _any_ of the below),
 - `2`, `2.6` (will work on any Python `>= 2.6` but `< 3`),
 - `2.7` (will work on any Python `>= 2.7` but `< 3`),
 - `3`, `3.2` (will work on any Python `>= 3.2`),

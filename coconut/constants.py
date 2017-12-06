@@ -299,6 +299,7 @@ hash_sep = "\x00"
 
 specific_targets = ("2", "27", "3", "33", "35", "36")
 pseudo_targets = {
+    "universal": "",
     "26": "2",
     "32": "3",
     "34": "33",
