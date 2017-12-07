@@ -60,7 +60,12 @@ else:
 # GLOBALS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-COMPILER = Compiler(target="sys", line_numbers=True, keep_lines=True)
+COMPILER = Compiler(
+    target="sys",
+    line_numbers=True,
+    keep_lines=True,
+)
+
 RUNNER = Runner(COMPILER)
 
 parse_block_memo = {}

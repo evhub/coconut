@@ -443,6 +443,8 @@ def main_test():
     assert true where: true = True
     assert a == 5 where:
         {"a": a} = {"a": 5}
+    assert (None ?? False is False) is True
+    assert (1 ?? False is False) is False
     return True
 
 def tco_func() = tco_func()

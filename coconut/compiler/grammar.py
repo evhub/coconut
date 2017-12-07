@@ -389,7 +389,7 @@ def none_coalesce_handle(tokens):
     if len(tokens) == 1:
         return tokens[0]
     elif tokens[0].isalnum():
-        return "{b} if {a} is None else {a}".format(
+        return "({b} if {a} is None else {a})".format(
             a=tokens[0],
             b=none_coalesce_handle(tokens[1:]),
         )
