@@ -65,14 +65,24 @@ def evaluate_tokens(tokens):
     elif isinstance(tokens, ParseResults):
         toklist, name, asList, modal = tokens.__getnewargs__()
         new_toklist = [evaluate_tokens(toks) for toks in toklist]
+        new_tokens = ParseResults(new_toklist, name, asList, modal)
         new_tokdict = {}
         for name, occurrences in tokens._ParseResults__tokdict.items():
             new_occurences = []
             for value, position in occurrences:
-                new_value = evaluate_tokens(value)
+                if isinstance(value, ParseResults) and value._ParseResults__toklist == toklist:
+                    new_value = new_tokens
+                else:
+                    try:
+                        new_value = new_toklist[toklist.index(value)]
+                    except ValueError:
+                        complain(CoconutInternalException("inefficient re-parsing of tokens: {} not in {}".format(
+                            value,
+                            toklist,
+                        )))
+                        new_value = evaluate_tokens(value)
                 new_occurences.append(_ParseResultsWithOffset(new_value, position))
             new_tokdict[name] = occurrences
-        new_tokens = ParseResults(new_toklist, name, asList, modal)
         new_tokens._ParseResults__accumNames.update(tokens._ParseResults__accumNames)
         new_tokens._ParseResults__tokdict.update(new_tokdict)
         return new_tokens
@@ -86,9 +96,8 @@ def evaluate_tokens(tokens):
 
 class ComputationNode(object):
     """A single node in the computation graph."""
-    __slots__ = ("action", "loc", "tokens", "index_of_original", "result")
+    __slots__ = ("action", "loc", "tokens", "index_of_original")
     list_of_originals = []
-    no_result = object()
 
     def __new__(cls, action, original, loc, tokens, simple=False, greedy=False):
         """Create a ComputionNode to return from a parse action.
@@ -99,7 +108,6 @@ class ComputationNode(object):
             return tokens[0]  # could be a ComputationNode, so we can't have an __init__
         else:
             self = super(ComputationNode, cls).__new__(cls)
-            self.result = cls.no_result
             self.action, self.loc, self.tokens = action, loc, tokens
             try:
                 self.index_of_original = self.list_of_originals.index(original)
@@ -123,18 +131,11 @@ class ComputationNode(object):
 
     def evaluate(self):
         """Get the result of evaluating the computation graph at this node."""
-        if self.result is self.no_result:
-            self.compute_result()
-            internal_assert(self.result is not self.no_result, "got no result computing action " + self.name + " of graph", self.tokens)
-        return self.result
-
-    def compute_result(self):
-        """Evaluate the computation graph at this node and assign the result to self.result."""
         evaluated_toks = evaluate_tokens(self.tokens)
         if logger.tracing:  # avoid the overhead of the call if not tracing
             logger.log_trace(self.name, self.original, self.loc, evaluated_toks, self.tokens)
         try:
-            self.result = _trim_arity(self.action)(
+            return _trim_arity(self.action)(
                 self.original,
                 self.loc,
                 evaluated_toks,

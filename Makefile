@@ -73,7 +73,7 @@ profile-code:
 
 .PHONY: profile-memory
 profile-memory:
-	vprof -m h "coconut tests/src/cocotest/agnostic tests/dest/cocotest --force" --output-file ./profile.json
+	vprof -c m "coconut tests/src/cocotest/agnostic tests/dest/cocotest --force" --output-file ./profile.json
 
 .PHONY: view-profile
 view-profile:
