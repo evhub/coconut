@@ -29,7 +29,7 @@ test-basic:
 # same as test-basic but includes verbose output for better debugging
 .PHONY: test-verbose
 test-verbose:
-	python ./tests --force --verbose
+	python ./tests --force --verbose --jobs 0
 	python ./tests/dest/runner.py
 	python ./tests/dest/extras.py
 
