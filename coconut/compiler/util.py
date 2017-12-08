@@ -76,7 +76,7 @@ def evaluate_tokens(tokens):
                     try:
                         new_value = new_toklist[toklist.index(value)]
                     except ValueError:
-                        complain(CoconutInternalException("inefficient re-parsing of tokens: {} not in {}".format(
+                        complain(lambda: CoconutInternalException("inefficient reevaluation of tokens: {} not in {}".format(
                             value,
                             toklist,
                         )))
@@ -429,6 +429,7 @@ def transform(grammar, text):
 
 class Wrap(ParseElementEnhance):
     """PyParsing token that wraps the given item in the given context manager."""
+    __slots__ = ("errmsg", "wrapper")
 
     def __init__(self, item, wrapper):
         super(Wrap, self).__init__(item)

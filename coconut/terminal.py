@@ -69,7 +69,10 @@ def format_error(err_type, err_value, err_trace=None):
 
 def complain(error):
     """Raises in develop; warns in release."""
-    if DEVELOP:
+    if callable(error):
+        if DEVELOP:
+            raise error()
+    elif DEVELOP:
         raise error
     else:
         logger.warn_err(error)
