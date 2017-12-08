@@ -124,9 +124,9 @@ from coconut.compiler.header import (
 def set_to_tuple(tokens):
     """Converts set literal tokens to tuples."""
     internal_assert(len(tokens) == 1, "invalid set maker tokens", tokens)
-    if "comp" in tokens.keys() or "list" in tokens.keys():
+    if "comp" in tokens or "list" in tokens:
         return "(" + tokens[0] + ")"
-    elif "test" in tokens.keys():
+    elif "test" in tokens:
         return "(" + tokens[0] + ",)"
     else:
         raise CoconutInternalException("invalid set maker item", tokens[0])
@@ -1163,11 +1163,11 @@ class Compiler(Grammar):
             else:
                 return "(_coconut.object)"
         elif len(tokens) == 1 and len(tokens[0]) == 1:
-            if "tests" in tokens[0].keys():
+            if "tests" in tokens[0]:
                 if self.strict and tokens[0][0] == "(object)":
                     raise self.make_err(CoconutStyleError, "unnecessary inheriting from object (Coconut does this automatically)", original, loc)
                 return tokens[0][0]
-            elif "args" in tokens[0].keys():
+            elif "args" in tokens[0]:
                 if self.target.startswith("3"):
                     return tokens[0][0]
                 else:
@@ -1196,19 +1196,19 @@ class Compiler(Grammar):
         for i, arg in enumerate(original_args):
 
             star, default, typedef = False, None, None
-            if "name" in arg.keys():
+            if "name" in arg:
                 internal_assert(len(arg) == 1)
                 argname = arg[0]
-            elif "default" in arg.keys():
+            elif "default" in arg:
                 internal_assert(len(arg) == 2)
                 argname, default = arg
-            elif "star" in arg.keys():
+            elif "star" in arg:
                 internal_assert(len(arg) == 1)
                 star, argname = True, arg[0]
-            elif "type" in arg.keys():
+            elif "type" in arg:
                 internal_assert(len(arg) == 2)
                 argname, typedef = arg
-            elif "type default" in arg.keys():
+            elif "type default" in arg:
                 internal_assert(len(arg) == 3)
                 argname, typedef, default = arg
             else:
@@ -1325,18 +1325,18 @@ class Compiler(Grammar):
             ) + "):\n" + openindent
         )
         rest = None
-        if "simple" in stmts.keys() and len(stmts) == 1:
+        if "simple" in stmts and len(stmts) == 1:
             out += extra_stmts
             rest = stmts[0]
-        elif "docstring" in stmts.keys() and len(stmts) == 1:
+        elif "docstring" in stmts and len(stmts) == 1:
             out += stmts[0] + extra_stmts
-        elif "complex" in stmts.keys() and len(stmts) == 1:
+        elif "complex" in stmts and len(stmts) == 1:
             out += extra_stmts
             rest = "".join(stmts[0])
-        elif "complex" in stmts.keys() and len(stmts) == 2:
+        elif "complex" in stmts and len(stmts) == 2:
             out += stmts[0] + extra_stmts
             rest = "".join(stmts[1])
-        elif "empty" in stmts.keys() and len(stmts) == 1:
+        elif "empty" in stmts and len(stmts) == 1:
             out += extra_stmts.rstrip() + stmts[0]
         else:
             raise CoconutInternalException("invalid inner data tokens", stmts)
@@ -1501,7 +1501,7 @@ class Compiler(Grammar):
             params, stmts = tokens
         elif len(tokens) == 3:
             params, stmts, last = tokens
-            if "tests" in tokens.keys():
+            if "tests" in tokens:
                 stmts = stmts.asList() + ["return " + last]
             else:
                 stmts = stmts.asList() + [last]

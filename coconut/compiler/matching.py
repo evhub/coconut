@@ -45,14 +45,14 @@ from coconut.compiler.util import paren_join
 def get_match_names(match):
     """Gets keyword names for the given match."""
     names = []
-    if "paren" in match.keys():
+    if "paren" in match:
         (match,) = match
         names += get_match_names(match)
-    elif "var" in match.keys():
+    elif "var" in match:
         (setvar,) = match
         if setvar != wildcard:
             names.append(setvar)
-    elif "trailer" in match.keys():
+    elif "trailer" in match:
         match, trailers = match[0], match[1:]
         for i in range(0, len(trailers), 2):
             op, arg = trailers[i], trailers[i + 1]
@@ -609,7 +609,7 @@ class Matcher(object):
     def match(self, tokens, item):
         """Performs pattern-matching processing."""
         for flag, get_handler in self.matchers.items():
-            if flag in tokens.keys():
+            if flag in tokens:
                 return get_handler(self)(tokens, item)
         raise CoconutInternalException("invalid pattern-matching tokens", tokens)
 
