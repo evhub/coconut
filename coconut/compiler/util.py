@@ -63,9 +63,11 @@ def evaluate_tokens(tokens):
     if isinstance(tokens, str):
         return tokens
     elif isinstance(tokens, ParseResults):
+        # evaluate the list portion of the ParseResults
         toklist, name, asList, modal = tokens.__getnewargs__()
         new_toklist = [evaluate_tokens(toks) for toks in toklist]
         new_tokens = ParseResults(new_toklist, name, asList, modal)
+        # evaluate the dictionary portion of the ParseResults
         new_tokdict = {}
         for name, occurrences in tokens._ParseResults__tokdict.items():
             new_occurences = []
@@ -260,7 +262,7 @@ skip_whitespace = SkipTo(CharsNotIn(default_whitespace_chars)).suppress()
 
 def longest(*args):
     """Match the longest of the given grammar elements."""
-    internal_assert(len(args) >= 2, "longest expected at least two args")
+    internal_assert(len(args) >= 2, "longest expects at least two args")
     matcher = args[0] + skip_whitespace
     for elem in args[1:]:
         matcher ^= elem + skip_whitespace
