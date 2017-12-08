@@ -294,7 +294,7 @@ def item_handle(loc, tokens):
     return out
 
 
-item_handle.simple = True
+item_handle.ignore_one_token = True
 
 
 def pipe_handle(loc, tokens, **kwargs):
@@ -405,7 +405,7 @@ def none_coalesce_handle(tokens):
         )
 
 
-none_coalesce_handle.simple = True
+none_coalesce_handle.ignore_one_token = True
 
 
 def attrgetter_atom_handle(loc, tokens):
@@ -440,7 +440,7 @@ def chain_handle(tokens):
         return "_coconut.itertools.chain.from_iterable(" + lazy_list_handle(tokens) + ")"
 
 
-chain_handle.simple = True
+chain_handle.ignore_one_token = True
 
 
 def infix_handle(tokens):
@@ -647,7 +647,7 @@ def namelist_handle(tokens):
         raise CoconutInternalException("invalid in-line nonlocal / global tokens", tokens)
 
 
-namelist_handle.simple = True
+namelist_handle.ignore_one_token = True
 
 
 def compose_item_handle(tokens):
@@ -660,7 +660,7 @@ def compose_item_handle(tokens):
         return "_coconut_forward_compose(" + ", ".join(reversed(tokens)) + ")"
 
 
-compose_item_handle.simple = True
+compose_item_handle.ignore_one_token = True
 
 
 def tco_return_handle(tokens):

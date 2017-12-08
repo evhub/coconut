@@ -98,15 +98,18 @@ def evaluate_tokens(tokens):
 
 class ComputationNode(object):
     """A single node in the computation graph."""
-    __slots__ = ("action", "loc", "tokens", "index_of_original")
+    __slots__ = ("action", "loc", "tokens", "index_of_original") + (("been_called",) if DEVELOP else ())
     list_of_originals = []
 
-    def __new__(cls, action, original, loc, tokens, simple=False, greedy=False):
+    def __new__(cls, action, original, loc, tokens, greedy=False, ignore_no_tokens=False, ignore_one_token=False):
         """Create a ComputionNode to return from a parse action.
 
-        If simple, then don't call the action if there is only one token.
-        If greedy, then never defer the action until later."""
-        if simple and len(tokens) == 1:
+        If greedy, then never defer the action until later.
+        If ignore_no_tokens, then don't call the action if there are no tokens.
+        If ignore_one_token, then don't call the action if there is only one token."""
+        if ignore_no_tokens and len(tokens) == 0:
+            return []
+        elif ignore_one_token and len(tokens) == 1:
             return tokens[0]  # could be a ComputationNode, so we can't have an __init__
         else:
             self = super(ComputationNode, cls).__new__(cls)
@@ -116,6 +119,8 @@ class ComputationNode(object):
             except ValueError:
                 self.index_of_original = len(self.list_of_originals)
                 self.list_of_originals.append(original)
+            if DEVELOP:
+                self.been_called = False
             if greedy:
                 return self.evaluate()
             else:
@@ -133,6 +138,9 @@ class ComputationNode(object):
 
     def evaluate(self):
         """Get the result of evaluating the computation graph at this node."""
+        if DEVELOP:
+            internal_assert(not self.been_called, "inefficient reevaluation of action " + self.name + " with tokens", self.tokens)
+            self.been_called = True
         evaluated_toks = evaluate_tokens(self.tokens)
         if logger.tracing:  # avoid the overhead of the call if not tracing
             logger.log_trace(self.name, self.original, self.loc, evaluated_toks, self.tokens)
@@ -146,7 +154,7 @@ class ComputationNode(object):
             raise
         except (Exception, AssertionError):
             traceback.print_exc()
-            raise CoconutInternalException("error computing action " + self.name + " of tokens", evaluated_toks)
+            raise CoconutInternalException("error computing action " + self.name + " of evaluated tokens", evaluated_toks)
 
     def __repr__(self):
         """Get a representation of the entire computation graph below this node."""
@@ -168,7 +176,7 @@ if use_computation_graph:
 
         def postParse(self, original, loc, tokens):
             """Create a ComputationNode for Combine."""
-            return ComputationNode(self._combine, original, loc, tokens, simple=True)
+            return ComputationNode(self._combine, original, loc, tokens, ignore_no_tokens=True, ignore_one_token=True)
 
 else:
     CombineNode = Combine
@@ -179,12 +187,23 @@ def add_action(item, action):
     return item.copy().addParseAction(action)
 
 
-def attach(item, action, simple=None, greedy=False):
+def attach(item, action, greedy=False, ignore_no_tokens=None, ignore_one_token=None):
     """Set the parse action for the given item to create a node in the computation graph."""
     if use_computation_graph:
-        if simple is None:
-            simple = getattr(action, "simple", False)
-        action = partial(ComputationNode, action, simple=simple, greedy=greedy)
+        # use the action's annotations to generate the defaults
+        if ignore_no_tokens is None:
+            ignore_no_tokens = getattr(action, "ignore_no_tokens", False)
+        if ignore_one_token is None:
+            ignore_one_token = getattr(action, "ignore_one_token", False)
+        # only include True keyword arguments in the partial, since False is the default
+        kwargs = {}
+        if greedy:
+            kwargs["greedy"] = greedy
+        if ignore_no_tokens:
+            kwargs["ignore_no_tokens"] = ignore_no_tokens
+        if ignore_one_token:
+            kwargs["ignore_one_token"] = ignore_one_token
+        action = partial(ComputationNode, action, **kwargs)
     return add_action(item, action)
 
 
@@ -311,12 +330,12 @@ def fixto(item, output):
 
 def addspace(item):
     """Condense and adds space to the tokenized output."""
-    return attach(item, " ".join, simple=True)
+    return attach(item, " ".join, ignore_no_tokens=True, ignore_one_token=True)
 
 
 def condense(item):
     """Condense the tokenized output."""
-    return attach(item, "".join, simple=True)
+    return attach(item, "".join, ignore_no_tokens=True, ignore_one_token=True)
 
 
 def maybeparens(lparen, item, rparen):
