@@ -102,13 +102,13 @@ def split_function_call(tokens, loc):
     for arg in tokens:
         argstr = "".join(arg)
         if len(arg) == 1:
-            if kwd_args or dubstar_args:
-                raise CoconutDeferredSyntaxError("positional argument after keyword argument", loc)
+            if star_args or kwd_args or dubstar_args:
+                raise CoconutDeferredSyntaxError("positional arguments must come first", loc)
             pos_args.append(argstr)
         elif len(arg) == 2:
             if arg[0] == "*":
-                if dubstar_args:
-                    raise CoconutDeferredSyntaxError("star unpacking after double star unpacking", loc)
+                if kwd_args or dubstar_args:
+                    raise CoconutDeferredSyntaxError("star unpacking must come before keyword arguments", loc)
                 star_args.append(argstr)
             elif arg[0] == "**":
                 dubstar_args.append(argstr)

@@ -23,6 +23,15 @@ if IPY:
 else:
     CoconutKernel = None  # type: ignore
 
+def assert_raises(c, exc):
+    """Test whether callable c raises an exception of type exc."""
+    try:
+        c()
+    except exc:
+        return True
+    else:
+        raise AssertionError("%s failed to raise exception %s" % (c, exc))
+
 def main():
     if IPY:
         import coconut.highlighter  # type: ignore
@@ -32,18 +41,8 @@ def main():
     assert version("spec")
     assert version("tag")
     assert version("-v")
-    try:
-        version("other")
-    except CoconutException:
-        pass
-    else:
-        assert False
-    try:
-        raise CoconutException("derp").syntax_err()
-    except SyntaxError:
-        pass
-    else:
-        assert False
+    assert_raises(-> version("other"), CoconutException)
+    assert_raises(def -> raise CoconutException("derp").syntax_err(), SyntaxError)
     setup()
     assert parse("abc") == parse("abc", "sys")
     assert parse("abc", "file")
@@ -54,48 +53,13 @@ def main():
     assert parse("x |> map$(f)", "debug") == "map(f, x)"
     assert "_coconut" not in parse("a |> .b |> .m() |> f$(x) |> .[0]", "block")
     assert parse("abc # derp", "debug") == "abc  # derp"
-    try:
-        parse(" abc", "file")
-    except CoconutException:
-        pass
-    else:
-        assert False
-    try:
-        parse("'")
-    except CoconutException:
-        pass
-    else:
-        assert False
-    try:
-        parse("(")
-    except CoconutException:
-        pass
-    else:
-        assert False
-    try:
-        parse("\\(")
-    except CoconutException:
-        pass
-    else:
-        assert False
-    try:
-        parse("if a:\n  b\n c")
-    except CoconutException:
-        pass
-    else:
-        assert False
-    try:
-        parse("$")
-    except CoconutException:
-        pass
-    else:
-        assert False
-    try:
-        parse("_coconut")
-    except CoconutException:
-        pass
-    else:
-        assert False
+    assert_raises(-> parse(" abc", "file"), CoconutException)
+    assert_raises(-> parse("'"), CoconutException)
+    assert_raises(-> parse("("), CoconutException)
+    assert_raises(-> parse("\\("), CoconutException)
+    assert_raises(-> parse("if a:\n  b\n c"), CoconutException)
+    assert_raises(-> parse("$"), CoconutException)
+    assert_raises(-> parse("_coconut"), CoconutException)
     assert parse("def f(x):\n \t pass")
     assert parse("lambda x: x")
     assert parse("u''")
@@ -114,85 +78,21 @@ def main():
     setup(strict=True)
     assert "prepattern" not in parse("\n", mode="file")
     assert "datamaker" not in parse("\n", mode="file")
-    try:
-        parse("def f(x):\n \t pass")
-    except CoconutStyleError:
-        pass
-    else:
-        assert False
-    try:
-        parse("lambda x: x")
-    except CoconutStyleError:
-        pass
-    else:
-        assert False
-    try:
-        parse("u''")
-    except CoconutStyleError:
-        pass
-    else:
-        assert False
-    try:
-        parse("def f(x):\\\n pass")
-    except CoconutStyleError:
-        pass
-    else:
-        assert False
-    try:
-        parse("abc ")
-    except CoconutStyleError:
-        pass
-    else:
-        assert False
-    try:
-        parse("abc", "file")
-    except CoconutStyleError:
-        pass
-    else:
-        assert False
-    try:
-        parse("a=1;")
-    except CoconutStyleError:
-        pass
-    else:
-        assert False
-    try:
-        parse("class derp(object)")
-    except CoconutStyleError:
-        pass
-    else:
-        assert False
+    assert_raises(-> parse("def f(x):\n \t pass"), CoconutStyleError)
+    assert_raises(-> parse("lambda x: x"), CoconutStyleError)
+    assert_raises(-> parse("u''"), CoconutStyleError)
+    assert_raises(-> parse("def f(x):\\\n pass"), CoconutStyleError)
+    assert_raises(-> parse("abc "), CoconutStyleError)
+    assert_raises(-> parse("abc", "file"), CoconutStyleError)
+    assert_raises(-> parse("a=1;"), CoconutStyleError)
+    assert_raises(-> parse("class derp(object)"), CoconutStyleError)
     setup()
-    try:
-        cmd("-f")
-    except SystemExit:
-        pass
-    else:
-        assert False
-    try:
-        cmd("-pa .")
-    except SystemExit:
-        pass
-    else:
-        assert False
-    try:
-        cmd("-n . .")
-    except SystemExit:
-        pass
-    else:
-        assert False
-    try:
-        parse("f''")
-    except CoconutException:
-        pass
-    else:
-        assert False
-    try:
-        parse("f$()")
-    except CoconutSyntaxError:
-        pass
-    else:
-        assert False
+    assert_raises(-> cmd("-f"), SystemExit)
+    assert_raises(-> cmd("-pa ."), SystemExit)
+    assert_raises(-> cmd("-n . ."), SystemExit)
+    assert_raises(-> parse("f''"), CoconutException)
+    assert_raises(-> parse("f$()"), CoconutSyntaxError)
+    assert_raises(-> parse("f(*x, y)"), CoconutSyntaxError)
     setup(target="2.7")
     assert parse("from io import BytesIO", mode="debug") == "from io import BytesIO"
     setup(target="3.6")

@@ -456,7 +456,7 @@ def assert_raises(c, exc):
     except exc:
         return True
     else:
-        raise AssertionError("%s failed to raise %s exception" % (c, exc))
+        raise AssertionError("%s failed to raise exception %s" % (c, exc))
 
 def main(*args):
     """Asserts arguments and executes tests."""

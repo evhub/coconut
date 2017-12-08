@@ -106,7 +106,9 @@ class CoconutException(Exception):
 
     def __repr__(self):
         """Get a representation of the exception."""
-        return self.__class__.__name__ + "(" + ", ".join(self.args) + ")"
+        return self.__class__.__name__ + "(" + ", ".join(
+            repr(arg) for arg in self.args if arg is not None
+        ) + ")"
 
 
 class CoconutSyntaxError(CoconutException):
