@@ -1526,15 +1526,15 @@ class Grammar(object):
     ))
     match_funcdef = Optional(Keyword("match").suppress()) + def_match_funcdef
 
-    where_suite = colon.suppress() + Group(
+    where_suite = colon.suppress() - Group(
         newline.suppress() + indent.suppress() - OneOrMore(simple_stmt) - dedent.suppress()
         | simple_stmt,
     )
-    where_stmt = attach(unsafe_simple_stmt_item + Keyword("where").suppress() + where_suite, where_stmt_handle)
+    where_stmt = attach(unsafe_simple_stmt_item + Keyword("where").suppress() - where_suite, where_stmt_handle)
 
     implicit_return = attach(testlist, implicit_return_handle)
     implicit_return_stmt = (
-        attach(implicit_return + Keyword("where").suppress() + where_suite, where_stmt_handle)
+        attach(implicit_return + Keyword("where").suppress() - where_suite, where_stmt_handle)
         | condense(implicit_return + newline)
     )
     math_funcdef_body = ZeroOrMore(~(implicit_return_stmt + dedent) + stmt) - implicit_return_stmt
@@ -1658,7 +1658,7 @@ class Grammar(object):
         + (newline | endline_semicolon),
     ))
     stmt <<= trace(compound_stmt | simple_stmt)
-    base_suite <<= condense(newline + indent - OneOrMore(stmt) - dedent)
+    base_suite <<= condense(newline + indent - OneOrMore(final(stmt)) - dedent)
     simple_suite = attach(simple_stmt, make_suite_handle)
     nocolon_suite <<= trace(base_suite | simple_suite)
     suite <<= condense(colon + nocolon_suite)
@@ -1712,7 +1712,7 @@ class Grammar(object):
 
     stores_scope = (
         Keyword("lambda")
-        | Keyword("for") - base_name - Keyword("in")
+        | Keyword("for") + base_name + Keyword("in")
     )
 
     just_a_string = start_marker + string + end_marker
