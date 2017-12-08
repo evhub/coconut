@@ -143,17 +143,17 @@ def pipe_item_split(tokens, loc):
         - (name, args) for attr/method, and
         - (op, args) for itemgetter."""
     # list implies artificial tokens, which must be expr
-    if isinstance(tokens, list) or "expr" in tokens.keys():
+    if isinstance(tokens, list) or "expr" in tokens:
         internal_assert(len(tokens) == 1, "invalid expr pipe item tokens", tokens)
         return "expr", (tokens[0],)
-    elif "partial" in tokens.keys():
+    elif "partial" in tokens:
         func, args = tokens
         pos_args, star_args, kwd_args, dubstar_args = split_function_call(args, loc)
         return "partial", (func, join_args(pos_args, star_args), join_args(kwd_args, dubstar_args))
-    elif "attrgetter" in tokens.keys():
+    elif "attrgetter" in tokens:
         name, args = attrgetter_atom_split(tokens)
         return "attrgetter", (name, args)
-    elif "itemgetter" in tokens.keys():
+    elif "itemgetter" in tokens:
         op, args = tokens
         return "itemgetter", (op, args)
     else:
@@ -511,9 +511,9 @@ def decorator_handle(tokens):
     defs = []
     decorates = []
     for i, tok in enumerate(tokens):
-        if "simple" in tok.keys() and len(tok) == 1:
+        if "simple" in tok and len(tok) == 1:
             decorates.append("@" + tok[0])
-        elif "test" in tok.keys() and len(tok) == 1:
+        elif "test" in tok and len(tok) == 1:
             varname = decorator_var + "_" + str(i)
             defs.append(varname + " = " + tok[0])
             decorates.append("@" + varname)
@@ -596,7 +596,7 @@ def except_handle(tokens):
     else:
         raise CoconutInternalException("invalid except tokens", tokens)
     out = "except "
-    if "list" in tokens.keys():
+    if "list" in tokens:
         out += "(" + errs + ")"
     else:
         out += errs
@@ -1688,6 +1688,7 @@ class Grammar(object):
             + ZeroOrMore(dot + base_name | brackets | parens + ~end_marker),
         ) + parens + end_marker,
         tco_return_handle,
+        greedy=True,
     )
 
     rest_of_arg = ZeroOrMore(parens | brackets | braces | ~comma + ~rparen + any_char)
@@ -1706,6 +1707,7 @@ class Grammar(object):
         (start_marker - Keyword("def")).suppress() - dotted_base_name - lparen.suppress()
         - parameters_tokens - rparen.suppress(),
         split_func_name_args_params_handle,
+        greedy=True,
     )
 
     stores_scope = (
@@ -1731,5 +1733,6 @@ def set_grammar_names():
 
 if DEVELOP:
     set_grammar_names()
+
 
 # end: NAMING
