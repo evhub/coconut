@@ -1120,7 +1120,7 @@ class Compiler(Grammar):
         ln = self.adjust(lineno(loc, original))
         internal_assert(lambda: ln not in self.comments, "multiple comments on line", ln)
         self.comments[ln] = tokens[0]
-        return []
+        return ""
 
     def augassign_handle(self, tokens):
         """Process assignments."""
@@ -1159,7 +1159,7 @@ class Compiler(Grammar):
         """Process class inheritance lists."""
         if len(tokens) == 0:
             if self.target.startswith("3"):
-                return []
+                return ""
             else:
                 return "(_coconut.object)"
         elif len(tokens) == 1 and len(tokens[0]) == 1:
@@ -1353,7 +1353,7 @@ class Compiler(Grammar):
             imp_from, imports = tokens
             if imp_from == "__future__":
                 self.strict_err_or_warn("unnecessary from __future__ import (Coconut does these automatically)", original, loc)
-                return []
+                return ""
         else:
             raise CoconutInternalException("invalid import tokens", tokens)
         if self.strict:
