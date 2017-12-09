@@ -72,7 +72,7 @@ from coconut.constants import (
 )
 from coconut.compiler.matching import Matcher
 from coconut.compiler.util import (
-    CombineNode as Combine,
+    UseCombine as Combine,
     attach,
     fixto,
     addspace,

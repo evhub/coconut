@@ -282,7 +282,7 @@ varchars = string.ascii_letters + string.digits + "_"
 # COMPILER CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-use_computation_graph = True
+use_computation_graph = not (PYPY and PY2)  # experimentally determined
 
 template_ext = ".py_template"
 

@@ -162,24 +162,25 @@ class ComputationNode(object):
         return self.name + "(\n" + inner_repr + "\n)"
 
 
+class CombineNode(Combine):
+    """Modified Combine to work with the computation graph."""
+    __slots__ = ()
+
+    def _combine(self, original, loc, tokens):
+        """Implement the parse action for Combine."""
+        combined_tokens = super(CombineNode, self).postParse(original, loc, tokens)
+        internal_assert(len(combined_tokens) == 1, "Combine produced multiple tokens", combined_tokens)
+        return combined_tokens[0]
+
+    def postParse(self, original, loc, tokens):
+        """Create a ComputationNode for Combine."""
+        return ComputationNode(self._combine, original, loc, tokens, ignore_no_tokens=True, ignore_one_token=True)
+
+
 if use_computation_graph:
-
-    class CombineNode(Combine):
-        """Modified Combine to work with the computation graph."""
-        __slots__ = ()
-
-        def _combine(self, original, loc, tokens):
-            """Implement the parse action for Combine."""
-            combined_tokens = super(CombineNode, self).postParse(original, loc, tokens)
-            internal_assert(len(combined_tokens) == 1, "Combine produced multiple tokens", combined_tokens)
-            return combined_tokens[0]
-
-        def postParse(self, original, loc, tokens):
-            """Create a ComputationNode for Combine."""
-            return ComputationNode(self._combine, original, loc, tokens, ignore_no_tokens=True, ignore_one_token=True)
-
+    UseCombine = CombineNode
 else:
-    CombineNode = Combine
+    UseCombine = Combine
 
 
 def add_action(item, action):
