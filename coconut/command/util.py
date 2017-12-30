@@ -69,6 +69,7 @@ from coconut import __coconut__
 try:
     import prompt_toolkit
     import pygments
+    import pygments.styles
     from coconut.highlighter import CoconutLexer
 except ImportError:
     prompt_toolkit = None
