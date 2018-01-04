@@ -206,13 +206,11 @@ class Command(object):
 
             if args.dest is None:
                 if args.no_write:
-                    dest = None  # no dest
+                    dest = False  # no dest
                 else:
                     dest = True  # auto-generate dest
             elif args.no_write:
                 raise CoconutException("destination path cannot be given when --no-write is enabled")
-            elif os.path.isfile(args.dest):
-                raise CoconutException("destination path must point to directory not file")
             else:
                 dest = args.dest
 
@@ -288,7 +286,7 @@ class Command(object):
     def compile_path(self, path, write=True, package=None, *args, **kwargs):
         """Compile a path and returns paths to compiled files."""
         path = fixpath(path)
-        if write is not None and write is not True:
+        if not isinstance(write, bool):
             write = fixpath(write)
         if os.path.isfile(path):
             if package is None:
@@ -304,9 +302,11 @@ class Command(object):
 
     def compile_folder(self, directory, write=True, package=True, *args, **kwargs):
         """Compile a directory and returns paths to compiled files."""
+        if not isinstance(write, bool) and os.path.isfile(write):
+            raise CoconutException("destination path cannot point to a file when compiling a directory")
         filepaths = []
         for dirpath, dirnames, filenames in os.walk(directory):
-            if write is None or write is True:
+            if isinstance(write, bool):
                 writedir = write
             else:
                 writedir = os.path.join(write, os.path.relpath(dirpath, directory))
@@ -324,20 +324,26 @@ class Command(object):
 
     def compile_file(self, filepath, write=True, package=False, *args, **kwargs):
         """Compile a file and returns the compiled file's path."""
-        if write is None:
+        set_ext = False
+        if write is False:
             destpath = None
         elif write is True:
             destpath = filepath
+            set_ext = True
+        elif os.extsep in write:
+            # write is a file; it is the destination filepath
+            destpath = write
         else:
-            # add the name of file to the destination path
+            # write is a dir; make the destination filepath by adding the filename
             destpath = os.path.join(write, os.path.basename(filepath))
-        if destpath is not None:
+            set_ext = True
+        if set_ext:
             base, ext = os.path.splitext(os.path.splitext(destpath)[0])
             if not ext:
                 ext = comp_ext
             destpath = fixpath(base + ext)
-            if filepath == destpath:
-                raise CoconutException("cannot compile " + showpath(filepath) + " to itself", extra="incorrect file extension")
+        if filepath == destpath:
+            raise CoconutException("cannot compile " + showpath(filepath) + " to itself", extra="incorrect file extension")
         self.compile(filepath, destpath, package, *args, **kwargs)
         return destpath
 

@@ -335,6 +335,11 @@ class TestShell(unittest.TestCase):
     def test_runnable_nowrite(self):
         run_runnable(["-n"])
 
+    def test_compile_to_file(self):
+        with remove_when_done(runnable_py):
+            call_coconut([runnable_coco, runnable_py])
+            call(["python", runnable_py, "--arg"], assert_output=True)
+
     if IPY:
         def test_ipython_extension(self):
             call(
