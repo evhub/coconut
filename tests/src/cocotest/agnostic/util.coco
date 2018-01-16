@@ -744,14 +744,7 @@ class counter:
 
 # Typing
 
-import sys
-if sys.version_info > (3, 5):
-    import typing
-    from typing import Any, List, Dict
-
-    def args_kwargs_func(args:List[Any]=[], kwargs:Dict[Any, Any]={}) -> None: pass
-else:
-    def args_kwargs_func(args=[], kwargs={}) -> None: pass
+def args_kwargs_func(args:List[Any]=[], kwargs:Dict[Any, Any]={}) -> None: pass
 
 def anything_func(*args: int, **kwargs: int) -> None: pass
 

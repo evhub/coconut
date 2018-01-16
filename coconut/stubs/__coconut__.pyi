@@ -1,20 +1,7 @@
 import sys
 import functools
 import itertools
-from typing import (
-    TypeVar,
-    Callable,
-    overload,
-    Iterable,
-    Iterator,
-    Text,
-    Any,
-    Optional,
-    Union,
-    Dict,
-    Tuple,
-    Text,
-)
+from typing import *
 
 
 _T = TypeVar('_T')
