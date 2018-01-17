@@ -330,7 +330,7 @@ class Command(object):
         elif write is True:
             destpath = filepath
             set_ext = True
-        elif os.extsep in write:
+        elif os.path.splitext(write)[1]:
             # write is a file; it is the destination filepath
             destpath = write
         else:
