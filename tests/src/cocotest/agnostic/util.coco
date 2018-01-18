@@ -816,7 +816,7 @@ class Vars:
 
 # Complex Data
 
-data Tuple(*elems)
+data Tuple_(*elems)
 
 data Pred(name, *args)
 data Pred_(name: str, *args)
