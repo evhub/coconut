@@ -255,7 +255,7 @@ def main_test():
     assert ((def (x) -> -> x)(x) for x in range(5)) |> map$(-> _()) |> list == [0, 1, 2, 3, 4]
     herpaderp = 5
     def derp():
-        herp = 10  # type: ignore
+        herp = 10
         return (def -> herpaderp + herp)
     assert derp()() == 15
     data abc(xyz)
@@ -420,10 +420,10 @@ def main_test():
     price = 100
     assert 0 == (requested_quantity ?? default_quantity) * price
     assert range(10) |> .[1] .. .[1:] == 2 == range(10) |> .[1:] |> .[1]
-    assert None?.herp(derp) is None
-    assert None?[herp].derp is None
-    assert None?(derp)[herp] is None
-    assert None?$(herp)(derp) is None
+    assert None?.herp(derp) is None  # type: ignore
+    assert None?[herp].derp is None  # type: ignore
+    assert None?(derp)[herp] is None  # type: ignore
+    assert None?$(herp)(derp) is None  # type: ignore
     assert "a b c" == (" ". ?? "not gonna happen")("join")("abc")
     a: int[]? = None
     assert a is None
