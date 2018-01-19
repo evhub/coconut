@@ -1,4 +1,4 @@
-from .util import *
+from .util import *  # type: ignore
 
 def suite_test():
     """Executes the main test suite."""

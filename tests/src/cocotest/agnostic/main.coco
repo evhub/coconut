@@ -255,7 +255,7 @@ def main_test():
     assert ((def (x) -> -> x)(x) for x in range(5)) |> map$(-> _()) |> list == [0, 1, 2, 3, 4]
     herpaderp = 5
     def derp():
-        herp = 10
+        herp = 10  # type: ignore
         return (def -> herpaderp + herp)
     assert derp()() == 15
     data abc(xyz)

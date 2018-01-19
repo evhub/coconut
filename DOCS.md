@@ -294,7 +294,7 @@ Coconut has the ability to integrate with [MyPy](http://mypy-lang.org/) to provi
 
 _Note: Since [tail call optimization](#tail-call-optimization) prevents proper type-checking, `--mypy` implicitly disables it._
 
-To explicitly annotate your code with types for MyPy to check, Coconut supports [Python 3 function type annotations](https://www.python.org/dev/peps/pep-0484/), [Python 3.6 variable type annotations](https://www.python.org/dev/peps/pep-0526/), and even Coconut's own [enhanced type annotation syntax](#enhanced-type-annotations). By default, all type annotations are compiled to Python-2-compatible type comments, which means all of the above works on any Python version.
+To explicitly annotate your code with types for MyPy to check, Coconut supports [Python 3 function type annotations](https://www.python.org/dev/peps/pep-0484/), [Python 3.6 variable type annotations](https://www.python.org/dev/peps/pep-0526/), and even Coconut's own [enhanced type annotation syntax](#enhanced-type-annotation). By default, all type annotations are compiled to Python-2-compatible type comments, which means it all works on any Python version.
 
 Coconut even supports `--mypy` in the interpreter, which will intelligently scan each new line of code, in the context of previous lines, for newly-introduced MyPy errors. For example:
 ```coconut
@@ -601,7 +601,7 @@ data <name>(<args>) [from <inherits>]:
 ```
 `<name>` is the name of the new data type, `<args>` are the arguments to its constructor as well as the names of its attributes, `<body>` contains the data type's methods, and `<inherits>` optionally contains any desired base classes.
 
-Coconut allows data fields in `<args>` to have defaults and/or [type annotations](#enhanced-type-annotations) attached to them, and supports a starred parameter at the end to collect extra arguments.
+Coconut allows data fields in `<args>` to have defaults and/or [type annotations](#enhanced-type-annotation) attached to them, and supports a starred parameter at the end to collect extra arguments.
 
 Writing constructors for `data` types must be done using the `__new__` method instead of the `__init__` method. For helping to easily write `__new__` methods, Coconut provides the [makedata](#makedata) built-in.
 
@@ -1044,68 +1044,6 @@ mod$ <| 5 <| 3
 mod(5, 3)
 ```
 
-### Enhanced Type Annotations
-
-Since Coconut syntax is a superset of Python 3 syntax, it supports [Python 3 function type annotation syntax](https://www.python.org/dev/peps/pep-0484/) and [Python 3.6 variable type annotation syntax](https://www.python.org/dev/peps/pep-0526/). By default, Coconut compiles all type annotations into Python-2-compatible type comments. If you want to keep the type annotations instead, simply pass a `--target` that supports them.
-
-Furthermore, Coconut ensures that all type annotations automatically have the [`typing`](https://docs.python.org/3/library/typing.html) module available to them for type annotation purposes, even on Python versions that don't natively support it. Thus, instead of writing
-```coconut_python
-try:
-    import typing
-except ImportError:
-    pass
-
-x: typing.List[str] = ["a", "b"]
-```
-you can just write
-```coconut
-x: List[str] = ["a", "b"]
-```
-and Coconut will make sure it works.
-
-_Note: When compiling type annotations to Python 3 syntax, Coconut will wrap every annotation in a string when in a position where Python would otherwise evaluate it (e.g. Python 3 function annotation), so that all type annotations are only ever evaluated at compile time, never at run time._
-
-Additionally, Coconut adds special syntax for making type annotations easier and simpler to write. When inside of a type annotation, Coconut treats certain syntax constructs differently, compiling them to type annotations instead of what they would normally represent. Specifically, Coconut applies the following transformations:
-```coconut
-<type>?
-    => typing.Optional[<type>]
-<type>[]
-    => typing.Sequence[<type>]
-<type>$[]
-    => typing.Iterable[<type>]
-() -> <ret>
-    => typing.Callable[[], <ret>]
-<arg> -> <ret>
-    => typing.Callable[[<arg>], <ret>]
-(<args>) -> <ret>
-    => typing.Callable[[<args>], <ret>]
--> <ret>
-    => typing.Callable[..., <ret>]
-```
-where `typing` is the Python 3.5 built-in [`typing` module](https://docs.python.org/3/library/typing.html).
-
-##### Example
-
-**Coconut:**
-```coconut
-def int_map(
-    f: int -> int,
-    xs: int[],
-) -> int[] =
-    xs |> map$(f) |> list
-```
-
-**Python:**
-```coconut_python
-import typing  # unlike this typing import, Coconut produces universal code
-def int_map(
-    f,  # type: typing.Callable[[int], int]
-    xs,  # type: typing.Sequence[int]
-):
-    # type: (...) -> typing.Sequence[int]
-    return list(map(f, xs))
-```
-
 ### Operator Functions
 
 Coconut uses a simple operator function short-hand: surround an operator with parentheses to retrieve its function. Similarly to iterator comprehensions, if the operator function is the only argument to a function, the parentheses of the function call can also serve as the parentheses for the operator function.
@@ -1167,6 +1105,68 @@ A very common thing to do in functional programming is to make use of function v
 ```coconut_python
 import operator
 print(list(map(operator.add, range(0, 5), range(5, 10))))
+```
+
+### Enhanced Type Annotation
+
+Since Coconut syntax is a superset of Python 3 syntax, it supports [Python 3 function type annotation syntax](https://www.python.org/dev/peps/pep-0484/) and [Python 3.6 variable type annotation syntax](https://www.python.org/dev/peps/pep-0526/). By default, Coconut compiles all type annotations into Python-2-compatible type comments. If you want to keep the type annotations instead, simply pass a `--target` that supports them.
+
+Furthermore, Coconut ensures that all type annotations automatically have the [`typing`](https://docs.python.org/3/library/typing.html) module available to them for type annotation purposes, even on Python versions that don't natively support it. Thus, instead of writing
+```coconut_python
+try:
+    import typing
+except ImportError:
+    pass
+
+x: typing.List[str] = ["a", "b"]
+```
+you can just write
+```coconut
+x: List[str] = ["a", "b"]
+```
+and Coconut will make sure it works.
+
+_Note: When compiling type annotations to Python 3 syntax, Coconut will wrap every annotation in a string when in a position where Python would otherwise evaluate it (e.g. Python 3 function annotation), so that all type annotations are only ever evaluated at compile time, never at run time._
+
+Additionally, Coconut adds special syntax for making type annotations easier and simpler to write. When inside of a type annotation, Coconut treats certain syntax constructs differently, compiling them to type annotations instead of what they would normally represent. Specifically, Coconut applies the following transformations:
+```coconut
+<type>?
+    => typing.Optional[<type>]
+<type>[]
+    => typing.Sequence[<type>]
+<type>$[]
+    => typing.Iterable[<type>]
+() -> <ret>
+    => typing.Callable[[], <ret>]
+<arg> -> <ret>
+    => typing.Callable[[<arg>], <ret>]
+(<args>) -> <ret>
+    => typing.Callable[[<args>], <ret>]
+-> <ret>
+    => typing.Callable[..., <ret>]
+```
+where `typing` is the Python 3.5 built-in [`typing` module](https://docs.python.org/3/library/typing.html).
+
+##### Example
+
+**Coconut:**
+```coconut
+def int_map(
+    f: int -> int,
+    xs: int[],
+) -> int[] =
+    xs |> map$(f) |> list
+```
+
+**Python:**
+```coconut_python
+import typing  # unlike this typing import, Coconut produces universal code
+def int_map(
+    f,  # type: typing.Callable[[int], int]
+    xs,  # type: typing.Sequence[int]
+):
+    # type: (...) -> typing.Sequence[int]
+    return list(map(f, xs))
 ```
 
 ### Set Literals
