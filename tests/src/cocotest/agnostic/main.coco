@@ -73,7 +73,8 @@ def main_test():
     assert (| 1 |) :: (| 2 |) |> list == [1, 2]
     assert not isinstance(map((+)$(2), [1,2,3]), list)
     assert not isinstance(range(10), list)
-    assert isinstance(10**100, int)
+    longint: int = 10**100
+    assert isinstance(longint, int)
     assert chr(1000)
     assert 3 + 4i |> abs == 5
     assert 3.14j == 3.14i

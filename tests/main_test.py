@@ -375,17 +375,19 @@ class TestCompilation(unittest.TestCase):
     def test_target(self):
         run(agnostic_target=(2 if PY2 else 3))
 
-    def test_line_numbers(self):
-        run(["--linenumbers"])
-
     if not PYPY and not PY26:
         def test_jobs_zero(self):
             run(["--jobs", "0"])
 
     if PY34 and not WINDOWS and not PYPY:
-        def test_mypy(self):
+        def test_mypy_snip(self):
             call(["coconut", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err, check_mypy=False)
+
+        def test_mypy(self):
             run(["--mypy"] + mypy_args)
+
+        def test_mypy_py3(self):
+            run(["--mypy"] + mypy_args, agnostic_target=3)
 
     def test_run(self):
         run(use_run_arg=True)
@@ -401,6 +403,9 @@ class TestCompilation(unittest.TestCase):
 
     def test_no_tco(self):
         run(["--no-tco"])
+
+    def test_simple_line_numbers(self):
+        run_runnable(["-n", "--linenumbers"])
 
     def test_simple_keep_lines(self):
         run_runnable(["-n", "--keeplines"])

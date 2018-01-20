@@ -1,6 +1,4 @@
 import sys
-import functools
-import itertools
 from typing import *
 
 
@@ -9,18 +7,18 @@ _S = TypeVar('_S')
 
 
 if sys.version_info < (3,):
-    import io
-    import future_builtins
+    import io as _io
+    import future_builtins as _fb
     import __builtin__ as _b
 
     str = unicode
-    open = io.open
-    ascii = future_builtins.ascii
-    filter = future_builtins.filter
-    hex = future_builtins.hex
-    map = future_builtins.map
-    oct = future_builtins.oct
-    zip = future_builtins.zip
+    open = _io.open
+    ascii = _fb.ascii
+    filter = _fb.filter
+    hex = _fb.hex
+    map = _fb.map
+    oct = _fb.oct
+    zip = _fb.zip
 
     py_raw_input, py_xrange = _b.raw_input, _b.xrange
 
@@ -46,25 +44,11 @@ else:
 py_chr, py_filter, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate = _b.chr, _b.filter, _b.hex, _b.input, _b.int, _b.map, _b.object, _b.oct, _b.open, _b.print, _b.range, _b.str, _b.zip, _b.filter, _b.reversed, _b.enumerate
 
 
-reduce = functools.reduce
-takewhile = itertools.takewhile
-dropwhile = itertools.dropwhile
-tee = itertools.tee
-starmap = itertools.starmap
-
-
 def scan(func: Callable[[_T, _T], _T], iterable: Iterable[_T]) -> Iterable[_T]: ...
 
 
-_coconut_tee = tee
-_coconut_starmap = starmap
-parallel_map = concurrent_map = _coconut_map = map
-
-
 class _coconut:
-    # The real _coconut doesn't import typing,
-    # but since typing is only used in type-checking,
-    # in which case this file is used instead, it's fine.
+    # The real _coconut doesn't import typing, but we want type-checkers to treat it as if it does
     import typing
 
     import collections, copy, functools, imp, itertools, operator, types, weakref, pickle
@@ -79,6 +63,18 @@ class _coconut:
         OrderedDict = collections.OrderedDict
     else:
         OrderedDict = dict
+
+
+reduce = _coconut.functools.reduce
+takewhile = _coconut.itertools.takewhile
+dropwhile = _coconut.itertools.dropwhile
+tee = _coconut.itertools.tee
+starmap = _coconut.itertools.starmap
+
+
+_coconut_tee = tee
+_coconut_starmap = starmap
+parallel_map = concurrent_map = _coconut_map = map
 
 
 _coconut_NamedTuple = _coconut.typing.NamedTuple
