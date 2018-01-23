@@ -770,8 +770,12 @@ def no_args_kwargs(*(), **{}) = True
 
 # Alternative Class Notation
 
-class altclass  # type: ignore
+class altclass:
+    func: Any -> Any
+    zero: int -> int
+
 def altclass.func(self, x) = x
+
 def altclass.zero(self, x) =
     if x == 0:
         return 0
