@@ -1700,7 +1700,7 @@ class Grammar(object):
             | star - Optional(tfpdef_tokens)
             | tfpdef_default_tokens,
         ) + Optional(passthrough.suppress()),
-        comma + Optional(passthrough),
+        comma + Optional(passthrough),  # implicitly suppressed
     )))
 
     split_func_name_args_params = attach(

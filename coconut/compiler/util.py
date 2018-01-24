@@ -378,6 +378,15 @@ def split_comment(line):
     return base, line[len(base):]
 
 
+def split_leading_comment(inputstring):
+    """Split into leading comment and rest."""
+    if inputstring.startswith("#"):
+        comment, rest = inputstring.split("\n", 1)
+        return comment + "\n", rest
+    else:
+        return "", inputstring
+
+
 def split_leading_indent(line, max_indents=None):
     """Split line into leading indent and main."""
     indent = ""

@@ -779,7 +779,7 @@ def altclass.func(self, x) = x
 def altclass.zero(self, x: int) -> int =
     if x == 0:
         return 0
-    altclass.zero(self, x-1)
+    altclass.zero(self, x-1)  # tail recursive
 
 # Logic Stuff
 

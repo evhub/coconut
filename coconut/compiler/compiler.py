@@ -109,6 +109,7 @@ from coconut.compiler.util import (
     ignore_transform,
     parse,
     get_target_info_len2,
+    split_leading_comment,
 )
 from coconut.compiler.header import (
     minify,
@@ -1641,11 +1642,14 @@ class Compiler(Grammar):
 
         out = "".join(lines)
         if tre:
-            indent, base, dedent = split_leading_trailing_indent(out, 1)
+            comment, rest = split_leading_comment(out)
+            indent, base, dedent = split_leading_trailing_indent(rest, 1)
             base, base_dedent = split_trailing_indent(base)
             docstring, base = self.split_docstring(base)
             out = (
-                indent + (docstring + "\n" if docstring is not None else "") + (
+                comment + indent
+                + (docstring + "\n" if docstring is not None else "")
+                + (
                     "def " + tre_mock_var + func_params + ": return " + func_args + "\n"
                     if use_mock else ""
                 ) + "while True:\n"
