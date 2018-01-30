@@ -138,7 +138,7 @@ class Command(object):
             if self.errmsg is not None:
                 logger.show_error("Exiting due to " + self.errmsg + ".")
                 self.errmsg = None
-            if self.jobs != 0:
+            if self.using_jobs:
                 kill_children()
             sys.exit(self.exit_code)
 
@@ -271,7 +271,10 @@ class Command(object):
     def handling_exceptions(self):
         """Perform proper exception handling."""
         try:
-            with handling_broken_process_pool():
+            if self.using_jobs:
+                with handling_broken_process_pool():
+                    yield
+            else:
                 yield
         except SystemExit as err:
             self.register_error(err.code)
@@ -312,9 +315,10 @@ class Command(object):
                 writedir = os.path.join(write, os.path.relpath(dirpath, directory))
             for filename in filenames:
                 if os.path.splitext(filename)[1] in code_exts:
-                    destpath = self.compile_file(os.path.join(dirpath, filename), writedir, package, *args, **kwargs)
-                    if destpath is not None:
-                        filepaths.append(destpath)
+                    with self.handling_exceptions():
+                        destpath = self.compile_file(os.path.join(dirpath, filename), writedir, package, *args, **kwargs)
+                        if destpath is not None:
+                            filepaths.append(destpath)
             for name in dirnames[:]:
                 if not is_special_dir(name) and name.startswith("."):
                     if logger.verbose:
@@ -426,19 +430,24 @@ class Command(object):
                 raise CoconutException("--jobs must be an integer >= 0 or 'sys'")
             self.jobs = jobs
 
+    @property
+    def using_jobs(self):
+        """Determine whether or not multiprocessing is being used."""
+        return self.jobs != 0
+
     @contextmanager
     def running_jobs(self, exit_on_error=True):
         """Initialize multiprocessing."""
         with self.handling_exceptions():
-            if self.jobs == 0:
-                yield
-            else:
+            if self.using_jobs:
                 from concurrent.futures import ProcessPoolExecutor
                 try:
                     with ProcessPoolExecutor(self.jobs) as self.executor:
                         yield
                 finally:
                     self.executor = None
+            else:
+                yield
         if exit_on_error:
             self.exit_on_error()
 
