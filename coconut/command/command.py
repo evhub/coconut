@@ -604,6 +604,7 @@ class Command(object):
                         print(line)
                 if line not in self.mypy_errs:
                     self.mypy_errs.append(line)
+                self.register_error(errmsg="MyPy error")
 
     def start_jupyter(self, args):
         """Start Jupyter with the Coconut kernel."""
