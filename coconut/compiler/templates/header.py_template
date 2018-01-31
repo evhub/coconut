@@ -470,8 +470,8 @@ def fmap(func, obj):
     if _coconut.isinstance(obj, _coconut.str):
         return "".join(args)
     return obj.__class__(args)
-def memoize(maxsize=None, **kwargs):
+def memoize(maxsize=None, *args, **kwargs):
     """Decorator that memoizes a function,
     preventing it from being recomputed if it is called multiple times with the same arguments."""
-    return _coconut.functools.lru_cache(maxsize, **kwargs)
+    return _coconut.functools.lru_cache(maxsize, *args, **kwargs)
 _coconut_MatchError, _coconut_count, _coconut_enumerate, _coconut_reversed, _coconut_map, _coconut_starmap, _coconut_tee, _coconut_zip, reduce, takewhile, dropwhile = MatchError, count, enumerate, reversed, map, starmap, tee, zip, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile
