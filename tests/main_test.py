@@ -82,7 +82,7 @@ def escape(inputstring):
         return '"' + inputstring.replace("$", "\\$").replace("`", "\\`") + '"'
 
 
-def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_first=False, allow_fail=False, **kwargs):
+def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_first=False, expect_retcode=0, **kwargs):
     """Executes a shell command."""
     print("\n>", (cmd if isinstance(cmd, str) else " ".join(cmd)))
     if assert_output is False:
@@ -100,8 +100,12 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
         out = stdout + stderr
     out = "".join(out)
     lines = out.splitlines()
-    if not allow_fail:
-        assert not retcode, "Command failed: " + repr(cmd)
+    if expect_retcode is not None:
+        assert retcode == expect_retcode, "Return code not as expected ({} != {}) in: {!r}".format(
+            retcode,
+            expect_retcode,
+            cmd,
+        )
     for line in lines:
         assert "CoconutInternalException" not in line, "CoconutInternalException in " + repr(line)
         assert "<unprintable" not in line, "Unprintable error in " + repr(line)
@@ -225,7 +229,7 @@ def run_extras(**kwargs):
     call(["python", os.path.join(dest, "extras.py")], assert_output=True, check_errors=False, stderr_first=True, **kwargs)
 
 
-def run(args=[], agnostic_target=None, use_run_arg=False):
+def run(args=[], agnostic_target=None, use_run_arg=False, expect_retcode=0):
     """Compiles and runs tests."""
     if agnostic_target is None:
         agnostic_args = args
@@ -240,7 +244,7 @@ def run(args=[], agnostic_target=None, use_run_arg=False):
             comp_3(args)
             if sys.version_info >= (3, 5):
                 comp_35(args)
-        comp_agnostic(agnostic_args)
+        comp_agnostic(agnostic_args, expect_retcode=expect_retcode)
         if use_run_arg:
             comp_runner(["--run"] + agnostic_args, assert_output=True)
         else:
@@ -347,7 +351,7 @@ class TestShell(unittest.TestCase):
                 assert_output=(True,) + (("Jupyter error",) if WINDOWS else ()),
                 stderr_first=WINDOWS,
                 check_errors=not WINDOWS,
-                allow_fail=WINDOWS,
+                expect_retcode=0 if not WINDOWS else None,
             )
 
         def test_kernel_installation(self):
@@ -381,13 +385,13 @@ class TestCompilation(unittest.TestCase):
 
     if PY34 and not WINDOWS and not PYPY:
         def test_mypy_snip(self):
-            call(["coconut", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err, check_mypy=False)
+            call(["coconut", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err, check_mypy=False, expect_retcode=1)
 
         def test_mypy(self):
-            run(["--mypy"] + mypy_args, allow_fail=True)  # fails due to tutorial type errors
+            run(["--mypy"] + mypy_args, expect_retcode=1)  # fails due to tutorial type errors
 
         def test_mypy_py3(self):
-            run(["--mypy"] + mypy_args, agnostic_target=3, allow_fail=True)  # fails due to tutorial type errors
+            run(["--mypy"] + mypy_args, agnostic_target=3, expect_retcode=1)  # fails due to tutorial type errors
 
     def test_run(self):
         run(use_run_arg=True)
