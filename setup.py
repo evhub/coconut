@@ -34,9 +34,9 @@ from coconut.constants import (
     classifiers,
     search_terms,
     script_names,
-    using_modern_setuptools,
 )
 from coconut.requirements import (
+    using_modern_setuptools,
     requirements,
     extras,
 )

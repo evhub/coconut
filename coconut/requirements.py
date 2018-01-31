@@ -18,10 +18,11 @@ Description: Coconut installation requirements.
 from coconut.root import *  # NOQA
 
 from coconut.constants import (
+    ver_str_to_tuple,
+    ver_tuple_to_str,
     all_reqs,
     min_versions,
     version_strictly,
-    using_modern_setuptools,
     PYPY,
     PY34,
     IPY,
@@ -29,25 +30,18 @@ from coconut.constants import (
 )
 
 #-----------------------------------------------------------------------------------------------------------------------
-# UTILITIES:
+# CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
+try:
+    import setuptools  # this import is expensive, so we keep it out of constants
+    using_modern_setuptools = int(setuptools.__version__.split(".", 1)[0]) >= 18
+except Exception:
+    using_modern_setuptools = False
 
-def ver_tuple_to_str(req_ver):
-    """Converts a requirement version tuple into a version string."""
-    return ".".join(str(x) for x in req_ver)
-
-
-def ver_str_to_tuple(ver_str):
-    """Convert a version string into a version tuple."""
-    out = []
-    for x in ver_str.split("."):
-        try:
-            x = int(x)
-        except ValueError:
-            pass
-        out.append(x)
-    return tuple(out)
+#-----------------------------------------------------------------------------------------------------------------------
+# UTILITIES:
+#-----------------------------------------------------------------------------------------------------------------------
 
 
 def get_reqs(which="main"):

@@ -21,6 +21,7 @@ from coconut.root import *  # NOQA
 
 import os.path
 
+from coconut.root import _indent
 from coconut.constants import (
     get_target_info,
     hash_prefix,
@@ -103,6 +104,13 @@ def process_header_args(which, target, use_hash, no_tco, strict):
     """Create the dictionary passed to str.format in the header, target_startswith, and target_info."""
     target_startswith = one_num_ver(target)
     target_info = get_target_info(target)
+
+    try_backport_lru_cache = r'''try:
+    from backports.functools_lru_cache import lru_cache
+    functools.lru_cache = lru_cache
+except ImportError: pass
+'''
+
     format_dict = dict(
         comment=comment(),
         empty_dict="{}",
@@ -113,29 +121,37 @@ def process_header_args(which, target, use_hash, no_tco, strict):
         VERSION_STR=VERSION_STR,
         module_docstring='"""Built-in Coconut utilities."""\n\n' if which == "__coconut__" else "",
         object="(object)" if target_startswith != "3" else "",
-        import_pickle=(
+        import_pickle=_indent(
             r'''if _coconut_sys.version_info < (3,):
-        import cPickle as pickle
-    else:
-        import pickle''' if not target
+    import cPickle as pickle
+else:
+    import pickle''' if not target
             else "import cPickle as pickle" if target_info < (3,)
             else "import pickle"
         ),
-        import_OrderedDict=(
+        import_OrderedDict=_indent(
             r'''if _coconut_sys.version_info >= (2, 7):
-        OrderedDict = collections.OrderedDict
-    else:
-        OrderedDict = dict''' if not target
+    OrderedDict = collections.OrderedDict
+else:
+    OrderedDict = dict'''
+            if not target
             else "OrderedDict = collections.OrderedDict" if target_info >= (2, 7)
             else "OrderedDict = dict"
         ),
-        import_collections_abc=(
+        import_collections_abc=_indent(
             r'''if _coconut_sys.version_info < (3, 3):
-        abc = collections
-    else:
-        import collections.abc as abc'''
+    abc = collections
+else:
+    import collections.abc as abc'''
             if target_startswith != "2"
             else "abc = collections"
+        ),
+        bind_lru_cache=_indent(
+            r'''if _coconut_sys.version_info < (3, 2):
+''' + _indent(try_backport_lru_cache)
+            if not target
+            else try_backport_lru_cache if target_startswith == "2"
+            else ""
         ),
         comma_bytearray=", bytearray" if target_startswith != "3" else "",
         static_repr="staticmethod(repr)" if target_startswith != "3" else "repr",
@@ -168,7 +184,9 @@ def process_header_args(which, target, use_hash, no_tco, strict):
 ''' if not strict else ""
         ),
     )
+
     format_dict["underscore_imports"] = "_coconut, _coconut_NamedTuple, _coconut_MatchError{comma_tco}, _coconut_igetitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_pipe, _coconut_star_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial".format(**format_dict)
+
     # ._coconut_tco_func is used in main.coco, so don't remove it
     #  here without replacing its usage there
     format_dict["def_tco"] = "" if no_tco else '''class _coconut_tail_call{object}:
@@ -192,6 +210,7 @@ def _coconut_tco(func):
     _coconut_tco_func_dict[_coconut.id(tail_call_optimized_func)] = _coconut.weakref.ref(tail_call_optimized_func)
     return tail_call_optimized_func
 '''.format(**format_dict)
+
     return format_dict, target_startswith, target_info
 
 

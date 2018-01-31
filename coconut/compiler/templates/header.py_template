@@ -1,9 +1,9 @@
 class _coconut{object}:{comment.everything_here_must_be_copied_to_stub_file}
     import collections, copy, functools, imp, itertools, operator, types, weakref
-    {import_pickle}
-    {import_OrderedDict}
-    {import_collections_abc}
-    Exception, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr{comma_bytearray} = Exception, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, {static_repr}{comma_bytearray}
+{bind_lru_cache}{import_pickle}
+{import_OrderedDict}
+{import_collections_abc}
+    Exception, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr{comma_bytearray} = Exception, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, {static_repr}{comma_bytearray}
 {def_coconut_NamedTuple}
 class MatchError(Exception):
     """Pattern-matching error. Has attributes .pattern and .value."""
@@ -470,4 +470,8 @@ def fmap(func, obj):
     if _coconut.isinstance(obj, _coconut.str):
         return "".join(args)
     return obj.__class__(args)
+def memoize(maxsize=None, **kwargs):
+    """Decorator that memoizes a function,
+    preventing it from being recomputed if it is called multiple times with the same arguments."""
+    return _coconut.functools.lru_cache(maxsize, **kwargs)
 _coconut_MatchError, _coconut_count, _coconut_enumerate, _coconut_reversed, _coconut_map, _coconut_starmap, _coconut_tee, _coconut_zip, reduce, takewhile, dropwhile = MatchError, count, enumerate, reversed, map, starmap, tee, zip, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile

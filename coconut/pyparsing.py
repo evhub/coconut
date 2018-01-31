@@ -19,15 +19,13 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
-from coconut.requirements import (
-    ver_str_to_tuple,
-    ver_tuple_to_str,
-)
 from coconut.constants import (
     packrat_cache,
     default_whitespace_chars,
     varchars,
     min_versions,
+    ver_str_to_tuple,
+    ver_tuple_to_str,
 )
 
 try:

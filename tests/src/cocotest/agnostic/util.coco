@@ -667,7 +667,7 @@ def `pattern_abs_` (x) = x
 # Recursive iterator
 
 @recursive_iterator
-def fib() = (1, 1) :: map((+), fib(), fib()$[1:])
+def fibs() = (1, 1) :: map((+), fibs(), fibs()$[1:])
 
 @recursive_iterator
 def loop(it) = it :: loop(it)
@@ -856,3 +856,32 @@ def context_produces(out):
 # Where statements
 def sum2(ab) = a + b where:
     a, b = ab
+
+# Memoization
+import functools
+
+@memoize()
+def ridiculously_recursive(n):
+    """Requires maxsize=None when called on large numbers."""
+    if n <= 0:
+        return 1
+    result = 0
+    for i in range(1, 200):
+        result += ridiculously_recursive(n-i)
+    return result
+
+@functools.lru_cache(maxsize=None)
+def ridiculously_recursive_(n):
+    """Requires maxsize=None when called on large numbers."""
+    if n <= 0:
+        return 1
+    result = 0
+    for i in range(1, 200):
+        result += ridiculously_recursive_(n-i)
+    return result
+
+def fib(n if n < 2) = n
+
+@memoize()
+@addpattern(fib)
+def fib(n) = fib(n-1) + fib(n-2)

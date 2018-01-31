@@ -48,11 +48,9 @@ def scan(func: Callable[[_T, _T], _T], iterable: Iterable[_T]) -> Iterable[_T]: 
 
 
 class _coconut:
-    # The real _coconut doesn't import typing, but we want type-checkers to treat it as if it does
-    import typing
-
+    import typing  # The real _coconut doesn't import typing, but we want type-checkers to treat it as if it does
     import collections, copy, functools, imp, itertools, operator, types, weakref, pickle
-    Exception, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip = Exception, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip
+    Exception, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip = Exception, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip
     if sys.version_info < (3, 3):
         abc = collections
     else:
@@ -70,6 +68,13 @@ takewhile = _coconut.itertools.takewhile
 dropwhile = _coconut.itertools.dropwhile
 tee = _coconut.itertools.tee
 starmap = _coconut.itertools.starmap
+
+
+if sys.version_info >= (3, 2):
+    memoize = _coconut.functools.lru_cache
+else:
+    from backports.functools_lru_cache import lru_cache as memoize
+    _coconut.functools.lru_cache = memoize
 
 
 _coconut_tee = tee

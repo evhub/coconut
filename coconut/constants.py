@@ -39,6 +39,23 @@ def get_target_info(target):
     return tuple(int(x) for x in target)
 
 
+def ver_tuple_to_str(req_ver):
+    """Converts a requirement version tuple into a version string."""
+    return ".".join(str(x) for x in req_ver)
+
+
+def ver_str_to_tuple(ver_str):
+    """Convert a version string into a version tuple."""
+    out = []
+    for x in ver_str.split("."):
+        try:
+            x = int(x)
+        except ValueError:
+            pass
+        out.append(x)
+    return tuple(out)
+
+
 #-----------------------------------------------------------------------------------------------------------------------
 # VERSION CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -64,12 +81,6 @@ IPY = (PY2 and not PY26) or (PY33 if not WINDOWS else PY34)
 # INSTALLATION CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-try:
-    import setuptools
-    using_modern_setuptools = int(setuptools.__version__.split(".", 1)[0]) >= 18
-except Exception:
-    using_modern_setuptools = False
-
 package_name = "coconut" + ("-develop" if DEVELOP else "")
 
 author = "Evan Hubinger"
@@ -88,6 +99,7 @@ all_reqs = {
     ),
     "py2": (
         "futures",
+        "backports.functools-lru-cache",
     ),
     "py26": (
         "argparse",
@@ -140,6 +152,7 @@ min_versions = {
     "mypy": (0, 550),
     "prompt_toolkit": (1, 0),
     "futures": (3, 1),
+    "backports.functools-lru-cache": (1, 4),
     "argparse": (1, 4),
     "pytest": (3,),
     "pexpect": (4,),
@@ -155,9 +168,9 @@ min_versions = {
 
 version_strictly = (
     "pyparsing",
+    "ipython",
     "sphinx",
     "sphinx_bootstrap_theme",
-    "ipython",
 )
 
 classifiers = (
@@ -257,6 +270,10 @@ search_terms = (
     "groupsof",
     "where",
     "statement",
+    "lru_cache",
+    "memoize",
+    "memoization",
+    "backport",
 )
 
 script_names = (
@@ -539,6 +556,7 @@ coconut_specific_builtins = (
     "reiterable",
     "scan",
     "groupsof",
+    "memoize",
     "py_chr",
     "py_filter",
     "py_hex",
