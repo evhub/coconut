@@ -119,6 +119,9 @@ all_reqs = {
     "watch": (
         "watchdog",
     ),
+    "asyncio": (
+        "trollius",
+    ),
     "dev": (
         "pre-commit",
         "requests",
@@ -148,15 +151,16 @@ min_versions = {
     "psutil": (5,),
     "jupyter": (1, 0),
     "jupyter-console": (5, 2),
-    "ipykernel": (4, 6),
-    "mypy": (0, 550),
+    "ipykernel": (4, 8),
+    "mypy": (0, 560),
     "prompt_toolkit": (1, 0),
-    "futures": (3, 1),
+    "futures": (3, 2),
     "backports.functools-lru-cache": (1, 4),
     "argparse": (1, 4),
     "pytest": (3,),
     "pexpect": (4,),
     "watchdog": (0, 8),
+    "trollius": (2, 1),
     "requests": (2,),
     "vprof": (0, 37),
     # We can't upgrade this; it breaks on Python 2.
@@ -459,6 +463,8 @@ py3_to_py2_stdlib = {
     # ./ denotes from ... import ...
     "io.StringIO": ("StringIO./StringIO", (2, 7)),
     "io.BytesIO": ("cStringIO./StringIO", (2, 7)),
+    # third-party backports
+    "asyncio": ("trollius", (3, 4)),
 }
 
 #-----------------------------------------------------------------------------------------------------------------------

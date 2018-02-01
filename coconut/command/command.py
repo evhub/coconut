@@ -136,7 +136,7 @@ class Command(object):
         """Exit if exit_code is abnormal."""
         if self.exit_code:
             if self.errmsg is not None:
-                logger.show_error("Exiting due to " + self.errmsg + ".")
+                logger.show("Exiting due to " + self.errmsg + ".")
                 self.errmsg = None
             if self.using_jobs:
                 kill_children()

@@ -17,6 +17,8 @@ Description: Coconut installation requirements.
 
 from coconut.root import *  # NOQA
 
+import sys
+
 from coconut.constants import (
     ver_str_to_tuple,
     ver_tuple_to_str,
@@ -81,6 +83,7 @@ extras = {
     "watch": get_reqs("watch"),
     "jobs": get_reqs("jobs"),
     "mypy": get_reqs("mypy"),
+    "asyncio": get_reqs("asyncio"),
 }
 
 extras["ipython"] = extras["jupyter"]
@@ -92,6 +95,7 @@ extras["tests"] = uniqueify(
     + (extras["jobs"] + get_reqs("cPyparsing") if not PYPY else [])
     + (extras["jupyter"] if IPY else [])
     + (extras["mypy"] if PY34 and not WINDOWS and not PYPY else []),
+    + (extras["asyncio"] if sys.version_info < (3, 4) else []),
 )
 
 extras["docs"] = unique_wrt(get_reqs("docs"), requirements)
@@ -101,7 +105,7 @@ extras["dev"] = uniqueify(
     + get_reqs("dev"),
 )
 
-extras["cPyparsing"] = get_reqs("cPyparsing")
+extras["cPyparsing"] = get_reqs("cPyparsing")  # shouldn't be included in all
 
 if using_modern_setuptools:
     # modern method for adding version-dependent requirements

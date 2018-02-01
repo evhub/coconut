@@ -882,6 +882,6 @@ def ridiculously_recursive_(n):
 
 def fib(n if n < 2) = n
 
-@memoize()
-@addpattern(fib)  # type: ignore
+@memoize()  # type: ignore
+@addpattern(fib)
 def fib(n) = fib(n-1) + fib(n-2)

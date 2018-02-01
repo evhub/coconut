@@ -1,4 +1,5 @@
 import sys
+import asyncio
 
 def main_test():
     """Basic no-dependency tests."""
@@ -446,6 +447,8 @@ def main_test():
         {"a": a} = {"a": 5}
     assert (None ?? False is False) is True
     assert (1 ?? False is False) is False
+    loop = asyncio.new_event_loop()
+    loop.close()
     return True
 
 def tco_func() = tco_func()
