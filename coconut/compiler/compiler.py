@@ -604,7 +604,8 @@ class Compiler(Grammar):
                 )
         if self.strict:
             for name in self.unused_imports:
-                logger.warn("found unused import", name, extra="disable --strict to dismiss")
+                if name != "*":
+                    logger.warn("found unused import", name, extra="disable --strict to dismiss")
         return out
 
 # end: COMPILER

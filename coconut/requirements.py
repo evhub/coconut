@@ -62,6 +62,14 @@ def uniqueify(reqs):
     return list(set(reqs))
 
 
+def uniqueify_all(init_reqs, *other_reqs):
+    """Find the union of all the given requirements."""
+    union = set(init_reqs)
+    for reqs in other_reqs:
+        union.update(reqs)
+    return list(union)
+
+
 def unique_wrt(reqs, main_reqs):
     """Ensures reqs doesn't contain anything in main_reqs."""
     return list(set(reqs) - set(main_reqs))
@@ -90,19 +98,20 @@ extras["ipython"] = extras["jupyter"]
 
 extras["all"] = everything_in(extras)
 
-extras["tests"] = uniqueify(
-    get_reqs("tests")
-    + (extras["jobs"] + get_reqs("cPyparsing") if not PYPY else [])
-    + (extras["jupyter"] if IPY else [])
-    + (extras["mypy"] if PY34 and not WINDOWS and not PYPY else []),
-    + (extras["asyncio"] if sys.version_info < (3, 4) else []),
+extras["tests"] = uniqueify_all(
+    get_reqs("tests"),
+    extras["jobs"] + get_reqs("cPyparsing") if not PYPY else [],
+    extras["jupyter"] if IPY else [],
+    extras["mypy"] if PY34 and not WINDOWS and not PYPY else [],
+    extras["asyncio"] if sys.version_info < (3, 4) else [],
 )
+
 
 extras["docs"] = unique_wrt(get_reqs("docs"), requirements)
 
-extras["dev"] = uniqueify(
-    everything_in(extras)
-    + get_reqs("dev"),
+extras["dev"] = uniqueify_all(
+    everything_in(extras),
+    get_reqs("dev"),
 )
 
 extras["cPyparsing"] = get_reqs("cPyparsing")  # shouldn't be included in all
