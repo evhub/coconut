@@ -221,14 +221,14 @@ _Note: Periods are ignored in target specifications, such that the target `27` i
 
 If the `--strict` (`-s` for short) flag is enabled, Coconut will perform additional checks on the code being compiled. It is recommended that you use the `--strict` flag if you are starting a new Coconut project, as it will help you write cleaner code. Specifically, the extra checks done by `--strict` are
 
-- warning about unused imports,
-- throwing errors on various style problems (see list below), and
-- disabling deprecated features (making them entirely unavailable to code compiled with `--strict`).
+- disabling deprecated features (making them entirely unavailable to code compiled with `--strict`),
+- warning about unused imports, and
+- throwing errors on various style problems (see list below).
 
 The style issues which will cause `--strict` to throw an error are:
 
-- mixing of tabs and spaces (without `--strict` will show a Warning),
-- use of `from __future__` imports (without `--strict` will show a Warning)
+- mixing of tabs and spaces (without `--strict` will show a warning),
+- use of `from __future__` imports (without `--strict` will show a warning)
 - missing new line at end of file,
 - trailing whitespace at end of lines,
 - semicolons at end of lines,
@@ -247,7 +247,7 @@ Text editors with support for Coconut syntax highlighting are:
 - **Vim**: See [`coconut.vim`](https://github.com/manicmaniac/coconut.vim).
 - **Emacs**: See [`coconut-mode`](https://github.com/NickSeagull/coconut-mode).
 - **Atom**: See [`language-coconut`](https://github.com/enilsen16/language-coconut).
-- Any editor that supports Pygments (e.g. **Spyder**): See Pygments section below.
+- Any editor that supports **Pygments** (e.g. **Spyder**): See Pygments section below.
 
 Alternatively, if none of the above work for you, you can just treat Coconut as Python. Simply set up your editor so it interprets all `.coco` files as Python and that should highlight most of your code well enough.
 
@@ -265,7 +265,7 @@ _Note: Coconut syntax highlighting for SublimeText is provided by the [sublime-c
 
 #### Pygments
 
-The same `pip install coconut` command that installs the Coconut command-line utility will also install the `coconut` Pygments lexer. How to use this lexer depends on the Pygments-enabled application being used, but in general simply enter `coconut` as the language being highlighted and/or use a valid Coconut file extension (`.coco`, `.coc`, or `.coconut`) and Pygments should be able to figure it out.
+The same `pip install coconut` command that installs the Coconut command-line utility will also install the `coconut` Pygments lexer. How to use this lexer depends on the Pygments-enabled application being used, but in general simply use the `.coco` file extension (should be all you need to do for Spyder) and/or enter `coconut` as the language being highlighted and Pygments should be able to figure it out.
 
 For example, this documentation is generated with [Sphinx](http://www.sphinx-doc.org/en/stable/), with the syntax highlighting you see created by adding the line
 ```coconut_python

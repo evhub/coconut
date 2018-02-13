@@ -947,7 +947,7 @@ print(vector(1, 0).angle(vector(0, 2)), math.pi/2)  # should be the same
 vector(1, 2).angle(5)  # MatchError
 ```
 
-_Hint: Look back at how we checked whether the argument to `factorial` was an integer using destructuring assignment._
+_Hint: Look back at how we checked whether the argument to `factorial` was an integer using pattern-matching._
 
 <br>
 <br>
@@ -1012,7 +1012,7 @@ data vector(*pts):
     def __rmul__(self, other) =
         """Necessary to make scalar multiplication commutative."""
         self * other
-     # New one-line functions necessary for finding the angle between vectors:
+    # New one-line functions necessary for finding the angle between vectors:
     def __truediv__(self, other) = self.pts |> map$(x -> x/other) |*> vector
     def unit(self) = self / abs(self)
     def angle(self, other is vector) = math.acos(self.unit() * other.unit())
