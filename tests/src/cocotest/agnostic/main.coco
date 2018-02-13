@@ -1,5 +1,5 @@
 import sys
-import asyncio
+import asyncio  # type: ignore
 
 def main_test():
     """Basic no-dependency tests."""

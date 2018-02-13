@@ -870,7 +870,7 @@ def ridiculously_recursive(n):
         result += ridiculously_recursive(n-i)
     return result
 
-@functools.lru_cache(maxsize=None)
+@functools.lru_cache(maxsize=None)  # type: ignore
 def ridiculously_recursive_(n):
     """Requires maxsize=None when called on large numbers."""
     if n <= 0:

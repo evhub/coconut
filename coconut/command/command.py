@@ -598,10 +598,7 @@ class Command(object):
                 args += ["-c", code]
             for line, is_err in mypy_run(args):
                 if code is None or line not in self.mypy_errs:
-                    if is_err:
-                        printerr(line)
-                    else:
-                        print(line)
+                    printerr(line)
                 if line not in self.mypy_errs:
                     self.mypy_errs.append(line)
                 self.register_error(errmsg="MyPy error")
