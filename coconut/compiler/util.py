@@ -134,7 +134,9 @@ class ComputationNode(object):
     @property
     def name(self):
         """Get the name of the action."""
-        return getattr(self.action, "__name__", ascii(self.action))
+        name = getattr(self.action, "__name__", None)
+        # ascii(action) not defined for all actions, so must only be evaluated if getattr fails
+        return name if name is not None else ascii(self.action)
 
     def evaluate(self):
         """Get the result of evaluating the computation graph at this node."""
