@@ -1547,12 +1547,15 @@ class Compiler(Grammar):
 
     def split_docstring(self, block):
         """Split a code block into a docstring and a body."""
-        first_line, rest_of_lines = block.split("\n", 1)
-        raw_first_line = split_leading_trailing_indent(rem_comment(first_line))[1]
-        if match_in(self.just_a_string, raw_first_line):
-            return first_line, rest_of_lines
+        try:
+            first_line, rest_of_lines = block.split("\n", 1)
+        except ValueError:
+            pass
         else:
-            return None, block
+            raw_first_line = split_leading_trailing_indent(rem_comment(first_line))[1]
+            if match_in(self.just_a_string, raw_first_line):
+                return first_line, rest_of_lines
+        return None, block
 
     def tre_return(self, func_name, func_args, func_store, use_mock=True):
         """Generate a tail recursion elimination grammar element."""
@@ -1626,6 +1629,7 @@ class Compiler(Grammar):
                             line = tco_base + comment + indent
                             tco = True
             level += ind_change(indent)
+            lines.append(line)
 
         return lines, tco, tre
 
@@ -1633,7 +1637,7 @@ class Compiler(Grammar):
         """Determines if TCO or TRE can be done and if so does it,
         handles dotted function names, and universalizes async functions."""
         if len(tokens) == 1:
-            decorators, funcdef = None, tokens[0]
+            decorators, funcdef = "", tokens[0]
         elif len(tokens) == 2:
             decorators, funcdef = tokens
         else:
