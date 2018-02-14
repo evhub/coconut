@@ -134,7 +134,7 @@ class ComputationNode(object):
     @property
     def name(self):
         """Get the name of the action."""
-        return getattr(self.action, "__name__", str(self.action))
+        return getattr(self.action, "__name__", ascii(self.action))
 
     def evaluate(self):
         """Get the result of evaluating the computation graph at this node."""

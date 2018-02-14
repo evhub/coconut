@@ -31,7 +31,6 @@ from coconut.root import *  # NOQA
 import sys
 import re
 from contextlib import contextmanager
-from functools import partial
 
 from coconut.pyparsing import (
     ParseBaseException,
@@ -402,11 +401,11 @@ class Compiler(Grammar):
 
         self.decoratable_normal_funcdef_stmt <<= trace(attach(
             self.decoratable_normal_funcdef_stmt_ref,
-            partial(self.decoratable_funcdef_stmt_handle, is_async=False),
+            lambda tokens: self.decoratable_funcdef_stmt_handle(tokens, is_async=False),
         ))
         self.decoratable_async_funcdef_stmt <<= trace(attach(
             self.decoratable_async_funcdef_stmt_ref,
-            partial(self.decoratable_funcdef_stmt_handle, is_async=True),
+            lambda tokens: self.decoratable_funcdef_stmt_handle(tokens, is_async=True),
         ))
 
         self.u_string <<= attach(self.u_string_ref, self.u_string_check)
