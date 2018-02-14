@@ -31,6 +31,7 @@ from coconut.root import *  # NOQA
 import sys
 import re
 from contextlib import contextmanager
+from functools import partial
 
 from coconut.pyparsing import (
     ParseBaseException,
@@ -374,11 +375,10 @@ class Compiler(Grammar):
     def bind(self):
         """Binds reference objects to the proper parse actions."""
         self.endline <<= attach(self.endline_ref, self.endline_handle)
-        # comments are evaluated greedily because we need to know about them even if we're going to suppress them
-        self.comment <<= trace(attach(self.comment_ref, self.comment_handle, greedy=True))
         self.moduledoc_item <<= trace(attach(self.moduledoc, self.set_docstring))
         self.name <<= trace(attach(self.base_name, self.name_check))
-
+        # comments are evaluated greedily because we need to know about them even if we're going to suppress them
+        self.comment <<= trace(attach(self.comment_ref, self.comment_handle, greedy=True))
         self.set_literal <<= trace(attach(self.set_literal_ref, self.set_literal_handle))
         self.set_letter_literal <<= trace(attach(self.set_letter_literal_ref, self.set_letter_literal_handle))
         self.classlist <<= trace(attach(self.classlist_ref, self.classlist_handle))
@@ -392,7 +392,6 @@ class Compiler(Grammar):
         self.yield_from <<= trace(attach(self.yield_from_ref, self.yield_from_handle))
         self.exec_stmt <<= trace(attach(self.exec_stmt_ref, self.exec_stmt_handle))
         self.stmt_lambdef <<= trace(attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle))
-        self.decoratable_normal_funcdef_stmt <<= trace(attach(self.decoratable_normal_funcdef_stmt_ref, self.decoratable_normal_funcdef_stmt_handle))
         self.typedef <<= trace(attach(self.typedef_ref, self.typedef_handle))
         self.typedef_default <<= trace(attach(self.typedef_default_ref, self.typedef_handle))
         self.unsafe_typedef_default <<= trace(attach(self.unsafe_typedef_default_ref, self.unsafe_typedef_handle))
@@ -401,13 +400,23 @@ class Compiler(Grammar):
         self.datadef <<= trace(attach(self.datadef_ref, self.data_handle))
         self.with_stmt <<= trace(attach(self.with_stmt_ref, self.with_stmt_handle))
 
+        self.decoratable_normal_funcdef_stmt <<= trace(attach(
+            self.decoratable_normal_funcdef_stmt_ref,
+            partial(self.decoratable_funcdef_stmt_handle, is_async=False),
+        ))
+        self.decoratable_async_funcdef_stmt <<= trace(attach(
+            self.decoratable_async_funcdef_stmt_ref,
+            partial(self.decoratable_funcdef_stmt_handle, is_async=True),
+        ))
+
         self.u_string <<= attach(self.u_string_ref, self.u_string_check)
         self.f_string <<= attach(self.f_string_ref, self.f_string_check)
         self.matrix_at <<= attach(self.matrix_at_ref, self.matrix_at_check)
         self.nonlocal_stmt <<= attach(self.nonlocal_stmt_ref, self.nonlocal_check)
         self.star_assign_item <<= attach(self.star_assign_item_ref, self.star_assign_item_check)
         self.classic_lambdef <<= attach(self.classic_lambdef_ref, self.lambdef_check)
-        self.async_keyword <<= attach(self.async_keyword_ref, self.async_keyword_check)
+        # async statements are checked greedily since they get suppressed otherwise
+        self.async_keyword <<= attach(self.async_keyword_ref, self.async_keyword_check, greedy=True)
         self.await_keyword <<= attach(self.await_keyword_ref, self.await_keyword_check)
         self.star_expr <<= attach(self.star_expr_ref, self.star_expr_check)
         self.dubstar_expr <<= attach(self.dubstar_expr_ref, self.star_expr_check)
@@ -1526,6 +1535,25 @@ class Compiler(Grammar):
             )
         return name
 
+    @contextmanager
+    def complain_on_err(self):
+        """Complain about any parsing-related errors raised inside."""
+        try:
+            yield
+        except ParseBaseException as err:
+            complain(self.make_parse_err(err, reformat=False, include_ln=False))
+        except CoconutException as err:
+            complain(err)
+
+    def split_docstring(self, block):
+        """Split a code block into a docstring and a body."""
+        first_line, rest_of_lines = block.split("\n", 1)
+        raw_first_line = split_leading_trailing_indent(rem_comment(first_line))[1]
+        if match_in(self.just_a_string, raw_first_line):
+            return first_line, rest_of_lines
+        else:
+            return None, block
+
     def tre_return(self, func_name, func_args, func_store, use_mock=True):
         """Generate a tail recursion elimination grammar element."""
         def tre_return_handle(loc, tokens):
@@ -1556,56 +1584,13 @@ class Compiler(Grammar):
             tre_return_handle,
         )
 
-    @contextmanager
-    def complain_on_err(self):
-        """Complain about any parsing-related errors raised inside."""
-        try:
-            yield
-        except ParseBaseException as err:
-            complain(self.make_parse_err(err, reformat=False, include_ln=False))
-        except CoconutException as err:
-            complain(err)
-
-    def split_docstring(self, block):
-        """Split a code block into a docstring and a body."""
-        first_line, rest_of_lines = block.split("\n", 1)
-        raw_first_line = split_leading_trailing_indent(rem_comment(first_line))[1]
-        if match_in(self.just_a_string, raw_first_line):
-            return first_line, rest_of_lines
-        else:
-            return None, block
-
-    def decoratable_normal_funcdef_stmt_handle(self, tokens):
-        """Determines if TCO or TRE can be done and if so does it.
-        Also handles dotted function names."""
-        if len(tokens) == 1:
-            decorators, funcdef = None, tokens[0]
-        elif len(tokens) == 2:
-            decorators, funcdef = tokens
-        else:
-            raise CoconutInternalException("invalid function definition tokens", tokens)
-
-        lines = []  # transformed
+    def transform_tail_calls(self, raw_lines, func_name, func_args, func_store, decorated, attempt_tre, use_mock):
+        """Apply TCO and/or TRE to the given function."""
+        lines = []  # transformed lines
         tco = False  # whether tco was done
-        tre = False  # wether tre was done
+        tre = False  # whether tre was done
         level = 0  # indentation level
         disabled_until_level = None  # whether inside of a def/try/with
-        attempt_tre = False  # whether to attempt tre at all
-        func_name = None  # the name of the function, None if attempt_tre == False
-        undotted_name = None  # the function __name__ if func_name is a dotted name
-
-        raw_lines = funcdef.splitlines(True)
-        def_stmt, raw_lines = raw_lines[0], raw_lines[1:]
-        with self.complain_on_err():
-            func_name, func_args, func_params = parse(self.split_func_name_args_params, def_stmt)
-        if func_name is not None:
-            if "." in func_name:
-                undotted_name = func_name.rsplit(".", 1)[-1]
-                def_stmt = def_stmt.replace(func_name, undotted_name)
-            use_mock = func_args and func_args != func_params[1:-1]
-            func_store = tre_store_var + "_" + str(self.tre_store_count)
-            self.tre_store_count += 1
-            attempt_tre = True
 
         for line in raw_lines:
             body, indent = split_trailing_indent(line)
@@ -1616,15 +1601,14 @@ class Compiler(Grammar):
             if disabled_until_level is None:
                 if re.search(r"\byield\b", body):
                     # we can't tco or tre generators
-                    lines = raw_lines
-                    break
+                    return raw_lines, False, False
                 elif re.search(r"\b(?:def|try|with)\b", body):
                     disabled_until_level = level
                 else:
                     base, comment = split_comment(body)
                     tre_base = None
                     # tre does not work with decorators, though tco does
-                    if not decorators and attempt_tre:
+                    if not decorated and attempt_tre:
                         # attempt tre
                         with self.complain_on_err():
                             tre_base = transform(self.tre_return(func_name, func_args, func_store, use_mock=use_mock), base)
@@ -1641,16 +1625,60 @@ class Compiler(Grammar):
                         if tco_base is not None:
                             line = tco_base + comment + indent
                             tco = True
-            lines.append(line)
             level += ind_change(indent)
 
-        out = "".join(lines)
+        return lines, tco, tre
+
+    def decoratable_funcdef_stmt_handle(self, tokens, is_async):
+        """Determines if TCO or TRE can be done and if so does it,
+        handles dotted function names, and universalizes async functions."""
+        if len(tokens) == 1:
+            decorators, funcdef = None, tokens[0]
+        elif len(tokens) == 2:
+            decorators, funcdef = tokens
+        else:
+            raise CoconutInternalException("invalid function definition tokens", tokens)
+
+        # extract information about the function
+        raw_lines = funcdef.splitlines(True)
+        def_stmt, raw_lines = raw_lines[0], raw_lines[1:]
+        func_name, func_args, func_params = None, None, None
+        with self.complain_on_err():
+            func_name, func_args, func_params = parse(self.split_func_name_args_params, def_stmt)
+
+        undotted_name = None  # the function __name__ if func_name is a dotted name
+        if func_name is None:
+            attempt_tre = False
+        else:
+            if "." in func_name:
+                undotted_name = func_name.rsplit(".", 1)[-1]
+                def_stmt = def_stmt.replace(func_name, undotted_name)
+            use_mock = func_args and func_args != func_params[1:-1]
+            func_store = tre_store_var + "_" + str(self.tre_store_count)
+            self.tre_store_count += 1
+            attempt_tre = True
+
+        if is_async:
+            def_stmt = "async " + def_stmt
+            lines, tco, tre = raw_lines, False, False
+        else:
+            lines, tco, tre = self.transform_tail_calls(
+                raw_lines,
+                func_name,
+                func_args,
+                func_store,
+                bool(decorators),
+                attempt_tre,
+                use_mock,
+            )
+
+        func_code = "".join(lines)
         if tre:
-            comment, rest = split_leading_comment(out)
+            comment, rest = split_leading_comment(func_code)
             indent, base, dedent = split_leading_trailing_indent(rest, 1)
             base, base_dedent = split_trailing_indent(base)
             docstring, base = self.split_docstring(base)
-            out = (
+            func_code = (
                 comment + indent
                 + (docstring + "\n" if docstring is not None else "")
                 + (
@@ -1662,9 +1690,10 @@ class Compiler(Grammar):
                     + ("\n" if "\n" not in dedent else "") + closeindent + dedent
                 + func_store + " = " + (func_name if undotted_name is None else undotted_name) + "\n"
             )
-        out = def_stmt + out
+
+        out = def_stmt + func_code
         if tco:
-            out = "@_coconut_tco\n" + out
+            decorators += "@_coconut_tco\n"  # must be the first decorator
         if decorators:
             out = decorators + out
         if undotted_name is not None:

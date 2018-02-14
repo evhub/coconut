@@ -1561,15 +1561,12 @@ class Grammar(object):
         insert_docstring_handle,
     ))
 
-    async_funcdef = addspace(async_keyword + (funcdef | math_funcdef))
     async_stmt = addspace(async_keyword + (with_stmt | for_stmt))
-    async_match_funcdef = addspace(
-        (
-            Optional(Keyword("match")).suppress() + async_keyword
-            | async_keyword + Optional(Keyword("match")).suppress()
-        )
-        + (def_match_funcdef | math_match_funcdef),
-    )
+    async_funcdef = async_keyword.suppress() + (funcdef | math_funcdef)
+    async_match_funcdef = (
+        Optional(Keyword("match")) + async_keyword
+        | async_keyword + Optional(Keyword("match"))
+    ).suppress() + (def_match_funcdef | math_match_funcdef)
 
     datadef = Forward()
     data_args = Group(Optional(lparen.suppress() + ZeroOrMore(
@@ -1601,8 +1598,9 @@ class Grammar(object):
     )
     decoratable_normal_funcdef_stmt_ref = Optional(decorators) + normal_funcdef_stmt
 
+    decoratable_async_funcdef_stmt = Forward()
     async_funcdef_stmt = async_funcdef | async_match_funcdef
-    decoratable_async_funcdef_stmt = trace(condense(Optional(decorators) + async_funcdef_stmt))
+    decoratable_async_funcdef_stmt_ref = Optional(decorators) + async_funcdef_stmt
 
     decoratable_func_stmt = decoratable_normal_funcdef_stmt | decoratable_async_funcdef_stmt
 
