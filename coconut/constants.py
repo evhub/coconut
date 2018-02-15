@@ -155,7 +155,7 @@ min_versions = {
     "mypy": (0, 560),
     "prompt_toolkit": (1, 0),
     "futures": (3, 2),
-    "backports.functools-lru-cache": (1, 4),
+    "backports.functools-lru-cache": (1, 5),
     "argparse": (1, 4),
     "pytest": (3,),
     "pexpect": (4,),
