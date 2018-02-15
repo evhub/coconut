@@ -121,6 +121,14 @@ except ImportError: pass
         VERSION_STR=VERSION_STR,
         module_docstring='"""Built-in Coconut utilities."""\n\n' if which == "__coconut__" else "",
         object="(object)" if target_startswith != "3" else "",
+        import_trollius=_indent(
+            r'''try:
+    import trollius
+except ImportError:
+    class py2_async_requires_trollius: pass
+    trollius = py2_async_requires_trollius()
+''' if target_startswith == "2" else "",
+        ),
         import_pickle=_indent(
             r'''if _coconut_sys.version_info < (3,):
     import cPickle as pickle

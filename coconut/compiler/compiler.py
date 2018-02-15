@@ -401,7 +401,7 @@ class Compiler(Grammar):
 
         self.decoratable_normal_funcdef_stmt <<= trace(attach(
             self.decoratable_normal_funcdef_stmt_ref,
-            lambda tokens: self.decoratable_funcdef_stmt_handle(tokens, is_async=False),
+            self.decoratable_funcdef_stmt_handle,
         ))
         self.decoratable_async_funcdef_stmt <<= trace(attach(
             self.decoratable_async_funcdef_stmt_ref,
@@ -1635,7 +1635,7 @@ class Compiler(Grammar):
 
         return lines, tco, tre
 
-    def decoratable_funcdef_stmt_handle(self, tokens, is_async):
+    def decoratable_funcdef_stmt_handle(self, tokens, is_async=False):
         """Determines if TCO or TRE can be done and if so does it,
         handles dotted function names, and universalizes async functions."""
         if len(tokens) == 1:
@@ -1824,15 +1824,33 @@ class Compiler(Grammar):
 
     def async_keyword_check(self, original, loc, tokens):
         """Check for Python 3.5 async statement."""
-        return self.check_py("35", "async statement", original, loc, tokens)
+        internal_assert(len(tokens) == 1, "invalid async statement tokens", tokens)
+        if not self.target or (3,) <= self.target_info < (3, 5):
+            raise self.make_err(
+                CoconutTargetError,
+                "async requires Python 3.5 or Python 2 with trollius",
+                original, loc,
+                target="35 or --target 2",
+            )
+        else:
+            return tokens[0]
+
+    def await_keyword_check(self, original, loc, tokens):
+        """Check for Python 3.5 await expression."""
+        internal_assert(len(tokens) == 1, "invalid await statement tokens", tokens)
+        if not self.target or (3,) <= self.target_info < (3, 5):
+            raise self.make_err(
+                CoconutTargetError,
+                "await requires Python 3.5 or Python 2 with trollius",
+                original, loc,
+                target="35 or --target 2",
+            )
+        else:
+            return tokens[0]
 
     def async_comp_check(self, original, loc, tokens):
         """Check for Python 3.6 async comprehension."""
         return self.check_py("36", "async comprehension", original, loc, tokens)
-
-    def await_keyword_check(self, original, loc, tokens):
-        """Check for Python 3.5 await expression."""
-        return self.check_py("35", "await expression", original, loc, tokens)
 
     def f_string_check(self, original, loc, tokens):
         """Check for Python 3.6 format strings."""
