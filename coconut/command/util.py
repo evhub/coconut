@@ -42,9 +42,11 @@ from coconut.constants import (
     main_prompt,
     more_prompt,
     default_style,
-    default_multiline,
-    default_vi_mode,
-    default_mouse_support,
+    prompt_multiline,
+    prompt_vi_mode,
+    prompt_mouse_support,
+    prompt_wrap_lines,
+    prompt_history_search,
     style_env_var,
     mypy_path_env_var,
     tutorial_url,
@@ -335,9 +337,11 @@ def canparse(argparser, args):
 class Prompt(object):
     """Manages prompting for code on the command line."""
     style = None
-    multiline = default_multiline
-    vi_mode = default_vi_mode
-    mouse_support = default_mouse_support
+    multiline = prompt_multiline
+    vi_mode = prompt_vi_mode
+    mouse_support = prompt_mouse_support
+    wrap_lines = prompt_wrap_lines
+    history_search = prompt_history_search
 
     def __init__(self):
         """Set up the prompt."""
@@ -388,6 +392,8 @@ class Prompt(object):
             "multiline": self.multiline,
             "vi_mode": self.vi_mode,
             "mouse_support": self.mouse_support,
+            "wrap_lines": self.wrap_lines,
+            "enable_history_search": self.history_search,
             "lexer": prompt_toolkit.layout.lexers.PygmentsLexer(CoconutLexer),
             "style": prompt_toolkit.styles.style_from_pygments(pygments.styles.get_style_by_name(self.style)),
         }

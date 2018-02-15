@@ -480,9 +480,11 @@ main_prompt = ">>> "
 more_prompt = "    "
 
 default_style = "default"
-default_multiline = False
-default_vi_mode = False
-default_mouse_support = True
+prompt_multiline = False
+prompt_vi_mode = False
+prompt_mouse_support = False
+prompt_wrap_lines = True
+prompt_history_search = True
 
 mypy_path_env_var = "MYPYPATH"
 style_env_var = "COCONUT_STYLE"
