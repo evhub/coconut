@@ -150,9 +150,9 @@ dest                destination directory for compiled files (defaults to
 
 ### Automatic Compilation
 
-If you don't care very much about the exact compilation parameters you want to use, automatic compilation is a way to let Coconut take care of everything for you. If you make sure to `import coconut` before you import anything else, Coconut will check each of your imports to see if you are attempting to import a Coconut file and, if so, automatically compile it for you. Note that, for Coconut to know what file you are trying to import, it will need to be accessible via `sys.path`, just like a normal import. Automatic compilation always compiles modules and packages in-place, and always uses `--target sys`.
+If you don't care very much about the exact compilation parameters you want to use, automatic compilation is a way to let Coconut take care of everything for you. If you make sure to `import coconut` before you import anything else, Coconut will check each of your imports to see if you are attempting to import a `.coco` file and, if so, automatically compile it for you. Note that, for Coconut to know what file you are trying to import, it will need to be accessible via `sys.path`, just like a normal import. Automatic compilation always compiles modules and packages in-place, and always uses `--target sys`.
 
-_Note: Automatic compilation is always available in the Coconut interpreter. Additionally, if using the Coconut interpreter, a `reload` built-in is provided to reload an imported Coconut module._
+_Note: Automatic compilation is always available in the Coconut interpreter. Additionally, if using the Coconut interpreter, a `reload` built-in is provided to reload an imported module._
 
 ### Coconut Scripts
 

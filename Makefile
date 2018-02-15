@@ -40,6 +40,10 @@ test-verbose:
 	python ./tests/dest/runner.py
 	python ./tests/dest/extras.py
 
+.PHONY: diff
+diff:
+	git diff origin/develop
+
 .PHONY: docs
 docs: clean
 	sphinx-build -b html . ./docs

@@ -19,6 +19,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
+import re
 import traceback
 from functools import partial
 from contextlib import contextmanager
@@ -324,6 +325,11 @@ def paren_change(inputstring, opens=opens, closes=closes):
 def ind_change(inputstring):
     """Determine the change in indentation level (num opens - num closes)."""
     return inputstring.count(openindent) - inputstring.count(closeindent)
+
+
+def compile_regex(regex):
+    """Compiles the given regex to support unicode."""
+    return re.compile(regex, re.U)
 
 
 def fixto(item, output):

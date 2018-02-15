@@ -482,7 +482,7 @@ more_prompt = "    "
 default_style = "default"
 prompt_multiline = False
 prompt_vi_mode = False
-prompt_mouse_support = False
+prompt_mouse_support = False  # causes problems in unix shells
 prompt_wrap_lines = True
 prompt_history_search = True
 

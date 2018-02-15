@@ -87,6 +87,7 @@ def load_ipython_extension(ipython):
 
 class CoconutImporter(object):
     """Finder and loader for compiling Coconut files at import time."""
+    ext = code_exts[0]
 
     @staticmethod
     def run_compiler(path):
@@ -103,21 +104,20 @@ class CoconutImporter(object):
                 # we can't do a relative import if there's no package path
                 return None
             fullname = fullname[1:]
-            basepaths.append(path)
+            basepaths.insert(0, path)
         fullpath = os.path.join(*fullname.split("."))
         for head in basepaths:
             path = os.path.join(head, fullpath)
-            for ext in code_exts:
-                filepath = path + ext
-                dirpath = os.path.join(path, "__init__" + ext)
-                if os.path.exists(filepath):
-                    self.run_compiler(filepath)
-                    # Coconut file was found and compiled, now let Python import it
-                    return None
-                if os.path.exists(dirpath):
-                    self.run_compiler(path)
-                    # Coconut package was found and compiled, now let Python import it
-                    return None
+            filepath = path + self.ext
+            dirpath = os.path.join(path, "__init__" + self.ext)
+            if os.path.exists(filepath):
+                self.run_compiler(filepath)
+                # Coconut file was found and compiled, now let Python import it
+                return None
+            if os.path.exists(dirpath):
+                self.run_compiler(path)
+                # Coconut package was found and compiled, now let Python import it
+                return None
         return None
 
 

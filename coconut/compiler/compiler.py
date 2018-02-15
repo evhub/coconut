@@ -29,7 +29,6 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import sys
-import re
 from contextlib import contextmanager
 
 from coconut.pyparsing import (
@@ -110,6 +109,7 @@ from coconut.compiler.util import (
     parse,
     get_target_info_len2,
     split_leading_comment,
+    compile_regex,
 )
 from coconut.compiler.header import (
     minify,
@@ -885,12 +885,12 @@ class Compiler(Grammar):
         regexes = []
         for i in range(len(self.stmt_lambdas)):
             name = self.stmt_lambda_name(i)
-            regex = re.compile(r"\b{}\b".format(name))
+            regex = compile_regex(r"\b{}\b".format(name))
             regexes.append(regex)
         out = []
         for line in inputstring.splitlines():
             for i, regex in enumerate(regexes):
-                if re.search(regex, line):
+                if regex.search(line):
                     indent, line = split_leading_indent(line)
                     out.append(indent + self.stmt_lambdas[i])
             out.append(line)
@@ -1586,6 +1586,9 @@ class Compiler(Grammar):
             tre_return_handle,
         )
 
+    yield_regex = compile_regex(r"\byield\b")
+    def_try_with_regex = compile_regex(r"\b(?:def|try|with)\b")
+
     def transform_tail_calls(self, raw_lines, func_name, func_args, func_store, decorated, attempt_tre, use_mock):
         """Apply TCO and/or TRE to the given function."""
         lines = []  # transformed lines
@@ -1601,10 +1604,10 @@ class Compiler(Grammar):
                 if level <= disabled_until_level:
                     disabled_until_level = None
             if disabled_until_level is None:
-                if re.search(r"\byield\b", body):
+                if self.yield_regex.search(body):
                     # we can't tco or tre generators
                     return raw_lines, False, False
-                elif re.search(r"\b(?:def|try|with)\b", body):
+                elif self.def_try_with_regex.search(body):
                     disabled_until_level = level
                 else:
                     base, comment = split_comment(body)
@@ -1693,12 +1696,10 @@ class Compiler(Grammar):
                     + ("\n" if "\n" not in dedent else "") + closeindent + dedent
                 + func_store + " = " + (func_name if undotted_name is None else undotted_name) + "\n"
             )
-
-        out = def_stmt + func_code
         if tco:
             decorators += "@_coconut_tco\n"  # must be the first decorator
-        if decorators:
-            out = decorators + out
+
+        out = decorators + def_stmt + func_code
         if undotted_name is not None:
             out += func_name + " = " + undotted_name + "\n"
         return out
