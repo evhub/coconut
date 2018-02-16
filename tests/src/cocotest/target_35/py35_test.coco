@@ -1,0 +1,15 @@
+def py35_test():
+    """Performs Python-3.5-specific tests."""
+    try:
+        2 @ 3
+    except TypeError:
+        assert True
+    else:
+        assert False
+    assert (1, *(2, 3), 4) == (1, 2, 3, 4)
+    assert {"a": 1, **{"b": 2}, "c": 3} == {"a": 1, "b": 2, "c": 3}
+    assert .attr |> repr == "operator.attrgetter('attr')"
+    assert .method(1) |> repr == "operator.methodcaller('method', 1)"
+    assert pow$(1) |> repr == "functools.partial(<built-in function pow>, 1)"
+    assert .[1] |> repr == "operator.itemgetter(1)"
+    return True

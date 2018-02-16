@@ -1,7 +1,7 @@
 import asyncio
 
-def py35_test():
-    """Performs Python-3.5-specific tests."""
+def target_sys_test():
+    """Performs --target sys tests."""
     async def async_map_0(args):
         return parallel_map(args[0], *args[1:])
     async def async_map_1(args) = parallel_map(args[0], *args[1:])
@@ -14,16 +14,4 @@ def py35_test():
     loop = asyncio.new_event_loop()
     loop.run_until_complete(async_map_test())
     loop.close()
-    try:
-        2 @ 3
-    except TypeError:
-        assert True
-    else:
-        assert False
-    assert (1, *(2, 3), 4) == (1, 2, 3, 4)
-    assert {"a": 1, **{"b": 2}, "c": 3} == {"a": 1, "b": 2, "c": 3}
-    assert .attr |> repr == "operator.attrgetter('attr')"
-    assert .method(1) |> repr == "operator.methodcaller('method', 1)"
-    assert pow$(1) |> repr == "functools.partial(<built-in function pow>, 1)"
-    assert .[1] |> repr == "operator.itemgetter(1)"
     return True

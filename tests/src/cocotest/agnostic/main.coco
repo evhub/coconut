@@ -465,8 +465,10 @@ def assert_raises(c, exc):
 def main(*args):
     """Asserts arguments and executes tests."""
     assert all(args)
+
     print(".", end="")  # ..
     assert main_test()
+
     print(".", end="")  # ...
     if sys.version_info >= (2, 7):
         from .specific import non_py26_test
@@ -474,12 +476,15 @@ def main(*args):
     if not (3,) <= sys.version_info < (3, 3):
         from .specific import non_py32_test
         assert non_py32_test
+
     print(".", end="")  # ....
     from .suite import suite_test, tco_test
     assert suite_test()
+
     print(".", end="")  # .....
     if hasattr(tco_func, "_coconut_tco_func"):
         assert tco_test()
+
     print(".", end="")  # ......
     if sys.version_info < (3,):
         from .py2_test import py2_test
@@ -490,6 +495,12 @@ def main(*args):
         if sys.version_info >= (3, 5):
             from .py35_test import py35_test
             assert py35_test()
-    print(".", end="")  # .......
+
+    print(".", end="")
+    from .target_sys_test import target_sys_test
+    assert target_sys_test()
+
+    print(".", end="")  # ........
     from . import tutorial
+
     print("\n<success>")

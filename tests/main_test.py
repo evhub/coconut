@@ -37,6 +37,9 @@ from coconut.constants import (
     icoconut_kernel_names,
 )
 
+from coconut.convenience import auto_compilation
+auto_compilation(False)
+
 #-----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
@@ -205,18 +208,23 @@ def comp_agnostic(args=[], **kwargs):
 
 
 def comp_2(args=[], **kwargs):
-    """Compiles python2."""
-    comp(path="cocotest", folder="python2", args=["--target", "2"] + args, **kwargs)
+    """Compiles target_2."""
+    comp(path="cocotest", folder="target_2", args=["--target", "2"] + args, **kwargs)
 
 
 def comp_3(args=[], **kwargs):
-    """Compiles python3."""
-    comp(path="cocotest", folder="python3", args=["--target", "3"] + args, **kwargs)
+    """Compiles target_3."""
+    comp(path="cocotest", folder="target_3", args=["--target", "3"] + args, **kwargs)
 
 
 def comp_35(args=[], **kwargs):
-    """Compiles python35."""
-    comp(path="cocotest", folder="python35", args=["--target", "35"] + args, **kwargs)
+    """Compiles target_35."""
+    comp(path="cocotest", folder="target_35", args=["--target", "35"] + args, **kwargs)
+
+
+def comp_sys(args=[], **kwargs):
+    """Compiles target_sys."""
+    comp(path="cocotest", folder="target_sys", args=["--target", "sys"] + args, **kwargs)
 
 
 def run_src(**kwargs):
@@ -245,6 +253,8 @@ def run(args=[], agnostic_target=None, use_run_arg=False, expect_retcode=0):
             if sys.version_info >= (3, 5):
                 comp_35(args)
         comp_agnostic(agnostic_args, expect_retcode=expect_retcode)
+        comp_sys(args)
+
         if use_run_arg:
             comp_runner(["--run"] + agnostic_args, assert_output=True)
         else:
@@ -298,6 +308,7 @@ def comp_all(args=[], **kwargs):
     comp_3(args, **kwargs)
     comp_35(args, **kwargs)
     comp_agnostic(args, **kwargs)
+    comp_sys(args, **kwargs)
     comp_runner(args, **kwargs)
     comp_extras(args, **kwargs)
 
@@ -324,11 +335,13 @@ class TestShell(unittest.TestCase):
 
     def test_import_hook(self):
         sys.path.append(src)
+        auto_compilation(True)
         try:
             with remove_when_done(runnable_py):
                 with using_logger():
                     import runnable
         finally:
+            auto_compilation(False)
             sys.path.remove(src)
         assert runnable.success == "<success>"
 
@@ -376,13 +389,6 @@ class TestCompilation(unittest.TestCase):
     def test_normal(self):
         run()
 
-    def test_target(self):
-        run(agnostic_target=(2 if PY2 else 3))
-
-    if not PYPY and not PY26:
-        def test_jobs_zero(self):
-            run(["--jobs", "0"])
-
     if PY34 and not WINDOWS and not PYPY:
         def test_mypy_snip(self):
             call(["coconut", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err, check_mypy=False, expect_retcode=1)
@@ -393,20 +399,27 @@ class TestCompilation(unittest.TestCase):
         def test_mypy_py3(self):
             run(["--mypy"] + mypy_args, agnostic_target=3, expect_retcode=1)  # fails due to tutorial type errors
 
-    def test_run(self):
-        run(use_run_arg=True)
-
-    def test_package(self):
-        run(["--package"])
+    def test_target(self):
+        run(agnostic_target=(2 if PY2 else 3))
 
     def test_standalone(self):
         run(["--standalone"])
 
-    def test_strict(self):
-        run(["--strict"])
+    def test_package(self):
+        run(["--package"])
 
     def test_no_tco(self):
         run(["--no-tco"])
+
+    def test_strict(self):
+        run(["--strict"])
+
+    def test_run(self):
+        run(use_run_arg=True)
+
+    if not PYPY and not PY26:
+        def test_jobs_zero(self):
+            run(["--jobs", "0"])
 
     def test_simple_line_numbers(self):
         run_runnable(["-n", "--linenumbers"])
@@ -419,9 +432,6 @@ class TestCompilation(unittest.TestCase):
 
     def test_simple_minify(self):
         run_runnable(["-n", "--minify"])
-
-    def test_simple_target(self):
-        run_runnable(["-n", "-t", "sys"])
 
 
 class TestExternal(unittest.TestCase):

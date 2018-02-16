@@ -1585,21 +1585,15 @@ class Compiler(Grammar):
         )
 
     yield_regex = compile_regex(r"\byield\b")
-    def_try_with_regex = compile_regex(r"\b(?:def|try|with)\b")
+    is_return_sensitive_regex = compile_regex(r"\b(?:def|try|with)\b")
 
-    def transform_tail_calls(self, raw_lines, func_name, func_args, func_params, decorated):
+    def transform_tail_calls(self, raw_lines, func_name, func_args, func_store, use_mock, attempt_tre):
         """Apply TCO and/or TRE to the given function."""
-        attempt_tre = func_name is not None  # whether to try TRE or not
         lines = []  # transformed lines
         tco = False  # whether tco was done
         tre = False  # whether tre was done
         level = 0  # indentation level
         disabled_until_level = None  # whether inside of a def/try/with
-
-        if attempt_tre:
-            use_mock = func_args and func_args != func_params[1:-1]
-            func_store = tre_store_var + "_" + str(self.tre_store_count)
-            self.tre_store_count += 1
 
         for line in raw_lines:
             body, indent = split_trailing_indent(line)
@@ -1611,33 +1605,33 @@ class Compiler(Grammar):
                 if self.yield_regex.search(body):
                     lines = raw_lines  # reset lines
                     break
-                elif self.def_try_with_regex.search(body):
+                elif self.is_return_sensitive_regex.search(body):
                     disabled_until_level = level
                 else:
                     base, comment = split_comment(body)
                     tre_base = None
-                    # tre does not work with decorators, though tco does
-                    if not decorated and attempt_tre:
-                        # attempt tre
+
+                    if attempt_tre:
                         with self.complain_on_err():
-                            tre_base = transform(self.tre_return(func_name, func_args, func_store, use_mock=use_mock), base)
+                            tre_base = transform(self.tre_return(func_name, func_args, func_store, use_mock), base)
                         if tre_base is not None:
                             line = tre_base + comment + indent
                             tre = True
                             # when tco is available, tre falls back on it if the function is changed
                             tco = not self.no_tco
-                    if tre_base is None and not self.no_tco:
-                        # attempt tco
+
+                    if tre_base is None and not self.no_tco:  # attempt tco
                         tco_base = None
                         with self.complain_on_err():
                             tco_base = transform(self.tco_return, base)
                         if tco_base is not None:
                             line = tco_base + comment + indent
                             tco = True
+
             level += ind_change(indent)
             lines.append(line)
 
-        return "\n".join(lines), tco, tre
+        return "".join(lines), tco, tre
 
     def decoratable_funcdef_stmt_handle(self, original, loc, tokens, is_async=False):
         """Determines if TCO or TRE can be done and if so does it,
@@ -1675,16 +1669,25 @@ class Compiler(Grammar):
                 def_stmt = "async " + def_stmt
             else:
                 decorators += "@_coconut.asyncio.coroutine\n"
-            func_code = "\n".join(raw_lines)
+            func_code = "".join(raw_lines)
 
         # handle normal functions
         else:
+            # tre does not work with decorators, though tco does
+            attempt_tre = func_name is not None and not decorators
+            if attempt_tre:
+                use_mock = func_args and func_args != func_params[1:-1]
+                func_store = tre_store_var + "_" + str(self.tre_store_count)
+                self.tre_store_count += 1
+            else:
+                use_mock = func_store = None
             func_code, tco, tre = self.transform_tail_calls(
                 raw_lines,
                 func_name,
                 func_args,
-                func_params,
-                bool(decorators),
+                func_store,
+                use_mock,
+                attempt_tre,
             )
             if tre:
                 comment, rest = split_leading_comment(func_code)
