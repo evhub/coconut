@@ -224,6 +224,9 @@ def comp_35(args=[], **kwargs):
 
 def comp_sys(args=[], **kwargs):
     """Compiles target_sys."""
+    if "--package" in args:  # if we're in --package mode, we need to make sure we get our own header
+        args.remove("--package")
+        args.append("--standalone")
     comp(path="cocotest", folder="target_sys", args=["--target", "sys"] + args, **kwargs)
 
 

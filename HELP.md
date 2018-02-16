@@ -120,13 +120,13 @@ python hello_world.py
 ```
 which should produce `hello, world!` as the output.
 
-_Note: You can compile and run your code all in one step if you use Coconut's `--run` option._
+_Note: You can compile and run your code all in one step if you use Coconut's `--run` option (`-r` for short)._
 
 Compiling single files is not the only way to use the Coconut command-line utility, however. We can also compile all the Coconut files in a given directory simply by passing that directory as the first argument, which will get rid of the need to run the same Coconut header code in each file by storing it in a `__coconut__.py` file in the same directory.
 
 The Coconut  compiler supports a large variety of different compilation options, the help for which can always be accessed by entering `coconut -h` into the command line. One of the most useful of these is `--line-numbers` (or `-l` for short). Using `--line-numbers` will add the line numbers of your source code as comments in the compiled code, allowing you to see what line in your source code corresponds to a line in the compiled code where an error occurred, for ease of debugging.
 
-_Note: If you don't need the full control of the Coconut compiler, you can also [access your Coconut code just by importing it](DOCS.html#automatic-compilation), either from the Coconut interpreter, or in any Python file where you import [`coconut.convenience`](DOCS.html#coconut-convenience))._
+_Note: If you don't need the full control of the Coconut compiler, you can also [access your Coconut code just by importing it](DOCS.html#automatic-compilation), either from the Coconut interpreter, or in any Python file where you import [`coconut.convenience`](DOCS.html#coconut-convenience)._
 
 ### Using IPython/Jupyter
 
@@ -146,7 +146,7 @@ or equivalently, `--ipython` can be substituted for `--jupyter` in either comman
 
 ### Case Studies
 
-Because Coconut is built to be fundamentally _useful_, the best way to demo it is to show it in action. To that end, the majority of this tutorial will be showing how to apply Coconut to solve particular problems, which we'll call case studies.
+Because Coconut is built to be useful, the best way to demo it is to show it in action. To that end, the majority of this tutorial will be showing how to apply Coconut to solve particular problems, which we'll call case studies.
 
 These case studies are not intended to provide a complete picture of all of Coconut's features. For that, see Coconut's [documentation](DOCS.html). Instead, they are intended to show how Coconut can actually be used to solve practical programming problems.
 
@@ -176,6 +176,7 @@ def factorial(n):
 0 |> factorial |> print  # 1
 3 |> factorial |> print  # 6
 ```
+
 Before we delve into what exactly is happening here, let's give it a run and make sure the test cases check out. If we were really writing a Coconut program, we'd want to save and compile an actual file, but since we're just playing around, let's try copy-pasting into the interpreter. Here, you should get two `TypeErrors`, then `1`, then `6`.
 
 Now that we've verified it works, let's take a look at what's going on. Since the imperative approach is a fundamentally non-functional method, Coconut can't help us improve this example very much. Even here, though, the use of Coconut's infix notation (where the function is put in-between its arguments, surrounded in backticks) in `` n `isinstance` int `` makes the code slightly cleaner and easier to read.
@@ -201,7 +202,7 @@ def factorial(n):
 3 |> factorial |> print  # 6
 ```
 
-Copy and paste the code and tests into the interpreter. You should get the same test results as you got for the imperative version—but you can probably tell there's quite a lot more going on here than there. That's intentional: Coconut is intended for functional programming, not imperative programming, and so its new features are built to be most useful when programming in a functional style.
+Go ahead and copy and paste the code and tests into the interpreter. You should get the same test results as you got for the imperative version—but you can probably tell there's quite a lot more going on here than there. That's intentional: Coconut is intended for functional programming, not imperative programming, and so its new features are built to be most useful when programming in a functional style.
 
 Let's take a look at the specifics of the syntax in this example. The first thing we see is `case n`. This statement starts a `case` block, in which only `match` statements can occur. Each `match` statement will attempt to match its given pattern against the value in the `case` block. Only the first successful match inside of any given `case` block will be executed. When a match is successful, any variable bindings in that match will also be performed. Additionally, as is true in this case, `match` statements can also have `if` guards that will check the given condition before the match is considered final. Finally, after the `case` block, an `else` statement is allowed, which will only be executed if no `match` statement is.
 
@@ -1068,6 +1069,8 @@ iter$[]
 .[slice]
 .$[slice]
 ```
+
+For a full explanation of what each implicit partial does, see Coconut's documentation on [implicit partials](DOCS.html#implicit-partial-application).
 
 ### Type Annotations
 

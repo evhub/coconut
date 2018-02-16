@@ -52,7 +52,7 @@ pip install coconut[opt_dep_1,opt_dep_2]
 
 The full list of optional dependencies is:
 
-- `all`: alias for `jupyter,watch,jobs,mypy,asyncio` (this is the recommended way to install a feature-complete version of Coconut),
+- `all`: alias for `jupyter,watch,jobs,mypy,asyncio,cPyparsing` (this is the recommended way to install a feature-complete version of Coconut),
 - `jupyter/ipython`: enables use of the `--jupyter` / `--ipython` flag,
 - `watch`: enables use of the `--watch` flag,
 - `jobs`: improves use of the `--jobs` flag,

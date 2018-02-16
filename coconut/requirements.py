@@ -17,8 +17,6 @@ Description: Coconut installation requirements.
 
 from coconut.root import *  # NOQA
 
-import sys
-
 from coconut.constants import (
     ver_str_to_tuple,
     ver_tuple_to_str,
@@ -92,23 +90,22 @@ extras = {
     "jobs": get_reqs("jobs"),
     "mypy": get_reqs("mypy"),
     "asyncio": get_reqs("asyncio"),
+    "cPyparsing": get_reqs("cPyparsing"),
 }
+
+extras["all"] = everything_in(extras)
 
 extras["ipython"] = extras["jupyter"]
 
-extras["all"] = everything_in(extras)
+extras["docs"] = unique_wrt(get_reqs("docs"), requirements)
 
 extras["tests"] = uniqueify_all(
     get_reqs("tests"),
     extras["jobs"] + get_reqs("cPyparsing") if not PYPY else [],
     extras["jupyter"] if IPY else [],
     extras["mypy"] if PY34 and not WINDOWS and not PYPY else [],
-    extras["asyncio"] if sys.version_info < (3, 4) else [],
+    extras["asyncio"] if not PY34 else [],
 )
-
-extras["docs"] = unique_wrt(get_reqs("docs"), requirements)
-
-extras["cPyparsing"] = get_reqs("cPyparsing")  # shouldn't be included in all
 
 extras["dev"] = uniqueify_all(
     everything_in(extras),
