@@ -785,13 +785,13 @@ class Grammar(object):
     ge = Literal(">=") | fixto(Literal("\u2265"), ">=")
     ne = Literal("!=") | fixto(Literal("\xac=") | Literal("\u2260"), "!=")
 
-    mul_star = star | fixto(Literal("\u22c5"), "*")
+    mul_star = star | fixto(Literal("\xd7"), "*")
     exp_dubstar = dubstar | fixto(Literal("\u2191"), "**")
     neg_minus = minus | fixto(Literal("\u207b"), "-")
     sub_minus = minus | fixto(Literal("\u2212"), "-")
     div_slash = slash | fixto(Literal("\xf7") + ~slash, "/")
     div_dubslash = dubslash | fixto(Combine(Literal("\xf7") + slash), "//")
-    matrix_at_ref = at | fixto(Literal("\xd7"), "@")
+    matrix_at_ref = at | fixto(Literal("\u22c5"), "@")
     matrix_at = Forward()
 
     test = Forward()

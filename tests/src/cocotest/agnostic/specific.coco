@@ -1,6 +1,6 @@
 from io import StringIO  # type: ignore
 
-from .util import mod
+from .util import mod  # NOQA
 
 def non_py26_test():
     """Tests for any non-py26 version."""

@@ -557,7 +557,7 @@ Coconut supports Unicode alternatives to many different operator symbols. The Un
 *↦ (*\u21a6)                => "|*>"
 ↤ (\u21a4)                  => "<|"
 ↤* (\u21a4*)                => "<*|"
-⋅ (\u22c5)                  => "*"
+× (\xd7)                    => "*"
 ↑ (\u2191)                  => "**"
 ÷ (\xf7)                    => "/"
 ÷/ (\xf7/)                  => "//"
@@ -578,7 +578,7 @@ Coconut supports Unicode alternatives to many different operator symbols. The Un
 « (\xab)                    => "<<"
 » (\xbb)                    => ">>"
 … (\u2026)                  => "..."
-× (\xd7)                    => "@" (only matrix multiplication)
+⋅ (\u22c5)                  => "@" (only matrix multiplication)
 ```
 
 ## Keywords
@@ -974,7 +974,7 @@ def (arguments) -> statement; statement; ...
 ```
 where `arguments` can be standard function arguments or [pattern-matching function definition](#pattern-matching-functions) arguments and `statement` can be an assignment statement or a keyword statement. If the last `statement` (not followed by a semicolon) is an `expression`, it will automatically be returned.
 
-Statement lambdas also support implicit lambda syntax, where when the arguments are omitted, as in `def -> _`, `def (_=None) -> _` is assumed.
+Statement lambdas also support implicit lambda syntax, where, as in `def -> _`, when the arguments are omitted, `def (_=None) -> _` is assumed.
 
 ##### Example
 

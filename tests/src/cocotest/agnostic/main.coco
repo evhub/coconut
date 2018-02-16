@@ -501,6 +501,6 @@ def main(*args):
     assert target_sys_test()
 
     print(".", end="")  # ........
-    from . import tutorial
+    from . import tutorial  # NOQA
 
     print("\n<success>")
