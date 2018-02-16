@@ -148,12 +148,6 @@ dest                destination directory for compiled files (defaults to
                       develop)
 ```
 
-### Automatic Compilation
-
-If you don't care very much about the exact compilation parameters you want to use, automatic compilation is a way to let Coconut take care of everything for you. If you make sure to `import coconut` before you import anything else, Coconut will check each of your imports to see if you are attempting to import a `.coco` file and, if so, automatically compile it for you. Note that, for Coconut to know what file you are trying to import, it will need to be accessible via `sys.path`, just like a normal import. Automatic compilation always compiles modules and packages in-place, and always uses `--target sys`.
-
-_Note: Automatic compilation is always available in the Coconut interpreter. Additionally, if using the Coconut interpreter, a `reload` built-in is provided to reload an imported module._
-
 ### Coconut Scripts
 
 To run a Coconut file as a script, Coconut provides the command
@@ -2170,21 +2164,15 @@ A `MatchError` is raised when a [destructuring assignment](#destructuring-assign
 
 ## Coconut Modules
 
-### `coconut.__coconut__`
+### Automatic Compilation
 
-It is sometimes useful to be able to access Coconut built-ins from pure Python. To accomplish this, Coconut provides `coconut.__coconut__`, which behaves exactly like the `__coconut__.py` header file included when Coconut is compiled in package mode.
+If you don't care about the exact compilation parameters you want to use, automatic compilation lets Coconut take care of everything for you. If you make sure to import [`coconut.convenience`](#coconut-convenience) before you import anything else, Coconut will check each of your imports to see if you are attempting to import a `.coco` file and, if so, automatically compile it for you. Note that, for Coconut to know what file you are trying to import, it will need to be accessible via `sys.path`, just like a normal import.
 
-All Coconut built-ins are accessible from `coconut.__coconut__`. The recommended way to import them is to use `from coconut.__coconut__ import` and import whatever built-ins you'll be using.
-
-##### Example
-
-```coconut_python
-from coconut.__coconut__ import parallel_map
-```
+Automatic compilation always compiles modules and packages in-place, and always uses `--target sys`. Automatic compilation is always available in the Coconut interpreter, and, if using the Coconut interpreter, a `reload` built-in is provided to easily reload imported modules.
 
 ### `coconut.convenience`
 
-It is sometimes useful to be able to use the Coconut compiler from code, instead of from the command line. The recommended way to do this is to use `from coconut.convenience import` and import whatever convenience functions you'll be using. Specifications of the different convenience functions are as follows.
+In addition to enabling automatic compilation, `coconut.convenience` can also be used to call the Coconut compiler from code instead of from the command line. See below for specifications of the different convenience functions.
 
 #### `parse`
 
@@ -2200,7 +2188,7 @@ Each _mode_ has two components: what parser it uses, and what header it prepends
     + parser: file
         * The file parser can parse any Coconut code.
     + header: sys
-        * This header imports `coconut.__coconut__` to access the necessary Coconut objects.
+        * This header imports [`coconut.__coconut__`](#coconut-coconut) to access the necessary Coconut objects.
 - `"exec"`:
     + parser: file
     + header: exec
@@ -2270,6 +2258,24 @@ Retrieves a string containing information about the Coconut version. The optiona
 - `"tag"`: the version tag used in GitHub and documentation URLs
 - `"-v"`: the full string printed by `coconut -v`
 
+#### `auto_compilation`
+
+**coconut.convenience.auto_compilation**(**[**_on_**]**)
+
+Turns [automatic compilation](#automatic-compilation) on or off (defaults to on). This function is called automatically when `coconut.convenience` is imported.
+
 #### `CoconutException`
 
 If an error is encountered in a convenience function, a `CoconutException` instance may be raised. `coconut.convenience.CoconutException` is provided to allow catching such errors.
+
+### `coconut.__coconut__`
+
+It is sometimes useful to be able to access Coconut built-ins from pure Python. To accomplish this, Coconut provides `coconut.__coconut__`, which behaves exactly like the `__coconut__.py` header file included when Coconut is compiled in package mode.
+
+All Coconut built-ins are accessible from `coconut.__coconut__`. The recommended way to import them is to use `from coconut.__coconut__ import` and import whatever built-ins you'll be using.
+
+##### Example
+
+```coconut_python
+from coconut.__coconut__ import parallel_map
+```

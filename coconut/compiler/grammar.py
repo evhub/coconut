@@ -30,7 +30,7 @@ from coconut.root import *  # NOQA
 import re
 from functools import reduce
 
-from coconut.pyparsing import (
+from coconut.myparsing import (
     CaselessLiteral,
     Forward,
     Group,
@@ -50,7 +50,6 @@ from coconut.pyparsing import (
     nestedExpr,
     FollowedBy,
 )
-
 from coconut.exceptions import (
     CoconutInternalException,
     CoconutDeferredSyntaxError,
@@ -899,11 +898,6 @@ class Grammar(object):
         | Keyword("is")
     )
 
-    async_keyword = Forward()
-    async_keyword_ref = Keyword("async")
-    await_keyword = Forward()
-    await_keyword_ref = Keyword("await")
-
     expr = Forward()
     star_expr = Forward()
     dubstar_expr = Forward()
@@ -1178,7 +1172,9 @@ class Grammar(object):
     )
 
     factor = Forward()
-    power = trace(condense(addspace(Optional(await_keyword) + compose_item) + Optional(exp_dubstar + factor)))
+    await_item = Forward()
+    await_item_ref = Keyword("await").suppress() + compose_item
+    power = trace(condense((await_item | compose_item) + Optional(exp_dubstar + factor)))
     unary = plus | neg_minus | tilde
 
     factor <<= trace(condense(ZeroOrMore(unary) + power))
@@ -1561,11 +1557,11 @@ class Grammar(object):
         insert_docstring_handle,
     ))
 
-    async_stmt = addspace(async_keyword + (with_stmt | for_stmt))
-    async_funcdef = async_keyword.suppress() + (funcdef | math_funcdef)
+    async_stmt = addspace(Keyword("async") + (with_stmt | for_stmt))
+    async_funcdef = Keyword("async").suppress() + (funcdef | math_funcdef)
     async_match_funcdef = (
-        Optional(Keyword("match")) + async_keyword
-        | async_keyword + Optional(Keyword("match"))
+        Optional(Keyword("match")) + Keyword("async")
+        | Keyword("async") + Optional(Keyword("match"))
     ).suppress() + (def_match_funcdef | math_match_funcdef)
 
     datadef = Forward()

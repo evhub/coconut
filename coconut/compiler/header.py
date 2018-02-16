@@ -121,13 +121,15 @@ except ImportError: pass
         VERSION_STR=VERSION_STR,
         module_docstring='"""Built-in Coconut utilities."""\n\n' if which == "__coconut__" else "",
         object="(object)" if target_startswith != "3" else "",
-        import_trollius=_indent(
-            r'''try:
-    import trollius
+        import_asyncio=_indent(
+            "" if not target
+            else "import asyncio\n" if target_info >= (3, 4)
+            else r'''try:
+    import trollius as asyncio
 except ImportError:
-    class py2_async_requires_trollius: pass
-    trollius = py2_async_requires_trollius()
-''' if target_startswith == "2" else "",
+    class you_need_to_install_trollius: pass
+    asyncio = you_need_to_install_trollius()
+''',
         ),
         import_pickle=_indent(
             r'''if _coconut_sys.version_info < (3,):

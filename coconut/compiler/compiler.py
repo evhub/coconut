@@ -30,8 +30,9 @@ from coconut.root import *  # NOQA
 
 import sys
 from contextlib import contextmanager
+from functools import partial
 
-from coconut.pyparsing import (
+from coconut.myparsing import (
     ParseBaseException,
     col,
     line as getline,
@@ -39,7 +40,6 @@ from coconut.pyparsing import (
     nums,
     Keyword,
 )
-
 from coconut.constants import (
     get_target_info,
     specific_targets,
@@ -398,6 +398,7 @@ class Compiler(Grammar):
         self.typed_assign_stmt <<= trace(attach(self.typed_assign_stmt_ref, self.typed_assign_stmt_handle))
         self.datadef <<= trace(attach(self.datadef_ref, self.data_handle))
         self.with_stmt <<= trace(attach(self.with_stmt_ref, self.with_stmt_handle))
+        self.await_item <<= attach(self.await_item_ref, self.await_item_handle)
 
         self.decoratable_normal_funcdef_stmt <<= trace(attach(
             self.decoratable_normal_funcdef_stmt_ref,
@@ -405,7 +406,7 @@ class Compiler(Grammar):
         ))
         self.decoratable_async_funcdef_stmt <<= trace(attach(
             self.decoratable_async_funcdef_stmt_ref,
-            lambda tokens: self.decoratable_funcdef_stmt_handle(tokens, is_async=True),
+            partial(self.decoratable_funcdef_stmt_handle, is_async=True),
         ))
 
         self.u_string <<= attach(self.u_string_ref, self.u_string_check)
@@ -414,9 +415,6 @@ class Compiler(Grammar):
         self.nonlocal_stmt <<= attach(self.nonlocal_stmt_ref, self.nonlocal_check)
         self.star_assign_item <<= attach(self.star_assign_item_ref, self.star_assign_item_check)
         self.classic_lambdef <<= attach(self.classic_lambdef_ref, self.lambdef_check)
-        # async statements are checked greedily since they get suppressed otherwise
-        self.async_keyword <<= attach(self.async_keyword_ref, self.async_keyword_check, greedy=True)
-        self.await_keyword <<= attach(self.await_keyword_ref, self.await_keyword_check)
         self.star_expr <<= attach(self.star_expr_ref, self.star_expr_check)
         self.dubstar_expr <<= attach(self.dubstar_expr_ref, self.star_expr_check)
         self.endline_semicolon <<= attach(self.endline_semicolon_ref, self.endline_semicolon_check)
@@ -1589,13 +1587,19 @@ class Compiler(Grammar):
     yield_regex = compile_regex(r"\byield\b")
     def_try_with_regex = compile_regex(r"\b(?:def|try|with)\b")
 
-    def transform_tail_calls(self, raw_lines, func_name, func_args, func_store, decorated, attempt_tre, use_mock):
+    def transform_tail_calls(self, raw_lines, func_name, func_args, func_params, decorated):
         """Apply TCO and/or TRE to the given function."""
+        attempt_tre = func_name is not None  # whether to try TRE or not
         lines = []  # transformed lines
         tco = False  # whether tco was done
         tre = False  # whether tre was done
         level = 0  # indentation level
         disabled_until_level = None  # whether inside of a def/try/with
+
+        if attempt_tre:
+            use_mock = func_args and func_args != func_params[1:-1]
+            func_store = tre_store_var + "_" + str(self.tre_store_count)
+            self.tre_store_count += 1
 
         for line in raw_lines:
             body, indent = split_trailing_indent(line)
@@ -1605,8 +1609,8 @@ class Compiler(Grammar):
                     disabled_until_level = None
             if disabled_until_level is None:
                 if self.yield_regex.search(body):
-                    # we can't tco or tre generators
-                    return raw_lines, False, False
+                    lines = raw_lines  # reset lines
+                    break
                 elif self.def_try_with_regex.search(body):
                     disabled_until_level = level
                 else:
@@ -1633,9 +1637,9 @@ class Compiler(Grammar):
             level += ind_change(indent)
             lines.append(line)
 
-        return lines, tco, tre
+        return "\n".join(lines), tco, tre
 
-    def decoratable_funcdef_stmt_handle(self, tokens, is_async=False):
+    def decoratable_funcdef_stmt_handle(self, original, loc, tokens, is_async=False):
         """Determines if TCO or TRE can be done and if so does it,
         handles dotted function names, and universalizes async functions."""
         if len(tokens) == 1:
@@ -1647,62 +1651,82 @@ class Compiler(Grammar):
 
         # extract information about the function
         raw_lines = funcdef.splitlines(True)
-        def_stmt, raw_lines = raw_lines[0], raw_lines[1:]
+        def_stmt = raw_lines.pop(0)
         func_name, func_args, func_params = None, None, None
         with self.complain_on_err():
             func_name, func_args, func_params = parse(self.split_func_name_args_params, def_stmt)
 
         undotted_name = None  # the function __name__ if func_name is a dotted name
-        if func_name is None:
-            attempt_tre = False
-        else:
+        if func_name is not None:
             if "." in func_name:
                 undotted_name = func_name.rsplit(".", 1)[-1]
                 def_stmt = def_stmt.replace(func_name, undotted_name)
-            use_mock = func_args and func_args != func_params[1:-1]
-            func_store = tre_store_var + "_" + str(self.tre_store_count)
-            self.tre_store_count += 1
-            attempt_tre = True
 
+        # handle async functions
         if is_async:
-            def_stmt = "async " + def_stmt
-            lines, tco, tre = raw_lines, False, False
+            if not self.target:
+                raise self.make_err(
+                    CoconutTargetError,
+                    "async function definition requires a specific target",
+                    original, loc,
+                    target="sys",
+                )
+            elif self.target_info >= (3, 5):
+                def_stmt = "async " + def_stmt
+            else:
+                decorators += "@_coconut.asyncio.coroutine\n"
+            func_code = "\n".join(raw_lines)
+
+        # handle normal functions
         else:
-            lines, tco, tre = self.transform_tail_calls(
+            func_code, tco, tre = self.transform_tail_calls(
                 raw_lines,
                 func_name,
                 func_args,
-                func_store,
+                func_params,
                 bool(decorators),
-                attempt_tre,
-                use_mock,
             )
-
-        func_code = "".join(lines)
-        if tre:
-            comment, rest = split_leading_comment(func_code)
-            indent, base, dedent = split_leading_trailing_indent(rest, 1)
-            base, base_dedent = split_trailing_indent(base)
-            docstring, base = self.split_docstring(base)
-            func_code = (
-                comment + indent
-                + (docstring + "\n" if docstring is not None else "")
-                + (
-                    "def " + tre_mock_var + func_params + ": return " + func_args + "\n"
-                    if use_mock else ""
-                ) + "while True:\n"
-                    + openindent + base + base_dedent
-                    + ("\n" if "\n" not in base_dedent else "") + "return None"
-                    + ("\n" if "\n" not in dedent else "") + closeindent + dedent
-                + func_store + " = " + (func_name if undotted_name is None else undotted_name) + "\n"
-            )
-        if tco:
-            decorators += "@_coconut_tco\n"  # must be the first decorator
+            if tre:
+                comment, rest = split_leading_comment(func_code)
+                indent, base, dedent = split_leading_trailing_indent(rest, 1)
+                base, base_dedent = split_trailing_indent(base)
+                docstring, base = self.split_docstring(base)
+                func_code = (
+                    comment + indent
+                    + (docstring + "\n" if docstring is not None else "")
+                    + (
+                        "def " + tre_mock_var + func_params + ": return " + func_args + "\n"
+                        if use_mock else ""
+                    ) + "while True:\n"
+                        + openindent + base + base_dedent
+                        + ("\n" if "\n" not in base_dedent else "") + "return None"
+                        + ("\n" if "\n" not in dedent else "") + closeindent + dedent
+                    + func_store + " = " + (func_name if undotted_name is None else undotted_name) + "\n"
+                )
+            if tco:
+                decorators += "@_coconut_tco\n"  # binds most tightly
 
         out = decorators + def_stmt + func_code
         if undotted_name is not None:
             out += func_name + " = " + undotted_name + "\n"
         return out
+
+    def await_item_handle(self, original, loc, tokens):
+        """Check for Python 3.5 await expression."""
+        internal_assert(len(tokens) == 1, "invalid await statement tokens", tokens)
+        if not self.target:
+            self.make_err(
+                CoconutTargetError,
+                "await requires a specific target",
+                original, loc,
+                target="sys",
+            )
+        elif self.target_info >= (3, 5):
+            return "await " + tokens[0]
+        elif self.target_info >= (3, 3):
+            return "(yield from " + tokens[0] + ")"
+        else:
+            return "(yield _coconut.asyncio.From(" + tokens[0] + "))"
 
     def unsafe_typedef_handle(self, tokens):
         """Process type annotations without a comma after them."""
@@ -1821,32 +1845,6 @@ class Compiler(Grammar):
     def matrix_at_check(self, original, loc, tokens):
         """Check for Python 3.5 matrix multiplication."""
         return self.check_py("35", "matrix multiplication", original, loc, tokens)
-
-    def async_keyword_check(self, original, loc, tokens):
-        """Check for Python 3.5 async statement."""
-        internal_assert(len(tokens) == 1, "invalid async statement tokens", tokens)
-        if not self.target or (3,) <= self.target_info < (3, 5):
-            raise self.make_err(
-                CoconutTargetError,
-                "async requires Python 3.5 or Python 2 with trollius",
-                original, loc,
-                target="35 or --target 2",
-            )
-        else:
-            return tokens[0]
-
-    def await_keyword_check(self, original, loc, tokens):
-        """Check for Python 3.5 await expression."""
-        internal_assert(len(tokens) == 1, "invalid await statement tokens", tokens)
-        if not self.target or (3,) <= self.target_info < (3, 5):
-            raise self.make_err(
-                CoconutTargetError,
-                "await requires Python 3.5 or Python 2 with trollius",
-                original, loc,
-                target="35 or --target 2",
-            )
-        else:
-            return tokens[0]
 
     def async_comp_check(self, original, loc, tokens):
         """Check for Python 3.6 async comprehension."""

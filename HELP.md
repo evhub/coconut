@@ -126,7 +126,7 @@ Compiling single files is not the only way to use the Coconut command-line utili
 
 The Coconut  compiler supports a large variety of different compilation options, the help for which can always be accessed by entering `coconut -h` into the command line. One of the most useful of these is `--line-numbers` (or `-l` for short). Using `--line-numbers` will add the line numbers of your source code as comments in the compiled code, allowing you to see what line in your source code corresponds to a line in the compiled code where an error occurred, for ease of debugging.
 
-_Note: If you don't need the full control of the Coconut compiler, you can also [access your Coconut code just by importing it](DOCS.html#automatic-compilation), either from the Coconut interpreter, or in any Python file where you have previously imported Coconut itself (via `import coconut`)._
+_Note: If you don't need the full control of the Coconut compiler, you can also [access your Coconut code just by importing it](DOCS.html#automatic-compilation), either from the Coconut interpreter, or in any Python file where you import [`coconut.convenience`](DOCS.html#coconut-convenience))._
 
 ### Using IPython/Jupyter
 

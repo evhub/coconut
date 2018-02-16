@@ -162,10 +162,11 @@ min_versions = {
     "watchdog": (0, 8),
     "trollius": (2, 1),
     "requests": (2,),
-    "vprof": (0, 37),
-    # We can't upgrade this; it breaks on Python 2.
+    # don't upgrade this; it breaks on unix
+    "vprof": (0, 36),
+    # we can't upgrade this; it breaks on Python 2
     "ipython": (5, 4),
-    # Don't upgrade these; they break on master!
+    # don't upgrade these; they break on master
     "sphinx": (1, 6, 2),
     "sphinx_bootstrap_theme": (0, 4),
 }

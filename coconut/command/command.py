@@ -27,8 +27,7 @@ import functools
 from contextlib import contextmanager
 from subprocess import CalledProcessError
 
-from coconut.pyparsing import PYPARSING
-
+from coconut.myparsing import PYPARSING
 from coconut.compiler import Compiler
 from coconut.exceptions import (
     CoconutException,

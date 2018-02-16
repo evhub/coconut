@@ -19,6 +19,8 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
+import traceback
+
 from coconut.constants import (
     packrat_cache,
     default_whitespace_chars,
@@ -28,6 +30,7 @@ from coconut.constants import (
     ver_tuple_to_str,
 )
 
+# warning: do not name this file cPyparsing or pyparsing or it might collide with the following imports
 try:
     from cPyparsing import *  # NOQA
     from cPyparsing import (  # NOQA
@@ -49,6 +52,7 @@ except ImportError:
         PYPARSING = "Python pyparsing v" + __version__
 
     except ImportError:
+        traceback.print_exc()
         __version__ = None
 
 #-----------------------------------------------------------------------------------------------------------------------

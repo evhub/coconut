@@ -23,7 +23,6 @@ import sys
 import os
 import traceback
 import subprocess
-import webbrowser
 import imp
 from copy import copy
 from contextlib import contextmanager
@@ -66,7 +65,6 @@ from coconut.terminal import (
     logger,
     complain,
 )
-from coconut import __coconut__
 
 try:
     import prompt_toolkit
@@ -106,11 +104,13 @@ def readfile(openedfile):
 
 def launch_tutorial():
     """Open the Coconut tutorial."""
+    import webbrowser  # this is expensive, so only do it here
     webbrowser.open(tutorial_url, 2)
 
 
 def launch_documentation():
     """Open the Coconut documentation."""
+    import webbrowser  # this is expensive, so only do it here
     webbrowser.open(documentation_url, 2)
 
 
@@ -404,6 +404,8 @@ class Runner(object):
 
     def __init__(self, comp=None, exit=sys.exit, store=False, path=None):
         """Create the executor."""
+        # allow direct importing of Coconut files
+        import coconut.convenience  # NOQA
         self.exit = exit
         self.vars = self.build_vars(path)
         self.stored = [] if store else None
@@ -434,6 +436,7 @@ class Runner(object):
 
     def fix_pickle(self):
         """Fix pickling of Coconut header objects."""
+        from coconut import __coconut__  # this is expensive, so only do it here
         for var in self.vars:
             if not var.startswith("__") and var in dir(__coconut__):
                 self.vars[var] = getattr(__coconut__, var)

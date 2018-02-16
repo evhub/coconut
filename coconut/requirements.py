@@ -106,15 +106,14 @@ extras["tests"] = uniqueify_all(
     extras["asyncio"] if sys.version_info < (3, 4) else [],
 )
 
-
 extras["docs"] = unique_wrt(get_reqs("docs"), requirements)
+
+extras["cPyparsing"] = get_reqs("cPyparsing")  # shouldn't be included in all
 
 extras["dev"] = uniqueify_all(
     everything_in(extras),
     get_reqs("dev"),
 )
-
-extras["cPyparsing"] = get_reqs("cPyparsing")  # shouldn't be included in all
 
 if using_modern_setuptools:
     # modern method for adding version-dependent requirements
