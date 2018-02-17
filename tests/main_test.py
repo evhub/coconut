@@ -224,9 +224,6 @@ def comp_35(args=[], **kwargs):
 
 def comp_sys(args=[], **kwargs):
     """Compiles target_sys."""
-    if "--package" in args:  # if we're in --package mode, we need to make sure we get our own header
-        args.remove("--package")
-        args.append("--standalone")
     comp(path="cocotest", folder="target_sys", args=["--target", "sys"] + args, **kwargs)
 
 
@@ -397,10 +394,10 @@ class TestCompilation(unittest.TestCase):
             call(["coconut", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err, check_mypy=False, expect_retcode=1)
 
         def test_mypy(self):
-            run(["--mypy"] + mypy_args, expect_retcode=1)  # fails due to tutorial type errors
+            run(["--mypy"] + mypy_args)
 
         def test_mypy_py3(self):
-            run(["--mypy"] + mypy_args, agnostic_target=3, expect_retcode=1)  # fails due to tutorial type errors
+            run(["--mypy"] + mypy_args, agnostic_target=3)
 
     def test_target(self):
         run(agnostic_target=(2 if PY2 else 3))

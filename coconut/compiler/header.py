@@ -110,6 +110,12 @@ def process_header_args(which, target, use_hash, no_tco, strict):
     functools.lru_cache = lru_cache
 except ImportError: pass
 '''
+    try_import_trollius = r'''try:
+    import trollius as asyncio
+except ImportError:
+    class you_need_to_install_trollius: pass
+    asyncio = you_need_to_install_trollius()
+'''
 
     format_dict = dict(
         comment=comment(),
@@ -122,14 +128,13 @@ except ImportError: pass
         module_docstring='"""Built-in Coconut utilities."""\n\n' if which == "__coconut__" else "",
         object="(object)" if target_startswith != "3" else "",
         import_asyncio=_indent(
-            "" if not target
+            "" if not target or target_info >= (3, 5)
             else "import asyncio\n" if target_info >= (3, 4)
-            else r'''try:
-    import trollius as asyncio
-except ImportError:
-    class you_need_to_install_trollius: pass
-    asyncio = you_need_to_install_trollius()
-''',
+            else r'''if _coconut_sys.version_info >= (3, 4):
+    import asyncio
+else:
+''' + _indent(try_import_trollius) if target_info >= (3,)
+            else try_import_trollius,
         ),
         import_pickle=_indent(
             r'''if _coconut_sys.version_info < (3,):
