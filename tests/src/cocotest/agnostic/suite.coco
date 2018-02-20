@@ -19,11 +19,11 @@ def suite_test():
     assert 1 `range` 5 |> product == 24
     assert plus1(4) == 5 == plus1_(4)
     assert 2 `plus1` == 3 == plus1(2)
-    assert plus1(plus1(5)) == 7 == plus1..plus1(5)
+    assert plus1(plus1(5)) == 7 == (plus1..plus1)(5)
     assert `sqrt` 16 == 4 == `sqrt_` 16
     assert `square` 3 == 9
     def test_sqplus1_plus1sq(sqplus1, plus1sq, parallel=True):
-        assert sqplus1(3) == 10 == plus1..square(3), sqplus1
+        assert sqplus1(3) == 10 == (plus1..square)(3), sqplus1
         if parallel:
             assert parallel_map(sqplus1, range(3)) |> tuple == (1, 2, 5), sqplus1
         assert 3 `plus1sq` == 16, plus1sq
@@ -247,7 +247,7 @@ def suite_test():
     assert 15 == assign_func_1((*), 3, 5)
     assert 15 == assign_func_2((*), 3, 5)
     assert 20 == (..)(minus$(2), mul$(2), plus$(1))(10)
-    assert 20 == minus$(2) .. mul$(2) .. plus$(1) (10)
+    assert 20 == minus$(2) .. mul$(2) .. plus$(1) <| 10
     assert does_raise_exc(raise_exc)
     assert ret_none(10) is None
     assert (2, 3, 5) |*> ret_args_kwargs$(1, ?, ?, 4, ?, *(6, 7), a="k") == ((1, 2, 3, 4, 5, 6, 7), {"a": "k"})
@@ -382,7 +382,7 @@ def suite_test():
     assert recurse_n_times(10000)
     assert fake_recurse_n_times(10000)
     a = A()
-    assert (not)..a.true() is False
+    assert ((not)..a.true)() is False
     assert 10 % 4 % 3 == 2 == 10 `mod` 4 `mod` 3
     assert square_times2_plus1(3) == 19 == square_times2_plus1_(3)
     assert plus1_cube(2) == 27

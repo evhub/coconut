@@ -1049,11 +1049,6 @@ Next is function composition. In Coconut, this is accomplished through the `..` 
 zipsum = map$(sum)..zip
 ```
 
-Function composition also gets rid of the need for lots of parentheses when chaining function calls, like so:
-```coconut
-plus1..square(3) == 10
-```
-
 _Note: Coconut also supports the function composition pipe operators `..>`, `<..`, `..*>`, and `<*..`._
 
 ### Implicit Partials

@@ -64,7 +64,7 @@ plus1sqsum_all_ = sum <.. square_all <*.. plus1_all
 # Basic Functions:
 product = reduce$(*)
 def zipwith(f, *args) = map((items) -> f(*items), zip(*args))
-def zipwith_(f, *args) = starmap$(f)..zip(*args)
+def zipwith_(f, *args) = starmap$(f)..zip <*| args
 zipsum = map$(sum)..zip  # type: ignore
 ident = (x) -> x
 @ ident .. ident
@@ -102,16 +102,16 @@ def qsort1(l: int[]) -> int[]:
                 smalls.append(x)
             else:
                 larges.append(x)
-        return list..qsort1(smalls) + [split] + list..qsort1(larges)
+        return list(qsort1(smalls)) + [split] + list(qsort1(larges))
 def qsort2(l: int[]) -> int[]:
     """Functional Quick Sort."""
     if not l:
         return []
     else:
         head, tail = l[0], l[1:]# Python Pattern-Matching
-        return (list..qsort2([x for x in tail if x <= head])
+        return (list(qsort2([x for x in tail if x <= head]))
                 + [head] # The pivot is a list
-                + list..qsort2([x for x in tail if x > head])
+                + list(qsort2([x for x in tail if x > head]))
                 )
 def qsort3(l: int$[]) -> int$[]:
     """Iterator Quick Sort."""
@@ -131,9 +131,9 @@ def qsort4(l: int[]) -> int[]:
         match []:
             return l
         match [head] + tail:
-            return (list..qsort4([x for x in tail if x <= head])
+            return (list(qsort4([x for x in tail if x <= head]))
                     + [head] # The pivot is a list
-                    + list..qsort4([x for x in tail if x > head])
+                    + list(qsort4([x for x in tail if x > head]))
                     )
     return None
 def qsort5(l: int$[]) -> int$[]:

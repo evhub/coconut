@@ -457,7 +457,7 @@ Coconut has three basic function composition operators: `..`, `..>`, and `<..`. 
 
 The `..>` and `<..` function composition pipe operators also have `..*>` and `<*..` forms which are, respectively, the equivalents of `|*>` and `<*|`. Forwards and backwards function composition pipes cannot be used together in the same expression (unlike normal pipes) and have precedence in-between `None`-coalescing and normal pipes.
 
-The `..` operator has lower precedence than attribute access (`.`), slicing (`[]`), etc., except for function calling, which it has higher precedence than. Thus, `a.b..c.d` is equivalent to `(a.b)..(c.d)`, while `f..g(x)` is equivalent to `(f..g)(x)`.
+The `..` operator has lower precedence than attribute access, slices, function calls, etc., but higher precedence than all other operations.
 
 The in-place function composition operators are `..=`, `..>=`, `<..=`, `..*>=`, and `<*..=`.
 
@@ -1562,11 +1562,11 @@ with open('/path/to/some/file/you/want/to/read') as file_1:
 
 Coconut's `map`, `zip`, `filter`, `reversed`, and `enumerate` objects are enhanced versions of their Python equivalents that support `reversed`, `repr`, optimized normal (and iterator) slicing (all but `filter`), `len` (all but `filter`), and have added attributes which subclasses can make use of to get at the original arguments to the object:
 
-- `map`: `_func`, `_iters`
-- `zip`: `_iters`
-- `filter`: `_func`, `_iter`
-- `reversed`: `_iter`
-- `enumerate`: `_iter`, `_start`
+- `map`: `func`, `iters`
+- `zip`: `iters`
+- `filter`: `func`, `iter`
+- `reversed`: `iter`
+- `enumerate`: `iter`, `start`
 
 ##### Example
 
@@ -1895,7 +1895,7 @@ collections.deque(map(print, map(lambda x: x**2, range(10))), maxlen=0)
 
 ### `count`
 
-Coconut provides a modified version of `itertools.count` that supports `in`, normal slicing, optimized iterator slicing, `count` and `index` sequence methods, `repr`, and `start` and `step` attributes as a built-in under the name `count`.
+Coconut provides a modified version of `itertools.count` that supports `in`, normal slicing, optimized iterator slicing, the standard `count` and `index` sequence methods, `repr`, and `start`/`step` attributes as a built-in under the name `count`.
 
 ##### Python Docs
 
@@ -1996,7 +1996,7 @@ Nothing(*map(lambda x: x*2, Nothing())) == Nothing()
 
 ### `starmap`
 
-Coconut provides a modified version of `itertools.starmap` that supports `reversed`, `repr`, optimized normal (and iterator) slicing, `len`, and `_func` and `_iter` attributes.
+Coconut provides a modified version of `itertools.starmap` that supports `reversed`, `repr`, optimized normal (and iterator) slicing, `len`, and `func`/`iter` attributes.
 
 ##### Python Docs
 
@@ -2026,15 +2026,15 @@ collections.deque(itertools.starmap(print, map(range, range(1, 5))), maxlen=0)
 
 ### `scan`
 
-Coconut provides a modified version of `itertools.accumulate` with opposite argument order as `scan` that also supports `repr`, `len`, and `func` and `iter` attributes. `scan` works exactly like [`reduce`](#reduce), except that instead of only returning the last accumulated value, it returns an iterator of all the intermediate values.
+Coconut provides a modified version of `itertools.accumulate` with opposite argument order as `scan` that also supports `repr`, `len`, and `func`/`iter`/`initializer` attributes (if no `initializer` is given the attribute is set to `scan.empty_initializer`). `scan` works exactly like [`reduce`](#reduce), except that instead of only returning the last accumulated value, it returns an iterator of all the intermediate values.
 
 ##### Python Docs
 
-**scan**(_func, iterable_)
+**scan**(_func, iterable_**[**_, initializer_**]**)
 
-Make an iterator that returns accumulated results of some function of two arguments. Elements of the input iterable may be any type that can be accepted as arguments to func. (For example, with the operation of addition, elements may be any addable type including Decimal or Fraction.) If the input iterable is empty, the output iterable will also be empty.
+Make an iterator that returns accumulated results of some function of two arguments. Elements of the input iterable may be any type that can be accepted as arguments to _func_. (For example, with the operation of addition, elements may be any addable type including Decimal or Fraction.) If the input iterable is empty, the output iterable will also be empty.
 
-Roughly equivalent to:
+If no _initializer_ is given, roughly equivalent to:
 ```coconut_python
 def scan(func, iterable):
     'Return running totals'

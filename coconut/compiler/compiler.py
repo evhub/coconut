@@ -1268,7 +1268,7 @@ class Compiler(Grammar):
                 {cind}def _replace(_self, **kwds):
                     {oind}result = _self._make(_coconut.tuple(_coconut.map(kwds.pop, {quoted_base_args_tuple}, _self)) + kwds.pop("{starred_arg}", self.{starred_arg}))
                     if kwds:
-                        {oind}raise _coconut.ValueError("Got unexpected field names: %r" % kwds.keys())
+                        {oind}raise _coconut.ValueError("Got unexpected field names: " + _coconut.repr(kwds.keys()))
                     {cind}return result
                 {cind}@_coconut.property
                 def {starred_arg}(self):
@@ -1299,7 +1299,7 @@ class Compiler(Grammar):
                 {cind}def _replace(_self, **kwds):
                     {oind}result = self._make(kwds.pop("{arg}", _self))
                     if kwds:
-                        {oind}raise _coconut.ValueError("Got unexpected field names: %r" % kwds.keys())
+                        {oind}raise _coconut.ValueError("Got unexpected field names: " + _coconut.repr(kwds.keys()))
                     {cind}return result
                 {cind}@_coconut.property
                 def {arg}(self):

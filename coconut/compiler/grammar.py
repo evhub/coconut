@@ -384,7 +384,7 @@ def comp_pipe_handle(loc, tokens):
         stars.reverse()
     func = funcs.pop(0)
     funcstars = zip(funcs, stars)
-    return "_coconut_base_compose(" + func + ", " + ", ".join("(%s, %s)" % (f, star) for f, star in funcstars) + ")"
+    return "_coconut_base_compose(" + func + ", " + ", ".join("({}, {})".format(f, star) for f, star in funcstars) + ")"
 
 
 def none_coalesce_handle(tokens):
@@ -1130,10 +1130,6 @@ class Grammar(object):
         implicit_partial_atom
         | attach(atom + ZeroOrMore(trailer), item_handle)
     )
-    no_call_atom_item = (
-        implicit_partial_atom
-        | attach(atom + ZeroOrMore(no_call_trailer), item_handle)
-    )
     partial_atom_tokens = attach(atom + ZeroOrMore(no_partial_trailer), item_handle) + partial_trailer_tokens
 
     simple_assign = attach(
@@ -1160,23 +1156,14 @@ class Grammar(object):
     typed_assign_stmt_ref = simple_assign + colon.suppress() + typedef_test + Optional(equals.suppress() + test_expr)
     basic_stmt = trace(addspace(ZeroOrMore(assignlist + equals) + test_expr))
 
-    compose_item = (
-        atom_item + ~dotdot
-        | attach(
-            attach(
-                OneOrMore(atom_item + dotdot.suppress()) + no_call_atom_item,
-                compose_item_handle,
-            ) + ZeroOrMore(trailer),
-            item_handle,
-        )
-    )
+    compose_item = attach(atom_item + ZeroOrMore(dotdot.suppress() + atom_item), compose_item_handle)
 
-    factor = Forward()
     await_item = Forward()
     await_item_ref = Keyword("await").suppress() + compose_item
-    power = trace(condense((await_item | compose_item) + Optional(exp_dubstar + factor)))
-    unary = plus | neg_minus | tilde
 
+    factor = Forward()
+    unary = plus | neg_minus | tilde
+    power = trace(condense((await_item | compose_item) + Optional(exp_dubstar + factor)))
     factor <<= trace(condense(ZeroOrMore(unary) + power))
 
     mulop = mul_star | div_dubslash | div_slash | percent | matrix_at
