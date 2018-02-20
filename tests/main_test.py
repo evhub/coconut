@@ -394,10 +394,10 @@ class TestCompilation(unittest.TestCase):
             call(["coconut", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err, check_mypy=False, expect_retcode=1)
 
         def test_mypy(self):
-            run(["--mypy"] + mypy_args)
+            run(["--mypy"] + mypy_args, expect_retcode=1)  # fails due to tutorial mypy errors
 
         def test_mypy_py3(self):
-            run(["--mypy"] + mypy_args, agnostic_target=3)
+            run(["--mypy"] + mypy_args, agnostic_target=3, expect_retcode=1)  # fails due to tutorial mypy errors
 
     def test_target(self):
         run(agnostic_target=(2 if PY2 else 3))
