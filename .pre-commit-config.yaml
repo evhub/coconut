@@ -1,6 +1,6 @@
 repos:
 -   repo: git://github.com/pre-commit/pre-commit-hooks.git
-    sha: v1.1.1
+    sha: v1.2.1
     hooks:
     -   id: check-byte-order-marker
     -   id: check-merge-conflict

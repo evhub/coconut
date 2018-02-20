@@ -275,6 +275,9 @@ def getheader(which, target="", use_hash=None, no_tco=False, strict=False):
     if which == "package":
         return header + '''import sys as _coconut_sys, os.path as _coconut_os_path
 _coconut_file_path = _coconut_os_path.dirname(_coconut_os_path.abspath(__file__))
+_coconut_cached_module = _coconut_sys.modules.get("__coconut__")
+if _coconut_cached_module is not None and _coconut_os_path.dirname(_coconut_cached_module.__file__) != _coconut_file_path:
+    del _coconut_sys.modules["__coconut__"]
 _coconut_sys.path.insert(0, _coconut_file_path)
 from __coconut__ import {underscore_imports}
 from __coconut__ import *
