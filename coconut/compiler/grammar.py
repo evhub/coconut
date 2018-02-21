@@ -1520,7 +1520,7 @@ class Grammar(object):
         attach(implicit_return + Keyword("where").suppress() - where_suite, where_stmt_handle)
         | condense(implicit_return + newline)
     )
-    math_funcdef_body = ZeroOrMore(~(implicit_return_stmt + dedent) + stmt) - implicit_return_stmt
+    math_funcdef_body = condense(ZeroOrMore(~(implicit_return_stmt + dedent) + stmt) - implicit_return_stmt)
     math_funcdef_suite = (
         attach(implicit_return_stmt, make_suite_handle)
         | condense(newline - indent - math_funcdef_body - dedent)
