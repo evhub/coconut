@@ -418,6 +418,7 @@ class Compiler(Grammar):
         self.star_expr <<= attach(self.star_expr_ref, self.star_expr_check)
         self.dubstar_expr <<= attach(self.dubstar_expr_ref, self.star_expr_check)
         self.endline_semicolon <<= attach(self.endline_semicolon_ref, self.endline_semicolon_check)
+        self.async_stmt <<= attach(self.async_stmt_ref, self.async_stmt_check)
         self.async_comp_for <<= attach(self.async_comp_for_ref, self.async_comp_check)
 
     def copy_skips(self):
@@ -431,7 +432,7 @@ class Compiler(Grammar):
         self.skips = skips
 
     def adjust(self, ln):
-        """Adjusts a line number."""
+        """Converts a parsing line number into an original line number."""
         adj_ln = ln
         need_unskipped = 0
         for i in self.skips:
@@ -1555,7 +1556,7 @@ class Compiler(Grammar):
         return None, block
 
     def tre_return(self, func_name, func_args, func_store, use_mock=True):
-        """Generate a tail recursion elimination grammar element."""
+        """Generate grammar element that matches a string which is just a TRE return statement."""
         def tre_return_handle(loc, tokens):
             internal_assert(len(tokens) == 1, "invalid tail recursion elimination tokens", tokens)
             args = tokens[0][1:-1]  # strip parens
@@ -1580,7 +1581,7 @@ class Compiler(Grammar):
                 + tco_recurse + closeindent
             )
         return attach(
-            (Keyword("return") + Keyword(func_name)).suppress() + self.parens + self.end_marker.suppress(),
+            (Keyword("return") + Keyword(func_name)).suppress() + self.parens + self.end_marker,
             tre_return_handle,
         )
 
@@ -1594,6 +1595,8 @@ class Compiler(Grammar):
         tre = False  # whether tre was done
         level = 0  # indentation level
         disabled_until_level = None  # whether inside of a def/try/with
+        if attempt_tre:
+            tre_return_grammar = self.tre_return(func_name, func_args, func_store, use_mock)
 
         for line in raw_lines:
             body, indent = split_trailing_indent(line)
@@ -1613,7 +1616,7 @@ class Compiler(Grammar):
 
                     if attempt_tre:
                         with self.complain_on_err():
-                            tre_base = transform(self.tre_return(func_name, func_args, func_store, use_mock), base)
+                            tre_base = transform(tre_return_grammar, base)
                         if tre_base is not None:
                             line = tre_base + comment + indent
                             tre = True
@@ -1848,6 +1851,10 @@ class Compiler(Grammar):
     def matrix_at_check(self, original, loc, tokens):
         """Check for Python 3.5 matrix multiplication."""
         return self.check_py("35", "matrix multiplication", original, loc, tokens)
+
+    def async_stmt_check(self, original, loc, tokens):
+        """Check for Python 3.5 async for/with."""
+        return self.check_py("35", "async for/with", original, loc, tokens)
 
     def async_comp_check(self, original, loc, tokens):
         """Check for Python 3.6 async comprehension."""

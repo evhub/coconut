@@ -1546,7 +1546,9 @@ class Grammar(object):
         insert_docstring_handle,
     ))
 
-    async_stmt = addspace(Keyword("async") + (with_stmt | for_stmt))
+    async_stmt = Forward()
+    async_stmt_ref = addspace(Keyword("async") + (with_stmt | for_stmt))
+
     async_funcdef = Keyword("async").suppress() + (funcdef | math_funcdef)
     async_match_funcdef = (
         Optional(Keyword("match")) + Keyword("async")
@@ -1699,6 +1701,8 @@ class Grammar(object):
     )
 
     just_a_string = start_marker + string + end_marker
+
+    at_end_of_line = FollowedBy(Literal("\n") | pound)
 
 
 # end: EXTRA GRAMMAR
