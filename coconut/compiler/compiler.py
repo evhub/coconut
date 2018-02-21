@@ -883,7 +883,7 @@ class Compiler(Grammar):
         regexes = []
         for i in range(len(self.stmt_lambdas)):
             name = self.stmt_lambda_name(i)
-            regex = compile_regex(r"\b{}\b".format(name))
+            regex = compile_regex(r"\b%s\b" % (name,))
             regexes.append(regex)
         out = []
         for line in inputstring.splitlines():

@@ -198,6 +198,11 @@ else:
     return _coconut.functools.partial(makedata, data_type)
 ''' if not strict else ""
         ),
+        __coconut__=(
+            '"__coconut__"' if target_startswith == "3"
+            else 'b"__coconut__"' if target_startswith == "2"
+            else 'str("__coconut__")'
+        ),
     )
 
     format_dict["underscore_imports"] = "_coconut, _coconut_NamedTuple, _coconut_MatchError{comma_tco}, _coconut_igetitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_pipe, _coconut_star_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial".format(**format_dict)
@@ -275,9 +280,9 @@ def getheader(which, target="", use_hash=None, no_tco=False, strict=False):
     if which == "package":
         return header + '''import sys as _coconut_sys, os.path as _coconut_os_path
 _coconut_file_path = _coconut_os_path.dirname(_coconut_os_path.abspath(__file__))
-_coconut_cached_module = _coconut_sys.modules.get("__coconut__")
+_coconut_cached_module = _coconut_sys.modules.get({__coconut__})
 if _coconut_cached_module is not None and _coconut_os_path.dirname(_coconut_cached_module.__file__) != _coconut_file_path:
-    del _coconut_sys.modules["__coconut__"]
+    del _coconut_sys.modules[{__coconut__}]
 _coconut_sys.path.insert(0, _coconut_file_path)
 from __coconut__ import {underscore_imports}
 from __coconut__ import *
