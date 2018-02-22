@@ -1673,7 +1673,7 @@ class Grammar(object):
             + ZeroOrMore(dot + base_name | brackets | parens + ~end_marker),
         ) + parens + end_marker,
         tco_return_handle,
-        greedy=True,
+        greedy=True,  # this is the root in what it's used for, so might as well evaluate greedily
     )
 
     rest_of_arg = ZeroOrMore(parens | brackets | braces | ~comma + ~rparen + any_char)
@@ -1692,7 +1692,7 @@ class Grammar(object):
         (start_marker - Keyword("def")).suppress() - dotted_base_name - lparen.suppress()
         - parameters_tokens - rparen.suppress(),
         split_func_name_args_params_handle,
-        greedy=True,
+        greedy=True,  # this is the root in what it's used for, so might as well evaluate greedily
     )
 
     stores_scope = (
@@ -1702,7 +1702,7 @@ class Grammar(object):
 
     just_a_string = start_marker + string + end_marker
 
-    at_end_of_line = FollowedBy(Literal("\n") | pound)
+    end_of_line = end_marker | Literal("\n") | pound
 
 
 # end: EXTRA GRAMMAR

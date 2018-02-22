@@ -500,7 +500,7 @@ def main(*args):
 
     print(".", end="")
     from .target_sys_test import target_sys_test
-    assert target_sys_test()
+    assert target_sys_test()  # type: ignore
 
     print(".", end="")  # ........
     from . import tutorial  # type: ignore

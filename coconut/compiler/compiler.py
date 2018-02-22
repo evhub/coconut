@@ -1586,55 +1586,81 @@ class Compiler(Grammar):
         )
 
     yield_regex = compile_regex(r"\byield\b")
-    is_return_sensitive_regex = compile_regex(r"\b(?:def|try|with)\b")
+    def_regex = compile_regex(r"def\b")
+    try_with_regex = compile_regex(r"(?:try|with)\b")
+    return_regex = compile_regex(r"return\b")
 
-    def transform_tail_calls(self, raw_lines, func_name, func_args, func_store, use_mock, attempt_tre):
-        """Apply TCO and/or TRE to the given function."""
+    def transform_returns(self, raw_lines, tre_return_grammar=None, use_mock=None, is_async=False):
+        """Apply TCO, TRE, or async universalization to the given function."""
         lines = []  # transformed lines
         tco = False  # whether tco was done
         tre = False  # whether tre was done
         level = 0  # indentation level
-        disabled_until_level = None  # whether inside of a def/try/with
-        if attempt_tre:
-            tre_return_grammar = self.tre_return(func_name, func_args, func_store, use_mock)
+        disabled_until_level = None  # whether inside of a disabled block
+        attempt_tre = tre_return_grammar is not None  # whether to even attempt tre
+        attempt_tco = not is_async and not self.no_tco  # whether to even attempt tco
+
+        if is_async:
+            internal_assert(not attempt_tre and not attempt_tco, "cannot tail call optimize async functions")
 
         for line in raw_lines:
-            body, indent = split_trailing_indent(line)
-            level += ind_change(body)
+            indent, body, dedent = split_leading_trailing_indent(line)
+            level += ind_change(indent)
+
             if disabled_until_level is not None:
                 if level <= disabled_until_level:
                     disabled_until_level = None
+
             if disabled_until_level is None:
-                if self.yield_regex.search(body):
+
+                # tco and tre don't support generators
+                if not is_async and self.yield_regex.search(body):
                     lines = raw_lines  # reset lines
                     break
-                elif self.is_return_sensitive_regex.search(body):
+
+                # don't touch inner functions
+                elif self.def_regex.match(body):
                     disabled_until_level = level
+
+                # tco and tre shouldn't touch scopes that depend on actual return statements
+                elif not is_async and self.try_with_regex.match(body):
+                    disabled_until_level = level
+
                 else:
                     base, comment = split_comment(body)
                     tre_base = None
+
+                    if is_async:
+                        if self.return_regex.match(base):
+                            to_return = base[len("return"):].strip()
+                            if to_return:  # leave empty return statements alone
+                                line = indent + "raise _coconut.asyncio.Return(" + to_return + ")" + comment + dedent
 
                     if attempt_tre:
                         with self.complain_on_err():
                             tre_base = transform(tre_return_grammar, base)
                         if tre_base is not None:
-                            line = tre_base + comment + indent
+                            line = indent + tre_base + comment + dedent
                             tre = True
                             # when tco is available, tre falls back on it if the function is changed
                             tco = not self.no_tco
 
-                    if tre_base is None and not self.no_tco:  # attempt tco
+                    if attempt_tco and tre_base is None:  # don't attempt tco if tre succeeded
                         tco_base = None
                         with self.complain_on_err():
                             tco_base = transform(self.tco_return, base)
                         if tco_base is not None:
-                            line = tco_base + comment + indent
+                            line = indent + tco_base + comment + dedent
                             tco = True
 
-            level += ind_change(indent)
+            level += ind_change(dedent)
             lines.append(line)
 
-        return "".join(lines), tco, tre
+        func_code = "".join(lines)
+        if is_async:
+            return func_code
+        else:
+            return func_code, tco, tre
 
     def decoratable_funcdef_stmt_handle(self, original, loc, tokens, is_async=False):
         """Determines if TCO or TRE can be done and if so does it,
@@ -1672,7 +1698,12 @@ class Compiler(Grammar):
                 def_stmt = "async " + def_stmt
             else:
                 decorators += "@_coconut.asyncio.coroutine\n"
-            func_code = "".join(raw_lines)
+
+            # only Python 3.3+ supports returning values inside generators
+            if self.target_info < (3, 3):
+                func_code = self.transform_returns(raw_lines, is_async=True)
+            else:
+                func_code = "".join(raw_lines)
 
         # handle normal functions
         else:
@@ -1682,16 +1713,16 @@ class Compiler(Grammar):
                 use_mock = func_args and func_args != func_params[1:-1]
                 func_store = tre_store_var + "_" + str(self.tre_store_count)
                 self.tre_store_count += 1
+                tre_return_grammar = self.tre_return(func_name, func_args, func_store, use_mock)
             else:
-                use_mock = func_store = None
-            func_code, tco, tre = self.transform_tail_calls(
+                use_mock = func_store = tre_return_grammar = None
+
+            func_code, tco, tre = self.transform_returns(
                 raw_lines,
-                func_name,
-                func_args,
-                func_store,
+                tre_return_grammar,
                 use_mock,
-                attempt_tre,
             )
+
             if tre:
                 comment, rest = split_leading_comment(func_code)
                 indent, base, dedent = split_leading_trailing_indent(rest, 1)

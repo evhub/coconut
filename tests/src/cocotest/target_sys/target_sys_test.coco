@@ -8,10 +8,13 @@ def target_sys_test():
     async def async_map_2([func] + iters) = parallel_map(func, *iters)
     async match def async_map_3([func] + iters) = parallel_map(func, *iters)
     match async def async_map_4([func] + iters) = parallel_map(func, *iters)
-    async def async_map_test():
+    async def async_map_test() =
         for async_map in (async_map_0, async_map_1, async_map_2, async_map_3, async_map_4):
             assert (await ((pow$(2), range(5)) |> async_map)) |> tuple == (1, 2, 4, 8, 16)
+        True
+    async def main():
+        assert await async_map_test()
     loop = asyncio.new_event_loop()
-    loop.run_until_complete(async_map_test())
+    loop.run_until_complete(main())
     loop.close()
     return True
