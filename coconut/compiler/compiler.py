@@ -1563,7 +1563,7 @@ class Compiler(Grammar):
             # check if there is anything in the arguments that will store a reference
             # to the current scope, and if so, abort TRE, since it can't handle that
             if match_in(self.stores_scope, args):
-                return ignore_transform
+                return ignore_transform  # this is the only way to make the outer transform call return None
             if self.no_tco:
                 tco_recurse = "return " + func_name + "(" + args + ")"
             else:
@@ -1581,13 +1581,13 @@ class Compiler(Grammar):
                 + tco_recurse + closeindent
             )
         return attach(
-            (Keyword("return") + Keyword(func_name)).suppress() + self.parens + self.end_marker,
+            self.start_marker + (Keyword("return") + Keyword(func_name)).suppress() + self.parens + self.end_marker,
             tre_return_handle,
         )
 
     yield_regex = compile_regex(r"\byield\b")
-    def_regex = compile_regex(r"def\b")
-    try_with_regex = compile_regex(r"(?:try|with)\b")
+    def_regex = compile_regex(r"(async\s+)?def\b")
+    try_with_regex = compile_regex(r"(?:try|(async\s+)?with)\b")
     return_regex = compile_regex(r"return\b")
 
     def transform_returns(self, raw_lines, tre_return_grammar=None, use_mock=None, is_async=False):
@@ -1605,6 +1605,8 @@ class Compiler(Grammar):
 
         for line in raw_lines:
             indent, body, dedent = split_leading_trailing_indent(line)
+            base, comment = split_comment(body)
+
             level += ind_change(indent)
 
             if disabled_until_level is not None:
@@ -1627,8 +1629,6 @@ class Compiler(Grammar):
                     disabled_until_level = level
 
                 else:
-                    base, comment = split_comment(body)
-                    tre_base = None
 
                     if is_async:
                         if self.return_regex.match(base):
@@ -1636,6 +1636,7 @@ class Compiler(Grammar):
                             if to_return:  # leave empty return statements alone
                                 line = indent + "raise _coconut.asyncio.Return(" + to_return + ")" + comment + dedent
 
+                    tre_base = None
                     if attempt_tre:
                         with self.complain_on_err():
                             tre_base = transform(tre_return_grammar, base)

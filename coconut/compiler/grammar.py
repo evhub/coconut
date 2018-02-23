@@ -85,6 +85,9 @@ from coconut.compiler.util import (
     disable_inside,
     disable_outside,
     final,
+    split_trailing_indent,
+    split_leading_indent,
+    collapse_indents,
 )
 
 # end: IMPORTS
@@ -692,8 +695,8 @@ def split_func_name_args_params_handle(tokens):
     ]
 
 
-def insert_docstring_handle(tokens):
-    """Insert a docstring, if present, into match function definition."""
+def join_match_funcdef(tokens):
+    """Join the pieces of a pattern-matching function together."""
     if len(tokens) == 2:
         (func, insert_after_docstring), body = tokens
         docstring = None
@@ -701,10 +704,16 @@ def insert_docstring_handle(tokens):
         (func, insert_after_docstring), docstring, body = tokens
     else:
         raise CoconutInternalException("invalid docstring insertion tokens", tokens)
+    # insert_after_docstring and body are their own self-contained suites, but we
+    # expect them to both be one suite, so we have to join them together
+    insert_after_docstring, dedent = split_trailing_indent(insert_after_docstring)
+    indent, body = split_leading_indent(body)
+    indentation = collapse_indents(dedent + indent)
     return (
         func
         + (docstring if docstring is not None else "")
         + insert_after_docstring
+        + indentation
         + body
     )
 
@@ -1507,7 +1516,7 @@ class Grammar(object):
             + attach(condense(OneOrMore(stmt)), make_suite_handle)
             + dedent.suppress()
         ),
-        insert_docstring_handle,
+        join_match_funcdef,
     ))
     match_funcdef = Optional(Keyword("match").suppress()) + def_match_funcdef
 
@@ -1543,7 +1552,7 @@ class Grammar(object):
             - attach(math_funcdef_body, make_suite_handle)
             - dedent.suppress()
         ),
-        insert_docstring_handle,
+        join_match_funcdef,
     ))
 
     async_stmt = Forward()
@@ -1668,7 +1677,7 @@ class Grammar(object):
     any_char = Regex(r".", re.U | re.DOTALL)
 
     tco_return = attach(
-        Keyword("return").suppress() + condense(
+        start_marker + Keyword("return").suppress() + condense(
             (base_name | parens | brackets | braces | string)
             + ZeroOrMore(dot + base_name | brackets | parens + ~end_marker),
         ) + parens + end_marker,

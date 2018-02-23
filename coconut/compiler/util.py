@@ -429,6 +429,18 @@ def split_leading_trailing_indent(line, max_indents=None):
     return leading_indent, line, trailing_indent
 
 
+def collapse_indents(indentation):
+    """Removes all openindent-closeindent pairs."""
+    change_in_level = ind_change(indentation)
+    if change_in_level == 0:
+        indents = ""
+    elif change_in_level < 0:
+        indents = closeindent * (-change_in_level)
+    else:
+        indents = openindent * change_in_level
+    return indentation.replace(openindent, "").replace(closeindent, "") + indents
+
+
 ignore_transform = object()
 
 
@@ -439,6 +451,8 @@ def transform(grammar, text):
     for result, start, stop in all_matches(grammar, text):
         if result is not ignore_transform:
             internal_assert(isinstance(result, str), "got non-string transform result", result)
+            if start == 0 and stop == len(text):
+                return result
             results.append(result)
             intervals.append((start, stop))
 
