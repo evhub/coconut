@@ -23,6 +23,7 @@ import unittest
 import sys
 import os
 import shutil
+import imp
 from contextlib import contextmanager
 
 import pexpect
@@ -256,9 +257,9 @@ def run(args=[], agnostic_target=None, use_run_arg=False, expect_retcode=0):
         comp_sys(args)
 
         if use_run_arg:
-            comp_runner(["--run"] + agnostic_args, assert_output=True)
+            comp_runner(["--run"] + agnostic_args, expect_retcode=expect_retcode, assert_output=True)
         else:
-            comp_runner(agnostic_args)
+            comp_runner(agnostic_args, expect_retcode=expect_retcode)
             run_src()
 
         if use_run_arg:
@@ -340,6 +341,7 @@ class TestShell(unittest.TestCase):
             with remove_when_done(runnable_py):
                 with using_logger():
                     import runnable
+                    imp.reload(runnable)
         finally:
             auto_compilation(False)
             sys.path.remove(src)
