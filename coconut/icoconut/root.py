@@ -73,20 +73,19 @@ parse_block_memo = {}
 
 def memoized_parse_block(code):
     """Memoized version of parse_block."""
-    try:
-        result = parse_block_memo[code]
-    except KeyError:
+    success, result = parse_block_memo.get(code, (None, None))
+    if success is None:
         try:
             parsed = COMPILER.parse_block(code)
         except Exception as err:
-            result = err
+            success, result = False, err
         else:
-            result = parsed
-        parse_block_memo[code] = result
-    if isinstance(result, Exception):
-        raise result
-    else:
+            success, result = True, parsed
+        parse_block_memo[code] = (success, result)
+    if success:
         return result
+    else:
+        raise result
 
 
 def memoized_parse_sys(code):

@@ -379,7 +379,9 @@ class TestShell(unittest.TestCase):
 
         if not WINDOWS and not PYPY:
             def test_jupyter_console(self):
-                p = pexpect.spawn("coconut --jupyter console --no-confirm-exit")
+                cmd = "coconut --jupyter console --no-confirm-exit"
+                print("\n>", cmd)
+                p = pexpect.spawn(cmd)
                 p.sendline("exit()")
                 p.expect("Shutting down kernel|shutting down|Jupyter error")
                 if p.isalive():
