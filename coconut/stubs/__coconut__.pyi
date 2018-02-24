@@ -44,13 +44,17 @@ else:
 py_chr, py_filter, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate = _b.chr, _b.filter, _b.hex, _b.input, _b.int, _b.map, _b.object, _b.oct, _b.open, _b.print, _b.range, _b.str, _b.zip, _b.filter, _b.reversed, _b.enumerate
 
 
-def scan(func: Callable[[_T, _T], _T], iterable: Iterable[_T]) -> Iterable[_T]: ...
+def scan(func: Callable[[_T, _U], _T], iterable: Iterable[_U], initializer: _T=None) -> Iterable[_T]: ...
 
 
 class _coconut:
     import typing  # The real _coconut doesn't import typing, but we want type-checkers to treat it as if it does
     import collections, copy, functools, imp, itertools, operator, types, weakref, pickle
     Exception, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip = Exception, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip
+    if sys.version_info >= (3, 4):
+        import asyncio
+    else:
+        import trollius as asyncio  # type: ignore
     if sys.version_info < (3, 3):
         abc = collections
     else:
@@ -92,8 +96,12 @@ _coconut_MatchError = MatchError
 class _coconut_tail_call(Exception): ...
 
 
-def addpattern(func: _T) -> _T: ...
-_coconut_tco = recursive_iterator = prepattern = addpattern
+def recursive_iterator(func: _T) -> _T: ...
+_coconut_tco = recursive_iterator
+
+
+def addpattern(func: _T) -> Callable[[_U], Union[_T, _U]]: ...
+prepattern = addpattern
 
 
 @overload
@@ -108,9 +116,7 @@ def _coconut_igetitem(
     ) -> Iterable[_T]: ...
 
 
-class _coconut_base_compose:
-    def __init__(self, func: Callable, *funcstars: Tuple[Callable, bool]) -> None: ...
-    def __call__(self, *args, **kwargs) -> Any: ...
+def _coconut_base_compose(func: Callable[[_T], Any], *funcstars: Tuple[Callable, bool]) -> Callable[[_T], Any]: ...
 
 
 @overload
@@ -169,8 +175,9 @@ class count(Iterable[int]):
 def groupsof(n: int, iterable: Iterable[_T]) -> Iterable[Tuple[_T, ...]]: ...
 
 
-def makedata(data_type, *args, **kwargs) -> NamedTuple: ...
-def datamaker(data_type) -> Callable[..., NamedTuple]: ...
+def makedata(data_type: Type[_T], *args, **kwargs) -> _T: ...
+def datamaker(data_type):
+    return _coconut.functools.partial(makedata, data_type)
 
 
 def consume(
