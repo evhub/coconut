@@ -743,8 +743,10 @@ class counter:
         self.count += 1
 
 # Typing
+if TYPE_CHECKING:
+    from typing import List, Dict
 
-def args_kwargs_func(args:List[Any]=[], kwargs:Dict[Any, Any]={}) -> None: pass
+def args_kwargs_func(args: List[Any]=[], kwargs: Dict[Any, Any]={}) -> None: pass
 
 def anything_func(*args: int, **kwargs: int) -> None: pass
 

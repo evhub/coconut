@@ -279,6 +279,7 @@ search_terms = (
     "memoize",
     "memoization",
     "backport",
+    "typing",
 )
 
 script_names = (
@@ -566,11 +567,12 @@ coconut_specific_builtins = (
     "scan",
     "groupsof",
     "memoize",
+    "TYPE_CHECKING",
     "py_chr",
     "py_filter",
     "py_hex",
     "py_input",
-    "py_input",
+    "py_raw_input",
     "py_int",
     "py_object",
     "py_oct",

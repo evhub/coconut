@@ -1106,20 +1106,7 @@ print(list(map(operator.add, range(0, 5), range(5, 10))))
 
 Since Coconut syntax is a superset of Python 3 syntax, it supports [Python 3 function type annotation syntax](https://www.python.org/dev/peps/pep-0484/) and [Python 3.6 variable type annotation syntax](https://www.python.org/dev/peps/pep-0526/). By default, Coconut compiles all type annotations into Python-2-compatible type comments. If you want to keep the type annotations instead, simply pass a `--target` that supports them.
 
-Furthermore, Coconut ensures that all type annotations automatically have the [`typing`](https://docs.python.org/3/library/typing.html) module available to them for type annotation purposes, even on Python versions that don't natively support it. Thus, instead of writing
-```coconut_python
-try:
-    import typing
-except ImportError:
-    pass
-
-x: typing.List[str] = ["a", "b"]
-```
-you can just write
-```coconut
-x: List[str] = ["a", "b"]
-```
-and Coconut will make sure it works.
+Furthermore, since not all supported Python versions support the [`typing`](https://docs.python.org/3/library/typing.html) module, Coconut provides the [`TYPE_CHECKING`](#type-checking) built-in for hiding your `typing` imports and `TypeVar` definitions from being executed at runtime.
 
 _Note: When compiling type annotations to Python 3 syntax, Coconut will wrap every annotation in a string when in a position where Python would otherwise evaluate it (e.g. Python 3 function annotation), so that all type annotations are only ever evaluated at compile time, never at run time._
 
@@ -2068,6 +2055,42 @@ for x in input_data:
     if x > max_so_far:
         max_so_far = x
     running_max.append(x)
+```
+
+### `TYPE_CHECKING`
+
+The `TYPE_CHECKING` variable is set to `False` at runtime and `True` during type-checking, allowing you to prevent your `typing` imports and `TypeVar` definitions from being executed at runtime. By wrapping your `typing` imports in an `if TYPE_CHECKING:` block, you can even use the [`typing`](https://docs.python.org/3/library/typing.html) module on Python versions that don't natively support it.
+
+##### Python Docs
+
+A special constant that is assumed to be `True` by 3rd party static type checkers. It is `False` at runtime. Usage:
+```coconut_python
+if TYPE_CHECKING:
+    import expensive_mod
+
+def fun(arg: expensive_mod.SomeType) -> None:
+    local_var: expensive_mod.AnotherType = other_fun()
+```
+
+##### Example
+
+**Coconut:**
+```coconut
+if TYPE_CHECKING:
+    from typing import List
+x: List[str] = ["a", "b"]
+```
+
+**Python:**
+```coconut_python
+try:
+    from typing import TYPE_CHECKING
+except ImportError:
+    TYPE_CHECKING = False
+
+if TYPE_CHECKING:
+    from typing import List
+x: List[str] = ["a", "b"]
 ```
 
 ### `recursive_iterator`
