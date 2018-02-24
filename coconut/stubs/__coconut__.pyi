@@ -4,21 +4,16 @@ import typing as _t
 
 _T = _t.TypeVar("_T")
 _U = _t.TypeVar("_U")
+_FUNC = _t.TypeVar("_FUNC", bound=_t.Callable)
+_FUNC2 = _t.TypeVar("_FUNC2", bound=_t.Callable)
+_ITER_FUNC = _t.TypeVar("_ITER_FUNC", bound=_t.Callable[..., _t.Iterable])
 
 
 if sys.version_info < (3,):
-    import io as _io
-    import future_builtins as _fb
     import __builtin__ as _b
 
-    str = unicode
-    open = _io.open
-    ascii = _fb.ascii
-    filter = _fb.filter
-    hex = _fb.hex
-    map = _fb.map
-    oct = _fb.oct
-    zip = _fb.zip
+    from future_builtins import *
+    from io import open
 
     py_raw_input, py_xrange = _b.raw_input, _b.xrange
 
@@ -50,7 +45,7 @@ def scan(func: _t.Callable[[_T, _U], _T], iterable: _t.Iterable[_U], initializer
 class _coconut:
     typing = _t  # The real _coconut doesn't import typing, but we want type-checkers to treat it as if it does
     import collections, copy, functools, imp, itertools, operator, types, weakref, pickle
-    Exception, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip = Exception, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip
+    Exception, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, Ellipsis = Exception, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, Ellipsis
     if sys.version_info >= (3, 4):
         import asyncio
     else:
@@ -94,23 +89,24 @@ class MatchError(Exception): ...
 _coconut_MatchError = MatchError
 
 
-class _coconut_tail_call(Exception): ...
+def _coconut_tco(func: _FUNC) -> _FUNC: ...
+def _coconut_tail_call(func: _t.Callable, *args, **kwargs):
+    return func(*args, **kwargs)
 
 
-def recursive_iterator(func: _T) -> _T: ...
-_coconut_tco = recursive_iterator
+def recursive_iterator(func: _ITER_FUNC) -> _ITER_FUNC: ...
 
 
-def addpattern(func: _T) -> _t.Callable[[_U], _t.Union[_T, _U]]: ...
+def addpattern(func: _FUNC) -> _t.Callable[[_FUNC2], _t.Union[_FUNC, _FUNC2]]: ...
 prepattern = addpattern
 
 
-@overload
+@_t.overload
 def _coconut_igetitem(
     iterable: _t.Iterable[_T],
     index: int,
     ) -> _T: ...
-@overload
+@_t.overload
 def _coconut_igetitem(
     iterable: _t.Iterable[_T],
     index: slice,
@@ -120,16 +116,16 @@ def _coconut_igetitem(
 def _coconut_base_compose(func: _t.Callable[[_T], _t.Any], *funcstars: _t.Tuple[_t.Callable, bool]) -> _t.Callable[[_T], _t.Any]: ...
 
 
-@overload
+@_t.overload
 def _coconut_forward_compose(g: _t.Callable[..., _T], f: _t.Callable[[_T], _U]) -> _t.Callable[..., _U]: ...
-@overload
+@_t.overload
 def _coconut_forward_compose(*funcs: _t.Callable) -> _t.Callable: ...
 _coconut_forward_star_compose = _coconut_forward_compose
 
 
-@overload
+@_t.overload
 def _coconut_back_compose(f: _t.Callable[[_T], _U], g: _t.Callable[..., _T]) -> _t.Callable[..., _U]: ...
-@overload
+@_t.overload
 def _coconut_back_compose(*funcs: _t.Callable) -> _t.Callable: ...
 _coconut_back_star_compose = _coconut_back_compose
 
@@ -176,7 +172,7 @@ class count(_t.Iterable[int]):
 def groupsof(n: int, iterable: _t.Iterable[_T]) -> _t.Iterable[_t.Tuple[_T, ...]]: ...
 
 
-def makedata(data_type: Type[_T], *args, **kwargs) -> _T: ...
+def makedata(data_type: _t.Type[_T], *args, **kwargs) -> _T: ...
 def datamaker(data_type):
     return _coconut.functools.partial(makedata, data_type)
 
@@ -192,13 +188,13 @@ class _coconut_partial:
     keywords: _t.Dict[_t.Text, _t.Any] = ...
     def __init__(
         self,
-        func: _t.Callable,
+        func: _t.Callable[..., _T],
         argdict: _t.Dict[int, _t.Any],
         arglen: int,
         *args,
         **kwargs,
         ) -> None: ...
-    def __call__(self, *args, **kwargs) -> _t.Any: ...
+    def __call__(self, *args, **kwargs) -> _T: ...
 
 
 def fmap(func: _t.Callable, obj: _T) -> _T: ...

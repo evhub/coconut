@@ -451,6 +451,7 @@ def main_test():
     assert (1 ?? False is False) is False
     loop = asyncio.new_event_loop()
     loop.close()
+    assert ... is Ellipsis
     return True
 
 def tco_func() = tco_func()

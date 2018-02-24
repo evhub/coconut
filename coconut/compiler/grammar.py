@@ -778,7 +778,6 @@ class Grammar(object):
     bar = ~rbanana + unsafe_bar
     percent = Literal("%")
     dollar = Literal("$")
-    ellipses = fixto(Literal("...") | Literal("\u2026"), "...")
     lshift = Literal("<<") | fixto(Literal("\xab"), "<<")
     rshift = Literal(">>") | fixto(Literal("\xbb"), ">>")
     tilde = Literal("~") | fixto(~Literal("\xac=") + Literal("\xac"), "~")
@@ -789,6 +788,9 @@ class Grammar(object):
     backslash = ~dubbackslash + Literal("\\")
     dubquestion = Literal("??")
     questionmark = ~dubquestion + Literal("?")
+
+    ellipsis = Forward()
+    ellipsis_ref = Literal("...") | Literal("\u2026")
 
     lt = ~Literal("<<") + ~Literal("<=") + ~Literal("<..") + Literal("<")
     gt = ~Literal(">>") + ~Literal(">=") + Literal(">")
@@ -1074,7 +1076,7 @@ class Grammar(object):
     )
     known_atom = trace(
         const_atom
-        | ellipses
+        | ellipsis
         | list_comp
         | dict_comp
         | dict_item

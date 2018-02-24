@@ -399,6 +399,7 @@ class Compiler(Grammar):
         self.datadef <<= trace(attach(self.datadef_ref, self.data_handle))
         self.with_stmt <<= trace(attach(self.with_stmt_ref, self.with_stmt_handle))
         self.await_item <<= attach(self.await_item_ref, self.await_item_handle)
+        self.ellipsis <<= attach(self.ellipsis_ref, self.ellipsis_handle)
 
         self.decoratable_normal_funcdef_stmt <<= trace(attach(
             self.decoratable_normal_funcdef_stmt_ref,
@@ -1822,6 +1823,13 @@ class Compiler(Grammar):
                 + "with " + withs[-1] + body
                 + closeindent * (len(withs) - 1)
             )
+
+    def ellipsis_handle(self, tokens):
+        internal_assert(len(tokens) == 1, "invalid ellipsis tokens", tokens)
+        if self.target.startswith("3"):
+            return "..."
+        else:
+            return "_coconut.Ellipsis"
 
 # end: COMPILER HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
