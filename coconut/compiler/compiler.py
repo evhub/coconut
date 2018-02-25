@@ -1772,8 +1772,7 @@ class Compiler(Grammar):
         return self.typedef_handle(tokens.asList() + [","])
 
     def wrap_typedef(self, typedef):
-        """Wrap a type definition in a string to defer it.
-        Used for function type annotations on Python 3, the only ones evaluated at runtime."""
+        """Wrap a type definition in a string to defer it."""
         return self.wrap_str_of(self.reformat(typedef))
 
     def typedef_handle(self, tokens):
@@ -1800,12 +1799,12 @@ class Compiler(Grammar):
         """Process Python 3.6 variable type annotations."""
         if len(tokens) == 2:
             if self.target_info >= (3, 6):
-                return tokens[0] + ": " + tokens[1]
+                return tokens[0] + ": " + self.wrap_typedef(tokens[1])
             else:
                 return tokens[0] + " = None" + self.wrap_comment(" type: " + tokens[1])
         elif len(tokens) == 3:
             if self.target_info >= (3, 6):
-                return tokens[0] + ": " + tokens[1] + " = " + tokens[2]
+                return tokens[0] + ": " + self.wrap_typedef(tokens[1]) + " = " + tokens[2]
             else:
                 return tokens[0] + " = " + tokens[2] + self.wrap_comment(" type: " + tokens[1])
         else:

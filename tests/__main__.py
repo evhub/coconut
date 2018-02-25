@@ -35,7 +35,7 @@ def main(args=None):
     if args is None:
         args = sys.argv[1:]
     print("Compiling Coconut test suite with args %r." % args)
-    comp_all(args)
+    comp_all(args, expect_retcode=0 if "--mypy" not in args else None)
 
 
 if __name__ == "__main__":

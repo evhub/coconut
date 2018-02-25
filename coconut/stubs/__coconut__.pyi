@@ -10,12 +10,10 @@ _ITER_FUNC = _t.TypeVar("_ITER_FUNC", bound=_t.Callable[..., _t.Iterable])
 
 
 if sys.version_info < (3,):
-    import __builtin__ as _b
-
     from future_builtins import *
     from io import open
 
-    py_raw_input, py_xrange = _b.raw_input, _b.xrange
+    py_raw_input, py_xrange = raw_input, xrange
 
     class range(_t.Iterable[int]):
         def __init__(self,
@@ -32,11 +30,8 @@ if sys.version_info < (3,):
         def count(self, elem: int) -> int: ...
         def index(self, elem: int) -> int: ...
 
-else:
-    import builtins as _b
 
-
-py_chr, py_filter, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate = _b.chr, _b.filter, _b.hex, _b.input, _b.int, _b.map, _b.object, _b.oct, _b.open, _b.print, _b.range, _b.str, _b.zip, _b.filter, _b.reversed, _b.enumerate
+py_chr, py_filter, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate = chr, filter, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate
 
 
 def scan(func: _t.Callable[[_T, _U], _T], iterable: _t.Iterable[_U], initializer: _T=None) -> _t.Iterable[_T]: ...

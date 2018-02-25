@@ -131,7 +131,7 @@ dest                destination directory for compiled files (defaults to
                       run Jupyter/IPython with Coconut as the kernel
                       (remaining args passed to Jupyter)
 --mypy ...            run MyPy on compiled Python (remaining args passed to
-                      MyPy) (implies --package --no-tco)
+                      MyPy) (implies --package)
 --argv ...            set sys.argv to source plus remaining args for use in
                       Coconut script being run
 --tutorial            open Coconut's tutorial in the default web browser
@@ -1106,9 +1106,7 @@ print(list(map(operator.add, range(0, 5), range(5, 10))))
 
 Since Coconut syntax is a superset of Python 3 syntax, it supports [Python 3 function type annotation syntax](https://www.python.org/dev/peps/pep-0484/) and [Python 3.6 variable type annotation syntax](https://www.python.org/dev/peps/pep-0526/). By default, Coconut compiles all type annotations into Python-2-compatible type comments. If you want to keep the type annotations instead, simply pass a `--target` that supports them.
 
-Furthermore, since not all supported Python versions support the [`typing`](https://docs.python.org/3/library/typing.html) module, Coconut provides the [`TYPE_CHECKING`](#type-checking) built-in for hiding your `typing` imports and `TypeVar` definitions from being executed at runtime.
-
-_Note: When compiling type annotations to Python 3 syntax, Coconut will wrap every annotation in a string when in a position where Python would otherwise evaluate it (e.g. Python 3 function annotation), so that all type annotations are only ever evaluated at compile time, never at run time._
+Since not all supported Python versions support the [`typing`](https://docs.python.org/3/library/typing.html) module, Coconut provides the [`TYPE_CHECKING`](#type-checking) built-in for hiding your `typing` imports and `TypeVar` definitions from being executed at runtime. Furthermore, when compiling type annotations to Python 3 syntax, Coconut wraps annotation in strings to prevent them from being evaluated at runtime.
 
 Additionally, Coconut adds special syntax for making type annotations easier and simpler to write. When inside of a type annotation, Coconut treats certain syntax constructs differently, compiling them to type annotations instead of what they would normally represent. Specifically, Coconut applies the following transformations:
 ```coconut

@@ -178,7 +178,7 @@ arguments.add_argument(
     "--mypy",
     type=str,
     nargs=argparse.REMAINDER,
-    help="run MyPy on compiled Python (remaining args passed to MyPy) (implies --package --no-tco)",
+    help="run MyPy on compiled Python (remaining args passed to MyPy) (implies --package)",
 )
 
 arguments.add_argument(

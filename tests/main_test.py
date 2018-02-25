@@ -400,8 +400,8 @@ class TestCompilation(unittest.TestCase):
         def test_mypy(self):
             run(["--mypy"] + mypy_args, expect_retcode=1)  # fails due to tutorial mypy errors
 
-        def test_mypy_py3(self):
-            run(["--mypy"] + mypy_args, agnostic_target=3, expect_retcode=1)  # fails due to tutorial mypy errors
+        def test_mypy_sys(self):
+            run(["--mypy"] + mypy_args, agnostic_target="sys", expect_retcode=1)  # fails due to tutorial mypy errors
 
     def test_target(self):
         run(agnostic_target=(2 if PY2 else 3))

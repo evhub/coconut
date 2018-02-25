@@ -171,12 +171,10 @@ class Command(object):
             minify=args.minify,
             line_numbers=args.line_numbers,
             keep_lines=args.keep_lines,
-            no_tco=args.no_tco or args.mypy is not None,
+            no_tco=args.no_tco,
         )
 
         if args.mypy is not None:
-            if args.no_tco:
-                logger.warn("extraneous --no-tco argument passed; --mypy implies --no-tco")
             self.set_mypy_args(args.mypy)
 
         if args.argv is not None:
