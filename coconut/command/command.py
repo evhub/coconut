@@ -566,16 +566,7 @@ class Command(object):
             self.mypy_errs = []
             self.mypy_args = list(mypy_args)
 
-            for arg in self.mypy_args:
-                if arg == "--py2" or arg == "-2":
-                    logger.warn("unnecessary --mypy argument", arg, extra="passed automatically when needed")
-                elif arg == "--python-version":
-                    logger.warn("unnecessary --mypy argument", arg, extra="current --target passed as version automatically")
-
-            if not ("--py2" in self.mypy_args or "-2" in self.mypy_args) and not self.comp.target.startswith("3"):
-                self.mypy_args.append("--py2")
-
-            if "--python-version" not in self.mypy_args:
+            if not any(arg.startswith("--python-version") for arg in mypy_args):
                 self.mypy_args += ["--python-version", ".".join(str(v) for v in self.comp.target_info_len2)]
 
             if logger.verbose:
