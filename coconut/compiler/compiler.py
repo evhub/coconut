@@ -1184,7 +1184,7 @@ class Compiler(Grammar):
             # this is necessary to prevent a segfault caused by self-reference
             out += (
                 ichain_var + " = " + name + "\n"
-                + " = _coconut.itertools.chain.from_iterable(" + lazy_list_handle([ichain_var, "(" + item + ")"]) + ")"
+                + name + " = _coconut.itertools.chain.from_iterable(" + lazy_list_handle([ichain_var, "(" + item + ")"]) + ")"
             )
         else:
             out += name + " " + op + " " + item
