@@ -38,7 +38,6 @@ from coconut.myparsing import (
     line as getline,
     lineno,
     nums,
-    Keyword,
 )
 from coconut.constants import (
     get_target_info,
@@ -110,6 +109,7 @@ from coconut.compiler.util import (
     get_target_info_len2,
     split_leading_comment,
     compile_regex,
+    keyword,
 )
 from coconut.compiler.header import (
     minify,
@@ -1582,7 +1582,7 @@ class Compiler(Grammar):
                 + tco_recurse + closeindent
             )
         return attach(
-            self.start_marker + (Keyword("return") + Keyword(func_name)).suppress() + self.parens + self.end_marker,
+            self.start_marker + (keyword("return") + keyword(func_name)).suppress() + self.parens + self.end_marker,
             tre_return_handle,
         )
 

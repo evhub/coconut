@@ -34,7 +34,6 @@ from coconut.myparsing import (
     CaselessLiteral,
     Forward,
     Group,
-    Keyword,
     Literal,
     OneOrMore,
     Optional,
@@ -88,6 +87,7 @@ from coconut.compiler.util import (
     split_trailing_indent,
     split_leading_indent,
     collapse_indents,
+    keyword,
 )
 
 # end: IMPORTS
@@ -814,9 +814,9 @@ class Grammar(object):
     name = Forward()
     base_name = Regex(r"\b(?![0-9])\w+\b", re.U)
     for k in keywords + const_vars:
-        base_name = ~Keyword(k) + base_name
+        base_name = ~keyword(k) + base_name
     for k in reserved_vars:
-        base_name |= backslash.suppress() + Keyword(k)
+        base_name |= backslash.suppress() + keyword(k)
     dotted_base_name = condense(base_name + ZeroOrMore(dot + base_name))
     dotted_name = condense(name + ZeroOrMore(dot + name))
 
@@ -905,10 +905,10 @@ class Grammar(object):
 
     comp_op = (
         le | ge | ne | lt | gt | eq
-        | addspace(Keyword("not") + Keyword("in"))
-        | Keyword("in")
-        | addspace(Keyword("is") + Keyword("not"))
-        | Keyword("is")
+        | addspace(keyword("not") + keyword("in"))
+        | keyword("in")
+        | addspace(keyword("is") + keyword("not"))
+        | keyword("is")
     )
 
     expr = Forward()
@@ -923,8 +923,8 @@ class Grammar(object):
 
     yield_from = Forward()
     dict_comp = Forward()
-    yield_classic = addspace(Keyword("yield") + Optional(testlist))
-    yield_from_ref = Keyword("yield").suppress() + Keyword("from").suppress() + test
+    yield_classic = addspace(keyword("yield") + Optional(testlist))
+    yield_from_ref = keyword("yield").suppress() + keyword("from").suppress() + test
     yield_expr = yield_from | yield_classic
     dict_comp_ref = lbrace.suppress() + (test + colon.suppress() + test | dubstar_expr) + comp_for + rbrace.suppress()
     dict_item = condense(
@@ -946,8 +946,8 @@ class Grammar(object):
         | fixto(comp_pipe, "_coconut_forward_compose")
         | fixto(comp_star_pipe, "_coconut_forward_star_compose")
         | fixto(comp_back_star_pipe, "_coconut_back_star_compose")
-        | fixto(Keyword("and"), "_coconut_bool_and")
-        | fixto(Keyword("or"), "_coconut_bool_or")
+        | fixto(keyword("and"), "_coconut_bool_and")
+        | fixto(keyword("or"), "_coconut_bool_or")
         | fixto(dubquestion, "_coconut_none_coalesce")
         | fixto(minus, "_coconut_minus")
         | fixto(dot, "_coconut.getattr")
@@ -973,9 +973,9 @@ class Grammar(object):
         | fixto(ne, "_coconut.operator.ne")
         | fixto(tilde, "_coconut.operator.inv")
         | fixto(matrix_at, "_coconut.operator.matmul")
-        | fixto(Keyword("not"), "_coconut.operator.not_")
-        | fixto(Keyword("is"), "_coconut.operator.is_")
-        | fixto(Keyword("in"), "_coconut.operator.contains")
+        | fixto(keyword("not"), "_coconut.operator.not_")
+        | fixto(keyword("is"), "_coconut.operator.is_")
+        | fixto(keyword("in"), "_coconut.operator.contains")
     )
 
     typedef = Forward()
@@ -1055,7 +1055,7 @@ class Grammar(object):
     list_comp = condense(lbrack + Optional(testlist_comp) + rbrack)
     paren_atom = condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
     op_atom = lparen.suppress() + op_item + rparen.suppress()
-    keyword_atom = reduce(lambda acc, x: acc | Keyword(x), const_vars)
+    keyword_atom = reduce(lambda acc, x: acc | keyword(x), const_vars)
     string_atom = addspace(OneOrMore(string))
     passthrough_atom = trace(addspace(OneOrMore(passthrough)))
     set_literal = Forward()
@@ -1172,7 +1172,7 @@ class Grammar(object):
     compose_item = attach(atom_item + ZeroOrMore(dotdot.suppress() + atom_item), compose_item_handle)
 
     await_item = Forward()
-    await_item_ref = Keyword("await").suppress() + compose_item
+    await_item_ref = keyword("await").suppress() + compose_item
 
     factor = Forward()
     unary = plus | neg_minus | tilde
@@ -1248,9 +1248,9 @@ class Grammar(object):
     dubstar_expr_ref = condense(dubstar + expr)
 
     comparison = exprlist(expr, comp_op)
-    not_test = addspace(ZeroOrMore(Keyword("not")) + comparison)
-    and_test = exprlist(not_test, Keyword("and"))
-    test_item = trace(exprlist(and_test, Keyword("or")))
+    not_test = addspace(ZeroOrMore(keyword("not")) + comparison)
+    and_test = exprlist(not_test, keyword("and"))
+    test_item = trace(exprlist(and_test, keyword("or")))
 
     simple_stmt_item = Forward()
     unsafe_simple_stmt_item = Forward()
@@ -1265,13 +1265,13 @@ class Grammar(object):
     classic_lambdef = Forward()
     classic_lambdef_params = maybeparens(lparen, var_args_list, rparen)
     new_lambdef_params = lparen.suppress() + var_args_list + rparen.suppress() | name
-    classic_lambdef_ref = addspace(Keyword("lambda") + condense(classic_lambdef_params + colon))
+    classic_lambdef_ref = addspace(keyword("lambda") + condense(classic_lambdef_params + colon))
     new_lambdef = attach(new_lambdef_params + arrow.suppress(), lambdef_handle)
     implicit_lambdef = fixto(arrow, "lambda _=None:")
     lambdef_base = classic_lambdef | new_lambdef | implicit_lambdef
 
     stmt_lambdef = Forward()
-    match_guard = Optional(Keyword("if").suppress() + test)
+    match_guard = Optional(keyword("if").suppress() + test)
     closing_stmt = longest(testlist("tests"), unsafe_simple_stmt_item)
     stmt_lambdef_params = Optional(
         attach(name, add_paren_handle)
@@ -1280,7 +1280,7 @@ class Grammar(object):
         default="(_=None)",
     )
     stmt_lambdef_ref = (
-        Keyword("def").suppress() + stmt_lambdef_params + arrow.suppress()
+        keyword("def").suppress() + stmt_lambdef_params + arrow.suppress()
         + (
             Group(OneOrMore(simple_stmt_item + semicolon.suppress())) + Optional(closing_stmt)
             | Group(ZeroOrMore(simple_stmt_item + semicolon.suppress())) + closing_stmt
@@ -1306,7 +1306,7 @@ class Grammar(object):
     test <<= trace(
         typedef_callable
         | lambdef
-        | addspace(test_item + Optional(Keyword("if") + test_item + Keyword("else") + test)),
+        | addspace(test_item + Optional(keyword("if") + test_item + keyword("else") + test)),
     )
     test_no_cond <<= trace(lambdef_no_cond | test_item)
 
@@ -1319,32 +1319,32 @@ class Grammar(object):
         ),
     )
     class_suite = suite | attach(newline, class_suite_handle)
-    classdef = condense(addspace(Keyword("class") - name) - classlist - class_suite)
+    classdef = condense(addspace(keyword("class") - name) - classlist - class_suite)
     comp_iter = Forward()
-    base_comp_for = addspace(Keyword("for") + assignlist + Keyword("in") + test_item + Optional(comp_iter))
-    async_comp_for_ref = addspace(Keyword("async") + base_comp_for)
+    base_comp_for = addspace(keyword("for") + assignlist + keyword("in") + test_item + Optional(comp_iter))
+    async_comp_for_ref = addspace(keyword("async") + base_comp_for)
     comp_for <<= async_comp_for | base_comp_for
-    comp_if = addspace(Keyword("if") + test_no_cond + Optional(comp_iter))
+    comp_if = addspace(keyword("if") + test_no_cond + Optional(comp_iter))
     comp_iter <<= comp_for | comp_if
 
     complex_raise_stmt = Forward()
-    pass_stmt = Keyword("pass")
-    break_stmt = Keyword("break")
-    continue_stmt = Keyword("continue")
-    return_stmt = addspace(Keyword("return") - Optional(testlist))
-    simple_raise_stmt = addspace(Keyword("raise") + Optional(test))
-    complex_raise_stmt_ref = Keyword("raise").suppress() + test + Keyword("from").suppress() - test
+    pass_stmt = keyword("pass")
+    break_stmt = keyword("break")
+    continue_stmt = keyword("continue")
+    return_stmt = addspace(keyword("return") - Optional(testlist))
+    simple_raise_stmt = addspace(keyword("raise") + Optional(test))
+    complex_raise_stmt_ref = keyword("raise").suppress() + test + keyword("from").suppress() - test
     raise_stmt = complex_raise_stmt | simple_raise_stmt
     flow_stmt = break_stmt | continue_stmt | return_stmt | raise_stmt | yield_expr
 
-    dotted_as_name = Group(dotted_name - Optional(Keyword("as").suppress() - name))
-    import_as_name = Group(name - Optional(Keyword("as").suppress() - name))
+    dotted_as_name = Group(dotted_name - Optional(keyword("as").suppress() - name))
+    import_as_name = Group(name - Optional(keyword("as").suppress() - name))
     import_names = Group(maybeparens(lparen, tokenlist(dotted_as_name, comma), rparen))
     from_import_names = Group(maybeparens(lparen, tokenlist(import_as_name, comma), rparen))
-    basic_import = Keyword("import").suppress() - import_names
-    from_import = (Keyword("from").suppress()
+    basic_import = keyword("import").suppress() - import_names
+    from_import = (keyword("from").suppress()
                    - condense(ZeroOrMore(unsafe_dot) + dotted_name | OneOrMore(unsafe_dot))
-                   - Keyword("import").suppress() - (Group(star) | from_import_names))
+                   - keyword("import").suppress() - (Group(star) | from_import_names))
     import_stmt = Forward()
     import_stmt_ref = from_import | basic_import
 
@@ -1353,9 +1353,9 @@ class Grammar(object):
         maybeparens(lparen, itemlist(name, comma), rparen) - Optional(equals.suppress() - test_expr),
         namelist_handle,
     )
-    global_stmt = addspace(Keyword("global") - namelist)
-    nonlocal_stmt_ref = addspace(Keyword("nonlocal") - namelist)
-    del_stmt = addspace(Keyword("del") - simple_assignlist)
+    global_stmt = addspace(keyword("global") - namelist)
+    nonlocal_stmt_ref = addspace(keyword("nonlocal") - namelist)
+    del_stmt = addspace(keyword("del") - simple_assignlist)
 
     matchlist_list = Group(Optional(tokenlist(match, comma)))
     matchlist_tuple = Group(
@@ -1414,60 +1414,60 @@ class Grammar(object):
         | (name + lparen.suppress() + matchlist_data + rparen.suppress())("data")
         | name("var"),
     ))
-    matchlist_trailer = base_match + OneOrMore(Keyword("as") + name | Keyword("is") + atom_item)
+    matchlist_trailer = base_match + OneOrMore(keyword("as") + name | keyword("is") + atom_item)
     as_match = Group(matchlist_trailer("trailer")) | base_match
-    matchlist_and = as_match + OneOrMore(Keyword("and").suppress() + as_match)
+    matchlist_and = as_match + OneOrMore(keyword("and").suppress() + as_match)
     and_match = Group(matchlist_and("and")) | as_match
-    matchlist_or = and_match + OneOrMore(Keyword("or").suppress() + and_match)
+    matchlist_or = and_match + OneOrMore(keyword("or").suppress() + and_match)
     or_match = Group(matchlist_or("or")) | and_match
     match <<= trace(or_match)
 
     else_suite = condense(colon + trace(attach(simple_compound_stmt, else_handle))) | suite
-    else_stmt = condense(Keyword("else") - else_suite)
+    else_stmt = condense(keyword("else") - else_suite)
 
     full_suite = colon.suppress() + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
     full_match = trace(attach(
-        Keyword("match").suppress() + match + Keyword("in").suppress() - test - match_guard - full_suite,
+        keyword("match").suppress() + match + keyword("in").suppress() - test - match_guard - full_suite,
         match_handle,
     ))
     match_stmt = condense(full_match - Optional(else_stmt))
 
     destructuring_stmt = Forward()
-    destructuring_stmt_ref = Optional(Keyword("match").suppress()) + match + equals.suppress() + test_expr
+    destructuring_stmt_ref = Optional(keyword("match").suppress()) + match + equals.suppress() + test_expr
 
     case_match = trace(Group(
-        Keyword("match").suppress() - match - Optional(Keyword("if").suppress() - test) - full_suite,
+        keyword("match").suppress() - match - Optional(keyword("if").suppress() - test) - full_suite,
     ))
     case_stmt = attach(
-        Keyword("case").suppress() + test - colon.suppress() - newline.suppress()
+        keyword("case").suppress() + test - colon.suppress() - newline.suppress()
         - indent.suppress() - Group(OneOrMore(case_match))
-        - dedent.suppress() - Optional(Keyword("else").suppress() - else_suite),
+        - dedent.suppress() - Optional(keyword("else").suppress() - else_suite),
         case_handle,
     )
 
     exec_stmt = Forward()
-    assert_stmt = addspace(Keyword("assert") - testlist)
+    assert_stmt = addspace(keyword("assert") - testlist)
     if_stmt = condense(
-        addspace(Keyword("if") - condense(test - suite))
-        - ZeroOrMore(addspace(Keyword("elif") - condense(test - suite)))
+        addspace(keyword("if") - condense(test - suite))
+        - ZeroOrMore(addspace(keyword("elif") - condense(test - suite)))
         - Optional(else_stmt),
     )
-    while_stmt = addspace(Keyword("while") - condense(test - suite - Optional(else_stmt)))
-    for_stmt = addspace(Keyword("for") - assignlist - Keyword("in") - condense(testlist - suite - Optional(else_stmt)))
+    while_stmt = addspace(keyword("while") - condense(test - suite - Optional(else_stmt)))
+    for_stmt = addspace(keyword("for") - assignlist - keyword("in") - condense(testlist - suite - Optional(else_stmt)))
     except_clause = attach(
-        Keyword("except").suppress() + (
+        keyword("except").suppress() + (
             testlist_has_comma("list") | test("test")
-        ) - Optional(Keyword("as").suppress() - name),
+        ) - Optional(keyword("as").suppress() - name),
         except_handle,
     )
-    try_stmt = condense(Keyword("try") - suite + (
-        Keyword("finally") - suite
+    try_stmt = condense(keyword("try") - suite + (
+        keyword("finally") - suite
         | (
-            OneOrMore(except_clause - suite) - Optional(Keyword("except") - suite)
-            | Keyword("except") - suite
-        ) - Optional(else_stmt) - Optional(Keyword("finally") - suite)
+            OneOrMore(except_clause - suite) - Optional(keyword("except") - suite)
+            | keyword("except") - suite
+        ) - Optional(else_stmt) - Optional(keyword("finally") - suite)
     ))
-    exec_stmt_ref = Keyword("exec").suppress() + lparen.suppress() + test + Optional(
+    exec_stmt_ref = keyword("exec").suppress() + lparen.suppress() + test + Optional(
         comma.suppress() + test + Optional(
             comma.suppress() + test + Optional(
                 comma.suppress(),
@@ -1475,9 +1475,9 @@ class Grammar(object):
         ),
     ) + rparen.suppress()
 
-    with_item = addspace(test - Optional(Keyword("as") - name))
+    with_item = addspace(test - Optional(keyword("as") - name))
     with_item_list = Group(maybeparens(lparen, tokenlist(with_item, comma), rparen))
-    with_stmt_ref = Keyword("with").suppress() - with_item_list - suite
+    with_stmt_ref = keyword("with").suppress() - with_item_list - suite
     with_stmt = Forward()
 
     return_typedef = Forward()
@@ -1496,7 +1496,7 @@ class Grammar(object):
     return_typedef_ref = arrow.suppress() + typedef_test
     end_func_colon = return_typedef + colon.suppress() | colon
     base_funcdef = op_funcdef | name_funcdef
-    funcdef = trace(addspace(Keyword("def") + condense(base_funcdef + end_func_colon + nocolon_suite)))
+    funcdef = trace(addspace(keyword("def") + condense(base_funcdef + end_func_colon + nocolon_suite)))
 
     name_match_funcdef = Forward()
     op_match_funcdef = Forward()
@@ -1507,7 +1507,7 @@ class Grammar(object):
     ))
     name_match_funcdef_ref = dotted_name + lparen.suppress() + match_args_list + match_guard + rparen.suppress()
     op_match_funcdef_ref = op_match_funcdef_arg + op_funcdef_name + op_match_funcdef_arg + match_guard
-    base_match_funcdef = trace(Keyword("def").suppress() + (op_match_funcdef | name_match_funcdef))
+    base_match_funcdef = trace(keyword("def").suppress() + (op_match_funcdef | name_match_funcdef))
     def_match_funcdef = trace(attach(
         base_match_funcdef
         + colon.suppress()
@@ -1520,17 +1520,17 @@ class Grammar(object):
         ),
         join_match_funcdef,
     ))
-    match_funcdef = Optional(Keyword("match").suppress()) + def_match_funcdef
+    match_funcdef = Optional(keyword("match").suppress()) + def_match_funcdef
 
     where_suite = colon.suppress() - Group(
         newline.suppress() + indent.suppress() - OneOrMore(simple_stmt) - dedent.suppress()
         | simple_stmt,
     )
-    where_stmt = attach(unsafe_simple_stmt_item + Keyword("where").suppress() - where_suite, where_stmt_handle)
+    where_stmt = attach(unsafe_simple_stmt_item + keyword("where").suppress() - where_suite, where_stmt_handle)
 
     implicit_return = attach(testlist, implicit_return_handle)
     implicit_return_stmt = (
-        attach(implicit_return + Keyword("where").suppress() - where_suite, where_stmt_handle)
+        attach(implicit_return + keyword("where").suppress() - where_suite, where_stmt_handle)
         | condense(implicit_return + newline)
     )
     math_funcdef_body = condense(ZeroOrMore(~(implicit_return_stmt + dedent) + stmt) - implicit_return_stmt)
@@ -1540,10 +1540,10 @@ class Grammar(object):
     )
     end_func_equals = return_typedef + equals.suppress() | fixto(equals, ":")
     math_funcdef = trace(attach(
-        condense(addspace(Keyword("def") + base_funcdef) + end_func_equals) - math_funcdef_suite,
+        condense(addspace(keyword("def") + base_funcdef) + end_func_equals) - math_funcdef_suite,
         math_funcdef_handle,
     ))
-    math_match_funcdef = Optional(Keyword("match").suppress()) + trace(attach(
+    math_match_funcdef = Optional(keyword("match").suppress()) + trace(attach(
         base_match_funcdef
         + equals.suppress()
         - Optional(docstring)
@@ -1558,12 +1558,12 @@ class Grammar(object):
     ))
 
     async_stmt = Forward()
-    async_stmt_ref = addspace(Keyword("async") + (with_stmt | for_stmt))
+    async_stmt_ref = addspace(keyword("async") + (with_stmt | for_stmt))
 
-    async_funcdef = Keyword("async").suppress() + (funcdef | math_funcdef)
+    async_funcdef = keyword("async").suppress() + (funcdef | math_funcdef)
     async_match_funcdef = (
-        Optional(Keyword("match")) + Keyword("async")
-        | Keyword("async") + Optional(Keyword("match"))
+        Optional(keyword("match")) + keyword("async")
+        | keyword("async") + Optional(keyword("match"))
     ).suppress() + (def_match_funcdef | math_match_funcdef)
 
     datadef = Forward()
@@ -1575,13 +1575,13 @@ class Grammar(object):
             | (name + colon.suppress() + typedef_test + equals.suppress() + test + arg_comma.suppress())("type default")
             | (name + colon.suppress() + typedef_test + arg_comma.suppress())("type"),
         ),
-    ) + rparen.suppress())) + Optional(Keyword("from").suppress() + testlist)
+    ) + rparen.suppress())) + Optional(keyword("from").suppress() + testlist)
     data_suite = Group(colon.suppress() - (
         (newline.suppress() + indent.suppress() + Optional(docstring) + Group(OneOrMore(stmt)) + dedent.suppress())("complex")
         | (newline.suppress() + indent.suppress() + docstring + dedent.suppress() | docstring)("docstring")
         | simple_stmt("simple")
     ) | newline("empty"))
-    datadef_ref = Keyword("data").suppress() + name - data_args - data_suite
+    datadef_ref = keyword("data").suppress() + name - data_args - data_suite
 
     simple_decorator = condense(dotted_name + Optional(function_call))("simple")
     complex_decorator = test("test")
@@ -1679,7 +1679,7 @@ class Grammar(object):
     any_char = Regex(r".", re.U | re.DOTALL)
 
     tco_return = attach(
-        start_marker + Keyword("return").suppress() + condense(
+        start_marker + keyword("return").suppress() + condense(
             (base_name | parens | brackets | braces | string)
             + ZeroOrMore(dot + base_name | brackets | parens + ~end_marker),
         ) + parens + end_marker,
@@ -1700,15 +1700,15 @@ class Grammar(object):
     )))
 
     split_func_name_args_params = attach(
-        (start_marker - Keyword("def")).suppress() - dotted_base_name - lparen.suppress()
+        (start_marker - keyword("def")).suppress() - dotted_base_name - lparen.suppress()
         - parameters_tokens - rparen.suppress(),
         split_func_name_args_params_handle,
         greedy=True,  # this is the root in what it's used for, so might as well evaluate greedily
     )
 
     stores_scope = (
-        Keyword("lambda")
-        | Keyword("for") + base_name + Keyword("in")
+        keyword("lambda")
+        | keyword("for") + base_name + keyword("in")
     )
 
     just_a_string = start_marker + string + end_marker

@@ -34,6 +34,7 @@ from coconut.myparsing import (
     ParseException,
     ParseResults,
     Combine,
+    Regex,
     _trim_arity,
     _ParseResultsWithOffset,
 )
@@ -329,6 +330,11 @@ def ind_change(inputstring):
 def compile_regex(regex):
     """Compiles the given regex to support unicode."""
     return re.compile(regex, re.U)
+
+
+def keyword(name):
+    """Construct a grammar which matches name as a Python keyword."""
+    return Regex(name + r"\b", re.U)
 
 
 def fixto(item, output):

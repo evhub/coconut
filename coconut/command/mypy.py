@@ -22,6 +22,7 @@ from coconut.root import *  # NOQA
 import traceback
 
 from coconut.exceptions import CoconutException
+from coconut.terminal import logger
 
 try:
     from mypy.api import run
@@ -38,6 +39,7 @@ except ImportError:
 
 def mypy_run(args):
     """Runs mypy with given arguments and shows the result."""
+    logger.log_cmd(["mypy"] + args)
     try:
         stdout, stderr, exit_code = run(args)
     except BaseException:
