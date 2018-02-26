@@ -1140,6 +1140,8 @@ class Grammar(object):
 
     chain_expr = attach(or_expr + ZeroOrMore(dubcolon.suppress() + or_expr), chain_handle)
 
+    lambdef = Forward()
+
     infix_op = condense(backtick.suppress() + test_no_infix + backtick.suppress())
 
     infix_expr = Forward()
@@ -1148,15 +1150,13 @@ class Grammar(object):
         | attach(
             Group(Optional(chain_expr))
             + OneOrMore(
-                infix_op + Group(Optional(chain_expr)),
+                infix_op + Group(Optional(lambdef | chain_expr)),
             ),
             infix_handle,
         )
     )
 
     none_coalesce_expr = attach(infix_expr + ZeroOrMore(dubquestion.suppress() + infix_expr), none_coalesce_handle)
-
-    lambdef = Forward()
 
     comp_pipe_op = comp_pipe | comp_back_pipe | comp_star_pipe | comp_back_star_pipe
     comp_pipe_expr = (

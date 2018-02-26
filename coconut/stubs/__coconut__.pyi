@@ -7,7 +7,6 @@ _U = _t.TypeVar("_U")
 _FUNC = _t.TypeVar("_FUNC", bound=_t.Callable)
 _FUNC2 = _t.TypeVar("_FUNC2", bound=_t.Callable)
 _ITER_FUNC = _t.TypeVar("_ITER_FUNC", bound=_t.Callable[..., _t.Iterable])
-_ITER = _t.TypeVar("_ITER", bound=_t.Iterable)
 
 
 if sys.version_info < (3,):
@@ -195,4 +194,4 @@ class _coconut_partial:
     def __call__(self, *args, **kwargs) -> _T: ...
 
 
-def fmap(func: _t.Callable, obj: _ITER) -> _ITER: ...
+def fmap(func: _t.Callable, obj: _t.Iterable) -> _t.Iterable: ...

@@ -498,6 +498,7 @@ def suite_test():
     assert ridiculously_recursive(300) == 201666561657114122540576123152528437944095370972927688812965354745141489205495516550423117825 == ridiculously_recursive_(300)
     assert [fib(n) for n in range(16)] == [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610]
     assert fib.cache_info().hits == 28
+    assert (plus1 `(..)` x -> x*2)(4) == 9
     return True
 
 def tco_test():
