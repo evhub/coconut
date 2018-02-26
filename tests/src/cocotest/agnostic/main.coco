@@ -465,6 +465,9 @@ def main_test():
     else:
         two = 4
     assert two == 2
+    assert makedata(list, 1, 2, 3) == [1, 2, 3]
+    assert makedata(str, "a", "b", "c") == "abc"
+    assert makedata(dict, ("a", 1), ("b", 2)) == {"a": 1, "b": 2}
     return True
 
 def tco_func() = tco_func()

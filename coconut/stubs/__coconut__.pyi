@@ -88,7 +88,7 @@ _coconut_MatchError = MatchError
 
 
 def _coconut_tco(func: _FUNC) -> _FUNC: ...
-def _coconut_tail_call(func: _t.Callable, *args, **kwargs):
+def _coconut_tail_call(func: _t.Callable[..., _T], *args, **kwargs) -> _T:
     return func(*args, **kwargs)
 
 
@@ -170,7 +170,7 @@ class count(_t.Iterable[int]):
 def groupsof(n: int, iterable: _t.Iterable[_T]) -> _t.Iterable[_t.Tuple[_T, ...]]: ...
 
 
-def makedata(data_type: _t.Type[_T], *args, **kwargs) -> _T: ...
+def makedata(data_type: _t.Type[_T], *args) -> _T: ...
 def datamaker(data_type):
     return _coconut.functools.partial(makedata, data_type)
 

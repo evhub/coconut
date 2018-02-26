@@ -1909,14 +1909,7 @@ _Can't be done quickly without Coconut's iterator slicing, which requires many c
 
 ### `makedata`
 
-Coconut provides the `makedata` function to allow direct access to the base constructor of data types created with the Coconut `data` statement. This is particularly useful when writing alternative constructors for data types by overwriting `__new__`.
-
-`makedata` takes the data type to call as the first argument, and the arguments for constructing that data type as the rest of the arguments. For `data` objects, `makedata` behaves as the underlying data type's original constructor, exactly as the data type was declared. For non-`data` objects, `makedata` is equivalent to:
-```coconut
-def makedata(data_type, *args, **kwargs):
-    """Returns base data constructor of data_type."""
-    return super(data_type, data_type).__new__(data_type, *args, **kwargs)
-```
+Coconut provides the `makedata` function to construct a container given the desired type and contents. This is particularly useful when writing alternative constructors for data types by overwriting `__new__`, since it allows direct access to the base constructor of the data type created with the Coconut `data` statement. `makedata` takes the data type to construct as the first argument, and the objects to put in that container as the rest of the arguments.
 
 **DEPRECATED:** Coconut also has a `datamaker` built-in, which partially applies `makedata`; `datamaker` is defined as:
 ```coconut
@@ -2015,13 +2008,13 @@ Coconut provides a modified version of `itertools.accumulate` with opposite argu
 
 ##### Python Docs
 
-**scan**(_func, iterable_**[**_, initializer_**]**)
+**scan**(_function, iterable_**[**_, initializer_**]**)
 
-Make an iterator that returns accumulated results of some function of two arguments. Elements of the input iterable may be any type that can be accepted as arguments to _func_. (For example, with the operation of addition, elements may be any addable type including Decimal or Fraction.) If the input iterable is empty, the output iterable will also be empty.
+Make an iterator that returns accumulated results of some function of two arguments. Elements of the input iterable may be any type that can be accepted as arguments to _function_. (For example, with the operation of addition, elements may be any addable type including Decimal or Fraction.) If the input iterable is empty, the output iterable will also be empty.
 
 If no _initializer_ is given, roughly equivalent to:
 ```coconut_python
-def scan(func, iterable):
+def scan(function, iterable):
     'Return running totals'
     # scan(operator.add, [1,2,3,4,5]) --> 1 3 6 10 15
     # scan(operator.mul, [1,2,3,4,5]) --> 1 2 6 24 120
@@ -2032,7 +2025,7 @@ def scan(func, iterable):
         return
     yield total
     for element in it:
-        total = func(total, element)
+        total = function(total, element)
         yield total
 ```
 
