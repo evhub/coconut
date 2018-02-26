@@ -31,7 +31,6 @@ from coconut.constants import (
     wildcard,
     openindent,
     closeindent,
-    match_check_var,
     const_vars,
     sentinel_var,
 )
@@ -90,6 +89,7 @@ class Matcher(object):
     }
     __slots__ = (
         "loc",
+        "check_var",
         "position",
         "checkdefs",
         "names",
@@ -99,9 +99,10 @@ class Matcher(object):
         "use_sentinel",
     )
 
-    def __init__(self, loc, checkdefs=None, names=None, var_index=0):
+    def __init__(self, loc, check_var, checkdefs=None, names=None, var_index=0):
         """Creates the matcher."""
         self.loc = loc
+        self.check_var = check_var
         self.position = 0
         self.checkdefs = []
         if checkdefs is None:
@@ -118,8 +119,8 @@ class Matcher(object):
 
     def duplicate(self):
         """Duplicates the matcher to others."""
-        other = Matcher(self.loc, self.checkdefs, self.names, self.var_index)
-        other.insert_check(0, "not " + match_check_var)
+        other = Matcher(self.loc, self.check_var, self.checkdefs, self.names, self.var_index)
+        other.insert_check(0, "not " + self.check_var)
         self.others.append(other)
         return other
 
@@ -614,6 +615,7 @@ class Matcher(object):
         raise CoconutInternalException("invalid pattern-matching tokens", tokens)
 
     def out(self):
+        """Return pattern-matching code."""
         out = ""
         if self.use_sentinel:
             out += sentinel_var + " = _coconut.object()\n"
@@ -625,14 +627,24 @@ class Matcher(object):
             if defs:
                 out += "\n".join(defs) + "\n"
         return out + (
-            match_check_var + " = True\n"
+            self.check_var + " = True\n"
             + closeindent * closes
             + "".join(other.out() for other in self.others)
             + (
-                "if " + match_check_var + " and not ("
+                "if " + self.check_var + " and not ("
                 + paren_join(self.guards, "and")
                 + "):\n" + openindent
-                + match_check_var + " = False\n" + closeindent
+                + self.check_var + " = False\n" + closeindent
                 if self.guards else ""
             )
         )
+
+    def build(self, stmts=None, set_check_var=True):
+        """Construct code for performing the match then executing stmts."""
+        out = ""
+        if set_check_var:
+            out += self.check_var + " = False\n"
+        out += self.out()
+        if stmts is not None:
+            out += "if " + self.check_var + ":" + "\n" + openindent + "".join(stmts) + closeindent
+        return out

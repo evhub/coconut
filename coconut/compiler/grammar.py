@@ -182,18 +182,6 @@ def get_infix_items(tokens, callback=infix_error):
     return func, args
 
 
-def case_to_match(tokens):
-    """Convert case tokens to match tokens."""
-    if len(tokens) == 2:
-        matches, stmts = tokens
-        return matches, None, stmts
-    elif len(tokens) == 3:
-        matches, cond, stmts = tokens
-        return matches, None, cond, stmts
-    else:
-        raise CoconutInternalException("invalid case match tokens", tokens)
-
-
 def comp_pipe_info(op):
     """Returns (direction, star) where direction is 'forwards' or 'backwards'."""
     if op == "..>":
@@ -532,18 +520,8 @@ def else_handle(tokens):
     return "\n" + openindent + tokens[0] + closeindent
 
 
-def match_handle(loc, tokens, **kwargs):
+def match_handle(loc, tokens):
     """Process match blocks."""
-    # we cannot add a default arg to match_handle otherwise pyparsing would pass
-    #  (original, loc, tokens) instead of just (loc, tokens), so we have to mimic
-    #  having a default argument of top=True like this instead
-    try:
-        top = kwargs["top"]
-        del kwargs["top"]
-    except KeyError:
-        top = True
-    internal_assert(not kwargs, "unknown keyword arguments to match_handle", kwargs)
-
     if len(tokens) == 3:
         matches, item, stmts = tokens
         cond = None
@@ -551,44 +529,14 @@ def match_handle(loc, tokens, **kwargs):
         matches, item, cond, stmts = tokens
     else:
         raise CoconutInternalException("invalid match statement tokens", tokens)
-
-    matching = Matcher(loc)
+    matching = Matcher(loc, match_check_var)
     matching.match(matches, match_to_var)
     if cond:
         matching.add_guard(cond)
-
-    out = ""
-    if top:
-        out += match_check_var + " = False\n"
-    if item is not None:  # case statement
-        out += match_to_var + " = " + item + "\n"
-    out += matching.out()
-    if stmts is not None:
-        out += "if " + match_check_var + ":" + "\n" + openindent + "".join(stmts) + closeindent
-    return out
-
-
-def case_handle(loc, tokens):
-    """Process case blocks."""
-    if len(tokens) == 2:
-        item, cases = tokens
-        default = None
-    elif len(tokens) == 3:
-        item, cases, default = tokens
-    else:
-        raise CoconutInternalException("invalid top-level case tokens", tokens)
-    out = (
+    return (
         match_to_var + " = " + item + "\n"
-        + match_handle(loc, case_to_match(cases[0]))
+        + matching.build(stmts)
     )
-    for case in cases[1:]:
-        out += (
-            "if not " + match_check_var + ":\n" + openindent
-            + match_handle(loc, case_to_match(case), top=False) + closeindent
-        )
-    if default is not None:
-        out += "if not " + match_check_var + default
-    return out
 
 
 def except_handle(tokens):
@@ -1435,14 +1383,14 @@ class Grammar(object):
     destructuring_stmt = Forward()
     destructuring_stmt_ref = Optional(keyword("match").suppress()) + match + equals.suppress() + test_expr
 
+    case_stmt = Forward()
     case_match = trace(Group(
         keyword("match").suppress() - match - Optional(keyword("if").suppress() - test) - full_suite,
     ))
-    case_stmt = attach(
+    case_stmt_ref = (
         keyword("case").suppress() + test - colon.suppress() - newline.suppress()
         - indent.suppress() - Group(OneOrMore(case_match))
-        - dedent.suppress() - Optional(keyword("else").suppress() - else_suite),
-        case_handle,
+        - dedent.suppress() - Optional(keyword("else").suppress() - else_suite)
     )
 
     exec_stmt = Forward()

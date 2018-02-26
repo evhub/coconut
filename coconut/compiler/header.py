@@ -168,7 +168,7 @@ else:
             else try_backport_lru_cache if target_startswith == "2"
             else ""
         ),
-        comma_bytearray_Ellipsis=", bytearray, Ellipsis" if target_startswith != "3" else "",
+        comma_bytearray=", bytearray" if target_startswith != "3" else "",
         static_repr="staticmethod(repr)" if target_startswith != "3" else "repr",
         with_ThreadPoolExecutor=(
             r'''from multiprocessing import cpu_count  # cpu_count() * 5 is the default Python 3.5 thread count

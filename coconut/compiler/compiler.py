@@ -70,6 +70,7 @@ from coconut.constants import (
     py3_to_py2_stdlib,
     checksum,
     reserved_prefix,
+    case_check_var,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -291,6 +292,22 @@ def split_args_list(tokens, loc):
     return req_args, def_args, star_arg, kwd_args, dubstar_arg
 
 
+def match_case_tokens(loc, tokens, check_var, top):
+    """Build code for matching the given case."""
+    if len(tokens) == 2:
+        matches, stmts = tokens
+        cond = None
+    elif len(tokens) == 3:
+        matches, cond, stmts = tokens
+    else:
+        raise CoconutInternalException("invalid case match tokens", tokens)
+    matching = Matcher(loc, check_var)
+    matching.match(matches, match_to_var)
+    if cond:
+        matching.add_guard(cond)
+    return matching.build(stmts, set_check_var=top)
+
+
 # end: HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------
 # COMPILER:
@@ -366,6 +383,7 @@ class Compiler(Grammar):
         self.docstring = ""
         self.ichain_count = 0
         self.tre_store_count = 0
+        self.case_check_count = 0
         self.stmt_lambdas = []
         if self.strict:
             self.unused_imports = set()
@@ -374,6 +392,7 @@ class Compiler(Grammar):
     def bind(self):
         """Binds reference objects to the proper parse actions."""
         self.endline <<= attach(self.endline_ref, self.endline_handle)
+
         self.moduledoc_item <<= trace(attach(self.moduledoc, self.set_docstring))
         self.name <<= trace(attach(self.base_name, self.name_check))
         # comments are evaluated greedily because we need to know about them even if we're going to suppress them
@@ -398,8 +417,9 @@ class Compiler(Grammar):
         self.typed_assign_stmt <<= trace(attach(self.typed_assign_stmt_ref, self.typed_assign_stmt_handle))
         self.datadef <<= trace(attach(self.datadef_ref, self.data_handle))
         self.with_stmt <<= trace(attach(self.with_stmt_ref, self.with_stmt_handle))
-        self.await_item <<= attach(self.await_item_ref, self.await_item_handle)
-        self.ellipsis <<= attach(self.ellipsis_ref, self.ellipsis_handle)
+        self.await_item <<= trace(attach(self.await_item_ref, self.await_item_handle))
+        self.ellipsis <<= trace(attach(self.ellipsis_ref, self.ellipsis_handle))
+        self.case_stmt <<= trace(attach(self.case_stmt_ref, self.case_stmt_handle))
 
         self.decoratable_normal_funcdef_stmt <<= trace(attach(
             self.decoratable_normal_funcdef_stmt_ref,
@@ -1159,11 +1179,13 @@ class Compiler(Grammar):
         elif op == "??=":
             out += name + " = " + item + " if " + name + " is None else " + name
         elif op == "::=":
-            # this is necessary to prevent a segfault caused by self-reference
             ichain_var = lazy_chain_var + "_" + str(self.ichain_count)
-            out += ichain_var + " = " + name + "\n"
-            out += name + " = _coconut.itertools.chain.from_iterable(" + lazy_list_handle([ichain_var, "(" + item + ")"]) + ")"
             self.ichain_count += 1
+            # this is necessary to prevent a segfault caused by self-reference
+            out += (
+                ichain_var + " = " + name + "\n"
+                + " = _coconut.itertools.chain.from_iterable(" + lazy_list_handle([ichain_var, "(" + item + ")"]) + ")"
+            )
         else:
             out += name + " " + op + " " + item
         return out
@@ -1395,13 +1417,13 @@ class Compiler(Grammar):
             key, val, comp = tokens
             return "dict(((" + key + "), (" + val + ")) " + comp + ")"
 
-    def pattern_error(self, original, loc, value_var):
+    def pattern_error(self, original, loc, value_var, check_var):
         """Construct a pattern-matching error message."""
         base_line = clean(self.reformat(getline(loc, original)))
         line_wrap = self.wrap_str_of(base_line)
         repr_wrap = self.wrap_str_of(ascii(base_line))
         return (
-            "if not " + match_check_var + ":\n" + openindent
+            "if not " + check_var + ":\n" + openindent
             + match_err_var + ' = _coconut_MatchError("pattern-matching failed for " '
             + repr_wrap + ' " in " + _coconut.repr(_coconut.repr(' + value_var + ")))\n"
             + match_err_var + ".pattern = " + line_wrap + "\n"
@@ -1414,7 +1436,7 @@ class Compiler(Grammar):
         internal_assert(len(tokens) == 2, "invalid destructuring assignment tokens", tokens)
         matches, item = tokens
         out = match_handle(loc, [matches, item, None])
-        out += self.pattern_error(original, loc, match_to_var)
+        out += self.pattern_error(original, loc, match_to_var, match_check_var)
         return out
 
     def name_match_funcdef_handle(self, original, loc, tokens):
@@ -1426,7 +1448,7 @@ class Compiler(Grammar):
             func, matches, cond = tokens
         else:
             raise CoconutInternalException("invalid match function definition tokens", tokens)
-        matcher = Matcher(loc)
+        matcher = Matcher(loc, match_check_var)
 
         req_args, def_args, star_arg, kwd_args, dubstar_arg = split_args_list(matches, loc)
         matcher.match_function(match_to_args_var, match_to_kwargs_var, req_args + def_args, star_arg, kwd_args, dubstar_arg)
@@ -1442,7 +1464,7 @@ class Compiler(Grammar):
         after_docstring = (
             match_check_var + " = False\n"
             + matcher.out()
-            + self.pattern_error(original, loc, match_to_args_var) + closeindent
+            + self.pattern_error(original, loc, match_to_args_var, match_check_var) + closeindent
         )
         return before_docstring, after_docstring
 
@@ -1829,6 +1851,30 @@ class Compiler(Grammar):
             return "..."
         else:
             return "_coconut.Ellipsis"
+
+    def case_stmt_handle(self, loc, tokens):
+        """Process case blocks."""
+        if len(tokens) == 2:
+            item, cases = tokens
+            default = None
+        elif len(tokens) == 3:
+            item, cases, default = tokens
+        else:
+            raise CoconutInternalException("invalid case tokens", tokens)
+        check_var = case_check_var + "_" + str(self.case_check_count)
+        self.case_check_count += 1
+        out = (
+            match_to_var + " = " + item + "\n"
+            + match_case_tokens(loc, cases[0], check_var, True)
+        )
+        for case in cases[1:]:
+            out += (
+                "if not " + check_var + ":\n" + openindent
+                + match_case_tokens(loc, case, check_var, False) + closeindent
+            )
+        if default is not None:
+            out += "if not " + check_var + default
+        return out
 
 # end: COMPILER HANDLERS
 #-----------------------------------------------------------------------------------------------------------------------

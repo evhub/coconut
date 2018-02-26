@@ -376,6 +376,7 @@ match_to_kwargs_var = match_to_var + "_kwargs"
 match_check_var = reserved_prefix + "_match_check"
 match_temp_var = reserved_prefix + "_match_temp"
 match_err_var = reserved_prefix + "_match_err"
+case_check_var = reserved_prefix + "_case_check"
 
 wildcard = "_"  # for pattern-matching
 

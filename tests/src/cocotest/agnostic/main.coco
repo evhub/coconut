@@ -453,6 +453,18 @@ def main_test():
     loop.close()
     assert ... is Ellipsis
     assert 1or 2
+    two = None
+    case False:
+        match False:
+            match False in True:
+                two = 1
+            else:
+                two = 2
+        match True:
+            two = 3
+    else:
+        two = 4
+    assert two == 2
     return True
 
 def tco_func() = tco_func()
@@ -464,7 +476,7 @@ def assert_raises(c, exc):
     except exc:
         return True
     else:
-        raise AssertionError("%s failed to raise exception %s" % (c, exc))
+        raise AssertionError("%r failed to raise exception %r" % (c, exc))
 
 def main(*args):
     """Asserts arguments and executes tests."""
