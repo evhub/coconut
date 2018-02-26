@@ -13,6 +13,8 @@ if sys.version_info < (3,):
     from future_builtins import *
     from io import open
 
+    str = unicode
+
     py_raw_input, py_xrange = raw_input, xrange
 
     class range(_t.Iterable[int]):
