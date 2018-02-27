@@ -4,6 +4,8 @@ import typing as _t
 
 _T = _t.TypeVar("_T")
 _U = _t.TypeVar("_U")
+_V = _t.TypeVar("_V")
+_W = _t.TypeVar("_W")
 _FUNC = _t.TypeVar("_FUNC", bound=_t.Callable)
 _FUNC2 = _t.TypeVar("_FUNC2", bound=_t.Callable)
 _ITER_FUNC = _t.TypeVar("_ITER_FUNC", bound=_t.Callable[..., _t.Iterable])
@@ -21,7 +23,7 @@ if sys.version_info < (3,):
         def __init__(self,
             start: _t.Optional[int] = ...,
             stop: _t.Optional[int] = ...,
-            step: _t.Optional[int] = ...
+            step: _t.Optional[int] = ...,
             ) -> None: ...
         def __iter__(self) -> _t.Iterator[int]: ...
         def __reversed__(self) -> _t.Iterable[int]: ...
@@ -36,7 +38,11 @@ if sys.version_info < (3,):
 py_chr, py_filter, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate = chr, filter, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate
 
 
-def scan(func: _t.Callable[[_T, _U], _T], iterable: _t.Iterable[_U], initializer: _T=None) -> _t.Iterable[_T]: ...
+def scan(
+    func: _t.Callable[[_T, _U], _T],
+    iterable: _t.Iterable[_U],
+    initializer: _T = ...,
+    ) -> _t.Iterable[_T]: ...
 
 
 class _coconut:
@@ -110,18 +116,53 @@ def _coconut_igetitem(
     ) -> _t.Iterable[_T]: ...
 
 
-def _coconut_base_compose(func: _t.Callable[[_T], _t.Any], *funcstars: _t.Tuple[_t.Callable, bool]) -> _t.Callable[[_T], _t.Any]: ...
+def _coconut_base_compose(
+    func: _t.Callable[[_T], _t.Any],
+    *funcstars: _t.Tuple[_t.Callable, bool],
+    ) -> _t.Callable[[_T], _t.Any]: ...
 
 
 @_t.overload
-def _coconut_forward_compose(g: _t.Callable[..., _T], f: _t.Callable[[_T], _U]) -> _t.Callable[..., _U]: ...
+def _coconut_forward_compose(
+    g: _t.Callable[..., _T],
+    f: _t.Callable[[_T], _U],
+    ) -> _t.Callable[..., _U]: ...
+@_t.overload
+def _coconut_forward_compose(
+    h: _t.Callable[..., _T],
+    g: _t.Callable[[_T], _U],
+    f: _t.Callable[[_U], _V],
+    ) -> _t.Callable[..., _V]: ...
+@_t.overload
+def _coconut_forward_compose(
+    h: _t.Callable[..., _T],
+    g: _t.Callable[[_T], _U],
+    f: _t.Callable[[_U], _V],
+    e: _t.Callable[[_V], _W],
+    ) -> _t.Callable[..., _W]: ...
 @_t.overload
 def _coconut_forward_compose(*funcs: _t.Callable) -> _t.Callable: ...
 _coconut_forward_star_compose = _coconut_forward_compose
 
 
 @_t.overload
-def _coconut_back_compose(f: _t.Callable[[_T], _U], g: _t.Callable[..., _T]) -> _t.Callable[..., _U]: ...
+def _coconut_back_compose(
+    f: _t.Callable[[_T], _U],
+    g: _t.Callable[..., _T],
+    ) -> _t.Callable[..., _U]: ...
+@_t.overload
+def _coconut_back_compose(
+    f: _t.Callable[[_U], _V],
+    g: _t.Callable[[_T], _U],
+    h: _t.Callable[..., _T],
+    ) -> _t.Callable[..., _V]: ...
+@_t.overload
+def _coconut_back_compose(
+    e: _t.Callable[[_V], _W],
+    f: _t.Callable[[_U], _V],
+    g: _t.Callable[[_T], _U],
+    h: _t.Callable[..., _T],
+    ) -> _t.Callable[..., _W]: ...
 @_t.overload
 def _coconut_back_compose(*funcs: _t.Callable) -> _t.Callable: ...
 _coconut_back_star_compose = _coconut_back_compose
