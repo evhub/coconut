@@ -17,7 +17,8 @@ if sys.version_info < (3,):
 
     str = unicode
 
-    py_raw_input, py_xrange = raw_input, xrange
+    py_raw_input = raw_input
+    py_xrange = xrange
 
     class range(_t.Iterable[int]):
         def __init__(self,
@@ -35,7 +36,7 @@ if sys.version_info < (3,):
         def index(self, elem: int) -> int: ...
 
 
-py_chr, py_filter, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate = chr, filter, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate
+py_chr, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate = chr, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate
 
 
 def scan(
