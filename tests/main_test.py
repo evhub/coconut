@@ -35,6 +35,7 @@ from coconut.constants import (
     PYPY,
     IPY,
     PY34,
+    PY35,
     icoconut_kernel_names,
 )
 
@@ -45,9 +46,9 @@ auto_compilation(False)
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
-MYPY = PY34 and not WINDOWS and not PYPY
-
 logger.verbose = True
+
+MYPY = PY34 and not WINDOWS and not PYPY
 
 base = os.path.dirname(os.path.relpath(__file__))
 src = os.path.join(base, "src")
@@ -393,7 +394,8 @@ class TestShell(unittest.TestCase):
                 cmd = "coconut --jupyter console --no-confirm-exit"
                 print("\n>", cmd)
                 p = pexpect.spawn(cmd)
-                p.sendline("exit()")
+                p.sendeof()
+                p.sendeof()
                 p.expect("Shutting down kernel|shutting down|Jupyter error")
                 if p.isalive():
                     p.terminate()
@@ -459,7 +461,8 @@ class TestExternal(unittest.TestCase):
     def test_prelude(self):
         with remove_when_done(prelude):
             comp_prelude()
-            run_prelude()
+            if PY35:  # has typing
+                run_prelude()
 
     def test_pyston(self):
         with remove_when_done(pyston):
