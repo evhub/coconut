@@ -94,7 +94,7 @@ _coconut_MatchError = MatchError
 
 
 def _coconut_tco(func: _FUNC) -> _FUNC: ...
-def _coconut_tail_call(func: _t.Callable[..., _T], *args, **kwargs) -> _T:
+def _coconut_tail_call(func, *args, **kwargs):
     return func(*args, **kwargs)
 
 

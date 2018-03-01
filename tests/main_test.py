@@ -45,6 +45,8 @@ auto_compilation(False)
 # CONSTANTS:
 #-----------------------------------------------------------------------------------------------------------------------
 
+MYPY = PY34 and not WINDOWS and not PYPY
+
 logger.verbose = True
 
 base = os.path.dirname(os.path.relpath(__file__))
@@ -297,13 +299,15 @@ def comp_prelude(args=[], **kwargs):
     """Compiles evhub/coconut-prelude."""
     call(["git", "clone", prelude_git])
     call_coconut([os.path.join(prelude, "setup.coco"), "--strict"] + args, **kwargs)
-    call_coconut([os.path.join(prelude, "prelude-source"), os.path.join(prelude, "prelude"), "--strict"] + args + ["--mypy"], **kwargs)
+    if MYPY:
+        args.append("--mypy")
+    call_coconut([os.path.join(prelude, "prelude-source"), os.path.join(prelude, "prelude"), "--strict"] + args, **kwargs)
 
 
 def run_prelude(**kwargs):
     """Runs coconut-prelude."""
     call(["pip", "install", "-e", prelude])
-    call(["python", os.path.join(prelude, "prelude", "test_prelude.py")], assert_output=True, **kwargs)
+    call(["python", os.path.join(prelude, "prelude", "prelude_test.py")], assert_output=True, **kwargs)
 
 
 def comp_all(args=[], **kwargs):
@@ -400,7 +404,7 @@ class TestCompilation(unittest.TestCase):
     def test_normal(self):
         run()
 
-    if PY34 and not WINDOWS and not PYPY:
+    if MYPY:
         def test_mypy_snip(self):
             call(["coconut", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err, check_mypy=False, expect_retcode=1)
 
