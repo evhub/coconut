@@ -468,6 +468,8 @@ def main_test():
     assert makedata(list, 1, 2, 3) == [1, 2, 3]
     assert makedata(str, "a", "b", "c") == "abc"
     assert makedata(dict, ("a", 1), ("b", 2)) == {"a": 1, "b": 2}
+    [a] is list = [1]
+    assert a == 1
     return True
 
 def tco_func() = tco_func()

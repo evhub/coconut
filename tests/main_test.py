@@ -53,13 +53,13 @@ dest = os.path.join(base, "dest")
 
 runnable_coco = os.path.join(src, "runnable.coco")
 runnable_py = os.path.join(src, "runnable.py")
-prisoner = os.path.join(os.curdir, "prisoner")
 pyston = os.path.join(os.curdir, "pyston")
 pyprover = os.path.join(os.curdir, "pyprover")
+prelude = os.path.join(os.curdir, "coconut-prelude")
 
-prisoner_git = "https://github.com/evhub/prisoner.git"
 pyston_git = "https://github.com/evhub/pyston.git"
 pyprover_git = "https://github.com/evhub/pyprover.git"
+prelude_git = "https://github.com/evhub/coconut-prelude"
 
 coconut_snip = r"msg = '<success>'; pmsg = print$(msg); `pmsg`"
 
@@ -269,12 +269,6 @@ def run(args=[], agnostic_target=None, use_run_arg=False, expect_retcode=0):
             run_extras()
 
 
-def comp_prisoner(args=[], **kwargs):
-    """Compiles evhub/prisoner."""
-    call(["git", "clone", prisoner_git])
-    call_coconut(["prisoner", "--strict"] + args, **kwargs)
-
-
 def comp_pyston(args=[], **kwargs):
     """Compiles evhub/pyston."""
     call(["git", "clone", pyston_git])
@@ -289,14 +283,27 @@ def run_pyston(**kwargs):
 def comp_pyprover(args=[], **kwargs):
     """Compiles evhub/pyprover."""
     call(["git", "clone", pyprover_git])
-    call_coconut([os.path.join("pyprover", "setup.coco"), "--strict"] + args, **kwargs)
-    call_coconut([os.path.join("pyprover", "pyprover-source"), os.path.join("pyprover", "pyprover"), "--strict"] + args, **kwargs)
+    call_coconut([os.path.join(pyprover, "setup.coco"), "--strict"] + args, **kwargs)
+    call_coconut([os.path.join(pyprover, "pyprover-source"), os.path.join(pyprover, "pyprover"), "--strict"] + args, **kwargs)
 
 
 def run_pyprover(**kwargs):
     """Runs pyprover."""
     call(["pip", "install", "-e", pyprover])
     call(["python", os.path.join(pyprover, "pyprover", "tests.py")], assert_output=True, **kwargs)
+
+
+def comp_prelude(args=[], **kwargs):
+    """Compiles evhub/coconut-prelude."""
+    call(["git", "clone", prelude_git])
+    call_coconut([os.path.join(prelude, "setup.coco"), "--strict"] + args, **kwargs)
+    call_coconut([os.path.join(prelude, "prelude-source"), os.path.join(prelude, "prelude"), "--strict"] + args + ["--mypy"], **kwargs)
+
+
+def run_prelude(**kwargs):
+    """Runs coconut-prelude."""
+    call(["pip", "install", "-e", prelude])
+    call(["python", os.path.join(prelude, "prelude", "test_prelude.py")], assert_output=True, **kwargs)
 
 
 def comp_all(args=[], **kwargs):
@@ -440,14 +447,15 @@ class TestCompilation(unittest.TestCase):
 
 class TestExternal(unittest.TestCase):
 
-    def test_prisoner(self):
-        with remove_when_done(prisoner):
-            comp_prisoner()
-
     def test_pyprover(self):
         with remove_when_done(pyprover):
             comp_pyprover()
             run_pyprover()
+
+    def test_prelude(self):
+        with remove_when_done(prelude):
+            comp_prelude()
+            run_prelude()
 
     def test_pyston(self):
         with remove_when_done(pyston):
