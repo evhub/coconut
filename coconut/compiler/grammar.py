@@ -67,6 +67,7 @@ from coconut.constants import (
     match_to_var,
     match_check_var,
     none_coalesce_var,
+    func_var,
 )
 from coconut.compiler.matching import Matcher
 from coconut.compiler.util import (
@@ -419,7 +420,7 @@ def lazy_list_handle(tokens):
         return "_coconut.iter(())"
     else:
         return (
-            "(f() for f in ("
+            "(%s() for %s in (" % (func_var, func_var)
             + "lambda: " + ", lambda: ".join(tokens) + ("," if len(tokens) == 1 else "") + "))"
         )
 

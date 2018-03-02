@@ -369,6 +369,7 @@ tre_mock_var = reserved_prefix + "_mock_func"
 tre_store_var = reserved_prefix + "_recursive_func"
 none_coalesce_var = reserved_prefix + "_none_coalesce_item"
 sentinel_var = reserved_prefix + "_sentinel"
+func_var = reserved_prefix + "_func"
 
 # prefer Matcher.get_temp_var to proliferating more match vars here
 match_to_var = reserved_prefix + "_match_to"
