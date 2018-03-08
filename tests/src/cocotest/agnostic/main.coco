@@ -470,6 +470,7 @@ def main_test():
     assert makedata(dict, ("a", 1), ("b", 2)) == {"a": 1, "b": 2}
     [a] is list = [1]
     assert a == 1
+    assert makedata(type((||)), 1, 2) == (1, 2) == makedata(type(() :: ()), 1, 2)
     return True
 
 def tco_func() = tco_func()

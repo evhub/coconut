@@ -1653,13 +1653,13 @@ def takewhile(predicate, iterable):
 
 **Coconut:**
 ```coconut
-negatives = takewhile(numiter, (x) -> x<0)
+negatives = takewhile(numiter, x -> x < 0)
 ```
 
 **Python:**
 ```coconut_python
 import itertools
-negatives = itertools.takewhile(numiter, lambda x: x<0)
+negatives = itertools.takewhile(numiter, lambda x: x < 0)
 ```
 
 ### `dropwhile`
@@ -1687,13 +1687,13 @@ def dropwhile(predicate, iterable):
 
 **Coconut:**
 ```coconut
-positives = dropwhile(numiter, (x) -> x<0)
+positives = dropwhile(numiter, x -> x < 0)
 ```
 
 **Python:**
 ```coconut_python
 import itertools
-positives = itertools.dropwhile(numiter, lambda x: x<0)
+positives = itertools.dropwhile(numiter, lambda x: x < 0)
 ```
 
 ### `memoize`
