@@ -7,7 +7,7 @@
 
 """
 The Coconut Programming Language
-Copyright (c) 2015-2017 Evan Hubinger
+Copyright (c) 2015-2018 Evan Hubinger
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use these files except in compliance with the License.
