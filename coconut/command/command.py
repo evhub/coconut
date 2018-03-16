@@ -635,10 +635,8 @@ class Command(object):
                 else:
                     kernel_name = "coconut" + ver
                 run_args = [jupyter, "console", "--kernel", kernel_name] + args[1:]
-            elif args[0] == "notebook":
-                run_args = [jupyter, "notebook"] + args[1:]
             else:
-                raise CoconutException("first argument after --jupyter must be either 'console' or 'notebook'")
+                run_args = [jupyter] + args
             self.register_error(run_cmd(run_args, raise_errs=False), errmsg="Jupyter error")
 
     def watch(self, source, write=True, package=None, run=False, force=False):
