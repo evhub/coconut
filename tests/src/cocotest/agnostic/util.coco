@@ -887,3 +887,18 @@ def fib(n if n < 2) = n
 @memoize()  # type: ignore
 @addpattern(fib)
 def fib(n) = fib(n-1) + fib(n-2)
+
+# MapReduce
+from collections import defaultdict
+
+join_pairs1 = reduce$((def (acc, (k, v)) ->
+    acc[k] += v;
+    acc
+), ?, defaultdict(list))
+
+def join_pairs2([]) = defaultdict(list)
+@addpattern(join_pairs2)
+def join_pairs2([(k, v)] + tail) =
+    result = join_pairs2(tail)
+    result[k] += v
+    result
