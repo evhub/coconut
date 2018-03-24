@@ -41,17 +41,21 @@ Credits
 Contributors
 ------------
 
-This project exists thanks to all the people who contribute_!
+This project exists thanks to all the people who contribute! `Become a contributor`__.
 
 .. image:: https://opencollective.com/coconut/contributors.svg?width=890&button=false
     :target: https://github.com/evhub/coconut/graphs/contributors
 
-.. _contribute: http://coconut.readthedocs.io/en/develop/CONTRIBUTING.html
+__ Contributer
+.. _Contributor: http://coconut.readthedocs.io/en/develop/CONTRIBUTING.html
 
 Backers
 -------
 
 Thank you to all our backers! `Become a backer`__.
+
+.. image:: https://opencollective.com/coconut/backers.svg?width=890
+    :target: https://opencollective.com/coconut#backers
 
 __ Backer_
 .. _Backer: https://opencollective.com/coconut#backer
