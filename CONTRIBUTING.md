@@ -12,7 +12,7 @@ If you are thinking about contributing to Coconut, please don't hesitate to ask 
 
 ## Bounties
 
-Coconut development is monetarily supported by Coconut's [Backers](https://opencollective.com/coconut#backer) and [Sponsors](https://opencollective.com/coconut#sponsor) on Open Collective. As a result of this, many of Coconut's open issues are labeled with bounties denoting the compensation available for resolving them. If you successfully resolve one of these issues (defined as getting a pull request resolving the issue merged), you become eligible to collect that issue's bounty. To do so, simply [file an expense report](https://opencollective.com/coconut/expenses/new#) for the correct amount with a link to the issue you resolved.
+Coconut development is monetarily supported by Coconut's [Backers](https://opencollective.com/coconut#backer) and [Sponsors](https://opencollective.com/coconut#sponsor) on Open Collective. As a result of this, many of Coconut's open issues are [labeled](https://github.com/evhub/coconut/labels) with bounties denoting the compensation available for resolving them. If you successfully resolve one of these issues (defined as getting a pull request resolving the issue merged), you become eligible to collect that issue's bounty. To do so, simply [file an expense report](https://opencollective.com/coconut/expenses/new#) for the correct amount with a link to the issue you resolved.
 
 ## Contribution Process
 
