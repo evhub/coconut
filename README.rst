@@ -46,7 +46,7 @@ This project exists thanks to all the people who contribute! `Become a contribut
 .. image:: https://opencollective.com/coconut/contributors.svg?width=890&button=false
     :target: https://github.com/evhub/coconut/graphs/contributors
 
-__ Contributer
+__ Contributer_
 .. _Contributor: http://coconut.readthedocs.io/en/develop/CONTRIBUTING.html
 
 Backers
