@@ -14,6 +14,10 @@ If you are thinking about contributing to Coconut, please don't hesitate to ask 
 
 Coconut development is monetarily supported by Coconut's [Backers](https://opencollective.com/coconut#backer) and [Sponsors](https://opencollective.com/coconut#sponsor) on Open Collective. As a result of this, many of Coconut's open issues are [labeled](https://github.com/evhub/coconut/labels) with bounties denoting the compensation available for resolving them. If you successfully resolve one of these issues (defined as getting a pull request resolving the issue merged), you become eligible to collect that issue's bounty. To do so, simply [file an expense report](https://opencollective.com/coconut/expenses/new#) for the correct amount with a link to the issue you resolved.
 
+## Good First Issues
+
+Want to help out, but don't know what to work on? Head over to Coconut's [open issues](https://github.com/evhub/coconut/issues) and look for ones labeled "good first issue." These issues are those that require less intimate knowledge of Coconut's inner workings, and are thus possible for new contributors to work on.
+
 ## Contribution Process
 
 Contributing to Coconut is as simple as
@@ -23,10 +27,6 @@ Contributing to Coconut is as simple as
 3. proposing a pull request.
 
 _Note: Don't forget to add yourself to the "Authors:" section in the moduledocs of any files you modify!_
-
-## Contributor Friendly Issues
-
-Want to help out, but don't know what to work on? Head over to Coconut's [open issues](https://github.com/evhub/coconut/issues) and look for ones labeled "contributor friendly." Contributor friendly issues are those that require less intimate knowledge of Coconut's inner workings, and are thus possible for new contributors to work on.
 
 ## Testing New Changes
 
