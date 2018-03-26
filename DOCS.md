@@ -277,6 +277,8 @@ If Coconut is used as a kernel, all code in the console or notebook will be sent
 
 The command `coconut --jupyter notebook` (or `coconut --ipython notebook`) will launch an IPython/Jupyter notebook using Coconut as the kernel and the command `coconut --jupyter console` (or `coconut --ipython console`) will launch an IPython/Jupyter console using Coconut as the kernel. Additionally, the command `coconut --jupyter` (or `coconut --ipython`) will add Coconut as a language option inside of all IPython/Jupyter notebooks, even those not launched with Coconut. This command may need to be re-run when a new version of Coconut is installed.
 
+_Note: Coconut also supports the command `coconut --jupyter lab` for using Coconut with [JupyterLab](https://github.com/jupyterlab/jupyterlab) instead of the standard Jupyter notebook._
+
 #### Extension
 
 If Coconut is used as an extension, a special magic command will send snippets of code to be evaluated using Coconut instead of IPython, but IPython will still be used as the default.

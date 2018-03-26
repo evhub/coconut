@@ -130,19 +130,12 @@ _Note: If you don't need the full control of the Coconut compiler, you can also 
 
 ### Using IPython/Jupyter
 
-Although all different types of programming can benefit from using more functional techniques, scientific computing, perhaps more than any other field, lends itself very well to functional programming, an observation the case studies in this tutorial are very good examples of. To that end, Coconut aims to provide extensive support for the established tools of scientific computing in Python.
+Although all different types of programming can benefit from using more functional techniques, scientific computing, perhaps more than any other field, lends itself very well to functional programming, an observation the case studies in this tutorial are very good examples of. That's why Coconut aims to provide extensive support for the established tools of scientific computing in Python.
 
-That means supporting IPython/Jupyter, as modern Python programming, particularly in the sciences, has gravitated towards the use of [IPython](http://ipython.org/) (the python kernel for the [Jupyter](http://jupyter.org/) framework) instead of the classic Python shell. Coconut supports being used as a kernel for Jupyter notebooks and consoles, allowing Coconut code to be used alongside powerful IPython features such as `%magic` commands.
-
-To launch a Jupyter notebook with Coconut as the kernel, use the command
+To that end, Coconut provides [built-in IPython/Jupyter support](DOCS.html#ipython-jupyter-support). To launch a Jupyter notebook with Coconut as the kernel, just enter the command
 ```
 coconut --jupyter notebook
 ```
-and to launch a Jupyter console, use the command
-```
-coconut --jupyter console
-```
-or equivalently, `--ipython` can be substituted for `--jupyter` in either command.
 
 ### Case Studies
 
