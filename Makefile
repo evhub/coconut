@@ -26,6 +26,14 @@ test-basic:
 	python ./tests/dest/runner.py
 	python ./tests/dest/extras.py
 
+# same as test-basic, but doesn't recompile unchanged test files;
+# should only be used when testing the tests not the compiler
+.PHONY: test-tests
+test-tests:
+	python ./tests
+	python ./tests/dest/runner.py
+	python ./tests/dest/extras.py
+
 # same as test-basic but also runs mypy
 .PHONY: test-mypy
 test-mypy:

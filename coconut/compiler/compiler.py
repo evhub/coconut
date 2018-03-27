@@ -257,31 +257,32 @@ def split_args_list(tokens, loc):
             if arg[0] == "*":
                 # star sep (pos = 3)
                 if pos >= 3:
-                    raise CoconutDeferredSyntaxError("invalid star separator in function definition", loc)
+                    raise CoconutDeferredSyntaxError("star separator at invalid position in function definition", loc)
                 pos = 3
             else:
                 # pos arg (pos = 0)
                 if pos > 0:
-                    raise CoconutDeferredSyntaxError("invalid positional argument in function definition", loc)
+                    raise CoconutDeferredSyntaxError("positional arguments must come first in function definition", loc)
                 req_args.append(arg[0])
         elif len(arg) == 2:
             if arg[0] == "*":
                 # star arg (pos = 2)
                 if pos >= 2:
-                    raise CoconutDeferredSyntaxError("invalid star argument in function definition", loc)
+                    raise CoconutDeferredSyntaxError("star argument at invalid position in function definition", loc)
                 pos = 2
                 star_arg = arg[1]
             elif arg[0] == "**":
                 # dub star arg (pos = 4)
                 if pos == 4:
-                    raise CoconutDeferredSyntaxError("invalid double star argument in function definition", loc)
+                    raise CoconutDeferredSyntaxError("double star argument at invalid position in function definition", loc)
                 pos = 4
                 dubstar_arg = arg[1]
             else:
-                # kwd arg (pos = 1 or 3)
+                # def arg (pos = 1)
                 if pos <= 1:
                     pos = 1
                     def_args.append((arg[0], arg[1]))
+                # kwd arg (pos = 3)
                 elif pos <= 3:
                     pos = 3
                     kwd_args.append((arg[0], arg[1]))
