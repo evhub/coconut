@@ -588,7 +588,7 @@ Coconut supports Unicode alternatives to many different operator symbols. The Un
 
 ### `data`
 
-Coconut's `data` keyword is used to create immutable, algebraic data types with built-in support for destructuring [pattern-matching](#match) and [`fmap`](#fmap).
+Coconut's `data` keyword is used to create immutable, algebraic data types with built-in support for destructuring [pattern-matching](#match), [`fmap`](#fmap), and typed equality.
 
 The syntax for `data` blocks is a cross between the syntax for functions and the syntax for classes. The first line looks like a function definition, but the rest of the body looks like a class, usually containing method definitions. This is because while `data` blocks actually end up as classes in Python, Coconut automatically creates a special, immutable constructor based on the given arguments.
 
@@ -673,42 +673,7 @@ data vector(*pts):
 _Showcases starred `data` declaration._
 
 **Python:**
-```coconut_python
-import typing
-class vector2(typing.NamedTuple("vector2", [("x", int), ("y", int)]), object):
-    __slots__ = ()
-    def __new__(cls, x=0, y=0):
-        return super(vector2, cls).__new__((x, y))
-    def __abs__(self):
-        return (self.x**2 + self.y**2)**.5
-
-v = vector2(3, 4)
-print(v)
-print(abs(v))
-v.x = 2
-```
-```coconut_python
-import collections
-class Empty(collections.namedtuple("Empty", ""), object):
-    __slots__ = ()
-class Leaf(collections.namedtuple("Leaf", "n"), object):
-    __slots__ = ()
-class Node(collections.namedtuple("Node", "l, r"), object):
-    __slots__ = ()
-
-def size(tree):
-    if isinstance(tree, Empty):
-        return 0
-    elif isinstance(tree, Leaf):
-        return 1
-    elif isinstance(tree, Node):
-        return size(tree[0]) + size(tree[1])
-    else:
-        raise MatchError()
-
-size(Node(Empty(), Leaf(10))) == 1
-```
-_Starred data declarations can't be done without a long sequence of method definitions. See the compiled code for the Python syntax._
+_Can't be done without a series of method definitions for each data type. See the compiled code for the Python syntax._
 
 ### `match`
 
@@ -825,21 +790,16 @@ data point(x, y):
             return point(self.x + x, self.y + y)
         else:
             raise TypeError("arg to transform must be a point")
-    def __eq__(self, other):
-        match point(=self.x, =self.y) in other:
-            return True
-        else:
-            return False
 
 point(1,2) |> point(3,4).transform |> print
 point(1,2) |> (==)$(point(1,2)) |> print
 ```
-_Showcases matching to data types. Values defined by the user with the `data` statement can be matched against and their contents accessed by specifically referencing arguments to the data type's constructor._
+_Showcases matching to data types and the default equality operator. Values defined by the user with the `data` statement can be matched against and their contents accessed by specifically referencing arguments to the data type's constructor._
 ```coconut
-data Empty()
-data Leaf(n)
-data Node(l, r)
-Tree = (Empty, Leaf, Node)  # type union
+class Tree
+data Empty() from Tree
+data Leaf(n) from Tree
+data Node(l, r) from Tree
 
 def depth(Tree()) = 0
 
@@ -977,7 +937,7 @@ def (arguments) -> statement; statement; ...
 ```
 where `arguments` can be standard function arguments or [pattern-matching function definition](#pattern-matching-functions) arguments and `statement` can be an assignment statement or a keyword statement. If the last `statement` (not followed by a semicolon) is an `expression`, it will automatically be returned.
 
-Statement lambdas also support implicit lambda syntax, where, as in `def -> _`, when the arguments are omitted, `def (_=None) -> _` is assumed.
+Statement lambdas also support implicit lambda syntax such that `def -> _` is equivalent to `def (_=None) -> _`.
 
 ##### Example
 
@@ -1465,21 +1425,14 @@ Coconut supports the simple `class name(base)` and `data name(args)` as aliases 
 
 **Coconut:**
 ```coconut
-data Empty
-data Leaf(item)
-data Node(left, right)
+class Tree
+data Empty from Tree
+data Leaf(item) from Tree
+data Node(left, right) from Tree
 ```
 
 **Python:**
-```coconut_python
-import collections
-class Empty(collections.namedtuple("Empty", ""), object):
-    __slots__ = ()
-class Leaf(collections.namedtuple("Leaf", "n"), object):
-    __slots__ = ()
-class Node(collections.namedtuple("Node", "l, r"), object):
-    __slots__ = ()
-```
+_Can't be done without a series of method definitions for each data type. See the compiled code for the Python syntax._
 
 ### In-line `global` And `nonlocal` Assignment
 
@@ -1852,7 +1805,8 @@ def list_type(xs):
             return "empty"
 ```
 
-**Python:** _Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._
+**Python:**
+_Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._
 
 ### `consume`
 
@@ -1932,13 +1886,7 @@ data Tuple(elems):
 ```
 
 **Python:**
-```coconut_python
-import collections
-class Tuple(collections.namedtuple("Tuple", "elems"), object):
-    __slots__ = ()
-    def __new__(cls, *elems):
-        return super(cls, cls).__new__(cls, elems)
-```
+_Can't be done without a series of method definitions for each data type. See the compiled code for the Python syntax._
 
 ### `fmap`
 
@@ -1954,26 +1902,16 @@ For `dict`, or any other `collections.abc.Mapping`, `fmap` will be called on the
 ```coconut
 [1, 2, 3] |> fmap$(x -> x+1) == [2, 3, 4]
 
-data Nothing()
-data Just(n)
+class Maybe
+data Nothing() from Maybe
+data Just(n) from Maybe
 
 Just(3) |> fmap$(x -> x*2) == Just(6)
 Nothing() |> fmap$(x -> x*2) == Nothing()
 ```
 
 **Python:**
-```coconut_python
-list(map(lambda x: x+1, [1, 2, 3])) == [2, 3, 4]
-
-import collections
-class Nothing(collections.namedtuple("Nothing", ""), object):
-    __slots__ = ()
-class Just(collections.namedtuple("Just", "n"), object):
-    __slots__ = ()
-
-Just(*map(lambda x: x*2, Just(3))) == Just(6)
-Nothing(*map(lambda x: x*2, Nothing())) == Nothing()
-```
+_Can't be done without a series of method definitions for each data type. See the compiled code for the Python syntax._
 
 ### `starmap`
 

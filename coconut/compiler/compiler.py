@@ -364,16 +364,13 @@ class Compiler(Grammar):
 
     def genhash(self, package, code):
         """Generate a hash from code."""
-        return hex(
-            checksum(
-                hash_sep.join(
-                    str(item) for item in
-                    (VERSION_STR,)
-                    + self.__reduce__()[1]
-                    + (package, code)
-                ).encode(default_encoding),
-            ) & 0xffffffff,
-        )  # necessary for cross-compatibility
+        return hex(checksum(
+            hash_sep.join(
+                str(item) for item in (VERSION_STR,)
+                + self.__reduce__()[1]
+                + (package, code)
+            ).encode(default_encoding),
+        ))
 
     def reset(self):
         """Resets references."""
@@ -1272,9 +1269,13 @@ class Compiler(Grammar):
             all_args.append(arg_str)
 
         attr_str = " ".join(base_args)
-        extra_stmts = (
-            '__slots__ = ()\n'
-            '__ne__ = _coconut.object.__ne__\n'
+        extra_stmts = '''__slots__ = ()
+__ne__ = _coconut.object.__ne__
+def __eq__(self, other):
+    {oind}return self.__class__ is other.__class__ and _coconut.tuple.__eq__(self, other)
+{cind}'''.format(
+            oind=openindent,
+            cind=closeindent,
         )
         if starred_arg is not None:
             attr_str += (" " if attr_str else "") + starred_arg
@@ -1466,6 +1467,7 @@ class Compiler(Grammar):
         after_docstring = (
             match_check_var + " = False\n"
             + matcher.out()
+            # we only include match_to_args_var here because match_to_kwargs_var is modified during matching
             + self.pattern_error(original, loc, match_to_args_var, match_check_var) + closeindent
         )
         return before_docstring, after_docstring

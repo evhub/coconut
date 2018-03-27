@@ -23,6 +23,7 @@ import sys
 import os
 import string
 import platform
+from zlib import crc32
 
 #-----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -54,6 +55,12 @@ def ver_str_to_tuple(ver_str):
             pass
         out.append(x)
     return tuple(out)
+
+
+def checksum(data):
+    """Compute a checksum of the given data.
+    Used for computing __coconut_hash__."""
+    return crc32(data) & 0xffffffff  # necessary for cross-compatibility
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -317,9 +324,6 @@ default_recursion_limit = 2000
 
 if sys.getrecursionlimit() < default_recursion_limit:
     sys.setrecursionlimit(default_recursion_limit)
-
-# used for generating __coconut_hash__
-from zlib import crc32 as checksum  # NOQA
 
 hash_prefix = "# __coconut_hash__ = "
 hash_sep = "\x00"

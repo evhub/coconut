@@ -286,11 +286,6 @@ data vector(x, y):
             return vector(self.x + x, self.y + y)
         else:
             raise TypeError()
-    def __eq__(self, other):
-        match vector(=self.x, =self.y) in other:
-            return True
-        else:
-            return False
 data triangle(a, b, c):
     def is_right(self):
         return self.a**2 + self.b**2 == self.c**2
@@ -483,19 +478,9 @@ def maybes(*fs) = reduce(base_maybe, fs)
 data Nothing():
     def __call__(self, *args):
         return Nothing()
-    def __eq__(self, other):
-        match Nothing() in other:
-            return True
-        else:
-            return False
 data Just(item):
     def __call__(self, *args):
         return Just <| reduce((|>), args, self.item)
-    def __eq__(self, other):
-        match Just(item) in other:
-            return self.item == item
-        else:
-            return False
 Maybe = (Nothing, Just)
 
 # Destructuring Assignment:
@@ -591,11 +576,6 @@ data pt(x, y):
     """Cartesian point in the x-y plane. Immutable."""
     def __abs__(self):
         return (self.x**2 + self.y**2)**0.5
-    def __eq__(self, other):
-        match pt(=self.x, =self.y) in other:
-            return True
-        else:
-            return False
 
 def vertical_line(x=0, y=0):
     """Infinite iterator of pt representing a vertical line."""
@@ -897,7 +877,7 @@ join_pairs1 = reduce$((def (acc, (k, v)) ->
 ), ?, defaultdict(list))
 
 def join_pairs2([]) = defaultdict(list)
-@addpattern(join_pairs2)
+@addpattern(join_pairs2)  # type: ignore
 def join_pairs2([(k, v)] + tail) =
     result = join_pairs2(tail)
     result[k] += v
