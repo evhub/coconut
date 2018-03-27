@@ -210,7 +210,7 @@ def add_paren_handle(tokens):
 
 
 def function_call_handle(loc, tokens):
-    """Properly order call arguments."""
+    """Enforce properly ordered function parameters."""
     return "(" + join_args(*split_function_call(tokens, loc)) + ")"
 
 
@@ -941,25 +941,28 @@ class Grammar(object):
     tfpdef = typedef | condense(name + arg_comma)
     tfpdef_default = typedef_default | condense(name + Optional(default) + arg_comma)
 
+    star_sep = Forward()
+    star_sep_ref = star
+
     match = Forward()
     args_list = trace(addspace(ZeroOrMore(condense(
-        dubstar + tfpdef  # tfpdef ends with arg_comma
-        | star + (tfpdef | arg_comma)
+        (star | dubstar) + tfpdef  # tfpdef ends with arg_comma
+        | star_sep + arg_comma
         | tfpdef_default,  # as does tfpdef_default
     ))))
     parameters = condense(lparen + args_list + rparen)
     var_args_list = trace(Optional(itemlist(
         condense(
-            dubstar + name
-            | star + Optional(name)
+            (star | dubstar) + name
+            | star_sep
             | name + Optional(default),
         ),
         comma,
     )))
     match_args_list = trace(Group(Optional(tokenlist(
         Group(
-            dubstar + match
-            | star + Optional(match)
+            (star | dubstar) + match
+            | star  # not star_sep because pattern-matching can handle star separators on any Python version
             | match + Optional(equals.suppress() + test),
         ),
         comma,
@@ -1056,7 +1059,7 @@ class Grammar(object):
         | condense(dot + name)
     )
     call_trailer = (
-        condense(function_call)
+        function_call
         | Group(dollar + ~lparen + ~lbrack + ~questionmark)  # keep $ for item_handle
     )
     known_trailer = typedef_atom | (

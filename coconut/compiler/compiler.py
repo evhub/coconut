@@ -439,6 +439,7 @@ class Compiler(Grammar):
         self.classic_lambdef <<= attach(self.classic_lambdef_ref, self.lambdef_check)
         self.star_expr <<= attach(self.star_expr_ref, self.star_expr_check)
         self.dubstar_expr <<= attach(self.dubstar_expr_ref, self.star_expr_check)
+        self.star_sep <<= attach(self.star_sep_ref, self.star_sep_check)
         self.endline_semicolon <<= attach(self.endline_semicolon_ref, self.endline_semicolon_check)
         self.async_stmt <<= attach(self.async_stmt_ref, self.async_stmt_check)
         self.async_comp_for <<= attach(self.async_comp_for_ref, self.async_comp_check)
@@ -1933,6 +1934,10 @@ class Compiler(Grammar):
     def star_expr_check(self, original, loc, tokens):
         """Check for Python 3.5 star unpacking."""
         return self.check_py("35", "star unpacking (add 'match' to front to produce universal code)", original, loc, tokens)
+
+    def star_sep_check(self, original, loc, tokens):
+        """Check for Python 3 keyword-only arguments."""
+        return self.check_py("3", "keyword-only argument separator (add 'match' to front to produce universal code)", original, loc, tokens)
 
     def matrix_at_check(self, original, loc, tokens):
         """Check for Python 3.5 matrix multiplication."""

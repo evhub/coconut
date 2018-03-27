@@ -7,6 +7,7 @@ from coconut.exceptions import (
     CoconutSyntaxError,
     CoconutStyleError,
     CoconutSyntaxError,
+    CoconutTargetError,
 )  # type: ignore
 
 from coconut.convenience import (
@@ -95,8 +96,10 @@ def main():
     assert_raises(-> parse("f(*x, y)"), CoconutSyntaxError)
     setup(target="2.7")
     assert parse("from io import BytesIO", mode="debug") == "from io import BytesIO"
+    assert_raises(-> parse("def f(*, x=None) = x"), CoconutTargetError)
     setup(target="3.6")
     assert parse("f''")
+    assert parse("def f(*, x=None) = x")
     if CoconutKernel is not None:
         k = CoconutKernel()
         exec_result = k.do_execute("derp = pow$(?, 2)", False, True, {"two": "(+)(1, 1)"}, True)

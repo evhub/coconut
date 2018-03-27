@@ -187,10 +187,11 @@ For standard library compatibility, **Coconut automatically maps imports under P
 
 Finally, while Coconut will try to compile Python-3-specific syntax to its universal equivalent, the following constructs have no equivalent in Python 2, and require the specification of a target of at least `3` to be used:
 
-- destructuring assignment with `*`s (use Coconut pattern-matching instead),
 - the `nonlocal` keyword,
 - `exec` used in a context where it must be a function,
 - keyword class definition,
+- keyword-only function arguments (use pattern-matching function definition instead),
+- destructuring assignment with `*`s (use pattern-matching instead),
 - tuples and lists with `*` unpacking or dicts with `**` unpacking (requires `--target 3.5`),
 - `@` as matrix multiplication (requires `--target 3.5`),
 - `async` and `await` statements (requires `--target 3.5`), and
