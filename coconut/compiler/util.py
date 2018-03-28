@@ -251,6 +251,13 @@ def match_in(grammar, text):
 #-----------------------------------------------------------------------------------------------------------------------
 
 
+def append_it(iterator, last_val):
+    """Iterate through iterator then yield last_val."""
+    for x in iterator:
+        yield x
+    yield last_val
+
+
 def get_target_info_len2(target, lowest=False):
     """By default, gets the highest version supported by the target before the next target.
     If lowest is passed, instead gets the lowest version supported by the target."""

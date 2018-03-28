@@ -111,6 +111,7 @@ from coconut.compiler.util import (
     split_leading_comment,
     compile_regex,
     keyword,
+    append_it,
 )
 from coconut.compiler.header import (
     minify,
@@ -429,7 +430,6 @@ class Compiler(Grammar):
         ))
 
         self.u_string <<= attach(self.u_string_ref, self.u_string_check)
-        self.f_string <<= attach(self.f_string_ref, self.f_string_check)
         self.matrix_at <<= attach(self.matrix_at_ref, self.matrix_at_check)
         self.nonlocal_stmt <<= attach(self.nonlocal_stmt_ref, self.nonlocal_check)
         self.star_assign_item <<= attach(self.star_assign_item_ref, self.star_assign_item_check)
@@ -440,6 +440,7 @@ class Compiler(Grammar):
         self.endline_semicolon <<= attach(self.endline_semicolon_ref, self.endline_semicolon_check)
         self.async_stmt <<= attach(self.async_stmt_ref, self.async_stmt_check)
         self.async_comp_for <<= attach(self.async_comp_for_ref, self.async_comp_check)
+        self.f_string <<= attach(self.f_string_ref, self.f_string_check)
 
     def copy_skips(self):
         """Copy the line skips."""
@@ -521,7 +522,9 @@ class Compiler(Grammar):
 
     def wrap_str(self, text, strchar, multiline=False):
         """Wrap a string."""
-        return strwrapper + self.add_ref("str", (text, strchar, multiline)) + unwrapper
+        if multiline:
+            strchar *= 3
+        return strwrapper + self.add_ref("str", (text, strchar)) + unwrapper
 
     def wrap_str_of(self, text):
         """Wrap a string of a string."""
@@ -564,8 +567,7 @@ class Compiler(Grammar):
     def pre(self, inputstring, **kwargs):
         """Perform pre-processing."""
         out = self.apply_procs(self.preprocs, kwargs, str(inputstring))
-        if self.line_numbers or self.keep_lines:
-            logger.log_tag("skips", self.skips)
+        logger.log_tag("skips", self.skips)
         return out
 
     def post(self, result, **kwargs):
@@ -613,8 +615,9 @@ class Compiler(Grammar):
         return CoconutParseError(None, err_line, err_index, err_lineno)
 
     def parse(self, inputstring, parser, preargs, postargs):
-        """Use the parser to parse the inputstring."""
+        """Use the parser to parse the inputstring with appropriate setup and teardown."""
         self.reset()
+        pre_procd = None
         with logger.gather_parsing_stats():
             try:
                 pre_procd = self.pre(inputstring, **preargs)
@@ -623,6 +626,7 @@ class Compiler(Grammar):
             except ParseBaseException as err:
                 raise self.make_parse_err(err)
             except CoconutDeferredSyntaxError as err:
+                internal_assert(pre_procd is not None, "invalid deferred syntax error in pre-processing", err)
                 raise self.make_syntax_err(err, pre_procd)
             except RuntimeError as err:
                 raise CoconutException(
@@ -767,13 +771,7 @@ class Compiler(Grammar):
         multiline = None  # if in a passthrough, is it a multiline passthrough
         skips = self.copy_skips()
 
-        for x in range(len(inputstring) + 1):
-            try:
-                c = inputstring[x]
-            except IndexError:
-                internal_assert(x == len(inputstring), "invalid index in passthrough_proc", x)
-                c = "\n"
-
+        for i, c in enumerate(append_it(inputstring, "\n")):
             if hold is not None:
                 # we specify that we only care about parens, not brackets or braces
                 count += paren_change(c, opens="(", closes=")")
@@ -785,7 +783,7 @@ class Compiler(Grammar):
                     multiline = None
                 else:
                     if c == "\n":
-                        skips = addskip(skips, self.adjust(lineno(x, inputstring)))
+                        skips = addskip(skips, self.adjust(lineno(i, inputstring)))
                     found += c
             elif found:
                 if c == "\\":
@@ -807,7 +805,7 @@ class Compiler(Grammar):
                 out.append(c)
 
         if hold is not None or found is not None:
-            raise self.make_err(CoconutSyntaxError, "unclosed passthrough", inputstring, x)
+            raise self.make_err(CoconutSyntaxError, "unclosed passthrough", inputstring, i)
 
         self.set_skips(skips)
         return "".join(out)
@@ -1005,9 +1003,9 @@ class Compiler(Grammar):
         """Add back passthroughs."""
         out = []
         index = None
-        for x in range(len(inputstring) + 1):
-            c = inputstring[x] if x != len(inputstring) else None
+        for c in append_it(inputstring, None):
             try:
+
                 if index is not None:
                     if c is not None and c in nums:
                         index += c
@@ -1025,12 +1023,14 @@ class Compiler(Grammar):
                         index = ""
                     else:
                         out.append(c)
+
             except CoconutInternalException as err:
                 complain(err)
                 if index is not None:
                     out.append(index)
                     index = None
                 out.append(c)
+
         return "".join(out)
 
     def str_repl(self, inputstring, **kwargs):
@@ -1039,13 +1039,7 @@ class Compiler(Grammar):
         comment = None
         string = None
 
-        for x in range(len(inputstring) + 1):
-            try:
-                c = inputstring[x]
-            except IndexError:
-                internal_assert(x == len(inputstring), "invalid index in str_repl", x)
-                c = None
-
+        for i, c in enumerate(append_it(inputstring, None)):
             try:
 
                 if comment is not None:
@@ -1060,20 +1054,16 @@ class Compiler(Grammar):
                         out.append("#" + ref)
                         comment = None
                     else:
-                        raise CoconutInternalException("invalid comment marker in", getline(x, inputstring))
+                        raise CoconutInternalException("invalid comment marker in", getline(i, inputstring))
                 elif string is not None:
                     if c is not None and c in nums:
                         string += c
                     elif c == unwrapper and string:
-                        ref = self.get_ref("str", string)
-                        text, strchar, multiline = ref
-                        if multiline:
-                            out.append(strchar * 3 + text + strchar * 3)
-                        else:
-                            out.append(strchar + text + strchar)
+                        text, strchar = self.get_ref("str", string)
+                        out.append(strchar + text + strchar)
                         string = None
                     else:
-                        raise CoconutInternalException("invalid string marker in", getline(x, inputstring))
+                        raise CoconutInternalException("invalid string marker in", getline(i, inputstring))
                 elif c is not None:
                     if c == "#":
                         comment = ""
@@ -1954,7 +1944,7 @@ def __eq__(self, other):
         return self.check_py("36", "async comprehension", original, loc, tokens)
 
     def f_string_check(self, original, loc, tokens):
-        """Check for Python 3.6 format strings."""
+        """Handle Python 3.6 format strings."""
         return self.check_py("36", "format string", original, loc, tokens)
 
 # end: CHECKING HANDLERS
