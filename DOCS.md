@@ -687,7 +687,7 @@ Match statements follow the basic syntax `match <pattern> in <value>`. The match
 
 Coconut match statement syntax is
 ```coconut
-match <pattern> in <value> [if <cond>]:
+match <pattern> [not] in <value> [if <cond>]:
     <body>
 [else:
     <body>]

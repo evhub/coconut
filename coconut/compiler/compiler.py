@@ -1438,7 +1438,7 @@ def __eq__(self, other):
         """Process match assign blocks."""
         internal_assert(len(tokens) == 2, "invalid destructuring assignment tokens", tokens)
         matches, item = tokens
-        out = match_handle(loc, [matches, item, None])
+        out = match_handle(loc, [matches, "in", item, None])
         out += self.pattern_error(original, loc, match_to_var, match_check_var)
         return out
 

@@ -479,6 +479,14 @@ def main_test():
     assert all_none.count(0) == 0
     assert all_none.count(None) == float("inf")
     assert all_none.index(None) == 0
+    match [] not in [1]:
+        assert True
+    else:
+        assert False
+    match [h] + t not in []:
+        assert True
+    else:
+        assert False
     return True
 
 def tco_func() = tco_func()

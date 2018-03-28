@@ -639,12 +639,12 @@ class Matcher(object):
             )
         )
 
-    def build(self, stmts=None, set_check_var=True):
+    def build(self, stmts=None, set_check_var=True, invert=False):
         """Construct code for performing the match then executing stmts."""
         out = ""
         if set_check_var:
             out += self.check_var + " = False\n"
         out += self.out()
         if stmts is not None:
-            out += "if " + self.check_var + ":" + "\n" + openindent + "".join(stmts) + closeindent
+            out += "if " + ("not " if invert else "") + self.check_var + ":" + "\n" + openindent + "".join(stmts) + closeindent
         return out

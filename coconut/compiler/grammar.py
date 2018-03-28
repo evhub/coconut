@@ -523,20 +523,28 @@ def else_handle(tokens):
 
 def match_handle(loc, tokens):
     """Process match blocks."""
-    if len(tokens) == 3:
-        matches, item, stmts = tokens
+    if len(tokens) == 4:
+        matches, match_type, item, stmts = tokens
         cond = None
-    elif len(tokens) == 4:
-        matches, item, cond, stmts = tokens
+    elif len(tokens) == 5:
+        matches, match_type, item, cond, stmts = tokens
     else:
         raise CoconutInternalException("invalid match statement tokens", tokens)
+
+    if match_type == "in":
+        invert = False
+    elif match_type == "not in":
+        invert = True
+    else:
+        raise CoconutInternalException("invalid match type", match_type)
+
     matching = Matcher(loc, match_check_var)
     matching.match(matches, match_to_var)
     if cond:
         matching.add_guard(cond)
     return (
         match_to_var + " = " + item + "\n"
-        + matching.build(stmts)
+        + matching.build(stmts, invert=invert)
     )
 
 
@@ -1379,7 +1387,7 @@ class Grammar(object):
 
     full_suite = colon.suppress() + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
     full_match = trace(attach(
-        keyword("match").suppress() + match + keyword("in").suppress() - test - match_guard - full_suite,
+        keyword("match").suppress() + match + addspace(Optional(keyword("not")) + keyword("in")) - test - match_guard - full_suite,
         match_handle,
     ))
     match_stmt = condense(full_match - Optional(else_stmt))
