@@ -1837,7 +1837,7 @@ collections.deque(map(print, map(lambda x: x**2, range(10))), maxlen=0)
 
 ### `count`
 
-Coconut provides a modified version of `itertools.count` that supports `in`, normal slicing, optimized iterator slicing, the standard `count` and `index` sequence methods, `repr`, and `start`/`step` attributes as a built-in under the name `count`.
+Coconut provides a modified version of `itertools.count` that supports `in`, normal slicing, optimized iterator slicing, the standard `count` and `index` sequence methods, `repr`, and `start`/`step` attributes as a built-in under the name `count`. Additionally, if the _step_ parameter is set to 0, `count` will infinitely repeat the _start_ parameter.
 
 ##### Python Docs
 
@@ -1851,7 +1851,8 @@ def count(start=0, step=1):
     n = start
     while True:
         yield n
-        n += step
+        if step:
+          n += step
 ```
 
 ##### Example

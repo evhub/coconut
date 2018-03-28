@@ -471,6 +471,14 @@ def main_test():
     [a] is list = [1]
     assert a == 1
     assert makedata(type((||)), 1, 2) == (1, 2) == makedata(type(() :: ()), 1, 2)
+    all_none = count(None, 0) |> reversed
+    assert all_none$[0] is None
+    assert all_none$[:3] |> list == [None, None, None]
+    assert None in all_none
+    assert (+) not in all_none
+    assert all_none.count(0) == 0
+    assert all_none.count(None) == float("inf")
+    assert all_none.index(None) == 0
     return True
 
 def tco_func() = tco_func()
