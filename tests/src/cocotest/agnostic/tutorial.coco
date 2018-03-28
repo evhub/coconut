@@ -67,7 +67,7 @@ def factorial(n):
         x is int = n
     except MatchError:
         pass
-    else: if x > 0:  # in Coconut, if, match, and try are allowed after else
+    else: if x > 0:  # in Coconut, statements can be nested on the same line
         return x * factorial(x-1)
     raise TypeError("the argument to factorial must be an integer >= 0")
 

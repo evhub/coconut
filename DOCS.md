@@ -775,8 +775,8 @@ When checking whether or not an object can be matched against in a particular fa
 def factorial(value):
     match 0 in value:
         return 1
-    else: match n is int in value if n > 0:  # possible because of Coconut's
-        return n * factorial(n-1)            #   enhanced else statements
+    else: match n is int in value if n > 0:  # Coconut allows nesting of statements on the same line
+        return n * factorial(n-1)
     else:
         raise TypeError("invalid argument to factorial of: "+repr(value))
 
@@ -1367,9 +1367,9 @@ def func(x):
     return x**2
 ```
 
-### `else` Statements
+### Statement Nesting
 
-Coconut supports the compound statements `try`, `if`, and `match` on the end of an `else` statement like any simple statement would be. This is most useful for mixing `match` and `if` statements together, but also allows for compound `try` statements.
+Coconut supports the nesting of compound statements on the same line. This allows the mixing of `match` and `if` statements together, as well as compound `try` statements.
 
 ##### Example
 

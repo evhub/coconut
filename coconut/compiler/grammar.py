@@ -515,12 +515,6 @@ def decorator_handle(tokens):
     return "\n".join(defs + decorates) + "\n"
 
 
-def else_handle(tokens):
-    """Process compound else statements."""
-    internal_assert(len(tokens) == 1, "invalid compound else statement tokens", tokens)
-    return "\n" + openindent + tokens[0] + closeindent
-
-
 def match_handle(loc, tokens):
     """Process match blocks."""
     if len(tokens) == 4:
@@ -1215,7 +1209,6 @@ class Grammar(object):
     simple_stmt_item = Forward()
     unsafe_simple_stmt_item = Forward()
     simple_stmt = Forward()
-    simple_compound_stmt = Forward()
     stmt = Forward()
     suite = Forward()
     nocolon_suite = Forward()
@@ -1382,9 +1375,7 @@ class Grammar(object):
     or_match = Group(matchlist_or("or")) | and_match
     match <<= trace(or_match)
 
-    else_suite = condense(colon + trace(attach(simple_compound_stmt, else_handle))) | suite
-    else_stmt = condense(keyword("else") - else_suite)
-
+    else_stmt = condense(keyword("else") - suite)
     full_suite = colon.suppress() + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
     full_match = trace(attach(
         keyword("match").suppress() + match + addspace(Optional(keyword("not")) + keyword("in")) - test - match_guard - full_suite,
@@ -1402,7 +1393,7 @@ class Grammar(object):
     case_stmt_ref = (
         keyword("case").suppress() + test - colon.suppress() - newline.suppress()
         - indent.suppress() - Group(OneOrMore(case_match))
-        - dedent.suppress() - Optional(keyword("else").suppress() - else_suite)
+        - dedent.suppress() - Optional(keyword("else").suppress() - suite)
     )
 
     exec_stmt = Forward()
@@ -1567,7 +1558,7 @@ class Grammar(object):
 
     passthrough_stmt = condense(passthrough_block - (base_suite | newline))
 
-    simple_compound_stmt <<= trace(
+    simple_compound_stmt = trace(
         if_stmt
         | try_stmt
         | case_stmt
@@ -1613,12 +1604,12 @@ class Grammar(object):
         + ZeroOrMore(fixto(semicolon, "\n") + simple_stmt_item)
         + (newline | endline_semicolon),
     ))
-    stmt <<= trace(compound_stmt | simple_stmt)
-    base_suite <<= condense(newline + indent - OneOrMore(final(stmt)) - dedent)
-    simple_suite = attach(simple_stmt, make_suite_handle)
+    stmt <<= final(trace(compound_stmt | simple_stmt))
+    base_suite <<= condense(newline + indent - OneOrMore(stmt) - dedent)
+    simple_suite = attach(stmt, make_suite_handle)
     nocolon_suite <<= trace(base_suite | simple_suite)
     suite <<= condense(colon + nocolon_suite)
-    line = trace(final(newline | stmt))
+    line = trace(newline | stmt)
 
     single_input = trace(condense(Optional(line) - ZeroOrMore(newline)))
     file_input = trace(condense(moduledoc_marker - ZeroOrMore(line)))
