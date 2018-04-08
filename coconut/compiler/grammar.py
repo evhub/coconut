@@ -948,9 +948,10 @@ class Grammar(object):
 
     match = Forward()
     args_list = trace(addspace(ZeroOrMore(condense(
-        (star | dubstar) + tfpdef  # tfpdef ends with arg_comma
+        # everything here must end with arg_comma (tfpdef/tfpdef_default implicitly do)
+        (star | dubstar) + tfpdef
         | star_sep + arg_comma
-        | tfpdef_default,  # as does tfpdef_default
+        | tfpdef_default,
     ))))
     parameters = condense(lparen + args_list + rparen)
     var_args_list = trace(Optional(itemlist(
@@ -970,11 +971,13 @@ class Grammar(object):
         comma,
     ))))
 
-    function_call_tokens = lparen.suppress() + Optional(
-        Group(op_item)
-        | Group(attach(addspace(test + comp_for), add_paren_handle))
-        | tokenlist(Group(dubstar + test | star + test | name + default | test), comma),
-    ) + rparen.suppress()
+    function_call_tokens = lparen.suppress() + (
+        # everything here must end with rparen
+        rparen.suppress()
+        | Group(op_item) + rparen.suppress()
+        | Group(attach(addspace(test + comp_for), add_paren_handle)) + rparen.suppress()
+        | tokenlist(Group(dubstar + test | star + test | name + default | test), comma) + rparen.suppress()
+    )
     function_call = attach(function_call_tokens, function_call_handle)
     questionmark_call_tokens = Group(tokenlist(
         Group(
@@ -983,8 +986,7 @@ class Grammar(object):
         comma,
     ))
     methodcaller_args = (
-        op_item
-        | itemlist(
+        itemlist(
             condense(
                 dubstar + test
                 | star + test
@@ -993,6 +995,7 @@ class Grammar(object):
             ),
             comma,
         )
+        | op_item
     )
 
     slicetest = Optional(test_no_chain)
@@ -1040,8 +1043,8 @@ class Grammar(object):
     )
     func_atom = (
         name
-        | op_atom
         | paren_atom
+        | op_atom
     )
     atom = (
         known_atom
@@ -1520,6 +1523,7 @@ class Grammar(object):
     datadef = Forward()
     data_args = Group(Optional(lparen.suppress() + ZeroOrMore(
         Group(
+            # everything here must end with arg_comma
             (name + arg_comma.suppress())("name")
             | (name + equals.suppress() + test + arg_comma.suppress())("default")
             | (star.suppress() + name + arg_comma.suppress())("star")
