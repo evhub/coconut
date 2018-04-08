@@ -971,9 +971,9 @@ class Grammar(object):
     ))))
 
     function_call_tokens = lparen.suppress() + Optional(
-        Group(attach(addspace(test + comp_for), add_paren_handle))
-        | tokenlist(Group(dubstar + test | star + test | name + default | test), comma)
-        | Group(op_item),
+        Group(op_item)
+        | Group(attach(addspace(test + comp_for), add_paren_handle))
+        | tokenlist(Group(dubstar + test | star + test | name + default | test), comma),
     ) + rparen.suppress()
     function_call = attach(function_call_tokens, function_call_handle)
     questionmark_call_tokens = Group(tokenlist(
@@ -983,7 +983,8 @@ class Grammar(object):
         comma,
     ))
     methodcaller_args = (
-        itemlist(
+        op_item
+        | itemlist(
             condense(
                 dubstar + test
                 | star + test
@@ -992,7 +993,6 @@ class Grammar(object):
             ),
             comma,
         )
-        | op_item
     )
 
     slicetest = Optional(test_no_chain)
@@ -1040,8 +1040,8 @@ class Grammar(object):
     )
     func_atom = (
         name
-        | paren_atom
         | op_atom
+        | paren_atom
     )
     atom = (
         known_atom
