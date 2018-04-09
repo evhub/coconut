@@ -3,13 +3,13 @@ import os
 
 from coconut.__coconut__ import consume as coc_consume  # type: ignore
 
+from coconut.constants import IPY, WINDOWS  # type: ignore
 from coconut.exceptions import (
     CoconutSyntaxError,
     CoconutStyleError,
     CoconutSyntaxError,
     CoconutTargetError,
 )  # type: ignore
-
 from coconut.convenience import (
     CoconutException,
     cmd,
@@ -18,8 +18,7 @@ from coconut.convenience import (
     parse,
 )  # type: ignore
 
-IPY = os.name != "nt" and (sys.version_info >= (3, 3) or (sys.version_info < (3,) and sys.version_info >= (2, 7)))
-if IPY:
+if IPY and not WINDOWS:
     from coconut.icoconut import CoconutKernel  # type: ignore
 else:
     CoconutKernel = None  # type: ignore
