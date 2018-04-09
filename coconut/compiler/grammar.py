@@ -934,8 +934,9 @@ class Grammar(object):
     unsafe_typedef_default = Forward()
     typedef_test = Forward()
 
-    # we include arg_comma to ensure the pattern matches the whole arg
+    # we include (var)arg_comma to ensure the pattern matches the whole arg
     arg_comma = comma | fixto(FollowedBy(rparen), "")
+    vararg_comma = arg_comma | fixto(FollowedBy(colon), "")
     typedef_ref = name + colon.suppress() + typedef_test + arg_comma
     default = condense(equals + test)
     unsafe_typedef_default_ref = name + colon.suppress() + typedef_test + Optional(default)
@@ -943,25 +944,26 @@ class Grammar(object):
     tfpdef = typedef | condense(name + arg_comma)
     tfpdef_default = typedef_default | condense(name + Optional(default) + arg_comma)
 
-    star_sep = Forward()
-    star_sep_ref = star
+    star_sep_arg = Forward()
+    star_sep_arg_ref = condense(star + arg_comma)
+    star_sep_vararg = Forward()
+    star_sep_vararg_ref = condense(star + vararg_comma)
+    just_star = star + rparen
 
     match = Forward()
-    args_list = trace(addspace(ZeroOrMore(condense(
-        # everything here must end with arg_comma (tfpdef/tfpdef_default implicitly do)
+    args_list = ~just_star + trace(addspace(ZeroOrMore(condense(
+        # everything here must end with arg_comma
         (star | dubstar) + tfpdef
-        | star_sep + arg_comma
+        | star_sep_arg
         | tfpdef_default,
     ))))
     parameters = condense(lparen + args_list + rparen)
-    var_args_list = trace(Optional(itemlist(
-        condense(
-            (star | dubstar) + name
-            | star_sep
-            | name + Optional(default),
-        ),
-        comma,
-    )))
+    var_args_list = ~just_star + trace(addspace(ZeroOrMore(condense(
+        # everything here must end with vararg_comma
+        (star | dubstar) + name + vararg_comma
+        | star_sep_vararg
+        | name + Optional(default) + vararg_comma,
+    ))))
     match_args_list = trace(Group(Optional(tokenlist(
         Group(
             (star | dubstar) + match
@@ -1043,8 +1045,8 @@ class Grammar(object):
     )
     func_atom = (
         name
-        | paren_atom
         | op_atom
+        | paren_atom
     )
     atom = (
         known_atom
