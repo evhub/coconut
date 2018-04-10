@@ -48,6 +48,7 @@ from coconut.constants import (
     prompt_history_search,
     style_env_var,
     mypy_path_env_var,
+    histfile_env_var,
     tutorial_url,
     documentation_url,
     reserved_vars,
@@ -350,7 +351,11 @@ class Prompt(object):
                 self.set_style(os.environ[style_env_var])
             else:
                 self.style = default_style
-            self.history = prompt_toolkit.history.InMemoryHistory()
+
+            if histfile_env_var in os.environ and os.environ[histfile_env_var]:
+                self.history = prompt_toolkit.history.FileHistory(os.environ[histfile_env_var])
+            else:
+                self.history = prompt_toolkit.history.InMemoryHistory()
 
     def set_style(self, style):
         """Set pygments syntax highlighting style."""

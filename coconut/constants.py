@@ -497,6 +497,7 @@ prompt_history_search = True
 
 mypy_path_env_var = "MYPYPATH"
 style_env_var = "COCONUT_STYLE"
+histfile_env_var = "COCONUT_HISTORY"
 
 watch_interval = .1  # seconds
 
