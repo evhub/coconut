@@ -375,7 +375,7 @@ class Prompt(object):
         if path == "":
             self.history = prompt_toolkit.history.InMemoryHistory()
         else:
-            self.history = prompt_toolkit.history.FileHistory(path)
+            self.history = prompt_toolkit.history.FileHistory(os.path.expanduser(path))
 
     def input(self, more=False):
         """Prompt for code input."""
