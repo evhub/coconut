@@ -160,6 +160,8 @@ class Command(object):
             self.show = True
         if args.style is not None:
             self.prompt.set_style(args.style)
+        if args.history_file is not None:
+            self.prompt.set_history_file(args.history_file)
         if args.documentation:
             launch_documentation()
         if args.tutorial:

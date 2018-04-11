@@ -489,6 +489,7 @@ main_prompt = ">>> "
 more_prompt = "    "
 
 default_style = "default"
+default_histfile = ""
 prompt_multiline = False
 prompt_vi_mode = False
 prompt_mouse_support = False  # causes problems in unix shells
