@@ -21,7 +21,7 @@ repos:
         - --aggressive
         - --aggressive
         - --experimental
-        - --ignore=W503,E501,E722
+        - --ignore=W503,E501,E722,E265
     -   id: flake8
         args:
         - --ignore=W503,E501,E265,E402,F405,E305
