@@ -16,7 +16,7 @@ from coconut.convenience import (
     version,
     setup,
     parse,
-)  # type: ignore
+)
 
 if IPY and not WINDOWS:
     from coconut.icoconut import CoconutKernel  # type: ignore
