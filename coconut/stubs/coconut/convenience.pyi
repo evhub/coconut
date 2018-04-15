@@ -19,7 +19,15 @@ Description: Mypy stub file for convenience.py
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-from typing import Any, Callable, Dict, Iterable, Text, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    Optional,
+    Text,
+    Union,
+)
 
 from coconut.command.command import Command
 
@@ -29,13 +37,13 @@ from coconut.command.command import Command
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-CLI = ... # type: Command
+CLI: Command = ...
 
 
-def cmd(args: Union[Text, bytes, Iterable], interact: bool) -> Command: ...
+def cmd(args: Union[Text, bytes, Iterable], interact: bool) -> None: ...
 
 
-VERSION = ... # type: Dict[Text, Text]
+VERSION: Dict[Text, Text] = ...
 
 
 def version(which: Text) -> Text: ...
@@ -46,10 +54,10 @@ def version(which: Text) -> Text: ...
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-setup = ... # type: Callable
+setup: Callable[[Optional[str], bool, bool, bool, bool, bool], None] = ...
 
 
-PARSERS = ... # Dict[Text, Callable]
+PARSERS: Dict[Text, Callable] = ...
 
 
-def parse(code: Text, mode: Text) -> None: ...
+def parse(code: Text, mode: Text) -> Text: ...
