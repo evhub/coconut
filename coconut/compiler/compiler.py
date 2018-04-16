@@ -1605,7 +1605,7 @@ def __eq__(self, other):
 
     yield_regex = compile_regex(r"\byield\b")
     def_regex = compile_regex(r"(async\s+)?def\b")
-    try_with_regex = compile_regex(r"(?:try|(async\s+)?with)\b")
+    tre_disable_regex = compile_regex(r"(try|(async\s+)?(with|for)|while)\b")
     return_regex = compile_regex(r"return\b")
 
     def transform_returns(self, raw_lines, tre_return_grammar=None, use_mock=None, is_async=False):
@@ -1643,7 +1643,8 @@ def __eq__(self, other):
                     disabled_until_level = level
 
                 # tco and tre shouldn't touch scopes that depend on actual return statements
-                elif not is_async and self.try_with_regex.match(body):
+                #  or scopes where we can't insert a continue
+                elif not is_async and self.tre_disable_regex.match(body):
                     disabled_until_level = level
 
                 else:

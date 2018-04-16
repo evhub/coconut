@@ -501,6 +501,7 @@ def suite_test():
     assert (plus1 `(..)` x -> x*2)(4) == 9
     assert join_pairs1([(1, [2]), (1, [3])]).items() |> list == [(1, [2, 3])]
     assert join_pairs2([(1, [2]), (1, [3])]).items() |> list == [(1, [3, 2])]
+    assert return_in_loop(10)
     return True
 
 def tco_test():

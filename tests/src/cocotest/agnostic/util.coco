@@ -263,6 +263,12 @@ def fake_recurse_n_times(n) =
     fake_recurse_n_times = recurse_n_times
     fake_recurse_n_times(n)
 
+def return_in_loop(x):
+    if x == 0:
+        return True
+    while True:
+        return return_in_loop(x - 1)
+
 # Data Blocks:
 try:
     datamaker
