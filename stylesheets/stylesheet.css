@@ -220,6 +220,20 @@ a {
     padding: 2rem 1rem;
     font-size: 1rem; } }
 
+@media screen and (min-width: 64em) {
+  .interpreter {
+    max-width: 64rem;
+    padding: 2rem 6rem;
+    margin: 0 auto; } }
+
+@media screen and (min-width: 42em) and (max-width: 64em) {
+  .interpreter {
+    padding: 2rem 4rem; } }
+
+@media screen and (max-width: 42em) {
+  .interpreter {
+    padding: 2rem 1rem; } }
+
 .site-footer {
   padding-top: 2rem;
   margin-top: 2rem;
