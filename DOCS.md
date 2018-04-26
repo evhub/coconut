@@ -16,6 +16,10 @@ The Coconut compiler turns Coconut code into Python code. The primary method of 
 
 While most of Coconut gets its inspiration simply from trying to make functional programming work in Python, additional inspiration came from [Haskell](https://www.haskell.org/), [CoffeeScript](http://coffeescript.org/), [F#](http://fsharp.org/), and [patterns.py](https://github.com/Suor/patterns).
 
+## Try It Out
+
+If you want to try Coconut in your browser, check out the [online interpreter](https://cs121-team-panda.github.io/coconut-interpreter).
+
 ## Installation
 
 ### Using Pip
