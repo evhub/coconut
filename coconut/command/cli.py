@@ -41,6 +41,7 @@ arguments = argparse.ArgumentParser(
     description=documentation_url,
 )
 
+# any changes made to these arguments must be reflected in DOCS.md
 arguments.add_argument(
     "source",
     metavar="source",
@@ -207,7 +208,7 @@ arguments.add_argument(
     metavar="name",
     type=str,
     help="Pygments syntax highlighting style (or 'none' to disable) (defaults to "
-    + style_env_var + " environment variable, if it exists, otherwise '" + default_style + "')",
+    + style_env_var + " environment variable if it exists, otherwise '" + default_style + "')",
 )
 
 arguments.add_argument(

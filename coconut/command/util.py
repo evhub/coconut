@@ -347,11 +347,7 @@ class Prompt(object):
     def __init__(self):
         """Set up the prompt."""
         if prompt_toolkit is not None:
-            if style_env_var in os.environ:
-                self.set_style(os.environ[style_env_var])
-            else:
-                self.style = default_style
-
+            self.set_style(os.environ.get(style_env_var, default_style))
             self.set_history_file(os.environ.get(histfile_env_var, default_histfile))
 
     def set_style(self, style):
@@ -370,12 +366,10 @@ class Prompt(object):
 
     def set_history_file(self, path):
         """Set path to history file. "" produces no file."""
-        assert isinstance(path, str)
-
-        if path == "":
-            self.history = prompt_toolkit.history.InMemoryHistory()
+        if path:
+            self.history = prompt_toolkit.history.FileHistory(fixpath(path))
         else:
-            self.history = prompt_toolkit.history.FileHistory(os.path.expanduser(path))
+            self.history = prompt_toolkit.history.InMemoryHistory()
 
     def input(self, more=False):
         """Prompt for code input."""

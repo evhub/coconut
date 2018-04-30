@@ -32,7 +32,7 @@ from zlib import crc32
 
 def fixpath(path):
     """Uniformly format a path."""
-    return os.path.normpath(os.path.realpath(path))
+    return os.path.normpath(os.path.realpath(os.path.expanduser(path)))
 
 
 def get_target_info(target):
