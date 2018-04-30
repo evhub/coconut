@@ -489,6 +489,7 @@ main_prompt = ">>> "
 more_prompt = "    "
 
 default_style = "default"
+default_histfile = os.path.join("~", ".coconut_history")
 prompt_multiline = False
 prompt_vi_mode = False
 prompt_mouse_support = False  # causes problems in unix shells
@@ -497,6 +498,7 @@ prompt_history_search = True
 
 mypy_path_env_var = "MYPYPATH"
 style_env_var = "COCONUT_STYLE"
+histfile_env_var = "COCONUT_HISTORY_FILE"
 
 watch_interval = .1  # seconds
 

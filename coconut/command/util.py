@@ -41,6 +41,7 @@ from coconut.constants import (
     main_prompt,
     more_prompt,
     default_style,
+    default_histfile,
     prompt_multiline,
     prompt_vi_mode,
     prompt_mouse_support,
@@ -48,6 +49,7 @@ from coconut.constants import (
     prompt_history_search,
     style_env_var,
     mypy_path_env_var,
+    histfile_env_var,
     tutorial_url,
     documentation_url,
     reserved_vars,
@@ -333,7 +335,6 @@ def canparse(argparser, args):
 # CLASSES:
 # -----------------------------------------------------------------------------------------------------------------------
 
-
 class Prompt(object):
     """Manages prompting for code on the command line."""
     style = None
@@ -350,7 +351,8 @@ class Prompt(object):
                 self.set_style(os.environ[style_env_var])
             else:
                 self.style = default_style
-            self.history = prompt_toolkit.history.InMemoryHistory()
+
+            self.set_history_file(os.environ.get(histfile_env_var, default_histfile))
 
     def set_style(self, style):
         """Set pygments syntax highlighting style."""
@@ -365,6 +367,15 @@ class Prompt(object):
             self.style = style
         else:
             raise CoconutException("unrecognized pygments style", style, extra="use '--style list' to show all valid styles")
+
+    def set_history_file(self, path):
+        """Set path to history file. "" produces no file."""
+        assert isinstance(path, str)
+
+        if path == "":
+            self.history = prompt_toolkit.history.InMemoryHistory()
+        else:
+            self.history = prompt_toolkit.history.FileHistory(os.path.expanduser(path))
 
     def input(self, more=False):
         """Prompt for code input."""
