@@ -402,12 +402,18 @@ def recursive_iterator(func):
 def addpattern(base_func):
     """Decorator to add a new case to a pattern-matching function,
     where the new case is checked last."""
+    try:
+        base_func._MatchError
+    except AttributeError:
+        class _MatchError(_coconut_MatchError):
+            pass
+        base_func._MatchError = _MatchError
     def pattern_adder(func):
         {tco_decorator}@_coconut.functools.wraps(func)
         def add_pattern_func(*args, **kwargs):
             try:
                 return base_func(*args, **kwargs)
-            except _coconut_MatchError:
+            except base_func._MatchError:
                 return {tail_call_func_args_kwargs}
         return add_pattern_func
     return pattern_adder
