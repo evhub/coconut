@@ -1038,12 +1038,60 @@ First up is lazy lists. Lazy lists are lazily-evaluated iterator literals, simil
 ```coconut
 abc = (| a, b, c |)
 ```
+Like all Python iterators, you can call `next` to retrieve the next object in the iterator. Using a lazy list, it is possible to define the values used in the expressions as needed without raising a `NameError`:
+
+```coconut
+abcd = (| d(a), d(b), d(c) |)  # a, b, c, and d are not defined yet
+def d(n) = n + 1
+
+a = 1
+next(abcd)  # 2
+b = 2
+next(abcd)  # 3
+c = 3
+next(abcd)  # 4
+```
 
 ### Function Composition
 
 Next is function composition. In Coconut, this is accomplished through the `..` operator, which takes two functions and composes them, creating a new function equivalent to `(*args, **kwargs) -> f1(f2(*args, **kwargs))`. This can be useful in combination with partial application for piecing together multiple higher-order functions, like so:
 ```coconut
 zipsum = map$(sum)..zip
+```
+
+If the composed functions are wrapped in parentheses, arguments can be passed into them:
+```coconut
+def plus1(x) = x + 1
+def square(x) = x * x
+
+(plus1..square)(3) == 10  # True
+```
+
+Functions of different arities can be composed together, as long as they are in the correct order. If they are in the incorrect order, a `TypeError` will be raised. In this example we will compose a unary function with a binary function:
+```coconut
+def add(n, m) = n + m  # binary function
+def square(n) = n * n  # unary function
+
+(add..square)(3, 1)    # Raises TypeError: square() takes exactly 1 argument (2 given)
+(square..add)(3, 1)    # 16
+```
+
+Another useful trick with function composition involves composing a function with a higher-order function:
+```coconut
+def inc_or_dec(t):
+    # Our higher-order function, which returns another function
+    if t:
+        return x -> x+1
+    else:
+        return x -> x-1
+
+def square(n) = n * n
+
+square_inc = square..inc_or_dec(True)
+square_dec = square..inc_or_dec(False)
+square_inc(4)  # 25
+square_dec(4)  # 9
+
 ```
 
 _Note: Coconut also supports the function composition pipe operators `..>`, `<..`, `..*>`, and `<*..`._
