@@ -1558,7 +1558,7 @@ print_type()  # appears to work
 print_type(1) # TypeError: print_type() takes 0 positional arguments but 1 was given
 ```
 
-This can be fixed by using the `match` keyword, making `print_type()` a pattern-matching function. This will have the effect of turning any `TypeErrors` that would be raised into `MatchErrors`. These can then be handled by new `addpattern` functions as needed.
+This can be fixed by using the `match` keyword, making `print_type()` a pattern-matching function. This will have the effect of turning any `TypeErrors` that would be raised into `MatchErrors`. They can then be handled by new `addpattern` decorated functions as needed.
 
 ```coconut
 match def print_type():
