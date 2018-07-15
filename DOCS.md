@@ -1543,21 +1543,41 @@ def addpattern(base_func):
     return pattern_adder
 ```
 
-**DEPRECATED:** Coconut also has a `prepattern` built-in, which adds patterns in the opposite order of `addpattern`; `prepattern` is defined as:
+Note that the function taken by `addpattern` must be a pattern-matching function. If `addpattern` receives a non pattern-matching function, the initial function with not raise `MatchError`. Thus, if a later function was meant to be called, `addpattern` will not know that the first match failed and the correct path will never be reached.
+
+For example, the following code raises a `TypeError`:
 ```coconut
-def prepattern(base_func):
-    """Decorator to add a new case to a pattern-matching function,
-    where the new case is checked first."""
-    def pattern_prepender(func):
-        return addpattern(func)(base_func)
-    return pattern_prepender
+def print_type():
+    print("Received no arguments.")
+
+@addpattern(print_type)
+def print_type(x is int):
+    print("Received an int.")
+
+print_type()  # appears to work
+print_type(1) # TypeError: print_type() takes 0 positional arguments but 1 was given
 ```
-_Note: Passing `--strict` disables deprecated features._
+
+This can be fixed by using the `match` keyword, making `print_type()` a pattern-matching function. This will have the effect of turning any `TypeErrors` that would be raised into `MatchErrors`; these can then be handled by new `addpattern` functions as needed.
+
+```coconut
+match def print_type():
+    print("Received no arguments.")
+
+@addpattern(print_type)
+def print_type(x is int):
+    print("Received an int.")
+
+print_type(1)  # Works as expected
+print_type("This is a string.") # Raises MatchError
+```
+
+`addpattern` can be used without the `match` keyword if the function it receives is an [assignment function](#assignment-functions) as seen in the example below:
 
 ##### Example
 
 **Coconut:**
-```
+```coconut
 def factorial(0) = 1
 
 @addpattern(factorial)
@@ -1566,6 +1586,20 @@ def factorial(n) = n * factorial(n - 1)
 
 **Python:**
 _Can't be done without a complicated decorator definition and a long series of checks for each pattern-matching. See the compiled code for the Python syntax._
+
+##### `prepattern`
+
+**DEPRECATED:** Coconut also has a `prepattern` built-in, which adds patterns in the opposite order of `addpattern`; `prepattern` is defined as:
+
+```coconut_python
+def prepattern(base_func):
+    """Decorator to add a new case to a pattern-matching function,
+    where the new case is checked first."""
+    def pattern_prepender(func):
+        return addpattern(func)(base_func)
+    return pattern_prepender
+```
+_Note: Passing `--strict` disables deprecated features._
 
 ### `reduce`
 
