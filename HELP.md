@@ -1054,7 +1054,7 @@ next(abcd)  # 4
 
 ### Function Composition
 
-Next is function composition. In Coconut, this is accomplished through the `..` operator, which takes two functions and composes them, creating a new function equivalent to `(*args, **kwargs) -> f1(f2(*args, **kwargs))`. This can be useful in combination with partial application for piecing together multiple higher-order functions, like so:
+Next is function composition. In Coconut, this is accomplished through the `..` operator, which takes two functions as in `f2..f1` and composes them, creating a new function equivalent to `(*args, **kwargs) -> f1(f2(*args, **kwargs))`, with evaluation from left to right. This can be useful in combination with partial application for piecing together multiple higher-order functions, like so:
 ```coconut
 zipsum = map$(sum)..zip
 ```
