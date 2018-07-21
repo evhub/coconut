@@ -160,15 +160,15 @@ min_versions = {
     "jupyter": (1, 0),
     "jupyter-console": (5, 2),
     "ipykernel": (4, 8),
-    "mypy": (0, 560),
-    "prompt_toolkit": (1, 0),
+    "mypy": (0, 620),
+    "prompt_toolkit": (2, 0),
     "futures": (3, 2),
     "backports.functools-lru-cache": (1, 5),
     "argparse": (1, 4),
     "pytest": (3,),
     "pexpect": (4,),
     "watchdog": (0, 8),
-    "trollius": (2, 1),
+    "trollius": (2, 2),
     "requests": (2,),
     # don't upgrade this; it breaks on unix
     "vprof": (0, 36),
@@ -492,7 +492,6 @@ default_style = "default"
 default_histfile = os.path.join("~", ".coconut_history")
 prompt_multiline = False
 prompt_vi_mode = False
-prompt_mouse_support = False  # causes problems in unix shells
 prompt_wrap_lines = True
 prompt_history_search = True
 

@@ -173,10 +173,10 @@ def single_import(path, imp_as):
                 "try:",
                 openindent + mod_name,
                 closeindent + "except:",
-                openindent + mod_name + ' = _coconut.imp.new_module("' + mod_name + '")',
+                openindent + mod_name + ' = _coconut.types.ModuleType("' + mod_name + '")',
                 closeindent + "else:",
                 openindent + "if not _coconut.isinstance(" + mod_name + ", _coconut.types.ModuleType):",
-                openindent + mod_name + ' = _coconut.imp.new_module("' + mod_name + '")' + closeindent * 2,
+                openindent + mod_name + ' = _coconut.types.ModuleType("' + mod_name + '")' + closeindent * 2,
             ))
         out.append(".".join(fake_mods) + " = " + import_as_var)
     else:

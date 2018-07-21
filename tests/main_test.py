@@ -23,13 +23,12 @@ import unittest
 import sys
 import os
 import shutil
-import imp
 from contextlib import contextmanager
 
 import pexpect
 
 from coconut.terminal import logger, Logger
-from coconut.command.util import call_output
+from coconut.command.util import call_output, reload
 from coconut.constants import (
     WINDOWS,
     PYPY,
@@ -353,7 +352,7 @@ class TestShell(unittest.TestCase):
             with remove_when_done(runnable_py):
                 with using_logger():
                     import runnable
-                    imp.reload(runnable)
+                    reload(runnable)
         finally:
             auto_compilation(False)
             sys.path.remove(src)

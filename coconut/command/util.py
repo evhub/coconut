@@ -23,7 +23,12 @@ import sys
 import os
 import traceback
 import subprocess
-import imp
+if PY26:
+    import imp
+if PY2:
+    from imp import reload
+else:
+    from importlib import reload
 from copy import copy
 from contextlib import contextmanager
 from select import select
@@ -44,7 +49,6 @@ from coconut.constants import (
     default_histfile,
     prompt_multiline,
     prompt_vi_mode,
-    prompt_mouse_support,
     prompt_wrap_lines,
     prompt_history_search,
     style_env_var,
@@ -340,7 +344,6 @@ class Prompt(object):
     style = None
     multiline = prompt_multiline
     vi_mode = prompt_vi_mode
-    mouse_support = prompt_mouse_support
     wrap_lines = prompt_wrap_lines
     history_search = prompt_history_search
 
@@ -381,7 +384,7 @@ class Prompt(object):
         if self.style is not None:
             internal_assert(prompt_toolkit is not None, "without prompt_toolkit cannot highlight style", self.style)
             try:
-                return prompt_toolkit.prompt(msg, **self.prompt_kwargs())
+                return self.prompt(msg)
             except EOFError:
                 raise  # issubclass(EOFError, Exception), so we have to do this
             except (Exception, AssertionError):
@@ -390,18 +393,20 @@ class Prompt(object):
                 self.style = None
         return input(msg)
 
-    def prompt_kwargs(self):
-        """Get prompt_toolkit.prompt keyword args."""
-        return {
-            "history": self.history,
-            "multiline": self.multiline,
-            "vi_mode": self.vi_mode,
-            "mouse_support": self.mouse_support,
-            "wrap_lines": self.wrap_lines,
-            "enable_history_search": self.history_search,
-            "lexer": prompt_toolkit.layout.lexers.PygmentsLexer(CoconutLexer),
-            "style": prompt_toolkit.styles.style_from_pygments(pygments.styles.get_style_by_name(self.style)),
-        }
+    def prompt(self, msg):
+        """Get input using prompt_toolkit."""
+        session = prompt_toolkit.PromptSession(history=self.history)
+        return session.prompt(
+            msg,
+            multiline=self.multiline,
+            vi_mode=self.vi_mode,
+            wrap_lines=self.wrap_lines,
+            enable_history_search=self.history_search,
+            lexer=prompt_toolkit.lexers.pygments.PygmentsLexer(CoconutLexer),
+            style=prompt_toolkit.styles.pygments.style_from_pygments_cls(
+                pygments.styles.get_style_by_name(self.style),
+            ),
+        )
 
 
 class Runner(object):
@@ -425,7 +430,7 @@ class Runner(object):
         init_vars = {
             "__name__": "__main__",
             "__package__": None,
-            "reload": imp.reload,
+            "reload": reload,
         }
         if path is not None:
             init_vars["__file__"] = fixpath(path)

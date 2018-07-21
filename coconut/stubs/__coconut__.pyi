@@ -66,7 +66,8 @@ def scan(
 
 class _coconut:
     typing = _t  # The real _coconut doesn't import typing, but we want type-checkers to treat it as if it does
-    import collections, copy, functools, imp, itertools, operator, types, weakref, pickle
+    import collections, copy, functools, types, itertools, operator, types, weakref
+    import pickle
     Ellipsis, Exception, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr = Ellipsis, Exception, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr
     if sys.version_info >= (3, 4):
         import asyncio
