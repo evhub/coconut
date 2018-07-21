@@ -161,7 +161,7 @@ min_versions = {
     "jupyter-console": (5, 2),
     "ipykernel": (4, 8),
     "mypy": (0, 620),
-    "prompt_toolkit": (2, 0),
+    "prompt_toolkit": (1,),
     "futures": (3, 2),
     "backports.functools-lru-cache": (1, 5),
     "argparse": (1, 4),
@@ -181,6 +181,7 @@ min_versions = {
 
 version_strictly = (
     "pyparsing",
+    "prompt_toolkit",
     "ipython",
     "sphinx",
     "sphinx_bootstrap_theme",

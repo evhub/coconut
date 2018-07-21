@@ -395,15 +395,15 @@ class Prompt(object):
 
     def prompt(self, msg):
         """Get input using prompt_toolkit."""
-        session = prompt_toolkit.PromptSession(history=self.history)
-        return session.prompt(
+        return prompt_toolkit.prompt(
             msg,
+            history=self.history,
             multiline=self.multiline,
             vi_mode=self.vi_mode,
             wrap_lines=self.wrap_lines,
             enable_history_search=self.history_search,
-            lexer=prompt_toolkit.lexers.pygments.PygmentsLexer(CoconutLexer),
-            style=prompt_toolkit.styles.pygments.style_from_pygments_cls(
+            lexer=prompt_toolkit.layout.lexers.PygmentsLexer(CoconutLexer),
+            style=prompt_toolkit.styles.style_from_pygments(
                 pygments.styles.get_style_by_name(self.style),
             ),
         )

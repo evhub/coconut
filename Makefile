@@ -73,14 +73,14 @@ wipe: clean
 	-pip2 uninstall coconut-develop
 	rm -rf *.egg-info
 
-.PHONY: build
-build: clean dev
+.PHONY: just-upload
+just-upload:
 	python setup.py sdist bdist_wheel
-
-.PHONY: upload
-upload: build
 	pip install --upgrade twine
 	twine upload dist/*
+
+.PHONY: upload
+upload: clean dev just-upload
 
 .PHONY: check
 check:
