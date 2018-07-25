@@ -104,8 +104,10 @@ _coconut_starmap = starmap
 parallel_map = concurrent_map = _coconut_map = map
 
 
-_coconut_NamedTuple = _t.NamedTuple
-TYPE_CHECKING = _t.TYPE_CHECKING
+from typing import (
+    NamedTuple as _coconut_NamedTuple,
+    TYPE_CHECKING,
+)
 
 
 class MatchError(Exception): ...

@@ -135,7 +135,7 @@ def qsort4(l: int[]) -> int[]:
                     + [head] # The pivot is a list
                     + list(qsort4([x for x in tail if x > head]))
                     )
-    return None
+    return None  # type: ignore
 def qsort5(l: int$[]) -> int$[]:
     """Iterator Match Quick Sort."""
     match (head,) :: tail in l:
@@ -194,7 +194,7 @@ def preN(it):
     return it
 def map_iter(func, args):
     match (| x |) :: xs in args:
-        return (| func(x) |) :: map_iter(func, xs)
+        yield from (| func(x) |) :: map_iter(func, xs)
 
 # Recursive Functions:
 
@@ -268,6 +268,10 @@ def return_in_loop(x):
         return True
     while True:
         return return_in_loop(x - 1)
+
+class methtest:
+    def meth(self, arg) = meth(self, arg)
+def meth(self, arg) = arg
 
 # Data Blocks:
 try:
@@ -752,7 +756,7 @@ def x_is_int_def_0(x is int = 0) = x
 
 def head_tail_def_none([head] + tail = [None]) = (head, tail)
 
-def kwd_only_x_is_int_def_0(*, x is int = 0) = x
+match def kwd_only_x_is_int_def_0(*, x is int = 0) = x
 
 def no_args_kwargs(*(), **{}) = True
 

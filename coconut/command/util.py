@@ -25,10 +25,6 @@ import traceback
 import subprocess
 if PY26:
     import imp
-if PY2:
-    from imp import reload
-else:
-    from importlib import reload
 from copy import copy
 from contextlib import contextmanager
 from select import select
@@ -61,6 +57,7 @@ from coconut.constants import (
     minimum_recursion_limit,
     oserror_retcode,
     WINDOWS,
+    PY34,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -71,6 +68,11 @@ from coconut.terminal import (
     logger,
     complain,
 )
+
+if PY34:
+    from importlib import reload
+else:
+    from imp import reload
 
 try:
     import prompt_toolkit

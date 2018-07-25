@@ -67,6 +67,7 @@ from coconut.constants import (
     stmt_lambda_var,
     tre_mock_var,
     tre_store_var,
+    tre_check_var,
     py3_to_py2_stdlib,
     checksum,
     reserved_prefix,
@@ -1593,10 +1594,14 @@ def __eq__(self, other):
             else:
                 tre_recurse = func_args + " = " + args + "\ncontinue"
             return (
-                "if " + func_name + " is " + func_store + ":\n" + openindent
+                "try:\n" + openindent
+                + tre_check_var + " = " + func_name + " is " + func_store + "\n" + closeindent
+                + "except _coconut.NameError:\n" + openindent
+                + tre_check_var + " = False\n" + closeindent
+                + "if " + tre_check_var + ":\n" + openindent
                 + tre_recurse + "\n" + closeindent
                 + "else:\n" + openindent
-                + tco_recurse + closeindent
+                + tco_recurse + "\n" + closeindent
             )
         return attach(
             self.start_marker + (keyword("return") + keyword(func_name)).suppress() + self.parens + self.end_marker,
