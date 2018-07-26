@@ -19,6 +19,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
+import sys
 import re
 import traceback
 from functools import partial
@@ -47,6 +48,8 @@ from coconut.constants import (
     default_whitespace_chars,
     get_target_info,
     use_computation_graph,
+    py2_vers,
+    py3_vers,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -258,23 +261,43 @@ def append_it(iterator, last_val):
     yield last_val
 
 
-def get_target_info_len2(target, lowest=False):
-    """By default, gets the highest version supported by the target before the next target.
-    If lowest is passed, instead gets the lowest version supported by the target."""
+def get_vers_for_target(target):
+    """Gets a list of the versions supported by the given target."""
     target_info = get_target_info(target)
     if not target_info:
-        return (2, 6) if lowest else (2, 7)
+        return py2_vers + py3_vers
     elif len(target_info) == 1:
         if target_info == (2,):
-            return (2, 6) if lowest else (2, 7)
+            return py2_vers
         elif target_info == (3,):
-            return (3, 2) if lowest else (3, 4)
+            return py3_vers
         else:
             raise CoconutInternalException("invalid target info", target_info)
-    elif len(target_info) == 2:
-        return target_info
+    elif target_info == (3, 3):
+        return [(3, 3), (3, 4)]
     else:
-        return target_info[:2]
+        return [target_info[:2]]
+
+
+def get_target_info_len2(target, mode="lowest"):
+    """Converts target into a length 2 Python version tuple.
+
+    Modes:
+    - "lowest" (default): Gets the lowest version supported by the target.
+    - "highest": Gets the highest version supported by the target.
+    - "nearest": If the current version is supported, returns that, otherwise gets the highest."""
+    supported_vers = get_vers_for_target(target)
+    if mode == "lowest":
+        return supported_vers[0]
+    elif mode == "highest":
+        return supported_vers[-1]
+    elif mode == "nearest":
+        if sys.version_info[:2] in supported_vers:
+            return sys.version_info[:2]
+        else:
+            return supported_vers[-1]
+    else:
+        raise CoconutInternalException("unknown get_target_info_len2 mode", mode)
 
 
 def join_args(*arglists):

@@ -214,7 +214,7 @@ def universal_import(imports, imp_from=None, target=""):
             paths = (imp,)
         elif not target:  # universal compatibility
             paths = (old_imp, imp, version_check)
-        elif get_target_info_len2(target, lowest=True) >= version_check:  # if lowest is above, we can safely use new
+        elif get_target_info_len2(target) >= version_check:  # if lowest is above, we can safely use new
             paths = (imp,)
         elif target.startswith("2"):  # "2" and "27" can safely use old
             paths = (old_imp,)
@@ -594,11 +594,6 @@ class Compiler(Grammar):
     def target_info(self):
         """Return information on the current target as a version tuple."""
         return get_target_info(self.target)
-
-    @property
-    def target_info_len2(self):
-        """Return target_info as a length 2 tuple."""
-        return get_target_info_len2(self.target)
 
     def make_syntax_err(self, err, original):
         """Make a CoconutSyntaxError from a CoconutDeferredSyntaxError."""

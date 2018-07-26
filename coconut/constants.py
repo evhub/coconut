@@ -329,6 +329,9 @@ if sys.getrecursionlimit() < default_recursion_limit:
 hash_prefix = "# __coconut_hash__ = "
 hash_sep = "\x00"
 
+py2_vers = [(2, 6), (2, 7)]
+py3_vers = [(3, 2), (3, 3), (3, 4), (3, 5), (3, 6), (3, 7)]
+
 specific_targets = ("2", "27", "3", "33", "35", "36")
 pseudo_targets = {
     "universal": "",
