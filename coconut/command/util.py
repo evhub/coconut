@@ -25,6 +25,7 @@ import traceback
 import subprocess
 if PY26:
     import imp
+from functools import partial
 from copy import copy
 from contextlib import contextmanager
 from select import select
@@ -76,8 +77,18 @@ else:
 
 try:
     import prompt_toolkit
+    try:
+        # prompt_toolkit v2
+        from prompt_toolkit.lexers.pygments import PygmentsLexer
+        from prompt_toolkit.styles.pygments import style_from_pygments_cls
+    except ImportError:
+        # prompt_toolkit v1
+        from prompt_toolkit.layout.lexers import PygmentsLexer
+        from prompt_toolkit.styles import style_from_pygments as style_from_pygments_cls
+
     import pygments
     import pygments.styles
+
     from coconut.highlighter import CoconutLexer
 except ImportError:
     prompt_toolkit = None
@@ -397,15 +408,20 @@ class Prompt(object):
 
     def prompt(self, msg):
         """Get input using prompt_toolkit."""
-        return prompt_toolkit.prompt(
+        try:
+            # prompt_toolkit v2
+            prompt = prompt_toolkit.PromptSession(history=self.history).prompt
+        except AttributeError:
+            # prompt_toolkit v1
+            prompt = partial(prompt_toolkit.prompt, history=self.history)
+        return prompt(
             msg,
-            history=self.history,
             multiline=self.multiline,
             vi_mode=self.vi_mode,
             wrap_lines=self.wrap_lines,
             enable_history_search=self.history_search,
-            lexer=prompt_toolkit.layout.lexers.PygmentsLexer(CoconutLexer),
-            style=prompt_toolkit.styles.style_from_pygments(
+            lexer=PygmentsLexer(CoconutLexer),
+            style=style_from_pygments_cls(
                 pygments.styles.get_style_by_name(self.style),
             ),
         )

@@ -181,7 +181,6 @@ min_versions = {
 
 version_strictly = (
     "pyparsing",
-    "prompt_toolkit",
     "ipython",
     "sphinx",
     "sphinx_bootstrap_theme",

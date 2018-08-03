@@ -23,7 +23,7 @@ import sys
 import os
 import time
 import traceback
-import functools
+from functools import partial
 from contextlib import contextmanager
 from subprocess import CalledProcessError
 
@@ -598,7 +598,7 @@ class Command(object):
 
     def start_jupyter(self, args):
         """Start Jupyter with the Coconut kernel."""
-        install_func = functools.partial(run_cmd, show_output=logger.verbose)
+        install_func = partial(run_cmd, show_output=logger.verbose)
 
         try:
             install_func(["jupyter", "--version"])
