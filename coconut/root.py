@@ -23,10 +23,10 @@ import sys as _coconut_sys
 # VERSION:
 # -----------------------------------------------------------------------------------------------------------------------
 
-VERSION = "1.3.1"
-VERSION_NAME = "Dead Parrot"
+VERSION = "1.4.0"
+VERSION_NAME = "Ernest Scribbler"
 # False for release, int >= 1 for develop
-DEVELOP = 29
+DEVELOP = False
 
 # -----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
