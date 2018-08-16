@@ -176,7 +176,7 @@ min_versions = {
     # we can't upgrade this; it breaks on Python 2
     "ipython": (5, 4),
     # don't upgrade these; they break on master
-    "sphinx": (1, 6, 2),
+    "sphinx": (1, 5, 1),
     "sphinx_bootstrap_theme": (0, 4),
     "docutils": (0, 12),
 }
