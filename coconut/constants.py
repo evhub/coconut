@@ -178,7 +178,7 @@ min_versions = {
     # don't upgrade these; they break on master
     "sphinx": (1, 6, 2),
     "sphinx_bootstrap_theme": (0, 4),
-    "docutils": (0, 13, 0),
+    "docutils": (0, 12),
 }
 
 version_strictly = (
