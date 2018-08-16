@@ -140,6 +140,7 @@ all_reqs = {
         "pygments",
         "recommonmark",
         "sphinx_bootstrap_theme",
+        "docutils",
     ),
     "tests": (
         "pytest",
@@ -177,6 +178,7 @@ min_versions = {
     # don't upgrade these; they break on master
     "sphinx": (1, 6, 2),
     "sphinx_bootstrap_theme": (0, 4),
+    "docutils": (0, 13, 0),
 }
 
 version_strictly = (
@@ -184,6 +186,7 @@ version_strictly = (
     "ipython",
     "sphinx",
     "sphinx_bootstrap_theme",
+    "docutils",
 )
 
 classifiers = (
