@@ -76,7 +76,7 @@ wipe: clean
 .PHONY: just-upload
 just-upload:
 	python setup.py sdist bdist_wheel
-	pip install --upgrade twine
+	pip install --upgrade --ignore-installed twine
 	twine upload dist/*
 
 .PHONY: upload
