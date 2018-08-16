@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # INFO:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 """
 Authors: Evan Hubinger, Fred Buchanan
@@ -11,9 +11,9 @@ License: Apache 2.0
 Description: Main Coconut tests.
 """
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # IMPORTS:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
@@ -25,19 +25,29 @@ import os
 import shutil
 from contextlib import contextmanager
 
-from coconut.terminal import logger
-from coconut.command.util import call_output
+import pexpect
+
+from coconut.terminal import logger, Logger
+from coconut.command.util import call_output, reload
 from coconut.constants import (
     WINDOWS,
     PYPY,
     IPY,
     PY34,
+    PY35,
     icoconut_kernel_names,
 )
 
-#-----------------------------------------------------------------------------------------------------------------------
+from coconut.convenience import auto_compilation
+auto_compilation(False)
+
+# -----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
+
+logger.verbose = True
+
+MYPY = PY34 and not WINDOWS and not PYPY
 
 base = os.path.dirname(os.path.relpath(__file__))
 src = os.path.join(base, "src")
@@ -45,18 +55,18 @@ dest = os.path.join(base, "dest")
 
 runnable_coco = os.path.join(src, "runnable.coco")
 runnable_py = os.path.join(src, "runnable.py")
-prisoner = os.path.join(os.curdir, "prisoner")
 pyston = os.path.join(os.curdir, "pyston")
 pyprover = os.path.join(os.curdir, "pyprover")
+prelude = os.path.join(os.curdir, "coconut-prelude")
 
-prisoner_git = "https://github.com/evhub/prisoner.git"
 pyston_git = "https://github.com/evhub/pyston.git"
 pyprover_git = "https://github.com/evhub/pyprover.git"
+prelude_git = "https://github.com/evhub/coconut-prelude"
 
 coconut_snip = r"msg = '<success>'; pmsg = print$(msg); `pmsg`"
 
 mypy_snip = r"a: str = count()[0]"
-mypy_snip_err = 'error: Incompatible types in assignment (expression has type "int", variable has type "str")'
+mypy_snip_err = 'error: Incompatible types in assignment (expression has type "int", variable has type "unicode")'
 
 mypy_args = ["--follow-imports", "silent", "--ignore-missing-imports"]
 
@@ -64,9 +74,9 @@ ignore_mypy_errs_with = (
     "tutorial.py",
 )
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 
 def escape(inputstring):
@@ -78,7 +88,7 @@ def escape(inputstring):
         return '"' + inputstring.replace("$", "\\$").replace("`", "\\`") + '"'
 
 
-def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_first=False, allow_fail=False, **kwargs):
+def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_first=False, expect_retcode=0, **kwargs):
     """Executes a shell command."""
     print("\n>", (cmd if isinstance(cmd, str) else " ".join(cmd)))
     if assert_output is False:
@@ -96,10 +106,12 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
         out = stdout + stderr
     out = "".join(out)
     lines = out.splitlines()
-    for line in lines:
-        print(line)
-    if not allow_fail:
-        assert not retcode, "Command failed: " + repr(cmd)
+    if expect_retcode is not None:
+        assert retcode == expect_retcode, "Return code not as expected ({} != {}) in: {!r}".format(
+            retcode,
+            expect_retcode,
+            cmd,
+        )
     for line in lines:
         assert "CoconutInternalException" not in line, "CoconutInternalException in " + repr(line)
         assert "<unprintable" not in line, "Unprintable error in " + repr(line)
@@ -167,9 +179,20 @@ def using_dest():
     with remove_when_done(dest):
         yield
 
-#-----------------------------------------------------------------------------------------------------------------------
+
+@contextmanager
+def using_logger():
+    """Use a temporary logger, then restore the old logger."""
+    saved_logger = Logger(logger)
+    try:
+        yield
+    finally:
+        logger.copy_from(saved_logger)
+
+
+# -----------------------------------------------------------------------------------------------------------------------
 # RUNNER:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 
 def comp_extras(args=[], **kwargs):
@@ -188,18 +211,23 @@ def comp_agnostic(args=[], **kwargs):
 
 
 def comp_2(args=[], **kwargs):
-    """Compiles python2."""
-    comp(path="cocotest", folder="python2", args=["--target", "2"] + args, **kwargs)
+    """Compiles target_2."""
+    comp(path="cocotest", folder="target_2", args=["--target", "2"] + args, **kwargs)
 
 
 def comp_3(args=[], **kwargs):
-    """Compiles python3."""
-    comp(path="cocotest", folder="python3", args=["--target", "3"] + args, **kwargs)
+    """Compiles target_3."""
+    comp(path="cocotest", folder="target_3", args=["--target", "3"] + args, **kwargs)
 
 
 def comp_35(args=[], **kwargs):
-    """Compiles python35."""
-    comp(path="cocotest", folder="python35", args=["--target", "35"] + args, **kwargs)
+    """Compiles target_35."""
+    comp(path="cocotest", folder="target_35", args=["--target", "35"] + args, **kwargs)
+
+
+def comp_sys(args=[], **kwargs):
+    """Compiles target_sys."""
+    comp(path="cocotest", folder="target_sys", args=["--target", "sys"] + args, **kwargs)
 
 
 def run_src(**kwargs):
@@ -212,7 +240,7 @@ def run_extras(**kwargs):
     call(["python", os.path.join(dest, "extras.py")], assert_output=True, check_errors=False, stderr_first=True, **kwargs)
 
 
-def run(args=[], agnostic_target=None, use_run_arg=False):
+def run(args=[], agnostic_target=None, use_run_arg=False, expect_retcode=0):
     """Compiles and runs tests."""
     if agnostic_target is None:
         agnostic_args = args
@@ -227,11 +255,13 @@ def run(args=[], agnostic_target=None, use_run_arg=False):
             comp_3(args)
             if sys.version_info >= (3, 5):
                 comp_35(args)
-        comp_agnostic(agnostic_args)
+        comp_agnostic(agnostic_args, expect_retcode=expect_retcode)
+        comp_sys(args)
+
         if use_run_arg:
-            comp_runner(["--run"] + agnostic_args, assert_output=True)
+            comp_runner(["--run"] + agnostic_args, expect_retcode=expect_retcode, assert_output=True)
         else:
-            comp_runner(agnostic_args)
+            comp_runner(agnostic_args, expect_retcode=expect_retcode)
             run_src()
 
         if use_run_arg:
@@ -239,12 +269,6 @@ def run(args=[], agnostic_target=None, use_run_arg=False):
         else:
             comp_extras(agnostic_args)
             run_extras()
-
-
-def comp_prisoner(args=[], **kwargs):
-    """Compiles evhub/prisoner."""
-    call(["git", "clone", prisoner_git])
-    call_coconut(["prisoner", "--strict"] + args, **kwargs)
 
 
 def comp_pyston(args=[], **kwargs):
@@ -261,14 +285,29 @@ def run_pyston(**kwargs):
 def comp_pyprover(args=[], **kwargs):
     """Compiles evhub/pyprover."""
     call(["git", "clone", pyprover_git])
-    call_coconut([os.path.join("pyprover", "setup.coco"), "--strict"] + args, **kwargs)
-    call_coconut([os.path.join("pyprover", "pyprover-source"), os.path.join("pyprover", "pyprover"), "--strict"] + args, **kwargs)
+    call_coconut([os.path.join(pyprover, "setup.coco"), "--strict"] + args, **kwargs)
+    call_coconut([os.path.join(pyprover, "pyprover-source"), os.path.join(pyprover, "pyprover"), "--strict"] + args, **kwargs)
 
 
 def run_pyprover(**kwargs):
     """Runs pyprover."""
     call(["pip", "install", "-e", pyprover])
     call(["python", os.path.join(pyprover, "pyprover", "tests.py")], assert_output=True, **kwargs)
+
+
+def comp_prelude(args=[], **kwargs):
+    """Compiles evhub/coconut-prelude."""
+    call(["git", "clone", prelude_git])
+    call_coconut([os.path.join(prelude, "setup.coco"), "--strict"] + args, **kwargs)
+    if MYPY:
+        args.append("--mypy")
+    call_coconut([os.path.join(prelude, "prelude-source"), os.path.join(prelude, "prelude"), "--strict"] + args, **kwargs)
+
+
+def run_prelude(**kwargs):
+    """Runs coconut-prelude."""
+    call(["pip", "install", "-e", prelude])
+    call(["python", os.path.join(prelude, "prelude", "prelude_test.py")], assert_output=True, **kwargs)
 
 
 def comp_all(args=[], **kwargs):
@@ -281,6 +320,7 @@ def comp_all(args=[], **kwargs):
     comp_3(args, **kwargs)
     comp_35(args, **kwargs)
     comp_agnostic(args, **kwargs)
+    comp_sys(args, **kwargs)
     comp_runner(args, **kwargs)
     comp_extras(args, **kwargs)
 
@@ -289,9 +329,9 @@ def run_runnable(args=[]):
     """Call coconut-run on runnable_coco."""
     call(["coconut-run"] + args + [runnable_coco, "--arg"], assert_output=True)
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # TESTS:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 
 class TestShell(unittest.TestCase):
@@ -305,6 +345,19 @@ class TestShell(unittest.TestCase):
     def test_convenience(self):
         call(["python", "-c", 'from coconut.convenience import parse; exec(parse("' + coconut_snip + '"))'], assert_output=True)
 
+    def test_import_hook(self):
+        sys.path.append(src)
+        auto_compilation(True)
+        try:
+            with remove_when_done(runnable_py):
+                with using_logger():
+                    import runnable
+                    reload(runnable)
+        finally:
+            auto_compilation(False)
+            sys.path.remove(src)
+        assert runnable.success == "<success>"
+
     def test_runnable(self):
         with remove_when_done(runnable_py):
             run_runnable()
@@ -312,30 +365,40 @@ class TestShell(unittest.TestCase):
     def test_runnable_nowrite(self):
         run_runnable(["-n"])
 
-    if IPY:
+    def test_compile_to_file(self):
+        with remove_when_done(runnable_py):
+            call_coconut([runnable_coco, runnable_py])
+            call(["python", runnable_py, "--arg"], assert_output=True)
 
+    if IPY:
         def test_ipython_extension(self):
             call(
                 ["ipython", "--ext", "coconut", "-c", r'%coconut ' + coconut_snip],
                 assert_output=(True,) + (("Jupyter error",) if WINDOWS else ()),
                 stderr_first=WINDOWS,
                 check_errors=not WINDOWS,
-                allow_fail=WINDOWS,
+                expect_retcode=0 if not WINDOWS else None,
             )
 
-        def test_jupyter_kernel(self):
+        def test_kernel_installation(self):
             call(["coconut", "--jupyter"], assert_output="Coconut: Successfully installed Coconut Jupyter kernel.")
             stdout, stderr, retcode = call_output(["jupyter", "kernelspec", "list"])
             stdout, stderr = "".join(stdout), "".join(stderr)
             assert not retcode and not stderr, stderr
             for kernel in icoconut_kernel_names:
                 assert kernel in stdout
-            call(
-                ["coconut", "--jupyter", "console"],
-                assert_output=("shutting down", "Jupyter error"),
-                check_errors=False,
-                allow_fail=True,
-            )
+
+        if not WINDOWS and not PYPY:
+            def test_jupyter_console(self):
+                cmd = "coconut --jupyter console"
+                print("\n>", cmd)
+                p = pexpect.spawn(cmd)
+                p.expect("In", timeout=60)
+                p.sendeof()
+                p.sendline("y")
+                p.expect("Shutting down kernel|shutting down|Jupyter error")
+                if p.isalive():
+                    p.terminate()
 
 
 class TestCompilation(unittest.TestCase):
@@ -343,35 +406,40 @@ class TestCompilation(unittest.TestCase):
     def test_normal(self):
         run()
 
+    if MYPY:
+        def test_mypy_snip(self):
+            call(["coconut", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err, check_mypy=False, expect_retcode=1)
+
+        def test_mypy(self):
+            run(["--mypy"] + mypy_args, expect_retcode=1)  # fails due to tutorial mypy errors
+
+        def test_mypy_sys(self):
+            run(["--mypy"] + mypy_args, agnostic_target="sys", expect_retcode=1)  # fails due to tutorial mypy errors
+
     def test_target(self):
         run(agnostic_target=(2 if PY2 else 3))
 
-    def test_line_numbers(self):
-        run(["--linenumbers"])
+    def test_standalone(self):
+        run(["--standalone"])
+
+    def test_package(self):
+        run(["--package"])
+
+    def test_no_tco(self):
+        run(["--no-tco"])
+
+    def test_strict(self):
+        run(["--strict"])
+
+    def test_run(self):
+        run(use_run_arg=True)
 
     if not PYPY and not PY26:
         def test_jobs_zero(self):
             run(["--jobs", "0"])
 
-    if PY34 and not WINDOWS and not PYPY:
-        def test_mypy(self):
-            call(["coconut", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err, check_mypy=False)
-            run(["--mypy"] + mypy_args)
-
-    def test_run(self):
-        run(use_run_arg=True)
-
-    def test_package(self):
-        run(["--package"])
-
-    def test_standalone(self):
-        run(["--standalone"])
-
-    def test_strict(self):
-        run(["--strict"])
-
-    def test_no_tco(self):
-        run(["--no-tco"])
+    def test_simple_line_numbers(self):
+        run_runnable(["-n", "--linenumbers"])
 
     def test_simple_keep_lines(self):
         run_runnable(["-n", "--keeplines"])
@@ -385,17 +453,19 @@ class TestCompilation(unittest.TestCase):
 
 class TestExternal(unittest.TestCase):
 
-    def test_prisoner(self):
-        with remove_when_done(prisoner):
-            comp_prisoner()
-
     def test_pyprover(self):
         with remove_when_done(pyprover):
             comp_pyprover()
             run_pyprover()
 
+    def test_prelude(self):
+        with remove_when_done(prelude):
+            comp_prelude()
+            if PY35:  # has typing
+                run_prelude()
+
     def test_pyston(self):
         with remove_when_done(pyston):
-            comp_pyston()
+            comp_pyston(["--no-tco"])
             if PY2 and PYPY:
                 run_pyston()

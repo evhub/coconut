@@ -1,4 +1,5 @@
 import sys
+import asyncio  # type: ignore
 
 def main_test():
     """Basic no-dependency tests."""
@@ -73,7 +74,8 @@ def main_test():
     assert (| 1 |) :: (| 2 |) |> list == [1, 2]
     assert not isinstance(map((+)$(2), [1,2,3]), list)
     assert not isinstance(range(10), list)
-    assert isinstance(10**100, int)
+    longint: int = 10**100
+    assert isinstance(longint, int)
     assert chr(1000)
     assert 3 + 4i |> abs == 5
     assert 3.14j == 3.14i
@@ -172,8 +174,8 @@ def main_test():
     class a(get_int()): pass
     assert isinstance(a(), int)
     assert map((+), range(5), range(6)) |> len == 5 == zip(range(5), range(6)) |> len
-    assert map((-), range(5))._func(3) == -3
-    assert map((-), range(5))._iters[0] |> tuple == range(5) |> tuple == zip(range(5), range(6))._iters[0] |> tuple
+    assert map((-), range(5)).func(3) == -3
+    assert map((-), range(5)).iters[0] |> tuple == range(5) |> tuple == zip(range(5), range(6)).iters[0] |> tuple
     assert repr(zip((0,1), (1,2))) == "zip((0, 1), (1, 2))"
     assert repr(map((-), range(5))).startswith("map(")
     assert repr(parallel_map((-), range(5))).startswith("parallel_map(")
@@ -231,8 +233,8 @@ def main_test():
     assert tee(count()) |> map$((t) -> isinstance(t, count)) |> all
     assert tee(range(10)) |> map$((t) -> isinstance(t, range)) |> all
     assert tee([1, 2, 3]) |> map$((t) -> isinstance(t, list)) |> all
-    assert (-> 5)() == 5
-    assert (-> _[0])([1, 2, 3]) == 1
+    assert (-> 5)() == 5  # type: ignore
+    assert (-> _[0])([1, 2, 3]) == 1  # type: ignore
     assert iter(range(10))$[-5:-8] |> list == [5, 6] == ($[])(iter(range(10)), slice(-5, -8)) |> list
     assert iter(range(10))$[-2:] |> list == [8, 9] == ($[])(iter(range(10)), slice(-2, None)) |> list
     assert (.[1])(range(1, 5)) == 2 == (.$[1])(range(1, 5))
@@ -252,11 +254,11 @@ def main_test():
     assert (def (x=10) -> do_stuff(x); x)() == 10
     assert (def -> def -> 11)()() == 11
     assert (def -> 12)() == 12 == (def -> 12)()
-    assert ((def (x) -> -> x)(x) for x in range(5)) |> map$(-> _()) |> list == [0, 1, 2, 3, 4]
+    assert ((def (x) -> -> x)(x) for x in range(5)) |> map$(-> _()) |> list == [0, 1, 2, 3, 4]  # type: ignore
     herpaderp = 5
     def derp():
         herp = 10
-        return (def -> herpaderp + herp)
+        return (def -> herpaderp + herp)  # type: ignore
     assert derp()() == 15
     data abc(xyz)
     data abc_(xyz: int)
@@ -347,9 +349,9 @@ def main_test():
     assert (1, 2, 3) |> fmap$(x -> x+1) == (2, 3, 4)
     assert "abc" |> fmap$(x -> x+"!") == "a!b!c!"
     assert {1:"2", 2:"3"} |> fmap$((k, v) -> (k+1, v+"!")) == {2:"2!", 3:"3!"}
-    assert {1, 2, 3} |> fmap$(-> _+1) == {2, 3, 4}
+    assert {1, 2, 3} |> fmap$(-> _+1) == {2, 3, 4}  # type: ignore
     assert [[1, 2, 3]] |> fmap$((+)$([0])) == [[0, 1, 2, 3]]
-    assert range(3) |> fmap$(-> _+1) |> tuple == (1, 2, 3) == (|0, 1, 2|) |> fmap$(-> _+1) |> tuple
+    assert range(3) |> fmap$(-> _+1) |> tuple == (1, 2, 3) == (|0, 1, 2|) |> fmap$(-> _+1) |> tuple  # type: ignore
     assert issubclass(int, py_int)
     class pyobjsub(py_object)
     class objsub(\(object))
@@ -420,21 +422,71 @@ def main_test():
     price = 100
     assert 0 == (requested_quantity ?? default_quantity) * price
     assert range(10) |> .[1] .. .[1:] == 2 == range(10) |> .[1:] |> .[1]
-    assert None?.herp(derp) is None
-    assert None?[herp].derp is None
-    assert None?(derp)[herp] is None
-    assert None?$(herp)(derp) is None
+    assert None?.herp(derp) is None  # type: ignore
+    assert None?[herp].derp is None  # type: ignore
+    assert None?(derp)[herp] is None  # type: ignore
+    assert None?$(herp)(derp) is None  # type: ignore
     assert "a b c" == (" ". ?? "not gonna happen")("join")("abc")
     a: int[]? = None
     assert a is None
     assert range(5) |> iter |> reiterable |> .[1] == 1
-    assert range(5) |> reiterable |> fmap$(-> _ + 1) |> list == [1, 2, 3, 4, 5]
+    assert range(5) |> reiterable |> fmap$(-> _ + 1) |> list == [1, 2, 3, 4, 5]  # type: ignore
     assert (+) ..*> (+) |> repr == "<built-in function add> ..*> <built-in function add>"
     assert scan((+), [1,2,3,4,5]) |> list == [1,3,6,10,15]
     assert scan((*), [1,2,3,4,5]) |> list == [1,2,6,24,120]
+    assert scan((+), [1,2,3,4], 0) |> list == [0,1,3,6,10]
+    assert scan((*), [1,2,3,4], -1) |> list == [-1,-1,-2,-6,-24]
     input_data = [3, 4, 6, 2, 1, 9, 0, 7, 5, 8]
     assert input_data |> scan$(*) |> list == [3, 12, 72, 144, 144, 1296, 0, 0, 0, 0]
     assert input_data |> scan$(max) |> list == [3, 4, 6, 6, 6, 9, 9, 9, 9, 9]
+    a: str = "test"
+    assert a == "test" and isinstance(a, str)
+    where = ten where:
+        ten = 10
+    assert where == 10 == \where
+    assert true where: true = True
+    assert a == 5 where:
+        {"a": a} = {"a": 5}
+    assert (None ?? False is False) is True
+    assert (1 ?? False is False) is False
+    loop = asyncio.new_event_loop()
+    loop.close()
+    assert ... is Ellipsis
+    assert 1or 2
+    two = None
+    case False:
+        match False:
+            match False in True:
+                two = 1
+            else:
+                two = 2
+        match True:
+            two = 3
+    else:
+        two = 4
+    assert two == 2
+    assert makedata(list, 1, 2, 3) == [1, 2, 3]
+    assert makedata(str, "a", "b", "c") == "abc"
+    assert makedata(dict, ("a", 1), ("b", 2)) == {"a": 1, "b": 2}
+    [a] is list = [1]
+    assert a == 1
+    assert makedata(type((||)), 1, 2) == (1, 2) == makedata(type(() :: ()), 1, 2)
+    all_none = count(None, 0) |> reversed
+    assert all_none$[0] is None
+    assert all_none$[:3] |> list == [None, None, None]
+    assert None in all_none
+    assert (+) not in all_none
+    assert all_none.count(0) == 0
+    assert all_none.count(None) == float("inf")
+    assert all_none.index(None) == 0
+    match [] not in [1]:
+        assert True
+    else:
+        assert False
+    match [h] + t not in []:
+        assert True
+    else:
+        assert False
     return True
 
 def tco_func() = tco_func()
@@ -446,13 +498,15 @@ def assert_raises(c, exc):
     except exc:
         return True
     else:
-        raise AssertionError("%s failed to raise %s exception" % (c, exc))
+        raise AssertionError("%r failed to raise exception %r" % (c, exc))
 
 def main(*args):
     """Asserts arguments and executes tests."""
     assert all(args)
+
     print(".", end="")  # ..
     assert main_test()
+
     print(".", end="")  # ...
     if sys.version_info >= (2, 7):
         from .specific import non_py26_test
@@ -460,12 +514,15 @@ def main(*args):
     if not (3,) <= sys.version_info < (3, 3):
         from .specific import non_py32_test
         assert non_py32_test
+
     print(".", end="")  # ....
     from .suite import suite_test, tco_test
     assert suite_test()
+
     print(".", end="")  # .....
     if hasattr(tco_func, "_coconut_tco_func"):
         assert tco_test()
+
     print(".", end="")  # ......
     if sys.version_info < (3,):
         from .py2_test import py2_test
@@ -476,6 +533,12 @@ def main(*args):
         if sys.version_info >= (3, 5):
             from .py35_test import py35_test
             assert py35_test()
-    print(".", end="")  # .......
-    from . import tutorial
+
+    print(".", end="")
+    from .target_sys_test import target_sys_test
+    assert target_sys_test()  # type: ignore
+
+    print(".", end="")  # ........
+    from . import tutorial  # type: ignore
+
     print("\n<success>")

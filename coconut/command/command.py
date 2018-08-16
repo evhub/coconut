@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # INFO:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 """
 Authors: Evan Hubinger, Fred Buchanan
@@ -11,9 +11,9 @@ License: Apache 2.0
 Description: The Coconut command-line utility.
 """
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # IMPORTS:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
@@ -23,12 +23,11 @@ import sys
 import os
 import time
 import traceback
-import functools
+from functools import partial
 from contextlib import contextmanager
 from subprocess import CalledProcessError
 
-from coconut.pyparsing import PYPARSING
-
+from coconut.myparsing import PYPARSING
 from coconut.compiler import Compiler
 from coconut.exceptions import (
     CoconutException,
@@ -45,6 +44,7 @@ from coconut.constants import (
     stub_dir,
     exit_chars,
     coconut_run_args,
+    coconut_run_verbose_args,
     verbose_mypy_args,
     report_this_text,
 )
@@ -66,14 +66,15 @@ from coconut.command.util import (
     launch_tutorial,
     stdin_readable,
     set_recursion_limit,
+    canparse,
 )
-from coconut.compiler.util import should_indent
+from coconut.compiler.util import should_indent, get_target_info_len2
 from coconut.compiler.header import gethash
 from coconut.command.cli import arguments
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # MAIN:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 
 class Command(object):
@@ -94,14 +95,19 @@ class Command(object):
     def start(self, run=False):
         """Process command-line arguments."""
         if run:
-            args, argv = list(coconut_run_args), []
+            args, argv = [], []
             # for coconut-run, all args beyond the source file should be wrapped in an --argv
             for i in range(1, len(sys.argv)):
                 arg = sys.argv[i]
                 args.append(arg)
-                if not arg.startswith("-"):  # was source file
+                # if arg is source file, put everything else in argv
+                if not arg.startswith("-") and canparse(arguments, args[:-1]):
                     argv = sys.argv[i + 1:]
                     break
+            if "--verbose" in args:
+                args = list(coconut_run_verbose_args) + args
+            else:
+                args = list(coconut_run_args) + args
             args += ["--argv"] + argv
         else:
             args = None
@@ -129,9 +135,9 @@ class Command(object):
         """Exit if exit_code is abnormal."""
         if self.exit_code:
             if self.errmsg is not None:
-                logger.show_error("Exiting due to " + self.errmsg + ".")
+                logger.show("Exiting due to " + self.errmsg + ".")
                 self.errmsg = None
-            if self.jobs != 0:
+            if self.using_jobs:
                 kill_children()
             sys.exit(self.exit_code)
 
@@ -154,6 +160,8 @@ class Command(object):
             self.show = True
         if args.style is not None:
             self.prompt.set_style(args.style)
+        if args.history_file is not None:
+            self.prompt.set_history_file(args.history_file)
         if args.documentation:
             launch_documentation()
         if args.tutorial:
@@ -165,12 +173,10 @@ class Command(object):
             minify=args.minify,
             line_numbers=args.line_numbers,
             keep_lines=args.keep_lines,
-            no_tco=args.no_tco or args.mypy is not None,
+            no_tco=args.no_tco,
         )
 
         if args.mypy is not None:
-            if args.no_tco:
-                logger.warn("extraneous --no-tco argument passed; --mypy implies --no-tco")
             self.set_mypy_args(args.mypy)
 
         if args.argv is not None:
@@ -199,13 +205,11 @@ class Command(object):
 
             if args.dest is None:
                 if args.no_write:
-                    dest = None  # no dest
+                    dest = False  # no dest
                 else:
                     dest = True  # auto-generate dest
             elif args.no_write:
                 raise CoconutException("destination path cannot be given when --no-write is enabled")
-            elif os.path.isfile(args.dest):
-                raise CoconutException("destination path must point to directory not file")
             else:
                 dest = args.dest
 
@@ -233,12 +237,12 @@ class Command(object):
         if args.code is not None:
             self.execute(self.comp.parse_block(args.code))
         got_stdin = False
-        if stdin_readable():
+        if args.jupyter is not None:
+            self.start_jupyter(args.jupyter)
+        elif stdin_readable():
             logger.log("Reading piped input from stdin...")
             self.execute(self.comp.parse_block(sys.stdin.read()))
             got_stdin = True
-        if args.jupyter is not None:
-            self.start_jupyter(args.jupyter)
         if args.interact or (interact and not (
                 got_stdin
                 or args.source
@@ -266,7 +270,10 @@ class Command(object):
     def handling_exceptions(self):
         """Perform proper exception handling."""
         try:
-            with handling_broken_process_pool():
+            if self.using_jobs:
+                with handling_broken_process_pool():
+                    yield
+            else:
                 yield
         except SystemExit as err:
             self.register_error(err.code)
@@ -281,7 +288,7 @@ class Command(object):
     def compile_path(self, path, write=True, package=None, *args, **kwargs):
         """Compile a path and returns paths to compiled files."""
         path = fixpath(path)
-        if write is not None and write is not True:
+        if not isinstance(write, bool):
             write = fixpath(write)
         if os.path.isfile(path):
             if package is None:
@@ -297,17 +304,20 @@ class Command(object):
 
     def compile_folder(self, directory, write=True, package=True, *args, **kwargs):
         """Compile a directory and returns paths to compiled files."""
+        if not isinstance(write, bool) and os.path.isfile(write):
+            raise CoconutException("destination path cannot point to a file when compiling a directory")
         filepaths = []
         for dirpath, dirnames, filenames in os.walk(directory):
-            if write is None or write is True:
+            if isinstance(write, bool):
                 writedir = write
             else:
                 writedir = os.path.join(write, os.path.relpath(dirpath, directory))
             for filename in filenames:
                 if os.path.splitext(filename)[1] in code_exts:
-                    destpath = self.compile_file(os.path.join(dirpath, filename), writedir, package, *args, **kwargs)
-                    if destpath is not None:
-                        filepaths.append(destpath)
+                    with self.handling_exceptions():
+                        destpath = self.compile_file(os.path.join(dirpath, filename), writedir, package, *args, **kwargs)
+                        if destpath is not None:
+                            filepaths.append(destpath)
             for name in dirnames[:]:
                 if not is_special_dir(name) and name.startswith("."):
                     if logger.verbose:
@@ -317,20 +327,26 @@ class Command(object):
 
     def compile_file(self, filepath, write=True, package=False, *args, **kwargs):
         """Compile a file and returns the compiled file's path."""
-        if write is None:
+        set_ext = False
+        if write is False:
             destpath = None
         elif write is True:
             destpath = filepath
+            set_ext = True
+        elif os.path.splitext(write)[1]:
+            # write is a file; it is the destination filepath
+            destpath = write
         else:
-            # add the name of file to the destination path
+            # write is a dir; make the destination filepath by adding the filename
             destpath = os.path.join(write, os.path.basename(filepath))
-        if destpath is not None:
+            set_ext = True
+        if set_ext:
             base, ext = os.path.splitext(os.path.splitext(destpath)[0])
             if not ext:
                 ext = comp_ext
             destpath = fixpath(base + ext)
-            if filepath == destpath:
-                raise CoconutException("cannot compile " + showpath(filepath) + " to itself", extra="incorrect file extension")
+        if filepath == destpath:
+            raise CoconutException("cannot compile " + showpath(filepath) + " to itself", extra="incorrect file extension")
         self.compile(filepath, destpath, package, *args, **kwargs)
         return destpath
 
@@ -413,19 +429,24 @@ class Command(object):
                 raise CoconutException("--jobs must be an integer >= 0 or 'sys'")
             self.jobs = jobs
 
+    @property
+    def using_jobs(self):
+        """Determine whether or not multiprocessing is being used."""
+        return self.jobs != 0
+
     @contextmanager
     def running_jobs(self, exit_on_error=True):
         """Initialize multiprocessing."""
         with self.handling_exceptions():
-            if self.jobs == 0:
-                yield
-            else:
+            if self.using_jobs:
                 from concurrent.futures import ProcessPoolExecutor
                 try:
                     with ProcessPoolExecutor(self.jobs) as self.executor:
                         yield
                 finally:
                     self.executor = None
+            else:
+                yield
         if exit_on_error:
             self.exit_on_error()
 
@@ -547,17 +568,11 @@ class Command(object):
             self.mypy_errs = []
             self.mypy_args = list(mypy_args)
 
-            for arg in self.mypy_args:
-                if arg == "--py2" or arg == "-2":
-                    logger.warn("unnecessary --mypy argument", arg, extra="passed automatically when needed")
-                elif arg == "--python-version":
-                    logger.warn("unnecessary --mypy argument", arg, extra="current --target passed as version automatically")
-
-            if not ("--py2" in self.mypy_args or "-2" in self.mypy_args) and not self.comp.target.startswith("3"):
-                self.mypy_args.append("--py2")
-
-            if "--python-version" not in self.mypy_args:
-                self.mypy_args += ["--python-version", ".".join(str(v) for v in self.comp.target_info_len2)]
+            if not any(arg.startswith("--python-version") for arg in mypy_args):
+                self.mypy_args += [
+                    "--python-version",
+                    ".".join(str(v) for v in get_target_info_len2(self.comp.target, mode="nearest")),
+                ]
 
             if logger.verbose:
                 for arg in verbose_mypy_args:
@@ -576,16 +591,14 @@ class Command(object):
                 args += ["-c", code]
             for line, is_err in mypy_run(args):
                 if code is None or line not in self.mypy_errs:
-                    if is_err:
-                        printerr(line)
-                    else:
-                        print(line)
+                    printerr(line)
                 if line not in self.mypy_errs:
                     self.mypy_errs.append(line)
+                self.register_error(errmsg="MyPy error")
 
     def start_jupyter(self, args):
         """Start Jupyter with the Coconut kernel."""
-        install_func = functools.partial(run_cmd, show_output=logger.verbose)
+        install_func = partial(run_cmd, show_output=logger.verbose)
 
         try:
             install_func(["jupyter", "--version"])
@@ -627,10 +640,8 @@ class Command(object):
                 else:
                     kernel_name = "coconut" + ver
                 run_args = [jupyter, "console", "--kernel", kernel_name] + args[1:]
-            elif args[0] == "notebook":
-                run_args = [jupyter, "notebook"] + args[1:]
             else:
-                raise CoconutException("first argument after --jupyter must be either 'console' or 'notebook'")
+                run_args = [jupyter] + args
             self.register_error(run_cmd(run_args, raise_errs=False), errmsg="Jupyter error")
 
     def watch(self, source, write=True, package=None, run=False, force=False):

@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # INFO:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 """
 The Coconut Programming Language
-Copyright (c) 2015-2017 Evan Hubinger
+Copyright (c) 2015-2018 Evan Hubinger
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use these files except in compliance with the License.
@@ -22,9 +22,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # IMPORTS:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
@@ -34,9 +34,9 @@ from coconut.constants import author as __author__  # NOQA
 
 __version__ = VERSION  # NOQA
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # IPYTHON:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 
 def load_ipython_extension(ipython):
@@ -49,10 +49,11 @@ def load_ipython_extension(ipython):
             newvars[var] = val
     ipython.push(newvars)
 
-    # add magic function
+    # import here to avoid circular dependencies
     from coconut.convenience import cmd, parse, CoconutException
     from coconut.terminal import logger
 
+    # add magic function
     def magic(line, cell=None):
         """Provides %coconut and %%coconut magics."""
         try:
@@ -62,7 +63,7 @@ def load_ipython_extension(ipython):
                 # first line in block is cmd, rest is code
                 line = line.strip()
                 if line:
-                    cmd(line)
+                    cmd(line, interact=False)
                 code = cell
             compiled = parse(code)
         except CoconutException:

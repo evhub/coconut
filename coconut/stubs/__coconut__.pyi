@@ -1,49 +1,51 @@
+# -----------------------------------------------------------------------------------------------------------------------
+# INFO:
+# -----------------------------------------------------------------------------------------------------------------------
+
+"""
+Author: Evan Hubinger
+License: Apache 2.0
+Description: MyPy stub file for __coconut__.py.
+"""
+
+# -----------------------------------------------------------------------------------------------------------------------
+# IMPORTS:
+# -----------------------------------------------------------------------------------------------------------------------
+
 import sys
-import functools
-import itertools
-from typing import (
-    TypeVar,
-    Callable,
-    overload,
-    Iterable,
-    Iterator,
-    Text,
-    Any,
-    Optional,
-    Union,
-    Dict,
-    Tuple,
-    Text,
-)
+import typing as _t
+
+# -----------------------------------------------------------------------------------------------------------------------
+# STUB:
+# -----------------------------------------------------------------------------------------------------------------------
 
 
-_T = TypeVar('_T')
-_S = TypeVar('_S')
+_T = _t.TypeVar("_T")
+_U = _t.TypeVar("_U")
+_V = _t.TypeVar("_V")
+_W = _t.TypeVar("_W")
+_FUNC = _t.TypeVar("_FUNC", bound=_t.Callable)
+_FUNC2 = _t.TypeVar("_FUNC2", bound=_t.Callable)
+_ITER_FUNC = _t.TypeVar("_ITER_FUNC", bound=_t.Callable[..., _t.Iterable])
 
 
 if sys.version_info < (3,):
-    import io
-    import future_builtins
-    import __builtin__ as _b
+    from future_builtins import *
+    from io import open
 
-    open = io.open
-    ascii = future_builtins.ascii
-    filter = future_builtins.filter
-    hex = future_builtins.hex
-    map = future_builtins.map
-    oct = future_builtins.oct
-    zip = future_builtins.zip
+    str = unicode
 
-    py_raw_input, py_xrange = _b.raw_input, _b.xrange
+    py_raw_input = raw_input
+    py_xrange = xrange
 
-    class range(Iterable[int]):
+    class range(_t.Iterable[int]):
         def __init__(self,
-            start: Optional[int] = ...,
-            stop: Optional[int] = ...,
-            step: Optional[int] = ...
+            start: _t.Optional[int] = ...,
+            stop: _t.Optional[int] = ...,
+            step: _t.Optional[int] = ...,
             ) -> None: ...
-        def __iter__(self) -> Iterator[int]: ...
-        def __reversed__(self) -> Iterable[int]: ...
+        def __iter__(self) -> _t.Iterator[int]: ...
+        def __reversed__(self) -> _t.Iterable[int]: ...
         def __len__(self) -> int: ...
         def __contains__(self, elem: int) -> bool: ...
         def __getitem__(self, index: int) -> int: ...
@@ -51,35 +53,26 @@ if sys.version_info < (3,):
         def count(self, elem: int) -> int: ...
         def index(self, elem: int) -> int: ...
 
-else:
-    import builtins as _b
+
+py_chr, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate = chr, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate
 
 
-py_chr, py_filter, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate = _b.chr, _b.filter, _b.hex, _b.input, _b.int, _b.map, _b.object, _b.oct, _b.open, _b.print, _b.range, _b.str, _b.zip, _b.filter, _b.reversed, _b.enumerate
-
-
-takewhile = itertools.takewhile
-dropwhile = itertools.dropwhile
-tee = itertools.tee
-starmap = itertools.starmap
-
-
-def scan(func: Callable[[_T, _T], _T], iterable: Iterable[_T]) -> Iterable[_T]: ...
-
-
-_coconut_tee = tee
-_coconut_starmap = starmap
-parallel_map = concurrent_map = _coconut_map = map
+def scan(
+    func: _t.Callable[[_T, _U], _T],
+    iterable: _t.Iterable[_U],
+    initializer: _T = ...,
+    ) -> _t.Iterable[_T]: ...
 
 
 class _coconut:
-    # The real _coconut doesn't import typing,
-    # but since typing is only used in type-checking,
-    # in which case this file is used instead, it's fine.
-    import typing
-
-    import collections, copy, functools, imp, itertools, operator, types, weakref, pickle
-    Exception, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip = Exception, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip
+    typing = _t  # The real _coconut doesn't import typing, but we want type-checkers to treat it as if it does
+    import collections, copy, functools, types, itertools, operator, types, weakref
+    import pickle
+    Ellipsis, Exception, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr = Ellipsis, Exception, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr
+    if sys.version_info >= (3, 4):
+        import asyncio
+    else:
+        import trollius as asyncio  # type: ignore
     if sys.version_info < (3, 3):
         abc = collections
     else:
@@ -92,58 +85,117 @@ class _coconut:
         OrderedDict = dict
 
 
-_coconut_NamedTuple = _coconut.typing.NamedTuple
+reduce = _coconut.functools.reduce
+takewhile = _coconut.itertools.takewhile
+dropwhile = _coconut.itertools.dropwhile
+tee = _coconut.itertools.tee
+starmap = _coconut.itertools.starmap
+
+
+if sys.version_info >= (3, 2):
+    memoize = _coconut.functools.lru_cache
+else:
+    from backports.functools_lru_cache import lru_cache as memoize  # type: ignore
+    _coconut.functools.lru_cache = memoize  # type: ignore
+
+
+_coconut_tee = tee
+_coconut_starmap = starmap
+parallel_map = concurrent_map = _coconut_map = map
+
+
+from typing import (
+    NamedTuple as _coconut_NamedTuple,
+    TYPE_CHECKING,
+)
 
 
 class MatchError(Exception): ...
 _coconut_MatchError = MatchError
 
 
-class _coconut_tail_call(Exception): ...
+def _coconut_tco(func: _FUNC) -> _FUNC: ...
+def _coconut_tail_call(func, *args, **kwargs):
+    return func(*args, **kwargs)
 
 
-def recursive_iterator(func: Callable[..., Iterable[_S]]) -> Callable[..., Iterable[_S]]: ...
-def addpattern(func: Callable[..., _T]) -> Callable[..., _T]: ...
-_coconut_tco = prepattern = addpattern
+def recursive_iterator(func: _ITER_FUNC) -> _ITER_FUNC: ...
 
 
-@overload
+def addpattern(func: _FUNC) -> _t.Callable[[_FUNC2], _t.Union[_FUNC, _FUNC2]]: ...
+prepattern = addpattern
+
+
+@_t.overload
 def _coconut_igetitem(
-    iterable: Iterable[_T],
+    iterable: _t.Iterable[_T],
     index: int,
     ) -> _T: ...
-@overload
+@_t.overload
 def _coconut_igetitem(
-    iterable: Iterable[_T],
+    iterable: _t.Iterable[_T],
     index: slice,
-    ) -> Iterable[_T]: ...
+    ) -> _t.Iterable[_T]: ...
 
 
-class _coconut_base_compose:
-    def __init__(self, func: Callable, *funcstars: Tuple[Callable, bool]) -> None: ...
-    def __call__(self, *args, **kwargs) -> Any: ...
+def _coconut_base_compose(
+    func: _t.Callable[[_T], _t.Any],
+    *funcstars: _t.Tuple[_t.Callable, bool],
+    ) -> _t.Callable[[_T], _t.Any]: ...
 
 
-@overload
-def _coconut_forward_compose(g: Callable[..., _T], f: Callable[[_T], _S]) -> Callable[..., _S]: ...
-@overload
-def _coconut_forward_compose(*funcs: Callable) -> Callable: ...
+@_t.overload
+def _coconut_forward_compose(
+    g: _t.Callable[..., _T],
+    f: _t.Callable[[_T], _U],
+    ) -> _t.Callable[..., _U]: ...
+@_t.overload
+def _coconut_forward_compose(
+    h: _t.Callable[..., _T],
+    g: _t.Callable[[_T], _U],
+    f: _t.Callable[[_U], _V],
+    ) -> _t.Callable[..., _V]: ...
+@_t.overload
+def _coconut_forward_compose(
+    h: _t.Callable[..., _T],
+    g: _t.Callable[[_T], _U],
+    f: _t.Callable[[_U], _V],
+    e: _t.Callable[[_V], _W],
+    ) -> _t.Callable[..., _W]: ...
+@_t.overload
+def _coconut_forward_compose(*funcs: _t.Callable) -> _t.Callable: ...
 _coconut_forward_star_compose = _coconut_forward_compose
 
 
-@overload
-def _coconut_back_compose(f: Callable[[_T], _S], g: Callable[..., _T]) -> Callable[..., _S]: ...
-@overload
-def _coconut_back_compose(*funcs: Callable) -> Callable: ...
+@_t.overload
+def _coconut_back_compose(
+    f: _t.Callable[[_T], _U],
+    g: _t.Callable[..., _T],
+    ) -> _t.Callable[..., _U]: ...
+@_t.overload
+def _coconut_back_compose(
+    f: _t.Callable[[_U], _V],
+    g: _t.Callable[[_T], _U],
+    h: _t.Callable[..., _T],
+    ) -> _t.Callable[..., _V]: ...
+@_t.overload
+def _coconut_back_compose(
+    e: _t.Callable[[_V], _W],
+    f: _t.Callable[[_U], _V],
+    g: _t.Callable[[_T], _U],
+    h: _t.Callable[..., _T],
+    ) -> _t.Callable[..., _W]: ...
+@_t.overload
+def _coconut_back_compose(*funcs: _t.Callable) -> _t.Callable: ...
 _coconut_back_star_compose = _coconut_back_compose
 
 
-def _coconut_pipe(x: _T, f: Callable[[_T], _S]) -> _S: ...
-def _coconut_back_pipe(f: Callable[[_T], _S], x: _T) -> _S: ...
+def _coconut_pipe(x: _T, f: _t.Callable[[_T], _U]) -> _U: ...
+def _coconut_back_pipe(f: _t.Callable[[_T], _U], x: _T) -> _U: ...
 
 
-def _coconut_star_pipe(xs: Iterable, f: Callable[..., _T]) -> _T: ...
-def _coconut_back_star_pipe(f: Callable[..., _T], xs: Iterable) -> _T: ...
+def _coconut_star_pipe(xs: _t.Iterable, f: _t.Callable[..., _T]) -> _T: ...
+def _coconut_back_star_pipe(f: _t.Callable[..., _T], xs: _t.Iterable) -> _T: ...
 
 
 def _coconut_bool_and(a, b):
@@ -164,12 +216,12 @@ def _coconut_minus(a, *rest):
     return a
 
 
-def reiterable(iterable: Iterable[_T]) -> Iterable[_T]: ...
+def reiterable(iterable: _t.Iterable[_T]) -> _t.Iterable[_T]: ...
 
 
-class count(Iterable[int]):
+class count(_t.Iterable[int]):
     def __init__(self, start: int = ..., step: int = ...) -> None: ...
-    def __iter__(self) -> Iterator[int]: ...
+    def __iter__(self) -> _t.Iterator[int]: ...
     def __contains__(self, elem: int) -> bool: ...
     def __getitem__(self, index: int) -> int: ...
     def __hash__(self) -> int: ...
@@ -177,31 +229,32 @@ class count(Iterable[int]):
     def index(self, elem: int) -> int: ...
 
 
-def groupsof(n: int, iterable: Iterable[_T]) -> Iterable[Tuple[_T, ...]]: ...
+def groupsof(n: int, iterable: _t.Iterable[_T]) -> _t.Iterable[_t.Tuple[_T, ...]]: ...
 
 
-def makedata(data_type, *args, **kwargs): ...
-def datamaker(data_type) -> Callable: ...
+def makedata(data_type: _t.Type[_T], *args) -> _T: ...
+def datamaker(data_type):
+    return _coconut.functools.partial(makedata, data_type)
 
 
 def consume(
-    iterable: Iterable[_T],
-    keep_last: Optional[int] = ...,
-    ) -> Iterable[_T]: ...
+    iterable: _t.Iterable[_T],
+    keep_last: _t.Optional[int] = ...,
+    ) -> _t.Iterable[_T]: ...
 
 
 class _coconut_partial:
-    args: Tuple = ...
-    keywords: Dict[Text, Any] = ...
+    args: _t.Tuple = ...
+    keywords: _t.Dict[_t.Text, _t.Any] = ...
     def __init__(
         self,
-        func: Callable,
-        argdict: Dict[int, Any],
+        func: _t.Callable[..., _T],
+        argdict: _t.Dict[int, _t.Any],
         arglen: int,
         *args,
         **kwargs,
         ) -> None: ...
-    def __call__(self, *args, **kwargs) -> Any: ...
+    def __call__(self, *args, **kwargs) -> _T: ...
 
 
-def fmap(func: Callable, obj: _T) -> _T: ...
+def fmap(func: _t.Callable, obj: _t.Iterable) -> _t.Iterable: ...

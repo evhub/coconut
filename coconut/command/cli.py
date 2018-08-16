@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # INFO:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 """
 Authors: Evan Hubinger
@@ -11,9 +11,9 @@ License: Apache 2.0
 Description: Defines arguments for the Coconut CLI.
 """
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # IMPORTS:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
@@ -26,19 +26,22 @@ from coconut.constants import (
     version_long,
     default_recursion_limit,
     style_env_var,
+    histfile_env_var,
     default_style,
+    default_histfile,
     main_sig,
 )
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # MAIN:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 arguments = argparse.ArgumentParser(
     prog="coconut",
     description=documentation_url,
 )
 
+# any changes made to these arguments must be reflected in DOCS.md
 arguments.add_argument(
     "source",
     metavar="source",
@@ -178,7 +181,7 @@ arguments.add_argument(
     "--mypy",
     type=str,
     nargs=argparse.REMAINDER,
-    help="run MyPy on compiled Python (remaining args passed to MyPy) (implies --package --no-tco)",
+    help="run MyPy on compiled Python (remaining args passed to MyPy) (implies --package)",
 )
 
 arguments.add_argument(
@@ -205,7 +208,15 @@ arguments.add_argument(
     metavar="name",
     type=str,
     help="Pygments syntax highlighting style (or 'none' to disable) (defaults to "
-    + style_env_var + " environment variable, if it exists, otherwise '" + default_style + "')",
+    + style_env_var + " environment variable if it exists, otherwise '" + default_style + "')",
+)
+
+arguments.add_argument(
+    "--history-file",
+    metavar="path",
+    type=str,
+    help="Path to history file (or '' for no file) (defaults to "
+    + histfile_env_var + " environment variable if it exists, otherwise '" + default_histfile + "')",
 )
 
 arguments.add_argument(

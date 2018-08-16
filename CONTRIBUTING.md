@@ -10,6 +10,16 @@ If you are considering contributing to Coconut, you'll be doing so on the [`deve
 
 If you are thinking about contributing to Coconut, please don't hesitate to ask questions at Coconut's [Gitter](https://gitter.im/evhub/coconut)! That includes any questions at all about contributing, including understanding the source code, figuring out how to implement a specific change, or just trying to figure out what needs to be done.
 
+## Bounties
+
+Coconut development is monetarily supported by Coconut's [Backers](https://opencollective.com/coconut#backer) and [Sponsors](https://opencollective.com/coconut#sponsor) on Open Collective. As a result of this, many of Coconut's open issues are [labeled](https://github.com/evhub/coconut/labels) with bounties denoting the compensation available for resolving them. If you successfully resolve one of these issues (defined as getting a pull request resolving the issue merged), you become eligible to collect that issue's bounty. To do so, simply [file an expense report](https://opencollective.com/coconut/expenses/new#) for the correct amount with a link to the issue you resolved.
+
+If an issue you really want fixed or an issue you're really excited to work on doesn't currently have a bounty on it, please leave a comment on the issue! Bounties are flexible, and some issues will always fall through the cracks, so don't be afraid to just ask if an issue doesn't have a bounty and you want it to.
+
+## Good First Issues
+
+Want to help out, but don't know what to work on? Head over to Coconut's [open issues](https://github.com/evhub/coconut/issues) and look for ones labeled "good first issue." These issues are those that require less intimate knowledge of Coconut's inner workings, and are thus possible for new contributors to work on.
+
 ## Contribution Process
 
 Contributing to Coconut is as simple as
@@ -18,11 +28,7 @@ Contributing to Coconut is as simple as
 2. making changes to the [`develop` branch](https://github.com/evhub/coconut/tree/develop), and
 3. proposing a pull request.
 
-_Note: Don't forget to add yourself to the "Authors:" section in the docstrings of any files you modify!_
-
-## Contributor Friendly Issues
-
-Want to help out, but don't know what to work on? Head over to Coconut's [open issues](https://github.com/evhub/coconut/issues) and look for ones labeled "contributor friendly." Contributor friendly issues are those that require less intimate knowledge of Coconut's inner workings, and are thus possible for new contributors to work on.
+_Note: Don't forget to add yourself to the "Authors:" section in the moduledocs of any files you modify!_
 
 ## Testing New Changes
 
@@ -179,8 +185,10 @@ After you've tested your changes locally, you'll want to add more permanent test
     1. Run `make dev`
     1. Push to `develop`
     1. Update [website](https://github.com/evhub/coconut/tree/gh-pages) if it needs updating
-    1. Wipe all updated versions on readthedocs
-    1. Copy PyPI keywords to readthedocs tags
-    1. Build all updated versions on readthedocs
+    1. Wipe all updated versions on [readthedocs](https://readthedocs.org/projects/coconut/versions/)
+    1. Copy [PyPI](https://pypi.python.org/pypi/coconut) keywords to readthedocs tags
+    1. Build all updated versions on [readthedocs](https://readthedocs.org/projects/coconut/builds/)
+    1. Download latest [PyPI](https://pypi.python.org/pypi/coconut) `.tar.gz` file, hash it with `openssl sha256 coconut-<version>.tar.gz`, and use that to update the [local feedstock](https://github.com/conda-forge/coconut-feedstock)
     1. Submit PR to update [Coconut's `conda-forge` feedstock](https://github.com/conda-forge/coconut-feedstock)
+    1. Wait until feedstock PR is passing then merge it
     1. Close release milestone

@@ -23,7 +23,7 @@ Specifically, Coconut adds to Python _built-in, syntactical support_ for:
 - pipeline-style programming
 - operator functions
 - tail call optimization
-- parallel programming
+- where statements
 
 and much more!
 
@@ -53,6 +53,10 @@ which should display Coconut's command-line help.
 
 _Note: If you're having trouble installing Coconut, or if anything else mentioned in this tutorial doesn't seem to work for you, feel free to [ask for help on Gitter](https://gitter.im/evhub/coconut) and somebody will try to answer your question as soon as possible._
 
+### No Installation
+
+If you want to run Coconut without installing it on your machine, try the [online interpreter](https://cs121-team-panda.github.io/coconut-interpreter).
+
 ## Starting Out
 
 ### Using the Interpreter
@@ -71,8 +75,7 @@ which is Coconut's way of telling you you're ready to start entering code for it
 
 In case you missed it earlier, _all valid Python 3 is valid Coconut_. That doesn't mean compiled Coconut will only run on Python 3—in fact, compiled Coconut will run the same on any Python version—but it does mean that only Python 3 code is guaranteed to compile as Coconut code.
 
-That means that if you're familiar with Python, you're already familiar with a good deal of Coconut's core syntax and Coconut's entire standard library. To show that, let's try entering some basic Python into the Coconut interpreter.
-
+That means that if you're familiar with Python, you're already familiar with a good deal of Coconut's core syntax and Coconut's entire standard library. To show that, let's try entering some basic Python into the Coconut interpreter. For example:
 ```coconut_pycon
 >>> "hello, world!"
 'hello, world!'
@@ -80,11 +83,11 @@ That means that if you're familiar with Python, you're already familiar with a g
 2
 ```
 
-### Using the Compiler
+### Writing Coconut Files
 
 Of course, while being able to interpret Coconut code on-the-fly is a great thing, it wouldn't be very useful without the ability to write and compile larger programs. To that end, it's time to write our first Coconut program: "hello, world!" Coconut-style.
 
-First, we're going to need to create a file to put our code into. The recommended file extension for Coconut source files is `.coco`, so let's create the new file `hello_world.coco`. After you do that, you should take the time now to set up your text editor to properly highlight Coconut code. For instructions on how to do that, see the documentation on [Coconut syntax highlighting](DOCS.html#syntax-highlighting).
+First, we're going to need to create a file to put our code into. The file extension for Coconut source files is `.coco`, so let's create the new file `hello_world.coco`. After you do that, you should take the time now to set up your text editor to properly highlight Coconut code. For instructions on how to do that, see the documentation on [Coconut syntax highlighting](DOCS.html#syntax-highlighting).
 
 Now let's put some code in our `hello_world.coco` file. Unlike in Python, where headers like
 ```coconut_python
@@ -104,7 +107,9 @@ and while that will work in Coconut, equally as valid is to use a pipeline-style
 ```
 which should let you see very clearly how Coconut's `|>` operator enables pipeline-style programming: it allows an object to be passed along from function to function, with a different operation performed at each step. In this case, we are piping the object `"hello, world!"` into the operation `print`. Now let's save our simple "hello, world!" program, and try to run it.
 
-Compiling Coconut files and projects with the Coconut command-line utility is incredibly simple. Just type
+### Using the Compiler
+
+Compiling Coconut files and projects with the Coconut command-line utility is incredibly simple. Just `cd` into the directory of your `hello_world.coco` file and type
 ```
 coconut hello_world.coco
 ```
@@ -119,31 +124,26 @@ python hello_world.py
 ```
 which should produce `hello, world!` as the output.
 
-_Note: You can compile and run your code all in one step if you use Coconut's `--run` option._
+_Note: You can compile and run your code all in one step if you use Coconut's `--run` option (`-r` for short)._
 
 Compiling single files is not the only way to use the Coconut command-line utility, however. We can also compile all the Coconut files in a given directory simply by passing that directory as the first argument, which will get rid of the need to run the same Coconut header code in each file by storing it in a `__coconut__.py` file in the same directory.
 
 The Coconut  compiler supports a large variety of different compilation options, the help for which can always be accessed by entering `coconut -h` into the command line. One of the most useful of these is `--line-numbers` (or `-l` for short). Using `--line-numbers` will add the line numbers of your source code as comments in the compiled code, allowing you to see what line in your source code corresponds to a line in the compiled code where an error occurred, for ease of debugging.
 
+_Note: If you don't need the full control of the Coconut compiler, you can also [access your Coconut code just by importing it](DOCS.html#automatic-compilation), either from the Coconut interpreter, or in any Python file where you import [`coconut.convenience`](DOCS.html#coconut-convenience)._
+
 ### Using IPython/Jupyter
 
-Although all different types of programming can benefit from using more functional techniques, scientific computing, perhaps more than any other field, lends itself very well to functional programming, an observation the case studies in this tutorial are very good examples of. To that end, Coconut aims to provide extensive support for the established tools of scientific computing in Python.
+Although all different types of programming can benefit from using more functional techniques, scientific computing, perhaps more than any other field, lends itself very well to functional programming, an observation the case studies in this tutorial are very good examples of. That's why Coconut aims to provide extensive support for the established tools of scientific computing in Python.
 
-That means supporting IPython/Jupyter, as modern Python programming, particularly in the sciences, has gravitated towards the use of [IPython](http://ipython.org/) (the python kernel for the [Jupyter](http://jupyter.org/) framework) instead of the classic Python shell. Coconut supports being used as a kernel for Jupyter notebooks and consoles, allowing Coconut code to be used alongside powerful IPython features such as `%magic` commands.
-
-To launch a Jupyter notebook with Coconut as the kernel, use the command
+To that end, Coconut provides [built-in IPython/Jupyter support](DOCS.html#ipython-jupyter-support). To launch a Jupyter notebook with Coconut as the kernel, just enter the command
 ```
 coconut --jupyter notebook
 ```
-and to launch a Jupyter console, use the command
-```
-coconut --jupyter console
-```
-or equivalently, `--ipython` can be substituted for `--jupyter` in either command.
 
 ### Case Studies
 
-Because Coconut is built to be fundamentally _useful_, the best way to demo it is to show it in action. To that end, the majority of this tutorial will be showing how to apply Coconut to solve particular problems, which we'll call case studies.
+Because Coconut is built to be useful, the best way to demo it is to show it in action. To that end, the majority of this tutorial will be showing how to apply Coconut to solve particular problems, which we'll call case studies.
 
 These case studies are not intended to provide a complete picture of all of Coconut's features. For that, see Coconut's [documentation](DOCS.html). Instead, they are intended to show how Coconut can actually be used to solve practical programming problems.
 
@@ -173,6 +173,7 @@ def factorial(n):
 0 |> factorial |> print  # 1
 3 |> factorial |> print  # 6
 ```
+
 Before we delve into what exactly is happening here, let's give it a run and make sure the test cases check out. If we were really writing a Coconut program, we'd want to save and compile an actual file, but since we're just playing around, let's try copy-pasting into the interpreter. Here, you should get two `TypeErrors`, then `1`, then `6`.
 
 Now that we've verified it works, let's take a look at what's going on. Since the imperative approach is a fundamentally non-functional method, Coconut can't help us improve this example very much. Even here, though, the use of Coconut's infix notation (where the function is put in-between its arguments, surrounded in backticks) in `` n `isinstance` int `` makes the code slightly cleaner and easier to read.
@@ -198,7 +199,7 @@ def factorial(n):
 3 |> factorial |> print  # 6
 ```
 
-Copy and paste the code and tests into the interpreter. You should get the same test results as you got for the imperative version—but you can probably tell there's quite a lot more going on here than there. That's intentional: Coconut is intended for functional programming, not imperative programming, and so its new features are built to be most useful when programming in a functional style.
+Go ahead and copy and paste the code and tests into the interpreter. You should get the same test results as you got for the imperative version—but you can probably tell there's quite a lot more going on here than there. That's intentional: Coconut is intended for functional programming, not imperative programming, and so its new features are built to be most useful when programming in a functional style.
 
 Let's take a look at the specifics of the syntax in this example. The first thing we see is `case n`. This statement starts a `case` block, in which only `match` statements can occur. Each `match` statement will attempt to match its given pattern against the value in the `case` block. Only the first successful match inside of any given `case` block will be executed. When a match is successful, any variable bindings in that match will also be performed. Additionally, as is true in this case, `match` statements can also have `if` guards that will check the given condition before the match is considered final. Finally, after the `case` block, an `else` statement is allowed, which will only be executed if no `match` statement is.
 
@@ -223,7 +224,7 @@ def factorial(n):
         x is int = n
     except MatchError:
         pass
-    else: if x > 0:  # in Coconut, if, match, and try are allowed after else
+    else: if x > 0:  # in Coconut, statements can be nested on the same line
         return x * factorial(x-1)
     raise TypeError("the argument to factorial must be an integer >= 0")
 
@@ -404,9 +405,9 @@ def quick_sort([]) = []
 @addpattern(quick_sort)
 def quick_sort([head] + tail) =
     """Sort the input sequence using the quick sort algorithm."""
-    (quick_sort([x for x in tail if x < head])
-        + [head]
-        + quick_sort([x for x in tail if x >= head]))
+    quick_sort(left) + [head] + quick_sort(right) where:
+        left = [x for x in tail if x < head]
+        right = [x for x in tail if x >= head]
 
 # Test cases:
 [] |> quick_sort |> print  # []
@@ -415,7 +416,11 @@ def quick_sort([head] + tail) =
 [4,3,2,1,0] |> quick_sort |> print  # [0,1,2,3,4]
 [3,0,4,2,1] |> quick_sort |> print  # [0,1,2,3,4]
 ```
-Copy, paste! Only one new feature here: head-tail pattern-matching. Here, we see the head-tail pattern `[head] + tail`, which more generally just follow the form of a list or tuple added to a variable. When this appears in any pattern-matching context, the value being matched against will be treated as a sequence, the list or tuple matched against the beginning of that sequence, and the rest of it bound to the variable. In this case, we use the head-tail pattern to remove the head so we can use it as the pivot for splitting the rest of the list.
+Copy, paste! Two new feature here: head-tail pattern-matching and `where` statements.
+
+First, `where` statements are extremely straightforward. In fact, I bet you've already figured out what they do from the code above. A `where` statement is just a way to compute something in the context of some set of assignment statements.
+
+Second, head-tail pattern-matching, which you can see here as `[head] + tail`, simply follows the form of a list or tuple added to a variable. When this appears in any pattern-matching context, the value being matched against will be treated as a sequence, the list or tuple matched against the beginning of that sequence, and the rest of it bound to the variable. In this case, we use the head-tail pattern to remove the head so we can use it as the pivot for splitting the rest of the list.
 
 ### Sorting an Iterator
 
@@ -425,11 +430,10 @@ def quick_sort(l):
     """Sort the input iterator using the quick sort algorithm."""
     match [head] :: tail in l:
         tail = reiterable(tail)
-        yield from (quick_sort(x for x in tail if x < head)
-            :: (head,)
-            :: quick_sort(x for x in tail if x >= head)
-            )
-    # We implicitly return an empty iterator here if the match falls through.
+        yield from quick_sort(left) :: [head] :: quick_sort(right) where:
+            left = (x for x in tail if x < head)
+            right = (x for x in tail if x >= head)
+    # By yielding nothing if the match falls through, we implicitly return an empty iterator.
 
 # Test cases:
 [] |> quick_sort |> list |> print  # []
@@ -469,11 +473,10 @@ def quick_sort(l):
     """Sort the input iterator using the quick sort algorithm."""
     match [head] :: tail in l:
         tail = reiterable(tail)
-        yield from (quick_sort(x for x in tail if x < head)
-            :: (head,)
-            :: quick_sort(x for x in tail if x >= head)
-            )
-    # We implicitly return an empty iterator here if the match falls through.
+        yield from quick_sort(left) :: [head] :: quick_sort(right) where:
+            left = (x for x in tail if x < head)
+            right = (x for x in tail if x >= head)
+    # By yielding nothing if the match falls through, we implicitly return an empty iterator.
 ```
 
 The function first attempts to split `l` into an initial element and a remaining iterator. If `l` is the empty iterator, that match will fail, and it will fall through, yielding the empty iterator (that's how the function handles the base case). Otherwise, we make a copy of the rest of the iterator, and yield the join of (the quick sort of all the remaining elements less than the initial element), (the initial element), and (the quick sort of all the remaining elements greater than the initial element).
@@ -942,7 +945,7 @@ print(vector(1, 0).angle(vector(0, 2)), math.pi/2)  # should be the same
 vector(1, 2).angle(5)  # MatchError
 ```
 
-_Hint: Look back at how we checked whether the argument to `factorial` was an integer using destructuring assignment._
+_Hint: Look back at how we checked whether the argument to `factorial` was an integer using pattern-matching._
 
 <br>
 <br>
@@ -1007,7 +1010,7 @@ data vector(*pts):
     def __rmul__(self, other) =
         """Necessary to make scalar multiplication commutative."""
         self * other
-     # New one-line functions necessary for finding the angle between vectors:
+    # New one-line functions necessary for finding the angle between vectors:
     def __truediv__(self, other) = self.pts |> map$(x -> x/other) |*> vector
     def unit(self) = self / abs(self)
     def angle(self, other is vector) = math.acos(self.unit() * other.unit())
@@ -1023,17 +1026,30 @@ vector(1, 2).angle(5)  # MatchError
 ```
 _One note of warning here: be careful not to leave a blank line when substituting in your methods, or the interpreter will cut off the code for the `vector` there. This isn't a problem in normal Coconut code, only here because we're copy-and-pasting into the command line._
 
-Copy, paste! If everything is working, I'd recommend going back to playing around with `vector_field` [applications](#applications) using our new methods.
+Copy, paste! If everything is working, you can try going back to playing around with `vector_field` [applications](#applications) using our new methods.
 
 ## Filling in the Gaps
 
-And with that, this tutorial is out of case studies—but that doesn't mean Coconut is out of features! In this last section, we'll touch on three of the most important features of Coconut that we managed to miss in our case studies: lazy lists, function composition, and implicit partials.
+And with that, this tutorial is out of case studies—but that doesn't mean Coconut is out of features! In this last section, we'll touch on some of the other useful features of Coconut that we managed to miss in the case studies.
 
 ### Lazy Lists
 
 First up is lazy lists. Lazy lists are lazily-evaluated iterator literals, similar in their laziness to Coconut's `::` operator, in that any expressions put inside a lazy list won't be evaluated until that element of the lazy list is needed. The syntax for lazy lists is exactly the same as the syntax for normal lists, but with "banana brackets" (`(|` and `|)`) instead of normal brackets, like so:
 ```coconut
 abc = (| a, b, c |)
+```
+Like all Python iterators, you can call `next` to retrieve the next object in the iterator. Using a lazy list, it is possible to define the values used in the expressions as needed without raising a `NameError`:
+
+```coconut
+abcd = (| d(a), d(b), d(c) |)  # a, b, c, and d are not defined yet
+def d(n) = n + 1
+
+a = 1
+next(abcd)  # 2
+b = 2
+next(abcd)  # 3
+c = 3
+next(abcd)  # 4
 ```
 
 ### Function Composition
@@ -1043,9 +1059,39 @@ Next is function composition. In Coconut, this is accomplished through the `..` 
 zipsum = map$(sum)..zip
 ```
 
-Function composition also gets rid of the need for lots of parentheses when chaining function calls, like so:
+If the composed functions are wrapped in parentheses, arguments can be passed into them:
 ```coconut
-plus1..square(3) == 10
+def plus1(x) = x + 1
+def square(x) = x * x
+
+(plus1..square)(3) == 10  # True
+```
+
+Functions of different arities can be composed together, as long as they are in the correct order. If they are in the incorrect order, a `TypeError` will be raised. In this example we will compose a unary function with a binary function:
+```coconut
+def add(n, m) = n + m  # binary function
+def square(n) = n * n  # unary function
+
+(add..square)(3, 1)    # Raises TypeError: square() takes exactly 1 argument (2 given)
+(square..add)(3, 1)    # 16
+```
+
+Another useful trick with function composition involves composing a function with a higher-order function:
+```coconut
+def inc_or_dec(t):
+    # Our higher-order function, which returns another function
+    if t:
+        return x -> x+1
+    else:
+        return x -> x-1
+
+def square(n) = n * n
+
+square_inc = square..inc_or_dec(True)
+square_dec = square..inc_or_dec(False)
+square_inc(4)  # 25
+square_dec(4)  # 9
+
 ```
 
 _Note: Coconut also supports the function composition pipe operators `..>`, `<..`, `..*>`, and `<*..`._
@@ -1064,6 +1110,8 @@ iter$[]
 .$[slice]
 ```
 
+For a full explanation of what each implicit partial does, see Coconut's documentation on [implicit partials](DOCS.html#implicit-partial-application).
+
 ### Type Annotations
 
 For many people, one of the big downsides of Python is the fact that it is dynamically-typed. In Python, this problem is addressed by [MyPy](http://mypy-lang.org/), a static type analyzer for Python, which can check Python-3-style type annotations such as
@@ -1073,7 +1121,7 @@ def plus1(x: int) -> int:
 a: int = plus1(10)
 ```
 
-Unfortunately, in Python, such type annotation syntax only exists in Python 3. Not to worry in Coconut, however, which compiles Python-3-style type annotations to universally compatible type comments. Not only that, but Coconut has built-in [MyPy integration](DOCS.html#mypy-integration) for automatically type-checking your code, and its own [enhanced type annotation syntax](DOCS.html#enhanced-type-annotations) for more easily expressing complex types.
+Unfortunately, in Python, such type annotation syntax only exists in Python 3. Not to worry in Coconut, however, which compiles Python-3-style type annotations to universally compatible type comments. Not only that, but Coconut has built-in [MyPy integration](DOCS.html#mypy-integration) for automatically type-checking your code, and its own [enhanced type annotation syntax](DOCS.html#enhanced-type-annotation) for more easily expressing complex types.
 
 ### Further Reading
 

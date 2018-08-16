@@ -6,15 +6,15 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Author: Evan Hubinger
+Authors: Evan Hubinger, Fred Buchanan
 License: Apache 2.0
-Description: The Coconut IPython kernel module.
+Description: MyPy stub file for command.py.
 """
 
 # -----------------------------------------------------------------------------------------------------------------------
-# IMPORTS:
+# MAIN:
 # -----------------------------------------------------------------------------------------------------------------------
 
-from __future__ import print_function, absolute_import, unicode_literals, division
 
-from coconut.icoconut.root import *  # NOQA
+class Command():
+    ...

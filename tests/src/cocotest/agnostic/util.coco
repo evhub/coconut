@@ -64,7 +64,7 @@ plus1sqsum_all_ = sum <.. square_all <*.. plus1_all
 # Basic Functions:
 product = reduce$(*)
 def zipwith(f, *args) = map((items) -> f(*items), zip(*args))
-def zipwith_(f, *args) = starmap$(f)..zip(*args)
+def zipwith_(f, *args) = starmap$(f)..zip <*| args
 zipsum = map$(sum)..zip  # type: ignore
 ident = (x) -> x
 @ ident .. ident
@@ -102,16 +102,16 @@ def qsort1(l: int[]) -> int[]:
                 smalls.append(x)
             else:
                 larges.append(x)
-        return list..qsort1(smalls) + [split] + list..qsort1(larges)
+        return list(qsort1(smalls)) + [split] + list(qsort1(larges))
 def qsort2(l: int[]) -> int[]:
     """Functional Quick Sort."""
     if not l:
         return []
     else:
         head, tail = l[0], l[1:]# Python Pattern-Matching
-        return (list..qsort2([x for x in tail if x <= head])
+        return (list(qsort2([x for x in tail if x <= head]))
                 + [head] # The pivot is a list
-                + list..qsort2([x for x in tail if x > head])
+                + list(qsort2([x for x in tail if x > head]))
                 )
 def qsort3(l: int$[]) -> int$[]:
     """Iterator Quick Sort."""
@@ -131,11 +131,11 @@ def qsort4(l: int[]) -> int[]:
         match []:
             return l
         match [head] + tail:
-            return (list..qsort4([x for x in tail if x <= head])
+            return (list(qsort4([x for x in tail if x <= head]))
                     + [head] # The pivot is a list
-                    + list..qsort4([x for x in tail if x > head])
+                    + list(qsort4([x for x in tail if x > head]))
                     )
-    return None
+    return None  # type: ignore
 def qsort5(l: int$[]) -> int$[]:
     """Iterator Match Quick Sort."""
     match (head,) :: tail in l:
@@ -154,6 +154,22 @@ def qsort6(l: int$[]) -> int$[]:
             :: (head,)
             :: qsort6(x for x in tail if x > head)
         )  # type: ignore
+
+def empty_list_base_case([]) = []
+
+@addpattern(empty_list_base_case)
+def qsort7([head] + tail) =
+    qsort7(left) + [head] + qsort7(right) where:
+        left = [x for x in tail if x <= head]
+        right = [x for x in tail if x > head]
+
+@addpattern(empty_list_base_case)
+def qsort8(l) =
+    qsort8(left) + [mid] + qsort8(right) where:
+        midpt = len(l)//2
+        mid, rest = l[midpt], l[:midpt] + l[midpt+1:]
+        left = [x for x in rest if x < mid]
+        right = [x for x in rest if x >= mid]
 
 # Infinite Iterators:
 def repeat(elem):
@@ -178,7 +194,7 @@ def preN(it):
     return it
 def map_iter(func, args):
     match (| x |) :: xs in args:
-        return (| func(x) |) :: map_iter(func, xs)
+        yield from (| func(x) |) :: map_iter(func, xs)
 
 # Recursive Functions:
 
@@ -247,6 +263,16 @@ def fake_recurse_n_times(n) =
     fake_recurse_n_times = recurse_n_times
     fake_recurse_n_times(n)
 
+def return_in_loop(x):
+    if x == 0:
+        return True
+    while True:
+        return return_in_loop(x - 1)
+
+class methtest:
+    def meth(self, arg) = meth(self, arg)
+def meth(self, arg) = arg
+
 # Data Blocks:
 try:
     datamaker
@@ -270,11 +296,6 @@ data vector(x, y):
             return vector(self.x + x, self.y + y)
         else:
             raise TypeError()
-    def __eq__(self, other):
-        match vector(=self.x, =self.y) in other:
-            return True
-        else:
-            return False
 data triangle(a, b, c):
     def is_right(self):
         return self.a**2 + self.b**2 == self.c**2
@@ -467,19 +488,9 @@ def maybes(*fs) = reduce(base_maybe, fs)
 data Nothing():
     def __call__(self, *args):
         return Nothing()
-    def __eq__(self, other):
-        match Nothing() in other:
-            return True
-        else:
-            return False
 data Just(item):
     def __call__(self, *args):
         return Just <| reduce((|>), args, self.item)
-    def __eq__(self, other):
-        match Just(item) in other:
-            return self.item == item
-        else:
-            return False
 Maybe = (Nothing, Just)
 
 # Destructuring Assignment:
@@ -575,11 +586,6 @@ data pt(x, y):
     """Cartesian point in the x-y plane. Immutable."""
     def __abs__(self):
         return (self.x**2 + self.y**2)**0.5
-    def __eq__(self, other):
-        match pt(=self.x, =self.y) in other:
-            return True
-        else:
-            return False
 
 def vertical_line(x=0, y=0):
     """Infinite iterator of pt representing a vertical line."""
@@ -651,7 +657,7 @@ def `pattern_abs_` (x) = x
 # Recursive iterator
 
 @recursive_iterator
-def fib() = (1, 1) :: map((+), fib(), fib()$[1:])
+def fibs() = (1, 1) :: map((+), fibs(), fibs()$[1:])
 
 @recursive_iterator
 def loop(it) = it :: loop(it)
@@ -727,15 +733,10 @@ class counter:
         self.count += 1
 
 # Typing
+if TYPE_CHECKING:
+    from typing import List, Dict, Any
 
-import sys
-if sys.version_info > (3, 5):
-    import typing
-    from typing import Any, List, Dict
-
-    def args_kwargs_func(args:List[Any]=[], kwargs:Dict[Any, Any]={}) -> None: pass
-else:
-    def args_kwargs_func(args=[], kwargs={}) -> None: pass
+def args_kwargs_func(args: List[Any]=[], kwargs: Dict[Any, Any]={}) -> None: pass
 
 def anything_func(*args: int, **kwargs: int) -> None: pass
 
@@ -755,18 +756,22 @@ def x_is_int_def_0(x is int = 0) = x
 
 def head_tail_def_none([head] + tail = [None]) = (head, tail)
 
-def kwd_only_x_is_int_def_0(*, x is int = 0) = x
+match def kwd_only_x_is_int_def_0(*, x is int = 0) = x
 
 def no_args_kwargs(*(), **{}) = True
 
 # Alternative Class Notation
 
-class altclass
+class altclass:
+    func: (Any, Any) -> Any
+    zero: (Any, int) -> int
+
 def altclass.func(self, x) = x
-def altclass.zero(self, x) =
+
+def altclass.zero(self, x: int) -> int =
     if x == 0:
         return 0
-    altclass.zero(self, x-1)
+    altclass.zero(self, x-1)  # tail recursive
 
 # Logic Stuff
 
@@ -807,7 +812,7 @@ class Vars:
 
 # Complex Data
 
-data Tuple(*elems)
+data Tuple_(*elems)
 
 data Pred(name, *args)
 data Pred_(name: str, *args)
@@ -834,9 +839,56 @@ def int_map(f: int->int, xs: int[]) -> int[]: return list(map(f, xs))
 def sum_list_range(n: int) -> int = sum([i for i in range(1, n)])
 
 # Context managers
-
 def context_produces(out):
     @contextmanager
     def manager():
         yield out
     return manager()
+
+# Where statements
+def sum2(ab) = a + b where:
+    a, b = ab
+
+# Memoization
+import functools
+
+@memoize()
+def ridiculously_recursive(n):
+    """Requires maxsize=None when called on large numbers."""
+    if n <= 0:
+        return 1
+    result = 0
+    for i in range(1, 200):
+        result += ridiculously_recursive(n-i)
+    return result
+
+@functools.lru_cache(maxsize=None)  # type: ignore
+def ridiculously_recursive_(n):
+    """Requires maxsize=None when called on large numbers."""
+    if n <= 0:
+        return 1
+    result = 0
+    for i in range(1, 200):
+        result += ridiculously_recursive_(n-i)
+    return result
+
+def fib(n if n < 2) = n
+
+@memoize()  # type: ignore
+@addpattern(fib)
+def fib(n) = fib(n-1) + fib(n-2)
+
+# MapReduce
+from collections import defaultdict
+
+join_pairs1 = reduce$((def (acc, (k, v)) ->
+    acc[k] += v;
+    acc
+), ?, defaultdict(list))
+
+def join_pairs2([]) = defaultdict(list)
+@addpattern(join_pairs2)  # type: ignore
+def join_pairs2([(k, v)] + tail) =
+    result = join_pairs2(tail)
+    result[k] += v
+    result

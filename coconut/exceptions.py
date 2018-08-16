@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # INFO:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 """
 Author: Evan Hubinger
@@ -11,9 +11,9 @@ License: Apache 2.0
 Description: Exceptions for use in the compiler.
 """
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # IMPORTS:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
@@ -21,7 +21,7 @@ from coconut.root import *  # NOQA
 
 import sys
 
-from coconut.pyparsing import lineno
+from coconut.myparsing import lineno
 
 from coconut.constants import (
     openindent,
@@ -31,9 +31,9 @@ from coconut.constants import (
     report_this_text,
 )
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 
 def get_encoding(fileobj):
@@ -44,7 +44,7 @@ def get_encoding(fileobj):
 
 
 def clean(inputline, strip=True, rem_indents=True, encoding_errors="replace"):
-    """Clean and strips a line."""
+    """Clean and strip a line."""
     stdout_encoding = get_encoding(sys.stdout)
     inputline = str(inputline)
     if rem_indents:
@@ -54,9 +54,9 @@ def clean(inputline, strip=True, rem_indents=True, encoding_errors="replace"):
     return inputline.encode(stdout_encoding, encoding_errors).decode(stdout_encoding)
 
 
-def debug_clean(inputline, strip=True):
-    """Call clean with debug parameters."""
-    return clean(inputline, strip, rem_indents=False, encoding_errors="backslashreplace")
+def displayable(inputstr, strip=True):
+    """Make a string displayable with minimal loss of information."""
+    return clean(str(inputstr), strip, rem_indents=False, encoding_errors="backslashreplace")
 
 
 def internal_assert(condition, message=None, item=None, extra=None):
@@ -64,17 +64,17 @@ def internal_assert(condition, message=None, item=None, extra=None):
     If condition is a function, execute it on DEVELOP only."""
     if DEVELOP and callable(condition):
         condition = condition()
-    if message is None:
-        message = "assertion failed"
-        if item is None:
-            item = condition
     if not condition:
+        if message is None:
+            message = "assertion failed"
+            if item is None:
+                item = condition
         raise CoconutInternalException(message, item, extra)
 
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # EXCEPTIONS:
-#----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 class CoconutException(Exception):
@@ -106,7 +106,9 @@ class CoconutException(Exception):
 
     def __repr__(self):
         """Get a representation of the exception."""
-        return self.__class__.__name__ + "(" + ", ".join(self.args) + ")"
+        return self.__class__.__name__ + "(" + ", ".join(
+            repr(arg) for arg in self.args if arg is not None
+        ) + ")"
 
 
 class CoconutSyntaxError(CoconutException):

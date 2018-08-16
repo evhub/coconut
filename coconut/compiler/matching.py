@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # INFO:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 """
 Author: Evan Hubinger
@@ -11,9 +11,9 @@ License: Apache 2.0
 Description: Handles Coconut pattern-matching.
 """
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # IMPORTS:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
@@ -31,28 +31,27 @@ from coconut.constants import (
     wildcard,
     openindent,
     closeindent,
-    match_check_var,
     const_vars,
     sentinel_var,
 )
 from coconut.compiler.util import paren_join
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 
 def get_match_names(match):
     """Gets keyword names for the given match."""
     names = []
-    if "paren" in match.keys():
+    if "paren" in match:
         (match,) = match
         names += get_match_names(match)
-    elif "var" in match.keys():
+    elif "var" in match:
         (setvar,) = match
         if setvar != wildcard:
             names.append(setvar)
-    elif "trailer" in match.keys():
+    elif "trailer" in match:
         match, trailers = match[0], match[1:]
         for i in range(0, len(trailers), 2):
             op, arg = trailers[i], trailers[i + 1]
@@ -62,9 +61,9 @@ def get_match_names(match):
     return names
 
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # MATCHER:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 
 class Matcher(object):
@@ -90,6 +89,7 @@ class Matcher(object):
     }
     __slots__ = (
         "loc",
+        "check_var",
         "position",
         "checkdefs",
         "names",
@@ -99,9 +99,10 @@ class Matcher(object):
         "use_sentinel",
     )
 
-    def __init__(self, loc, checkdefs=None, names=None, var_index=0):
+    def __init__(self, loc, check_var, checkdefs=None, names=None, var_index=0):
         """Creates the matcher."""
         self.loc = loc
+        self.check_var = check_var
         self.position = 0
         self.checkdefs = []
         if checkdefs is None:
@@ -118,8 +119,8 @@ class Matcher(object):
 
     def duplicate(self):
         """Duplicates the matcher to others."""
-        other = Matcher(self.loc, self.checkdefs, self.names, self.var_index)
-        other.insert_check(0, "not " + match_check_var)
+        other = Matcher(self.loc, self.check_var, self.checkdefs, self.names, self.var_index)
+        other.insert_check(0, "not " + self.check_var)
         self.others.append(other)
         return other
 
@@ -394,7 +395,7 @@ class Matcher(object):
         else:
             self.add_check("_coconut.len(" + item + ") >= " + str(len(matches)))
             if tail != wildcard:
-                if len(matches):
+                if len(matches) > 0:
                     splice = "[" + str(len(matches)) + ":]"
                 else:
                     splice = ""
@@ -609,11 +610,12 @@ class Matcher(object):
     def match(self, tokens, item):
         """Performs pattern-matching processing."""
         for flag, get_handler in self.matchers.items():
-            if flag in tokens.keys():
+            if flag in tokens:
                 return get_handler(self)(tokens, item)
         raise CoconutInternalException("invalid pattern-matching tokens", tokens)
 
     def out(self):
+        """Return pattern-matching code."""
         out = ""
         if self.use_sentinel:
             out += sentinel_var + " = _coconut.object()\n"
@@ -625,14 +627,24 @@ class Matcher(object):
             if defs:
                 out += "\n".join(defs) + "\n"
         return out + (
-            match_check_var + " = True\n"
+            self.check_var + " = True\n"
             + closeindent * closes
             + "".join(other.out() for other in self.others)
             + (
-                "if " + match_check_var + " and not ("
+                "if " + self.check_var + " and not ("
                 + paren_join(self.guards, "and")
                 + "):\n" + openindent
-                + match_check_var + " = False\n" + closeindent
+                + self.check_var + " = False\n" + closeindent
                 if self.guards else ""
             )
         )
+
+    def build(self, stmts=None, set_check_var=True, invert=False):
+        """Construct code for performing the match then executing stmts."""
+        out = ""
+        if set_check_var:
+            out += self.check_var + " = False\n"
+        out += self.out()
+        if stmts is not None:
+            out += "if " + ("not " if invert else "") + self.check_var + ":" + "\n" + openindent + "".join(stmts) + closeindent
+        return out

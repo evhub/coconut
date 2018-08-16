@@ -8,5 +8,7 @@ global-include *.py_template
 prune tests
 prune docs
 prune .mypy_cache
+prune coconut/stubs/.mypy_cache
 prune *.egg-info
 exclude index.rst
+exclude profile.json

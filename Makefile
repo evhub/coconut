@@ -5,7 +5,7 @@ install:
 
 .PHONY: dev
 dev:
-	pip install --upgrade setuptools pip
+	python -m pip install --upgrade setuptools pip
 	pip install --upgrade -e .[dev]
 	pre-commit install -f --install-hooks
 
@@ -14,21 +14,43 @@ format: dev
 	pre-commit autoupdate
 	pre-commit run --all-files
 
+# test-all takes a very long time and should usually only be run by Travis
 .PHONY: test-all
 test-all:
 	pytest --strict -s tests
 
+# for quickly testing nearly everything locally, just use test-basic
 .PHONY: test-basic
 test-basic:
 	python ./tests --force
 	python ./tests/dest/runner.py
 	python ./tests/dest/extras.py
 
-.PHONY: test-run
-test-run:
+# same as test-basic, but doesn't recompile unchanged test files;
+# should only be used when testing the tests not the compiler
+.PHONY: test-tests
+test-tests:
 	python ./tests
 	python ./tests/dest/runner.py
 	python ./tests/dest/extras.py
+
+# same as test-basic but also runs mypy
+.PHONY: test-mypy
+test-mypy:
+	python ./tests --force --target sys --mypy --follow-imports silent --ignore-missing-imports
+	python ./tests/dest/runner.py
+	python ./tests/dest/extras.py
+
+# same as test-basic but includes verbose output for better debugging
+.PHONY: test-verbose
+test-verbose:
+	python ./tests --force --verbose --jobs 0
+	python ./tests/dest/runner.py
+	python ./tests/dest/extras.py
+
+.PHONY: diff
+diff:
+	git diff origin/develop
 
 .PHONY: docs
 docs: clean
@@ -37,7 +59,7 @@ docs: clean
 
 .PHONY: clean
 clean:
-	rm -rf ./docs ./dist ./build ./tests/dest index.rst
+	rm -rf ./docs ./dist ./build ./tests/dest index.rst profile.json
 	find . -name '*.pyc' -delete
 	find . -name '__pycache__' -delete
 
@@ -51,15 +73,27 @@ wipe: clean
 	-pip2 uninstall coconut-develop
 	rm -rf *.egg-info
 
-.PHONY: build
-build: clean dev
+.PHONY: just-upload
+just-upload:
 	python setup.py sdist bdist_wheel
-
-.PHONY: upload
-upload: build
 	pip install --upgrade twine
 	twine upload dist/*
+
+.PHONY: upload
+upload: clean dev just-upload
 
 .PHONY: check
 check:
 	python ./coconut/requirements.py
+
+.PHONY: profile-code
+profile-code:
+	vprof -c h "coconut tests/src/cocotest/agnostic tests/dest/cocotest --force" --output-file ./profile.json
+
+.PHONY: profile-memory
+profile-memory:
+	vprof -c m "coconut tests/src/cocotest/agnostic tests/dest/cocotest --force" --output-file ./profile.json
+
+.PHONY: view-profile
+view-profile:
+	vprof --input-file ./profile.json

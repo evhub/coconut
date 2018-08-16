@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # INFO:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 """
 Author: Evan Hubinger
@@ -11,43 +11,37 @@ License: Apache 2.0
 Description: Coconut installation requirements.
 """
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # IMPORTS:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 from coconut.root import *  # NOQA
 
 from coconut.constants import (
+    ver_str_to_tuple,
+    ver_tuple_to_str,
     all_reqs,
     min_versions,
     version_strictly,
-    using_modern_setuptools,
     PYPY,
     PY34,
     IPY,
     WINDOWS,
 )
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
+# CONSTANTS:
+# -----------------------------------------------------------------------------------------------------------------------
+
+try:
+    import setuptools  # this import is expensive, so we keep it out of constants
+    using_modern_setuptools = int(setuptools.__version__.split(".", 1)[0]) >= 18
+except Exception:
+    using_modern_setuptools = False
+
+# -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
-#-----------------------------------------------------------------------------------------------------------------------
-
-
-def ver_tuple_to_str(req_ver):
-    """Converts a requirement version tuple into a version string."""
-    return ".".join(str(x) for x in req_ver)
-
-
-def ver_str_to_tuple(ver_str):
-    """Convert a version string into a version tuple."""
-    out = []
-    for x in ver_str.split("."):
-        try:
-            x = int(x)
-        except ValueError:
-            pass
-        out.append(x)
-    return tuple(out)
+# -----------------------------------------------------------------------------------------------------------------------
 
 
 def get_reqs(which="main"):
@@ -66,6 +60,14 @@ def uniqueify(reqs):
     return list(set(reqs))
 
 
+def uniqueify_all(init_reqs, *other_reqs):
+    """Find the union of all the given requirements."""
+    union = set(init_reqs)
+    for reqs in other_reqs:
+        union.update(reqs)
+    return list(union)
+
+
 def unique_wrt(reqs, main_reqs):
     """Ensures reqs doesn't contain anything in main_reqs."""
     return list(set(reqs) - set(main_reqs))
@@ -76,9 +78,9 @@ def everything_in(req_dict):
     return uniqueify(req for req_list in req_dict.values() for req in req_list)
 
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # SETUP:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 requirements = get_reqs()
 
@@ -87,27 +89,28 @@ extras = {
     "watch": get_reqs("watch"),
     "jobs": get_reqs("jobs"),
     "mypy": get_reqs("mypy"),
+    "asyncio": get_reqs("asyncio"),
+    "cPyparsing": get_reqs("cPyparsing"),
 }
-
-extras["ipython"] = extras["jupyter"]
 
 extras["all"] = everything_in(extras)
 
-extras["tests"] = uniqueify(
-    get_reqs("tests")
-    + (extras["jobs"] + get_reqs("cPyparsing") if not PYPY else [])
-    + (extras["jupyter"] if IPY else [])
-    + (extras["mypy"] if PY34 and not WINDOWS and not PYPY else []),
-)
+extras["ipython"] = extras["jupyter"]
 
 extras["docs"] = unique_wrt(get_reqs("docs"), requirements)
 
-extras["dev"] = uniqueify(
-    everything_in(extras)
-    + get_reqs("dev"),
+extras["tests"] = uniqueify_all(
+    get_reqs("tests"),
+    extras["jobs"] + get_reqs("cPyparsing") if not PYPY else [],
+    extras["jupyter"] if IPY else [],
+    extras["mypy"] if PY34 and not WINDOWS and not PYPY else [],
+    extras["asyncio"] if not PY34 else [],
 )
 
-extras["cPyparsing"] = get_reqs("cPyparsing")
+extras["dev"] = uniqueify_all(
+    everything_in(extras),
+    get_reqs("dev"),
+)
 
 if using_modern_setuptools:
     # modern method for adding version-dependent requirements
@@ -124,9 +127,9 @@ else:
     if PY2:
         requirements += get_reqs("py2")
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # MAIN:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 
 def all_versions(req):

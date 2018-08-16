@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # INFO:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 """
 Author: Evan Hubinger
@@ -11,9 +11,9 @@ License: Apache 2.0
 Description: logger utilities.
 """
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # IMPORTS:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
@@ -21,32 +21,31 @@ from coconut.root import *  # NOQA
 
 import sys
 import traceback
-import functools
 import logging
 import time
 from contextlib import contextmanager
 
-from coconut.pyparsing import lineno, col, ParserElement
-if DEVELOP:
-    from coconut.pyparsing import _trim_arity
+from coconut.myparsing import (
+    lineno,
+    col,
+    ParserElement,
+)
 
 from coconut.constants import (
     info_tabulation,
     main_sig,
     taberrfmt,
-    use_packrat,
+    packrat_cache,
 )
 from coconut.exceptions import (
     CoconutWarning,
-    CoconutInternalException,
-    CoconutException,
-    debug_clean,
+    displayable,
     internal_assert,
 )
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 
 def printerr(*args):
@@ -70,15 +69,18 @@ def format_error(err_type, err_value, err_trace=None):
 
 def complain(error):
     """Raises in develop; warns in release."""
-    if DEVELOP:
+    if callable(error):
+        if DEVELOP:
+            raise error()
+    elif DEVELOP:
         raise error
     else:
         logger.warn_err(error)
 
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # logger:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 
 class Logger(object):
@@ -106,7 +108,9 @@ class Logger(object):
                 str(msg) for msg in messages
             ).splitlines(True)
         )
-        if debug is True:
+        if not full_message:
+            full_message = sig.rstrip()
+        if debug:
             printerr(full_message)
         else:
             print(full_message)
@@ -131,10 +135,14 @@ class Logger(object):
         if self.verbose:
             printerr(*messages)
 
-    def log_sig(self, *messages):
-        """Logs debug messages with main signature if --verbose."""
+    def log_prefix(self, prefix, *messages):
+        """Logs debug messages with the given signature if --verbose."""
         if self.verbose:
-            self.display(messages, main_sig, debug=True)
+            self.display(messages, prefix, debug=True)
+
+    def log_sig(self, *messages):
+        """Logs debug messages with the main signature if --verbose."""
+        self.log_prefix(main_sig, *messages)
 
     def log_vars(self, message, variables, rem_vars=("self",)):
         """Logs variables with given message if --verbose."""
@@ -190,12 +198,12 @@ class Logger(object):
             printerr(errmsg)
 
     def log_exc(self):
-        """Display an exception only if in verbose mode."""
+        """Display an exception only if --verbose."""
         if self.verbose:
             self.display_exc()
 
     def log_cmd(self, args):
-        """Logs a console command if in verbose mode."""
+        """Logs a console command if --verbose."""
         self.log("> " + " ".join(args))
 
     def show_tabulated(self, begin, middle, end):
@@ -206,22 +214,24 @@ class Logger(object):
     def log_tag(self, tag, code, multiline=False):
         """Logs a tagged message if tracing."""
         if self.tracing:
+            if callable(code):
+                code = code()
             tagstr = "[" + str(tag) + "]"
             if multiline:
-                printerr(tagstr + "\n" + debug_clean(code))
+                printerr(tagstr + "\n" + displayable(code))
             else:
                 printerr(tagstr, ascii(code))
 
-    def log_trace(self, tag, original, loc, tokens=None):
+    def log_trace(self, tag, original, loc, tokens=None, extra=None):
         """Formats and displays a trace if tracing."""
         if self.tracing:
-            tag, original, loc = str(tag), str(original), int(loc)
+            tag, original, loc = displayable(tag), displayable(original), int(loc)
             if "{" not in tag:
                 out = ["[" + tag + "]"]
                 add_line_col = True
                 if tokens is not None:
                     if isinstance(tokens, Exception):
-                        msg = str(tokens)
+                        msg = displayable(str(tokens))
                         if "{" in msg:
                             head, middle = msg.split("{", 1)
                             middle, tail = middle.rsplit("}", 1)
@@ -231,13 +241,12 @@ class Logger(object):
                     elif len(tokens) == 1 and isinstance(tokens[0], str):
                         out.append(ascii(tokens[0]))
                     else:
-                        out.append(str(tokens))
+                        out.append(ascii(tokens))
                 if add_line_col:
                     out.append("(line:" + str(lineno(loc, original)) + ", col:" + str(col(loc, original)) + ")")
+                if extra is not None:
+                    out.append("from " + ascii(extra))
                 printerr(*out)
-
-    def _trace_start_action(self, original, loc, expr):
-        self.log_trace(expr, original, loc)
 
     def _trace_success_action(self, original, start_loc, end_loc, expr, tokens):
         self.log_trace(expr, original, start_loc, tokens)
@@ -248,33 +257,17 @@ class Logger(object):
     def trace(self, item):
         """Traces a parse element (only enabled in develop)."""
         if DEVELOP:
-            item = item.setDebugActions(
-                self._trace_start_action,
+            item.debugActions = (
+                None,  # no start action
                 self._trace_success_action,
                 self._trace_exc_action,
             )
+            item.debug = True
         return item
-
-    def wrap_handler(self, handler):
-        """Wraps a handler to catch errors (only enabled in develop)."""
-        if DEVELOP and handler.__name__ not in ("<lambda>", "join"):  # not addspace, condense, or fixto
-            @functools.wraps(handler)
-            def wrapped_handler(s, l, t):
-                self.log_trace(handler.__name__, s, l, t)
-                try:
-                    return _trim_arity(handler)(s, l, t)
-                except CoconutException:
-                    raise
-                except (Exception, AssertionError):
-                    traceback.print_exc()
-                    raise CoconutInternalException("error calling handler " + handler.__name__ + " with tokens", t)
-            return wrapped_handler
-        else:
-            return handler
 
     @contextmanager
     def gather_parsing_stats(self):
-        """Times parsing if in verbose mode."""
+        """Times parsing if --verbose."""
         if self.verbose:
             start_time = time.clock()
             try:
@@ -282,7 +275,7 @@ class Logger(object):
             finally:
                 elapsed_time = time.clock() - start_time
                 printerr("Time while parsing:", elapsed_time, "seconds")
-                if use_packrat:
+                if packrat_cache:
                     hits, misses = ParserElement.packrat_cache_stats
                     printerr("Packrat parsing stats:", hits, "hits;", misses, "misses")
         else:
@@ -304,9 +297,9 @@ class Logger(object):
     debug = info = warning = error = critical = exception = pylog
 
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # MAIN:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 logger = Logger()
 

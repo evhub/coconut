@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # INFO:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 """
 Author: Evan Hubinger
@@ -11,26 +11,26 @@ License: Apache 2.0
 Description: Basic Coconut constants and compatibility handling.
 """
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # IMPORTS:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
 import sys as _coconut_sys
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # VERSION:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
-VERSION = "1.3.1"
-VERSION_NAME = "Dead Parrot"
+VERSION = "1.4.0"
+VERSION_NAME = "Ernest Scribbler"
 # False for release, int >= 1 for develop
 DEVELOP = False
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 if DEVELOP:
     VERSION += "-post_dev" + str(int(DEVELOP))
@@ -39,9 +39,12 @@ VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
 PY2 = _coconut_sys.version_info < (3,)
 PY26 = _coconut_sys.version_info < (2, 7)
 
-PY3_HEADER = r'''py_chr, py_filter, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate = chr, filter, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate
+PY3_HEADER = r'''from builtins import chr, filter, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate
+py_chr, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate = chr, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate
 '''
-PY27_HEADER = PY3_HEADER + r'''py_raw_input, py_xrange = raw_input, xrange
+
+PY27_HEADER = r'''from __builtin__ import chr, filter, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate, raw_input, xrange
+py_chr, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate, py_raw_input, py_xrange = chr, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate, raw_input, xrange
 _coconut_NotImplemented, _coconut_raw_input, _coconut_xrange, _coconut_int, _coconut_long, _coconut_print, _coconut_str, _coconut_unicode, _coconut_repr = NotImplemented, raw_input, xrange, int, long, print, str, unicode, repr
 from future_builtins import *
 chr, str = unichr, unicode
@@ -141,6 +144,7 @@ def xrange(*args):
     """Coconut uses Python 3 "range" instead of Python 2 "xrange"."""
     raise _coconut.NameError('Coconut uses Python 3 "range" instead of Python 2 "xrange"')
 '''
+
 PY2_HEADER = PY27_HEADER + '''if _coconut_sys.version_info < (2, 7):
     import functools as _coconut_functools, copy_reg as _coconut_copy_reg
     def _coconut_new_partial(func, args, keywords):
@@ -150,17 +154,22 @@ PY2_HEADER = PY27_HEADER + '''if _coconut_sys.version_info < (2, 7):
         return (_coconut_new_partial, (self.func, self.args, self.keywords))
     _coconut_copy_reg.pickle(_coconut_functools.partial, _coconut_reduce_partial)
 '''
-PYCHECK_HEADER = r'''if _coconut_sys.version_info < (3,):
-''' + "".join(
-    ("    " if _line else "") + _line for _line in PY2_HEADER.splitlines(True)
-) + '''else:
-''' + "".join(
-    ("    " if _line else "") + _line for _line in PY3_HEADER.splitlines(True)
-)
 
-#-----------------------------------------------------------------------------------------------------------------------
+
+def _indent(code, by=1):
+    """Indents every nonempty line of the given code."""
+    return "".join(
+        ("    " * by if line else "") + line for line in code.splitlines(True)
+    )
+
+
+PYCHECK_HEADER = r'''if _coconut_sys.version_info < (3,):
+''' + _indent(PY2_HEADER) + '''else:
+''' + _indent(PY3_HEADER)
+
+# -----------------------------------------------------------------------------------------------------------------------
 # SETUP:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 if PY2:
     if PY26:

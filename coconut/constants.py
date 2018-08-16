@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # INFO:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 """
 Authors: Evan Hubinger, Fred Buchanan
@@ -11,9 +11,9 @@ License: Apache 2.0
 Description: This file contains all the global constants used across Coconut.
 """
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # IMPORTS:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
@@ -23,15 +23,16 @@ import sys
 import os
 import string
 import platform
+from zlib import crc32
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 
 def fixpath(path):
     """Uniformly format a path."""
-    return os.path.normpath(os.path.realpath(path))
+    return os.path.normpath(os.path.realpath(os.path.expanduser(path)))
 
 
 def get_target_info(target):
@@ -39,9 +40,32 @@ def get_target_info(target):
     return tuple(int(x) for x in target)
 
 
-#-----------------------------------------------------------------------------------------------------------------------
+def ver_tuple_to_str(req_ver):
+    """Converts a requirement version tuple into a version string."""
+    return ".".join(str(x) for x in req_ver)
+
+
+def ver_str_to_tuple(ver_str):
+    """Convert a version string into a version tuple."""
+    out = []
+    for x in ver_str.split("."):
+        try:
+            x = int(x)
+        except ValueError:
+            pass
+        out.append(x)
+    return tuple(out)
+
+
+def checksum(data):
+    """Compute a checksum of the given data.
+    Used for computing __coconut_hash__."""
+    return crc32(data) & 0xffffffff  # necessary for cross-compatibility
+
+
+# -----------------------------------------------------------------------------------------------------------------------
 # VERSION CONSTANTS:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 version_long = "Version " + VERSION_STR + " running on Python " + sys.version.split()[0]
 version_banner = "Coconut " + VERSION_STR
@@ -58,17 +82,12 @@ WINDOWS = os.name == "nt"
 PYPY = platform.python_implementation() == "PyPy"
 PY33 = sys.version_info >= (3, 3)
 PY34 = sys.version_info >= (3, 4)
-IPY = (PY2 and not PY26) or (PY33 if not WINDOWS else PY34)
+PY35 = sys.version_info >= (3, 5)
+IPY = (PY2 and not PY26) or PY34
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # INSTALLATION CONSTANTS:
-#-----------------------------------------------------------------------------------------------------------------------
-
-try:
-    import setuptools
-    using_modern_setuptools = int(setuptools.__version__.split(".", 1)[0]) >= 18
-except Exception:
-    using_modern_setuptools = False
+# -----------------------------------------------------------------------------------------------------------------------
 
 package_name = "coconut" + ("-develop" if DEVELOP else "")
 
@@ -88,6 +107,7 @@ all_reqs = {
     ),
     "py2": (
         "futures",
+        "backports.functools-lru-cache",
     ),
     "py26": (
         "argparse",
@@ -107,9 +127,13 @@ all_reqs = {
     "watch": (
         "watchdog",
     ),
+    "asyncio": (
+        "trollius",
+    ),
     "dev": (
         "pre-commit",
         "requests",
+        "vprof",
     ),
     "docs": (
         "sphinx",
@@ -119,6 +143,7 @@ all_reqs = {
     ),
     "tests": (
         "pytest",
+        "pexpect",
     ),
     "cPyparsing": (
         "cPyparsing",
@@ -134,26 +159,31 @@ min_versions = {
     "psutil": (5,),
     "jupyter": (1, 0),
     "jupyter-console": (5, 2),
-    "ipykernel": (4, 6),
-    "mypy": (0, 540),
-    "prompt_toolkit": (1, 0),
-    "futures": (3, 1),
+    "ipykernel": (4, 8),
+    "mypy": (0, 620),
+    "prompt_toolkit": (1,),
+    "futures": (3, 2),
+    "backports.functools-lru-cache": (1, 5),
     "argparse": (1, 4),
     "pytest": (3,),
+    "pexpect": (4,),
     "watchdog": (0, 8),
+    "trollius": (2, 2),
     "requests": (2,),
-    # We can't upgrade this; it breaks on Python 2.
+    # don't upgrade this; it breaks on unix
+    "vprof": (0, 36),
+    # we can't upgrade this; it breaks on Python 2
     "ipython": (5, 4),
-    # Don't upgrade these; they break on master!
+    # don't upgrade these; they break on master
     "sphinx": (1, 6, 2),
     "sphinx_bootstrap_theme": (0, 4),
 }
 
 version_strictly = (
     "pyparsing",
+    "ipython",
     "sphinx",
     "sphinx_bootstrap_theme",
-    "ipython",
 )
 
 classifiers = (
@@ -251,6 +281,13 @@ search_terms = (
     "reiterable",
     "scan",
     "groupsof",
+    "where",
+    "statement",
+    "lru_cache",
+    "memoize",
+    "memoization",
+    "backport",
+    "typing",
 )
 
 script_names = (
@@ -262,20 +299,21 @@ script_names = (
     "coconut-v" + ".".join(version_tuple[:i]) for i in range(1, len(version_tuple) + 1)
 )
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # PYPARSING CONSTANTS:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
-packrat_cache_size = 512
-use_packrat = packrat_cache_size != 0
+packrat_cache = 512
 
 default_whitespace_chars = " \t\f\v\xa0"  # we don't include \r here because the compiler converts \r into \n
 
 varchars = string.ascii_letters + string.digits + "_"
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # COMPILER CONSTANTS:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
+
+use_computation_graph = not PYPY  # experimentally determined
 
 template_ext = ".py_template"
 
@@ -287,14 +325,15 @@ default_recursion_limit = 2000
 if sys.getrecursionlimit() < default_recursion_limit:
     sys.setrecursionlimit(default_recursion_limit)
 
-# used for generating __coconut_hash__
-from zlib import crc32 as checksum  # NOQA
-
 hash_prefix = "# __coconut_hash__ = "
 hash_sep = "\x00"
 
+py2_vers = ((2, 6), (2, 7))
+py3_vers = ((3, 2), (3, 3), (3, 4), (3, 5), (3, 6), (3, 7))
+
 specific_targets = ("2", "27", "3", "33", "35", "36")
 pseudo_targets = {
+    "universal": "",
     "26": "2",
     "32": "3",
     "34": "33",
@@ -335,8 +374,10 @@ raise_from_var = reserved_prefix + "_raise_from"
 stmt_lambda_var = reserved_prefix + "_lambda"
 tre_mock_var = reserved_prefix + "_mock_func"
 tre_store_var = reserved_prefix + "_recursive_func"
+tre_check_var = reserved_prefix + "_is_recursive"
 none_coalesce_var = reserved_prefix + "_none_coalesce_item"
 sentinel_var = reserved_prefix + "_sentinel"
+func_var = reserved_prefix + "_func"
 
 # prefer Matcher.get_temp_var to proliferating more match vars here
 match_to_var = reserved_prefix + "_match_to"
@@ -345,6 +386,7 @@ match_to_kwargs_var = match_to_var + "_kwargs"
 match_check_var = reserved_prefix + "_match_check"
 match_temp_var = reserved_prefix + "_match_temp"
 match_err_var = reserved_prefix + "_match_err"
+case_check_var = reserved_prefix + "_case_check"
 
 wildcard = "_"  # for pattern-matching
 
@@ -393,6 +435,7 @@ reserved_vars = (  # can be backslash-escaped
     "case",
     "async",
     "await",
+    "where",
 )
 
 py3_to_py2_stdlib = {
@@ -433,11 +476,13 @@ py3_to_py2_stdlib = {
     # ./ denotes from ... import ...
     "io.StringIO": ("StringIO./StringIO", (2, 7)),
     "io.BytesIO": ("cStringIO./StringIO", (2, 7)),
+    # third-party backports
+    "asyncio": ("trollius", (3, 4)),
 }
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # COMMAND CONSTANTS:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 code_exts = (".coco", ".coc", ".coconut")  # in order of preference
 comp_ext = ".py"
@@ -448,12 +493,15 @@ main_prompt = ">>> "
 more_prompt = "    "
 
 default_style = "default"
-default_multiline = False
-default_vi_mode = False
-default_mouse_support = True
+default_histfile = os.path.join("~", ".coconut_history")
+prompt_multiline = False
+prompt_vi_mode = False
+prompt_wrap_lines = True
+prompt_history_search = True
 
 mypy_path_env_var = "MYPYPATH"
 style_env_var = "COCONUT_STYLE"
+histfile_env_var = "COCONUT_HISTORY_FILE"
 
 watch_interval = .1  # seconds
 
@@ -487,7 +535,9 @@ exit_chars = (
     "\x1a",  # Ctrl-Z
 )
 
-coconut_run_args = ("--run", "--quiet", "--target", "sys")
+coconut_run_args = ("--run", "--target", "sys", "--quiet")
+coconut_run_verbose_args = ("--run", "--target", "sys")
+coconut_import_hook_args = ("--target", "sys", "--quiet")
 
 num_added_tb_layers = 3  # how many frames to remove when printing a tb
 
@@ -501,9 +551,9 @@ verbose_mypy_args = (
 
 oserror_retcode = 127
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # HIGHLIGHTER CONSTANTS:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 shebang_regex = r'coconut(?:-run)?'
 
@@ -528,11 +578,13 @@ coconut_specific_builtins = (
     "reiterable",
     "scan",
     "groupsof",
+    "memoize",
+    "TYPE_CHECKING",
     "py_chr",
     "py_filter",
     "py_hex",
     "py_input",
-    "py_input",
+    "py_raw_input",
     "py_int",
     "py_object",
     "py_oct",
@@ -583,9 +635,9 @@ new_operators = (
     "\u2026",  # ...
 )
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # ICOCONUT CONSTANTS:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 py_syntax_version = 3.6
 mimetype = "text/x-python3"
@@ -594,9 +646,9 @@ all_keywords = keywords + const_vars + reserved_vars
 
 conda_build_env_var = "CONDA_BUILD"
 
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # DOCUMENTATION CONSTANTS:
-#-----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 without_toc = """
 =======
@@ -615,6 +667,6 @@ with_toc = """
 """
 
 project = "Coconut"
-copyright = "2015-2017 Evan Hubinger, licensed under Apache 2.0"
+copyright = "2015-2018 Evan Hubinger, licensed under Apache 2.0"
 
 highlight_language = "coconut"
