@@ -175,13 +175,14 @@ min_versions = {
     # we can't upgrade this; it breaks on Python 2
     "ipython": (5, 4),
     # don't upgrade these; they break on master
-    "sphinx": (1, 5, 1),
+    "sphinx": (1, 7, 4),
     "sphinx_bootstrap_theme": (0, 4),
 }
 
 version_strictly = (
     "pyparsing",
     "ipython",
+    "prompt_toolkit",
     "sphinx",
     "sphinx_bootstrap_theme",
 )
