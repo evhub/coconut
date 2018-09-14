@@ -487,6 +487,7 @@ def main_test():
         assert True
     else:
         assert False
+    assert 4 == range(2,20) |> filter$(i-> i > 3) |> .$[0]
     return True
 
 def tco_func() = tco_func()
