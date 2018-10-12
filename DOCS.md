@@ -557,9 +557,9 @@ could_be_none()?.attr[index].method()
 (lambda result: None if result is None else result.attr[index].method())(could_be_none())
 ```
 
-### Indexing Sequences
+### Expanded Indexing for Iterable
 
-Beyond indexing standard Python sequences, Coconut supports indexing into a number of iterables, including `range` and `map`. Indexing into one of these iterables uses the same syntax as indexing into a sequence in vanilla Python.
+Beyond indexing standard Python sequences, Coconut supports indexing into a number of iterables, including `range` and `map`, which do not support random access in Python. In Coconut, indexing into an iterable of this type uses the same syntax as indexing into a sequence in vanilla Python.
 
 ##### Example
 
@@ -586,6 +586,8 @@ In order to make this work, you can explicitly use iterator slicing, which is le
 ```coconut
 range(10) |> filter$(i->i>3) |> .$[0]  # works
 ```
+
+For more information on Coconut's iterator slicing, see [here](#iterator-slicing).
 
 ### Unicode Alternatives
 
