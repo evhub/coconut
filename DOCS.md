@@ -342,6 +342,8 @@ a if b else c         ternary left short-circuit
 ===================== ==========================
 ```
 
+Note that because indexing has a greater precedence than piping, expressions of the form `x |> y[0]` are equivalent to `x |> (y[0])`.
+
 ### Lambdas
 
 Coconut provides the simple, clean `->` operator as an alternative to Python's `lambda` statements. The syntax for the `->` operator is `(parameters) -> expression` (or `parameter -> expression` for one-argument lambdas). The operator has the same precedence as the old statement, which means it will often be necessary to surround the lambda in parentheses, and is right-associative.
@@ -553,6 +555,36 @@ could_be_none()?.attr[index].method()
 ```coconut_python
 (lambda result: result if result is not None else calculate_default_value())(could_be_none())
 (lambda result: None if result is None else result.attr[index].method())(could_be_none())
+```
+
+### Indexing Sequences
+
+Beyond indexing standard Python sequences, Coconut supports indexing into a number of iterables, including `range` and `map`. Indexing into one of these iterables uses the same syntax as indexing into a sequence in vanilla Python.
+
+##### Example
+
+**Coconut:**
+```coconut
+range(0, 12, 2)[4]  # 8
+
+map((i->i*2), range(10))[2]  # 4
+```
+
+**Python:**
+Can’t be done quickly without Coconut’s iterable indexing, which requires many complicated pieces. The necessary definitions in Python can be found in the Coconut header.
+
+##### Indexing into `filter`
+
+Coconut cannot index into `filter` directly, as there is no efficient way to do so.
+
+```coconut
+range(10) |> filter$(i->i>3) |> .[0]  # doesn't work
+```
+
+In order to make this work, you can explicitly use iterator slicing, which is less efficient in the general case:
+
+```coconut
+range(10) |> filter$(i->i>3) |> .$[0]  # works
 ```
 
 ### Unicode Alternatives
