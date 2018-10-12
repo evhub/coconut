@@ -217,6 +217,8 @@ class Command(object):
                 package = True
             elif args.standalone:
                 package = False
+            elif args.watch:
+                package = True
             else:
                 package = None  # auto-decide package
 
