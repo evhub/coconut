@@ -537,9 +537,9 @@ _Can't be done without a complicated iterator slicing function and inspection of
 
 ### None Coalescing
 
-Coconut provides `??` as a `None`-coalescing operator, similar to the `??` null-coalescing operator in C#. Coconut implements all of the [PEP 505](https://www.python.org/dev/peps/pep-0505/) proposal to add `None`-aware operators to Python.
+Coconut provides `??` as a `None`-coalescing operator, similar to the `??` null-coalescing operator in C# and Swift. Additionally, Coconut implements all of the `None`-aware operators proposed in [PEP 505](https://www.python.org/dev/peps/pep-0505/).
 
-Coconut's `None`-coalescing operator evaluates to its left operand if that operand is not `None`, otherwise its right operand. The expression `foo ?? bar` evaluates to `foo` as long as it isn't `None` and to `bar` if it is.
+Coconut's `??` operator evaluates to its left operand if that operand is not `None`, otherwise its right operand. The expression `foo ?? bar` evaluates to `foo` as long as it isn't `None`, and to `bar` if it is.
 The `None`-coalescing operator is short-circuiting, such that if the left operand is not `None`, the right operand won't be evaluated. This allows the right operand to be a potentially expensive operation without incurring any unnecessary cost.
 
 The `None`-coalescing operator has a precedence in-between infix function calls and composition pipes, and is left-associative.
@@ -566,13 +566,20 @@ foo ??= 10  # foo is still 1
 bar ??= 10  # bar is now 10
 ```
 
+As described with the standard `??` operator, the `None`-coalescing assignment operator will not evaluate the right hand side unless the left hand side is `None`.
+
+```coconut
+baz = 0
+baz ??= expensive_task()  # right hand side isn't evaluated
+```
+
 #### Other None-aware Operators
 
-Coconut also allows a single `?` before attribute access, function calling, partial application, and (iterator) indexing to short-circuit the rest of the evaluation if everything so far evaluates to `None`. This is also known as a "safe navigation" operator.
+Coconut also allows a single `?` before attribute access, function calling, partial application, and (iterator) indexing to short-circuit the rest of the evaluation if everything so far evaluates to `None`. This is sometimes known as a "safe navigation" operator.
 
 When using a `None`-aware operator for member access, either for a method or an attribute, the syntax is `obj?.method()` or `obj?.attr` respectively. `obj?.attr` is equivalent to `obj.attr if obj is not None else obj`. This does not prevent an `AttributeError` if `attr` is not an attribute or method of `obj`.
 
-The `None`-aware indexing operator is simply `?[]`. `seq?[index]` is equivalent to `seq[index] is seq is not None else seq`. Using this operator will not prevent an `IndexError` if `index` is outside the bounds of `seq`.
+The `None`-aware indexing operator is used identically to normal indexing, using `?[]` instead of `[]`. `seq?[index]` is equivalent to the expression `seq[index] is seq is not None else seq`. Using this operator will not prevent an `IndexError` if `index` is outside the bounds of `seq`.
 
 ##### Example
 
