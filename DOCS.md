@@ -537,25 +537,67 @@ _Can't be done without a complicated iterator slicing function and inspection of
 
 ### None Coalescing
 
-Coconut provides `??` as a `None`-coalescing operator, similar to the `??` null-coalescing operator in C#. The `None`-coalescing operator evaluates to its left operand if that operand is not `None`, otherwise its right operand. The `None`-coalescing operator is short-circuiting, such that if the left operand is not `None`, it will not evaluate the right operand. The `None`-coalescing operator has a precedence in-between infix function calls and composition pipes, and is left-associative. The in-place operator is `??=`.
+Coconut provides `??` as a `None`-coalescing operator, similar to the `??` null-coalescing operator in C#. Coconut implements all of the [PEP 505](https://www.python.org/dev/peps/pep-0505/) proposal to add `None`-aware operators to Python.
 
-Coconut also allows a single `?` before attribute access, function calling, partial application, and (iterator) indexing to short-circuit the rest of the evaluation if everything so far evaluates to `None`. Thus, `a?.b` is equivalent to `a.b if a is not None else a`.
+Coconut's `None`-coalescing operator evaluates to its left operand if that operand is not `None`, otherwise its right operand. The expression `foo ?? bar` evaluates to `foo` as long as it isn't `None` and to `bar` if it is.
+The `None`-coalescing operator is short-circuiting, such that if the left operand is not `None`, the right operand won't be evaluated. This allows the right operand to be a potentially expensive operation without incurring any unnecessary cost.
+
+The `None`-coalescing operator has a precedence in-between infix function calls and composition pipes, and is left-associative.
 
 ##### Example
 
 **Coconut:**
 ```coconut
 could_be_none() ?? calculate_default_value()
-could_be_none()?.attr[index].method()
 ```
 
 **Python:**
 ```coconut_python
 (lambda result: result if result is not None else calculate_default_value())(could_be_none())
+```
+#### Coalescing Assignment Operator
+
+The in-place assignment operator is `??=`, which allows conditionally setting a variable if it is currently `None`.
+
+```coconut
+foo = 1
+bar = None
+foo ??= 10  # foo is still 1
+bar ??= 10  # bar is now 10
+```
+
+#### Other None-aware Operators
+
+Coconut also allows a single `?` before attribute access, function calling, partial application, and (iterator) indexing to short-circuit the rest of the evaluation if everything so far evaluates to `None`. This is also known as a "safe navigation" operator.
+
+When using a `None`-aware operator for member access, either for a method or an attribute, the syntax is `obj?.method()` or `obj?.attr` respectively. `obj?.attr` is equivalent to `obj.attr if obj is not None else obj`. This does not prevent an `AttributeError` if `attr` is not an attribute or method of `obj`.
+
+The `None`-aware indexing operator is simply `?[]`. `seq?[index]` is equivalent to `seq[index] is seq is not None else seq`. Using this operator will not prevent an `IndexError` if `index` is outside the bounds of `seq`.
+
+##### Example
+
+**Coconut:**
+```coconut
+could_be_none?.attr     # attribute access
+could_be_none?(arg)     # function calling
+could_be_none?.method() # method calling
+could_be_none?$(arg)    # partial application
+could_be_none()?[0]     # indexing
+could_be_none()?.attr[index].method()
+```
+
+**Python:**
+```coconut_python
+import functools
+(lambda result: None if result is None else result.attr)(could_be_none())
+(lambda result: None if result is None else result(arg))(could_be_none())
+(lambda result: None if result is None else result.method())(could_be_none())
+(lambda result: None if result is None else functools.partial(result, arg))(could_be_none())
+(lambda result: None if result is None else result[0])(could_be_none())
 (lambda result: None if result is None else result.attr[index].method())(could_be_none())
 ```
 
-### Expanded Indexing for Iterable
+### Expanded Indexing for Iterables
 
 Beyond indexing standard Python sequences, Coconut supports indexing into a number of iterables, including `range` and `map`, which do not support random access in Python. In Coconut, indexing into an iterable of this type uses the same syntax as indexing into a sequence in vanilla Python.
 
