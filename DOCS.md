@@ -1256,8 +1256,6 @@ _Note: Tail call optimization (though not tail recursion elimination) will work 
 
 If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for tail call optimization, or the corresponding criteria for [`recursive_iterator`](#recursive-iterator), either of which should prevent such errors.
 
-_Note: Tail call optimization (though not tail recursion elimination) will be turned off if you pass the `--no-tco` command-line option, which is useful if you are having trouble reading your tracebacks and/or need maximum performance._
-
 ##### Example
 
 **Coconut:**
@@ -1285,6 +1283,28 @@ _Showcases tail call optimization._
 
 **Python:**
 _Can't be done without rewriting the function(s)._
+
+#### --no-tco flag
+_Note: Tail call optimization will be turned off if you pass the `--no-tco` command-line option, which is useful if you are having trouble reading your tracebacks and/or need maximum performance. `--no-tco` does not disable tail recursion elimination.
+This is because tail recursion elimination is usually faster than doing nothing, while other types of tail call optimization are usually slower than doing nothing.
+Tail recursion elimination results in a big performance win because Python has a fairly large function call overhead. By unwinding a recursive function, far fewer function calls need to be made.
+When the `--no-tco` flag is disabled, Coconut will attempt to do all types of tail call optimizations, handling non-recursive tail calls, split pattern-matching functions, mutual recursion, and tail recursion. When the `--no-tco` flag is enabled, Coconut will no longer perform any tail call optimizations other than tail recursion elimination.
+
+#### Tail Recursion Elimination and Python lambdas
+
+Coconut does not perform tail recursion elimination in functions that utilize lambdas in their tail call. This is because of the way that Python handles lambdas.
+Each lambda stores a pointer to the namespace enclosing it, rather than a copy of the namespace. Thus, if the Coconut compiler tries to recycle anything in the namespace that produced the lambda, which needs to be done for TRE, the lambda can be changed retroactively.
+A simple example demonstrating this behavior in Python3 is below:
+
+```python
+x = 1
+foo = lambda: x
+print(foo())  # 1
+x = 2         # Directly alter the values in the namespace enclosing foo
+print(foo())  # 2 (!)
+```
+
+Because this could have unintended and potentially damaging consequences, Coconut opts to not perform TRE on any function with a lambda in its tail call.
 
 ### Assignment Functions
 
