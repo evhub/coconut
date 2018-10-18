@@ -1178,6 +1178,18 @@ Additionally, Coconut adds special syntax for making type annotations easier and
 ```
 where `typing` is the Python 3.5 built-in [`typing` module](https://docs.python.org/3/library/typing.html).
 
+_Note: `<type>[]` does not map onto `typing.List[<int>]` but onto `typing.Sequence[<int>]`._
+There are two reasons that this design choice was made. When writing in an idiomatic functional style, assignment should be rare and tuples should be common.
+Using `Sequence` covers both cases, accommodating tuples and lists and preventing indexed assignment.
+When an indexed assignment is attempted into a variable typed with `Sequence`, MyPy will generate an error:
+
+```
+foo: int[] = [0, 1, 2, 3, 4, 5]
+foo[0] = 1   # MyPy error: "Unsupported target for indexed assignment"
+```
+
+If you want to use `List` instead (if you want to support indexed assignment), use the standard Python 3.5 variable type annotation syntax: `foo: List[<type>]`.
+
 ##### Example
 
 **Coconut:**
