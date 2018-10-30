@@ -105,7 +105,7 @@ arguments.add_argument(
 arguments.add_argument(
     "-w", "--watch",
     action="store_true",
-    help="watch a directory and recompile on changes",
+    help="watch a directory and recompile on changes (by default will compile source as part of a package unless --standalone is given)",
 )
 
 arguments.add_argument(
