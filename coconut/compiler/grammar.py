@@ -487,6 +487,11 @@ def make_suite_handle(tokens):
     return "\n" + openindent + tokens[0] + closeindent
 
 
+def invalid_return_stmt_handle(_, loc, __):
+    """Raise a syntax error if encountered a return statement where an implicit return is expected."""
+    raise CoconutDeferredSyntaxError("Expected expression but got return statement", loc)
+
+
 def implicit_return_handle(tokens):
     """Add an implicit return."""
     internal_assert(len(tokens) == 1, "invalid implicit return tokens", tokens)
@@ -1484,7 +1489,10 @@ class Grammar(object):
     )
     where_stmt = attach(unsafe_simple_stmt_item + keyword("where").suppress() - where_suite, where_stmt_handle)
 
-    implicit_return = attach(testlist, implicit_return_handle)
+    implicit_return = (
+        attach(return_stmt, invalid_return_stmt_handle)
+        | attach(testlist, implicit_return_handle)
+    )
     implicit_return_stmt = (
         attach(implicit_return + keyword("where").suppress() - where_suite, where_stmt_handle)
         | condense(implicit_return + newline)

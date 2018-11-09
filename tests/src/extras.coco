@@ -93,6 +93,8 @@ def main():
     assert_raises(-> parse("f''"), CoconutException)
     assert_raises(-> parse("f$()"), CoconutSyntaxError)
     assert_raises(-> parse("f(*x, y)"), CoconutSyntaxError)
+    assert_raises(-> parse("def f(x) = return x"), CoconutSyntaxError)
+    assert_raises(-> parse("def f(x) =\n return x"), CoconutSyntaxError)
     setup(target="2.7")
     assert parse("from io import BytesIO", mode="debug") == "from io import BytesIO"
     assert_raises(-> parse("def f(*, x=None) = x"), CoconutTargetError)
