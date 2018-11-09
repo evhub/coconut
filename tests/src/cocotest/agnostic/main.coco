@@ -267,6 +267,8 @@ def main_test():
     assert issubclass(abc_, object)
     assert isinstance(abc(10), object)
     assert isinstance(abc_(10), object)
+    assert hash(abc(10)) == hash(abc(10))
+    assert hash(abc(10)) != hash(abc_(10)) != hash((10,))
     class aclass
     assert issubclass(aclass, object)
     assert isinstance(aclass(), object)
