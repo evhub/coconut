@@ -1260,6 +1260,8 @@ class Compiler(Grammar):
 __ne__ = _coconut.object.__ne__
 def __eq__(self, other):
     {oind}return self.__class__ is other.__class__ and _coconut.tuple.__eq__(self, other)
+{cind}def __hash__(self):
+    {oind}return _coconut.tuple.__hash__(self) ^ hash(self.__class__)
 {cind}'''.format(
             oind=openindent,
             cind=closeindent,
