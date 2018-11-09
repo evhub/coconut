@@ -32,6 +32,18 @@ def assert_raises(c, exc):
     else:
         raise AssertionError("%s failed to raise exception %s" % (c, exc))
 
+def unwrap_future(maybe_future):
+    """
+    If the passed value looks like a Future, return its result, otherwise return the value unchanged.
+
+    This is needed for the CoconutKernel test to be compatible with ipykernel version 5 and newer,
+    where IPyKernel.do_execute is a coroutine.
+    """
+
+    if hasattr(maybe_future, 'result') and callable(maybe_future.result):
+        return maybe_future.result()
+    return maybe_future
+
 def main():
     if IPY:
         import coconut.highlighter  # type: ignore
@@ -101,7 +113,7 @@ def main():
     assert parse("def f(*, x=None) = x")
     if CoconutKernel is not None:
         k = CoconutKernel()
-        exec_result = k.do_execute("derp = pow$(?, 2)", False, True, {"two": "(+)(1, 1)"}, True)
+        exec_result = k.do_execute("derp = pow$(?, 2)", False, True, {"two": "(+)(1, 1)"}, True) |> unwrap_future
         assert exec_result["status"] == "ok"
         assert exec_result["user_expressions"]["two"]["data"]["text/plain"] == "2"
         assert k.do_is_complete("if abc:")["status"] == "incomplete"
