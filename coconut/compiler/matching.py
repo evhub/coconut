@@ -33,6 +33,7 @@ from coconut.constants import (
     closeindent,
     const_vars,
     sentinel_var,
+    function_match_error_var,
 )
 from coconut.compiler.util import paren_join
 
@@ -251,6 +252,11 @@ class Matcher(object):
 
     def match_in_args_kwargs(self, match_args, args, kwargs, allow_star_args=False):
         """Matches against args or kwargs."""
+
+        # before everything, pop the FunctionMatchError from context
+        self.add_def(function_match_error_var + " = _coconut_get_function_match_error()")
+        self.increment()
+
         req_len = 0
         arg_checks = {}
         to_match = []  # [(move_down, match, against)]

@@ -399,15 +399,41 @@ def recursive_iterator(func):
             tee_store[key], to_return = _coconut_tee(tee_store.get(key) or func(*args, **kwargs))
         return to_return
     return recursive_iterator_func
+class _coconut_FunctionMatchErrorContext(object):
+    from threading import local; threadlocal_var = local(); del local
+    __slots__ = ('exc_class', 'taken')
+    def __init__(self, exc_class):
+        self.exc_class = exc_class
+        self.taken = False
+    def __enter__(self):
+        try:
+            self.threadlocal_var.contexts.append(self)
+        except AttributeError:
+            self.threadlocal_var.contexts = [self]
+    def __exit__(self, type, value, traceback):
+        self.threadlocal_var.contexts.pop()
+    @classmethod
+    def get(cls):
+        try:
+            ctx = cls.threadlocal_var.contexts[-1]
+        except (AttributeError, IndexError):
+            return MatchError
+        if not ctx.taken:
+            ctx.taken = True
+            return ctx.exc_class
+        return MatchError
+_coconut_get_function_match_error = _coconut_FunctionMatchErrorContext.get
 def addpattern(base_func):
     """Decorator to add a new case to a pattern-matching function,
     where the new case is checked last."""
     def pattern_adder(func):
+        FunctionMatchError = type(_coconut_str("MatchError"), (MatchError,), {{}})
         {tco_decorator}@_coconut.functools.wraps(func)
         def add_pattern_func(*args, **kwargs):
             try:
-                return base_func(*args, **kwargs)
-            except _coconut_MatchError:
+                with _coconut_FunctionMatchErrorContext(FunctionMatchError):
+                    return base_func(*args, **kwargs)
+            except FunctionMatchError:
                 return {tail_call_func_args_kwargs}
         return add_pattern_func
     return pattern_adder

@@ -114,6 +114,9 @@ class MatchError(Exception): ...
 _coconut_MatchError = MatchError
 
 
+def _coconut_get_function_match_error() -> _t.Type[MatchError]: ...
+
+
 def _coconut_tco(func: _FUNC) -> _FUNC: ...
 def _coconut_tail_call(func, *args, **kwargs):
     return func(*args, **kwargs)

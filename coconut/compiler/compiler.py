@@ -72,6 +72,7 @@ from coconut.constants import (
     checksum,
     reserved_prefix,
     case_check_var,
+    function_match_error_var,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -1409,14 +1410,14 @@ def __eq__(self, other):
             key, val, comp = tokens
             return "dict(((" + key + "), (" + val + ")) " + comp + ")"
 
-    def pattern_error(self, original, loc, value_var, check_var):
+    def pattern_error(self, original, loc, value_var, check_var, match_error_class='_coconut_MatchError'):
         """Construct a pattern-matching error message."""
         base_line = clean(self.reformat(getline(loc, original)))
         line_wrap = self.wrap_str_of(base_line)
         repr_wrap = self.wrap_str_of(ascii(base_line))
         return (
             "if not " + check_var + ":\n" + openindent
-            + match_err_var + ' = _coconut_MatchError("pattern-matching failed for " '
+            + match_err_var + " = " + match_error_class + '("pattern-matching failed for " '
             + repr_wrap + ' " in " + _coconut.repr(_coconut.repr(' + value_var + ")))\n"
             + match_err_var + ".pattern = " + line_wrap + "\n"
             + match_err_var + ".value = " + value_var
@@ -1457,7 +1458,8 @@ def __eq__(self, other):
             match_check_var + " = False\n"
             + matcher.out()
             # we only include match_to_args_var here because match_to_kwargs_var is modified during matching
-            + self.pattern_error(original, loc, match_to_args_var, match_check_var) + closeindent
+            + self.pattern_error(original, loc, match_to_args_var, match_check_var, function_match_error_var)
+            + closeindent
         )
         return before_docstring, after_docstring
 
