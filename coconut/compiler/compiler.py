@@ -944,11 +944,11 @@ class Compiler(Grammar):
         """Get an end line comment. CoconutInternalExceptions should always be caught and complained."""
         if self.keep_lines:
             if not 1 <= ln <= len(self.original_lines) + 1:
-                raise CoconutInternalException(
+                complain(CoconutInternalException(
                     "out of bounds line number", ln,
                     "not in range [1, " + str(len(self.original_lines) + 1) + "]",
-                )
-            elif ln == len(self.original_lines) + 1:  # trim too large
+                ))
+            if ln >= len(self.original_lines) + 1:  # trim too large
                 lni = -1
             else:
                 lni = ln - 1
