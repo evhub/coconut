@@ -213,15 +213,23 @@ class Command(object):
             else:
                 dest = args.dest
 
+            source = fixpath(args.source)
+
             if args.package or self.mypy:
                 package = True
             elif args.standalone:
                 package = False
             else:
-                package = None  # auto-decide package
+                # auto-decide package
+                if os.path.isfile(source):
+                    package = True
+                elif os.path.isdir(source):
+                    package = False
+                else:
+                    raise CoconutException("could not find source path", source)
 
             with self.running_jobs(exit_on_error=not args.watch):
-                filepaths = self.compile_path(args.source, dest, package, args.run or args.interact, args.force)
+                filepaths = self.compile_path(source, dest, package, args.run or args.interact, args.force)
             self.run_mypy(filepaths)
 
         elif (
@@ -254,7 +262,7 @@ class Command(object):
         )):
             self.start_prompt()
         if args.watch:
-            self.watch(args.source, dest, package, args.run, args.force)
+            self.watch(source, dest, package, args.run, args.force)
 
     def register_error(self, code=1, errmsg=None):
         """Update the exit code."""
@@ -285,19 +293,14 @@ class Command(object):
                 printerr(report_this_text)
             self.register_error(errmsg=err.__class__.__name__)
 
-    def compile_path(self, path, write=True, package=None, *args, **kwargs):
+    def compile_path(self, path, write=True, package=True, *args, **kwargs):
         """Compile a path and returns paths to compiled files."""
-        path = fixpath(path)
         if not isinstance(write, bool):
             write = fixpath(write)
         if os.path.isfile(path):
-            if package is None:
-                package = False
             destpath = self.compile_file(path, write, package, *args, **kwargs)
             return [destpath] if destpath is not None else []
         elif os.path.isdir(path):
-            if package is None:
-                package = True
             return self.compile_folder(path, write, package, *args, **kwargs)
         else:
             raise CoconutException("could not find source path", path)
@@ -644,7 +647,7 @@ class Command(object):
                 run_args = [jupyter] + args
             self.register_error(run_cmd(run_args, raise_errs=False), errmsg="Jupyter error")
 
-    def watch(self, source, write=True, package=None, run=False, force=False):
+    def watch(self, source, write=True, package=True, run=False, force=False):
         """Watch a source and recompiles on change."""
         from coconut.command.watch import Observer, RecompilationWatcher
 
