@@ -222,9 +222,9 @@ class Command(object):
             else:
                 # auto-decide package
                 if os.path.isfile(source):
-                    package = True
-                elif os.path.isdir(source):
                     package = False
+                elif os.path.isdir(source):
+                    package = True
                 else:
                     raise CoconutException("could not find source path", source)
 
