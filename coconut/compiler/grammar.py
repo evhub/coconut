@@ -632,13 +632,13 @@ def tco_return_handle(tokens):
         return "return _coconut_tail_call(" + tokens[0] + ", " + tokens[1][1:]  # tokens[1] contains )\n
 
 
-def split_func_name_args_params_handle(tokens):
+def split_func_handle(tokens):
     """Process splitting a function into name, params, and args."""
     internal_assert(len(tokens) == 2, "invalid function definition splitting tokens", tokens)
-    func_name = tokens[0]
+    func_name, func_arg_tokens = tokens
     func_args = []
     func_params = []
-    for arg in tokens[1]:
+    for arg in func_arg_tokens:
         if len(arg) > 1 and arg[0] in ("*", "**"):
             func_args.append(arg[1])
         elif arg[0] != "*":
@@ -1466,9 +1466,9 @@ class Grammar(object):
         + Group(match + Optional(equals.suppress() + test))
         + rparen.suppress(),
     ))
-    name_match_funcdef_ref = dotted_name + lparen.suppress() + match_args_list + match_guard + rparen.suppress()
-    op_match_funcdef_ref = op_match_funcdef_arg + op_funcdef_name + op_match_funcdef_arg + match_guard
-    base_match_funcdef = trace(keyword("def").suppress() + (op_match_funcdef | name_match_funcdef))
+    name_match_funcdef_ref = keyword("def").suppress() + dotted_name + lparen.suppress() + match_args_list + match_guard + rparen.suppress()
+    op_match_funcdef_ref = keyword("def").suppress() + op_match_funcdef_arg + op_funcdef_name + op_match_funcdef_arg + match_guard
+    base_match_funcdef = trace(op_match_funcdef | name_match_funcdef)
     def_match_funcdef = trace(attach(
         base_match_funcdef
         + colon.suppress()
@@ -1481,7 +1481,12 @@ class Grammar(object):
         ),
         join_match_funcdef,
     ))
-    match_funcdef = Optional(keyword("match").suppress()) + def_match_funcdef
+    match_def_modifiers = trace(Optional(
+        # we don't suppress addpattern so its presence can be detected later
+        keyword("match").suppress() + Optional(keyword("addpattern"))
+        | keyword("addpattern") + Optional(keyword("match")).suppress(),
+    ))
+    match_funcdef = addspace(match_def_modifiers + def_match_funcdef)
 
     where_suite = colon.suppress() - Group(
         newline.suppress() + indent.suppress() - OneOrMore(simple_stmt) - dedent.suppress()
@@ -1507,28 +1512,35 @@ class Grammar(object):
         condense(addspace(keyword("def") + base_funcdef) + end_func_equals) - math_funcdef_suite,
         math_funcdef_handle,
     ))
-    math_match_funcdef = Optional(keyword("match").suppress()) + trace(attach(
-        base_match_funcdef
-        + equals.suppress()
-        - Optional(docstring)
-        - (
-            attach(implicit_return_stmt, make_suite_handle)
-            | newline.suppress() - indent.suppress()
+    math_match_funcdef = addspace(
+        match_def_modifiers
+        + trace(attach(
+            base_match_funcdef
+            + equals.suppress()
             - Optional(docstring)
-            - attach(math_funcdef_body, make_suite_handle)
-            - dedent.suppress()
-        ),
-        join_match_funcdef,
-    ))
+            - (
+                attach(implicit_return_stmt, make_suite_handle)
+                | newline.suppress() - indent.suppress()
+                - Optional(docstring)
+                - attach(math_funcdef_body, make_suite_handle)
+                - dedent.suppress()
+            ),
+            join_match_funcdef,
+        )),
+    )
 
     async_stmt = Forward()
     async_stmt_ref = addspace(keyword("async") + (with_stmt | for_stmt))
 
     async_funcdef = keyword("async").suppress() + (funcdef | math_funcdef)
-    async_match_funcdef = (
-        Optional(keyword("match")) + keyword("async")
-        | keyword("async") + Optional(keyword("match"))
-    ).suppress() + (def_match_funcdef | math_match_funcdef)
+    async_match_funcdef = addspace(trace(
+        # we don't suppress addpattern so its presence can be detected later
+        keyword("match").suppress() + keyword("addpattern") + keyword("async").suppress()
+        | keyword("addpattern") + keyword("match").suppress() + keyword("async").suppress()
+        | keyword("match").suppress() + keyword("async").suppress() + Optional(keyword("addpattern"))
+        | keyword("addpattern") + keyword("async").suppress() + Optional(keyword("match")).suppress()
+        | keyword("async").suppress() + match_def_modifiers,
+    ) + (def_match_funcdef | math_match_funcdef))
 
     datadef = Forward()
     data_args = Group(Optional(lparen.suppress() + ZeroOrMore(
@@ -1664,11 +1676,14 @@ class Grammar(object):
         comma + Optional(passthrough),  # implicitly suppressed
     )))
 
-    split_func_name_args_params = attach(
-        (start_marker - keyword("def")).suppress() - dotted_base_name - lparen.suppress()
-        - parameters_tokens - rparen.suppress(),
-        split_func_name_args_params_handle,
-        greedy=True,  # this is the root in what it's used for, so might as well evaluate greedily
+    split_func = attach(
+        start_marker.suppress()
+        - keyword("def").suppress()
+        - dotted_base_name
+        - lparen.suppress() - parameters_tokens - rparen.suppress(),
+        split_func_handle,
+        # this is the root in what it's used for, so might as well evaluate greedily
+        greedy=True,
     )
 
     stores_scope = (

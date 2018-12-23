@@ -229,12 +229,10 @@ def is_odd(n) =
     is_even(n-1)
 
 def is_even_(0) = True
-@addpattern(is_even_)  # type: ignore
-def is_even_(n) = is_odd_(n-1)
+addpattern def is_even_(n) = is_odd_(n-1)  # type: ignore
 
 def is_odd_(0) = False
-@addpattern(is_odd_)  # type: ignore
-def is_odd_(n) = is_even_(n-1)
+addpattern def is_odd_(n) = is_even_(n-1)  # type: ignore
 
 # TCO/TRE tests:
 
@@ -349,14 +347,13 @@ def factorial5(value):
     else:
         return None
     raise TypeError()
+
 match def fact(n) = fact(n, 1)  # type: ignore
-@addpattern(fact)  # type: ignore
-match def fact(0, acc) = acc
-@addpattern(fact)  # type: ignore
-match def fact(n, acc) = fact(n-1, acc*n)
+match addpattern def fact(0, acc) = acc  # type: ignore
+addpattern match def fact(n, acc) = fact(n-1, acc*n)  # type: ignore
+
 def factorial(0, acc=1) = acc
-@addpattern(factorial)  # type: ignore
-def factorial(n is int, acc=1 if n > 0) =
+addpattern def factorial(n is int, acc=1 if n > 0) =  # type: ignore
     """this is a docstring"""
     factorial(n-1, acc*n)
 
@@ -629,12 +626,10 @@ except NameError:
         return pattern_prepender
 
 def add_int_or_str_1(x is int) = x + 1
-@addpattern(add_int_or_str_1)  # type: ignore
-def add_int_or_str_1(x is str) = x + "1"
+addpattern def add_int_or_str_1(x is str) = x + "1"  # type: ignore
 
 def coercive_add(a is int, b) = a + int(b)
-@addpattern(coercive_add)  # type: ignore
-def coercive_add(a is str, b) = a + str(b)
+addpattern def coercive_add(a is str, b) = a + str(b)  # type: ignore
 
 @addpattern(ident)
 def still_ident(x) =
@@ -647,12 +642,10 @@ def not_ident(x) = "bar"
 # Pattern-matching functions with guards
 
 def pattern_abs(x if x < 0) = -x
-@addpattern(pattern_abs)  # type: ignore
-def pattern_abs(x) = x
+addpattern def pattern_abs(x) = x  # type: ignore
 
 def `pattern_abs_` (x) if x < 0 = -x
-@addpattern(pattern_abs_)  # type: ignore
-def `pattern_abs_` (x) = x
+addpattern def `pattern_abs_` (x) = x  # type: ignore
 
 # Recursive iterator
 
@@ -743,8 +736,7 @@ def anything_func(*args: int, **kwargs: int) -> None: pass
 # Enhanced Pattern-Matching
 
 def fact_(0, acc=1) = acc
-@addpattern(fact_)  # type: ignore
-def fact_(n is int, acc=1 if n > 0) = fact_(n-1, acc*n)
+addpattern def fact_(n is int, acc=1 if n > 0) = fact_(n-1, acc*n)  # type: ignore
 
 def x_is_int(x is int) = x
 
@@ -875,8 +867,7 @@ def ridiculously_recursive_(n):
 def fib(n if n < 2) = n
 
 @memoize()  # type: ignore
-@addpattern(fib)
-def fib(n) = fib(n-1) + fib(n-2)
+addpattern def fib(n) = fib(n-1) + fib(n-2)  # type: ignore
 
 # MapReduce
 from collections import defaultdict
@@ -887,8 +878,7 @@ join_pairs1 = reduce$((def (acc, (k, v)) ->
 ), ?, defaultdict(list))
 
 def join_pairs2([]) = defaultdict(list)
-@addpattern(join_pairs2)  # type: ignore
-def join_pairs2([(k, v)] + tail) =
+addpattern def join_pairs2([(k, v)] + tail) =  # type: ignore
     result = join_pairs2(tail)
     result[k] += v
     result

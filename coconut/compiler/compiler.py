@@ -1441,6 +1441,7 @@ def __eq__(self, other):
             func, matches, cond = tokens
         else:
             raise CoconutInternalException("invalid match function definition tokens", tokens)
+
         matcher = Matcher(loc, match_check_var)
 
         req_args, def_args, star_arg, kwd_args, dubstar_arg = split_args_list(matches, loc)
@@ -1544,9 +1545,9 @@ def __eq__(self, other):
                 "def " + name + params + ":\n" + body,
             )
         else:
-            params.insert(0, name)  # construct match tokens
+            match_tokens = [name] + list(params)
             self.stmt_lambdas.append(
-                "".join(self.name_match_funcdef_handle(original, loc, params))
+                "".join(self.name_match_funcdef_handle(original, loc, match_tokens))
                 + body,
             )
         return name
@@ -1696,18 +1697,39 @@ def __eq__(self, other):
         else:
             raise CoconutInternalException("invalid function definition tokens", tokens)
 
-        # extract information about the function
+        # process tokens
         raw_lines = funcdef.splitlines(True)
         def_stmt = raw_lines.pop(0)
+
+        # detect addpattern functions
+        if def_stmt.startswith("addpattern def"):
+            def_stmt = def_stmt[len("addpattern "):]
+            addpattern = True
+        elif def_stmt.startswith("def"):
+            addpattern = False
+        else:
+            raise CoconutInternalException("invalid function definition statement", def_stmt)
+
+        # extract information about the function
         func_name, func_args, func_params = None, None, None
         with self.complain_on_err():
-            func_name, func_args, func_params = parse(self.split_func_name_args_params, def_stmt)
+            func_name, func_args, func_params = parse(self.split_func, def_stmt)
 
+        # handle addpattern functions
+        if addpattern:
+            if func_name is None:
+                raise CoconutInternalException("could not find name in addpattern function definition", def_stmt)
+            # binds most tightly, except for TCO
+            decorators += "@_coconut_addpattern(" + func_name + ")\n"
+
+        # handle dotted function definition
         undotted_name = None  # the function __name__ if func_name is a dotted name
         if func_name is not None:
             if "." in func_name:
                 undotted_name = func_name.rsplit(".", 1)[-1]
-                def_stmt = def_stmt.replace(func_name, undotted_name)
+                def_stmt_pre_lparen, def_stmt_post_lparen = def_stmt.split("(", 1)
+                def_stmt_pre_lparen = def_stmt_pre_lparen.replace(func_name, undotted_name)
+                def_stmt = def_stmt_pre_lparen + "(" + def_stmt_post_lparen
 
         # handle async functions
         if is_async:

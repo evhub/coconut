@@ -352,12 +352,11 @@ def factorial(n):
         raise TypeError("the argument to factorial must be an integer >= 0")
 ```
 
-By making use of the [Coconut built-in `addpattern`](DOCS.html#addpattern), we can take that from three indentation levels down to one. Take a look:
+By making use of the [Coconut `addpattern` syntax](DOCS.html#addpattern), we can take that from three indentation levels down to one. Take a look:
 ```
 def factorial(0) = 1
 
-@addpattern(factorial)
-def factorial(n is int if n > 0) =
+addpattern def factorial(n is int if n > 0) =
     """Compute n! where n is an integer >= 0."""
     range(1, n+1) |> reduce$(*)
 
@@ -373,14 +372,13 @@ First, assignment function notation. This one's pretty straightforward. If a fun
 
 Second, pattern-matching function definition. Pattern-matching function definition does exactly that—pattern-matches against all the arguments that are passed to the function. Unlike normal function definition, however, if the pattern doesn't match (if for example the wrong number of arguments are passed), your function will raise a `MatchError`. Finally, like destructuring assignment, if you want to be more explicit about using pattern-matching function definition, you can add a `match` before the `def`.
 
-Third, `addpattern`. `addpattern` takes one argument, a previously-defined pattern-matching function, and returns a decorator that decorates a new pattern-matching function by adding the new pattern as an additional case to the old patterns. Thus, `addpattern` can be thought of as doing exactly what it says—it adds a new pattern to an existing pattern-matching function.
+Third, `addpattern`. `addpattern` creates a new pattern-matching function by adding the new pattern as an additional case to the old pattern-matching function it is replacing. Thus, `addpattern` can be thought of as doing exactly what it says—it adds a new pattern to an existing pattern-matching function.
 
 Finally, not only can we rewrite the iterative approach using `addpattern`, as we did above, we can also rewrite the recursive approach using `addpattern`, like so:
 ```coconut
 def factorial(0) = 1
 
-@addpattern(factorial)
-def factorial(n is int if n > 0) =
+addpattern def factorial(n is int if n > 0) =
     """Compute n! where n is an integer >= 0."""
     n * factorial(n - 1)
 
@@ -402,8 +400,7 @@ First up is `quick_sort` for lists. We're going to use a recursive `addpattern`-
 ```coconut
 def quick_sort([]) = []
 
-@addpattern(quick_sort)
-def quick_sort([head] + tail) =
+addpattern def quick_sort([head] + tail) =
     """Sort the input sequence using the quick sort algorithm."""
     quick_sort(left) + [head] + quick_sort(right) where:
         left = [x for x in tail if x < head]

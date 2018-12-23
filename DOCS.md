@@ -1387,6 +1387,27 @@ range(5) |> last_two |> print
 **Python:**
 _Can't be done without a long series of checks at the top of the function. See the compiled code for the Python syntax._
 
+### `addpattern` Functions
+
+Coconut provides the `addpattern def` syntax as a shortcut for the full
+```coconut
+@addpattern(func)
+match def func(...):
+  ...
+```
+syntax using the [`addpattern`](#addpattern) decorator.
+
+##### Example
+
+**Coconut:**
+```coconut
+def factorial(0) = 1
+addpattern def factorial(n) = n * factorial(n - 1)
+```
+
+**Python:**
+_Can't be done without a complicated decorator definition and a long series of checks for each pattern-matching. See the compiled code for the Python syntax._
+
 ### Infix Functions
 
 Coconut allows for infix function calling, where an expression that evaluates to a function is surrounded by backticks and then can have arguments placed in front of or behind it. Infix calling has a precedence in-between chaining and `None`-coalescing, and is left-associative. Additionally, infix notation supports a lambda as the last argument, despite lambdas having a lower precedence. Thus, ``a `func` b -> c`` is equivalent to `func(a, b -> c)`.
@@ -1658,7 +1679,7 @@ def addpattern(base_func):
     return pattern_adder
 ```
 
-Note that the function taken by `addpattern` must be a pattern-matching function. If `addpattern` receives a non pattern-matching function, the initial function with not raise `MatchError`. Thus, if a later function was meant to be called, `addpattern` will not know that the first match failed and the correct path will never be reached.
+Note that the function taken by `addpattern` must be a pattern-matching function. If `addpattern` receives a non pattern-matching function, the function with not raise `MatchError`, and `addpattern` won't be able to detect the failed match. Thus, if a later function was meant to be called, `addpattern` will not know that the first match failed and the correct path will never be reached.
 
 For example, the following code raises a `TypeError`:
 ```coconut
@@ -1673,21 +1694,19 @@ print_type()  # appears to work
 print_type(1) # TypeError: print_type() takes 0 positional arguments but 1 was given
 ```
 
-This can be fixed by using the `match` keyword, making `print_type()` a pattern-matching function. This will have the effect of turning any `TypeErrors` that would be raised into `MatchErrors`. They can then be handled by new `addpattern` decorated functions as needed.
-
+This can be fixed by using either the `match` or `addpattern` keyword. For example:
 ```coconut
 match def print_type():
     print("Received no arguments.")
 
-@addpattern(print_type)
-def print_type(x is int):
+addpattern def print_type(x is int):
     print("Received an int.")
 
 print_type(1)  # Works as expected
 print_type("This is a string.") # Raises MatchError
 ```
 
-`addpattern` can be used without the `match` keyword if the function it receives is an [assignment function](#assignment-functions) as seen in the example below:
+The last case in an `addpattern` function, however, doesn't have to be a pattern-matching function if it is intended to catch all remaining cases.
 
 ##### Example
 
