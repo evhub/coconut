@@ -249,6 +249,7 @@ Text editors with support for Coconut syntax highlighting are:
 - **Vim**: See [`coconut.vim`](https://github.com/manicmaniac/coconut.vim).
 - **Emacs**: See [`coconut-mode`](https://github.com/NickSeagull/coconut-mode).
 - **Atom**: See [`language-coconut`](https://github.com/enilsen16/language-coconut).
+- **IntelliJ IDEA**: See [registering file types](https://www.jetbrains.com/help/idea/creating-and-registering-file-types.html).
 - Any editor that supports **Pygments** (e.g. **Spyder**): See Pygments section below.
 
 Alternatively, if none of the above work for you, you can just treat Coconut as Python. Simply set up your editor so it interprets all `.coco` files as Python and that should highlight most of your code well enough.
