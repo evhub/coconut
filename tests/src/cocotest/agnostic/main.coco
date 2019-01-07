@@ -433,6 +433,15 @@ def main_test():
     assert a is None
     assert range(5) |> iter |> reiterable |> .[1] == 1
     assert range(5) |> reiterable |> fmap$(-> _ + 1) |> list == [1, 2, 3, 4, 5]  # type: ignore
+
+    a: Iterable[int] = [1] :: [2] :: [3]
+    a = a |> reiterable
+    b = a |> reiterable
+    assert b |> list == [1, 2, 3]
+    assert b |> list == [1, 2, 3]
+    assert a |> list == [1, 2, 3]
+    assert a |> list == [1, 2, 3]
+
     assert (+) ..*> (+) |> repr == "<built-in function add> ..*> <built-in function add>"
     assert scan((+), [1,2,3,4,5]) |> list == [1,3,6,10,15]
     assert scan((*), [1,2,3,4,5]) |> list == [1,2,6,24,120]
