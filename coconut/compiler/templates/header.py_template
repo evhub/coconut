@@ -86,7 +86,8 @@ class reiterable{object}:
     def __reduce__(self):
         return (self.__class__, (self.iter,))
     def __copy__(self):
-        return self.__class__(_coconut.copy.copy(self.iter))
+        self.iter, new = _coconut_tee(self.iter)
+        return self.__class__(new)
     def __fmap__(self, func):
         return _coconut_map(func, self)
 class scan{object}:
