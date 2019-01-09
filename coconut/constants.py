@@ -377,7 +377,6 @@ tre_mock_var = reserved_prefix + "_mock_func"
 tre_store_var = reserved_prefix + "_recursive_func"
 tre_check_var = reserved_prefix + "_is_recursive"
 none_coalesce_var = reserved_prefix + "_none_coalesce_item"
-sentinel_var = reserved_prefix + "_sentinel"
 func_var = reserved_prefix + "_func"
 
 # prefer Matcher.get_temp_var to proliferating more match vars here
@@ -615,7 +614,7 @@ new_operators = (
     "\u2192",  # ->
     "\\*?\u21a6",  # |>
     "\u21a4\\*?",  # <|
-    "<?\*?\u2218\*?>?",  # ..
+    "<?\\*?\u2218\\*?>?",  # ..
     "\u22c5",  # *
     "\u2191",  # **
     "\xf7",  # /

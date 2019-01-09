@@ -32,7 +32,6 @@ from coconut.constants import (
     openindent,
     closeindent,
     const_vars,
-    sentinel_var,
     function_match_error_var,
 )
 from coconut.compiler.util import paren_join
@@ -97,7 +96,6 @@ class Matcher(object):
         "var_index",
         "others",
         "guards",
-        "use_sentinel",
     )
 
     def __init__(self, loc, check_var, checkdefs=None, names=None, var_index=0):
@@ -116,7 +114,6 @@ class Matcher(object):
         self.var_index = var_index
         self.others = []
         self.guards = []
-        self.use_sentinel = False
 
     def duplicate(self):
         """Duplicates the matcher to others."""
@@ -361,13 +358,11 @@ class Matcher(object):
         if rest is None:
             self.add_check("_coconut.len(" + item + ") == " + str(len(matches)))
 
-        if matches:
-            self.use_sentinel = True
         for k, v in matches:
             key_var = self.get_temp_var()
-            self.add_def(key_var + " = " + item + ".get(" + k + ", " + sentinel_var + ")")
+            self.add_def(key_var + " = " + item + ".get(" + k + ", _coconut_sentinel)")
             with self.down_a_level():
-                self.add_check(key_var + " is not " + sentinel_var)
+                self.add_check(key_var + " is not _coconut_sentinel")
                 self.match(v, key_var)
         if rest is not None and rest != wildcard:
             match_keys = [k for k, v in matches]
@@ -529,8 +524,8 @@ class Matcher(object):
             self.add_check(item + ".endswith(" + suffix + ")")
         if name != wildcard:
             self.add_def(
-                name + " = " + item + "[" +
-                ("" if prefix is None else "_coconut.len(" + prefix + ")") + ":"
+                name + " = " + item + "["
+                + ("" if prefix is None else "_coconut.len(" + prefix + ")") + ":"
                 + ("" if suffix is None else "-_coconut.len(" + suffix + ")") + "]",
             )
 
@@ -623,8 +618,6 @@ class Matcher(object):
     def out(self):
         """Return pattern-matching code."""
         out = ""
-        if self.use_sentinel:
-            out += sentinel_var + " = _coconut.object()\n"
         closes = 0
         for checks, defs in self.checkdefs:
             if checks:

@@ -4,6 +4,7 @@ class _coconut{object}:{comment.everything_here_must_be_copied_to_stub_file}
 {import_OrderedDict}
 {import_collections_abc}
     Ellipsis, Exception, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr{comma_bytearray} = Ellipsis, Exception, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, {static_repr}{comma_bytearray}
+_coconut_sentinel = _coconut.object()
 {def_coconut_NamedTuple}
 class MatchError(Exception):
     """Pattern-matching error. Has attributes .pattern and .value."""
@@ -94,17 +95,16 @@ class scan{object}:
     """Reduce func over iterable, yielding intermediate results,
     optionally starting from initializer."""
     __slots__ = ("func", "iter", "initializer")
-    empty_initializer = _coconut.object()
-    def __init__(self, function, iterable, initializer=empty_initializer):
+    def __init__(self, function, iterable, initializer=_coconut_sentinel):
         self.func = function
         self.iter = iterable
         self.initializer = initializer
     def __iter__(self):
         acc = self.initializer
-        if acc is not self.empty_initializer:
+        if acc is not _coconut_sentinel:
             yield acc
         for item in self.iter:
-            if acc is self.empty_initializer:
+            if acc is _coconut_sentinel:
                 acc = item
             else:
                 acc = self.func(acc, item)
