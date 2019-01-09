@@ -1,5 +1,5 @@
 class _coconut{object}:{comment.everything_here_must_be_copied_to_stub_file}
-    import collections, copy, functools, types, itertools, operator, types, weakref
+    import collections, copy, functools, types, itertools, operator, types, weakref, threading
 {bind_lru_cache}{import_asyncio}{import_pickle}
 {import_OrderedDict}
 {import_collections_abc}
@@ -86,8 +86,8 @@ class reiterable{object}:
     def __reduce__(self):
         return (self.__class__, (self.iter,))
     def __copy__(self):
-        self.iter, new = _coconut_tee(self.iter)
-        return self.__class__(new)
+        self.iter, new_iter = _coconut_tee(self.iter)
+        return self.__class__(new_iter)
     def __fmap__(self, func):
         return _coconut_map(func, self)
 class scan{object}:
@@ -401,8 +401,8 @@ def recursive_iterator(func):
         return to_return
     return recursive_iterator_func
 class _coconut_FunctionMatchErrorContext(object):
-    from threading import local; threadlocal_var = local(); del local
     __slots__ = ('exc_class', 'taken')
+    threadlocal_var = _coconut.threading.local()
     def __init__(self, exc_class):
         self.exc_class = exc_class
         self.taken = False
