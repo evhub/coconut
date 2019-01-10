@@ -326,6 +326,8 @@ default_recursion_limit = 2000
 if sys.getrecursionlimit() < default_recursion_limit:
     sys.setrecursionlimit(default_recursion_limit)
 
+legal_indent_chars = " \t\xa0"
+
 hash_prefix = "# __coconut_hash__ = "
 hash_sep = "\x00"
 

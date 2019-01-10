@@ -72,6 +72,7 @@ from coconut.constants import (
     reserved_prefix,
     case_check_var,
     function_match_error_var,
+    legal_indent_chars,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -811,7 +812,7 @@ class Compiler(Grammar):
         """Get leading whitespace."""
         leading_ws = []
         for i, c in enumerate(inputstring):
-            if c in " \t":
+            if c in legal_indent_chars:
                 leading_ws.append(c)
             else:
                 break
