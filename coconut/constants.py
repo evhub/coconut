@@ -361,7 +361,6 @@ holds = "'\""  # string open/close chars
 
 taberrfmt = 2  # spaces to indent exceptions
 tabideal = 4  # spaces to indent code for displaying
-tabworth = 8  # worth of \t in spaces for parsing (8 = Python standard)
 
 justify_len = 79  # ideal line length
 

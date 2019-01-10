@@ -53,7 +53,6 @@ from coconut.constants import (
     unwrapper,
     holds,
     tabideal,
-    tabworth,
     match_to_var,
     match_to_args_var,
     match_to_kwargs_var,
@@ -809,20 +808,18 @@ class Compiler(Grammar):
         return "".join(out)
 
     def leading_whitespace(self, inputstring):
-        """Count leading whitespace."""
-        count = 0
+        """Get leading whitespace."""
+        leading_ws = []
         for i, c in enumerate(inputstring):
-            if c == " ":
-                count += 1
-            elif c == "\t":
-                count += tabworth - (i % tabworth)
+            if c in " \t":
+                leading_ws.append(c)
             else:
                 break
             if self.indchar is None:
                 self.indchar = c
             elif c != self.indchar:
                 self.strict_err_or_warn("found mixing of tabs and spaces", inputstring, i)
-        return count
+        return "".join(leading_ws)
 
     def ind_proc(self, inputstring, **kwargs):
         """Process indentation."""
@@ -861,17 +858,19 @@ class Compiler(Grammar):
                     if check:
                         raise self.make_err(CoconutSyntaxError, "illegal initial indent", line, 0, self.adjust(ln))
                     else:
-                        current = 0
-                elif check > current:
-                    levels.append(current)
-                    current = check
-                    line = openindent + line
-                elif check in levels:
+                        current = ""
+                elif current == check:
+                    pass
+                elif check in levels:  # dedent
                     point = levels.index(check) + 1
                     line = closeindent * (len(levels[point:]) + 1) + line
                     levels = levels[:point]
                     current = levels.pop()
-                elif current != check:
+                elif check.startswith(current):  # indent, since current != check
+                    levels.append(current)
+                    current = check
+                    line = openindent + line
+                else:
                     raise self.make_err(CoconutSyntaxError, "illegal dedent to unused indentation level", line, 0, self.adjust(ln))
                 new.append(line)
 
