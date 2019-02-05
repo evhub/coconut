@@ -62,40 +62,59 @@ from coconut.exceptions import (
 # -----------------------------------------------------------------------------------------------------------------------
 
 
+def find_new_value(value, toklist, new_toklist):
+    """Find the value in new_toklist that corresponds to the given value in toklist."""
+    # find ParseResults by looking up their tokens
+    if isinstance(value, ParseResults):
+        if value._ParseResults__toklist == toklist:
+            new_value_toklist = new_toklist
+        else:
+            new_value_toklist = []
+            for inner_value in value._ParseResults__toklist:
+                new_value_toklist.append(find_new_value(inner_value, toklist, new_toklist))
+        return ParseResults(new_value_toklist)
+
+    # find other objects by looking them up directly
+    try:
+        return new_toklist[toklist.index(value)]
+    except ValueError:
+        complain(lambda: CoconutInternalException("inefficient reevaluation of tokens: {} not in {}".format(
+            value,
+            toklist,
+        )))
+        return evaluate_tokens(value)
+
+
 def evaluate_tokens(tokens):
     """Evaluate the given tokens in the computation graph."""
     if isinstance(tokens, str):
         return tokens
+
     elif isinstance(tokens, ParseResults):
+
         # evaluate the list portion of the ParseResults
         toklist, name, asList, modal = tokens.__getnewargs__()
         new_toklist = [evaluate_tokens(toks) for toks in toklist]
         new_tokens = ParseResults(new_toklist, name, asList, modal)
+
         # evaluate the dictionary portion of the ParseResults
         new_tokdict = {}
         for name, occurrences in tokens._ParseResults__tokdict.items():
             new_occurences = []
             for value, position in occurrences:
-                if isinstance(value, ParseResults) and value._ParseResults__toklist == toklist:
-                    new_value = new_tokens
-                else:
-                    try:
-                        new_value = new_toklist[toklist.index(value)]
-                    except ValueError:
-                        complain(lambda: CoconutInternalException("inefficient reevaluation of tokens: {} not in {}".format(
-                            value,
-                            toklist,
-                        )))
-                        new_value = evaluate_tokens(value)
+                new_value = find_new_value(value, toklist, new_toklist)
                 new_occurences.append(_ParseResultsWithOffset(new_value, position))
             new_tokdict[name] = occurrences
         new_tokens._ParseResults__accumNames.update(tokens._ParseResults__accumNames)
         new_tokens._ParseResults__tokdict.update(new_tokdict)
         return new_tokens
+
     elif isinstance(tokens, ComputationNode):
         return tokens.evaluate()
+
     elif isinstance(tokens, (list, tuple)):
         return [evaluate_tokens(inner_toks) for inner_toks in tokens]
+
     else:
         raise CoconutInternalException("invalid computation graph tokens", tokens)
 
