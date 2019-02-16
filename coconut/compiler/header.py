@@ -178,12 +178,6 @@ else:
         tco_decorator="@_coconut_tco\n" + " " * 8 if not no_tco else "",
         tail_call_func_args_kwargs="func(*args, **kwargs)" if no_tco else "_coconut_tail_call(func, *args, **kwargs)",
         comma_tco=", _coconut_tail_call, _coconut_tco" if not no_tco else "",
-        def_coconut_NamedTuple=(
-            r'''def _coconut_NamedTuple(name, fields):
-    return _coconut.collections.namedtuple(name, [x for x, t in fields])'''
-            if target_info < (3, 6)
-            else "from typing import NamedTuple as _coconut_NamedTuple"
-        ),
         def_prepattern=(
             r'''def prepattern(base_func):
     """DEPRECATED: Use addpattern instead."""
@@ -205,7 +199,15 @@ else:
         ),
     )
 
-    format_dict["underscore_imports"] = "_coconut, _coconut_NamedTuple, _coconut_MatchError{comma_tco}, _coconut_igetitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_pipe, _coconut_star_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_addpattern, _coconut_sentinel".format(**format_dict)
+    format_dict["import_typing_NamedTuple"] = _indent(
+        "import typing" if target_info >= (3, 6)
+        else '''class typing{object}:
+    @staticmethod
+    def NamedTuple(name, fields):
+        return _coconut.collections.namedtuple(name, [x for x, t in fields])'''.format(**format_dict),
+    )
+
+    format_dict["underscore_imports"] = "_coconut, _coconut_MatchError{comma_tco}, _coconut_igetitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_pipe, _coconut_star_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_addpattern, _coconut_sentinel".format(**format_dict)
 
     # ._coconut_tco_func is used in main.coco, so don't remove it
     #  here without replacing its usage there

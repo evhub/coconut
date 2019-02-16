@@ -117,7 +117,7 @@ class CoconutImporter(object):
         if fullname.startswith("."):
             if path is None:
                 # we can't do a relative import if there's no package path
-                return None
+                return
             fullname = fullname[1:]
             basepaths.insert(0, path)
         fullpath = os.path.join(*fullname.split("."))
@@ -128,12 +128,12 @@ class CoconutImporter(object):
             if os.path.exists(filepath):
                 self.run_compiler(filepath)
                 # Coconut file was found and compiled, now let Python import it
-                return None
+                return
             if os.path.exists(dirpath):
                 self.run_compiler(path)
                 # Coconut package was found and compiled, now let Python import it
-                return None
-        return None
+                return
+        return
 
 
 coconut_importer = CoconutImporter()

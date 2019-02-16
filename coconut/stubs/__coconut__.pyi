@@ -107,7 +107,6 @@ parallel_map = concurrent_map = _coconut_map = map
 _coconut_sentinel = object()
 
 
-_coconut_NamedTuple = _t.NamedTuple
 TYPE_CHECKING = _t.TYPE_CHECKING
 
 

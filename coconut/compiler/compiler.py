@@ -1338,15 +1338,16 @@ def __eq__(self, other):
                 args_tuple="(" + ", ".join(base_args) + ("," if len(base_args) == 1 else "") + ")",
             )
 
+        if types:
+            namedtuple_call = '_coconut.typing.NamedTuple("' + name + '", [' + ", ".join(
+                '("' + argname + '", ' + self.wrap_typedef(types.get(i, "_coconut.typing.Any")) + ")"
+                for i, argname in enumerate(base_args + ([starred_arg] if starred_arg is not None else []))
+            ) + "])"
+        else:
+            namedtuple_call = '_coconut.collections.namedtuple("' + name + '", "' + attr_str + '")'
+
         out = (
-            "class " + name + "("
-            + (
-                '_coconut.collections.namedtuple("' + name + '", "' + attr_str + '")' if not types
-                else '_coconut_NamedTuple("' + name + '", [' + ", ".join(
-                    '("' + argname + '", ' + self.wrap_typedef(types.get(i, "_coconut.typing.Any")) + ")"
-                    for i, argname in enumerate(base_args + ([starred_arg] if starred_arg is not None else []))
-                ) + "])"
-            ) + (
+            "class " + name + "(" + namedtuple_call + (
                 ", " + inherit if inherit is not None
                 else ", _coconut.object" if not self.target.startswith("3")
                 else ""
