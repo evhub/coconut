@@ -107,10 +107,8 @@ parallel_map = concurrent_map = _coconut_map = map
 _coconut_sentinel = object()
 
 
-from typing import (
-    NamedTuple as _coconut_NamedTuple,
-    TYPE_CHECKING,
-)
+_coconut_NamedTuple = _t.NamedTuple
+TYPE_CHECKING = _t.TYPE_CHECKING
 
 
 class MatchError(Exception): ...
