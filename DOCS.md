@@ -378,6 +378,26 @@ dubsums = map(lambda x, y: 2*(x+y), range(0, 10), range(10, 20))
 print(list(dubsums))
 ```
 
+#### Implicit Lambdas
+
+Coconut also supports implicit lambdas, which allow a lambda to take either no arguments or a single argument. Implicit lambdas are formed with the usual Coconut lambda operator `->`, in the form `(-> expression)`. This is equivalent to `((_=None) -> expression)`. When an argument is passed to an implicit lambda, it will be assigned to `_`, replacing the default value `None`.
+
+Below are two examples of implicit lambdas. The first uses the implicit argument `_`, while the second does not.
+
+**Single Argument Example:**
+```coconut
+square = (-> _**2)
+```
+
+**No-Argument Example:**
+```coconut
+import random
+
+get_random_number = (-> random.random())
+```
+
+_Note: Nesting implicit lambdas can lead to problems with the scope of the `_` parameter to each lambda. It is recommended that nesting implicit lambdas be avoided._
+
 ### Partial Application
 
 Coconut uses a `$` sign right after a function's name but before the open parenthesis used to call the function to denote partial application.
