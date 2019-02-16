@@ -104,6 +104,9 @@ _coconut_starmap = starmap
 parallel_map = concurrent_map = _coconut_map = map
 
 
+_coconut_sentinel = object()
+
+
 from typing import (
     NamedTuple as _coconut_NamedTuple,
     TYPE_CHECKING,
@@ -126,7 +129,7 @@ def recursive_iterator(func: _ITER_FUNC) -> _ITER_FUNC: ...
 
 
 def addpattern(func: _FUNC) -> _t.Callable[[_FUNC2], _t.Union[_FUNC, _FUNC2]]: ...
-prepattern = addpattern
+_coconut_addpattern = prepattern = addpattern
 
 
 @_t.overload
