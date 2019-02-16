@@ -165,11 +165,12 @@ min_versions = {
     "futures": (3, 2),
     "backports.functools-lru-cache": (1, 5),
     "argparse": (1, 4),
-    "pytest": (4,),
     "pexpect": (4,),
     "watchdog": (0, 9),
     "trollius": (2, 2),
     "requests": (2,),
+    # don't upgrade this; it breaks on Python 2.6
+    "pytest": (3,),
     # don't upgrade this; it breaks on unix
     "vprof": (0, 36),
     # we can't upgrade this; it breaks on Python 2
