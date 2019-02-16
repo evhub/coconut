@@ -349,7 +349,7 @@ Coconut provides the simple, clean `->` operator as an alternative to Python's `
 
 Additionally, Coconut also supports an implicit usage of the `->` operator of the form `(-> expression)`, which is equivalent to `((_=None) -> expression)`, which allows an implicit lambda to be used both when no arguments are required, and when one argument (assigned to `_`) is required.
 
-_Note: If normal lambda syntax is insufficient, Coconut also supports an extended lambda syntax in the form of [statement lambdas](#statement-lambdas)._
+_Note: If normal lambda syntax is insufficient, Coconut also supports an extended lambda syntax in the form of [statement lambdas](#statement-lambdas). Statement lambdas support type annotations for their parameters, while standard lambdas do not._
 
 ##### Rationale
 
@@ -1041,6 +1041,15 @@ def _lambda(x):
     y = 1/x
     return y*(1 - y)
 map(_lambda, L)
+```
+
+#### Type annotations
+Another case where statement lambdas would be used over standard lambdas is when the parameters to the lambda are typed with type annotations. Statement lambdas use the standard Python syntax for adding type annotations to their parameters:
+
+```coconut
+f = def (c: str) -> print(c)
+
+g = def (a: int, b: int) -> a ** b
 ```
 
 ### Lazy Lists
