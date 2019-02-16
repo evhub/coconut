@@ -394,7 +394,7 @@ import random
 get_random_number = (-> random.random())
 ```
 
-_Note: Nesting implicit lambdas can lead to problems with the scope of the `\_` parameter to each lambda. It is recommended that nesting implicit lambdas be avoided._
+_Note: Nesting implicit lambdas can lead to problems with the scope of the `_` parameter to each lambda. It is recommended that nesting implicit lambdas be avoided._
 
 ### Partial Application
 
