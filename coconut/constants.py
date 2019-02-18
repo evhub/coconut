@@ -441,6 +441,7 @@ reserved_vars = (  # can be backslash-escaped
     "where",
 )
 
+
 py3_to_py2_stdlib = {
     # new_name: (old_name, before_version_info)
     "builtins": ("__builtin__", (3,)),
@@ -479,6 +480,7 @@ py3_to_py2_stdlib = {
     # ./ denotes from ... import ...
     "io.StringIO": ("StringIO./StringIO", (2, 7)),
     "io.BytesIO": ("cStringIO./StringIO", (2, 7)),
+    "importlib.reload": ("imp./reload", (3, 4)),
     # third-party backports
     "asyncio": ("trollius", (3, 4)),
 }
