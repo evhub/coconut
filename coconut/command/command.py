@@ -361,6 +361,7 @@ class Command(object):
         with openfile(codepath, "r") as opened:
             code = readfile(opened)
 
+        package_level = -1
         if destpath is not None:
             destpath = fixpath(destpath)
             destdir = os.path.dirname(destpath)
@@ -370,8 +371,6 @@ class Command(object):
                 package_level = self.get_package_level(codepath)
                 if package_level == 0:
                     self.create_package(destdir)
-            else:
-                package_level = -1
 
         foundhash = None if force else self.has_hash_of(destpath, code, package_level)
         if foundhash:
