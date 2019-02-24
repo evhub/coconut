@@ -107,10 +107,10 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
     out = "".join(out)
     lines = out.splitlines()
     if expect_retcode is not None:
-        assert retcode == expect_retcode, "Return code not as expected ({} != {}) in: {!r}".format(
-            retcode,
-            expect_retcode,
-            cmd,
+        assert retcode == expect_retcode, "Return code not as expected ({retcode} != {expect_retcode}) in: {cmd!r}".format(
+            retcode=retcode,
+            expect_retcode=expect_retcode,
+            cmd=cmd,
         )
     for line in lines:
         assert "CoconutInternalException" not in line, "CoconutInternalException in " + repr(line)
