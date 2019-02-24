@@ -288,7 +288,7 @@ if _coconut_cached_module is not None and _coconut_os_path.dirname(_coconut_cach
 _coconut_sys.path.insert(0, _coconut_file_path)
 from __coconut__ import {underscore_imports}
 from __coconut__ import *
-_coconut_sys.path.remove(_coconut_file_path)
+_coconut_sys.path.pop(0)
 
 '''.format(**format_dict) + section("Compiled Coconut")
 
