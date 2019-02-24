@@ -192,11 +192,6 @@ else:
     return _coconut.functools.partial(makedata, data_type)
 ''' if not strict else ""
         ),
-        __coconut__=(
-            '"__coconut__"' if target_startswith == "3"
-            else 'b"__coconut__"' if target_startswith == "2"
-            else 'str("__coconut__")'
-        ),
     )
 
     format_dict["import_typing_NamedTuple"] = _indent(
@@ -292,12 +287,27 @@ _coconut_file_path = {coconut_file_path}
 _coconut_cached_module = _coconut_sys.modules.get({__coconut__})
 if _coconut_cached_module is not None and _coconut_os_path.dirname(_coconut_cached_module.__file__) != _coconut_file_path:
     del _coconut_sys.modules[{__coconut__}]
-_coconut_sys.path.insert(0, _coconut_file_path)
+_coconut_sys.path.append(_coconut_file_path)
 from __coconut__ import {underscore_imports}
 from __coconut__ import *
-_coconut_sys.path.pop(0)
+{sys_path_pop}
 
-'''.format(coconut_file_path=coconut_file_path, **format_dict) + section("Compiled Coconut")
+'''.format(
+            coconut_file_path=coconut_file_path,
+            __coconut__=(
+                '"__coconut__"' if target_startswith == "3"
+                else 'b"__coconut__"' if target_startswith == "2"
+                else 'str("__coconut__")'
+            ),
+            sys_path_pop=(
+                # we can't pop on Python 2 if we want __coconut__ objects to be pickleable
+                "_coconut_sys.path.pop()" if target_startswith == "3"
+                else "" if target_startswith == "2"
+                else '''if _coconut_sys.version_info >= (3,):
+    _coconut_sys.path.pop()'''
+            ),
+            **format_dict
+        ) + section("Compiled Coconut")
 
     if which == "sys":
         return header + '''import sys as _coconut_sys
