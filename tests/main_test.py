@@ -130,13 +130,18 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
         assert any(x in last_line for x in assert_output), "Expected " + ", ".join(assert_output) + "; got " + repr(last_line)
 
 
+def call_python(args, **kwargs):
+    """Calls the current Python."""
+    call([sys.executable] + args, **kwargs)
+
+
 def call_coconut(args, **kwargs):
     """Calls Coconut."""
     if "--jobs" not in args and not PYPY and not PY26:
         args = ["--jobs", "sys"] + args
     if "--mypy" in args and "check_mypy" not in kwargs:
         kwargs["check_mypy"] = True
-    call([sys.executable, "-m", "coconut"] + args, **kwargs)
+    call_python(["-m", "coconut"] + args, **kwargs)
 
 
 def comp(path=None, folder=None, file=None, args=[], **kwargs):
@@ -232,12 +237,12 @@ def comp_sys(args=[], **kwargs):
 
 def run_src(**kwargs):
     """Runs runner.py."""
-    call(["python", os.path.join(dest, "runner.py")], assert_output=True, **kwargs)
+    call_python([os.path.join(dest, "runner.py")], assert_output=True, **kwargs)
 
 
 def run_extras(**kwargs):
     """Runs extras.py."""
-    call(["python", os.path.join(dest, "extras.py")], assert_output=True, check_errors=False, stderr_first=True, **kwargs)
+    call_python([os.path.join(dest, "extras.py")], assert_output=True, check_errors=False, stderr_first=True, **kwargs)
 
 
 def run(args=[], agnostic_target=None, use_run_arg=False, expect_retcode=0):
@@ -279,7 +284,7 @@ def comp_pyston(args=[], **kwargs):
 
 def run_pyston(**kwargs):
     """Runs pyston."""
-    call(["python", os.path.join(pyston, "runner.py")], assert_output=True, **kwargs)
+    call_python([os.path.join(pyston, "runner.py")], assert_output=True, **kwargs)
 
 
 def comp_pyprover(args=[], **kwargs):
@@ -292,7 +297,7 @@ def comp_pyprover(args=[], **kwargs):
 def run_pyprover(**kwargs):
     """Runs pyprover."""
     call(["pip", "install", "-e", pyprover])
-    call(["python", os.path.join(pyprover, "pyprover", "tests.py")], assert_output=True, **kwargs)
+    call_python([os.path.join(pyprover, "pyprover", "tests.py")], assert_output=True, **kwargs)
 
 
 def comp_prelude(args=[], **kwargs):
@@ -307,7 +312,7 @@ def comp_prelude(args=[], **kwargs):
 def run_prelude(**kwargs):
     """Runs coconut-prelude."""
     call(["pip", "install", "-e", prelude])
-    call(["python", os.path.join(prelude, "prelude", "prelude_test.py")], assert_output=True, **kwargs)
+    call_python([os.path.join(prelude, "prelude", "prelude_test.py")], assert_output=True, **kwargs)
 
 
 def comp_all(args=[], **kwargs):
@@ -343,7 +348,7 @@ class TestShell(unittest.TestCase):
         call('echo ' + escape(coconut_snip) + "| coconut -s", shell=True, assert_output=True)
 
     def test_convenience(self):
-        call(["python", "-c", 'from coconut.convenience import parse; exec(parse("' + coconut_snip + '"))'], assert_output=True)
+        call_python(["-c", 'from coconut.convenience import parse; exec(parse("' + coconut_snip + '"))'], assert_output=True)
 
     def test_import_hook(self):
         sys.path.append(src)
@@ -368,7 +373,7 @@ class TestShell(unittest.TestCase):
     def test_compile_to_file(self):
         with remove_when_done(runnable_py):
             call_coconut([runnable_coco, runnable_py])
-            call(["python", runnable_py, "--arg"], assert_output=True)
+            call_python([runnable_py, "--arg"], assert_output=True)
 
     if IPY:
         def test_ipython_extension(self):
