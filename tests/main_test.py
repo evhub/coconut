@@ -136,7 +136,7 @@ def call_coconut(args, **kwargs):
         args = ["--jobs", "sys"] + args
     if "--mypy" in args and "check_mypy" not in kwargs:
         kwargs["check_mypy"] = True
-    call(["coconut"] + args, **kwargs)
+    call([sys.executable, "-m", "coconut"] + args, **kwargs)
 
 
 def comp(path=None, folder=None, file=None, args=[], **kwargs):
@@ -164,7 +164,7 @@ def remove_when_done(path):
                 shutil.rmtree(path)
             elif os.path.isfile(path):
                 os.remove(path)
-        except OSError as err:
+        except OSError:
             logger.display_exc()
 
 
