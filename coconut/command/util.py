@@ -23,20 +23,20 @@ import sys
 import os
 import traceback
 import subprocess
-if PY26:
-    import imp
-from functools import partial
-from copy import copy
-from contextlib import contextmanager
 from select import select
-if not PY26:
-    import runpy
-try:
-    # just importing readline improves built-in input()
-    import readline  # NOQA
-except ImportError:
-    pass
+from contextlib import contextmanager
+from copy import copy
+from functools import partial
 
+from coconut.terminal import (
+    logger,
+    complain,
+)
+from coconut.exceptions import (
+    CoconutException,
+    get_encoding,
+    internal_assert,
+)
 from coconut.constants import (
     fixpath,
     default_encoding,
@@ -60,16 +60,16 @@ from coconut.constants import (
     WINDOWS,
     PY34,
 )
-from coconut.exceptions import (
-    CoconutException,
-    get_encoding,
-    internal_assert,
-)
-from coconut.terminal import (
-    logger,
-    complain,
-)
 
+if PY26:
+    import imp
+if not PY26:
+    import runpy
+try:
+    # just importing readline improves built-in input()
+    import readline  # NOQA
+except ImportError:
+    pass
 if PY34:
     from importlib import reload
 else:
@@ -438,7 +438,7 @@ class Runner(object):
         self.vars = self.build_vars(path)
         self.stored = [] if store else None
         if comp is not None:
-            self.store(comp.getheader("package"))
+            self.store(comp.getheader("package:0"))
             self.run(comp.getheader("code"), store=False)
             self.fix_pickle()
 

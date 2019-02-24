@@ -241,12 +241,15 @@ def _coconut_tco(func):
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-allowed_headers = ("none", "initial", "__coconut__", "package", "sys", "code", "file")
-
-
 def getheader(which, target="", use_hash=None, no_tco=False, strict=False):
     """Generate the specified header."""
-    internal_assert(which in allowed_headers, "invalid header type", which)
+    internal_assert(
+        which.startswith("package") or which in (
+            "none", "initial", "__coconut__", "sys", "code", "file",
+        ),
+        "invalid header type",
+        which,
+    )
 
     if which == "none":
         return ""
@@ -279,9 +282,13 @@ def getheader(which, target="", use_hash=None, no_tco=False, strict=False):
     elif target_info >= (3, 5):
         header += "from __future__ import generator_stop\n"
 
-    if which == "package":
+    if which.startswith("package"):
+        levels_up = int(which[len("package:"):])
+        coconut_file_path = "_coconut_os_path.dirname(_coconut_os_path.abspath(__file__))"
+        for _ in range(levels_up):
+            coconut_file_path = "_coconut_os_path.dirname(" + coconut_file_path + ")"
         return header + '''import sys as _coconut_sys, os.path as _coconut_os_path
-_coconut_file_path = _coconut_os_path.dirname(_coconut_os_path.abspath(__file__))
+_coconut_file_path = {coconut_file_path}
 _coconut_cached_module = _coconut_sys.modules.get({__coconut__})
 if _coconut_cached_module is not None and _coconut_os_path.dirname(_coconut_cached_module.__file__) != _coconut_file_path:
     del _coconut_sys.modules[{__coconut__}]
@@ -290,7 +297,7 @@ from __coconut__ import {underscore_imports}
 from __coconut__ import *
 _coconut_sys.path.pop(0)
 
-'''.format(**format_dict) + section("Compiled Coconut")
+'''.format(coconut_file_path=coconut_file_path, **format_dict) + section("Compiled Coconut")
 
     if which == "sys":
         return header + '''import sys as _coconut_sys

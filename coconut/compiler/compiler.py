@@ -365,13 +365,13 @@ class Compiler(Grammar):
         """Return pickling information."""
         return (Compiler, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.no_tco))
 
-    def genhash(self, package, code):
+    def genhash(self, code, package_level=-1):
         """Generate a hash from code."""
         return hex(checksum(
             hash_sep.join(
                 str(item) for item in (VERSION_STR,)
                 + self.__reduce__()[1]
-                + (package, code)
+                + (package_level, code)
             ).encode(default_encoding),
         ))
 
@@ -1988,7 +1988,7 @@ def __eq__(self, other):
     def parse_file(self, inputstring, addhash=True):
         """Parse file code."""
         if addhash:
-            use_hash = self.genhash(False, inputstring)
+            use_hash = self.genhash(inputstring)
         else:
             use_hash = None
         return self.parse(inputstring, self.file_parser, {"nl_at_eof_check": True}, {"header": "file", "use_hash": use_hash})
@@ -1997,13 +1997,14 @@ def __eq__(self, other):
         """Parse exec code."""
         return self.parse(inputstring, self.file_parser, {}, {"header": "file", "initial": "none"})
 
-    def parse_package(self, inputstring, addhash=True):
+    def parse_package(self, inputstring, package_level=0, addhash=True):
         """Parse package code."""
+        internal_assert(package_level >= 0, "invalid package level", package_level)
         if addhash:
-            use_hash = self.genhash(True, inputstring)
+            use_hash = self.genhash(inputstring, package_level)
         else:
             use_hash = None
-        return self.parse(inputstring, self.file_parser, {"nl_at_eof_check": True}, {"header": "package", "use_hash": use_hash})
+        return self.parse(inputstring, self.file_parser, {"nl_at_eof_check": True}, {"header": "package:" + str(package_level), "use_hash": use_hash})
 
     def parse_block(self, inputstring):
         """Parse block code."""

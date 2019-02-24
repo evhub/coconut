@@ -33,7 +33,10 @@ from coconut.exceptions import (
     CoconutException,
     CoconutInternalException,
 )
-from coconut.terminal import logger, printerr
+from coconut.terminal import (
+    logger,
+    printerr,
+)
 from coconut.constants import (
     fixpath,
     code_exts,
@@ -359,13 +362,18 @@ class Command(object):
             code = readfile(opened)
 
         if destpath is not None:
+            destpath = fixpath(destpath)
             destdir = os.path.dirname(destpath)
             if not os.path.exists(destdir):
                 os.makedirs(destdir)
             if package is True:
-                self.create_package(destdir)
+                package_level = self.get_package_level(codepath)
+                if package_level == 0:
+                    self.create_package(destdir)
+            else:
+                package_level = -1
 
-        foundhash = None if force else self.has_hash_of(destpath, code, package)
+        foundhash = None if force else self.has_hash_of(destpath, code, package_level)
         if foundhash:
             if show_unchanged:
                 logger.show_tabulated("Left unchanged", showpath(destpath), "(pass --force to override).")
@@ -376,13 +384,6 @@ class Command(object):
 
         else:
             logger.show_tabulated("Compiling", showpath(codepath), "...")
-
-            if package is True:
-                compile_method = "parse_package"
-            elif package is False:
-                compile_method = "parse_file"
-            else:
-                raise CoconutInternalException("invalid value for package", package)
 
             def callback(compiled):
                 if destpath is None:
@@ -399,7 +400,40 @@ class Command(object):
                     else:
                         self.execute_file(destpath)
 
-            self.submit_comp_job(codepath, callback, compile_method, code)
+            if package is True:
+                self.submit_comp_job(codepath, callback, "parse_package", code, package_level=package_level)
+            elif package is False:
+                self.submit_comp_job(codepath, callback, "parse_file", code)
+            else:
+                raise CoconutInternalException("invalid value for package", package)
+
+    def get_package_level(self, codepath):
+        """Get the relative level to the base directory of the package."""
+        package_level = -1
+        check_dir = os.path.dirname(os.path.abspath(codepath))
+        while check_dir:
+            has_init = False
+            for ext in code_exts:
+                init_file = os.path.join(check_dir, "__init__" + ext)
+                if os.path.exists(init_file):
+                    has_init = True
+                    break
+            if has_init:
+                package_level += 1
+                check_dir = os.path.dirname(check_dir)
+            else:
+                break
+        if package_level < 0:
+            logger.warn("missing __init__" + code_exts[0] + " in package", check_dir)
+            package_level = 0
+        return package_level
+        return 0
+
+    def create_package(self, dirpath):
+        """Set up a package directory."""
+        filepath = os.path.join(dirpath, "__coconut__.py")
+        with openfile(filepath, "w") as opened:
+            writefile(opened, self.comp.getheader("__coconut__"))
 
     def submit_comp_job(self, path, callback, method, *args, **kwargs):
         """Submits a job on self.comp to be run in parallel."""
@@ -453,22 +487,15 @@ class Command(object):
         if exit_on_error:
             self.exit_on_error()
 
-    def create_package(self, dirpath):
-        """Set up a package directory."""
-        dirpath = fixpath(dirpath)
-        filepath = os.path.join(dirpath, "__coconut__.py")
-        with openfile(filepath, "w") as opened:
-            writefile(opened, self.comp.getheader("__coconut__"))
-
-    def has_hash_of(self, destpath, code, package):
+    def has_hash_of(self, destpath, code, package_level):
         """Determine if a file has the hash of the code."""
         if destpath is not None and os.path.isfile(destpath):
             with openfile(destpath, "r") as opened:
                 compiled = readfile(opened)
             hashash = gethash(compiled)
-            if hashash is not None and hashash == self.comp.genhash(package, code):
-                return compiled
-        return None
+            if hashash is not None and hashash == self.comp.genhash(code, package_level):
+                return True
+        return False
 
     def get_input(self, more=False):
         """Prompt for code input."""
