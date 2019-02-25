@@ -141,7 +141,10 @@ def call_coconut(args, **kwargs):
         args = ["--jobs", "sys"] + args
     if "--mypy" in args and "check_mypy" not in kwargs:
         kwargs["check_mypy"] = True
-    call_python(["-m", "coconut"] + args, **kwargs)
+    if PY26:
+        call(["coconut"] + args, **kwargs)
+    else:
+        call_python(["-m", "coconut"] + args, **kwargs)
 
 
 def comp(path=None, folder=None, file=None, args=[], **kwargs):
