@@ -82,8 +82,8 @@ just-upload:
 .PHONY: upload
 upload: clean dev just-upload
 
-.PHONY: check
-check:
+.PHONY: check-reqs
+check-reqs:
 	python ./coconut/requirements.py
 
 .PHONY: profile-code
