@@ -3,7 +3,11 @@ import os
 
 from coconut.__coconut__ import consume as coc_consume  # type: ignore
 
-from coconut.constants import IPY, WINDOWS  # type: ignore
+from coconut.constants import (
+    IPY,
+    PY35,
+    WINDOWS,
+)  # type: ignore
 from coconut.exceptions import (
     CoconutSyntaxError,
     CoconutStyleError,
@@ -19,6 +23,8 @@ from coconut.convenience import (
 )
 
 if IPY and not WINDOWS:
+    if PY35:
+        import asyncio
     from coconut.icoconut import CoconutKernel  # type: ignore
 else:
     CoconutKernel = None  # type: ignore
@@ -114,6 +120,8 @@ def main():
     assert parse("f''")
     assert parse("def f(*, x=None) = x")
     if CoconutKernel is not None:
+        if PY35:
+            asyncio.set_event_loop(asyncio.new_event_loop())
         k = CoconutKernel()
         exec_result = k.do_execute("derp = pow$(?, 2)", False, True, {"two": "(+)(1, 1)"}, True) |> unwrap_future
         assert exec_result["status"] == "ok"
