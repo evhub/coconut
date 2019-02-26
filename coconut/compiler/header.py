@@ -287,7 +287,7 @@ _coconut_file_path = {coconut_file_path}
 _coconut_cached_module = _coconut_sys.modules.get({__coconut__})
 if _coconut_cached_module is not None and _coconut_os_path.dirname(_coconut_cached_module.__file__) != _coconut_file_path:
     del _coconut_sys.modules[{__coconut__}]
-_coconut_sys.path.append(_coconut_file_path)
+_coconut_sys.path.insert(0, _coconut_file_path)
 from __coconut__ import {underscore_imports}
 from __coconut__ import *
 {sys_path_pop}
@@ -301,10 +301,10 @@ from __coconut__ import *
             ),
             sys_path_pop=(
                 # we can't pop on Python 2 if we want __coconut__ objects to be pickleable
-                "_coconut_sys.path.pop()" if target_startswith == "3"
+                "_coconut_sys.path.pop(0)" if target_startswith == "3"
                 else "" if target_startswith == "2"
                 else '''if _coconut_sys.version_info >= (3,):
-    _coconut_sys.path.pop()'''
+    _coconut_sys.path.pop(0)'''
             ),
             **format_dict
         ) + section("Compiled Coconut")
