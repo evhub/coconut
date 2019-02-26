@@ -35,6 +35,7 @@ from coconut.constants import (
     IPY,
     PY34,
     PY35,
+    PY36,
     icoconut_kernel_names,
 )
 
@@ -307,8 +308,8 @@ def comp_prelude(args=[], **kwargs):
     """Compiles evhub/coconut-prelude."""
     call(["git", "clone", prelude_git])
     call_coconut([os.path.join(prelude, "setup.coco"), "--strict"] + args, **kwargs)
-    if MYPY:
-        args.append("--mypy")
+    if PY36:
+        args.append("--target", "3.6", "--mypy")
     call_coconut([os.path.join(prelude, "prelude-source"), os.path.join(prelude, "prelude"), "--strict"] + args, **kwargs)
 
 

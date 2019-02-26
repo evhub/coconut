@@ -83,6 +83,7 @@ PYPY = platform.python_implementation() == "PyPy"
 PY33 = sys.version_info >= (3, 3)
 PY34 = sys.version_info >= (3, 4)
 PY35 = sys.version_info >= (3, 5)
+PY36 = sys.version_info >= (3, 6)
 IPY = (PY2 and not PY26) or PY34
 
 # -----------------------------------------------------------------------------------------------------------------------
