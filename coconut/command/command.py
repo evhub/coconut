@@ -619,10 +619,11 @@ class Command(object):
             if code is not None:
                 args += ["-c", code]
             for line, is_err in mypy_run(args):
-                if code is None or line not in self.mypy_errs:
-                    printerr(line)
                 if line not in self.mypy_errs:
+                    printerr(line)
                     self.mypy_errs.append(line)
+                elif code is None:
+                    printerr(line)
                 self.register_error(errmsg="MyPy error")
 
     def start_jupyter(self, args):

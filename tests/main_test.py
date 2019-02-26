@@ -66,7 +66,7 @@ prelude_git = "https://github.com/evhub/coconut-prelude"
 coconut_snip = r"msg = '<success>'; pmsg = print$(msg); `pmsg`"
 
 mypy_snip = r"a: str = count()[0]"
-mypy_snip_err = 'error: Incompatible types in assignment (expression has type "int", variable has type "unicode")'
+mypy_snip_err = 'error: Incompatible types in assignment (expression has type "int", variable has type "str")'
 
 mypy_args = ["--follow-imports", "silent", "--ignore-missing-imports"]
 
