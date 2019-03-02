@@ -200,9 +200,8 @@ Finally, while Coconut will try to compile Python-3-specific syntax to its unive
 - keyword-only function arguments (use pattern-matching function definition instead),
 - destructuring assignment with `*`s (use pattern-matching instead),
 - tuples and lists with `*` unpacking or dicts with `**` unpacking (requires `--target 3.5`),
-- `@` as matrix multiplication (requires `--target 3.5`),
-- `async` and `await` statements (requires `--target 3.5`), and
-- formatting strings by prefixing them with `f` (requires `--target 3.6`).
+- `@` as matrix multiplication (requires `--target 3.5`), and
+- `async` and `await` statements (requires `--target 3.5`).
 
 ### Allowable Targets
 
@@ -2374,8 +2373,8 @@ Each _mode_ has two components: what parser it uses, and what header it prepends
     + parser: eval
         * Can only parse a Coconut expression, not a statement.
     + header: none
-- `"debug"`:
-    + parser: debug
+- `"any"`:
+    + parser: any
         * Can parse any Coconut code, allows leading whitespace, and has no trailing newline.
     + header: none
 

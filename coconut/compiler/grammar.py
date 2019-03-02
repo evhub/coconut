@@ -826,7 +826,7 @@ class Grammar(object):
     b_string = Combine((bit_b + raw_r | raw_r + bit_b) + string_item)
     unicode_u = CaselessLiteral("u").suppress()
     u_string_ref = Combine((unicode_u + raw_r | raw_r + unicode_u) + string_item)
-    format_f = CaselessLiteral("f")
+    format_f = CaselessLiteral("f").suppress()
     f_string_ref = Combine((format_f + raw_r | raw_r + format_f) + string_item)
     string = trace(b_string | u_string | f_string)
     moduledoc = string + newline

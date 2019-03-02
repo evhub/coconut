@@ -500,6 +500,13 @@ def main_test():
         assert False
     assert 4 == range(2,20) |> filter$(i-> i > 3) |> .$[0]
     from importlib import reload
+    x = 1
+    y = "2"
+    assert f"{x} == {y}" == "1 == 2"
+    assert f"{x!r} == {y!r}" == "1 == '2'"
+    assert f"{({})}" == "{}" == f"{({})!r}"
+    assert f"{{" == "{"
+    assert f"}}" == "}"
     return True
 
 def tco_func() = tco_func()

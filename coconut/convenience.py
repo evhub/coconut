@@ -80,7 +80,7 @@ PARSERS = {
     "block": lambda comp: comp.parse_block,
     "single": lambda comp: comp.parse_single,
     "eval": lambda comp: comp.parse_eval,
-    "debug": lambda comp: comp.parse_debug,
+    "any": lambda comp: comp.parse_any,
 }
 
 

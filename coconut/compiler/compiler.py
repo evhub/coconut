@@ -73,6 +73,7 @@ from coconut.constants import (
     case_check_var,
     function_match_error_var,
     legal_indent_chars,
+    format_var,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -421,6 +422,7 @@ class Compiler(Grammar):
         self.await_item <<= trace(attach(self.await_item_ref, self.await_item_handle))
         self.ellipsis <<= trace(attach(self.ellipsis_ref, self.ellipsis_handle))
         self.case_stmt <<= trace(attach(self.case_stmt_ref, self.case_stmt_handle))
+        self.f_string <<= attach(self.f_string_ref, self.f_string_handle)
 
         self.decoratable_normal_funcdef_stmt <<= trace(attach(
             self.decoratable_normal_funcdef_stmt_ref,
@@ -443,7 +445,6 @@ class Compiler(Grammar):
         self.endline_semicolon <<= attach(self.endline_semicolon_ref, self.endline_semicolon_check)
         self.async_stmt <<= attach(self.async_stmt_ref, self.async_stmt_check)
         self.async_comp_for <<= attach(self.async_comp_for_ref, self.async_comp_check)
-        self.f_string <<= attach(self.f_string_ref, self.f_string_check)
 
     def copy_skips(self):
         """Copy the line skips."""
@@ -1899,6 +1900,72 @@ def __eq__(self, other):
             out += "if not " + check_var + default
         return out
 
+    def f_string_handle(self, original, loc, tokens):
+        """Handle Python 3.6 format strings."""
+        internal_assert(len(tokens) == 1, "invalid format string tokens", tokens)
+        string = tokens[0]
+        if self.target_info >= (3, 6):
+            return "f" + string
+        else:
+            # strip raw r
+            raw = string.startswith("r")
+            if raw:
+                string = string[1:]
+
+            # strip wrappers
+            internal_assert(string.startswith(strwrapper) and string.endswith(unwrapper))
+            string = string[1:-1]
+
+            # get text
+            old_text, strchar = self.get_ref("str", string)
+
+            # separate expressions
+            new_text = ""
+            exprs = []
+            saw_brace = False
+            in_expr = False
+            expr_level = 0
+            for c in old_text:
+                if saw_brace:
+                    saw_brace = False
+                    if c == "{":
+                        new_text += c
+                    elif c == "}":
+                        raise self.make_err(CoconutSyntaxError, "empty expressing in format string", original, loc)
+                    else:
+                        in_expr = True
+                        expr_level = paren_change(c)
+                        exprs.append(c)
+                elif in_expr:
+                    if expr_level < 0:
+                        expr_level += paren_change(c)
+                        exprs[-1] += c
+                    elif expr_level > 0:
+                        raise self.make_err(CoconutSyntaxError, "imbalanced parentheses in format string expression", original, loc)
+                    elif c in "!:}":  # these characters end the expr
+                        in_expr = False
+                        name = format_var + "_" + str(len(exprs) - 1)
+                        new_text += name + c
+                    else:
+                        exprs[-1] += c
+                elif c == "{":
+                    saw_brace = True
+                    new_text += c
+                else:
+                    new_text += c
+
+            # handle dangling detections
+            if saw_brace:
+                raise self.make_err(CoconutSyntaxError, "format string ends with unescaped brace (escape by doubling to '{{')", original, loc)
+            if in_expr:
+                raise self.make_err(CoconutSyntaxError, "imbalanced braces in format string (escape braces by doubling to '{{' and '}}')", original, loc)
+
+            # generate format call
+            return ("r" if raw else "") + strchar + new_text + strchar + ".format(" + ", ".join(
+                format_var + "_" + str(i) + "=" + expr
+                for i, expr in enumerate(exprs)
+            ) + ")"
+
 # end: COMPILER HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------
 # CHECKING HANDLERS:
@@ -1972,10 +2039,6 @@ def __eq__(self, other):
         """Check for Python 3.6 async comprehension."""
         return self.check_py("36", "async comprehension", original, loc, tokens)
 
-    def f_string_check(self, original, loc, tokens):
-        """Handle Python 3.6 format strings."""
-        return self.check_py("36", "format string", original, loc, tokens)
-
 # end: CHECKING HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------
 # ENDPOINTS:
@@ -2018,13 +2081,13 @@ def __eq__(self, other):
         """Parse eval code."""
         return self.parse(inputstring, self.eval_parser, {"strip": True}, {"header": "none", "initial": "none"})
 
-    def parse_debug(self, inputstring):
-        """Parse debug code."""
+    def parse_any(self, inputstring):
+        """Parse any code."""
         return self.parse(inputstring, self.file_parser, {"strip": True}, {"header": "none", "initial": "none", "final_endline": False})
 
     def warm_up(self):
         """Warm up the compiler by running something through it."""
-        result = self.parse_debug("")
+        result = self.parse_any("")
         internal_assert(result == "", "compiler warm-up should produce no code; instead got", result)
 
 # end: ENDPOINTS

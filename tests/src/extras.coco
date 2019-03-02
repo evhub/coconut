@@ -67,10 +67,10 @@ def main():
     assert parse("abc", "package")
     assert parse("abc", "block") == "abc\n" == parse("abc", "single")
     assert parse("abc", "eval") == "abc\n" == parse(" abc", "eval")
-    assert parse("abc", "debug") == "abc"
-    assert parse("x |> map$(f)", "debug") == "map(f, x)"
+    assert parse("abc", "any") == "abc"
+    assert parse("x |> map$(f)", "any") == "map(f, x)"
     assert "_coconut" not in parse("a |> .b |> .m() |> f$(x) |> .[0]", "block")
-    assert parse("abc # derp", "debug") == "abc  # derp"
+    assert parse("abc # derp", "any") == "abc  # derp"
     assert_raises(-> parse(" abc", "file"), CoconutException)
     assert_raises(-> parse("'"), CoconutException)
     assert_raises(-> parse("("), CoconutException)
@@ -83,13 +83,13 @@ def main():
     assert parse("u''")
     assert parse("def f(x):\\\n pass")
     assert parse("abc ")
-    assert parse("abc # derp", "debug") == "abc  # derp"
+    assert parse("abc # derp", "any") == "abc  # derp"
     setup(line_numbers=True)
-    assert parse("abc", "debug") == "abc  # line 1"
+    assert parse("abc", "any") == "abc  # line 1"
     setup(keep_lines=True)
-    assert parse("abc", "debug") == "abc  # abc"
+    assert parse("abc", "any") == "abc  # abc"
     setup(line_numbers=True, keep_lines=True)
-    assert parse("abc", "debug") == "abc  # line 1: abc"
+    assert parse("abc", "any") == "abc  # line 1: abc"
     setup()
     assert "prepattern" in parse("\n", mode="file")
     assert "datamaker" in parse("\n", mode="file")
@@ -108,16 +108,14 @@ def main():
     assert_raises(-> cmd("-f"), SystemExit)
     assert_raises(-> cmd("-pa ."), SystemExit)
     assert_raises(-> cmd("-n . ."), SystemExit)
-    assert_raises(-> parse("f''"), CoconutException)
     assert_raises(-> parse("f$()"), CoconutSyntaxError)
     assert_raises(-> parse("f(*x, y)"), CoconutSyntaxError)
     assert_raises(-> parse("def f(x) = return x"), CoconutSyntaxError)
     assert_raises(-> parse("def f(x) =\n return x"), CoconutSyntaxError)
     setup(target="2.7")
-    assert parse("from io import BytesIO", mode="debug") == "from io import BytesIO"
+    assert parse("from io import BytesIO", mode="any") == "from io import BytesIO"
     assert_raises(-> parse("def f(*, x=None) = x"), CoconutTargetError)
     setup(target="3.6")
-    assert parse("f''")
     assert parse("def f(*, x=None) = x")
     if CoconutKernel is not None:
         if PY35:

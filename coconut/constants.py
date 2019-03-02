@@ -381,6 +381,7 @@ tre_store_var = reserved_prefix + "_recursive_func"
 tre_check_var = reserved_prefix + "_is_recursive"
 none_coalesce_var = reserved_prefix + "_none_coalesce_item"
 func_var = reserved_prefix + "_func"
+format_var = reserved_prefix + "_format"
 
 # prefer Matcher.get_temp_var to proliferating more match vars here
 match_to_var = reserved_prefix + "_match_to"
