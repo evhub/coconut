@@ -445,6 +445,7 @@ class Compiler(Grammar):
         self.endline_semicolon <<= attach(self.endline_semicolon_ref, self.endline_semicolon_check)
         self.async_stmt <<= attach(self.async_stmt_ref, self.async_stmt_check)
         self.async_comp_for <<= attach(self.async_comp_for_ref, self.async_comp_check)
+        self.namedexpr <<= attach(self.namedexpr_ref, self.namedexpr_check)
 
     def copy_skips(self):
         """Copy the line skips."""
@@ -2017,15 +2018,15 @@ def __eq__(self, other):
 
     def star_assign_item_check(self, original, loc, tokens):
         """Check for Python 3 starred assignment."""
-        return self.check_py("3", "starred assignment (add 'match' to front to produce universal code)", original, loc, tokens)
+        return self.check_py("3", "starred assignment (use 'match' to produce universal code)", original, loc, tokens)
 
     def star_expr_check(self, original, loc, tokens):
         """Check for Python 3.5 star unpacking."""
-        return self.check_py("35", "star unpacking (add 'match' to front to produce universal code)", original, loc, tokens)
+        return self.check_py("35", "star unpacking (use 'match' to produce universal code)", original, loc, tokens)
 
     def star_sep_check(self, original, loc, tokens):
         """Check for Python 3 keyword-only arguments."""
-        return self.check_py("3", "keyword-only argument separator (add 'match' to front to produce universal code)", original, loc, tokens)
+        return self.check_py("3", "keyword-only argument separator (use 'match' to produce universal code)", original, loc, tokens)
 
     def matrix_at_check(self, original, loc, tokens):
         """Check for Python 3.5 matrix multiplication."""
@@ -2038,6 +2039,10 @@ def __eq__(self, other):
     def async_comp_check(self, original, loc, tokens):
         """Check for Python 3.6 async comprehension."""
         return self.check_py("36", "async comprehension", original, loc, tokens)
+
+    def namedexpr_check(self, original, loc, tokens):
+        """Check for Python 3.8 assignment expressions."""
+        return self.check_py("38", "assignment expression", original, loc, tokens)
 
 # end: CHECKING HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------

@@ -13,6 +13,7 @@ from coconut.exceptions import (
     CoconutStyleError,
     CoconutSyntaxError,
     CoconutTargetError,
+    CoconutParseError,
 )  # type: ignore
 from coconut.convenience import (
     CoconutException,
@@ -50,7 +51,7 @@ def unwrap_future(maybe_future):
         return maybe_future.result()
     return maybe_future
 
-def main():
+def test_extras():
     if IPY:
         import coconut.highlighter  # type: ignore
     assert consume(range(10), keep_last=1)[0] == 9 == coc_consume(range(10), keep_last=1)[0]
@@ -112,11 +113,15 @@ def main():
     assert_raises(-> parse("f(*x, y)"), CoconutSyntaxError)
     assert_raises(-> parse("def f(x) = return x"), CoconutSyntaxError)
     assert_raises(-> parse("def f(x) =\n return x"), CoconutSyntaxError)
+    assert_raises(-> parse("a := b"), CoconutParseError)
+    assert_raises(-> parse("(a := b)"), CoconutTargetError)
     setup(target="2.7")
     assert parse("from io import BytesIO", mode="any") == "from io import BytesIO"
     assert_raises(-> parse("def f(*, x=None) = x"), CoconutTargetError)
     setup(target="3.6")
     assert parse("def f(*, x=None) = x")
+    setup(target="3.8")
+    assert parse("(a := b)")
     if CoconutKernel is not None:
         if PY35:
             asyncio.set_event_loop(asyncio.new_event_loop())
@@ -149,4 +154,4 @@ def main():
 if __name__ == "__main__":
     print("Expect Coconut errors below from running extras:")
     print("(but make sure you get a <success> after them)")
-    main()
+    test_extras()

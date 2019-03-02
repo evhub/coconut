@@ -699,6 +699,7 @@ class Grammar(object):
     unsafe_dubcolon = Literal("::")
     unsafe_colon = Literal(":")
     colon = ~unsafe_dubcolon + unsafe_colon
+    colon_eq = Literal(":=")
     semicolon = Literal(";")
     eq = Literal("==")
     equals = ~eq + Literal("=")
@@ -764,6 +765,7 @@ class Grammar(object):
     matrix_at = Forward()
 
     test = Forward()
+    namedexpr_test = Forward()
     test_no_chain, dubcolon = disable_inside(test, unsafe_dubcolon)
     test_no_infix, backtick = disable_inside(test, unsafe_backtick)
 
@@ -875,6 +877,7 @@ class Grammar(object):
 
     testlist = trace(itemlist(test, comma, suppress_trailing=False))
     testlist_star_expr = trace(itemlist(test | star_expr, comma, suppress_trailing=False))
+    testlist_star_namedexpr = trace(itemlist(namedexpr_test | star_expr, comma, suppress_trailing=False))
     testlist_has_comma = trace(addspace(OneOrMore(condense(test + comma)) + Optional(test)))
 
     yield_from = Forward()
@@ -1015,7 +1018,7 @@ class Grammar(object):
     subscriptgroup = attach(slicetestgroup + sliceopgroup + Optional(sliceopgroup) | test, subscriptgroup_handle)
     subscriptgrouplist = itemlist(subscriptgroup, comma)
 
-    testlist_comp = addspace((test | star_expr) + comp_for) | testlist_star_expr
+    testlist_comp = addspace((namedexpr_test | star_expr) + comp_for) | testlist_star_namedexpr
     list_comp = condense(lbrack + Optional(testlist_comp) + rbrack)
     paren_atom = condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
     op_atom = lparen.suppress() + op_item + rparen.suppress()
@@ -1273,6 +1276,13 @@ class Grammar(object):
     )
     test_no_cond <<= trace(lambdef_no_cond | test_item)
 
+    namedexpr = Forward()
+    namedexpr_ref = addspace(name + colon_eq + test)
+    namedexpr_test <<= trace(
+        test + ~colon_eq
+        | namedexpr,
+    )
+
     async_comp_for = Forward()
     classlist_ref = Optional(
         lparen.suppress() + rparen.suppress()
@@ -1409,11 +1419,11 @@ class Grammar(object):
     exec_stmt = Forward()
     assert_stmt = addspace(keyword("assert") - testlist)
     if_stmt = condense(
-        addspace(keyword("if") - condense(test - suite))
-        - ZeroOrMore(addspace(keyword("elif") - condense(test - suite)))
+        addspace(keyword("if") - condense(namedexpr_test - suite))
+        - ZeroOrMore(addspace(keyword("elif") - condense(namedexpr_test - suite)))
         - Optional(else_stmt),
     )
-    while_stmt = addspace(keyword("while") - condense(test - suite - Optional(else_stmt)))
+    while_stmt = addspace(keyword("while") - condense(namedexpr_test - suite - Optional(else_stmt)))
     for_stmt = addspace(keyword("for") - assignlist - keyword("in") - condense(testlist - suite - Optional(else_stmt)))
     except_clause = attach(
         keyword("except").suppress() + (

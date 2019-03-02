@@ -336,12 +336,13 @@ hash_sep = "\x00"
 py2_vers = ((2, 6), (2, 7))
 py3_vers = ((3, 2), (3, 3), (3, 4), (3, 5), (3, 6), (3, 7))
 
-specific_targets = ("2", "27", "3", "33", "35", "36")
+specific_targets = ("2", "27", "3", "33", "35", "36", "38")
 pseudo_targets = {
     "universal": "",
     "26": "2",
     "32": "3",
     "34": "33",
+    "37": "36",
 }
 
 targets = ("",) + specific_targets
