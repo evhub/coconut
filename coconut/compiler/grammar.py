@@ -765,7 +765,6 @@ class Grammar(object):
     matrix_at = Forward()
 
     test = Forward()
-    namedexpr_test = Forward()
     test_no_chain, dubcolon = disable_inside(test, unsafe_dubcolon)
     test_no_infix, backtick = disable_inside(test, unsafe_backtick)
 
@@ -874,6 +873,7 @@ class Grammar(object):
     dubstar_expr = Forward()
     comp_for = Forward()
     test_no_cond = Forward()
+    namedexpr_test = Forward()
 
     testlist = trace(itemlist(test, comma, suppress_trailing=False))
     testlist_star_expr = trace(itemlist(test | star_expr, comma, suppress_trailing=False))

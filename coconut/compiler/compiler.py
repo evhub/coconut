@@ -370,9 +370,11 @@ class Compiler(Grammar):
         """Generate a hash from code."""
         return hex(checksum(
             hash_sep.join(
-                str(item) for item in (VERSION_STR,)
-                + self.__reduce__()[1]
-                + (package_level, code)
+                str(item) for item in (
+                    (VERSION_STR,)
+                    + self.__reduce__()[1]
+                    + (package_level, code)
+                )
             ).encode(default_encoding),
         ))
 
