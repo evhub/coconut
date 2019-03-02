@@ -2079,7 +2079,7 @@ def __eq__(self, other):
 
     def parse_eval(self, inputstring):
         """Parse eval code."""
-        return self.parse(inputstring, self.eval_parser, {"strip": True}, {"header": "none", "initial": "none"})
+        return self.parse(inputstring, self.eval_parser, {"strip": True}, {"header": "none", "initial": "none", "final_endline": False})
 
     def parse_any(self, inputstring):
         """Parse any code."""

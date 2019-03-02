@@ -66,7 +66,7 @@ def main():
     assert parse("abc", "file")
     assert parse("abc", "package")
     assert parse("abc", "block") == "abc\n" == parse("abc", "single")
-    assert parse("abc", "eval") == "abc\n" == parse(" abc", "eval")
+    assert parse("abc", "eval") == "abc" == parse(" abc", "eval")
     assert parse("abc", "any") == "abc"
     assert parse("x |> map$(f)", "any") == "map(f, x)"
     assert "_coconut" not in parse("a |> .b |> .m() |> f$(x) |> .[0]", "block")
