@@ -115,9 +115,12 @@ class Matcher(object):
         self.others = []
         self.guards = []
 
-    def duplicate(self):
+    def duplicate(self, separate_names=False):
         """Duplicates the matcher to others."""
-        other = Matcher(self.loc, self.check_var, self.checkdefs, self.names, self.var_index)
+        new_names = self.names
+        if separate_names:
+            new_names = new_names.copy()
+        other = Matcher(self.loc, self.check_var, self.checkdefs, new_names, self.var_index)
         other.insert_check(0, "not " + self.check_var)
         self.others.append(other)
         return other
@@ -604,7 +607,7 @@ class Matcher(object):
     def match_or(self, tokens, item):
         """Matches or."""
         for x in range(1, len(tokens)):
-            self.duplicate().match(tokens[x], item)
+            self.duplicate(separate_names=True).match(tokens[x], item)
         with self.only_self():
             self.match(tokens[0], item)
 

@@ -508,6 +508,8 @@ def main_test():
     assert f"{{" == "{"
     assert f"}}" == "}"
     assert f"{1, 2}" == "(1, 2)"
+    match {"a": {"b": x }} or {"a": {"b": {"c": x}}} = {"a": {"b": {"c": "x"}}}
+    assert x == {"c": "x"}
     return True
 
 def tco_func() = tco_func()
