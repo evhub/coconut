@@ -507,6 +507,7 @@ def main_test():
     assert f"{({})}" == "{}" == f"{({})!r}"
     assert f"{{" == "{"
     assert f"}}" == "}"
+    assert f"{1, 2}" == "(1, 2)"
     return True
 
 def tco_func() = tco_func()

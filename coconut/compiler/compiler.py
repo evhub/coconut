@@ -1962,7 +1962,7 @@ def __eq__(self, other):
 
             # generate format call
             return ("r" if raw else "") + strchar + new_text + strchar + ".format(" + ", ".join(
-                format_var + "_" + str(i) + "=" + expr
+                format_var + "_" + str(i) + "=(" + expr + ")"
                 for i, expr in enumerate(exprs)
             ) + ")"
 
