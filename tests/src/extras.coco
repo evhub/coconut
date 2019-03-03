@@ -122,6 +122,7 @@ def test_extras():
     assert parse("def f(*, x=None) = x")
     setup(target="3.8")
     assert parse("(a := b)")
+    assert parse("print(a := 1, b := 2)")
     if CoconutKernel is not None:
         if PY35:
             asyncio.set_event_loop(asyncio.new_event_loop())

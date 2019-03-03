@@ -981,30 +981,29 @@ class Grammar(object):
         comma,
     ))))
 
+    call_item = (
+        dubstar + test
+        | star + test
+        | name + default
+        | namedexpr_test
+    )
     function_call_tokens = lparen.suppress() + (
         # everything here must end with rparen
         rparen.suppress()
         | Group(op_item) + rparen.suppress()
         | Group(attach(addspace(test + comp_for), add_paren_handle)) + rparen.suppress()
-        | tokenlist(Group(dubstar + test | star + test | name + default | test), comma) + rparen.suppress()
+        | tokenlist(Group(call_item), comma) + rparen.suppress()
     )
     function_call = attach(function_call_tokens, function_call_handle)
     questionmark_call_tokens = Group(tokenlist(
         Group(
-            questionmark | dubstar + test | star + test | name + default | test,
+            questionmark
+            | call_item,
         ),
         comma,
     ))
     methodcaller_args = (
-        itemlist(
-            condense(
-                dubstar + test
-                | star + test
-                | name + default
-                | test,
-            ),
-            comma,
-        )
+        itemlist(condense(call_item), comma)
         | op_item
     )
 
