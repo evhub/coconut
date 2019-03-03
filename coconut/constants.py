@@ -145,6 +145,7 @@ all_reqs = {
     "tests": (
         "pytest",
         "pexpect",
+        "numpy",
     ),
     "cPyparsing": (
         "cPyparsing",
@@ -170,6 +171,7 @@ min_versions = {
     "watchdog": (0, 9),
     "trollius": (2, 2),
     "requests": (2,),
+    "numpy": (1,),
     # don't upgrade this; it breaks on Python 2.6
     "pytest": (3,),
     # don't upgrade this; it breaks on unix

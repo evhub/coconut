@@ -525,6 +525,9 @@ def makedata(data_type, *args):
     Override by defining obj.__fmap__(func)."""
     if _coconut.hasattr(obj, "__fmap__"):
         return obj.__fmap__(func)
+    if _coconut.hasattr(obj, "__class__") and _coconut.hasattr(obj.__class__, "__module__") and obj.__class__.__module__ == "numpy":
+        from numpy import vectorize
+        return vectorize(func)(obj)
     return _coconut_makedata(obj.__class__, *(_coconut_starmap(func, obj.items()) if _coconut.isinstance(obj, _coconut.abc.Mapping) else _coconut_map(func, obj)))
 def memoize(maxsize=None, *args, **kwargs):
     """Decorator that memoizes a function,

@@ -2103,6 +2103,8 @@ In functional programming, `fmap(func, obj)` takes a data type `obj` and returns
 
 For `dict`, or any other `collections.abc.Mapping`, `fmap` will be called on the mapping's `.items()` instead of the default iteration through its `.keys()`.
 
+As an additional special case, for [`numpy`](http://www.numpy.org/) objects, `fmap` will use [`vectorize`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.vectorize.html) to produce the result.
+
 ##### Example
 
 **Coconut:**

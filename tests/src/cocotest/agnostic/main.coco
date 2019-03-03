@@ -1,6 +1,9 @@
 import sys
 import asyncio  # type: ignore
 
+import numpy as np
+
+
 def main_test():
     """Basic no-dependency tests."""
     assert "\n" == (
@@ -510,6 +513,7 @@ def main_test():
     assert f"{1, 2}" == "(1, 2)"
     match {"a": {"b": x }} or {"a": {"b": {"c": x}}} = {"a": {"b": {"c": "x"}}}
     assert x == {"c": "x"}
+    assert np.all(fmap(-> _ + 1, np.arange(3)) == np.array([1, 2, 3]))
     return True
 
 def tco_func() = tco_func()
