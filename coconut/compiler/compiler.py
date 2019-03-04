@@ -1156,10 +1156,14 @@ class Compiler(Grammar):
             out += name + " = (" + item + ")(" + name + ")"
         elif op == "|*>=":
             out += name + " = (" + item + ")(*" + name + ")"
+        elif op == "|**>=":
+            out += name + " = (" + item + ")(**" + name + ")"
         elif op == "<|=":
             out += name + " = " + name + "((" + item + "))"
         elif op == "<*|=":
             out += name + " = " + name + "(*(" + item + "))"
+        elif op == "<**|=":
+            out += name + " = " + name + "(**(" + item + "))"
         elif op == "..=" or op == "<..=":
             out += name + " = _coconut_forward_compose((" + item + "), " + name + ")"
         elif op == "..>=":
@@ -1168,6 +1172,10 @@ class Compiler(Grammar):
             out += name + " = _coconut_forward_star_compose((" + item + "), " + name + ")"
         elif op == "..*>=":
             out += name + " = _coconut_forward_star_compose(" + name + ", (" + item + "))"
+        elif op == "<**..=":
+            out += name + " = _coconut_forward_dubstar_compose((" + item + "), " + name + ")"
+        elif op == "..**>=":
+            out += name + " = _coconut_forward_dubstar_compose(" + name + ", (" + item + "))"
         elif op == "??=":
             out += name + " = " + item + " if " + name + " is None else " + name
         elif op == "::=":

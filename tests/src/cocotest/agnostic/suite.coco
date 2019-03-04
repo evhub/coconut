@@ -512,6 +512,29 @@ def suite_test():
         assert err
     else:
         assert False
+
+    assert dict(a=1, b=2) |**> ret_args_kwargs == ((), dict(a=1, b=2)) == (|**>)(dict(a=1, b=2), ret_args_kwargs)
+    x = dict(a=1, b=2)
+    x |**>= ret_args_kwargs
+    assert x == ((), dict(a=1, b=2))
+
+    assert ret_args_kwargs <**| {"a": 1, "b": 2} == ((), {"a": 1, "b": 2}) == (<**|)(ret_args_kwargs, {"a": 1, "b": 2})
+    f = ret_args_kwargs
+    f <**|= {"a": 1, "b": 2}
+    assert f == ((), {"a": 1, "b": 2})
+
+    ret_dict = -> dict(x=2)
+
+    assert (ret_dict ..**> ret_args_kwargs$(1))() == ((1,), dict(x=2)) == ((..**>)(ret_dict, ret_args_kwargs$(1)))()
+    x = ret_dict
+    x ..**>= ret_args_kwargs$(1)
+    assert x() == ((1,), dict(x=2))
+
+    assert (ret_args_kwargs$(1) <**.. ret_dict)() == ((1,), dict(x=2)) == ((<**..)(ret_args_kwargs$(1), ret_dict))()
+    f = ret_args_kwargs$(1)
+    f <**..= ret_dict
+    assert f() == ((1,), dict(x=2))
+
     return True
 
 def tco_test():

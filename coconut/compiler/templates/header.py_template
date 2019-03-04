@@ -29,29 +29,40 @@ class _coconut_base_compose{object}:
     def __init__(self, func, *funcstars):
         self.func = func
         self.funcstars = []
-        for f, star in funcstars:
+        for f, stars in funcstars:
             if isinstance(f, _coconut_base_compose):
-                self.funcstars.append((f.func, star))
+                self.funcstars.append((f.func, stars))
                 self.funcstars += f.funcstars
             else:
-                self.funcstars.append((f, star))
+                self.funcstars.append((f, stars))
     def __call__(self, *args, **kwargs):
         arg = self.func(*args, **kwargs)
-        for f, star in self.funcstars:
-            arg = f(*arg) if star else f(arg)
+        for f, stars in self.funcstars:
+            if stars == 0:
+                arg = f(arg)
+            elif stars == 1:
+                arg = f(*arg)
+            elif stars == 2:
+                arg = f(**arg)
+            else:
+                raise ValueError()
         return arg
     def __repr__(self):
-        return _coconut.repr(self.func) + " " + " ".join(("..*> " if star else "..> ") + _coconut.repr(f) for f, star in self.funcstars)
+        return _coconut.repr(self.func) + " " + " ".join(("..*> " if star == 1 else "..**>" if star == 2 else "..> ") + _coconut.repr(f) for f, star in self.funcstars)
     def __reduce__(self):
         return (self.__class__, (self.func,) + _coconut.tuple(self.funcstars))
-def _coconut_forward_compose(func, *funcs): return _coconut_base_compose(func, *((f, False) for f in funcs))
+def _coconut_forward_compose(func, *funcs): return _coconut_base_compose(func, *((f, 0) for f in funcs))
 def _coconut_back_compose(*funcs): return _coconut_forward_compose(*_coconut.reversed(funcs))
-def _coconut_forward_star_compose(func, *funcs): return _coconut_base_compose(func, *((f, True) for f in funcs))
+def _coconut_forward_star_compose(func, *funcs): return _coconut_base_compose(func, *((f, 1) for f in funcs))
 def _coconut_back_star_compose(*funcs): return _coconut_forward_star_compose(*_coconut.reversed(funcs))
+def _coconut_forward_dubstar_compose(func, *funcs): return _coconut_base_compose(func, *((f, 2) for f in funcs))
+def _coconut_back_dubstar_compose(*funcs): return _coconut_forward_dubstar_compose(*_coconut.reversed(funcs))
 def _coconut_pipe(x, f): return f(x)
 def _coconut_star_pipe(xs, f): return f(*xs)
+def _coconut_dubstar_pipe(kws, f): return f(**kws)
 def _coconut_back_pipe(f, x): return f(x)
 def _coconut_back_star_pipe(f, xs): return f(*xs)
+def _coconut_back_dubstar_pipe(f, kws): return f(**kws)
 def _coconut_bool_and(a, b): return a and b
 def _coconut_bool_or(a, b): return a or b
 def _coconut_none_coalesce(a, b): return a if a is not None else b

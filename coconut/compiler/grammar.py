@@ -183,18 +183,23 @@ def get_infix_items(tokens, callback=infix_error):
     return func, args
 
 
-def comp_pipe_info(op):
-    """Returns (direction, star) where direction is 'forwards' or 'backwards'."""
-    if op == "..>":
-        return "forwards", False
-    elif op == "<..":
-        return "backwards", False
-    elif op == "..*>":
-        return "forwards", True
-    elif op == "<*..":
-        return "backwards", True
+def pipe_info(op):
+    """Returns (direction, stars) where direction is 'forwards' or 'backwards'.
+    Works with normal pipe operators and composition pipe operators."""
+    if op.startswith("<**"):
+        return "backwards", 2
+    elif op.endswith("**>"):
+        return "forwards", 2
+    elif op.endswith("*>"):
+        return "forwards", 1
+    elif op.startswith("<*"):
+        return "backwards", 1
+    elif op.endswith(">"):
+        return "forwards", 0
+    elif op.startswith("<"):
+        return "backwards", 0
     else:
-        raise CoconutInternalException("invalid function composition pipe operator", op)
+        raise CoconutInternalException("invalid pipe operator", op)
 
 
 # end: HELPERS
@@ -314,25 +319,26 @@ def pipe_handle(loc, tokens, **kwargs):
 
     else:
         item, op = tokens.pop(), tokens.pop()
+        direction, stars = pipe_info(op)
+        star_str = "*" * stars
 
-        if op == "|>" or op == "|*>":
+        if direction == "forwards":
             # if this is an implicit partial, we have something to apply it to, so optimize it
             name, split_item = pipe_item_split(item, loc)
-            star = "*" if op == "|*>" else ""
             if name == "expr":
                 internal_assert(len(split_item) == 1)
-                return "(" + split_item[0] + ")(" + star + pipe_handle(loc, tokens) + ")"
+                return "(" + split_item[0] + ")(" + star_str + pipe_handle(loc, tokens) + ")"
             elif name == "partial":
                 internal_assert(len(split_item) == 3)
-                return split_item[0] + "(" + join_args((split_item[1], star + pipe_handle(loc, tokens), split_item[2])) + ")"
+                return split_item[0] + "(" + join_args((split_item[1], star_str + pipe_handle(loc, tokens), split_item[2])) + ")"
             elif name == "attrgetter":
                 internal_assert(len(split_item) == 2)
-                if star:
+                if stars:
                     raise CoconutDeferredSyntaxError("cannot star pipe into attribute access or method call", loc)
                 return "(" + pipe_handle(loc, tokens) + ")." + split_item[0] + ("(" + split_item[1] + ")" if split_item[1] is not None else "")
             elif name == "itemgetter":
                 internal_assert(len(split_item) == 2)
-                if star:
+                if stars:
                     raise CoconutDeferredSyntaxError("cannot star pipe into item getting", loc)
                 op, args = split_item
                 if op == "[":
@@ -344,38 +350,37 @@ def pipe_handle(loc, tokens, **kwargs):
             else:
                 raise CoconutInternalException("invalid split pipe item", split_item)
 
-        elif op == "<|" or op == "<*|":
+        elif direction == "backwards":
             # for backwards pipes, we just reuse the machinery for forwards pipes
-            star = "*" if op == "<*|" else ""
             inner_item = pipe_handle(loc, tokens, top=False)
             if isinstance(inner_item, str):
                 inner_item = [inner_item]  # artificial pipe item
-            return pipe_handle(loc, [item, "|" + star + ">", inner_item])
+            return pipe_handle(loc, [item, "|" + star_str + ">", inner_item])
 
         else:
-            raise CoconutInternalException("invalid pipe operator", op)
+            raise CoconutInternalException("invalid pipe operator direction", direction)
 
 
 def comp_pipe_handle(loc, tokens):
     """Process pipe function composition."""
     internal_assert(len(tokens) >= 3 and len(tokens) % 2 == 1, "invalid composition pipe tokens", tokens)
     funcs = [tokens[0]]
-    stars = []
+    stars_per_func = []
     direction = None
     for i in range(1, len(tokens), 2):
         op, fn = tokens[i], tokens[i + 1]
-        new_direction, star = comp_pipe_info(op)
+        new_direction, stars = pipe_info(op)
         if direction is None:
             direction = new_direction
         elif new_direction != direction:
             raise CoconutDeferredSyntaxError("cannot mix function composition pipe operators with different directions", loc)
         funcs.append(fn)
-        stars.append(star)
+        stars_per_func.append(stars)
     if direction == "backwards":
         funcs.reverse()
-        stars.reverse()
+        stars_per_func.reverse()
     func = funcs.pop(0)
-    funcstars = zip(funcs, stars)
+    funcstars = zip(funcs, stars_per_func)
     return "_coconut_base_compose(" + func + ", " + ", ".join(
         "(%s, %s)" % (f, star) for f, star in funcstars
     ) + ")"
@@ -707,7 +712,7 @@ class Grammar(object):
     rbrack = Literal("]")
     lbrace = Literal("{")
     rbrace = Literal("}")
-    lbanana = ~Literal("(|)") + ~Literal("(|>)") + ~Literal("(|*>)") + Literal("(|")
+    lbanana = Literal("(|") + ~Word(")>*", exact=1)
     rbanana = Literal("|)")
     lparen = ~lbanana + Literal("(")
     rparen = Literal(")")
@@ -718,9 +723,11 @@ class Grammar(object):
     dubslash = Literal("//")
     slash = ~dubslash + Literal("/")
     pipe = Literal("|>") | fixto(Literal("\u21a6"), "|>")
-    star_pipe = Literal("|*>") | fixto(Literal("*\u21a6"), "|*>")
     back_pipe = Literal("<|") | fixto(Literal("\u21a4"), "<|")
-    back_star_pipe = Literal("<*|") | fixto(Literal("\u21a4*"), "<*|")
+    star_pipe = Literal("|*>") | fixto(Literal("*\u21a6"), "|*>")
+    back_star_pipe = Literal("<*|") | ~Literal("\u21a4**") + fixto(Literal("\u21a4*"), "<*|")
+    dubstar_pipe = Literal("|**>") | fixto(Literal("**\u21a6"), "|**>")
+    back_dubstar_pipe = Literal("<**|") | fixto(Literal("\u21a4**"), "<**|")
     dotdot = (
         ~Literal("...") + ~Literal("..>") + ~Literal("..*>") + Literal("..")
         | ~Literal("\u2218>") + ~Literal("\u2218*>") + fixto(Literal("\u2218"), "..")
@@ -729,6 +736,8 @@ class Grammar(object):
     comp_back_pipe = Literal("<..") | fixto(Literal("<\u2218"), "<..")
     comp_star_pipe = Literal("..*>") | fixto(Literal("\u2218*>"), "..*>")
     comp_back_star_pipe = Literal("<*..") | fixto(Literal("<*\u2218"), "<*..")
+    comp_dubstar_pipe = Literal("..**>") | fixto(Literal("\u2218**>"), "..**>")
+    comp_back_dubstar_pipe = Literal("<**..") | fixto(Literal("<**\u2218"), "<**..")
     amp = Literal("&") | fixto(Literal("\u2227") | Literal("\u2229"), "&")
     caret = Literal("^") | fixto(Literal("\u22bb") | Literal("\u2295"), "^")
     unsafe_bar = ~Literal("|>") + ~Literal("|*>") + Literal("|") | fixto(Literal("\u2228") | Literal("\u222a"), "|")
@@ -835,14 +844,18 @@ class Grammar(object):
 
     augassign = (
         Combine(pipe + equals)
-        | Combine(star_pipe + equals)
         | Combine(back_pipe + equals)
+        | Combine(star_pipe + equals)
         | Combine(back_star_pipe + equals)
-        | Combine(dotdot + equals)
+        | Combine(dubstar_pipe + equals)
+        | Combine(back_dubstar_pipe + equals)
         | Combine(comp_pipe + equals)
+        | Combine(dotdot + equals)
         | Combine(comp_back_pipe + equals)
         | Combine(comp_star_pipe + equals)
         | Combine(comp_back_star_pipe + equals)
+        | Combine(comp_dubstar_pipe + equals)
+        | Combine(comp_back_dubstar_pipe + equals)
         | Combine(unsafe_dubcolon + equals)
         | Combine(div_dubslash + equals)
         | Combine(div_slash + equals)
@@ -897,14 +910,23 @@ class Grammar(object):
     test_expr = yield_expr | testlist_star_expr
 
     op_item = (
-        fixto(pipe, "_coconut_pipe")
+
+        # must go dubstar then star then no star
+        fixto(dubstar_pipe, "_coconut_dubstar_pipe")
+        | fixto(back_dubstar_pipe, "_coconut_back_dubstar_pipe")
         | fixto(star_pipe, "_coconut_star_pipe")
-        | fixto(back_pipe, "_coconut_back_pipe")
         | fixto(back_star_pipe, "_coconut_back_star_pipe")
-        | fixto(dotdot | comp_back_pipe, "_coconut_back_compose")
-        | fixto(comp_pipe, "_coconut_forward_compose")
+        | fixto(pipe, "_coconut_pipe")
+        | fixto(back_pipe, "_coconut_back_pipe")
+
+        # must go dubstar then star then no star
+        | fixto(comp_dubstar_pipe, "_coconut_forward_dubstar_compose")
+        | fixto(comp_back_dubstar_pipe, "_coconut_back_dubstar_compose")
         | fixto(comp_star_pipe, "_coconut_forward_star_compose")
         | fixto(comp_back_star_pipe, "_coconut_back_star_compose")
+        | fixto(comp_pipe, "_coconut_forward_compose")
+        | fixto(dotdot | comp_back_pipe, "_coconut_back_compose")
+
         | fixto(keyword("and"), "_coconut_bool_and")
         | fixto(keyword("or"), "_coconut_bool_or")
         | fixto(dubquestion, "_coconut_none_coalesce")
@@ -1176,7 +1198,14 @@ class Grammar(object):
 
     none_coalesce_expr = attach(infix_expr + ZeroOrMore(dubquestion.suppress() + infix_expr), none_coalesce_handle)
 
-    comp_pipe_op = comp_pipe | comp_back_pipe | comp_star_pipe | comp_back_star_pipe
+    comp_pipe_op = (
+        comp_pipe
+        | comp_star_pipe
+        | comp_back_pipe
+        | comp_back_star_pipe
+        | comp_dubstar_pipe
+        | comp_back_dubstar_pipe
+    )
     comp_pipe_expr = (
         none_coalesce_expr + ~comp_pipe_op
         | attach(
@@ -1185,7 +1214,14 @@ class Grammar(object):
         )
     )
 
-    pipe_op = pipe | star_pipe | back_pipe | back_star_pipe
+    pipe_op = (
+        pipe
+        | back_pipe
+        | star_pipe
+        | back_star_pipe
+        | dubstar_pipe
+        | back_dubstar_pipe
+    )
     pipe_item = (
         # we need the pipe_op since any of the atoms could otherwise be the start of an expression
         Group(attrgetter_atom_tokens("attrgetter")) + pipe_op

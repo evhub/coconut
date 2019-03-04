@@ -506,7 +506,7 @@ def main_test():
     x = 1
     y = "2"
     assert f"{x} == {y}" == "1 == 2"
-    assert f"{x!r} == {y!r}" == "1 == '2'"
+    assert f"{x!r} == {y!r}" == "1 == " + py_repr("2")
     assert f"{({})}" == "{}" == f"{({})!r}"
     assert f"{{" == "{"
     assert f"}}" == "}"
@@ -514,6 +514,7 @@ def main_test():
     match {"a": {"b": x }} or {"a": {"b": {"c": x}}} = {"a": {"b": {"c": "x"}}}
     assert x == {"c": "x"}
     assert np.all(fmap(-> _ + 1, np.arange(3)) == np.array([1, 2, 3]))
+    assert py_repr("x") == ("u'x'" if sys.version_info < (3,) else "'x'")
     return True
 
 def tco_func() = tco_func()

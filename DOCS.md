@@ -446,8 +446,10 @@ Coconut uses pipe operators for pipeline-style function application. All the ope
 ```coconut
 (|>)    => pipe forward
 (|*>)   => multiple-argument pipe forward
+(|**>)  => keyword argument pipe forward
 (<|)    => pipe backward
 (<*|)   => multiple-argument pipe backward
+(<**|)  => keyword argument pipe backward
 ```
 
 Additionally, all pipe operators support a lambda as the last argument, despite lambdas having a lower precedence. Thus, `a |> x -> b |> c` is equivalent to `a |> (x -> b |> c)`, not `a |> (x -> b) |> c`.
@@ -487,11 +489,11 @@ print(sq(operator.add(1, 2)))
 
 Coconut has three basic function composition operators: `..`, `..>`, and `<..`. Both `..` and `<..` use math-style "backwards" function composition, where the first function is called last, while `..>` uses "forwards" function composition, where the first function is called first.
 
-The `..>` and `<..` function composition pipe operators also have `..*>` and `<*..` forms which are, respectively, the equivalents of `|*>` and `<*|`. Forwards and backwards function composition pipes cannot be used together in the same expression (unlike normal pipes) and have precedence in-between `None`-coalescing and normal pipes.
+The `..>` and `<..` function composition pipe operators also have `..*>` and `<*..` forms which are, respectively, the equivalents of `|*>` and `<*|` and `..**>` and `<**..` forms correspond to `|**>` and `<**|`. Forwards and backwards function composition pipes cannot be used together in the same expression (unlike normal pipes) and have precedence in-between `None`-coalescing and normal pipes.
 
 The `..` operator has lower precedence than attribute access, slices, function calls, etc., but higher precedence than all other operations.
 
-The in-place function composition operators are `..=`, `..>=`, `<..=`, `..*>=`, and `<*..=`.
+The in-place function composition operators are `..=`, `..>=`, `<..=`, `..*>=`, `<*..=`, `..**>`, and `..**>`.
 
 ##### Example
 
@@ -667,9 +669,11 @@ Coconut supports Unicode alternatives to many different operator symbols. The Un
 ```
 → (\u2192)                  => "->"
 ↦ (\u21a6)                  => "|>"
-*↦ (*\u21a6)                => "|*>"
 ↤ (\u21a4)                  => "<|"
+*↦ (*\u21a6)                => "|*>"
 ↤* (\u21a4*)                => "<*|"
+**↦ (**\u21a6)              => "|**>"
+↤** (\u21a4**)              => "<**|"
 × (\xd7)                    => "*"
 ↑ (\u2191)                  => "**"
 ÷ (\xf7)                    => "/"
@@ -679,6 +683,8 @@ Coconut supports Unicode alternatives to many different operator symbols. The Un
 <∘ (<\u2218)                => "<.."
 ∘*> (\u2218*>)              => "..*>"
 <*∘ (<*\u2218)              => "<*.."
+∘**> (\u2218**>)            => "..**>"
+<**∘ (<**\u2218)            => "<**.."
 − (\u2212)                  => "-" (only subtraction)
 ⁻ (\u207b)                  => "-" (only negation)
 ¬ (\xac)                    => "~"
@@ -1133,13 +1139,17 @@ A very common thing to do in functional programming is to make use of function v
 
 ```coconut
 (|>)        => # pipe forward
-(|*>)       => # multi-arg pipe forward
 (<|)        => # pipe backward
+(|*>)       => # multi-arg pipe forward
 (<*|)       => # multi-arg pipe backward
+(|**>)      => # keyword arg pipe forward
+(<**|)      => # keyword arg pipe backward
 (..), (<..) => # backward function composition
 (..>)       => # forward function composition
 (<*..)      => # multi-arg backward function composition
 (..*>)      => # multi-arg forward function composition
+(<**..)     => # keyword arg backward function composition
+(..**>)     => # keyword arg forward function composition
 (.)         => (getattr)
 (::)        => (itertools.chain)  # will not evaluate its arguments lazily
 ($)         => (functools.partial)
