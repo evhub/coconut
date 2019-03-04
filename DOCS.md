@@ -316,7 +316,7 @@ In order of precedence, highest first, the operators supported in Coconut are:
 ===================== ==========================
 Symbol(s)             Associativity
 ===================== ==========================
-..                    n/a won't capture call
+..                    n/a (won't capture call)
 **                    right
 +, -, ~               unary
 *, /, //, %, @        left
@@ -325,24 +325,26 @@ Symbol(s)             Associativity
 &                     left
 ^                     left
 |                     left
-::                    n/a lazy
-a `b` c               left captures lambda
-??                    left short-circuit
-..>, <.., ..*>, <*..  n/a captures lambda
-|>, <|, |*>, <*|      left captures lambda
+::                    n/a (lazy)
+a `b` c               left (captures lambda)
+??                    left (short-circuits)
+..>, <.., ..*>, <*.., n/a (captures lambda)
+  ..**>, <**..
+|>, <|, |*>, <*|,     left (captures lambda)
+  |**>, <**|
 ==, !=, <, >,
   <=, >=,
   in, not in,
   is, is not          n/a
 not                   unary
-and                   left short-circuit
-or                    left short-circuit
-a if b else c         ternary left short-circuit
+and                   left (short-circuits)
+or                    left (short-circuits)
+a if b else c         ternary left (short-circuits)
 ->                    right
 ===================== ==========================
 ```
 
-Note that because indexing has a greater precedence than piping, expressions of the form `x |> y[0]` are equivalent to `x |> (y[0])`.
+Note that because addition has a greater precedence than piping, expressions of the form `x |> y + z` are equivalent to `x |> (y + z)`.
 
 ### Lambdas
 
@@ -468,7 +470,7 @@ func(args, obj.attribute.method(args))[index]
 ```
 where `func` has to go at the beginning.
 
-If Coconut compiled each of the partials in the pipe syntax as an actual partial application object, it would make the Coconut-style syntax here so much slower than the Python-style syntax as to make it near-useless. Thus, Coconut does not do that. If any of the above styles of partials or implicit partials are used in pipes, they will whenever possible be compiled to the Python-style syntax, producing no intermediate partial application objects.
+If Coconut compiled each of the partials in the pipe syntax as an actual partial application object, it would make the Coconut-style syntax significantly slower than the Python-style syntax. Thus, Coconut does not do that. If any of the above styles of partials or implicit partials are used in pipes, they will whenever possible be compiled to the Python-style syntax, producing no intermediate partial application objects.
 
 ##### Example
 
@@ -487,11 +489,9 @@ print(sq(operator.add(1, 2)))
 
 ### Compose
 
-Coconut has three basic function composition operators: `..`, `..>`, and `<..`. Both `..` and `<..` use math-style "backwards" function composition, where the first function is called last, while `..>` uses "forwards" function composition, where the first function is called first.
+Coconut has three basic function composition operators: `..`, `..>`, and `<..`. Both `..` and `<..` use math-style "backwards" function composition, where the first function is called last, while `..>` uses "forwards" function composition, where the first function is called first. Forwards and backwards function composition pipes cannot be used together in the same expression (unlike normal pipes) and have precedence in-between `None`-coalescing and normal pipes. The `..>` and `<..` function composition pipe operators also have `..*>` and `<*..` forms which are, respectively, the equivalents of `|*>` and `<*|` and `..**>` and `<**..` forms which correspond to `|**>` and `<**|`.
 
-The `..>` and `<..` function composition pipe operators also have `..*>` and `<*..` forms which are, respectively, the equivalents of `|*>` and `<*|` and `..**>` and `<**..` forms correspond to `|**>` and `<**|`. Forwards and backwards function composition pipes cannot be used together in the same expression (unlike normal pipes) and have precedence in-between `None`-coalescing and normal pipes.
-
-The `..` operator has lower precedence than attribute access, slices, function calls, etc., but higher precedence than all other operations.
+The `..` operator has lower precedence than attribute access, slices, function calls, etc., but higher precedence than all other operations while the `..>` pipe operators have a precedence directly higher than normal pipes.
 
 The in-place function composition operators are `..=`, `..>=`, `<..=`, `..*>=`, `<*..=`, `..**>`, and `..**>`.
 
@@ -563,8 +563,7 @@ _Can't be done without a complicated iterator slicing function and inspection of
 
 Coconut provides `??` as a `None`-coalescing operator, similar to the `??` null-coalescing operator in C# and Swift. Additionally, Coconut implements all of the `None`-aware operators proposed in [PEP 505](https://www.python.org/dev/peps/pep-0505/).
 
-Coconut's `??` operator evaluates to its left operand if that operand is not `None`, otherwise its right operand. The expression `foo ?? bar` evaluates to `foo` as long as it isn't `None`, and to `bar` if it is.
-The `None`-coalescing operator is short-circuiting, such that if the left operand is not `None`, the right operand won't be evaluated. This allows the right operand to be a potentially expensive operation without incurring any unnecessary cost.
+Coconut's `??` operator evaluates to its left operand if that operand is not `None`, otherwise its right operand. The expression `foo ?? bar` evaluates to `foo` as long as it isn't `None`, and to `bar` if it is. The `None`-coalescing operator is short-circuiting, such that if the left operand is not `None`, the right operand won't be evaluated. This allows the right operand to be a potentially expensive operation without incurring any unnecessary cost.
 
 The `None`-coalescing operator has a precedence in-between infix function calls and composition pipes, and is left-associative.
 
@@ -579,6 +578,7 @@ could_be_none() ?? calculate_default_value()
 ```coconut_python
 (lambda result: result if result is not None else calculate_default_value())(could_be_none())
 ```
+
 #### Coalescing Assignment Operator
 
 The in-place assignment operator is `??=`, which allows conditionally setting a variable if it is currently `None`.
@@ -597,7 +597,7 @@ baz = 0
 baz ??= expensive_task()  # right hand side isn't evaluated
 ```
 
-#### Other None-aware Operators
+#### Other None-Aware Operators
 
 Coconut also allows a single `?` before attribute access, function calling, partial application, and (iterator) indexing to short-circuit the rest of the evaluation if everything so far evaluates to `None`. This is sometimes known as a "safe navigation" operator.
 
@@ -630,7 +630,7 @@ import functools
 
 ### Expanded Indexing for Iterables
 
-Beyond indexing standard Python sequences, Coconut supports indexing into a number of iterables, including `range` and `map`, which do not support random access in Python. In Coconut, indexing into an iterable of this type uses the same syntax as indexing into a sequence in vanilla Python.
+Beyond indexing standard Python sequences, Coconut supports indexing into a number of iterables, including `range` and `map`, which do not support random access in all Python versions but do in Coconut. In Coconut, indexing into an iterable of this type uses the same syntax as indexing into a sequence in vanilla Python.
 
 ##### Example
 
@@ -880,7 +880,7 @@ pattern ::= (
 - Iterator Splits (`<list/tuple/lazy list> :: <var>`): will match the beginning of an iterable (`collections.abc.Iterable`) against the `<list/tuple/lazy list>`, then bind the rest to `<var>` or check that the iterable is done.
 - Complex String Matching (`<string> + <var> + <string>`): matches strings that start and end with the given substrings, binding the middle to `<var>`.
 
-_Note: Like [iterator slicing](#iterator-slicing), iterator and lazy list matching make no guarantee that the original iterator matched against be preserved (to preserve the iterator, use Coconut's [`tee`](#tee) or [`reiterable`](#reiterable) built-in)._
+_Note: Like [iterator slicing](#iterator-slicing), iterator and lazy list matching make no guarantee that the original iterator matched against be preserved (to preserve the iterator, use Coconut's [`tee`](#tee) or [`reiterable`](#reiterable) built-ins)._
 
 When checking whether or not an object can be matched against in a particular fashion, Coconut makes use of Python's abstract base classes. Therefore, to enable proper matching for a custom object, register it with the proper abstract base classes.
 
