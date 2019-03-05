@@ -379,6 +379,8 @@ tabideal = 4  # spaces to indent code for displaying
 
 justify_len = 79  # ideal line length
 
+max_match_val_repr_len = 500  # max len of match val reprs in err msgs
+
 reserved_prefix = "_coconut"
 decorator_var = reserved_prefix + "_decorator"
 lazy_chain_var = reserved_prefix + "_lazy_chain"
@@ -401,6 +403,7 @@ match_to_kwargs_var = match_to_var + "_kwargs"
 match_check_var = reserved_prefix + "_match_check"
 match_temp_var = reserved_prefix + "_match_temp"
 match_err_var = reserved_prefix + "_match_err"
+match_val_repr_var = reserved_prefix + "_match_val_repr"
 case_check_var = reserved_prefix + "_case_check"
 function_match_error_var = reserved_prefix + "_FunctionMatchError"
 

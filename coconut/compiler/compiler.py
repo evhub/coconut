@@ -74,6 +74,8 @@ from coconut.constants import (
     function_match_error_var,
     legal_indent_chars,
     format_var,
+    match_val_repr_var,
+    max_match_val_repr_len,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -1431,11 +1433,14 @@ def __eq__(self, other):
         repr_wrap = self.wrap_str_of(ascii(base_line))
         return (
             "if not " + check_var + ":\n" + openindent
+            + match_val_repr_var + " = _coconut.repr(" + value_var + ")\n"
             + match_err_var + " = " + match_error_class + '("pattern-matching failed for " '
-            + repr_wrap + ' " in " + _coconut.repr(_coconut.repr(' + value_var + ")))\n"
+            + repr_wrap + ' " in " + (' + match_val_repr_var
+            + " if _coconut.len(" + match_val_repr_var + ") <= " + str(max_match_val_repr_len)
+            + " else " + match_val_repr_var + "[:" + str(max_match_val_repr_len) + '] + "..."))\n'
             + match_err_var + ".pattern = " + line_wrap + "\n"
-            + match_err_var + ".value = " + value_var
-            + "\nraise " + match_err_var + "\n" + closeindent
+            + match_err_var + ".value = " + value_var + "\n"
+            + "raise " + match_err_var + "\n" + closeindent
         )
 
     def destructuring_stmt_handle(self, original, loc, tokens):

@@ -515,6 +515,11 @@ def main_test():
     assert x == {"c": "x"}
     assert np.all(fmap(-> _ + 1, np.arange(3)) == np.array([1, 2, 3]))
     assert py_repr("x") == ("u'x'" if sys.version_info < (3,) else "'x'")
+    def foo(x is int) = x
+    try:
+        foo(["foo"] * 100000)
+    except MatchError as err:
+        assert len(repr(err)) < 1000
     return True
 
 def tco_func() = tco_func()
