@@ -212,9 +212,11 @@ If the version of Python that the compiled code will be running on is known ahea
 - `2`, `2.6` (will work on any Python `>= 2.6` but `< 3`),
 - `2.7` (will work on any Python `>= 2.7` but `< 3`),
 - `3`, `3.2` (will work on any Python `>= 3.2`),
-- `3.3`, `3.4` (will work on any Python `>= 3.3`),
+- `3.3` (will work on any Python `>= 3.3`),
+- `3.4` (will work on any Python `>= 3.4`),
 - `3.5` (will work on any Python `>= 3.5`),
-- `3.6`, `3.7` (will work on any Python `>= 3.6`),
+- `3.6` (will work on any Python `>= 3.6`),
+- `3.7` (will work on any Python `>= 3.7`),
 - `3.8` (will work on any Python `>= 3.8`), and
 - `sys` (chooses the target corresponding to the current Python version).
 

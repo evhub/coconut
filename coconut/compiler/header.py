@@ -274,6 +274,8 @@ def getheader(which, target="", use_hash=None, no_tco=False, strict=False):
 
     if target_startswith != "3":
         header += "from __future__ import print_function, absolute_import, unicode_literals, division\n"
+    elif target_info >= (3, 7):
+        header += "from __future__ import generator_stop, annotations\n"
     elif target_info >= (3, 5):
         header += "from __future__ import generator_stop\n"
 
