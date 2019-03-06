@@ -7,6 +7,7 @@ from coconut.constants import (
     IPY,
     PY35,
     WINDOWS,
+    PYPY,
 )  # type: ignore
 from coconut.exceptions import (
     CoconutSyntaxError,
@@ -150,6 +151,9 @@ def test_extras():
         assert keyword_complete_result["cursor_start"] == 0
         assert keyword_complete_result["cursor_end"] == 1
         assert not keyword_complete_result["metadata"]
+    if not PYPY:
+        import numpy as np
+        assert np.all(fmap(-> _ + 1, np.arange(3)) == np.array([1, 2, 3]))
     print("<success>")
 
 if __name__ == "__main__":
