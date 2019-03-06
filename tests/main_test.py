@@ -467,11 +467,12 @@ class TestExternal(unittest.TestCase):
             comp_pyprover()
             run_pyprover()
 
-    def test_prelude(self):
-        with remove_when_done(prelude):
-            comp_prelude()
-            if PY35:  # has typing
-                run_prelude()
+    if not PYPY or PY2:
+        def test_prelude(self):
+            with remove_when_done(prelude):
+                comp_prelude()
+                if PY35:  # has typing
+                    run_prelude()
 
     def test_pyston(self):
         with remove_when_done(pyston):
