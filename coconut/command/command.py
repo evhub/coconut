@@ -275,7 +275,7 @@ class Command(object):
             elif errmsg not in self.errmsg:
                 self.errmsg += ", " + errmsg
         if code is not None:
-            self.exit_code = max(self.exit_code, code)
+            self.exit_code = code or self.exit_code
 
     @contextmanager
     def handling_exceptions(self):
@@ -569,7 +569,7 @@ class Command(object):
                 print(compiled)
             if path is not None:  # path means header is included, and thus encoding must be removed
                 compiled = rem_encoding(compiled)
-            self.runner.run(compiled, use_eval=use_eval, path=path, all_errors_exit=(path is not None))
+            self.runner.run(compiled, use_eval=use_eval, path=path, all_errors_exit=path is not None)
             self.run_mypy(code=self.runner.was_run_code())
 
     def execute_file(self, destpath):
