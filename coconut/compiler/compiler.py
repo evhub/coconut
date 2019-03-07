@@ -422,6 +422,7 @@ class Compiler(Grammar):
         self.return_typedef <<= trace(attach(self.return_typedef_ref, self.typedef_handle))
         self.typed_assign_stmt <<= trace(attach(self.typed_assign_stmt_ref, self.typed_assign_stmt_handle))
         self.datadef <<= trace(attach(self.datadef_ref, self.data_handle))
+        self.match_datadef <<= trace(attach(self.match_datadef_ref, self.match_data_handle))
         self.with_stmt <<= trace(attach(self.with_stmt_ref, self.with_stmt_handle))
         self.await_item <<= trace(attach(self.await_item_ref, self.await_item_handle))
         self.ellipsis <<= trace(attach(self.ellipsis_ref, self.ellipsis_handle))
@@ -1214,6 +1215,55 @@ class Compiler(Grammar):
         else:
             raise CoconutInternalException("invalid classlist tokens", tokens)
 
+    def match_data_handle(self, original, loc, tokens):
+        """Process pattern-matching data blocks."""
+        if len(tokens) == 3:
+            name, match_tokens, stmts = tokens
+            inherit = None
+        elif len(tokens) == 4:
+            name, match_tokens, inherit, stmts = tokens
+        else:
+            raise CoconutInternalException("invalid pattern-matching data tokens", tokens)
+
+        if len(match_tokens) == 1:
+            matches, = match_tokens
+            cond = None
+        elif len(match_tokens) == 2:
+            matches, cond = match_tokens
+        else:
+            raise CoconutInternalException("invalid pattern-matching tokens in data", match_tokens)
+
+        matcher = Matcher(loc, match_check_var, name_list=[])
+
+        req_args, def_args, star_arg, kwd_args, dubstar_arg = split_args_list(matches, loc)
+        matcher.match_function(match_to_args_var, match_to_kwargs_var, req_args + def_args, star_arg, kwd_args, dubstar_arg)
+
+        if cond is not None:
+            matcher.add_guard(cond)
+
+        arg_names = ", ".join(matcher.name_list)
+        arg_tuple = arg_names + ("," if len(matcher.name_list) == 1 else "")
+
+        extra_stmts = '''def __new__(_cls, *{match_to_args_var}, **{match_to_kwargs_var}):
+            {oind}{match_check_var} = False
+            {matching}
+            {pattern_error}
+            return _coconut.tuple.__new__(_cls, ({arg_tuple}))
+        {cind}'''.format(
+            oind=openindent,
+            cind=closeindent,
+            match_to_args_var=match_to_args_var,
+            match_to_kwargs_var=match_to_kwargs_var,
+            match_check_var=match_check_var,
+            matching=matcher.out(),
+            pattern_error=self.pattern_error(original, loc, match_to_args_var, match_check_var, function_match_error_var),
+            arg_tuple=arg_tuple,
+        )
+
+        namedtuple_call = '_coconut.collections.namedtuple("' + name + '", "' + arg_names + '")'
+
+        return self.assemble_data(name, namedtuple_call, inherit, extra_stmts, stmts)
+
     def data_handle(self, loc, tokens):
         """Process data blocks."""
         if len(tokens) == 3:
@@ -1272,16 +1322,7 @@ class Compiler(Grammar):
             all_args.append(arg_str)
 
         attr_str = " ".join(base_args)
-        extra_stmts = '''__slots__ = ()
-__ne__ = _coconut.object.__ne__
-def __eq__(self, other):
-    {oind}return self.__class__ is other.__class__ and _coconut.tuple.__eq__(self, other)
-{cind}def __hash__(self):
-    {oind}return _coconut.tuple.__hash__(self) ^ hash(self.__class__)
-{cind}'''.format(
-            oind=openindent,
-            cind=closeindent,
-        )
+        extra_stmts = ""
         if starred_arg is not None:
             attr_str += (" " if attr_str else "") + starred_arg
             if base_args:
@@ -1361,6 +1402,10 @@ def __eq__(self, other):
         else:
             namedtuple_call = '_coconut.collections.namedtuple("' + name + '", "' + attr_str + '")'
 
+        return self.assemble_data(name, namedtuple_call, inherit, extra_stmts, stmts)
+
+    def assemble_data(self, name, namedtuple_call, inherit, extra_stmts, stmts):
+        # create class
         out = (
             "class " + name + "(" + namedtuple_call + (
                 ", " + inherit if inherit is not None
@@ -1368,6 +1413,20 @@ def __eq__(self, other):
                 else ""
             ) + "):\n" + openindent
         )
+
+        # add universal statements
+        extra_stmts = '''__slots__ = ()
+        __ne__ = _coconut.object.__ne__
+        def __eq__(self, other):
+            {oind}return self.__class__ is other.__class__ and _coconut.tuple.__eq__(self, other)
+        {cind}def __hash__(self):
+            {oind}return _coconut.tuple.__hash__(self) ^ hash(self.__class__)
+        {cind}'''.format(
+            oind=openindent,
+            cind=closeindent,
+        ) + extra_stmts
+
+        # manage docstring
         rest = None
         if "simple" in stmts and len(stmts) == 1:
             out += extra_stmts
@@ -1384,6 +1443,8 @@ def __eq__(self, other):
             out += extra_stmts.rstrip() + stmts[0]
         else:
             raise CoconutInternalException("invalid inner data tokens", stmts)
+
+        # create full data definition
         if rest is not None and rest != "pass\n":
             out += rest
         out += closeindent

@@ -998,6 +998,36 @@ def classify_sequence(value):
 **Python:**
 _Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._
 
+### `match data`
+
+In addition to normal `data` statements, Coconut also supports pattern-matching data statements that enable the use of Coconut's pattern-matching syntax to define the data type's constructor. Pattern-matching data types look like
+```
+[match] data <name>(<patterns>) [from <base class>]:
+    <body>
+```
+where `<patterns>` are exactly as in [pattern-matching functions](#pattern-matching-functions).
+
+It is important to keep in mind that pattern-matching data types vary from normal data types in a variety of ways. First, like pattern-matching functions, they raise [`MatchError`](#matcherror) instead of `TypeError` when passed the wrong arguments. Second, pattern-matching data types will not do any special handling of starred arguments. Thus,
+```
+data vec(*xs)
+```
+when iterated over will iterate over all the elements of `xs`, but
+```
+match data vec(*xs)
+```
+when iterated over will only give the single element `xs`.
+
+##### Example
+
+**Coconut:**
+```
+data namedpt(name is str, x is int, y is int):
+    def mag(self) = (self.x**2 + self.y**2)**0.5
+```
+
+**Python:**
+_Can't be done without a series of method definitions for each data type. See the compiled code for the Python syntax._
+
 ### `where`
 
 Coconut's `where` statement is extremely straightforward. The syntax for a `where` statement is just

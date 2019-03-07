@@ -94,11 +94,12 @@ class Matcher(object):
         "checkdefs",
         "names",
         "var_index",
+        "name_list",
         "others",
         "guards",
     )
 
-    def __init__(self, loc, check_var, checkdefs=None, names=None, var_index=0):
+    def __init__(self, loc, check_var, checkdefs=None, names=None, var_index=0, name_list=None):
         """Creates the matcher."""
         self.loc = loc
         self.check_var = check_var
@@ -112,6 +113,7 @@ class Matcher(object):
             self.set_position(-1)
         self.names = names if names is not None else {}
         self.var_index = var_index
+        self.name_list = name_list
         self.others = []
         self.guards = []
 
@@ -120,10 +122,16 @@ class Matcher(object):
         new_names = self.names
         if separate_names:
             new_names = new_names.copy()
-        other = Matcher(self.loc, self.check_var, self.checkdefs, new_names, self.var_index)
+        other = Matcher(self.loc, self.check_var, self.checkdefs, new_names, self.var_index, self.name_list)
         other.insert_check(0, "not " + self.check_var)
         self.others.append(other)
         return other
+
+    def register_name(self, name, value):
+        """Register a new name."""
+        self.names[name] = value
+        if self.name_list is not None and name not in self.name_list:
+            self.name_list.append(name)
 
     def add_guard(self, cond):
         """Adds cond as a guard."""
@@ -548,7 +556,7 @@ class Matcher(object):
                 self.add_check(self.names[setvar] + " == " + item)
             else:
                 self.add_def(setvar + " = " + item)
-                self.names[setvar] = item
+                self.register_name(setvar, item)
 
     def match_set(self, tokens, item):
         """Matches a set."""
@@ -594,7 +602,7 @@ class Matcher(object):
                     self.add_check(self.names[arg] + " == " + item)
                 elif arg != wildcard:
                     self.add_def(arg + " = " + item)
-                    self.names[arg] = item
+                    self.register_name(arg, item)
             else:
                 raise CoconutInternalException("invalid trailer match operation", op)
         self.match(match, item)

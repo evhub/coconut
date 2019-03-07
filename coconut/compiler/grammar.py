@@ -1603,7 +1603,13 @@ class Grammar(object):
         | (newline.suppress() + indent.suppress() + docstring + dedent.suppress() | docstring)("docstring")
         | simple_stmt("simple")
     ) | newline("empty"))
-    datadef_ref = keyword("data").suppress() + name - data_args - data_suite
+    datadef_ref = keyword("data").suppress() + name + data_args + data_suite
+
+    match_datadef = Forward()
+    match_data_args = lparen.suppress() + Group(
+        match_args_list + match_guard,
+    ) + rparen.suppress() + Optional(keyword("from").suppress() + testlist)
+    match_datadef_ref = Optional(keyword("match").suppress()) + keyword("data").suppress() + name + match_data_args + data_suite
 
     simple_decorator = condense(dotted_name + Optional(function_call))("simple")
     complex_decorator = test("test")
@@ -1624,7 +1630,7 @@ class Grammar(object):
 
     decoratable_func_stmt = decoratable_normal_funcdef_stmt | decoratable_async_funcdef_stmt
 
-    class_stmt = classdef | datadef
+    class_stmt = classdef | datadef | match_datadef
     decoratable_class_stmt = trace(condense(Optional(decorators) + class_stmt))
 
     passthrough_stmt = condense(passthrough_block - (base_suite | newline))

@@ -535,6 +535,27 @@ def suite_test():
     f <**..= ret_dict
     assert f() == ((1,), dict(x=2))
 
+    assert data1(1) |> fmap$(-> _ + 1) == data1(2)
+    assert data1(1).x == 1
+    assert data2(1) |> fmap$(-> _ + 1) == data2(2)
+    try:
+        data2("a")
+    except MatchError as err:
+        assert err
+    else:
+        assert False
+    assert data3(1, 2, 3).xs == (1, 2, 3)
+    assert data4(x=1, y=2).kws == dict(x=1, y=2)
+    assert data5(1, 2, "3").__doc__ == "docstring"
+    assert data5(1, 2, "3").attr == 1
+    try:
+        data5(1, 2, 3)
+    except MatchError as err:
+        assert err
+    else:
+        assert False
+    assert issubclass(data6, BaseClass)
+    assert namedpt("a", 3, 4).mag() == 5
     return True
 
 def tco_test():

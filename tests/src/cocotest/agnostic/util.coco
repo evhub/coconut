@@ -882,3 +882,24 @@ addpattern def join_pairs2([(k, v)] + tail) =  # type: ignore
     result = join_pairs2(tail)
     result[k] += v
     result
+
+
+# Match data
+match data data1(x)
+
+data data2(x is int)
+
+match data data3(*xs)
+
+data data4(**kws)
+
+data data5(x, y is int, z is str):
+    """docstring"""
+    attr = 1
+
+class BaseClass
+
+data data6(x is int) from BaseClass
+
+data namedpt(name is str, x is int, y is int):
+    def mag(self) = (self.x**2 + self.y**2)**0.5
