@@ -44,11 +44,16 @@ except Exception:
 # -----------------------------------------------------------------------------------------------------------------------
 
 
+def get_base_req(req):
+    """Get the name of the required package for the given requirement."""
+    return req.split(":", 1)[0]
+
+
 def get_reqs(which="main"):
     """Gets requirements from all_reqs with versions."""
     reqs = []
     for req in all_reqs[which]:
-        req_str = req + ">=" + ver_tuple_to_str(min_versions[req])
+        req_str = get_base_req(req) + ">=" + ver_tuple_to_str(min_versions[req])
         if req in version_strictly:
             req_str += ",<" + ver_tuple_to_str(min_versions[req][:-1] + (min_versions[req][-1] + 1,))
         reqs.append(req_str)
@@ -117,6 +122,7 @@ if using_modern_setuptools:
     extras[":python_version<'2.7'"] = get_reqs("py26")
     extras[":python_version>='2.7'"] = get_reqs("non-py26")
     extras[":python_version<'3'"] = get_reqs("py2")
+    extras[":python_version>='3'"] = get_reqs("py3")
 
 else:
     # old method for adding version-dependent requirements
@@ -126,6 +132,8 @@ else:
         requirements += get_reqs("non-py26")
     if PY2:
         requirements += get_reqs("py2")
+    else:
+        requirements += get_reqs("py3")
 
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN:
@@ -135,7 +143,7 @@ else:
 def all_versions(req):
     """Get all versions of req from PyPI."""
     import requests
-    url = "https://pypi.python.org/pypi/" + req + "/json"
+    url = "https://pypi.python.org/pypi/" + get_base_req(req) + "/json"
     return tuple(requests.get(url).json()["releases"].keys())
 
 
@@ -166,7 +174,7 @@ def print_new_versions(strict=False):
                 new_versions.append(ver_str)
             elif not strict and newer(ver_str_to_tuple(ver_str), min_versions[req]):
                 same_versions.append(ver_str)
-        update_str = req + ": " + ver_tuple_to_str(min_versions[req]) + " -> " + ", ".join(
+        update_str = req + " = " + ver_tuple_to_str(min_versions[req]) + " -> " + ", ".join(
             new_versions + ["(" + v + ")" for v in same_versions],
         )
         if new_versions:

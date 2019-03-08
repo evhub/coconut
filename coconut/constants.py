@@ -104,11 +104,14 @@ all_reqs = {
     ),
     "non-py26": (
         "pygments",
-        "prompt_toolkit",
     ),
     "py2": (
         "futures",
         "backports.functools-lru-cache",
+        "prompt_toolkit:2",
+    ),
+    "py3": (
+        "prompt_toolkit:3",
     ),
     "py26": (
         "argparse",
@@ -171,13 +174,14 @@ min_versions = {
     "trollius": (2, 2),
     "requests": (2,),
     "numpy": (1,),
+    "prompt_toolkit:3": (2,),
     # don't upgrade this; it breaks on Python 2.6
     "pytest": (3,),
     # don't upgrade this; it breaks on unix
     "vprof": (0, 36),
     # we can't upgrade these; they breaks on Python 2
     "ipython": (5, 4),
-    "prompt_toolkit": (1,),
+    "prompt_toolkit:2": (1,),
     # don't upgrade these; they break on master
     "sphinx": (1, 7, 4),
     "sphinx_bootstrap_theme": (0, 4),
@@ -188,6 +192,7 @@ version_strictly = (
     "ipython",
     "sphinx",
     "sphinx_bootstrap_theme",
+    "prompt_toolkit:2",
 )
 
 classifiers = (
