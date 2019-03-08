@@ -163,7 +163,6 @@ min_versions = {
     "jupyter-console": (5, 2),
     "ipykernel": (4, 10),
     "mypy": (0, 660),
-    "prompt_toolkit": (1,),
     "futures": (3, 2),
     "backports.functools-lru-cache": (1, 5),
     "argparse": (1, 4),
@@ -176,8 +175,9 @@ min_versions = {
     "pytest": (3,),
     # don't upgrade this; it breaks on unix
     "vprof": (0, 36),
-    # we can't upgrade this; it breaks on Python 2
+    # we can't upgrade these; they breaks on Python 2
     "ipython": (5, 4),
+    "prompt_toolkit": (1,),
     # don't upgrade these; they break on master
     "sphinx": (1, 7, 4),
     "sphinx_bootstrap_theme": (0, 4),
@@ -186,7 +186,6 @@ min_versions = {
 version_strictly = (
     "pyparsing",
     "ipython",
-    "prompt_toolkit",
     "sphinx",
     "sphinx_bootstrap_theme",
 )
