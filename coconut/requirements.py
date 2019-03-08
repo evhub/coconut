@@ -35,9 +35,12 @@ from coconut.constants import (
 
 try:
     import setuptools  # this import is expensive, so we keep it out of constants
-    using_modern_setuptools = int(setuptools.__version__.split(".", 1)[0]) >= 18
+    setuptools_version = tuple(int(x) for x in setuptools.__version__.split("."))
+    using_modern_setuptools = setuptools_version >= (18,)
+    supports_env_markers = setuptools_version >= (36, 2)
 except Exception:
     using_modern_setuptools = False
+    supports_env_markers = False
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -46,6 +49,8 @@ except Exception:
 
 def get_base_req(req):
     """Get the name of the required package for the given requirement."""
+    if isinstance(req, tuple):
+        req = req[0]
     return req.split(":", 1)[0]
 
 
@@ -56,6 +61,20 @@ def get_reqs(which="main"):
         req_str = get_base_req(req) + ">=" + ver_tuple_to_str(min_versions[req])
         if req in version_strictly:
             req_str += ",<" + ver_tuple_to_str(min_versions[req][:-1] + (min_versions[req][-1] + 1,))
+        env_marker = req[1] if isinstance(req, tuple) else None
+        if env_marker:
+            if env_marker == "py2":
+                if supports_env_markers:
+                    req_str += ";python_version<'3'"
+                elif not PY2:
+                    continue
+            elif env_marker == "py3":
+                if supports_env_markers:
+                    req_str += ";python_version>='3'"
+                elif PY2:
+                    continue
+            else:
+                raise ValueError("unknown env marker id " + repr(env_marker))
         reqs.append(req_str)
     return reqs
 

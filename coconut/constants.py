@@ -121,7 +121,8 @@ all_reqs = {
     ),
     "jupyter": (
         "jupyter",
-        "ipython",
+        ("ipython", "py2"),
+        ("ipython", "py3"),
         "ipykernel",
         "jupyter-console",
     ),
@@ -175,12 +176,13 @@ min_versions = {
     "requests": (2,),
     "numpy": (1,),
     "prompt_toolkit:3": (2,),
+    ("ipython", "py3"): (6,),
     # don't upgrade this; it breaks on Python 2.6
     "pytest": (3,),
     # don't upgrade this; it breaks on unix
     "vprof": (0, 36),
     # we can't upgrade these; they breaks on Python 2
-    "ipython": (5, 4),
+    ("ipython", "py2"): (5, 4),
     "prompt_toolkit:2": (1,),
     # don't upgrade these; they break on master
     "sphinx": (1, 7, 4),
@@ -189,7 +191,7 @@ min_versions = {
 
 version_strictly = (
     "pyparsing",
-    "ipython",
+    ("ipython", "py2"),
     "sphinx",
     "sphinx_bootstrap_theme",
     "prompt_toolkit:2",
