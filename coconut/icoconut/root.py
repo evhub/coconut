@@ -183,13 +183,14 @@ if LOAD_MODULE:
         banner = version_banner
         language_info = {
             "name": "coconut",
+            "version": VERSION,
             "mimetype": mimetype,
-            "file_extension": code_exts[0],
             "codemirror_mode": {
                 "name": "python",
                 "version": py_syntax_version,
             },
             "pygments_lexer": "coconut",
+            "file_extension": code_exts[0],
         }
         help_links = [
             {

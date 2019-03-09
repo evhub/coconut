@@ -327,7 +327,8 @@ script_names = (
 
 packrat_cache = 512
 
-default_whitespace_chars = " \t\f\v\xa0"  # we don't include \r here because the compiler converts \r into \n
+# we don't include \r here because the compiler converts \r into \n
+default_whitespace_chars = " \t\f\v\xa0"
 
 varchars = string.ascii_letters + string.digits + "_"
 
@@ -473,7 +474,6 @@ reserved_vars = (  # can be backslash-escaped
     "await",
     "where",
 )
-
 
 py3_to_py2_stdlib = {
     # new_name: (old_name, before_version_info)
@@ -633,6 +633,7 @@ coconut_specific_builtins = (
     "py_str",
     "py_map",
     "py_zip",
+    "py_repr",
 )
 
 new_operators = (
@@ -641,17 +642,15 @@ new_operators = (
     r"\$",
     r"`",
     r"::",
-    r"(?:<\*?)?(?!\.\.\.)\.\.(?:\*?>)?",  # ..
-    r"\|>",
-    r"<\|",
-    r"\|\*>",
-    r"<\*\|",
+    r"(?:<\*?\*?)?(?!\.\.\.)\.\.(?:\*?\*?>)?",  # ..
+    r"\|\*?\*?>",
+    r"<\*?\*?\|",
     r"->",
     r"\?\??",
     "\u2192",  # ->
-    "\\*?\u21a6",  # |>
-    "\u21a4\\*?",  # <|
-    "<?\\*?\u2218\\*?>?",  # ..
+    "\\*?\\*?\u21a6",  # |>
+    "\u21a4\\*?\\*?",  # <|
+    "<?\\*?\\*?\u2218\\*?\\*?>?",  # ..
     "\u22c5",  # *
     "\u2191",  # **
     "\xf7",  # /
@@ -677,7 +676,7 @@ new_operators = (
 # ICOCONUT CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
 
-py_syntax_version = 3.6
+py_syntax_version = 3
 mimetype = "text/x-python3"
 
 all_keywords = keywords + const_vars + reserved_vars
