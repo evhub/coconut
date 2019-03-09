@@ -98,6 +98,10 @@ author_email = "evanjhub@gmail.com"
 description = "Simple, elegant, Pythonic functional programming."
 website_url = "http://coconut-lang.org"
 
+# the different categories here are defined in requirements.py,
+#  anything after a colon is ignored but allows different versions
+#  for different categories, and tuples denote the use of environment
+#  markers as specified in requirements.py
 all_reqs = {
     "main": (
         "pyparsing",
@@ -183,7 +187,7 @@ min_versions = {
     "pytest": (3,),
     # don't upgrade this; it breaks on unix
     "vprof": (0, 36),
-    # we can't upgrade these; they breaks on Python 2
+    # don't upgrade these; they break on Python 2
     ("ipython", "py2"): (5, 4),
     ("jupyter-console", "py2"): (5, 2),
     ("ipykernel", "py2"): (4, 10),
@@ -201,6 +205,7 @@ version_strictly = (
     ("ipykernel", "py2"),
     "sphinx",
     "sphinx_bootstrap_theme",
+    "mypy",
 )
 
 classifiers = (
