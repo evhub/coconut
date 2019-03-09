@@ -123,8 +123,10 @@ all_reqs = {
         "jupyter",
         ("ipython", "py2"),
         ("ipython", "py3"),
-        "ipykernel",
-        "jupyter-console",
+        ("ipykernel", "py2"),
+        ("ipykernel", "py3"),
+        ("jupyter-console", "py2"),
+        ("jupyter-console", "py3"),
     ),
     "mypy": (
         "mypy",
@@ -164,9 +166,7 @@ min_versions = {
     "recommonmark": (0, 5),
     "psutil": (5,),
     "jupyter": (1, 0),
-    "jupyter-console": (5, 2),
-    "ipykernel": (4, 10),
-    "mypy": (0, 660),
+    "mypy": (0, 670),
     "futures": (3, 2),
     "backports.functools-lru-cache": (1, 5),
     "argparse": (1, 4),
@@ -176,13 +176,17 @@ min_versions = {
     "requests": (2,),
     "numpy": (1,),
     "prompt_toolkit:3": (2,),
-    ("ipython", "py3"): (6,),
+    ("ipython", "py3"): (7,),
+    ("jupyter-console", "py3"): (6,),
+    ("ipykernel", "py3"): (5,),
     # don't upgrade this; it breaks on Python 2.6
     "pytest": (3,),
     # don't upgrade this; it breaks on unix
     "vprof": (0, 36),
     # we can't upgrade these; they breaks on Python 2
     ("ipython", "py2"): (5, 4),
+    ("jupyter-console", "py2"): (5, 2),
+    ("ipykernel", "py2"): (4, 10),
     "prompt_toolkit:2": (1,),
     # don't upgrade these; they break on master
     "sphinx": (1, 7, 4),
@@ -191,10 +195,12 @@ min_versions = {
 
 version_strictly = (
     "pyparsing",
+    "prompt_toolkit:2",
     ("ipython", "py2"),
+    ("jupyter-console", "py2"),
+    ("ipykernel", "py2"),
     "sphinx",
     "sphinx_bootstrap_theme",
-    "prompt_toolkit:2",
 )
 
 classifiers = (

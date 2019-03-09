@@ -193,8 +193,14 @@ def print_new_versions(strict=False):
                 new_versions.append(ver_str)
             elif not strict and newer(ver_str_to_tuple(ver_str), min_versions[req]):
                 same_versions.append(ver_str)
-        update_str = req + " = " + ver_tuple_to_str(min_versions[req]) + " -> " + ", ".join(
-            new_versions + ["(" + v + ")" for v in same_versions],
+        if isinstance(req, tuple):
+            base_req, env_marker = req
+        else:
+            base_req, env_marker = req, None
+        update_str = (
+            base_req + (" (" + env_marker + ")" if env_marker else "")
+            + " = " + ver_tuple_to_str(min_versions[req])
+            + " -> " + ", ".join(new_versions + ["(" + v + ")" for v in same_versions])
         )
         if new_versions:
             new_updates.append(update_str)
