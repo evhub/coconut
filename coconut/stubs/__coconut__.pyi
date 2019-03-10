@@ -143,7 +143,7 @@ def _coconut_igetitem(
 
 def _coconut_base_compose(
     func: _t.Callable[[_T], _t.Any],
-    *funcstars: _t.Tuple[_t.Callable, bool],
+    *funcstars: _t.Tuple[_t.Callable, int],
     ) -> _t.Callable[[_T], _t.Any]: ...
 
 
@@ -167,7 +167,9 @@ def _coconut_forward_compose(
     ) -> _t.Callable[..., _W]: ...
 @_t.overload
 def _coconut_forward_compose(*funcs: _t.Callable) -> _t.Callable: ...
+
 _coconut_forward_star_compose = _coconut_forward_compose
+_coconut_forward_dubstar_compose = _coconut_forward_compose
 
 
 @_t.overload
@@ -190,7 +192,9 @@ def _coconut_back_compose(
     ) -> _t.Callable[..., _W]: ...
 @_t.overload
 def _coconut_back_compose(*funcs: _t.Callable) -> _t.Callable: ...
+
 _coconut_back_star_compose = _coconut_back_compose
+_coconut_back_dubstar_compose = _coconut_back_compose
 
 
 def _coconut_pipe(x: _T, f: _t.Callable[[_T], _U]) -> _U: ...
@@ -199,6 +203,10 @@ def _coconut_back_pipe(f: _t.Callable[[_T], _U], x: _T) -> _U: ...
 
 def _coconut_star_pipe(xs: _t.Iterable, f: _t.Callable[..., _T]) -> _T: ...
 def _coconut_back_star_pipe(f: _t.Callable[..., _T], xs: _t.Iterable) -> _T: ...
+
+
+def _coconut_dubstar_pipe(kws: _t.Dict, f: _t.Callable[..., _T]) -> _T: ...
+def _coconut_back_dubstar_pipe(f: _t.Callable[..., _T], kws: _t.Dict) -> _T: ...
 
 
 def _coconut_bool_and(a, b):

@@ -180,9 +180,9 @@ min_versions = {
     "requests": (2,),
     "numpy": (1,),
     "prompt_toolkit:3": (2,),
-    ("ipython", "py3"): (7,),
+    ("ipython", "py3"): (7, 3),
     ("jupyter-console", "py3"): (6,),
-    ("ipykernel", "py3"): (5,),
+    ("ipykernel", "py3"): (5, 1),
     # don't upgrade this; it breaks on Python 2.6
     "pytest": (3,),
     # don't upgrade this; it breaks on unix
