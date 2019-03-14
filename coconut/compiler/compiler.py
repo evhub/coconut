@@ -370,11 +370,19 @@ class Compiler(Grammar):
 
     def genhash(self, code, package_level=-1):
         """Generate a hash from code."""
+        reduce_args = self.__reduce__()[1]
+        logger.log(
+            "Hash args:", {
+                "VERSION_STR": VERSION_STR,
+                "reduce_args": reduce_args,
+                "package_level": package_level,
+            },
+        )
         return hex(checksum(
             hash_sep.join(
                 str(item) for item in (
                     (VERSION_STR,)
-                    + self.__reduce__()[1]
+                    + reduce_args
                     + (package_level, code)
                 )
             ).encode(default_encoding),
