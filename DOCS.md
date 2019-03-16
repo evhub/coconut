@@ -84,7 +84,8 @@ coconut [-h] [-v] [-t version] [-i] [-p] [-a] [-l] [-k] [-w] [-r] [-n]
         [-d] [-q] [-s] [--no-tco] [-c code] [-j processes] [-f]
         [--minify] [--jupyter ...] [--mypy ...] [--argv ...]
         [--tutorial] [--documentation] [--style name]
-        [--recursion-limit limit] [--verbose] [--trace]
+        [--history-file path] [--recursion-limit limit] [--verbose]
+        [--trace]
         [source] [dest]
 ```
 
@@ -136,7 +137,8 @@ dest                destination directory for compiled files (defaults to
                         (remaining args passed to Jupyter)
   --mypy ...            run MyPy on compiled Python (remaining args passed to
                         MyPy) (implies --package)
-  --argv ...            set sys.argv to source plus remaining args for use in
+  --argv ..., --args ...
+                        set sys.argv to source plus remaining args for use in
                         Coconut script being run
   --tutorial            open Coconut's tutorial in the default web browser
   --documentation       open Coconut's documentation in the default web
