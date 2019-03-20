@@ -517,6 +517,19 @@ def main_test():
         foo(["foo"] * 100000)
     except MatchError as err:
         assert len(repr(err)) < 1000
+    (assert)(True)
+    try:
+        (assert)(False, "msg")
+    except AssertionError as err:
+        assert str(err) == "msg"
+    else:
+        assert False
+    try:
+        (assert)([])
+    except AssertionError as err:
+        assert str(err) == "(assert) got falsey value []"
+    else:
+        assert False
     return True
 
 def tco_func() = tco_func()

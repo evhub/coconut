@@ -209,6 +209,10 @@ def _coconut_dubstar_pipe(kws: _t.Dict[_t.Text, _t.Any], f: _t.Callable[..., _T]
 def _coconut_back_dubstar_pipe(f: _t.Callable[..., _T], kws: _t.Dict[_t.Text, _t.Any]) -> _T: ...
 
 
+def _coconut_assert(cond, msg: _t.Optional[_t.Text]=None):
+    assert cond, msg
+
+
 def _coconut_bool_and(a, b):
     return a and b
 def _coconut_bool_or(a, b):

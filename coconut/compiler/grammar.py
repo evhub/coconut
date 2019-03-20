@@ -910,7 +910,6 @@ class Grammar(object):
     test_expr = yield_expr | testlist_star_expr
 
     op_item = (
-
         # must go dubstar then star then no star
         fixto(dubstar_pipe, "_coconut_dubstar_pipe")
         | fixto(back_dubstar_pipe, "_coconut_back_dubstar_pipe")
@@ -927,6 +926,7 @@ class Grammar(object):
         | fixto(comp_pipe, "_coconut_forward_compose")
         | fixto(dotdot | comp_back_pipe, "_coconut_back_compose")
 
+        | fixto(keyword("assert"), "_coconut_assert")
         | fixto(keyword("and"), "_coconut_bool_and")
         | fixto(keyword("or"), "_coconut_bool_or")
         | fixto(dubquestion, "_coconut_none_coalesce")

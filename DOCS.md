@@ -1211,6 +1211,7 @@ A very common thing to do in functional programming is to make use of function v
 (or)        => # boolean or
 (is)        => (operator.is_)
 (in)        => (operator.contains)
+(assert)    => # assert function
 ```
 
 ##### Example
