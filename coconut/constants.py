@@ -199,7 +199,6 @@ min_versions = {
 
 version_strictly = (
     "pyparsing",
-    "prompt_toolkit:2",
     ("ipython", "py2"),
     ("jupyter-console", "py2"),
     ("ipykernel", "py2"),
