@@ -111,17 +111,18 @@ class Command(object):
                 args = list(coconut_run_verbose_args) + args
             else:
                 args = list(coconut_run_args) + args
-            args += ["--argv"] + argv
+            self.cmd(args, argv=argv)
         else:
-            args = None
-        self.cmd(args)
+            self.cmd()
 
-    def cmd(self, args=None, interact=True):
+    def cmd(self, args=None, argv=None, interact=True):
         """Process command-line arguments."""
         if args is None:
             parsed_args = arguments.parse_args()
         else:
             parsed_args = arguments.parse_args(args)
+        if argv is not None:
+            parsed_args.argv = argv
         self.exit_code = 0
         with self.handling_exceptions():
             self.use_args(parsed_args, interact, original_args=args)

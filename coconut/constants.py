@@ -199,9 +199,6 @@ min_versions = {
 
 version_strictly = (
     "pyparsing",
-    ("ipython", "py2"),
-    ("jupyter-console", "py2"),
-    ("ipykernel", "py2"),
     "sphinx",
     "sphinx_bootstrap_theme",
     "mypy",
