@@ -103,7 +103,10 @@ website_url = "http://coconut-lang.org"
 #  for different categories, and tuples denote the use of environment
 #  markers as specified in requirements.py
 all_reqs = {
-    "main": (
+    "cpython": (
+        "cPyparsing",
+    ),
+    "purepython": (
         "pyparsing",
     ),
     "non-py26": (
@@ -157,9 +160,6 @@ all_reqs = {
         "pexpect",
         "numpy",
     ),
-    "cPyparsing": (
-        "cPyparsing",
-    ),
 }
 
 min_versions = {
@@ -170,7 +170,7 @@ min_versions = {
     "recommonmark": (0, 5),
     "psutil": (5,),
     "jupyter": (1, 0),
-    "mypy": (0, 670),
+    "mypy": (0, 700),
     "futures": (3, 2),
     "backports.functools-lru-cache": (1, 5),
     "argparse": (1, 4),

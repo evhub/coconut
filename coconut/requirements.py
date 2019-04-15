@@ -17,6 +17,8 @@ Description: Coconut installation requirements.
 
 from coconut.root import *  # NOQA
 
+import platform
+
 from coconut.constants import (
     ver_str_to_tuple,
     ver_tuple_to_str,
@@ -54,7 +56,7 @@ def get_base_req(req):
     return req.split(":", 1)[0]
 
 
-def get_reqs(which="main"):
+def get_reqs(which):
     """Gets requirements from all_reqs with versions."""
     reqs = []
     for req in all_reqs[which]:
@@ -106,7 +108,7 @@ def everything_in(req_dict):
 # SETUP:
 # -----------------------------------------------------------------------------------------------------------------------
 
-requirements = get_reqs()
+requirements = []
 
 extras = {
     "jupyter": get_reqs("jupyter"),
@@ -114,22 +116,22 @@ extras = {
     "jobs": get_reqs("jobs"),
     "mypy": get_reqs("mypy"),
     "asyncio": get_reqs("asyncio"),
-    "cPyparsing": get_reqs("cPyparsing"),
 }
 
 extras["all"] = everything_in(extras)
 
-extras["ipython"] = extras["jupyter"]
-
-extras["docs"] = unique_wrt(get_reqs("docs"), requirements)
-
-extras["tests"] = uniqueify_all(
-    get_reqs("tests"),
-    extras["jobs"] + get_reqs("cPyparsing") if not PYPY else [],
-    extras["jupyter"] if IPY else [],
-    extras["mypy"] if PY34 and not WINDOWS and not PYPY else [],
-    extras["asyncio"] if not PY34 else [],
-)
+extras.update({
+    "ipython": extras["jupyter"],
+    "purepython": get_reqs("purepython"),
+    "docs": unique_wrt(get_reqs("docs"), requirements),
+    "tests": uniqueify_all(
+        get_reqs("tests"),
+        extras["jobs"] if not PYPY else [],
+        extras["jupyter"] if IPY else [],
+        extras["mypy"] if PY34 and not WINDOWS and not PYPY else [],
+        extras["asyncio"] if not PY34 else [],
+    ),
+})
 
 extras["dev"] = uniqueify_all(
     everything_in(extras),
@@ -138,6 +140,8 @@ extras["dev"] = uniqueify_all(
 
 if using_modern_setuptools:
     # modern method for adding version-dependent requirements
+    extras[":platform_python_implementation=='CPython'"] = get_reqs("cpython")
+    extras[":platform_python_implementation!='CPython'"] = get_reqs("purepython")
     extras[":python_version<'2.7'"] = get_reqs("py26")
     extras[":python_version>='2.7'"] = get_reqs("non-py26")
     extras[":python_version<'3'"] = get_reqs("py2")
@@ -145,6 +149,10 @@ if using_modern_setuptools:
 
 else:
     # old method for adding version-dependent requirements
+    if platform.python_implementation() == "CPython":
+        requirements += get_reqs("cpython")
+    else:
+        requirements += get_reqs("purepython")
     if PY26:
         requirements += get_reqs("py26")
     else:
