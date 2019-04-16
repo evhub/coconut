@@ -103,6 +103,8 @@ author_email = "evanjhub@gmail.com"
 description = "Simple, elegant, Pythonic functional programming."
 website_url = "http://coconut-lang.org"
 
+license_name = "Apache 2.0"
+
 # the different categories here are defined in requirements.py,
 #  anything after a colon is ignored but allows different versions
 #  for different categories, and tuples denote the use of environment

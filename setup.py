@@ -34,6 +34,7 @@ from coconut.constants import (
     classifiers,
     search_terms,
     script_names,
+    license_name,
 )
 from coconut.requirements import (
     using_modern_setuptools,
@@ -83,4 +84,5 @@ setuptools.setup(
     },
     classifiers=list(classifiers),
     keywords=list(search_terms),
+    license=license_name,
 )
