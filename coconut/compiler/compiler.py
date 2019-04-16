@@ -470,11 +470,13 @@ class Compiler(Grammar):
         internal_assert(lambda: len(set(skips)) == len(skips), "duplicate line skip(s) in skips", skips)
         self.skips = skips
 
-    def adjust(self, ln):
+    def adjust(self, ln, skips=None):
         """Converts a parsing line number into an original line number."""
+        if skips is None:
+            skips = self.skips
         adj_ln = ln
         need_unskipped = 0
-        for i in self.skips:
+        for i in skips:
             if i <= ln:
                 need_unskipped += 1
             elif adj_ln + need_unskipped < i:

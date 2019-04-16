@@ -22,7 +22,10 @@ from coconut.root import *  # NOQA
 import os
 import traceback
 
-from coconut.exceptions import CoconutException
+from coconut.exceptions import (
+    CoconutException,
+    CoconutInternalException,
+)
 from coconut.constants import (
     py_syntax_version,
     mimetype,
@@ -175,7 +178,7 @@ if LOAD_MODULE:
     class CoconutKernel(IPythonKernel, object):
         """Jupyter kernel for Coconut."""
         shell_class = CoconutShell
-        use_experimental_completions = False
+        use_experimental_completions = True
         implementation = "icoconut"
         implementation_version = VERSION
         language = "coconut"
@@ -202,3 +205,19 @@ if LOAD_MODULE:
                 "url": documentation_url,
             },
         ]
+
+        def do_complete(self, code, cursor_pos):
+            # first try with Jedi completions
+            self.use_experimental_completions = True
+            try:
+                return super(CoconutKernel, self).do_complete(code, cursor_pos)
+            except Exception:
+                traceback.print_exc()
+                logger.warn_err(CoconutInternalException("experimental IPython completion failed, defaulting to shell completion"))
+
+            # then if that fails default to shell completions
+            self.use_experimental_completions = False
+            try:
+                return super(CoconutKernel, self).do_complete(code, cursor_pos)
+            finally:
+                self.use_experimental_completions = True
