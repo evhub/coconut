@@ -32,28 +32,35 @@ from coconut.constants import (
 
 # warning: do not name this file cPyparsing or pyparsing or it might collide with the following imports
 try:
+
+    import cPyparsing as _pyparsing
     from cPyparsing import *  # NOQA
     from cPyparsing import (  # NOQA
         _trim_arity,
         _ParseResultsWithOffset,
         __version__,
     )
-    PYPARSING = "Cython cPyparsing v" + __version__
+    PYPARSING_PACKAGE = "cPyparsing"
+    PYPARSING_INFO = "Cython cPyparsing v" + __version__
 
 except ImportError:
     try:
 
+        import pyparsing as _pyparsing
         from pyparsing import *  # NOQA
         from pyparsing import (  # NOQA
             _trim_arity,
             _ParseResultsWithOffset,
             __version__,
         )
-        PYPARSING = "Python pyparsing v" + __version__
+        PYPARSING_PACKAGE = "pyparsing"
+        PYPARSING_INFO = "Python pyparsing v" + __version__
 
     except ImportError:
         traceback.print_exc()
         __version__ = None
+        PYPARSING_PACKAGE = "pyparsing"
+        PYPARSING_INFO = None
 
 # -----------------------------------------------------------------------------------------------------------------------
 # SETUP:
@@ -63,9 +70,8 @@ if __version__ is None or ver_str_to_tuple(__version__) < min_versions["pyparsin
     req_ver_str = ver_tuple_to_str(min_versions["pyparsing"])
     raise ImportError(
         "Coconut requires pyparsing version >= " + req_ver_str
-        + ("; got version " + __version__ if __version__ is not None else "")
-        + " (run 'pip install --upgrade pyparsing' or"
-        + " 'pip install --upgrade cPyparsing' to fix)",
+        + ("; got " + PYPARSING_INFO if PYPARSING_INFO is not None else "")
+        + " (run 'pip install --upgrade " + PYPARSING_PACKAGE + "' to fix)",
     )
 
 if packrat_cache:
@@ -74,3 +80,17 @@ if packrat_cache:
 ParserElement.setDefaultWhitespaceChars(default_whitespace_chars)
 
 Keyword.setDefaultKeywordChars(varchars)
+
+# -----------------------------------------------------------------------------------------------------------------------
+# __str__ Patching:
+# -----------------------------------------------------------------------------------------------------------------------
+
+# makes pyparsing much faster if it doesn't have to compute expensive
+#  nested string representations
+for obj in vars(_pyparsing).values():
+    try:
+        if issubclass(obj, ParserElement):
+            obj.__str__ = object.__str__
+            obj.__repr__ = object.__repr__
+    except TypeError:
+        pass

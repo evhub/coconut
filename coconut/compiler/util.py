@@ -25,7 +25,7 @@ import traceback
 from functools import partial
 from contextlib import contextmanager
 
-from coconut.myparsing import (
+from coconut._pyparsing import (
     replaceWith,
     ZeroOrMore,
     Optional,

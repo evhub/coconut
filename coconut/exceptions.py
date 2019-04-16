@@ -21,7 +21,7 @@ from coconut.root import *  # NOQA
 
 import sys
 
-from coconut.myparsing import lineno
+from coconut._pyparsing import lineno
 
 from coconut.constants import (
     openindent,

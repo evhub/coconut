@@ -163,7 +163,7 @@ all_reqs = {
 }
 
 min_versions = {
-    "pyparsing": (2, 3, 1),
+    "pyparsing": (2, 4, 0),
     "cPyparsing": (2, 3, 2, 1, 0, 0),
     "pre-commit": (1,),
     "pygments": (2, 3),

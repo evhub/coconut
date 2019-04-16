@@ -30,7 +30,7 @@ from coconut.root import *  # NOQA
 import re
 from functools import reduce
 
-from coconut.myparsing import (
+from coconut._pyparsing import (
     CaselessLiteral,
     Forward,
     Group,

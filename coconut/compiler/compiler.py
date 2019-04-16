@@ -32,7 +32,7 @@ import sys
 from contextlib import contextmanager
 from functools import partial
 
-from coconut.myparsing import (
+from coconut._pyparsing import (
     ParseBaseException,
     col,
     line as getline,

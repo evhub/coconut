@@ -25,7 +25,7 @@ import logging
 import time
 from contextlib import contextmanager
 
-from coconut.myparsing import (
+from coconut._pyparsing import (
     lineno,
     col,
     ParserElement,

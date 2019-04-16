@@ -27,7 +27,7 @@ from functools import partial
 from contextlib import contextmanager
 from subprocess import CalledProcessError
 
-from coconut.myparsing import PYPARSING
+from coconut._pyparsing import PYPARSING_INFO
 from coconut.compiler import Compiler
 from coconut.exceptions import (
     CoconutException,
@@ -151,7 +151,7 @@ class Command(object):
         if DEVELOP:
             logger.tracing = args.trace
 
-        logger.log("Using " + PYPARSING + ".")
+        logger.log("Using " + PYPARSING_INFO + ".")
         if original_args is not None:
             logger.log("Directly passed args:", original_args)
         logger.log("Parsed args:", args)
