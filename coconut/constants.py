@@ -186,7 +186,7 @@ min_versions = {
     "trollius": (2, 2),
     "requests": (2,),
     "numpy": (1,),
-    "prompt_toolkit:3": (2,),
+    "prompt_toolkit:3": (1,),
     ("ipython", "py3"): (7, 3),
     ("jupyter-console", "py3"): (6,),
     ("ipykernel", "py3"): (5, 1),
@@ -209,6 +209,7 @@ version_strictly = (
     "sphinx",
     "sphinx_bootstrap_theme",
     "mypy",
+    "prompt_toolkit:2",
 )
 
 classifiers = (
