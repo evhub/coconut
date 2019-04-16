@@ -1,11 +1,11 @@
 .PHONY: install
 install:
-	pip install "pip>=7.1.2"
+	pip install --upgrade setuptools pip
 	pip install .[tests]
 
 .PHONY: dev
 dev:
-	python -m pip install --upgrade setuptools pip
+	pip install --upgrade setuptools pip
 	pip install --upgrade -e .[dev]
 	pre-commit install -f --install-hooks
 
