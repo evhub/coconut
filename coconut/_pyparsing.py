@@ -74,17 +74,6 @@ if __version__ is None or ver_str_to_tuple(__version__) < min_versions["pyparsin
         + " (run 'pip install --upgrade " + PYPARSING_PACKAGE + "' to fix)",
     )
 
-if packrat_cache:
-    ParserElement.enablePackrat(packrat_cache)
-
-ParserElement.setDefaultWhitespaceChars(default_whitespace_chars)
-
-Keyword.setDefaultKeywordChars(varchars)
-
-# -----------------------------------------------------------------------------------------------------------------------
-# __str__ Patching:
-# -----------------------------------------------------------------------------------------------------------------------
-
 # makes pyparsing much faster if it doesn't have to compute expensive
 #  nested string representations
 for obj in vars(_pyparsing).values():
@@ -94,3 +83,10 @@ for obj in vars(_pyparsing).values():
             obj.__repr__ = object.__repr__
     except TypeError:
         pass
+
+if packrat_cache:
+    ParserElement.enablePackrat(packrat_cache)
+
+ParserElement.setDefaultWhitespaceChars(default_whitespace_chars)
+
+Keyword.setDefaultKeywordChars(varchars)
