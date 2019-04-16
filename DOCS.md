@@ -32,7 +32,13 @@ which will install Coconut and its required dependencies.
 
 _Note: If you have an old version of Coconut installed and you want to upgrade, run `pip install --upgrade coconut` instead._
 
-If you are encountering errors running `pip install coconut`, try re-running it with the `--user` option. If `pip install coconut` works, but you cannot access the `coconut` command, be sure that Coconut's installation location is in your `PATH` environment variable. On UNIX, that is `/usr/local/bin` (without `--user`) or `${HOME}/.local/bin/` (with `--user`).
+If you are encountering errors running `pip install coconut`, try instead running
+```
+pip install --user --no-deps --upgrade coconut pyparsing
+```
+which will force Coconut to use the pure-Python [`pyparsing`](https://github.com/pyparsing/pyparsing) module instead of the faster [`cPyparsing`](https://github.com/evhub/cpyparsing) module. If you are still getting errors, you may want to try [using conda](#using-conda) instead.
+
+If `pip install coconut` works, but you cannot access the `coconut` command, be sure that Coconut's installation location is in your `PATH` environment variable. On UNIX, that is `/usr/local/bin` (without `--user`) or `${HOME}/.local/bin/` (with `--user`).
 
 ### Using Conda
 
@@ -62,7 +68,6 @@ The full list of optional dependencies is:
 - `jobs`: improves use of the `--jobs` flag,
 - `mypy`: enables use of the `--mypy` flag,
 - `asyncio`: enables use of the [`asyncio`](https://docs.python.org/3/library/asyncio.html) library on older Python versions by making use of [`trollius`](https://pypi.python.org/pypi/trollius),
-- `purepython`: uses the pure-Python [`pyparsing`](https://github.com/pyparsing/pyparsing) module instead of the default (faster) [`cPyparsing`](https://github.com/evhub/cpyparsing) module,
 - `tests`: everything necessary to run Coconut's test suite,
 - `docs`: everything necessary to build Coconut's documentation, and
 - `dev`: everything necessary to develop on Coconut, including all of the dependencies above.

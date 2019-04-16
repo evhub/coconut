@@ -123,7 +123,6 @@ extras["all"] = everything_in(extras)
 
 extras.update({
     "ipython": extras["jupyter"],
-    "purepython": get_reqs("purepython"),
     "docs": unique_wrt(get_reqs("docs"), requirements),
     "tests": uniqueify_all(
         get_reqs("tests"),
@@ -136,6 +135,7 @@ extras.update({
 
 extras["dev"] = uniqueify_all(
     everything_in(extras),
+    get_reqs("purepython"),
     get_reqs("dev"),
 )
 
