@@ -20,6 +20,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import traceback
+import functools
 
 from coconut.constants import (
     packrat_cache,
@@ -79,13 +80,24 @@ if __version__ is None or not min_ver <= ver_str_to_tuple(__version__) < max_ver
         + " (run 'pip install --upgrade " + PYPARSING_PACKAGE + "' to fix)",
     )
 
+
+def fast_str(cls):
+    """A very simple __str__ implementation."""
+    return "<" + cls.__name__ + ">"
+
+
+def fast_repr(cls):
+    """A very simple __repr__ implementation."""
+    return "<" + cls.__name__ + ">"
+
+
 # makes pyparsing much faster if it doesn't have to compute expensive
 #  nested string representations
 for obj in vars(_pyparsing).values():
     try:
         if issubclass(obj, ParserElement):
-            obj.__str__ = object.__str__
-            obj.__repr__ = object.__repr__
+            obj.__str__ = functools.partial(fast_str, obj)
+            obj.__repr__ = functools.partial(fast_repr, obj)
     except TypeError:
         pass
 
