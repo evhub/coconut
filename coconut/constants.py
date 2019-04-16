@@ -57,6 +57,11 @@ def ver_str_to_tuple(ver_str):
     return tuple(out)
 
 
+def get_next_version(req_ver):
+    """Get the next version after the given version."""
+    return req_ver[:-1] + (req_ver[-1] + 1,)
+
+
 def checksum(data):
     """Compute a checksum of the given data.
     Used for computing __coconut_hash__."""

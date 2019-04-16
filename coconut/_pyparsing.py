@@ -28,6 +28,7 @@ from coconut.constants import (
     min_versions,
     ver_str_to_tuple,
     ver_tuple_to_str,
+    get_next_version,
 )
 
 # warning: do not name this file cPyparsing or pyparsing or it might collide with the following imports
@@ -66,10 +67,14 @@ except ImportError:
 # SETUP:
 # -----------------------------------------------------------------------------------------------------------------------
 
-if __version__ is None or ver_str_to_tuple(__version__) < min_versions["pyparsing"]:
-    req_ver_str = ver_tuple_to_str(min_versions["pyparsing"])
+min_ver = min(min_versions["pyparsing"], min_versions["cPyparsing"][:3])
+max_ver = get_next_version(max(min_versions["pyparsing"], min_versions["cPyparsing"][:3]))
+
+if __version__ is None or not min_ver <= ver_str_to_tuple(__version__) < max_ver:
+    min_ver_str = ver_tuple_to_str(min_ver)
+    max_ver_str = ver_tuple_to_str(max_ver)
     raise ImportError(
-        "Coconut requires pyparsing version >= " + req_ver_str
+        "Coconut requires pyparsing/cPyparsing version >= " + min_ver_str + " and < " + max_ver_str
         + ("; got " + PYPARSING_INFO if PYPARSING_INFO is not None else "")
         + " (run 'pip install --upgrade " + PYPARSING_PACKAGE + "' to fix)",
     )

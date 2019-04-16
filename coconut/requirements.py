@@ -22,6 +22,7 @@ import platform
 from coconut.constants import (
     ver_str_to_tuple,
     ver_tuple_to_str,
+    get_next_version,
     all_reqs,
     min_versions,
     version_strictly,
@@ -62,7 +63,7 @@ def get_reqs(which):
     for req in all_reqs[which]:
         req_str = get_base_req(req) + ">=" + ver_tuple_to_str(min_versions[req])
         if req in version_strictly:
-            req_str += ",<" + ver_tuple_to_str(min_versions[req][:-1] + (min_versions[req][-1] + 1,))
+            req_str += ",<" + ver_tuple_to_str(get_next_version(min_versions[req]))
         env_marker = req[1] if isinstance(req, tuple) else None
         if env_marker:
             if env_marker == "py2":
