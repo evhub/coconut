@@ -139,21 +139,26 @@ extras["dev"] = uniqueify_all(
     get_reqs("dev"),
 )
 
-if using_modern_setuptools:
-    # modern method for adding version-dependent requirements
+if supports_env_markers:
+    # modern method
     extras[":platform_python_implementation=='CPython'"] = get_reqs("cpython")
     extras[":platform_python_implementation!='CPython'"] = get_reqs("purepython")
+else:
+    # old method
+    if platform.python_implementation() == "CPython":
+        requirements += get_reqs("cpython")
+    else:
+        requirements += get_reqs("purepython")
+
+if using_modern_setuptools:
+    # modern method
     extras[":python_version<'2.7'"] = get_reqs("py26")
     extras[":python_version>='2.7'"] = get_reqs("non-py26")
     extras[":python_version<'3'"] = get_reqs("py2")
     extras[":python_version>='3'"] = get_reqs("py3")
 
 else:
-    # old method for adding version-dependent requirements
-    if platform.python_implementation() == "CPython":
-        requirements += get_reqs("cpython")
-    else:
-        requirements += get_reqs("purepython")
+    # old method
     if PY26:
         requirements += get_reqs("py26")
     else:
