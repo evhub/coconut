@@ -265,7 +265,7 @@ def run(args=[], agnostic_target=None, use_run_arg=False, expect_retcode=0):
             if sys.version_info >= (3, 5):
                 comp_35(args)
         comp_agnostic(agnostic_args, expect_retcode=expect_retcode)
-        comp_sys(args)
+        comp_sys(args, expect_retcode=expect_retcode)
 
         if use_run_arg:
             comp_runner(["--run"] + agnostic_args, expect_retcode=expect_retcode, assert_output=True)
@@ -402,7 +402,7 @@ class TestShell(unittest.TestCase):
                 cmd = "coconut --jupyter console"
                 print("\n>", cmd)
                 p = pexpect.spawn(cmd)
-                p.expect("In", timeout=60)
+                p.expect("In", timeout=100)
                 p.sendeof()
                 p.sendline("y")
                 p.expect("Shutting down kernel|shutting down|Jupyter error")
