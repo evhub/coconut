@@ -126,6 +126,7 @@ extras.update({
     "docs": unique_wrt(get_reqs("docs"), requirements),
     "tests": uniqueify_all(
         get_reqs("tests"),
+        get_reqs("purepython"),
         extras["jobs"] if not PYPY else [],
         extras["jupyter"] if IPY else [],
         extras["mypy"] if PY34 and not WINDOWS and not PYPY else [],
@@ -135,7 +136,6 @@ extras.update({
 
 extras["dev"] = uniqueify_all(
     everything_in(extras),
-    get_reqs("purepython"),
     get_reqs("dev"),
 )
 

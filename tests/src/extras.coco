@@ -143,14 +143,12 @@ def test_extras():
         assert "derp" in complete_result["matches"]
         assert complete_result["cursor_start"] == 0
         assert complete_result["cursor_end"] == 1
-        assert not complete_result["metadata"]
         keyword_complete_result = k.do_complete("ma", 1)
         assert keyword_complete_result["status"] == "ok"
         assert "match" in keyword_complete_result["matches"]
         assert "map" in keyword_complete_result["matches"]
         assert keyword_complete_result["cursor_start"] == 0
         assert keyword_complete_result["cursor_end"] == 1
-        assert not keyword_complete_result["metadata"]
     if not PYPY:
         import numpy as np
         assert np.all(fmap(-> _ + 1, np.arange(3)) == np.array([1, 2, 3]))
