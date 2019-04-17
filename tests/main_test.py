@@ -259,11 +259,11 @@ def run(args=[], agnostic_target=None, use_run_arg=False, expect_retcode=0):
     with using_dest():
 
         if PY2:
-            comp_2(args)
+            comp_2(args, expect_retcode=expect_retcode)
         else:
-            comp_3(args)
+            comp_3(args, expect_retcode=expect_retcode)
             if sys.version_info >= (3, 5):
-                comp_35(args)
+                comp_35(args, expect_retcode=expect_retcode)
         comp_agnostic(agnostic_args, expect_retcode=expect_retcode)
         comp_sys(args, expect_retcode=expect_retcode)
 
@@ -274,9 +274,9 @@ def run(args=[], agnostic_target=None, use_run_arg=False, expect_retcode=0):
             run_src()
 
         if use_run_arg:
-            comp_extras(["--run"] + agnostic_args, assert_output=True, check_errors=False, stderr_first=True)
+            comp_extras(["--run"] + agnostic_args, assert_output=True, check_errors=False, stderr_first=True, expect_retcode=expect_retcode)
         else:
-            comp_extras(agnostic_args)
+            comp_extras(agnostic_args, expect_retcode=expect_retcode)
             run_extras()
 
 
