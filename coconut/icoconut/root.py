@@ -213,7 +213,7 @@ if LOAD_MODULE:
                 return super(CoconutKernel, self).do_complete(code, cursor_pos)
             except Exception:
                 traceback.print_exc()
-                logger.warn_err(CoconutInternalException("experimental IPython completion failed, defaulting to shell completion"))
+                logger.warn_err(CoconutInternalException("experimental IPython completion failed, defaulting to shell completion"), force=True)
 
             # then if that fails default to shell completions
             self.use_experimental_completions = False
