@@ -26,7 +26,7 @@ from coconut.convenience import (
 
 if IPY and not WINDOWS:
     if PY35:
-        import asyncio
+        import asyncio  # type: ignore
     from coconut.icoconut import CoconutKernel  # type: ignore
 else:
     CoconutKernel = None  # type: ignore
