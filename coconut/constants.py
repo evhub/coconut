@@ -177,7 +177,7 @@ min_versions = {
     "recommonmark": (0, 5),
     "psutil": (5,),
     "jupyter": (1, 0),
-    "mypy": (0, 700),
+    "mypy": (0, 701),
     "futures": (3, 2),
     "backports.functools-lru-cache": (1, 5),
     "argparse": (1, 4),
