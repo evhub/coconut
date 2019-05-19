@@ -117,6 +117,7 @@ from coconut.compiler.util import (
     compile_regex,
     keyword,
     append_it,
+    interleaved_join,
 )
 from coconut.compiler.header import (
     minify,
@@ -367,6 +368,13 @@ class Compiler(Grammar):
     def __reduce__(self):
         """Return pickling information."""
         return (Compiler, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.no_tco))
+
+    def __copy__(self):
+        """Create a copy of this object."""
+        cls, args = self.__reduce__()
+        return cls(*args)
+
+    copy = __copy__
 
     def genhash(self, code, package_level=-1):
         """Generate a hash from code."""
@@ -1992,66 +2000,76 @@ class Compiler(Grammar):
         """Handle Python 3.6 format strings."""
         internal_assert(len(tokens) == 1, "invalid format string tokens", tokens)
         string = tokens[0]
-        if self.target_info >= (3, 6):
-            return "f" + string
-        else:
-            # strip raw r
-            raw = string.startswith("r")
-            if raw:
-                string = string[1:]
 
-            # strip wrappers
-            internal_assert(string.startswith(strwrapper) and string.endswith(unwrapper))
-            string = string[1:-1]
+        # strip raw r
+        raw = string.startswith("r")
+        if raw:
+            string = string[1:]
 
-            # get text
-            old_text, strchar = self.get_ref("str", string)
+        # strip wrappers
+        internal_assert(string.startswith(strwrapper) and string.endswith(unwrapper))
+        string = string[1:-1]
 
-            # separate expressions
-            new_text = ""
-            exprs = []
-            saw_brace = False
-            in_expr = False
-            expr_level = 0
-            for c in old_text:
-                if saw_brace:
-                    saw_brace = False
-                    if c == "{":
-                        new_text += c
-                    elif c == "}":
-                        raise self.make_err(CoconutSyntaxError, "empty expressing in format string", original, loc)
-                    else:
-                        in_expr = True
-                        expr_level = paren_change(c)
-                        exprs.append(c)
-                elif in_expr:
-                    if expr_level < 0:
-                        expr_level += paren_change(c)
-                        exprs[-1] += c
-                    elif expr_level > 0:
-                        raise self.make_err(CoconutSyntaxError, "imbalanced parentheses in format string expression", original, loc)
-                    elif c in "!:}":  # these characters end the expr
-                        in_expr = False
-                        name = format_var + "_" + str(len(exprs) - 1)
-                        new_text += name + c
-                    else:
-                        exprs[-1] += c
-                elif c == "{":
-                    saw_brace = True
-                    new_text += c
-                else:
-                    new_text += c
+        # get text
+        old_text, strchar = self.get_ref("str", string)
 
-            # handle dangling detections
+        # separate expressions
+        string_parts = [""]
+        exprs = []
+        saw_brace = False
+        in_expr = False
+        expr_level = 0
+        for c in old_text:
             if saw_brace:
-                raise self.make_err(CoconutSyntaxError, "format string ends with unescaped brace (escape by doubling to '{{')", original, loc)
-            if in_expr:
-                raise self.make_err(CoconutSyntaxError, "imbalanced braces in format string (escape braces by doubling to '{{' and '}}')", original, loc)
+                saw_brace = False
+                if c == "{":
+                    string_parts[-1] += c
+                elif c == "}":
+                    raise self.make_err(CoconutSyntaxError, "empty expressing in format string", original, loc)
+                else:
+                    in_expr = True
+                    expr_level = paren_change(c)
+                    exprs.append(c)
+            elif in_expr:
+                if expr_level < 0:
+                    expr_level += paren_change(c)
+                    exprs[-1] += c
+                elif expr_level > 0:
+                    raise self.make_err(CoconutSyntaxError, "imbalanced parentheses in format string expression", original, loc)
+                elif c in "!:}":  # these characters end the expr
+                    in_expr = False
+                    string_parts.append(c)
+                else:
+                    exprs[-1] += c
+            elif c == "{":
+                saw_brace = True
+                string_parts[-1] += c
+            else:
+                string_parts[-1] += c
+
+        # handle dangling detections
+        if saw_brace:
+            raise self.make_err(CoconutSyntaxError, "format string ends with unescaped brace (escape by doubling to '{{')", original, loc)
+        if in_expr:
+            raise self.make_err(CoconutSyntaxError, "imbalanced braces in format string (escape braces by doubling to '{{' and '}}')", original, loc)
+
+        expr_compiler = self.copy()
+        compiled_exprs = [
+            expr_compiler.parse_eval(expr)
+            for expr in exprs
+        ]
+        self.bind()  # hack to reset `Forward`s in grammar
+
+        if self.target_info >= (3, 6):
+            return "f" + ("r" if raw else "") + strchar + interleaved_join(string_parts, compiled_exprs) + strchar
+        else:
+            names = [format_var + "_" + str(i) for i in range(len(compiled_exprs))]
+            new_text = interleaved_join(string_parts, names)
 
             # generate format call
             return ("r" if raw else "") + strchar + new_text + strchar + ".format(" + ", ".join(
-                format_var + "_" + str(i) + "=(" + expr + ")"
-                for i, expr in enumerate(exprs)
+                name + "=(" + expr + ")"
+                for name, expr in zip(names, compiled_exprs)
             ) + ")"
 
 # end: COMPILER HANDLERS

@@ -587,3 +587,17 @@ def disable_outside(item, *elems):
     """
     for wrapped in disable_inside(item, *elems, **{"_invert": True}):
         yield wrapped
+
+
+def interleaved_join(outer_list, inner_list):
+    """Interleaves two lists of strings and joins the result.
+
+    Example: interleaved_join(['1', '3'], ['2']) == '123'
+    The first list must be 1 longer than the second list.
+    """
+    internal_assert(len(outer_list) == len(inner_list) + 1, "invalid list lengths to interleaved_join")
+    interleaved = []
+    for xx in zip(outer_list, inner_list):
+        interleaved.extend(xx)
+    interleaved.append(outer_list[-1])
+    return "".join(interleaved)
