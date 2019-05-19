@@ -152,6 +152,9 @@ After you've tested your changes locally, you'll want to add more permanent test
             - python35
                 - `py35_test.coco`
                     + Tests to be run only on Python 3.5 with `--target 3.5`.
+            - python36
+                - `py36_test.coco`
+                    + Tests to be run only on Python 3.6 with `--target 3.6`.
 
 ## Release Process
 

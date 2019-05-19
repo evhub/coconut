@@ -509,6 +509,7 @@ def main_test():
     assert f"{{" == "{"
     assert f"}}" == "}"
     assert f"{1, 2}" == "(1, 2)"
+    assert f"{[] |> len}" == "0"
     match {"a": {"b": x }} or {"a": {"b": {"c": x}}} = {"a": {"b": {"c": "x"}}}
     assert x == {"c": "x"}
     assert py_repr("x") == ("u'x'" if sys.version_info < (3,) else "'x'")
@@ -582,6 +583,9 @@ def main(*args):
         if sys.version_info >= (3, 5):
             from .py35_test import py35_test
             assert py35_test()
+        if sys.version_info >= (3, 6):
+            from .py36_test import py36_test
+            assert py36_test()
 
     print(".", end="")
     from .target_sys_test import target_sys_test
