@@ -1812,6 +1812,12 @@ class Compiler(Grammar):
             # binds most tightly, except for TCO
             decorators += "@_coconut_addpattern(" + func_name + ")\n"
 
+        # handle_match_functions
+        is_match = func_params == "(*{match_to_args_var}, **{match_to_kwargs_var})".format(
+            match_to_args_var=match_to_args_var,
+            match_to_kwargs_var=match_to_kwargs_var,
+        )
+
         # handle dotted function definition
         undotted_name = None  # the function __name__ if func_name is a dotted name
         if func_name is not None:
@@ -1882,6 +1888,8 @@ class Compiler(Grammar):
         out = decorators + def_stmt + func_code
         if undotted_name is not None:
             out += func_name + " = " + undotted_name + "\n"
+        if is_match:
+            out += func_name + "._coconut_is_pattern_matching = True" + self.wrap_comment("type: ignore") + "\n"
         return out
 
     def await_item_handle(self, original, loc, tokens):

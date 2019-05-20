@@ -29,6 +29,8 @@ from coconut.constants import (
     default_encoding,
     template_ext,
     justify_len,
+    match_to_args_var,
+    match_to_kwargs_var,
 )
 from coconut.exceptions import internal_assert
 
@@ -192,6 +194,8 @@ else:
     return _coconut.functools.partial(makedata, data_type)
 ''' if not strict else ""
         ),
+        match_to_args_var=match_to_args_var,
+        match_to_kwargs_var=match_to_kwargs_var,
     )
 
     format_dict["import_typing_NamedTuple"] = _indent(

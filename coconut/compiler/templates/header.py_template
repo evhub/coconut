@@ -445,6 +445,12 @@ _coconut_get_function_match_error = _coconut_FunctionMatchErrorContext.get
 def addpattern(base_func):
     """Decorator to add a new case to a pattern-matching function,
     where the new case is checked last."""
+    if not getattr(base_func, "_coconut_is_pattern_matching", False):
+        import warnings
+        warnings.warn(
+            "Possible misuse of addpattern with non-pattern-matching function {{name}}".format(name=base_func.__name__),
+            stacklevel=2,
+        )
     def pattern_adder(func):
         FunctionMatchError = type(_coconut_str("MatchError"), (MatchError,), {{}})
         {tco_decorator}@_coconut.functools.wraps(func)
