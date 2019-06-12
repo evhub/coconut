@@ -595,7 +595,7 @@ def interleaved_join(outer_list, inner_list):
     Example: interleaved_join(['1', '3'], ['2']) == '123'
     The first list must be 1 longer than the second list.
     """
-    internal_assert(len(outer_list) == len(inner_list) + 1, "invalid list lengths to interleaved_join")
+    internal_assert(len(outer_list) == len(inner_list) + 1, "invalid list lengths to interleaved_join", (outer_list, inner_list))
     interleaved = []
     for xx in zip(outer_list, inner_list):
         interleaved.extend(xx)

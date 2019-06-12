@@ -370,7 +370,7 @@ class Compiler(Grammar):
         return (Compiler, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.no_tco))
 
     def __copy__(self):
-        """Create a copy of this object."""
+        """Create a new, blank copy of the compiler."""
         cls, args = self.__reduce__()
         return cls(*args)
 
@@ -401,15 +401,30 @@ class Compiler(Grammar):
         self.indchar = None
         self.comments = {}
         self.refs = []
-        self.set_skips([])
+        self.skips = []
         self.docstring = ""
         self.ichain_count = 0
         self.tre_store_count = 0
         self.case_check_count = 0
         self.stmt_lambdas = []
-        if self.strict:
-            self.unused_imports = set()
+        self.unused_imports = set()
+        self.original_lines = []
         self.bind()
+
+    @contextmanager
+    def inner_environment(self):
+        """Set up compiler to evaluate inner expressions."""
+        comments, self.comments = self.comments, {}
+        skips, self.skips = self.skips, []
+        docstring, self.docstring = self.docstring, ""
+        original_lines, self.original_lines = self.original_lines, []
+        try:
+            yield
+        finally:
+            self.comments = comments
+            self.skips = skips
+            self.docstring = docstring
+            self.original_lines = original_lines
 
     def bind(self):
         """Binds reference objects to the proper parse actions."""
@@ -636,6 +651,15 @@ class Compiler(Grammar):
             if err_lineno is not None:
                 err_lineno = self.adjust(err_lineno)
         return CoconutParseError(None, err_line, err_index, err_lineno)
+
+    def inner_parse_eval(self, inputstring, parser=None, preargs={"strip": True}, postargs={"header": "none", "initial": "none", "final_endline": False}):
+        """Parse eval code in an inner environment."""
+        if parser is None:
+            parser = self.eval_parser
+        with self.inner_environment():
+            pre_procd = self.pre(inputstring, **preargs)
+            parsed = parse(parser, pre_procd)
+            return self.post(parsed, **postargs)
 
     def parse(self, inputstring, parser, preargs, postargs):
         """Use the parser to parse the inputstring with appropriate setup and teardown."""
@@ -2025,7 +2049,7 @@ class Compiler(Grammar):
                 if c == "{":
                     string_parts[-1] += c
                 elif c == "}":
-                    raise self.make_err(CoconutSyntaxError, "empty expressing in format string", original, loc)
+                    raise self.make_err(CoconutSyntaxError, "empty expression in format string", original, loc)
                 else:
                     in_expr = True
                     expr_level = paren_change(c)
@@ -2053,21 +2077,26 @@ class Compiler(Grammar):
         if in_expr:
             raise self.make_err(CoconutSyntaxError, "imbalanced braces in format string (escape braces by doubling to '{{' and '}}')", original, loc)
 
-        expr_compiler = self.copy()
-        compiled_exprs = [
-            expr_compiler.parse_eval(expr)
-            for expr in exprs
-        ]
-        self.bind()  # hack to reset `Forward`s in grammar
+        # compile Coconut expressions
+        compiled_exprs = []
+        for co_expr in exprs:
+            py_expr = self.inner_parse_eval(co_expr)
+            if "\n" in py_expr:
+                print(py_expr)
+                raise self.make_err(CoconutSyntaxError, "invalid expression in format string: " + co_expr, original, loc)
+            compiled_exprs.append(py_expr)
 
+        # reconstitute string
         if self.target_info >= (3, 6):
-            return "f" + ("r" if raw else "") + strchar + interleaved_join(string_parts, compiled_exprs) + strchar
+            new_text = interleaved_join(string_parts, compiled_exprs)
+
+            return "f" + ("r" if raw else "") + self.wrap_str(new_text, strchar)
         else:
             names = [format_var + "_" + str(i) for i in range(len(compiled_exprs))]
             new_text = interleaved_join(string_parts, names)
 
             # generate format call
-            return ("r" if raw else "") + strchar + new_text + strchar + ".format(" + ", ".join(
+            return ("r" if raw else "") + self.wrap_str(new_text, strchar) + ".format(" + ", ".join(
                 name + "=(" + expr + ")"
                 for name, expr in zip(names, compiled_exprs)
             ) + ")"
