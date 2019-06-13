@@ -652,8 +652,9 @@ addpattern def `pattern_abs_` (x) = x  # type: ignore
 @recursive_iterator
 def fibs() = (1, 1) :: map((+), fibs(), fibs()$[1:])
 
-@recursive_iterator
-def loop(it) = it :: loop(it)
+# use separate name for base func for pickle
+def _loop(it) = it :: loop(it)
+loop = recursive_iterator(_loop)
 
 # Sieve Example
 

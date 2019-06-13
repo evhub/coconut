@@ -386,12 +386,14 @@ class groupsof{object}:
         return self.__class__(self.group_size, _coconut.copy.copy(self.iter))
     def __fmap__(self, func):
         return _coconut_map(func, self)
-def recursive_iterator(func):
+class recursive_iterator{object}:
     """Decorator that optimizes a function for iterator recursion."""
-    tee_store = {empty_dict}
-    backup_tee_store = []
-    @_coconut.functools.wraps(func)
-    def recursive_iterator_func(*args, **kwargs):
+    __slots__ = ("func", "tee_store", "backup_tee_store")
+    def __init__(self, func):
+        self.func = func
+        self.tee_store = {empty_dict}
+        self.backup_tee_store = []
+    def __call__(self, *args, **kwargs):
         key = (args, _coconut.frozenset(kwargs))
         use_backup = False
         try:
@@ -402,22 +404,25 @@ def recursive_iterator(func):
             except _coconut.Exception:
                 use_backup = True
         if use_backup:
-            for i, (k, v) in _coconut.enumerate(backup_tee_store):
+            for i, (k, v) in _coconut.enumerate(self.backup_tee_store):
                 if k == key:
                     to_tee, store_pos = v, i
                     break
             else:  # no break
-                to_tee = func(*args, **kwargs)
+                to_tee = self.func(*args, **kwargs)
                 store_pos = None
             to_store, to_return = _coconut_tee(to_tee)
             if store_pos is None:
-                backup_tee_store.append([key, to_store])
+                self.backup_tee_store.append([key, to_store])
             else:
-                backup_tee_store[store_pos][1] = to_store
+                self.backup_tee_store[store_pos][1] = to_store
         else:
-            tee_store[key], to_return = _coconut_tee(tee_store.get(key) or func(*args, **kwargs))
+            self.tee_store[key], to_return = _coconut_tee(self.tee_store.get(key) or self.func(*args, **kwargs))
         return to_return
-    return recursive_iterator_func
+    def __repr__(self):
+        return "@recursive_iterator(" + _coconut.repr(self.func) + ")"
+    def __reduce__(self):
+        return (self.__class__, (self.func,))
 class _coconut_FunctionMatchErrorContext(object):
     __slots__ = ('exc_class', 'taken')
     threadlocal_var = _coconut.threading.local()
