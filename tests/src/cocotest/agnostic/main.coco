@@ -571,7 +571,7 @@ def main(*args):
 
     print(".", end="")  # .....
     if "_coconut_tco" in globals() or "_coconut_tco" in locals():
-        assert hasattr(tco_func, "func")
+        assert hasattr(tco_func, "_coconut_tco_func")
         assert tco_test()
 
     print(".", end="")  # ......
