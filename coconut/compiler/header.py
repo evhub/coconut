@@ -175,8 +175,11 @@ else:
         with ThreadPoolExecutor(cpu_count() * 5)''' if target_info < (3, 5)
             else '''with ThreadPoolExecutor()'''
         ),
-        tco_decorator="@_coconut_tco\n" + " " * 8 if not no_tco else "",
-        tail_call_func_args_kwargs="func(*args, **kwargs)" if no_tco else "_coconut_tail_call(func, *args, **kwargs)",
+        tail_call_last_pattern="self.patterns[-1](*args, **kwargs)" if no_tco else "_coconut_tail_call(self.patterns[-1], *args, **kwargs)",
+        tco_partial_base_pattern_func=(
+            "_coconut.functools.partial(_coconut_base_pattern_func, base_func)" if no_tco
+            else "_coconut_back_compose(_coconut_tco, _coconut.functools.partial(_coconut_base_pattern_func, base_func))"
+        ),
         comma_tco=", _coconut_tail_call, _coconut_tco" if not no_tco else "",
         def_prepattern=(
             r'''def prepattern(base_func):
@@ -204,28 +207,30 @@ else:
 
     format_dict["underscore_imports"] = "_coconut, _coconut_MatchError{comma_tco}, _coconut_igetitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_back_pipe, _coconut_star_pipe, _coconut_back_star_pipe, _coconut_dubstar_pipe, _coconut_back_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_addpattern, _coconut_sentinel, _coconut_assert".format(**format_dict)
 
-    # ._coconut_tco_func is used in main.coco, so don't remove it
+    # .func is used in main.coco, so don't remove it
     #  here without replacing its usage there
     format_dict["def_tco"] = "" if no_tco else '''class _coconut_tail_call{object}:
     __slots__ = ("func", "args", "kwargs")
     def __init__(self, func, *args, **kwargs):
         self.func, self.args, self.kwargs = func, args, kwargs
-_coconut_tco_func_dict = {empty_dict}
-def _coconut_tco(func):
-    @_coconut.functools.wraps(func)
-    def tail_call_optimized_func(*args, **kwargs):
-        call_func = func
+class _coconut_tco{object}:
+    __slots__ = ("__doc__", "func")
+    def __init__(self, func):
+        self.__doc__ = func.__doc__
+        self.func = func
+    def __call__(self, *args, **kwargs):
+        call_func = self.func
         while True:
-            wkref = _coconut_tco_func_dict.get(_coconut.id(call_func))
-            if wkref is not None and wkref() is call_func:
-                call_func = call_func._coconut_tco_func
+            if _coconut.isinstance(call_func, _coconut_tco):
+                call_func = call_func.func
             result = call_func(*args, **kwargs)  # pass --no-tco to clean up your traceback
             if not isinstance(result, _coconut_tail_call):
                 return result
             call_func, args, kwargs = result.func, result.args, result.kwargs
-    tail_call_optimized_func._coconut_tco_func = func
-    _coconut_tco_func_dict[_coconut.id(tail_call_optimized_func)] = _coconut.weakref.ref(tail_call_optimized_func)
-    return tail_call_optimized_func
+    def __repr__(self):
+        return repr(self.func)
+    def __reduce__(self):
+        return (self.__class__, (self.func,))
 '''.format(**format_dict)
 
     return format_dict, target_startswith, target_info

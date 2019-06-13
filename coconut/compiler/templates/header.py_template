@@ -4,7 +4,7 @@ class _coconut{object}:{comment.everything_here_must_be_copied_to_stub_file}
 {import_OrderedDict}
 {import_collections_abc}
 {import_typing_NamedTuple}
-    Ellipsis, Exception, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr{comma_bytearray} = Ellipsis, Exception, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, {static_repr}{comma_bytearray}
+    Ellipsis, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, type, zip, repr{comma_bytearray} = Ellipsis, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, type, zip, {static_repr}{comma_bytearray}
 _coconut_sentinel = _coconut.object()
 class MatchError(Exception):
     """Pattern-matching error. Has attributes .pattern and .value."""
@@ -30,7 +30,7 @@ class _coconut_base_compose{object}:
         self.func = func
         self.funcstars = []
         for f, stars in funcstars:
-            if isinstance(f, _coconut_base_compose):
+            if _coconut.isinstance(f, _coconut_base_compose):
                 self.funcstars.append((f.func, stars))
                 self.funcstars += f.funcstars
             else:
@@ -45,7 +45,7 @@ class _coconut_base_compose{object}:
             elif stars == 2:
                 arg = f(**arg)
             else:
-                raise ValueError()
+                raise _coconut.ValueError("invalid arguments to " + _coconut.repr(self))
         return arg
     def __repr__(self):
         return _coconut.repr(self.func) + " " + " ".join(("..*> " if star == 1 else "..**>" if star == 2 else "..> ") + _coconut.repr(f) for f, star in self.funcstars)
@@ -427,7 +427,7 @@ class _coconut_FunctionMatchErrorContext(object):
     def __enter__(self):
         try:
             self.threadlocal_var.contexts.append(self)
-        except AttributeError:
+        except _coconut.AttributeError:
             self.threadlocal_var.contexts = [self]
     def __exit__(self, type, value, traceback):
         self.threadlocal_var.contexts.pop()
@@ -435,27 +435,43 @@ class _coconut_FunctionMatchErrorContext(object):
     def get(cls):
         try:
             ctx = cls.threadlocal_var.contexts[-1]
-        except (AttributeError, IndexError):
-            return MatchError
+        except (_coconut.AttributeError, _coconut.IndexError):
+            return _coconut_MatchError
         if not ctx.taken:
             ctx.taken = True
             return ctx.exc_class
-        return MatchError
+        return _coconut_MatchError
 _coconut_get_function_match_error = _coconut_FunctionMatchErrorContext.get
+class _coconut_base_pattern_func{object}:
+    __slots__ = ("FunctionMatchError", "__doc__", "patterns")
+    def __init__(self, *funcs):
+        self.FunctionMatchError = _coconut.type(_coconut_str("MatchError"), (_coconut_MatchError,), {{}})
+        self.__doc__ = None
+        self.patterns = []
+        for func in funcs:
+            self.add(func)
+    def add(self, func):
+        self.__doc__ = func.__doc__ or self.__doc__
+        if _coconut.isinstance(func, _coconut_base_pattern_func):
+            self.patterns += func.patterns
+        else:
+            self.patterns.append(func)
+    def __call__(self, *args, **kwargs):
+        for func in self.patterns[:-1]:
+            try:
+                with _coconut_FunctionMatchErrorContext(self.FunctionMatchError):
+                    return func(*args, **kwargs)
+            except self.FunctionMatchError:
+                pass
+        return {tail_call_last_pattern}
+    def __repr__(self):
+        return "addpattern(" + _coconut.repr(self.patterns[0]) + ")(*" + _coconut.repr(self.patterns[1:]) + ")"
+    def __reduce__(self):
+        return (self.__class__, self.patterns)
 def addpattern(base_func):
     """Decorator to add a new case to a pattern-matching function,
     where the new case is checked last."""
-    def pattern_adder(func):
-        FunctionMatchError = type(_coconut_str("MatchError"), (MatchError,), {{}})
-        {tco_decorator}@_coconut.functools.wraps(func)
-        def add_pattern_func(*args, **kwargs):
-            try:
-                with _coconut_FunctionMatchErrorContext(FunctionMatchError):
-                    return base_func(*args, **kwargs)
-            except FunctionMatchError:
-                return {tail_call_func_args_kwargs}
-        return add_pattern_func
-    return pattern_adder
+    return {tco_partial_base_pattern_func}
 _coconut_addpattern = addpattern
 {def_prepattern}class _coconut_partial{object}:
     __slots__ = ("func", "_argdict", "_arglen", "_stargs", "keywords")

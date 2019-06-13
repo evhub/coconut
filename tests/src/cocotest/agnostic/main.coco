@@ -570,7 +570,8 @@ def main(*args):
     assert suite_test()
 
     print(".", end="")  # .....
-    if hasattr(tco_func, "_coconut_tco_func"):
+    if "_coconut_tco" in globals() or "_coconut_tco" in locals():
+        assert hasattr(tco_func, "func")
         assert tco_test()
 
     print(".", end="")  # ......

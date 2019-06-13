@@ -41,9 +41,12 @@ def suite_test():
     assert zipsum([1,2,3], [10,20,30]) |> list == [11,22,33]
     assert clean("   ab cd ef   ") == "ab cd ef" == "   ab cd ef   " |> clean
     assert add2 <| 2 <| 3 == 5
-    for qsort in [qsort1, qsort2, qsort3, qsort4, qsort5, qsort6, qsort7]:
+    qsorts = [qsort1, qsort2, qsort3, qsort4, qsort5, qsort6, qsort7, qsort8]
+    for qsort in qsorts:
         to_sort = rand_list(10)
         assert to_sort |> qsort |> tuple == to_sort |> sorted |> tuple, qsort
+    to_sort = rand_list(10)
+    assert parallel_map(tuple <.. (|>)$(to_sort), qsorts) |> list == [to_sort |> sorted |> tuple] * len(qsorts)
     assert repeat(3)$[2] == 3 == repeat_(3)$[2]
     assert sum_(repeat(1)$[:5]) == 5 == sum_(repeat_(1)$[:5])
     assert (sum_(takewhile((x)-> x<5, N()))
