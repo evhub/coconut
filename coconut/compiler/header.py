@@ -29,6 +29,8 @@ from coconut.constants import (
     default_encoding,
     template_ext,
     justify_len,
+    reserved_prefix,
+    ignored_imports,
 )
 from coconut.exceptions import internal_assert
 
@@ -180,7 +182,6 @@ else:
             "_coconut.functools.partial(_coconut_base_pattern_func, base_func)" if no_tco
             else "_coconut_back_compose(_coconut_tco, _coconut.functools.partial(_coconut_base_pattern_func, base_func))"
         ),
-        comma_tco=", _coconut_tail_call, _coconut_tco" if not no_tco else "",
         def_prepattern=(
             r'''def prepattern(base_func):
     """DEPRECATED: Use addpattern instead."""
@@ -204,8 +205,6 @@ else:
     def NamedTuple(name, fields):
         return _coconut.collections.namedtuple(name, [x for x, t in fields])'''.format(**format_dict),
     )
-
-    format_dict["underscore_imports"] = "_coconut, _coconut_MatchError{comma_tco}, _coconut_igetitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_back_pipe, _coconut_star_pipe, _coconut_back_star_pipe, _coconut_dubstar_pipe, _coconut_back_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert".format(**format_dict)
 
     # ._coconut_tco_func is used in main.coco, so don't remove it
     #  here without replacing its usage there
@@ -234,6 +233,16 @@ def _coconut_tco(func):
     return tail_call_optimized_func
 '''.format(**format_dict)
 
+    # only do this when asked for to avoid import cycles and performance implications
+    #  we do this instead of import * + import underscore names to avoid ipython errs
+    if which == "sys" or which.startswith("package"):
+        from coconut import __coconut__
+        format_dict["import_names"] = ", ".join(
+            varname for varname in dir(__coconut__)
+            if (not varname.startswith("_") or varname.startswith(reserved_prefix))
+            and varname not in ignored_imports
+        )
+
     return format_dict, target_startswith, target_info
 
 
@@ -255,7 +264,7 @@ def getheader(which, target="", use_hash=None, no_tco=False, strict=False):
     if which == "none":
         return ""
 
-    # initial, __coconut__, package, sys, code, file
+    # initial, __coconut__, package:n, sys, code, file
 
     format_dict, target_startswith, target_info = process_header_args(which, target, use_hash, no_tco, strict)
 
@@ -274,7 +283,7 @@ def getheader(which, target="", use_hash=None, no_tco=False, strict=False):
     if which == "initial":
         return header
 
-    # __coconut__, package, sys, code, file
+    # __coconut__, package:n, sys, code, file
 
     header += section("Coconut Header")
 
@@ -296,8 +305,7 @@ _coconut_cached_module = _coconut_sys.modules.get({__coconut__})
 if _coconut_cached_module is not None and _coconut_os_path.dirname(_coconut_cached_module.__file__) != _coconut_file_path:
     del _coconut_sys.modules[{__coconut__}]
 _coconut_sys.path.insert(0, _coconut_file_path)
-from __coconut__ import {underscore_imports}
-from __coconut__ import *
+from __coconut__ import {import_names}
 {sys_path_pop}
 
 '''.format(
@@ -319,8 +327,7 @@ from __coconut__ import *
 
     if which == "sys":
         return header + '''import sys as _coconut_sys
-from coconut.__coconut__ import {underscore_imports}
-from coconut.__coconut__ import *
+from coconut.__coconut__ import {import_names}
 '''.format(**format_dict)
 
     # __coconut__, code, file

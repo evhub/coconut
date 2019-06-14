@@ -524,6 +524,16 @@ py3_to_py2_stdlib = {
     "asyncio": ("trollius", (3, 4)),
 }
 
+# names not to import from __coconut__; should include all __future__ imports
+ignored_imports = (
+    "print_function",
+    "absolute_import",
+    "unicode_literals",
+    "division",
+    "generator_stop",
+    "annotations",
+)
+
 # -----------------------------------------------------------------------------------------------------------------------
 # COMMAND CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
