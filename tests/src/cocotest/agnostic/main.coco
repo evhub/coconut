@@ -537,6 +537,15 @@ def main_test():
     assert count("derp", None)[5:10] |> list == ["derp"] * 5
     assert count("derp", None)[5:] == count("derp", None)
     assert count("derp", None)[:5] |> list == ["derp"] * 5
+    match def f(a, /, b) = a, b
+    assert f(1, 2) == (1, 2)
+    assert f(1, b=2) == (1, 2)
+    try:
+        f(a=1, b=2)
+    except MatchError:
+        assert True
+    else:
+        assert False
     return True
 
 def tco_func() = tco_func()

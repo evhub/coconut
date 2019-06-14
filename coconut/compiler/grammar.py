@@ -978,26 +978,37 @@ class Grammar(object):
     star_sep_arg_ref = condense(star + arg_comma)
     star_sep_vararg = Forward()
     star_sep_vararg_ref = condense(star + vararg_comma)
+
+    slash_sep_arg = Forward()
+    slash_sep_arg_ref = condense(slash + arg_comma)
+    slash_sep_vararg = Forward()
+    slash_sep_vararg_ref = condense(slash + vararg_comma)
+
     just_star = star + rparen
+    just_slash = slash + rparen
+    just_op = just_star | just_slash
 
     match = Forward()
-    args_list = ~just_star + trace(addspace(ZeroOrMore(condense(
+    args_list = ~just_op + trace(addspace(ZeroOrMore(condense(
         # everything here must end with arg_comma
         (star | dubstar) + tfpdef
         | star_sep_arg
+        | slash_sep_arg
         | tfpdef_default,
     ))))
     parameters = condense(lparen + args_list + rparen)
-    var_args_list = ~just_star + trace(addspace(ZeroOrMore(condense(
+    var_args_list = ~just_op + trace(addspace(ZeroOrMore(condense(
         # everything here must end with vararg_comma
         (star | dubstar) + name + vararg_comma
         | star_sep_vararg
+        | slash_sep_vararg
         | name + Optional(default) + vararg_comma,
     ))))
     match_args_list = trace(Group(Optional(tokenlist(
         Group(
             (star | dubstar) + match
             | star  # not star_sep because pattern-matching can handle star separators on any Python version
+            | slash  # not slash_sep as above
             | match + Optional(equals.suppress() + test),
         ),
         comma,
@@ -1722,6 +1733,7 @@ class Grammar(object):
         Group(
             dubstar - tfpdef_tokens
             | star - Optional(tfpdef_tokens)
+            | slash
             | tfpdef_default_tokens,
         ) + Optional(passthrough.suppress()),
         comma + Optional(passthrough),  # implicitly suppressed

@@ -246,19 +246,19 @@ class Matcher(object):
         else:
             self.add_check(str(min_len) + " <= _coconut.len(" + item + ") <= " + str(max_len))
 
-    def match_function(self, args, kwargs, match_args=(), star_arg=None, kwd_args=(), dubstar_arg=None):
+    def match_function(self, args, kwargs, pos_only_match_args=(), match_args=(), star_arg=None, kwd_match_args=(), dubstar_arg=None):
         """Matches a pattern-matching function."""
-        self.match_in_args_kwargs(match_args, args, kwargs, allow_star_args=star_arg is not None)
+        self.match_in_args_kwargs(pos_only_match_args, match_args, args, kwargs, allow_star_args=star_arg is not None)
         if star_arg is not None:
             self.match(star_arg, args + "[" + str(len(match_args)) + ":]")
-        self.match_in_kwargs(kwd_args, kwargs)
+        self.match_in_kwargs(kwd_match_args, kwargs)
         with self.down_a_level():
             if dubstar_arg is None:
                 self.add_check("not " + kwargs)
             else:
                 self.match(dubstar_arg, kwargs)
 
-    def match_in_args_kwargs(self, match_args, args, kwargs, allow_star_args=False):
+    def match_in_args_kwargs(self, pos_only_match_args, match_args, args, kwargs, allow_star_args=False):
         """Matches against args or kwargs."""
 
         # before everything, pop the FunctionMatchError from context
@@ -268,12 +268,15 @@ class Matcher(object):
         req_len = 0
         arg_checks = {}
         to_match = []  # [(move_down, match, against)]
-        for i, arg in enumerate(match_args):
+        for i, arg in enumerate(pos_only_match_args + match_args):
             if isinstance(arg, tuple):
                 (match, default) = arg
             else:
                 match, default = arg, None
-            names = get_match_names(match)
+            if i < len(pos_only_match_args):  # faster if arg in pos_only_match_args
+                names = None
+            else:
+                names = get_match_names(match)
             if default is None:
                 if not names:
                     req_len = i + 1
@@ -322,7 +325,7 @@ class Matcher(object):
                     )
                     to_match.append((True, match, tempvar))
 
-        max_len = None if allow_star_args else len(match_args)
+        max_len = None if allow_star_args else len(pos_only_match_args) + len(match_args)
         self.check_len_in(req_len, max_len, args)
         for i in sorted(arg_checks):
             lt_check, ge_check = arg_checks[i]

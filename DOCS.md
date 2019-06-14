@@ -206,8 +206,9 @@ Finally, while Coconut will try to compile Python-3-specific syntax to its unive
 - destructuring assignment with `*`s (use pattern-matching instead),
 - tuples and lists with `*` unpacking or dicts with `**` unpacking (requires `--target 3.5`),
 - `@` as matrix multiplication (requires `--target 3.5`),
-- `async` and `await` statements (requires `--target 3.5`), and
-- `:=` assignment expressions (requires `--target 3.8`).
+- `async` and `await` statements (requires `--target 3.5`),
+- `:=` assignment expressions (requires `--target 3.8`), and
+- positional-only function arguments (use pattern-matching function definition instead) (requires `--target 3.8`).
 
 ### Allowable Targets
 

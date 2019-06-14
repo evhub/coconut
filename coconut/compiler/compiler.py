@@ -257,7 +257,12 @@ def imported_names(imports):
 
 def split_args_list(tokens, loc):
     """Splits function definition arguments."""
-    req_args, def_args, star_arg, kwd_args, dubstar_arg = [], [], None, [], None
+    pos_only_args = []
+    req_args = []
+    def_args = []
+    star_arg = None
+    kwd_args = []
+    dubstar_arg = None
     pos = 0
     for arg in tokens:
         if len(arg) == 1:
@@ -266,6 +271,16 @@ def split_args_list(tokens, loc):
                 if pos >= 3:
                     raise CoconutDeferredSyntaxError("star separator at invalid position in function definition", loc)
                 pos = 3
+            elif arg[0] == "/":
+                # slash sep (pos = 0)
+                if pos > 0:
+                    raise CoconutDeferredSyntaxError("slash separator at invalid position in function definition", loc)
+                if pos_only_args:
+                    raise CoconutDeferredSyntaxError("only one slash separator allowed in function definition", loc)
+                if not req_args:
+                    raise CoconutDeferredSyntaxError("slash separator must come after arguments to mark as positional-only")
+                pos_only_args = req_args
+                req_args = []
             else:
                 # pos arg (pos = 0)
                 if pos > 0:
@@ -297,7 +312,7 @@ def split_args_list(tokens, loc):
                     raise CoconutDeferredSyntaxError("invalid default argument in function definition", loc)
         else:
             raise CoconutInternalException("invalid function definition argument", arg)
-    return req_args, def_args, star_arg, kwd_args, dubstar_arg
+    return pos_only_args, req_args, def_args, star_arg, kwd_args, dubstar_arg
 
 
 def match_case_tokens(loc, tokens, check_var, top):
@@ -478,6 +493,8 @@ class Compiler(Grammar):
         self.dubstar_expr <<= attach(self.dubstar_expr_ref, self.star_expr_check)
         self.star_sep_arg <<= attach(self.star_sep_arg_ref, self.star_sep_check)
         self.star_sep_vararg <<= attach(self.star_sep_vararg_ref, self.star_sep_check)
+        self.slash_sep_arg <<= attach(self.slash_sep_arg_ref, self.slash_sep_check)
+        self.slash_sep_vararg <<= attach(self.slash_sep_vararg_ref, self.slash_sep_check)
         self.endline_semicolon <<= attach(self.endline_semicolon_ref, self.endline_semicolon_check)
         self.async_stmt <<= attach(self.async_stmt_ref, self.async_stmt_check)
         self.async_comp_for <<= attach(self.async_comp_for_ref, self.async_comp_check)
@@ -1277,8 +1294,8 @@ class Compiler(Grammar):
 
         matcher = Matcher(loc, match_check_var, name_list=[])
 
-        req_args, def_args, star_arg, kwd_args, dubstar_arg = split_args_list(matches, loc)
-        matcher.match_function(match_to_args_var, match_to_kwargs_var, req_args + def_args, star_arg, kwd_args, dubstar_arg)
+        pos_only_args, req_args, def_args, star_arg, kwd_args, dubstar_arg = split_args_list(matches, loc)
+        matcher.match_function(match_to_args_var, match_to_kwargs_var, pos_only_args, req_args + def_args, star_arg, kwd_args, dubstar_arg)
 
         if cond is not None:
             matcher.add_guard(cond)
@@ -1566,8 +1583,8 @@ class Compiler(Grammar):
 
         matcher = Matcher(loc, match_check_var)
 
-        req_args, def_args, star_arg, kwd_args, dubstar_arg = split_args_list(matches, loc)
-        matcher.match_function(match_to_args_var, match_to_kwargs_var, req_args + def_args, star_arg, kwd_args, dubstar_arg)
+        pos_only_args, req_args, def_args, star_arg, kwd_args, dubstar_arg = split_args_list(matches, loc)
+        matcher.match_function(match_to_args_var, match_to_kwargs_var, pos_only_args, req_args + def_args, star_arg, kwd_args, dubstar_arg)
 
         if cond is not None:
             matcher.add_guard(cond)
@@ -2161,6 +2178,10 @@ class Compiler(Grammar):
     def star_sep_check(self, original, loc, tokens):
         """Check for Python 3 keyword-only arguments."""
         return self.check_py("3", "keyword-only argument separator (use 'match' to produce universal code)", original, loc, tokens)
+
+    def slash_sep_check(self, original, loc, tokens):
+        """Check for Python 3.8 positional-only arguments."""
+        return self.check_py("38", "positional-only argument separator (use 'match' to produce universal code)", original, loc, tokens)
 
     def matrix_at_check(self, original, loc, tokens):
         """Check for Python 3.5 matrix multiplication."""
