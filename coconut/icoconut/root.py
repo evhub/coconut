@@ -174,11 +174,11 @@ if LOAD_MODULE:
             super(CoconutShell, self).init_instance_attrs()
             self.compile = CoconutCompiler()
 
-        def init_create_namespaces(self, user_module=None, user_ns=None):
-            """Version of init_create_namespaces that adds Coconut built-ins to globals."""
-            super(CoconutShell, self).init_create_namespaces(user_module, user_ns)
-            for namespace in self.ns_table.values():
-                RUNNER.update_vars(namespace)
+        def init_user_ns(self):
+            """Version of init_user_ns that adds Coconut built-ins."""
+            super(CoconutShell, self).init_user_ns()
+            RUNNER.update_vars(self.user_ns)
+            RUNNER.update_vars(self.user_ns_hidden)
 
         def run_cell(self, raw_cell, store_history=False, silent=False, shell_futures=True):
             """Version of run_cell that always uses shell_futures."""
