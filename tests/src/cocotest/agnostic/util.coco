@@ -157,19 +157,22 @@ def qsort6(l: int$[]) -> int$[]:
 
 def empty_list_base_case([]) = []
 
-@addpattern(empty_list_base_case)
-def qsort7([head] + tail) =
+# use separate name for base func for pickle
+def _qsort7([head] + tail) =
     qsort7(left) + [head] + qsort7(right) where:
         left = [x for x in tail if x <= head]
         right = [x for x in tail if x > head]
+qsort7 = addpattern(empty_list_base_case)(_qsort7)
 
-@addpattern(empty_list_base_case)
-def qsort8(l) =
+# use separate name for base func for pickle
+def _qsort8(l) =
     qsort8(left) + [mid] + qsort8(right) where:
         midpt = len(l)//2
         mid, rest = l[midpt], l[:midpt] + l[midpt+1:]
         left = [x for x in rest if x < mid]
         right = [x for x in rest if x >= mid]
+qsort8 = addpattern(empty_list_base_case)(_qsort8)
+
 
 # Infinite Iterators:
 def repeat(elem):

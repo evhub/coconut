@@ -475,7 +475,7 @@ class _coconut_base_pattern_func{object}:
     def __repr__(self):
         return "addpattern(" + _coconut.repr(self.patterns[0]) + ")(*" + _coconut.repr(self.patterns[1:]) + ")"
     def __reduce__(self):
-        return (self.__class__, self.patterns)
+        return (self.__class__, _coconut.tuple(self.patterns))
 def addpattern(base_func):
     """Decorator to add a new case to a pattern-matching function,
     where the new case is checked last."""
