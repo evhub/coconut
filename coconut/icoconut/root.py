@@ -25,6 +25,7 @@ import traceback
 from coconut.exceptions import (
     CoconutException,
     CoconutInternalException,
+    internal_assert,
 )
 from coconut.constants import (
     py_syntax_version,
@@ -76,6 +77,7 @@ parse_block_memo = {}
 
 def memoized_parse_block(code):
     """Memoized version of parse_block."""
+    internal_assert(lambda: code not in parse_block_memo.values(), "attempted recompilation of", code)
     success, result = parse_block_memo.get(code, (None, None))
     if success is None:
         try:
@@ -91,11 +93,6 @@ def memoized_parse_block(code):
         raise result
 
 
-def memoized_parse_sys(code):
-    """Memoized version of parse_sys."""
-    return COMPILER.header_proc(memoized_parse_block(code), header="sys", initial="none")
-
-
 # -----------------------------------------------------------------------------------------------------------------------
 # KERNEL:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -106,10 +103,17 @@ if LOAD_MODULE:
     class CoconutCompiler(CachingCompiler, object):
         """IPython compiler for Coconut."""
 
+        def __init__(self):
+            super(CoconutCompiler, self).__init__()
+
+            # we compile the header here to cache the proper __future__ imports
+            header = COMPILER.getheader("sys")
+            super(CoconutCompiler, self).__call__(header, "<string>", "exec")
+
         def ast_parse(self, source, *args, **kwargs):
             """Version of ast_parse that compiles Coconut code first."""
             try:
-                compiled = memoized_parse_sys(source)
+                compiled = memoized_parse_block(source)
             except CoconutException as err:
                 raise err.syntax_err()
             else:
@@ -118,12 +122,23 @@ if LOAD_MODULE:
         def cache(self, code, *args, **kwargs):
             """Version of cache that compiles Coconut code first."""
             try:
-                compiled = memoized_parse_sys(code)
+                compiled = memoized_parse_block(code)
             except CoconutException:
                 traceback.print_exc()
                 return None
             else:
                 return super(CoconutCompiler, self).cache(compiled, *args, **kwargs)
+
+        def __call__(self, source, *args, **kwargs):
+            """Version of __call__ that compiles Coconut code first."""
+            if isinstance(source, (str, bytes)):
+                try:
+                    compiled = memoized_parse_block(source)
+                except CoconutException as err:
+                    raise err.syntax_err()
+            else:
+                compiled = source
+            return super(CoconutCompiler, self).__call__(compiled, *args, **kwargs)
 
     class CoconutSplitter(IPythonInputSplitter, object):
         """IPython splitter for Coconut."""
@@ -154,14 +169,22 @@ if LOAD_MODULE:
             super(CoconutShell, self).init_instance_attrs()
             self.compile = CoconutCompiler()
 
-        def init_create_namespaces(self, *args, **kwargs):
+        def init_create_namespaces(self, user_module=None, user_ns=None):
             """Version of init_create_namespaces that adds Coconut built-ins to globals."""
-            super(CoconutShell, self).init_create_namespaces(*args, **kwargs)
-            RUNNER.update_vars(self.user_global_ns)
+            super(CoconutShell, self).init_create_namespaces(user_module, user_ns)
+            for namespace in self.ns_table.values():
+                RUNNER.update_vars(namespace)
 
-        def run_cell(self, raw_cell, store_history=False, silent=False, shell_futures=None):
+        def run_cell(self, raw_cell, store_history=False, silent=False, shell_futures=True):
             """Version of run_cell that always uses shell_futures."""
             return super(CoconutShell, self).run_cell(raw_cell, store_history, silent, shell_futures=True)
+
+        if hasattr(ZMQInteractiveShell, "run_cell_async"):
+            import asyncio
+            @asyncio.coroutine
+            def run_cell_async(self, raw_cell, store_history=False, silent=False, shell_futures=True):
+                """Version of run_cell_async that always uses shell_futures."""
+                return super(CoconutShell, self).run_cell_async(raw_cell, store_history, silent, shell_futures=True)
 
         def user_expressions(self, expressions):
             """Version of user_expressions that compiles Coconut code first."""
