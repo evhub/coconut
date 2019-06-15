@@ -22,6 +22,11 @@ from coconut.root import *  # NOQA
 import os
 import traceback
 
+try:
+    import asyncio
+except ImportError:
+    asyncio = None
+
 from coconut.exceptions import (
     CoconutException,
     CoconutInternalException,
@@ -179,8 +184,7 @@ if LOAD_MODULE:
             """Version of run_cell that always uses shell_futures."""
             return super(CoconutShell, self).run_cell(raw_cell, store_history, silent, shell_futures=True)
 
-        if hasattr(ZMQInteractiveShell, "run_cell_async"):
-            import asyncio
+        if asyncio is not None:
             @asyncio.coroutine
             def run_cell_async(self, raw_cell, store_history=False, silent=False, shell_futures=True):
                 """Version of run_cell_async that always uses shell_futures."""
