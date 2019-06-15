@@ -175,11 +175,15 @@ else:
         with ThreadPoolExecutor(cpu_count() * 5)''' if target_info < (3, 5)
             else '''with ThreadPoolExecutor()'''
         ),
-        tail_call_last_pattern="self.patterns[-1](*args, **kwargs)" if no_tco else "_coconut_tail_call(self.patterns[-1], *args, **kwargs)",
-        tco_partial_base_pattern_func=(
-            "_coconut.functools.partial(_coconut_base_pattern_func, base_func)" if no_tco
-            else "_coconut_back_compose(_coconut_tco, _coconut.functools.partial(_coconut_base_pattern_func, base_func))"
-        ),
+        def_tco_func="""def _coconut_tco_func(self, *args, **kwargs):
+        for func in self.patterns[:-1]:
+            try:
+                with _coconut_FunctionMatchErrorContext(self.FunctionMatchError):
+                    return func(*args, **kwargs)
+            except self.FunctionMatchError:
+                pass
+        return _coconut_tail_call(self.patterns[-1], *args, **kwargs)
+    """,
         def_prepattern=(
             r'''def prepattern(base_func):
     """DEPRECATED: Use addpattern instead."""
@@ -213,15 +217,12 @@ else:
     __slots__ = ("func", "args", "kwargs")
     def __init__(self, func, *args, **kwargs):
         self.func, self.args, self.kwargs = func, args, kwargs
-_coconut_tco_func_dict = {empty_dict}
 def _coconut_tco(func):
     @_coconut.functools.wraps(func)
     def tail_call_optimized_func(*args, **kwargs):
         call_func = func
         while True:
-            wkref = _coconut_tco_func_dict.get(_coconut.id(call_func))
-            if wkref is not None and wkref() is call_func:
-                call_func = call_func._coconut_tco_func
+            call_func = _coconut.getattr(call_func, "_coconut_tco_func", call_func)
             result = call_func(*args, **kwargs)  # pass --no-tco to clean up your traceback
             if not isinstance(result, _coconut_tail_call):
                 return result
@@ -230,7 +231,6 @@ def _coconut_tco(func):
     tail_call_optimized_func.__module__ = _coconut.getattr(func, "__module__", None)
     tail_call_optimized_func.__name__ = _coconut.getattr(func, "__name__", "<coconut tco function (pass --no-tco to remove)>")
     tail_call_optimized_func.__qualname__ = _coconut.getattr(func, "__qualname__", tail_call_optimized_func.__name__)
-    _coconut_tco_func_dict[_coconut.id(tail_call_optimized_func)] = _coconut.weakref.ref(tail_call_optimized_func)
     return tail_call_optimized_func
 '''.format(**format_dict)
 

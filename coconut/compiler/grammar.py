@@ -683,8 +683,8 @@ def where_stmt_handle(tokens):
     """Process a where statement."""
     internal_assert(len(tokens) == 2, "invalid where statement tokens", tokens)
     base_stmt, assignment_stmts = tokens
-    stmts = list(assignment_stmts) + [base_stmt]
-    return "\n".join(stmts) + "\n"
+    stmts = list(assignment_stmts) + [base_stmt + "\n"]
+    return "".join(stmts)
 
 
 # end: HANDLERS

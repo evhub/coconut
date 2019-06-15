@@ -1,5 +1,5 @@
-class _coconut{object}:{comment.everything_here_must_be_copied_to_stub_file}
-    import collections, copy, functools, types, itertools, operator, weakref, threading
+class _coconut{object}:{comment.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
+    import collections, copy, functools, types, itertools, operator, threading
 {bind_lru_cache}{import_asyncio}{import_pickle}
 {import_OrderedDict}
 {import_collections_abc}
@@ -448,18 +448,15 @@ class _coconut_FunctionMatchErrorContext(object):
         return _coconut_MatchError
 _coconut_get_function_match_error = _coconut_FunctionMatchErrorContext.get
 class _coconut_base_pattern_func{object}:
+    __slots__ = ("FunctionMatchError", "__doc__", "patterns")
     def __init__(self, *funcs):
         self.FunctionMatchError = _coconut.type(_coconut_str("MatchError"), (_coconut_MatchError,), {{}})
         self.__doc__ = None
-        self.__name__ = "<coconut addpattern func>"
-        self.__module__ = None
         self.patterns = []
         for func in funcs:
             self.add(func)
     def add(self, func):
         self.__doc__ = _coconut.getattr(func, "__doc__", None) or self.__doc__
-        self.__name__ = _coconut.getattr(func, "__name__", None) or self.__name__
-        self.__module__ = _coconut.getattr(func, "__module__", None) or self.__module__
         if _coconut.isinstance(func, _coconut_base_pattern_func):
             self.patterns += func.patterns
         else:
@@ -471,15 +468,15 @@ class _coconut_base_pattern_func{object}:
                     return func(*args, **kwargs)
             except self.FunctionMatchError:
                 pass
-        return {tail_call_last_pattern}
-    def __repr__(self):
+        return self.patterns[-1](*args, **kwargs)
+    {def_tco_func}def __repr__(self):
         return "addpattern(" + _coconut.repr(self.patterns[0]) + ")(*" + _coconut.repr(self.patterns[1:]) + ")"
     def __reduce__(self):
         return (self.__class__, _coconut.tuple(self.patterns))
 def addpattern(base_func):
     """Decorator to add a new case to a pattern-matching function,
     where the new case is checked last."""
-    return {tco_partial_base_pattern_func}
+    return _coconut.functools.partial(_coconut_base_pattern_func, base_func)
 _coconut_addpattern = addpattern
 {def_prepattern}class _coconut_partial{object}:
     __slots__ = ("func", "_argdict", "_arglen", "_stargs", "keywords")
@@ -525,7 +522,7 @@ _coconut_addpattern = addpattern
         return _coconut.repr(self.func) + "$(" + ", ".join(args) + ")"
 def consume(iterable, keep_last=0):
     """consume(iterable, keep_last) fully exhausts iterable and return the last keep_last elements."""
-    return _coconut.collections.deque(iterable, maxlen=keep_last)  # fastest way to exhaust an iterator
+    return _coconut.collections.deque(iterable, maxlen=keep_last)
 class starmap(_coconut.itertools.starmap):
     __slots__ = ("func", "iter")
     if hasattr(_coconut.itertools.starmap, "__doc__"):
