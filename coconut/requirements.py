@@ -17,6 +17,7 @@ Description: Coconut installation requirements.
 
 from coconut.root import *  # NOQA
 
+import os
 import platform
 
 from coconut.constants import (
@@ -26,6 +27,7 @@ from coconut.constants import (
     all_reqs,
     min_versions,
     version_strictly,
+    pure_python_env_var,
     PYPY,
     PY34,
     IPY,
@@ -139,6 +141,9 @@ extras["dev"] = uniqueify_all(
     get_reqs("dev"),
 )
 
+if os.environ.get(pure_python_env_var, "").lower() == "true":
+    # override necessary for readthedocs
+    requirements += get_reqs("purepython")
 if supports_env_markers:
     # modern method
     extras[":platform_python_implementation=='CPython'"] = get_reqs("cpython")

@@ -105,6 +105,8 @@ website_url = "http://coconut-lang.org"
 
 license_name = "Apache 2.0"
 
+pure_python_env_var = "COCONUT_PURE_PYTHON"
+
 # the different categories here are defined in requirements.py,
 #  anything after a colon is ignored but allows different versions
 #  for different categories, and tuples denote the use of environment
