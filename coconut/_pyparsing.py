@@ -19,6 +19,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
+import os
 import traceback
 import functools
 
@@ -30,10 +31,15 @@ from coconut.constants import (
     ver_str_to_tuple,
     ver_tuple_to_str,
     get_next_version,
+    pure_python_env_var,
+    PURE_PYTHON,
 )
 
 # warning: do not name this file cPyparsing or pyparsing or it might collide with the following imports
 try:
+
+    if PURE_PYTHON:
+        raise ImportError("skipping cPyparsing check due to " + pure_python_env_var + " = " + os.environ.get(pure_python_env_var, ""))
 
     import cPyparsing as _pyparsing
     from cPyparsing import *  # NOQA

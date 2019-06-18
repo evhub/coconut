@@ -33,10 +33,14 @@ which will install Coconut and its required dependencies.
 _Note: If you have an old version of Coconut installed and you want to upgrade, run `pip install --upgrade coconut` instead._
 
 If you are encountering errors running `pip install coconut`, try instead running
+```bash
+COCONUT_PURE_PYTHON=TRUE pip install --user --upgrade coconut
 ```
-pip install --user --no-deps --upgrade coconut pyparsing
+in `bash` (UNIX) or
+```bash
+cmd /c "set COCONUT_PURE_PYTHON=TRUE&& pip install --user --upgrade coconut"
 ```
-which will force Coconut to use the pure-Python [`pyparsing`](https://github.com/pyparsing/pyparsing) module instead of the faster [`cPyparsing`](https://github.com/evhub/cpyparsing) module. If you are still getting errors, you may want to try [using conda](#using-conda) instead.
+in `cmd` (Windows) which will force Coconut to use the pure-Python [`pyparsing`](https://github.com/pyparsing/pyparsing) module instead of the faster [`cPyparsing`](https://github.com/evhub/cpyparsing) module. If you are still getting errors, you may want to try [using conda](#using-conda) instead.
 
 If `pip install coconut` works, but you cannot access the `coconut` command, be sure that Coconut's installation location is in your `PATH` environment variable. On UNIX, that is `/usr/local/bin` (without `--user`) or `${HOME}/.local/bin/` (with `--user`).
 
