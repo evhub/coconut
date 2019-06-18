@@ -144,7 +144,7 @@ extras["dev"] = uniqueify_all(
 if os.environ.get(pure_python_env_var, "").lower() == "true":
     # override necessary for readthedocs
     requirements += get_reqs("purepython")
-if supports_env_markers:
+elif supports_env_markers:
     # modern method
     extras[":platform_python_implementation=='CPython'"] = get_reqs("cpython")
     extras[":platform_python_implementation!='CPython'"] = get_reqs("purepython")
@@ -180,7 +180,7 @@ else:
 
 def all_versions(req):
     """Get all versions of req from PyPI."""
-    import requests
+    import requests  # expensive
     url = "https://pypi.python.org/pypi/" + get_base_req(req) + "/json"
     return tuple(requests.get(url).json()["releases"].keys())
 
