@@ -81,6 +81,8 @@ def suite_test():
     assert not vector(1, 2) == (1, 2)
     assert not vector(2, 3) != vector(2, 3)
     assert vector(1, 2) != (1, 2)
+    assert vector(1, 2) + vector(2, 3) == vector(3, 5)
+    assert vector(1, 2) + 1 == vector(2, 3)
     assert triangle(3, 4, 5).is_right()
     assert (.)(triangle(3, 4, 5), "is_right")
     assert (.is_right())(triangle(3, 4, 5))
@@ -561,6 +563,10 @@ def suite_test():
         assert False
     assert issubclass(data6, BaseClass)
     assert namedpt("a", 3, 4).mag() == 5
+    t = descriptor_test()
+    assert t.lam() == t
+    assert t.comp() == (t,)
+    assert t.N()$[:2] |> list == [(t, 0), (t, 1)]
     return True
 
 def tco_test():
