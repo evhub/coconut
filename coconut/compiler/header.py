@@ -217,12 +217,15 @@ else:
     __slots__ = ("func", "args", "kwargs")
     def __init__(self, func, *args, **kwargs):
         self.func, self.args, self.kwargs = func, args, kwargs
+_coconut_tco_func_dict = {empty_dict}
 def _coconut_tco(func):
     @_coconut.functools.wraps(func)
     def tail_call_optimized_func(*args, **kwargs):
         call_func = func
-        while True:
-            call_func = _coconut.getattr(call_func, "_coconut_tco_func", call_func)
+        while True:{comment.weakrefs_necessary_for_ignoring_bound_methods}
+            wkref = _coconut_tco_func_dict.get(_coconut.id(call_func))
+            if (wkref is not None and wkref() is call_func) or _coconut.isinstance(call_func, _coconut_base_pattern_func):
+                call_func = call_func._coconut_tco_func
             result = call_func(*args, **kwargs)  # pass --no-tco to clean up your traceback
             if not isinstance(result, _coconut_tail_call):
                 return result
@@ -231,6 +234,7 @@ def _coconut_tco(func):
     tail_call_optimized_func.__module__ = _coconut.getattr(func, "__module__", None)
     tail_call_optimized_func.__name__ = _coconut.getattr(func, "__name__", "<coconut tco function (pass --no-tco to remove)>")
     tail_call_optimized_func.__qualname__ = _coconut.getattr(func, "__qualname__", tail_call_optimized_func.__name__)
+    _coconut_tco_func_dict[_coconut.id(tail_call_optimized_func)] = _coconut.weakref.ref(tail_call_optimized_func)
     return tail_call_optimized_func
 '''.format(**format_dict)
 

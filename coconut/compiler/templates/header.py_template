@@ -1,5 +1,5 @@
 class _coconut{object}:{comment.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
-    import collections, copy, functools, types, itertools, operator, threading
+    import collections, copy, functools, types, itertools, operator, threading, weakref
 {bind_lru_cache}{import_asyncio}{import_pickle}
 {import_OrderedDict}
 {import_collections_abc}

@@ -272,6 +272,7 @@ def return_in_loop(x):
 
 class methtest:
     def meth(self, arg) = meth(self, arg)
+    def tail_call_meth(self, arg) = self.meth(arg)
 def meth(self, arg) = arg
 
 # Data Blocks:
