@@ -316,7 +316,7 @@ def comp_prelude(args=[], **kwargs):
     call(["git", "clone", prelude_git])
     call_coconut([os.path.join(prelude, "setup.coco"), "--strict"] + args, **kwargs)
     if PY36:
-        args.append("--target", "3.6", "--mypy")
+        args.extend(["--target", "3.6", "--mypy"])
     call_coconut([os.path.join(prelude, "prelude-source"), os.path.join(prelude, "prelude"), "--strict"] + args, **kwargs)
 
 

@@ -300,7 +300,7 @@ data vector(x, y):
             raise TypeError()
     def __add__(self, vector(x_, y_)) =
         vector(self.x + x_, self.y + y_)
-    addpattern def __add__(self, n is int) =
+    addpattern def __add__(self, n is int) =  # type: ignore
         vector(self.x + n, self.y + n)
 data triangle(a, b, c):
     def is_right(self):
