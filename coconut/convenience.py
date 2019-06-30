@@ -99,6 +99,10 @@ def parse(code="", mode="sys"):
 
 def coconut_eval(expression, globals=None, locals=None):
     """Compile and evaluate Coconut code."""
+    CLI.check_runner(fix_path=False)
+    if globals is None:
+        globals = {}
+    CLI.runner.update_vars(globals)
     return eval(parse(expression, "eval"), globals, locals)
 
 
