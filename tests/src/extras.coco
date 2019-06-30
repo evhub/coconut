@@ -61,7 +61,8 @@ def test_extras():
     assert version("-v")
     assert_raises(-> version("other"), CoconutException)
     assert_raises(def -> raise CoconutException("derp").syntax_err(), SyntaxError)
-    setup()
+    assert coconut_eval("x -> x + 1")(2) == 3
+    assert coconut_eval("addpattern")
     assert parse("abc") == parse("abc", "sys")
     assert parse("abc", "file")
     assert parse("abc", "package")
@@ -123,8 +124,6 @@ def test_extras():
     assert parse("(a := b)")
     assert parse("print(a := 1, b := 2)")
     assert parse("def f(a, /, b) = a, b")
-    assert coconut_eval("x -> x + 1")(2) == 3
-    assert coconut_eval("addpattern")
     if CoconutKernel is not None:
         if PY35:
             asyncio.set_event_loop(asyncio.new_event_loop())
