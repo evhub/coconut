@@ -88,13 +88,12 @@ def parse(code="", mode="sys"):
     """Compile Coconut code."""
     if CLI.comp is None:
         setup()
-    if mode in PARSERS:
-        return PARSERS[mode](CLI.comp)(code)
-    else:
+    if mode not in PARSERS:
         raise CoconutException(
             "invalid parse mode " + ascii(mode),
             extra="valid modes are " + ", ".join(PARSERS),
         )
+    return PARSERS[mode](CLI.comp)(code)
 
 
 def coconut_eval(expression, globals=None, locals=None):
