@@ -580,7 +580,7 @@ class Command(object):
 
     def check_runner(self, fix_path=True):
         """Make sure there is a runner."""
-        if fix_path and s.getcwd() not in sys.path:
+        if fix_path and os.getcwd() not in sys.path:
             sys.path.append(os.getcwd())
         if self.runner is None:
             self.runner = Runner(self.comp, exit=self.exit_runner, store=self.mypy)
