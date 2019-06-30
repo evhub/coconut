@@ -97,6 +97,11 @@ def parse(code="", mode="sys"):
         )
 
 
+def coconut_eval(expression, globals=None, locals=None):
+    """Compile and evaluate Coconut code."""
+    return eval(parse(expression, "eval"), globals, locals)
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # IMPORTER:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -133,7 +138,6 @@ class CoconutImporter(object):
                 self.run_compiler(path)
                 # Coconut package was found and compiled, now let Python import it
                 return
-        return
 
 
 coconut_importer = CoconutImporter()

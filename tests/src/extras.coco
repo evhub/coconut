@@ -19,6 +19,7 @@ from coconut.convenience import (
     version,
     setup,
     parse,
+    coconut_eval,
 )
 
 if IPY and not WINDOWS:
@@ -122,6 +123,7 @@ def test_extras():
     assert parse("(a := b)")
     assert parse("print(a := 1, b := 2)")
     assert parse("def f(a, /, b) = a, b")
+    assert coconut_eval("x -> x + 1")(2) == 3
     if CoconutKernel is not None:
         if PY35:
             asyncio.set_event_loop(asyncio.new_event_loop())

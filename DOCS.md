@@ -2465,6 +2465,12 @@ while True:
 
 Executes the given _args_ as if they were fed to `coconut` on the command-line, with the exception that unless _interact_ is true or `-i` is passed, the interpreter will not be started. Additionally, since `parse` and `cmd` share the same convenience parsing object, any changes made to the parsing with `cmd` will work just as if they were made with `setup`.
 
+#### `coconut_eval`
+
+**coconut.convenience.coconut_eval**(_expression_, _globals_=`None`, _locals_=`None`)
+
+Version of [`eval`](https://docs.python.org/3/library/functions.html#eval) which can evaluate Coconut code. Uses the same convenience parsing object as the other functions and thus can be controlled by `setup`.
+
 #### `version`
 
 **coconut.convenience.version**(**[**_which_**]**)
