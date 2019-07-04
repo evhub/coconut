@@ -260,9 +260,11 @@ def special_starred_import_handle(imp_all=False):
     if imp_all:
         return """
         for _coconut_m in _coconut_sys.modules.values():{oind}
-            for _coconut_k, _coconut_v in _coconut_m.__dict__.items():{oind}
-                if not _coconut_k.startswith("_"):{oind}
-                    _coconut.locals()[_coconut_k] = _coconut_v{cind}{cind}{cind}
+            _coconut_d = _coconut.getattr(_coconut_m, "__dict__")
+            if _coconut_d is not None:{oind}
+                for _coconut_k, _coconut_v in _coconut_d.items():{oind}
+                    if not _coconut_k.startswith("_"):{oind}
+                        _coconut.locals()[_coconut_k] = _coconut_v{cind}{cind}{cind}{cind}
         """.strip().format(oind=openindent, cind=closeindent)
     else:
         return """
