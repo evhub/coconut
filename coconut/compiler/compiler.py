@@ -255,6 +255,22 @@ def imported_names(imports):
         yield imp[-1].split(".", 1)[0]
 
 
+def special_starred_import_handle(imp_all=False):
+    """Handles the [from *] import * Coconut Easter egg."""
+    if imp_all:
+        return """
+        for _coconut_m in _coconut_sys.modules.values():{oind}
+            for _coconut_k, _coconut_v in _coconut_m.__dict__.items():{oind}
+                if not _coconut_k.startswith("_"):{oind}
+                    _coconut.locals()[_coconut_k] = _coconut_v{cind}{cind}{cind}
+        """.strip().format(oind=openindent, cind=closeindent)
+    else:
+        return """
+        for _coconut_n, _coconut_m in _coconut_sys.modules.items():{oind}
+            _coconut.locals()[_coconut_n] = _coconut_m{cind}
+        """.strip().format(oind=openindent, cind=closeindent)
+
+
 def split_args_list(tokens, loc):
     """Splits function definition arguments."""
     pos_only_args = []
@@ -1520,6 +1536,12 @@ class Compiler(Grammar):
                 return ""
         else:
             raise CoconutInternalException("invalid import tokens", tokens)
+        imports = list(imports)
+        if imp_from == "*" or imp_from is None and "*" in imports:
+            logger.warn_err(self.make_err(CoconutSyntaxWarning, "[from *] import * is a Coconut Easter egg and should not be used in production code", original, loc))
+            if not (len(imports) == 1 and imports[0] == "*"):
+                raise self.make_err(CoconutSyntaxError, "only [from *] import * allowed, not from * import name", original, loc)
+            return special_starred_import_handle(imp_all=bool(imp_from))
         if self.strict:
             self.unused_imports.update(imported_names(imports))
         return universal_import(imports, imp_from=imp_from, target=self.target)

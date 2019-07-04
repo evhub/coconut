@@ -2,6 +2,15 @@ import sys
 import asyncio  # type: ignore
 
 
+def assert_raises(c, exc):
+    """Test whether callable c raises an exception of type exc."""
+    try:
+        c()
+    except exc:
+        return True
+    else:
+        raise AssertionError("%r failed to raise exception %r" % (c, exc))
+
 def main_test():
     """Basic no-dependency tests."""
     assert "\n" == (
@@ -548,16 +557,17 @@ def main_test():
         assert False
     return True
 
-def tco_func() = tco_func()
+def easter_egg_test():
+    import sys as _sys
+    import *
+    assert sys == _sys
+    orig_name = __name__
+    from * import *
+    assert __name__ == orig_name
+    assert locals()["byteorder"] == _sys.byteorder
+    return True
 
-def assert_raises(c, exc):
-    """Test whether callable c raises an exception of type exc."""
-    try:
-        c()
-    except exc:
-        return True
-    else:
-        raise AssertionError("%r failed to raise exception %r" % (c, exc))
+def tco_func() = tco_func()
 
 def main(*args):
     """Asserts arguments and executes tests."""
@@ -603,5 +613,8 @@ def main(*args):
 
     print(".", end="")  # ........
     from . import tutorial  # type: ignore
+
+    print(".", end="")  # .........
+    assert easter_egg_test()
 
     print("\n<success>")
