@@ -118,6 +118,7 @@ from coconut.compiler.util import (
     keyword,
     append_it,
     interleaved_join,
+    handle_indentation,
 )
 from coconut.compiler.header import (
     minify,
@@ -257,42 +258,42 @@ def imported_names(imports):
 
 def special_starred_import_handle(imp_all=False):
     """Handles the [from *] import * Coconut Easter egg."""
-    out = """
-    import imp as _coconut_imp
-    for _coconut_base_path in _coconut_sys.path:{oind}
-        for _coconut_dirpath, _coconut_dirnames, _coconut_filenames in _coconut.os.walk(_coconut_base_path):{oind}
-            _coconut_paths_to_imp = []
-            for _coconut_fname in _coconut_filenames:{oind}
-                if _coconut.os.path.splitext(_coconut_fname)[-1] == "py":{oind}
-                    _coconut_fpath = _coconut.os.path.join(_coconut_dirpath, _coconut_fname)
-                    _coconut_paths_to_imp.append(_coconut_fpath){cind}{cind}
-            for _coconut_dname in _coconut_dirnames:{oind}
-                _coconut_dpath = _coconut.os.path.join(_coconut_dirpath, _coconut_dname)
-                if "__init__.py" in _coconut.os.listdir(_coconut_dpath):{oind}
-                    _coconut_paths_to_imp.append(_coconut_dpath){cind}{cind}
-            for _coconut_imp_path in _coconut_paths_to_imp:{oind}
-                _coconut_imp_name = _coconut.os.path.splitext(_coconut.os.path.basename(_coconut_imp_path))[0]
-                descr = _coconut_imp.find_module(_coconut_imp_name, [_coconut.os.path.dirname(_coconut_imp_path)])
-                try:{oind}
-                    _coconut_imp.load_module(_coconut_imp_name, *descr){cind}
-                except:{oind}
-                    pass{cind}{cind}
-            _coconut_dirnames[:] = []{cind}{cind}
-    """.strip().format(oind=openindent, cind=closeindent)
+    out = handle_indentation("""
+import imp as _coconut_imp
+for _coconut_base_path in _coconut_sys.path:
+    for _coconut_dirpath, _coconut_dirnames, _coconut_filenames in _coconut.os.walk(_coconut_base_path):
+        _coconut_paths_to_imp = []
+        for _coconut_fname in _coconut_filenames:
+            if _coconut.os.path.splitext(_coconut_fname)[-1] == "py":
+                _coconut_fpath = _coconut.os.path.join(_coconut_dirpath, _coconut_fname)
+                _coconut_paths_to_imp.append(_coconut_fpath)
+        for _coconut_dname in _coconut_dirnames:
+            _coconut_dpath = _coconut.os.path.join(_coconut_dirpath, _coconut_dname)
+            if "__init__.py" in _coconut.os.listdir(_coconut_dpath):
+                _coconut_paths_to_imp.append(_coconut_dpath)
+        for _coconut_imp_path in _coconut_paths_to_imp:
+            _coconut_imp_name = _coconut.os.path.splitext(_coconut.os.path.basename(_coconut_imp_path))[0]
+            descr = _coconut_imp.find_module(_coconut_imp_name, [_coconut.os.path.dirname(_coconut_imp_path)])
+            try:
+                _coconut_imp.load_module(_coconut_imp_name, *descr)
+            except:
+                pass
+        _coconut_dirnames[:] = []
+    """.strip())
     if imp_all:
-        out += "\n" + """
-        for _coconut_m in _coconut.tuple(_coconut_sys.modules.values()):{oind}
-            _coconut_d = _coconut.getattr(_coconut_m, "__dict__", None)
-            if _coconut_d is not None:{oind}
-                for _coconut_k, _coconut_v in _coconut_d.items():{oind}
-                    if not _coconut_k.startswith("_"):{oind}
-                        _coconut.locals()[_coconut_k] = _coconut_v{cind}{cind}{cind}{cind}
-        """.strip().format(oind=openindent, cind=closeindent)
+        out += "\n" + handle_indentation("""
+for _coconut_m in _coconut.tuple(_coconut_sys.modules.values()):
+    _coconut_d = _coconut.getattr(_coconut_m, "__dict__", None)
+    if _coconut_d is not None:
+        for _coconut_k, _coconut_v in _coconut_d.items():
+            if not _coconut_k.startswith("_"):
+                _coconut.locals()[_coconut_k] = _coconut_v
+        """.strip())
     else:
-        out += "\n" + """
-        for _coconut_n, _coconut_m in _coconut.tuple(_coconut_sys.modules.items()):{oind}
-            _coconut.locals()[_coconut_n] = _coconut_m{cind}
-        """.strip().format(oind=openindent, cind=closeindent)
+        out += "\n" + handle_indentation("""
+for _coconut_n, _coconut_m in _coconut.tuple(_coconut_sys.modules.items()):
+    _coconut.locals()[_coconut_n] = _coconut_m
+        """.strip())
     return out
 
 
@@ -1344,14 +1345,15 @@ class Compiler(Grammar):
         arg_names = ", ".join(matcher.name_list)
         arg_tuple = arg_names + ("," if len(matcher.name_list) == 1 else "")
 
-        extra_stmts = '''def __new__(_cls, *{match_to_args_var}, **{match_to_kwargs_var}):
-            {oind}{match_check_var} = False
-            {matching}
-            {pattern_error}
-            return _coconut.tuple.__new__(_cls, ({arg_tuple}))
-        {cind}'''.format(
-            oind=openindent,
-            cind=closeindent,
+        extra_stmts = handle_indentation(
+            '''
+def __new__(_cls, *{match_to_args_var}, **{match_to_kwargs_var}):
+    {match_check_var} = False
+    {matching}
+    {pattern_error}
+    return _coconut.tuple.__new__(_cls, ({arg_tuple}))
+'''.strip(), add_newline=True,
+        ).format(
             match_to_args_var=match_to_args_var,
             match_to_kwargs_var=match_to_kwargs_var,
             match_check_var=match_check_var,
@@ -1426,29 +1428,30 @@ class Compiler(Grammar):
         if starred_arg is not None:
             attr_str += (" " if attr_str else "") + starred_arg
             if base_args:
-                extra_stmts += '''def __new__(_cls, {all_args}):
-                    {oind}return _coconut.tuple.__new__(_cls, {base_args_tuple} + {starred_arg})
-                {cind}@_coconut.classmethod
-                def _make(cls, iterable, {kwd_only}new=_coconut.tuple.__new__, len=_coconut.len):
-                    {oind}result = new(cls, iterable)
-                    if len(result) < {req_args}:
-                        {oind}raise _coconut.TypeError("Expected at least {req_args} argument(s), got %d" % len(result))
-                    {cind}return result
-                {cind}def _asdict(self):
-                    {oind}return _coconut.OrderedDict((f, _coconut.getattr(self, f)) for f in self._fields)
-                {cind}def __repr__(self):
-                    {oind}return "{name}({args_for_repr})".format(**self._asdict())
-                {cind}def _replace(_self, **kwds):
-                    {oind}result = _self._make(_coconut.tuple(_coconut.map(kwds.pop, {quoted_base_args_tuple}, _self)) + kwds.pop("{starred_arg}", self.{starred_arg}))
-                    if kwds:
-                        {oind}raise _coconut.ValueError("Got unexpected field names: " + _coconut.repr(kwds.keys()))
-                    {cind}return result
-                {cind}@_coconut.property
-                def {starred_arg}(self):
-                    {oind}return self[{num_base_args}:]
-                {cind}'''.format(
-                    oind=openindent,
-                    cind=closeindent,
+                extra_stmts += handle_indentation(
+                    '''
+def __new__(_cls, {all_args}):
+    return _coconut.tuple.__new__(_cls, {base_args_tuple} + {starred_arg})
+@_coconut.classmethod
+def _make(cls, iterable, {kwd_only}new=_coconut.tuple.__new__, len=_coconut.len):
+    result = new(cls, iterable)
+    if len(result) < {req_args}:
+        raise _coconut.TypeError("Expected at least {req_args} argument(s), got %d" % len(result))
+    return result
+def _asdict(self):
+    return _coconut.OrderedDict((f, _coconut.getattr(self, f)) for f in self._fields)
+def __repr__(self):
+    return "{name}({args_for_repr})".format(**self._asdict())
+def _replace(_self, **kwds):
+    result = _self._make(_coconut.tuple(_coconut.map(kwds.pop, {quoted_base_args_tuple}, _self)) + kwds.pop("{starred_arg}", self.{starred_arg}))
+    if kwds:
+        raise _coconut.ValueError("Got unexpected field names: " + _coconut.repr(kwds.keys()))
+    return result
+@_coconut.property
+def {starred_arg}(self):
+    return self[{num_base_args}:]
+                '''.strip(), add_newline=True,
+                ).format(
                     name=name,
                     args_for_repr=", ".join(arg + "={" + arg.lstrip("*") + "!r}" for arg in base_args + ["*" + starred_arg]),
                     starred_arg=starred_arg,
@@ -1460,36 +1463,38 @@ class Compiler(Grammar):
                     kwd_only=("*, " if self.target.startswith("3") else ""),
                 )
             else:
-                extra_stmts += '''def __new__(_cls, *{arg}):
-                    {oind}return _coconut.tuple.__new__(_cls, {arg})
-                {cind}@_coconut.classmethod
-                def _make(cls, iterable, {kwd_only}new=_coconut.tuple.__new__, len=None):
-                    {oind}return new(cls, iterable)
-                {cind}def _asdict(self):
-                    {oind}return _coconut.OrderedDict([("{arg}", self[:])])
-                {cind}def __repr__(self):
-                    {oind}return "{name}(*{arg}=%r)" % (self[:],)
-                {cind}def _replace(_self, **kwds):
-                    {oind}result = self._make(kwds.pop("{arg}", _self))
-                    if kwds:
-                        {oind}raise _coconut.ValueError("Got unexpected field names: " + _coconut.repr(kwds.keys()))
-                    {cind}return result
-                {cind}@_coconut.property
-                def {arg}(self):
-                    {oind}return self[:]
-                {cind}'''.format(
-                    oind=openindent,
-                    cind=closeindent,
+                extra_stmts += handle_indentation(
+                    '''
+def __new__(_cls, *{arg}):
+    return _coconut.tuple.__new__(_cls, {arg})
+@_coconut.classmethod
+def _make(cls, iterable, {kwd_only}new=_coconut.tuple.__new__, len=None):
+    return new(cls, iterable)
+def _asdict(self):
+    return _coconut.OrderedDict([("{arg}", self[:])])
+def __repr__(self):
+    return "{name}(*{arg}=%r)" % (self[:],)
+def _replace(_self, **kwds):
+    result = self._make(kwds.pop("{arg}", _self))
+    if kwds:
+        raise _coconut.ValueError("Got unexpected field names: " + _coconut.repr(kwds.keys()))
+    return result
+@_coconut.property
+def {arg}(self):
+    return self[:]
+                '''.strip(), add_newline=True,
+                ).format(
                     name=name,
                     arg=starred_arg,
                     kwd_only=("*, " if self.target.startswith("3") else ""),
                 )
         elif saw_defaults:
-            extra_stmts += '''def __new__(_cls, {all_args}):
-                {oind}return _coconut.tuple.__new__(_cls, {args_tuple})
-            {cind}'''.format(
-                oind=openindent,
-                cind=closeindent,
+            extra_stmts += handle_indentation(
+                '''
+def __new__(_cls, {all_args}):
+    return _coconut.tuple.__new__(_cls, {args_tuple})
+            '''.strip(), add_newline=True,
+            ).format(
                 all_args=", ".join(all_args),
                 args_tuple="(" + ", ".join(base_args) + ("," if len(base_args) == 1 else "") + ")",
             )
@@ -1515,15 +1520,15 @@ class Compiler(Grammar):
         )
 
         # add universal statements
-        extra_stmts = '''__slots__ = ()
-        __ne__ = _coconut.object.__ne__
-        def __eq__(self, other):
-            {oind}return self.__class__ is other.__class__ and _coconut.tuple.__eq__(self, other)
-        {cind}def __hash__(self):
-            {oind}return _coconut.tuple.__hash__(self) ^ hash(self.__class__)
-        {cind}'''.format(
-            oind=openindent,
-            cind=closeindent,
+        extra_stmts = handle_indentation(
+            '''
+__slots__ = ()
+__ne__ = _coconut.object.__ne__
+def __eq__(self, other):
+    return self.__class__ is other.__class__ and _coconut.tuple.__eq__(self, other)
+def __hash__(self):
+    return _coconut.tuple.__hash__(self) ^ hash(self.__class__)
+        '''.strip(), add_newline=True,
         ) + extra_stmts
 
         # manage docstring
@@ -1598,16 +1603,24 @@ class Compiler(Grammar):
         base_line = clean(self.reformat(getline(loc, original)))
         line_wrap = self.wrap_str_of(base_line)
         repr_wrap = self.wrap_str_of(ascii(base_line))
-        return (
-            "if not " + check_var + ":\n" + openindent
-            + match_val_repr_var + " = _coconut.repr(" + value_var + ")\n"
-            + match_err_var + " = " + match_error_class + '("pattern-matching failed for " '
-            + repr_wrap + ' " in " + (' + match_val_repr_var
-            + " if _coconut.len(" + match_val_repr_var + ") <= " + str(max_match_val_repr_len)
-            + " else " + match_val_repr_var + "[:" + str(max_match_val_repr_len) + '] + "..."))\n'
-            + match_err_var + ".pattern = " + line_wrap + "\n"
-            + match_err_var + ".value = " + value_var + "\n"
-            + "raise " + match_err_var + "\n" + closeindent
+        return handle_indentation(
+            """
+if not {check_var}:
+    {match_val_repr_var} = _coconut.repr({value_var})
+    {match_err_var} = {match_error_class}("pattern-matching failed for " {repr_wrap} " in " + ({match_val_repr_var} if _coconut.len({match_val_repr_var}) <= {max_match_val_repr_len} else {match_val_repr_var}[:{max_match_val_repr_len}] + "..."))
+    {match_err_var}.pattern = {line_wrap}
+    {match_err_var}.value = {value_var}
+    raise {match_err_var}
+        """.strip(), add_newline=True,
+        ).format(
+            check_var=check_var,
+            match_val_repr_var=match_val_repr_var,
+            value_var=value_var,
+            match_err_var=match_err_var,
+            match_error_class=match_error_class,
+            repr_wrap=repr_wrap,
+            max_match_val_repr_len=max_match_val_repr_len,
+            line_wrap=line_wrap,
         )
 
     def destructuring_stmt_handle(self, original, loc, tokens):

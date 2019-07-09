@@ -50,6 +50,7 @@ from coconut.constants import (
     use_computation_graph,
     py2_vers,
     py3_vers,
+    tabideal,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -601,3 +602,29 @@ def interleaved_join(outer_list, inner_list):
         interleaved.extend(xx)
     interleaved.append(outer_list[-1])
     return "".join(interleaved)
+
+
+def handle_indentation(inputstr, add_newline=False):
+    """Replace tabideal indentation with openindent and closeindent."""
+    out_lines = []
+    prev_ind = None
+    for line in inputstr.splitlines():
+        new_ind_str, _ = split_leading_indent(line)
+        internal_assert(new_ind_str.strip(" ") == "", "invalid indentation characters for handle_indentation", new_ind_str)
+        internal_assert(len(new_ind_str) % tabideal == 0, "invalid indentation level for handle_indentation", len(new_ind_str))
+        new_ind = len(new_ind_str) // tabideal
+        if prev_ind is None:  # first line
+            indent = ""
+        elif new_ind > prev_ind:  # indent
+            indent = openindent * (new_ind - prev_ind)
+        elif new_ind < prev_ind:  # dedent
+            indent = closeindent * (prev_ind - new_ind)
+        else:
+            indent = ""
+        out_lines.append(indent + line)
+        prev_ind = new_ind
+    if add_newline:
+        out_lines.append("")
+    if prev_ind > 0:
+        out_lines[-1] += closeindent * prev_ind
+    return "\n".join(out_lines)
