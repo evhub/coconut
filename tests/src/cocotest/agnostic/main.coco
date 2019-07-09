@@ -559,8 +559,10 @@ def main_test():
 
 def easter_egg_test():
     import sys as _sys
+    num_mods_0 = len(_sys.modules)
     import *
     assert sys == _sys
+    assert len(_sys.modules) > num_mods_0
     orig_name = __name__
     from * import *
     assert __name__ == orig_name

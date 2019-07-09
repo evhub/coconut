@@ -257,20 +257,43 @@ def imported_names(imports):
 
 def special_starred_import_handle(imp_all=False):
     """Handles the [from *] import * Coconut Easter egg."""
+    out = """
+    import imp as _coconut_imp
+    for _coconut_base_path in _coconut_sys.path:{oind}
+        for _coconut_dirpath, _coconut_dirnames, _coconut_filenames in _coconut.os.walk(_coconut_base_path):{oind}
+            _coconut_paths_to_imp = []
+            for _coconut_fname in _coconut_filenames:{oind}
+                if _coconut.os.path.splitext(_coconut_fname)[-1] == "py":{oind}
+                    _coconut_fpath = _coconut.os.path.join(_coconut_dirpath, _coconut_fname)
+                    _coconut_paths_to_imp.append(_coconut_fpath){cind}{cind}
+            for _coconut_dname in _coconut_dirnames:{oind}
+                _coconut_dpath = _coconut.os.path.join(_coconut_dirpath, _coconut_dname)
+                if "__init__.py" in _coconut.os.listdir(_coconut_dpath):{oind}
+                    _coconut_paths_to_imp.append(_coconut_dpath){cind}{cind}
+            for _coconut_imp_path in _coconut_paths_to_imp:{oind}
+                _coconut_imp_name = _coconut.os.path.splitext(_coconut.os.path.basename(_coconut_imp_path))[0]
+                descr = _coconut_imp.find_module(_coconut_imp_name, [_coconut.os.path.dirname(_coconut_imp_path)])
+                try:{oind}
+                    _coconut_imp.load_module(_coconut_imp_name, *descr){cind}
+                except:{oind}
+                    pass{cind}{cind}
+            _coconut_dirnames[:] = []{cind}{cind}
+    """.strip().format(oind=openindent, cind=closeindent)
     if imp_all:
-        return """
-        for _coconut_m in _coconut_sys.modules.values():{oind}
-            _coconut_d = _coconut.getattr(_coconut_m, "__dict__")
+        out += "\n" + """
+        for _coconut_m in _coconut.tuple(_coconut_sys.modules.values()):{oind}
+            _coconut_d = _coconut.getattr(_coconut_m, "__dict__", None)
             if _coconut_d is not None:{oind}
                 for _coconut_k, _coconut_v in _coconut_d.items():{oind}
                     if not _coconut_k.startswith("_"):{oind}
                         _coconut.locals()[_coconut_k] = _coconut_v{cind}{cind}{cind}{cind}
         """.strip().format(oind=openindent, cind=closeindent)
     else:
-        return """
-        for _coconut_n, _coconut_m in _coconut_sys.modules.items():{oind}
+        out += "\n" + """
+        for _coconut_n, _coconut_m in _coconut.tuple(_coconut_sys.modules.items()):{oind}
             _coconut.locals()[_coconut_n] = _coconut_m{cind}
         """.strip().format(oind=openindent, cind=closeindent)
+    return out
 
 
 def split_args_list(tokens, loc):
