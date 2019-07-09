@@ -571,10 +571,8 @@ def easter_egg_test():
 
 def tco_func() = tco_func()
 
-def main(*args):
+def main(test_easter_egg=False):
     """Asserts arguments and executes tests."""
-    assert all(args)
-
     print(".", end="")  # ..
     assert main_test()
 
