@@ -614,7 +614,8 @@ def main(test_easter_egg=False):
     print(".", end="")  # ........
     from . import tutorial  # type: ignore
 
-    print(".", end="")  # .........
-    assert easter_egg_test()
+    if test_easter_egg:
+        print(".", end="")  # .........
+        assert easter_egg_test()
 
     print("\n<success>")

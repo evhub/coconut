@@ -1568,9 +1568,9 @@ def __hash__(self):
             raise CoconutInternalException("invalid import tokens", tokens)
         imports = list(imports)
         if imp_from == "*" or imp_from is None and "*" in imports:
-            logger.warn_err(self.make_err(CoconutSyntaxWarning, "[from *] import * is a Coconut Easter egg and should not be used in production code", original, loc))
             if not (len(imports) == 1 and imports[0] == "*"):
                 raise self.make_err(CoconutSyntaxError, "only [from *] import * allowed, not from * import name", original, loc)
+            logger.warn_err(self.make_err(CoconutSyntaxWarning, "[from *] import * is a Coconut Easter egg and should not be used in production code", original, loc))
             return special_starred_import_handle(imp_all=bool(imp_from))
         if self.strict:
             self.unused_imports.update(imported_names(imports))
