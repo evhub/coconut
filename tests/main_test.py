@@ -162,17 +162,24 @@ def comp(path=None, folder=None, file=None, args=[], **kwargs):
     call_coconut([source, compdest] + args, **kwargs)
 
 
+def rm_path(path):
+    """Delete a path."""
+    if os.path.isdir(path):
+        shutil.rmtree(path)
+    elif os.path.isfile(path):
+        os.remove(path)
+
+
 @contextmanager
-def remove_when_done(path):
-    """Removes a path when done."""
+def using_path(path):
+    """Removes a path at the beginning and end."""
+    if os.path.exists(path):
+        rm_path(path)
     try:
         yield
     finally:
         try:
-            if os.path.isdir(path):
-                shutil.rmtree(path)
-            elif os.path.isfile(path):
-                os.remove(path)
+            rm_path(path)
         except OSError:
             logger.display_exc()
 
@@ -314,9 +321,9 @@ def run_pyprover(**kwargs):
 def comp_prelude(args=[], **kwargs):
     """Compiles evhub/coconut-prelude."""
     call(["git", "clone", prelude_git])
-    call_coconut([os.path.join(prelude, "setup.coco"), "--strict"] + args, **kwargs)
     if PY36:
         args.extend(["--target", "3.6", "--mypy"])
+    call_coconut([os.path.join(prelude, "setup.coco"), "--strict"] + args, **kwargs)
     call_coconut([os.path.join(prelude, "prelude-source"), os.path.join(prelude, "prelude"), "--strict"] + args, **kwargs)
 
 
@@ -366,7 +373,7 @@ class TestShell(unittest.TestCase):
         sys.path.append(src)
         auto_compilation(True)
         try:
-            with remove_when_done(runnable_py):
+            with using_path(runnable_py):
                 with using_logger():
                     import runnable
                     reload(runnable)
@@ -376,14 +383,14 @@ class TestShell(unittest.TestCase):
         assert runnable.success == "<success>"
 
     def test_runnable(self):
-        with remove_when_done(runnable_py):
+        with using_path(runnable_py):
             run_runnable()
 
     def test_runnable_nowrite(self):
         run_runnable(["-n"])
 
     def test_compile_to_file(self):
-        with remove_when_done(runnable_py):
+        with using_path(runnable_py):
             call_coconut([runnable_coco, runnable_py])
             call_python([runnable_py, "--arg"], assert_output=True)
 
@@ -472,19 +479,19 @@ class TestCompilation(unittest.TestCase):
 class TestExternal(unittest.TestCase):
 
     def test_pyprover(self):
-        with remove_when_done(pyprover):
+        with using_path(pyprover):
             comp_pyprover()
             run_pyprover()
 
     if not PYPY or PY2:
         def test_prelude(self):
-            with remove_when_done(prelude):
+            with using_path(prelude):
                 comp_prelude()
                 if PY35:  # has typing
                     run_prelude()
 
     def test_pyston(self):
-        with remove_when_done(pyston):
+        with using_path(pyston):
             comp_pyston(["--no-tco"])
             if PY2 and PYPY:
                 run_pyston()
