@@ -196,7 +196,7 @@ def using_dest():
         yield
     finally:
         try:
-            rm_path(path)
+            rm_path(dest)
         except OSError:
             logger.display_exc()
 
