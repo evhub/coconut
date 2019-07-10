@@ -192,8 +192,13 @@ def using_dest():
     except Exception:
         shutil.rmtree(dest)
         os.mkdir(dest)
-    with remove_when_done(dest):
+    try:
         yield
+    finally:
+        try:
+            rm_path(path)
+        except OSError:
+            logger.display_exc()
 
 
 @contextmanager
