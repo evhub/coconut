@@ -58,6 +58,13 @@ PARSERS: Dict[Text, Callable] = ...
 def parse(code: Text, mode: Text) -> Text: ...
 
 
+def coconut_eval(
+    expression: Text,
+    globals: Dict[Text, Any]=None,
+    locals: Dict[Text, Any]=None,
+) -> Any: ...
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # IMPORTER:
 # -----------------------------------------------------------------------------------------------------------------------

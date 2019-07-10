@@ -412,6 +412,7 @@ class TestShell(unittest.TestCase):
                 p = pexpect.spawn(cmd)
                 p.expect("In", timeout=100)
                 p.sendeof()
+                p.expect("Do you really want to exit")
                 p.sendline("y")
                 p.expect("Shutting down kernel|shutting down|Jupyter error")
                 if p.isalive():
@@ -487,3 +488,11 @@ class TestExternal(unittest.TestCase):
             comp_pyston(["--no-tco"])
             if PY2 and PYPY:
                 run_pyston()
+
+
+# -----------------------------------------------------------------------------------------------------------------------
+# MAIN:
+# -----------------------------------------------------------------------------------------------------------------------
+
+if __name__ == "__main__":
+    unittest.main()
