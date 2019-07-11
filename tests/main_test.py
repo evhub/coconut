@@ -335,7 +335,7 @@ def comp_prelude(args=[], **kwargs):
 def run_prelude(**kwargs):
     """Runs coconut-prelude."""
     call(["pip", "install", "-e", prelude])
-    call_python([os.path.join(prelude, "prelude", "prelude_test.py")], assert_output=True, **kwargs)
+    call(["pytest", "--strict", "-s", os.path.join(prelude, "prelude")], assert_output=True, **kwargs)
 
 
 def comp_all(args=[], **kwargs):
