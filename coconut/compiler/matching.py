@@ -294,8 +294,10 @@ class Matcher(object):
                     self.add_def(
                         tempvar + " = "
                         + args + "[" + str(i) + "] if _coconut.len(" + args + ") > " + str(i) + " else "
-                        + "".join(kwargs + '.pop("' + name + '") if "' + name + '" in ' + kwargs + " else "
-                                  for name in names[:-1])
+                        + "".join(
+                            kwargs + '.pop("' + name + '") if "' + name + '" in ' + kwargs + " else "
+                            for name in names[:-1]
+                        )
                         + kwargs + '.pop("' + names[-1] + '")',
                     )
                     to_match.append((True, match, tempvar))

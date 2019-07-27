@@ -258,7 +258,8 @@ def imported_names(imports):
 
 def special_starred_import_handle(imp_all=False):
     """Handles the [from *] import * Coconut Easter egg."""
-    out = handle_indentation("""
+    out = handle_indentation(
+        """
 import imp as _coconut_imp
 for _coconut_base_path in _coconut_sys.path:
     for _coconut_dirpath, _coconut_dirnames, _coconut_filenames in _coconut.os.walk(_coconut_base_path):
@@ -279,21 +280,26 @@ for _coconut_base_path in _coconut_sys.path:
             except:
                 pass
         _coconut_dirnames[:] = []
-    """.strip())
+        """.strip()
+    )
     if imp_all:
-        out += "\n" + handle_indentation("""
+        out += "\n" + handle_indentation(
+            """
 for _coconut_m in _coconut.tuple(_coconut_sys.modules.values()):
     _coconut_d = _coconut.getattr(_coconut_m, "__dict__", None)
     if _coconut_d is not None:
         for _coconut_k, _coconut_v in _coconut_d.items():
             if not _coconut_k.startswith("_"):
                 _coconut.locals()[_coconut_k] = _coconut_v
-        """.strip())
+            """.strip()
+        )
     else:
-        out += "\n" + handle_indentation("""
+        out += "\n" + handle_indentation(
+            """
 for _coconut_n, _coconut_m in _coconut.tuple(_coconut_sys.modules.items()):
     _coconut.locals()[_coconut_n] = _coconut_m
-        """.strip())
+            """.strip()
+        )
     return out
 
 
@@ -443,15 +449,17 @@ class Compiler(Grammar):
                 "package_level": package_level,
             },
         )
-        return hex(checksum(
-            hash_sep.join(
-                str(item) for item in (
-                    (VERSION_STR,)
-                    + reduce_args
-                    + (package_level, code)
-                )
-            ).encode(default_encoding),
-        ))
+        return hex(
+            checksum(
+                hash_sep.join(
+                    str(item) for item in (
+                        (VERSION_STR,)
+                        + reduce_args
+                        + (package_level, code)
+                    )
+                ).encode(default_encoding),
+            ),
+        )
 
     def reset(self):
         """Resets references."""
@@ -517,14 +525,18 @@ class Compiler(Grammar):
         self.case_stmt <<= trace(attach(self.case_stmt_ref, self.case_stmt_handle))
         self.f_string <<= attach(self.f_string_ref, self.f_string_handle)
 
-        self.decoratable_normal_funcdef_stmt <<= trace(attach(
-            self.decoratable_normal_funcdef_stmt_ref,
-            self.decoratable_funcdef_stmt_handle,
-        ))
-        self.decoratable_async_funcdef_stmt <<= trace(attach(
-            self.decoratable_async_funcdef_stmt_ref,
-            partial(self.decoratable_funcdef_stmt_handle, is_async=True),
-        ))
+        self.decoratable_normal_funcdef_stmt <<= trace(
+            attach(
+                self.decoratable_normal_funcdef_stmt_ref,
+                self.decoratable_funcdef_stmt_handle,
+            ),
+        )
+        self.decoratable_async_funcdef_stmt <<= trace(
+            attach(
+                self.decoratable_async_funcdef_stmt_ref,
+                partial(self.decoratable_funcdef_stmt_handle, is_async=True),
+            ),
+        )
 
         self.u_string <<= attach(self.u_string_ref, self.u_string_check)
         self.matrix_at <<= attach(self.matrix_at_ref, self.matrix_at_check)
@@ -1053,10 +1065,12 @@ class Compiler(Grammar):
         # CoconutInternalExceptions should always be caught and complained here
         if self.keep_lines:
             if not 1 <= ln <= len(self.original_lines) + 2:
-                complain(CoconutInternalException(
-                    "out of bounds line number", ln,
-                    "not in range [1, " + str(len(self.original_lines) + 2) + "]",
-                ))
+                complain(
+                    CoconutInternalException(
+                        "out of bounds line number", ln,
+                        "not in range [1, " + str(len(self.original_lines) + 2) + "]",
+                    ),
+                )
             if ln >= len(self.original_lines) + 1:  # trim too large
                 lni = -1
             else:
@@ -1352,7 +1366,7 @@ def __new__(_cls, *{match_to_args_var}, **{match_to_kwargs_var}):
     {matching}
     {pattern_error}
     return _coconut.tuple.__new__(_cls, ({arg_tuple}))
-'''.strip(), add_newline=True,
+            '''.strip(), add_newline=True,
         ).format(
             match_to_args_var=match_to_args_var,
             match_to_kwargs_var=match_to_kwargs_var,
@@ -1450,7 +1464,7 @@ def _replace(_self, **kwds):
 @_coconut.property
 def {starred_arg}(self):
     return self[{num_base_args}:]
-                '''.strip(), add_newline=True,
+                    '''.strip(), add_newline=True,
                 ).format(
                     name=name,
                     args_for_repr=", ".join(arg + "={" + arg.lstrip("*") + "!r}" for arg in base_args + ["*" + starred_arg]),
@@ -1482,7 +1496,7 @@ def _replace(_self, **kwds):
 @_coconut.property
 def {arg}(self):
     return self[:]
-                '''.strip(), add_newline=True,
+                    '''.strip(), add_newline=True,
                 ).format(
                     name=name,
                     arg=starred_arg,
@@ -1493,7 +1507,7 @@ def {arg}(self):
                 '''
 def __new__(_cls, {all_args}):
     return _coconut.tuple.__new__(_cls, {args_tuple})
-            '''.strip(), add_newline=True,
+                '''.strip(), add_newline=True,
             ).format(
                 all_args=", ".join(all_args),
                 args_tuple="(" + ", ".join(base_args) + ("," if len(base_args) == 1 else "") + ")",
@@ -1528,7 +1542,7 @@ def __eq__(self, other):
     return self.__class__ is other.__class__ and _coconut.tuple.__eq__(self, other)
 def __hash__(self):
     return _coconut.tuple.__hash__(self) ^ hash(self.__class__)
-        '''.strip(), add_newline=True,
+            '''.strip(), add_newline=True,
         ) + extra_stmts
 
         # manage docstring
@@ -1611,7 +1625,7 @@ if not {check_var}:
     {match_err_var}.pattern = {line_wrap}
     {match_err_var}.value = {value_var}
     raise {match_err_var}
-        """.strip(), add_newline=True,
+            """.strip(), add_newline=True,
         ).format(
             check_var=check_var,
             match_val_repr_var=match_val_repr_var,

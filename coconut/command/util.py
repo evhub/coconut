@@ -93,9 +93,11 @@ try:
 except ImportError:
     prompt_toolkit = None
 except KeyError:
-    complain(ImportError(
-        "detected outdated pygments version (run 'pip install --upgrade pygments' to fix)",
-    ))
+    complain(
+        ImportError(
+            "detected outdated pygments version (run 'pip install --upgrade pygments' to fix)",
+        ),
+    )
     prompt_toolkit = None
 
 # -----------------------------------------------------------------------------------------------------------------------

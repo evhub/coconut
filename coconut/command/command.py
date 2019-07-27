@@ -255,7 +255,8 @@ class Command(object):
             logger.log("Reading piped input from stdin...")
             self.execute(self.comp.parse_block(sys.stdin.read()))
             got_stdin = True
-        if args.interact or (interact and not (
+        if args.interact or (
+            interact and not (
                 got_stdin
                 or args.source
                 or args.code
@@ -263,7 +264,8 @@ class Command(object):
                 or args.documentation
                 or args.watch
                 or args.jupyter is not None
-        )):
+            )
+        ):
             self.start_prompt()
         if args.watch:
             self.watch(source, dest, package, args.run, args.force)

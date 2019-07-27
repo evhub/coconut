@@ -79,10 +79,14 @@ def find_new_value(value, toklist, new_toklist):
     try:
         return new_toklist[toklist.index(value)]
     except ValueError:
-        complain(lambda: CoconutInternalException("inefficient reevaluation of tokens: {} not in {}".format(
-            value,
-            toklist,
-        )))
+        complain(
+            lambda: CoconutInternalException(
+                "inefficient reevaluation of tokens: {} not in {}".format(
+                    value,
+                    toklist,
+                ),
+            ),
+        )
         return evaluate_tokens(value)
 
 

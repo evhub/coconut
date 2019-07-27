@@ -62,10 +62,12 @@ setuptools.setup(
     author_email=author_email,
     install_requires=requirements,
     extras_require=extras,
-    packages=setuptools.find_packages(exclude=[
-        "docs",
-        "tests",
-    ]),
+    packages=setuptools.find_packages(
+        exclude=[
+            "docs",
+            "tests",
+        ],
+    ),
     include_package_data=True,
     zip_safe=False,
     entry_points={

@@ -1,6 +1,6 @@
 repos:
 -   repo: git://github.com/pre-commit/pre-commit-hooks.git
-    rev: v2.1.0
+    rev: v2.2.3
     hooks:
     -   id: check-byte-order-marker
     -   id: check-merge-conflict
@@ -17,9 +17,9 @@ repos:
         - --autofix
     -   id: flake8
         args:
-        - --ignore=W503,E501,E265,E402,F405,E305
+        - --ignore=W503,E501,E265,E402,F405,E305,E126
 -   repo: https://github.com/pre-commit/mirrors-autopep8
-    rev: v1.4.3
+    rev: v1.4.4
     hooks:
     -   id: autopep8
         args:
@@ -29,6 +29,6 @@ repos:
         - --experimental
         - --ignore=W503,E501,E722,E402
 -   repo: https://github.com/asottile/add-trailing-comma
-    rev: v0.7.2
+    rev: v1.4.1
     hooks:
     -   id: add-trailing-comma
