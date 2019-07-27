@@ -23,7 +23,7 @@ test-all:
 .PHONY: test-basic
 test-basic:
 	python ./tests --strict --force
-	python ./tests/dest/runner.py --test-easter-egg
+	python ./tests/dest/runner.py
 	python ./tests/dest/extras.py
 
 # same as test-basic, but doesn't recompile unchanged test files;
@@ -31,21 +31,28 @@ test-basic:
 .PHONY: test-tests
 test-tests:
 	python ./tests --strict
-	python ./tests/dest/runner.py --test-easter-egg
+	python ./tests/dest/runner.py
 	python ./tests/dest/extras.py
 
 # same as test-basic but also runs mypy
 .PHONY: test-mypy
 test-mypy:
 	python ./tests --strict --force --target sys --mypy --follow-imports silent --ignore-missing-imports
-	python ./tests/dest/runner.py --test-easter-egg
+	python ./tests/dest/runner.py
 	python ./tests/dest/extras.py
 
 # same as test-basic but includes verbose output for better debugging
 .PHONY: test-verbose
 test-verbose:
 	python ./tests --strict --force --verbose --jobs 0
-	python ./tests/dest/runner.py --test-easter-egg
+	python ./tests/dest/runner.py
+	python ./tests/dest/extras.py
+
+# same as test-basic but also tests easter eggs
+.PHONY: test-easter-eggs
+test-easter-eggs:
+	python ./tests --strict --force
+	python ./tests/dest/runner.py --test-easter-eggs
 	python ./tests/dest/extras.py
 
 .PHONY: diff

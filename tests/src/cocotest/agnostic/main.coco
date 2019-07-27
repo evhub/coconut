@@ -571,7 +571,7 @@ def easter_egg_test():
 
 def tco_func() = tco_func()
 
-def main(test_easter_egg=False):
+def main(test_easter_eggs=False):
     """Asserts arguments and executes tests."""
     print(".", end="")  # ..
     assert main_test()
@@ -614,7 +614,7 @@ def main(test_easter_egg=False):
     print(".", end="")  # ........
     from . import tutorial  # type: ignore
 
-    if test_easter_egg:
+    if test_easter_eggs:
         print(".", end="")  # .........
         assert easter_egg_test()
 

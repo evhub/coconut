@@ -1043,7 +1043,7 @@ class Grammar(object):
     slicetest = Optional(test_no_chain)
     sliceop = condense(unsafe_colon + slicetest)
     subscript = condense(slicetest + sliceop + Optional(sliceop)) | test
-    subscriptlist = itemlist(subscript, comma)
+    subscriptlist = itemlist(subscript, comma, suppress_trailing=False)
 
     slicetestgroup = Optional(test_no_chain, default="")
     sliceopgroup = unsafe_colon.suppress() + slicetestgroup
