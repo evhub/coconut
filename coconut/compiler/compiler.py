@@ -424,9 +424,12 @@ class Compiler(Grammar):
                 extra="supported targets are " + ', '.join(ascii(t) for t in specific_targets) + ", or leave blank for universal",
             )
         logger.log_vars("Compiler args:", locals())
-        self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.no_tco = (
-            target, strict, minify, line_numbers, keep_lines, no_tco,
-        )
+        self.target = target
+        self.strict = strict
+        self.minify = minify
+        self.line_numbers = line_numbers
+        self.keep_lines = keep_lines
+        self.no_tco = no_tco
 
     def __reduce__(self):
         """Return pickling information."""
@@ -479,6 +482,8 @@ class Compiler(Grammar):
     @contextmanager
     def inner_environment(self):
         """Set up compiler to evaluate inner expressions."""
+        line_numbers, self.line_numbers = self.line_numbers, False
+        keep_lines, self.keep_lines = self.keep_lines, False
         comments, self.comments = self.comments, {}
         skips, self.skips = self.skips, []
         docstring, self.docstring = self.docstring, ""
@@ -486,6 +491,8 @@ class Compiler(Grammar):
         try:
             yield
         finally:
+            self.line_numbers = line_numbers
+            self.keep_lines = keep_lines
             self.comments = comments
             self.skips = skips
             self.docstring = docstring

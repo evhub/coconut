@@ -93,7 +93,7 @@ starmap = _coconut.itertools.starmap
 
 
 if sys.version_info >= (3, 2):
-    memoize = _coconut.functools.lru_cache
+    from functools import lru_cache as memoize
 else:
     from backports.functools_lru_cache import lru_cache as memoize  # type: ignore
     _coconut.functools.lru_cache = memoize  # type: ignore

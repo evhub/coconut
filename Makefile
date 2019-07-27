@@ -37,7 +37,7 @@ test-tests:
 # same as test-basic but also runs mypy
 .PHONY: test-mypy
 test-mypy:
-	python ./tests --strict --force --target sys --mypy --follow-imports silent --ignore-missing-imports
+	python ./tests --strict --force --target sys --line-numbers --mypy --follow-imports silent --ignore-missing-imports
 	python ./tests/dest/runner.py
 	python ./tests/dest/extras.py
 

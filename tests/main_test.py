@@ -461,6 +461,9 @@ class TestCompilation(unittest.TestCase):
     def test_strict(self):
         run(["--strict"])
 
+    def test_line_numbers(self):
+        run(["--line-numbers"])
+
     def test_run(self):
         run(use_run_arg=True)
 
@@ -468,14 +471,11 @@ class TestCompilation(unittest.TestCase):
         def test_jobs_zero(self):
             run(["--jobs", "0"])
 
-    def test_simple_line_numbers(self):
-        run_runnable(["-n", "--linenumbers"])
-
     def test_simple_keep_lines(self):
-        run_runnable(["-n", "--keeplines"])
+        run_runnable(["-n", "--keep-lines"])
 
     def test_simple_line_numbers_keep_lines(self):
-        run_runnable(["-n", "--linenumbers", "--keeplines"])
+        run_runnable(["-n", "--line-numbers", "--keep-lines"])
 
     def test_simple_minify(self):
         run_runnable(["-n", "--minify"])

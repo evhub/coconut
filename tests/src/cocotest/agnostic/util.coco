@@ -25,7 +25,7 @@ plus1sq_1 = square..plus1  # type: ignore
 sqplus1_1 = plus1
 sqplus1_1 ..= square  # type: ignore
 
-plus1sq_2 = (x) -> x |> plus1 |> square
+plus1sq_2 = (x) -> x |> plus1 |> square  # type: ignore
 sqplus1_2 = (x) -> x |> square |> plus1
 
 plus1sq_3 = square <.. plus1
@@ -138,7 +138,7 @@ def qsort4(l: int[]) -> int[]:
     return None  # type: ignore
 def qsort5(l: int$[]) -> int$[]:
     """Iterator Match Quick Sort."""
-    match (head,) :: tail in l:
+    match (head,) :: tail in l:  # type: ignore
         tail, tail_ = tee(tail)
         return (qsort5((x for x in tail if x <= head))
             :: (head,) # The pivot is a tuple
@@ -147,8 +147,8 @@ def qsort5(l: int$[]) -> int$[]:
     else:
         return iter(())
 def qsort6(l: int$[]) -> int$[]:
-    match [head] :: tail in l:
-        tail = reiterable(tail)
+    match [head] :: tail in l:  # type: ignore
+        tail = reiterable(tail)  # type: ignore
         yield from (
             qsort6(x for x in tail if x <= head)
             :: (head,)
