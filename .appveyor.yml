@@ -26,7 +26,7 @@ environment:
       PYTHON_ARCH: "32"
 
 install:
-  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;c:\\MinGW\\bin;%PATH%"
+  - "SET PATH=%APPDATA%\\Python;%APPDATA%\\Python\\Scripts;%PYTHON%;%PYTHON%\\Scripts;c:\\MinGW\\bin;%PATH%"
   - "copy c:\\MinGW\\bin\\mingw32-make.exe c:\\MinGW\\bin\\make.exe"
   - make install-user
 

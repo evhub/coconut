@@ -833,8 +833,7 @@ class Compiler(Grammar):
                         if c == "\n":
                             if len(hold[_start]) == 1:
                                 raise self.make_err(CoconutSyntaxError, "linebreak in non-multiline string", inputstring, x, reformat=False)
-                            else:
-                                skips = addskip(skips, self.adjust(lineno(x, inputstring)))
+                            skips = addskip(skips, self.adjust(lineno(x, inputstring)))
                         hold[_contents] += hold[_stop] + c
                         hold[_stop] = None
                 elif count_end(hold[_contents], "\\") % 2 == 1:
@@ -850,8 +849,7 @@ class Compiler(Grammar):
                     if c == "\n":
                         if len(hold[_start]) == 1:
                             raise self.make_err(CoconutSyntaxError, "linebreak in non-multiline string", inputstring, x, reformat=False)
-                        else:
-                            skips = addskip(skips, self.adjust(lineno(x, inputstring)))
+                        skips = addskip(skips, self.adjust(lineno(x, inputstring)))
                     hold[_contents] += c
             elif found is not None:
                 if c == found[0]:
@@ -859,9 +857,8 @@ class Compiler(Grammar):
                 elif len(found) == 1:  # found == "_"
                     if c == "\n":
                         raise self.make_err(CoconutSyntaxError, "linebreak in non-multiline string", inputstring, x, reformat=False)
-                    else:
-                        hold = [c, found, None]  # [_contents, _start, _stop]
-                        found = None
+                    hold = [c, found, None]  # [_contents, _start, _stop]
+                    found = None
                 elif len(found) == 2:  # found == "__"
                     out.append(self.wrap_str("", found[0], False))
                     found = None
