@@ -168,7 +168,8 @@ all_reqs = {
     "tests": (
         "pytest",
         "pexpect",
-        "numpy",
+        ("numpy", "py34"),
+        ("numpy", "py2"),
     ),
 }
 
@@ -187,11 +188,12 @@ min_versions = {
     "watchdog": (0, 9),
     "trollius": (2, 2),
     "requests": (2,),
-    "numpy": (1,),
-    ("ipython", "py3"): (7, 6),
+    ("numpy", "py34"): (1,),
+    ("numpy", "py2"): (1,),
     ("jupyter-console", "py3"): (6,),
     ("ipykernel", "py3"): (5, 1),
-    # don't upgrade this; it breaks with Python 3.4 on Windows
+    # don't upgrade these; they break with Python 3.4 on Windows
+    ("ipython", "py3"): (6, 5),
     "pygments": (2, 3, 1),
     # don't upgrade this to allow all versions
     "prompt_toolkit:3": (1,),

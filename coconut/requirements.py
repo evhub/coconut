@@ -77,6 +77,11 @@ def get_reqs(which):
                     req_str += ";python_version>='3'"
                 elif PY2:
                     continue
+            elif env_marker == "py34":
+                if supports_env_markers:
+                    req_str += ";python_version>='3.4'"
+                elif not PY34:
+                    continue
             else:
                 raise ValueError("unknown env marker id " + repr(env_marker))
         reqs.append(req_str)

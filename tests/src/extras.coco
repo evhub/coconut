@@ -2,6 +2,8 @@ from coconut.__coconut__ import consume as coc_consume  # type: ignore
 
 from coconut.constants import (
     IPY,
+    PY2,
+    PY34,
     PY35,
     WINDOWS,
     PYPY,
@@ -149,7 +151,7 @@ def test_extras():
         assert "map" in keyword_complete_result["matches"]
         assert keyword_complete_result["cursor_start"] == 0
         assert keyword_complete_result["cursor_end"] == 1
-    if not PYPY:
+    if not PYPY and (PY2 or PY34):
         import numpy as np
         assert np.all(fmap(-> _ + 1, np.arange(3)) == np.array([1, 2, 3]))
     print("<success>")
