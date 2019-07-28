@@ -3,11 +3,6 @@ install:
 	pip install --upgrade setuptools pip
 	pip install .[tests]
 
-.PHONY: install-user
-install-user:
-	pip install --user --upgrade setuptools pip
-	pip install --user .[tests]
-
 .PHONY: dev
 dev:
 	pip install --upgrade setuptools pip

@@ -176,7 +176,6 @@ min_versions = {
     "pyparsing": (2, 4, 0),
     "cPyparsing": (2, 4, 0, 1, 0, 0),
     "pre-commit": (1,),
-    "pygments": (2, 4),
     "recommonmark": (0, 5),
     "psutil": (5,),
     "jupyter": (1, 0),
@@ -192,6 +191,8 @@ min_versions = {
     ("ipython", "py3"): (7, 6),
     ("jupyter-console", "py3"): (6,),
     ("ipykernel", "py3"): (5, 1),
+    # don't upgrade this; it breaks with Python 3.4 on Windows
+    "pygments": (2, 3, 1),
     # don't upgrade this to allow all versions
     "prompt_toolkit:3": (1,),
     # don't upgrade this; it breaks on Python 2.6

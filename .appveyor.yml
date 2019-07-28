@@ -28,7 +28,8 @@ environment:
 install:
   - "SET PATH=%APPDATA%\\Python;%APPDATA%\\Python\\Scripts;%PYTHON%;%PYTHON%\\Scripts;c:\\MinGW\\bin;%PATH%"
   - "copy c:\\MinGW\\bin\\mingw32-make.exe c:\\MinGW\\bin\\make.exe"
-  - make install-user
+  - python -m pip install --user --upgrade setuptools pip
+  - python -m pip install .[tests]
 
 build: false
 
