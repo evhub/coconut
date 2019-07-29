@@ -138,12 +138,11 @@ all_reqs = {
     ),
     "jupyter": (
         "jupyter",
+        "jupyter-console",
         ("ipython", "py2"),
         ("ipython", "py3"),
         ("ipykernel", "py2"),
         ("ipykernel", "py3"),
-        ("jupyter-console", "py2"),
-        ("jupyter-console", "py3"),
     ),
     "mypy": (
         "mypy",
@@ -190,8 +189,9 @@ min_versions = {
     "requests": (2,),
     ("numpy", "py34"): (1,),
     ("numpy", "py2"): (1,),
-    ("jupyter-console", "py3"): (6,),
     ("ipykernel", "py3"): (5, 1),
+    # don't upgrade this; it breaks on Python 2 and Python 3.4 on Windows
+    "jupyter-console": (5, 2),
     # don't upgrade these; they break with Python 3.4 on Windows
     ("ipython", "py3"): (6, 5),
     "pygments": (2, 3, 1),
@@ -203,7 +203,6 @@ min_versions = {
     "vprof": (0, 36),
     # don't upgrade these; they break on Python 2
     ("ipython", "py2"): (5, 4),
-    ("jupyter-console", "py2"): (5, 2),
     ("ipykernel", "py2"): (4, 10),
     "prompt_toolkit:2": (1,),
     # don't upgrade these; they break on master
