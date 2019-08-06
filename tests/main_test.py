@@ -326,7 +326,7 @@ def run_pyprover(**kwargs):
 def comp_prelude(args=[], **kwargs):
     """Compiles evhub/coconut-prelude."""
     call(["git", "clone", prelude_git])
-    if PY36:
+    if PY36 and not WINDOWS:
         args.extend(["--target", "3.6", "--mypy"])
     call_coconut([os.path.join(prelude, "setup.coco"), "--strict"] + args, **kwargs)
     call_coconut([os.path.join(prelude, "prelude-source"), os.path.join(prelude, "prelude"), "--strict"] + args, **kwargs)
@@ -399,7 +399,7 @@ class TestShell(unittest.TestCase):
             call_coconut([runnable_coco, runnable_py])
             call_python([runnable_py, "--arg"], assert_output=True)
 
-    if IPY:
+    if IPY and (not WINDOWS or PY35):
         def test_ipython_extension(self):
             call(
                 ["ipython", "--ext", "coconut", "-c", r'%coconut ' + coconut_snip],
