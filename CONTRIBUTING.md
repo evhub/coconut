@@ -181,10 +181,9 @@ After you've tested your changes locally, you'll want to add more permanent test
     1. Release [`sublime-coconut`](https://github.com/evhub/sublime-coconut) first if applicable
     1. Merge pull request and mark as resolved
     1. Release `master` on GitHub
-    1. Fetch and switch to `master` locally
+    1. `git fetch`, `git checkout master`, and `git pull`
     1. Run `make upload`
-    1. Switch back to `develop` locally
-    1. Update from master
+    1. `git checkout develop`, `git rebase master`, and `git push`
     1. Turn on `develop` in `root`
     1. Run `make dev`
     1. Push to `develop`
