@@ -67,7 +67,7 @@ except ImportError:
     except ImportError:
         traceback.print_exc()
         __version__ = None
-        PYPARSING_PACKAGE = "pyparsing"
+        PYPARSING_PACKAGE = "cPyparsing"
         PYPARSING_INFO = None
 
 # -----------------------------------------------------------------------------------------------------------------------
