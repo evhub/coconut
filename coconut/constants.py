@@ -57,6 +57,11 @@ def ver_str_to_tuple(ver_str):
     return tuple(out)
 
 
+def get_next_version(req_ver):
+    """Get the next version after the given version."""
+    return req_ver[:-1] + (req_ver[-1] + 1,)
+
+
 def checksum(data):
     """Compute a checksum of the given data.
     Used for computing __coconut_hash__."""
@@ -83,6 +88,7 @@ PYPY = platform.python_implementation() == "PyPy"
 PY33 = sys.version_info >= (3, 3)
 PY34 = sys.version_info >= (3, 4)
 PY35 = sys.version_info >= (3, 5)
+PY36 = sys.version_info >= (3, 6)
 IPY = (PY2 and not PY26) or PY34
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -97,17 +103,32 @@ author_email = "evanjhub@gmail.com"
 description = "Simple, elegant, Pythonic functional programming."
 website_url = "http://coconut-lang.org"
 
+license_name = "Apache 2.0"
+
+pure_python_env_var = "COCONUT_PURE_PYTHON"
+PURE_PYTHON = os.environ.get(pure_python_env_var, "").lower() in ["true", "1"]
+
+# the different categories here are defined in requirements.py,
+#  anything after a colon is ignored but allows different versions
+#  for different categories, and tuples denote the use of environment
+#  markers as specified in requirements.py
 all_reqs = {
-    "main": (
+    "cpython": (
+        "cPyparsing",
+    ),
+    "purepython": (
         "pyparsing",
     ),
     "non-py26": (
         "pygments",
-        "prompt_toolkit",
     ),
     "py2": (
         "futures",
         "backports.functools-lru-cache",
+        "prompt_toolkit:2",
+    ),
+    "py3": (
+        "prompt_toolkit:3",
     ),
     "py26": (
         "argparse",
@@ -117,9 +138,11 @@ all_reqs = {
     ),
     "jupyter": (
         "jupyter",
-        "ipython",
-        "ipykernel",
         "jupyter-console",
+        ("ipython", "py2"),
+        ("ipython", "py3"),
+        ("ipykernel", "py2"),
+        ("ipykernel", "py3"),
     ),
     "mypy": (
         "mypy",
@@ -144,36 +167,44 @@ all_reqs = {
     "tests": (
         "pytest",
         "pexpect",
-    ),
-    "cPyparsing": (
-        "cPyparsing",
+        ("numpy", "py34"),
+        ("numpy", "py2"),
     ),
 }
 
 min_versions = {
-    "pyparsing": (2, 2, 0),
-    "cPyparsing": (2, 2, 0, 1, 1),
+    "pyparsing": (2, 4, 0),
+    "cPyparsing": (2, 4, 0, 1, 0, 0),
     "pre-commit": (1,),
-    "pygments": (2, 2),
-    "recommonmark": (0, 4),
+    "recommonmark": (0, 5),
     "psutil": (5,),
     "jupyter": (1, 0),
-    "jupyter-console": (5, 2),
-    "ipykernel": (4, 8),
-    "mypy": (0, 620),
-    "prompt_toolkit": (1,),
-    "futures": (3, 2),
+    "mypy": (0, 720),
+    "futures": (3, 3),
     "backports.functools-lru-cache": (1, 5),
     "argparse": (1, 4),
-    "pytest": (3,),
     "pexpect": (4,),
-    "watchdog": (0, 8),
+    "watchdog": (0, 9),
     "trollius": (2, 2),
     "requests": (2,),
+    ("numpy", "py34"): (1,),
+    ("numpy", "py2"): (1,),
+    ("ipykernel", "py3"): (5, 1),
+    # don't upgrade this; it breaks on Python 2 and Python 3.4 on Windows
+    "jupyter-console": (5, 2),
+    # don't upgrade these; they break with Python 3.4 on Windows
+    ("ipython", "py3"): (6, 5),
+    "pygments": (2, 3, 1),
+    # don't upgrade this to allow all versions
+    "prompt_toolkit:3": (1,),
+    # don't upgrade this; it breaks on Python 2.6
+    "pytest": (3,),
     # don't upgrade this; it breaks on unix
     "vprof": (0, 36),
-    # we can't upgrade this; it breaks on Python 2
-    "ipython": (5, 4),
+    # don't upgrade these; they break on Python 2
+    ("ipython", "py2"): (5, 4),
+    ("ipykernel", "py2"): (4, 10),
+    "prompt_toolkit:2": (1,),
     # don't upgrade these; they break on master
     "sphinx": (1, 7, 4),
     "sphinx_bootstrap_theme": (0, 4),
@@ -181,10 +212,10 @@ min_versions = {
 
 version_strictly = (
     "pyparsing",
-    "ipython",
-    "prompt_toolkit",
     "sphinx",
     "sphinx_bootstrap_theme",
+    "mypy",
+    "prompt_toolkit:2",
 )
 
 classifiers = (
@@ -306,7 +337,8 @@ script_names = (
 
 packrat_cache = 512
 
-default_whitespace_chars = " \t\f\v\xa0"  # we don't include \r here because the compiler converts \r into \n
+# we don't include \r here because the compiler converts \r into \n
+default_whitespace_chars = " \t\f\v\xa0"
 
 varchars = string.ascii_letters + string.digits + "_"
 
@@ -326,18 +358,29 @@ default_recursion_limit = 2000
 if sys.getrecursionlimit() < default_recursion_limit:
     sys.setrecursionlimit(default_recursion_limit)
 
+legal_indent_chars = " \t\xa0"
+
 hash_prefix = "# __coconut_hash__ = "
 hash_sep = "\x00"
 
 py2_vers = ((2, 6), (2, 7))
 py3_vers = ((3, 2), (3, 3), (3, 4), (3, 5), (3, 6), (3, 7))
 
-specific_targets = ("2", "27", "3", "33", "35", "36")
+specific_targets = (
+    "2",
+    "27",
+    "3",
+    "33",
+    "34",
+    "35",
+    "36",
+    "37",
+    "38",
+)
 pseudo_targets = {
     "universal": "",
     "26": "2",
     "32": "3",
-    "34": "33",
 }
 
 targets = ("",) + specific_targets
@@ -361,9 +404,10 @@ holds = "'\""  # string open/close chars
 
 taberrfmt = 2  # spaces to indent exceptions
 tabideal = 4  # spaces to indent code for displaying
-tabworth = 8  # worth of \t in spaces for parsing (8 = Python standard)
 
 justify_len = 79  # ideal line length
+
+max_match_val_repr_len = 500  # max len of match val reprs in err msgs
 
 reserved_prefix = "_coconut"
 decorator_var = reserved_prefix + "_decorator"
@@ -377,8 +421,8 @@ tre_mock_var = reserved_prefix + "_mock_func"
 tre_store_var = reserved_prefix + "_recursive_func"
 tre_check_var = reserved_prefix + "_is_recursive"
 none_coalesce_var = reserved_prefix + "_none_coalesce_item"
-sentinel_var = reserved_prefix + "_sentinel"
 func_var = reserved_prefix + "_func"
+format_var = reserved_prefix + "_format"
 
 # prefer Matcher.get_temp_var to proliferating more match vars here
 match_to_var = reserved_prefix + "_match_to"
@@ -387,7 +431,9 @@ match_to_kwargs_var = match_to_var + "_kwargs"
 match_check_var = reserved_prefix + "_match_check"
 match_temp_var = reserved_prefix + "_match_temp"
 match_err_var = reserved_prefix + "_match_err"
+match_val_repr_var = reserved_prefix + "_match_val_repr"
 case_check_var = reserved_prefix + "_case_check"
+function_match_error_var = reserved_prefix + "_FunctionMatchError"
 
 wildcard = "_"  # for pattern-matching
 
@@ -477,6 +523,9 @@ py3_to_py2_stdlib = {
     # ./ denotes from ... import ...
     "io.StringIO": ("StringIO./StringIO", (2, 7)),
     "io.BytesIO": ("cStringIO./StringIO", (2, 7)),
+    "importlib.reload": ("imp./reload", (3, 4)),
+    "itertools.filterfalse": ("itertools./ifilterfalse", (3,)),
+    "itertools.zip_longest": ("itertools./izip_longest", (3,)),
     # third-party backports
     "asyncio": ("trollius", (3, 4)),
 }
@@ -596,6 +645,7 @@ coconut_specific_builtins = (
     "py_str",
     "py_map",
     "py_zip",
+    "py_repr",
 )
 
 new_operators = (
@@ -604,17 +654,15 @@ new_operators = (
     r"\$",
     r"`",
     r"::",
-    r"(?:<\*?)?(?!\.\.\.)\.\.(?:\*?>)?",  # ..
-    r"\|>",
-    r"<\|",
-    r"\|\*>",
-    r"<\*\|",
+    r"(?:<\*?\*?)?(?!\.\.\.)\.\.(?:\*?\*?>)?",  # ..
+    r"\|\*?\*?>",
+    r"<\*?\*?\|",
     r"->",
     r"\?\??",
     "\u2192",  # ->
-    "\\*?\u21a6",  # |>
-    "\u21a4\\*?",  # <|
-    "<?\*?\u2218\*?>?",  # ..
+    "\\*?\\*?\u21a6",  # |>
+    "\u21a4\\*?\\*?",  # <|
+    "<?\\*?\\*?\u2218\\*?\\*?>?",  # ..
     "\u22c5",  # *
     "\u2191",  # **
     "\xf7",  # /
@@ -640,7 +688,7 @@ new_operators = (
 # ICOCONUT CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
 
-py_syntax_version = 3.6
+py_syntax_version = 3
 mimetype = "text/x-python3"
 
 all_keywords = keywords + const_vars + reserved_vars

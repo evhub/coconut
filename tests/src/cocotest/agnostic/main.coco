@@ -1,6 +1,16 @@
 import sys
 import asyncio  # type: ignore
 
+
+def assert_raises(c, exc):
+    """Test whether callable c raises an exception of type exc."""
+    try:
+        c()
+    except exc:
+        return True
+    else:
+        raise AssertionError("%r failed to raise exception %r" % (c, exc))
+
 def main_test():
     """Basic no-dependency tests."""
     assert "\n" == (
@@ -267,6 +277,8 @@ def main_test():
     assert issubclass(abc_, object)
     assert isinstance(abc(10), object)
     assert isinstance(abc_(10), object)
+    assert hash(abc(10)) == hash(abc(10))
+    assert hash(abc(10)) != hash(abc_(10)) != hash((10,))
     class aclass
     assert issubclass(aclass, object)
     assert isinstance(aclass(), object)
@@ -431,6 +443,15 @@ def main_test():
     assert a is None
     assert range(5) |> iter |> reiterable |> .[1] == 1
     assert range(5) |> reiterable |> fmap$(-> _ + 1) |> list == [1, 2, 3, 4, 5]  # type: ignore
+
+    a: Iterable[int] = [1] :: [2] :: [3]
+    a = a |> reiterable
+    b = a |> reiterable
+    assert b |> list == [1, 2, 3]
+    assert b |> list == [1, 2, 3]
+    assert a |> list == [1, 2, 3]
+    assert a |> list == [1, 2, 3]
+
     assert (+) ..*> (+) |> repr == "<built-in function add> ..*> <built-in function add>"
     assert scan((+), [1,2,3,4,5]) |> list == [1,3,6,10,15]
     assert scan((*), [1,2,3,4,5]) |> list == [1,2,6,24,120]
@@ -487,23 +508,71 @@ def main_test():
         assert True
     else:
         assert False
+    assert 4 == range(2,20) |> filter$(i-> i > 3) |> .$[0]
+    from importlib import reload
+    x = 1
+    y = "2"
+    assert f"{x} == {y}" == "1 == 2"
+    assert f"{x!r} == {y!r}" == "1 == " + py_repr("2")
+    assert f"{({})}" == "{}" == f"{({})!r}"
+    assert f"{{" == "{"
+    assert f"}}" == "}"
+    assert f"{1, 2}" == "(1, 2)"
+    assert f"{[] |> len}" == "0"
+    match {"a": {"b": x }} or {"a": {"b": {"c": x}}} = {"a": {"b": {"c": "x"}}}
+    assert x == {"c": "x"}
+    assert py_repr("x") == ("u'x'" if sys.version_info < (3,) else "'x'")
+    def foo(x is int) = x
+    try:
+        foo(["foo"] * 100000)
+    except MatchError as err:
+        assert len(repr(err)) < 1000
+    (assert)(True)
+    try:
+        (assert)(False, "msg")
+    except AssertionError as err:
+        assert str(err) == "msg"
+    else:
+        assert False
+    try:
+        (assert)([])
+    except AssertionError as err:
+        assert str(err) == "(assert) got falsey value []"
+    else:
+        assert False
+    from itertools import filterfalse, zip_longest
+    assert reversed(reiterable(range(10)))[-1] == 0
+    assert count("derp", None)[10] == "derp"
+    assert count("derp", None)[5:10] |> list == ["derp"] * 5
+    assert count("derp", None)[5:] == count("derp", None)
+    assert count("derp", None)[:5] |> list == ["derp"] * 5
+    match def f(a, /, b) = a, b
+    assert f(1, 2) == (1, 2)
+    assert f(1, b=2) == (1, 2)
+    try:
+        f(a=1, b=2)
+    except MatchError:
+        assert True
+    else:
+        assert False
+    return True
+
+def easter_egg_test():
+    import sys as _sys
+    num_mods_0 = len(_sys.modules)
+    import *
+    assert sys == _sys
+    assert len(_sys.modules) > num_mods_0
+    orig_name = __name__
+    from * import *
+    assert __name__ == orig_name
+    assert locals()["byteorder"] == _sys.byteorder
     return True
 
 def tco_func() = tco_func()
 
-def assert_raises(c, exc):
-    """Test whether callable c raises an exception of type exc."""
-    try:
-        c()
-    except exc:
-        return True
-    else:
-        raise AssertionError("%r failed to raise exception %r" % (c, exc))
-
-def main(*args):
+def main(test_easter_eggs=False):
     """Asserts arguments and executes tests."""
-    assert all(args)
-
     print(".", end="")  # ..
     assert main_test()
 
@@ -520,7 +589,8 @@ def main(*args):
     assert suite_test()
 
     print(".", end="")  # .....
-    if hasattr(tco_func, "_coconut_tco_func"):
+    if "_coconut_tco" in globals() or "_coconut_tco" in locals():
+        assert hasattr(tco_func, "_coconut_tco_func")
         assert tco_test()
 
     print(".", end="")  # ......
@@ -533,6 +603,9 @@ def main(*args):
         if sys.version_info >= (3, 5):
             from .py35_test import py35_test
             assert py35_test()
+        if sys.version_info >= (3, 6):
+            from .py36_test import py36_test
+            assert py36_test()
 
     print(".", end="")
     from .target_sys_test import target_sys_test
@@ -540,5 +613,9 @@ def main(*args):
 
     print(".", end="")  # ........
     from . import tutorial  # type: ignore
+
+    if test_easter_eggs:
+        print(".", end="")  # .........
+        assert easter_egg_test()
 
     print("\n<success>")

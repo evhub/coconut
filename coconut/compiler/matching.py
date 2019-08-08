@@ -32,7 +32,7 @@ from coconut.constants import (
     openindent,
     closeindent,
     const_vars,
-    sentinel_var,
+    function_match_error_var,
 )
 from coconut.compiler.util import paren_join
 
@@ -94,12 +94,12 @@ class Matcher(object):
         "checkdefs",
         "names",
         "var_index",
+        "name_list",
         "others",
         "guards",
-        "use_sentinel",
     )
 
-    def __init__(self, loc, check_var, checkdefs=None, names=None, var_index=0):
+    def __init__(self, loc, check_var, checkdefs=None, names=None, var_index=0, name_list=None):
         """Creates the matcher."""
         self.loc = loc
         self.check_var = check_var
@@ -113,16 +113,25 @@ class Matcher(object):
             self.set_position(-1)
         self.names = names if names is not None else {}
         self.var_index = var_index
+        self.name_list = name_list
         self.others = []
         self.guards = []
-        self.use_sentinel = False
 
-    def duplicate(self):
+    def duplicate(self, separate_names=False):
         """Duplicates the matcher to others."""
-        other = Matcher(self.loc, self.check_var, self.checkdefs, self.names, self.var_index)
+        new_names = self.names
+        if separate_names:
+            new_names = new_names.copy()
+        other = Matcher(self.loc, self.check_var, self.checkdefs, new_names, self.var_index, self.name_list)
         other.insert_check(0, "not " + self.check_var)
         self.others.append(other)
         return other
+
+    def register_name(self, name, value):
+        """Register a new name."""
+        self.names[name] = value
+        if self.name_list is not None and name not in self.name_list:
+            self.name_list.append(name)
 
     def add_guard(self, cond):
         """Adds cond as a guard."""
@@ -237,29 +246,37 @@ class Matcher(object):
         else:
             self.add_check(str(min_len) + " <= _coconut.len(" + item + ") <= " + str(max_len))
 
-    def match_function(self, args, kwargs, match_args=(), star_arg=None, kwd_args=(), dubstar_arg=None):
+    def match_function(self, args, kwargs, pos_only_match_args=(), match_args=(), star_arg=None, kwd_match_args=(), dubstar_arg=None):
         """Matches a pattern-matching function."""
-        self.match_in_args_kwargs(match_args, args, kwargs, allow_star_args=star_arg is not None)
+        self.match_in_args_kwargs(pos_only_match_args, match_args, args, kwargs, allow_star_args=star_arg is not None)
         if star_arg is not None:
             self.match(star_arg, args + "[" + str(len(match_args)) + ":]")
-        self.match_in_kwargs(kwd_args, kwargs)
+        self.match_in_kwargs(kwd_match_args, kwargs)
         with self.down_a_level():
             if dubstar_arg is None:
                 self.add_check("not " + kwargs)
             else:
                 self.match(dubstar_arg, kwargs)
 
-    def match_in_args_kwargs(self, match_args, args, kwargs, allow_star_args=False):
+    def match_in_args_kwargs(self, pos_only_match_args, match_args, args, kwargs, allow_star_args=False):
         """Matches against args or kwargs."""
+
+        # before everything, pop the FunctionMatchError from context
+        self.add_def(function_match_error_var + " = _coconut_get_function_match_error()")
+        self.increment()
+
         req_len = 0
         arg_checks = {}
         to_match = []  # [(move_down, match, against)]
-        for i, arg in enumerate(match_args):
+        for i, arg in enumerate(pos_only_match_args + match_args):
             if isinstance(arg, tuple):
                 (match, default) = arg
             else:
                 match, default = arg, None
-            names = get_match_names(match)
+            if i < len(pos_only_match_args):  # faster if arg in pos_only_match_args
+                names = None
+            else:
+                names = get_match_names(match)
             if default is None:
                 if not names:
                     req_len = i + 1
@@ -277,8 +294,10 @@ class Matcher(object):
                     self.add_def(
                         tempvar + " = "
                         + args + "[" + str(i) + "] if _coconut.len(" + args + ") > " + str(i) + " else "
-                        + "".join(kwargs + '.pop("' + name + '") if "' + name + '" in ' + kwargs + " else "
-                                  for name in names[:-1])
+                        + "".join(
+                            kwargs + '.pop("' + name + '") if "' + name + '" in ' + kwargs + " else "
+                            for name in names[:-1]
+                        )
                         + kwargs + '.pop("' + names[-1] + '")',
                     )
                     to_match.append((True, match, tempvar))
@@ -308,7 +327,7 @@ class Matcher(object):
                     )
                     to_match.append((True, match, tempvar))
 
-        max_len = None if allow_star_args else len(match_args)
+        max_len = None if allow_star_args else len(pos_only_match_args) + len(match_args)
         self.check_len_in(req_len, max_len, args)
         for i in sorted(arg_checks):
             lt_check, ge_check = arg_checks[i]
@@ -355,13 +374,11 @@ class Matcher(object):
         if rest is None:
             self.add_check("_coconut.len(" + item + ") == " + str(len(matches)))
 
-        if matches:
-            self.use_sentinel = True
         for k, v in matches:
             key_var = self.get_temp_var()
-            self.add_def(key_var + " = " + item + ".get(" + k + ", " + sentinel_var + ")")
+            self.add_def(key_var + " = " + item + ".get(" + k + ", _coconut_sentinel)")
             with self.down_a_level():
-                self.add_check(key_var + " is not " + sentinel_var)
+                self.add_check(key_var + " is not _coconut_sentinel")
                 self.match(v, key_var)
         if rest is not None and rest != wildcard:
             match_keys = [k for k, v in matches]
@@ -523,8 +540,8 @@ class Matcher(object):
             self.add_check(item + ".endswith(" + suffix + ")")
         if name != wildcard:
             self.add_def(
-                name + " = " + item + "[" +
-                ("" if prefix is None else "_coconut.len(" + prefix + ")") + ":"
+                name + " = " + item + "["
+                + ("" if prefix is None else "_coconut.len(" + prefix + ")") + ":"
                 + ("" if suffix is None else "-_coconut.len(" + suffix + ")") + "]",
             )
 
@@ -544,7 +561,7 @@ class Matcher(object):
                 self.add_check(self.names[setvar] + " == " + item)
             else:
                 self.add_def(setvar + " = " + item)
-                self.names[setvar] = item
+                self.register_name(setvar, item)
 
     def match_set(self, tokens, item):
         """Matches a set."""
@@ -590,7 +607,7 @@ class Matcher(object):
                     self.add_check(self.names[arg] + " == " + item)
                 elif arg != wildcard:
                     self.add_def(arg + " = " + item)
-                    self.names[arg] = item
+                    self.register_name(arg, item)
             else:
                 raise CoconutInternalException("invalid trailer match operation", op)
         self.match(match, item)
@@ -603,7 +620,7 @@ class Matcher(object):
     def match_or(self, tokens, item):
         """Matches or."""
         for x in range(1, len(tokens)):
-            self.duplicate().match(tokens[x], item)
+            self.duplicate(separate_names=True).match(tokens[x], item)
         with self.only_self():
             self.match(tokens[0], item)
 
@@ -617,8 +634,6 @@ class Matcher(object):
     def out(self):
         """Return pattern-matching code."""
         out = ""
-        if self.use_sentinel:
-            out += sentinel_var + " = _coconut.object()\n"
         closes = 0
         for checks, defs in self.checkdefs:
             if checks:

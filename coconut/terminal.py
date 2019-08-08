@@ -25,7 +25,7 @@ import logging
 import time
 from contextlib import contextmanager
 
-from coconut.myparsing import (
+from coconut._pyparsing import (
     lineno,
     col,
     ParserElement,
@@ -176,12 +176,12 @@ class Logger(object):
         """Creates and displays a warning."""
         return self.warn_err(CoconutWarning(*args, **kwargs))
 
-    def warn_err(self, warning):
+    def warn_err(self, warning, force=False):
         """Displays a warning."""
         try:
             raise warning
         except Exception:
-            if not self.quiet:
+            if not self.quiet or force:
                 self.display_exc()
 
     def display_exc(self):

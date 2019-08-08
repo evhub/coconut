@@ -23,20 +23,20 @@ import sys
 import os
 import traceback
 import subprocess
-if PY26:
-    import imp
-from functools import partial
-from copy import copy
-from contextlib import contextmanager
 from select import select
-if not PY26:
-    import runpy
-try:
-    # just importing readline improves built-in input()
-    import readline  # NOQA
-except ImportError:
-    pass
+from contextlib import contextmanager
+from copy import copy
+from functools import partial
 
+from coconut.terminal import (
+    logger,
+    complain,
+)
+from coconut.exceptions import (
+    CoconutException,
+    get_encoding,
+    internal_assert,
+)
 from coconut.constants import (
     fixpath,
     default_encoding,
@@ -60,16 +60,16 @@ from coconut.constants import (
     WINDOWS,
     PY34,
 )
-from coconut.exceptions import (
-    CoconutException,
-    get_encoding,
-    internal_assert,
-)
-from coconut.terminal import (
-    logger,
-    complain,
-)
 
+if PY26:
+    import imp
+if not PY26:
+    import runpy
+try:
+    # just importing readline improves built-in input()
+    import readline  # NOQA
+except ImportError:
+    pass
 if PY34:
     from importlib import reload
 else:
@@ -93,9 +93,11 @@ try:
 except ImportError:
     prompt_toolkit = None
 except KeyError:
-    complain(ImportError(
-        "detected outdated pygments version (run 'pip install --upgrade pygments' to fix)",
-    ))
+    complain(
+        ImportError(
+            "detected outdated pygments version (run 'pip install --upgrade pygments' to fix)",
+        ),
+    )
     prompt_toolkit = None
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -438,7 +440,7 @@ class Runner(object):
         self.vars = self.build_vars(path)
         self.stored = [] if store else None
         if comp is not None:
-            self.store(comp.getheader("package"))
+            self.store(comp.getheader("package:0"))
             self.run(comp.getheader("code"), store=False)
             self.fix_pickle()
 
@@ -486,9 +488,15 @@ class Runner(object):
             if all_errors_exit:
                 self.exit(1)
 
-    def update_vars(self, global_vars):
+    def update_vars(self, global_vars, ignore_vars=None):
         """Add Coconut built-ins to given vars."""
-        global_vars.update(self.vars)
+        if ignore_vars:
+            update_vars = self.vars.copy()
+            for del_var in ignore_vars:
+                del update_vars[del_var]
+        else:
+            update_vars = self.vars
+        global_vars.update(update_vars)
 
     def run(self, code, use_eval=None, path=None, all_errors_exit=False, store=True):
         """Execute Python code."""

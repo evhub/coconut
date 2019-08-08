@@ -32,7 +32,7 @@ import sys
 from contextlib import contextmanager
 from functools import partial
 
-from coconut.myparsing import (
+from coconut._pyparsing import (
     ParseBaseException,
     col,
     line as getline,
@@ -53,7 +53,6 @@ from coconut.constants import (
     unwrapper,
     holds,
     tabideal,
-    tabworth,
     match_to_var,
     match_to_args_var,
     match_to_kwargs_var,
@@ -72,6 +71,11 @@ from coconut.constants import (
     checksum,
     reserved_prefix,
     case_check_var,
+    function_match_error_var,
+    legal_indent_chars,
+    format_var,
+    match_val_repr_var,
+    max_match_val_repr_len,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -113,6 +117,8 @@ from coconut.compiler.util import (
     compile_regex,
     keyword,
     append_it,
+    interleaved_join,
+    handle_indentation,
 )
 from coconut.compiler.header import (
     minify,
@@ -250,9 +256,61 @@ def imported_names(imports):
         yield imp[-1].split(".", 1)[0]
 
 
+def special_starred_import_handle(imp_all=False):
+    """Handles the [from *] import * Coconut Easter egg."""
+    out = handle_indentation(
+        """
+import imp as _coconut_imp
+for _coconut_base_path in _coconut_sys.path:
+    for _coconut_dirpath, _coconut_dirnames, _coconut_filenames in _coconut.os.walk(_coconut_base_path):
+        _coconut_paths_to_imp = []
+        for _coconut_fname in _coconut_filenames:
+            if _coconut.os.path.splitext(_coconut_fname)[-1] == "py":
+                _coconut_fpath = _coconut.os.path.join(_coconut_dirpath, _coconut_fname)
+                _coconut_paths_to_imp.append(_coconut_fpath)
+        for _coconut_dname in _coconut_dirnames:
+            _coconut_dpath = _coconut.os.path.join(_coconut_dirpath, _coconut_dname)
+            if "__init__.py" in _coconut.os.listdir(_coconut_dpath):
+                _coconut_paths_to_imp.append(_coconut_dpath)
+        for _coconut_imp_path in _coconut_paths_to_imp:
+            _coconut_imp_name = _coconut.os.path.splitext(_coconut.os.path.basename(_coconut_imp_path))[0]
+            descr = _coconut_imp.find_module(_coconut_imp_name, [_coconut.os.path.dirname(_coconut_imp_path)])
+            try:
+                _coconut_imp.load_module(_coconut_imp_name, *descr)
+            except:
+                pass
+        _coconut_dirnames[:] = []
+        """.strip()
+    )
+    if imp_all:
+        out += "\n" + handle_indentation(
+            """
+for _coconut_m in _coconut.tuple(_coconut_sys.modules.values()):
+    _coconut_d = _coconut.getattr(_coconut_m, "__dict__", None)
+    if _coconut_d is not None:
+        for _coconut_k, _coconut_v in _coconut_d.items():
+            if not _coconut_k.startswith("_"):
+                _coconut.locals()[_coconut_k] = _coconut_v
+            """.strip()
+        )
+    else:
+        out += "\n" + handle_indentation(
+            """
+for _coconut_n, _coconut_m in _coconut.tuple(_coconut_sys.modules.items()):
+    _coconut.locals()[_coconut_n] = _coconut_m
+            """.strip()
+        )
+    return out
+
+
 def split_args_list(tokens, loc):
     """Splits function definition arguments."""
-    req_args, def_args, star_arg, kwd_args, dubstar_arg = [], [], None, [], None
+    pos_only_args = []
+    req_args = []
+    def_args = []
+    star_arg = None
+    kwd_args = []
+    dubstar_arg = None
     pos = 0
     for arg in tokens:
         if len(arg) == 1:
@@ -261,6 +319,16 @@ def split_args_list(tokens, loc):
                 if pos >= 3:
                     raise CoconutDeferredSyntaxError("star separator at invalid position in function definition", loc)
                 pos = 3
+            elif arg[0] == "/":
+                # slash sep (pos = 0)
+                if pos > 0:
+                    raise CoconutDeferredSyntaxError("slash separator at invalid position in function definition", loc)
+                if pos_only_args:
+                    raise CoconutDeferredSyntaxError("only one slash separator allowed in function definition", loc)
+                if not req_args:
+                    raise CoconutDeferredSyntaxError("slash separator must come after arguments to mark as positional-only")
+                pos_only_args = req_args
+                req_args = []
             else:
                 # pos arg (pos = 0)
                 if pos > 0:
@@ -292,7 +360,7 @@ def split_args_list(tokens, loc):
                     raise CoconutDeferredSyntaxError("invalid default argument in function definition", loc)
         else:
             raise CoconutInternalException("invalid function definition argument", arg)
-    return req_args, def_args, star_arg, kwd_args, dubstar_arg
+    return pos_only_args, req_args, def_args, star_arg, kwd_args, dubstar_arg
 
 
 def match_case_tokens(loc, tokens, check_var, top):
@@ -356,38 +424,79 @@ class Compiler(Grammar):
                 extra="supported targets are " + ', '.join(ascii(t) for t in specific_targets) + ", or leave blank for universal",
             )
         logger.log_vars("Compiler args:", locals())
-        self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.no_tco = (
-            target, strict, minify, line_numbers, keep_lines, no_tco,
-        )
+        self.target = target
+        self.strict = strict
+        self.minify = minify
+        self.line_numbers = line_numbers
+        self.keep_lines = keep_lines
+        self.no_tco = no_tco
 
     def __reduce__(self):
         """Return pickling information."""
         return (Compiler, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.no_tco))
 
-    def genhash(self, package, code):
+    def __copy__(self):
+        """Create a new, blank copy of the compiler."""
+        cls, args = self.__reduce__()
+        return cls(*args)
+
+    copy = __copy__
+
+    def genhash(self, code, package_level=-1):
         """Generate a hash from code."""
-        return hex(checksum(
-            hash_sep.join(
-                str(item) for item in (VERSION_STR,)
-                + self.__reduce__()[1]
-                + (package, code)
-            ).encode(default_encoding),
-        ))
+        reduce_args = self.__reduce__()[1]
+        logger.log(
+            "Hash args:", {
+                "VERSION_STR": VERSION_STR,
+                "reduce_args": reduce_args,
+                "package_level": package_level,
+            },
+        )
+        return hex(
+            checksum(
+                hash_sep.join(
+                    str(item) for item in (
+                        (VERSION_STR,)
+                        + reduce_args
+                        + (package_level, code)
+                    )
+                ).encode(default_encoding),
+            ),
+        )
 
     def reset(self):
         """Resets references."""
         self.indchar = None
         self.comments = {}
         self.refs = []
-        self.set_skips([])
+        self.skips = []
         self.docstring = ""
         self.ichain_count = 0
         self.tre_store_count = 0
         self.case_check_count = 0
         self.stmt_lambdas = []
-        if self.strict:
-            self.unused_imports = set()
+        self.unused_imports = set()
+        self.original_lines = []
         self.bind()
+
+    @contextmanager
+    def inner_environment(self):
+        """Set up compiler to evaluate inner expressions."""
+        line_numbers, self.line_numbers = self.line_numbers, False
+        keep_lines, self.keep_lines = self.keep_lines, False
+        comments, self.comments = self.comments, {}
+        skips, self.skips = self.skips, []
+        docstring, self.docstring = self.docstring, ""
+        original_lines, self.original_lines = self.original_lines, []
+        try:
+            yield
+        finally:
+            self.line_numbers = line_numbers
+            self.keep_lines = keep_lines
+            self.comments = comments
+            self.skips = skips
+            self.docstring = docstring
+            self.original_lines = original_lines
 
     def bind(self):
         """Binds reference objects to the proper parse actions."""
@@ -416,19 +525,25 @@ class Compiler(Grammar):
         self.return_typedef <<= trace(attach(self.return_typedef_ref, self.typedef_handle))
         self.typed_assign_stmt <<= trace(attach(self.typed_assign_stmt_ref, self.typed_assign_stmt_handle))
         self.datadef <<= trace(attach(self.datadef_ref, self.data_handle))
+        self.match_datadef <<= trace(attach(self.match_datadef_ref, self.match_data_handle))
         self.with_stmt <<= trace(attach(self.with_stmt_ref, self.with_stmt_handle))
         self.await_item <<= trace(attach(self.await_item_ref, self.await_item_handle))
         self.ellipsis <<= trace(attach(self.ellipsis_ref, self.ellipsis_handle))
         self.case_stmt <<= trace(attach(self.case_stmt_ref, self.case_stmt_handle))
+        self.f_string <<= attach(self.f_string_ref, self.f_string_handle)
 
-        self.decoratable_normal_funcdef_stmt <<= trace(attach(
-            self.decoratable_normal_funcdef_stmt_ref,
-            self.decoratable_funcdef_stmt_handle,
-        ))
-        self.decoratable_async_funcdef_stmt <<= trace(attach(
-            self.decoratable_async_funcdef_stmt_ref,
-            partial(self.decoratable_funcdef_stmt_handle, is_async=True),
-        ))
+        self.decoratable_normal_funcdef_stmt <<= trace(
+            attach(
+                self.decoratable_normal_funcdef_stmt_ref,
+                self.decoratable_funcdef_stmt_handle,
+            ),
+        )
+        self.decoratable_async_funcdef_stmt <<= trace(
+            attach(
+                self.decoratable_async_funcdef_stmt_ref,
+                partial(self.decoratable_funcdef_stmt_handle, is_async=True),
+            ),
+        )
 
         self.u_string <<= attach(self.u_string_ref, self.u_string_check)
         self.matrix_at <<= attach(self.matrix_at_ref, self.matrix_at_check)
@@ -439,10 +554,12 @@ class Compiler(Grammar):
         self.dubstar_expr <<= attach(self.dubstar_expr_ref, self.star_expr_check)
         self.star_sep_arg <<= attach(self.star_sep_arg_ref, self.star_sep_check)
         self.star_sep_vararg <<= attach(self.star_sep_vararg_ref, self.star_sep_check)
+        self.slash_sep_arg <<= attach(self.slash_sep_arg_ref, self.slash_sep_check)
+        self.slash_sep_vararg <<= attach(self.slash_sep_vararg_ref, self.slash_sep_check)
         self.endline_semicolon <<= attach(self.endline_semicolon_ref, self.endline_semicolon_check)
         self.async_stmt <<= attach(self.async_stmt_ref, self.async_stmt_check)
         self.async_comp_for <<= attach(self.async_comp_for_ref, self.async_comp_check)
-        self.f_string <<= attach(self.f_string_ref, self.f_string_check)
+        self.namedexpr <<= attach(self.namedexpr_ref, self.namedexpr_check)
 
     def copy_skips(self):
         """Copy the line skips."""
@@ -454,11 +571,13 @@ class Compiler(Grammar):
         internal_assert(lambda: len(set(skips)) == len(skips), "duplicate line skip(s) in skips", skips)
         self.skips = skips
 
-    def adjust(self, ln):
+    def adjust(self, ln, skips=None):
         """Converts a parsing line number into an original line number."""
+        if skips is None:
+            skips = self.skips
         adj_ln = ln
         need_unskipped = 0
-        for i in self.skips:
+        for i in skips:
             if i <= ln:
                 need_unskipped += 1
             elif adj_ln + need_unskipped < i:
@@ -611,6 +730,15 @@ class Compiler(Grammar):
                 err_lineno = self.adjust(err_lineno)
         return CoconutParseError(None, err_line, err_index, err_lineno)
 
+    def inner_parse_eval(self, inputstring, parser=None, preargs={"strip": True}, postargs={"header": "none", "initial": "none", "final_endline": False}):
+        """Parse eval code in an inner environment."""
+        if parser is None:
+            parser = self.eval_parser
+        with self.inner_environment():
+            pre_procd = self.pre(inputstring, **preargs)
+            parsed = parse(parser, pre_procd)
+            return self.post(parsed, **postargs)
+
     def parse(self, inputstring, parser, preargs, postargs):
         """Use the parser to parse the inputstring with appropriate setup and teardown."""
         self.reset()
@@ -705,8 +833,7 @@ class Compiler(Grammar):
                         if c == "\n":
                             if len(hold[_start]) == 1:
                                 raise self.make_err(CoconutSyntaxError, "linebreak in non-multiline string", inputstring, x, reformat=False)
-                            else:
-                                skips = addskip(skips, self.adjust(lineno(x, inputstring)))
+                            skips = addskip(skips, self.adjust(lineno(x, inputstring)))
                         hold[_contents] += hold[_stop] + c
                         hold[_stop] = None
                 elif count_end(hold[_contents], "\\") % 2 == 1:
@@ -722,8 +849,7 @@ class Compiler(Grammar):
                     if c == "\n":
                         if len(hold[_start]) == 1:
                             raise self.make_err(CoconutSyntaxError, "linebreak in non-multiline string", inputstring, x, reformat=False)
-                        else:
-                            skips = addskip(skips, self.adjust(lineno(x, inputstring)))
+                        skips = addskip(skips, self.adjust(lineno(x, inputstring)))
                     hold[_contents] += c
             elif found is not None:
                 if c == found[0]:
@@ -731,9 +857,8 @@ class Compiler(Grammar):
                 elif len(found) == 1:  # found == "_"
                     if c == "\n":
                         raise self.make_err(CoconutSyntaxError, "linebreak in non-multiline string", inputstring, x, reformat=False)
-                    else:
-                        hold = [c, found, None]  # [_contents, _start, _stop]
-                        found = None
+                    hold = [c, found, None]  # [_contents, _start, _stop]
+                    found = None
                 elif len(found) == 2:  # found == "__"
                     out.append(self.wrap_str("", found[0], False))
                     found = None
@@ -808,20 +933,18 @@ class Compiler(Grammar):
         return "".join(out)
 
     def leading_whitespace(self, inputstring):
-        """Count leading whitespace."""
-        count = 0
+        """Get leading whitespace."""
+        leading_ws = []
         for i, c in enumerate(inputstring):
-            if c == " ":
-                count += 1
-            elif c == "\t":
-                count += tabworth - (i % tabworth)
+            if c in legal_indent_chars:
+                leading_ws.append(c)
             else:
                 break
             if self.indchar is None:
                 self.indchar = c
             elif c != self.indchar:
                 self.strict_err_or_warn("found mixing of tabs and spaces", inputstring, i)
-        return count
+        return "".join(leading_ws)
 
     def ind_proc(self, inputstring, **kwargs):
         """Process indentation."""
@@ -860,17 +983,19 @@ class Compiler(Grammar):
                     if check:
                         raise self.make_err(CoconutSyntaxError, "illegal initial indent", line, 0, self.adjust(ln))
                     else:
-                        current = 0
-                elif check > current:
-                    levels.append(current)
-                    current = check
-                    line = openindent + line
-                elif check in levels:
+                        current = ""
+                elif current == check:
+                    pass
+                elif check in levels:  # dedent
                     point = levels.index(check) + 1
                     line = closeindent * (len(levels[point:]) + 1) + line
                     levels = levels[:point]
                     current = levels.pop()
-                elif current != check:
+                elif check.startswith(current):  # indent, since current != check
+                    levels.append(current)
+                    current = check
+                    line = openindent + line
+                else:
                     raise self.make_err(CoconutSyntaxError, "illegal dedent to unused indentation level", line, 0, self.adjust(ln))
                 new.append(line)
 
@@ -940,14 +1065,17 @@ class Compiler(Grammar):
         return "\n".join(out)
 
     def ln_comment(self, ln):
-        """Get an end line comment. CoconutInternalExceptions should always be caught and complained."""
+        """Get an end line comment."""
+        # CoconutInternalExceptions should always be caught and complained here
         if self.keep_lines:
-            if not 1 <= ln <= len(self.original_lines) + 1:
-                raise CoconutInternalException(
-                    "out of bounds line number", ln,
-                    "not in range [1, " + str(len(self.original_lines) + 1) + "]",
+            if not 1 <= ln <= len(self.original_lines) + 2:
+                complain(
+                    CoconutInternalException(
+                        "out of bounds line number", ln,
+                        "not in range [1, " + str(len(self.original_lines) + 2) + "]",
+                    ),
                 )
-            elif ln == len(self.original_lines) + 1:  # trim too large
+            if ln >= len(self.original_lines) + 1:  # trim too large
                 lni = -1
             else:
                 lni = ln - 1
@@ -1150,10 +1278,14 @@ class Compiler(Grammar):
             out += name + " = (" + item + ")(" + name + ")"
         elif op == "|*>=":
             out += name + " = (" + item + ")(*" + name + ")"
+        elif op == "|**>=":
+            out += name + " = (" + item + ")(**" + name + ")"
         elif op == "<|=":
             out += name + " = " + name + "((" + item + "))"
         elif op == "<*|=":
             out += name + " = " + name + "(*(" + item + "))"
+        elif op == "<**|=":
+            out += name + " = " + name + "(**(" + item + "))"
         elif op == "..=" or op == "<..=":
             out += name + " = _coconut_forward_compose((" + item + "), " + name + ")"
         elif op == "..>=":
@@ -1162,6 +1294,10 @@ class Compiler(Grammar):
             out += name + " = _coconut_forward_star_compose((" + item + "), " + name + ")"
         elif op == "..*>=":
             out += name + " = _coconut_forward_star_compose(" + name + ", (" + item + "))"
+        elif op == "<**..=":
+            out += name + " = _coconut_forward_dubstar_compose((" + item + "), " + name + ")"
+        elif op == "..**>=":
+            out += name + " = _coconut_forward_dubstar_compose(" + name + ", (" + item + "))"
         elif op == "??=":
             out += name + " = " + item + " if " + name + " is None else " + name
         elif op == "::=":
@@ -1197,6 +1333,56 @@ class Compiler(Grammar):
                 raise CoconutInternalException("invalid inner classlist token", tokens[0])
         else:
             raise CoconutInternalException("invalid classlist tokens", tokens)
+
+    def match_data_handle(self, original, loc, tokens):
+        """Process pattern-matching data blocks."""
+        if len(tokens) == 3:
+            name, match_tokens, stmts = tokens
+            inherit = None
+        elif len(tokens) == 4:
+            name, match_tokens, inherit, stmts = tokens
+        else:
+            raise CoconutInternalException("invalid pattern-matching data tokens", tokens)
+
+        if len(match_tokens) == 1:
+            matches, = match_tokens
+            cond = None
+        elif len(match_tokens) == 2:
+            matches, cond = match_tokens
+        else:
+            raise CoconutInternalException("invalid pattern-matching tokens in data", match_tokens)
+
+        matcher = Matcher(loc, match_check_var, name_list=[])
+
+        pos_only_args, req_args, def_args, star_arg, kwd_args, dubstar_arg = split_args_list(matches, loc)
+        matcher.match_function(match_to_args_var, match_to_kwargs_var, pos_only_args, req_args + def_args, star_arg, kwd_args, dubstar_arg)
+
+        if cond is not None:
+            matcher.add_guard(cond)
+
+        arg_names = ", ".join(matcher.name_list)
+        arg_tuple = arg_names + ("," if len(matcher.name_list) == 1 else "")
+
+        extra_stmts = handle_indentation(
+            '''
+def __new__(_cls, *{match_to_args_var}, **{match_to_kwargs_var}):
+    {match_check_var} = False
+    {matching}
+    {pattern_error}
+    return _coconut.tuple.__new__(_cls, ({arg_tuple}))
+            '''.strip(), add_newline=True,
+        ).format(
+            match_to_args_var=match_to_args_var,
+            match_to_kwargs_var=match_to_kwargs_var,
+            match_check_var=match_check_var,
+            matching=matcher.out(),
+            pattern_error=self.pattern_error(original, loc, match_to_args_var, match_check_var, function_match_error_var),
+            arg_tuple=arg_tuple,
+        )
+
+        namedtuple_call = '_coconut.collections.namedtuple("' + name + '", "' + arg_names + '")'
+
+        return self.assemble_data(name, namedtuple_call, inherit, extra_stmts, stmts)
 
     def data_handle(self, loc, tokens):
         """Process data blocks."""
@@ -1256,40 +1442,34 @@ class Compiler(Grammar):
             all_args.append(arg_str)
 
         attr_str = " ".join(base_args)
-        extra_stmts = '''__slots__ = ()
-__ne__ = _coconut.object.__ne__
-def __eq__(self, other):
-    {oind}return self.__class__ is other.__class__ and _coconut.tuple.__eq__(self, other)
-{cind}'''.format(
-            oind=openindent,
-            cind=closeindent,
-        )
+        extra_stmts = ""
         if starred_arg is not None:
             attr_str += (" " if attr_str else "") + starred_arg
             if base_args:
-                extra_stmts += '''def __new__(_cls, {all_args}):
-                    {oind}return _coconut.tuple.__new__(_cls, {base_args_tuple} + {starred_arg})
-                {cind}@_coconut.classmethod
-                def _make(cls, iterable, {kwd_only}new=_coconut.tuple.__new__, len=_coconut.len):
-                    {oind}result = new(cls, iterable)
-                    if len(result) < {req_args}:
-                        {oind}raise _coconut.TypeError("Expected at least {req_args} argument(s), got %d" % len(result))
-                    {cind}return result
-                {cind}def _asdict(self):
-                    {oind}return _coconut.OrderedDict((f, _coconut.getattr(self, f)) for f in self._fields)
-                {cind}def __repr__(self):
-                    {oind}return "{name}({args_for_repr})".format(**self._asdict())
-                {cind}def _replace(_self, **kwds):
-                    {oind}result = _self._make(_coconut.tuple(_coconut.map(kwds.pop, {quoted_base_args_tuple}, _self)) + kwds.pop("{starred_arg}", self.{starred_arg}))
-                    if kwds:
-                        {oind}raise _coconut.ValueError("Got unexpected field names: " + _coconut.repr(kwds.keys()))
-                    {cind}return result
-                {cind}@_coconut.property
-                def {starred_arg}(self):
-                    {oind}return self[{num_base_args}:]
-                {cind}'''.format(
-                    oind=openindent,
-                    cind=closeindent,
+                extra_stmts += handle_indentation(
+                    '''
+def __new__(_cls, {all_args}):
+    return _coconut.tuple.__new__(_cls, {base_args_tuple} + {starred_arg})
+@_coconut.classmethod
+def _make(cls, iterable, {kwd_only}new=_coconut.tuple.__new__, len=_coconut.len):
+    result = new(cls, iterable)
+    if len(result) < {req_args}:
+        raise _coconut.TypeError("Expected at least {req_args} argument(s), got %d" % len(result))
+    return result
+def _asdict(self):
+    return _coconut.OrderedDict((f, _coconut.getattr(self, f)) for f in self._fields)
+def __repr__(self):
+    return "{name}({args_for_repr})".format(**self._asdict())
+def _replace(_self, **kwds):
+    result = _self._make(_coconut.tuple(_coconut.map(kwds.pop, {quoted_base_args_tuple}, _self)) + kwds.pop("{starred_arg}", self.{starred_arg}))
+    if kwds:
+        raise _coconut.ValueError("Got unexpected field names: " + _coconut.repr(kwds.keys()))
+    return result
+@_coconut.property
+def {starred_arg}(self):
+    return self[{num_base_args}:]
+                    '''.strip(), add_newline=True,
+                ).format(
                     name=name,
                     args_for_repr=", ".join(arg + "={" + arg.lstrip("*") + "!r}" for arg in base_args + ["*" + starred_arg]),
                     starred_arg=starred_arg,
@@ -1301,54 +1481,75 @@ def __eq__(self, other):
                     kwd_only=("*, " if self.target.startswith("3") else ""),
                 )
             else:
-                extra_stmts += '''def __new__(_cls, *{arg}):
-                    {oind}return _coconut.tuple.__new__(_cls, {arg})
-                {cind}@_coconut.classmethod
-                def _make(cls, iterable, {kwd_only}new=_coconut.tuple.__new__, len=None):
-                    {oind}return new(cls, iterable)
-                {cind}def _asdict(self):
-                    {oind}return _coconut.OrderedDict([("{arg}", self[:])])
-                {cind}def __repr__(self):
-                    {oind}return "{name}(*{arg}=%r)" % (self[:],)
-                {cind}def _replace(_self, **kwds):
-                    {oind}result = self._make(kwds.pop("{arg}", _self))
-                    if kwds:
-                        {oind}raise _coconut.ValueError("Got unexpected field names: " + _coconut.repr(kwds.keys()))
-                    {cind}return result
-                {cind}@_coconut.property
-                def {arg}(self):
-                    {oind}return self[:]
-                {cind}'''.format(
-                    oind=openindent,
-                    cind=closeindent,
+                extra_stmts += handle_indentation(
+                    '''
+def __new__(_cls, *{arg}):
+    return _coconut.tuple.__new__(_cls, {arg})
+@_coconut.classmethod
+def _make(cls, iterable, {kwd_only}new=_coconut.tuple.__new__, len=None):
+    return new(cls, iterable)
+def _asdict(self):
+    return _coconut.OrderedDict([("{arg}", self[:])])
+def __repr__(self):
+    return "{name}(*{arg}=%r)" % (self[:],)
+def _replace(_self, **kwds):
+    result = self._make(kwds.pop("{arg}", _self))
+    if kwds:
+        raise _coconut.ValueError("Got unexpected field names: " + _coconut.repr(kwds.keys()))
+    return result
+@_coconut.property
+def {arg}(self):
+    return self[:]
+                    '''.strip(), add_newline=True,
+                ).format(
                     name=name,
                     arg=starred_arg,
                     kwd_only=("*, " if self.target.startswith("3") else ""),
                 )
         elif saw_defaults:
-            extra_stmts += '''def __new__(_cls, {all_args}):
-                {oind}return _coconut.tuple.__new__(_cls, {args_tuple})
-            {cind}'''.format(
-                oind=openindent,
-                cind=closeindent,
+            extra_stmts += handle_indentation(
+                '''
+def __new__(_cls, {all_args}):
+    return _coconut.tuple.__new__(_cls, {args_tuple})
+                '''.strip(), add_newline=True,
+            ).format(
                 all_args=", ".join(all_args),
                 args_tuple="(" + ", ".join(base_args) + ("," if len(base_args) == 1 else "") + ")",
             )
 
+        if types:
+            namedtuple_call = '_coconut.typing.NamedTuple("' + name + '", [' + ", ".join(
+                '("' + argname + '", ' + self.wrap_typedef(types.get(i, "_coconut.typing.Any")) + ")"
+                for i, argname in enumerate(base_args + ([starred_arg] if starred_arg is not None else []))
+            ) + "])"
+        else:
+            namedtuple_call = '_coconut.collections.namedtuple("' + name + '", "' + attr_str + '")'
+
+        return self.assemble_data(name, namedtuple_call, inherit, extra_stmts, stmts)
+
+    def assemble_data(self, name, namedtuple_call, inherit, extra_stmts, stmts):
+        # create class
         out = (
-            "class " + name + "("
-            + (
-                '_coconut.collections.namedtuple("' + name + '", "' + attr_str + '")' if not types
-                else '_coconut_NamedTuple("' + name + '", [' + ", ".join(
-                    '("' + argname + '", ' + self.wrap_typedef(types.get(i, "_coconut.typing.Any")) + ")"
-                    for i, argname in enumerate(base_args + ([starred_arg] if starred_arg is not None else []))
-                ) + "])"
-            ) + (
+            "class " + name + "(" + namedtuple_call + (
                 ", " + inherit if inherit is not None
                 else ", _coconut.object" if not self.target.startswith("3")
                 else ""
             ) + "):\n" + openindent
         )
+
+        # add universal statements
+        extra_stmts = handle_indentation(
+            '''
+__slots__ = ()
+__ne__ = _coconut.object.__ne__
+def __eq__(self, other):
+    return self.__class__ is other.__class__ and _coconut.tuple.__eq__(self, other)
+def __hash__(self):
+    return _coconut.tuple.__hash__(self) ^ hash(self.__class__)
+            '''.strip(), add_newline=True,
+        ) + extra_stmts
+
+        # manage docstring
         rest = None
         if "simple" in stmts and len(stmts) == 1:
             out += extra_stmts
@@ -1365,6 +1566,8 @@ def __eq__(self, other):
             out += extra_stmts.rstrip() + stmts[0]
         else:
             raise CoconutInternalException("invalid inner data tokens", stmts)
+
+        # create full data definition
         if rest is not None and rest != "pass\n":
             out += rest
         out += closeindent
@@ -1381,6 +1584,12 @@ def __eq__(self, other):
                 return ""
         else:
             raise CoconutInternalException("invalid import tokens", tokens)
+        imports = list(imports)
+        if imp_from == "*" or imp_from is None and "*" in imports:
+            if not (len(imports) == 1 and imports[0] == "*"):
+                raise self.make_err(CoconutSyntaxError, "only [from *] import * allowed, not from * import name", original, loc)
+            logger.warn_err(self.make_err(CoconutSyntaxWarning, "[from *] import * is a Coconut Easter egg and should not be used in production code", original, loc))
+            return special_starred_import_handle(imp_all=bool(imp_from))
         if self.strict:
             self.unused_imports.update(imported_names(imports))
         return universal_import(imports, imp_from=imp_from, target=self.target)
@@ -1407,18 +1616,29 @@ def __eq__(self, other):
             key, val, comp = tokens
             return "dict(((" + key + "), (" + val + ")) " + comp + ")"
 
-    def pattern_error(self, original, loc, value_var, check_var):
+    def pattern_error(self, original, loc, value_var, check_var, match_error_class='_coconut_MatchError'):
         """Construct a pattern-matching error message."""
         base_line = clean(self.reformat(getline(loc, original)))
         line_wrap = self.wrap_str_of(base_line)
         repr_wrap = self.wrap_str_of(ascii(base_line))
-        return (
-            "if not " + check_var + ":\n" + openindent
-            + match_err_var + ' = _coconut_MatchError("pattern-matching failed for " '
-            + repr_wrap + ' " in " + _coconut.repr(_coconut.repr(' + value_var + ")))\n"
-            + match_err_var + ".pattern = " + line_wrap + "\n"
-            + match_err_var + ".value = " + value_var
-            + "\nraise " + match_err_var + "\n" + closeindent
+        return handle_indentation(
+            """
+if not {check_var}:
+    {match_val_repr_var} = _coconut.repr({value_var})
+    {match_err_var} = {match_error_class}("pattern-matching failed for " {repr_wrap} " in " + ({match_val_repr_var} if _coconut.len({match_val_repr_var}) <= {max_match_val_repr_len} else {match_val_repr_var}[:{max_match_val_repr_len}] + "..."))
+    {match_err_var}.pattern = {line_wrap}
+    {match_err_var}.value = {value_var}
+    raise {match_err_var}
+            """.strip(), add_newline=True,
+        ).format(
+            check_var=check_var,
+            match_val_repr_var=match_val_repr_var,
+            value_var=value_var,
+            match_err_var=match_err_var,
+            match_error_class=match_error_class,
+            repr_wrap=repr_wrap,
+            max_match_val_repr_len=max_match_val_repr_len,
+            line_wrap=line_wrap,
         )
 
     def destructuring_stmt_handle(self, original, loc, tokens):
@@ -1438,10 +1658,11 @@ def __eq__(self, other):
             func, matches, cond = tokens
         else:
             raise CoconutInternalException("invalid match function definition tokens", tokens)
+
         matcher = Matcher(loc, match_check_var)
 
-        req_args, def_args, star_arg, kwd_args, dubstar_arg = split_args_list(matches, loc)
-        matcher.match_function(match_to_args_var, match_to_kwargs_var, req_args + def_args, star_arg, kwd_args, dubstar_arg)
+        pos_only_args, req_args, def_args, star_arg, kwd_args, dubstar_arg = split_args_list(matches, loc)
+        matcher.match_function(match_to_args_var, match_to_kwargs_var, pos_only_args, req_args + def_args, star_arg, kwd_args, dubstar_arg)
 
         if cond is not None:
             matcher.add_guard(cond)
@@ -1455,7 +1676,8 @@ def __eq__(self, other):
             match_check_var + " = False\n"
             + matcher.out()
             # we only include match_to_args_var here because match_to_kwargs_var is modified during matching
-            + self.pattern_error(original, loc, match_to_args_var, match_check_var) + closeindent
+            + self.pattern_error(original, loc, match_to_args_var, match_check_var, function_match_error_var)
+            + closeindent
         )
         return before_docstring, after_docstring
 
@@ -1540,9 +1762,9 @@ def __eq__(self, other):
                 "def " + name + params + ":\n" + body,
             )
         else:
-            params.insert(0, name)  # construct match tokens
+            match_tokens = [name] + list(params)
             self.stmt_lambdas.append(
-                "".join(self.name_match_funcdef_handle(original, loc, params))
+                "".join(self.name_match_funcdef_handle(original, loc, match_tokens))
                 + body,
             )
         return name
@@ -1692,18 +1914,39 @@ def __eq__(self, other):
         else:
             raise CoconutInternalException("invalid function definition tokens", tokens)
 
-        # extract information about the function
+        # process tokens
         raw_lines = funcdef.splitlines(True)
         def_stmt = raw_lines.pop(0)
+
+        # detect addpattern functions
+        if def_stmt.startswith("addpattern def"):
+            def_stmt = def_stmt[len("addpattern "):]
+            addpattern = True
+        elif def_stmt.startswith("def"):
+            addpattern = False
+        else:
+            raise CoconutInternalException("invalid function definition statement", def_stmt)
+
+        # extract information about the function
         func_name, func_args, func_params = None, None, None
         with self.complain_on_err():
-            func_name, func_args, func_params = parse(self.split_func_name_args_params, def_stmt)
+            func_name, func_args, func_params = parse(self.split_func, def_stmt)
 
+        # handle addpattern functions
+        if addpattern:
+            if func_name is None:
+                raise CoconutInternalException("could not find name in addpattern function definition", def_stmt)
+            # binds most tightly, except for TCO
+            decorators += "@_coconut_addpattern(" + func_name + ")\n"
+
+        # handle dotted function definition
         undotted_name = None  # the function __name__ if func_name is a dotted name
         if func_name is not None:
             if "." in func_name:
                 undotted_name = func_name.rsplit(".", 1)[-1]
-                def_stmt = def_stmt.replace(func_name, undotted_name)
+                def_stmt_pre_lparen, def_stmt_post_lparen = def_stmt.split("(", 1)
+                def_stmt_pre_lparen = def_stmt_pre_lparen.replace(func_name, undotted_name)
+                def_stmt = def_stmt_pre_lparen + "(" + def_stmt_post_lparen
 
         # handle async functions
         if is_async:
@@ -1872,6 +2115,87 @@ def __eq__(self, other):
             out += "if not " + check_var + default
         return out
 
+    def f_string_handle(self, original, loc, tokens):
+        """Handle Python 3.6 format strings."""
+        internal_assert(len(tokens) == 1, "invalid format string tokens", tokens)
+        string = tokens[0]
+
+        # strip raw r
+        raw = string.startswith("r")
+        if raw:
+            string = string[1:]
+
+        # strip wrappers
+        internal_assert(string.startswith(strwrapper) and string.endswith(unwrapper))
+        string = string[1:-1]
+
+        # get text
+        old_text, strchar = self.get_ref("str", string)
+
+        # separate expressions
+        string_parts = [""]
+        exprs = []
+        saw_brace = False
+        in_expr = False
+        expr_level = 0
+        for c in old_text:
+            if saw_brace:
+                saw_brace = False
+                if c == "{":
+                    string_parts[-1] += c
+                elif c == "}":
+                    raise self.make_err(CoconutSyntaxError, "empty expression in format string", original, loc)
+                else:
+                    in_expr = True
+                    expr_level = paren_change(c)
+                    exprs.append(c)
+            elif in_expr:
+                if expr_level < 0:
+                    expr_level += paren_change(c)
+                    exprs[-1] += c
+                elif expr_level > 0:
+                    raise self.make_err(CoconutSyntaxError, "imbalanced parentheses in format string expression", original, loc)
+                elif c in "!:}":  # these characters end the expr
+                    in_expr = False
+                    string_parts.append(c)
+                else:
+                    exprs[-1] += c
+            elif c == "{":
+                saw_brace = True
+                string_parts[-1] += c
+            else:
+                string_parts[-1] += c
+
+        # handle dangling detections
+        if saw_brace:
+            raise self.make_err(CoconutSyntaxError, "format string ends with unescaped brace (escape by doubling to '{{')", original, loc)
+        if in_expr:
+            raise self.make_err(CoconutSyntaxError, "imbalanced braces in format string (escape braces by doubling to '{{' and '}}')", original, loc)
+
+        # compile Coconut expressions
+        compiled_exprs = []
+        for co_expr in exprs:
+            py_expr = self.inner_parse_eval(co_expr)
+            if "\n" in py_expr:
+                print(py_expr)
+                raise self.make_err(CoconutSyntaxError, "invalid expression in format string: " + co_expr, original, loc)
+            compiled_exprs.append(py_expr)
+
+        # reconstitute string
+        if self.target_info >= (3, 6):
+            new_text = interleaved_join(string_parts, compiled_exprs)
+
+            return "f" + ("r" if raw else "") + self.wrap_str(new_text, strchar)
+        else:
+            names = [format_var + "_" + str(i) for i in range(len(compiled_exprs))]
+            new_text = interleaved_join(string_parts, names)
+
+            # generate format call
+            return ("r" if raw else "") + self.wrap_str(new_text, strchar) + ".format(" + ", ".join(
+                name + "=(" + expr + ")"
+                for name, expr in zip(names, compiled_exprs)
+            ) + ")"
+
 # end: COMPILER HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------
 # CHECKING HANDLERS:
@@ -1923,15 +2247,19 @@ def __eq__(self, other):
 
     def star_assign_item_check(self, original, loc, tokens):
         """Check for Python 3 starred assignment."""
-        return self.check_py("3", "starred assignment (add 'match' to front to produce universal code)", original, loc, tokens)
+        return self.check_py("3", "starred assignment (use 'match' to produce universal code)", original, loc, tokens)
 
     def star_expr_check(self, original, loc, tokens):
         """Check for Python 3.5 star unpacking."""
-        return self.check_py("35", "star unpacking (add 'match' to front to produce universal code)", original, loc, tokens)
+        return self.check_py("35", "star unpacking (use 'match' to produce universal code)", original, loc, tokens)
 
     def star_sep_check(self, original, loc, tokens):
         """Check for Python 3 keyword-only arguments."""
-        return self.check_py("3", "keyword-only argument separator (add 'match' to front to produce universal code)", original, loc, tokens)
+        return self.check_py("3", "keyword-only argument separator (use 'match' to produce universal code)", original, loc, tokens)
+
+    def slash_sep_check(self, original, loc, tokens):
+        """Check for Python 3.8 positional-only arguments."""
+        return self.check_py("38", "positional-only argument separator (use 'match' to produce universal code)", original, loc, tokens)
 
     def matrix_at_check(self, original, loc, tokens):
         """Check for Python 3.5 matrix multiplication."""
@@ -1945,9 +2273,9 @@ def __eq__(self, other):
         """Check for Python 3.6 async comprehension."""
         return self.check_py("36", "async comprehension", original, loc, tokens)
 
-    def f_string_check(self, original, loc, tokens):
-        """Handle Python 3.6 format strings."""
-        return self.check_py("36", "format string", original, loc, tokens)
+    def namedexpr_check(self, original, loc, tokens):
+        """Check for Python 3.8 assignment expressions."""
+        return self.check_py("38", "assignment expression", original, loc, tokens)
 
 # end: CHECKING HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------
@@ -1961,7 +2289,7 @@ def __eq__(self, other):
     def parse_file(self, inputstring, addhash=True):
         """Parse file code."""
         if addhash:
-            use_hash = self.genhash(False, inputstring)
+            use_hash = self.genhash(inputstring)
         else:
             use_hash = None
         return self.parse(inputstring, self.file_parser, {"nl_at_eof_check": True}, {"header": "file", "use_hash": use_hash})
@@ -1970,13 +2298,14 @@ def __eq__(self, other):
         """Parse exec code."""
         return self.parse(inputstring, self.file_parser, {}, {"header": "file", "initial": "none"})
 
-    def parse_package(self, inputstring, addhash=True):
+    def parse_package(self, inputstring, package_level=0, addhash=True):
         """Parse package code."""
+        internal_assert(package_level >= 0, "invalid package level", package_level)
         if addhash:
-            use_hash = self.genhash(True, inputstring)
+            use_hash = self.genhash(inputstring, package_level)
         else:
             use_hash = None
-        return self.parse(inputstring, self.file_parser, {"nl_at_eof_check": True}, {"header": "package", "use_hash": use_hash})
+        return self.parse(inputstring, self.file_parser, {"nl_at_eof_check": True}, {"header": "package:" + str(package_level), "use_hash": use_hash})
 
     def parse_block(self, inputstring):
         """Parse block code."""
@@ -1988,15 +2317,15 @@ def __eq__(self, other):
 
     def parse_eval(self, inputstring):
         """Parse eval code."""
-        return self.parse(inputstring, self.eval_parser, {"strip": True}, {"header": "none", "initial": "none"})
+        return self.parse(inputstring, self.eval_parser, {"strip": True}, {"header": "none", "initial": "none", "final_endline": False})
 
-    def parse_debug(self, inputstring):
-        """Parse debug code."""
+    def parse_any(self, inputstring):
+        """Parse any code."""
         return self.parse(inputstring, self.file_parser, {"strip": True}, {"header": "none", "initial": "none", "final_endline": False})
 
     def warm_up(self):
         """Warm up the compiler by running something through it."""
-        result = self.parse_debug("")
+        result = self.parse_any("")
         internal_assert(result == "", "compiler warm-up should produce no code; instead got", result)
 
 # end: ENDPOINTS

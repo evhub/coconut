@@ -80,7 +80,7 @@ PARSERS = {
     "block": lambda comp: comp.parse_block,
     "single": lambda comp: comp.parse_single,
     "eval": lambda comp: comp.parse_eval,
-    "debug": lambda comp: comp.parse_debug,
+    "any": lambda comp: comp.parse_any,
 }
 
 
@@ -88,13 +88,23 @@ def parse(code="", mode="sys"):
     """Compile Coconut code."""
     if CLI.comp is None:
         setup()
-    if mode in PARSERS:
-        return PARSERS[mode](CLI.comp)(code)
-    else:
+    if mode not in PARSERS:
         raise CoconutException(
             "invalid parse mode " + ascii(mode),
             extra="valid modes are " + ", ".join(PARSERS),
         )
+    return PARSERS[mode](CLI.comp)(code)
+
+
+def coconut_eval(expression, globals=None, locals=None):
+    """Compile and evaluate Coconut code."""
+    if CLI.comp is None:
+        setup()
+    CLI.check_runner(set_up_path=False)
+    if globals is None:
+        globals = {}
+    CLI.runner.update_vars(globals)
+    return eval(parse(expression, "eval"), globals, locals)
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -117,7 +127,7 @@ class CoconutImporter(object):
         if fullname.startswith("."):
             if path is None:
                 # we can't do a relative import if there's no package path
-                return None
+                return
             fullname = fullname[1:]
             basepaths.insert(0, path)
         fullpath = os.path.join(*fullname.split("."))
@@ -128,12 +138,11 @@ class CoconutImporter(object):
             if os.path.exists(filepath):
                 self.run_compiler(filepath)
                 # Coconut file was found and compiled, now let Python import it
-                return None
+                return
             if os.path.exists(dirpath):
                 self.run_compiler(path)
                 # Coconut package was found and compiled, now let Python import it
-                return None
-        return None
+                return
 
 
 coconut_importer = CoconutImporter()

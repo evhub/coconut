@@ -34,6 +34,7 @@ from coconut.constants import (
     classifiers,
     search_terms,
     script_names,
+    license_name,
 )
 from coconut.requirements import (
     using_modern_setuptools,
@@ -61,10 +62,12 @@ setuptools.setup(
     author_email=author_email,
     install_requires=requirements,
     extras_require=extras,
-    packages=setuptools.find_packages(exclude=[
-        "docs",
-        "tests",
-    ]),
+    packages=setuptools.find_packages(
+        exclude=[
+            "docs",
+            "tests",
+        ],
+    ),
     include_package_data=True,
     zip_safe=False,
     entry_points={
@@ -83,4 +86,5 @@ setuptools.setup(
     },
     classifiers=list(classifiers),
     keywords=list(search_terms),
+    license=license_name,
 )

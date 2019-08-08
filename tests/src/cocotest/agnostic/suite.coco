@@ -41,9 +41,12 @@ def suite_test():
     assert zipsum([1,2,3], [10,20,30]) |> list == [11,22,33]
     assert clean("   ab cd ef   ") == "ab cd ef" == "   ab cd ef   " |> clean
     assert add2 <| 2 <| 3 == 5
-    for qsort in [qsort1, qsort2, qsort3, qsort4, qsort5, qsort6, qsort7]:
+    qsorts = [qsort1, qsort2, qsort3, qsort4, qsort5, qsort6, qsort7, qsort8]
+    for qsort in qsorts:
         to_sort = rand_list(10)
         assert to_sort |> qsort |> tuple == to_sort |> sorted |> tuple, qsort
+    to_sort = rand_list(10)
+    assert parallel_map(tuple <.. (|>)$(to_sort), qsorts) |> list == [to_sort |> sorted |> tuple] * len(qsorts)
     assert repeat(3)$[2] == 3 == repeat_(3)$[2]
     assert sum_(repeat(1)$[:5]) == 5 == sum_(repeat_(1)$[:5])
     assert (sum_(takewhile((x)-> x<5, N()))
@@ -78,6 +81,8 @@ def suite_test():
     assert not vector(1, 2) == (1, 2)
     assert not vector(2, 3) != vector(2, 3)
     assert vector(1, 2) != (1, 2)
+    assert vector(1, 2) + vector(2, 3) == vector(3, 5)
+    assert vector(1, 2) + 1 == vector(2, 3)
     assert triangle(3, 4, 5).is_right()
     assert (.)(triangle(3, 4, 5), "is_right")
     assert (.is_right())(triangle(3, 4, 5))
@@ -241,6 +246,7 @@ def suite_test():
     assert fibs()$[1:4] |> tuple == (1, 2, 3)
     assert fibs() |> takewhile$((i) -> i < 4000000 ) |> filter$((i) -> i % 2 == 0 ) |> sum == 4613732
     assert loop([1,2])$[:4] |> list == [1, 2] * 2
+    assert parallel_map(list .. .$[:2] .. loop, ([1], [2]))$[:2] |> tuple == ([1, 1], [2, 2])
     assert (def -> mod)()(5, 3) == 2
     assert sieve((2, 3, 4, 5)) |> list == [2, 3, 5]
     assert 11 == double_plus_one(5)
@@ -324,6 +330,8 @@ def suite_test():
     assert identity.method(*(1,), **{"a": 2}) == ((1,), {"a": 2})
     assert (.method(*(1,), **{"a": 2}))(identity) == ((1,), {"a": 2})
     assert identity |> .method(*(1,), **{"a": 2}) == ((1,), {"a": 2})
+    assert identity[1] == 1
+    assert identity[1,] == (1,)
     assert container(1) == container(1)
     assert not container(1) != container(1)
     assert container(1) != container(2)
@@ -503,6 +511,64 @@ def suite_test():
     assert join_pairs2([(1, [2]), (1, [3])]).items() |> list == [(1, [3, 2])]
     assert return_in_loop(10)
     assert methtest().meth(5) == 5
+    assert methtest().tail_call_meth(3) == 3
+    def test_match_error_addpattern(x is int): raise MatchError()
+    @addpattern(test_match_error_addpattern)
+    def test_match_error_addpattern(x) = x
+    try:
+        test_match_error_addpattern(0)
+    except MatchError as err:  # must not be caught inside addpattern
+        assert err
+    else:
+        assert False
+
+    assert dict(a=1, b=2) |**> ret_args_kwargs == ((), dict(a=1, b=2)) == (|**>)(dict(a=1, b=2), ret_args_kwargs)
+    x = dict(a=1, b=2)
+    x |**>= ret_args_kwargs
+    assert x == ((), dict(a=1, b=2))
+
+    assert ret_args_kwargs <**| {"a": 1, "b": 2} == ((), {"a": 1, "b": 2}) == (<**|)(ret_args_kwargs, {"a": 1, "b": 2})
+    f = ret_args_kwargs
+    f <**|= {"a": 1, "b": 2}
+    assert f == ((), {"a": 1, "b": 2})
+
+    ret_dict = -> dict(x=2)
+
+    assert (ret_dict ..**> ret_args_kwargs$(1))() == ((1,), dict(x=2)) == ((..**>)(ret_dict, ret_args_kwargs$(1)))()
+    x = ret_dict
+    x ..**>= ret_args_kwargs$(1)
+    assert x() == ((1,), dict(x=2))
+
+    assert (ret_args_kwargs$(1) <**.. ret_dict)() == ((1,), dict(x=2)) == ((<**..)(ret_args_kwargs$(1), ret_dict))()
+    f = ret_args_kwargs$(1)
+    f <**..= ret_dict
+    assert f() == ((1,), dict(x=2))
+
+    assert data1(1) |> fmap$(-> _ + 1) == data1(2)
+    assert data1(1).x == 1
+    assert data2(1) |> fmap$(-> _ + 1) == data2(2)
+    try:
+        data2("a")
+    except MatchError as err:
+        assert err
+    else:
+        assert False
+    assert data3(1, 2, 3).xs == (1, 2, 3)
+    assert data4(x=1, y=2).kws == dict(x=1, y=2)
+    assert data5(1, 2, "3").__doc__ == "docstring"
+    assert data5(1, 2, "3").attr == 1
+    try:
+        data5(1, 2, 3)
+    except MatchError as err:
+        assert err
+    else:
+        assert False
+    assert issubclass(data6, BaseClass)
+    assert namedpt("a", 3, 4).mag() == 5
+    t = descriptor_test()
+    assert t.lam() == t
+    assert t.comp() == (t,)
+    assert t.N()$[:2] |> list == [(t, 0), (t, 1)]
     return True
 
 def tco_test():

@@ -1,14 +1,19 @@
-import sys
-import os
-
 from coconut.__coconut__ import consume as coc_consume  # type: ignore
 
-from coconut.constants import IPY, WINDOWS  # type: ignore
+from coconut.constants import (
+    IPY,
+    PY2,
+    PY34,
+    PY35,
+    WINDOWS,
+    PYPY,
+)  # type: ignore
 from coconut.exceptions import (
     CoconutSyntaxError,
     CoconutStyleError,
     CoconutSyntaxError,
     CoconutTargetError,
+    CoconutParseError,
 )  # type: ignore
 from coconut.convenience import (
     CoconutException,
@@ -16,9 +21,12 @@ from coconut.convenience import (
     version,
     setup,
     parse,
+    coconut_eval,
 )
 
 if IPY and not WINDOWS:
+    if PY35:
+        import asyncio  # type: ignore
     from coconut.icoconut import CoconutKernel  # type: ignore
 else:
     CoconutKernel = None  # type: ignore
@@ -32,7 +40,19 @@ def assert_raises(c, exc):
     else:
         raise AssertionError("%s failed to raise exception %s" % (c, exc))
 
-def main():
+def unwrap_future(maybe_future):
+    """
+    If the passed value looks like a Future, return its result, otherwise return the value unchanged.
+
+    This is needed for the CoconutKernel test to be compatible with ipykernel version 5 and newer,
+    where IPyKernel.do_execute is a coroutine.
+    """
+
+    if hasattr(maybe_future, 'result') and callable(maybe_future.result):
+        return maybe_future.result()
+    return maybe_future
+
+def test_extras():
     if IPY:
         import coconut.highlighter  # type: ignore
     assert consume(range(10), keep_last=1)[0] == 9 == coc_consume(range(10), keep_last=1)[0]
@@ -43,16 +63,17 @@ def main():
     assert version("-v")
     assert_raises(-> version("other"), CoconutException)
     assert_raises(def -> raise CoconutException("derp").syntax_err(), SyntaxError)
-    setup()
+    assert coconut_eval("x -> x + 1")(2) == 3
+    assert coconut_eval("addpattern")
     assert parse("abc") == parse("abc", "sys")
     assert parse("abc", "file")
     assert parse("abc", "package")
     assert parse("abc", "block") == "abc\n" == parse("abc", "single")
-    assert parse("abc", "eval") == "abc\n" == parse(" abc", "eval")
-    assert parse("abc", "debug") == "abc"
-    assert parse("x |> map$(f)", "debug") == "map(f, x)"
+    assert parse("abc", "eval") == "abc" == parse(" abc", "eval")
+    assert parse("abc", "any") == "abc"
+    assert parse("x |> map$(f)", "any") == "map(f, x)"
     assert "_coconut" not in parse("a |> .b |> .m() |> f$(x) |> .[0]", "block")
-    assert parse("abc # derp", "debug") == "abc  # derp"
+    assert parse("abc # derp", "any") == "abc  # derp"
     assert_raises(-> parse(" abc", "file"), CoconutException)
     assert_raises(-> parse("'"), CoconutException)
     assert_raises(-> parse("("), CoconutException)
@@ -65,13 +86,13 @@ def main():
     assert parse("u''")
     assert parse("def f(x):\\\n pass")
     assert parse("abc ")
-    assert parse("abc # derp", "debug") == "abc  # derp"
+    assert parse("abc # derp", "any") == "abc  # derp"
     setup(line_numbers=True)
-    assert parse("abc", "debug") == "abc  # line 1"
+    assert parse("abc", "any") == "abc  # line 1"
     setup(keep_lines=True)
-    assert parse("abc", "debug") == "abc  # abc"
+    assert parse("abc", "any") == "abc  # abc"
     setup(line_numbers=True, keep_lines=True)
-    assert parse("abc", "debug") == "abc  # line 1: abc"
+    assert parse("abc", "any") == "abc  # line 1: abc"
     setup()
     assert "prepattern" in parse("\n", mode="file")
     assert "datamaker" in parse("\n", mode="file")
@@ -90,18 +111,26 @@ def main():
     assert_raises(-> cmd("-f"), SystemExit)
     assert_raises(-> cmd("-pa ."), SystemExit)
     assert_raises(-> cmd("-n . ."), SystemExit)
-    assert_raises(-> parse("f''"), CoconutException)
     assert_raises(-> parse("f$()"), CoconutSyntaxError)
     assert_raises(-> parse("f(*x, y)"), CoconutSyntaxError)
+    assert_raises(-> parse("def f(x) = return x"), CoconutSyntaxError)
+    assert_raises(-> parse("def f(x) =\n return x"), CoconutSyntaxError)
+    assert_raises(-> parse("a := b"), CoconutParseError)
+    assert_raises(-> parse("(a := b)"), CoconutTargetError)
     setup(target="2.7")
-    assert parse("from io import BytesIO", mode="debug") == "from io import BytesIO"
+    assert parse("from io import BytesIO", mode="any") == "from io import BytesIO"
     assert_raises(-> parse("def f(*, x=None) = x"), CoconutTargetError)
     setup(target="3.6")
-    assert parse("f''")
     assert parse("def f(*, x=None) = x")
+    setup(target="3.8")
+    assert parse("(a := b)")
+    assert parse("print(a := 1, b := 2)")
+    assert parse("def f(a, /, b) = a, b")
     if CoconutKernel is not None:
+        if PY35:
+            asyncio.set_event_loop(asyncio.new_event_loop())
         k = CoconutKernel()
-        exec_result = k.do_execute("derp = pow$(?, 2)", False, True, {"two": "(+)(1, 1)"}, True)
+        exec_result = k.do_execute("derp = pow$(?, 2)", False, True, {"two": "(+)(1, 1)"}, True) |> unwrap_future
         assert exec_result["status"] == "ok"
         assert exec_result["user_expressions"]["two"]["data"]["text/plain"] == "2"
         assert k.do_is_complete("if abc:")["status"] == "incomplete"
@@ -116,17 +145,18 @@ def main():
         assert "derp" in complete_result["matches"]
         assert complete_result["cursor_start"] == 0
         assert complete_result["cursor_end"] == 1
-        assert not complete_result["metadata"]
         keyword_complete_result = k.do_complete("ma", 1)
         assert keyword_complete_result["status"] == "ok"
         assert "match" in keyword_complete_result["matches"]
         assert "map" in keyword_complete_result["matches"]
         assert keyword_complete_result["cursor_start"] == 0
         assert keyword_complete_result["cursor_end"] == 1
-        assert not keyword_complete_result["metadata"]
+    if not PYPY and (PY2 or PY34):
+        import numpy as np
+        assert np.all(fmap(-> _ + 1, np.arange(3)) == np.array([1, 2, 3]))
     print("<success>")
 
 if __name__ == "__main__":
     print("Expect Coconut errors below from running extras:")
     print("(but make sure you get a <success> after them)")
-    main()
+    test_extras()

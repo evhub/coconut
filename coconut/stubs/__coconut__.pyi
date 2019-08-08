@@ -65,24 +65,24 @@ def scan(
 
 
 class _coconut:
-    typing = _t  # The real _coconut doesn't import typing, but we want type-checkers to treat it as if it does
-    import collections, copy, functools, types, itertools, operator, types, weakref
-    import pickle
-    Ellipsis, Exception, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr = Ellipsis, Exception, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr
+    import collections, copy, functools, types, itertools, operator, threading
     if sys.version_info >= (3, 4):
         import asyncio
     else:
         import trollius as asyncio  # type: ignore
-    if sys.version_info < (3, 3):
-        abc = collections
-    else:
-        abc = collections.abc
-    if sys.version_info >= (3,):
-        bytearray = bytearray
+    import pickle
     if sys.version_info >= (2, 7):
         OrderedDict = collections.OrderedDict
     else:
         OrderedDict = dict
+    if sys.version_info < (3, 3):
+        abc = collections
+    else:
+        abc = collections.abc
+    typing = _t  # The real _coconut doesn't import typing, but we want type-checkers to treat it as if it does
+    Ellipsis, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, type, zip, repr = Ellipsis, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, type, zip, repr
+    if sys.version_info >= (3,):
+        bytearray = bytearray
 
 
 reduce = _coconut.functools.reduce
@@ -93,7 +93,7 @@ starmap = _coconut.itertools.starmap
 
 
 if sys.version_info >= (3, 2):
-    memoize = _coconut.functools.lru_cache
+    from functools import lru_cache as memoize
 else:
     from backports.functools_lru_cache import lru_cache as memoize  # type: ignore
     _coconut.functools.lru_cache = memoize  # type: ignore
@@ -104,26 +104,50 @@ _coconut_starmap = starmap
 parallel_map = concurrent_map = _coconut_map = map
 
 
-from typing import (
-    NamedTuple as _coconut_NamedTuple,
-    TYPE_CHECKING,
-)
+TYPE_CHECKING = _t.TYPE_CHECKING
+
+
+_coconut_sentinel = object()
 
 
 class MatchError(Exception): ...
 _coconut_MatchError = MatchError
 
 
-def _coconut_tco(func: _FUNC) -> _FUNC: ...
+def _coconut_get_function_match_error() -> _t.Type[MatchError]: ...
+
+
+def _coconut_tco(func: _FUNC) -> _FUNC:
+    return func
 def _coconut_tail_call(func, *args, **kwargs):
     return func(*args, **kwargs)
 
 
-def recursive_iterator(func: _ITER_FUNC) -> _ITER_FUNC: ...
+def recursive_iterator(func: _ITER_FUNC) -> _ITER_FUNC:
+    return func
 
+
+class _coconut_base_pattern_func:
+    def __init__(self, *funcs: _t.Callable): ...
+    def add(self, func: _t.Callable) -> None: ...
+    def __call__(self, *args, **kwargs) -> _t.Any: ...
 
 def addpattern(func: _FUNC) -> _t.Callable[[_FUNC2], _t.Union[_FUNC, _FUNC2]]: ...
-prepattern = addpattern
+_coconut_addpattern = prepattern = addpattern
+
+
+class _coconut_partial:
+    args: _t.Tuple = ...
+    keywords: _t.Dict[_t.Text, _t.Any] = ...
+    def __init__(
+        self,
+        func: _t.Callable[..., _T],
+        argdict: _t.Dict[int, _t.Any],
+        arglen: int,
+        *args,
+        **kwargs,
+        ) -> None: ...
+    def __call__(self, *args, **kwargs) -> _T: ...
 
 
 @_t.overload
@@ -140,7 +164,7 @@ def _coconut_igetitem(
 
 def _coconut_base_compose(
     func: _t.Callable[[_T], _t.Any],
-    *funcstars: _t.Tuple[_t.Callable, bool],
+    *funcstars: _t.Tuple[_t.Callable, int],
     ) -> _t.Callable[[_T], _t.Any]: ...
 
 
@@ -164,7 +188,9 @@ def _coconut_forward_compose(
     ) -> _t.Callable[..., _W]: ...
 @_t.overload
 def _coconut_forward_compose(*funcs: _t.Callable) -> _t.Callable: ...
+
 _coconut_forward_star_compose = _coconut_forward_compose
+_coconut_forward_dubstar_compose = _coconut_forward_compose
 
 
 @_t.overload
@@ -187,7 +213,9 @@ def _coconut_back_compose(
     ) -> _t.Callable[..., _W]: ...
 @_t.overload
 def _coconut_back_compose(*funcs: _t.Callable) -> _t.Callable: ...
+
 _coconut_back_star_compose = _coconut_back_compose
+_coconut_back_dubstar_compose = _coconut_back_compose
 
 
 def _coconut_pipe(x: _T, f: _t.Callable[[_T], _U]) -> _U: ...
@@ -196,6 +224,14 @@ def _coconut_back_pipe(f: _t.Callable[[_T], _U], x: _T) -> _U: ...
 
 def _coconut_star_pipe(xs: _t.Iterable, f: _t.Callable[..., _T]) -> _T: ...
 def _coconut_back_star_pipe(f: _t.Callable[..., _T], xs: _t.Iterable) -> _T: ...
+
+
+def _coconut_dubstar_pipe(kws: _t.Dict[_t.Text, _t.Any], f: _t.Callable[..., _T]) -> _T: ...
+def _coconut_back_dubstar_pipe(f: _t.Callable[..., _T], kws: _t.Dict[_t.Text, _t.Any]) -> _T: ...
+
+
+def _coconut_assert(cond, msg: _t.Optional[_t.Text]=None):
+    assert cond, msg
 
 
 def _coconut_bool_and(a, b):
@@ -241,20 +277,6 @@ def consume(
     iterable: _t.Iterable[_T],
     keep_last: _t.Optional[int] = ...,
     ) -> _t.Iterable[_T]: ...
-
-
-class _coconut_partial:
-    args: _t.Tuple = ...
-    keywords: _t.Dict[_t.Text, _t.Any] = ...
-    def __init__(
-        self,
-        func: _t.Callable[..., _T],
-        argdict: _t.Dict[int, _t.Any],
-        arglen: int,
-        *args,
-        **kwargs,
-        ) -> None: ...
-    def __call__(self, *args, **kwargs) -> _T: ...
 
 
 def fmap(func: _t.Callable, obj: _t.Iterable) -> _t.Iterable: ...

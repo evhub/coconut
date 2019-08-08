@@ -27,13 +27,16 @@ from functools import partial
 from contextlib import contextmanager
 from subprocess import CalledProcessError
 
-from coconut.myparsing import PYPARSING
+from coconut._pyparsing import PYPARSING_INFO
 from coconut.compiler import Compiler
 from coconut.exceptions import (
     CoconutException,
     CoconutInternalException,
 )
-from coconut.terminal import logger, printerr
+from coconut.terminal import (
+    logger,
+    printerr,
+)
 from coconut.constants import (
     fixpath,
     code_exts,
@@ -108,17 +111,18 @@ class Command(object):
                 args = list(coconut_run_verbose_args) + args
             else:
                 args = list(coconut_run_args) + args
-            args += ["--argv"] + argv
+            self.cmd(args, argv=argv)
         else:
-            args = None
-        self.cmd(args)
+            self.cmd()
 
-    def cmd(self, args=None, interact=True):
+    def cmd(self, args=None, argv=None, interact=True):
         """Process command-line arguments."""
         if args is None:
             parsed_args = arguments.parse_args()
         else:
             parsed_args = arguments.parse_args(args)
+        if argv is not None:
+            parsed_args.argv = argv
         self.exit_code = 0
         with self.handling_exceptions():
             self.use_args(parsed_args, interact, original_args=args)
@@ -147,7 +151,7 @@ class Command(object):
         if DEVELOP:
             logger.tracing = args.trace
 
-        logger.log("Using " + PYPARSING + ".")
+        logger.log("Using " + PYPARSING_INFO + ".")
         if original_args is not None:
             logger.log("Directly passed args:", original_args)
         logger.log("Parsed args:", args)
@@ -213,15 +217,23 @@ class Command(object):
             else:
                 dest = args.dest
 
+            source = fixpath(args.source)
+
             if args.package or self.mypy:
                 package = True
             elif args.standalone:
                 package = False
             else:
-                package = None  # auto-decide package
+                # auto-decide package
+                if os.path.isfile(source):
+                    package = False
+                elif os.path.isdir(source):
+                    package = True
+                else:
+                    raise CoconutException("could not find source path", source)
 
             with self.running_jobs(exit_on_error=not args.watch):
-                filepaths = self.compile_path(args.source, dest, package, args.run or args.interact, args.force)
+                filepaths = self.compile_path(source, dest, package, args.run or args.interact, args.force)
             self.run_mypy(filepaths)
 
         elif (
@@ -243,7 +255,8 @@ class Command(object):
             logger.log("Reading piped input from stdin...")
             self.execute(self.comp.parse_block(sys.stdin.read()))
             got_stdin = True
-        if args.interact or (interact and not (
+        if args.interact or (
+            interact and not (
                 got_stdin
                 or args.source
                 or args.code
@@ -251,10 +264,11 @@ class Command(object):
                 or args.documentation
                 or args.watch
                 or args.jupyter is not None
-        )):
+            )
+        ):
             self.start_prompt()
         if args.watch:
-            self.watch(args.source, dest, package, args.run, args.force)
+            self.watch(source, dest, package, args.run, args.force)
 
     def register_error(self, code=1, errmsg=None):
         """Update the exit code."""
@@ -264,7 +278,7 @@ class Command(object):
             elif errmsg not in self.errmsg:
                 self.errmsg += ", " + errmsg
         if code is not None:
-            self.exit_code = max(self.exit_code, code)
+            self.exit_code = code or self.exit_code
 
     @contextmanager
     def handling_exceptions(self):
@@ -285,19 +299,14 @@ class Command(object):
                 printerr(report_this_text)
             self.register_error(errmsg=err.__class__.__name__)
 
-    def compile_path(self, path, write=True, package=None, *args, **kwargs):
+    def compile_path(self, path, write=True, package=True, *args, **kwargs):
         """Compile a path and returns paths to compiled files."""
-        path = fixpath(path)
         if not isinstance(write, bool):
             write = fixpath(write)
         if os.path.isfile(path):
-            if package is None:
-                package = False
             destpath = self.compile_file(path, write, package, *args, **kwargs)
             return [destpath] if destpath is not None else []
         elif os.path.isdir(path):
-            if package is None:
-                package = True
             return self.compile_folder(path, write, package, *args, **kwargs)
         else:
             raise CoconutException("could not find source path", path)
@@ -355,14 +364,18 @@ class Command(object):
         with openfile(codepath, "r") as opened:
             code = readfile(opened)
 
+        package_level = -1
         if destpath is not None:
+            destpath = fixpath(destpath)
             destdir = os.path.dirname(destpath)
             if not os.path.exists(destdir):
                 os.makedirs(destdir)
             if package is True:
-                self.create_package(destdir)
+                package_level = self.get_package_level(codepath)
+                if package_level == 0:
+                    self.create_package(destdir)
 
-        foundhash = None if force else self.has_hash_of(destpath, code, package)
+        foundhash = None if force else self.has_hash_of(destpath, code, package_level)
         if foundhash:
             if show_unchanged:
                 logger.show_tabulated("Left unchanged", showpath(destpath), "(pass --force to override).")
@@ -373,13 +386,6 @@ class Command(object):
 
         else:
             logger.show_tabulated("Compiling", showpath(codepath), "...")
-
-            if package is True:
-                compile_method = "parse_package"
-            elif package is False:
-                compile_method = "parse_file"
-            else:
-                raise CoconutInternalException("invalid value for package", package)
 
             def callback(compiled):
                 if destpath is None:
@@ -396,7 +402,40 @@ class Command(object):
                     else:
                         self.execute_file(destpath)
 
-            self.submit_comp_job(codepath, callback, compile_method, code)
+            if package is True:
+                self.submit_comp_job(codepath, callback, "parse_package", code, package_level=package_level)
+            elif package is False:
+                self.submit_comp_job(codepath, callback, "parse_file", code)
+            else:
+                raise CoconutInternalException("invalid value for package", package)
+
+    def get_package_level(self, codepath):
+        """Get the relative level to the base directory of the package."""
+        package_level = -1
+        check_dir = os.path.dirname(os.path.abspath(codepath))
+        while check_dir:
+            has_init = False
+            for ext in code_exts:
+                init_file = os.path.join(check_dir, "__init__" + ext)
+                if os.path.exists(init_file):
+                    has_init = True
+                    break
+            if has_init:
+                package_level += 1
+                check_dir = os.path.dirname(check_dir)
+            else:
+                break
+        if package_level < 0:
+            logger.warn("missing __init__" + code_exts[0] + " in package", check_dir)
+            package_level = 0
+        return package_level
+        return 0
+
+    def create_package(self, dirpath):
+        """Set up a package directory."""
+        filepath = os.path.join(dirpath, "__coconut__.py")
+        with openfile(filepath, "w") as opened:
+            writefile(opened, self.comp.getheader("__coconut__"))
 
     def submit_comp_job(self, path, callback, method, *args, **kwargs):
         """Submits a job on self.comp to be run in parallel."""
@@ -450,22 +489,15 @@ class Command(object):
         if exit_on_error:
             self.exit_on_error()
 
-    def create_package(self, dirpath):
-        """Set up a package directory."""
-        dirpath = fixpath(dirpath)
-        filepath = os.path.join(dirpath, "__coconut__.py")
-        with openfile(filepath, "w") as opened:
-            writefile(opened, self.comp.getheader("__coconut__"))
-
-    def has_hash_of(self, destpath, code, package):
+    def has_hash_of(self, destpath, code, package_level):
         """Determine if a file has the hash of the code."""
         if destpath is not None and os.path.isfile(destpath):
             with openfile(destpath, "r") as opened:
                 compiled = readfile(opened)
             hashash = gethash(compiled)
-            if hashash is not None and hashash == self.comp.genhash(package, code):
-                return compiled
-        return None
+            if hashash is not None and hashash == self.comp.genhash(code, package_level):
+                return True
+        return False
 
     def get_input(self, more=False):
         """Prompt for code input."""
@@ -540,7 +572,7 @@ class Command(object):
                 print(compiled)
             if path is not None:  # path means header is included, and thus encoding must be removed
                 compiled = rem_encoding(compiled)
-            self.runner.run(compiled, use_eval=use_eval, path=path, all_errors_exit=(path is not None))
+            self.runner.run(compiled, use_eval=use_eval, path=path, all_errors_exit=path is not None)
             self.run_mypy(code=self.runner.was_run_code())
 
     def execute_file(self, destpath):
@@ -548,9 +580,9 @@ class Command(object):
         self.check_runner()
         self.runner.run_file(destpath)
 
-    def check_runner(self):
+    def check_runner(self, set_up_path=True):
         """Make sure there is a runner."""
-        if os.getcwd() not in sys.path:
+        if set_up_path and os.getcwd() not in sys.path:
             sys.path.append(os.getcwd())
         if self.runner is None:
             self.runner = Runner(self.comp, exit=self.exit_runner, store=self.mypy)
@@ -590,10 +622,11 @@ class Command(object):
             if code is not None:
                 args += ["-c", code]
             for line, is_err in mypy_run(args):
-                if code is None or line not in self.mypy_errs:
-                    printerr(line)
                 if line not in self.mypy_errs:
+                    printerr(line)
                     self.mypy_errs.append(line)
+                elif code is None:
+                    printerr(line)
                 self.register_error(errmsg="MyPy error")
 
     def start_jupyter(self, args):
@@ -644,7 +677,7 @@ class Command(object):
                 run_args = [jupyter] + args
             self.register_error(run_cmd(run_args, raise_errs=False), errmsg="Jupyter error")
 
-    def watch(self, source, write=True, package=None, run=False, force=False):
+    def watch(self, source, write=True, package=True, run=False, force=False):
         """Watch a source and recompiles on change."""
         from coconut.command.watch import Observer, RecompilationWatcher
 

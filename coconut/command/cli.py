@@ -185,7 +185,7 @@ arguments.add_argument(
 )
 
 arguments.add_argument(
-    "--argv",
+    "--argv", "--args",
     type=str,
     nargs=argparse.REMAINDER,
     help="set sys.argv to source plus remaining args for use in Coconut script being run",

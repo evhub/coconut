@@ -43,7 +43,7 @@ Installing Coconut, including all the features above, is drop-dead simple. Just
 pip install coconut
 ```
 
-_Note: Try re-running the above command with the `--user` option if you are encountering errors. Be sure that Coconut's installation location (on UNIX `/usr/local/bin` if you didn't use `--user` or `${HOME}/.local/bin/` if you did) is in your `PATH` environment variable. If you are still encountering errors installing Coconut with `pip`, you can also install Coconut with `conda` by following the [conda installation instructions in the documentation](DOCS.html#using-conda)._
+_Note: If you are having trouble installing Coconut, try following the debugging steps in the [installation section of Coconut's documentation](DOCS.html#installation)._
 
 To check that your installation is functioning properly, try entering into the command line
 ```
@@ -352,12 +352,11 @@ def factorial(n):
         raise TypeError("the argument to factorial must be an integer >= 0")
 ```
 
-By making use of the [Coconut built-in `addpattern`](DOCS.html#addpattern), we can take that from three indentation levels down to one. Take a look:
+By making use of the [Coconut `addpattern` syntax](DOCS.html#addpattern), we can take that from three indentation levels down to one. Take a look:
 ```
 def factorial(0) = 1
 
-@addpattern(factorial)
-def factorial(n is int if n > 0) =
+addpattern def factorial(n is int if n > 0) =
     """Compute n! where n is an integer >= 0."""
     range(1, n+1) |> reduce$(*)
 
@@ -373,14 +372,13 @@ First, assignment function notation. This one's pretty straightforward. If a fun
 
 Second, pattern-matching function definition. Pattern-matching function definition does exactly that—pattern-matches against all the arguments that are passed to the function. Unlike normal function definition, however, if the pattern doesn't match (if for example the wrong number of arguments are passed), your function will raise a `MatchError`. Finally, like destructuring assignment, if you want to be more explicit about using pattern-matching function definition, you can add a `match` before the `def`.
 
-Third, `addpattern`. `addpattern` takes one argument, a previously-defined pattern-matching function, and returns a decorator that decorates a new pattern-matching function by adding the new pattern as an additional case to the old patterns. Thus, `addpattern` can be thought of as doing exactly what it says—it adds a new pattern to an existing pattern-matching function.
+Third, `addpattern`. `addpattern` creates a new pattern-matching function by adding the new pattern as an additional case to the old pattern-matching function it is replacing. Thus, `addpattern` can be thought of as doing exactly what it says—it adds a new pattern to an existing pattern-matching function.
 
 Finally, not only can we rewrite the iterative approach using `addpattern`, as we did above, we can also rewrite the recursive approach using `addpattern`, like so:
 ```coconut
 def factorial(0) = 1
 
-@addpattern(factorial)
-def factorial(n is int if n > 0) =
+addpattern def factorial(n is int if n > 0) =
     """Compute n! where n is an integer >= 0."""
     n * factorial(n - 1)
 
@@ -402,8 +400,7 @@ First up is `quick_sort` for lists. We're going to use a recursive `addpattern`-
 ```coconut
 def quick_sort([]) = []
 
-@addpattern(quick_sort)
-def quick_sort([head] + tail) =
+addpattern def quick_sort([head] + tail) =
     """Sort the input sequence using the quick sort algorithm."""
     quick_sort(left) + [head] + quick_sort(right) where:
         left = [x for x in tail if x < head]
@@ -544,7 +541,7 @@ Copy, paste! The big new thing here is how to write `data` constructors. Since `
 
 In this case, the constructor checks whether nothing but another `vector` was passed, in which case it returns that, otherwise it returns the result of passing the arguments to the underlying constructor, the form of which is `vector(*pts)`, since that is how we declared the data type. We use sequence pattern-matching to determine whether we were passed a single vector, which is just a list or tuple of patterns to match against the contents of the sequence.
 
-The other new construct used here is the `|*>`, or star-pipe, operator, which functions exactly like the normal pipe, except that instead of calling the function with one argument, it calls it with as many arguments as there are elements in the sequence passed into it. The difference between `|*>` and `|>` is exactly analogous to the difference between `f(args)` and `f(*args)`.
+The other new construct used here is the `|*>`, or star-pipe, operator, which functions exactly like the normal pipe, except that instead of calling the function with one argument, it calls it with as many arguments as there are elements in the sequence passed into it. The difference between `|>` and `|*>` is exactly analogous to the difference between `f(args)` and `f(*args)`.
 
 ### n-Vector Methods
 
