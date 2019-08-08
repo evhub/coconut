@@ -149,11 +149,9 @@
 
 <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="n">Empty</span><span class="p">())</span> <span class="o">=</span> <span class="mi">0</span>
 
-<span class="o">@</span><span class="nb">addpattern</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="n">Leaf</span><span class="p">(</span><span class="n">n</span><span class="p">))</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="k">addpattern</span> <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="n">Leaf</span><span class="p">(</span><span class="n">n</span><span class="p">))</span> <span class="o">=</span> <span class="mi">1</span>
 
-<span class="o">@</span><span class="nb">addpattern</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="n">Node</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">))</span> <span class="o">=</span> <span class="n">size</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">+</span> <span class="n">size</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+<span class="k">addpattern</span> <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="n">Node</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">))</span> <span class="o">=</span> <span class="n">size</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">+</span> <span class="n">size</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
 </pre></div>
 </div>
 </ul>
