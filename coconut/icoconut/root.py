@@ -98,6 +98,16 @@ def memoized_parse_block(code):
         raise result
 
 
+def syntaxerr_memoized_parse_block(code):
+    """Version of memoized_parse_block that raises SyntaxError without any __cause__."""
+    to_raise = None
+    try:
+        return memoized_parse_block(code)
+    except CoconutException as err:
+        to_raise = err.syntax_err()
+    raise to_raise
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # KERNEL:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -117,19 +127,15 @@ if LOAD_MODULE:
 
         def ast_parse(self, source, *args, **kwargs):
             """Version of ast_parse that compiles Coconut code first."""
-            try:
-                compiled = memoized_parse_block(source)
-            except CoconutException as err:
-                raise err.syntax_err()
-            else:
-                return super(CoconutCompiler, self).ast_parse(compiled, *args, **kwargs)
+            compiled = syntaxerr_memoized_parse_block(source)
+            return super(CoconutCompiler, self).ast_parse(compiled, *args, **kwargs)
 
         def cache(self, code, *args, **kwargs):
             """Version of cache that compiles Coconut code first."""
             try:
                 compiled = memoized_parse_block(code)
             except CoconutException:
-                traceback.print_exc()
+                logger.display_exc()
                 return None
             else:
                 return super(CoconutCompiler, self).cache(compiled, *args, **kwargs)
@@ -137,10 +143,7 @@ if LOAD_MODULE:
         def __call__(self, source, *args, **kwargs):
             """Version of __call__ that compiles Coconut code first."""
             if isinstance(source, (str, bytes)):
-                try:
-                    compiled = memoized_parse_block(source)
-                except CoconutException as err:
-                    raise err.syntax_err()
+                compiled = syntaxerr_memoized_parse_block(source)
             else:
                 compiled = source
             return super(CoconutCompiler, self).__call__(compiled, *args, **kwargs)
