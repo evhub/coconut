@@ -151,7 +151,7 @@ all_reqs = {
         "watchdog",
     ),
     "asyncio": (
-        "trollius",
+        ("trollius", "py2"),
     ),
     "dev": (
         "pre-commit",
@@ -185,7 +185,7 @@ min_versions = {
     "argparse": (1, 4),
     "pexpect": (4,),
     "watchdog": (0, 9),
-    "trollius": (2, 2),
+    ("trollius", "py2"): (2, 2),
     "requests": (2,),
     ("numpy", "py34"): (1,),
     ("numpy", "py2"): (1,),
