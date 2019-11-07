@@ -328,7 +328,7 @@ In order of precedence, highest first, the operators supported in Coconut are:
 ===================== ==========================
 Symbol(s)             Associativity
 ===================== ==========================
-..                    n/a (won't capture call)
+..                    n/a
 **                    right
 +, -, ~               unary
 *, /, //, %, @        left
