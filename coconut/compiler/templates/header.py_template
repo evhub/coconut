@@ -1,5 +1,5 @@
 class _coconut{object}:{comment.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
-    import collections, copy, functools, types, itertools, operator, threading, weakref, os, warnings
+    import collections, copy, functools, types, itertools, operator, threading, weakref, os
 {bind_lru_cache}{import_asyncio}{import_pickle}
 {import_OrderedDict}
 {import_collections_abc}
@@ -482,9 +482,7 @@ class _coconut_base_pattern_func{object}:
 def addpattern(base_func):
     """Decorator to add a new case to a pattern-matching function,
     where the new case is checked last."""
-    if not _coconut.isinstance(base_func, _coconut_base_pattern_func):
-        _coconut.warnings.warn("Possible misuse of addpattern with non-pattern-matching function {{name}}".format(name=_coconut.getattr(base_func, "__name__", _coconut.repr(base_func)), stacklevel=2))
-    return _coconut.functools.partial(_coconut_base_pattern_func, base_func)
+    {addpattern_warning}return _coconut.functools.partial(_coconut_base_pattern_func, base_func)
 _coconut_addpattern = addpattern
 {def_prepattern}class _coconut_partial{object}:
     __slots__ = ("func", "_argdict", "_arglen", "_stargs", "keywords")

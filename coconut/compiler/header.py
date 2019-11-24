@@ -175,7 +175,7 @@ else:
         with ThreadPoolExecutor(cpu_count() * 5)''' if target_info < (3, 5)
             else '''with ThreadPoolExecutor()'''
         ),
-        def_tco_func="""def _coconut_tco_func(self, *args, **kwargs):
+        def_tco_func=r'''def _coconut_tco_func(self, *args, **kwargs):
         for func in self.patterns[:-1]:
             try:
                 with _coconut_FunctionMatchErrorContext(self.FunctionMatchError):
@@ -183,7 +183,7 @@ else:
             except self.FunctionMatchError:
                 pass
         return _coconut_tail_call(self.patterns[-1], *args, **kwargs)
-    """,
+    ''',
         def_prepattern=(
             r'''def prepattern(base_func):
     """DEPRECATED: Use addpattern instead."""
@@ -199,6 +199,12 @@ else:
 ''' if not strict else ""
         ),
         comma_tco=", _coconut_tail_call, _coconut_tco" if not no_tco else "",
+        addpattern_warning=(
+            r'''if not _coconut.isinstance(base_func, _coconut_base_pattern_func):
+        import warnings
+        warnings.warn("Possible misuse of addpattern with non-pattern-matching function {name}".format(name=_coconut.getattr(base_func, "__name__", _coconut.repr(base_func)), stacklevel=2))
+    ''' if strict else ""
+        ),
     )
 
     format_dict["underscore_imports"] = "_coconut, _coconut_MatchError{comma_tco}, _coconut_igetitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_back_pipe, _coconut_star_pipe, _coconut_back_star_pipe, _coconut_dubstar_pipe, _coconut_back_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert".format(**format_dict)

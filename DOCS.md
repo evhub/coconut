@@ -237,7 +237,8 @@ _Note: Periods are ignored in target specifications, such that the target `27` i
 If the `--strict` (`-s` for short) flag is enabled, Coconut will perform additional checks on the code being compiled. It is recommended that you use the `--strict` flag if you are starting a new Coconut project, as it will help you write cleaner code. Specifically, the extra checks done by `--strict` are
 
 - disabling deprecated features (making them entirely unavailable to code compiled with `--strict`),
-- warning about unused imports, and
+- warning about unused imports,
+- adding runtime warnings about using [`addpattern`](#addpattern) with a non-pattern-matching function, and
 - throwing errors on various style problems (see list below).
 
 The style issues which will cause `--strict` to throw an error are:
