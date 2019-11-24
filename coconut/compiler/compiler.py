@@ -477,7 +477,7 @@ class Compiler(Grammar):
 
     def get_temp_var(self, base_name):
         """Get a unique temporary variable name."""
-        var_name = reserved_prefix + "_" + base_name + str(self.temp_var_counts[base_name])
+        var_name = reserved_prefix + "_" + base_name + "_" + str(self.temp_var_counts[base_name])
         self.temp_var_counts[base_name] += 1
         return var_name
 
