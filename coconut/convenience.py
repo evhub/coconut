@@ -88,13 +88,23 @@ def parse(code="", mode="sys"):
     """Compile Coconut code."""
     if CLI.comp is None:
         setup()
-    if mode in PARSERS:
-        return PARSERS[mode](CLI.comp)(code)
-    else:
+    if mode not in PARSERS:
         raise CoconutException(
             "invalid parse mode " + ascii(mode),
             extra="valid modes are " + ", ".join(PARSERS),
         )
+    return PARSERS[mode](CLI.comp)(code)
+
+
+def coconut_eval(expression, globals=None, locals=None):
+    """Compile and evaluate Coconut code."""
+    if CLI.comp is None:
+        setup()
+    CLI.check_runner(set_up_path=False)
+    if globals is None:
+        globals = {}
+    CLI.runner.update_vars(globals)
+    return eval(parse(expression, "eval"), globals, locals)
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -133,7 +143,6 @@ class CoconutImporter(object):
                 self.run_compiler(path)
                 # Coconut package was found and compiled, now let Python import it
                 return
-        return
 
 
 coconut_importer = CoconutImporter()

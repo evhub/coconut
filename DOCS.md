@@ -33,10 +33,14 @@ which will install Coconut and its required dependencies.
 _Note: If you have an old version of Coconut installed and you want to upgrade, run `pip install --upgrade coconut` instead._
 
 If you are encountering errors running `pip install coconut`, try instead running
+```bash
+COCONUT_PURE_PYTHON=TRUE pip install --user --upgrade coconut
 ```
-pip install --user --no-deps --upgrade coconut pyparsing
+in `bash` (UNIX) or
+```bash
+cmd /c "set COCONUT_PURE_PYTHON=TRUE&& pip install --user --upgrade coconut"
 ```
-which will force Coconut to use the pure-Python [`pyparsing`](https://github.com/pyparsing/pyparsing) module instead of the faster [`cPyparsing`](https://github.com/evhub/cpyparsing) module. If you are still getting errors, you may want to try [using conda](#using-conda) instead.
+in `cmd` (Windows) which will force Coconut to use the pure-Python [`pyparsing`](https://github.com/pyparsing/pyparsing) module instead of the faster [`cPyparsing`](https://github.com/evhub/cpyparsing) module. If you are still getting errors, you may want to try [using conda](#using-conda) instead.
 
 If `pip install coconut` works, but you cannot access the `coconut` command, be sure that Coconut's installation location is in your `PATH` environment variable. On UNIX, that is `/usr/local/bin` (without `--user`) or `${HOME}/.local/bin/` (with `--user`).
 
@@ -206,8 +210,9 @@ Finally, while Coconut will try to compile Python-3-specific syntax to its unive
 - destructuring assignment with `*`s (use pattern-matching instead),
 - tuples and lists with `*` unpacking or dicts with `**` unpacking (requires `--target 3.5`),
 - `@` as matrix multiplication (requires `--target 3.5`),
-- `async` and `await` statements (requires `--target 3.5`), and
-- `:=` assignment expressions (requires `--target 3.8`).
+- `async` and `await` statements (requires `--target 3.5`),
+- `:=` assignment expressions (requires `--target 3.8`), and
+- positional-only function arguments (use pattern-matching function definition instead) (requires `--target 3.8`).
 
 ### Allowable Targets
 
@@ -323,7 +328,7 @@ In order of precedence, highest first, the operators supported in Coconut are:
 ===================== ==========================
 Symbol(s)             Associativity
 ===================== ==========================
-..                    n/a (won't capture call)
+..                    n/a
 **                    right
 +, -, ~               unary
 *, /, //, %, @        left
@@ -2459,6 +2464,12 @@ while True:
 **coconut.convenience.cmd**(_args_, **[**_interact_**]**)
 
 Executes the given _args_ as if they were fed to `coconut` on the command-line, with the exception that unless _interact_ is true or `-i` is passed, the interpreter will not be started. Additionally, since `parse` and `cmd` share the same convenience parsing object, any changes made to the parsing with `cmd` will work just as if they were made with `setup`.
+
+#### `coconut_eval`
+
+**coconut.convenience.coconut_eval**(_expression_, _globals_=`None`, _locals_=`None`)
+
+Version of [`eval`](https://docs.python.org/3/library/functions.html#eval) which can evaluate Coconut code. Uses the same convenience parsing object as the other functions and thus can be controlled by `setup`.
 
 #### `version`
 

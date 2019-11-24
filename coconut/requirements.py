@@ -30,6 +30,7 @@ from coconut.constants import (
     PY34,
     IPY,
     WINDOWS,
+    PURE_PYTHON,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -75,6 +76,11 @@ def get_reqs(which):
                 if supports_env_markers:
                     req_str += ";python_version>='3'"
                 elif PY2:
+                    continue
+            elif env_marker == "py34":
+                if supports_env_markers:
+                    req_str += ";python_version>='3.4'"
+                elif not PY34:
                     continue
             else:
                 raise ValueError("unknown env marker id " + repr(env_marker))
@@ -139,7 +145,10 @@ extras["dev"] = uniqueify_all(
     get_reqs("dev"),
 )
 
-if supports_env_markers:
+if PURE_PYTHON:
+    # override necessary for readthedocs
+    requirements += get_reqs("purepython")
+elif supports_env_markers:
     # modern method
     extras[":platform_python_implementation=='CPython'"] = get_reqs("cpython")
     extras[":platform_python_implementation!='CPython'"] = get_reqs("purepython")
@@ -175,7 +184,7 @@ else:
 
 def all_versions(req):
     """Get all versions of req from PyPI."""
-    import requests
+    import requests  # expensive
     url = "https://pypi.python.org/pypi/" + get_base_req(req) + "/json"
     return tuple(requests.get(url).json()["releases"].keys())
 

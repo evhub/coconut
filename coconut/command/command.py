@@ -255,7 +255,8 @@ class Command(object):
             logger.log("Reading piped input from stdin...")
             self.execute(self.comp.parse_block(sys.stdin.read()))
             got_stdin = True
-        if args.interact or (interact and not (
+        if args.interact or (
+            interact and not (
                 got_stdin
                 or args.source
                 or args.code
@@ -263,7 +264,8 @@ class Command(object):
                 or args.documentation
                 or args.watch
                 or args.jupyter is not None
-        )):
+            )
+        ):
             self.start_prompt()
         if args.watch:
             self.watch(source, dest, package, args.run, args.force)
@@ -578,9 +580,9 @@ class Command(object):
         self.check_runner()
         self.runner.run_file(destpath)
 
-    def check_runner(self):
+    def check_runner(self, set_up_path=True):
         """Make sure there is a runner."""
-        if os.getcwd() not in sys.path:
+        if set_up_path and os.getcwd() not in sys.path:
             sys.path.append(os.getcwd())
         if self.runner is None:
             self.runner = Runner(self.comp, exit=self.exit_runner, store=self.mypy)

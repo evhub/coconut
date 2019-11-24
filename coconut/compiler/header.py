@@ -177,9 +177,15 @@ else:
         with ThreadPoolExecutor(cpu_count() * 5)''' if target_info < (3, 5)
             else '''with ThreadPoolExecutor()'''
         ),
-        tco_decorator="@_coconut_tco\n" + " " * 8 if not no_tco else "",
-        tail_call_func_args_kwargs="func(*args, **kwargs)" if no_tco else "_coconut_tail_call(func, *args, **kwargs)",
-        comma_tco=", _coconut_tail_call, _coconut_tco" if not no_tco else "",
+        def_tco_func="""def _coconut_tco_func(self, *args, **kwargs):
+        for func in self.patterns[:-1]:
+            try:
+                with _coconut_FunctionMatchErrorContext(self.FunctionMatchError):
+                    return func(*args, **kwargs)
+            except self.FunctionMatchError:
+                pass
+        return _coconut_tail_call(self.patterns[-1], *args, **kwargs)
+    """,
         def_prepattern=(
             r'''def prepattern(base_func):
     """DEPRECATED: Use addpattern instead."""
@@ -196,7 +202,10 @@ else:
         ),
         match_to_args_var=match_to_args_var,
         match_to_kwargs_var=match_to_kwargs_var,
+        comma_tco=", _coconut_tail_call, _coconut_tco" if not no_tco else "",
     )
+
+    format_dict["underscore_imports"] = "_coconut, _coconut_MatchError{comma_tco}, _coconut_igetitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_back_pipe, _coconut_star_pipe, _coconut_back_star_pipe, _coconut_dubstar_pipe, _coconut_back_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert".format(**format_dict)
 
     format_dict["import_typing_NamedTuple"] = _indent(
         "import typing" if target_info >= (3, 6)
@@ -205,8 +214,6 @@ else:
     def NamedTuple(name, fields):
         return _coconut.collections.namedtuple(name, [x for x, t in fields])'''.format(**format_dict),
     )
-
-    format_dict["underscore_imports"] = "_coconut, _coconut_MatchError{comma_tco}, _coconut_igetitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_back_pipe, _coconut_star_pipe, _coconut_back_star_pipe, _coconut_dubstar_pipe, _coconut_back_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_addpattern, _coconut_sentinel, _coconut_assert".format(**format_dict)
 
     # ._coconut_tco_func is used in main.coco, so don't remove it
     #  here without replacing its usage there
@@ -219,15 +226,18 @@ def _coconut_tco(func):
     @_coconut.functools.wraps(func)
     def tail_call_optimized_func(*args, **kwargs):
         call_func = func
-        while True:
+        while True:{comment.weakrefs_necessary_for_ignoring_bound_methods}
             wkref = _coconut_tco_func_dict.get(_coconut.id(call_func))
-            if wkref is not None and wkref() is call_func:
+            if (wkref is not None and wkref() is call_func) or _coconut.isinstance(call_func, _coconut_base_pattern_func):
                 call_func = call_func._coconut_tco_func
             result = call_func(*args, **kwargs)  # pass --no-tco to clean up your traceback
             if not isinstance(result, _coconut_tail_call):
                 return result
             call_func, args, kwargs = result.func, result.args, result.kwargs
     tail_call_optimized_func._coconut_tco_func = func
+    tail_call_optimized_func.__module__ = _coconut.getattr(func, "__module__", None)
+    tail_call_optimized_func.__name__ = _coconut.getattr(func, "__name__", "<coconut tco function (pass --no-tco to remove)>")
+    tail_call_optimized_func.__qualname__ = _coconut.getattr(func, "__qualname__", tail_call_optimized_func.__name__)
     _coconut_tco_func_dict[_coconut.id(tail_call_optimized_func)] = _coconut.weakref.ref(tail_call_optimized_func)
     return tail_call_optimized_func
 '''.format(**format_dict)
@@ -253,7 +263,7 @@ def getheader(which, target="", use_hash=None, no_tco=False, strict=False):
     if which == "none":
         return ""
 
-    # initial, __coconut__, package, sys, code, file
+    # initial, __coconut__, package:n, sys, code, file
 
     format_dict, target_startswith, target_info = process_header_args(which, target, use_hash, no_tco, strict)
 
@@ -272,7 +282,7 @@ def getheader(which, target="", use_hash=None, no_tco=False, strict=False):
     if which == "initial":
         return header
 
-    # __coconut__, package, sys, code, file
+    # __coconut__, package:n, sys, code, file
 
     header += section("Coconut Header")
 
@@ -294,8 +304,8 @@ _coconut_cached_module = _coconut_sys.modules.get({__coconut__})
 if _coconut_cached_module is not None and _coconut_os_path.dirname(_coconut_cached_module.__file__) != _coconut_file_path:
     del _coconut_sys.modules[{__coconut__}]
 _coconut_sys.path.insert(0, _coconut_file_path)
-from __coconut__ import {underscore_imports}
 from __coconut__ import *
+from __coconut__ import {underscore_imports}
 {sys_path_pop}
 
 '''.format(
@@ -317,8 +327,8 @@ from __coconut__ import *
 
     if which == "sys":
         return header + '''import sys as _coconut_sys
-from coconut.__coconut__ import {underscore_imports}
 from coconut.__coconut__ import *
+from coconut.__coconut__ import {underscore_imports}
 '''.format(**format_dict)
 
     # __coconut__, code, file

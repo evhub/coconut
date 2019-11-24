@@ -162,17 +162,24 @@ def comp(path=None, folder=None, file=None, args=[], **kwargs):
     call_coconut([source, compdest] + args, **kwargs)
 
 
+def rm_path(path):
+    """Delete a path."""
+    if os.path.isdir(path):
+        shutil.rmtree(path)
+    elif os.path.isfile(path):
+        os.remove(path)
+
+
 @contextmanager
-def remove_when_done(path):
-    """Removes a path when done."""
+def using_path(path):
+    """Removes a path at the beginning and end."""
+    if os.path.exists(path):
+        rm_path(path)
     try:
         yield
     finally:
         try:
-            if os.path.isdir(path):
-                shutil.rmtree(path)
-            elif os.path.isfile(path):
-                os.remove(path)
+            rm_path(path)
         except OSError:
             logger.display_exc()
 
@@ -185,8 +192,13 @@ def using_dest():
     except Exception:
         shutil.rmtree(dest)
         os.mkdir(dest)
-    with remove_when_done(dest):
+    try:
         yield
+    finally:
+        try:
+            rm_path(dest)
+        except OSError:
+            logger.display_exc()
 
 
 @contextmanager
@@ -234,6 +246,11 @@ def comp_35(args=[], **kwargs):
     comp(path="cocotest", folder="target_35", args=["--target", "35"] + args, **kwargs)
 
 
+def comp_36(args=[], **kwargs):
+    """Compiles target_35."""
+    comp(path="cocotest", folder="target_36", args=["--target", "36"] + args, **kwargs)
+
+
 def comp_sys(args=[], **kwargs):
     """Compiles target_sys."""
     comp(path="cocotest", folder="target_sys", args=["--target", "sys"] + args, **kwargs)
@@ -264,6 +281,8 @@ def run(args=[], agnostic_target=None, use_run_arg=False, expect_retcode=0):
             comp_3(args, expect_retcode=expect_retcode)
             if sys.version_info >= (3, 5):
                 comp_35(args, expect_retcode=expect_retcode)
+            if sys.version_info >= (3, 6):
+                comp_36(args, expect_retcode=expect_retcode)
         comp_agnostic(agnostic_args, expect_retcode=expect_retcode)
         comp_sys(args, expect_retcode=expect_retcode)
 
@@ -307,16 +326,16 @@ def run_pyprover(**kwargs):
 def comp_prelude(args=[], **kwargs):
     """Compiles evhub/coconut-prelude."""
     call(["git", "clone", prelude_git])
+    if PY36 and not WINDOWS:
+        args.extend(["--target", "3.6", "--mypy"])
     call_coconut([os.path.join(prelude, "setup.coco"), "--strict"] + args, **kwargs)
-    if PY36:
-        args.append("--target", "3.6", "--mypy")
     call_coconut([os.path.join(prelude, "prelude-source"), os.path.join(prelude, "prelude"), "--strict"] + args, **kwargs)
 
 
 def run_prelude(**kwargs):
     """Runs coconut-prelude."""
     call(["pip", "install", "-e", prelude])
-    call_python([os.path.join(prelude, "prelude", "prelude_test.py")], assert_output=True, **kwargs)
+    call(["pytest", "--strict", "-s", os.path.join(prelude, "prelude")], assert_output="passed", **kwargs)
 
 
 def comp_all(args=[], **kwargs):
@@ -328,6 +347,7 @@ def comp_all(args=[], **kwargs):
     comp_2(args, **kwargs)
     comp_3(args, **kwargs)
     comp_35(args, **kwargs)
+    comp_36(args, **kwargs)
     comp_agnostic(args, **kwargs)
     comp_sys(args, **kwargs)
     comp_runner(args, **kwargs)
@@ -358,7 +378,7 @@ class TestShell(unittest.TestCase):
         sys.path.append(src)
         auto_compilation(True)
         try:
-            with remove_when_done(runnable_py):
+            with using_path(runnable_py):
                 with using_logger():
                     import runnable
                     reload(runnable)
@@ -368,18 +388,18 @@ class TestShell(unittest.TestCase):
         assert runnable.success == "<success>"
 
     def test_runnable(self):
-        with remove_when_done(runnable_py):
+        with using_path(runnable_py):
             run_runnable()
 
     def test_runnable_nowrite(self):
         run_runnable(["-n"])
 
     def test_compile_to_file(self):
-        with remove_when_done(runnable_py):
+        with using_path(runnable_py):
             call_coconut([runnable_coco, runnable_py])
             call_python([runnable_py, "--arg"], assert_output=True)
 
-    if IPY:
+    if IPY and (not WINDOWS or PY35):
         def test_ipython_extension(self):
             call(
                 ["ipython", "--ext", "coconut", "-c", r'%coconut ' + coconut_snip],
@@ -404,6 +424,7 @@ class TestShell(unittest.TestCase):
                 p = pexpect.spawn(cmd)
                 p.expect("In", timeout=100)
                 p.sendeof()
+                p.expect("Do you really want to exit")
                 p.sendline("y")
                 p.expect("Shutting down kernel|shutting down|Jupyter error")
                 if p.isalive():
@@ -418,9 +439,6 @@ class TestCompilation(unittest.TestCase):
     if MYPY:
         def test_mypy_snip(self):
             call(["coconut", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err, check_mypy=False, expect_retcode=1)
-
-        def test_mypy(self):
-            run(["--mypy"] + mypy_args, expect_retcode=None)  # fails due to tutorial mypy errors
 
         def test_mypy_sys(self):
             run(["--mypy"] + mypy_args, agnostic_target="sys", expect_retcode=None)  # fails due to tutorial mypy errors
@@ -440,6 +458,9 @@ class TestCompilation(unittest.TestCase):
     def test_strict(self):
         run(["--strict"])
 
+    def test_line_numbers(self):
+        run(["--line-numbers"])
+
     def test_run(self):
         run(use_run_arg=True)
 
@@ -447,14 +468,11 @@ class TestCompilation(unittest.TestCase):
         def test_jobs_zero(self):
             run(["--jobs", "0"])
 
-    def test_simple_line_numbers(self):
-        run_runnable(["-n", "--linenumbers"])
-
     def test_simple_keep_lines(self):
-        run_runnable(["-n", "--keeplines"])
+        run_runnable(["-n", "--keep-lines"])
 
     def test_simple_line_numbers_keep_lines(self):
-        run_runnable(["-n", "--linenumbers", "--keeplines"])
+        run_runnable(["-n", "--line-numbers", "--keep-lines"])
 
     def test_simple_minify(self):
         run_runnable(["-n", "--minify"])
@@ -463,19 +481,27 @@ class TestCompilation(unittest.TestCase):
 class TestExternal(unittest.TestCase):
 
     def test_pyprover(self):
-        with remove_when_done(pyprover):
+        with using_path(pyprover):
             comp_pyprover()
             run_pyprover()
 
     if not PYPY or PY2:
         def test_prelude(self):
-            with remove_when_done(prelude):
+            with using_path(prelude):
                 comp_prelude()
                 if PY35:  # has typing
                     run_prelude()
 
     def test_pyston(self):
-        with remove_when_done(pyston):
+        with using_path(pyston):
             comp_pyston(["--no-tco"])
             if PY2 and PYPY:
                 run_pyston()
+
+
+# -----------------------------------------------------------------------------------------------------------------------
+# MAIN:
+# -----------------------------------------------------------------------------------------------------------------------
+
+if __name__ == "__main__":
+    unittest.main()

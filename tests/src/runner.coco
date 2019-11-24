@@ -7,4 +7,5 @@ from cocotest.main import main
 
 if __name__ == "__main__":
     print(".", end="")  # .
-    main(cocotest.__doc__)
+    assert cocotest.__doc__
+    main(test_easter_eggs="--test-easter-eggs" in sys.argv)

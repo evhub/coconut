@@ -105,6 +105,9 @@ website_url = "http://coconut-lang.org"
 
 license_name = "Apache 2.0"
 
+pure_python_env_var = "COCONUT_PURE_PYTHON"
+PURE_PYTHON = os.environ.get(pure_python_env_var, "").lower() in ["true", "1"]
+
 # the different categories here are defined in requirements.py,
 #  anything after a colon is ignored but allows different versions
 #  for different categories, and tuples denote the use of environment
@@ -135,12 +138,11 @@ all_reqs = {
     ),
     "jupyter": (
         "jupyter",
+        "jupyter-console",
         ("ipython", "py2"),
         ("ipython", "py3"),
         ("ipykernel", "py2"),
         ("ipykernel", "py3"),
-        ("jupyter-console", "py2"),
-        ("jupyter-console", "py3"),
     ),
     "mypy": (
         "mypy",
@@ -149,7 +151,7 @@ all_reqs = {
         "watchdog",
     ),
     "asyncio": (
-        "trollius",
+        ("trollius", "py2"),
     ),
     "dev": (
         "pre-commit",
@@ -165,7 +167,8 @@ all_reqs = {
     "tests": (
         "pytest",
         "pexpect",
-        "numpy",
+        ("numpy", "py34"),
+        ("numpy", "py2"),
     ),
 }
 
@@ -173,30 +176,33 @@ min_versions = {
     "pyparsing": (2, 4, 0),
     "cPyparsing": (2, 4, 0, 1, 0, 0),
     "pre-commit": (1,),
-    "pygments": (2, 3),
     "recommonmark": (0, 5),
     "psutil": (5,),
     "jupyter": (1, 0),
-    "mypy": (0, 701),
-    "futures": (3, 2),
+    "mypy": (0, 720),
+    "futures": (3, 3),
     "backports.functools-lru-cache": (1, 5),
     "argparse": (1, 4),
     "pexpect": (4,),
     "watchdog": (0, 9),
-    "trollius": (2, 2),
+    ("trollius", "py2"): (2, 2),
     "requests": (2,),
-    "numpy": (1,),
-    "prompt_toolkit:3": (1,),
-    ("ipython", "py3"): (7, 3),
-    ("jupyter-console", "py3"): (6,),
+    ("numpy", "py34"): (1,),
+    ("numpy", "py2"): (1,),
     ("ipykernel", "py3"): (5, 1),
+    # don't upgrade this; it breaks on Python 2 and Python 3.4 on Windows
+    "jupyter-console": (5, 2),
+    # don't upgrade these; they break with Python 3.4 on Windows
+    ("ipython", "py3"): (6, 5),
+    "pygments": (2, 3, 1),
+    # don't upgrade this to allow all versions
+    "prompt_toolkit:3": (1,),
     # don't upgrade this; it breaks on Python 2.6
     "pytest": (3,),
     # don't upgrade this; it breaks on unix
     "vprof": (0, 36),
     # don't upgrade these; they break on Python 2
     ("ipython", "py2"): (5, 4),
-    ("jupyter-console", "py2"): (5, 2),
     ("ipykernel", "py2"): (4, 10),
     "prompt_toolkit:2": (1,),
     # don't upgrade these; they break on master

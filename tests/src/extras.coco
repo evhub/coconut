@@ -1,10 +1,9 @@
-import sys
-import os
-
 from coconut.__coconut__ import consume as coc_consume  # type: ignore
 
 from coconut.constants import (
     IPY,
+    PY2,
+    PY34,
     PY35,
     WINDOWS,
     PYPY,
@@ -22,6 +21,7 @@ from coconut.convenience import (
     version,
     setup,
     parse,
+    coconut_eval,
 )
 
 if IPY and not WINDOWS:
@@ -63,7 +63,8 @@ def test_extras():
     assert version("-v")
     assert_raises(-> version("other"), CoconutException)
     assert_raises(def -> raise CoconutException("derp").syntax_err(), SyntaxError)
-    setup()
+    assert coconut_eval("x -> x + 1")(2) == 3
+    assert coconut_eval("addpattern")
     assert parse("abc") == parse("abc", "sys")
     assert parse("abc", "file")
     assert parse("abc", "package")
@@ -124,6 +125,7 @@ def test_extras():
     setup(target="3.8")
     assert parse("(a := b)")
     assert parse("print(a := 1, b := 2)")
+    assert parse("def f(a, /, b) = a, b")
     if CoconutKernel is not None:
         if PY35:
             asyncio.set_event_loop(asyncio.new_event_loop())
@@ -149,7 +151,7 @@ def test_extras():
         assert "map" in keyword_complete_result["matches"]
         assert keyword_complete_result["cursor_start"] == 0
         assert keyword_complete_result["cursor_end"] == 1
-    if not PYPY:
+    if not PYPY and (PY2 or PY34):
         import numpy as np
         assert np.all(fmap(-> _ + 1, np.arange(3)) == np.array([1, 2, 3]))
     print("<success>")

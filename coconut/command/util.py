@@ -93,9 +93,11 @@ try:
 except ImportError:
     prompt_toolkit = None
 except KeyError:
-    complain(ImportError(
-        "detected outdated pygments version (run 'pip install --upgrade pygments' to fix)",
-    ))
+    complain(
+        ImportError(
+            "detected outdated pygments version (run 'pip install --upgrade pygments' to fix)",
+        ),
+    )
     prompt_toolkit = None
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -486,9 +488,15 @@ class Runner(object):
             if all_errors_exit:
                 self.exit(1)
 
-    def update_vars(self, global_vars):
+    def update_vars(self, global_vars, ignore_vars=None):
         """Add Coconut built-ins to given vars."""
-        global_vars.update(self.vars)
+        if ignore_vars:
+            update_vars = self.vars.copy()
+            for del_var in ignore_vars:
+                del update_vars[del_var]
+        else:
+            update_vars = self.vars
+        global_vars.update(update_vars)
 
     def run(self, code, use_eval=None, path=None, all_errors_exit=False, store=True):
         """Execute Python code."""

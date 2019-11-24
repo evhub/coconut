@@ -17,12 +17,12 @@ format: dev
 # test-all takes a very long time and should usually only be run by Travis
 .PHONY: test-all
 test-all:
-	pytest --strict -s tests
+	pytest --strict -s ./tests
 
 # for quickly testing nearly everything locally, just use test-basic
 .PHONY: test-basic
 test-basic:
-	python ./tests --force
+	python ./tests --strict --force
 	python ./tests/dest/runner.py
 	python ./tests/dest/extras.py
 
@@ -30,22 +30,29 @@ test-basic:
 # should only be used when testing the tests not the compiler
 .PHONY: test-tests
 test-tests:
-	python ./tests
+	python ./tests --strict
 	python ./tests/dest/runner.py
 	python ./tests/dest/extras.py
 
 # same as test-basic but also runs mypy
 .PHONY: test-mypy
 test-mypy:
-	python ./tests --force --target sys --mypy --follow-imports silent --ignore-missing-imports
+	python ./tests --strict --force --target sys --line-numbers --mypy --follow-imports silent --ignore-missing-imports
 	python ./tests/dest/runner.py
 	python ./tests/dest/extras.py
 
 # same as test-basic but includes verbose output for better debugging
 .PHONY: test-verbose
 test-verbose:
-	python ./tests --force --verbose --jobs 0
+	python ./tests --strict --force --verbose --jobs 0
 	python ./tests/dest/runner.py
+	python ./tests/dest/extras.py
+
+# same as test-basic but also tests easter eggs
+.PHONY: test-easter-eggs
+test-easter-eggs:
+	python ./tests --strict --force
+	python ./tests/dest/runner.py --test-easter-eggs
 	python ./tests/dest/extras.py
 
 .PHONY: diff

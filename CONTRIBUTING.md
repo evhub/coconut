@@ -152,18 +152,22 @@ After you've tested your changes locally, you'll want to add more permanent test
             - python35
                 - `py35_test.coco`
                     + Tests to be run only on Python 3.5 with `--target 3.5`.
+            - python36
+                - `py36_test.coco`
+                    + Tests to be run only on Python 3.6 with `--target 3.6`.
 
 ## Release Process
 
 1. Preparation:
     1. Run `make check-reqs` and update dependencies as necessary
     1. Run `make format`
-    1. Check changes in [`compiled-cocotest`](https://github.com/evhub/compiled-cocotest) and [`pyprover`](https://github.com/evhub/pyprover)
-    1. Check [Codacy issues](https://www.codacy.com/app/evanjhub) (for `coconut` and `compiled-cocotest`) and [LGTM alerts](https://lgtm.com/projects/g/evhub/coconut/)
+    1. Check changes in [`compiled-cocotest`](https://github.com/evhub/compiled-cocotest), [`pyprover`](https://github.com/evhub/pyprover), and [`coconut-prelude`](https://github.com/evhub/coconut-prelude)
+    1. Check [Codebeat](https://codebeat.co/a/evhub/projects) and [LGTM](https://lgtm.com/dashboard) for `coconut` and `compiled-cocotest`
     1. Make sure [`coconut-develop`](https://pypi.python.org/pypi/coconut-develop) package looks good
     1. Run `make docs` and ensure local documentation looks good
     1. Make sure [develop documentation](http://coconut.readthedocs.io/en/develop/) looks good
     1. Make sure [Travis](https://travis-ci.org/evhub/coconut/builds) and [AppVeyor](https://ci.appveyor.com/project/evhub/coconut) are passing
+    1. Run `make test-easter-eggs`
     1. Turn off `develop` in `root.py`
     1. Set `root.py` to new version number
     1. If major release, set `root.py` to new version name
@@ -177,18 +181,17 @@ After you've tested your changes locally, you'll want to add more permanent test
     1. Release [`sublime-coconut`](https://github.com/evhub/sublime-coconut) first if applicable
     1. Merge pull request and mark as resolved
     1. Release `master` on GitHub
-    1. Fetch and switch to `master` locally
+    1. `git fetch`, `git checkout master`, and `git pull`
     1. Run `make upload`
-    1. Switch back to `develop` locally
-    1. Update from master
+    1. `git checkout develop`, `git rebase master`, and `git push`
     1. Turn on `develop` in `root`
     1. Run `make dev`
     1. Push to `develop`
-    1. Update [website](https://github.com/evhub/coconut/tree/gh-pages) if it needs updating
     1. Wipe all updated versions on [readthedocs](https://readthedocs.org/projects/coconut/versions/)
-    1. Copy [PyPI](https://pypi.python.org/pypi/coconut) keywords to readthedocs tags
     1. Build all updated versions on [readthedocs](https://readthedocs.org/projects/coconut/builds/)
-    1. Download latest [PyPI](https://pypi.python.org/pypi/coconut) `.tar.gz` file, hash it with `openssl sha256 coconut-<version>.tar.gz`, and use that to update the [local feedstock](https://github.com/conda-forge/coconut-feedstock)
+    1. Copy [PyPI](https://pypi.python.org/pypi/coconut) keywords to readthedocs tags
+    1. Get SHA-256 hash from [PyPI](https://pypi.python.org/pypi/coconut) `.tar.gz` file and use that as well as the latest pyparsing version to update the [local feedstock](https://github.com/evhub/coconut-feedstock)
     1. Submit PR to update [Coconut's `conda-forge` feedstock](https://github.com/conda-forge/coconut-feedstock)
+    1. Update [website](https://github.com/evhub/coconut/tree/gh-pages) if it needs updating
     1. Wait until feedstock PR is passing then merge it
     1. Close release milestone

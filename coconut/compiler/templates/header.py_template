@@ -1,10 +1,10 @@
-class _coconut{object}:{comment.everything_here_must_be_copied_to_stub_file}
-    import collections, copy, functools, types, itertools, operator, weakref, threading
+class _coconut{object}:{comment.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
+    import collections, copy, functools, types, itertools, operator, threading, weakref, os
 {bind_lru_cache}{import_asyncio}{import_pickle}
 {import_OrderedDict}
 {import_collections_abc}
 {import_typing_NamedTuple}
-    Ellipsis, Exception, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr{comma_bytearray} = Ellipsis, Exception, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, {static_repr}{comma_bytearray}
+    Ellipsis, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, type, zip, repr{comma_bytearray} = Ellipsis, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, type, zip, {static_repr}{comma_bytearray}
 _coconut_sentinel = _coconut.object()
 class MatchError(Exception):
     """Pattern-matching error. Has attributes .pattern and .value."""
@@ -30,7 +30,7 @@ class _coconut_base_compose{object}:
         self.func = func
         self.funcstars = []
         for f, stars in funcstars:
-            if isinstance(f, _coconut_base_compose):
+            if _coconut.isinstance(f, _coconut_base_compose):
                 self.funcstars.append((f.func, stars))
                 self.funcstars += f.funcstars
             else:
@@ -45,12 +45,14 @@ class _coconut_base_compose{object}:
             elif stars == 2:
                 arg = f(**arg)
             else:
-                raise ValueError()
+                raise _coconut.ValueError("invalid arguments to " + _coconut.repr(self))
         return arg
     def __repr__(self):
         return _coconut.repr(self.func) + " " + " ".join(("..*> " if star == 1 else "..**>" if star == 2 else "..> ") + _coconut.repr(f) for f, star in self.funcstars)
     def __reduce__(self):
         return (self.__class__, (self.func,) + _coconut.tuple(self.funcstars))
+    def __get__(self, obj, objtype=None):
+        return _coconut.functools.partial(self, obj)
 def _coconut_forward_compose(func, *funcs): return _coconut_base_compose(func, *((f, 0) for f in funcs))
 def _coconut_back_compose(*funcs): return _coconut_forward_compose(*_coconut.reversed(funcs))
 def _coconut_forward_star_compose(func, *funcs): return _coconut_base_compose(func, *((f, 1) for f in funcs))
@@ -386,12 +388,14 @@ class groupsof{object}:
         return self.__class__(self.group_size, _coconut.copy.copy(self.iter))
     def __fmap__(self, func):
         return _coconut_map(func, self)
-def recursive_iterator(func):
+class recursive_iterator{object}:
     """Decorator that optimizes a function for iterator recursion."""
-    tee_store = {empty_dict}
-    backup_tee_store = []
-    @_coconut.functools.wraps(func)
-    def recursive_iterator_func(*args, **kwargs):
+    __slots__ = ("func", "tee_store", "backup_tee_store")
+    def __init__(self, func):
+        self.func = func
+        self.tee_store = {empty_dict}
+        self.backup_tee_store = []
+    def __call__(self, *args, **kwargs):
         key = (args, _coconut.frozenset(kwargs))
         use_backup = False
         try:
@@ -402,22 +406,27 @@ def recursive_iterator(func):
             except _coconut.Exception:
                 use_backup = True
         if use_backup:
-            for i, (k, v) in _coconut.enumerate(backup_tee_store):
+            for i, (k, v) in _coconut.enumerate(self.backup_tee_store):
                 if k == key:
                     to_tee, store_pos = v, i
                     break
             else:  # no break
-                to_tee = func(*args, **kwargs)
+                to_tee = self.func(*args, **kwargs)
                 store_pos = None
             to_store, to_return = _coconut_tee(to_tee)
             if store_pos is None:
-                backup_tee_store.append([key, to_store])
+                self.backup_tee_store.append([key, to_store])
             else:
-                backup_tee_store[store_pos][1] = to_store
+                self.backup_tee_store[store_pos][1] = to_store
         else:
-            tee_store[key], to_return = _coconut_tee(tee_store.get(key) or func(*args, **kwargs))
+            self.tee_store[key], to_return = _coconut_tee(self.tee_store.get(key) or self.func(*args, **kwargs))
         return to_return
-    return recursive_iterator_func
+    def __repr__(self):
+        return "@recursive_iterator(" + _coconut.repr(self.func) + ")"
+    def __reduce__(self):
+        return (self.__class__, (self.func,))
+    def __get__(self, obj, objtype=None):
+        return _coconut.functools.partial(self, obj)
 class _coconut_FunctionMatchErrorContext(object):
     __slots__ = ('exc_class', 'taken')
     threadlocal_var = _coconut.threading.local()
@@ -427,7 +436,7 @@ class _coconut_FunctionMatchErrorContext(object):
     def __enter__(self):
         try:
             self.threadlocal_var.contexts.append(self)
-        except AttributeError:
+        except _coconut.AttributeError:
             self.threadlocal_var.contexts = [self]
     def __exit__(self, type, value, traceback):
         self.threadlocal_var.contexts.pop()
@@ -435,33 +444,47 @@ class _coconut_FunctionMatchErrorContext(object):
     def get(cls):
         try:
             ctx = cls.threadlocal_var.contexts[-1]
-        except (AttributeError, IndexError):
-            return MatchError
+        except (_coconut.AttributeError, _coconut.IndexError):
+            return _coconut_MatchError
         if not ctx.taken:
             ctx.taken = True
             return ctx.exc_class
-        return MatchError
+        return _coconut_MatchError
 _coconut_get_function_match_error = _coconut_FunctionMatchErrorContext.get
+class _coconut_base_pattern_func{object}:
+    __slots__ = ("FunctionMatchError", "__doc__", "patterns")
+    def __init__(self, *funcs):
+        self.FunctionMatchError = _coconut.type(_coconut_str("MatchError"), (_coconut_MatchError,), {{}})
+        self.__doc__ = None
+        self.patterns = []
+        for func in funcs:
+            self.add(func)
+    def add(self, func):
+        self.__doc__ = _coconut.getattr(func, "__doc__", None) or self.__doc__
+        if _coconut.isinstance(func, _coconut_base_pattern_func):
+            self.patterns += func.patterns
+        else:
+            self.patterns.append(func)
+    def __call__(self, *args, **kwargs):
+        for func in self.patterns[:-1]:
+            try:
+                with _coconut_FunctionMatchErrorContext(self.FunctionMatchError):
+                    return func(*args, **kwargs)
+            except self.FunctionMatchError:
+                pass
+        return self.patterns[-1](*args, **kwargs)
+    {def_tco_func}def __repr__(self):
+        return "addpattern(" + _coconut.repr(self.patterns[0]) + ")(*" + _coconut.repr(self.patterns[1:]) + ")"
+    def __reduce__(self):
+        return (self.__class__, _coconut.tuple(self.patterns))
+    def __get__(self, obj, objtype=None):
+        return _coconut.functools.partial(self, obj)
 def addpattern(base_func):
     """Decorator to add a new case to a pattern-matching function,
     where the new case is checked last."""
-    if not getattr(base_func, "_coconut_is_pattern_matching", False):
-        import warnings
-        warnings.warn(
-            "Possible misuse of addpattern with non-pattern-matching function {{name}}".format(name=base_func.__name__),
-            stacklevel=2,
-        )
-    def pattern_adder(func):
-        FunctionMatchError = type(_coconut_str("MatchError"), (MatchError,), {{}})
-        {tco_decorator}@_coconut.functools.wraps(func)
-        def add_pattern_func(*args, **kwargs):
-            try:
-                with _coconut_FunctionMatchErrorContext(FunctionMatchError):
-                    return base_func(*args, **kwargs)
-            except FunctionMatchError:
-                return {tail_call_func_args_kwargs}
-        return add_pattern_func
-    return pattern_adder
+    if not _coconut.isinstance(base_func, _coconut_base_pattern_func):
+        _coconut.warnings.warn("Possible misuse of addpattern with non-pattern-matching function {name}".format(name=_coconut.getattr(base_func, "__name__", _coconut.repr(base_func)), stacklevel=2)
+    return _coconut.functools.partial(_coconut_base_pattern_func, base_func)
 _coconut_addpattern = addpattern
 {def_prepattern}class _coconut_partial{object}:
     __slots__ = ("func", "_argdict", "_arglen", "_stargs", "keywords")
@@ -507,7 +530,7 @@ _coconut_addpattern = addpattern
         return _coconut.repr(self.func) + "$(" + ", ".join(args) + ")"
 def consume(iterable, keep_last=0):
     """consume(iterable, keep_last) fully exhausts iterable and return the last keep_last elements."""
-    return _coconut.collections.deque(iterable, maxlen=keep_last)  # fastest way to exhaust an iterator
+    return _coconut.collections.deque(iterable, maxlen=keep_last)
 class starmap(_coconut.itertools.starmap):
     __slots__ = ("func", "iter")
     if hasattr(_coconut.itertools.starmap, "__doc__"):

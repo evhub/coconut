@@ -65,24 +65,24 @@ def scan(
 
 
 class _coconut:
-    typing = _t  # The real _coconut doesn't import typing, but we want type-checkers to treat it as if it does
-    import collections, copy, functools, types, itertools, operator, types, weakref
-    import pickle
-    Ellipsis, Exception, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr = Ellipsis, Exception, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, zip, repr
+    import collections, copy, functools, types, itertools, operator, threading
     if sys.version_info >= (3, 4):
         import asyncio
     else:
         import trollius as asyncio  # type: ignore
-    if sys.version_info < (3, 3):
-        abc = collections
-    else:
-        abc = collections.abc
-    if sys.version_info >= (3,):
-        bytearray = bytearray
+    import pickle
     if sys.version_info >= (2, 7):
         OrderedDict = collections.OrderedDict
     else:
         OrderedDict = dict
+    if sys.version_info < (3, 3):
+        abc = collections
+    else:
+        abc = collections.abc
+    typing = _t  # The real _coconut doesn't import typing, but we want type-checkers to treat it as if it does
+    Ellipsis, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, type, zip, repr = Ellipsis, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, type, zip, repr
+    if sys.version_info >= (3,):
+        bytearray = bytearray
 
 
 reduce = _coconut.functools.reduce
@@ -93,7 +93,7 @@ starmap = _coconut.itertools.starmap
 
 
 if sys.version_info >= (3, 2):
-    memoize = _coconut.functools.lru_cache
+    from functools import lru_cache as memoize
 else:
     from backports.functools_lru_cache import lru_cache as memoize  # type: ignore
     _coconut.functools.lru_cache = memoize  # type: ignore
@@ -104,10 +104,10 @@ _coconut_starmap = starmap
 parallel_map = concurrent_map = _coconut_map = map
 
 
-_coconut_sentinel = object()
-
-
 TYPE_CHECKING = _t.TYPE_CHECKING
+
+
+_coconut_sentinel = object()
 
 
 class MatchError(Exception): ...
@@ -117,16 +117,37 @@ _coconut_MatchError = MatchError
 def _coconut_get_function_match_error() -> _t.Type[MatchError]: ...
 
 
-def _coconut_tco(func: _FUNC) -> _FUNC: ...
+def _coconut_tco(func: _FUNC) -> _FUNC:
+    return func
 def _coconut_tail_call(func, *args, **kwargs):
     return func(*args, **kwargs)
 
 
-def recursive_iterator(func: _ITER_FUNC) -> _ITER_FUNC: ...
+def recursive_iterator(func: _ITER_FUNC) -> _ITER_FUNC:
+    return func
 
+
+class _coconut_base_pattern_func:
+    def __init__(self, *funcs: _t.Callable): ...
+    def add(self, func: _t.Callable) -> None: ...
+    def __call__(self, *args, **kwargs) -> _t.Any: ...
 
 def addpattern(func: _FUNC) -> _t.Callable[[_FUNC2], _t.Union[_FUNC, _FUNC2]]: ...
 _coconut_addpattern = prepattern = addpattern
+
+
+class _coconut_partial:
+    args: _t.Tuple = ...
+    keywords: _t.Dict[_t.Text, _t.Any] = ...
+    def __init__(
+        self,
+        func: _t.Callable[..., _T],
+        argdict: _t.Dict[int, _t.Any],
+        arglen: int,
+        *args,
+        **kwargs,
+        ) -> None: ...
+    def __call__(self, *args, **kwargs) -> _T: ...
 
 
 @_t.overload
@@ -256,20 +277,6 @@ def consume(
     iterable: _t.Iterable[_T],
     keep_last: _t.Optional[int] = ...,
     ) -> _t.Iterable[_T]: ...
-
-
-class _coconut_partial:
-    args: _t.Tuple = ...
-    keywords: _t.Dict[_t.Text, _t.Any] = ...
-    def __init__(
-        self,
-        func: _t.Callable[..., _T],
-        argdict: _t.Dict[int, _t.Any],
-        arglen: int,
-        *args,
-        **kwargs,
-        ) -> None: ...
-    def __call__(self, *args, **kwargs) -> _T: ...
 
 
 def fmap(func: _t.Callable, obj: _t.Iterable) -> _t.Iterable: ...

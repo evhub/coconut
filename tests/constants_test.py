@@ -97,3 +97,11 @@ class TestConstants(unittest.TestCase):
                 assert is_importable(new_imp), "Failed to import " + new_imp
             else:
                 assert is_importable(old_imp), "Failed to import " + old_imp
+
+
+# -----------------------------------------------------------------------------------------------------------------------
+# MAIN:
+# -----------------------------------------------------------------------------------------------------------------------
+
+if __name__ == "__main__":
+    unittest.main()

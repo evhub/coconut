@@ -1,0 +1,4 @@
+def py36_test():
+    """Performs Python-3.6-specific tests."""
+    assert f"{[] |> len}" == "0"
+    return True
