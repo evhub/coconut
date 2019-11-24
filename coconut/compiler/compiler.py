@@ -31,6 +31,7 @@ from coconut.root import *  # NOQA
 import sys
 from contextlib import contextmanager
 from functools import partial
+from collections import defaultdict
 
 from coconut._pyparsing import (
     ParseBaseException,
@@ -58,19 +59,16 @@ from coconut.constants import (
     match_to_kwargs_var,
     match_check_var,
     match_err_var,
-    lazy_chain_var,
     import_as_var,
     yield_from_var,
     yield_item_var,
     raise_from_var,
     stmt_lambda_var,
     tre_mock_var,
-    tre_store_var,
     tre_check_var,
     py3_to_py2_stdlib,
     checksum,
     reserved_prefix,
-    case_check_var,
     function_match_error_var,
     legal_indent_chars,
     format_var,
@@ -471,13 +469,17 @@ class Compiler(Grammar):
         self.refs = []
         self.skips = []
         self.docstring = ""
-        self.ichain_count = 0
-        self.tre_store_count = 0
-        self.case_check_count = 0
+        self.temp_var_counts = defaultdict(int)
         self.stmt_lambdas = []
         self.unused_imports = set()
         self.original_lines = []
         self.bind()
+
+    def get_temp_var(self, base_name):
+        """Get a unique temporary variable name."""
+        var_name = reserved_prefix + "_" + base_name + str(self.temp_var_counts[base_name])
+        self.temp_var_counts[base_name] += 1
+        return var_name
 
     @contextmanager
     def inner_environment(self):
@@ -1301,8 +1303,7 @@ class Compiler(Grammar):
         elif op == "??=":
             out += name + " = " + item + " if " + name + " is None else " + name
         elif op == "::=":
-            ichain_var = lazy_chain_var + "_" + str(self.ichain_count)
-            self.ichain_count += 1
+            ichain_var = self.get_temp_var("lazy_chain")
             # this is necessary to prevent a segfault caused by self-reference
             out += (
                 ichain_var + " = " + name + "\n"
@@ -1974,8 +1975,7 @@ if not {check_var}:
             attempt_tre = func_name is not None and not decorators
             if attempt_tre:
                 use_mock = func_args and func_args != func_params[1:-1]
-                func_store = tre_store_var + "_" + str(self.tre_store_count)
-                self.tre_store_count += 1
+                func_store = self.get_temp_var("recursive_func")
                 tre_return_grammar = self.tre_return(func_name, func_args, func_store, use_mock)
             else:
                 use_mock = func_store = tre_return_grammar = None
@@ -2006,9 +2006,22 @@ if not {check_var}:
             if tco:
                 decorators += "@_coconut_tco\n"  # binds most tightly
 
-        out = decorators + def_stmt + func_code
+        # handle dotted function definition
         if undotted_name is not None:
-            out += func_name + " = " + undotted_name + "\n"
+            store_var = self.get_temp_var("dotted_func_name_store")
+            out = (
+                "try:\n"
+                + openindent + store_var + " = " + undotted_name + "\n"
+                + closeindent + "except _coconut.NameError:\n"
+                + openindent + store_var + " = None\n"
+                + closeindent + decorators + def_stmt + func_code
+                + func_name + " = " + undotted_name + "\n"
+                + undotted_name + " = " + store_var + "\n"
+            )
+
+        else:
+            out = decorators + def_stmt + func_code
+
         return out
 
     def await_item_handle(self, original, loc, tokens):
@@ -2100,8 +2113,7 @@ if not {check_var}:
             item, cases, default = tokens
         else:
             raise CoconutInternalException("invalid case tokens", tokens)
-        check_var = case_check_var + "_" + str(self.case_check_count)
-        self.case_check_count += 1
+        check_var = self.get_temp_var("case_check")
         out = (
             match_to_var + " = " + item + "\n"
             + match_case_tokens(loc, cases[0], check_var, True)

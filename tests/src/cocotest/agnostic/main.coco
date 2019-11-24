@@ -555,6 +555,11 @@ def main_test():
         assert True
     else:
         assert False
+    class A
+    a = A()
+    f = 10
+    def a.f(x) = x
+    assert f == 10
     return True
 
 def easter_egg_test():

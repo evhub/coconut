@@ -411,14 +411,12 @@ max_match_val_repr_len = 500  # max len of match val reprs in err msgs
 
 reserved_prefix = "_coconut"
 decorator_var = reserved_prefix + "_decorator"
-lazy_chain_var = reserved_prefix + "_lazy_chain"
 import_as_var = reserved_prefix + "_import"
 yield_from_var = reserved_prefix + "_yield_from"
 yield_item_var = reserved_prefix + "_yield_item"
 raise_from_var = reserved_prefix + "_raise_from"
 stmt_lambda_var = reserved_prefix + "_lambda"
 tre_mock_var = reserved_prefix + "_mock_func"
-tre_store_var = reserved_prefix + "_recursive_func"
 tre_check_var = reserved_prefix + "_is_recursive"
 none_coalesce_var = reserved_prefix + "_none_coalesce_item"
 func_var = reserved_prefix + "_func"
@@ -432,7 +430,6 @@ match_check_var = reserved_prefix + "_match_check"
 match_temp_var = reserved_prefix + "_match_temp"
 match_err_var = reserved_prefix + "_match_err"
 match_val_repr_var = reserved_prefix + "_match_val_repr"
-case_check_var = reserved_prefix + "_case_check"
 function_match_error_var = reserved_prefix + "_FunctionMatchError"
 
 wildcard = "_"  # for pattern-matching
