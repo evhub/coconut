@@ -1933,6 +1933,12 @@ if not {check_var}:
         with self.complain_on_err():
             func_name, func_args, func_params = parse(self.split_func, def_stmt)
 
+        # detect pattern-matching functions
+        is_match_func = func_params == "(*{match_to_args_var}, **{match_to_kwargs_var})".format(
+            match_to_args_var=match_to_args_var,
+            match_to_kwargs_var=match_to_kwargs_var,
+        )
+
         # handle addpattern functions
         if addpattern:
             if func_name is None:
@@ -2004,7 +2010,11 @@ if not {check_var}:
                     + func_store + " = " + (func_name if undotted_name is None else undotted_name) + "\n"
                 )
             if tco:
-                decorators += "@_coconut_tco\n"  # binds most tightly
+                decorators += "@_coconut_tco\n"  # binds most tightly (aside from below)
+
+        # add attribute to mark pattern-matching functions if strict
+        if self.strict and is_match_func:
+            decorators += "@_coconut_mark_as_match\n"  # binds most tightly
 
         # handle dotted function definition
         if undotted_name is not None:
