@@ -2012,8 +2012,8 @@ if not {check_var}:
             if tco:
                 decorators += "@_coconut_tco\n"  # binds most tightly (aside from below)
 
-        # add attribute to mark pattern-matching functions if strict
-        if self.strict and is_match_func:
+        # add attribute to mark pattern-matching functions
+        if is_match_func:
             decorators += "@_coconut_mark_as_match\n"  # binds most tightly
 
         # handle dotted function definition

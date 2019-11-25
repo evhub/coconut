@@ -238,7 +238,6 @@ If the `--strict` (`-s` for short) flag is enabled, Coconut will perform additio
 
 - disabling deprecated features (making them entirely unavailable to code compiled with `--strict`),
 - warning about unused imports,
-- adding runtime warnings about using [`addpattern`](#addpattern) with a non-pattern-matching function, and
 - throwing errors on various style problems (see list below).
 
 The style issues which will cause `--strict` to throw an error are:
@@ -1752,7 +1751,7 @@ _Can't be done without defining a custom `map` type. The full definition of `map
 
 Takes one argument that is a [pattern-matching function](#pattern-matching-functions), and returns a decorator that adds the patterns in the existing function to the new function being decorated, where the existing patterns are checked first, then the new. Roughly equivalent to:
 ```
-def addpattern(base_func):
+def addpattern(base_func, *, allow_any_func=True):
     """Decorator to add a new case to a pattern-matching function, where the new case is checked last."""
     def pattern_adder(func):
         def add_pattern_func(*args, **kwargs):
@@ -1792,6 +1791,8 @@ print_type("This is a string.") # Raises MatchError
 ```
 
 The last case in an `addpattern` function, however, doesn't have to be a pattern-matching function if it is intended to catch all remaining cases.
+
+To catch this mistake, `addpattern` will emit a warning if passed what it believes to be a non-pattern-matching function. However, this warning can sometimes be erroneous if the original pattern-matching function has been wrapped in some way, in which case you can pass `allow_any_func=True` to dismiss the warning.
 
 ##### Example
 

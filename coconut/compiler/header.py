@@ -185,10 +185,10 @@ else:
         return _coconut_tail_call(self.patterns[-1], *args, **kwargs)
     ''',
         def_prepattern=(
-            r'''def prepattern(base_func):
+            r'''def prepattern(base_func, **kwargs):
     """DEPRECATED: Use addpattern instead."""
     def pattern_prepender(func):
-        return addpattern(func)(base_func)
+        return addpattern(func, **kwargs)(base_func)
     return pattern_prepender
 ''' if not strict else ""
         ),
@@ -237,13 +237,6 @@ def _coconut_tco(func):
     _coconut_tco_func_dict[_coconut.id(tail_call_optimized_func)] = _coconut.weakref.ref(tail_call_optimized_func)
     return tail_call_optimized_func
 '''.format(**format_dict)
-
-    format_dict["addpattern_warning"] = (
-        r'''if not _coconut.getattr(base_func, "_coconut_is_match", False):
-        import warnings
-        warnings.warn("Possible misuse of addpattern with non-pattern-matching function " + _coconut.repr(base_func), stacklevel=2)
-    '''.format(**format_dict) if strict else ""
-    )
 
     return format_dict, target_startswith, target_info
 

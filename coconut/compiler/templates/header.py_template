@@ -483,10 +483,16 @@ class _coconut_base_pattern_func{object}:
 def _coconut_mark_as_match(base_func):
     base_func._coconut_is_match = True
     return base_func
-def addpattern(base_func):
+def addpattern(base_func, **kwargs):
     """Decorator to add a new case to a pattern-matching function,
     where the new case is checked last."""
-    {addpattern_warning}return _coconut.functools.partial(_coconut_base_pattern_func, base_func)
+    allow_any_func = kwargs.pop("allow_any_func", False)
+    if not allow_any_func and not _coconut.getattr(base_func, "_coconut_is_match", False):
+        import warnings
+        warnings.warn("Possible misuse of addpattern with non-pattern-matching function " + _coconut.repr(base_func) + " (pass allow_any_func=True to dismiss)", stacklevel=2)
+    if kwargs:
+        raise _coconut.TypeError("addpattern() got unexpected keyword arguments " + _coconut.repr(kwargs))
+    return _coconut.functools.partial(_coconut_base_pattern_func, base_func)
 _coconut_addpattern = addpattern
 {def_prepattern}class _coconut_partial{object}:
     __slots__ = ("func", "_argdict", "_arglen", "_stargs", "keywords")

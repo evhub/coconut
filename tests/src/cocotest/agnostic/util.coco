@@ -626,11 +626,11 @@ def SHOPeriodTerminate(X, t, params):
 try:
     prepattern
 except NameError:
-    def prepattern(base_func):
+    def prepattern(base_func, **kwargs):
         """Decorator to add a new case to a pattern-matching function,
         where the new case is checked first."""
         def pattern_prepender(func):
-            return addpattern(func)(base_func)
+            return addpattern(func, **kwargs)(base_func)
         return pattern_prepender
 
 def add_int_or_str_1(x is int) = x + 1
@@ -639,12 +639,12 @@ addpattern def add_int_or_str_1(x is str) = x + "1"  # type: ignore
 def coercive_add(a is int, b) = a + int(b)
 addpattern def coercive_add(a is str, b) = a + str(b)  # type: ignore
 
-@addpattern(ident)
+@addpattern(ident, allow_any_func=True)
 def still_ident(x) =
     """docstring"""
     "foo"
 
-@prepattern(ident)
+@prepattern(ident, allow_any_func=True)
 def not_ident(x) = "bar"
 
 # Pattern-matching functions with guards
