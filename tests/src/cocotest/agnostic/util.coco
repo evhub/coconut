@@ -626,7 +626,7 @@ def SHOPeriodTerminate(X, t, params):
 try:
     prepattern
 except NameError:
-    def prepattern(base_func, **kwargs):
+    def prepattern(base_func, **kwargs):  # type: ignore
         """Decorator to add a new case to a pattern-matching function,
         where the new case is checked first."""
         def pattern_prepender(func):
@@ -767,9 +767,9 @@ class altclass:
     func: (Any, Any) -> Any
     zero: (Any, int) -> int
 
-def altclass.func(self, x) = x
+def altclass.func(self, x) = x  # type: ignore
 
-def altclass.zero(self, x: int) -> int =
+def altclass.zero(self, x: int) -> int =  # type: ignore
     if x == 0:
         return 0
     altclass.zero(self, x-1)  # tail recursive

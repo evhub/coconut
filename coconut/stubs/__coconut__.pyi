@@ -132,8 +132,16 @@ class _coconut_base_pattern_func:
     def add(self, func: _t.Callable) -> None: ...
     def __call__(self, *args, **kwargs) -> _t.Any: ...
 
-def addpattern(func: _FUNC) -> _t.Callable[[_FUNC2], _t.Union[_FUNC, _FUNC2]]: ...
+def addpattern(
+    func: _FUNC,
+    *,
+    allow_any_func: bool=False,
+    ) -> _t.Callable[[_FUNC2], _t.Union[_FUNC, _FUNC2]]: ...
 _coconut_addpattern = prepattern = addpattern
+
+
+def _coconut_mark_as_match(func: _FUNC) -> _FUNC:
+    return func
 
 
 class _coconut_partial:
