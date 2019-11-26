@@ -1113,6 +1113,7 @@ map(_lambda, L)
 ```
 
 #### Type annotations
+
 Another case where statement lambdas would be used over standard lambdas is when the parameters to the lambda are typed with type annotations. Statement lambdas use the standard Python syntax for adding type annotations to their parameters:
 
 ```coconut
@@ -1235,6 +1236,31 @@ A very common thing to do in functional programming is to make use of function v
 ```coconut_python
 import operator
 print(list(map(operator.add, range(0, 5), range(5, 10))))
+```
+
+### Implicit Function Application
+
+Coconut supports implicit function application of the form `f x y`, which is compiled to `f(x, y)` (note: **not** `f(x)(y)` as is common in many languages with automatic currying).
+
+However, due to the limitations of Python syntax, supported arguments are highly restricted, and must be either constants or variable names (e.g. `f x 1` is okay but `f x [1]` or `f x (1+2)` are not).
+
+##### Examples
+
+**Coconut:**
+```coconut
+def f(x, y) = (x, y)
+print (f 5 10)
+```
+
+```coconut
+def p1(x) = x + 1
+print..p1 5
+```
+
+**Python:**
+```coconut_python
+def f(x, y): return (x, y)
+print(f(100, 5+6))
 ```
 
 ### Enhanced Type Annotation

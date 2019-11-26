@@ -617,15 +617,24 @@ namelist_handle.ignore_one_token = True
 
 def compose_item_handle(tokens):
     """Process function composition."""
-    if len(tokens) < 1:
-        raise CoconutInternalException("invalid function composition tokens", tokens)
-    elif len(tokens) == 1:
+    if len(tokens) == 1:
         return tokens[0]
-    else:
-        return "_coconut_forward_compose(" + ", ".join(reversed(tokens)) + ")"
+    internal_assert(len(tokens) >= 1, "invalid function composition tokens", tokens)
+    return "_coconut_forward_compose(" + ", ".join(reversed(tokens)) + ")"
 
 
 compose_item_handle.ignore_one_token = True
+
+
+def impl_call_item_handle(tokens):
+    """Process implicit function application."""
+    if len(tokens) == 1:
+        return tokens[0]
+    internal_assert(len(tokens) >= 1, "invalid implicit function application tokens", tokens)
+    return tokens[0] + "(" + ", ".join(tokens[1:]) + ")"
+
+
+impl_call_item_handle.ignore_one_token = True
 
 
 def tco_return_handle(tokens):
@@ -1116,6 +1125,11 @@ class Grammar(object):
         | func_atom
     )
 
+    impl_call_atom = (
+        const_atom
+        | name
+    )
+
     typedef_atom = Forward()
     typedef_atom_ref = (  # use special type signifier for item_handle
         Group(fixto(lbrack + rbrack, "type:[]"))
@@ -1192,12 +1206,18 @@ class Grammar(object):
 
     compose_item = attach(atom_item + ZeroOrMore(dotdot.suppress() + atom_item), compose_item_handle)
 
+    impl_call_arg = attach(impl_call_atom + ZeroOrMore(trailer), item_handle)
+    for k in reserved_vars:
+        impl_call_arg = ~keyword(k) + impl_call_arg
+    impl_call_item = attach(compose_item + ZeroOrMore(impl_call_arg), impl_call_item_handle)
+
     await_item = Forward()
-    await_item_ref = keyword("await").suppress() + compose_item
+    await_item_ref = keyword("await").suppress() + impl_call_item
+    power_item = await_item | impl_call_item
 
     factor = Forward()
     unary = plus | neg_minus | tilde
-    power = trace(condense((await_item | compose_item) + Optional(exp_dubstar + factor)))
+    power = trace(condense(power_item + Optional(exp_dubstar + factor)))
     factor <<= trace(condense(ZeroOrMore(unary) + power))
 
     mulop = mul_star | div_dubslash | div_slash | percent | matrix_at

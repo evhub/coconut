@@ -20,6 +20,7 @@ def suite_test():
     assert plus1(4) == 5 == plus1_(4)
     assert 2 `plus1` == 3 == plus1(2)
     assert plus1(plus1(5)) == 7 == (plus1..plus1)(5)
+    assert plus1..plus1 5 == 7 == plus1 (plus1 5)
     assert `sqrt` 16 == 4 == `sqrt_` 16
     assert `square` 3 == 9
     def test_sqplus1_plus1sq(sqplus1, plus1sq, parallel=True):

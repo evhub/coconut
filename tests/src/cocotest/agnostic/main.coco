@@ -560,6 +560,8 @@ def main_test():
     f = 10
     def a.f(x) = x
     assert f == 10
+    def f(x, y) = (x, y)
+    assert f 1 2 == (1, 2)
     return True
 
 def easter_egg_test():
