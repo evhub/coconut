@@ -26,6 +26,7 @@ from coconut.constants import (
     all_reqs,
     min_versions,
     version_strictly,
+    pinned_reqs,
     PYPY,
     PY34,
     IPY,
@@ -208,6 +209,7 @@ def print_new_versions(strict=False):
     """Prints new requirement versions."""
     new_updates = []
     same_updates = []
+    pinned_updates = []
     for req in everything_in(all_reqs):
         new_versions = []
         same_versions = []
@@ -225,11 +227,17 @@ def print_new_versions(strict=False):
             + " = " + ver_tuple_to_str(min_versions[req])
             + " -> " + ", ".join(new_versions + ["(" + v + ")" for v in same_versions])
         )
-        if new_versions:
+        if req in pinned_reqs:
+            pinned_updates.append(update_str)
+        elif new_versions:
             new_updates.append(update_str)
         elif same_versions:
             same_updates.append(update_str)
-    print("\n".join(new_updates + same_updates))
+    print("\n".join(new_updates))
+    print()
+    print("\n".join(same_updates))
+    print()
+    print("\n".join(pinned_updates))
 
 
 if __name__ == "__main__":

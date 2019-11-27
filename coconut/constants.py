@@ -176,12 +176,12 @@ min_versions = {
     "pyparsing": (2, 4, 0),
     "cPyparsing": (2, 4, 0, 1, 0, 0),
     "pre-commit": (1,),
-    "recommonmark": (0, 5),
+    "recommonmark": (0, 6),
     "psutil": (5,),
     "jupyter": (1, 0),
-    "mypy": (0, 720),
+    "mypy": (0, 740),
     "futures": (3, 3),
-    "backports.functools-lru-cache": (1, 5),
+    "backports.functools-lru-cache": (1, 6),
     "argparse": (1, 4),
     "pexpect": (4,),
     "watchdog": (0, 9),
@@ -209,6 +209,21 @@ min_versions = {
     "sphinx": (1, 7, 4),
     "sphinx_bootstrap_theme": (0, 4),
 }
+
+# should match the reqs with comments above
+pinned_reqs = (
+    "jupyter-console",
+    ("ipython", "py3"),
+    "pygments",
+    "prompt_toolkit:3",
+    "pytest",
+    "vprof",
+    ("ipython", "py2"),
+    ("ipykernel", "py2"),
+    "prompt_toolkit:2",
+    "sphinx",
+    "sphinx_bootstrap_theme",
+)
 
 version_strictly = (
     "pyparsing",
