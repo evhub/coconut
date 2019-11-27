@@ -422,7 +422,7 @@ class TestShell(unittest.TestCase):
                 cmd = "coconut --jupyter console"
                 print("\n>", cmd)
                 p = pexpect.spawn(cmd)
-                p.expect("In", timeout=100)
+                p.expect("In", timeout=120)
                 p.sendeof()
                 p.expect("Do you really want to exit")
                 p.sendline("y")
