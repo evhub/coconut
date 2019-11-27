@@ -1125,11 +1125,6 @@ class Grammar(object):
         | func_atom
     )
 
-    impl_call_atom = (
-        const_atom
-        | name
-    )
-
     typedef_atom = Forward()
     typedef_atom_ref = (  # use special type signifier for item_handle
         Group(fixto(lbrack + rbrack, "type:[]"))
@@ -1206,7 +1201,10 @@ class Grammar(object):
 
     compose_item = attach(atom_item + ZeroOrMore(dotdot.suppress() + atom_item), compose_item_handle)
 
-    impl_call_arg = attach(impl_call_atom + ZeroOrMore(trailer), item_handle)
+    impl_call_arg = (
+        const_atom
+        | name
+    )
     for k in reserved_vars:
         impl_call_arg = ~keyword(k) + impl_call_arg
     impl_call_item = attach(compose_item + ZeroOrMore(impl_call_arg), impl_call_item_handle)
