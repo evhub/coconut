@@ -307,7 +307,7 @@ def set_mypy_path(mypy_path):
     else:
         new_mypy_path = None
     if new_mypy_path is not None:
-        logger.log(mypy_path_env_var + ":", new_mypy_path)
+        logger.log(mypy_path_env_var, "=", new_mypy_path)
         os.environ[mypy_path_env_var] = new_mypy_path
 
 

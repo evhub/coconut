@@ -21,6 +21,7 @@ from coconut.root import *  # NOQA
 
 import traceback
 
+from coconut.constants import ignore_mypy_errs
 from coconut.exceptions import CoconutException
 from coconut.terminal import logger
 
@@ -48,4 +49,7 @@ def mypy_run(args):
         for line in stdout.splitlines():
             yield line, False
         for line in stderr.splitlines():
+            for ignore_err in ignore_mypy_errs:
+                if ignore_err in line:
+                    continue
             yield line, True

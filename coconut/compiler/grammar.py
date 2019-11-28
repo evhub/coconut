@@ -1202,7 +1202,8 @@ class Grammar(object):
     compose_item = attach(atom_item + ZeroOrMore(dotdot.suppress() + atom_item), compose_item_handle)
 
     impl_call_arg = (
-        const_atom
+        keyword_atom
+        | number
         | name
     )
     for k in reserved_vars:

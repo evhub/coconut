@@ -565,6 +565,10 @@ mypy_path_env_var = "MYPYPATH"
 style_env_var = "COCONUT_STYLE"
 histfile_env_var = "COCONUT_HISTORY_FILE"
 
+ignore_mypy_errs = (
+    "is in the MYPYPATH. Please remove it.",
+)
+
 watch_interval = .1  # seconds
 
 info_tabulation = 18  # offset for tabulated info messages
