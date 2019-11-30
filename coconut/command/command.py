@@ -44,7 +44,6 @@ from coconut.constants import (
     watch_interval,
     icoconut_kernel_names,
     icoconut_kernel_dirs,
-    stub_dir,
     exit_chars,
     coconut_run_args,
     coconut_run_verbose_args,
@@ -616,7 +615,7 @@ class Command(object):
     def run_mypy(self, paths=(), code=None):
         """Run MyPy with arguments."""
         if self.mypy:
-            set_mypy_path(stub_dir)
+            set_mypy_path()
             from coconut.command.mypy import mypy_run
             args = list(paths) + self.mypy_args
             if code is not None:

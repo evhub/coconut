@@ -85,6 +85,7 @@ version_tuple = tuple(VERSION.split("."))
 
 WINDOWS = os.name == "nt"
 PYPY = platform.python_implementation() == "PyPy"
+PY32 = sys.version_info >= (3, 2)
 PY33 = sys.version_info >= (3, 3)
 PY34 = sys.version_info >= (3, 4)
 PY35 = sys.version_info >= (3, 5)
@@ -179,7 +180,7 @@ min_versions = {
     "recommonmark": (0, 6),
     "psutil": (5,),
     "jupyter": (1, 0),
-    "mypy": (0, 740),
+    "mypy": (0, 750),
     "futures": (3, 3),
     "backports.functools-lru-cache": (1, 6),
     "argparse": (1, 4),
@@ -565,10 +566,6 @@ mypy_path_env_var = "MYPYPATH"
 style_env_var = "COCONUT_STYLE"
 histfile_env_var = "COCONUT_HISTORY_FILE"
 
-ignore_mypy_errs = (
-    "is in the MYPYPATH. Please remove it.",
-)
-
 watch_interval = .1  # seconds
 
 info_tabulation = 18  # offset for tabulated info messages
@@ -594,7 +591,8 @@ icoconut_kernel_dirs = tuple(
     for kernel_name in icoconut_kernel_names
 )
 
-stub_dir = os.path.join(base_dir, "stubs")
+base_stub_dir = os.path.join(base_dir, "stubs")
+installed_stub_dir = os.path.join(os.path.expanduser("~"), ".coconut_stubs")
 
 exit_chars = (
     "\x04",  # Ctrl-D

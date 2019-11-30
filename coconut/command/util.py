@@ -23,6 +23,7 @@ import sys
 import os
 import traceback
 import subprocess
+import shutil
 from select import select
 from contextlib import contextmanager
 from copy import copy
@@ -57,8 +58,11 @@ from coconut.constants import (
     num_added_tb_layers,
     minimum_recursion_limit,
     oserror_retcode,
+    base_stub_dir,
+    installed_stub_dir,
     WINDOWS,
     PY34,
+    PY32,
 )
 
 if PY26:
@@ -269,12 +273,8 @@ def run_cmd(cmd, show_output=True, raise_errs=True, **kwargs):
     When raise_errs=True, raises a subprocess.CalledProcessError if the command fails.
     """
     internal_assert(cmd and isinstance(cmd, list), "console commands must be passed as non-empty lists")
-    try:
-        from shutil import which
-    except ImportError:
-        pass
-    else:
-        cmd[0] = which(cmd[0]) or cmd[0]
+    if hasattr(shutil, "which"):
+        cmd[0] = shutil.which(cmd[0]) or cmd[0]
     logger.log_cmd(cmd)
     try:
         if show_output and raise_errs:
@@ -297,13 +297,31 @@ def run_cmd(cmd, show_output=True, raise_errs=True, **kwargs):
             return ""
 
 
-def set_mypy_path(mypy_path):
-    """Prepend to MYPYPATH."""
+def symlink(link_to, link_from):
+    """Link link_from to the directory link_to universally."""
+    if os.path.exists(link_from) and not os.path.islink(link_from):
+        shutil.rmtree(link_from)
+    try:
+        if PY32:
+            os.symlink(link_to, link_from, target_is_directory=True)
+        elif not WINDOWS:
+            os.symlink(link_to, link_from)
+    except OSError:
+        logger.log_exc()
+    else:
+        return
+    if not os.path.islink(link_from):
+        shutil.copytree(link_to, link_from)
+
+
+def set_mypy_path():
+    """Put Coconut stubs in MYPYPATH."""
+    symlink(base_stub_dir, installed_stub_dir)
     original = os.environ.get(mypy_path_env_var)
     if original is None:
-        new_mypy_path = mypy_path
-    elif not original.startswith(mypy_path):
-        new_mypy_path = mypy_path + os.pathsep + original
+        new_mypy_path = installed_stub_dir
+    elif not original.startswith(installed_stub_dir):
+        new_mypy_path = installed_stub_dir + os.pathsep + original
     else:
         new_mypy_path = None
     if new_mypy_path is not None:

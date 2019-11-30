@@ -21,7 +21,6 @@ from coconut.root import *  # NOQA
 
 import traceback
 
-from coconut.constants import ignore_mypy_errs
 from coconut.exceptions import CoconutException
 from coconut.terminal import logger
 
@@ -39,7 +38,7 @@ except ImportError:
 
 
 def mypy_run(args):
-    """Runs mypy with given arguments and shows the result."""
+    """Run mypy with given arguments and return the result."""
     logger.log_cmd(["mypy"] + args)
     try:
         stdout, stderr, exit_code = run(args)
@@ -49,7 +48,4 @@ def mypy_run(args):
         for line in stdout.splitlines():
             yield line, False
         for line in stderr.splitlines():
-            for ignore_err in ignore_mypy_errs:
-                if ignore_err in line:
-                    continue
             yield line, True
