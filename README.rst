@@ -22,7 +22,7 @@ after which the entire world of Coconut will be at your disposal. To help you ge
 - Tutorial_: If you're new to Coconut, a good place to start is Coconut's **tutorial**.
 - Documentation_: If you're looking for info about a specific feature, check out Coconut's **documentation**.
 - `Online Interpreter`_: If you want to try Coconut in your browser, check out Coconut's **online interpreter**.
-- FAQ_: If you have questions about who Coconut is built for and whether or not you should use it, Coconut's frequently asked questions have you covered.
+- FAQ_: If you have general questions about Coconut—like who Coconut is built for and whether or not you should use it—Coconut's frequently asked questions are often the best place to start.
 - `Create a New Issue <https://github.com/evhub/coconut/issues/new>`_: If you're having a problem with Coconut, creating a new issue detailing the problem will allow it to be addressed as soon as possible.
 - Gitter_: For any questions, concerns, or comments about anything Coconut-related, ask around at Coconut's Gitter, a GitHub-integrated chat room for Coconut developers.
 - Releases_: Want to know what's been added in recent Coconut versions? Check out the release log for all the new features and fixes.

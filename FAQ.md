@@ -19,7 +19,7 @@ Coconut supports any Python version `>= 2.6` on the `2.x` branch or `>= 3.2` on 
 
 Yes! But only in the backporting direction: Coconut can convert Python 3 to Python 2, but not the other way around. Coconut really can, though, turn Python 3 code into version-independent Python. Coconut will compile Python 3 syntax, built-ins, and even imports to code that will work on any supported Python version (`2.6`, `2.7`, `>=3.2`).
 
-There a couple of caveats to this, however: some constructs, like `async`, are for all intents and purposes impossible to recreate in lower Python versions, and require a particular `--target` to make them work. For a full list, see [compatible Python versions](DOCS.html#compatible-python-versions).
+There a couple of caveats to this, however: Coconut can't magically make all your other third-party packages version-independent, and some constructs will require a particular `--target` to make them work (for a full list, see [compatible Python versions](DOCS.html#compatible-python-versions)).
 
 ### How do I release a Coconut package on PyPI?
 
@@ -79,10 +79,10 @@ That's great! Coconut is completely open-source, and new contributors are always
 
 ### Why the name Coconut?
 
-![Monty Python and the Holy Grail](http://i.imgur.com/PoFot.jpg)
+![](http://i.imgur.com/PoFot.jpg)
 
 If you don't get the reference, the image above is from [Monty Python and the Holy Grail](https://en.wikipedia.org/wiki/Monty_Python_and_the_Holy_Grail), in which the Knights of the Round Table bang Coconuts together to mimic the sound of riding a horse. The name was chosen to reference the fact that [Python is named after Monty Python](https://www.python.org/doc/essays/foreword/) as well.
 
 ### Who developed Coconut?
 
-[Evan Hubinger](https://github.com/evhub) is an undergraduate student studying mathematics and computer science at [Harvey Mudd College](https://www.hmc.edu/). He can be reached by asking a question on [Coconut's Gitter chat room](https://gitter.im/evhub/coconut), through email at <evanjhub@gmail.com>, or on [LinkedIn](https://www.linkedin.com/in/ehubinger).
+[Evan Hubinger](https://github.com/evhub) is a [full-time AGI safety researcher](https://www.alignmentforum.org/users/evhub) at the [Machine Intelligence Research Institute](https://intelligence.org/). He can be reached by asking a question on [Coconut's Gitter chat room](https://gitter.im/evhub/coconut), through email at <evanjhub@gmail.com>, or on [LinkedIn](https://www.linkedin.com/in/ehubinger).
