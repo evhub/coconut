@@ -192,7 +192,7 @@ def all_versions(req):
 
 def newer(new_ver, old_ver, strict=False):
     """Determines if the first version tuple is newer than the second.
-    True if newer, False if older, None if difference is after specified version parts."""
+    True if newer; False if older."""
     if old_ver == new_ver or old_ver + (0,) == new_ver:
         return False
     for n, o in zip(new_ver, old_ver):
