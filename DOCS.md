@@ -148,7 +148,7 @@ dest                destination directory for compiled files (defaults to
                         MyPy) (implies --package)
   --argv ..., --args ...
                         set sys.argv to source plus remaining args for use in
-                        Coconut script being run
+                        the Coconut script being run
   --tutorial            open Coconut's tutorial in the default web browser
   --documentation       open Coconut's documentation in the default web
                         browser
@@ -1406,7 +1406,8 @@ _Showcases tail call optimization._
 **Python:**
 _Can't be done without rewriting the function(s)._
 
-#### --no-tco flag
+#### `--no-tco` flag
+
 _Note: Tail call optimization will be turned off if you pass the `--no-tco` command-line option, which is useful if you are having trouble reading your tracebacks and/or need maximum performance._
 
 `--no-tco` does not disable tail recursion elimination.
@@ -1607,7 +1608,7 @@ Unlike Python, which only supports a single variable or function call in a decor
 
 **Coconut:**
 ```coconut
-@ wrapper1 .. wrapper2 $(arg)
+@ wrapper1 .. wrapper2$(arg)
 def func(x) = x**2
 ```
 
@@ -2513,9 +2514,9 @@ Retrieves a string containing information about the Coconut version. The optiona
 
 #### `auto_compilation`
 
-**coconut.convenience.auto_compilation**(**[**_on_**]**)
+**coconut.convenience.auto_compilation**(_on_=`True`)
 
-Turns [automatic compilation](#automatic-compilation) on or off (defaults to on). This function is called automatically when `coconut.convenience` is imported.
+Turns [automatic compilation](#automatic-compilation) on or off. This function is called automatically when `coconut.convenience` is imported.
 
 #### `CoconutException`
 

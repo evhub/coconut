@@ -141,6 +141,8 @@ To that end, Coconut provides [built-in IPython/Jupyter support](DOCS.html#ipyth
 coconut --jupyter notebook
 ```
 
+_Alternatively, to launch the Jupyter interpreter with Coconut as the kernel, run `coconut --jupyter console` instead._
+
 ### Case Studies
 
 Because Coconut is built to be useful, the best way to demo it is to show it in action. To that end, the majority of this tutorial will be showing how to apply Coconut to solve particular problems, which we'll call case studies.
