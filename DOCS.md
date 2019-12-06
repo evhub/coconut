@@ -309,7 +309,7 @@ The line magic `%load_ext coconut` will load Coconut as an extension, providing 
 
 ### MyPy Integration
 
-Coconut has the ability to integrate with [MyPy](http://mypy-lang.org/) to provide optional static type-checking, including for all Coconut built-ins. Simply pass `--mypy` to enable MyPy integration, though be careful to pass it only as the last argument, since all arguments after `--mypy` are passed to `mypy`, not Coconut.
+Coconut has the ability to integrate with [MyPy](http://mypy-lang.org/) to provide optional static type-checking, including for all Coconut built-ins. Simply pass `--mypy` to enable MyPy integration, though be careful to pass it only as the last argument, since all arguments after `--mypy` are passed to `mypy`, not Coconut. You can also call `mypy` directly on the compiled Coconut if you run `coconut --mypy` at least once and then add `~/.coconut_stubs` to your [`MYPYPATH`](https://mypy.readthedocs.io/en/latest/running_mypy.html#how-imports-are-found).
 
 To explicitly annotate your code with types for MyPy to check, Coconut supports [Python 3 function type annotations](https://www.python.org/dev/peps/pep-0484/), [Python 3.6 variable type annotations](https://www.python.org/dev/peps/pep-0526/), and even Coconut's own [enhanced type annotation syntax](#enhanced-type-annotation). By default, all type annotations are compiled to Python-2-compatible type comments, which means it all works on any Python version.
 
