@@ -175,7 +175,7 @@ all_reqs = {
 
 min_versions = {
     "pyparsing": (2, 4, 5),
-    "cPyparsing": (2, 4, 0, 1, 0, 0),
+    "cPyparsing": (2, 4, 5, 0, 1, 1),
     "pre-commit": (1,),
     "recommonmark": (0, 6),
     "psutil": (5,),
@@ -257,6 +257,8 @@ classifiers = (
     "Programming Language :: Python :: 3.4",
     "Programming Language :: Python :: 3.5",
     "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
     "Programming Language :: Other",
     "Programming Language :: Other Scripting Engines",
     "Programming Language :: Python :: Implementation :: CPython",
