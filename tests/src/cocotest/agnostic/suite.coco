@@ -570,7 +570,7 @@ def suite_test():
     assert t.lam() == t
     assert t.comp() == (t,)
     assert t.N()$[:2] |> list == [(t, 0), (t, 1)]
-    assert map(Ad.ef, range(5)) |> list == range(1, 6) |> list
+    assert map(Ad().ef, range(5)) |> list == range(1, 6) |> list
     return True
 
 def tco_test():

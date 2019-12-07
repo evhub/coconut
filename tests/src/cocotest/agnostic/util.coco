@@ -929,5 +929,5 @@ class descriptor_test:
 # Function named Ad.ef
 class Ad
 
-def Ad.ef(0) = 1
-addpattern def Ad.ef(x) = x + 1
+def Ad.ef(self, 0) = 1
+addpattern def Ad.ef(self, x) = x + 1
