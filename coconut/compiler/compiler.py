@@ -1933,6 +1933,13 @@ if not {check_var}:
         with self.complain_on_err():
             func_name, func_args, func_params = parse(self.split_func, def_stmt)
 
+        def_name = func_name  # the name used when defining the function
+
+        # handle dotted function definition
+        is_dotted = func_name is not None and "." in func_name
+        if is_dotted:
+            def_name = func_name.rsplit(".", 1)[-1]
+
         # detect pattern-matching functions
         is_match_func = func_params == "(*{match_to_args_var}, **{match_to_kwargs_var})".format(
             match_to_args_var=match_to_args_var,
@@ -1946,14 +1953,12 @@ if not {check_var}:
             # binds most tightly, except for TCO
             decorators += "@_coconut_addpattern(" + func_name + ")\n"
 
-        # handle dotted function definition
-        undotted_name = None  # the function __name__ if func_name is a dotted name
-        if func_name is not None:
-            if "." in func_name:
-                undotted_name = func_name.rsplit(".", 1)[-1]
-                def_stmt_pre_lparen, def_stmt_post_lparen = def_stmt.split("(", 1)
-                def_stmt_pre_lparen = def_stmt_pre_lparen.replace(func_name, undotted_name)
-                def_stmt = def_stmt_pre_lparen + "(" + def_stmt_post_lparen
+        # modify function definition to use def_name
+        if def_name != func_name:
+            def_stmt_pre_lparen, def_stmt_post_lparen = def_stmt.split("(", 1)
+            def_stmt_def, def_stmt_name = def_stmt_pre_lparen.rsplit(" ", 1)
+            def_stmt_name = def_stmt_name.replace(func_name, def_name)
+            def_stmt = def_stmt_def + " " + def_stmt_name + "(" + def_stmt_post_lparen
 
         # handle async functions
         if is_async:
@@ -2007,7 +2012,7 @@ if not {check_var}:
                         + openindent + base + base_dedent
                         + ("\n" if "\n" not in base_dedent else "") + "return None"
                         + ("\n" if "\n" not in dedent else "") + closeindent + dedent
-                    + func_store + " = " + (func_name if undotted_name is None else undotted_name) + "\n"
+                    + func_store + " = " + def_name + "\n"
                 )
             if tco:
                 decorators += "@_coconut_tco\n"  # binds most tightly (aside from below)
@@ -2017,16 +2022,16 @@ if not {check_var}:
             decorators += "@_coconut_mark_as_match\n"  # binds most tightly
 
         # handle dotted function definition
-        if undotted_name is not None:
+        if is_dotted:
             store_var = self.get_temp_var("dotted_func_name_store")
             out = (
                 "try:\n"
-                + openindent + store_var + " = " + undotted_name + "\n"
+                + openindent + store_var + " = " + def_name + "\n"
                 + closeindent + "except _coconut.NameError:\n"
                 + openindent + store_var + " = None\n"
                 + closeindent + decorators + def_stmt + func_code
-                + func_name + " = " + undotted_name + "\n"
-                + undotted_name + " = " + store_var + "\n"
+                + func_name + " = " + def_name + "\n"
+                + def_name + " = " + store_var + "\n"
             )
 
         else:

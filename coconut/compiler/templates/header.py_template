@@ -479,6 +479,8 @@ class _coconut_base_pattern_func{object}:
     def __reduce__(self):
         return (self.__class__, _coconut.tuple(self.patterns))
     def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
         return _coconut.functools.partial(self, obj)
 def _coconut_mark_as_match(base_func):
     base_func._coconut_is_match = True
