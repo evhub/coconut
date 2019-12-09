@@ -189,8 +189,8 @@ After you've tested your changes locally, you'll want to add more permanent test
     1. Push to `develop`
     1. Wipe all updated versions on [readthedocs](https://readthedocs.org/projects/coconut/versions/)
     1. Build all updated versions on [readthedocs](https://readthedocs.org/projects/coconut/builds/)
-    1. Copy [PyPI](https://pypi.python.org/pypi/coconut) keywords to readthedocs tags
-    1. Get SHA-256 hash from [PyPI](https://pypi.python.org/pypi/coconut) `.tar.gz` file and use that as well as the latest pyparsing version to update the [local feedstock](https://github.com/evhub/coconut-feedstock)
+    1. Copy [PyPI](https://pypi.python.org/pypi/coconut) keywords to [readthedocs tags](https://readthedocs.org/dashboard/coconut/edit/)
+    1. Get SHA-256 hash from [PyPI](https://pypi.python.org/pypi/coconut) `.tar.gz` file and use that as well as the current version requirements in [`constants.py`](https://github.com/evhub/coconut/blob/master/coconut/constants.py) to update the [local feedstock](https://github.com/evhub/coconut-feedstock)
     1. Submit PR to update [Coconut's `conda-forge` feedstock](https://github.com/conda-forge/coconut-feedstock)
     1. Update [website](https://github.com/evhub/coconut/tree/gh-pages) if it needs updating
     1. Wait until feedstock PR is passing then merge it
