@@ -473,13 +473,8 @@ class Compiler(Grammar):
         self.stmt_lambdas = []
         self.unused_imports = set()
         self.original_lines = []
+        self.num_lines = 0
         self.bind()
-
-    def get_temp_var(self, base_name):
-        """Get a unique temporary variable name."""
-        var_name = reserved_prefix + "_" + base_name + "_" + str(self.temp_var_counts[base_name])
-        self.temp_var_counts[base_name] += 1
-        return var_name
 
     @contextmanager
     def inner_environment(self):
@@ -490,6 +485,7 @@ class Compiler(Grammar):
         skips, self.skips = self.skips, []
         docstring, self.docstring = self.docstring, ""
         original_lines, self.original_lines = self.original_lines, []
+        num_lines, self.num_lines = self.num_lines, 0
         try:
             yield
         finally:
@@ -499,6 +495,13 @@ class Compiler(Grammar):
             self.skips = skips
             self.docstring = docstring
             self.original_lines = original_lines
+            self.num_lines = num_lines
+
+    def get_temp_var(self, base_name):
+        """Get a unique temporary variable name."""
+        var_name = reserved_prefix + "_" + base_name + "_" + str(self.temp_var_counts[base_name])
+        self.temp_var_counts[base_name] += 1
+        return var_name
 
     def bind(self):
         """Binds reference objects to the proper parse actions."""
@@ -777,6 +780,7 @@ class Compiler(Grammar):
             end_index = len(inputstring) - 1 if inputstring else 0
             raise self.make_err(CoconutStyleError, "missing new line at end of file", inputstring, end_index)
         original_lines = inputstring.splitlines()
+        self.num_lines = len(original_lines)
         if self.keep_lines:
             self.original_lines = original_lines
         inputstring = "\n".join(original_lines)
@@ -1107,7 +1111,8 @@ class Compiler(Grammar):
         for line in inputstring.splitlines():
             add_one_to_ln = False
             try:
-                if line.endswith(lnwrapper):
+                has_ln_comment = line.endswith(lnwrapper)
+                if has_ln_comment:
                     line, index = line[:-1].rsplit("#", 1)
                     new_ln = self.get_ref("ln", index)
                     if new_ln < ln:
@@ -1115,14 +1120,14 @@ class Compiler(Grammar):
                     ln = new_ln
                     line = line.rstrip()
                     add_one_to_ln = True
-                if not reformatting or add_one_to_ln:  # add_one_to_ln here is a proxy for whether there was a ln comment or not
+                if not reformatting or has_ln_comment:
                     line += self.comments.get(ln, "")
                 if not reformatting and line.rstrip() and not line.lstrip().startswith("#"):
                     line += self.ln_comment(ln)
             except CoconutInternalException as err:
                 complain(err)
             out.append(line)
-            if add_one_to_ln:
+            if add_one_to_ln and ln <= self.num_lines - 1:
                 ln += 1
         return "\n".join(out)
 

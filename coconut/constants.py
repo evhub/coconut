@@ -228,6 +228,7 @@ pinned_reqs = (
 
 version_strictly = (
     "pyparsing",
+    "cPyparsing",
     "sphinx",
     "sphinx_bootstrap_theme",
     "mypy",

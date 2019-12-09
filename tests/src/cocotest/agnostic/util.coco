@@ -1,6 +1,8 @@
 # Imports:
 import random
 from contextlib import contextmanager
+if TYPE_CHECKING:
+    import typing
 
 # Random Number Helper:
 def rand_list(n):
@@ -927,7 +929,8 @@ class descriptor_test:
 
 
 # Function named Ad.ef
-class Ad
+class Ad:
+    ef: typing.Callable
 
-def Ad.ef(self, 0) = 1
-addpattern def Ad.ef(self, x) = x + 1
+def Ad.ef(self, 0) = 1  # type: ignore
+addpattern def Ad.ef(self, x) = x + 1  # type: ignore
