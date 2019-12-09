@@ -145,6 +145,12 @@ arguments.add_argument(
 )
 
 arguments.add_argument(
+    "--no-wrap", "--nowrap",
+    action="store_true",
+    help="disable wrapping type hints in strings",
+)
+
+arguments.add_argument(
     "-c", "--code",
     metavar="code",
     type=str,

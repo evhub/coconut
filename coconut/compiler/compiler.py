@@ -406,7 +406,7 @@ class Compiler(Grammar):
         """Creates a new compiler with the given parsing parameters."""
         self.setup(*args, **kwargs)
 
-    def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False, no_tco=False):
+    def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False, no_tco=False, no_wrap=False):
         """Initializes parsing parameters."""
         if target is None:
             target = ""
@@ -426,10 +426,11 @@ class Compiler(Grammar):
         self.line_numbers = line_numbers
         self.keep_lines = keep_lines
         self.no_tco = no_tco
+        self.no_wrap = no_wrap
 
     def __reduce__(self):
         """Return pickling information."""
-        return (Compiler, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.no_tco))
+        return (Compiler, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.no_tco, self.no_wrap))
 
     def __copy__(self):
         """Create a new, blank copy of the compiler."""
@@ -1590,7 +1591,7 @@ def __new__(_cls, {all_args}):
 
         if types:
             namedtuple_call = '_coconut.typing.NamedTuple("' + name + '", [' + ", ".join(
-                '("' + argname + '", ' + self.wrap_typedef(types.get(i, "_coconut.typing.Any")) + ")"
+                '("' + argname + '", ' + (types.get(i, "_coconut.typing.Any") if self.no_wrap else self.wrap_typedef(types.get(i, "_coconut.typing.Any"))) + ")"
                 for i, argname in enumerate(base_args + ([starred_arg] if starred_arg is not None else []))
             ) + "])"
         else:
@@ -2180,7 +2181,7 @@ if {store_var} is not _coconut_sentinel:
         """Process Python 3 type annotations."""
         if len(tokens) == 1:  # return typedef
             if self.target.startswith("3"):
-                return " -> " + self.wrap_typedef(tokens[0]) + ":"
+                return " -> " + (tokens[0] if self.no_wrap else self.wrap_typedef(tokens[0])) + ":"
             else:
                 return ":\n" + self.wrap_comment(" type: (...) -> " + tokens[0])
         else:  # argument typedef
@@ -2192,7 +2193,7 @@ if {store_var} is not _coconut_sentinel:
             else:
                 raise CoconutInternalException("invalid type annotation tokens", tokens)
             if self.target.startswith("3"):
-                return varname + ": " + self.wrap_typedef(typedef) + default + comma
+                return varname + ": " + (typedef if self.no_wrap else self.wrap_typedef(typedef)) + default + comma
             else:
                 return varname + default + comma + self.wrap_passthrough(self.wrap_comment(" type: " + typedef) + "\n" + " " * self.tabideal)
 
@@ -2200,12 +2201,12 @@ if {store_var} is not _coconut_sentinel:
         """Process Python 3.6 variable type annotations."""
         if len(tokens) == 2:
             if self.target_info >= (3, 6):
-                return tokens[0] + ": " + self.wrap_typedef(tokens[1])
+                return tokens[0] + ": " + (tokens[1] if self.no_wrap else self.wrap_typedef(tokens[1]))
             else:
                 return tokens[0] + " = None" + self.wrap_comment(" type: " + tokens[1])
         elif len(tokens) == 3:
             if self.target_info >= (3, 6):
-                return tokens[0] + ": " + self.wrap_typedef(tokens[1]) + " = " + tokens[2]
+                return tokens[0] + ": " + (tokens[1] if self.no_wrap else self.wrap_typedef(tokens[1])) + " = " + tokens[2]
             else:
                 return tokens[0] + " = " + tokens[2] + self.wrap_comment(" type: " + tokens[1])
         else:
