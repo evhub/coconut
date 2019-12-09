@@ -67,7 +67,8 @@ prelude_git = "https://github.com/evhub/coconut-prelude"
 coconut_snip = r"msg = '<success>'; pmsg = print$(msg); `pmsg`"
 
 mypy_snip = r"a: str = count()[0]"
-mypy_snip_err = 'error: Incompatible types in assignment (expression has type "int", variable has type "str")'
+mypy_snip_err = r'''error: Incompatible types in assignment (expression has type "int", variable has type "str")
+Found 1 error in 1 file (checked 1 source file)'''
 
 mypy_args = ["--follow-imports", "silent", "--ignore-missing-imports"]
 
@@ -97,7 +98,8 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
     elif assert_output is True:
         assert_output = ("<success>",)
     elif isinstance(assert_output, str):
-        assert_output = (assert_output,)
+        if "\n" not in assert_output:
+            assert_output = (assert_output,)
     else:
         assert_output = tuple(x if x is not True else "<success>" for x in assert_output)
     stdout, stderr, retcode = call_output(cmd, **kwargs)
@@ -124,11 +126,15 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
         if check_mypy and all(test not in line for test in ignore_mypy_errs_with):
             assert "INTERNAL ERROR" not in line, "MyPy INTERNAL ERROR in " + repr(line)
             assert "error:" not in line, "MyPy error in " + repr(line)
-    last_line = lines[-1] if lines else ""
-    if assert_output is None:
-        assert not last_line, "Expected nothing; got " + repr(last_line)
+    if isinstance(assert_output, str):
+        got_output = "\n".join(lines) + "\n"
+        assert assert_output in got_output, "Expected " + repr(assert_output) + "; got " + repr(got_output)
     else:
-        assert any(x in last_line for x in assert_output), "Expected " + ", ".join(assert_output) + "; got " + repr(last_line)
+        last_line = lines[-1] if lines else ""
+        if assert_output is None:
+            assert not last_line, "Expected nothing; got " + repr(last_line)
+        else:
+            assert any(x in last_line for x in assert_output), "Expected " + ", ".join(assert_output) + "; got " + repr(last_line)
 
 
 def call_python(args, **kwargs):
@@ -422,7 +428,7 @@ class TestShell(unittest.TestCase):
                 cmd = "coconut --jupyter console"
                 print("\n>", cmd)
                 p = pexpect.spawn(cmd)
-                p.expect("In", timeout=100)
+                p.expect("In", timeout=120)
                 p.sendeof()
                 p.expect("Do you really want to exit")
                 p.sendline("y")

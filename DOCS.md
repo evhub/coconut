@@ -148,7 +148,7 @@ dest                destination directory for compiled files (defaults to
                         MyPy) (implies --package)
   --argv ..., --args ...
                         set sys.argv to source plus remaining args for use in
-                        Coconut script being run
+                        the Coconut script being run
   --tutorial            open Coconut's tutorial in the default web browser
   --documentation       open Coconut's documentation in the default web
                         browser
@@ -237,7 +237,7 @@ _Note: Periods are ignored in target specifications, such that the target `27` i
 If the `--strict` (`-s` for short) flag is enabled, Coconut will perform additional checks on the code being compiled. It is recommended that you use the `--strict` flag if you are starting a new Coconut project, as it will help you write cleaner code. Specifically, the extra checks done by `--strict` are
 
 - disabling deprecated features (making them entirely unavailable to code compiled with `--strict`),
-- warning about unused imports, and
+- warning about unused imports,
 - throwing errors on various style problems (see list below).
 
 The style issues which will cause `--strict` to throw an error are:
@@ -309,7 +309,7 @@ The line magic `%load_ext coconut` will load Coconut as an extension, providing 
 
 ### MyPy Integration
 
-Coconut has the ability to integrate with [MyPy](http://mypy-lang.org/) to provide optional static type-checking, including for all Coconut built-ins. Simply pass `--mypy` to enable MyPy integration, though be careful to pass it only as the last argument, since all arguments after `--mypy` are passed to `mypy`, not Coconut.
+Coconut has the ability to integrate with [MyPy](http://mypy-lang.org/) to provide optional static type-checking, including for all Coconut built-ins. Simply pass `--mypy` to enable MyPy integration, though be careful to pass it only as the last argument, since all arguments after `--mypy` are passed to `mypy`, not Coconut. You can also call `mypy` directly on the compiled Coconut if you run `coconut --mypy` at least once and then add `~/.coconut_stubs` to your [`MYPYPATH`](https://mypy.readthedocs.io/en/latest/running_mypy.html#how-imports-are-found).
 
 To explicitly annotate your code with types for MyPy to check, Coconut supports [Python 3 function type annotations](https://www.python.org/dev/peps/pep-0484/), [Python 3.6 variable type annotations](https://www.python.org/dev/peps/pep-0526/), and even Coconut's own [enhanced type annotation syntax](#enhanced-type-annotation). By default, all type annotations are compiled to Python-2-compatible type comments, which means it all works on any Python version.
 
@@ -328,7 +328,7 @@ In order of precedence, highest first, the operators supported in Coconut are:
 ===================== ==========================
 Symbol(s)             Associativity
 ===================== ==========================
-..                    n/a (won't capture call)
+..                    n/a
 **                    right
 +, -, ~               unary
 *, /, //, %, @        left
@@ -1113,6 +1113,7 @@ map(_lambda, L)
 ```
 
 #### Type annotations
+
 Another case where statement lambdas would be used over standard lambdas is when the parameters to the lambda are typed with type annotations. Statement lambdas use the standard Python syntax for adding type annotations to their parameters:
 
 ```coconut
@@ -1235,6 +1236,31 @@ A very common thing to do in functional programming is to make use of function v
 ```coconut_python
 import operator
 print(list(map(operator.add, range(0, 5), range(5, 10))))
+```
+
+### Implicit Function Application
+
+Coconut supports implicit function application of the form `f x y`, which is compiled to `f(x, y)` (note: **not** `f(x)(y)` as is common in many languages with automatic currying). Implicit function application has a lower precedence than `..` function composition and a higher precedence than `**`.
+
+Supported arguments to implicit function application are highly restricted, and must be either variables or non-string constants (e.g. `f x 1` will work but `f x [1]`, `f x (1+2)`, and `f "abc"` will not). Implicit function application is only intended for simple use cases—for more complex cases, use either standard function application or [pipes](#pipeline).
+
+##### Examples
+
+**Coconut:**
+```coconut
+def f(x, y) = (x, y)
+print (f 5 10)
+```
+
+```coconut
+def p1(x) = x + 1
+print..p1 5
+```
+
+**Python:**
+```coconut_python
+def f(x, y): return (x, y)
+print(f(100, 5+6))
 ```
 
 ### Enhanced Type Annotation
@@ -1380,7 +1406,8 @@ _Showcases tail call optimization._
 **Python:**
 _Can't be done without rewriting the function(s)._
 
-#### --no-tco flag
+#### `--no-tco` flag
+
 _Note: Tail call optimization will be turned off if you pass the `--no-tco` command-line option, which is useful if you are having trouble reading your tracebacks and/or need maximum performance._
 
 `--no-tco` does not disable tail recursion elimination.
@@ -1581,7 +1608,7 @@ Unlike Python, which only supports a single variable or function call in a decor
 
 **Coconut:**
 ```coconut
-@ wrapper1 .. wrapper2 $(arg)
+@ wrapper1 .. wrapper2$(arg)
 def func(x) = x**2
 ```
 
@@ -1751,7 +1778,7 @@ _Can't be done without defining a custom `map` type. The full definition of `map
 
 Takes one argument that is a [pattern-matching function](#pattern-matching-functions), and returns a decorator that adds the patterns in the existing function to the new function being decorated, where the existing patterns are checked first, then the new. Roughly equivalent to:
 ```
-def addpattern(base_func):
+def addpattern(base_func, *, allow_any_func=True):
     """Decorator to add a new case to a pattern-matching function, where the new case is checked last."""
     def pattern_adder(func):
         def add_pattern_func(*args, **kwargs):
@@ -1791,6 +1818,8 @@ print_type("This is a string.") # Raises MatchError
 ```
 
 The last case in an `addpattern` function, however, doesn't have to be a pattern-matching function if it is intended to catch all remaining cases.
+
+To catch this mistake, `addpattern` will emit a warning if passed what it believes to be a non-pattern-matching function. However, this warning can sometimes be erroneous if the original pattern-matching function has been wrapped in some way, in which case you can pass `allow_any_func=True` to dismiss the warning.
 
 ##### Example
 
@@ -2485,9 +2514,9 @@ Retrieves a string containing information about the Coconut version. The optiona
 
 #### `auto_compilation`
 
-**coconut.convenience.auto_compilation**(**[**_on_**]**)
+**coconut.convenience.auto_compilation**(_on_=`True`)
 
-Turns [automatic compilation](#automatic-compilation) on or off (defaults to on). This function is called automatically when `coconut.convenience` is imported.
+Turns [automatic compilation](#automatic-compilation) on or off. This function is called automatically when `coconut.convenience` is imported.
 
 #### `CoconutException`
 

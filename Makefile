@@ -22,7 +22,7 @@ test-all:
 # for quickly testing nearly everything locally, just use test-basic
 .PHONY: test-basic
 test-basic:
-	python ./tests --strict --force
+	python ./tests --strict --line-numbers --force
 	python ./tests/dest/runner.py
 	python ./tests/dest/extras.py
 
@@ -30,28 +30,28 @@ test-basic:
 # should only be used when testing the tests not the compiler
 .PHONY: test-tests
 test-tests:
-	python ./tests --strict
+	python ./tests --strict --line-numbers
 	python ./tests/dest/runner.py
 	python ./tests/dest/extras.py
 
 # same as test-basic but also runs mypy
 .PHONY: test-mypy
 test-mypy:
-	python ./tests --strict --force --target sys --line-numbers --mypy --follow-imports silent --ignore-missing-imports
+	python ./tests --strict --line-numbers --force --target sys --mypy --follow-imports silent --ignore-missing-imports
 	python ./tests/dest/runner.py
 	python ./tests/dest/extras.py
 
 # same as test-basic but includes verbose output for better debugging
 .PHONY: test-verbose
 test-verbose:
-	python ./tests --strict --force --verbose --jobs 0
+	python ./tests --strict --line-numbers --force --verbose --jobs 0
 	python ./tests/dest/runner.py
 	python ./tests/dest/extras.py
 
 # same as test-basic but also tests easter eggs
 .PHONY: test-easter-eggs
 test-easter-eggs:
-	python ./tests --strict --force
+	python ./tests --strict --line-numbers --force
 	python ./tests/dest/runner.py --test-easter-eggs
 	python ./tests/dest/extras.py
 

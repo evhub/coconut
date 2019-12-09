@@ -85,6 +85,7 @@ version_tuple = tuple(VERSION.split("."))
 
 WINDOWS = os.name == "nt"
 PYPY = platform.python_implementation() == "PyPy"
+PY32 = sys.version_info >= (3, 2)
 PY33 = sys.version_info >= (3, 3)
 PY34 = sys.version_info >= (3, 4)
 PY35 = sys.version_info >= (3, 5)
@@ -151,7 +152,7 @@ all_reqs = {
         "watchdog",
     ),
     "asyncio": (
-        "trollius",
+        ("trollius", "py2"),
     ),
     "dev": (
         "pre-commit",
@@ -173,19 +174,19 @@ all_reqs = {
 }
 
 min_versions = {
-    "pyparsing": (2, 4, 0),
-    "cPyparsing": (2, 4, 0, 1, 0, 0),
+    "pyparsing": (2, 4, 5),
+    "cPyparsing": (2, 4, 5, 0, 1, 1),
     "pre-commit": (1,),
-    "recommonmark": (0, 5),
+    "recommonmark": (0, 6),
     "psutil": (5,),
     "jupyter": (1, 0),
-    "mypy": (0, 720),
+    "mypy": (0, 750),
     "futures": (3, 3),
-    "backports.functools-lru-cache": (1, 5),
+    "backports.functools-lru-cache": (1, 6),
     "argparse": (1, 4),
     "pexpect": (4,),
     "watchdog": (0, 9),
-    "trollius": (2, 2),
+    ("trollius", "py2"): (2, 2),
     "requests": (2,),
     ("numpy", "py34"): (1,),
     ("numpy", "py2"): (1,),
@@ -210,8 +211,24 @@ min_versions = {
     "sphinx_bootstrap_theme": (0, 4),
 }
 
+# should match the reqs with comments above
+pinned_reqs = (
+    "jupyter-console",
+    ("ipython", "py3"),
+    "pygments",
+    "prompt_toolkit:3",
+    "pytest",
+    "vprof",
+    ("ipython", "py2"),
+    ("ipykernel", "py2"),
+    "prompt_toolkit:2",
+    "sphinx",
+    "sphinx_bootstrap_theme",
+)
+
 version_strictly = (
     "pyparsing",
+    "cPyparsing",
     "sphinx",
     "sphinx_bootstrap_theme",
     "mypy",
@@ -241,6 +258,8 @@ classifiers = (
     "Programming Language :: Python :: 3.4",
     "Programming Language :: Python :: 3.5",
     "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
     "Programming Language :: Other",
     "Programming Language :: Other Scripting Engines",
     "Programming Language :: Python :: Implementation :: CPython",
@@ -411,14 +430,12 @@ max_match_val_repr_len = 500  # max len of match val reprs in err msgs
 
 reserved_prefix = "_coconut"
 decorator_var = reserved_prefix + "_decorator"
-lazy_chain_var = reserved_prefix + "_lazy_chain"
 import_as_var = reserved_prefix + "_import"
 yield_from_var = reserved_prefix + "_yield_from"
 yield_item_var = reserved_prefix + "_yield_item"
 raise_from_var = reserved_prefix + "_raise_from"
 stmt_lambda_var = reserved_prefix + "_lambda"
 tre_mock_var = reserved_prefix + "_mock_func"
-tre_store_var = reserved_prefix + "_recursive_func"
 tre_check_var = reserved_prefix + "_is_recursive"
 none_coalesce_var = reserved_prefix + "_none_coalesce_item"
 func_var = reserved_prefix + "_func"
@@ -432,7 +449,6 @@ match_check_var = reserved_prefix + "_match_check"
 match_temp_var = reserved_prefix + "_match_temp"
 match_err_var = reserved_prefix + "_match_err"
 match_val_repr_var = reserved_prefix + "_match_val_repr"
-case_check_var = reserved_prefix + "_case_check"
 function_match_error_var = reserved_prefix + "_FunctionMatchError"
 
 wildcard = "_"  # for pattern-matching
@@ -578,7 +594,8 @@ icoconut_kernel_dirs = tuple(
     for kernel_name in icoconut_kernel_names
 )
 
-stub_dir = os.path.join(base_dir, "stubs")
+base_stub_dir = os.path.join(base_dir, "stubs")
+installed_stub_dir = os.path.join(os.path.expanduser("~"), ".coconut_stubs")
 
 exit_chars = (
     "\x04",  # Ctrl-D
@@ -716,6 +733,6 @@ with_toc = """
 """
 
 project = "Coconut"
-copyright = "2015-2018 Evan Hubinger, licensed under Apache 2.0"
+copyright = "2015-2019 Evan Hubinger, licensed under Apache 2.0"
 
 highlight_language = "coconut"

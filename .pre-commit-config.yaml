@@ -1,6 +1,6 @@
 repos:
 -   repo: git://github.com/pre-commit/pre-commit-hooks.git
-    rev: v2.2.3
+    rev: v2.4.0
     hooks:
     -   id: check-byte-order-marker
     -   id: check-merge-conflict
@@ -29,6 +29,6 @@ repos:
         - --experimental
         - --ignore=W503,E501,E722,E402
 -   repo: https://github.com/asottile/add-trailing-comma
-    rev: v1.4.1
+    rev: v1.5.0
     hooks:
     -   id: add-trailing-comma

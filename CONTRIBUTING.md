@@ -181,18 +181,17 @@ After you've tested your changes locally, you'll want to add more permanent test
     1. Release [`sublime-coconut`](https://github.com/evhub/sublime-coconut) first if applicable
     1. Merge pull request and mark as resolved
     1. Release `master` on GitHub
-    1. Fetch and switch to `master` locally
+    1. `git fetch`, `git checkout master`, and `git pull`
     1. Run `make upload`
-    1. Switch back to `develop` locally
-    1. Update from master
+    1. `git checkout develop`, `git rebase master`, and `git push`
     1. Turn on `develop` in `root`
     1. Run `make dev`
     1. Push to `develop`
-    1. Update [website](https://github.com/evhub/coconut/tree/gh-pages) if it needs updating
     1. Wipe all updated versions on [readthedocs](https://readthedocs.org/projects/coconut/versions/)
-    1. Copy [PyPI](https://pypi.python.org/pypi/coconut) keywords to readthedocs tags
     1. Build all updated versions on [readthedocs](https://readthedocs.org/projects/coconut/builds/)
-    1. Download latest [PyPI](https://pypi.python.org/pypi/coconut) `.tar.gz` file, hash it with `openssl sha256 coconut-<version>.tar.gz`, and use that to update the [local feedstock](https://github.com/conda-forge/coconut-feedstock)
+    1. Copy [PyPI](https://pypi.python.org/pypi/coconut) keywords to readthedocs tags
+    1. Get SHA-256 hash from [PyPI](https://pypi.python.org/pypi/coconut) `.tar.gz` file and use that as well as the latest pyparsing version to update the [local feedstock](https://github.com/evhub/coconut-feedstock)
     1. Submit PR to update [Coconut's `conda-forge` feedstock](https://github.com/conda-forge/coconut-feedstock)
+    1. Update [website](https://github.com/evhub/coconut/tree/gh-pages) if it needs updating
     1. Wait until feedstock PR is passing then merge it
     1. Close release milestone

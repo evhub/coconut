@@ -80,7 +80,7 @@ class _coconut:
     else:
         abc = collections.abc
     typing = _t  # The real _coconut doesn't import typing, but we want type-checkers to treat it as if it does
-    Ellipsis, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, type, zip, repr = Ellipsis, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, type, zip, repr
+    Ellipsis, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, type, zip, repr = Ellipsis, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, staticmethod(list), locals, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, type, zip, staticmethod(repr)
     if sys.version_info >= (3,):
         bytearray = bytearray
 
@@ -132,8 +132,16 @@ class _coconut_base_pattern_func:
     def add(self, func: _t.Callable) -> None: ...
     def __call__(self, *args, **kwargs) -> _t.Any: ...
 
-def addpattern(func: _FUNC) -> _t.Callable[[_FUNC2], _t.Union[_FUNC, _FUNC2]]: ...
+def addpattern(
+    func: _FUNC,
+    *,
+    allow_any_func: bool=False,
+    ) -> _t.Callable[[_FUNC2], _t.Union[_FUNC, _FUNC2]]: ...
 _coconut_addpattern = prepattern = addpattern
+
+
+def _coconut_mark_as_match(func: _FUNC) -> _FUNC:
+    return func
 
 
 class _coconut_partial:

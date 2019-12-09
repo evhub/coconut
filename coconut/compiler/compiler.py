@@ -31,6 +31,7 @@ from coconut.root import *  # NOQA
 import sys
 from contextlib import contextmanager
 from functools import partial
+from collections import defaultdict
 
 from coconut._pyparsing import (
     ParseBaseException,
@@ -58,19 +59,16 @@ from coconut.constants import (
     match_to_kwargs_var,
     match_check_var,
     match_err_var,
-    lazy_chain_var,
     import_as_var,
     yield_from_var,
     yield_item_var,
     raise_from_var,
     stmt_lambda_var,
     tre_mock_var,
-    tre_store_var,
     tre_check_var,
     py3_to_py2_stdlib,
     checksum,
     reserved_prefix,
-    case_check_var,
     function_match_error_var,
     legal_indent_chars,
     format_var,
@@ -471,12 +469,11 @@ class Compiler(Grammar):
         self.refs = []
         self.skips = []
         self.docstring = ""
-        self.ichain_count = 0
-        self.tre_store_count = 0
-        self.case_check_count = 0
+        self.temp_var_counts = defaultdict(int)
         self.stmt_lambdas = []
         self.unused_imports = set()
         self.original_lines = []
+        self.num_lines = 0
         self.bind()
 
     @contextmanager
@@ -488,6 +485,7 @@ class Compiler(Grammar):
         skips, self.skips = self.skips, []
         docstring, self.docstring = self.docstring, ""
         original_lines, self.original_lines = self.original_lines, []
+        num_lines, self.num_lines = self.num_lines, 0
         try:
             yield
         finally:
@@ -497,6 +495,13 @@ class Compiler(Grammar):
             self.skips = skips
             self.docstring = docstring
             self.original_lines = original_lines
+            self.num_lines = num_lines
+
+    def get_temp_var(self, base_name):
+        """Get a unique temporary variable name."""
+        var_name = reserved_prefix + "_" + base_name + "_" + str(self.temp_var_counts[base_name])
+        self.temp_var_counts[base_name] += 1
+        return var_name
 
     def bind(self):
         """Binds reference objects to the proper parse actions."""
@@ -775,6 +780,7 @@ class Compiler(Grammar):
             end_index = len(inputstring) - 1 if inputstring else 0
             raise self.make_err(CoconutStyleError, "missing new line at end of file", inputstring, end_index)
         original_lines = inputstring.splitlines()
+        self.num_lines = len(original_lines)
         if self.keep_lines:
             self.original_lines = original_lines
         inputstring = "\n".join(original_lines)
@@ -1105,7 +1111,8 @@ class Compiler(Grammar):
         for line in inputstring.splitlines():
             add_one_to_ln = False
             try:
-                if line.endswith(lnwrapper):
+                has_ln_comment = line.endswith(lnwrapper)
+                if has_ln_comment:
                     line, index = line[:-1].rsplit("#", 1)
                     new_ln = self.get_ref("ln", index)
                     if new_ln < ln:
@@ -1113,14 +1120,14 @@ class Compiler(Grammar):
                     ln = new_ln
                     line = line.rstrip()
                     add_one_to_ln = True
-                if not reformatting or add_one_to_ln:  # add_one_to_ln here is a proxy for whether there was a ln comment or not
+                if not reformatting or has_ln_comment:
                     line += self.comments.get(ln, "")
                 if not reformatting and line.rstrip() and not line.lstrip().startswith("#"):
                     line += self.ln_comment(ln)
             except CoconutInternalException as err:
                 complain(err)
             out.append(line)
-            if add_one_to_ln:
+            if add_one_to_ln and ln <= self.num_lines - 1:
                 ln += 1
         return "\n".join(out)
 
@@ -1301,8 +1308,7 @@ class Compiler(Grammar):
         elif op == "??=":
             out += name + " = " + item + " if " + name + " is None else " + name
         elif op == "::=":
-            ichain_var = lazy_chain_var + "_" + str(self.ichain_count)
-            self.ichain_count += 1
+            ichain_var = self.get_temp_var("lazy_chain")
             # this is necessary to prevent a segfault caused by self-reference
             out += (
                 ichain_var + " = " + name + "\n"
@@ -1932,6 +1938,19 @@ if not {check_var}:
         with self.complain_on_err():
             func_name, func_args, func_params = parse(self.split_func, def_stmt)
 
+        def_name = func_name  # the name used when defining the function
+
+        # handle dotted function definition
+        is_dotted = func_name is not None and "." in func_name
+        if is_dotted:
+            def_name = func_name.rsplit(".", 1)[-1]
+
+        # detect pattern-matching functions
+        is_match_func = func_params == "(*{match_to_args_var}, **{match_to_kwargs_var})".format(
+            match_to_args_var=match_to_args_var,
+            match_to_kwargs_var=match_to_kwargs_var,
+        )
+
         # handle addpattern functions
         if addpattern:
             if func_name is None:
@@ -1939,14 +1958,12 @@ if not {check_var}:
             # binds most tightly, except for TCO
             decorators += "@_coconut_addpattern(" + func_name + ")\n"
 
-        # handle dotted function definition
-        undotted_name = None  # the function __name__ if func_name is a dotted name
-        if func_name is not None:
-            if "." in func_name:
-                undotted_name = func_name.rsplit(".", 1)[-1]
-                def_stmt_pre_lparen, def_stmt_post_lparen = def_stmt.split("(", 1)
-                def_stmt_pre_lparen = def_stmt_pre_lparen.replace(func_name, undotted_name)
-                def_stmt = def_stmt_pre_lparen + "(" + def_stmt_post_lparen
+        # modify function definition to use def_name
+        if def_name != func_name:
+            def_stmt_pre_lparen, def_stmt_post_lparen = def_stmt.split("(", 1)
+            def_stmt_def, def_stmt_name = def_stmt_pre_lparen.rsplit(" ", 1)
+            def_stmt_name = def_stmt_name.replace(func_name, def_name)
+            def_stmt = def_stmt_def + " " + def_stmt_name + "(" + def_stmt_post_lparen
 
         # handle async functions
         if is_async:
@@ -1974,8 +1991,7 @@ if not {check_var}:
             attempt_tre = func_name is not None and not decorators
             if attempt_tre:
                 use_mock = func_args and func_args != func_params[1:-1]
-                func_store = tre_store_var + "_" + str(self.tre_store_count)
-                self.tre_store_count += 1
+                func_store = self.get_temp_var("recursive_func")
                 tre_return_grammar = self.tre_return(func_name, func_args, func_store, use_mock)
             else:
                 use_mock = func_store = tre_return_grammar = None
@@ -2001,14 +2017,31 @@ if not {check_var}:
                         + openindent + base + base_dedent
                         + ("\n" if "\n" not in base_dedent else "") + "return None"
                         + ("\n" if "\n" not in dedent else "") + closeindent + dedent
-                    + func_store + " = " + (func_name if undotted_name is None else undotted_name) + "\n"
+                    + func_store + " = " + def_name + "\n"
                 )
             if tco:
-                decorators += "@_coconut_tco\n"  # binds most tightly
+                decorators += "@_coconut_tco\n"  # binds most tightly (aside from below)
 
-        out = decorators + def_stmt + func_code
-        if undotted_name is not None:
-            out += func_name + " = " + undotted_name + "\n"
+        # add attribute to mark pattern-matching functions
+        if is_match_func:
+            decorators += "@_coconut_mark_as_match\n"  # binds most tightly
+
+        # handle dotted function definition
+        if is_dotted:
+            store_var = self.get_temp_var("dotted_func_name_store")
+            out = (
+                "try:\n"
+                + openindent + store_var + " = " + def_name + "\n"
+                + closeindent + "except _coconut.NameError:\n"
+                + openindent + store_var + " = None\n"
+                + closeindent + decorators + def_stmt + func_code
+                + func_name + " = " + def_name + "\n"
+                + def_name + " = " + store_var + "\n"
+            )
+
+        else:
+            out = decorators + def_stmt + func_code
+
         return out
 
     def await_item_handle(self, original, loc, tokens):
@@ -2100,8 +2133,7 @@ if not {check_var}:
             item, cases, default = tokens
         else:
             raise CoconutInternalException("invalid case tokens", tokens)
-        check_var = case_check_var + "_" + str(self.case_check_count)
-        self.case_check_count += 1
+        check_var = self.get_temp_var("case_check")
         out = (
             match_to_var + " = " + item + "\n"
             + match_case_tokens(loc, cases[0], check_var, True)

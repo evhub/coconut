@@ -38,7 +38,7 @@ except ImportError:
 
 
 def mypy_run(args):
-    """Runs mypy with given arguments and shows the result."""
+    """Run mypy with given arguments and return the result."""
     logger.log_cmd(["mypy"] + args)
     try:
         stdout, stderr, exit_code = run(args)
