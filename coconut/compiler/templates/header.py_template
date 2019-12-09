@@ -1,5 +1,5 @@
 class _coconut{object}:{comment.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
-    import collections, copy, functools, types, itertools, operator, threading, weakref, os
+    import collections, copy, functools, types, itertools, operator, threading, weakref, os, warnings
 {bind_lru_cache}{import_asyncio}{import_pickle}
 {import_OrderedDict}
 {import_collections_abc}
@@ -490,8 +490,7 @@ def addpattern(base_func, **kwargs):
     where the new case is checked last."""
     allow_any_func = kwargs.pop("allow_any_func", False)
     if not allow_any_func and not _coconut.getattr(base_func, "_coconut_is_match", False):
-        import warnings
-        warnings.warn("Possible misuse of addpattern with non-pattern-matching function " + _coconut.repr(base_func) + " (pass allow_any_func=True to dismiss)", stacklevel=2)
+        _coconut.warnings.warn("Possible misuse of addpattern with non-pattern-matching function " + _coconut.repr(base_func) + " (pass allow_any_func=True to dismiss)", stacklevel=2)
     if kwargs:
         raise _coconut.TypeError("addpattern() got unexpected keyword arguments " + _coconut.repr(kwargs))
     return _coconut.functools.partial(_coconut_base_pattern_func, base_func)
