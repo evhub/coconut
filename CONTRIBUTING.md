@@ -194,4 +194,4 @@ After you've tested your changes locally, you'll want to add more permanent test
     1. Submit PR to update [Coconut's `conda-forge` feedstock](https://github.com/conda-forge/coconut-feedstock)
     1. Update [website](https://github.com/evhub/coconut/tree/gh-pages) if it needs updating
     1. Wait until feedstock PR is passing then merge it
-    1. Close release milestone
+    1. Close release [milestone](https://github.com/evhub/coconut/milestones?direction=asc&sort=due_date)
