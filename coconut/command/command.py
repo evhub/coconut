@@ -177,6 +177,7 @@ class Command(object):
             line_numbers=args.line_numbers,
             keep_lines=args.keep_lines,
             no_tco=args.no_tco,
+            no_wrap=args.no_wrap,
         )
 
         if args.mypy is not None:
