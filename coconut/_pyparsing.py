@@ -22,6 +22,7 @@ from coconut.root import *  # NOQA
 import os
 import traceback
 import functools
+import warnings
 
 from coconut.constants import (
     packrat_cache,
@@ -74,16 +75,23 @@ except ImportError:
 # SETUP:
 # -----------------------------------------------------------------------------------------------------------------------
 
-min_ver = min(min_versions["pyparsing"], min_versions["cPyparsing"][:3])
-max_ver = get_next_version(max(min_versions["pyparsing"], min_versions["cPyparsing"][:3]))
+min_ver = min(min_versions["pyparsing"], min_versions["cPyparsing"][:3])  # inclusive
+max_ver = get_next_version(max(min_versions["pyparsing"], min_versions["cPyparsing"][:3]))  # exclusive
+cur_ver = None if __version__ is None else ver_str_to_tuple(__version__)
 
-if __version__ is None or not min_ver <= ver_str_to_tuple(__version__) < max_ver:
+if cur_ver is None or cur_ver < min_ver:
     min_ver_str = ver_tuple_to_str(min_ver)
-    max_ver_str = ver_tuple_to_str(max_ver)
     raise ImportError(
-        "Coconut requires pyparsing/cPyparsing version >= " + min_ver_str + " and < " + max_ver_str
+        "Coconut requires pyparsing/cPyparsing version >= " + min_ver_str
         + ("; got " + PYPARSING_INFO if PYPARSING_INFO is not None else "")
         + " (run 'pip install --upgrade " + PYPARSING_PACKAGE + "' to fix)",
+    )
+elif cur_ver >= max_ver:
+    max_ver_str = ver_tuple_to_str(max_ver)
+    warnings.warn(
+        "This version of Coconut was built for pyparsing/cPyparsing version < " + max_ver_str
+        + ("; got " + PYPARSING_INFO if PYPARSING_INFO is not None else "")
+        + " (run 'pip install " + PYPARSING_PACKAGE + "<" + max_ver_str + "' to fix)",
     )
 
 
