@@ -65,7 +65,7 @@ def scan(
 
 
 class _coconut:
-    import collections, copy, functools, types, itertools, operator, threading
+    import collections, copy, functools, types, itertools, operator, threading, weakref, os, warnings
     if sys.version_info >= (3, 4):
         import asyncio
     else:

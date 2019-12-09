@@ -23,6 +23,7 @@ import sys
 import os
 import string
 import platform
+import datetime as dt
 from zlib import crc32
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -733,6 +734,8 @@ with_toc = """
 """
 
 project = "Coconut"
-copyright = "2015-2019 Evan Hubinger, licensed under Apache 2.0"
+copyright = "2015-{y} Evan Hubinger, licensed under Apache 2.0".format(
+    y=dt.datetime.now().year,
+)
 
 highlight_language = "coconut"
