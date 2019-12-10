@@ -319,7 +319,7 @@ Coconut even supports `--mypy` in the interpreter, which will intelligently scan
 <string>:14: error: Incompatible types in assignment (expression has type "int", variable has type "str")
 ```
 
-Sometimes, MyPy will not know how to handle certain Coconut constructs, such as `addpattern`. For the `addpattern` case, it is recommended to pass `--allow-redefinition` (i.e. run `coconut <args> --mypy --allow-redefinition`), though in some cases `--allow-redefinition` may not be sufficient. In that case, simply put a `# type: ignore` comment on the Coconut line which is generating the line MyPy is complaining about (you can figure out what line this is using `--line-numbers`) and the comment will be added to every generated line.
+Sometimes, MyPy will not know how to handle certain Coconut constructs, such as `addpattern`. For the `addpattern` case, it is recommended to pass `--allow-redefinition` to MyPy (i.e. run `coconut <args> --mypy --allow-redefinition`), though in some cases `--allow-redefinition` may not be sufficient. In that case, either hide the offending code using [`TYPE_CHECKING`](#type-checking) or put a `# type: ignore` comment on the Coconut line which is generating the line MyPy is complaining about (you can figure out what line this is using `--line-numbers`) and the comment will be added to every generated line.
 
 ## Operators
 
@@ -1261,6 +1261,11 @@ print..p1 5
 ```coconut_python
 def f(x, y): return (x, y)
 print(f(100, 5+6))
+```
+
+```coconut_python
+def p1(x): return x + 1
+print(p1(5))
 ```
 
 ### Enhanced Type Annotation
@@ -2284,7 +2289,7 @@ for x in input_data:
 
 ### `TYPE_CHECKING`
 
-The `TYPE_CHECKING` variable is set to `False` at runtime and `True` during type-checking, allowing you to prevent your `typing` imports and `TypeVar` definitions from being executed at runtime. By wrapping your `typing` imports in an `if TYPE_CHECKING:` block, you can even use the [`typing`](https://docs.python.org/3/library/typing.html) module on Python versions that don't natively support it.
+The `TYPE_CHECKING` variable is set to `False` at runtime and `True` during type-checking, allowing you to prevent your `typing` imports and `TypeVar` definitions from being executed at runtime. By wrapping your `typing` imports in an `if TYPE_CHECKING:` block, you can even use the [`typing`](https://docs.python.org/3/library/typing.html) module on Python versions that don't natively support it. Furthermore, `TYPE_CHECKING` can also be used to hide code that is mistyped by default.
 
 ##### Python Docs
 
@@ -2297,13 +2302,21 @@ def fun(arg: expensive_mod.SomeType) -> None:
     local_var: expensive_mod.AnotherType = other_fun()
 ```
 
-##### Example
+##### Examples
 
 **Coconut:**
 ```coconut
 if TYPE_CHECKING:
     from typing import List
 x: List[str] = ["a", "b"]
+```
+
+```coconut
+if TYPE_CHECKING:
+    def factorial(n: int) -> int: ...
+else:
+    def factorial(0) = 1
+    addpattern def factorial(n) = n * factorial(n-1)
 ```
 
 **Python:**
@@ -2316,6 +2329,22 @@ except ImportError:
 if TYPE_CHECKING:
     from typing import List
 x: List[str] = ["a", "b"]
+```
+
+```coconut_python
+try:
+    from typing import TYPE_CHECKING
+except ImportError:
+    TYPE_CHECKING = False
+
+if TYPE_CHECKING:
+    def factorial(n: int) -> int: ...
+else:
+    def factorial(n):
+        if n == 0:
+            return 1
+        else:
+            return n * factorial(n-1)
 ```
 
 ### `recursive_iterator`
