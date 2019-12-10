@@ -1242,7 +1242,7 @@ print(list(map(operator.add, range(0, 5), range(5, 10))))
 
 Coconut supports implicit function application of the form `f x y`, which is compiled to `f(x, y)` (note: **not** `f(x)(y)` as is common in many languages with automatic currying). Implicit function application has a lower precedence than `..` function composition and a higher precedence than `**`.
 
-Supported arguments to implicit function application are highly restricted, and must be either variables or non-string constants (e.g. `f x 1` will work but `f x [1]`, `f x (1+2)`, and `f "abc"` will not). Implicit function application is only intended for simple use cases—for more complex cases, use either standard function application or [pipes](#pipeline).
+Supported arguments to implicit function application are highly restricted, and must be either variables/attributes or non-string constants (e.g. `f x 1` will work but `f x [1]`, `f x (1+2)`, and `f "abc"` will not). Implicit function application is only intended for simple use cases—for more complex cases, use either standard function application or [pipes](#pipeline).
 
 ##### Examples
 
