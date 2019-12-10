@@ -934,3 +934,10 @@ class Ad:
 
 def Ad.ef(self, 0) = 1  # type: ignore
 addpattern def Ad.ef(self, x) = x + 1  # type: ignore
+
+
+# Storage class
+class store:
+    one = 1
+    two = 2
+    plus1 = (+)$(1)

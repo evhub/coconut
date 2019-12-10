@@ -1204,7 +1204,7 @@ class Grammar(object):
     impl_call_arg = (
         keyword_atom
         | number
-        | name
+        | dotted_name
     )
     for k in reserved_vars:
         impl_call_arg = ~keyword(k) + impl_call_arg
