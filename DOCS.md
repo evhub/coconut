@@ -319,7 +319,7 @@ Coconut even supports `--mypy` in the interpreter, which will intelligently scan
 <string>:14: error: Incompatible types in assignment (expression has type "int", variable has type "str")
 ```
 
-_Note: Sometimes, MyPy will not know how to handle certain Coconut constructs, such as `addpattern`. In that case, simply put a `# type: ignore` comment on the Coconut line which is generating the line MyPy is complaining about (you can figure out what line this is using `--line-numbers`) and the comment will be added to every generated line._
+Sometimes, MyPy will not know how to handle certain Coconut constructs, such as `addpattern`. For the `addpattern` case, it is recommended to pass `--allow-redefinition` (i.e. run `coconut <args> --mypy --allow-redefinition`), though in some cases `--allow-redefinition` may not be sufficient. In that case, simply put a `# type: ignore` comment on the Coconut line which is generating the line MyPy is complaining about (you can figure out what line this is using `--line-numbers`) and the comment will be added to every generated line.
 
 ## Operators
 
