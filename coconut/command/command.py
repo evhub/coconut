@@ -50,6 +50,7 @@ from coconut.constants import (
     coconut_run_verbose_args,
     verbose_mypy_args,
     report_this_text,
+    mypy_non_err_prefixes,
 )
 from coconut.command.util import (
     writefile,
@@ -621,12 +622,15 @@ class Command(object):
             if code is not None:
                 args += ["-c", code]
             for line, is_err in mypy_run(args):
-                if line not in self.mypy_errs:
-                    printerr(line)
-                    self.mypy_errs.append(line)
-                elif code is None:
-                    printerr(line)
-                self.register_error(errmsg="MyPy error")
+                if line.startswith(mypy_non_err_prefixes):
+                    print(line)
+                else:
+                    if line not in self.mypy_errs:
+                        printerr(line)
+                        self.mypy_errs.append(line)
+                    elif code is None:
+                        printerr(line)
+                    self.register_error(errmsg="MyPy error")
 
     def start_jupyter(self, args):
         """Start Jupyter with the Coconut kernel."""
