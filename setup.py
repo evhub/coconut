@@ -26,7 +26,7 @@ from coconut.root import *  # NOQA
 import setuptools
 
 from coconut.constants import (
-    openfile,
+    univ_open,
     package_name,
     author,
     author_email,
@@ -50,7 +50,7 @@ from coconut.requirements import (
 if not using_modern_setuptools and "bdist_wheel" in sys.argv:
     raise RuntimeError("bdist_wheel not supported for setuptools versions < 18 (run 'pip install --upgrade setuptools' to fix)")
 
-with openfile("README.rst", "r") as readme_file:
+with univ_open("README.rst", "r") as readme_file:
     readme = readme_file.read()
 
 setuptools.setup(

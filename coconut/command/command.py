@@ -38,7 +38,7 @@ from coconut.terminal import (
     printerr,
 )
 from coconut.constants import (
-    openfile,
+    univ_open,
     fixpath,
     code_exts,
     comp_ext,
@@ -360,7 +360,7 @@ class Command(object):
 
     def compile(self, codepath, destpath=None, package=False, run=False, force=False, show_unchanged=True):
         """Compile a source Coconut file to a destination Python file."""
-        with openfile(codepath, "r") as opened:
+        with univ_open(codepath, "r") as opened:
             code = readfile(opened)
 
         package_level = -1
@@ -390,7 +390,7 @@ class Command(object):
                 if destpath is None:
                     logger.show_tabulated("Compiled", showpath(codepath), "without writing to file.")
                 else:
-                    with openfile(destpath, "w") as opened:
+                    with univ_open(destpath, "w") as opened:
                         writefile(opened, compiled)
                     logger.show_tabulated("Compiled to", showpath(destpath), ".")
                 if self.show:
@@ -433,7 +433,7 @@ class Command(object):
     def create_package(self, dirpath):
         """Set up a package directory."""
         filepath = os.path.join(dirpath, "__coconut__.py")
-        with openfile(filepath, "w") as opened:
+        with univ_open(filepath, "w") as opened:
             writefile(opened, self.comp.getheader("__coconut__"))
 
     def submit_comp_job(self, path, callback, method, *args, **kwargs):
@@ -491,7 +491,7 @@ class Command(object):
     def has_hash_of(self, destpath, code, package_level):
         """Determine if a file has the hash of the code."""
         if destpath is not None and os.path.isfile(destpath):
-            with openfile(destpath, "r") as opened:
+            with univ_open(destpath, "r") as opened:
                 compiled = readfile(opened)
             hashash = gethash(compiled)
             if hashash is not None and hashash == self.comp.genhash(code, package_level):

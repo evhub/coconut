@@ -36,9 +36,12 @@ def fixpath(path):
     return os.path.normpath(os.path.realpath(os.path.expanduser(path)))
 
 
-def openfile(filename, opentype="r+"):
+def univ_open(filename, opentype="r+", encoding=None, **kwargs):
     """Open a file using default_encoding."""
-    return open(filename, opentype, encoding=default_encoding)  # using open from coconut.root
+    if encoding is None:
+        encoding = default_encoding
+    # we use io.open from coconut.root here
+    return open(filename, opentype, encoding=encoding, **kwargs)
 
 
 def get_target_info(target):
@@ -186,7 +189,7 @@ min_versions = {
     "recommonmark": (0, 6),
     "psutil": (5,),
     "jupyter": (1, 0),
-    "mypy": (0, 750),
+    "mypy": (0, 761),
     "futures": (3, 3),
     "backports.functools-lru-cache": (1, 6),
     "argparse": (1, 4),
