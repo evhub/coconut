@@ -25,7 +25,7 @@ from coconut.constants import (
     get_next_version,
     all_reqs,
     min_versions,
-    version_strictly,
+    max_versions,
     pinned_reqs,
     PYPY,
     PY34,
@@ -64,8 +64,11 @@ def get_reqs(which):
     reqs = []
     for req in all_reqs[which]:
         req_str = get_base_req(req) + ">=" + ver_tuple_to_str(min_versions[req])
-        if req in version_strictly:
-            req_str += ",<" + ver_tuple_to_str(get_next_version(min_versions[req]))
+        if req in max_versions:
+            max_ver = max_versions[req]
+            if max_ver is None:
+                max_ver = get_next_version(min_versions[req])
+            req_str += ",<" + ver_tuple_to_str(max_ver)
         env_marker = req[1] if isinstance(req, tuple) else None
         if env_marker:
             if env_marker == "py2":
