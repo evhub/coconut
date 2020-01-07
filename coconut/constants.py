@@ -36,6 +36,11 @@ def fixpath(path):
     return os.path.normpath(os.path.realpath(os.path.expanduser(path)))
 
 
+def openfile(filename, opentype="r+"):
+    """Open a file using default_encoding."""
+    return open(filename, opentype, encoding=default_encoding)  # using open from coconut.root
+
+
 def get_target_info(target):
     """Return target information as a version tuple."""
     return tuple(int(x) for x in target)
