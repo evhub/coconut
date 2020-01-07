@@ -38,6 +38,7 @@ from coconut.terminal import (
     printerr,
 )
 from coconut.constants import (
+    openfile,
     fixpath,
     code_exts,
     comp_ext,
@@ -51,7 +52,6 @@ from coconut.constants import (
     report_this_text,
 )
 from coconut.command.util import (
-    openfile,
     writefile,
     readfile,
     showpath,

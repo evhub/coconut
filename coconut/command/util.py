@@ -40,7 +40,6 @@ from coconut.exceptions import (
 )
 from coconut.constants import (
     fixpath,
-    default_encoding,
     main_prompt,
     more_prompt,
     default_style,
@@ -107,11 +106,6 @@ except KeyError:
 # -----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
 # -----------------------------------------------------------------------------------------------------------------------
-
-
-def openfile(filename, opentype="r+"):
-    """Open a file using default_encoding."""
-    return open(filename, opentype, encoding=default_encoding)  # using open from coconut.root
 
 
 def writefile(openedfile, newcontents):
