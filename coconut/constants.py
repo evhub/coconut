@@ -153,6 +153,7 @@ all_reqs = {
         ("ipython", "py3"),
         ("ipykernel", "py2"),
         ("ipykernel", "py3"),
+        "ipython_genutils",
     ),
     "mypy": (
         "mypy",
@@ -200,6 +201,7 @@ min_versions = {
     ("numpy", "py34"): (1,),
     ("numpy", "py2"): (1,),
     ("ipykernel", "py3"): (5, 1),
+    "ipython_genutils": (0, 2),
     # don't upgrade this; it breaks on Python 2 and Python 3.4 on Windows
     "jupyter-console": (5, 2),
     # don't upgrade these; they break with Python 3.4 on Windows
