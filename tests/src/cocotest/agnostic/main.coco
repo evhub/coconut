@@ -563,6 +563,8 @@ def main_test():
     assert a.f 1 == 1
     def f(x, y) = (x, y)
     assert f 1 2 == (1, 2)
+    def f(0) = 'a'
+    assert f 0 == 'a'
     return True
 
 def easter_egg_test():

@@ -1633,13 +1633,14 @@ class Grammar(object):
             attach(
                 base_match_funcdef
                 + equals.suppress()
-                - Optional(docstring)
-                - (
+                + (
                     attach(implicit_return_stmt, make_suite_handle)
-                    | newline.suppress() - indent.suppress()
-                    - Optional(docstring)
-                    - attach(math_funcdef_body, make_suite_handle)
-                    - dedent.suppress()
+                    | (
+                        newline.suppress() - indent.suppress()
+                        + Optional(docstring)
+                        + attach(math_funcdef_body, make_suite_handle)
+                        + dedent.suppress()
+                    )
                 ),
                 join_match_funcdef,
             ),
