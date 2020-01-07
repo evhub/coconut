@@ -23,7 +23,7 @@ import os.path
 
 from coconut.root import _indent
 from coconut.constants import (
-    openfile,
+    univ_open,
     get_target_info,
     hash_prefix,
     tabideal,
@@ -73,7 +73,7 @@ template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templat
 
 def get_template(template):
     """Read the given template file."""
-    with openfile(os.path.join(template_dir, template) + template_ext, "r") as template_file:
+    with univ_open(os.path.join(template_dir, template) + template_ext, "r") as template_file:
         return template_file.read()
 
 
