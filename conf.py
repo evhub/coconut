@@ -24,6 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from coconut.root import *  # NOQA
 
 from coconut.constants import (
+    openfile,
     version_str_tag,
     without_toc,
     with_toc,
@@ -37,10 +38,10 @@ from recommonmark.transform import AutoStructify
 # README:
 # -----------------------------------------------------------------------------------------------------------------------
 
-with open("README.rst", "r") as readme_file:
+with openfile("README.rst", "r") as readme_file:
     readme = readme_file.read()
 
-with open("index.rst", "w") as index_file:
+with openfile("index.rst", "w") as index_file:
     index_file.write(readme.replace(without_toc, with_toc))
 
 # -----------------------------------------------------------------------------------------------------------------------
