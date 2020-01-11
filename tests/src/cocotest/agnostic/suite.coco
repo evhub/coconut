@@ -573,6 +573,8 @@ def suite_test():
     assert map(Ad().ef, range(5)) |> list == range(1, 6) |> list
     assert Ad().ef 1 == 2
     assert store.plus1 store.one == store.two
+    assert ret_locals()["abc"] == 1
+    assert ret_globals()["abc"] == 1
     return True
 
 def tco_test():

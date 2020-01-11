@@ -1835,6 +1835,7 @@ if not {check_var}:
     def_regex = compile_regex(r"(async\s+)?def\b")
     tre_disable_regex = compile_regex(r"(try|(async\s+)?(with|for)|while)\b")
     return_regex = compile_regex(r"return\b")
+    no_tco_funcs_regex = compile_regex(r"\b(locals|globals)\b")
 
     def transform_returns(self, raw_lines, tre_return_grammar=None, use_mock=None, is_async=False):
         """Apply TCO, TRE, or async universalization to the given function."""
@@ -1850,8 +1851,8 @@ if not {check_var}:
             internal_assert(not attempt_tre and not attempt_tco, "cannot tail call optimize async functions")
 
         for line in raw_lines:
-            indent, body, dedent = split_leading_trailing_indent(line)
-            base, comment = split_comment(body)
+            indent, _body, dedent = split_leading_trailing_indent(line)
+            base, comment = split_comment(_body)
 
             level += ind_change(indent)
 
@@ -1862,17 +1863,17 @@ if not {check_var}:
             if disabled_until_level is None:
 
                 # tco and tre don't support generators
-                if not is_async and self.yield_regex.search(body):
+                if not is_async and self.yield_regex.search(base):
                     lines = raw_lines  # reset lines
                     break
 
                 # don't touch inner functions
-                elif self.def_regex.match(body):
+                elif self.def_regex.match(base):
                     disabled_until_level = level
 
                 # tco and tre shouldn't touch scopes that depend on actual return statements
                 #  or scopes where we can't insert a continue
-                elif not is_async and self.tre_disable_regex.match(body):
+                elif not is_async and self.tre_disable_regex.match(base):
                     disabled_until_level = level
 
                 else:
@@ -1893,7 +1894,13 @@ if not {check_var}:
                             # when tco is available, tre falls back on it if the function is changed
                             tco = not self.no_tco
 
-                    if attempt_tco and tre_base is None:  # don't attempt tco if tre succeeded
+                    if (
+                        attempt_tco
+                        # don't attempt tco if tre succeeded
+                        and tre_base is None
+                        # don't tco scope-dependent functions
+                        and not self.no_tco_funcs_regex.match(base)
+                    ):
                         tco_base = None
                         with self.complain_on_err():
                             tco_base = transform(self.tco_return, base)

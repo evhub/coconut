@@ -941,3 +941,12 @@ class store:
     one = 1
     two = 2
     plus1 = (+)$(1)
+
+
+# Locals and globals
+def ret_locals() =
+    abc = 1
+    locals()
+def ret_globals() =
+    abc = 1
+    locals()
