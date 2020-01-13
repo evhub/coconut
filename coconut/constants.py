@@ -99,7 +99,7 @@ PY33 = sys.version_info >= (3, 3)
 PY34 = sys.version_info >= (3, 4)
 PY35 = sys.version_info >= (3, 5)
 PY36 = sys.version_info >= (3, 6)
-IPY = (PY2 and not PY26) or PY34
+IPY = (PY2 and not PY26) or PY35 or (PY34 and not WINDOWS)
 
 # -----------------------------------------------------------------------------------------------------------------------
 # INSTALLATION CONSTANTS:
@@ -201,11 +201,9 @@ min_versions = {
     ("numpy", "py34"): (1,),
     ("numpy", "py2"): (1,),
     ("ipykernel", "py3"): (5, 1),
-    # don't upgrade this; it breaks on Python 2 and Python 3.4 on Windows
-    "jupyter-console": (5, 2),
-    # don't upgrade these; they break with Python 3.4 on Windows
-    ("ipython", "py3"): (6, 5),
-    "pygments": (2, 3, 1),
+    "pygments": (2, 5),
+    # don't upgrade this until https://github.com/jupyter/jupyter_console/issues/198 is fixed
+    ("ipython", "py3"): (7, 10),
     # don't upgrade this to allow all versions
     "prompt_toolkit:3": (1,),
     # don't upgrade this; it breaks on Python 2.6
@@ -213,6 +211,7 @@ min_versions = {
     # don't upgrade this; it breaks on unix
     "vprof": (0, 36),
     # don't upgrade these; they break on Python 2
+    "jupyter-console": (5, 2),
     ("ipython", "py2"): (5, 4),
     ("ipykernel", "py2"): (4, 10),
     "prompt_toolkit:2": (1,),
@@ -223,12 +222,11 @@ min_versions = {
 
 # should match the reqs with comments above
 pinned_reqs = (
-    "jupyter-console",
     ("ipython", "py3"),
-    "pygments",
     "prompt_toolkit:3",
     "pytest",
     "vprof",
+    "jupyter-console",
     ("ipython", "py2"),
     ("ipykernel", "py2"),
     "prompt_toolkit:2",
@@ -245,8 +243,7 @@ max_versions = {
     "sphinx_bootstrap_theme": None,
     "mypy": None,
     "prompt_toolkit:2": None,
-    # until https://github.com/jupyter/jupyter_console/issues/198 is fixed
-    ("ipython", "py3"): (7, 11),
+    ("ipython", "py3"): None,
 }
 
 classifiers = (
