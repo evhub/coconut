@@ -99,7 +99,7 @@ PY33 = sys.version_info >= (3, 3)
 PY34 = sys.version_info >= (3, 4)
 PY35 = sys.version_info >= (3, 5)
 PY36 = sys.version_info >= (3, 6)
-IPY = (PY2 and not PY26) or PY35 or (PY34 and not WINDOWS)
+IPY = (PY2 and not PY26) or PY35
 
 # -----------------------------------------------------------------------------------------------------------------------
 # INSTALLATION CONSTANTS:
