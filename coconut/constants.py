@@ -202,8 +202,8 @@ min_versions = {
     ("numpy", "py2"): (1,),
     ("ipykernel", "py3"): (5, 1),
     "pygments": (2, 5),
-    # don't upgrade this until https://github.com/jupyter/jupyter_console/issues/198 is fixed
-    ("ipython", "py3"): (7, 10),
+    # don't upgrade this; it breaks on Python 3.5
+    ("ipython", "py3"): (7, 9),
     # don't upgrade this to allow all versions
     "prompt_toolkit:3": (1,),
     # don't upgrade this; it breaks on Python 2.6
@@ -243,7 +243,8 @@ max_versions = {
     "sphinx_bootstrap_theme": None,
     "mypy": None,
     "prompt_toolkit:2": None,
-    ("ipython", "py3"): None,
+    # don't remove this until https://github.com/jupyter/jupyter_console/issues/198 is fixed
+    ("ipython", "py3"): (7, 11),
 }
 
 classifiers = (
