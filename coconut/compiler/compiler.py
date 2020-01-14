@@ -1899,7 +1899,7 @@ if not {check_var}:
                         # don't attempt tco if tre succeeded
                         and tre_base is None
                         # don't tco scope-dependent functions
-                        and not self.no_tco_funcs_regex.match(base)
+                        and not self.no_tco_funcs_regex.search(base)
                     ):
                         tco_base = None
                         with self.complain_on_err():
