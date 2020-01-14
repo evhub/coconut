@@ -55,6 +55,11 @@ test-easter-eggs:
 	python ./tests/dest/runner.py --test-easter-eggs
 	python ./tests/dest/extras.py
 
+# same as test-basic but uses python pyparsing
+.PHONY: test-pyparsing
+test-pyparsing: COCONUT_PURE_PYTHON=TRUE
+test-pyparsing: test-basic
+
 .PHONY: diff
 diff:
 	git diff origin/develop
