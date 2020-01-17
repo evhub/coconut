@@ -2211,6 +2211,14 @@ if not {check_var}:
         if in_expr:
             raise self.make_err(CoconutSyntaxError, "imbalanced braces in format string (escape braces by doubling to '{{' and '}}')", original, loc)
 
+        # handle Python 3.8 f string = specifier
+        for i, expr in enumerate(exprs):
+            if expr.endswith("="):
+                before = string_parts[i]
+                internal_assert(before[-1] == "{", "invalid format string split", (string_parts, exprs))
+                string_parts[i] = before[:-1] + expr + "{"
+                exprs[i] = expr[:-1]
+
         # compile Coconut expressions
         compiled_exprs = []
         for co_expr in exprs:

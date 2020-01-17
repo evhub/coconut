@@ -565,6 +565,11 @@ def main_test():
     assert f 1 2 == (1, 2)
     def f(0) = 'a'
     assert f 0 == 'a'
+    a = 1
+    assert f"xx{a=}yy" == "xxa=1yy"
+    def f(x) = x + 1
+    assert f"{1 |> f=}" == "1 |> f=2"
+    assert f"{'abc'=}" == "'abc'=abc"
     return True
 
 def easter_egg_test():
