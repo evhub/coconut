@@ -324,7 +324,7 @@ def split_args_list(tokens, loc):
                 if pos_only_args:
                     raise CoconutDeferredSyntaxError("only one slash separator allowed in function definition", loc)
                 if not req_args:
-                    raise CoconutDeferredSyntaxError("slash separator must come after arguments to mark as positional-only")
+                    raise CoconutDeferredSyntaxError("slash separator must come after arguments to mark as positional-only", loc)
                 pos_only_args = req_args
                 req_args = []
             else:

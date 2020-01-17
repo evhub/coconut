@@ -575,6 +575,13 @@ def suite_test():
     assert store.plus1 store.one == store.two
     assert ret_locals()["abc"] == 1
     assert ret_globals()["abc"] == 1
+    assert pos_only(1, 2) == (1, 2)
+    try:
+        pos_only(a=1, b=2)
+    except MatchError as err:
+        assert err
+    else:
+        assert False
     return True
 
 def tco_test():

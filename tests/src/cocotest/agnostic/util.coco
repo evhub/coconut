@@ -950,3 +950,7 @@ def ret_locals() =
 def ret_globals() =
     abc = 1
     locals()
+
+
+# Pos only args
+match def pos_only(a, b, /) = a, b
