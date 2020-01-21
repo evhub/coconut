@@ -124,11 +124,11 @@ dmypy.json
 # Sublime
 *.sublime-*
 
+# PEP 582
+__pypackages__/
+
 # Coconut
 tests/dest/
 docs/
 index.rst
 profile.json
-
-# PEP 582
-__pypackages__/
