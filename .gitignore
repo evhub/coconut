@@ -26,11 +26,13 @@ parts/
 sdist/
 var/
 wheels/
-bin/
-*.iml
+pip-wheel-metadata/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+bin/
+*.iml
 
 # PyInstaller
 *.manifest
@@ -44,13 +46,16 @@ pip-wheel-metadata/
 # Unit test / coverage reports
 htmlcov/
 .tox/
+.nox/
 .coverage
 .coverage.*
 .cache
 nosetests.xml
 coverage.xml
 *.cover
+*.py,cover
 .hypothesis/
+.pytest_cache/
 
 # Translations
 *.mo
@@ -59,6 +64,8 @@ coverage.xml
 # Django
 *.log
 local_settings.py
+db.sqlite3
+db.sqlite3-journal
 
 # Flask
 instance/
@@ -71,10 +78,15 @@ instance/
 target/
 
 # Jupyter
-.ipynb_checkpoints/
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
 
 # Celery
 celerybeat-schedule
+celerybeat.pid
 
 # SageMath
 *.sage.py
@@ -96,6 +108,11 @@ ENV/
 
 # MyPy
 .mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre
+.pyre/
 
 # mkdocs
 /site
@@ -107,11 +124,11 @@ ENV/
 # Sublime
 *.sublime-*
 
-# Pytest
-.pytest_cache/
-
 # Coconut
 tests/dest/
 docs/
 index.rst
 profile.json
+
+# PEP 582
+__pypackages__/
