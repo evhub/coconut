@@ -570,6 +570,19 @@ def main_test():
     def f(x) = x + 1
     assert f"{1 |> f=}" == "1 |> f=2"
     assert f"{'abc'=}" == "'abc'=abc"
+    assert a == 2 where: a = 2
+    assert a == 1
+    assert a == 3 where:
+        (1, 2, a) = (1, 2, 3)
+    assert a == 1
+    assert unique_name == "name" where:
+        unique_name = "name"
+    try:
+        unique_name
+    except NameError as err:
+        assert err
+    else:
+        assert False
     return True
 
 def easter_egg_test():

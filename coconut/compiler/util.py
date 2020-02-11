@@ -208,9 +208,9 @@ class CombineNode(Combine):
 
 
 if use_computation_graph:
-    UseCombine = CombineNode
+    CustomCombine = CombineNode
 else:
-    UseCombine = Combine
+    CustomCombine = Combine
 
 
 def add_action(item, action):
@@ -588,7 +588,7 @@ def disable_inside(item, *elems, **kwargs):
 def disable_outside(item, *elems):
     """Prevent elems from matching outside of item.
 
-    Returns (item with elem disabled, *new versions of elems).
+    Returns (item with elem enabled, *new versions of elems).
     """
     for wrapped in disable_inside(item, *elems, **{"_invert": True}):
         yield wrapped

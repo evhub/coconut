@@ -71,7 +71,7 @@ from coconut.constants import (
 )
 from coconut.compiler.matching import Matcher
 from coconut.compiler.util import (
-    UseCombine as Combine,
+    CustomCombine as Combine,
     attach,
     fixto,
     addspace,
@@ -688,12 +688,18 @@ def join_match_funcdef(tokens):
     )
 
 
-def where_stmt_handle(tokens):
-    """Process a where statement."""
-    internal_assert(len(tokens) == 2, "invalid where statement tokens", tokens)
-    base_stmt, assignment_stmts = tokens
-    stmts = list(assignment_stmts) + [base_stmt + "\n"]
-    return "".join(stmts)
+def find_assigned_vars_handle(tokens):
+    """Extract assigned vars."""
+    assigned_vars = []
+    for tok in tokens:
+        if "single" in tok:
+            internal_assert(len(tok) == 1, "invalid single find_assigned_vars tokens", tok)
+            assigned_vars.append(tok[0])
+        elif "group" in tok:
+            assigned_vars += find_assigned_vars_handle(tok)
+        else:
+            raise CoconutInternalException("invalid find_assigned_vars tokens", tok)
+    return tuple(assigned_vars)
 
 
 # end: HANDLERS
@@ -1605,14 +1611,17 @@ class Grammar(object):
         newline.suppress() + indent.suppress() - OneOrMore(simple_stmt) - dedent.suppress()
         | simple_stmt,
     )
-    where_stmt = attach(unsafe_simple_stmt_item + keyword("where").suppress() - where_suite, where_stmt_handle)
+    where_stmt_ref = unsafe_simple_stmt_item + keyword("where").suppress() - where_suite
+    where_stmt = Forward()
 
     implicit_return = (
         attach(return_stmt, invalid_return_stmt_handle)
         | attach(testlist, implicit_return_handle)
     )
+    implicit_return_where_ref = implicit_return + keyword("where").suppress() - where_suite
+    implicit_return_where = Forward()
     implicit_return_stmt = (
-        attach(implicit_return + keyword("where").suppress() - where_suite, where_stmt_handle)
+        implicit_return_where
         | condense(implicit_return + newline)
     )
     math_funcdef_body = condense(ZeroOrMore(~(implicit_return_stmt + dedent) + stmt) - implicit_return_stmt)
@@ -1833,6 +1842,28 @@ class Grammar(object):
     just_a_string = start_marker + string + end_marker
 
     end_of_line = end_marker | Literal("\n") | pound
+
+    assignlist_tokens = Forward()
+    assign_item_tokens = Optional(star.suppress()) + Group(
+        simple_assign("single")
+        | (
+            lparen.suppress() + assignlist_tokens + rparen.suppress()
+            | lbrack.suppress() + assignlist_tokens + rbrack.suppress()
+        )("group"),
+    )
+    assignlist_tokens <<= tokenlist(assign_item_tokens, comma)
+    find_assigned_vars = attach(
+        start_marker.suppress()
+        - assignlist_tokens
+        - (
+            equals
+            | colon  # typed assign stmt
+            | augassign
+        ).suppress(),
+        find_assigned_vars_handle,
+        # this is the root in what it's used for, so might as well evaluate greedily
+        greedy=True,
+    )
 
 
 # end: EXTRA GRAMMAR

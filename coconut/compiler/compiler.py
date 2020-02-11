@@ -474,28 +474,38 @@ class Compiler(Grammar):
         self.unused_imports = set()
         self.original_lines = []
         self.num_lines = 0
+        self.disable_name_check = False
         self.bind()
 
     @contextmanager
     def inner_environment(self):
         """Set up compiler to evaluate inner expressions."""
-        line_numbers, self.line_numbers = self.line_numbers, False
-        keep_lines, self.keep_lines = self.keep_lines, False
         comments, self.comments = self.comments, {}
         skips, self.skips = self.skips, []
         docstring, self.docstring = self.docstring, ""
         original_lines, self.original_lines = self.original_lines, []
+        line_numbers, self.line_numbers = self.line_numbers, False
+        keep_lines, self.keep_lines = self.keep_lines, False
         num_lines, self.num_lines = self.num_lines, 0
         try:
             yield
         finally:
-            self.line_numbers = line_numbers
-            self.keep_lines = keep_lines
             self.comments = comments
             self.skips = skips
             self.docstring = docstring
             self.original_lines = original_lines
+            self.line_numbers = line_numbers
+            self.keep_lines = keep_lines
             self.num_lines = num_lines
+
+    @contextmanager
+    def name_check_disabled(self):
+        """Run the block without checking names."""
+        disable_name_check, self.disable_name_check = self.disable_name_check, True
+        try:
+            yield
+        finally:
+            self.disable_name_check = disable_name_check
 
     def get_temp_var(self, base_name):
         """Get a unique temporary variable name."""
@@ -536,6 +546,8 @@ class Compiler(Grammar):
         self.ellipsis <<= trace(attach(self.ellipsis_ref, self.ellipsis_handle))
         self.case_stmt <<= trace(attach(self.case_stmt_ref, self.case_stmt_handle))
         self.f_string <<= attach(self.f_string_ref, self.f_string_handle)
+        self.where_stmt <<= attach(self.where_stmt_ref, self.where_handle)
+        self.implicit_return_where <<= attach(self.implicit_return_where_ref, self.where_handle)
 
         self.decoratable_normal_funcdef_stmt <<= trace(
             attach(
@@ -2036,16 +2048,28 @@ if not {check_var}:
         # handle dotted function definition
         if is_dotted:
             store_var = self.get_temp_var("dotted_func_name_store")
-            out = (
-                "try:\n"
-                + openindent + store_var + " = " + def_name + "\n"
-                + closeindent + "except _coconut.NameError:\n"
-                + openindent + store_var + " = None\n"
-                + closeindent + decorators + def_stmt + func_code
-                + func_name + " = " + def_name + "\n"
-                + def_name + " = " + store_var + "\n"
+            out = r'''try:
+    {oind}{store_var} = {def_name}
+{cind}except _coconut.NameError:
+    {oind}{store_var} = _coconut_sentinel
+{cind}{decorators}{def_stmt}{func_code}{func_name} = {def_name}
+if {store_var} is _coconut_sentinel:
+    {oind}try:
+        {oind}del {def_name}
+    {cind}except _coconut.NameError:
+        {oind}pass
+{cind}{cind}else:
+    {oind}{def_name} = {store_var}
+{cind}'''.format(
+                oind=openindent,
+                cind=closeindent,
+                store_var=store_var,
+                def_name=def_name,
+                decorators=decorators,
+                def_stmt=def_stmt,
+                func_code=func_code,
+                func_name=func_name
             )
-
         else:
             out = decorators + def_stmt + func_code
 
@@ -2243,6 +2267,58 @@ if not {check_var}:
                 for name, expr in zip(names, compiled_exprs)
             ) + ")"
 
+    def where_handle(self, tokens):
+        """Handle a where statement."""
+        internal_assert(len(tokens) == 2, "invalid where statement tokens", tokens)
+        base_stmt, assignment_stmts = tokens
+        assignment_block = "".join(assignment_stmts)
+        assigned_vars = set()
+        for line in assignment_block.splitlines():
+            ind, body = split_leading_indent(line)
+            try:
+                with self.name_check_disabled():
+                    new_vars = parse(self.find_assigned_vars, body)
+            except ParseBaseException:
+                logger.log_exc()
+            else:
+                for new_var in new_vars:
+                    if not new_var.startswith(reserved_prefix):
+                        assigned_vars.add(new_var)
+        temp_vars = {}
+        for var in assigned_vars:
+            temp_vars[var] = self.get_temp_var(var)
+        return "".join(
+            [
+                r'''try:
+    {oind}{temp_var} = {var}
+{cind}except _coconut.NameError:
+    {oind}{temp_var} = _coconut_sentinel
+{cind}'''.format(
+                    oind=openindent,
+                    cind=closeindent,
+                    temp_var=temp_vars[var],
+                    var=var,
+                ) for var in assigned_vars
+            ] + [
+                assignment_block,
+                base_stmt + "\n",
+            ] + [
+                r'''if {temp_var} is _coconut_sentinel:
+    {oind}try:
+        {oind}del {var}
+    {cind}except _coconut.NameError:
+        {oind}pass
+{cind}{cind}else:
+    {oind}{var} = {temp_var}
+{cind}'''.format(
+                    oind=openindent,
+                    cind=closeindent,
+                    temp_var=temp_vars[var],
+                    var=var,
+                ) for var in assigned_vars
+            ],
+        )
+
 # end: COMPILER HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------
 # CHECKING HANDLERS:
@@ -2279,6 +2355,8 @@ if not {check_var}:
     def name_check(self, original, loc, tokens):
         """Check the given base name."""
         internal_assert(len(tokens) == 1, "invalid name tokens", tokens)
+        if self.disable_name_check:
+            return tokens[0]
         if self.strict:
             self.unused_imports.discard(tokens[0])
         if tokens[0] == "exec":
