@@ -548,6 +548,7 @@ class Compiler(Grammar):
         self.f_string <<= attach(self.f_string_ref, self.f_string_handle)
         self.where_stmt <<= attach(self.where_stmt_ref, self.where_handle)
         self.implicit_return_where <<= attach(self.implicit_return_where_ref, self.where_handle)
+        self.let_stmt <<= attach(self.let_stmt_ref, self.let_stmt_handle)
 
         self.decoratable_normal_funcdef_stmt <<= trace(
             attach(
@@ -2179,7 +2180,7 @@ if {store_var} is _coconut_sentinel:
         return out
 
     def f_string_handle(self, original, loc, tokens):
-        """Handle Python 3.6 format strings."""
+        """Process Python 3.6 format strings."""
         internal_assert(len(tokens) == 1, "invalid format string tokens", tokens)
         string = tokens[0]
 
@@ -2268,7 +2269,7 @@ if {store_var} is _coconut_sentinel:
             ) + ")"
 
     def where_handle(self, tokens):
-        """Handle a where statement."""
+        """Process a where statement."""
         internal_assert(len(tokens) == 2, "invalid where statement tokens", tokens)
         base_stmt, assignment_stmts = tokens
         assignment_block = "".join(assignment_stmts)
@@ -2318,6 +2319,15 @@ if {store_var} is _coconut_sentinel:
                 ) for var in assigned_vars
             ],
         )
+
+    def let_stmt_handle(self, tokens):
+        """Process a let statement."""
+        internal_assert(len(tokens) == 2, "invalid let statement tokens", tokens)
+        assignment_stmt, base_stmts = tokens
+        return self.where_handle([
+            "".join(base_stmts).rstrip(),
+            [assignment_stmt + "\n"],
+        ])
 
 # end: COMPILER HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------

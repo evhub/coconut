@@ -1047,7 +1047,7 @@ Coconut's `where` statement is extremely straightforward. The syntax for a `wher
 <stmt> where:
     <body>
 ```
-where `<body>` is composed entirely of assignment statements. The `where` statement just executes each assignment statement in `<body>`, evaluates the base `<stmt>`, then `del`s the variables assigned in `<body>`.
+where `<body>` is composed entirely of assignment statements. The `where` statement executes each assignment statement in `<body>`, evaluates the base `<stmt>`, then resets the values of all the variables assigned to in `<body>`.
 
 ##### Example
 
@@ -1060,16 +1060,44 @@ c = a + b where:
 
 **Python:**
 ```coconut_python
+prev_a = a
+prev_b = b
 a = 1
 b = 2
 c = a + b
-del a
-del b
+a = prev_a
+b = prev_b
 ```
+
+### `let`
+
+Coconut's `let` statement is a simple variation on the [`where`](#where) statement. The syntax for a `let` statement is just
+```
+let <stmt> in:
+    <body>
+```
+where `<stmt>` is an assignment statement. The `let` statement executes the assignment statement in `<stmt>`, evaluates the `<body>`, then resets the values of all the variables assigned to in `<stmt>`.
+
+##### Example
+
+**Coconut:**
+```coconut
+let a = 1 in:
+    print(a)
+```
+
+**Python:**
+```coconut_python
+prev_a = a
+a = 1
+print(a)
+a = prev_a
+```
+
 
 ### Backslash-Escaping
 
-In Coconut, the keywords `data`, `match`, `case`, `where`, `async` (keyword in Python 3.5), and `await` (keyword in Python 3.5) are also valid variable names. While Coconut can disambiguate these two use cases, when using one of these keywords as a variable name, a backslash is allowed in front to be explicit about using a keyword as a variable name (in particular, to let syntax highlighters know).
+In Coconut, the keywords `data`, `match`, `case`, `where`, `let`, `async` (keyword in Python 3.5), and `await` (keyword in Python 3.5) are also valid variable names. While Coconut can disambiguate these two use cases, when using one of these keywords as a variable name, a backslash is allowed in front to be explicit about using a keyword as a variable name (in particular, to let syntax highlighters know).
 
 ##### Example
 

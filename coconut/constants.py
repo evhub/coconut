@@ -351,6 +351,7 @@ search_terms = (
     "memoization",
     "backport",
     "typing",
+    "let",
 )
 
 script_names = (
@@ -513,12 +514,13 @@ const_vars = (
 )
 
 reserved_vars = (  # can be backslash-escaped
+    "async",
+    "await",
     "data",
     "match",
     "case",
-    "async",
-    "await",
     "where",
+    "let",
 )
 
 py3_to_py2_stdlib = {

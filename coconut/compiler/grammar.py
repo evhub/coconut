@@ -1614,6 +1614,9 @@ class Grammar(object):
     where_stmt_ref = unsafe_simple_stmt_item + keyword("where").suppress() - where_suite
     where_stmt = Forward()
 
+    let_stmt_ref = keyword("let").suppress() + unsafe_simple_stmt_item + keyword("in").suppress() + full_suite
+    let_stmt = Forward()
+
     implicit_return = (
         attach(return_stmt, invalid_return_stmt_handle)
         | attach(testlist, implicit_return_handle)
@@ -1740,6 +1743,7 @@ class Grammar(object):
         | for_stmt
         | async_stmt
         | where_stmt
+        | let_stmt
         | simple_compound_stmt,
     )
     endline_semicolon = Forward()
