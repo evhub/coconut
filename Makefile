@@ -60,6 +60,14 @@ test-easter-eggs:
 test-pyparsing: COCONUT_PURE_PYTHON=TRUE
 test-pyparsing: test-basic
 
+# same as test-basic but watches tests before running them
+.PHONY: test-watch
+test-watch:
+	python ./tests --strict --line-numbers --force
+	coconut ./tests/src/cocotest/agnostic ./tests/dest/cocotest --watch --strict --line-numbers
+	python ./tests/dest/runner.py
+	python ./tests/dest/extras.py
+
 .PHONY: diff
 diff:
 	git diff origin/develop

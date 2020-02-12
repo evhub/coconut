@@ -148,7 +148,8 @@ all_reqs = {
     ),
     "jupyter": (
         "jupyter",
-        "jupyter-console",
+        ("jupyter-console", "py2"),
+        ("jupyter-console", "py3"),
         ("ipython", "py2"),
         ("ipython", "py3"),
         ("ipykernel", "py2"),
@@ -186,7 +187,7 @@ all_reqs = {
 min_versions = {
     "pyparsing": (2, 4, 6),
     "cPyparsing": (2, 4, 5, 0, 1, 1),
-    "pre-commit": (1,),
+    "pre-commit": (2,),
     "recommonmark": (0, 6),
     "psutil": (5,),
     "jupyter": (1, 0),
@@ -195,12 +196,13 @@ min_versions = {
     "backports.functools-lru-cache": (1, 6),
     "argparse": (1, 4),
     "pexpect": (4,),
-    "watchdog": (0, 9),
+    "watchdog": (0, 10),
     ("trollius", "py2"): (2, 2),
     "requests": (2,),
     ("numpy", "py34"): (1,),
     ("numpy", "py2"): (1,),
     ("ipykernel", "py3"): (5, 1),
+    ("jupyter-console", "py3"): (6, 1),
     "pygments": (2, 5),
     # don't upgrade this; it breaks on Python 3.5
     ("ipython", "py3"): (7, 9),
@@ -211,7 +213,7 @@ min_versions = {
     # don't upgrade this; it breaks on unix
     "vprof": (0, 36),
     # don't upgrade these; they break on Python 2
-    "jupyter-console": (5, 2),
+    ("jupyter-console", "py2"): (5, 2),
     ("ipython", "py2"): (5, 4),
     ("ipykernel", "py2"): (4, 10),
     "prompt_toolkit:2": (1,),
@@ -226,7 +228,7 @@ pinned_reqs = (
     "prompt_toolkit:3",
     "pytest",
     "vprof",
-    "jupyter-console",
+    ("jupyter-console", "py2"),
     ("ipython", "py2"),
     ("ipykernel", "py2"),
     "prompt_toolkit:2",
@@ -243,8 +245,6 @@ max_versions = {
     "sphinx_bootstrap_theme": None,
     "mypy": None,
     "prompt_toolkit:2": None,
-    # don't remove this until https://github.com/jupyter/jupyter_console/issues/198 is fixed
-    ("ipython", "py3"): (7, 11),
 }
 
 classifiers = (
@@ -617,7 +617,7 @@ icoconut_kernel_dirs = tuple(
 )
 
 base_stub_dir = os.path.join(base_dir, "stubs")
-installed_stub_dir = os.path.join(os.path.expanduser("~"), ".coconut_stubs")
+installed_stub_dir = fixpath(os.path.join("~", ".coconut_stubs"))
 
 exit_chars = (
     "\x04",  # Ctrl-D
