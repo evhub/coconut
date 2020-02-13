@@ -17,6 +17,7 @@ Description: Coconut installation requirements.
 
 from coconut.root import *  # NOQA
 
+import sys
 import platform
 
 from coconut.constants import (
@@ -81,10 +82,11 @@ def get_reqs(which):
                     req_str += ";python_version>='3'"
                 elif PY2:
                     continue
-            elif env_marker == "py34":
+            elif env_marker.startswith("py3") and len(env_marker) == len("py3") + 1:
+                ver = int(env_marker[len("py3"):])
                 if supports_env_markers:
-                    req_str += ";python_version>='3.4'"
-                elif not PY34:
+                    req_str += ";python_version>='3.{ver}'".format(ver=ver)
+                elif sys.version_info < (3, ver):
                     continue
             else:
                 raise ValueError("unknown env marker id " + repr(env_marker))
