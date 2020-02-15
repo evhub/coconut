@@ -550,9 +550,6 @@ class Compiler(Grammar):
         self.ellipsis <<= attach(self.ellipsis_ref, self.ellipsis_handle)
         self.case_stmt <<= attach(self.case_stmt_ref, self.case_stmt_handle)
         self.f_string <<= attach(self.f_string_ref, self.f_string_handle)
-        self.where_stmt <<= attach(self.where_stmt_ref, self.where_handle)
-        self.implicit_return_where <<= attach(self.implicit_return_where_ref, self.where_handle)
-        self.let_stmt <<= attach(self.let_stmt_ref, self.let_stmt_handle)
 
         self.decoratable_normal_funcdef_stmt <<= attach(
             self.decoratable_normal_funcdef_stmt_ref,
@@ -562,28 +559,6 @@ class Compiler(Grammar):
             self.decoratable_async_funcdef_stmt_ref,
             partial(self.decoratable_funcdef_stmt_handle, is_async=True),
         )
-
-        _name, _name_replacing_unsafe_simple_stmt_item, _name_replacing_full_suite, _name_replacing_implicit_return = self.replace_matches_of_inside(
-            "name_atom",
-            self.name,
-            self.unsafe_simple_stmt_item,
-            self.full_suite,
-            self.implicit_return,
-        )
-        self.name_atom <<= _name
-        self.name_replacing_unsafe_simple_stmt_item <<= _name_replacing_unsafe_simple_stmt_item
-        self.name_replacing_full_suite <<= _name_replacing_full_suite
-        self.name_replacing_implicit_return <<= _name_replacing_implicit_return
-
-        _name, _assign_replacing_pure_assign_stmt, _assign_replacing_unsafe_pure_assign_stmt_item = self.replace_matches_of_inside(
-            "assign_name",
-            self.name,
-            self.pure_assign_stmt,
-            self.unsafe_pure_assign_stmt_item,
-        )
-        self.assign_name <<= _name
-        self.assign_replacing_pure_assign_stmt <<= _assign_replacing_pure_assign_stmt
-        self.assign_replacing_unsafe_pure_assign_stmt_item <<= _assign_replacing_unsafe_pure_assign_stmt_item
 
         self.u_string <<= attach(self.u_string_ref, self.u_string_check)
         self.matrix_at <<= attach(self.matrix_at_ref, self.matrix_at_check)
@@ -2332,47 +2307,6 @@ if {store_var} is _coconut_sentinel:
                 name + "=(" + expr + ")"
                 for name, expr in zip(names, compiled_exprs)
             ) + ")"
-
-    def where_handle(self, tokens):
-        """Process a where statement."""
-        internal_assert(len(tokens) == 2, "invalid where statement tokens", tokens)
-        (name_refs, base_stmt), assignment_refs_and_stmts = tokens
-
-        # modify assignment statements to use temporary variables
-        repl_assign_stmts = []
-        temp_vars = {}
-        for assign_refs, assign_stmt in assignment_refs_and_stmts:
-            ref_replacements = {}
-            for ref in assign_refs:
-                var = self.get_ref("repl", ref)
-                temp_var = self.get_temp_var(var)
-                temp_vars[var] = temp_var
-                ref_replacements[ref] = temp_var
-            repl_assign_stmt = self.replace_replaced_matches(assign_stmt, ref_replacements)
-            repl_assign_stmts.append(repl_assign_stmt)
-        repl_assign_block = "".join(repl_assign_stmts)
-
-        # replace refs in base statement
-        ref_replacements = {}
-        for ref in name_refs:
-            var = self.get_ref("repl", ref)
-            ref_replacements[ref] = temp_vars.get(var, var)
-        repl_base_stmt = self.replace_replaced_matches(base_stmt, ref_replacements)
-
-        # combine into result
-        return "".join([
-            repl_assign_block,
-            repl_base_stmt + "\n",
-        ])
-
-    def let_stmt_handle(self, tokens):
-        """Process a let statement."""
-        internal_assert(len(tokens) == 2, "invalid let statement tokens", tokens)
-        (assign_refs, assign_stmt), (name_refs, base_stmts) = tokens
-        return self.where_handle([
-            (name_refs, "".join(base_stmts).rstrip()),
-            [(assign_refs, assign_stmt + "\n")],
-        ])
 
 # end: COMPILER HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------

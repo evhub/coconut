@@ -353,7 +353,6 @@ search_terms = (
     "memoization",
     "backport",
     "typing",
-    "let",
 )
 
 script_names = (
@@ -523,7 +522,6 @@ reserved_vars = (  # can be backslash-escaped
     "match",
     "case",
     "where",
-    "let",
 )
 
 py3_to_py2_stdlib = {

@@ -688,6 +688,13 @@ def join_match_funcdef(tokens):
     )
 
 
+def where_handle(tokens):
+    """Process where statements."""
+    internal_assert(len(tokens) == 2, "invalid where statement tokens", tokens)
+    final_stmt, init_stmts = tokens
+    return "".join(init_stmts) + final_stmt + "\n"
+
+
 # end: HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN GRAMMAR:
@@ -779,7 +786,6 @@ class Grammar(object):
     test_no_infix, backtick = disable_inside(test, unsafe_backtick)
 
     name = Forward()
-    name_atom = Forward()
     base_name = Regex(r"\b(?![0-9])\w+\b", re.U)
     for k in keywords + const_vars:
         base_name = ~keyword(k) + base_name
@@ -787,7 +793,6 @@ class Grammar(object):
         base_name |= backslash.suppress() + keyword(k)
     dotted_base_name = condense(base_name + ZeroOrMore(dot + base_name))
     dotted_name = condense(name + ZeroOrMore(dot + name))
-    dotted_name_atom = condense(name_atom + ZeroOrMore(dot + name))
 
     integer = Combine(Word(nums) + ZeroOrMore(underscore.suppress() + Word(nums)))
     binint = Combine(Word("01") + ZeroOrMore(underscore.suppress() + Word("01")))
@@ -1111,7 +1116,7 @@ class Grammar(object):
         | lazy_list,
     )
     func_atom = (
-        name_atom
+        name
         | op_atom
         | paren_atom
     )
@@ -1171,11 +1176,10 @@ class Grammar(object):
     )
     partial_atom_tokens = attach(atom + ZeroOrMore(no_partial_trailer), item_handle) + partial_trailer_tokens
 
-    assign_name = Forward()
     simple_assign = attach(
         maybeparens(
             lparen,
-            (assign_name | passthrough_atom)
+            (name | passthrough_atom)
             + ZeroOrMore(ZeroOrMore(complex_trailer) + OneOrMore(simple_trailer)),
             rparen,
         ),
@@ -1201,7 +1205,7 @@ class Grammar(object):
     impl_call_arg = (
         keyword_atom
         | number
-        | dotted_name_atom
+        | dotted_name
     )
     for k in reserved_vars:
         impl_call_arg = ~keyword(k) + impl_call_arg
@@ -1409,7 +1413,7 @@ class Grammar(object):
 
     nonlocal_stmt = Forward()
     namelist = attach(
-        maybeparens(lparen, itemlist(assign_name, comma), rparen) - Optional(equals.suppress() - test_expr),
+        maybeparens(lparen, itemlist(name, comma), rparen) - Optional(equals.suppress() - test_expr),
         namelist_handle,
     )
     global_stmt = addspace(keyword("global") - namelist)
@@ -1425,7 +1429,7 @@ class Grammar(object):
     )
     matchlist_star = (
         Optional(Group(OneOrMore(match + comma.suppress())))
-        + star.suppress() + assign_name
+        + star.suppress() + name
         + Optional(Group(OneOrMore(comma.suppress() + match)))
         + Optional(comma.suppress())
     )
@@ -1437,9 +1441,9 @@ class Grammar(object):
 
     match_const = const_atom | condense(equals.suppress() + atom_item)
     match_string = (
-        (string + plus.suppress() + assign_name + plus.suppress() + string)("mstring")
-        | (string + plus.suppress() + assign_name)("string")
-        | (assign_name + plus.suppress() + string)("rstring")
+        (string + plus.suppress() + name + plus.suppress() + string)("mstring")
+        | (string + plus.suppress() + name)("string")
+        | (name + plus.suppress() + string)("rstring")
     )
     matchlist_set = Group(Optional(tokenlist(match_const, comma)))
     match_pair = Group(match_const + colon.suppress() + match)
@@ -1448,13 +1452,13 @@ class Grammar(object):
     match_tuple = lparen + matchlist_tuple + rparen.suppress()
     match_lazy = lbanana + matchlist_list + rbanana.suppress()
     series_match = (
-        (match_list + plus.suppress() + assign_name + plus.suppress() + match_list)("mseries")
-        | (match_tuple + plus.suppress() + assign_name + plus.suppress() + match_tuple)("mseries")
-        | ((match_list | match_tuple) + Optional(plus.suppress() + assign_name))("series")
-        | (assign_name + plus.suppress() + (match_list | match_tuple))("rseries")
+        (match_list + plus.suppress() + name + plus.suppress() + match_list)("mseries")
+        | (match_tuple + plus.suppress() + name + plus.suppress() + match_tuple)("mseries")
+        | ((match_list | match_tuple) + Optional(plus.suppress() + name))("series")
+        | (name + plus.suppress() + (match_list | match_tuple))("rseries")
     )
     iter_match = (
-        ((match_list | match_tuple | match_lazy) + unsafe_dubcolon.suppress() + assign_name)
+        ((match_list | match_tuple | match_lazy) + unsafe_dubcolon.suppress() + name)
         | match_lazy
     )("iter")
     star_match = (
@@ -1466,16 +1470,16 @@ class Grammar(object):
             match_string
             | match_const("const")
             | (lparen.suppress() + match + rparen.suppress())("paren")
-            | (lbrace.suppress() + matchlist_dict + Optional(dubstar.suppress() + assign_name) + rbrace.suppress())("dict")
+            | (lbrace.suppress() + matchlist_dict + Optional(dubstar.suppress() + name) + rbrace.suppress())("dict")
             | (Optional(set_s.suppress()) + lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
             | iter_match
             | series_match
             | star_match
             | (name + lparen.suppress() + matchlist_data + rparen.suppress())("data")
-            | assign_name("var"),
+            | name("var"),
         ),
     )
-    matchlist_trailer = base_match + OneOrMore(keyword("as") + assign_name | keyword("is") + atom_item)
+    matchlist_trailer = base_match + OneOrMore(keyword("as") + name | keyword("is") + atom_item)
     as_match = Group(matchlist_trailer("trailer")) | base_match
     matchlist_and = as_match + OneOrMore(keyword("and").suppress() + as_match)
     and_match = Group(matchlist_and("and")) | as_match
@@ -1598,29 +1602,23 @@ class Grammar(object):
     )
     match_funcdef = addspace(match_def_modifiers + def_match_funcdef)
 
-    name_replacing_unsafe_simple_stmt_item = Forward()
-    name_replacing_full_suite = Forward()
-    name_replacing_implicit_return = Forward()
-
-    assign_replacing_pure_assign_stmt = Forward()
-    assign_replacing_unsafe_pure_assign_stmt_item = Forward()
-
-    where_suite = colon.suppress() - Group(
-        newline.suppress() + indent.suppress() - OneOrMore(assign_replacing_pure_assign_stmt) - dedent.suppress()
-        | assign_replacing_pure_assign_stmt,
+    where_stmt = attach(
+        unsafe_simple_stmt_item
+        + keyword("where").suppress()
+        - full_suite,
+        where_handle,
     )
-    where_stmt_ref = name_replacing_unsafe_simple_stmt_item + keyword("where").suppress() - where_suite
-    where_stmt = Forward()
-
-    let_stmt_ref = keyword("let").suppress() + assign_replacing_unsafe_pure_assign_stmt_item + keyword("in").suppress() + name_replacing_full_suite
-    let_stmt = Forward()
 
     implicit_return = (
         attach(return_stmt, invalid_return_stmt_handle)
         | attach(testlist, implicit_return_handle)
     )
-    implicit_return_where_ref = name_replacing_implicit_return + keyword("where").suppress() - where_suite
-    implicit_return_where = Forward()
+    implicit_return_where = attach(
+        implicit_return
+        + keyword("where").suppress()
+        - full_suite,
+        where_handle,
+    )
     implicit_return_stmt = (
         condense(implicit_return + newline)
         | implicit_return_where
@@ -1704,7 +1702,7 @@ class Grammar(object):
     ) + rparen.suppress() + Optional(keyword("from").suppress() + testlist)
     match_datadef_ref = Optional(keyword("match").suppress()) + keyword("data").suppress() + name + match_data_args + data_suite
 
-    simple_decorator = condense(dotted_name_atom + Optional(function_call))("simple")
+    simple_decorator = condense(dotted_name + Optional(function_call))("simple")
     complex_decorator = test("test")
     decorators = attach(OneOrMore(at.suppress() - Group(longest(simple_decorator, complex_decorator)) - newline.suppress()), decorator_handle)
 
@@ -1742,7 +1740,7 @@ class Grammar(object):
         | while_stmt
         | for_stmt
         | async_stmt
-        | let_stmt
+        | where_stmt
         | simple_compound_stmt,
     )
     endline_semicolon = Forward()
@@ -1776,37 +1774,13 @@ class Grammar(object):
     )
     stmt <<= final(
         compound_stmt
-        | simple_stmt
-        # where must come last here to avoid inefficient reevaluation
-        | where_stmt,
+        | simple_stmt,
     )
     base_suite <<= condense(newline + indent - OneOrMore(stmt) - dedent)
     simple_suite = attach(stmt, make_suite_handle)
     nocolon_suite <<= base_suite | simple_suite
     suite <<= condense(colon + nocolon_suite)
     line = trace(newline | stmt)
-
-    basic_pure_assign_stmt = trace(addspace(OneOrMore(assignlist + equals) + test_expr))
-    unsafe_pure_assign_stmt_item = trace(
-        global_stmt
-        | nonlocal_stmt
-        | typed_assign_stmt
-        | longest(basic_pure_assign_stmt, destructuring_stmt),
-    )
-    pure_assign_stmt_item = trace(
-        global_stmt
-        | nonlocal_stmt
-        | typed_assign_stmt
-        | basic_pure_assign_stmt + end_simple_stmt_item
-        | destructuring_stmt + end_simple_stmt_item,
-    )
-    pure_assign_stmt = trace(
-        condense(
-            pure_assign_stmt_item
-            + ZeroOrMore(fixto(semicolon, "\n") + pure_assign_stmt_item)
-            + (newline | endline_semicolon),
-        ),
-    )
 
     single_input = trace(condense(Optional(line) - ZeroOrMore(newline)))
     file_input = trace(condense(moduledoc_marker - ZeroOrMore(line)))

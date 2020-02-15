@@ -1047,7 +1047,7 @@ Coconut's `where` statement is extremely straightforward. The syntax for a `wher
 <stmt> where:
     <body>
 ```
-where `<body>` is composed entirely of assignment statements. The `where` statement executes each assignment statement in `<body>` and evaluates the base `<stmt>` without touching the actual values of the variables assigned to in `<body>`.
+which just executed `<body>` followed by `<stmt>`.
 
 ##### Example
 
@@ -1060,32 +1060,9 @@ c = a + b where:
 
 **Python:**
 ```coconut_python
-_a = 1
-_b = 2
-c = _a + _b
-```
-
-### `let`
-
-Coconut's `let` statement is a simple variation on the [`where`](#where) statement. The syntax for a `let` statement is just
-```
-let <stmt> in:
-    <body>
-```
-where `<stmt>` is an assignment statement. The `let` statement executes the assignment statement in `<stmt>` and evaluates the `<body>` without touching the values of any of the variables assigned to in `<stmt>`.
-
-##### Example
-
-**Coconut:**
-```coconut
-let a = 1 in:
-    print(a)
-```
-
-**Python:**
-```coconut_python
-_a = 1
-print(_a)
+a = 1
+b = 2
+c = a + b
 ```
 
 ### Backslash-Escaping
