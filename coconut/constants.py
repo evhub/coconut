@@ -436,8 +436,9 @@ else:
 
 openindent = "\u204b"  # reverse pilcrow
 closeindent = "\xb6"  # pilcrow
-strwrapper = "\u25b6"  # right-pointing triangle
-lnwrapper = "\u23f4"  # left-pointing triangle
+strwrapper = "\u25b6"  # black right-pointing triangle
+replwrapper = "\u25b7"  # white right-pointing triangle
+lnwrapper = "\u25c6"  # black diamond
 unwrapper = "\u23f9"  # stop square
 
 opens = "([{"  # opens parenthetical

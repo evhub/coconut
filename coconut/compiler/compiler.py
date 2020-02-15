@@ -16,7 +16,7 @@ Description: Compiles Coconut code into Python code.
 #   - Handlers
 #   - Compiler
 #   - Processors
-#   - Parser Handlers
+#   - Compiler Handlers
 #   - Checking Handlers
 #   - Endpoints
 
@@ -35,6 +35,7 @@ from collections import defaultdict
 
 from coconut._pyparsing import (
     ParseBaseException,
+    ParseResults,
     col,
     line as getline,
     lineno,
@@ -74,6 +75,7 @@ from coconut.constants import (
     format_var,
     match_val_repr_var,
     max_match_val_repr_len,
+    replwrapper,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -87,7 +89,7 @@ from coconut.exceptions import (
     clean,
     internal_assert,
 )
-from coconut.terminal import logger, trace, complain
+from coconut.terminal import logger, complain
 from coconut.compiler.matching import Matcher
 from coconut.compiler.grammar import (
     Grammar,
@@ -117,6 +119,7 @@ from coconut.compiler.util import (
     append_it,
     interleaved_join,
     handle_indentation,
+    Wrap,
 )
 from coconut.compiler.header import (
     minify,
@@ -470,6 +473,7 @@ class Compiler(Grammar):
         self.skips = []
         self.docstring = ""
         self.temp_var_counts = defaultdict(int)
+        self.stored_matches_of = defaultdict(list)
         self.stmt_lambdas = []
         self.unused_imports = set()
         self.original_lines = []
@@ -517,51 +521,69 @@ class Compiler(Grammar):
         """Binds reference objects to the proper parse actions."""
         self.endline <<= attach(self.endline_ref, self.endline_handle)
 
-        self.moduledoc_item <<= trace(attach(self.moduledoc, self.set_docstring))
-        self.name <<= trace(attach(self.base_name, self.name_check))
+        self.moduledoc_item <<= attach(self.moduledoc, self.set_docstring)
+        self.name <<= attach(self.base_name, self.name_check)
         # comments are evaluated greedily because we need to know about them even if we're going to suppress them
-        self.comment <<= trace(attach(self.comment_ref, self.comment_handle, greedy=True))
-        self.set_literal <<= trace(attach(self.set_literal_ref, self.set_literal_handle))
-        self.set_letter_literal <<= trace(attach(self.set_letter_literal_ref, self.set_letter_literal_handle))
-        self.classlist <<= trace(attach(self.classlist_ref, self.classlist_handle))
-        self.import_stmt <<= trace(attach(self.import_stmt_ref, self.import_handle))
-        self.complex_raise_stmt <<= trace(attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_handle))
-        self.augassign_stmt <<= trace(attach(self.augassign_stmt_ref, self.augassign_handle))
-        self.dict_comp <<= trace(attach(self.dict_comp_ref, self.dict_comp_handle))
-        self.destructuring_stmt <<= trace(attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle))
-        self.name_match_funcdef <<= trace(attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle))
-        self.op_match_funcdef <<= trace(attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle))
-        self.yield_from <<= trace(attach(self.yield_from_ref, self.yield_from_handle))
-        self.exec_stmt <<= trace(attach(self.exec_stmt_ref, self.exec_stmt_handle))
-        self.stmt_lambdef <<= trace(attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle))
-        self.typedef <<= trace(attach(self.typedef_ref, self.typedef_handle))
-        self.typedef_default <<= trace(attach(self.typedef_default_ref, self.typedef_handle))
-        self.unsafe_typedef_default <<= trace(attach(self.unsafe_typedef_default_ref, self.unsafe_typedef_handle))
-        self.return_typedef <<= trace(attach(self.return_typedef_ref, self.typedef_handle))
-        self.typed_assign_stmt <<= trace(attach(self.typed_assign_stmt_ref, self.typed_assign_stmt_handle))
-        self.datadef <<= trace(attach(self.datadef_ref, self.data_handle))
-        self.match_datadef <<= trace(attach(self.match_datadef_ref, self.match_data_handle))
-        self.with_stmt <<= trace(attach(self.with_stmt_ref, self.with_stmt_handle))
-        self.await_item <<= trace(attach(self.await_item_ref, self.await_item_handle))
-        self.ellipsis <<= trace(attach(self.ellipsis_ref, self.ellipsis_handle))
-        self.case_stmt <<= trace(attach(self.case_stmt_ref, self.case_stmt_handle))
+        self.comment <<= attach(self.comment_ref, self.comment_handle, greedy=True)
+        self.set_literal <<= attach(self.set_literal_ref, self.set_literal_handle)
+        self.set_letter_literal <<= attach(self.set_letter_literal_ref, self.set_letter_literal_handle)
+        self.classlist <<= attach(self.classlist_ref, self.classlist_handle)
+        self.import_stmt <<= attach(self.import_stmt_ref, self.import_handle)
+        self.complex_raise_stmt <<= attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_handle)
+        self.augassign_stmt <<= attach(self.augassign_stmt_ref, self.augassign_handle)
+        self.dict_comp <<= attach(self.dict_comp_ref, self.dict_comp_handle)
+        self.destructuring_stmt <<= attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle)
+        self.name_match_funcdef <<= attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle)
+        self.op_match_funcdef <<= attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle)
+        self.yield_from <<= attach(self.yield_from_ref, self.yield_from_handle)
+        self.exec_stmt <<= attach(self.exec_stmt_ref, self.exec_stmt_handle)
+        self.stmt_lambdef <<= attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle)
+        self.typedef <<= attach(self.typedef_ref, self.typedef_handle)
+        self.typedef_default <<= attach(self.typedef_default_ref, self.typedef_handle)
+        self.unsafe_typedef_default <<= attach(self.unsafe_typedef_default_ref, self.unsafe_typedef_handle)
+        self.return_typedef <<= attach(self.return_typedef_ref, self.typedef_handle)
+        self.typed_assign_stmt <<= attach(self.typed_assign_stmt_ref, self.typed_assign_stmt_handle)
+        self.datadef <<= attach(self.datadef_ref, self.data_handle)
+        self.match_datadef <<= attach(self.match_datadef_ref, self.match_data_handle)
+        self.with_stmt <<= attach(self.with_stmt_ref, self.with_stmt_handle)
+        self.await_item <<= attach(self.await_item_ref, self.await_item_handle)
+        self.ellipsis <<= attach(self.ellipsis_ref, self.ellipsis_handle)
+        self.case_stmt <<= attach(self.case_stmt_ref, self.case_stmt_handle)
         self.f_string <<= attach(self.f_string_ref, self.f_string_handle)
         self.where_stmt <<= attach(self.where_stmt_ref, self.where_handle)
         self.implicit_return_where <<= attach(self.implicit_return_where_ref, self.where_handle)
         self.let_stmt <<= attach(self.let_stmt_ref, self.let_stmt_handle)
 
-        self.decoratable_normal_funcdef_stmt <<= trace(
-            attach(
-                self.decoratable_normal_funcdef_stmt_ref,
-                self.decoratable_funcdef_stmt_handle,
-            ),
+        self.decoratable_normal_funcdef_stmt <<= attach(
+            self.decoratable_normal_funcdef_stmt_ref,
+            self.decoratable_funcdef_stmt_handle,
         )
-        self.decoratable_async_funcdef_stmt <<= trace(
-            attach(
-                self.decoratable_async_funcdef_stmt_ref,
-                partial(self.decoratable_funcdef_stmt_handle, is_async=True),
-            ),
+        self.decoratable_async_funcdef_stmt <<= attach(
+            self.decoratable_async_funcdef_stmt_ref,
+            partial(self.decoratable_funcdef_stmt_handle, is_async=True),
         )
+
+        _name, _name_replacing_unsafe_simple_stmt_item, _name_replacing_full_suite, _name_replacing_implicit_return = self.replace_matches_of_inside(
+            "name_atom",
+            self.name,
+            self.unsafe_simple_stmt_item,
+            self.full_suite,
+            self.implicit_return,
+        )
+        self.name_atom <<= _name
+        self.name_replacing_unsafe_simple_stmt_item <<= _name_replacing_unsafe_simple_stmt_item
+        self.name_replacing_full_suite <<= _name_replacing_full_suite
+        self.name_replacing_implicit_return <<= _name_replacing_implicit_return
+
+        _name, _assign_replacing_pure_assign_stmt, _assign_replacing_unsafe_pure_assign_stmt_item = self.replace_matches_of_inside(
+            "assign_name",
+            self.name,
+            self.pure_assign_stmt,
+            self.unsafe_pure_assign_stmt_item,
+        )
+        self.assign_name <<= _name
+        self.assign_replacing_pure_assign_stmt <<= _assign_replacing_pure_assign_stmt
+        self.assign_replacing_unsafe_pure_assign_stmt_item <<= _assign_replacing_unsafe_pure_assign_stmt_item
 
         self.u_string <<= attach(self.u_string_ref, self.u_string_check)
         self.matrix_at <<= attach(self.matrix_at_ref, self.matrix_at_check)
@@ -1249,6 +1271,50 @@ class Compiler(Grammar):
 # -----------------------------------------------------------------------------------------------------------------------
 # COMPILER HANDLERS:
 # -----------------------------------------------------------------------------------------------------------------------
+
+    def replace_matches_of_inside(self, name, elem, *items):
+        """Replace all matches of elem inside of items and include the
+        replacements in the resulting matches of items. Requires elem
+        to only match a single string.
+
+        Returns (new version of elem, *modified items)."""
+        @contextmanager
+        def manage_item(wrapper, instring, loc):
+            self.stored_matches_of[name].append([])
+            try:
+                yield
+            finally:
+                self.stored_matches_of[name].pop()
+
+        def handle_item(tokens):
+            if isinstance(tokens, ParseResults) and len(tokens) == 1:
+                tokens = tokens[0]
+            return (self.stored_matches_of[name][-1], tokens)
+
+        handle_item.__name__ = "handle_wrapping_" + name
+
+        def handle_elem(tokens):
+            internal_assert(len(tokens) == 1, "invalid elem tokens in replace_matches_inside_of", tokens)
+            if self.stored_matches_of[name]:
+                ref = self.add_ref("repl", tokens[0])
+                self.stored_matches_of[name][-1].append(ref)
+                return replwrapper + ref + unwrapper
+            else:
+                return tokens[0]
+
+        handle_elem.__name__ = "handle_" + name
+
+        yield attach(elem, handle_elem)
+
+        for item in items:
+            yield Wrap(attach(item, handle_item, greedy=True), manage_item)
+
+    def replace_replaced_matches(self, to_repl_str, ref_to_replacement):
+        """Replace refs in str generated by replace_matches_of_inside."""
+        out = to_repl_str
+        for ref, repl in ref_to_replacement.items():
+            out = out.replace(replwrapper + ref + unwrapper, repl)
+        return out
 
     def set_docstring(self, loc, tokens):
         """Set the docstring."""
@@ -2249,7 +2315,6 @@ if {store_var} is _coconut_sentinel:
         for co_expr in exprs:
             py_expr = self.inner_parse_eval(co_expr)
             if "\n" in py_expr:
-                print(py_expr)
                 raise self.make_err(CoconutSyntaxError, "invalid expression in format string: " + co_expr, original, loc)
             compiled_exprs.append(py_expr)
 
@@ -2271,62 +2336,42 @@ if {store_var} is _coconut_sentinel:
     def where_handle(self, tokens):
         """Process a where statement."""
         internal_assert(len(tokens) == 2, "invalid where statement tokens", tokens)
-        base_stmt, assignment_stmts = tokens
-        assignment_block = "".join(assignment_stmts)
-        assigned_vars = set()
-        for line in assignment_block.splitlines():
-            ind, body = split_leading_indent(line)
-            try:
-                with self.name_check_disabled():
-                    new_vars = parse(self.find_assigned_vars, body)
-            except ParseBaseException:
-                logger.log_exc()
-            else:
-                for new_var in new_vars:
-                    if not new_var.startswith(reserved_prefix):
-                        assigned_vars.add(new_var)
+        (name_refs, base_stmt), assignment_refs_and_stmts = tokens
+
+        # modify assignment statements to use temporary variables
+        repl_assign_stmts = []
         temp_vars = {}
-        for var in assigned_vars:
-            temp_vars[var] = self.get_temp_var(var)
-        return "".join(
-            [
-                r'''try:
-    {oind}{temp_var} = {var}
-{cind}except _coconut.NameError:
-    {oind}{temp_var} = _coconut_sentinel
-{cind}'''.format(
-                    oind=openindent,
-                    cind=closeindent,
-                    temp_var=temp_vars[var],
-                    var=var,
-                ) for var in assigned_vars
-            ] + [
-                assignment_block,
-                base_stmt + "\n",
-            ] + [
-                r'''if {temp_var} is _coconut_sentinel:
-    {oind}try:
-        {oind}del {var}
-    {cind}except _coconut.NameError:
-        {oind}pass
-{cind}{cind}else:
-    {oind}{var} = {temp_var}
-{cind}'''.format(
-                    oind=openindent,
-                    cind=closeindent,
-                    temp_var=temp_vars[var],
-                    var=var,
-                ) for var in assigned_vars
-            ],
-        )
+        for assign_refs, assign_stmt in assignment_refs_and_stmts:
+            ref_replacements = {}
+            for ref in assign_refs:
+                var = self.get_ref("repl", ref)
+                temp_var = self.get_temp_var(var)
+                temp_vars[var] = temp_var
+                ref_replacements[ref] = temp_var
+            repl_assign_stmt = self.replace_replaced_matches(assign_stmt, ref_replacements)
+            repl_assign_stmts.append(repl_assign_stmt)
+        repl_assign_block = "".join(repl_assign_stmts)
+
+        # replace refs in base statement
+        ref_replacements = {}
+        for ref in name_refs:
+            var = self.get_ref("repl", ref)
+            ref_replacements[ref] = temp_vars.get(var, var)
+        repl_base_stmt = self.replace_replaced_matches(base_stmt, ref_replacements)
+
+        # combine into result
+        return "".join([
+            repl_assign_block,
+            repl_base_stmt + "\n",
+        ])
 
     def let_stmt_handle(self, tokens):
         """Process a let statement."""
         internal_assert(len(tokens) == 2, "invalid let statement tokens", tokens)
-        assignment_stmt, base_stmts = tokens
+        (assign_refs, assign_stmt), (name_refs, base_stmts) = tokens
         return self.where_handle([
-            "".join(base_stmts).rstrip(),
-            [assignment_stmt + "\n"],
+            (name_refs, "".join(base_stmts).rstrip()),
+            [(assign_refs, assign_stmt + "\n")],
         ])
 
 # end: COMPILER HANDLERS

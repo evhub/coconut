@@ -25,6 +25,7 @@ import logging
 import time
 from contextlib import contextmanager
 
+from coconut.root import _indent
 from coconut._pyparsing import (
     lineno,
     col,
@@ -78,6 +79,16 @@ def complain(error):
         logger.warn_err(error)
 
 
+def get_name(expr):
+    """Get the name of an expression for displaying."""
+    name = expr if isinstance(expr, str) else None
+    if name is None:
+        name = getattr(expr, "name", None)
+    if name is None:
+        name = displayable(expr)
+    return name
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # logger:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -87,9 +98,10 @@ class Logger(object):
     """Container object for various logger functions and variables."""
     verbose = False
     quiet = False
-    tracing = False
     path = None
     name = None
+    tracing = False
+    trace_ind = 0
 
     def __init__(self, other=None):
         """Create a logger, optionally from another logger."""
@@ -99,7 +111,7 @@ class Logger(object):
 
     def copy_from(self, other):
         """Copy other onto self."""
-        self.verbose, self.quiet, self.path, self.name, self.tracing = other.verbose, other.quiet, other.path, other.name, other.tracing
+        self.verbose, self.quiet, self.path, self.name, self.tracing, self.trace_ind = other.verbose, other.quiet, other.path, other.name, other.tracing, other.trace_ind
 
     def display(self, messages, sig="", debug=False):
         """Prints an iterator of messages."""
@@ -211,6 +223,20 @@ class Logger(object):
         internal_assert(len(begin) < info_tabulation, "info message too long", begin)
         self.show(begin + " " * (info_tabulation - len(begin)) + middle + " " + end)
 
+    @contextmanager
+    def indent_tracing(self):
+        """Indent wrapped tracing."""
+        self.trace_ind += 1
+        try:
+            yield
+        finally:
+            self.trace_ind -= 1
+
+    def print_trace(self, *args):
+        """Print to stderr with tracing indent."""
+        trace = " ".join(str(arg) for arg in args)
+        printerr(_indent(trace, self.trace_ind))
+
     def log_tag(self, tag, code, multiline=False):
         """Logs a tagged message if tracing."""
         if self.tracing:
@@ -218,14 +244,16 @@ class Logger(object):
                 code = code()
             tagstr = "[" + str(tag) + "]"
             if multiline:
-                printerr(tagstr + "\n" + displayable(code))
+                self.print_trace(tagstr + "\n" + displayable(code))
             else:
-                printerr(tagstr, ascii(code))
+                self.print_trace(tagstr, ascii(code))
 
-    def log_trace(self, tag, original, loc, tokens=None, extra=None):
+    def log_trace(self, expr, original, loc, tokens=None, extra=None):
         """Formats and displays a trace if tracing."""
         if self.tracing:
-            tag, original, loc = displayable(tag), displayable(original), int(loc)
+            tag = get_name(expr)
+            original = displayable(original)
+            loc = int(loc)
             if "{" not in tag:
                 out = ["[" + tag + "]"]
                 add_line_col = True
@@ -246,13 +274,14 @@ class Logger(object):
                     out.append("(line:" + str(lineno(loc, original)) + ", col:" + str(col(loc, original)) + ")")
                 if extra is not None:
                     out.append("from " + ascii(extra))
-                printerr(*out)
+                self.print_trace(*out)
 
     def _trace_success_action(self, original, start_loc, end_loc, expr, tokens):
         self.log_trace(expr, original, start_loc, tokens)
 
     def _trace_exc_action(self, original, loc, expr, exc):
-        self.log_trace(expr, original, loc, exc)
+        if self.verbose:
+            self.log_trace(expr, original, loc, exc)
 
     def trace(self, item):
         """Traces a parse element (only enabled in develop)."""

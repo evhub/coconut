@@ -1047,7 +1047,7 @@ Coconut's `where` statement is extremely straightforward. The syntax for a `wher
 <stmt> where:
     <body>
 ```
-where `<body>` is composed entirely of assignment statements. The `where` statement executes each assignment statement in `<body>`, evaluates the base `<stmt>`, then resets the values of all the variables assigned to in `<body>`.
+where `<body>` is composed entirely of assignment statements. The `where` statement executes each assignment statement in `<body>` and evaluates the base `<stmt>` without touching the actual values of the variables assigned to in `<body>`.
 
 ##### Example
 
@@ -1060,13 +1060,9 @@ c = a + b where:
 
 **Python:**
 ```coconut_python
-prev_a = a
-prev_b = b
-a = 1
-b = 2
-c = a + b
-a = prev_a
-b = prev_b
+_a = 1
+_b = 2
+c = _a + _b
 ```
 
 ### `let`
@@ -1076,7 +1072,7 @@ Coconut's `let` statement is a simple variation on the [`where`](#where) stateme
 let <stmt> in:
     <body>
 ```
-where `<stmt>` is an assignment statement. The `let` statement executes the assignment statement in `<stmt>`, evaluates the `<body>`, then resets the values of all the variables assigned to in `<stmt>`.
+where `<stmt>` is an assignment statement. The `let` statement executes the assignment statement in `<stmt>` and evaluates the `<body>` without touching the values of any of the variables assigned to in `<stmt>`.
 
 ##### Example
 
@@ -1088,12 +1084,9 @@ let a = 1 in:
 
 **Python:**
 ```coconut_python
-prev_a = a
-a = 1
-print(a)
-a = prev_a
+_a = 1
+print(_a)
 ```
-
 
 ### Backslash-Escaping
 

@@ -157,10 +157,10 @@ PY2_HEADER = PY27_HEADER + '''if _coconut_sys.version_info < (2, 7):
 '''
 
 
-def _indent(code, by=1):
+def _indent(code, by=1, tabsize=4):
     """Indents every nonempty line of the given code."""
     return "".join(
-        ("    " * by if line else "") + line for line in code.splitlines(True)
+        (" " * (tabsize * by) if line else "") + line for line in code.splitlines(True)
     )
 
 
