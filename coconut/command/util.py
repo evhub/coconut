@@ -319,8 +319,8 @@ def set_mypy_path():
     else:
         new_mypy_path = None
     if new_mypy_path is not None:
-        logger.log(mypy_path_env_var, "=", new_mypy_path)
         os.environ[mypy_path_env_var] = new_mypy_path
+    logger.log_func(lambda: (mypy_path_env_var, "=", os.environ[mypy_path_env_var]))
 
 
 def stdin_readable():

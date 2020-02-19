@@ -147,6 +147,15 @@ class Logger(object):
         if self.verbose:
             printerr(*messages)
 
+    def log_func(self, func):
+        """Calls a function and logs the results if --verbose."""
+        if self.verbose:
+            to_log = func()
+            if isinstance(to_log, tuple):
+                printerr(*to_log)
+            else:
+                printerr(to_log)
+
     def log_prefix(self, prefix, *messages):
         """Logs debug messages with the given signature if --verbose."""
         if self.verbose:
