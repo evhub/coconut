@@ -1973,12 +1973,13 @@ if not {check_var}:
                 # handle generator/async returns
                 if not normal_func and self.return_regex.match(base):
                     to_return = base[len("return"):].strip()
-                    if to_return:  # leave empty return statements alone
-                        if is_async:
-                            ret_err = "_coconut.asyncio.Return"
-                        else:
-                            ret_err = "_coconut.StopIteration"
-                        line = indent + "raise " + ret_err + "((" + to_return + "))" + comment + dedent
+                    if to_return:
+                        to_return = "(" + to_return + ")"
+                    if is_async:
+                        ret_err = "_coconut.asyncio.Return"
+                    else:
+                        ret_err = "_coconut.StopIteration"
+                    line = indent + "raise " + ret_err + "(" + to_return + ")" + comment + dedent
 
                 tre_base = None
                 if attempt_tre:

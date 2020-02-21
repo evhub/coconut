@@ -452,6 +452,9 @@ class TestCompilation(unittest.TestCase):
     def test_target(self):
         run(agnostic_target=(2 if PY2 else 3))
 
+    def test_line_numbers(self):
+        run(["--line-numbers"])
+
     def test_standalone(self):
         run(["--standalone"])
 
@@ -463,9 +466,6 @@ class TestCompilation(unittest.TestCase):
 
     def test_strict(self):
         run(["--strict"])
-
-    def test_line_numbers(self):
-        run(["--line-numbers"])
 
     def test_run(self):
         run(use_run_arg=True)

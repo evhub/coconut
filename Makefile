@@ -3,6 +3,11 @@ install:
 	pip install --upgrade setuptools pip
 	pip install .[tests]
 
+.PHONY: install-py2
+install-py2:
+	pip2 install --upgrade setuptools pip
+	pip2 install .[tests]
+
 .PHONY: dev
 dev:
 	pip install --upgrade setuptools pip pytest_remotedata
@@ -33,6 +38,13 @@ test-tests:
 	python ./tests --strict --line-numbers
 	python ./tests/dest/runner.py
 	python ./tests/dest/extras.py
+
+# same as test-basic but uses Python 2
+.PHONY: test-py2
+test-py2:
+	python2 ./tests --strict --line-numbers --force
+	python2 ./tests/dest/runner.py
+	python2 ./tests/dest/extras.py
 
 # same as test-basic but also runs mypy
 .PHONY: test-mypy
