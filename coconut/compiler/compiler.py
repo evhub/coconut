@@ -62,9 +62,8 @@ from coconut.constants import (
     match_err_var,
     import_as_var,
     yield_from_var,
-    yield_item_var,
+    yield_err_var,
     raise_from_var,
-    stmt_lambda_var,
     tre_mock_var,
     tre_check_var,
     py3_to_py2_stdlib,
@@ -110,7 +109,6 @@ from coconut.compiler.util import (
     split_leading_trailing_indent,
     match_in,
     transform,
-    ignore_transform,
     parse,
     get_target_info_len2,
     split_leading_comment,
@@ -395,7 +393,7 @@ class Compiler(Grammar):
         lambda self: self.ind_proc,
     ]
     postprocs = [
-        lambda self: self.stmt_lambda_proc,
+        lambda self: self.add_code_before_proc,
         lambda self: self.reind_proc,
         lambda self: self.repl_proc,
         lambda self: self.header_proc,
@@ -474,7 +472,7 @@ class Compiler(Grammar):
         self.docstring = ""
         self.temp_var_counts = defaultdict(int)
         self.stored_matches_of = defaultdict(list)
-        self.stmt_lambdas = []
+        self.add_code_before = {}
         self.unused_imports = set()
         self.original_lines = []
         self.num_lines = 0
@@ -1035,19 +1033,17 @@ class Compiler(Grammar):
         new.append(closeindent * len(levels))
         return "\n".join(new)
 
-    def stmt_lambda_proc(self, inputstring, **kwargs):
-        """Add statement lambda definitions."""
-        regexes = []
-        for i in range(len(self.stmt_lambdas)):
-            name = self.stmt_lambda_name(i)
-            regex = compile_regex(r"\b%s\b" % (name,))
-            regexes.append(regex)
+    def add_code_before_proc(self, inputstring, **kwargs):
+        """Add definitions for names in self.add_code_before."""
+        regexes = {}
+        for name in self.add_code_before:
+            regexes[name] = compile_regex(r"\b%s\b" % (name,))
         out = []
         for line in inputstring.splitlines():
-            for i, regex in enumerate(regexes):
+            for name, regex in regexes.items():
                 if regex.search(line):
                     indent, line = split_leading_indent(line)
-                    out.append(indent + self.stmt_lambdas[i])
+                    out.append(indent + self.add_code_before[name])
             out.append(line)
         return "\n".join(out)
 
@@ -1301,11 +1297,23 @@ class Compiler(Grammar):
         """Process Python 3.3 yield from."""
         internal_assert(len(tokens) == 1, "invalid yield from tokens", tokens)
         if self.target_info < (3, 3):
-            return (
-                yield_from_var + " = " + tokens[0]
-                + "\nfor " + yield_item_var + " in " + yield_from_var + ":\n"
-                + openindent + "yield " + yield_item_var + "\n" + closeindent
+            ret_val_name = self.get_temp_var("yield_from")
+            self.add_code_before[ret_val_name] = r'''{yield_from_var} = _coconut.iter({expr})
+while True:
+    {oind}try:
+        {oind}yield _coconut.next({yield_from_var})
+    {cind}except _coconut.StopIteration as {yield_err_var}:
+        {oind}{ret_val_name} = {yield_err_var}.args[0] if _coconut.len({yield_err_var}.args) > 0 else None
+        break
+{cind}{cind}'''.format(
+                oind=openindent,
+                cind=closeindent,
+                expr=tokens[0],
+                yield_from_var=yield_from_var,
+                yield_err_var=yield_err_var,
+                ret_val_name=ret_val_name,
             )
+            return ret_val_name
         else:
             return "yield from " + tokens[0]
 
@@ -1797,12 +1805,6 @@ if not {check_var}:
         else:
             return "exec(" + ", ".join(tokens) + ")"
 
-    def stmt_lambda_name(self, index=None):
-        """Return the next (or specified) statement lambda name."""
-        if index is None:
-            index = len(self.stmt_lambdas)
-        return stmt_lambda_var + "_" + str(index)
-
     def stmt_lambdef_handle(self, original, loc, tokens):
         """Process multi-line lambdef statements."""
         if len(tokens) == 2:
@@ -1815,17 +1817,15 @@ if not {check_var}:
                 stmts = stmts.asList() + [last]
         else:
             raise CoconutInternalException("invalid statement lambda tokens", tokens)
-        name = self.stmt_lambda_name()
-        body = openindent + self.stmt_lambda_proc("\n".join(stmts)) + closeindent
+        name = self.get_temp_var("lambda")
+        body = openindent + self.add_code_before_proc("\n".join(stmts)) + closeindent
         if isinstance(params, str):
-            self.stmt_lambdas.append(
-                "def " + name + params + ":\n" + body,
-            )
+            self.add_code_before[name] = "def " + name + params + ":\n" + body
         else:
             match_tokens = [name] + list(params)
-            self.stmt_lambdas.append(
+            self.add_code_before[name] = (
                 "".join(self.name_match_funcdef_handle(original, loc, match_tokens))
-                + body,
+                + body
             )
         return name
 
@@ -1856,10 +1856,6 @@ if not {check_var}:
         def tre_return_handle(loc, tokens):
             internal_assert(len(tokens) == 1, "invalid tail recursion elimination tokens", tokens)
             args = tokens[0][1:-1]  # strip parens
-            # check if there is anything in the arguments that will store a reference
-            # to the current scope, and if so, abort TRE, since it can't handle that
-            if match_in(self.stores_scope, args):
-                return ignore_transform  # this is the only way to make the outer transform call return None
             if self.no_tco:
                 tco_recurse = "return " + func_name + "(" + args + ")"
             else:
@@ -1885,24 +1881,61 @@ if not {check_var}:
             tre_return_handle,
         )
 
-    yield_regex = compile_regex(r"\byield\b")
     def_regex = compile_regex(r"(async\s+)?def\b")
-    tre_disable_regex = compile_regex(r"(try|(async\s+)?(with|for)|while)\b")
+    yield_regex = compile_regex(r"\byield\b")
+
+    def detect_is_gen(self, raw_lines):
+        """Determine if the given function code is for a generator."""
+        level = 0  # indentation level
+        func_until_level = None  # whether inside of an inner function
+
+        for line in raw_lines:
+            indent, line = split_leading_indent(line)
+
+            level += ind_change(indent)
+
+            # update func_until_level
+            if func_until_level is not None and level <= func_until_level:
+                func_until_level = None
+
+            # detect inner functions
+            if func_until_level is None and self.def_regex.match(line):
+                func_until_level = level
+
+            # search for yields if not in an inner function
+            if func_until_level is None and self.yield_regex.search(line):
+                return True
+
+        return False
+
+    tco_disable_regex = compile_regex(r"(try|(async\s+)?(with|for)|while)\b")
     return_regex = compile_regex(r"return\b")
     no_tco_funcs_regex = compile_regex(r"\b(locals|globals)\b")
 
-    def transform_returns(self, raw_lines, tre_return_grammar=None, use_mock=None, is_async=False):
-        """Apply TCO, TRE, or async universalization to the given function."""
+    def transform_returns(self, raw_lines, tre_return_grammar=None, use_mock=None, is_async=False, is_gen=False):
+        """Apply TCO, TRE, async, and generator return universalization to the given function."""
         lines = []  # transformed lines
         tco = False  # whether tco was done
         tre = False  # whether tre was done
         level = 0  # indentation level
         disabled_until_level = None  # whether inside of a disabled block
+        func_until_level = None  # whether inside of an inner function
         attempt_tre = tre_return_grammar is not None  # whether to even attempt tre
-        attempt_tco = not is_async and not self.no_tco  # whether to even attempt tco
+        normal_func = not (is_async or is_gen)  # whether this is a normal function
+        attempt_tco = normal_func and not self.no_tco  # whether to even attempt tco
 
-        if is_async:
-            internal_assert(not attempt_tre and not attempt_tco, "cannot tail call optimize async functions")
+        # sanity checks
+        internal_assert(not (is_async and is_gen), "cannot mark as async and generator")
+        internal_assert(not (not normal_func and (attempt_tre or attempt_tco)), "cannot tail call optimize async/generator functions")
+
+        if (
+            # don't transform generator returns if they're supported
+            is_gen and self.target_info >= (3, 3)
+            # don't transform async returns if they're supported
+            or is_async and self.target_info >= (3, 5)
+        ):
+            func_code = "".join(raw_lines)
+            return func_code, tco, tre
 
         for line in raw_lines:
             indent, _body, dedent = split_leading_trailing_indent(line)
@@ -1910,66 +1943,72 @@ if not {check_var}:
 
             level += ind_change(indent)
 
-            if disabled_until_level is not None:
-                if level <= disabled_until_level:
-                    disabled_until_level = None
+            # update disabled_until_level and func_until_level
+            if disabled_until_level is not None and level <= disabled_until_level:
+                disabled_until_level = None
+            if func_until_level is not None and level <= func_until_level:
+                func_until_level = None
 
+            # detect inner functions
+            if func_until_level is None and self.def_regex.match(base):
+                func_until_level = level
+                if disabled_until_level is None:
+                    disabled_until_level = level
+                # functions store scope so no TRE anywhere
+                attempt_tre = False
+
+            # tco and tre shouldn't touch scopes that depend on actual return statements
+            #  or scopes where we can't insert a continue
+            if normal_func and disabled_until_level is None and self.tco_disable_regex.match(base):
+                disabled_until_level = level
+
+            # check if there is anything that stores a scope reference, and if so,
+            # disable TRE, since it can't handle that
+            if attempt_tre and match_in(self.stores_scope, line):
+                attempt_tre = False
+
+            # attempt tco/tre/async universalization
             if disabled_until_level is None:
 
-                # tco and tre don't support generators
-                if not is_async and self.yield_regex.search(base):
-                    lines = raw_lines  # reset lines
-                    break
+                # handle generator/async returns
+                if not normal_func and self.return_regex.match(base):
+                    to_return = base[len("return"):].strip()
+                    if to_return:  # leave empty return statements alone
+                        if is_async:
+                            ret_err = "_coconut.asyncio.Return"
+                        else:
+                            ret_err = "_coconut.StopIteration"
+                        line = indent + "raise " + ret_err + "((" + to_return + "))" + comment + dedent
 
-                # don't touch inner functions
-                elif self.def_regex.match(base):
-                    disabled_until_level = level
+                tre_base = None
+                if attempt_tre:
+                    with self.complain_on_err():
+                        tre_base = transform(tre_return_grammar, base)
+                    if tre_base is not None:
+                        line = indent + tre_base + comment + dedent
+                        tre = True
+                        # when tco is available, tre falls back on it if the function is changed
+                        tco = not self.no_tco
 
-                # tco and tre shouldn't touch scopes that depend on actual return statements
-                #  or scopes where we can't insert a continue
-                elif not is_async and self.tre_disable_regex.match(base):
-                    disabled_until_level = level
-
-                else:
-
-                    if is_async:
-                        if self.return_regex.match(base):
-                            to_return = base[len("return"):].strip()
-                            if to_return:  # leave empty return statements alone
-                                line = indent + "raise _coconut.asyncio.Return(" + to_return + ")" + comment + dedent
-
-                    tre_base = None
-                    if attempt_tre:
-                        with self.complain_on_err():
-                            tre_base = transform(tre_return_grammar, base)
-                        if tre_base is not None:
-                            line = indent + tre_base + comment + dedent
-                            tre = True
-                            # when tco is available, tre falls back on it if the function is changed
-                            tco = not self.no_tco
-
-                    if (
-                        attempt_tco
-                        # don't attempt tco if tre succeeded
-                        and tre_base is None
-                        # don't tco scope-dependent functions
-                        and not self.no_tco_funcs_regex.search(base)
-                    ):
-                        tco_base = None
-                        with self.complain_on_err():
-                            tco_base = transform(self.tco_return, base)
-                        if tco_base is not None:
-                            line = indent + tco_base + comment + dedent
-                            tco = True
+                if (
+                    attempt_tco
+                    # don't attempt tco if tre succeeded
+                    and tre_base is None
+                    # don't tco scope-dependent functions
+                    and not self.no_tco_funcs_regex.search(base)
+                ):
+                    tco_base = None
+                    with self.complain_on_err():
+                        tco_base = transform(self.tco_return, base)
+                    if tco_base is not None:
+                        line = indent + tco_base + comment + dedent
+                        tco = True
 
             level += ind_change(dedent)
             lines.append(line)
 
         func_code = "".join(lines)
-        if is_async:
-            return func_code
-        else:
-            return func_code, tco, tre
+        return func_code, tco, tre
 
     def decoratable_funcdef_stmt_handle(self, original, loc, tokens, is_async=False):
         """Determines if TCO or TRE can be done and if so does it,
@@ -2040,16 +2079,19 @@ if not {check_var}:
             else:
                 decorators += "@_coconut.asyncio.coroutine\n"
 
-            # only Python 3.3+ supports returning values inside generators
-            if self.target_info < (3, 3):
-                func_code = self.transform_returns(raw_lines, is_async=True)
-            else:
-                func_code = "".join(raw_lines)
+            func_code, _, _ = self.transform_returns(raw_lines, is_async=True)
 
         # handle normal functions
         else:
-            # tre does not work with decorators, though tco does
-            attempt_tre = func_name is not None and not decorators
+            # detect generators
+            is_gen = self.detect_is_gen(raw_lines)
+
+            attempt_tre = (
+                func_name is not None
+                and not is_gen
+                # tre does not work with decorators, though tco does
+                and not decorators
+            )
             if attempt_tre:
                 use_mock = func_args and func_args != func_params[1:-1]
                 func_store = self.get_temp_var("recursive_func")
@@ -2061,6 +2103,7 @@ if not {check_var}:
                 raw_lines,
                 tre_return_grammar,
                 use_mock,
+                is_gen=is_gen,
             )
 
             if tre:

@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "1.4.3"
 VERSION_NAME = "Ernest Scribbler"
 # False for release, int >= 1 for develop
-DEVELOP = 11
+DEVELOP = 12
 
 # -----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
@@ -39,14 +39,14 @@ VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
 PY2 = _coconut_sys.version_info < (3,)
 PY26 = _coconut_sys.version_info < (2, 7)
 
-PY3_HEADER = r'''from builtins import chr, filter, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate
-py_chr, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate, py_repr = chr, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate, repr
+PY3_HEADER = r'''from builtins import StopIteration, chr, filter, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate
+py_StopIteration, py_chr, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate, py_repr = StopIteration, chr, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate, repr
 _coconut_str = str
 '''
 
-PY27_HEADER = r'''from __builtin__ import chr, filter, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate, raw_input, xrange
-py_chr, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate, py_raw_input, py_xrange, py_repr = chr, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate, raw_input, xrange, repr
-_coconut_NotImplemented, _coconut_raw_input, _coconut_xrange, _coconut_int, _coconut_long, _coconut_print, _coconut_str, _coconut_unicode, _coconut_repr = NotImplemented, raw_input, xrange, int, long, print, str, unicode, repr
+PY27_HEADER = r'''from __builtin__ import StopIteration, chr, filter, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate, raw_input, xrange
+py_StopIteration, py_chr, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate, py_raw_input, py_xrange, py_repr = StopIteration, chr, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate, raw_input, xrange, repr
+_coconut_NotImplemented, _coconut_StopIteration, _coconut_raw_input, _coconut_xrange, _coconut_int, _coconut_long, _coconut_print, _coconut_str, _coconut_unicode, _coconut_repr = NotImplemented, StopIteration, raw_input, xrange, int, long, print, str, unicode, repr
 from future_builtins import *
 chr, str = unichr, unicode
 from io import open
@@ -57,6 +57,17 @@ class object(object):
         if eq is _coconut_NotImplemented:
             return eq
         return not eq
+class StopIteration(_coconut_StopIteration):
+    def __init__(self, *args):
+        self.value = args[0] if _coconut.len(args) > 0 else None
+        _coconut.Exception.__init__(self, *args)
+    if hasattr(_coconut_StopIteration, "__doc__"):
+        __doc__ = _coconut_StopIteration.__doc__
+    class __metaclass__(type):
+        def __instancecheck__(cls, inst):
+            return _coconut.isinstance(inst, _coconut_StopIteration)
+        def __subclasscheck__(cls, subcls):
+            return _coconut.issubclass(subcls, _coconut_StopIteration)
 class int(_coconut_int):
     __slots__ = ()
     if hasattr(_coconut_int, "__doc__"):

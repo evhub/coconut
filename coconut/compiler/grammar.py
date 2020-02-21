@@ -1838,7 +1838,8 @@ class Grammar(object):
 
     stores_scope = (
         keyword("lambda")
-        | keyword("for") + base_name + keyword("in")
+        # match comprehensions but not for loops
+        | ~indent + ~dedent + any_char + keyword("for") + base_name + keyword("in")
     )
 
     just_a_string = start_marker + string + end_marker
