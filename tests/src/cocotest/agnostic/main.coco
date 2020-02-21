@@ -1,5 +1,4 @@
 import sys
-import asyncio  # type: ignore
 
 
 def assert_raises(c, exc):
@@ -470,8 +469,6 @@ def main_test():
         {"a": a} = {"a": 5}
     assert (None ?? False is False) is True
     assert (1 ?? False is False) is False
-    loop = asyncio.new_event_loop()
-    loop.close()
     assert ... is Ellipsis
     assert 1or 2
     two = None
@@ -549,12 +546,7 @@ def main_test():
     match def f(a, /, b) = a, b
     assert f(1, 2) == (1, 2)
     assert f(1, b=2) == (1, 2)
-    try:
-        f(a=1, b=2)
-    except MatchError:
-        assert True
-    else:
-        assert False
+    assert_raises(-> f(a=1, b=2), MatchError)
     class A
     a = A()
     f = 10
@@ -585,6 +577,12 @@ def main_test():
     assert 1 == 1.0 == 1.
     assert 1i == 1.0i == 1.i
     assert py_StopIteration() `isinstance` StopIteration
+    return True
+
+def test_asyncio():
+    import asyncio  # type: ignore
+    loop = asyncio.new_event_loop()
+    loop.close()
     return True
 
 def easter_egg_test():
@@ -638,7 +636,9 @@ def main(test_easter_eggs=False):
             assert py36_test()
 
     print(".", end="")
-    from .target_sys_test import target_sys_test
+    from .target_sys_test import TEST_ASYNCIO, target_sys_test
+    if TEST_ASYNCIO:
+        assert test_asyncio()
     assert target_sys_test()  # type: ignore
 
     print(".", end="")  # ........

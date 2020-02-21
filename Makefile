@@ -5,8 +5,18 @@ install:
 
 .PHONY: install-py2
 install-py2:
-	pip2 install --upgrade setuptools pip
-	pip2 install .[tests]
+	python2 -m pip install --upgrade setuptools pip
+	python2 -m pip install .[tests]
+
+.PHONY: install-pypy
+install-pypy:
+	pypy -m pip install --upgrade setuptools pip
+	pypy -m pip install .[tests]
+
+.PHONY: install-pypy3
+install-pypy3:
+	pypy3 -m pip install --upgrade setuptools pip
+	pypy3 -m pip install .[tests]
 
 .PHONY: dev
 dev:
@@ -45,6 +55,20 @@ test-py2:
 	python2 ./tests --strict --line-numbers --force
 	python2 ./tests/dest/runner.py
 	python2 ./tests/dest/extras.py
+
+# same as test-basic but uses PyPy
+.PHONY: test-pypy
+test-pypy:
+	pypy ./tests --strict --line-numbers --force
+	pypy ./tests/dest/runner.py
+	pypy ./tests/dest/extras.py
+
+# same as test-basic but uses PyPy3
+.PHONY: test-pypy3
+test-pypy3:
+	pypy3 ./tests --strict --line-numbers --force
+	pypy3 ./tests/dest/runner.py
+	pypy3 ./tests/dest/extras.py
 
 # same as test-basic but also runs mypy
 .PHONY: test-mypy

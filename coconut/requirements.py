@@ -18,7 +18,6 @@ Description: Coconut installation requirements.
 from coconut.root import *  # NOQA
 
 import sys
-import platform
 
 from coconut.constants import (
     ver_str_to_tuple,
@@ -29,6 +28,7 @@ from coconut.constants import (
     max_versions,
     pinned_reqs,
     PYPY,
+    CPYTHON,
     PY34,
     IPY,
     WINDOWS,
@@ -64,6 +64,7 @@ def get_reqs(which):
     """Gets requirements from all_reqs with versions."""
     reqs = []
     for req in all_reqs[which]:
+        use_req = True
         req_str = get_base_req(req) + ">=" + ver_tuple_to_str(min_versions[req])
         if req in max_versions:
             max_ver = max_versions[req]
@@ -72,25 +73,39 @@ def get_reqs(which):
             req_str += ",<" + ver_tuple_to_str(max_ver)
         env_marker = req[1] if isinstance(req, tuple) else None
         if env_marker:
-            if env_marker == "py2":
-                if supports_env_markers:
-                    req_str += ";python_version<'3'"
-                elif not PY2:
-                    continue
-            elif env_marker == "py3":
-                if supports_env_markers:
-                    req_str += ";python_version>='3'"
-                elif PY2:
-                    continue
-            elif env_marker.startswith("py3") and len(env_marker) == len("py3") + 1:
-                ver = int(env_marker[len("py3"):])
-                if supports_env_markers:
-                    req_str += ";python_version>='3.{ver}'".format(ver=ver)
-                elif sys.version_info < (3, ver):
-                    continue
-            else:
-                raise ValueError("unknown env marker id " + repr(env_marker))
-        reqs.append(req_str)
+            markers = []
+            for mark in env_marker.split(";"):
+                if mark == "py2":
+                    if supports_env_markers:
+                        markers.append("python_version<'3'")
+                    elif not PY2:
+                        use_req = False
+                        break
+                elif mark == "py3":
+                    if supports_env_markers:
+                        markers.append("python_version>='3'")
+                    elif PY2:
+                        use_req = False
+                        break
+                elif mark.startswith("py3") and len(mark) == len("py3") + 1:
+                    ver = int(mark[len("py3"):])
+                    if supports_env_markers:
+                        markers.append("python_version>='3.{ver}'".format(ver=ver))
+                    elif sys.version_info < (3, ver):
+                        use_req = False
+                        break
+                elif mark == "cpy":
+                    if supports_env_markers:
+                        markers.append("platform_python_implementation=='CPython'")
+                    elif not CPYTHON:
+                        use_req = False
+                        break
+                else:
+                    raise ValueError("unknown env marker " + repr(mark))
+            if markers:
+                req_str += ";" + " and ".join(markers)
+        if use_req:
+            reqs.append(req_str)
     return reqs
 
 
@@ -142,7 +157,7 @@ extras.update({
         extras["jobs"] if not PYPY else [],
         extras["jupyter"] if IPY else [],
         extras["mypy"] if PY34 and not WINDOWS and not PYPY else [],
-        extras["asyncio"] if not PY34 else [],
+        extras["asyncio"] if not PY34 and not PYPY else [],
     ),
 })
 
@@ -160,7 +175,7 @@ elif supports_env_markers:
     extras[":platform_python_implementation!='CPython'"] = get_reqs("purepython")
 else:
     # old method
-    if platform.python_implementation() == "CPython":
+    if CPYTHON:
         requirements += get_reqs("cpython")
     else:
         requirements += get_reqs("purepython")

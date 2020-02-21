@@ -94,12 +94,13 @@ version_tuple = tuple(VERSION.split("."))
 
 WINDOWS = os.name == "nt"
 PYPY = platform.python_implementation() == "PyPy"
+CPYTHON = platform.python_implementation() == "CPython"
 PY32 = sys.version_info >= (3, 2)
 PY33 = sys.version_info >= (3, 3)
 PY34 = sys.version_info >= (3, 4)
 PY35 = sys.version_info >= (3, 5)
 PY36 = sys.version_info >= (3, 6)
-IPY = (PY2 and not PY26) or PY35
+IPY = ((PY2 and not PY26) or PY35) and not (PYPY and WINDOWS)
 
 # -----------------------------------------------------------------------------------------------------------------------
 # INSTALLATION CONSTANTS:
@@ -180,7 +181,7 @@ all_reqs = {
         "pytest",
         "pexpect",
         ("numpy", "py34"),
-        ("numpy", "py2"),
+        ("numpy", "py2;cpy"),
     ),
 }
 
@@ -201,7 +202,7 @@ min_versions = {
     ("trollius", "py2"): (2, 2),
     "requests": (2,),
     ("numpy", "py34"): (1,),
-    ("numpy", "py2"): (1,),
+    ("numpy", "py2;cpy"): (1,),
     ("ipykernel", "py3"): (5, 1),
     ("jupyter-console", "py3"): (6, 1),
     ("jupyterlab", "py35"): (1,),
@@ -565,7 +566,7 @@ py3_to_py2_stdlib = {
     "itertools.filterfalse": ("itertools./ifilterfalse", (3,)),
     "itertools.zip_longest": ("itertools./izip_longest", (3,)),
     # third-party backports
-    "asyncio": ("trollius", (3, 4)),
+    "asyncio": ("trollius", (3,)),
 }
 
 # -----------------------------------------------------------------------------------------------------------------------
