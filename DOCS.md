@@ -1607,7 +1607,7 @@ _Can't be done without a long series of checks in place of the destructuring ass
 
 ### Decorators
 
-Unlike Python, which only supports a single variable or function call in a decorator, Coconut supports any expression.
+Unlike Python, which only supports a single variable or function call in a decorator, Coconut supports any expression as in [PEP 614](https://www.python.org/dev/peps/pep-0614/).
 
 ##### Example
 

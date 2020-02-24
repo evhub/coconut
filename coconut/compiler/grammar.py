@@ -1703,7 +1703,7 @@ class Grammar(object):
     match_datadef_ref = Optional(keyword("match").suppress()) + keyword("data").suppress() + name + match_data_args + data_suite
 
     simple_decorator = condense(dotted_name + Optional(function_call))("simple")
-    complex_decorator = test("test")
+    complex_decorator = namedexpr_test("test")
     decorators = attach(OneOrMore(at.suppress() - Group(longest(simple_decorator, complex_decorator)) - newline.suppress()), decorator_handle)
 
     decoratable_normal_funcdef_stmt = Forward()
