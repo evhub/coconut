@@ -26,10 +26,10 @@ from coconut.constants import (
     version_long,
     default_recursion_limit,
     style_env_var,
-    histfile_env_var,
     default_style,
-    default_histfile,
     main_sig,
+    default_histfile,
+    home_env_var,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -207,7 +207,7 @@ arguments.add_argument(
     "--style",
     metavar="name",
     type=str,
-    help="Pygments syntax highlighting style (or 'none' to disable) (defaults to "
+    help="Pygments syntax highlighting style (or 'list' to list styles) (defaults to "
     + style_env_var + " environment variable if it exists, otherwise '" + default_style + "')",
 )
 
@@ -215,8 +215,7 @@ arguments.add_argument(
     "--history-file",
     metavar="path",
     type=str,
-    help="Path to history file (or '' for no file) (defaults to "
-    + histfile_env_var + " environment variable if it exists, otherwise '" + default_histfile + "')",
+    help="Path to history file (or '' for no file) (currently set to '" + default_histfile + "') (can be modified by setting " + home_env_var + " environment variable)",
 )
 
 arguments.add_argument(

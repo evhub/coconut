@@ -581,16 +581,23 @@ main_sig = "Coconut: "
 main_prompt = ">>> "
 more_prompt = "    "
 
+mypy_path_env_var = "MYPYPATH"
+style_env_var = "COCONUT_STYLE"
+home_env_var = "COCONUT_HOME"
+
+coconut_home = fixpath(os.environ.get(home_env_var, "~"))
+
 default_style = "default"
-default_histfile = os.path.join("~", ".coconut_history")
+default_histfile = os.path.join(coconut_home, ".coconut_history")
 prompt_multiline = False
 prompt_vi_mode = False
 prompt_wrap_lines = True
 prompt_history_search = True
 
-mypy_path_env_var = "MYPYPATH"
-style_env_var = "COCONUT_STYLE"
-histfile_env_var = "COCONUT_HISTORY_FILE"
+base_dir = os.path.dirname(os.path.abspath(fixpath(__file__)))
+
+base_stub_dir = os.path.join(base_dir, "stubs")
+installed_stub_dir = os.path.join(coconut_home, ".coconut_stubs")
 
 watch_interval = .1  # seconds
 
@@ -603,8 +610,6 @@ documentation_url = rtfd_url + "/DOCS.html"
 new_issue_url = "https://github.com/evhub/coconut/issues/new"
 report_this_text = "(you should report this at " + new_issue_url + ")"
 
-base_dir = os.path.dirname(os.path.abspath(fixpath(__file__)))
-
 icoconut_kernel_names = (
     "coconut",
     "coconut2",
@@ -616,9 +621,6 @@ icoconut_kernel_dirs = tuple(
     os.path.join(icoconut_dir, kernel_name)
     for kernel_name in icoconut_kernel_names
 )
-
-base_stub_dir = os.path.join(base_dir, "stubs")
-installed_stub_dir = fixpath(os.path.join("~", ".coconut_stubs"))
 
 exit_chars = (
     "\x04",  # Ctrl-D

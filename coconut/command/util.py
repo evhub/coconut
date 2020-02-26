@@ -50,7 +50,6 @@ from coconut.constants import (
     prompt_history_search,
     style_env_var,
     mypy_path_env_var,
-    histfile_env_var,
     tutorial_url,
     documentation_url,
     reserved_vars,
@@ -378,7 +377,7 @@ class Prompt(object):
         """Set up the prompt."""
         if prompt_toolkit is not None:
             self.set_style(os.environ.get(style_env_var, default_style))
-            self.set_history_file(os.environ.get(histfile_env_var, default_histfile))
+            self.set_history_file(default_histfile)
 
     def set_style(self, style):
         """Set pygments syntax highlighting style."""
@@ -395,7 +394,7 @@ class Prompt(object):
             raise CoconutException("unrecognized pygments style", style, extra="use '--style list' to show all valid styles")
 
     def set_history_file(self, path):
-        """Set path to history file. "" produces no file."""
+        """Set path to history file. Pass empty string for in-memory history."""
         if path:
             self.history = prompt_toolkit.history.FileHistory(fixpath(path))
         else:

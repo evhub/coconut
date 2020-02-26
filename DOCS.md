@@ -152,12 +152,12 @@ dest                destination directory for compiled files (defaults to
   --tutorial            open Coconut's tutorial in the default web browser
   --documentation       open Coconut's documentation in the default web
                         browser
-  --style name          Pygments syntax highlighting style (or 'none' to
-                        disable) (defaults to COCONUT_STYLE environment
+  --style name          Pygments syntax highlighting style (or 'list' to list
+                        styles) (defaults to COCONUT_STYLE environment
                         variable if it exists, otherwise 'default')
-  --history-file path   Path to history file (or '' for no file) (defaults to
-                        COCONUT_HISTORY_FILE environment variable if it
-                        exists, otherwise '~\.coconut_history')
+  --history-file path   Path to history file (or '' for no file) (currently
+                        set to 'C:\Users\evanj\.coconut_history') (can be
+                        modified by setting COCONUT_HOME environment variable)
   --recursion-limit limit, --recursionlimit limit
                         set maximum recursion depth in compiler (defaults to
                         2000)
