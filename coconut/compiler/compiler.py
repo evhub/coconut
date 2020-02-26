@@ -2139,12 +2139,7 @@ if not {check_var}:
 {cind}except _coconut.NameError:
     {oind}{store_var} = _coconut_sentinel
 {cind}{decorators}{def_stmt}{func_code}{func_name} = {def_name}
-if {store_var} is _coconut_sentinel:
-    {oind}try:
-        {oind}del {def_name}
-    {cind}except _coconut.NameError:
-        {oind}pass
-{cind}{cind}else:
+if {store_var} is not _coconut_sentinel:
     {oind}{def_name} = {store_var}
 {cind}'''.format(
                 oind=openindent,
