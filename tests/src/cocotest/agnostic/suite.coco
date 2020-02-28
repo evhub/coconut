@@ -588,7 +588,7 @@ def suite_test():
     try:
         next(it)
     except StopIteration as err:
-        assert err.value |> list == [2]
+        assert err.args[0] |> list == [2]
     else:
         assert False
     it = yield_from_return(1)
@@ -597,25 +597,25 @@ def suite_test():
     try:
         next(it)
     except StopIteration as err:
-        assert err.value == 0
+        assert err.args[0] == 0
     else:
         assert False
     try:
         next(it_ret(5))
     except StopIteration as err:
-        assert err.value == 5
+        assert err.args[0] == 5
     else:
         assert False
     try:
         next(it_ret_none())
     except StopIteration as err:
-        assert err.value is None
+        assert not err.args
     else:
         assert False
     try:
         next(it_ret_tuple(1, 2))
     except StopIteration as err:
-        assert err.value == (1, 2)
+        assert err.args[0] == (1, 2)
     else:
         assert False
     assert loop_then_tre(1e4) == 0
