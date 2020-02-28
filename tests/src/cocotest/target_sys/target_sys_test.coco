@@ -1,7 +1,8 @@
 import os
+import sys
 import platform
 
-TEST_ASYNCIO = not (os.name == "nt" and platform.python_implementation() == "PyPy")
+TEST_ASYNCIO = not (platform.python_implementation() == "PyPy" and (os.name == "nt" or sys.version_info < (3,)))
 
 def target_sys_test():
     """Performs --target sys tests."""
@@ -23,6 +24,6 @@ def target_sys_test():
         loop.run_until_complete(main())
         loop.close()
     else:
-        assert os.name == "nt"
         assert platform.python_implementation() == "PyPy"
+        assert os.name == "nt" or sys.version_info < (3,)
     return True
