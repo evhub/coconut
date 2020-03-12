@@ -193,7 +193,7 @@ min_versions = {
     "recommonmark": (0, 6),
     "psutil": (5,),
     "jupyter": (1, 0),
-    "mypy": (0, 761),
+    "mypy": (0, 770),
     "futures": (3, 3),
     "backports.functools-lru-cache": (1, 6),
     "argparse": (1, 4),
@@ -205,8 +205,8 @@ min_versions = {
     ("numpy", "py2;cpy"): (1,),
     ("ipykernel", "py3"): (5, 1),
     ("jupyter-console", "py3"): (6, 1),
-    ("jupyterlab", "py35"): (1,),
-    "pygments": (2, 5),
+    ("jupyterlab", "py35"): (2,),
+    "pygments": (2, 6),
     # don't upgrade this; it breaks on Python 3.5
     ("ipython", "py3"): (7, 9),
     # don't upgrade this to allow all versions

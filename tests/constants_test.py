@@ -91,6 +91,8 @@ class TestConstants(unittest.TestCase):
                 or PY26 and old_imp == "ttk"
                 # don't test tkinter on PyPy
                 or PYPY and new_imp.startswith("tkinter")
+                # don't test trollius on PyPy
+                or PYPY and old_imp == "trollius"
             ):
                 pass
             elif sys.version_info >= ver_cutoff:
