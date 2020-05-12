@@ -25,6 +25,7 @@ import shutil
 import json
 
 from coconut.constants import (
+    fixpath,
     univ_open,
     default_encoding,
     icoconut_custom_kernel_dir,
@@ -45,13 +46,23 @@ def get_kernel_data_files(argv):
         executable = sys.executable
     else:
         return []
-    make_custom_kernel(executable)
+    install_custom_kernel(executable)
     return [
         (
             icoconut_custom_kernel_install_loc,
             [icoconut_custom_kernel_file_loc],
         ),
     ]
+
+
+def install_custom_kernel(executable=None):
+    """Force install the custom kernel."""
+    make_custom_kernel(executable)
+    kernel_source = os.path.join(icoconut_custom_kernel_dir, "kernel.json")
+    kernel_dest = fixpath(os.path.join(sys.exec_prefix, icoconut_custom_kernel_install_loc))
+    if not os.path.exists(kernel_dest):
+        os.makedirs(kernel_dest)
+    shutil.copy(kernel_source, kernel_dest)
 
 
 def make_custom_kernel(executable=None):
@@ -70,3 +81,7 @@ def make_custom_kernel(executable=None):
         raw_json = json.dumps(kernel_dict, indent=1)
         kernel_file.write(raw_json.encode(encoding=default_encoding))
     return icoconut_custom_kernel_dir
+
+
+if __name__ == "__main__":
+    install_custom_kernel()
