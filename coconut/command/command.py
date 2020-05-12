@@ -52,7 +52,7 @@ from coconut.constants import (
     report_this_text,
     mypy_non_err_prefixes,
 )
-from coconut.kernel_installer import make_custom_kernel_and_get_dir
+from coconut.kernel_installer import make_custom_kernel
 from coconut.command.util import (
     writefile,
     readfile,
@@ -680,7 +680,7 @@ class Command(object):
                     success = self.remove_jupyter_kernel(jupyter, old_kernel_name)
                     overall_success = overall_success and success
 
-            for kernel_dir in (make_custom_kernel_and_get_dir(),) + icoconut_default_kernel_dirs:
+            for kernel_dir in (make_custom_kernel(),) + icoconut_default_kernel_dirs:
                 success = self.install_jupyter_kernel(jupyter, kernel_dir)
                 overall_success = overall_success and success
 
@@ -696,7 +696,7 @@ class Command(object):
                     do_install = True
 
             if do_install:
-                success = self.install_jupyter_kernel(jupyter, make_custom_kernel_and_get_dir())
+                success = self.install_jupyter_kernel(jupyter, make_custom_kernel())
                 logger.show_sig("Finished with Coconut Jupyter kernel installation; proceeding to launch Jupyter.")
 
             # launch Jupyter

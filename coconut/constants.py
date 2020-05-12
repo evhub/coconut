@@ -615,7 +615,9 @@ icoconut_dir = os.path.join(base_dir, "icoconut")
 
 icoconut_custom_kernel_name = "coconut"
 icoconut_custom_kernel_dir = os.path.join(icoconut_dir, icoconut_custom_kernel_name)
-icoconut_custom_kernel_install_loc = os.path.join("share", "jupyter", "kernels", "coconut")
+
+icoconut_custom_kernel_install_loc = "/".join(("share", "jupyter", "kernels", icoconut_custom_kernel_name))
+icoconut_custom_kernel_file_loc = "/".join(("coconut", "icoconut", icoconut_custom_kernel_name))
 
 icoconut_default_kernel_names = (
     "coconut_py",

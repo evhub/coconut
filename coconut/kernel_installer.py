@@ -24,7 +24,11 @@ import os
 import shutil
 import json
 
-from coconut.constants import icoconut_custom_kernel_dir, icoconut_custom_kernel_install_loc
+from coconut.constants import (
+    icoconut_custom_kernel_dir,
+    icoconut_custom_kernel_install_loc,
+    icoconut_custom_kernel_file_loc,
+)
 
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN:
@@ -39,17 +43,17 @@ def get_kernel_data_files(argv):
         executable = sys.executable
     else:
         return []
-    kernel_file = make_custom_kernel(executable)
+    make_custom_kernel(executable)
     return [
         (
             icoconut_custom_kernel_install_loc,
-            [kernel_file],
+            [icoconut_custom_kernel_file_loc],
         ),
     ]
 
 
 def make_custom_kernel(executable=None):
-    """Write custom kernel file and return its path."""
+    """Write custom kernel file and return its directory."""
     if executable is None:
         executable = sys.executable
     kernel_dict = {
@@ -60,13 +64,6 @@ def make_custom_kernel(executable=None):
     if os.path.exists(icoconut_custom_kernel_dir):
         shutil.rmtree(icoconut_custom_kernel_dir)
     os.mkdir(icoconut_custom_kernel_dir)
-    dest_path = os.path.join(icoconut_custom_kernel_dir, "kernel.json")
-    with open(dest_path, "w") as kernel_file:
+    with open(os.path.join(icoconut_custom_kernel_dir, "kernel.json"), "w") as kernel_file:
         json.dump(kernel_dict, kernel_file, indent=1)
-    return dest_path
-
-
-def make_custom_kernel_and_get_dir(executable=None):
-    """Write custom kernel file and return its directory."""
-    make_custom_kernel(executable)
     return icoconut_custom_kernel_dir
