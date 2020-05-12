@@ -40,8 +40,10 @@ def univ_open(filename, opentype="r+", encoding=None, **kwargs):
     """Open a file using default_encoding."""
     if encoding is None:
         encoding = default_encoding
+    if "b" not in opentype:
+        kwargs["encoding"] = encoding
     # we use io.open from coconut.root here
-    return open(filename, opentype, encoding=encoding, **kwargs)
+    return open(filename, opentype, **kwargs)
 
 
 def get_target_info(target):

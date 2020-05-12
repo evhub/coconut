@@ -25,6 +25,8 @@ import shutil
 import json
 
 from coconut.constants import (
+    univ_open,
+    default_encoding,
     icoconut_custom_kernel_dir,
     icoconut_custom_kernel_install_loc,
     icoconut_custom_kernel_file_loc,
@@ -64,6 +66,7 @@ def make_custom_kernel(executable=None):
     if os.path.exists(icoconut_custom_kernel_dir):
         shutil.rmtree(icoconut_custom_kernel_dir)
     os.mkdir(icoconut_custom_kernel_dir)
-    with open(os.path.join(icoconut_custom_kernel_dir, "kernel.json"), "w") as kernel_file:
-        json.dump(kernel_dict, kernel_file, indent=1)
+    with univ_open(os.path.join(icoconut_custom_kernel_dir, "kernel.json"), "wb") as kernel_file:
+        raw_json = json.dumps(kernel_dict, indent=1)
+        kernel_file.write(raw_json.encode(encoding=default_encoding))
     return icoconut_custom_kernel_dir
