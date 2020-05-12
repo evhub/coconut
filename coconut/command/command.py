@@ -42,6 +42,7 @@ from coconut.constants import (
     code_exts,
     comp_ext,
     watch_interval,
+    icoconut_default_kernel_names,
     icoconut_default_kernel_dirs,
     icoconut_custom_kernel_name,
     icoconut_old_kernel_names,
@@ -52,7 +53,6 @@ from coconut.constants import (
     report_this_text,
     mypy_non_err_prefixes,
 )
-from coconut.kernel_installer import make_custom_kernel
 from coconut.command.util import (
     writefile,
     readfile,
@@ -633,15 +633,19 @@ class Command(object):
                         printerr(line)
                     self.register_error(errmsg="MyPy error")
 
+    def run_cmd(self, *args):
+        """Same as run_cmd$(show_output=logger.verbose)."""
+        return run_cmd(*args, show_output=logger.verbose)
+
     def install_jupyter_kernel(self, jupyter, kernel_dir):
         """Install the given kernel via the command line and return whether successful."""
         install_args = [jupyter, "kernelspec", "install", kernel_dir, "--replace"]
         try:
-            run_cmd(install_args, show_output=logger.verbose)
+            self.run_cmd(install_args)
         except CalledProcessError:
             user_install_args = install_args + ["--user"]
             try:
-                run_cmd(user_install_args, show_output=logger.verbose)
+                self.run_cmd(user_install_args)
             except CalledProcessError:
                 logger.warn("kernel install failed on command'", " ".join(install_args))
                 self.register_error(errmsg="Jupyter error")
@@ -652,58 +656,71 @@ class Command(object):
         """Remove the given kernel via the command line and return whether successful."""
         remove_args = [jupyter, "kernelspec", "remove", kernel_name, "-f"]
         try:
-            run_cmd(remove_args, show_output=logger.verbose)
+            self.run_cmd(remove_args)
         except CalledProcessError:
             logger.warn("kernel removal failed on command'", " ".join(remove_args))
             self.register_error(errmsg="Jupyter error")
             return False
         return True
 
+    def install_default_jupyter_kernels(self, jupyter, kernel_list):
+        """Install icoconut default kernels."""
+        overall_success = True
+
+        for old_kernel_name in icoconut_old_kernel_names:
+            if old_kernel_name in kernel_list:
+                success = self.remove_jupyter_kernel(jupyter, old_kernel_name)
+                overall_success = overall_success and success
+
+        for kernel_dir in icoconut_default_kernel_dirs:
+            success = self.install_jupyter_kernel(jupyter, kernel_dir)
+            overall_success = overall_success and success
+
+        if overall_success:
+            logger.show_sig("Successfully installed Jupyter kernels: " + ", ".join(icoconut_default_kernel_names))
+
     def start_jupyter(self, args):
         """Start Jupyter with the Coconut kernel."""
         # get the correct jupyter command
         try:
-            run_cmd(["jupyter", "--version"], show_output=logger.verbose)
+            self.run_cmd(["jupyter", "--version"])
         except CalledProcessError:
             jupyter = "ipython"
         else:
             jupyter = "jupyter"
 
-        kernel_list = run_cmd([jupyter, "kernelspec", "list"], show_output=False, raise_errs=False)
+        raw_kernel_list = run_cmd([jupyter, "kernelspec", "list"], show_output=False, raise_errs=False)
+
+        kernel_list = []
+        for line in raw_kernel_list.splitlines():
+            kernel_list.append(line.split()[0])
 
         if not args:
-            # remove all old kernels and install all new kernels if given no args
-            overall_success = True
-
-            for old_kernel_name in icoconut_old_kernel_names:
-                if old_kernel_name in kernel_list:
-                    success = self.remove_jupyter_kernel(jupyter, old_kernel_name)
-                    overall_success = overall_success and success
-
-            for kernel_dir in (make_custom_kernel(),) + icoconut_default_kernel_dirs:
-                success = self.install_jupyter_kernel(jupyter, kernel_dir)
-                overall_success = overall_success and success
-
-            if overall_success:
-                logger.show_sig("Successfully installed Coconut Jupyter kernels.")
+            self.install_default_jupyter_kernels(jupyter, kernel_list)
 
         else:
-            # install the custom kernel if it there are old kernels or it isn't installed already
-            do_install = icoconut_custom_kernel_name not in kernel_list
-            for old_kernel_name in icoconut_old_kernel_names:
-                if old_kernel_name in kernel_list:
-                    self.remove_jupyter_kernel(jupyter, old_kernel_name)
-                    do_install = True
-
-            if do_install:
-                success = self.install_jupyter_kernel(jupyter, make_custom_kernel())
-                logger.show_sig("Finished with Coconut Jupyter kernel installation; proceeding to launch Jupyter.")
-
-            # launch Jupyter
             if args[0] == "console":
-                run_args = [jupyter, "console", "--kernel", icoconut_custom_kernel_name] + args[1:]
+                # use the custom kernel if it exists
+                if icoconut_custom_kernel_name in kernel_list:
+                    kernel = icoconut_custom_kernel_name
+
+                # otherwise determine which default kernel to use and install them if necessary
+                else:
+                    ver = "2" if PY2 else "3"
+                    try:
+                        self.run_cmd(["python" + ver, "-m", "coconut.main", "--version"])
+                    except CalledProcessError:
+                        kernel = "coconut_py"
+                    else:
+                        kernel = "coconut_py" + ver
+                    if kernel not in kernel_list:
+                        self.install_default_jupyter_kernels(jupyter, kernel_list)
+
+                run_args = [jupyter, "console", "--kernel", kernel] + args[1:]
+
             else:
                 run_args = [jupyter] + args
+
             self.register_error(run_cmd(run_args, raise_errs=False), errmsg="Jupyter error")
 
     def watch(self, source, write=True, package=True, run=False, force=False):
