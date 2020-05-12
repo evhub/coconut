@@ -685,7 +685,7 @@ class Command(object):
                 overall_success = overall_success and success
 
             if overall_success:
-                logger.show_sig("Successfully installed all Coconut Jupyter kernel.")
+                logger.show_sig("Successfully installed Coconut Jupyter kernels.")
 
         else:
             # install the custom kernel if it there are old kernels or it isn't installed already

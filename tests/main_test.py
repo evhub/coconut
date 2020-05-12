@@ -417,7 +417,7 @@ class TestShell(unittest.TestCase):
             )
 
         def test_kernel_installation(self):
-            call(["coconut", "--jupyter"], assert_output="Coconut: Successfully installed Coconut Jupyter kernel.")
+            call(["coconut", "--jupyter"], assert_output="Coconut: Successfully installed Coconut Jupyter kernels.")
             stdout, stderr, retcode = call_output(["jupyter", "kernelspec", "list"])
             stdout, stderr = "".join(stdout), "".join(stderr)
             assert not retcode and not stderr, stderr
