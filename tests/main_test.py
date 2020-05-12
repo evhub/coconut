@@ -36,7 +36,8 @@ from coconut.constants import (
     PY34,
     PY35,
     PY36,
-    icoconut_kernel_names,
+    icoconut_default_kernel_names,
+    icoconut_custom_kernel_name,
 )
 
 from coconut.convenience import auto_compilation
@@ -420,7 +421,7 @@ class TestShell(unittest.TestCase):
             stdout, stderr, retcode = call_output(["jupyter", "kernelspec", "list"])
             stdout, stderr = "".join(stdout), "".join(stderr)
             assert not retcode and not stderr, stderr
-            for kernel in icoconut_kernel_names:
+            for kernel in (icoconut_custom_kernel_name,) + icoconut_default_kernel_names:
                 assert kernel in stdout
 
         if not WINDOWS and not PYPY:

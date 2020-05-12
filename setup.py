@@ -37,6 +37,7 @@ from coconut.constants import (
     script_names,
     license_name,
 )
+from coconut.kernel_installer import get_kernel_data_files
 from coconut.requirements import (
     using_modern_setuptools,
     requirements,
@@ -88,4 +89,5 @@ setuptools.setup(
     classifiers=list(classifiers),
     keywords=list(search_terms),
     license=license_name,
+    data_files=get_kernel_data_files(sys.argv),
 )

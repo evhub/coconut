@@ -1,11 +1,11 @@
 {
   "argv": [
-    "c:\\programdata\\anaconda3\\python.exe",
+    "python2",
     "-m",
     "coconut.icoconut",
     "-f",
     "{connection_file}"
   ],
-  "display_name": "Coconut",
+  "display_name": "Coconut (Default Python 2)",
   "language": "coconut"
 }
