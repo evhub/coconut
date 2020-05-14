@@ -77,6 +77,8 @@ ignore_mypy_errs_with = (
     "tutorial.py",
 )
 
+kernel_installation_msg = "Coconut: Successfully installed Jupyter kernels: " + ", ".join((icoconut_custom_kernel_name,) + icoconut_default_kernel_names)
+
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -417,7 +419,7 @@ class TestShell(unittest.TestCase):
             )
 
         def test_kernel_installation(self):
-            call(["coconut", "--jupyter"], assert_output="Coconut: Successfully installed Coconut Jupyter kernels.")
+            call(["coconut", "--jupyter"], assert_output=kernel_installation_msg)
             stdout, stderr, retcode = call_output(["jupyter", "kernelspec", "list"])
             stdout, stderr = "".join(stdout), "".join(stderr)
             assert not retcode and not stderr, stderr
