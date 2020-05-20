@@ -613,29 +613,6 @@ documentation_url = rtfd_url + "/DOCS.html"
 new_issue_url = "https://github.com/evhub/coconut/issues/new"
 report_this_text = "(you should report this at " + new_issue_url + ")"
 
-icoconut_dir = os.path.join(base_dir, "icoconut")
-
-icoconut_custom_kernel_name = "coconut"
-icoconut_custom_kernel_dir = os.path.join(icoconut_dir, icoconut_custom_kernel_name)
-
-icoconut_custom_kernel_install_loc = "/".join(("share", "jupyter", "kernels", icoconut_custom_kernel_name))
-icoconut_custom_kernel_file_loc = "/".join(("coconut", "icoconut", icoconut_custom_kernel_name, "kernel.json"))
-
-icoconut_default_kernel_names = (
-    "coconut_py",
-    "coconut_py2",
-    "coconut_py3",
-)
-icoconut_default_kernel_dirs = tuple(
-    os.path.join(icoconut_dir, kernel_name)
-    for kernel_name in icoconut_default_kernel_names
-)
-
-icoconut_old_kernel_names = (
-    "coconut2",
-    "coconut3",
-)
-
 exit_chars = (
     "\x04",  # Ctrl-D
     "\x1a",  # Ctrl-Z
@@ -749,6 +726,29 @@ new_operators = (
 # -----------------------------------------------------------------------------------------------------------------------
 # ICOCONUT CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
+
+icoconut_dir = os.path.join(base_dir, "icoconut")
+
+icoconut_custom_kernel_name = "coconut"
+icoconut_custom_kernel_dir = os.path.join(icoconut_dir, icoconut_custom_kernel_name)
+
+icoconut_custom_kernel_install_loc = "/".join(("share", "jupyter", "kernels", icoconut_custom_kernel_name))
+icoconut_custom_kernel_file_loc = "/".join(("coconut", "icoconut", icoconut_custom_kernel_name, "kernel.json"))
+
+icoconut_default_kernel_names = (
+    "coconut_py",
+    "coconut_py2",
+    "coconut_py3",
+)
+icoconut_default_kernel_dirs = tuple(
+    os.path.join(icoconut_dir, kernel_name)
+    for kernel_name in icoconut_default_kernel_names
+)
+
+icoconut_old_kernel_names = (
+    "coconut2",
+    "coconut3",
+)
 
 py_syntax_version = 3
 mimetype = "text/x-python3"
