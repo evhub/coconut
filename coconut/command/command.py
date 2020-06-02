@@ -235,7 +235,7 @@ class Command(object):
                     raise CoconutException("could not find source path", source)
 
             with self.running_jobs(exit_on_error=not args.watch):
-                filepaths = self.compile_path(source, dest, package, args.run or args.interact, args.force)
+                filepaths = self.compile_path(source, dest, package, run=args.run or args.interact, force=args.force)
             self.run_mypy(filepaths)
 
         elif (
@@ -301,19 +301,19 @@ class Command(object):
                 printerr(report_this_text)
             self.register_error(errmsg=err.__class__.__name__)
 
-    def compile_path(self, path, write=True, package=True, *args, **kwargs):
+    def compile_path(self, path, write=True, package=True, **kwargs):
         """Compile a path and returns paths to compiled files."""
         if not isinstance(write, bool):
             write = fixpath(write)
         if os.path.isfile(path):
-            destpath = self.compile_file(path, write, package, *args, **kwargs)
+            destpath = self.compile_file(path, write, package, **kwargs)
             return [destpath] if destpath is not None else []
         elif os.path.isdir(path):
-            return self.compile_folder(path, write, package, *args, **kwargs)
+            return self.compile_folder(path, write, package, **kwargs)
         else:
             raise CoconutException("could not find source path", path)
 
-    def compile_folder(self, directory, write=True, package=True, *args, **kwargs):
+    def compile_folder(self, directory, write=True, package=True, **kwargs):
         """Compile a directory and returns paths to compiled files."""
         if not isinstance(write, bool) and os.path.isfile(write):
             raise CoconutException("destination path cannot point to a file when compiling a directory")
@@ -326,7 +326,7 @@ class Command(object):
             for filename in filenames:
                 if os.path.splitext(filename)[1] in code_exts:
                     with self.handling_exceptions():
-                        destpath = self.compile_file(os.path.join(dirpath, filename), writedir, package, *args, **kwargs)
+                        destpath = self.compile_file(os.path.join(dirpath, filename), writedir, package, **kwargs)
                         if destpath is not None:
                             filepaths.append(destpath)
             for name in dirnames[:]:
@@ -336,7 +336,7 @@ class Command(object):
                     dirnames.remove(name)  # directories removed from dirnames won't appear in further os.walk iterations
         return filepaths
 
-    def compile_file(self, filepath, write=True, package=False, *args, **kwargs):
+    def compile_file(self, filepath, write=True, package=False, force=False, **kwargs):
         """Compile a file and returns the compiled file's path."""
         set_ext = False
         if write is False:
@@ -358,7 +358,11 @@ class Command(object):
             destpath = fixpath(base + ext)
         if filepath == destpath:
             raise CoconutException("cannot compile " + showpath(filepath) + " to itself", extra="incorrect file extension")
-        self.compile(filepath, destpath, package, *args, **kwargs)
+        if not force:
+            dest_ext = os.path.splitext(destpath)[1]
+            if dest_ext in code_exts:
+                raise CoconutException("found destination path with " + dest_ext + " extension; aborting compilation", extra="pass --force to override")
+        self.compile(filepath, destpath, package, **kwargs)
         return destpath
 
     def compile(self, codepath, destpath=None, package=False, run=False, force=False, show_unchanged=True):
@@ -753,7 +757,7 @@ class Command(object):
                         # correct the compilation path based on the relative position of path to source
                         dirpath = os.path.dirname(path)
                         writedir = os.path.join(write, os.path.relpath(dirpath, source))
-                    filepaths = self.compile_path(path, writedir, package, run, force, show_unchanged=False)
+                    filepaths = self.compile_path(path, writedir, package, run=run, force=force, show_unchanged=False)
                     self.run_mypy(filepaths)
 
         watcher = RecompilationWatcher(recompile)

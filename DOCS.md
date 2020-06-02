@@ -137,9 +137,8 @@ dest                destination directory for compiled files (defaults to
   -j processes, --jobs processes
                         number of additional processes to use (defaults to 0)
                         (pass 'sys' to use machine default)
-  -f, --force           force overwriting of compiled Python (otherwise only
-                        overwrites when source code or compilation parameters
-                        change)
+  -f, --force           force re-compilation even when source code and
+                        compilation parameters haven't changed
   --minify              reduce size of compiled Python
   --jupyter ..., --ipython ...
                         run Jupyter/IPython with Coconut as the kernel

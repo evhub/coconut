@@ -161,7 +161,7 @@ arguments.add_argument(
 arguments.add_argument(
     "-f", "--force",
     action="store_true",
-    help="force overwriting of compiled Python (otherwise only overwrites when source code or compilation parameters change)",
+    help="force re-compilation even when source code and compilation parameters haven't changed",
 )
 
 arguments.add_argument(
