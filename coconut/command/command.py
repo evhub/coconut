@@ -358,7 +358,7 @@ class Command(object):
             destpath = fixpath(base + ext)
         if filepath == destpath:
             raise CoconutException("cannot compile " + showpath(filepath) + " to itself", extra="incorrect file extension")
-        if not force:
+        if destpath is not None and not force:
             dest_ext = os.path.splitext(destpath)[1]
             if dest_ext in code_exts:
                 raise CoconutException("found destination path with " + dest_ext + " extension; aborting compilation", extra="pass --force to override")
