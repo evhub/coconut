@@ -189,13 +189,13 @@ all_reqs = {
 
 # min versions are inclusive
 min_versions = {
-    "pyparsing": (2, 4, 6),
+    "pyparsing": (2, 4, 7),
     "cPyparsing": (2, 4, 5, 0, 1, 1),
     "pre-commit": (2,),
     "recommonmark": (0, 6),
     "psutil": (5,),
     "jupyter": (1, 0),
-    "mypy": (0, 770),
+    "mypy": (0, 780),
     "futures": (3, 3),
     "backports.functools-lru-cache": (1, 6),
     "argparse": (1, 4),
@@ -205,7 +205,7 @@ min_versions = {
     "requests": (2,),
     ("numpy", "py34"): (1,),
     ("numpy", "py2;cpy"): (1,),
-    ("ipykernel", "py3"): (5, 1),
+    ("ipykernel", "py3"): (5, 3),
     ("jupyter-console", "py3"): (6, 1),
     ("jupyterlab", "py35"): (2,),
     # don't upgrade this; it breaks on Python 3.5
