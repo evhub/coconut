@@ -292,9 +292,15 @@ If you prefer [IPython](http://ipython.org/) (the python kernel for the [Jupyter
 
 If Coconut is used as a kernel, all code in the console or notebook will be sent directly to Coconut instead of Python to be evaluated. Otherwise, the Coconut kernel behaves exactly like the IPython kernel, including support for `%magic` commands.
 
-The command `coconut --jupyter notebook` (or `coconut --ipython notebook`) will launch an IPython/Jupyter notebook using Coconut as the kernel and the command `coconut --jupyter console` (or `coconut --ipython console`) will launch an IPython/Jupyter console using Coconut as the kernel. Additionally, the command `coconut --jupyter` (or `coconut --ipython`) will add Coconut as a language option inside of all IPython/Jupyter notebooks, even those not launched with Coconut. This command may need to be re-run when a new version of Coconut is installed.
+Simply installing Coconut should add a `Coconut` kernel to your Jupyter/IPython notebooks. If you are having issues accessing the Coconut kernel, however, the command `coconut --jupyter` will re-install the `Coconut` kernel to ensure it is using the current Python as well as add the additional kernels `Coconut (Default Python)`, `Coconut (Default Python 2)`, and `Coconut (Default Python 3)` which will use, respectively, the Python accessible as `python`, `python2`, and `python3`. Furthermore, the Coconut kernel fully supports [`nb_conda_kernels`](https://github.com/Anaconda-Platform/nb_conda_kernels) to enable accessing the Coconut kernel in one Conda environment from another Conda environment.
 
-_Note: Coconut also supports the command `coconut --jupyter lab` for using Coconut with [JupyterLab](https://github.com/jupyterlab/jupyterlab) instead of the standard Jupyter notebook._
+Coconut also provides the following convenience commands:
+
+- `coconut --jupyter notebook` will ensure that the Coconut kernel is available and launch a Jupyter/IPython notebook.
+- `coconut --jupyter console` will launch a Jupyter/IPython console using the Coconut kernel.
+- `coconut --jupyter lab` will ensure that the Coconut kernel is available and launch [JupyterLab](https://github.com/jupyterlab/jupyterlab).
+
+Additionally, [Jupytext](https://github.com/mwouts/jupytext) contains special support for the Coconut kernel.
 
 #### Extension
 

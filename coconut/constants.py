@@ -158,6 +158,7 @@ all_reqs = {
         ("ipykernel", "py2"),
         ("ipykernel", "py3"),
         ("jupyterlab", "py35"),
+        "jupytext",
     ),
     "mypy": (
         "mypy",
@@ -208,6 +209,7 @@ min_versions = {
     ("ipykernel", "py3"): (5, 3),
     ("jupyter-console", "py3"): (6, 1),
     ("jupyterlab", "py35"): (2,),
+    "jupytext": (1, 5),
     # don't upgrade this; it breaks on Python 3.5
     ("ipython", "py3"): (7, 9),
     # don't upgrade this to allow all versions
