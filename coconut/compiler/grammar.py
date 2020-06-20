@@ -591,7 +591,7 @@ def itemgetter_handle(tokens):
     if op == "[":
         return "_coconut.operator.itemgetter((" + args + "))"
     elif op == "$[":
-        return "_coconut.functools.partial(_coconut_igetitem, index=" + args + ")"
+        return "_coconut.functools.partial(_coconut_igetitem, index=(" + args + "))"
     else:
         raise CoconutInternalException("invalid implicit itemgetter type", op)
 
