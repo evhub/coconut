@@ -333,6 +333,7 @@ def suite_test():
     assert identity |> .method(*(1,), **{"a": 2}) == ((1,), {"a": 2})
     assert identity[1] == 1
     assert identity[1,] == (1,)
+    assert identity |> .[0, 0] == (0, 0)
     assert container(1) == container(1)
     assert not container(1) != container(1)
     assert container(1) != container(2)

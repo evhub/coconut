@@ -589,7 +589,7 @@ def itemgetter_handle(tokens):
     internal_assert(len(tokens) == 2, "invalid implicit itemgetter args", tokens)
     op, args = tokens
     if op == "[":
-        return "_coconut.operator.itemgetter(" + args + ")"
+        return "_coconut.operator.itemgetter((" + args + "))"
     elif op == "$[":
         return "_coconut.functools.partial(_coconut_igetitem, index=" + args + ")"
     else:
@@ -1806,7 +1806,8 @@ class Grammar(object):
             + ZeroOrMore(dot + base_name | brackets | parens + ~end_marker),
         ) + parens + end_marker,
         tco_return_handle,
-        greedy=True,  # this is the root in what it's used for, so might as well evaluate greedily
+        # this is the root in what it's used for, so might as well evaluate greedily
+        greedy=True,
     )
 
     rest_of_arg = ZeroOrMore(parens | brackets | braces | ~comma + ~rparen + any_char)

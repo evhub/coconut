@@ -204,15 +204,15 @@ def kill_children():
             extra="run 'pip install coconut[jobs]' to fix",
         )
     else:
-        master = psutil.Process()
-        children = master.children(recursive=True)
+        parent = psutil.Process()
+        children = parent.children(recursive=True)
         while children:
             for child in children:
                 try:
                     child.terminate()
                 except psutil.NoSuchProcess:
                     pass  # process is already dead, so do nothing
-            children = master.children(recursive=True)
+            children = parent.children(recursive=True)
 
 
 def splitname(path):
