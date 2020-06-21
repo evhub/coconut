@@ -77,7 +77,7 @@ def embed_kernel(module=None, local_ns=None, **kwargs):
     app.start()
 
 
-def embed(**kwargs):
+def embed(stack_depth=2, **kwargs):
     """Based on IPython.terminal.embed.embed."""
     config = kwargs.get('config')
     header = kwargs.pop('header', u'')
@@ -112,7 +112,7 @@ def embed(**kwargs):
     )
     shell(
         header=header,
-        stack_depth=2,
+        stack_depth=stack_depth,
         compile_flags=compile_flags,
         _call_location_id='%s:%s' % (
             frame.f_code.co_filename,
