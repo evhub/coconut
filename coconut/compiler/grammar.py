@@ -344,7 +344,7 @@ def pipe_handle(loc, tokens, **kwargs):
                 if op == "[":
                     return "(" + pipe_handle(loc, tokens) + ")[" + args + "]"
                 elif op == "$[":
-                    return "_coconut_igetitem(" + pipe_handle(loc, tokens) + ", " + args + ")"
+                    return "_coconut_igetitem(" + pipe_handle(loc, tokens) + ", (" + args + "))"
                 else:
                     raise CoconutInternalException("pipe into invalid implicit itemgetter operation", op)
             else:

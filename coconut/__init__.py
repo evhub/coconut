@@ -39,6 +39,16 @@ __version__ = VERSION  # NOQA
 # -----------------------------------------------------------------------------------------------------------------------
 
 
+def embed(kernel=False, **kwargs):
+    """If _kernel_=False (default), embeds a Coconut Jupyter console
+    initialized from the current local namespace. If _kernel_=True,
+    launches a Coconut Jupyter kernel initialized from the local
+    namespace that can then be attached to. _kwargs_ are as in
+    IPython.embed or IPython.embed_kernel based on _kernel_."""
+    from coconut.icoconut.embed import embed, embed_kernel
+    return embed_kernel() if kernel else embed()
+
+
 def load_ipython_extension(ipython):
     """Loads Coconut as an IPython extension."""
     # add Coconut built-ins

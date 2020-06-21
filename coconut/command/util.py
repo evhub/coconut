@@ -445,8 +445,8 @@ class Runner(object):
 
     def __init__(self, comp=None, exit=sys.exit, store=False, path=None):
         """Create the executor."""
-        # allow direct importing of Coconut files
-        import coconut.convenience  # NOQA
+        from coconut.convenience import auto_compilation
+        auto_compilation(on=True)
         self.exit = exit
         self.vars = self.build_vars(path)
         self.stored = [] if store else None
