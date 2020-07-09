@@ -71,7 +71,7 @@ def test_extras():
     assert parse("abc", "block") == "abc\n" == parse("abc", "single")
     assert parse("abc", "eval") == "abc" == parse(" abc", "eval")
     assert parse("abc", "any") == "abc"
-    assert parse("x |> map$(f)", "any") == "map(f, x)"
+    assert parse("x |> map$(f)", "any") == "(map)(f, x)"
     assert "_coconut" not in parse("a |> .b |> .m() |> f$(x) |> .[0]", "block")
     assert parse("abc # derp", "any") == "abc  # derp"
     assert_raises(-> parse(" abc", "file"), CoconutException)

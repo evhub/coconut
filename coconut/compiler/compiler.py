@@ -1355,6 +1355,12 @@ while True:
             out += name + " = " + name + "(*(" + item + "))"
         elif op == "<**|=":
             out += name + " = " + name + "(**(" + item + "))"
+        elif op == "|?>=":
+            out += name + " = _coconut_none_pipe(" + name + ", (" + item + "))"
+        elif op == "|?*>=":
+            out += name + " = _coconut_none_star_pipe(" + name + ", (" + item + "))"
+        elif op == "|?**>=":
+            out += name + " = _coconut_none_dubstar_pipe(" + name + ", (" + item + "))"
         elif op == "..=" or op == "<..=":
             out += name + " = _coconut_forward_compose((" + item + "), " + name + ")"
         elif op == "..>=":

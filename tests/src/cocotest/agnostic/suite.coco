@@ -334,7 +334,6 @@ def suite_test():
     assert identity[1] == 1
     assert identity[1,] == (1,)
     assert identity |> .[0, 0] == (0, 0)
-    assert identity |> .$[0, 0] == (0, 0)
     assert container(1) == container(1)
     assert not container(1) != container(1)
     assert container(1) != container(2)
@@ -621,6 +620,16 @@ def suite_test():
     else:
         assert False
     assert loop_then_tre(1e4) == 0
+    assert (None |?> (+)$(1)) is None
+    assert (2 |?> (**)$(3)) == 9
+    assert (|?>)(None, (+)$(1)) is None
+    assert (|?>)(2, (**)$(3)) == 9
+    x = None
+    x |?>= (+)$(1)
+    assert x is None
+    x = 2
+    x |?>= (**)$(3)
+    assert x == 9
     return True
 
 def tco_test():

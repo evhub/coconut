@@ -184,22 +184,19 @@ def get_infix_items(tokens, callback=infix_error):
 
 
 def pipe_info(op):
-    """Returns (direction, stars) where direction is 'forwards' or 'backwards'.
+    """Returns (direction, stars, None-aware) where direction is 'forwards' or 'backwards'.
     Works with normal pipe operators and composition pipe operators."""
-    if op.startswith("<**"):
-        return "backwards", 2
-    elif op.endswith("**>"):
-        return "forwards", 2
-    elif op.endswith("*>"):
-        return "forwards", 1
-    elif op.startswith("<*"):
-        return "backwards", 1
-    elif op.endswith(">"):
-        return "forwards", 0
-    elif op.startswith("<"):
-        return "backwards", 0
+    none_aware = "?" in op
+    stars = op.count("*")
+    if not 0 <= stars <= 2:
+        raise CoconutInternalException("invalid stars in pipe operator", op)
+    if ">" in op:
+        direction = "forwards"
+    elif "<" in op:
+        direction = "backwards"
     else:
-        raise CoconutInternalException("invalid pipe operator", op)
+        raise CoconutInternalException("invalid direction in pipe operator", op)
+    return direction, stars, none_aware
 
 
 # end: HELPERS
@@ -245,9 +242,13 @@ def item_handle(loc, tokens):
                 rest_of_trailers = tokens[i + 1:]
                 if len(rest_of_trailers) == 0:
                     raise CoconutDeferredSyntaxError("None-coalescing ? must have something after it", loc)
-                not_none_tokens = ["x"]
+                not_none_tokens = [none_coalesce_var]
                 not_none_tokens.extend(rest_of_trailers)
-                return "(lambda x: None if x is None else " + item_handle(loc, not_none_tokens) + ")(" + out + ")"
+                return "(lambda {x}: None if {x} is None else {rest})({inp})".format(
+                    x=none_coalesce_var,
+                    rest=item_handle(loc, not_none_tokens),
+                    inp=out,
+                )
             else:
                 raise CoconutInternalException("invalid trailer symbol", trailer[0])
         elif len(trailer) == 2:
@@ -319,43 +320,54 @@ def pipe_handle(loc, tokens, **kwargs):
 
     else:
         item, op = tokens.pop(), tokens.pop()
-        direction, stars = pipe_info(op)
+        direction, stars, none_aware = pipe_info(op)
         star_str = "*" * stars
 
-        if direction == "forwards":
-            # if this is an implicit partial, we have something to apply it to, so optimize it
-            name, split_item = pipe_item_split(item, loc)
-            if name == "expr":
-                internal_assert(len(split_item) == 1)
-                return "(" + split_item[0] + ")(" + star_str + pipe_handle(loc, tokens) + ")"
-            elif name == "partial":
-                internal_assert(len(split_item) == 3)
-                return split_item[0] + "(" + join_args((split_item[1], star_str + pipe_handle(loc, tokens), split_item[2])) + ")"
-            elif name == "attrgetter":
-                internal_assert(len(split_item) == 2)
-                if stars:
-                    raise CoconutDeferredSyntaxError("cannot star pipe into attribute access or method call", loc)
-                return "(" + pipe_handle(loc, tokens) + ")." + split_item[0] + ("(" + split_item[1] + ")" if split_item[1] is not None else "")
-            elif name == "itemgetter":
-                internal_assert(len(split_item) == 2)
-                if stars:
-                    raise CoconutDeferredSyntaxError("cannot star pipe into item getting", loc)
-                op, args = split_item
-                if op == "[":
-                    return "(" + pipe_handle(loc, tokens) + ")[" + args + "]"
-                elif op == "$[":
-                    return "_coconut_igetitem(" + pipe_handle(loc, tokens) + ", (" + args + "))"
-                else:
-                    raise CoconutInternalException("pipe into invalid implicit itemgetter operation", op)
-            else:
-                raise CoconutInternalException("invalid split pipe item", split_item)
-
-        elif direction == "backwards":
+        if direction == "backwards":
             # for backwards pipes, we just reuse the machinery for forwards pipes
             inner_item = pipe_handle(loc, tokens, top=False)
             if isinstance(inner_item, str):
                 inner_item = [inner_item]  # artificial pipe item
-            return pipe_handle(loc, [item, "|" + star_str + ">", inner_item])
+            return pipe_handle(loc, [item, "|" + ("?" if none_aware else "") + star_str + ">", inner_item])
+
+        elif none_aware:
+            # for none_aware forward pipes, we wrap the normal forward pipe in a lambda
+            return "(lambda {x}: None if {x} is None else {pipe})({subexpr})".format(
+                x=none_coalesce_var,
+                pipe=pipe_handle(loc, [[none_coalesce_var], "|" + star_str + ">", item]),
+                subexpr=pipe_handle(loc, tokens),
+            )
+
+        elif direction == "forwards":
+            # if this is an implicit partial, we have something to apply it to, so optimize it
+            name, split_item = pipe_item_split(item, loc)
+            subexpr = pipe_handle(loc, tokens)
+
+            if name == "expr":
+                func, = split_item
+                return "({f})({stars}{x})".format(f=func, stars=star_str, x=subexpr)
+            elif name == "partial":
+                func, partial_args, partial_kwargs = split_item
+                return "({f})({args})".format(f=func, args=join_args((partial_args, star_str + subexpr, partial_kwargs)))
+            elif name == "attrgetter":
+                attr, method_args = split_item
+                call = "(" + method_args + ")" if method_args is not None else ""
+                if stars:
+                    raise CoconutDeferredSyntaxError("cannot star pipe into attribute access or method call", loc)
+                return "({x}).{attr}{call}".format(x=subexpr, attr=attr, call=call)
+            elif name == "itemgetter":
+                op, args = split_item
+                if stars:
+                    raise CoconutDeferredSyntaxError("cannot star pipe into item getting", loc)
+                if op == "[":
+                    fmtstr = "({x})[{args}]"
+                elif op == "$[":
+                    fmtstr = "_coconut_igetitem({x}, ({args}))"
+                else:
+                    raise CoconutInternalException("pipe into invalid implicit itemgetter operation", op)
+                return fmtstr.format(x=subexpr, args=args)
+            else:
+                raise CoconutInternalException("invalid split pipe item", split_item)
 
         else:
             raise CoconutInternalException("invalid pipe operator direction", direction)
@@ -369,7 +381,9 @@ def comp_pipe_handle(loc, tokens):
     direction = None
     for i in range(1, len(tokens), 2):
         op, fn = tokens[i], tokens[i + 1]
-        new_direction, stars = pipe_info(op)
+        new_direction, stars, none_aware = pipe_info(op)
+        if none_aware:
+            raise CoconutInternalException("found unsupported None-aware composition pipe")
         if direction is None:
             direction = new_direction
         elif new_direction != direction:
@@ -720,7 +734,7 @@ class Grammar(object):
     rbrack = Literal("]")
     lbrace = Literal("{")
     rbrace = Literal("}")
-    lbanana = Literal("(|") + ~Word(")>*", exact=1)
+    lbanana = Literal("(|") + ~Word(")>*?", exact=1)
     rbanana = Literal("|)")
     lparen = ~lbanana + Literal("(")
     rparen = Literal(")")
@@ -731,11 +745,14 @@ class Grammar(object):
     dubslash = Literal("//")
     slash = ~dubslash + Literal("/")
     pipe = Literal("|>") | fixto(Literal("\u21a6"), "|>")
-    back_pipe = Literal("<|") | fixto(Literal("\u21a4"), "<|")
     star_pipe = Literal("|*>") | fixto(Literal("*\u21a6"), "|*>")
-    back_star_pipe = Literal("<*|") | ~Literal("\u21a4**") + fixto(Literal("\u21a4*"), "<*|")
     dubstar_pipe = Literal("|**>") | fixto(Literal("**\u21a6"), "|**>")
+    back_pipe = Literal("<|") | fixto(Literal("\u21a4"), "<|")
+    back_star_pipe = Literal("<*|") | ~Literal("\u21a4**") + fixto(Literal("\u21a4*"), "<*|")
     back_dubstar_pipe = Literal("<**|") | fixto(Literal("\u21a4**"), "<**|")
+    none_pipe = Literal("|?>") | fixto(Literal("?\u21a6"), "|?>")
+    none_star_pipe = Literal("|?*>") | fixto(Literal("?*\u21a6"), "|?*>")
+    none_dubstar_pipe = Literal("|?**>") | fixto(Literal("?**\u21a6"), "|?**>")
     dotdot = (
         ~Literal("...") + ~Literal("..>") + ~Literal("..*>") + Literal("..")
         | ~Literal("\u2218>") + ~Literal("\u2218*>") + fixto(Literal("\u2218"), "..")
@@ -852,11 +869,14 @@ class Grammar(object):
 
     augassign = (
         Combine(pipe + equals)
-        | Combine(back_pipe + equals)
         | Combine(star_pipe + equals)
-        | Combine(back_star_pipe + equals)
         | Combine(dubstar_pipe + equals)
+        | Combine(back_pipe + equals)
+        | Combine(back_star_pipe + equals)
         | Combine(back_dubstar_pipe + equals)
+        | Combine(none_pipe + equals)
+        | Combine(none_star_pipe + equals)
+        | Combine(none_dubstar_pipe + equals)
         | Combine(comp_pipe + equals)
         | Combine(dotdot + equals)
         | Combine(comp_back_pipe + equals)
@@ -923,10 +943,13 @@ class Grammar(object):
         # must go dubstar then star then no star
         fixto(dubstar_pipe, "_coconut_dubstar_pipe")
         | fixto(back_dubstar_pipe, "_coconut_back_dubstar_pipe")
+        | fixto(none_dubstar_pipe, "_coconut_none_dubstar_pipe")
         | fixto(star_pipe, "_coconut_star_pipe")
         | fixto(back_star_pipe, "_coconut_back_star_pipe")
+        | fixto(none_star_pipe, "_coconut_none_star_pipe")
         | fixto(pipe, "_coconut_pipe")
         | fixto(back_pipe, "_coconut_back_pipe")
+        | fixto(none_pipe, "_coconut_none_pipe")
 
         # must go dubstar then star then no star
         | fixto(comp_dubstar_pipe, "_coconut_forward_dubstar_compose")
@@ -1269,11 +1292,14 @@ class Grammar(object):
 
     pipe_op = (
         pipe
-        | back_pipe
         | star_pipe
-        | back_star_pipe
         | dubstar_pipe
+        | back_pipe
+        | back_star_pipe
         | back_dubstar_pipe
+        | none_pipe
+        | none_star_pipe
+        | none_dubstar_pipe
     )
     pipe_item = (
         # we need the pipe_op since any of the atoms could otherwise be the start of an expression

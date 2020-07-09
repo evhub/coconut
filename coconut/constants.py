@@ -465,7 +465,7 @@ yield_err_var = reserved_prefix + "_yield_err"
 raise_from_var = reserved_prefix + "_raise_from"
 tre_mock_var = reserved_prefix + "_mock_func"
 tre_check_var = reserved_prefix + "_is_recursive"
-none_coalesce_var = reserved_prefix + "_none_coalesce_item"
+none_coalesce_var = reserved_prefix + "_x"
 func_var = reserved_prefix + "_func"
 format_var = reserved_prefix + "_format"
 
@@ -696,12 +696,12 @@ new_operators = (
     r"`",
     r"::",
     r"(?:<\*?\*?)?(?!\.\.\.)\.\.(?:\*?\*?>)?",  # ..
-    r"\|\*?\*?>",
+    r"\|\??\*?\*?>",
     r"<\*?\*?\|",
     r"->",
     r"\?\??",
     "\u2192",  # ->
-    "\\*?\\*?\u21a6",  # |>
+    "\\??\\*?\\*?\u21a6",  # |>
     "\u21a4\\*?\\*?",  # <|
     "<?\\*?\\*?\u2218\\*?\\*?>?",  # ..
     "\u22c5",  # *
