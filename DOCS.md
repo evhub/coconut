@@ -2091,7 +2091,7 @@ sliced = itertools.islice(temp, 5, None)
 
 ### `reiterable`
 
-Sometimes, when an iterator may need to be iterated over an arbitrary number of times, `tee` can be cumbersome to use. For such cases, Coconut provides `reiterable`, which wraps the given iterator such that whenever an attempt to iterate over it is made, it iterates over a `tee` instead of the original.
+Sometimes, when an iterator may need to be iterated over an arbitrary number of times, [`tee`](#tee) can be cumbersome to use. For such cases, Coconut provides `reiterable`, which wraps the given iterator such that whenever an attempt to iterate over it is made, it iterates over a `tee` instead of the original.
 
 ##### Example
 
