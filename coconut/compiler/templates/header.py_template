@@ -7,10 +7,33 @@ class _coconut{object}:{comment.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
     Ellipsis, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, type, zip, repr{comma_bytearray} = Ellipsis, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, type, zip, {static_repr}{comma_bytearray}
 _coconut_sentinel = _coconut.object()
 class MatchError(Exception):
-    """Pattern-matching error. Has attributes .pattern and .value."""
-    __slots__ = ("pattern", "value")
+    """Pattern-matching error. Has attributes .pattern, .value, and .message."""
+    __slots__ = ("pattern", "value", "_message")
+    max_val_repr_len = 500
+    def __init__(self, pattern, value):
+        self.pattern = pattern
+        self.value = value
+        self._message = None
+    @property
+    def message(self):
+        if self._message is None:
+            value_repr = _coconut.repr(self.value)
+            self._message = "pattern-matching failed for %r in %s" % (self.pattern, value_repr if _coconut.len(value_repr) <= self.max_val_repr_len else value_repr[:self.max_val_repr_len] + "...")
+            super(MatchError, self).__init__(self._message)
+        return self._message
+    def __repr__(self):
+        self.message
+        return super(MatchError, self).__repr__()
+    def __str__(self):
+        self.message
+        return super(MatchError, self).__str__()
+    def __unicode__(self):
+        self.message
+        return super(MatchError, self).__unicode__()
+    def __reduce__(self):
+        return (self.__class__, (self.pattern, self.value))
 {def_tco}def _coconut_igetitem(iterable, index):
-    if isinstance(iterable, (_coconut_reversed, _coconut_map, _coconut.zip, _coconut_enumerate, _coconut_count, _coconut.abc.Sequence)):
+    if _coconut.isinstance(iterable, (_coconut_reversed, _coconut_map, _coconut.zip, _coconut_enumerate, _coconut_count, _coconut.abc.Sequence)):
         return iterable[index]
     if not _coconut.isinstance(index, _coconut.slice):
         if index < 0:

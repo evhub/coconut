@@ -365,7 +365,7 @@ class Command(object):
                     logger.warn("found destination path with " + dest_ext + " extension; compiling anyway due to --force")
                 else:
                     raise CoconutException("found destination path with " + dest_ext + " extension; aborting compilation", extra="pass --force to override")
-        self.compile(filepath, destpath, package, **kwargs)
+        self.compile(filepath, destpath, package, force=force, **kwargs)
         return destpath
 
     def compile(self, codepath, destpath=None, package=False, run=False, force=False, show_unchanged=True):

@@ -59,7 +59,6 @@ from coconut.constants import (
     match_to_args_var,
     match_to_kwargs_var,
     match_check_var,
-    match_err_var,
     import_as_var,
     yield_from_var,
     yield_err_var,
@@ -72,8 +71,6 @@ from coconut.constants import (
     function_match_error_var,
     legal_indent_chars,
     format_var,
-    match_val_repr_var,
-    max_match_val_repr_len,
     replwrapper,
 )
 from coconut.exceptions import (
@@ -1694,24 +1691,16 @@ def __hash__(self):
         """Construct a pattern-matching error message."""
         base_line = clean(self.reformat(getline(loc, original)))
         line_wrap = self.wrap_str_of(base_line)
-        repr_wrap = self.wrap_str_of(ascii(base_line))
         return handle_indentation(
             """
 if not {check_var}:
-    {match_val_repr_var} = _coconut.repr({value_var})
-    {match_err_var} = {match_error_class}("pattern-matching failed for " {repr_wrap} " in " + ({match_val_repr_var} if _coconut.len({match_val_repr_var}) <= {max_match_val_repr_len} else {match_val_repr_var}[:{max_match_val_repr_len}] + "..."))
-    {match_err_var}.pattern = {line_wrap}
-    {match_err_var}.value = {value_var}
-    raise {match_err_var}
-            """.strip(), add_newline=True,
+    raise {match_error_class}({line_wrap}, {value_var})
+            """.strip(),
+            add_newline=True,
         ).format(
             check_var=check_var,
-            match_val_repr_var=match_val_repr_var,
             value_var=value_var,
-            match_err_var=match_err_var,
             match_error_class=match_error_class,
-            repr_wrap=repr_wrap,
-            max_match_val_repr_len=max_match_val_repr_len,
             line_wrap=line_wrap,
         )
 

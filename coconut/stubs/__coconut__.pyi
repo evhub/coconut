@@ -110,7 +110,13 @@ TYPE_CHECKING = _t.TYPE_CHECKING
 _coconut_sentinel = object()
 
 
-class MatchError(Exception): ...
+class MatchError(Exception):
+    pattern: _t.Text
+    value: _t.Any
+    _message: _t.Optional[_t.Text]
+    def __init__(self, pattern: _t.Text, value: _t.Any): ...
+    @property
+    def message(self) -> _t.Text: ...
 _coconut_MatchError = MatchError
 
 

@@ -168,6 +168,7 @@ def suite_test():
     try:
         strmul("a", "b")
     except MatchError as err:
+        assert str(err) == "pattern-matching failed for 'match def strmul(a is str, x is int):' in ('a', 'b')"
         assert err.pattern == "match def strmul(a is str, x is int):"
         assert err.value == ("a", "b")
     else:
@@ -514,7 +515,7 @@ def suite_test():
     assert return_in_loop(10)
     assert methtest().meth(5) == 5
     assert methtest().tail_call_meth(3) == 3
-    def test_match_error_addpattern(x is int): raise MatchError()
+    def test_match_error_addpattern(x is int): raise MatchError("pat", "val")
     @addpattern(test_match_error_addpattern)
     def test_match_error_addpattern(x) = x
     try:
