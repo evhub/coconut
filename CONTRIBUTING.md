@@ -160,6 +160,7 @@ After you've tested your changes locally, you'll want to add more permanent test
 
 1. Preparation:
     1. Run `make check-reqs` and update dependencies as necessary
+    1. Make sure `make test-basic`, `make test-py2`, and `make test-easter-eggs` are passing
     1. Run `make format`
     1. Check changes in [`compiled-cocotest`](https://github.com/evhub/compiled-cocotest), [`pyprover`](https://github.com/evhub/pyprover), and [`coconut-prelude`](https://github.com/evhub/coconut-prelude)
     1. Check [Codebeat](https://codebeat.co/a/evhub/projects) and [LGTM](https://lgtm.com/dashboard) for `coconut` and `compiled-cocotest`
@@ -167,7 +168,6 @@ After you've tested your changes locally, you'll want to add more permanent test
     1. Run `make docs` and ensure local documentation looks good
     1. Make sure [develop documentation](http://coconut.readthedocs.io/en/develop/) looks good
     1. Make sure [Travis](https://travis-ci.org/evhub/coconut/builds) and [AppVeyor](https://ci.appveyor.com/project/evhub/coconut) are passing
-    1. Run `make test-easter-eggs`
     1. Turn off `develop` in `root.py`
     1. Set `root.py` to new version number
     1. If major release, set `root.py` to new version name

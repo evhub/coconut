@@ -4,7 +4,7 @@ class _coconut{object}:{comment.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
 {import_OrderedDict}
 {import_collections_abc}
 {import_typing_NamedTuple}
-    Ellipsis, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, type, zip, repr{comma_bytearray} = Ellipsis, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, type, zip, {static_repr}{comma_bytearray}
+    Ellipsis, NotImplemented, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, type, zip, repr{comma_bytearray} = Ellipsis, NotImplemented, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, type, zip, {static_repr}{comma_bytearray}
 _coconut_sentinel = _coconut.object()
 class MatchError(Exception):
     """Pattern-matching error. Has attributes .pattern, .value, and .message."""
@@ -18,7 +18,7 @@ class MatchError(Exception):
     def message(self):
         if self._message is None:
             value_repr = _coconut.repr(self.value)
-            self._message = "pattern-matching failed for %r in %s" % (self.pattern, value_repr if _coconut.len(value_repr) <= self.max_val_repr_len else value_repr[:self.max_val_repr_len] + "...")
+            self._message = "pattern-matching failed for %s in %s" % (_coconut.repr(self.pattern), value_repr if _coconut.len(value_repr) <= self.max_val_repr_len else value_repr[:self.max_val_repr_len] + "...")
             super(MatchError, self).__init__(self._message)
         return self._message
     def __repr__(self):
@@ -481,7 +481,7 @@ class _coconut_base_pattern_func{object}:
     __slots__ = ("FunctionMatchError", "__doc__", "patterns")
     _coconut_is_match = True
     def __init__(self, *funcs):
-        self.FunctionMatchError = _coconut.type(_coconut_str("MatchError"), (_coconut_MatchError,), {{}})
+        self.FunctionMatchError = _coconut.type(_coconut_py_str("MatchError"), (_coconut_MatchError,), {{}})
         self.__doc__ = None
         self.patterns = []
         for func in funcs:

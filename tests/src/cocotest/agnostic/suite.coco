@@ -168,7 +168,6 @@ def suite_test():
     try:
         strmul("a", "b")
     except MatchError as err:
-        assert str(err) == "pattern-matching failed for 'match def strmul(a is str, x is int):' in ('a', 'b')"
         assert err.pattern == "match def strmul(a is str, x is int):"
         assert err.value == ("a", "b")
     else:

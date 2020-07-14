@@ -18,6 +18,5 @@ from typing import Optional
 # MAIN:
 # -----------------------------------------------------------------------------------------------------------------------
 
-
 def embed(kernel: Optional[bool] = False, **kwargs) -> None:
     ...

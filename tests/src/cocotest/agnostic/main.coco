@@ -576,7 +576,15 @@ def main_test():
     assert 1i == 1.0i == 1.i
     exc = MatchError("pat", "val")
     assert exc._message is None
-    assert exc.message == "pattern-matching failed for 'pat' in 'val'" == exc._message
+    expected_msg = "pattern-matching failed for 'pat' in 'val'"
+    assert exc.message == expected_msg
+    assert exc._message == expected_msg
+    try:
+        x is int = "a"
+    except MatchError as err:
+        assert str(err) == "pattern-matching failed for 'x is int = \"a\"' in 'a'"
+    else:
+        assert False
     return True
 
 def test_asyncio():

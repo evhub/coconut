@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "1.4.3"
 VERSION_NAME = "Ernest Scribbler"
 # False for release, int >= 1 for develop
-DEVELOP = 34
+DEVELOP = 35
 
 # -----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
@@ -41,12 +41,12 @@ PY26 = _coconut_sys.version_info < (2, 7)
 
 PY3_HEADER = r'''from builtins import chr, filter, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate
 py_chr, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate, py_repr = chr, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate, repr
-_coconut_str = str
+_coconut_py_str = str
 '''
 
 PY27_HEADER = r'''from __builtin__ import chr, filter, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate, raw_input, xrange
 py_chr, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate, py_raw_input, py_xrange, py_repr = chr, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate, raw_input, xrange, repr
-_coconut_NotImplemented, _coconut_raw_input, _coconut_xrange, _coconut_int, _coconut_long, _coconut_print, _coconut_str, _coconut_unicode, _coconut_repr = NotImplemented, raw_input, xrange, int, long, print, str, unicode, repr
+_coconut_py_raw_input, _coconut_py_xrange, _coconut_py_int, _coconut_py_long, _coconut_py_print, _coconut_py_str, _coconut_py_unicode, _coconut_py_repr = raw_input, xrange, int, long, print, str, unicode, repr
 from future_builtins import *
 chr, str = unichr, unicode
 from io import open
@@ -54,24 +54,24 @@ class object(object):
     __slots__ = ()
     def __ne__(self, other):
         eq = self == other
-        if eq is _coconut_NotImplemented:
+        if eq is _coconut.NotImplemented:
             return eq
         return not eq
-class int(_coconut_int):
+class int(_coconut_py_int):
     __slots__ = ()
-    if hasattr(_coconut_int, "__doc__"):
-        __doc__ = _coconut_int.__doc__
+    if hasattr(_coconut_py_int, "__doc__"):
+        __doc__ = _coconut_py_int.__doc__
     class __metaclass__(type):
         def __instancecheck__(cls, inst):
-            return _coconut.isinstance(inst, (_coconut_int, _coconut_long))
+            return _coconut.isinstance(inst, (_coconut_py_int, _coconut_py_long))
         def __subclasscheck__(cls, subcls):
-            return _coconut.issubclass(subcls, (_coconut_int, _coconut_long))
+            return _coconut.issubclass(subcls, (_coconut_py_int, _coconut_py_long))
 class range(object):
     __slots__ = ("_xrange",)
-    if hasattr(_coconut_xrange, "__doc__"):
-        __doc__ = _coconut_xrange.__doc__
+    if hasattr(_coconut_py_xrange, "__doc__"):
+        __doc__ = _coconut_py_xrange.__doc__
     def __init__(self, *args):
-        self._xrange = _coconut_xrange(*args)
+        self._xrange = _coconut_py_xrange(*args)
     def __iter__(self):
         return _coconut.iter(self._xrange)
     def __reversed__(self):
@@ -89,7 +89,7 @@ class range(object):
             return self._xrange[index]
     def count(self, elem):
         """Count the number of times elem appears in the range."""
-        return _coconut_int(elem in self._xrange)
+        return _coconut_py_int(elem in self._xrange)
     def index(self, elem):
         """Find the index of elem in the range."""
         if elem not in self._xrange: raise _coconut.ValueError(_coconut.repr(elem) + " is not in range")
@@ -113,31 +113,36 @@ class range(object):
 from collections import Sequence as _coconut_Sequence
 _coconut_Sequence.register(range)
 from functools import wraps as _coconut_wraps
-@_coconut_wraps(_coconut_print)
+@_coconut_wraps(_coconut_py_print)
 def print(*args, **kwargs):
     file = kwargs.get("file", _coconut_sys.stdout)
     flush = kwargs.get("flush", False)
     if "flush" in kwargs:
         del kwargs["flush"]
     if _coconut.hasattr(file, "encoding") and file.encoding is not None:
-        _coconut_print(*(_coconut_unicode(x).encode(file.encoding) for x in args), **kwargs)
+        _coconut_py_print(*(_coconut_py_unicode(x).encode(file.encoding) for x in args), **kwargs)
     else:
-        _coconut_print(*(_coconut_unicode(x).encode() for x in args), **kwargs)
+        _coconut_py_print(*(_coconut_py_unicode(x).encode() for x in args), **kwargs)
     if flush:
         file.flush()
-@_coconut_wraps(_coconut_raw_input)
+@_coconut_wraps(_coconut_py_raw_input)
 def input(*args, **kwargs):
     if _coconut.hasattr(_coconut_sys.stdout, "encoding") and _coconut_sys.stdout.encoding is not None:
-        return _coconut_raw_input(*args, **kwargs).decode(_coconut_sys.stdout.encoding)
-    return _coconut_raw_input(*args, **kwargs).decode()
-@_coconut_wraps(_coconut_repr)
+        return _coconut_py_raw_input(*args, **kwargs).decode(_coconut_sys.stdout.encoding)
+    return _coconut_py_raw_input(*args, **kwargs).decode()
+@_coconut_wraps(_coconut_py_repr)
 def repr(obj):
-    if isinstance(obj, _coconut_unicode):
-        return _coconut_unicode(_coconut_repr(obj)[1:])
-    if isinstance(obj, _coconut_str):
-        return "b" + _coconut_unicode(_coconut_repr(obj))
-    return _coconut_unicode(_coconut_repr(obj))
-ascii = repr
+    import __builtin__
+    try:
+        __builtin__.repr = _coconut_repr
+        if isinstance(obj, _coconut_py_unicode):
+            return _coconut_py_unicode(_coconut_py_repr(obj)[1:])
+        if isinstance(obj, _coconut_py_str):
+            return "b" + _coconut_py_unicode(_coconut_py_repr(obj))
+        return _coconut_py_unicode(_coconut_py_repr(obj))
+    finally:
+        __builtin__.repr = _coconut_py_repr
+ascii = _coconut_repr = repr
 def raw_input(*args):
     """Coconut uses Python 3 "input" instead of Python 2 "raw_input"."""
     raise _coconut.NameError('Coconut uses Python 3 "input" instead of Python 2 "raw_input"')
