@@ -49,6 +49,13 @@ conda install coconut
 ```
 which will properly create and build a `conda` recipe out of [Coconut's `conda-forge` feedstock](https://github.com/conda-forge/coconut-feedstock).
 
+### Using Homebrew
+
+If you prefer to use [Homebrew](https://brew.sh/), you can install Coconut using `brew`:
+```
+brew install coconut
+```
+
 ### Optional Dependencies
 
 Coconut also has optional dependencies, which can be installed by entering
