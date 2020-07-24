@@ -585,6 +585,18 @@ def main_test():
         assert str(err) == "pattern-matching failed for 'x is int = \"a\"' in 'a'"
     else:
         assert False
+    for base_it in [
+        map((+)$(1), range(10)),
+        zip(range(10), range(5, 15)),
+        filter(x -> x > 5, range(10)),
+        reversed(range(10)),
+        enumerate(range(10)),
+    ]:
+        it1 = iter(base_it)
+        item1 = next(it1)
+        it2 = iter(base_it)
+        item2 = next(it2)
+        assert item1 == item2
     return True
 
 def test_asyncio():

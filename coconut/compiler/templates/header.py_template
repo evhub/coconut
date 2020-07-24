@@ -225,6 +225,8 @@ class map(_coconut.map):
         return (self.__class__, (self.func,) + self.iters)
     def __reduce_ex__(self, _):
         return self.__reduce__()
+    def __iter__(self):
+        return super(_coconut_map, self.__class__(self.func, *self.iters)).__iter__()
     def __copy__(self):
         return self.__class__(self.func, *_coconut.map(_coconut.copy.copy, self.iters))
     def __fmap__(self, func):
@@ -265,6 +267,8 @@ class filter(_coconut.filter):
         return (self.__class__, (self.func, self.iter))
     def __reduce_ex__(self, _):
         return self.__reduce__()
+    def __iter__(self):
+        return super(_coconut_filter, self.__class__(self.func, self.iter)).__iter__()
     def __copy__(self):
         return self.__class__(self.func, _coconut.copy.copy(self.iter))
     def __fmap__(self, func):
@@ -291,6 +295,8 @@ class zip(_coconut.zip):
         return (self.__class__, self.iters)
     def __reduce_ex__(self, _):
         return self.__reduce__()
+    def __iter__(self):
+        return super(_coconut_zip, self.__class__(*self.iters)).__iter__()
     def __copy__(self):
         return self.__class__(*_coconut.map(_coconut.copy.copy, self.iters))
     def __fmap__(self, func):
@@ -316,6 +322,8 @@ class enumerate(_coconut.enumerate):
         return (self.__class__, (self.iter, self.start))
     def __reduce_ex__(self, _):
         return self.__reduce__()
+    def __iter__(self):
+        return super(_coconut_enumerate, self.__class__(self.iter, self.start)).__iter__()
     def __copy__(self):
         return self.__class__(_coconut.copy.copy(self.iter), self.start)
     def __fmap__(self, func):
@@ -589,6 +597,8 @@ class starmap(_coconut.itertools.starmap):
         return (self.__class__, (self.func, self.iter))
     def __reduce_ex__(self, _):
         return self.__reduce__()
+    def __iter__(self):
+        return super(_coconut_starmap, self.__class__(self.func, self.iter)).__iter__()
     def __copy__(self):
         return self.__class__(self.func, _coconut.copy.copy(self.iter))
     def __fmap__(self, func):
@@ -615,4 +625,4 @@ def memoize(maxsize=None, *args, **kwargs):
     """Decorator that memoizes a function,
     preventing it from being recomputed if it is called multiple times with the same arguments."""
     return _coconut.functools.lru_cache(maxsize, *args, **kwargs)
-_coconut_MatchError, _coconut_count, _coconut_enumerate, _coconut_makedata, _coconut_map, _coconut_reversed, _coconut_starmap, _coconut_tee, _coconut_zip, TYPE_CHECKING, reduce, takewhile, dropwhile = MatchError, count, enumerate, makedata, map, reversed, starmap, tee, zip, False, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile
+_coconut_MatchError, _coconut_count, _coconut_enumerate, _coconut_filter, _coconut_makedata, _coconut_map, _coconut_reversed, _coconut_starmap, _coconut_tee, _coconut_zip, TYPE_CHECKING, reduce, takewhile, dropwhile = MatchError, count, enumerate, filter, makedata, map, reversed, starmap, tee, zip, False, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile

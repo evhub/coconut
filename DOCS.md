@@ -1782,7 +1782,7 @@ with open('/path/to/some/file/you/want/to/read') as file_1:
 
 ### Enhanced Built-Ins
 
-Coconut's `map`, `zip`, `filter`, `reversed`, and `enumerate` objects are enhanced versions of their Python equivalents that support `reversed`, `repr`, optimized normal (and iterator) slicing (all but `filter`), `len` (all but `filter`), and have added attributes which subclasses can make use of to get at the original arguments to the object:
+Coconut's `map`, `zip`, `filter`, `reversed`, and `enumerate` objects are enhanced versions of their Python equivalents that support `reversed`, `repr`, optimized normal (and iterator) slicing (all but `filter`), `len` (all but `filter`), the ability to be iterated over multiple times if the underlying iterators are iterables, and have added attributes which subclasses can make use of to get at the original arguments to the object:
 
 - `map`: `func`, `iters`
 - `zip`: `iters`
