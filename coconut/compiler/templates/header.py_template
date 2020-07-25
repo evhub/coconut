@@ -226,7 +226,7 @@ class map(_coconut.map):
     def __reduce_ex__(self, _):
         return self.__reduce__()
     def __iter__(self):
-        return super(_coconut_map, self.__class__(self.func, *self.iters)).__iter__()
+        return _coconut.iter(_coconut.map(self.func, *self.iters))
     def __copy__(self):
         return self.__class__(self.func, *_coconut.map(_coconut.copy.copy, self.iters))
     def __fmap__(self, func):
@@ -268,7 +268,7 @@ class filter(_coconut.filter):
     def __reduce_ex__(self, _):
         return self.__reduce__()
     def __iter__(self):
-        return super(_coconut_filter, self.__class__(self.func, self.iter)).__iter__()
+        return _coconut.iter(_coconut.filter(self.func, self.iter))
     def __copy__(self):
         return self.__class__(self.func, _coconut.copy.copy(self.iter))
     def __fmap__(self, func):
@@ -296,7 +296,7 @@ class zip(_coconut.zip):
     def __reduce_ex__(self, _):
         return self.__reduce__()
     def __iter__(self):
-        return super(_coconut_zip, self.__class__(*self.iters)).__iter__()
+        return _coconut.iter(_coconut.zip(*self.iters))
     def __copy__(self):
         return self.__class__(*_coconut.map(_coconut.copy.copy, self.iters))
     def __fmap__(self, func):
@@ -323,7 +323,7 @@ class enumerate(_coconut.enumerate):
     def __reduce_ex__(self, _):
         return self.__reduce__()
     def __iter__(self):
-        return super(_coconut_enumerate, self.__class__(self.iter, self.start)).__iter__()
+        return _coconut.iter(_coconut.enumerate(self.iter, self.start))
     def __copy__(self):
         return self.__class__(_coconut.copy.copy(self.iter), self.start)
     def __fmap__(self, func):
@@ -598,7 +598,7 @@ class starmap(_coconut.itertools.starmap):
     def __reduce_ex__(self, _):
         return self.__reduce__()
     def __iter__(self):
-        return super(_coconut_starmap, self.__class__(self.func, self.iter)).__iter__()
+        return _coconut.iter(_coconut.itertools.starmap(self.func, self.iter))
     def __copy__(self):
         return self.__class__(self.func, _coconut.copy.copy(self.iter))
     def __fmap__(self, func):

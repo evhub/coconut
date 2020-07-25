@@ -597,6 +597,9 @@ def main_test():
         it2 = iter(base_it)
         item2 = next(it2)
         assert item1 == item2
+        it3 = iter(it2)
+        item3 = next(it3)
+        assert item3 != item2
     return True
 
 def test_asyncio():
