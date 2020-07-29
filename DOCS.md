@@ -139,6 +139,7 @@ dest                destination directory for compiled files (defaults to
                         --display to write runnable code to stdout)
   -s, --strict          enforce code cleanliness standards
   --no-tco, --notco     disable tail call optimization
+  --no-wrap, --nowrap   disable wrapping type hints in strings
   -c code, --code code  run Coconut passed in as a string (can also be piped
                         into stdin)
   -j processes, --jobs processes

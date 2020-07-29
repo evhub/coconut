@@ -446,8 +446,14 @@ class TestCompilation(unittest.TestCase):
         run()
 
     if MYPY:
-        def test_mypy_snip(self):
+        def test_universal_mypy_snip(self):
             call(["coconut", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err, check_mypy=False, expect_retcode=1)
+
+        def test_sys_mypy_snip(self):
+            call(["coconut", "--target", "sys", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err, check_mypy=False, expect_retcode=1)
+
+        def test_no_wrap_mypy_snip(self):
+            call(["coconut", "--target", "sys", "--no-wrap", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err, check_mypy=False, expect_retcode=1)
 
         def test_mypy_sys(self):
             run(["--mypy"] + mypy_args, agnostic_target="sys", expect_retcode=None)  # fails due to tutorial mypy errors
