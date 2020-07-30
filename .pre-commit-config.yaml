@@ -1,6 +1,6 @@
 repos:
 -   repo: git://github.com/pre-commit/pre-commit-hooks.git
-    rev: v3.1.0
+    rev: v3.2.0
     hooks:
     -   id: check-byte-order-marker
     -   id: check-merge-conflict
@@ -16,7 +16,7 @@ repos:
         args:
         - --autofix
 -   repo: https://gitlab.com/pycqa/flake8
-    rev: 3.8.2
+    rev: 3.8.3
     hooks:
     -   id: flake8
         args:

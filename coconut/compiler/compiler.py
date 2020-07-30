@@ -432,7 +432,7 @@ class Compiler(Grammar):
 
     def __reduce__(self):
         """Return pickling information."""
-        return (Compiler, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.no_tco, self.no_wrap))
+        return (self.__class__, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.no_tco, self.no_wrap))
 
     def __copy__(self):
         """Create a new, blank copy of the compiler."""
@@ -446,7 +446,7 @@ class Compiler(Grammar):
         reduce_args = self.__reduce__()[1]
         logger.log(
             "Hash args:", {
-                "VERSION_STR": VERSION_STR,
+                "VERSION": VERSION,
                 "reduce_args": reduce_args,
                 "package_level": package_level,
             },
@@ -455,9 +455,8 @@ class Compiler(Grammar):
             checksum(
                 hash_sep.join(
                     str(item) for item in (
-                        (VERSION_STR,)
-                        + reduce_args
-                        + (package_level, code)
+                        reduce_args
+                        + (VERSION, package_level, code)
                     )
                 ).encode(default_encoding),
             ),
