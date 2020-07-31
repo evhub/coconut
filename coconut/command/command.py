@@ -633,7 +633,8 @@ class Command(object):
                 args += ["-c", code]
             for line, is_err in mypy_run(args):
                 if line.startswith(mypy_non_err_prefixes):
-                    print(line)
+                    if code is not None:
+                        print(line)
                 else:
                     if line not in self.mypy_errs:
                         printerr(line)
