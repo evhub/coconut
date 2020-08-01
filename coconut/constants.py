@@ -200,7 +200,7 @@ min_versions = {
     "recommonmark": (0, 6),
     "psutil": (5,),
     "jupyter": (1, 0),
-    "mypy": (0, 780),
+    "mypy": (0, 782),
     "futures": (3, 3),
     "backports.functools-lru-cache": (1, 6),
     "dataclasses": (0, 7),
@@ -208,7 +208,7 @@ min_versions = {
     "pexpect": (4,),
     "watchdog": (0, 10),
     ("trollius", "py2"): (2, 2),
-    "requests": (2,),
+    "requests": (2, 24),
     ("numpy", "py34"): (1,),
     ("numpy", "py2;cpy"): (1,),
     ("ipykernel", "py3"): (5, 3),
@@ -374,6 +374,8 @@ script_names = (
 ) + tuple(
     "coconut-v" + ".".join(version_tuple[:i]) for i in range(1, len(version_tuple) + 1)
 )
+
+requests_sleep_times = (0, 0.1, 0.2, 0.3, 0.4, 1)
 
 # -----------------------------------------------------------------------------------------------------------------------
 # PYPARSING CONSTANTS:

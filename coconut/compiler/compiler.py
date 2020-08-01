@@ -249,7 +249,9 @@ def universal_import(imports, imp_from=None, target=""):
 def imported_names(imports):
     """Yields all the names imported by imports = [[imp1], [imp2, as], ...]."""
     for imp in imports:
-        yield imp[-1].split(".", 1)[0]
+        imp_name = imp[-1].split(".", 1)[0]
+        if imp_name != "*":
+            yield imp_name
 
 
 def special_starred_import_handle(imp_all=False):
@@ -754,8 +756,8 @@ class Compiler(Grammar):
     def parse(self, inputstring, parser, preargs, postargs):
         """Use the parser to parse the inputstring with appropriate setup and teardown."""
         self.reset()
-        pre_procd = None
         with logger.gather_parsing_stats():
+            pre_procd = None
             try:
                 pre_procd = self.pre(inputstring, **preargs)
                 parsed = parse(parser, pre_procd)
@@ -772,8 +774,7 @@ class Compiler(Grammar):
                 )
         if self.strict:
             for name in self.unused_imports:
-                if name != "*":
-                    logger.warn("found unused import", name, extra="disable --strict to dismiss")
+                logger.warn("found unused import", name, extra="disable --strict to dismiss")
         return out
 
 # end: COMPILER

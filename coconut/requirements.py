@@ -18,6 +18,7 @@ Description: Coconut installation requirements.
 from coconut.root import *  # NOQA
 
 import sys
+import time
 
 from coconut.constants import (
     ver_str_to_tuple,
@@ -34,6 +35,7 @@ from coconut.constants import (
     IPY,
     WINDOWS,
     PURE_PYTHON,
+    requests_sleep_times,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -211,7 +213,19 @@ def all_versions(req):
     """Get all versions of req from PyPI."""
     import requests  # expensive
     url = "https://pypi.python.org/pypi/" + get_base_req(req) + "/json"
-    return tuple(requests.get(url).json()["releases"].keys())
+    for i, sleep_time in enumerate(requests_sleep_times):
+        time.sleep(sleep_time)
+        try:
+            result = requests.get(url)
+        except Exception:
+            if i == len(requests_sleep_times) - 1:
+                print("Error accessing:", url)
+                raise
+            elif i > 0:
+                print("Error accessing:", url, "(retrying)")
+        else:
+            break
+    return tuple(result.json()["releases"].keys())
 
 
 def newer(new_ver, old_ver, strict=False):
