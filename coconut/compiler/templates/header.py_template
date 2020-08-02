@@ -1,5 +1,5 @@
 class _coconut{object}:{comment.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
-    import collections, copy, functools, types, itertools, operator, threading, weakref, os, warnings
+    import collections, copy, functools, types, itertools, operator, threading, weakref, os, warnings, contextlib
 {bind_lru_cache}{import_asyncio}{import_pickle}
 {import_OrderedDict}
 {import_collections_abc}
@@ -19,17 +19,17 @@ class MatchError(Exception):
         if self._message is None:
             value_repr = _coconut.repr(self.value)
             self._message = "pattern-matching failed for %s in %s" % (_coconut.repr(self.pattern), value_repr if _coconut.len(value_repr) <= self.max_val_repr_len else value_repr[:self.max_val_repr_len] + "...")
-            super(MatchError, self).__init__(self._message)
+            _coconut.super(_coconut_MatchError, self).__init__(self._message)
         return self._message
     def __repr__(self):
         self.message
-        return super(MatchError, self).__repr__()
+        return _coconut.super(_coconut_MatchError, self).__repr__()
     def __str__(self):
         self.message
-        return super(MatchError, self).__str__()
+        return _coconut.super(_coconut_MatchError, self).__str__()
     def __unicode__(self):
         self.message
-        return super(MatchError, self).__unicode__()
+        return _coconut.super(_coconut_MatchError, self).__unicode__()
     def __reduce__(self):
         return (self.__class__, (self.pattern, self.value))
 {def_tco}def _coconut_igetitem(iterable, index):
@@ -231,23 +231,62 @@ class map(_coconut.map):
         return self.__class__(self.func, *_coconut.map(_coconut.copy.copy, self.iters))
     def __fmap__(self, func):
         return self.__class__(_coconut_forward_compose(self.func, func), *self.iters)
-class parallel_map(map):
-    """Multi-process implementation of map using concurrent.futures.
-    Requires arguments to be pickleable."""
-    __slots__ = ()
+class _coconut_base_parallel_concurrent_map(map):
+    __slots__ = ("result")
+    @classmethod
+    def get_executor(cls):
+        return cls.threadlocal_ns.__dict__.get("executor")
+    def __new__(cls, function, *iterables):
+        self = _coconut.super(_coconut_base_parallel_concurrent_map, cls).__new__(cls, function, *iterables)
+        self.result = None
+        if cls.get_executor() is None:
+            return self
+        return self.get_list()
+    def get_list(self):
+        if self.result is None:
+            with self.multiple_sequential_calls():
+                self.result = _coconut.list(self.get_executor().map(self.func, *self.iters))
+        return self.result
     def __iter__(self):
-        from concurrent.futures import ProcessPoolExecutor
-        with ProcessPoolExecutor() as executor:
-            return _coconut.iter(_coconut.list(executor.map(self.func, *self.iters)))
+        return _coconut.iter(self.get_list())
+class parallel_map(_coconut_base_parallel_concurrent_map):
+    """Multi-process implementation of map using concurrent.futures.
+    Requires arguments to be pickleable. For multiple sequential calls,
+    use `with parallel_map.multiple_sequential_calls()`."""
+    __slots__ = ()
+    threadlocal_ns = _coconut.threading.local()
+    @classmethod
+    @_coconut.contextlib.contextmanager
+    def multiple_sequential_calls(cls):
+        if cls.get_executor() is None:
+            from concurrent.futures import ProcessPoolExecutor
+            try:
+                with ProcessPoolExecutor() as cls.threadlocal_ns.executor:
+                    yield
+            finally:
+                cls.threadlocal_ns.executor = None
+        else:
+            yield
     def __repr__(self):
         return "parallel_" + _coconut_map.__repr__(self)
-class concurrent_map(map):
-    """Multi-thread implementation of map using concurrent.futures."""
+class concurrent_map(_coconut_base_parallel_concurrent_map):
+    """Multi-thread implementation of map using concurrent.futures.
+    For multiple sequential calls, use
+    `with concurrent_map.multiple_sequential_calls()`."""
     __slots__ = ()
-    def __iter__(self):
-        from concurrent.futures import ThreadPoolExecutor
-        {with_ThreadPoolExecutor} as executor:
-            return _coconut.iter(_coconut.list(executor.map(self.func, *self.iters)))
+    threadlocal_ns = _coconut.threading.local()
+    @classmethod
+    @_coconut.contextlib.contextmanager
+    def multiple_sequential_calls(cls):
+        if cls.get_executor() is None:
+            from concurrent.futures import ThreadPoolExecutor
+            try:
+                {with_ThreadPoolExecutor} as cls.threadlocal_ns.executor:
+                    yield
+            finally:
+                cls.threadlocal_ns.executor = None
+        else:
+            yield
     def __repr__(self):
         return "concurrent_" + _coconut_map.__repr__(self)
 class filter(_coconut.filter):
@@ -463,28 +502,30 @@ class recursive_iterator{object}:
         return _coconut.functools.partial(self, obj)
 class _coconut_FunctionMatchErrorContext(object):
     __slots__ = ('exc_class', 'taken')
-    threadlocal_var = _coconut.threading.local()
+    threadlocal_ns = _coconut.threading.local()
     def __init__(self, exc_class):
         self.exc_class = exc_class
         self.taken = False
-    def __enter__(self):
-        try:
-            self.threadlocal_var.contexts.append(self)
-        except _coconut.AttributeError:
-            self.threadlocal_var.contexts = [self]
-    def __exit__(self, type, value, traceback):
-        self.threadlocal_var.contexts.pop()
     @classmethod
-    def get(cls):
+    def get_contexts(cls):
         try:
-            ctx = cls.threadlocal_var.contexts[-1]
-        except (_coconut.AttributeError, _coconut.IndexError):
-            return _coconut_MatchError
-        if not ctx.taken:
-            ctx.taken = True
-            return ctx.exc_class
+            return cls.threadlocal_ns.contexts
+        except _coconut.AttributeError:
+            cls.threadlocal_ns.contexts = []
+            return cls.threadlocal_ns.contexts
+    def __enter__(self):
+        self.get_contexts().append(self)
+    def __exit__(self, type, value, traceback):
+        self.get_contexts().pop()
+def _coconut_get_function_match_error():
+    try:
+        ctx = _coconut_FunctionMatchErrorContext.get_contexts()[-1]
+    except _coconut.IndexError:
         return _coconut_MatchError
-_coconut_get_function_match_error = _coconut_FunctionMatchErrorContext.get
+    if ctx.taken:
+        return _coconut_MatchError
+    ctx.taken = True
+    return ctx.exc_class
 class _coconut_base_pattern_func{object}:
     __slots__ = ("FunctionMatchError", "__doc__", "patterns")
     _coconut_is_match = True

@@ -600,6 +600,15 @@ def main_test():
         it3 = iter(it2)
         item3 = next(it3)
         assert item3 != item2
+    for map_func in (parallel_map, concurrent_map):
+        m1 = map_func((+)$(1), range(5))
+        assert m1 `isinstance` map_func
+        with map_func.multiple_sequential_calls():
+            m2 = map_func((+)$(1), range(5))
+            assert m2 `isinstance` list
+            assert m1.result is None
+            assert m2 == [1, 2, 3, 4, 5] == list(m1)
+        assert m1.result == [1, 2, 3, 4, 5] == list(m1)
     return True
 
 def test_asyncio():

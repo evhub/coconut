@@ -2410,6 +2410,8 @@ Use of `parallel_map` requires `concurrent.futures`, which exists in the Python 
 
 Because `parallel_map` uses multiple processes for its execution, it is necessary that all of its arguments be pickleable. Only objects defined at the module level, and not lambdas, objects defined inside of a function, or objects defined inside of the interpreter, are pickleable. Furthermore, on Windows, it is necessary that all calls to `parallel_map` occur inside of an `if __name__ == "__main__"` guard.
 
+If multiple sequential calls to `parallel_map` need to be made, it is highly recommended that they be done inside of a `with parallel_map.multiple_sequential_calls():` block, which will cause the different calls to use the same process pool and result in `parallel_map` immediately returning a list rather than a `parallel_map` object.
+
 ##### Python Docs
 
 **parallel_map**(_func, \*iterables_)
@@ -2436,6 +2438,8 @@ with concurrent.futures.ProcessPoolExecutor() as executor:
 Coconut provides a concurrent version of `map` under the name `concurrent_map`. `concurrent_map` makes use of multiple threads, and is therefore much faster than `map` for IO-bound tasks.
 
 Use of `concurrent_map` requires `concurrent.futures`, which exists in the Python 3 standard library, but under Python 2 will require `pip install futures` to function.
+
+If multiple sequential calls to `concurrent_map` need to be made, it is highly recommended that they be done inside of a `with concurrent_map.multiple_sequential_calls():` block, which will cause the different calls to use the same process pool and result in `concurrent_map` immediately returning a list rather than a `concurrent_map` object.
 
 ##### Python Docs
 
