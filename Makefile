@@ -8,6 +8,11 @@ install-py2:
 	python2 -m pip install --upgrade setuptools pip
 	python2 -m pip install .[tests]
 
+.PHONY: install-py3
+install-py3:
+	python3 -m pip install --upgrade setuptools pip
+	python3 -m pip install .[tests]
+
 .PHONY: install-pypy
 install-pypy:
 	pypy -m pip install --upgrade setuptools pip
@@ -20,8 +25,8 @@ install-pypy3:
 
 .PHONY: dev
 dev:
-	pip install --upgrade setuptools pip pytest_remotedata
-	pip install --upgrade -e .[dev]
+	python3 -m pip install --upgrade setuptools pip pytest_remotedata
+	python3 -m pip install --upgrade -e .[dev]
 	pre-commit install -f --install-hooks
 
 .PHONY: format
@@ -55,6 +60,13 @@ test-py2:
 	python2 ./tests --strict --line-numbers --force
 	python2 ./tests/dest/runner.py
 	python2 ./tests/dest/extras.py
+
+# same as test-basic but uses Python 3
+.PHONY: test-py3
+test-py3:
+	python3 ./tests --strict --line-numbers --force
+	python3 ./tests/dest/runner.py
+	python3 ./tests/dest/extras.py
 
 # same as test-basic but uses PyPy
 .PHONY: test-pypy

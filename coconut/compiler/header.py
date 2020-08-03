@@ -171,11 +171,11 @@ else:
         ),
         comma_bytearray=", bytearray" if target_startswith != "3" else "",
         static_repr="staticmethod(repr)" if target_startswith != "3" else "repr",
-        with_ThreadPoolExecutor=(
+        return_ThreadPoolExecutor=(
             # cpu_count() * 5 is the default Python 3.5 thread count
             r'''from multiprocessing import cpu_count
-                with ThreadPoolExecutor(cpu_count() * 5)''' if target_info < (3, 5)
-            else '''with ThreadPoolExecutor()'''
+        return ThreadPoolExecutor(cpu_count() * 5)''' if target_info < (3, 5)
+            else '''return ThreadPoolExecutor()'''
         ),
         def_tco_func=r'''def _coconut_tco_func(self, *args, **kwargs):
         for func in self.patterns[:-1]:

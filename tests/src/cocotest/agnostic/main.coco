@@ -609,6 +609,7 @@ def main_test():
             assert m1.result is None
             assert m2 == [1, 2, 3, 4, 5] == list(m1)
         assert m1.result == [1, 2, 3, 4, 5] == list(m1)
+        assert m1.__copy__().result == m1.result
     return True
 
 def test_asyncio():
