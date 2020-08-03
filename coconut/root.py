@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "1.4.3"
 VERSION_NAME = "Ernest Scribbler"
 # False for release, int >= 1 for develop
-DEVELOP = 44
+DEVELOP = 45
 
 # -----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
@@ -83,8 +83,29 @@ class range(object):
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
             args = _coconut.slice(*self._args)
-            start, stop, step, ind_step = (args.start if args.start is not None else 0), args.stop, (args.step if args.step is not None else 1), (index.step if index.step is not None else 1)
-            return self.__class__((start if ind_step >= 0 else stop - step) if index.start is None else start + step * index.start if index.start >= 0 else stop + step * index.start, (stop if ind_step >= 0 else start - step) if index.stop is None else start + step * index.stop if index.stop >= 0 else stop + step * index.stop, step if index.step is None else step * index.step)
+            start, stop, step = (args.start if args.start is not None else 0), args.stop, (args.step if args.step is not None else 1)
+            if index.start is None:
+                new_start = start if index.step is None or index.step >= 0 else stop - step
+            elif index.start >= 0:
+                new_start = start + step * index.start
+                if (step >= 0 and new_start >= stop) or (step < 0 and new_start <= stop):
+                    new_start = stop
+            else:
+                new_start = stop + step * index.start
+                if (step >= 0 and new_start <= start) or (step < 0 and new_start >= start):
+                    new_start = start
+            if index.stop is None:
+                new_stop = stop if index.step is None or index.step >= 0 else start - step
+            elif index.stop >= 0:
+                new_stop = start + step * index.stop
+                if (step >= 0 and new_stop >= stop) or (step < 0 and new_stop <= stop):
+                    new_stop = stop
+            else:
+                new_stop = stop + step * index.stop
+                if (step >= 0 and new_stop <= start) or (step < 0 and new_stop >= start):
+                    new_stop = start
+            new_step = step if index.step is None else step * index.step
+            return self.__class__(new_start, new_stop, new_step)
         else:
             return self._xrange[index]
     def count(self, elem):
