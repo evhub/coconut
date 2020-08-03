@@ -364,6 +364,7 @@ search_terms = (
     "memoization",
     "backport",
     "typing",
+    "zip_longest",
 )
 
 script_names = (
@@ -671,6 +672,7 @@ coconut_specific_builtins = (
     "scan",
     "groupsof",
     "memoize",
+    "zip_longest",
     "TYPE_CHECKING",
     "py_chr",
     "py_hex",

@@ -4,7 +4,8 @@ class _coconut{object}:{comment.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
 {import_OrderedDict}
 {import_collections_abc}
 {import_typing_NamedTuple}
-    Ellipsis, NotImplemented, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, type, zip, repr{comma_bytearray} = Ellipsis, NotImplemented, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, type, zip, {static_repr}{comma_bytearray}
+{set_zip_longest}
+    Ellipsis, NotImplemented, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, slice, str, sum, tuple, type, zip, repr{comma_bytearray} = Ellipsis, NotImplemented, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, slice, str, sum, tuple, type, zip, {static_repr}{comma_bytearray}
 _coconut_sentinel = _coconut.object()
 class MatchError(Exception):
     """Pattern-matching error. Has attributes .pattern, .value, and .message."""
@@ -19,17 +20,17 @@ class MatchError(Exception):
         if self._message is None:
             value_repr = _coconut.repr(self.value)
             self._message = "pattern-matching failed for %s in %s" % (_coconut.repr(self.pattern), value_repr if _coconut.len(value_repr) <= self.max_val_repr_len else value_repr[:self.max_val_repr_len] + "...")
-            _coconut.super(_coconut_MatchError, self).__init__(self._message)
+            Exception.__init__(self, self._message)
         return self._message
     def __repr__(self):
         self.message
-        return _coconut.super(_coconut_MatchError, self).__repr__()
+        return Exception.__repr__(self)
     def __str__(self):
         self.message
-        return _coconut.super(_coconut_MatchError, self).__str__()
+        return Exception.__str__(self)
     def __unicode__(self):
         self.message
-        return _coconut.super(_coconut_MatchError, self).__unicode__()
+        return Exception.__unicode__(self)
     def __reduce__(self):
         return (self.__class__, (self.pattern, self.value))
 {def_tco}def _coconut_igetitem(iterable, index):
@@ -38,7 +39,10 @@ class MatchError(Exception):
     if not _coconut.isinstance(index, _coconut.slice):
         if index < 0:
             return _coconut.collections.deque(iterable, maxlen=-index)[0]
-        return _coconut.next(_coconut.itertools.islice(iterable, index, index + 1))
+        try:
+            return _coconut.next(_coconut.itertools.islice(iterable, index, index + 1))
+        except _coconut.StopIteration:
+            raise _coconut.IndexError("$[] index out of range")
     if index.start is not None and index.start < 0 and (index.stop is None or index.stop < 0) and index.step is None:
         queue = _coconut.collections.deque(iterable, maxlen=-index.start)
         if index.stop is not None:
@@ -252,7 +256,7 @@ class _coconut_base_parallel_concurrent_map(map):
     def get_executor_stack(cls):
         return cls.threadlocal_ns.__dict__.setdefault("executor_stack", [None])
     def __new__(cls, function, *iterables):
-        self = _coconut.super(_coconut_base_parallel_concurrent_map, cls).__new__(cls, function, *iterables)
+        self = _coconut_map.__new__(cls, function, *iterables)
         self.result = None
         if cls.get_executor_stack()[-1] is not None:
             return self.get_list()
@@ -278,7 +282,7 @@ class _coconut_base_parallel_concurrent_map(map):
     def __iter__(self):
         return _coconut.iter(self.get_list())
     def __copy__(self):
-        copy = _coconut.super(_coconut_base_parallel_concurrent_map, self).__copy__()
+        copy = _coconut_map.__copy__(self)
         copy.result = self.result
         return copy
 class parallel_map(_coconut_base_parallel_concurrent_map):
@@ -356,6 +360,44 @@ class zip(_coconut.zip):
         return self.__class__(*_coconut.map(_coconut.copy.copy, self.iters))
     def __fmap__(self, func):
         return _coconut_map(func, self)
+class zip_longest(zip):
+    __slots__ = ("fillvalue",)
+    if hasattr(_coconut.zip_longest, "__doc__"):
+        __doc__ = (_coconut.zip_longest).__doc__
+    def __new__(cls, *iterables, **kwargs):
+        self = _coconut_zip.__new__(cls, *iterables)
+        self.fillvalue = kwargs.pop("fillvalue", None)
+        if kwargs:
+            raise _coconut.TypeError("zip_longest() got unexpected keyword arguments " + _coconut.repr(kwargs))
+        return self
+    def __getitem__(self, index):
+        if _coconut.isinstance(index, _coconut.slice):
+            new_ind = _coconut.slice(index.start + self.__len__() if index.start is not None and index.start < 0 else index.start, index.stop + self.__len__() if index.stop is not None and index.stop < 0 else index.stop, index.step)
+            return self.__class__(*(_coconut_igetitem(i, new_ind) for i in self.iters))
+        if index < 0:
+            index += self.__len__()
+        result = []
+        got_non_default = False
+        for it in self.iters:
+            try:
+                result.append(_coconut_igetitem(it, index))
+            except _coconut.IndexError:
+                result.append(self.fillvalue)
+            else:
+                got_non_default = True
+        if not got_non_default:
+            raise _coconut.IndexError("zip_longest index out of range")
+        return _coconut.tuple(result)
+    def __len__(self):
+        return _coconut.max(_coconut.len(i) for i in self.iters)
+    def __repr__(self):
+        return "zip_longest(%s, fillvalue=%s)" % (", ".join((_coconut.repr(i) for i in self.iters)), self.fillvalue)
+    def __reduce__(self):
+        return (self.__class__, self.iters, {open}"fillvalue": fillvalue{close})
+    def __iter__(self):
+        return _coconut.iter(_coconut.zip_longest(*self.iters, fillvalue=self.fillvalue))
+    def __copy__(self):
+        return self.__class__(*_coconut.map(_coconut.copy.copy, self.iters), fillvalue=self.fillvalue)
 class enumerate(_coconut.enumerate):
     __slots__ = ("iter", "start")
     if hasattr(_coconut.enumerate, "__doc__"):

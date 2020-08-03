@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "1.4.3"
 VERSION_NAME = "Ernest Scribbler"
 # False for release, int >= 1 for develop
-DEVELOP = 43
+DEVELOP = 44
 
 # -----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:

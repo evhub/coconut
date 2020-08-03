@@ -1902,6 +1902,53 @@ product = functools.partial(functools.reduce, operator.mul)
 print(product(range(1, 10)))
 ```
 
+### `zip_longest`
+
+Coconut provides an enhanced version of `itertools.zip_longest` as a built-in under the name `zip_longest`. `zip_longest` supports all the same features as Coconut's [enhanced zip](#enhanced-built-ins) as well as the additional attribute `fillvalue`.
+
+##### Python Docs
+
+**zip_longest**(_\*iterables, fillvalue=None_)
+
+Make an iterator that aggregates elements from each of the iterables. If the iterables are of uneven length, missing values are filled-in with _fillvalue_. Iteration continues until the longest iterable is exhausted. Roughly equivalent to:
+
+```coconut_python
+def zip_longest(*args, fillvalue=None):
+    # zip_longest('ABCD', 'xy', fillvalue='-') --> Ax By C- D-
+    iterators = [iter(it) for it in args]
+    num_active = len(iterators)
+    if not num_active:
+        return
+    while True:
+        values = []
+        for i, it in enumerate(iterators):
+            try:
+                value = next(it)
+            except StopIteration:
+                num_active -= 1
+                if not num_active:
+                    return
+                iterators[i] = repeat(fillvalue)
+                value = fillvalue
+            values.append(value)
+        yield tuple(values)
+```
+
+If one of the iterables is potentially infinite, then the `zip_longest()` function should be wrapped with something that limits the number of calls (for example iterator slicing or `takewhile`). If not specified, _fillvalue_ defaults to `None`.
+
+##### Example
+
+**Coconut:**
+```coconut
+result = zip_longest(range(5), range(10))
+```
+
+**Python:**
+```coconut_python
+import itertools
+result = itertools.zip_longest(range(5), range(10))
+```
+
 ### `takewhile`
 
 Coconut provides `itertools.takewhile` as a built-in under the name `takewhile`.

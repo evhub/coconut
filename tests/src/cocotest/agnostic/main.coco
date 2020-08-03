@@ -535,7 +535,10 @@ def main_test():
         assert str(err) == "(assert) got falsey value []"
     else:
         assert False
-    from itertools import filterfalse, zip_longest
+    from itertools import filterfalse as py_filterfalse
+    assert py_filterfalse
+    from itertools import zip_longest as py_zip_longest
+    assert py_zip_longest
     assert reversed(reiterable(range(10)))[-1] == 0
     assert count("derp", None)[10] == "derp"
     assert count("derp", None)[5:10] |> list == ["derp"] * 5
@@ -610,6 +613,17 @@ def main_test():
             assert m2 == [1, 2, 3, 4, 5] == list(m1)
         assert m1.result == [1, 2, 3, 4, 5] == list(m1)
         assert m1.__copy__().result == m1.result
+    for it in ((), [], (||)):
+        assert_raises(-> it$[0], IndexError)
+        assert_raises(-> it$[-1], IndexError)
+    z = zip_longest(range(2), range(5))
+    r = [(0, 0), (1, 1), (None, 2), (None, 3), (None, 4)]
+    assert list(z) == r
+    assert [z[i] for i in range(5)] == r == list(z[:])
+    assert_raises(-> z[5], IndexError)
+    assert z[-1] == (None, 4)
+    assert list(z[1:-1]) == r[1:-1]
+    assert list(z[10:]) == []
     return True
 
 def test_asyncio():

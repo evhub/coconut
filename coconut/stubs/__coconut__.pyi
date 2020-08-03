@@ -71,15 +71,13 @@ class _coconut:
     else:
         import trollius as asyncio  # type: ignore
     import pickle
-    if sys.version_info >= (2, 7):
-        OrderedDict = collections.OrderedDict
-    else:
-        OrderedDict = dict
+    OrderedDict = collections.OrderedDict if sys.version_info >= (2, 7) else dict
     if sys.version_info < (3, 3):
         abc = collections
     else:
         abc = collections.abc
     typing = _t  # The real _coconut doesn't import typing, but we want type-checkers to treat it as if it does
+    zip_longest = itertools.zip_longest if sys.version_info >= (3,) else itertools.izip_longest
     Ellipsis = Ellipsis
     NotImplemented = NotImplemented
     Exception = Exception
@@ -120,7 +118,6 @@ class _coconut:
     slice = slice
     str = str
     sum = sum
-    super = super
     tuple = tuple
     type = type
     zip = zip
