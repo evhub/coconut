@@ -54,7 +54,21 @@ if sys.version_info < (3,):
         def index(self, elem: int) -> int: ...
 
 
-py_chr, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate = chr, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate
+py_chr = chr
+py_hex = hex
+py_input = input
+py_int = int
+py_map = map
+py_object = object
+py_oct = oct
+py_open = open
+py_print = print
+py_range = range
+py_str = str
+py_zip = zip
+py_filter = filter
+py_reversed = reversed
+py_enumerate = enumerate
 
 
 def scan(
@@ -116,7 +130,7 @@ class _coconut:
     min = min
     max = max
     next = next
-    object = object
+    object = _t.Union[object]
     property = property
     range = range
     reversed = reversed

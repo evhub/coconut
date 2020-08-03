@@ -89,6 +89,13 @@ test-mypy:
 	python ./tests/dest/runner.py
 	python ./tests/dest/extras.py
 
+# same as test-mypy but uses the universal target
+.PHONY: test-mypy-univ
+test-mypy-univ:
+	python ./tests --strict --line-numbers --force --mypy --follow-imports silent --ignore-missing-imports
+	python ./tests/dest/runner.py
+	python ./tests/dest/extras.py
+
 # same as test-basic but includes verbose output for better debugging
 .PHONY: test-verbose
 test-verbose:
