@@ -423,12 +423,12 @@ def tokenlist(item, sep, suppress=True):
 
 
 def itemlist(item, sep, suppress_trailing=True):
-    """Create a list of items seperated by seps."""
+    """Create a list of items separated by seps."""
     return condense(item + ZeroOrMore(addspace(sep + item)) + Optional(sep.suppress() if suppress_trailing else sep))
 
 
 def exprlist(expr, op):
-    """Create a list of exprs seperated by ops."""
+    """Create a list of exprs separated by ops."""
     return addspace(expr + ZeroOrMore(op + expr))
 
 
