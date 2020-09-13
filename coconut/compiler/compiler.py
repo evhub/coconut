@@ -421,8 +421,6 @@ class Compiler(Grammar):
                 "unsupported target Python version " + ascii(target),
                 extra="supported targets are " + ', '.join(ascii(t) for t in specific_targets) + ", or leave blank for universal",
             )
-        if no_wrap and not target.startswith("3"):
-            logger.warn("--no-wrap argument has no effect on target " + ascii(target if target else "universal"), extra="only Python 3 targets support non-comment type annotations")
         logger.log_vars("Compiler args:", locals())
         self.target = target
         self.strict = strict
@@ -431,6 +429,15 @@ class Compiler(Grammar):
         self.keep_lines = keep_lines
         self.no_tco = no_tco
         self.no_wrap = no_wrap
+        if self.no_wrap:
+            if not self.target.startswith("3"):
+                errmsg = "only Python 3 targets support non-comment type annotations"
+            elif self.target_info >= (3, 7):
+                errmsg = "annotations are never wrapped on targets with PEP 563 support"
+            else:
+                errmsg = None
+            if errmsg is not None:
+                logger.warn("--no-wrap argument has no effect on target " + ascii(target if target else "universal"), extra=errmsg)
 
     def __reduce__(self):
         """Return pickling information."""
@@ -2177,7 +2184,7 @@ if {store_var} is not _coconut_sentinel:
 
     def wrap_typedef(self, typedef):
         """Wrap a type definition in a string to defer it unless --no-wrap."""
-        if self.no_wrap:
+        if self.no_wrap or self.target_info >= (3, 7):
             return typedef
         else:
             return self.wrap_str_of(self.reformat(typedef))
