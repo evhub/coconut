@@ -624,6 +624,15 @@ def main_test():
     assert z[-1] == (None, 4)
     assert list(z[1:-1]) == r[1:-1]
     assert list(z[10:]) == []
+    hook = getattr(sys, "breakpointhook", None)
+    try:
+        def sys.breakpointhook() = 5
+        assert breakpoint() == 5
+    finally:
+        if hook is None:
+            del sys.breakpointhook
+        else:
+            sys.breakpointhook = hook
     return True
 
 def test_asyncio():
@@ -657,7 +666,10 @@ def main(test_easter_eggs=False):
         assert non_py26_test()
     if not (3,) <= sys.version_info < (3, 3):
         from .specific import non_py32_test
-        assert non_py32_test
+        assert non_py32_test()
+    if sys.version_info >= (3, 7):
+        from .specific import py37_test
+        assert py37_test()
 
     print(".", end="")  # ....
     from .suite import suite_test, tco_test

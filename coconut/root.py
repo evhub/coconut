@@ -26,11 +26,23 @@ import sys as _coconut_sys
 VERSION = "1.4.3"
 VERSION_NAME = "Ernest Scribbler"
 # False for release, int >= 1 for develop
-DEVELOP = 47
+DEVELOP = 48
+
+# -----------------------------------------------------------------------------------------------------------------------
+# UTILITIES:
+# -----------------------------------------------------------------------------------------------------------------------
+
+
+def _indent(code, by=1, tabsize=4):
+    """Indents every nonempty line of the given code."""
+    return "".join(
+        (" " * (tabsize * by) if line else "") + line for line in code.splitlines(True)
+    )
 
 # -----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
+
 
 if DEVELOP:
     VERSION += "-post_dev" + str(int(DEVELOP))
@@ -38,10 +50,39 @@ VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
 
 PY2 = _coconut_sys.version_info < (3,)
 PY26 = _coconut_sys.version_info < (2, 7)
+PY37 = _coconut_sys.version_info >= (3, 7)
 
-PY3_HEADER = r'''from builtins import chr, filter, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate
+_non_py37_extras = r'''def _coconut_default_breakpointhook(*args, **kwargs):
+    hookname = _coconut.os.getenv("PYTHONBREAKPOINT")
+    if hookname != "0":
+        if not hookname:
+            hookname = "pdb.set_trace"
+        modname, dot, funcname = hookname.rpartition(".")
+        if not dot:
+            modname = "builtins" if _coconut_sys.version_info >= (3,) else "__builtin__"
+        if _coconut_sys.version_info >= (2, 7):
+            import importlib
+            module = importlib.import_module(modname)
+        else:
+            import imp
+            module = imp.load_module(modname, *imp.find_module(modname))
+        hook = _coconut.getattr(module, funcname)
+        return hook(*args, **kwargs)
+def breakpoint(*args, **kwargs):
+    return _coconut.getattr(_coconut_sys, "breakpointhook", _coconut_default_breakpointhook)(*args, **kwargs)
+'''
+
+_base_py3_header = r'''from builtins import chr, filter, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate
 py_chr, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate, py_repr = chr, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate, repr
 _coconut_py_str = str
+'''
+
+PY37_HEADER = _base_py3_header + r'''py_breakpoint = breakpoint
+'''
+
+PY3_HEADER = _base_py3_header + r'''if _coconut_sys.version_info < (3, 7):
+''' + _indent(_non_py37_extras) + r'''else:
+    py_breakpoint = breakpoint
 '''
 
 PY27_HEADER = r'''from __builtin__ import chr, filter, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate, raw_input, xrange
@@ -170,7 +211,7 @@ def raw_input(*args):
 def xrange(*args):
     """Coconut uses Python 3 "range" instead of Python 2 "xrange"."""
     raise _coconut.NameError('Coconut uses Python 3 "range" instead of Python 2 "xrange"')
-'''
+''' + _non_py37_extras
 
 PY2_HEADER = PY27_HEADER + '''if _coconut_sys.version_info < (2, 7):
     import functools as _coconut_functools, copy_reg as _coconut_copy_reg
@@ -181,14 +222,6 @@ PY2_HEADER = PY27_HEADER + '''if _coconut_sys.version_info < (2, 7):
         return (_coconut_new_partial, (self.func, self.args, self.keywords))
     _coconut_copy_reg.pickle(_coconut_functools.partial, _coconut_reduce_partial)
 '''
-
-
-def _indent(code, by=1, tabsize=4):
-    """Indents every nonempty line of the given code."""
-    return "".join(
-        (" " * (tabsize * by) if line else "") + line for line in code.splitlines(True)
-    )
-
 
 PYCHECK_HEADER = r'''if _coconut_sys.version_info < (3,):
 ''' + _indent(PY2_HEADER) + '''else:
@@ -205,6 +238,10 @@ if PY2:
         exec(PY27_HEADER)
     import __builtin__ as _coconut  # NOQA
     import pickle
+    import os
     _coconut.pickle = pickle
+    _coconut.os = os
+elif PY37:
+    exec(PY37_HEADER)
 else:
     exec(PY3_HEADER)

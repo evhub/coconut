@@ -54,6 +54,10 @@ if sys.version_info < (3,):
         def index(self, elem: int) -> int: ...
 
 
+if sys.version_info < (3, 7):
+    def breakpoint(*args, **kwargs) -> _t.Any: ...
+
+
 py_chr = chr
 py_hex = hex
 py_input = input

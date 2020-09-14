@@ -204,7 +204,27 @@ By default, if the `source` argument to the command-line utility is a file, it w
 
 While Coconut syntax is based off of Python 3, Coconut code compiled in universal mode (the default `--target`), and the Coconut compiler, should run on any Python version `>= 2.6` on the `2.x` branch or `>= 3.2` on the `3.x` branch on either [CPython](https://www.python.org/) or [PyPy](http://pypy.org/).
 
-To make Coconut built-ins universal across Python versions, **Coconut automatically overwrites Python 2 built-ins with their Python 3 counterparts**. Additionally, Coconut also overwrites some Python 3 built-ins for optimization and enhancement purposes. If access to the original Python versions of any overwritten built-ins is desired, the old built-ins can be retrieved by prefixing them with `py_`.
+To make Coconut built-ins universal across Python versions, Coconut makes available on any Python version built-ins that only exist in later versions, including **automatically overwriting Python 2 built-ins with their Python 3 counterparts.** Additionally, Coconut also overwrites some Python 3 built-ins for optimization and enhancement purposes. If access to the original Python versions of any overwritten built-ins is desired, the old built-ins can be retrieved by prefixing them with `py_`. Specifically, the overwritten built-ins are:
+
+- `py_chr`,
+- `py_hex`,
+- `py_input`,
+- `py_int`,
+- `py_map`,
+- `py_object`,
+- `py_oct`,
+- `py_open`,
+- `py_print`,
+- `py_range`,
+- `py_str`,
+- `py_zip`,
+- `py_filter`,
+- `py_reversed`,
+- `py_enumerate`,
+- `py_raw_input`,
+- `py_xrange`,
+- `py_repr`, and
+- `py_breakpoint`.
 
 _Note: Coconut's `repr` can be somewhat tricky, as it will attempt to remove the `u` before reprs of unicode strings, but will not always be able to do so if the unicode string is nested._
 
@@ -2517,9 +2537,9 @@ A `MatchError` is raised when a [destructuring assignment](#destructuring-assign
 
 ### `coconut.embed`
 
-**coconut.embed**(_kernel_=`None`, \*\*_kwargs_)
+**coconut.embed**(_kernel_=`None`, _depth_=`0`, \*\*_kwargs_)
 
-If _kernel_=`False` (default), embeds a Coconut Jupyter console initialized from the current local namespace. If _kernel_=`True`, launches a Coconut Jupyter kernel initialized from the local namespace that can then be attached to. _kwargs_ are as in [IPython.embed](https://ipython.readthedocs.io/en/stable/api/generated/IPython.terminal.embed.html#IPython.terminal.embed.embed) or [IPython.embed_kernel](https://ipython.readthedocs.io/en/stable/api/generated/IPython.html#IPython.embed_kernel) based on _kernel_.
+If _kernel_=`False` (default), embeds a Coconut Jupyter console initialized from the current local namespace. If _kernel_=`True`, launches a Coconut Jupyter kernel initialized from the local namespace that can then be attached to. The _depth_ indicates how many additional call frames to ignore. _kwargs_ are as in [IPython.embed](https://ipython.readthedocs.io/en/stable/api/generated/IPython.terminal.embed.html#IPython.terminal.embed.embed) or [IPython.embed_kernel](https://ipython.readthedocs.io/en/stable/api/generated/IPython.html#IPython.embed_kernel) based on _kernel_.
 
 Recommended usage is as a debugging tool, where the code `from coconut import embed; embed()` can be inserted to launch an interactive Coconut shell initialized from that point.
 

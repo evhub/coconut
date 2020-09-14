@@ -102,7 +102,7 @@ PY33 = sys.version_info >= (3, 3)
 PY34 = sys.version_info >= (3, 4)
 PY35 = sys.version_info >= (3, 5)
 PY36 = sys.version_info >= (3, 6)
-JUST_PY36 = PY36 and sys.version_info < (3, 7)
+JUST_PY36 = PY36 and not PY37
 IPY = ((PY2 and not PY26) or PY35) and not (PYPY and WINDOWS)
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -365,6 +365,8 @@ search_terms = (
     "backport",
     "typing",
     "zip_longest",
+    "breakpoint",
+    "embed",
 )
 
 script_names = (
@@ -692,6 +694,7 @@ coconut_specific_builtins = (
     "py_raw_input",
     "py_xrange",
     "py_repr",
+    "py_breakpoint",
 )
 
 new_operators = (

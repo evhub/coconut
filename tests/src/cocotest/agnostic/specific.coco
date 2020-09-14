@@ -24,3 +24,9 @@ def non_py32_test():
     fakefile = StringIO()
     print("herpaderp", file=fakefile, flush=True)
     assert fakefile.getvalue() == "herpaderp\n"
+    return True
+
+def py37_test():
+    """Tests for any py37+ version."""
+    assert py_breakpoint
+    return True

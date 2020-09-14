@@ -339,7 +339,9 @@ from coconut.__coconut__ import {underscore_imports}
 
     header += "import sys as _coconut_sys\n"
 
-    if target_startswith == "3":
+    if target_info >= (3, 7):
+        header += PY37_HEADER
+    elif target_startswith == "3":
         header += PY3_HEADER
     elif target_info >= (2, 7):
         header += PY27_HEADER
