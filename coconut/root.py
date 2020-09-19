@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "1.4.3"
 VERSION_NAME = "Ernest Scribbler"
 # False for release, int >= 1 for develop
-DEVELOP = 49
+DEVELOP = 50
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -181,15 +181,15 @@ def print(*args, **kwargs):
     flush = kwargs.get("flush", False)
     if "flush" in kwargs:
         del kwargs["flush"]
-    if _coconut.hasattr(file, "encoding") and file.encoding is not None:
+    if _coconut.getattr(file, "encoding", None) is not None:
         _coconut_py_print(*(_coconut_py_unicode(x).encode(file.encoding) for x in args), **kwargs)
     else:
-        _coconut_py_print(*(_coconut_py_unicode(x).encode() for x in args), **kwargs)
+        _coconut_py_print(*args, **kwargs)
     if flush:
         file.flush()
 @_coconut_wraps(_coconut_py_raw_input)
 def input(*args, **kwargs):
-    if _coconut.hasattr(_coconut_sys.stdout, "encoding") and _coconut_sys.stdout.encoding is not None:
+    if _coconut.getattr(_coconut_sys.stdout, "encoding", None) is not None:
         return _coconut_py_raw_input(*args, **kwargs).decode(_coconut_sys.stdout.encoding)
     return _coconut_py_raw_input(*args, **kwargs).decode()
 @_coconut_wraps(_coconut_py_repr)

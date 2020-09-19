@@ -105,7 +105,7 @@ PY36 = sys.version_info >= (3, 6)
 JUST_PY36 = PY36 and not PY37
 IPY = ((PY2 and not PY26) or PY35) and not (PYPY and WINDOWS)
 
-if WINDOWS:
+if WINDOWS and not hasattr(os, "add_dll_directory"):
     def append_to_path(path):
         """Appends the given directory to the PATH.
 
@@ -219,7 +219,7 @@ min_versions = {
     "watchdog": (0, 10),
     ("trollius", "py2"): (2, 2),
     "requests": (2, 24),
-    ("numpy", "py34"): (1, 17),
+    ("numpy", "py34"): (1,),
     ("numpy", "py2;cpy"): (1,),
     ("ipykernel", "py3"): (5, 3),
     ("jupyter-console", "py3"): (6, 1),
