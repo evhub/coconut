@@ -445,8 +445,9 @@ class Runner(object):
 
     def __init__(self, comp=None, exit=sys.exit, store=False, path=None):
         """Create the executor."""
-        from coconut.convenience import auto_compilation
+        from coconut.convenience import auto_compilation, use_coconut_breakpoint
         auto_compilation(on=True)
+        use_coconut_breakpoint(on=False)
         self.exit = exit
         self.vars = self.build_vars(path)
         self.stored = [] if store else None

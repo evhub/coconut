@@ -22,6 +22,7 @@ from coconut.root import *  # NOQA
 import sys
 import os.path
 
+from coconut import embed
 from coconut.exceptions import CoconutException
 from coconut.command import Command
 from coconut.constants import (
@@ -108,8 +109,29 @@ def coconut_eval(expression, globals=None, locals=None):
 
 
 # -----------------------------------------------------------------------------------------------------------------------
-# IMPORTER:
+# ENABLERS:
 # -----------------------------------------------------------------------------------------------------------------------
+
+
+def _coconut_breakpoint():
+    """Determine coconut.embed depth based on whether we're being
+    called by Coconut's breakpoint() or Python's breakpoint()."""
+    if sys.version_info >= (3, 7):
+        return embed(depth=1)
+    else:
+        return embed(depth=2)
+
+
+def use_coconut_breakpoint(on=True):
+    """Switches the breakpoint() built-in (universally accessible via
+    coconut.__coconut__.breakpoint) to use coconut.embed."""
+    if on:
+        sys.breakpointhook = _coconut_breakpoint
+    else:
+        sys.breakpointhook = sys.__breakpointhook__
+
+
+use_coconut_breakpoint()
 
 
 class CoconutImporter(object):

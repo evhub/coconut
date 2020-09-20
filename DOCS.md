@@ -2649,6 +2649,12 @@ Retrieves a string containing information about the Coconut version. The optiona
 
 Turns [automatic compilation](#automatic-compilation) on or off. This function is called automatically when `coconut.convenience` is imported.
 
+#### `use_coconut_breakpoint`
+
+**coconut.convenience.use_coconut_breakpoint**(_on_=`True`)
+
+Switches the [`breakpoint` built-in](https://www.python.org/dev/peps/pep-0553/) which Coconut makes universally available to use [`coconut.embed`](#coconut-embed) instead of [`pdb.set_trace`](https://docs.python.org/3/library/pdb.html#pdb.set_trace) (or undoes that switch if `on=False`). This function is called automatically when `coconut.convenience` is imported.
+
 #### `CoconutException`
 
 If an error is encountered in a convenience function, a `CoconutException` instance may be raised. `coconut.convenience.CoconutException` is provided to allow catching such errors.

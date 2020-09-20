@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "1.4.3"
 VERSION_NAME = "Ernest Scribbler"
 # False for release, int >= 1 for develop
-DEVELOP = 50
+DEVELOP = 51
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -68,6 +68,8 @@ _non_py37_extras = r'''def _coconut_default_breakpointhook(*args, **kwargs):
             module = imp.load_module(modname, *imp.find_module(modname))
         hook = _coconut.getattr(module, funcname)
         return hook(*args, **kwargs)
+if not hasattr(_coconut_sys, "__breakpointhook__"):
+    _coconut_sys.__breakpointhook__ = _coconut_default_breakpointhook
 def breakpoint(*args, **kwargs):
     return _coconut.getattr(_coconut_sys, "breakpointhook", _coconut_default_breakpointhook)(*args, **kwargs)
 '''
@@ -232,15 +234,20 @@ PYCHECK_HEADER = r'''if _coconut_sys.version_info < (3,):
 # -----------------------------------------------------------------------------------------------------------------------
 
 if PY2:
-    if PY26:
-        exec(PY2_HEADER)
-    else:
-        exec(PY27_HEADER)
     import __builtin__ as _coconut  # NOQA
-    import pickle
-    import os
-    _coconut.pickle = pickle
-    _coconut.os = os
+else:
+    import builtins as _coconut  # NOQA
+
+import pickle
+_coconut.pickle = pickle
+
+import os
+_coconut.os = os
+
+if PY26:
+    exec(PY2_HEADER)
+elif PY2:
+    exec(PY27_HEADER)
 elif PY37:
     exec(PY37_HEADER)
 else:
