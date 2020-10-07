@@ -63,6 +63,7 @@ def install_custom_kernel(executable=None):
     if not os.path.exists(kernel_dest):
         os.makedirs(kernel_dest)
     shutil.copy(kernel_source, kernel_dest)
+    return kernel_dest
 
 
 def make_custom_kernel(executable=None):

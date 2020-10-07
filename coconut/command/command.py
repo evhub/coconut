@@ -649,7 +649,7 @@ class Command(object):
 
     def install_jupyter_kernel(self, jupyter, kernel_dir):
         """Install the given kernel via the command line and return whether successful."""
-        install_args = [jupyter, "kernelspec", "install", kernel_dir, "--replace"]
+        install_args = jupyter + ["kernelspec", "install", kernel_dir, "--replace"]
         try:
             self.run_silent_cmd(install_args)
         except CalledProcessError:
@@ -664,7 +664,7 @@ class Command(object):
 
     def remove_jupyter_kernel(self, jupyter, kernel_name):
         """Remove the given kernel via the command line and return whether successful."""
-        remove_args = [jupyter, "kernelspec", "remove", kernel_name, "-f"]
+        remove_args = jupyter + ["kernelspec", "remove", kernel_name, "-f"]
         try:
             self.run_silent_cmd(remove_args)
         except CalledProcessError:
@@ -691,7 +691,7 @@ class Command(object):
 
     def get_jupyter_kernels(self, jupyter):
         """Get the currently installed Jupyter kernels."""
-        raw_kernel_list = run_cmd([jupyter, "kernelspec", "list"], show_output=False, raise_errs=False)
+        raw_kernel_list = run_cmd(jupyter + ["kernelspec", "list"], show_output=False, raise_errs=False)
 
         kernel_list = []
         for line in raw_kernel_list.splitlines():
@@ -700,16 +700,22 @@ class Command(object):
 
     def start_jupyter(self, args):
         """Start Jupyter with the Coconut kernel."""
-        # always update the custom kernel
-        install_custom_kernel()
-
         # get the correct jupyter command
-        try:
-            self.run_silent_cmd(["jupyter", "--version"])
-        except CalledProcessError:
-            jupyter = "ipython"
-        else:
-            jupyter = "jupyter"
+        for jupyter in (
+            [sys.executable, "-m", "jupyter"],
+            [sys.executable, "-m", "ipython"],
+            ["jupyter"],
+        ):
+            try:
+                self.run_silent_cmd([sys.executable, "-m", "jupyter", "--version"])
+            except CalledProcessError:
+                logger.warn("failed to find Jupyter command at " + str(jupyter))
+            else:
+                break
+
+        # always force update the custom kernel
+        custom_kernel_dir = install_custom_kernel()
+        self.install_jupyter_kernel(jupyter, custom_kernel_dir)
 
         # get a list of installed kernels
         kernel_list = self.get_jupyter_kernels(jupyter)
@@ -734,12 +740,13 @@ class Command(object):
                     kernel = "coconut_py" + ver
                 if kernel not in kernel_list:
                     self.install_default_jupyter_kernels(jupyter, kernel_list)
+                logger.warn("could not find 'coconut' kernel; using " + repr(kernel) + " kernel instead")
 
             # pass the kernel to the console or otherwise just launch Jupyter now that we know our kernel is available
             if args[0] == "console":
-                run_args = [jupyter, "console", "--kernel", kernel] + args[1:]
+                run_args = jupyter + ["console", "--kernel", kernel] + args[1:]
             else:
-                run_args = [jupyter] + args
+                run_args = jupyter + args
 
             self.register_error(run_cmd(run_args, raise_errs=False), errmsg="Jupyter error")
 
