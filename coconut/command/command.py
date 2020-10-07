@@ -713,12 +713,13 @@ class Command(object):
             else:
                 break
 
-        # always force update the custom kernel
-        custom_kernel_dir = install_custom_kernel()
-        self.install_jupyter_kernel(jupyter, custom_kernel_dir)
-
         # get a list of installed kernels
         kernel_list = self.get_jupyter_kernels(jupyter)
+
+        # always update the custom kernel, but only reinstall it if it isn't already there
+        custom_kernel_dir = install_custom_kernel()
+        if icoconut_custom_kernel_name not in kernel_list:
+            self.install_jupyter_kernel(jupyter, custom_kernel_dir)
 
         if not args:
             # install default kernels if given no args
