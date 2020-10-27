@@ -184,15 +184,15 @@ def init_user_ns(self):
     RUNNER.update_vars(self.user_ns)
     RUNNER.update_vars(self.user_ns_hidden)
 
-def run_cell(self, raw_cell, store_history=False, silent=False, shell_futures=True):
+def run_cell(self, raw_cell, store_history=False, silent=False, shell_futures=True, **kwargs):
     """Version of run_cell that always uses shell_futures."""
-    return super({cls}, self).run_cell(raw_cell, store_history, silent, shell_futures=True)
+    return super({cls}, self).run_cell(raw_cell, store_history, silent, shell_futures=True, **kwargs)
 
 if asyncio is not None:
     @asyncio.coroutine
-    def run_cell_async(self, raw_cell, store_history=False, silent=False, shell_futures=True):
+    def run_cell_async(self, raw_cell, store_history=False, silent=False, shell_futures=True, **kwargs):
         """Version of run_cell_async that always uses shell_futures."""
-        return super({cls}, self).run_cell_async(raw_cell, store_history, silent, shell_futures=True)
+        return super({cls}, self).run_cell_async(raw_cell, store_history, silent, shell_futures=True, **kwargs)
 
 def user_expressions(self, expressions):
     """Version of user_expressions that compiles Coconut code first."""
