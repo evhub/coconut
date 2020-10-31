@@ -2311,6 +2311,7 @@ if {store_var} is not _coconut_sentinel:
                     in_expr = False
                     string_parts.append(c)
                 else:
+                    expr_level += paren_change(c)
                     exprs[-1] += c
             elif c == "{":
                 saw_brace = True
