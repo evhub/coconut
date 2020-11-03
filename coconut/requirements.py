@@ -40,7 +40,7 @@ from coconut.constants import (
 
 try:
     import setuptools  # this import is expensive, so we keep it out of constants
-    setuptools_version = tuple(int(x) for x in setuptools.__version__.split("."))
+    setuptools_version = tuple(int(x) for x in setuptools.__version__.split(".")[:2])
     using_modern_setuptools = setuptools_version >= (18,)
     supports_env_markers = setuptools_version >= (36, 2)
 except Exception:
