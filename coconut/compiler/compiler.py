@@ -1341,7 +1341,7 @@ while True:
         """Store comment in comments."""
         internal_assert(len(tokens) == 1, "invalid comment tokens", tokens)
         ln = self.adjust(lineno(loc, original))
-        internal_assert(lambda: ln not in self.comments, "multiple comments on line", ln)
+        internal_assert(lambda: ln not in self.comments or self.comments[ln] == tokens[0], "multiple comments on line", ln, lambda: repr(self.comments[ln]) + " and " + repr(tokens[0]))
         self.comments[ln] = tokens[0]
         return ""
 

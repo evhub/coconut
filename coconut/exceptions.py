@@ -69,6 +69,8 @@ def internal_assert(condition, message=None, item=None, extra=None):
             message = "assertion failed"
             if item is None:
                 item = condition
+        if callable(extra):
+            extra = extra()
         raise CoconutInternalException(message, item, extra)
 
 
