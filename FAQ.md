@@ -23,7 +23,7 @@ There a couple of caveats to this, however: Coconut can't magically make all you
 
 ### How do I release a Coconut package on PyPI?
 
-Since Coconut just compiles to Python, releasing a Coconut package on PyPI is exactly the same as releasing a Python package, with an extra compilation step. Just write your package in Coconut, run `coconut` on the source code, and upload the compiled code to PyPI. You can even mix Python and Coconut code, since the compiler will only touch `.coco` files. If you want to see an example of a PyPI package written in Coconut, including a [Makefile](https://github.com/evhub/pyprover/blob/master/Makefile) with the exact compiler commands being used, check out [pyprover](https://github.com/evhub/pyprover).
+Since Coconut just compiles to Python, releasing a Coconut package on PyPI is exactly the same as releasing a Python package, with an extra compilation step. Just write your package in Coconut, run `coconut` on the source code, and upload the compiled code to PyPI. You can even mix Python and Coconut code, since the compiler will only touch `.coco` files. If you want to see an example of a PyPI package written in Coconut, including a [Makefile with the exact compiler commands being used](https://github.com/evhub/bbopt/blob/master/Makefile), check out [bbopt](https://github.com/evhub/bbopt).
 
 ### I saw that Coconut was recently updated. Where is the change log?
 
