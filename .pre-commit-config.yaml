@@ -1,6 +1,6 @@
 repos:
 -   repo: git://github.com/pre-commit/pre-commit-hooks.git
-    rev: v3.2.0
+    rev: v3.3.0
     hooks:
     -   id: check-byte-order-marker
     -   id: check-merge-conflict
@@ -16,13 +16,13 @@ repos:
         args:
         - --autofix
 -   repo: https://gitlab.com/pycqa/flake8
-    rev: 3.8.3
+    rev: 3.8.4
     hooks:
     -   id: flake8
         args:
         - --ignore=W503,E501,E265,E402,F405,E305,E126
 -   repo: https://github.com/pre-commit/mirrors-autopep8
-    rev: v1.5.3
+    rev: v1.5.4
     hooks:
     -   id: autopep8
         args:
