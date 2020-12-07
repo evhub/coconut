@@ -127,6 +127,8 @@ PURE_PYTHON = os.environ.get(pure_python_env_var, "").lower() in ["true", "1"]
 #  for different categories, and tuples denote the use of environment
 #  markers as specified in requirements.py
 all_reqs = {
+    "main": (
+    ),
     "cpython": (
         "cPyparsing",
     ),
@@ -212,11 +214,11 @@ min_versions = {
     ("numpy", "py34"): (1,),
     ("numpy", "py2;cpy"): (1,),
     ("ipykernel", "py3"): (5, 3),
-    ("jupyter-console", "py3"): (6, 2),
     ("jupyterlab", "py35"): (2,),
     "jupytext": (1, 7),
-    # don't upgrade this; it breaks on Python 3.5
+    # don't upgrade these; they break on Python 3.5
     ("ipython", "py3"): (7, 9),
+    ("jupyter-console", "py3"): (6, 1),
     # don't upgrade this to allow all versions
     "prompt_toolkit:3": (1,),
     # don't upgrade this; it breaks on Python 2.6
@@ -237,6 +239,7 @@ min_versions = {
 # should match the reqs with comments above
 pinned_reqs = (
     ("ipython", "py3"),
+    "jupyter-console",
     "prompt_toolkit:3",
     "pytest",
     "vprof",

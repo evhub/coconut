@@ -96,7 +96,7 @@ class _coconut:
     if sys.version_info < (3, 3):
         abc = collections
     else:
-        abc = collections.abc
+        from collections import abc
     typing = _t  # The real _coconut doesn't import typing, but we want type-checkers to treat it as if it does
     if sys.version_info >= (3,):
         zip_longest = itertools.zip_longest

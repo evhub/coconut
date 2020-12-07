@@ -139,7 +139,7 @@ def everything_in(req_dict):
 # SETUP:
 # -----------------------------------------------------------------------------------------------------------------------
 
-requirements = []
+requirements = get_reqs("main")
 
 extras = {
     "jupyter": get_reqs("jupyter"),

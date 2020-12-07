@@ -1,4 +1,10 @@
 .PHONY: install
+.PHONY: dev
+dev:
+	python3 -m pip install --upgrade setuptools pip pytest_remotedata
+	python3 -m pip install --upgrade -e .[dev]
+	pre-commit install -f --install-hooks
+
 install:
 	pip install --upgrade setuptools pip
 	pip install .[tests]
@@ -22,12 +28,6 @@ install-pypy:
 install-pypy3:
 	pypy3 -m pip install --upgrade setuptools pip
 	pypy3 -m pip install .[tests]
-
-.PHONY: dev
-dev:
-	python3 -m pip install --upgrade setuptools pip pytest_remotedata
-	python3 -m pip install --upgrade -e .[dev]
-	pre-commit install -f --install-hooks
 
 .PHONY: format
 format: dev
