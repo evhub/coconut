@@ -629,7 +629,7 @@ class Compiler(Grammar):
         """Reformat and evaluate a code snippet and return code for the result."""
         result = eval(self.reformat(code))
         if result is None or isinstance(result, (bool, int, float, complex)):
-            return repr(result)
+            return ascii(result)
         elif isinstance(result, bytes):
             return "b" + self.wrap_str_of(result)
         elif isinstance(result, str):
@@ -654,7 +654,7 @@ class Compiler(Grammar):
             logger.warn_err(self.make_err(CoconutSyntaxWarning, *args, **kwargs))
 
     def add_ref(self, reftype, data):
-        """Add a reference and returns the identifier."""
+        """Add a reference and return the identifier."""
         ref = (reftype, data)
         try:
             index = self.refs.index(ref)
@@ -1947,7 +1947,7 @@ if not {check_var}:
             # don't transform generator returns if they're supported
             is_gen and self.target_info >= (3, 3)
             # don't transform async returns if they're supported
-            or is_async and self.target_info >= (3, 5)
+            or is_async and self.target_info >= (3, 4)
         ):
             func_code = "".join(raw_lines)
             return func_code, tco, tre
@@ -2484,7 +2484,7 @@ if {store_var} is not _coconut_sentinel:
         return self.parse(inputstring, self.file_parser, {}, {"header": "none", "initial": "none"})
 
     def parse_sys(self, inputstring):
-        """Parse module code."""
+        """Parse code to use the Coconut module."""
         return self.parse(inputstring, self.file_parser, {}, {"header": "sys", "initial": "none"})
 
     def parse_eval(self, inputstring):
