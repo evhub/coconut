@@ -1990,6 +1990,7 @@ if not {check_var}:
                     to_return = base[len("return"):].strip()
                     if to_return:
                         to_return = "(" + to_return + ")"
+                    # only use trollius Return when trollius is imported
                     if is_async and self.target_info < (3, 4):
                         ret_err = "_coconut.asyncio.Return"
                     else:

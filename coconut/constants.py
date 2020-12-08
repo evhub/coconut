@@ -581,7 +581,7 @@ py3_to_py2_stdlib = {
     "itertools.filterfalse": ("itertools./ifilterfalse", (3,)),
     "itertools.zip_longest": ("itertools./izip_longest", (3,)),
     # third-party backports
-    "asyncio": ("trollius", (3,)),
+    "asyncio": ("trollius", (3, 4)),
 }
 
 # -----------------------------------------------------------------------------------------------------------------------
