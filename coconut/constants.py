@@ -225,8 +225,9 @@ min_versions = {
     "pytest": (3,),
     # don't upgrade this; it breaks on unix
     "vprof": (0, 36),
-    # don't upgrade these; they break on Python 2
+    # don't upgrade this; it breaks on Python 3.4
     "pygments": (2, 3),
+    # don't upgrade these; they break on Python 2
     ("jupyter-console", "py2"): (5, 2),
     ("ipython", "py2"): (5, 4),
     ("ipykernel", "py2"): (4, 10),
@@ -239,7 +240,7 @@ min_versions = {
 # should match the reqs with comments above
 pinned_reqs = (
     ("ipython", "py3"),
-    "jupyter-console",
+    ("jupyter-console", "py3"),
     "prompt_toolkit:3",
     "pytest",
     "vprof",
