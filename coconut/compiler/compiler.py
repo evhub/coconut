@@ -259,24 +259,34 @@ def special_starred_import_handle(imp_all=False):
     out = handle_indentation(
         """
 import imp as _coconut_imp
+_coconut_norm_file = _coconut.os.path.normpath(_coconut.os.path.realpath(_coconut.os.path.abspath(__file__)))
+_coconut_norm_dir = _coconut.os.path.normpath(_coconut.os.path.realpath(_coconut.os.path.abspath(_coconut.os.path.dirname(__file__))))
+_coconut_seen_imports = set()
 for _coconut_base_path in _coconut_sys.path:
     for _coconut_dirpath, _coconut_dirnames, _coconut_filenames in _coconut.os.walk(_coconut_base_path):
         _coconut_paths_to_imp = []
         for _coconut_fname in _coconut_filenames:
             if _coconut.os.path.splitext(_coconut_fname)[-1] == "py":
-                _coconut_fpath = _coconut.os.path.join(_coconut_dirpath, _coconut_fname)
-                _coconut_paths_to_imp.append(_coconut_fpath)
+                _coconut_fpath = _coconut.os.path.normpath(_coconut.os.path.realpath(_coconut.os.path.abspath(_coconut.os.path.join(_coconut_dirpath, _coconut_fname))))
+                if _coconut_fpath != _coconut_norm_file:
+                    _coconut_paths_to_imp.append(_coconut_fpath)
         for _coconut_dname in _coconut_dirnames:
-            _coconut_dpath = _coconut.os.path.join(_coconut_dirpath, _coconut_dname)
-            if "__init__.py" in _coconut.os.listdir(_coconut_dpath):
+            _coconut_dpath = _coconut.os.path.normpath(_coconut.os.path.realpath(_coconut.os.path.abspath(_coconut.os.path.join(_coconut_dirpath, _coconut_dname))))
+            if "__init__.py" in _coconut.os.listdir(_coconut_dpath) and _coconut_dpath != _coconut_norm_dir:
                 _coconut_paths_to_imp.append(_coconut_dpath)
         for _coconut_imp_path in _coconut_paths_to_imp:
             _coconut_imp_name = _coconut.os.path.splitext(_coconut.os.path.basename(_coconut_imp_path))[0]
-            descr = _coconut_imp.find_module(_coconut_imp_name, [_coconut.os.path.dirname(_coconut_imp_path)])
+            if _coconut_imp_name in _coconut_seen_imports:
+                continue
+            _coconut_seen_imports.add(_coconut_imp_name)
+            _coconut.print("Importing {}...".format(_coconut_imp_name))
             try:
+                descr = _coconut_imp.find_module(_coconut_imp_name, [_coconut.os.path.dirname(_coconut_imp_path)])
                 _coconut_imp.load_module(_coconut_imp_name, *descr)
             except:
-                pass
+                _coconut.print("Failed to import {}.".format(_coconut_imp_name))
+            else:
+                _coconut.print("Imported {}.".format(_coconut_imp_name))
         _coconut_dirnames[:] = []
         """.strip()
     )

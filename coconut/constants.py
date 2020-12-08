@@ -226,7 +226,7 @@ min_versions = {
     # don't upgrade this; it breaks on unix
     "vprof": (0, 36),
     # don't upgrade these; they break on Python 2
-    "pygments": (2, 5),
+    "pygments": (2, 3),
     ("jupyter-console", "py2"): (5, 2),
     ("ipython", "py2"): (5, 4),
     ("ipykernel", "py2"): (4, 10),

@@ -5,7 +5,7 @@ class _coconut{object}:{comment.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
 {import_collections_abc}
 {import_typing_NamedTuple}
 {set_zip_longest}
-    Ellipsis, NotImplemented, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, slice, str, sum, tuple, type, zip, repr{comma_bytearray} = Ellipsis, NotImplemented, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, slice, str, sum, tuple, type, zip, {static_repr}{comma_bytearray}
+    Ellipsis, NotImplemented, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, print, property, range, reversed, set, slice, str, sum, tuple, type, zip, repr{comma_bytearray} = Ellipsis, NotImplemented, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, print, property, range, reversed, set, slice, str, sum, tuple, type, zip, {static_repr}{comma_bytearray}
 _coconut_sentinel = _coconut.object()
 class MatchError(Exception):
     """Pattern-matching error. Has attributes .pattern, .value, and .message."""
@@ -245,7 +245,7 @@ class _coconut_parallel_concurrent_map_func_wrapper{object}:
         try:
             return self.func(*args, **kwargs)
         except:
-            print(self.map_cls.__name__ + " error:")
+            _coconut.print(self.map_cls.__name__ + " error:")
             _coconut.traceback.print_exc()
             raise
         finally:

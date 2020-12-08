@@ -135,6 +135,7 @@ class _coconut:
     max = max
     next = next
     object = _t.Union[object]
+    print = print
     property = property
     range = range
     reversed = reversed
