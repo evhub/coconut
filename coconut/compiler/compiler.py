@@ -1947,7 +1947,7 @@ if not {check_var}:
             # don't transform generator returns if they're supported
             is_gen and self.target_info >= (3, 3)
             # don't transform async returns if they're supported
-            or is_async and self.target_info >= (3, 4)
+            or is_async and self.target_info >= (3, 5)
         ):
             func_code = "".join(raw_lines)
             return func_code, tco, tre
@@ -1990,7 +1990,7 @@ if not {check_var}:
                     to_return = base[len("return"):].strip()
                     if to_return:
                         to_return = "(" + to_return + ")"
-                    if is_async:
+                    if is_async and self.target_info < (3, 4):
                         ret_err = "_coconut.asyncio.Return"
                     else:
                         ret_err = "_coconut.StopIteration"
