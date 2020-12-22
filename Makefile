@@ -42,17 +42,17 @@ test-all:
 # for quickly testing nearly everything locally, just use test-basic
 .PHONY: test-basic
 test-basic:
-	python ./tests --strict --line-numbers --force
-	python ./tests/dest/runner.py
-	python ./tests/dest/extras.py
+	python3 ./tests --strict --line-numbers --force
+	python3 ./tests/dest/runner.py
+	python3 ./tests/dest/extras.py
 
 # same as test-basic, but doesn't recompile unchanged test files;
 # should only be used when testing the tests not the compiler
 .PHONY: test-tests
 test-tests:
-	python ./tests --strict --line-numbers
-	python ./tests/dest/runner.py
-	python ./tests/dest/extras.py
+	python3 ./tests --strict --line-numbers
+	python3 ./tests/dest/runner.py
+	python3 ./tests/dest/extras.py
 
 # same as test-basic but uses Python 2
 .PHONY: test-py2
@@ -61,12 +61,12 @@ test-py2:
 	python2 ./tests/dest/runner.py
 	python2 ./tests/dest/extras.py
 
-# same as test-basic but uses Python 3
-.PHONY: test-py3
-test-py3:
-	python3 ./tests --strict --line-numbers --force
-	python3 ./tests/dest/runner.py
-	python3 ./tests/dest/extras.py
+# same as test-basic but uses default Python
+.PHONY: test-pyd
+test-pyd:
+	python ./tests --strict --line-numbers --force
+	python ./tests/dest/runner.py
+	python ./tests/dest/extras.py
 
 # same as test-basic but uses PyPy
 .PHONY: test-pypy
@@ -85,30 +85,30 @@ test-pypy3:
 # same as test-basic but also runs mypy
 .PHONY: test-mypy
 test-mypy:
-	python ./tests --strict --line-numbers --force --target sys --mypy --follow-imports silent --ignore-missing-imports
-	python ./tests/dest/runner.py
-	python ./tests/dest/extras.py
+	python3 ./tests --strict --line-numbers --force --target sys --mypy --follow-imports silent --ignore-missing-imports
+	python3 ./tests/dest/runner.py
+	python3 ./tests/dest/extras.py
 
 # same as test-mypy but uses the universal target
 .PHONY: test-mypy-univ
 test-mypy-univ:
-	python ./tests --strict --line-numbers --force --mypy --follow-imports silent --ignore-missing-imports
-	python ./tests/dest/runner.py
-	python ./tests/dest/extras.py
+	python3 ./tests --strict --line-numbers --force --mypy --follow-imports silent --ignore-missing-imports
+	python3 ./tests/dest/runner.py
+	python3 ./tests/dest/extras.py
 
 # same as test-basic but includes verbose output for better debugging
 .PHONY: test-verbose
 test-verbose:
-	python ./tests --strict --line-numbers --force --verbose --jobs 0
-	python ./tests/dest/runner.py
-	python ./tests/dest/extras.py
+	python3 ./tests --strict --line-numbers --force --verbose --jobs 0
+	python3 ./tests/dest/runner.py
+	python3 ./tests/dest/extras.py
 
 # same as test-basic but also tests easter eggs
 .PHONY: test-easter-eggs
 test-easter-eggs:
-	python ./tests --strict --line-numbers --force
-	python ./tests/dest/runner.py --test-easter-eggs
-	python ./tests/dest/extras.py
+	python3 ./tests --strict --line-numbers --force
+	python3 ./tests/dest/runner.py --test-easter-eggs
+	python3 ./tests/dest/extras.py
 
 # same as test-basic but uses python pyparsing
 .PHONY: test-pyparsing
@@ -118,10 +118,10 @@ test-pyparsing: test-basic
 # same as test-basic but watches tests before running them
 .PHONY: test-watch
 test-watch:
-	python ./tests --strict --line-numbers --force
+	python3 ./tests --strict --line-numbers --force
 	coconut ./tests/src/cocotest/agnostic ./tests/dest/cocotest --watch --strict --line-numbers
-	python ./tests/dest/runner.py
-	python ./tests/dest/extras.py
+	python3 ./tests/dest/runner.py
+	python3 ./tests/dest/extras.py
 
 .PHONY: diff
 diff:
@@ -150,7 +150,7 @@ wipe: clean
 
 .PHONY: just-upload
 just-upload:
-	python setup.py sdist bdist_wheel
+	python3 setup.py sdist bdist_wheel
 	pip install --upgrade --ignore-installed twine
 	twine upload dist/*
 
@@ -159,7 +159,7 @@ upload: clean dev just-upload
 
 .PHONY: check-reqs
 check-reqs:
-	python ./coconut/requirements.py
+	python3 ./coconut/requirements.py
 
 .PHONY: profile-code
 profile-code:

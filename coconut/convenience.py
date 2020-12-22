@@ -25,9 +25,9 @@ import os.path
 from coconut import embed
 from coconut.exceptions import CoconutException
 from coconut.command import Command
+from coconut.command.cli import cli_version
 from coconut.constants import (
     version_tag,
-    version_long,
     code_exts,
     coconut_import_hook_args,
 )
@@ -51,7 +51,7 @@ VERSIONS = {
     "name": VERSION_NAME,
     "spec": VERSION_STR,
     "tag": version_tag,
-    "-v": version_long,
+    "-v": cli_version,
 }
 
 

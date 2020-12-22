@@ -83,7 +83,6 @@ def checksum(data):
 # VERSION CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
 
-version_long = "Version " + VERSION_STR + " running on Python " + sys.version.split()[0]
 version_banner = "Coconut " + VERSION_STR
 
 if DEVELOP:

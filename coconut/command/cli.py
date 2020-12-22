@@ -19,11 +19,12 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
+import sys
 import argparse
 
+from coconut._pyparsing import PYPARSING_INFO
 from coconut.constants import (
     documentation_url,
-    version_long,
     default_recursion_limit,
     style_env_var,
     default_style,
@@ -31,6 +32,14 @@ from coconut.constants import (
     default_histfile,
     home_env_var,
 )
+
+# -----------------------------------------------------------------------------------------------------------------------
+# VERSION:
+# -----------------------------------------------------------------------------------------------------------------------
+
+cli_version = "Version " + VERSION_STR + " running on Python " + sys.version.split()[0] + " and " + PYPARSING_INFO
+
+cli_version_str = main_sig + cli_version
 
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN:
@@ -61,7 +70,7 @@ arguments.add_argument(
 arguments.add_argument(
     "-v", "--version",
     action="version",
-    version=main_sig + version_long,
+    version=cli_version_str,
     help="print Coconut and Python version information",
 )
 

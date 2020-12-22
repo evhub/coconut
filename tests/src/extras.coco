@@ -81,6 +81,7 @@ def test_extras():
     assert_raises(-> parse("if a:\n  b\n c"), CoconutException)
     assert_raises(-> parse("$"), CoconutException)
     assert_raises(-> parse("_coconut"), CoconutException)
+    assert_raises(-> parse("range(1,10) |> reduce$(*, initializer = 1000) |> print"), CoconutException)
     assert parse("def f(x):\n \t pass")
     assert parse("lambda x: x")
     assert parse("u''")
