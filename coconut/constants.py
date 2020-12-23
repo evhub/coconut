@@ -163,7 +163,7 @@ all_reqs = {
         ("ipykernel", "py2"),
         ("ipykernel", "py3"),
         ("jupyterlab", "py35"),
-        "jupytext",
+        ("jupytext", "py3"),
     ),
     "mypy": (
         "mypy",
@@ -214,6 +214,7 @@ min_versions = {
     ("numpy", "py2;cpy"): (1,),
     ("ipykernel", "py3"): (5, 3),
     ("jupyterlab", "py35"): (2,),
+    ("jupytext", "py3"): (1, 7),
     # don't upgrade these; they break on Python 3.5
     ("ipython", "py3"): (7, 9),
     ("jupyter-console", "py3"): (6, 1),
@@ -230,7 +231,6 @@ min_versions = {
     ("ipython", "py2"): (5, 4),
     ("ipykernel", "py2"): (4, 10),
     "prompt_toolkit:2": (1,),
-    "jupytext": (1, 5),
     # don't upgrade these; they break on master
     "sphinx": (1, 7, 4),
     "sphinx_bootstrap_theme": (0, 4),
@@ -248,7 +248,6 @@ pinned_reqs = (
     ("ipython", "py2"),
     ("ipykernel", "py2"),
     "prompt_toolkit:2",
-    "jupytext",
     "sphinx",
     "sphinx_bootstrap_theme",
 )
@@ -542,12 +541,11 @@ reserved_vars = (  # can be backslash-escaped
 )
 
 py3_to_py2_stdlib = {
-    # new_name: (old_name, before_version_info)
+    # new_name: (old_name, before_version_info[, ])
     "builtins": ("__builtin__", (3,)),
     "configparser": ("ConfigParser", (3,)),
     "copyreg": ("copy_reg", (3,)),
     "dbm.gnu": ("gdbm", (3,)),
-    "_dummy_thread": ("dummy_thread", (3,)),
     "queue": ("Queue", (3,)),
     "reprlib": ("repr", (3,)),
     "socketserver": ("SocketServer", (3,)),
@@ -584,6 +582,8 @@ py3_to_py2_stdlib = {
     "itertools.zip_longest": ("itertools./izip_longest", (3,)),
     # third-party backports
     "asyncio": ("trollius", (3, 4)),
+    # _dummy_thread was removed in Python 3.9, so this no longer works
+    # "_dummy_thread": ("dummy_thread", (3,)),
 }
 
 # -----------------------------------------------------------------------------------------------------------------------
