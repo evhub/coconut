@@ -580,6 +580,7 @@ py3_to_py2_stdlib = {
     "importlib.reload": ("imp./reload", (3, 4)),
     "itertools.filterfalse": ("itertools./ifilterfalse", (3,)),
     "itertools.zip_longest": ("itertools./izip_longest", (3,)),
+    "math.gcd": ("fractions./gcd", (3, 5)),
     # third-party backports
     "asyncio": ("trollius", (3, 4)),
     # _dummy_thread was removed in Python 3.9, so this no longer works
