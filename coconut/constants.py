@@ -214,7 +214,6 @@ min_versions = {
     ("numpy", "py2;cpy"): (1,),
     ("ipykernel", "py3"): (5, 3),
     ("jupyterlab", "py35"): (2,),
-    "jupytext": (1, 7),
     # don't upgrade these; they break on Python 3.5
     ("ipython", "py3"): (7, 9),
     ("jupyter-console", "py3"): (6, 1),
@@ -231,6 +230,7 @@ min_versions = {
     ("ipython", "py2"): (5, 4),
     ("ipykernel", "py2"): (4, 10),
     "prompt_toolkit:2": (1,),
+    "jupytext": (1, 5),
     # don't upgrade these; they break on master
     "sphinx": (1, 7, 4),
     "sphinx_bootstrap_theme": (0, 4),
@@ -248,6 +248,7 @@ pinned_reqs = (
     ("ipython", "py2"),
     ("ipykernel", "py2"),
     "prompt_toolkit:2",
+    "jupytext",
     "sphinx",
     "sphinx_bootstrap_theme",
 )

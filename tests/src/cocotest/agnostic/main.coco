@@ -471,8 +471,9 @@ def main_test():
     assert a == 5 where:
         {"a": a} = {"a": 5}
     assert (None ?? False is False) is True
+    one = 1
     false = False
-    assert (1 ?? false is false) is false
+    assert (one ?? false is false) is false
     assert ... is Ellipsis
     assert 1or 2
     two = None
