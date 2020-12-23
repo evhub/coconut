@@ -154,7 +154,7 @@ class CoconutStyleError(CoconutSyntaxError):
 
     def message(self, message, source, point, ln):
         """Creates the --strict Coconut error message."""
-        message += " (disable --strict to dismiss)"
+        message += " (remove --strict to dismiss)"
         return super(CoconutStyleError, self).message(message, source, point, ln)
 
 
@@ -168,7 +168,7 @@ class CoconutTargetError(CoconutSyntaxError):
     def message(self, message, source, point, ln, target):
         """Creates the --target Coconut error message."""
         if target is not None:
-            message += " (enable --target " + target + " to dismiss)"
+            message += " (pass --target " + target + " to fix)"
         return super(CoconutTargetError, self).message(message, source, point, ln)
 
 

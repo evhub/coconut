@@ -291,16 +291,6 @@ def un_treable_func2(x, g=-> _):
     def gp(y): return px(g(y))
     return un_treable_func2(x-1, gp)
 
-def un_treable_iter(x):
-    try:
-        yield x
-    finally:
-        pass
-    if x == 0:
-        return x
-    else:
-        return un_treable_iter(x)
-
 def loop_then_tre(n):
     if n == 0:
         return 0
@@ -985,24 +975,3 @@ def ret_globals() =
 
 # Pos only args
 match def pos_only(a, b, /) = a, b
-
-
-# Iterator returns
-def it_ret(x):
-    return x
-    yield None
-
-def yield_from_return(x):
-    yield x
-    if x == 0:
-        return x
-    else:
-        return (yield from yield_from_return(x-1))
-
-def it_ret_none():
-    return
-    yield None
-
-def it_ret_tuple(x, y):
-    return x, y
-    yield None

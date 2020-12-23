@@ -73,6 +73,9 @@ def get_reqs(which):
             max_ver = max_versions[req]
             if max_ver is None:
                 max_ver = get_next_version(min_versions[req])
+            if None in max_ver:
+                assert all(v is None for v in max_ver), "invalid max version " + repr(max_ver)
+                max_ver = get_next_version(min_versions[req], len(max_ver) - 1)
             req_str += ",<" + ver_tuple_to_str(max_ver)
         env_marker = req[1] if isinstance(req, tuple) else None
         if env_marker:

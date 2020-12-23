@@ -1,32 +1,32 @@
-.PHONY: install
 .PHONY: dev
 dev:
-	python3 -m pip install --upgrade setuptools pip pytest_remotedata
-	python3 -m pip install --upgrade -e .[dev]
+	python -m pip install --upgrade setuptools wheel pip pytest_remotedata
+	python -m pip install --upgrade -e .[dev]
 	pre-commit install -f --install-hooks
 
+.PHONY: install
 install:
-	pip install --upgrade setuptools pip
+	pip install --upgrade setuptools wheel pip
 	pip install .[tests]
 
 .PHONY: install-py2
 install-py2:
-	python2 -m pip install --upgrade setuptools pip
+	python2 -m pip install --upgrade setuptools wheel pip
 	python2 -m pip install .[tests]
 
 .PHONY: install-py3
 install-py3:
-	python3 -m pip install --upgrade setuptools pip
+	python3 -m pip install --upgrade setuptools wheel pip
 	python3 -m pip install .[tests]
 
 .PHONY: install-pypy
 install-pypy:
-	pypy -m pip install --upgrade setuptools pip
+	pypy -m pip install --upgrade setuptools wheel pip
 	pypy -m pip install .[tests]
 
 .PHONY: install-pypy3
 install-pypy3:
-	pypy3 -m pip install --upgrade setuptools pip
+	pypy3 -m pip install --upgrade setuptools wheel pip
 	pypy3 -m pip install .[tests]
 
 .PHONY: format
@@ -42,17 +42,17 @@ test-all:
 # for quickly testing nearly everything locally, just use test-basic
 .PHONY: test-basic
 test-basic:
-	python3 ./tests --strict --line-numbers --force
-	python3 ./tests/dest/runner.py
-	python3 ./tests/dest/extras.py
+	python ./tests --strict --line-numbers --force
+	python ./tests/dest/runner.py
+	python ./tests/dest/extras.py
 
 # same as test-basic, but doesn't recompile unchanged test files;
 # should only be used when testing the tests not the compiler
 .PHONY: test-tests
 test-tests:
-	python3 ./tests --strict --line-numbers
-	python3 ./tests/dest/runner.py
-	python3 ./tests/dest/extras.py
+	python ./tests --strict --line-numbers
+	python ./tests/dest/runner.py
+	python ./tests/dest/extras.py
 
 # same as test-basic but uses Python 2
 .PHONY: test-py2
@@ -61,12 +61,12 @@ test-py2:
 	python2 ./tests/dest/runner.py
 	python2 ./tests/dest/extras.py
 
-# same as test-basic but uses default Python
-.PHONY: test-pyd
-test-pyd:
-	python ./tests --strict --line-numbers --force
-	python ./tests/dest/runner.py
-	python ./tests/dest/extras.py
+# same as test-basic but uses Python 3
+.PHONY: test-py3
+test-py3:
+	python3 ./tests --strict --line-numbers --force
+	python3 ./tests/dest/runner.py
+	python3 ./tests/dest/extras.py
 
 # same as test-basic but uses PyPy
 .PHONY: test-pypy
@@ -85,30 +85,30 @@ test-pypy3:
 # same as test-basic but also runs mypy
 .PHONY: test-mypy
 test-mypy:
-	python3 ./tests --strict --line-numbers --force --target sys --mypy --follow-imports silent --ignore-missing-imports
-	python3 ./tests/dest/runner.py
-	python3 ./tests/dest/extras.py
+	python ./tests --strict --line-numbers --force --target sys --mypy --follow-imports silent --ignore-missing-imports
+	python ./tests/dest/runner.py
+	python ./tests/dest/extras.py
 
 # same as test-mypy but uses the universal target
 .PHONY: test-mypy-univ
 test-mypy-univ:
-	python3 ./tests --strict --line-numbers --force --mypy --follow-imports silent --ignore-missing-imports
-	python3 ./tests/dest/runner.py
-	python3 ./tests/dest/extras.py
+	python ./tests --strict --line-numbers --force --mypy --follow-imports silent --ignore-missing-imports
+	python ./tests/dest/runner.py
+	python ./tests/dest/extras.py
 
 # same as test-basic but includes verbose output for better debugging
 .PHONY: test-verbose
 test-verbose:
-	python3 ./tests --strict --line-numbers --force --verbose --jobs 0
-	python3 ./tests/dest/runner.py
-	python3 ./tests/dest/extras.py
+	python ./tests --strict --line-numbers --force --verbose --jobs 0
+	python ./tests/dest/runner.py
+	python ./tests/dest/extras.py
 
 # same as test-basic but also tests easter eggs
 .PHONY: test-easter-eggs
 test-easter-eggs:
-	python3 ./tests --strict --line-numbers --force
-	python3 ./tests/dest/runner.py --test-easter-eggs
-	python3 ./tests/dest/extras.py
+	python ./tests --strict --line-numbers --force
+	python ./tests/dest/runner.py --test-easter-eggs
+	python ./tests/dest/extras.py
 
 # same as test-basic but uses python pyparsing
 .PHONY: test-pyparsing
@@ -118,10 +118,10 @@ test-pyparsing: test-basic
 # same as test-basic but watches tests before running them
 .PHONY: test-watch
 test-watch:
-	python3 ./tests --strict --line-numbers --force
+	python ./tests --strict --line-numbers --force
 	coconut ./tests/src/cocotest/agnostic ./tests/dest/cocotest --watch --strict --line-numbers
-	python3 ./tests/dest/runner.py
-	python3 ./tests/dest/extras.py
+	python ./tests/dest/runner.py
+	python ./tests/dest/extras.py
 
 .PHONY: diff
 diff:
@@ -150,7 +150,7 @@ wipe: clean
 
 .PHONY: just-upload
 just-upload:
-	python3 setup.py sdist bdist_wheel
+	python setup.py sdist bdist_wheel
 	pip install --upgrade --ignore-installed twine
 	twine upload dist/*
 
@@ -159,7 +159,7 @@ upload: clean dev just-upload
 
 .PHONY: check-reqs
 check-reqs:
-	python3 ./coconut/requirements.py
+	python ./coconut/requirements.py
 
 .PHONY: profile-code
 profile-code:

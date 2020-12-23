@@ -2,8 +2,42 @@ import os
 import sys
 import platform
 
+# Constants
 TEST_ASYNCIO = platform.python_implementation() != "PyPy" or os.name != "nt" and sys.version_info >= (3,)
 
+
+# Iterator returns
+def un_treable_iter(x):
+    try:
+        yield x
+    finally:
+        pass
+    if x == 0:
+        return x
+    else:
+        return un_treable_iter(x)
+
+def it_ret(x):
+    return x
+    yield None
+
+def yield_from_return(x):
+    yield x
+    if x == 0:
+        return x
+    else:
+        return (yield from yield_from_return(x-1))
+
+def it_ret_none():
+    return
+    yield None
+
+def it_ret_tuple(x, y):
+    return x, y
+    yield None
+
+
+# Main
 def target_sys_test():
     """Performs --target sys tests."""
     if TEST_ASYNCIO:
@@ -26,4 +60,39 @@ def target_sys_test():
     else:
         assert platform.python_implementation() == "PyPy"
         assert os.name == "nt" or sys.version_info < (3,)
+    it = un_treable_iter(2)
+    assert next(it) == 2
+    try:
+        next(it)
+    except StopIteration as err:
+        assert err.args[0] |> list == [2]
+    else:
+        assert False
+    it = yield_from_return(1)
+    assert next(it) == 1
+    assert next(it) == 0
+    try:
+        next(it)
+    except StopIteration as err:
+        assert err.args[0] == 0
+    else:
+        assert False
+    try:
+        next(it_ret(5))
+    except StopIteration as err:
+        assert err.args[0] == 5
+    else:
+        assert False
+    try:
+        next(it_ret_none())
+    except StopIteration as err:
+        assert not err.args
+    else:
+        assert False
+    try:
+        next(it_ret_tuple(1, 2))
+    except StopIteration as err:
+        assert err.args[0] == (1, 2)
+    else:
+        assert False
     return True

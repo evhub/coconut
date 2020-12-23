@@ -89,6 +89,7 @@ from coconut.compiler.util import (
     split_leading_indent,
     collapse_indents,
     keyword,
+    match_in,
 )
 
 # end: IMPORTS
@@ -403,6 +404,10 @@ def comp_pipe_handle(loc, tokens):
 def none_coalesce_handle(tokens):
     """Process the None-coalescing operator."""
     if len(tokens) == 1:
+        return tokens[0]
+    elif tokens[0] == "None":
+        return none_coalesce_handle(tokens[1:])
+    elif match_in(Grammar.just_non_none_atom, tokens[0]):
         return tokens[0]
     elif tokens[0].isalnum():
         return "({b} if {a} is None else {a})".format(
@@ -1820,6 +1825,8 @@ class Grammar(object):
 # -----------------------------------------------------------------------------------------------------------------------
 # EXTRA GRAMMAR:
 # -----------------------------------------------------------------------------------------------------------------------
+
+    just_non_none_atom = start_marker + ~keyword("None") + known_atom + end_marker
 
     parens = originalTextFor(nestedExpr("(", ")"))
     brackets = originalTextFor(nestedExpr("[", "]"))

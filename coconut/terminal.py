@@ -89,6 +89,14 @@ def get_name(expr):
     return name
 
 
+def get_clock_time():
+    """Get a time to use for performance metrics."""
+    if PY2:
+        return time.clock()
+    else:
+        return time.process_time()
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # logger:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -307,11 +315,11 @@ class Logger(object):
     def gather_parsing_stats(self):
         """Times parsing if --verbose."""
         if self.verbose:
-            start_time = time.clock()
+            start_time = get_clock_time()
             try:
                 yield
             finally:
-                elapsed_time = time.clock() - start_time
+                elapsed_time = get_clock_time() - start_time
                 printerr("Time while parsing:", elapsed_time, "seconds")
                 if packrat_cache:
                     hits, misses = ParserElement.packrat_cache_stats

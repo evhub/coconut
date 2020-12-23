@@ -288,7 +288,7 @@ for _coconut_base_path in _coconut_sys.path:
             else:
                 _coconut.print("Imported {}.".format(_coconut_imp_name))
         _coconut_dirnames[:] = []
-        """.strip()
+        """.strip(),
     )
     if imp_all:
         out += "\n" + handle_indentation(
@@ -299,14 +299,14 @@ for _coconut_m in _coconut.tuple(_coconut_sys.modules.values()):
         for _coconut_k, _coconut_v in _coconut_d.items():
             if not _coconut_k.startswith("_"):
                 _coconut.locals()[_coconut_k] = _coconut_v
-            """.strip()
+            """.strip(),
         )
     else:
         out += "\n" + handle_indentation(
             """
 for _coconut_n, _coconut_m in _coconut.tuple(_coconut_sys.modules.items()):
     _coconut.locals()[_coconut_n] = _coconut_m
-            """.strip()
+            """.strip(),
         )
     return out
 
@@ -1927,7 +1927,7 @@ if not {check_var}:
     return_regex = compile_regex(r"return\b")
     no_tco_funcs_regex = compile_regex(r"\b(locals|globals)\b")
 
-    def transform_returns(self, raw_lines, tre_return_grammar=None, use_mock=None, is_async=False, is_gen=False):
+    def transform_returns(self, original, loc, raw_lines, tre_return_grammar=None, use_mock=None, is_async=False, is_gen=False):
         """Apply TCO, TRE, async, and generator return universalization to the given function."""
         lines = []  # transformed lines
         tco = False  # whether tco was done
@@ -1995,6 +1995,9 @@ if not {check_var}:
                         ret_err = "_coconut.asyncio.Return"
                     else:
                         ret_err = "_coconut.StopIteration"
+                        # warn about Python 3.7 incompatibility on any target with Python 3 support
+                        if not self.target.startswith("2"):
+                            logger.warn_err(self.make_err(CoconutSyntaxWarning, "compiled generator return to StopIteration error; this will break on Python >= 3.7 (pass --target sys to fix)", original, loc))
                     line = indent + "raise " + ret_err + "(" + to_return + ")" + comment + dedent
 
                 tre_base = None
@@ -2096,7 +2099,7 @@ if not {check_var}:
             else:
                 decorators += "@_coconut.asyncio.coroutine\n"
 
-            func_code, _, _ = self.transform_returns(raw_lines, is_async=True)
+            func_code, _, _ = self.transform_returns(original, loc, raw_lines, is_async=True)
 
         # handle normal functions
         else:
@@ -2117,6 +2120,8 @@ if not {check_var}:
                 use_mock = func_store = tre_return_grammar = None
 
             func_code, tco, tre = self.transform_returns(
+                original,
+                loc,
                 raw_lines,
                 tre_return_grammar,
                 use_mock,
@@ -2165,7 +2170,7 @@ if {store_var} is not _coconut_sentinel:
                 decorators=decorators,
                 def_stmt=def_stmt,
                 func_code=func_code,
-                func_name=func_name
+                func_name=func_name,
             )
         else:
             out = decorators + def_stmt + func_code

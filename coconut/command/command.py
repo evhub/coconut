@@ -26,7 +26,6 @@ import traceback
 from contextlib import contextmanager
 from subprocess import CalledProcessError
 
-from coconut._pyparsing import PYPARSING_INFO
 from coconut.compiler import Compiler
 from coconut.exceptions import (
     CoconutException,
@@ -75,7 +74,7 @@ from coconut.command.util import (
 )
 from coconut.compiler.util import should_indent, get_target_info_len2
 from coconut.compiler.header import gethash
-from coconut.command.cli import arguments
+from coconut.command.cli import arguments, cli_version
 
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN:
@@ -153,7 +152,7 @@ class Command(object):
         if DEVELOP:
             logger.tracing = args.trace
 
-        logger.log("Using " + PYPARSING_INFO + ".")
+        logger.log(cli_version)
         if original_args is not None:
             logger.log("Directly passed args:", original_args)
         logger.log("Parsed args:", args)

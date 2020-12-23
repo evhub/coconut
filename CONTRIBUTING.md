@@ -32,7 +32,7 @@ _Note: Don't forget to add yourself to the "Authors:" section in the moduledocs 
 
 ## Testing New Changes
 
-First, you'll want to set up a local copy of Coconut's recommended development environment. For that, just run `git checkout develop` and `make dev`. That should switch you to the `develop` branch, install all possible dependencies, bind the `coconut` command to your local copy, and set up [pre-commit](http://pre-commit.com/), which will check your code for errors for you whenever you `git commit`.
+First, you'll want to set up a local copy of Coconut's recommended development environment. For that, just run `git checkout develop`, make sure your default `python` installation is some variant of Python 3, and run `make dev`. That should switch you to the `develop` branch, install all possible dependencies, bind the `coconut` command to your local copy, and set up [pre-commit](http://pre-commit.com/), which will check your code for errors for you whenever you `git commit`.
 
 Then, you should be able to use the Coconut command-line for trying out simple things, and to run a paired-down version of the test suite locally, just `make test-basic`.
 

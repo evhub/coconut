@@ -407,6 +407,11 @@ def main_test():
     assert b.read() == b"herp"
     assert 1 ?? 2 == 1 == (??)(1, 2)
     assert None ?? 2 == 2 == (??)(None, 2)
+    one = 1
+    two = 2
+    none = None
+    assert one ?? two == one == (??)(one, two)
+    assert none ?? two == two == (??)(none, two)
     timeout: int? = None
     local_timeout: int? = 60
     global_timeout: int = 300
@@ -466,7 +471,8 @@ def main_test():
     assert a == 5 where:
         {"a": a} = {"a": 5}
     assert (None ?? False is False) is True
-    assert (1 ?? False is False) is False
+    false = False
+    assert (1 ?? false is false) is false
     assert ... is Ellipsis
     assert 1or 2
     two = None
