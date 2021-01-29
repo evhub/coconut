@@ -570,8 +570,8 @@ py3_to_py2_stdlib = {
     "xmlrpc.client": ("xmlrpclib", (3,)),
     "xmlrpc.server": ("SimpleXMLRPCServer", (3,)),
     "urllib.request": ("urllib2", (3,)),
-    "urllib.parse": ("urllib2", (3,)),
     "urllib.error": ("urllib2", (3,)),
+    "urllib.parse": ("urllib", (3,)),
     "pickle": ("cPickle", (3,)),
     "collections.abc": ("collections", (3, 3)),
     # ./ denotes from ... import ...
