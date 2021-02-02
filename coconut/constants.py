@@ -521,7 +521,6 @@ py3_to_py2_stdlib = {
     "configparser": ("ConfigParser", (3,)),
     "copyreg": ("copy_reg", (3,)),
     "dbm.gnu": ("gdbm", (3,)),
-    "_dummy_thread": ("dummy_thread", (3,)),
     "queue": ("Queue", (3,)),
     "reprlib": ("repr", (3,)),
     "socketserver": ("SocketServer", (3,)),
