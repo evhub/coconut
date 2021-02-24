@@ -145,7 +145,7 @@ else:
 else:
     import pickle''' if not target
             else "import cPickle as pickle" if target_info < (3,)
-            else "import pickle"
+            else "import pickle",
         ),
         import_OrderedDict=_indent(
             r'''OrderedDict = collections.OrderedDict if _coconut_sys.version_info >= (2, 7) else dict'''
@@ -159,14 +159,14 @@ else:
 else:
     import collections.abc as abc'''
             if target_startswith != "2"
-            else "abc = collections"
+            else "abc = collections",
         ),
         bind_lru_cache=_indent(
             r'''if _coconut_sys.version_info < (3, 2):
 ''' + _indent(try_backport_lru_cache)
             if not target
             else try_backport_lru_cache if target_startswith == "2"
-            else ""
+            else "",
         ),
         set_zip_longest=_indent(
             r'''zip_longest = itertools.zip_longest if _coconut_sys.version_info >= (3,) else itertools.izip_longest'''
@@ -209,7 +209,7 @@ else:
     )
 
     # when anything is added to this list it must also be added to the stub file
-    format_dict["underscore_imports"] = "_coconut, _coconut_MatchError{comma_tco}, _coconut_igetitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_star_pipe, _coconut_dubstar_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_back_dubstar_pipe, _coconut_none_pipe, _coconut_none_star_pipe, _coconut_none_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_mark_as_match".format(**format_dict)
+    format_dict["underscore_imports"] = "_coconut, _coconut_MatchError{comma_tco}, _coconut_igetitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_star_pipe, _coconut_dubstar_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_back_dubstar_pipe, _coconut_none_pipe, _coconut_none_star_pipe, _coconut_none_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_mark_as_match, _coconut_reiterable".format(**format_dict)
 
     format_dict["import_typing_NamedTuple"] = _indent(
         "import typing" if target_info >= (3, 6)

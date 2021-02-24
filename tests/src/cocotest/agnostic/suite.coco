@@ -175,9 +175,9 @@ def suite_test():
     laz = lazy()
     assert not laz.done
     lazl = laz.list()
-    assert lazl$[:3] |> list == [1, 2, 3]
+    assert lazl$[:3] |> list == [1, 2, 3] == lazl$[:3] |> list
     assert not laz.done
-    assert lazl |> list == [None]
+    assert lazl |> list == [1, 2, 3, None]
     assert laz.done
     assert is_empty(iter(()))
     assert is_empty(())

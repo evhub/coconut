@@ -441,11 +441,12 @@ def attrgetter_atom_handle(loc, tokens):
 def lazy_list_handle(tokens):
     """Process lazy lists."""
     if len(tokens) == 0:
-        return "_coconut.iter(())"
+        return "_coconut_reiterable(())"
     else:
-        return (
-            "(%s() for %s in (" % (func_var, func_var)
-            + "lambda: " + ", lambda: ".join(tokens) + ("," if len(tokens) == 1 else "") + "))"
+        return "_coconut_reiterable({func_var}() for {func_var} in ({lambdas}{tuple_comma}))".format(
+            func_var=func_var,
+            lambdas="lambda: " + ", lambda: ".join(tokens),
+            tuple_comma="," if len(tokens) == 1 else "",
         )
 
 
@@ -658,11 +659,11 @@ impl_call_item_handle.ignore_one_token = True
 
 def tco_return_handle(tokens):
     """Process tail-call-optimizable return statements."""
-    internal_assert(len(tokens) == 2, "invalid tail-call-optimizable return statement tokens", tokens)
-    if tokens[1].startswith("()"):
-        return "return _coconut_tail_call(" + tokens[0] + ")" + tokens[1][2:]  # tokens[1] contains \n
+    internal_assert(len(tokens) >= 1, "invalid tail-call-optimizable return statement tokens", tokens)
+    if len(tokens) == 1:
+        return "return _coconut_tail_call(" + tokens[0] + ")"
     else:
-        return "return _coconut_tail_call(" + tokens[0] + ", " + tokens[1][1:]  # tokens[1] contains )\n
+        return "return _coconut_tail_call(" + tokens[0] + ", " + ", ".join(tokens[1:]) + ")"
 
 
 def split_func_handle(tokens):
@@ -1833,11 +1834,21 @@ class Grammar(object):
     braces = originalTextFor(nestedExpr("{", "}"))
     any_char = Regex(r".", re.U | re.DOTALL)
 
+    original_function_call_tokens = lparen.suppress() + (
+        rparen.suppress()
+        # we need to add parens here, since f(x for x in y) is fine but tail_call(f, x for x in y) is not
+        | attach(originalTextFor(test + comp_for), add_paren_handle) + rparen.suppress()
+        | originalTextFor(tokenlist(call_item, comma)) + rparen.suppress()
+    )
+
+    def get_tre_return_grammar(self, func_name):
+        return (self.start_marker + keyword("return") + keyword(func_name)).suppress() + self.original_function_call_tokens + self.end_marker.suppress()
+
     tco_return = attach(
-        start_marker + keyword("return").suppress() + condense(
+        (start_marker + keyword("return")).suppress() + condense(
             (base_name | parens | brackets | braces | string)
             + ZeroOrMore(dot + base_name | brackets | parens + ~end_marker),
-        ) + parens + end_marker,
+        ) + original_function_call_tokens + end_marker.suppress(),
         tco_return_handle,
         # this is the root in what it's used for, so might as well evaluate greedily
         greedy=True,

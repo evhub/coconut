@@ -336,6 +336,7 @@ def _coconut_minus(a, *rest):
 
 
 def reiterable(iterable: _t.Iterable[_T]) -> _t.Iterable[_T]: ...
+_coconut_reiterable = reiterable
 
 
 class count(_t.Iterable[int]):

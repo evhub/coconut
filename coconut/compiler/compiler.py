@@ -110,7 +110,6 @@ from coconut.compiler.util import (
     get_target_info_len2,
     split_leading_comment,
     compile_regex,
-    keyword,
     append_it,
     interleaved_join,
     handle_indentation,
@@ -1869,8 +1868,7 @@ if not {check_var}:
     def tre_return(self, func_name, func_args, func_store, use_mock=True):
         """Generate grammar element that matches a string which is just a TRE return statement."""
         def tre_return_handle(loc, tokens):
-            internal_assert(len(tokens) == 1, "invalid tail recursion elimination tokens", tokens)
-            args = tokens[0][1:-1]  # strip parens
+            args = ", ".join(tokens)
             if self.no_tco:
                 tco_recurse = "return " + func_name + "(" + args + ")"
             else:
@@ -1892,8 +1890,9 @@ if not {check_var}:
                 + tco_recurse + "\n" + closeindent
             )
         return attach(
-            self.start_marker + (keyword("return") + keyword(func_name)).suppress() + self.parens + self.end_marker,
+            self.get_tre_return_grammar(func_name),
             tre_return_handle,
+            greedy=True,
         )
 
     def_regex = compile_regex(r"(async\s+)?def\b")
