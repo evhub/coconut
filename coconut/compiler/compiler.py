@@ -526,6 +526,12 @@ class Compiler(Grammar):
         finally:
             self.disable_name_check = disable_name_check
 
+    def post_transform(self, grammar, text):
+        """Version of transform for post-processing."""
+        with self.complain_on_err():
+            with self.name_check_disabled():
+                return transform(grammar, text)
+
     def get_temp_var(self, base_name):
         """Get a unique temporary variable name."""
         var_name = reserved_prefix + "_" + base_name + "_" + str(self.temp_var_counts[base_name])
@@ -2001,8 +2007,7 @@ if not {check_var}:
 
                 tre_base = None
                 if attempt_tre:
-                    with self.complain_on_err():
-                        tre_base = transform(tre_return_grammar, base)
+                    tre_base = self.post_transform(tre_return_grammar, base)
                     if tre_base is not None:
                         line = indent + tre_base + comment + dedent
                         tre = True
@@ -2017,8 +2022,7 @@ if not {check_var}:
                     and not self.no_tco_funcs_regex.search(base)
                 ):
                     tco_base = None
-                    with self.complain_on_err():
-                        tco_base = transform(self.tco_return, base)
+                    tco_base = self.post_transform(self.tco_return, base)
                     if tco_base is not None:
                         line = indent + tco_base + comment + dedent
                         tco = True
