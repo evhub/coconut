@@ -214,11 +214,11 @@ min_versions = {
     ("numpy", "py34"): (1,),
     ("numpy", "py2;cpy"): (1,),
     ("ipykernel", "py3"): (5, 5),
-    ("jupyterlab", "py35"): (3,),
     # don't upgrade these; they break on Python 3.5
     ("ipython", "py3"): (7, 9),
     ("jupyter-console", "py3"): (6, 1),
     ("jupytext", "py3"): (1, 8),
+    ("jupyterlab", "py35"): (2, 2),
     # don't upgrade this to allow all versions
     "prompt_toolkit:3": (1,),
     # don't upgrade this; it breaks on Python 2.6
@@ -244,6 +244,7 @@ pinned_reqs = (
     ("ipython", "py3"),
     ("jupyter-console", "py3"),
     ("jupytext", "py3"),
+    ("jupyterlab", "py35"),
     "prompt_toolkit:3",
     "pytest",
     "vprof",

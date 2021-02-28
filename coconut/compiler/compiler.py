@@ -518,18 +518,20 @@ class Compiler(Grammar):
             self.num_lines = num_lines
 
     @contextmanager
-    def name_check_disabled(self):
-        """Run the block without checking names."""
+    def disable_checks(self):
+        """Run the block without checking names or strict errors."""
         disable_name_check, self.disable_name_check = self.disable_name_check, True
+        strict, self.strict = self.strict, False
         try:
             yield
         finally:
             self.disable_name_check = disable_name_check
+            self.strict = strict
 
     def post_transform(self, grammar, text):
         """Version of transform for post-processing."""
         with self.complain_on_err():
-            with self.name_check_disabled():
+            with self.disable_checks():
                 return transform(grammar, text)
 
     def get_temp_var(self, base_name):
