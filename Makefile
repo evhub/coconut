@@ -36,7 +36,7 @@ format: dev
 
 # test-all takes a very long time and should usually only be run by Travis
 .PHONY: test-all
-test-all:
+test-all: clean
 	pytest --strict -s ./tests
 
 # for quickly testing nearly everything locally, just use test-basic
