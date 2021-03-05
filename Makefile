@@ -1,5 +1,5 @@
 .PHONY: dev
-dev:
+dev: clean
 	python -m pip install --upgrade setuptools wheel pip pytest_remotedata
 	python -m pip install --upgrade -e .[dev]
 	pre-commit install -f --install-hooks
@@ -134,7 +134,7 @@ docs: clean
 
 .PHONY: clean
 clean:
-	rm -rf ./docs ./dist ./build ./tests/dest index.rst profile.json
+	rm -rf ./docs ./dist ./build ./tests/dest ./pyprover ./pyston ./coconut-prelude index.rst profile.json
 	-find . -name '*.pyc' -delete
 	-find . -name '__pycache__' -delete
 

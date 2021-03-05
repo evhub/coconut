@@ -130,6 +130,9 @@ __pypackages__/
 # Coconut
 tests/dest/
 docs/
+pyprover/
+pyston/
+coconut-prelude/
 index.rst
 profile.json
 coconut/icoconut/coconut/
