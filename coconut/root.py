@@ -23,10 +23,10 @@ import sys as _coconut_sys
 # VERSION:
 # -----------------------------------------------------------------------------------------------------------------------
 
-VERSION = "1.4.3"
-VERSION_NAME = "Ernest Scribbler"
+VERSION = "1.5.0"
+VERSION_NAME = "Fish License"
 # False for release, int >= 1 for develop
-DEVELOP = 68
+DEVELOP = False
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
