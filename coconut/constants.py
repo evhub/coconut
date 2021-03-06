@@ -40,8 +40,10 @@ def univ_open(filename, opentype="r+", encoding=None, **kwargs):
     """Open a file using default_encoding."""
     if encoding is None:
         encoding = default_encoding
+    if "b" not in opentype:
+        kwargs["encoding"] = encoding
     # we use io.open from coconut.root here
-    return open(filename, opentype, encoding=encoding, **kwargs)
+    return open(filename, opentype, **kwargs)
 
 
 def get_target_info(target):
@@ -66,9 +68,9 @@ def ver_str_to_tuple(ver_str):
     return tuple(out)
 
 
-def get_next_version(req_ver):
+def get_next_version(req_ver, point_to_increment=-1):
     """Get the next version after the given version."""
-    return req_ver[:-1] + (req_ver[-1] + 1,)
+    return req_ver[:point_to_increment] + (req_ver[point_to_increment] + 1,)
 
 
 def checksum(data):
@@ -81,7 +83,6 @@ def checksum(data):
 # VERSION CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
 
-version_long = "Version " + VERSION_STR + " running on Python " + sys.version.split()[0]
 version_banner = "Coconut " + VERSION_STR
 
 if DEVELOP:
@@ -94,12 +95,14 @@ version_tuple = tuple(VERSION.split("."))
 
 WINDOWS = os.name == "nt"
 PYPY = platform.python_implementation() == "PyPy"
+CPYTHON = platform.python_implementation() == "CPython"
 PY32 = sys.version_info >= (3, 2)
 PY33 = sys.version_info >= (3, 3)
 PY34 = sys.version_info >= (3, 4)
 PY35 = sys.version_info >= (3, 5)
 PY36 = sys.version_info >= (3, 6)
-IPY = (PY2 and not PY26) or PY34
+JUST_PY36 = PY36 and not PY37
+IPY = ((PY2 and not PY26) or PY35) and not (PYPY and WINDOWS)
 
 # -----------------------------------------------------------------------------------------------------------------------
 # INSTALLATION CONSTANTS:
@@ -123,6 +126,8 @@ PURE_PYTHON = os.environ.get(pure_python_env_var, "").lower() in ["true", "1"]
 #  for different categories, and tuples denote the use of environment
 #  markers as specified in requirements.py
 all_reqs = {
+    "main": (
+    ),
     "cpython": (
         "cPyparsing",
     ),
@@ -140,6 +145,9 @@ all_reqs = {
     "py3": (
         "prompt_toolkit:3",
     ),
+    "just-py36": (
+        "dataclasses",
+    ),
     "py26": (
         "argparse",
     ),
@@ -148,11 +156,15 @@ all_reqs = {
     ),
     "jupyter": (
         "jupyter",
-        "jupyter-console",
+        ("jupyter-console", "py2"),
+        ("jupyter-console", "py3"),
         ("ipython", "py2"),
         ("ipython", "py3"),
         ("ipykernel", "py2"),
         ("ipykernel", "py3"),
+        ("jupyterlab", "py35"),
+        ("jupytext", "py3"),
+        "jedi",
     ),
     "mypy": (
         "mypy",
@@ -178,75 +190,86 @@ all_reqs = {
         "pytest",
         "pexpect",
         ("numpy", "py34"),
-        ("numpy", "py2"),
+        ("numpy", "py2;cpy"),
     ),
 }
 
 # min versions are inclusive
 min_versions = {
-    "pyparsing": (2, 4, 5),
-    "cPyparsing": (2, 4, 5, 0, 1, 1),
-    "pre-commit": (1,),
-    "recommonmark": (0, 6),
+    "pyparsing": (2, 4, 7),
+    "cPyparsing": (2, 4, 5, 0, 1, 2),
+    "pre-commit": (2,),
+    "recommonmark": (0, 7),
     "psutil": (5,),
     "jupyter": (1, 0),
-    "mypy": (0, 761),
+    "mypy": (0, 812),
     "futures": (3, 3),
     "backports.functools-lru-cache": (1, 6),
+    "dataclasses": (0, 8),
     "argparse": (1, 4),
     "pexpect": (4,),
-    "watchdog": (0, 9),
+    "watchdog": (2,),
     ("trollius", "py2"): (2, 2),
-    "requests": (2,),
+    "requests": (2, 25),
     ("numpy", "py34"): (1,),
-    ("numpy", "py2"): (1,),
-    ("ipykernel", "py3"): (5, 1),
-    # don't upgrade this; it breaks on Python 2 and Python 3.4 on Windows
-    "jupyter-console": (5, 2),
-    # don't upgrade these; they break with Python 3.4 on Windows
-    ("ipython", "py3"): (6, 5),
-    "pygments": (2, 3, 1),
+    ("numpy", "py2;cpy"): (1,),
+    ("ipykernel", "py3"): (5, 5),
+    # don't upgrade these; they break on Python 3.5
+    ("ipython", "py3"): (7, 9),
+    ("jupyter-console", "py3"): (6, 1),
+    ("jupytext", "py3"): (1, 8),
+    ("jupyterlab", "py35"): (2, 2),
     # don't upgrade this to allow all versions
     "prompt_toolkit:3": (1,),
     # don't upgrade this; it breaks on Python 2.6
     "pytest": (3,),
     # don't upgrade this; it breaks on unix
     "vprof": (0, 36),
+    # don't upgrade this; it breaks on Python 3.4
+    "pygments": (2, 3),
     # don't upgrade these; they break on Python 2
+    ("jupyter-console", "py2"): (5, 2),
     ("ipython", "py2"): (5, 4),
     ("ipykernel", "py2"): (4, 10),
     "prompt_toolkit:2": (1,),
     # don't upgrade these; they break on master
     "sphinx": (1, 7, 4),
     "sphinx_bootstrap_theme": (0, 4),
+    # don't upgrade this; it breaks with old IPython versions
+    "jedi": (0, 17),
 }
 
 # should match the reqs with comments above
 pinned_reqs = (
-    "jupyter-console",
     ("ipython", "py3"),
-    "pygments",
+    ("jupyter-console", "py3"),
+    ("jupytext", "py3"),
+    ("jupyterlab", "py35"),
     "prompt_toolkit:3",
     "pytest",
     "vprof",
+    "pygments",
+    ("jupyter-console", "py2"),
     ("ipython", "py2"),
     ("ipykernel", "py2"),
     "prompt_toolkit:2",
     "sphinx",
     "sphinx_bootstrap_theme",
+    "jedi",
 )
 
 # max versions are exclusive; None implies that the max version should
-#  be generated by incrementing the min version
+#  be generated by incrementing the min version; multiple Nones implies
+#  that the element corresponding to the last None should be incremented
+_ = None
 max_versions = {
-    "pyparsing": None,
-    "cPyparsing": None,
-    "sphinx": None,
-    "sphinx_bootstrap_theme": None,
-    "mypy": None,
-    "prompt_toolkit:2": None,
-    # until https://github.com/jupyter/jupyter_console/issues/198 is fixed
-    ("ipython", "py3"): (7, 11),
+    "pyparsing": _,
+    "cPyparsing": (_, _, _),
+    "sphinx": _,
+    "sphinx_bootstrap_theme": _,
+    "mypy": _,
+    "prompt_toolkit:2": _,
+    "jedi": _,
 }
 
 classifiers = (
@@ -274,6 +297,7 @@ classifiers = (
     "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
     "Programming Language :: Other",
     "Programming Language :: Other Scripting Engines",
     "Programming Language :: Python :: Implementation :: CPython",
@@ -353,6 +377,9 @@ search_terms = (
     "memoization",
     "backport",
     "typing",
+    "zip_longest",
+    "breakpoint",
+    "embed",
 )
 
 script_names = (
@@ -363,6 +390,8 @@ script_names = (
 ) + tuple(
     "coconut-v" + ".".join(version_tuple[:i]) for i in range(1, len(version_tuple) + 1)
 )
+
+requests_sleep_times = (0, 0.1, 0.2, 0.3, 0.4, 1)
 
 # -----------------------------------------------------------------------------------------------------------------------
 # PYPARSING CONSTANTS:
@@ -397,7 +426,15 @@ hash_prefix = "# __coconut_hash__ = "
 hash_sep = "\x00"
 
 py2_vers = ((2, 6), (2, 7))
-py3_vers = ((3, 2), (3, 3), (3, 4), (3, 5), (3, 6), (3, 7))
+py3_vers = (
+    (3, 2),
+    (3, 3),
+    (3, 4),
+    (3, 5),
+    (3, 6),
+    (3, 7),
+    (3, 8),
+)
 
 specific_targets = (
     "2",
@@ -427,8 +464,9 @@ else:
 
 openindent = "\u204b"  # reverse pilcrow
 closeindent = "\xb6"  # pilcrow
-strwrapper = "\u25b6"  # right-pointing triangle
-lnwrapper = "\u23f4"  # left-pointing triangle
+strwrapper = "\u25b6"  # black right-pointing triangle
+replwrapper = "\u25b7"  # white right-pointing triangle
+lnwrapper = "\u25c6"  # black diamond
 unwrapper = "\u23f9"  # stop square
 
 opens = "([{"  # opens parenthetical
@@ -440,18 +478,15 @@ tabideal = 4  # spaces to indent code for displaying
 
 justify_len = 79  # ideal line length
 
-max_match_val_repr_len = 500  # max len of match val reprs in err msgs
-
 reserved_prefix = "_coconut"
 decorator_var = reserved_prefix + "_decorator"
 import_as_var = reserved_prefix + "_import"
 yield_from_var = reserved_prefix + "_yield_from"
-yield_item_var = reserved_prefix + "_yield_item"
+yield_err_var = reserved_prefix + "_yield_err"
 raise_from_var = reserved_prefix + "_raise_from"
-stmt_lambda_var = reserved_prefix + "_lambda"
 tre_mock_var = reserved_prefix + "_mock_func"
 tre_check_var = reserved_prefix + "_is_recursive"
-none_coalesce_var = reserved_prefix + "_none_coalesce_item"
+none_coalesce_var = reserved_prefix + "_x"
 func_var = reserved_prefix + "_func"
 format_var = reserved_prefix + "_format"
 
@@ -461,8 +496,6 @@ match_to_args_var = match_to_var + "_args"
 match_to_kwargs_var = match_to_var + "_kwargs"
 match_check_var = reserved_prefix + "_match_check"
 match_temp_var = reserved_prefix + "_match_temp"
-match_err_var = reserved_prefix + "_match_err"
-match_val_repr_var = reserved_prefix + "_match_val_repr"
 function_match_error_var = reserved_prefix + "_FunctionMatchError"
 
 wildcard = "_"  # for pattern-matching
@@ -507,21 +540,20 @@ const_vars = (
 )
 
 reserved_vars = (  # can be backslash-escaped
+    "async",
+    "await",
     "data",
     "match",
     "case",
-    "async",
-    "await",
     "where",
 )
 
 py3_to_py2_stdlib = {
-    # new_name: (old_name, before_version_info)
+    # new_name: (old_name, before_version_info[, ])
     "builtins": ("__builtin__", (3,)),
     "configparser": ("ConfigParser", (3,)),
     "copyreg": ("copy_reg", (3,)),
     "dbm.gnu": ("gdbm", (3,)),
-    "_dummy_thread": ("dummy_thread", (3,)),
     "queue": ("Queue", (3,)),
     "reprlib": ("repr", (3,)),
     "socketserver": ("SocketServer", (3,)),
@@ -546,8 +578,8 @@ py3_to_py2_stdlib = {
     "xmlrpc.client": ("xmlrpclib", (3,)),
     "xmlrpc.server": ("SimpleXMLRPCServer", (3,)),
     "urllib.request": ("urllib2", (3,)),
-    "urllib.parse": ("urllib2", (3,)),
     "urllib.error": ("urllib2", (3,)),
+    "urllib.parse": ("urllib", (3,)),
     "pickle": ("cPickle", (3,)),
     "collections.abc": ("collections", (3, 3)),
     # ./ denotes from ... import ...
@@ -556,8 +588,11 @@ py3_to_py2_stdlib = {
     "importlib.reload": ("imp./reload", (3, 4)),
     "itertools.filterfalse": ("itertools./ifilterfalse", (3,)),
     "itertools.zip_longest": ("itertools./izip_longest", (3,)),
+    "math.gcd": ("fractions./gcd", (3, 5)),
     # third-party backports
     "asyncio": ("trollius", (3, 4)),
+    # _dummy_thread was removed in Python 3.9, so this no longer works
+    # "_dummy_thread": ("dummy_thread", (3,)),
 }
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -572,16 +607,23 @@ main_sig = "Coconut: "
 main_prompt = ">>> "
 more_prompt = "    "
 
+mypy_path_env_var = "MYPYPATH"
+style_env_var = "COCONUT_STYLE"
+home_env_var = "COCONUT_HOME"
+
+coconut_home = fixpath(os.environ.get(home_env_var, "~"))
+
 default_style = "default"
-default_histfile = os.path.join("~", ".coconut_history")
+default_histfile = os.path.join(coconut_home, ".coconut_history")
 prompt_multiline = False
 prompt_vi_mode = False
 prompt_wrap_lines = True
 prompt_history_search = True
 
-mypy_path_env_var = "MYPYPATH"
-style_env_var = "COCONUT_STYLE"
-histfile_env_var = "COCONUT_HISTORY_FILE"
+base_dir = os.path.dirname(os.path.abspath(fixpath(__file__)))
+
+base_stub_dir = os.path.join(base_dir, "stubs")
+installed_stub_dir = os.path.join(coconut_home, ".coconut_stubs")
 
 watch_interval = .1  # seconds
 
@@ -593,23 +635,6 @@ documentation_url = rtfd_url + "/DOCS.html"
 
 new_issue_url = "https://github.com/evhub/coconut/issues/new"
 report_this_text = "(you should report this at " + new_issue_url + ")"
-
-base_dir = os.path.dirname(os.path.abspath(fixpath(__file__)))
-
-icoconut_kernel_names = (
-    "coconut",
-    "coconut2",
-    "coconut3",
-)
-
-icoconut_dir = os.path.join(base_dir, "icoconut")
-icoconut_kernel_dirs = tuple(
-    os.path.join(icoconut_dir, kernel_name)
-    for kernel_name in icoconut_kernel_names
-)
-
-base_stub_dir = os.path.join(base_dir, "stubs")
-installed_stub_dir = os.path.join(os.path.expanduser("~"), ".coconut_stubs")
 
 exit_chars = (
     "\x04",  # Ctrl-D
@@ -664,23 +689,27 @@ coconut_specific_builtins = (
     "scan",
     "groupsof",
     "memoize",
+    "zip_longest",
     "TYPE_CHECKING",
     "py_chr",
-    "py_filter",
     "py_hex",
     "py_input",
-    "py_raw_input",
     "py_int",
+    "py_map",
     "py_object",
     "py_oct",
     "py_open",
     "py_print",
     "py_range",
-    "py_xrange",
     "py_str",
-    "py_map",
     "py_zip",
+    "py_filter",
+    "py_reversed",
+    "py_enumerate",
+    "py_raw_input",
+    "py_xrange",
     "py_repr",
+    "py_breakpoint",
 )
 
 new_operators = (
@@ -690,12 +719,12 @@ new_operators = (
     r"`",
     r"::",
     r"(?:<\*?\*?)?(?!\.\.\.)\.\.(?:\*?\*?>)?",  # ..
-    r"\|\*?\*?>",
+    r"\|\??\*?\*?>",
     r"<\*?\*?\|",
     r"->",
     r"\?\??",
     "\u2192",  # ->
-    "\\*?\\*?\u21a6",  # |>
+    "\\??\\*?\\*?\u21a6",  # |>
     "\u21a4\\*?\\*?",  # <|
     "<?\\*?\\*?\u2218\\*?\\*?>?",  # ..
     "\u22c5",  # *
@@ -722,6 +751,29 @@ new_operators = (
 # -----------------------------------------------------------------------------------------------------------------------
 # ICOCONUT CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
+
+icoconut_dir = os.path.join(base_dir, "icoconut")
+
+icoconut_custom_kernel_name = "coconut"
+icoconut_custom_kernel_dir = os.path.join(icoconut_dir, icoconut_custom_kernel_name)
+
+icoconut_custom_kernel_install_loc = "/".join(("share", "jupyter", "kernels", icoconut_custom_kernel_name))
+icoconut_custom_kernel_file_loc = "/".join(("coconut", "icoconut", icoconut_custom_kernel_name, "kernel.json"))
+
+icoconut_default_kernel_names = (
+    "coconut_py",
+    "coconut_py2",
+    "coconut_py3",
+)
+icoconut_default_kernel_dirs = tuple(
+    os.path.join(icoconut_dir, kernel_name)
+    for kernel_name in icoconut_default_kernel_names
+)
+
+icoconut_old_kernel_names = (
+    "coconut2",
+    "coconut3",
+)
 
 py_syntax_version = 3
 mimetype = "text/x-python3"

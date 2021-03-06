@@ -50,8 +50,10 @@ try:
     from IPython.core.inputsplitter import IPythonInputSplitter
     from IPython.core.interactiveshell import InteractiveShellABC
     from IPython.core.compilerop import CachingCompiler
+    from IPython.terminal.embed import InteractiveShellEmbed
     from ipykernel.ipkernel import IPythonKernel
     from ipykernel.zmqshell import ZMQInteractiveShell
+    from ipykernel.kernelapp import IPKernelApp
 except ImportError:
     LOAD_MODULE = False
     if os.environ.get(conda_build_env_var):
@@ -167,43 +169,53 @@ if LOAD_MODULE:
             else:
                 return True
 
-    class CoconutShell(ZMQInteractiveShell, object):
-        """IPython shell for Coconut."""
-        input_splitter = CoconutSplitter(line_input_checker=True)
-        input_transformer_manager = CoconutSplitter(line_input_checker=False)
+    INTERACTIVE_SHELL_CODE = '''
+input_splitter = CoconutSplitter(line_input_checker=True)
+input_transformer_manager = CoconutSplitter(line_input_checker=False)
 
-        def init_instance_attrs(self):
-            """Version of init_instance_attrs that uses CoconutCompiler."""
-            super(CoconutShell, self).init_instance_attrs()
-            self.compile = CoconutCompiler()
+def init_instance_attrs(self):
+    """Version of init_instance_attrs that uses CoconutCompiler."""
+    super({cls}, self).init_instance_attrs()
+    self.compile = CoconutCompiler()
 
-        def init_user_ns(self):
-            """Version of init_user_ns that adds Coconut built-ins."""
-            super(CoconutShell, self).init_user_ns()
-            RUNNER.update_vars(self.user_ns)
-            RUNNER.update_vars(self.user_ns_hidden)
+def init_user_ns(self):
+    """Version of init_user_ns that adds Coconut built-ins."""
+    super({cls}, self).init_user_ns()
+    RUNNER.update_vars(self.user_ns)
+    RUNNER.update_vars(self.user_ns_hidden)
 
-        def run_cell(self, raw_cell, store_history=False, silent=False, shell_futures=True):
-            """Version of run_cell that always uses shell_futures."""
-            return super(CoconutShell, self).run_cell(raw_cell, store_history, silent, shell_futures=True)
+def run_cell(self, raw_cell, store_history=False, silent=False, shell_futures=True, **kwargs):
+    """Version of run_cell that always uses shell_futures."""
+    return super({cls}, self).run_cell(raw_cell, store_history, silent, shell_futures=True, **kwargs)
 
-        if asyncio is not None:
-            @asyncio.coroutine
-            def run_cell_async(self, raw_cell, store_history=False, silent=False, shell_futures=True):
-                """Version of run_cell_async that always uses shell_futures."""
-                return super(CoconutShell, self).run_cell_async(raw_cell, store_history, silent, shell_futures=True)
+if asyncio is not None:
+    @asyncio.coroutine
+    def run_cell_async(self, raw_cell, store_history=False, silent=False, shell_futures=True, **kwargs):
+        """Version of run_cell_async that always uses shell_futures."""
+        return super({cls}, self).run_cell_async(raw_cell, store_history, silent, shell_futures=True, **kwargs)
 
-        def user_expressions(self, expressions):
-            """Version of user_expressions that compiles Coconut code first."""
-            compiled_expressions = {}
-            for key, expr in expressions.items():
-                try:
-                    compiled_expressions[key] = COMPILER.parse_eval(expr)
-                except CoconutException:
-                    compiled_expressions[key] = expr
-            return super(CoconutShell, self).user_expressions(compiled_expressions)
+def user_expressions(self, expressions):
+    """Version of user_expressions that compiles Coconut code first."""
+    compiled_expressions = {dict}
+    for key, expr in expressions.items():
+        try:
+            compiled_expressions[key] = COMPILER.parse_eval(expr)
+        except CoconutException:
+            compiled_expressions[key] = expr
+    return super({cls}, self).user_expressions(compiled_expressions)
+'''
+
+    class CoconutShell(ZMQInteractiveShell):
+        """ZMQInteractiveShell for Coconut."""
+        exec(INTERACTIVE_SHELL_CODE.format(dict="{}", cls="CoconutShell"))
 
     InteractiveShellABC.register(CoconutShell)
+
+    class CoconutShellEmbed(InteractiveShellEmbed):
+        """InteractiveShellEmbed for Coconut."""
+        exec(INTERACTIVE_SHELL_CODE.format(dict="{}", cls="CoconutShellEmbed"))
+
+    InteractiveShellABC.register(CoconutShellEmbed)
 
     class CoconutKernel(IPythonKernel, object):
         """Jupyter kernel for Coconut."""
@@ -251,3 +263,10 @@ if LOAD_MODULE:
                 return super(CoconutKernel, self).do_complete(code, cursor_pos)
             finally:
                 self.use_experimental_completions = True
+
+    class CoconutKernelApp(IPKernelApp, object):
+        """IPython kernel app that uses the Coconut kernel."""
+        name = "coconut-kernel"
+        classes = IPKernelApp.classes + [CoconutKernel, CoconutShell]
+        kernel_class = CoconutKernel
+        subcommands = {}

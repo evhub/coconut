@@ -71,7 +71,7 @@ def test_extras():
     assert parse("abc", "block") == "abc\n" == parse("abc", "single")
     assert parse("abc", "eval") == "abc" == parse(" abc", "eval")
     assert parse("abc", "any") == "abc"
-    assert parse("x |> map$(f)", "any") == "map(f, x)"
+    assert parse("x |> map$(f)", "any") == "(map)(f, x)"
     assert "_coconut" not in parse("a |> .b |> .m() |> f$(x) |> .[0]", "block")
     assert parse("abc # derp", "any") == "abc  # derp"
     assert_raises(-> parse(" abc", "file"), CoconutException)
@@ -81,6 +81,7 @@ def test_extras():
     assert_raises(-> parse("if a:\n  b\n c"), CoconutException)
     assert_raises(-> parse("$"), CoconutException)
     assert_raises(-> parse("_coconut"), CoconutException)
+    assert_raises(-> parse("range(1,10) |> reduce$(*, initializer = 1000) |> print"), CoconutException)
     assert parse("def f(x):\n \t pass")
     assert parse("lambda x: x")
     assert parse("u''")
@@ -120,6 +121,13 @@ def test_extras():
     setup(target="2.7")
     assert parse("from io import BytesIO", mode="any") == "from io import BytesIO"
     assert_raises(-> parse("def f(*, x=None) = x"), CoconutTargetError)
+    setup(target="3.3")
+    gen_func_def = """def f(x):
+    yield x
+    return x"""
+    assert parse(gen_func_def, mode="any") == gen_func_def
+    setup(target="3.2")
+    assert parse(gen_func_def, mode="any") != gen_func_def
     setup(target="3.6")
     assert parse("def f(*, x=None) = x")
     setup(target="3.8")

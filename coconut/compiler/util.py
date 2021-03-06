@@ -39,7 +39,11 @@ from coconut._pyparsing import (
     _trim_arity,
     _ParseResultsWithOffset,
 )
-from coconut.terminal import logger, complain
+from coconut.terminal import (
+    logger,
+    complain,
+    get_name,
+)
 from coconut.constants import (
     opens,
     closes,
@@ -117,8 +121,11 @@ def evaluate_tokens(tokens):
     elif isinstance(tokens, ComputationNode):
         return tokens.evaluate()
 
-    elif isinstance(tokens, (list, tuple)):
+    elif isinstance(tokens, list):
         return [evaluate_tokens(inner_toks) for inner_toks in tokens]
+
+    elif isinstance(tokens, tuple):
+        return tuple(evaluate_tokens(inner_toks) for inner_toks in tokens)
 
     else:
         raise CoconutInternalException("invalid computation graph tokens", tokens)
@@ -129,12 +136,12 @@ class ComputationNode(object):
     __slots__ = ("action", "loc", "tokens", "index_of_original") + (("been_called",) if DEVELOP else ())
     list_of_originals = []
 
-    def __new__(cls, action, original, loc, tokens, greedy=False, ignore_no_tokens=False, ignore_one_token=False):
+    def __new__(cls, action, original, loc, tokens, ignore_no_tokens=False, ignore_one_token=False, greedy=False):
         """Create a ComputionNode to return from a parse action.
 
-        If greedy, then never defer the action until later.
         If ignore_no_tokens, then don't call the action if there are no tokens.
-        If ignore_one_token, then don't call the action if there is only one token."""
+        If ignore_one_token, then don't call the action if there is only one token.
+        If greedy, then never defer the action until later."""
         if ignore_no_tokens and len(tokens) == 0:
             return []
         elif ignore_one_token and len(tokens) == 1:
@@ -208,17 +215,17 @@ class CombineNode(Combine):
 
 
 if use_computation_graph:
-    UseCombine = CombineNode
+    CustomCombine = CombineNode
 else:
-    UseCombine = Combine
+    CustomCombine = Combine
 
 
 def add_action(item, action):
-    """Set the parse action for the given item."""
+    """Add a parse action to the given item."""
     return item.copy().addParseAction(action)
 
 
-def attach(item, action, greedy=False, ignore_no_tokens=None, ignore_one_token=None):
+def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, **kwargs):
     """Set the parse action for the given item to create a node in the computation graph."""
     if use_computation_graph:
         # use the action's annotations to generate the defaults
@@ -226,10 +233,7 @@ def attach(item, action, greedy=False, ignore_no_tokens=None, ignore_one_token=N
             ignore_no_tokens = getattr(action, "ignore_no_tokens", False)
         if ignore_one_token is None:
             ignore_one_token = getattr(action, "ignore_one_token", False)
-        # only include True keyword arguments in the partial, since False is the default
-        kwargs = {}
-        if greedy:
-            kwargs["greedy"] = greedy
+        # only include True keyword arguments in the partial since False is the default
         if ignore_no_tokens:
             kwargs["ignore_no_tokens"] = ignore_no_tokens
         if ignore_one_token:
@@ -419,12 +423,12 @@ def tokenlist(item, sep, suppress=True):
 
 
 def itemlist(item, sep, suppress_trailing=True):
-    """Create a list of items seperated by seps."""
+    """Create a list of items separated by seps."""
     return condense(item + ZeroOrMore(addspace(sep + item)) + Optional(sep.suppress() if suppress_trailing else sep))
 
 
 def exprlist(expr, op):
-    """Create a list of exprs seperated by ops."""
+    """Create a list of exprs separated by ops."""
     return addspace(expr + ZeroOrMore(op + expr))
 
 
@@ -547,11 +551,21 @@ class Wrap(ParseElementEnhance):
         super(Wrap, self).__init__(item)
         self.errmsg = item.errmsg + " (Wrapped)"
         self.wrapper = wrapper
+        self.name = get_name(item)
+
+    @property
+    def wrapper_name(self):
+        """Wrapper display name."""
+        return self.name + " wrapper"
 
     def parseImpl(self, instring, loc, *args, **kwargs):
         """Wrapper around ParseElementEnhance.parseImpl."""
-        with self.wrapper(self, instring, loc):
-            return super(Wrap, self).parseImpl(instring, loc, *args, **kwargs)
+        logger.log_trace(self.wrapper_name, instring, loc)
+        with logger.indent_tracing():
+            with self.wrapper(self, instring, loc):
+                evaluated_toks = super(Wrap, self).parseImpl(instring, loc, *args, **kwargs)
+        logger.log_trace(self.wrapper_name, instring, loc, evaluated_toks)
+        return evaluated_toks
 
 
 def disable_inside(item, *elems, **kwargs):
@@ -588,23 +602,23 @@ def disable_inside(item, *elems, **kwargs):
 def disable_outside(item, *elems):
     """Prevent elems from matching outside of item.
 
-    Returns (item with elem disabled, *new versions of elems).
+    Returns (item with elem enabled, *new versions of elems).
     """
     for wrapped in disable_inside(item, *elems, **{"_invert": True}):
         yield wrapped
 
 
-def interleaved_join(outer_list, inner_list):
+def interleaved_join(first_list, second_list):
     """Interleaves two lists of strings and joins the result.
 
     Example: interleaved_join(['1', '3'], ['2']) == '123'
     The first list must be 1 longer than the second list.
     """
-    internal_assert(len(outer_list) == len(inner_list) + 1, "invalid list lengths to interleaved_join", (outer_list, inner_list))
+    internal_assert(len(first_list) == len(second_list) + 1, "invalid list lengths to interleaved_join", (first_list, second_list))
     interleaved = []
-    for xx in zip(outer_list, inner_list):
-        interleaved.extend(xx)
-    interleaved.append(outer_list[-1])
+    for first_second in zip(first_list, second_list):
+        interleaved.extend(first_second)
+    interleaved.append(first_list[-1])
     return "".join(interleaved)
 
 

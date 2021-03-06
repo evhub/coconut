@@ -1,20 +1,98 @@
-import asyncio
+import os
+import sys
+import platform
 
+# Constants
+TEST_ASYNCIO = platform.python_implementation() != "PyPy" or os.name != "nt" and sys.version_info >= (3,)
+
+
+# Iterator returns
+def un_treable_iter(x):
+    try:
+        yield x
+    finally:
+        pass
+    if x == 0:
+        return x
+    else:
+        return un_treable_iter(x)
+
+def it_ret(x):
+    return x
+    yield None
+
+def yield_from_return(x):
+    yield x
+    if x == 0:
+        return x
+    else:
+        return (yield from yield_from_return(x-1))
+
+def it_ret_none():
+    return
+    yield None
+
+def it_ret_tuple(x, y):
+    return x, y
+    yield None
+
+
+# Main
 def target_sys_test():
     """Performs --target sys tests."""
-    async def async_map_0(args):
-        return parallel_map(args[0], *args[1:])
-    async def async_map_1(args) = parallel_map(args[0], *args[1:])
-    async def async_map_2([func] + iters) = parallel_map(func, *iters)
-    async match def async_map_3([func] + iters) = parallel_map(func, *iters)
-    match async def async_map_4([func] + iters) = parallel_map(func, *iters)
-    async def async_map_test() =
-        for async_map in (async_map_0, async_map_1, async_map_2, async_map_3, async_map_4):
-            assert (await ((pow$(2), range(5)) |> async_map)) |> tuple == (1, 2, 4, 8, 16)
-        True
-    async def main():
-        assert await async_map_test()
-    loop = asyncio.new_event_loop()
-    loop.run_until_complete(main())
-    loop.close()
+    if TEST_ASYNCIO:
+        import asyncio
+        async def async_map_0(args):
+            return parallel_map(args[0], *args[1:])
+        async def async_map_1(args) = parallel_map(args[0], *args[1:])
+        async def async_map_2([func] + iters) = parallel_map(func, *iters)
+        async match def async_map_3([func] + iters) = parallel_map(func, *iters)
+        match async def async_map_4([func] + iters) = parallel_map(func, *iters)
+        async def async_map_test() =
+            for async_map in (async_map_0, async_map_1, async_map_2, async_map_3, async_map_4):
+                assert (await ((pow$(2), range(5)) |> async_map)) |> tuple == (1, 2, 4, 8, 16)
+            True
+        async def main():
+            assert await async_map_test()
+        loop = asyncio.new_event_loop()
+        loop.run_until_complete(main())
+        loop.close()
+    else:
+        assert platform.python_implementation() == "PyPy"
+        assert os.name == "nt" or sys.version_info < (3,)
+    it = un_treable_iter(2)
+    assert next(it) == 2
+    try:
+        next(it)
+    except StopIteration as err:
+        assert err.args[0] |> list == [2]
+    else:
+        assert False
+    it = yield_from_return(1)
+    assert next(it) == 1
+    assert next(it) == 0
+    try:
+        next(it)
+    except StopIteration as err:
+        assert err.args[0] == 0
+    else:
+        assert False
+    try:
+        next(it_ret(5))
+    except StopIteration as err:
+        assert err.args[0] == 5
+    else:
+        assert False
+    try:
+        next(it_ret_none())
+    except StopIteration as err:
+        assert not err.args
+    else:
+        assert False
+    try:
+        next(it_ret_tuple(1, 2))
+    except StopIteration as err:
+        assert err.args[0] == (1, 2)
+    else:
+        assert False
     return True

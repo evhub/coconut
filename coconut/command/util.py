@@ -50,7 +50,6 @@ from coconut.constants import (
     prompt_history_search,
     style_env_var,
     mypy_path_env_var,
-    histfile_env_var,
     tutorial_url,
     documentation_url,
     reserved_vars,
@@ -205,15 +204,15 @@ def kill_children():
             extra="run 'pip install coconut[jobs]' to fix",
         )
     else:
-        master = psutil.Process()
-        children = master.children(recursive=True)
+        parent = psutil.Process()
+        children = parent.children(recursive=True)
         while children:
             for child in children:
                 try:
                     child.terminate()
                 except psutil.NoSuchProcess:
                     pass  # process is already dead, so do nothing
-            children = master.children(recursive=True)
+            children = parent.children(recursive=True)
 
 
 def splitname(path):
@@ -319,8 +318,8 @@ def set_mypy_path():
     else:
         new_mypy_path = None
     if new_mypy_path is not None:
-        logger.log(mypy_path_env_var, "=", new_mypy_path)
         os.environ[mypy_path_env_var] = new_mypy_path
+    logger.log_func(lambda: (mypy_path_env_var, "=", os.environ[mypy_path_env_var]))
 
 
 def stdin_readable():
@@ -378,7 +377,7 @@ class Prompt(object):
         """Set up the prompt."""
         if prompt_toolkit is not None:
             self.set_style(os.environ.get(style_env_var, default_style))
-            self.set_history_file(os.environ.get(histfile_env_var, default_histfile))
+            self.set_history_file(default_histfile)
 
     def set_style(self, style):
         """Set pygments syntax highlighting style."""
@@ -395,7 +394,7 @@ class Prompt(object):
             raise CoconutException("unrecognized pygments style", style, extra="use '--style list' to show all valid styles")
 
     def set_history_file(self, path):
-        """Set path to history file. "" produces no file."""
+        """Set path to history file. Pass empty string for in-memory history."""
         if path:
             self.history = prompt_toolkit.history.FileHistory(fixpath(path))
         else:
@@ -446,8 +445,9 @@ class Runner(object):
 
     def __init__(self, comp=None, exit=sys.exit, store=False, path=None):
         """Create the executor."""
-        # allow direct importing of Coconut files
-        import coconut.convenience  # NOQA
+        from coconut.convenience import auto_compilation, use_coconut_breakpoint
+        auto_compilation(on=True)
+        use_coconut_breakpoint(on=False)
         self.exit = exit
         self.vars = self.build_vars(path)
         self.stored = [] if store else None
@@ -559,7 +559,7 @@ class multiprocess_wrapper(object):
         self.base, self.method = base, method
 
     def __call__(self, *args, **kwargs):
-        """Set up new process then calls the method."""
+        """Call the method."""
         sys.setrecursionlimit(self.recursion)
         logger.copy_from(self.logger)
         return getattr(self.base, self.method)(*args, **kwargs)

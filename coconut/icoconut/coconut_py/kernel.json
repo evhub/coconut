@@ -1,11 +1,11 @@
 {
   "argv": [
-    "python2",
+    "python",
     "-m",
     "coconut.icoconut",
     "-f",
     "{connection_file}"
   ],
-  "display_name": "Coconut (Python 2)",
+  "display_name": "Coconut (Default Python)",
   "language": "coconut"
 }

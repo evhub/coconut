@@ -54,7 +54,25 @@ if sys.version_info < (3,):
         def index(self, elem: int) -> int: ...
 
 
-py_chr, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate = chr, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate
+if sys.version_info < (3, 7):
+    def breakpoint(*args, **kwargs) -> _t.Any: ...
+
+
+py_chr = chr
+py_hex = hex
+py_input = input
+py_int = int
+py_map = map
+py_object = object
+py_oct = oct
+py_open = open
+py_print = print
+py_range = range
+py_str = str
+py_zip = zip
+py_filter = filter
+py_reversed = reversed
+py_enumerate = enumerate
 
 
 def scan(
@@ -65,7 +83,7 @@ def scan(
 
 
 class _coconut:
-    import collections, copy, functools, types, itertools, operator, threading, weakref, os, warnings
+    import collections, copy, functools, types, itertools, operator, threading, weakref, os, warnings, contextlib, traceback
     if sys.version_info >= (3, 4):
         import asyncio
     else:
@@ -78,9 +96,57 @@ class _coconut:
     if sys.version_info < (3, 3):
         abc = collections
     else:
-        abc = collections.abc
+        from collections import abc
     typing = _t  # The real _coconut doesn't import typing, but we want type-checkers to treat it as if it does
-    Ellipsis, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, type, zip, repr = Ellipsis, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, staticmethod(list), locals, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, type, zip, staticmethod(repr)
+    if sys.version_info >= (3,):
+        zip_longest = itertools.zip_longest
+    else:
+        zip_longest = itertools.izip_longest
+    Ellipsis = Ellipsis
+    NotImplemented = NotImplemented
+    Exception = Exception
+    AttributeError = AttributeError
+    ImportError = ImportError
+    IndexError = IndexError
+    KeyError = KeyError
+    NameError = NameError
+    TypeError = TypeError
+    ValueError = ValueError
+    StopIteration = StopIteration
+    classmethod = classmethod
+    dict = dict
+    enumerate = enumerate
+    filter = filter
+    float = float
+    frozenset = frozenset
+    getattr = getattr
+    hasattr = hasattr
+    hash = hash
+    id = id
+    int = int
+    isinstance = isinstance
+    issubclass = issubclass
+    iter = iter
+    len = len
+    list = staticmethod(list)
+    locals = locals
+    map = map
+    min = min
+    max = max
+    next = next
+    object = _t.Union[object]
+    print = print
+    property = property
+    range = range
+    reversed = reversed
+    set = set
+    slice = slice
+    str = str
+    sum = sum
+    tuple = tuple
+    type = type
+    zip = zip
+    repr = staticmethod(repr)
     if sys.version_info >= (3,):
         bytearray = bytearray
 
@@ -93,10 +159,11 @@ starmap = _coconut.itertools.starmap
 
 
 if sys.version_info >= (3, 2):
-    from functools import lru_cache as memoize
+    from functools import lru_cache
 else:
-    from backports.functools_lru_cache import lru_cache as memoize  # type: ignore
+    from backports.functools_lru_cache import lru_cache  # type: ignore
     _coconut.functools.lru_cache = memoize  # type: ignore
+memoize = lru_cache
 
 
 _coconut_tee = tee
@@ -110,7 +177,13 @@ TYPE_CHECKING = _t.TYPE_CHECKING
 _coconut_sentinel = object()
 
 
-class MatchError(Exception): ...
+class MatchError(Exception):
+    pattern: _t.Text
+    value: _t.Any
+    _message: _t.Optional[_t.Text]
+    def __init__(self, pattern: _t.Text, value: _t.Any): ...
+    @property
+    def message(self) -> _t.Text: ...
 _coconut_MatchError = MatchError
 
 
@@ -227,15 +300,18 @@ _coconut_back_dubstar_compose = _coconut_back_compose
 
 
 def _coconut_pipe(x: _T, f: _t.Callable[[_T], _U]) -> _U: ...
-def _coconut_back_pipe(f: _t.Callable[[_T], _U], x: _T) -> _U: ...
-
-
 def _coconut_star_pipe(xs: _t.Iterable, f: _t.Callable[..., _T]) -> _T: ...
-def _coconut_back_star_pipe(f: _t.Callable[..., _T], xs: _t.Iterable) -> _T: ...
-
-
 def _coconut_dubstar_pipe(kws: _t.Dict[_t.Text, _t.Any], f: _t.Callable[..., _T]) -> _T: ...
+
+
+def _coconut_back_pipe(f: _t.Callable[[_T], _U], x: _T) -> _U: ...
+def _coconut_back_star_pipe(f: _t.Callable[..., _T], xs: _t.Iterable) -> _T: ...
 def _coconut_back_dubstar_pipe(f: _t.Callable[..., _T], kws: _t.Dict[_t.Text, _t.Any]) -> _T: ...
+
+
+def _coconut_none_pipe(x: _t.Optional[_T], f: _t.Callable[[_T], _U]) -> _t.Optional[_U]: ...
+def _coconut_none_star_pipe(xs: _t.Optional[_t.Iterable], f: _t.Callable[..., _T]) -> _t.Optional[_T]: ...
+def _coconut_none_dubstar_pipe(kws: _t.Optional[_t.Dict[_t.Text, _t.Any]], f: _t.Callable[..., _T]) -> _t.Optional[_T]: ...
 
 
 def _coconut_assert(cond, msg: _t.Optional[_t.Text]=None):
@@ -261,6 +337,7 @@ def _coconut_minus(a, *rest):
 
 
 def reiterable(iterable: _t.Iterable[_T]) -> _t.Iterable[_T]: ...
+_coconut_reiterable = reiterable
 
 
 class count(_t.Iterable[int]):

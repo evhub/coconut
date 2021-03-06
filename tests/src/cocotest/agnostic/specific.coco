@@ -12,7 +12,8 @@ def non_py26_test():
     test = {}
     exec("b = mod(5, 3)", globals(), test)
     assert test["b"] == 2
-    assert 5.bit_length() == 3
+    assert 5 .bit_length() == 3
+    assert 5 .imag == 0
     return True
 
 def non_py32_test():
@@ -23,3 +24,9 @@ def non_py32_test():
     fakefile = StringIO()
     print("herpaderp", file=fakefile, flush=True)
     assert fakefile.getvalue() == "herpaderp\n"
+    return True
+
+def py37_test():
+    """Tests for any py37+ version."""
+    assert py_breakpoint
+    return True

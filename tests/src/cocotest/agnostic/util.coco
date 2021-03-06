@@ -277,6 +277,27 @@ class methtest:
     def tail_call_meth(self, arg) = self.meth(arg)
 def meth(self, arg) = arg
 
+def un_treable_func1(x, g=-> _):
+    if x == 0:
+        return g(x)
+    px = y -> y + x
+    gp = y -> px(g(y))
+    return un_treable_func1(x-1, gp)
+
+def un_treable_func2(x, g=-> _):
+    if x == 0:
+        return g(x)
+    def px(y): return y + x
+    def gp(y): return px(g(y))
+    return un_treable_func2(x-1, gp)
+
+def loop_then_tre(n):
+    if n == 0:
+        return 0
+    for i in range(1):
+        pass
+    return loop_then_tre(n-1)
+
 # Data Blocks:
 try:
     datamaker
@@ -941,3 +962,16 @@ class store:
     one = 1
     two = 2
     plus1 = (+)$(1)
+
+
+# Locals and globals
+def ret_locals() =
+    abc = 1
+    locals()
+def ret_globals() =
+    abc = 1
+    locals()
+
+
+# Pos only args
+match def pos_only(a, b, /) = a, b

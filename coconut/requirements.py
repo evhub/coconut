@@ -17,7 +17,8 @@ Description: Coconut installation requirements.
 
 from coconut.root import *  # NOQA
 
-import platform
+import sys
+import time
 
 from coconut.constants import (
     ver_str_to_tuple,
@@ -28,10 +29,13 @@ from coconut.constants import (
     max_versions,
     pinned_reqs,
     PYPY,
+    CPYTHON,
     PY34,
+    JUST_PY36,
     IPY,
     WINDOWS,
     PURE_PYTHON,
+    requests_sleep_times,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -40,7 +44,7 @@ from coconut.constants import (
 
 try:
     import setuptools  # this import is expensive, so we keep it out of constants
-    setuptools_version = tuple(int(x) for x in setuptools.__version__.split("."))
+    setuptools_version = tuple(int(x) for x in setuptools.__version__.split(".")[:2])
     using_modern_setuptools = setuptools_version >= (18,)
     supports_env_markers = setuptools_version >= (36, 2)
 except Exception:
@@ -63,32 +67,51 @@ def get_reqs(which):
     """Gets requirements from all_reqs with versions."""
     reqs = []
     for req in all_reqs[which]:
+        use_req = True
         req_str = get_base_req(req) + ">=" + ver_tuple_to_str(min_versions[req])
         if req in max_versions:
             max_ver = max_versions[req]
             if max_ver is None:
                 max_ver = get_next_version(min_versions[req])
+            if None in max_ver:
+                assert all(v is None for v in max_ver), "invalid max version " + repr(max_ver)
+                max_ver = get_next_version(min_versions[req], len(max_ver) - 1)
             req_str += ",<" + ver_tuple_to_str(max_ver)
         env_marker = req[1] if isinstance(req, tuple) else None
         if env_marker:
-            if env_marker == "py2":
-                if supports_env_markers:
-                    req_str += ";python_version<'3'"
-                elif not PY2:
-                    continue
-            elif env_marker == "py3":
-                if supports_env_markers:
-                    req_str += ";python_version>='3'"
-                elif PY2:
-                    continue
-            elif env_marker == "py34":
-                if supports_env_markers:
-                    req_str += ";python_version>='3.4'"
-                elif not PY34:
-                    continue
-            else:
-                raise ValueError("unknown env marker id " + repr(env_marker))
-        reqs.append(req_str)
+            markers = []
+            for mark in env_marker.split(";"):
+                if mark == "py2":
+                    if supports_env_markers:
+                        markers.append("python_version<'3'")
+                    elif not PY2:
+                        use_req = False
+                        break
+                elif mark == "py3":
+                    if supports_env_markers:
+                        markers.append("python_version>='3'")
+                    elif PY2:
+                        use_req = False
+                        break
+                elif mark.startswith("py3") and len(mark) == len("py3") + 1:
+                    ver = int(mark[len("py3"):])
+                    if supports_env_markers:
+                        markers.append("python_version>='3.{ver}'".format(ver=ver))
+                    elif sys.version_info < (3, ver):
+                        use_req = False
+                        break
+                elif mark == "cpy":
+                    if supports_env_markers:
+                        markers.append("platform_python_implementation=='CPython'")
+                    elif not CPYTHON:
+                        use_req = False
+                        break
+                else:
+                    raise ValueError("unknown env marker " + repr(mark))
+            if markers:
+                req_str += ";" + " and ".join(markers)
+        if use_req:
+            reqs.append(req_str)
     return reqs
 
 
@@ -119,7 +142,7 @@ def everything_in(req_dict):
 # SETUP:
 # -----------------------------------------------------------------------------------------------------------------------
 
-requirements = []
+requirements = get_reqs("main")
 
 extras = {
     "jupyter": get_reqs("jupyter"),
@@ -140,7 +163,7 @@ extras.update({
         extras["jobs"] if not PYPY else [],
         extras["jupyter"] if IPY else [],
         extras["mypy"] if PY34 and not WINDOWS and not PYPY else [],
-        extras["asyncio"] if not PY34 else [],
+        extras["asyncio"] if not PY34 and not PYPY else [],
     ),
 })
 
@@ -158,7 +181,7 @@ elif supports_env_markers:
     extras[":platform_python_implementation!='CPython'"] = get_reqs("purepython")
 else:
     # old method
-    if platform.python_implementation() == "CPython":
+    if CPYTHON:
         requirements += get_reqs("cpython")
     else:
         requirements += get_reqs("purepython")
@@ -169,6 +192,7 @@ if using_modern_setuptools:
     extras[":python_version>='2.7'"] = get_reqs("non-py26")
     extras[":python_version<'3'"] = get_reqs("py2")
     extras[":python_version>='3'"] = get_reqs("py3")
+    extras[":python_version=='3.6.*'"] = get_reqs("just-py36")
 
 else:
     # old method
@@ -180,6 +204,8 @@ else:
         requirements += get_reqs("py2")
     else:
         requirements += get_reqs("py3")
+    if JUST_PY36:
+        requirements += get_reqs("just-py36")
 
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN:
@@ -190,7 +216,19 @@ def all_versions(req):
     """Get all versions of req from PyPI."""
     import requests  # expensive
     url = "https://pypi.python.org/pypi/" + get_base_req(req) + "/json"
-    return tuple(requests.get(url).json()["releases"].keys())
+    for i, sleep_time in enumerate(requests_sleep_times):
+        time.sleep(sleep_time)
+        try:
+            result = requests.get(url)
+        except Exception:
+            if i == len(requests_sleep_times) - 1:
+                print("Error accessing:", url)
+                raise
+            elif i > 0:
+                print("Error accessing:", url, "(retrying)")
+        else:
+            break
+    return tuple(result.json()["releases"].keys())
 
 
 def newer(new_ver, old_ver, strict=False):

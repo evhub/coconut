@@ -1,5 +1,4 @@
 import sys
-import asyncio  # type: ignore
 
 
 def assert_raises(c, exc):
@@ -171,9 +170,7 @@ def main_test():
     assert zip(count(), count())$[10**9] |> tuple == (10**9, 10**9) == zip(count(), count())[10**9] |> tuple
     assert count(1.5, 0.5)$[0] == 1.5 == (1.5,2,2.5,3)$[0]
     assert count(1.5, 0.5)$[1:3] |> tuple == (2,2.5) == (1.5,2,2.5,3)$[1:3] |> tuple
-    import platform
-    if sys.version_info < (3,) or platform.python_implementation() != "PyPy":  # TODO: remove when pypy3 fixes this error
-        assert iter((0,1,2,3,4))$[::2] |> tuple == (0,2,4), (iter((0,1,2,3,4)), iter((0,1,2,3,4))$[::2], iter((0,1,2,3,4))$[::2] |> tuple)
+    assert iter((0,1,2,3,4))$[::2] |> tuple == (0,2,4), (iter((0,1,2,3,4)), iter((0,1,2,3,4))$[::2], iter((0,1,2,3,4))$[::2] |> tuple)
     assert iter((0,1,2,3,4))$[::-1] |> tuple == (4,3,2,1,0), (iter((0,1,2,3,4)), iter((0,1,2,3,4))$[::-1], iter((0,1,2,3,4))$[::-1] |> tuple)
     assert {x:x for x in range(5)} == {0:0, 1:1, 2:2, 3:3, 4:4}
     match x = 12
@@ -410,6 +407,11 @@ def main_test():
     assert b.read() == b"herp"
     assert 1 ?? 2 == 1 == (??)(1, 2)
     assert None ?? 2 == 2 == (??)(None, 2)
+    one = 1
+    two = 2
+    none = None
+    assert one ?? two == one == (??)(one, two)
+    assert none ?? two == two == (??)(none, two)
     timeout: int? = None
     local_timeout: int? = 60
     global_timeout: int = 300
@@ -469,9 +471,9 @@ def main_test():
     assert a == 5 where:
         {"a": a} = {"a": 5}
     assert (None ?? False is False) is True
-    assert (1 ?? False is False) is False
-    loop = asyncio.new_event_loop()
-    loop.close()
+    one = 1
+    false = False
+    assert (one ?? false is false) is false
     assert ... is Ellipsis
     assert 1or 2
     two = None
@@ -491,7 +493,7 @@ def main_test():
     assert makedata(dict, ("a", 1), ("b", 2)) == {"a": 1, "b": 2}
     [a] is list = [1]
     assert a == 1
-    assert makedata(type((||)), 1, 2) == (1, 2) == makedata(type(() :: ()), 1, 2)
+    assert makedata(type(iter(())), 1, 2) == (1, 2) == makedata(type(() :: ()), 1, 2)
     all_none = count(None, 0) |> reversed
     assert all_none$[0] is None
     assert all_none$[:3] |> list == [None, None, None]
@@ -540,7 +542,10 @@ def main_test():
         assert str(err) == "(assert) got falsey value []"
     else:
         assert False
-    from itertools import filterfalse, zip_longest
+    from itertools import filterfalse as py_filterfalse
+    assert py_filterfalse
+    from itertools import zip_longest as py_zip_longest
+    assert py_zip_longest
     assert reversed(reiterable(range(10)))[-1] == 0
     assert count("derp", None)[10] == "derp"
     assert count("derp", None)[5:10] |> list == ["derp"] * 5
@@ -549,12 +554,7 @@ def main_test():
     match def f(a, /, b) = a, b
     assert f(1, 2) == (1, 2)
     assert f(1, b=2) == (1, 2)
-    try:
-        f(a=1, b=2)
-    except MatchError:
-        assert True
-    else:
-        assert False
+    assert_raises(-> f(a=1, b=2), MatchError)
     class A
     a = A()
     f = 10
@@ -565,6 +565,97 @@ def main_test():
     assert f 1 2 == (1, 2)
     def f(0) = 'a'
     assert f 0 == 'a'
+    a = 1
+    assert f"xx{a=}yy" == "xxa=1yy"
+    def f(x) = x + 1
+    assert f"{1 |> f=}" == "1 |> f=2"
+    assert f"{'abc'=}" == "'abc'=abc"
+    assert a == 3 where:
+        (1, 2, a) = (1, 2, 3)
+    assert a == 2 == b where:
+        a = 2
+        b = 2
+    assert a == 3 where:
+        a = 2
+        a = a + 1
+    assert a == 5 where:
+        def six() = 6
+        a = six()
+        a -= 1
+    assert 1 == 1.0 == 1.
+    assert 1i == 1.0i == 1.i
+    exc = MatchError("pat", "val")
+    assert exc._message is None
+    expected_msg = "pattern-matching failed for 'pat' in 'val'"
+    assert exc.message == expected_msg
+    assert exc._message == expected_msg
+    try:
+        x is int = "a"
+    except MatchError as err:
+        assert str(err) == "pattern-matching failed for 'x is int = \"a\"' in 'a'"
+    else:
+        assert False
+    for base_it in [
+        map((+)$(1), range(10)),
+        zip(range(10), range(5, 15)),
+        filter(x -> x > 5, range(10)),
+        reversed(range(10)),
+        enumerate(range(10)),
+    ]:
+        it1 = iter(base_it)
+        item1 = next(it1)
+        it2 = iter(base_it)
+        item2 = next(it2)
+        assert item1 == item2
+        it3 = iter(it2)
+        item3 = next(it3)
+        assert item3 != item2
+    for map_func in (parallel_map, concurrent_map):
+        m1 = map_func((+)$(1), range(5))
+        assert m1 `isinstance` map_func
+        with map_func.multiple_sequential_calls():
+            m2 = map_func((+)$(1), range(5))
+            assert m2 `isinstance` list
+            assert m1.result is None
+            assert m2 == [1, 2, 3, 4, 5] == list(m1)
+        assert m1.result == [1, 2, 3, 4, 5] == list(m1)
+        assert m1.__copy__().result == m1.result
+    for it in ((), [], (||)):
+        assert_raises(-> it$[0], IndexError)
+        assert_raises(-> it$[-1], IndexError)
+    z = zip_longest(range(2), range(5))
+    r = [(0, 0), (1, 1), (None, 2), (None, 3), (None, 4)]
+    assert list(z) == r
+    assert [z[i] for i in range(5)] == r == list(z[:])
+    assert_raises(-> z[5], IndexError)
+    assert z[-1] == (None, 4)
+    assert list(z[1:-1]) == r[1:-1]
+    assert list(z[10:]) == []
+    hook = getattr(sys, "breakpointhook", None)
+    try:
+        def sys.breakpointhook() = 5
+        assert breakpoint() == 5
+    finally:
+        if hook is None:
+            del sys.breakpointhook
+        else:
+            sys.breakpointhook = hook
+    x = 5
+    assert f"{f'{x}'}" == "5"
+    abcd = (| d(a), d(b), d(c) |)
+    def d(n) = n + 1
+    a = 1
+    assert abcd$[0] == 2
+    b = 2
+    assert abcd$[1] == 3
+    c = 3
+    assert abcd$[2] == 4
+    return True
+
+def test_asyncio():
+    import asyncio  # type: ignore
+    loop = asyncio.new_event_loop()
+    loop.close()
     return True
 
 def easter_egg_test():
@@ -592,7 +683,10 @@ def main(test_easter_eggs=False):
         assert non_py26_test()
     if not (3,) <= sys.version_info < (3, 3):
         from .specific import non_py32_test
-        assert non_py32_test
+        assert non_py32_test()
+    if sys.version_info >= (3, 7):
+        from .specific import py37_test
+        assert py37_test()
 
     print(".", end="")  # ....
     from .suite import suite_test, tco_test
@@ -618,7 +712,9 @@ def main(test_easter_eggs=False):
             assert py36_test()
 
     print(".", end="")
-    from .target_sys_test import target_sys_test
+    from .target_sys_test import TEST_ASYNCIO, target_sys_test
+    if TEST_ASYNCIO:
+        assert test_asyncio()
     assert target_sys_test()  # type: ignore
 
     print(".", end="")  # ........

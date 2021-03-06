@@ -32,7 +32,7 @@ _Note: Don't forget to add yourself to the "Authors:" section in the moduledocs 
 
 ## Testing New Changes
 
-First, you'll want to set up a local copy of Coconut's recommended development environment. For that, just run `git checkout develop` and `make dev`. That should switch you to the `develop` branch, install all possible dependencies, bind the `coconut` command to your local copy, and set up [pre-commit](http://pre-commit.com/), which will check your code for errors for you whenever you `git commit`.
+First, you'll want to set up a local copy of Coconut's recommended development environment. For that, just run `git checkout develop`, make sure your default `python` installation is some variant of Python 3, and run `make dev`. That should switch you to the `develop` branch, install all possible dependencies, bind the `coconut` command to your local copy, and set up [pre-commit](http://pre-commit.com/), which will check your code for errors for you whenever you `git commit`.
 
 Then, you should be able to use the Coconut command-line for trying out simple things, and to run a paired-down version of the test suite locally, just `make test-basic`.
 
@@ -161,13 +161,13 @@ After you've tested your changes locally, you'll want to add more permanent test
 1. Preparation:
     1. Run `make check-reqs` and update dependencies as necessary
     1. Run `make format`
+    1. Make sure `make test-basic`, `make test-py2`, and `make test-easter-eggs` are passing
     1. Check changes in [`compiled-cocotest`](https://github.com/evhub/compiled-cocotest), [`pyprover`](https://github.com/evhub/pyprover), and [`coconut-prelude`](https://github.com/evhub/coconut-prelude)
     1. Check [Codebeat](https://codebeat.co/a/evhub/projects) and [LGTM](https://lgtm.com/dashboard) for `coconut` and `compiled-cocotest`
     1. Make sure [`coconut-develop`](https://pypi.python.org/pypi/coconut-develop) package looks good
     1. Run `make docs` and ensure local documentation looks good
     1. Make sure [develop documentation](http://coconut.readthedocs.io/en/develop/) looks good
     1. Make sure [Travis](https://travis-ci.org/evhub/coconut/builds) and [AppVeyor](https://ci.appveyor.com/project/evhub/coconut) are passing
-    1. Run `make test-easter-eggs`
     1. Turn off `develop` in `root.py`
     1. Set `root.py` to new version number
     1. If major release, set `root.py` to new version name

@@ -23,11 +23,9 @@ import sys
 import os
 import time
 import traceback
-from functools import partial
 from contextlib import contextmanager
 from subprocess import CalledProcessError
 
-from coconut._pyparsing import PYPARSING_INFO
 from coconut.compiler import Compiler
 from coconut.exceptions import (
     CoconutException,
@@ -43,8 +41,10 @@ from coconut.constants import (
     code_exts,
     comp_ext,
     watch_interval,
-    icoconut_kernel_names,
-    icoconut_kernel_dirs,
+    icoconut_default_kernel_names,
+    icoconut_default_kernel_dirs,
+    icoconut_custom_kernel_name,
+    icoconut_old_kernel_names,
     exit_chars,
     coconut_run_args,
     coconut_run_verbose_args,
@@ -52,6 +52,7 @@ from coconut.constants import (
     report_this_text,
     mypy_non_err_prefixes,
 )
+from coconut.kernel_installer import install_custom_kernel
 from coconut.command.util import (
     writefile,
     readfile,
@@ -73,7 +74,7 @@ from coconut.command.util import (
 )
 from coconut.compiler.util import should_indent, get_target_info_len2
 from coconut.compiler.header import gethash
-from coconut.command.cli import arguments
+from coconut.command.cli import arguments, cli_version
 
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN:
@@ -151,7 +152,7 @@ class Command(object):
         if DEVELOP:
             logger.tracing = args.trace
 
-        logger.log("Using " + PYPARSING_INFO + ".")
+        logger.log(cli_version)
         if original_args is not None:
             logger.log("Directly passed args:", original_args)
         logger.log("Parsed args:", args)
@@ -178,6 +179,7 @@ class Command(object):
             line_numbers=args.line_numbers,
             keep_lines=args.keep_lines,
             no_tco=args.no_tco,
+            no_wrap=args.no_wrap,
         )
 
         if args.mypy is not None:
@@ -233,7 +235,7 @@ class Command(object):
                     raise CoconutException("could not find source path", source)
 
             with self.running_jobs(exit_on_error=not args.watch):
-                filepaths = self.compile_path(source, dest, package, args.run or args.interact, args.force)
+                filepaths = self.compile_path(source, dest, package, run=args.run or args.interact, force=args.force)
             self.run_mypy(filepaths)
 
         elif (
@@ -299,19 +301,19 @@ class Command(object):
                 printerr(report_this_text)
             self.register_error(errmsg=err.__class__.__name__)
 
-    def compile_path(self, path, write=True, package=True, *args, **kwargs):
+    def compile_path(self, path, write=True, package=True, **kwargs):
         """Compile a path and returns paths to compiled files."""
         if not isinstance(write, bool):
             write = fixpath(write)
         if os.path.isfile(path):
-            destpath = self.compile_file(path, write, package, *args, **kwargs)
+            destpath = self.compile_file(path, write, package, **kwargs)
             return [destpath] if destpath is not None else []
         elif os.path.isdir(path):
-            return self.compile_folder(path, write, package, *args, **kwargs)
+            return self.compile_folder(path, write, package, **kwargs)
         else:
             raise CoconutException("could not find source path", path)
 
-    def compile_folder(self, directory, write=True, package=True, *args, **kwargs):
+    def compile_folder(self, directory, write=True, package=True, **kwargs):
         """Compile a directory and returns paths to compiled files."""
         if not isinstance(write, bool) and os.path.isfile(write):
             raise CoconutException("destination path cannot point to a file when compiling a directory")
@@ -324,7 +326,7 @@ class Command(object):
             for filename in filenames:
                 if os.path.splitext(filename)[1] in code_exts:
                     with self.handling_exceptions():
-                        destpath = self.compile_file(os.path.join(dirpath, filename), writedir, package, *args, **kwargs)
+                        destpath = self.compile_file(os.path.join(dirpath, filename), writedir, package, **kwargs)
                         if destpath is not None:
                             filepaths.append(destpath)
             for name in dirnames[:]:
@@ -334,7 +336,7 @@ class Command(object):
                     dirnames.remove(name)  # directories removed from dirnames won't appear in further os.walk iterations
         return filepaths
 
-    def compile_file(self, filepath, write=True, package=False, *args, **kwargs):
+    def compile_file(self, filepath, write=True, package=False, force=False, **kwargs):
         """Compile a file and returns the compiled file's path."""
         set_ext = False
         if write is False:
@@ -356,7 +358,14 @@ class Command(object):
             destpath = fixpath(base + ext)
         if filepath == destpath:
             raise CoconutException("cannot compile " + showpath(filepath) + " to itself", extra="incorrect file extension")
-        self.compile(filepath, destpath, package, *args, **kwargs)
+        if destpath is not None:
+            dest_ext = os.path.splitext(destpath)[1]
+            if dest_ext in code_exts:
+                if force:
+                    logger.warn("found destination path with " + dest_ext + " extension; compiling anyway due to --force")
+                else:
+                    raise CoconutException("found destination path with " + dest_ext + " extension; aborting compilation", extra="pass --force to override")
+        self.compile(filepath, destpath, package, force=force, **kwargs)
         return destpath
 
     def compile(self, codepath, destpath=None, package=False, run=False, force=False, show_unchanged=True):
@@ -525,7 +534,7 @@ class Command(object):
     def start_prompt(self):
         """Start the interpreter."""
         logger.show("Coconut Interpreter:")
-        logger.show("(type 'exit()' or press Ctrl-D to end)")
+        logger.show("(enter 'exit()' or press Ctrl-D to end)")
         self.start_running()
         while self.running:
             try:
@@ -623,7 +632,8 @@ class Command(object):
                 args += ["-c", code]
             for line, is_err in mypy_run(args):
                 if line.startswith(mypy_non_err_prefixes):
-                    print(line)
+                    if code is not None:
+                        print(line)
                 else:
                     if line not in self.mypy_errs:
                         printerr(line)
@@ -632,52 +642,112 @@ class Command(object):
                         printerr(line)
                     self.register_error(errmsg="MyPy error")
 
+    def run_silent_cmd(self, *args):
+        """Same as run_cmd$(show_output=logger.verbose)."""
+        return run_cmd(*args, show_output=logger.verbose)
+
+    def install_jupyter_kernel(self, jupyter, kernel_dir):
+        """Install the given kernel via the command line and return whether successful."""
+        install_args = jupyter + ["kernelspec", "install", kernel_dir, "--replace"]
+        try:
+            self.run_silent_cmd(install_args)
+        except CalledProcessError:
+            user_install_args = install_args + ["--user"]
+            try:
+                self.run_silent_cmd(user_install_args)
+            except CalledProcessError:
+                logger.warn("kernel install failed on command'", " ".join(install_args))
+                self.register_error(errmsg="Jupyter error")
+                return False
+        return True
+
+    def remove_jupyter_kernel(self, jupyter, kernel_name):
+        """Remove the given kernel via the command line and return whether successful."""
+        remove_args = jupyter + ["kernelspec", "remove", kernel_name, "-f"]
+        try:
+            self.run_silent_cmd(remove_args)
+        except CalledProcessError:
+            logger.warn("kernel removal failed on command'", " ".join(remove_args))
+            self.register_error(errmsg="Jupyter error")
+            return False
+        return True
+
+    def install_default_jupyter_kernels(self, jupyter, kernel_list):
+        """Install icoconut default kernels."""
+        overall_success = True
+
+        for old_kernel_name in icoconut_old_kernel_names:
+            if old_kernel_name in kernel_list:
+                success = self.remove_jupyter_kernel(jupyter, old_kernel_name)
+                overall_success = overall_success and success
+
+        for kernel_dir in icoconut_default_kernel_dirs:
+            success = self.install_jupyter_kernel(jupyter, kernel_dir)
+            overall_success = overall_success and success
+
+        if overall_success:
+            logger.show_sig("Successfully installed Jupyter kernels: " + ", ".join((icoconut_custom_kernel_name,) + icoconut_default_kernel_names))
+
+    def get_jupyter_kernels(self, jupyter):
+        """Get the currently installed Jupyter kernels."""
+        raw_kernel_list = run_cmd(jupyter + ["kernelspec", "list"], show_output=False, raise_errs=False)
+
+        kernel_list = []
+        for line in raw_kernel_list.splitlines():
+            kernel_list.append(line.split()[0])
+        return kernel_list
+
     def start_jupyter(self, args):
         """Start Jupyter with the Coconut kernel."""
-        install_func = partial(run_cmd, show_output=logger.verbose)
+        # get the correct jupyter command
+        for jupyter in (
+            [sys.executable, "-m", "jupyter"],
+            [sys.executable, "-m", "ipython"],
+            ["jupyter"],
+        ):
+            try:
+                self.run_silent_cmd([sys.executable, "-m", "jupyter", "--version"])
+            except CalledProcessError:
+                logger.warn("failed to find Jupyter command at " + str(jupyter))
+            else:
+                break
 
-        try:
-            install_func(["jupyter", "--version"])
-        except CalledProcessError:
-            jupyter = "ipython"
+        # get a list of installed kernels
+        kernel_list = self.get_jupyter_kernels(jupyter)
+
+        # always update the custom kernel, but only reinstall it if it isn't already there
+        custom_kernel_dir = install_custom_kernel()
+        if icoconut_custom_kernel_name not in kernel_list:
+            self.install_jupyter_kernel(jupyter, custom_kernel_dir)
+
+        if not args:
+            # install default kernels if given no args
+            self.install_default_jupyter_kernels(jupyter, kernel_list)
+
         else:
-            jupyter = "jupyter"
+            # use the custom kernel if it exists
+            if icoconut_custom_kernel_name in kernel_list:
+                kernel = icoconut_custom_kernel_name
 
-        # always install kernels if given no args, otherwise only if there's a kernel missing
-        do_install = not args
-        if not do_install:
-            kernel_list = run_cmd([jupyter, "kernelspec", "list"], show_output=False, raise_errs=False)
-            do_install = any(ker not in kernel_list for ker in icoconut_kernel_names)
-
-        if do_install:
-            success = True
-            for icoconut_kernel_dir in icoconut_kernel_dirs:
-                install_args = [jupyter, "kernelspec", "install", icoconut_kernel_dir, "--replace"]
-                try:
-                    install_func(install_args)
-                except CalledProcessError:
-                    user_install_args = install_args + ["--user"]
-                    try:
-                        install_func(user_install_args)
-                    except CalledProcessError:
-                        logger.warn("kernel install failed on command'", " ".join(install_args))
-                        self.register_error(errmsg="Jupyter error")
-                        success = False
-            if success:
-                logger.show_sig("Successfully installed Coconut Jupyter kernel.")
-
-        if args:
-            if args[0] == "console":
+            # otherwise determine which default kernel to use and install them if necessary
+            else:
                 ver = "2" if PY2 else "3"
                 try:
-                    install_func(["python" + ver, "-m", "coconut.main", "--version"])
+                    self.run_silent_cmd(["python" + ver, "-m", "coconut.main", "--version"])
                 except CalledProcessError:
-                    kernel_name = "coconut"
+                    kernel = "coconut_py"
                 else:
-                    kernel_name = "coconut" + ver
-                run_args = [jupyter, "console", "--kernel", kernel_name] + args[1:]
+                    kernel = "coconut_py" + ver
+                if kernel not in kernel_list:
+                    self.install_default_jupyter_kernels(jupyter, kernel_list)
+                logger.warn("could not find 'coconut' kernel; using " + repr(kernel) + " kernel instead")
+
+            # pass the kernel to the console or otherwise just launch Jupyter now that we know our kernel is available
+            if args[0] == "console":
+                run_args = jupyter + ["console", "--kernel", kernel] + args[1:]
             else:
-                run_args = [jupyter] + args
+                run_args = jupyter + args
+
             self.register_error(run_cmd(run_args, raise_errs=False), errmsg="Jupyter error")
 
     def watch(self, source, write=True, package=True, run=False, force=False):
@@ -699,7 +769,7 @@ class Command(object):
                         # correct the compilation path based on the relative position of path to source
                         dirpath = os.path.dirname(path)
                         writedir = os.path.join(write, os.path.relpath(dirpath, source))
-                    filepaths = self.compile_path(path, writedir, package, run, force, show_unchanged=False)
+                    filepaths = self.compile_path(path, writedir, package, run=run, force=force, show_unchanged=False)
                     self.run_mypy(filepaths)
 
         watcher = RecompilationWatcher(recompile)

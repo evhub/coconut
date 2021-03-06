@@ -2,8 +2,8 @@ def py35_test():
     """Performs Python-3.5-specific tests."""
     try:
         2 @ 3
-    except TypeError:
-        assert True
+    except TypeError as err:
+        assert err
     else:
         assert False
     assert (1, *(2, 3), 4) == (1, 2, 3, 4)

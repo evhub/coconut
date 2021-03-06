@@ -8,6 +8,7 @@ python:
 - pypy
 - '3.5'
 - '3.6'
+- '3.9'
 - pypy3
 install:
 - make install

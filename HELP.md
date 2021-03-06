@@ -68,7 +68,7 @@ coconut
 and you should see something like
 ```coconut
 Coconut Interpreter:
-(type 'exit()' or press Ctrl-D to end)
+(enter 'exit()' or press Ctrl-D to end)
 >>>
 ```
 which is Coconut's way of telling you you're ready to start entering code for it to evaluate. So let's do that!
@@ -136,12 +136,12 @@ _Note: If you don't need the full control of the Coconut compiler, you can also 
 
 Although all different types of programming can benefit from using more functional techniques, scientific computing, perhaps more than any other field, lends itself very well to functional programming, an observation the case studies in this tutorial are very good examples of. That's why Coconut aims to provide extensive support for the established tools of scientific computing in Python.
 
-To that end, Coconut provides [built-in IPython/Jupyter support](DOCS.html#ipython-jupyter-support). To launch a Jupyter notebook with Coconut as the kernel, just enter the command
+To that end, Coconut provides [built-in IPython/Jupyter support](DOCS.html#ipython-jupyter-support). To launch a Jupyter notebook with Coconut, just enter the command
 ```
 coconut --jupyter notebook
 ```
 
-_Alternatively, to launch the Jupyter interpreter with Coconut as the kernel, run `coconut --jupyter console` instead._
+_Alternatively, to launch the Jupyter interpreter with Coconut as the kernel, run `coconut --jupyter console` instead. Additionally, you can launch an interactive Coconut Jupyter console initialized from the current namespace by inserting `from coconut import embed; embed()` into your code, which can be a very useful debugging tool._
 
 ### Case Studies
 
@@ -1033,22 +1033,23 @@ And with that, this tutorial is out of case studies—but that doesn't mean Coco
 
 ### Lazy Lists
 
-First up is lazy lists. Lazy lists are lazily-evaluated iterator literals, similar in their laziness to Coconut's `::` operator, in that any expressions put inside a lazy list won't be evaluated until that element of the lazy list is needed. The syntax for lazy lists is exactly the same as the syntax for normal lists, but with "banana brackets" (`(|` and `|)`) instead of normal brackets, like so:
+First up is lazy lists. Lazy lists are lazily-evaluated lists, similar in their laziness to Coconut's `::` operator, in that any expressions put inside a lazy list won't be evaluated until that element of the lazy list is needed. The syntax for lazy lists is exactly the same as the syntax for normal lists, but with "banana brackets" (`(|` and `|)`) instead of normal brackets, like so:
 ```coconut
 abc = (| a, b, c |)
 ```
-Like all Python iterators, you can call `next` to retrieve the next object in the iterator. Using a lazy list, it is possible to define the values used in the expressions as needed without raising a `NameError`:
+
+Unlike Python iterators, lazy lists can be iterated over multiple times and still return the same result. Unlike a Python list, however, using a lazy list, it is possible to define the values used in the following expressions as needed without raising a `NameError`:
 
 ```coconut
 abcd = (| d(a), d(b), d(c) |)  # a, b, c, and d are not defined yet
 def d(n) = n + 1
 
 a = 1
-next(abcd)  # 2
+abcd$[0]
 b = 2
-next(abcd)  # 3
+abcd$[1]
 c = 3
-next(abcd)  # 4
+abcd$[2]
 ```
 
 ### Function Composition

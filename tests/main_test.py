@@ -36,7 +36,8 @@ from coconut.constants import (
     PY34,
     PY35,
     PY36,
-    icoconut_kernel_names,
+    icoconut_default_kernel_names,
+    icoconut_custom_kernel_name,
 )
 
 from coconut.convenience import auto_compilation
@@ -75,6 +76,8 @@ mypy_args = ["--follow-imports", "silent", "--ignore-missing-imports"]
 ignore_mypy_errs_with = (
     "tutorial.py",
 )
+
+kernel_installation_msg = "Coconut: Successfully installed Jupyter kernels: " + ", ".join((icoconut_custom_kernel_name,) + icoconut_default_kernel_names)
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -416,11 +419,11 @@ class TestShell(unittest.TestCase):
             )
 
         def test_kernel_installation(self):
-            call(["coconut", "--jupyter"], assert_output="Coconut: Successfully installed Coconut Jupyter kernel.")
+            call(["coconut", "--jupyter"], assert_output=kernel_installation_msg)
             stdout, stderr, retcode = call_output(["jupyter", "kernelspec", "list"])
             stdout, stderr = "".join(stdout), "".join(stderr)
             assert not retcode and not stderr, stderr
-            for kernel in icoconut_kernel_names:
+            for kernel in (icoconut_custom_kernel_name,) + icoconut_default_kernel_names:
                 assert kernel in stdout
 
         if not WINDOWS and not PYPY:
@@ -443,14 +446,23 @@ class TestCompilation(unittest.TestCase):
         run()
 
     if MYPY:
-        def test_mypy_snip(self):
+        def test_universal_mypy_snip(self):
             call(["coconut", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err, check_mypy=False, expect_retcode=1)
+
+        def test_sys_mypy_snip(self):
+            call(["coconut", "--target", "sys", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err, check_mypy=False, expect_retcode=1)
+
+        def test_no_wrap_mypy_snip(self):
+            call(["coconut", "--target", "sys", "--no-wrap", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err, check_mypy=False, expect_retcode=1)
 
         def test_mypy_sys(self):
             run(["--mypy"] + mypy_args, agnostic_target="sys", expect_retcode=None)  # fails due to tutorial mypy errors
 
     def test_target(self):
         run(agnostic_target=(2 if PY2 else 3))
+
+    def test_line_numbers(self):
+        run(["--line-numbers"])
 
     def test_standalone(self):
         run(["--standalone"])
@@ -463,9 +475,6 @@ class TestCompilation(unittest.TestCase):
 
     def test_strict(self):
         run(["--strict"])
-
-    def test_line_numbers(self):
-        run(["--line-numbers"])
 
     def test_run(self):
         run(use_run_arg=True)

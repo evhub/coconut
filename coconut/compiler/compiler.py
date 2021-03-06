@@ -16,7 +16,7 @@ Description: Compiles Coconut code into Python code.
 #   - Handlers
 #   - Compiler
 #   - Processors
-#   - Parser Handlers
+#   - Compiler Handlers
 #   - Checking Handlers
 #   - Endpoints
 
@@ -35,6 +35,7 @@ from collections import defaultdict
 
 from coconut._pyparsing import (
     ParseBaseException,
+    ParseResults,
     col,
     line as getline,
     lineno,
@@ -58,12 +59,10 @@ from coconut.constants import (
     match_to_args_var,
     match_to_kwargs_var,
     match_check_var,
-    match_err_var,
     import_as_var,
     yield_from_var,
-    yield_item_var,
+    yield_err_var,
     raise_from_var,
-    stmt_lambda_var,
     tre_mock_var,
     tre_check_var,
     py3_to_py2_stdlib,
@@ -72,8 +71,7 @@ from coconut.constants import (
     function_match_error_var,
     legal_indent_chars,
     format_var,
-    match_val_repr_var,
-    max_match_val_repr_len,
+    replwrapper,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -87,7 +85,7 @@ from coconut.exceptions import (
     clean,
     internal_assert,
 )
-from coconut.terminal import logger, trace, complain
+from coconut.terminal import logger, complain
 from coconut.compiler.matching import Matcher
 from coconut.compiler.grammar import (
     Grammar,
@@ -108,15 +106,14 @@ from coconut.compiler.util import (
     split_leading_trailing_indent,
     match_in,
     transform,
-    ignore_transform,
     parse,
     get_target_info_len2,
     split_leading_comment,
     compile_regex,
-    keyword,
     append_it,
     interleaved_join,
     handle_indentation,
+    Wrap,
 )
 from coconut.compiler.header import (
     minify,
@@ -251,7 +248,9 @@ def universal_import(imports, imp_from=None, target=""):
 def imported_names(imports):
     """Yields all the names imported by imports = [[imp1], [imp2, as], ...]."""
     for imp in imports:
-        yield imp[-1].split(".", 1)[0]
+        imp_name = imp[-1].split(".", 1)[0]
+        if imp_name != "*":
+            yield imp_name
 
 
 def special_starred_import_handle(imp_all=False):
@@ -259,26 +258,36 @@ def special_starred_import_handle(imp_all=False):
     out = handle_indentation(
         """
 import imp as _coconut_imp
+_coconut_norm_file = _coconut.os.path.normpath(_coconut.os.path.realpath(_coconut.os.path.abspath(__file__)))
+_coconut_norm_dir = _coconut.os.path.normpath(_coconut.os.path.realpath(_coconut.os.path.abspath(_coconut.os.path.dirname(__file__))))
+_coconut_seen_imports = set()
 for _coconut_base_path in _coconut_sys.path:
     for _coconut_dirpath, _coconut_dirnames, _coconut_filenames in _coconut.os.walk(_coconut_base_path):
         _coconut_paths_to_imp = []
         for _coconut_fname in _coconut_filenames:
             if _coconut.os.path.splitext(_coconut_fname)[-1] == "py":
-                _coconut_fpath = _coconut.os.path.join(_coconut_dirpath, _coconut_fname)
-                _coconut_paths_to_imp.append(_coconut_fpath)
+                _coconut_fpath = _coconut.os.path.normpath(_coconut.os.path.realpath(_coconut.os.path.abspath(_coconut.os.path.join(_coconut_dirpath, _coconut_fname))))
+                if _coconut_fpath != _coconut_norm_file:
+                    _coconut_paths_to_imp.append(_coconut_fpath)
         for _coconut_dname in _coconut_dirnames:
-            _coconut_dpath = _coconut.os.path.join(_coconut_dirpath, _coconut_dname)
-            if "__init__.py" in _coconut.os.listdir(_coconut_dpath):
+            _coconut_dpath = _coconut.os.path.normpath(_coconut.os.path.realpath(_coconut.os.path.abspath(_coconut.os.path.join(_coconut_dirpath, _coconut_dname))))
+            if "__init__.py" in _coconut.os.listdir(_coconut_dpath) and _coconut_dpath != _coconut_norm_dir:
                 _coconut_paths_to_imp.append(_coconut_dpath)
         for _coconut_imp_path in _coconut_paths_to_imp:
             _coconut_imp_name = _coconut.os.path.splitext(_coconut.os.path.basename(_coconut_imp_path))[0]
-            descr = _coconut_imp.find_module(_coconut_imp_name, [_coconut.os.path.dirname(_coconut_imp_path)])
+            if _coconut_imp_name in _coconut_seen_imports:
+                continue
+            _coconut_seen_imports.add(_coconut_imp_name)
+            _coconut.print("Importing {}...".format(_coconut_imp_name))
             try:
+                descr = _coconut_imp.find_module(_coconut_imp_name, [_coconut.os.path.dirname(_coconut_imp_path)])
                 _coconut_imp.load_module(_coconut_imp_name, *descr)
             except:
-                pass
+                _coconut.print("Failed to import {}.".format(_coconut_imp_name))
+            else:
+                _coconut.print("Imported {}.".format(_coconut_imp_name))
         _coconut_dirnames[:] = []
-        """.strip()
+        """.strip(),
     )
     if imp_all:
         out += "\n" + handle_indentation(
@@ -289,14 +298,14 @@ for _coconut_m in _coconut.tuple(_coconut_sys.modules.values()):
         for _coconut_k, _coconut_v in _coconut_d.items():
             if not _coconut_k.startswith("_"):
                 _coconut.locals()[_coconut_k] = _coconut_v
-            """.strip()
+            """.strip(),
         )
     else:
         out += "\n" + handle_indentation(
             """
 for _coconut_n, _coconut_m in _coconut.tuple(_coconut_sys.modules.items()):
     _coconut.locals()[_coconut_n] = _coconut_m
-            """.strip()
+            """.strip(),
         )
     return out
 
@@ -324,7 +333,7 @@ def split_args_list(tokens, loc):
                 if pos_only_args:
                     raise CoconutDeferredSyntaxError("only one slash separator allowed in function definition", loc)
                 if not req_args:
-                    raise CoconutDeferredSyntaxError("slash separator must come after arguments to mark as positional-only")
+                    raise CoconutDeferredSyntaxError("slash separator must come after arguments to mark as positional-only", loc)
                 pos_only_args = req_args
                 req_args = []
             else:
@@ -392,7 +401,7 @@ class Compiler(Grammar):
         lambda self: self.ind_proc,
     ]
     postprocs = [
-        lambda self: self.stmt_lambda_proc,
+        lambda self: self.add_code_before_proc,
         lambda self: self.reind_proc,
         lambda self: self.repl_proc,
         lambda self: self.header_proc,
@@ -408,7 +417,7 @@ class Compiler(Grammar):
         """Creates a new compiler with the given parsing parameters."""
         self.setup(*args, **kwargs)
 
-    def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False, no_tco=False):
+    def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False, no_tco=False, no_wrap=False):
         """Initializes parsing parameters."""
         if target is None:
             target = ""
@@ -428,10 +437,20 @@ class Compiler(Grammar):
         self.line_numbers = line_numbers
         self.keep_lines = keep_lines
         self.no_tco = no_tco
+        self.no_wrap = no_wrap
+        if self.no_wrap:
+            if not self.target.startswith("3"):
+                errmsg = "only Python 3 targets support non-comment type annotations"
+            elif self.target_info >= (3, 7):
+                errmsg = "annotations are never wrapped on targets with PEP 563 support"
+            else:
+                errmsg = None
+            if errmsg is not None:
+                logger.warn("--no-wrap argument has no effect on target " + ascii(target if target else "universal"), extra=errmsg)
 
     def __reduce__(self):
         """Return pickling information."""
-        return (Compiler, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.no_tco))
+        return (self.__class__, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.no_tco, self.no_wrap))
 
     def __copy__(self):
         """Create a new, blank copy of the compiler."""
@@ -445,7 +464,7 @@ class Compiler(Grammar):
         reduce_args = self.__reduce__()[1]
         logger.log(
             "Hash args:", {
-                "VERSION_STR": VERSION_STR,
+                "VERSION": VERSION,
                 "reduce_args": reduce_args,
                 "package_level": package_level,
             },
@@ -454,9 +473,8 @@ class Compiler(Grammar):
             checksum(
                 hash_sep.join(
                     str(item) for item in (
-                        (VERSION_STR,)
-                        + reduce_args
-                        + (package_level, code)
+                        reduce_args
+                        + (VERSION, package_level, code)
                     )
                 ).encode(default_encoding),
             ),
@@ -470,32 +488,51 @@ class Compiler(Grammar):
         self.skips = []
         self.docstring = ""
         self.temp_var_counts = defaultdict(int)
-        self.stmt_lambdas = []
+        self.stored_matches_of = defaultdict(list)
+        self.add_code_before = {}
         self.unused_imports = set()
         self.original_lines = []
         self.num_lines = 0
+        self.disable_name_check = False
         self.bind()
 
     @contextmanager
     def inner_environment(self):
         """Set up compiler to evaluate inner expressions."""
-        line_numbers, self.line_numbers = self.line_numbers, False
-        keep_lines, self.keep_lines = self.keep_lines, False
         comments, self.comments = self.comments, {}
         skips, self.skips = self.skips, []
         docstring, self.docstring = self.docstring, ""
         original_lines, self.original_lines = self.original_lines, []
+        line_numbers, self.line_numbers = self.line_numbers, False
+        keep_lines, self.keep_lines = self.keep_lines, False
         num_lines, self.num_lines = self.num_lines, 0
         try:
             yield
         finally:
-            self.line_numbers = line_numbers
-            self.keep_lines = keep_lines
             self.comments = comments
             self.skips = skips
             self.docstring = docstring
             self.original_lines = original_lines
+            self.line_numbers = line_numbers
+            self.keep_lines = keep_lines
             self.num_lines = num_lines
+
+    @contextmanager
+    def disable_checks(self):
+        """Run the block without checking names or strict errors."""
+        disable_name_check, self.disable_name_check = self.disable_name_check, True
+        strict, self.strict = self.strict, False
+        try:
+            yield
+        finally:
+            self.disable_name_check = disable_name_check
+            self.strict = strict
+
+    def post_transform(self, grammar, text):
+        """Version of transform for post-processing."""
+        with self.complain_on_err():
+            with self.disable_checks():
+                return transform(grammar, text)
 
     def get_temp_var(self, base_name):
         """Get a unique temporary variable name."""
@@ -507,47 +544,43 @@ class Compiler(Grammar):
         """Binds reference objects to the proper parse actions."""
         self.endline <<= attach(self.endline_ref, self.endline_handle)
 
-        self.moduledoc_item <<= trace(attach(self.moduledoc, self.set_docstring))
-        self.name <<= trace(attach(self.base_name, self.name_check))
+        self.moduledoc_item <<= attach(self.moduledoc, self.set_docstring)
+        self.name <<= attach(self.base_name, self.name_check)
         # comments are evaluated greedily because we need to know about them even if we're going to suppress them
-        self.comment <<= trace(attach(self.comment_ref, self.comment_handle, greedy=True))
-        self.set_literal <<= trace(attach(self.set_literal_ref, self.set_literal_handle))
-        self.set_letter_literal <<= trace(attach(self.set_letter_literal_ref, self.set_letter_literal_handle))
-        self.classlist <<= trace(attach(self.classlist_ref, self.classlist_handle))
-        self.import_stmt <<= trace(attach(self.import_stmt_ref, self.import_handle))
-        self.complex_raise_stmt <<= trace(attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_handle))
-        self.augassign_stmt <<= trace(attach(self.augassign_stmt_ref, self.augassign_handle))
-        self.dict_comp <<= trace(attach(self.dict_comp_ref, self.dict_comp_handle))
-        self.destructuring_stmt <<= trace(attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle))
-        self.name_match_funcdef <<= trace(attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle))
-        self.op_match_funcdef <<= trace(attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle))
-        self.yield_from <<= trace(attach(self.yield_from_ref, self.yield_from_handle))
-        self.exec_stmt <<= trace(attach(self.exec_stmt_ref, self.exec_stmt_handle))
-        self.stmt_lambdef <<= trace(attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle))
-        self.typedef <<= trace(attach(self.typedef_ref, self.typedef_handle))
-        self.typedef_default <<= trace(attach(self.typedef_default_ref, self.typedef_handle))
-        self.unsafe_typedef_default <<= trace(attach(self.unsafe_typedef_default_ref, self.unsafe_typedef_handle))
-        self.return_typedef <<= trace(attach(self.return_typedef_ref, self.typedef_handle))
-        self.typed_assign_stmt <<= trace(attach(self.typed_assign_stmt_ref, self.typed_assign_stmt_handle))
-        self.datadef <<= trace(attach(self.datadef_ref, self.data_handle))
-        self.match_datadef <<= trace(attach(self.match_datadef_ref, self.match_data_handle))
-        self.with_stmt <<= trace(attach(self.with_stmt_ref, self.with_stmt_handle))
-        self.await_item <<= trace(attach(self.await_item_ref, self.await_item_handle))
-        self.ellipsis <<= trace(attach(self.ellipsis_ref, self.ellipsis_handle))
-        self.case_stmt <<= trace(attach(self.case_stmt_ref, self.case_stmt_handle))
+        self.comment <<= attach(self.comment_ref, self.comment_handle, greedy=True)
+        self.set_literal <<= attach(self.set_literal_ref, self.set_literal_handle)
+        self.set_letter_literal <<= attach(self.set_letter_literal_ref, self.set_letter_literal_handle)
+        self.classlist <<= attach(self.classlist_ref, self.classlist_handle)
+        self.import_stmt <<= attach(self.import_stmt_ref, self.import_handle)
+        self.complex_raise_stmt <<= attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_handle)
+        self.augassign_stmt <<= attach(self.augassign_stmt_ref, self.augassign_handle)
+        self.dict_comp <<= attach(self.dict_comp_ref, self.dict_comp_handle)
+        self.destructuring_stmt <<= attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle)
+        self.name_match_funcdef <<= attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle)
+        self.op_match_funcdef <<= attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle)
+        self.yield_from <<= attach(self.yield_from_ref, self.yield_from_handle)
+        self.exec_stmt <<= attach(self.exec_stmt_ref, self.exec_stmt_handle)
+        self.stmt_lambdef <<= attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle)
+        self.typedef <<= attach(self.typedef_ref, self.typedef_handle)
+        self.typedef_default <<= attach(self.typedef_default_ref, self.typedef_handle)
+        self.unsafe_typedef_default <<= attach(self.unsafe_typedef_default_ref, self.unsafe_typedef_handle)
+        self.return_typedef <<= attach(self.return_typedef_ref, self.typedef_handle)
+        self.typed_assign_stmt <<= attach(self.typed_assign_stmt_ref, self.typed_assign_stmt_handle)
+        self.datadef <<= attach(self.datadef_ref, self.data_handle)
+        self.match_datadef <<= attach(self.match_datadef_ref, self.match_data_handle)
+        self.with_stmt <<= attach(self.with_stmt_ref, self.with_stmt_handle)
+        self.await_item <<= attach(self.await_item_ref, self.await_item_handle)
+        self.ellipsis <<= attach(self.ellipsis_ref, self.ellipsis_handle)
+        self.case_stmt <<= attach(self.case_stmt_ref, self.case_stmt_handle)
         self.f_string <<= attach(self.f_string_ref, self.f_string_handle)
 
-        self.decoratable_normal_funcdef_stmt <<= trace(
-            attach(
-                self.decoratable_normal_funcdef_stmt_ref,
-                self.decoratable_funcdef_stmt_handle,
-            ),
+        self.decoratable_normal_funcdef_stmt <<= attach(
+            self.decoratable_normal_funcdef_stmt_ref,
+            self.decoratable_funcdef_stmt_handle,
         )
-        self.decoratable_async_funcdef_stmt <<= trace(
-            attach(
-                self.decoratable_async_funcdef_stmt_ref,
-                partial(self.decoratable_funcdef_stmt_handle, is_async=True),
-            ),
+        self.decoratable_async_funcdef_stmt <<= attach(
+            self.decoratable_async_funcdef_stmt_ref,
+            partial(self.decoratable_funcdef_stmt_handle, is_async=True),
         )
 
         self.u_string <<= attach(self.u_string_ref, self.u_string_check)
@@ -603,7 +636,7 @@ class Compiler(Grammar):
         """Reformat and evaluate a code snippet and return code for the result."""
         result = eval(self.reformat(code))
         if result is None or isinstance(result, (bool, int, float, complex)):
-            return repr(result)
+            return ascii(result)
         elif isinstance(result, bytes):
             return "b" + self.wrap_str_of(result)
         elif isinstance(result, str):
@@ -628,7 +661,7 @@ class Compiler(Grammar):
             logger.warn_err(self.make_err(CoconutSyntaxWarning, *args, **kwargs))
 
     def add_ref(self, reftype, data):
-        """Add a reference and returns the identifier."""
+        """Add a reference and return the identifier."""
         ref = (reftype, data)
         try:
             index = self.refs.index(ref)
@@ -747,8 +780,8 @@ class Compiler(Grammar):
     def parse(self, inputstring, parser, preargs, postargs):
         """Use the parser to parse the inputstring with appropriate setup and teardown."""
         self.reset()
-        pre_procd = None
         with logger.gather_parsing_stats():
+            pre_procd = None
             try:
                 pre_procd = self.pre(inputstring, **preargs)
                 parsed = parse(parser, pre_procd)
@@ -765,8 +798,7 @@ class Compiler(Grammar):
                 )
         if self.strict:
             for name in self.unused_imports:
-                if name != "*":
-                    logger.warn("found unused import", name, extra="disable --strict to dismiss")
+                logger.warn("found unused import", name, extra="disable --strict to dismiss")
         return out
 
 # end: COMPILER
@@ -1025,19 +1057,17 @@ class Compiler(Grammar):
         new.append(closeindent * len(levels))
         return "\n".join(new)
 
-    def stmt_lambda_proc(self, inputstring, **kwargs):
-        """Add statement lambda definitions."""
-        regexes = []
-        for i in range(len(self.stmt_lambdas)):
-            name = self.stmt_lambda_name(i)
-            regex = compile_regex(r"\b%s\b" % (name,))
-            regexes.append(regex)
+    def add_code_before_proc(self, inputstring, **kwargs):
+        """Add definitions for names in self.add_code_before."""
+        regexes = {}
+        for name in self.add_code_before:
+            regexes[name] = compile_regex(r"\b%s\b" % (name,))
         out = []
         for line in inputstring.splitlines():
-            for i, regex in enumerate(regexes):
+            for name, regex in regexes.items():
                 if regex.search(line):
                     indent, line = split_leading_indent(line)
-                    out.append(indent + self.stmt_lambdas[i])
+                    out.append(indent + self.add_code_before[name])
             out.append(line)
         return "\n".join(out)
 
@@ -1237,6 +1267,50 @@ class Compiler(Grammar):
 # COMPILER HANDLERS:
 # -----------------------------------------------------------------------------------------------------------------------
 
+    def replace_matches_of_inside(self, name, elem, *items):
+        """Replace all matches of elem inside of items and include the
+        replacements in the resulting matches of items. Requires elem
+        to only match a single string.
+
+        Returns (new version of elem, *modified items)."""
+        @contextmanager
+        def manage_item(wrapper, instring, loc):
+            self.stored_matches_of[name].append([])
+            try:
+                yield
+            finally:
+                self.stored_matches_of[name].pop()
+
+        def handle_item(tokens):
+            if isinstance(tokens, ParseResults) and len(tokens) == 1:
+                tokens = tokens[0]
+            return (self.stored_matches_of[name][-1], tokens)
+
+        handle_item.__name__ = "handle_wrapping_" + name
+
+        def handle_elem(tokens):
+            internal_assert(len(tokens) == 1, "invalid elem tokens in replace_matches_inside_of", tokens)
+            if self.stored_matches_of[name]:
+                ref = self.add_ref("repl", tokens[0])
+                self.stored_matches_of[name][-1].append(ref)
+                return replwrapper + ref + unwrapper
+            else:
+                return tokens[0]
+
+        handle_elem.__name__ = "handle_" + name
+
+        yield attach(elem, handle_elem)
+
+        for item in items:
+            yield Wrap(attach(item, handle_item, greedy=True), manage_item)
+
+    def replace_replaced_matches(self, to_repl_str, ref_to_replacement):
+        """Replace refs in str generated by replace_matches_of_inside."""
+        out = to_repl_str
+        for ref, repl in ref_to_replacement.items():
+            out = out.replace(replwrapper + ref + unwrapper, repl)
+        return out
+
     def set_docstring(self, loc, tokens):
         """Set the docstring."""
         internal_assert(len(tokens) == 2, "invalid docstring tokens", tokens)
@@ -1247,11 +1321,23 @@ class Compiler(Grammar):
         """Process Python 3.3 yield from."""
         internal_assert(len(tokens) == 1, "invalid yield from tokens", tokens)
         if self.target_info < (3, 3):
-            return (
-                yield_from_var + " = " + tokens[0]
-                + "\nfor " + yield_item_var + " in " + yield_from_var + ":\n"
-                + openindent + "yield " + yield_item_var + "\n" + closeindent
+            ret_val_name = self.get_temp_var("yield_from")
+            self.add_code_before[ret_val_name] = r'''{yield_from_var} = _coconut.iter({expr})
+while True:
+    {oind}try:
+        {oind}yield _coconut.next({yield_from_var})
+    {cind}except _coconut.StopIteration as {yield_err_var}:
+        {oind}{ret_val_name} = {yield_err_var}.args[0] if _coconut.len({yield_err_var}.args) > 0 else None
+        break
+{cind}{cind}'''.format(
+                oind=openindent,
+                cind=closeindent,
+                expr=tokens[0],
+                yield_from_var=yield_from_var,
+                yield_err_var=yield_err_var,
+                ret_val_name=ret_val_name,
             )
+            return ret_val_name
         else:
             return "yield from " + tokens[0]
 
@@ -1272,7 +1358,7 @@ class Compiler(Grammar):
         """Store comment in comments."""
         internal_assert(len(tokens) == 1, "invalid comment tokens", tokens)
         ln = self.adjust(lineno(loc, original))
-        internal_assert(lambda: ln not in self.comments, "multiple comments on line", ln)
+        internal_assert(lambda: ln not in self.comments or self.comments[ln] == tokens[0], "multiple comments on line", ln, lambda: repr(self.comments[ln]) + " and " + repr(tokens[0]))
         self.comments[ln] = tokens[0]
         return ""
 
@@ -1293,6 +1379,12 @@ class Compiler(Grammar):
             out += name + " = " + name + "(*(" + item + "))"
         elif op == "<**|=":
             out += name + " = " + name + "(**(" + item + "))"
+        elif op == "|?>=":
+            out += name + " = _coconut_none_pipe(" + name + ", (" + item + "))"
+        elif op == "|?*>=":
+            out += name + " = _coconut_none_star_pipe(" + name + ", (" + item + "))"
+        elif op == "|?**>=":
+            out += name + " = _coconut_none_dubstar_pipe(" + name + ", (" + item + "))"
         elif op == "..=" or op == "<..=":
             out += name + " = _coconut_forward_compose((" + item + "), " + name + ")"
         elif op == "..>=":
@@ -1626,24 +1718,16 @@ def __hash__(self):
         """Construct a pattern-matching error message."""
         base_line = clean(self.reformat(getline(loc, original)))
         line_wrap = self.wrap_str_of(base_line)
-        repr_wrap = self.wrap_str_of(ascii(base_line))
         return handle_indentation(
             """
 if not {check_var}:
-    {match_val_repr_var} = _coconut.repr({value_var})
-    {match_err_var} = {match_error_class}("pattern-matching failed for " {repr_wrap} " in " + ({match_val_repr_var} if _coconut.len({match_val_repr_var}) <= {max_match_val_repr_len} else {match_val_repr_var}[:{max_match_val_repr_len}] + "..."))
-    {match_err_var}.pattern = {line_wrap}
-    {match_err_var}.value = {value_var}
-    raise {match_err_var}
-            """.strip(), add_newline=True,
+    raise {match_error_class}({line_wrap}, {value_var})
+            """.strip(),
+            add_newline=True,
         ).format(
             check_var=check_var,
-            match_val_repr_var=match_val_repr_var,
             value_var=value_var,
-            match_err_var=match_err_var,
             match_error_class=match_error_class,
-            repr_wrap=repr_wrap,
-            max_match_val_repr_len=max_match_val_repr_len,
             line_wrap=line_wrap,
         )
 
@@ -1743,12 +1827,6 @@ if not {check_var}:
         else:
             return "exec(" + ", ".join(tokens) + ")"
 
-    def stmt_lambda_name(self, index=None):
-        """Return the next (or specified) statement lambda name."""
-        if index is None:
-            index = len(self.stmt_lambdas)
-        return stmt_lambda_var + "_" + str(index)
-
     def stmt_lambdef_handle(self, original, loc, tokens):
         """Process multi-line lambdef statements."""
         if len(tokens) == 2:
@@ -1761,17 +1839,15 @@ if not {check_var}:
                 stmts = stmts.asList() + [last]
         else:
             raise CoconutInternalException("invalid statement lambda tokens", tokens)
-        name = self.stmt_lambda_name()
-        body = openindent + self.stmt_lambda_proc("\n".join(stmts)) + closeindent
+        name = self.get_temp_var("lambda")
+        body = openindent + self.add_code_before_proc("\n".join(stmts)) + closeindent
         if isinstance(params, str):
-            self.stmt_lambdas.append(
-                "def " + name + params + ":\n" + body,
-            )
+            self.add_code_before[name] = "def " + name + params + ":\n" + body
         else:
             match_tokens = [name] + list(params)
-            self.stmt_lambdas.append(
+            self.add_code_before[name] = (
                 "".join(self.name_match_funcdef_handle(original, loc, match_tokens))
-                + body,
+                + body
             )
         return name
 
@@ -1800,12 +1876,7 @@ if not {check_var}:
     def tre_return(self, func_name, func_args, func_store, use_mock=True):
         """Generate grammar element that matches a string which is just a TRE return statement."""
         def tre_return_handle(loc, tokens):
-            internal_assert(len(tokens) == 1, "invalid tail recursion elimination tokens", tokens)
-            args = tokens[0][1:-1]  # strip parens
-            # check if there is anything in the arguments that will store a reference
-            # to the current scope, and if so, abort TRE, since it can't handle that
-            if match_in(self.stores_scope, args):
-                return ignore_transform  # this is the only way to make the outer transform call return None
+            args = ", ".join(tokens)
             if self.no_tco:
                 tco_recurse = "return " + func_name + "(" + args + ")"
             else:
@@ -1827,88 +1898,142 @@ if not {check_var}:
                 + tco_recurse + "\n" + closeindent
             )
         return attach(
-            self.start_marker + (keyword("return") + keyword(func_name)).suppress() + self.parens + self.end_marker,
+            self.get_tre_return_grammar(func_name),
             tre_return_handle,
+            greedy=True,
         )
 
-    yield_regex = compile_regex(r"\byield\b")
     def_regex = compile_regex(r"(async\s+)?def\b")
-    tre_disable_regex = compile_regex(r"(try|(async\s+)?(with|for)|while)\b")
-    return_regex = compile_regex(r"return\b")
+    yield_regex = compile_regex(r"\byield\b")
 
-    def transform_returns(self, raw_lines, tre_return_grammar=None, use_mock=None, is_async=False):
-        """Apply TCO, TRE, or async universalization to the given function."""
+    def detect_is_gen(self, raw_lines):
+        """Determine if the given function code is for a generator."""
+        level = 0  # indentation level
+        func_until_level = None  # whether inside of an inner function
+
+        for line in raw_lines:
+            indent, line = split_leading_indent(line)
+
+            level += ind_change(indent)
+
+            # update func_until_level
+            if func_until_level is not None and level <= func_until_level:
+                func_until_level = None
+
+            # detect inner functions
+            if func_until_level is None and self.def_regex.match(line):
+                func_until_level = level
+
+            # search for yields if not in an inner function
+            if func_until_level is None and self.yield_regex.search(line):
+                return True
+
+        return False
+
+    tco_disable_regex = compile_regex(r"(try|(async\s+)?(with|for)|while)\b")
+    return_regex = compile_regex(r"return\b")
+    no_tco_funcs_regex = compile_regex(r"\b(locals|globals)\b")
+
+    def transform_returns(self, original, loc, raw_lines, tre_return_grammar=None, use_mock=None, is_async=False, is_gen=False):
+        """Apply TCO, TRE, async, and generator return universalization to the given function."""
         lines = []  # transformed lines
         tco = False  # whether tco was done
         tre = False  # whether tre was done
         level = 0  # indentation level
         disabled_until_level = None  # whether inside of a disabled block
+        func_until_level = None  # whether inside of an inner function
         attempt_tre = tre_return_grammar is not None  # whether to even attempt tre
-        attempt_tco = not is_async and not self.no_tco  # whether to even attempt tco
+        normal_func = not (is_async or is_gen)  # whether this is a normal function
+        attempt_tco = normal_func and not self.no_tco  # whether to even attempt tco
 
-        if is_async:
-            internal_assert(not attempt_tre and not attempt_tco, "cannot tail call optimize async functions")
+        # sanity checks
+        internal_assert(not (is_async and is_gen), "cannot mark as async and generator")
+        internal_assert(not (not normal_func and (attempt_tre or attempt_tco)), "cannot tail call optimize async/generator functions")
+
+        if (
+            # don't transform generator returns if they're supported
+            is_gen and self.target_info >= (3, 3)
+            # don't transform async returns if they're supported
+            or is_async and self.target_info >= (3, 5)
+        ):
+            func_code = "".join(raw_lines)
+            return func_code, tco, tre
 
         for line in raw_lines:
-            indent, body, dedent = split_leading_trailing_indent(line)
-            base, comment = split_comment(body)
+            indent, _body, dedent = split_leading_trailing_indent(line)
+            base, comment = split_comment(_body)
 
             level += ind_change(indent)
 
-            if disabled_until_level is not None:
-                if level <= disabled_until_level:
-                    disabled_until_level = None
+            # update disabled_until_level and func_until_level
+            if disabled_until_level is not None and level <= disabled_until_level:
+                disabled_until_level = None
+            if func_until_level is not None and level <= func_until_level:
+                func_until_level = None
 
+            # detect inner functions
+            if func_until_level is None and self.def_regex.match(base):
+                func_until_level = level
+                if disabled_until_level is None:
+                    disabled_until_level = level
+                # functions store scope so no TRE anywhere
+                attempt_tre = False
+
+            # tco and tre shouldn't touch scopes that depend on actual return statements
+            #  or scopes where we can't insert a continue
+            if normal_func and disabled_until_level is None and self.tco_disable_regex.match(base):
+                disabled_until_level = level
+
+            # check if there is anything that stores a scope reference, and if so,
+            # disable TRE, since it can't handle that
+            if attempt_tre and match_in(self.stores_scope, line):
+                attempt_tre = False
+
+            # attempt tco/tre/async universalization
             if disabled_until_level is None:
 
-                # tco and tre don't support generators
-                if not is_async and self.yield_regex.search(body):
-                    lines = raw_lines  # reset lines
-                    break
+                # handle generator/async returns
+                if not normal_func and self.return_regex.match(base):
+                    to_return = base[len("return"):].strip()
+                    if to_return:
+                        to_return = "(" + to_return + ")"
+                    # only use trollius Return when trollius is imported
+                    if is_async and self.target_info < (3, 4):
+                        ret_err = "_coconut.asyncio.Return"
+                    else:
+                        ret_err = "_coconut.StopIteration"
+                        # warn about Python 3.7 incompatibility on any target with Python 3 support
+                        if not self.target.startswith("2"):
+                            logger.warn_err(self.make_err(CoconutSyntaxWarning, "compiled generator return to StopIteration error; this will break on Python >= 3.7 (pass --target sys to fix)", original, loc))
+                    line = indent + "raise " + ret_err + "(" + to_return + ")" + comment + dedent
 
-                # don't touch inner functions
-                elif self.def_regex.match(body):
-                    disabled_until_level = level
+                tre_base = None
+                if attempt_tre:
+                    tre_base = self.post_transform(tre_return_grammar, base)
+                    if tre_base is not None:
+                        line = indent + tre_base + comment + dedent
+                        tre = True
+                        # when tco is available, tre falls back on it if the function is changed
+                        tco = not self.no_tco
 
-                # tco and tre shouldn't touch scopes that depend on actual return statements
-                #  or scopes where we can't insert a continue
-                elif not is_async and self.tre_disable_regex.match(body):
-                    disabled_until_level = level
-
-                else:
-
-                    if is_async:
-                        if self.return_regex.match(base):
-                            to_return = base[len("return"):].strip()
-                            if to_return:  # leave empty return statements alone
-                                line = indent + "raise _coconut.asyncio.Return(" + to_return + ")" + comment + dedent
-
-                    tre_base = None
-                    if attempt_tre:
-                        with self.complain_on_err():
-                            tre_base = transform(tre_return_grammar, base)
-                        if tre_base is not None:
-                            line = indent + tre_base + comment + dedent
-                            tre = True
-                            # when tco is available, tre falls back on it if the function is changed
-                            tco = not self.no_tco
-
-                    if attempt_tco and tre_base is None:  # don't attempt tco if tre succeeded
-                        tco_base = None
-                        with self.complain_on_err():
-                            tco_base = transform(self.tco_return, base)
-                        if tco_base is not None:
-                            line = indent + tco_base + comment + dedent
-                            tco = True
+                if (
+                    attempt_tco
+                    # don't attempt tco if tre succeeded
+                    and tre_base is None
+                    # don't tco scope-dependent functions
+                    and not self.no_tco_funcs_regex.search(base)
+                ):
+                    tco_base = None
+                    tco_base = self.post_transform(self.tco_return, base)
+                    if tco_base is not None:
+                        line = indent + tco_base + comment + dedent
+                        tco = True
 
             level += ind_change(dedent)
             lines.append(line)
 
         func_code = "".join(lines)
-        if is_async:
-            return func_code
-        else:
-            return func_code, tco, tre
+        return func_code, tco, tre
 
     def decoratable_funcdef_stmt_handle(self, original, loc, tokens, is_async=False):
         """Determines if TCO or TRE can be done and if so does it,
@@ -1979,16 +2104,19 @@ if not {check_var}:
             else:
                 decorators += "@_coconut.asyncio.coroutine\n"
 
-            # only Python 3.3+ supports returning values inside generators
-            if self.target_info < (3, 3):
-                func_code = self.transform_returns(raw_lines, is_async=True)
-            else:
-                func_code = "".join(raw_lines)
+            func_code, _, _ = self.transform_returns(original, loc, raw_lines, is_async=True)
 
         # handle normal functions
         else:
-            # tre does not work with decorators, though tco does
-            attempt_tre = func_name is not None and not decorators
+            # detect generators
+            is_gen = self.detect_is_gen(raw_lines)
+
+            attempt_tre = (
+                func_name is not None
+                and not is_gen
+                # tre does not work with decorators, though tco does
+                and not decorators
+            )
             if attempt_tre:
                 use_mock = func_args and func_args != func_params[1:-1]
                 func_store = self.get_temp_var("recursive_func")
@@ -1997,9 +2125,12 @@ if not {check_var}:
                 use_mock = func_store = tre_return_grammar = None
 
             func_code, tco, tre = self.transform_returns(
+                original,
+                loc,
                 raw_lines,
                 tre_return_grammar,
                 use_mock,
+                is_gen=is_gen,
             )
 
             if tre:
@@ -2029,16 +2160,23 @@ if not {check_var}:
         # handle dotted function definition
         if is_dotted:
             store_var = self.get_temp_var("dotted_func_name_store")
-            out = (
-                "try:\n"
-                + openindent + store_var + " = " + def_name + "\n"
-                + closeindent + "except _coconut.NameError:\n"
-                + openindent + store_var + " = None\n"
-                + closeindent + decorators + def_stmt + func_code
-                + func_name + " = " + def_name + "\n"
-                + def_name + " = " + store_var + "\n"
+            out = r'''try:
+    {oind}{store_var} = {def_name}
+{cind}except _coconut.NameError:
+    {oind}{store_var} = _coconut_sentinel
+{cind}{decorators}{def_stmt}{func_code}{func_name} = {def_name}
+if {store_var} is not _coconut_sentinel:
+    {oind}{def_name} = {store_var}
+{cind}'''.format(
+                oind=openindent,
+                cind=closeindent,
+                store_var=store_var,
+                def_name=def_name,
+                decorators=decorators,
+                def_stmt=def_stmt,
+                func_code=func_code,
+                func_name=func_name,
             )
-
         else:
             out = decorators + def_stmt + func_code
 
@@ -2066,8 +2204,11 @@ if not {check_var}:
         return self.typedef_handle(tokens.asList() + [","])
 
     def wrap_typedef(self, typedef):
-        """Wrap a type definition in a string to defer it."""
-        return self.wrap_str_of(self.reformat(typedef))
+        """Wrap a type definition in a string to defer it unless --no-wrap."""
+        if self.no_wrap or self.target_info >= (3, 7):
+            return typedef
+        else:
+            return self.wrap_str_of(self.reformat(typedef))
 
     def typedef_handle(self, tokens):
         """Process Python 3 type annotations."""
@@ -2148,7 +2289,7 @@ if not {check_var}:
         return out
 
     def f_string_handle(self, original, loc, tokens):
-        """Handle Python 3.6 format strings."""
+        """Process Python 3.6 format strings."""
         internal_assert(len(tokens) == 1, "invalid format string tokens", tokens)
         string = tokens[0]
 
@@ -2191,6 +2332,7 @@ if not {check_var}:
                     in_expr = False
                     string_parts.append(c)
                 else:
+                    expr_level += paren_change(c)
                     exprs[-1] += c
             elif c == "{":
                 saw_brace = True
@@ -2204,12 +2346,19 @@ if not {check_var}:
         if in_expr:
             raise self.make_err(CoconutSyntaxError, "imbalanced braces in format string (escape braces by doubling to '{{' and '}}')", original, loc)
 
+        # handle Python 3.8 f string = specifier
+        for i, expr in enumerate(exprs):
+            if expr.endswith("="):
+                before = string_parts[i]
+                internal_assert(before[-1] == "{", "invalid format string split", (string_parts, exprs))
+                string_parts[i] = before[:-1] + expr + "{"
+                exprs[i] = expr[:-1]
+
         # compile Coconut expressions
         compiled_exprs = []
         for co_expr in exprs:
             py_expr = self.inner_parse_eval(co_expr)
             if "\n" in py_expr:
-                print(py_expr)
                 raise self.make_err(CoconutSyntaxError, "invalid expression in format string: " + co_expr, original, loc)
             compiled_exprs.append(py_expr)
 
@@ -2264,6 +2413,8 @@ if not {check_var}:
     def name_check(self, original, loc, tokens):
         """Check the given base name."""
         internal_assert(len(tokens) == 1, "invalid name tokens", tokens)
+        if self.disable_name_check:
+            return tokens[0]
         if self.strict:
             self.unused_imports.discard(tokens[0])
         if tokens[0] == "exec":
@@ -2344,7 +2495,7 @@ if not {check_var}:
         return self.parse(inputstring, self.file_parser, {}, {"header": "none", "initial": "none"})
 
     def parse_sys(self, inputstring):
-        """Parse module code."""
+        """Parse code to use the Coconut module."""
         return self.parse(inputstring, self.file_parser, {}, {"header": "sys", "initial": "none"})
 
     def parse_eval(self, inputstring):

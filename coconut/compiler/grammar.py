@@ -17,7 +17,7 @@ Description: Defines the Coconut grammar.
 #   - Handlers
 #   - Main Grammar
 #   - Extra Grammar
-#   - Naming
+#   - Tracing
 
 # -----------------------------------------------------------------------------------------------------------------------
 # IMPORTS:
@@ -71,7 +71,7 @@ from coconut.constants import (
 )
 from coconut.compiler.matching import Matcher
 from coconut.compiler.util import (
-    UseCombine as Combine,
+    CustomCombine as Combine,
     attach,
     fixto,
     addspace,
@@ -89,6 +89,7 @@ from coconut.compiler.util import (
     split_leading_indent,
     collapse_indents,
     keyword,
+    match_in,
 )
 
 # end: IMPORTS
@@ -184,22 +185,19 @@ def get_infix_items(tokens, callback=infix_error):
 
 
 def pipe_info(op):
-    """Returns (direction, stars) where direction is 'forwards' or 'backwards'.
+    """Returns (direction, stars, None-aware) where direction is 'forwards' or 'backwards'.
     Works with normal pipe operators and composition pipe operators."""
-    if op.startswith("<**"):
-        return "backwards", 2
-    elif op.endswith("**>"):
-        return "forwards", 2
-    elif op.endswith("*>"):
-        return "forwards", 1
-    elif op.startswith("<*"):
-        return "backwards", 1
-    elif op.endswith(">"):
-        return "forwards", 0
-    elif op.startswith("<"):
-        return "backwards", 0
+    none_aware = "?" in op
+    stars = op.count("*")
+    if not 0 <= stars <= 2:
+        raise CoconutInternalException("invalid stars in pipe operator", op)
+    if ">" in op:
+        direction = "forwards"
+    elif "<" in op:
+        direction = "backwards"
     else:
-        raise CoconutInternalException("invalid pipe operator", op)
+        raise CoconutInternalException("invalid direction in pipe operator", op)
+    return direction, stars, none_aware
 
 
 # end: HELPERS
@@ -245,9 +243,13 @@ def item_handle(loc, tokens):
                 rest_of_trailers = tokens[i + 1:]
                 if len(rest_of_trailers) == 0:
                     raise CoconutDeferredSyntaxError("None-coalescing ? must have something after it", loc)
-                not_none_tokens = ["x"]
+                not_none_tokens = [none_coalesce_var]
                 not_none_tokens.extend(rest_of_trailers)
-                return "(lambda x: None if x is None else " + item_handle(loc, not_none_tokens) + ")(" + out + ")"
+                return "(lambda {x}: None if {x} is None else {rest})({inp})".format(
+                    x=none_coalesce_var,
+                    rest=item_handle(loc, not_none_tokens),
+                    inp=out,
+                )
             else:
                 raise CoconutInternalException("invalid trailer symbol", trailer[0])
         elif len(trailer) == 2:
@@ -319,43 +321,54 @@ def pipe_handle(loc, tokens, **kwargs):
 
     else:
         item, op = tokens.pop(), tokens.pop()
-        direction, stars = pipe_info(op)
+        direction, stars, none_aware = pipe_info(op)
         star_str = "*" * stars
 
-        if direction == "forwards":
-            # if this is an implicit partial, we have something to apply it to, so optimize it
-            name, split_item = pipe_item_split(item, loc)
-            if name == "expr":
-                internal_assert(len(split_item) == 1)
-                return "(" + split_item[0] + ")(" + star_str + pipe_handle(loc, tokens) + ")"
-            elif name == "partial":
-                internal_assert(len(split_item) == 3)
-                return split_item[0] + "(" + join_args((split_item[1], star_str + pipe_handle(loc, tokens), split_item[2])) + ")"
-            elif name == "attrgetter":
-                internal_assert(len(split_item) == 2)
-                if stars:
-                    raise CoconutDeferredSyntaxError("cannot star pipe into attribute access or method call", loc)
-                return "(" + pipe_handle(loc, tokens) + ")." + split_item[0] + ("(" + split_item[1] + ")" if split_item[1] is not None else "")
-            elif name == "itemgetter":
-                internal_assert(len(split_item) == 2)
-                if stars:
-                    raise CoconutDeferredSyntaxError("cannot star pipe into item getting", loc)
-                op, args = split_item
-                if op == "[":
-                    return "(" + pipe_handle(loc, tokens) + ")[" + args + "]"
-                elif op == "$[":
-                    return "_coconut_igetitem(" + pipe_handle(loc, tokens) + ", " + args + ")"
-                else:
-                    raise CoconutInternalException("pipe into invalid implicit itemgetter operation", op)
-            else:
-                raise CoconutInternalException("invalid split pipe item", split_item)
-
-        elif direction == "backwards":
+        if direction == "backwards":
             # for backwards pipes, we just reuse the machinery for forwards pipes
             inner_item = pipe_handle(loc, tokens, top=False)
             if isinstance(inner_item, str):
                 inner_item = [inner_item]  # artificial pipe item
-            return pipe_handle(loc, [item, "|" + star_str + ">", inner_item])
+            return pipe_handle(loc, [item, "|" + ("?" if none_aware else "") + star_str + ">", inner_item])
+
+        elif none_aware:
+            # for none_aware forward pipes, we wrap the normal forward pipe in a lambda
+            return "(lambda {x}: None if {x} is None else {pipe})({subexpr})".format(
+                x=none_coalesce_var,
+                pipe=pipe_handle(loc, [[none_coalesce_var], "|" + star_str + ">", item]),
+                subexpr=pipe_handle(loc, tokens),
+            )
+
+        elif direction == "forwards":
+            # if this is an implicit partial, we have something to apply it to, so optimize it
+            name, split_item = pipe_item_split(item, loc)
+            subexpr = pipe_handle(loc, tokens)
+
+            if name == "expr":
+                func, = split_item
+                return "({f})({stars}{x})".format(f=func, stars=star_str, x=subexpr)
+            elif name == "partial":
+                func, partial_args, partial_kwargs = split_item
+                return "({f})({args})".format(f=func, args=join_args((partial_args, star_str + subexpr, partial_kwargs)))
+            elif name == "attrgetter":
+                attr, method_args = split_item
+                call = "(" + method_args + ")" if method_args is not None else ""
+                if stars:
+                    raise CoconutDeferredSyntaxError("cannot star pipe into attribute access or method call", loc)
+                return "({x}).{attr}{call}".format(x=subexpr, attr=attr, call=call)
+            elif name == "itemgetter":
+                op, args = split_item
+                if stars:
+                    raise CoconutDeferredSyntaxError("cannot star pipe into item getting", loc)
+                if op == "[":
+                    fmtstr = "({x})[{args}]"
+                elif op == "$[":
+                    fmtstr = "_coconut_igetitem({x}, ({args}))"
+                else:
+                    raise CoconutInternalException("pipe into invalid implicit itemgetter operation", op)
+                return fmtstr.format(x=subexpr, args=args)
+            else:
+                raise CoconutInternalException("invalid split pipe item", split_item)
 
         else:
             raise CoconutInternalException("invalid pipe operator direction", direction)
@@ -369,7 +382,9 @@ def comp_pipe_handle(loc, tokens):
     direction = None
     for i in range(1, len(tokens), 2):
         op, fn = tokens[i], tokens[i + 1]
-        new_direction, stars = pipe_info(op)
+        new_direction, stars, none_aware = pipe_info(op)
+        if none_aware:
+            raise CoconutInternalException("found unsupported None-aware composition pipe")
         if direction is None:
             direction = new_direction
         elif new_direction != direction:
@@ -389,6 +404,10 @@ def comp_pipe_handle(loc, tokens):
 def none_coalesce_handle(tokens):
     """Process the None-coalescing operator."""
     if len(tokens) == 1:
+        return tokens[0]
+    elif tokens[0] == "None":
+        return none_coalesce_handle(tokens[1:])
+    elif match_in(Grammar.just_non_none_atom, tokens[0]):
         return tokens[0]
     elif tokens[0].isalnum():
         return "({b} if {a} is None else {a})".format(
@@ -422,11 +441,12 @@ def attrgetter_atom_handle(loc, tokens):
 def lazy_list_handle(tokens):
     """Process lazy lists."""
     if len(tokens) == 0:
-        return "_coconut.iter(())"
+        return "_coconut_reiterable(())"
     else:
-        return (
-            "(%s() for %s in (" % (func_var, func_var)
-            + "lambda: " + ", lambda: ".join(tokens) + ("," if len(tokens) == 1 else "") + "))"
+        return "_coconut_reiterable({func_var}() for {func_var} in ({lambdas}{tuple_comma}))".format(
+            func_var=func_var,
+            lambdas="lambda: " + ", lambda: ".join(tokens),
+            tuple_comma="," if len(tokens) == 1 else "",
         )
 
 
@@ -589,9 +609,9 @@ def itemgetter_handle(tokens):
     internal_assert(len(tokens) == 2, "invalid implicit itemgetter args", tokens)
     op, args = tokens
     if op == "[":
-        return "_coconut.operator.itemgetter(" + args + ")"
+        return "_coconut.operator.itemgetter((" + args + "))"
     elif op == "$[":
-        return "_coconut.functools.partial(_coconut_igetitem, index=" + args + ")"
+        return "_coconut.functools.partial(_coconut_igetitem, index=(" + args + "))"
     else:
         raise CoconutInternalException("invalid implicit itemgetter type", op)
 
@@ -639,11 +659,11 @@ impl_call_item_handle.ignore_one_token = True
 
 def tco_return_handle(tokens):
     """Process tail-call-optimizable return statements."""
-    internal_assert(len(tokens) == 2, "invalid tail-call-optimizable return statement tokens", tokens)
-    if tokens[1].startswith("()"):
-        return "return _coconut_tail_call(" + tokens[0] + ")" + tokens[1][2:]  # tokens[1] contains \n
+    internal_assert(len(tokens) >= 1, "invalid tail-call-optimizable return statement tokens", tokens)
+    if len(tokens) == 1:
+        return "return _coconut_tail_call(" + tokens[0] + ")"
     else:
-        return "return _coconut_tail_call(" + tokens[0] + ", " + tokens[1][1:]  # tokens[1] contains )\n
+        return "return _coconut_tail_call(" + tokens[0] + ", " + ", ".join(tokens[1:]) + ")"
 
 
 def split_func_handle(tokens):
@@ -688,12 +708,11 @@ def join_match_funcdef(tokens):
     )
 
 
-def where_stmt_handle(tokens):
-    """Process a where statement."""
+def where_handle(tokens):
+    """Process where statements."""
     internal_assert(len(tokens) == 2, "invalid where statement tokens", tokens)
-    base_stmt, assignment_stmts = tokens
-    stmts = list(assignment_stmts) + [base_stmt + "\n"]
-    return "".join(stmts)
+    final_stmt, init_stmts = tokens
+    return "".join(init_stmts) + final_stmt + "\n"
 
 
 # end: HANDLERS
@@ -721,7 +740,7 @@ class Grammar(object):
     rbrack = Literal("]")
     lbrace = Literal("{")
     rbrace = Literal("}")
-    lbanana = Literal("(|") + ~Word(")>*", exact=1)
+    lbanana = Literal("(|") + ~Word(")>*?", exact=1)
     rbanana = Literal("|)")
     lparen = ~lbanana + Literal("(")
     rparen = Literal(")")
@@ -732,11 +751,14 @@ class Grammar(object):
     dubslash = Literal("//")
     slash = ~dubslash + Literal("/")
     pipe = Literal("|>") | fixto(Literal("\u21a6"), "|>")
-    back_pipe = Literal("<|") | fixto(Literal("\u21a4"), "<|")
     star_pipe = Literal("|*>") | fixto(Literal("*\u21a6"), "|*>")
-    back_star_pipe = Literal("<*|") | ~Literal("\u21a4**") + fixto(Literal("\u21a4*"), "<*|")
     dubstar_pipe = Literal("|**>") | fixto(Literal("**\u21a6"), "|**>")
+    back_pipe = Literal("<|") | fixto(Literal("\u21a4"), "<|")
+    back_star_pipe = Literal("<*|") | ~Literal("\u21a4**") + fixto(Literal("\u21a4*"), "<*|")
     back_dubstar_pipe = Literal("<**|") | fixto(Literal("\u21a4**"), "<**|")
+    none_pipe = Literal("|?>") | fixto(Literal("?\u21a6"), "|?>")
+    none_star_pipe = Literal("|?*>") | fixto(Literal("?*\u21a6"), "|?*>")
+    none_dubstar_pipe = Literal("|?**>") | fixto(Literal("?**\u21a6"), "|?**>")
     dotdot = (
         ~Literal("...") + ~Literal("..>") + ~Literal("..*>") + Literal("..")
         | ~Literal("\u2218>") + ~Literal("\u2218*>") + fixto(Literal("\u2218"), "..")
@@ -802,7 +824,7 @@ class Grammar(object):
 
     imag_j = CaselessLiteral("j") | fixto(CaselessLiteral("i"), "j")
     basenum = Combine(
-        integer + dot + (integer | FollowedBy(imag_j) | ~name)
+        integer + dot + Optional(integer)
         | Optional(integer) + dot + integer,
     ) | integer
     sci_e = Combine(CaselessLiteral("e") + Optional(plus | neg_minus))
@@ -853,11 +875,14 @@ class Grammar(object):
 
     augassign = (
         Combine(pipe + equals)
-        | Combine(back_pipe + equals)
         | Combine(star_pipe + equals)
-        | Combine(back_star_pipe + equals)
         | Combine(dubstar_pipe + equals)
+        | Combine(back_pipe + equals)
+        | Combine(back_star_pipe + equals)
         | Combine(back_dubstar_pipe + equals)
+        | Combine(none_pipe + equals)
+        | Combine(none_star_pipe + equals)
+        | Combine(none_dubstar_pipe + equals)
         | Combine(comp_pipe + equals)
         | Combine(dotdot + equals)
         | Combine(comp_back_pipe + equals)
@@ -924,10 +949,13 @@ class Grammar(object):
         # must go dubstar then star then no star
         fixto(dubstar_pipe, "_coconut_dubstar_pipe")
         | fixto(back_dubstar_pipe, "_coconut_back_dubstar_pipe")
+        | fixto(none_dubstar_pipe, "_coconut_none_dubstar_pipe")
         | fixto(star_pipe, "_coconut_star_pipe")
         | fixto(back_star_pipe, "_coconut_back_star_pipe")
+        | fixto(none_star_pipe, "_coconut_none_star_pipe")
         | fixto(pipe, "_coconut_pipe")
         | fixto(back_pipe, "_coconut_back_pipe")
+        | fixto(none_pipe, "_coconut_none_pipe")
 
         # must go dubstar then star then no star
         | fixto(comp_dubstar_pipe, "_coconut_forward_dubstar_compose")
@@ -1000,8 +1028,9 @@ class Grammar(object):
     just_op = just_star | just_slash
 
     match = Forward()
-    args_list = ~just_op + trace(
-        addspace(
+    args_list = trace(
+        ~just_op
+        + addspace(
             ZeroOrMore(
                 condense(
                     # everything here must end with arg_comma
@@ -1014,8 +1043,9 @@ class Grammar(object):
         ),
     )
     parameters = condense(lparen + args_list + rparen)
-    var_args_list = ~just_op + trace(
-        addspace(
+    var_args_list = trace(
+        ~just_op
+        + addspace(
             ZeroOrMore(
                 condense(
                     # everything here must end with vararg_comma
@@ -1191,7 +1221,7 @@ class Grammar(object):
     base_assign_item = condense(simple_assign | lparen + assignlist + rparen | lbrack + assignlist + rbrack)
     star_assign_item_ref = condense(star + base_assign_item)
     assign_item = star_assign_item | base_assign_item
-    assignlist <<= trace(itemlist(assign_item, comma, suppress_trailing=False))
+    assignlist <<= itemlist(assign_item, comma, suppress_trailing=False)
 
     augassign_stmt = Forward()
     typed_assign_stmt = Forward()
@@ -1217,7 +1247,7 @@ class Grammar(object):
     factor = Forward()
     unary = plus | neg_minus | tilde
     power = trace(condense(power_item + Optional(exp_dubstar + factor)))
-    factor <<= trace(condense(ZeroOrMore(unary) + power))
+    factor <<= condense(ZeroOrMore(unary) + power)
 
     mulop = mul_star | div_dubslash | div_slash | percent | matrix_at
     addop = plus | sub_minus
@@ -1268,11 +1298,14 @@ class Grammar(object):
 
     pipe_op = (
         pipe
-        | back_pipe
         | star_pipe
-        | back_star_pipe
         | dubstar_pipe
+        | back_pipe
+        | back_star_pipe
         | back_dubstar_pipe
+        | none_pipe
+        | none_star_pipe
+        | none_dubstar_pipe
     )
     pipe_item = (
         # we need the pipe_op since any of the atoms could otherwise be the start of an expression
@@ -1340,7 +1373,7 @@ class Grammar(object):
         )
     )
 
-    lambdef <<= trace(addspace(lambdef_base + test) | stmt_lambdef)
+    lambdef <<= addspace(lambdef_base + test) | stmt_lambdef
     lambdef_no_cond = trace(addspace(lambdef_base + test_no_cond))
 
     typedef_callable_params = (
@@ -1356,18 +1389,18 @@ class Grammar(object):
     typedef_atom <<= _typedef_atom
     typedef_test <<= _typedef_test
 
-    test <<= trace(
+    test <<= (
         typedef_callable
         | lambdef
-        | addspace(test_item + Optional(keyword("if") + test_item + keyword("else") + test)),
+        | addspace(test_item + Optional(keyword("if") + test_item + keyword("else") + test))
     )
-    test_no_cond <<= trace(lambdef_no_cond | test_item)
+    test_no_cond <<= lambdef_no_cond | test_item
 
     namedexpr = Forward()
     namedexpr_ref = addspace(name + colon_eq + test)
-    namedexpr_test <<= trace(
+    namedexpr_test <<= (
         test + ~colon_eq
-        | namedexpr,
+        | namedexpr
     )
 
     async_comp_for = Forward()
@@ -1484,7 +1517,7 @@ class Grammar(object):
     and_match = Group(matchlist_and("and")) | as_match
     matchlist_or = and_match + OneOrMore(keyword("or").suppress() + and_match)
     or_match = Group(matchlist_or("or")) | and_match
-    match <<= trace(or_match)
+    match <<= or_match
 
     else_stmt = condense(keyword("else") - suite)
     full_suite = colon.suppress() + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
@@ -1601,19 +1634,26 @@ class Grammar(object):
     )
     match_funcdef = addspace(match_def_modifiers + def_match_funcdef)
 
-    where_suite = colon.suppress() - Group(
-        newline.suppress() + indent.suppress() - OneOrMore(simple_stmt) - dedent.suppress()
-        | simple_stmt,
+    where_stmt = attach(
+        unsafe_simple_stmt_item
+        + keyword("where").suppress()
+        - full_suite,
+        where_handle,
     )
-    where_stmt = attach(unsafe_simple_stmt_item + keyword("where").suppress() - where_suite, where_stmt_handle)
 
     implicit_return = (
         attach(return_stmt, invalid_return_stmt_handle)
         | attach(testlist, implicit_return_handle)
     )
+    implicit_return_where = attach(
+        implicit_return
+        + keyword("where").suppress()
+        - full_suite,
+        where_handle,
+    )
     implicit_return_stmt = (
-        attach(implicit_return + keyword("where").suppress() - where_suite, where_stmt_handle)
-        | condense(implicit_return + newline)
+        condense(implicit_return + newline)
+        | implicit_return_where
     )
     math_funcdef_body = condense(ZeroOrMore(~(implicit_return_stmt + dedent) + stmt) - implicit_return_stmt)
     math_funcdef_suite = (
@@ -1627,10 +1667,10 @@ class Grammar(object):
             math_funcdef_handle,
         ),
     )
-    math_match_funcdef = addspace(
-        match_def_modifiers
-        + trace(
-            attach(
+    math_match_funcdef = trace(
+        addspace(
+            match_def_modifiers
+            + attach(
                 base_match_funcdef
                 + equals.suppress()
                 + (
@@ -1651,15 +1691,17 @@ class Grammar(object):
     async_stmt_ref = addspace(keyword("async") + (with_stmt | for_stmt))
 
     async_funcdef = keyword("async").suppress() + (funcdef | math_funcdef)
-    async_match_funcdef = addspace(
-        trace(
-            # we don't suppress addpattern so its presence can be detected later
-            keyword("match").suppress() + keyword("addpattern") + keyword("async").suppress()
-            | keyword("addpattern") + keyword("match").suppress() + keyword("async").suppress()
-            | keyword("match").suppress() + keyword("async").suppress() + Optional(keyword("addpattern"))
-            | keyword("addpattern") + keyword("async").suppress() + Optional(keyword("match")).suppress()
-            | keyword("async").suppress() + match_def_modifiers,
-        ) + (def_match_funcdef | math_match_funcdef),
+    async_match_funcdef = trace(
+        addspace(
+            (
+                # we don't suppress addpattern so its presence can be detected later
+                keyword("match").suppress() + keyword("addpattern") + keyword("async").suppress()
+                | keyword("addpattern") + keyword("match").suppress() + keyword("async").suppress()
+                | keyword("match").suppress() + keyword("async").suppress() + Optional(keyword("addpattern"))
+                | keyword("addpattern") + keyword("async").suppress() + Optional(keyword("match")).suppress()
+                | keyword("async").suppress() + match_def_modifiers
+            ) + (def_match_funcdef | math_match_funcdef),
+        ),
     )
 
     datadef = Forward()
@@ -1693,7 +1735,7 @@ class Grammar(object):
     match_datadef_ref = Optional(keyword("match").suppress()) + keyword("data").suppress() + name + match_data_args + data_suite
 
     simple_decorator = condense(dotted_name + Optional(function_call))("simple")
-    complex_decorator = test("test")
+    complex_decorator = namedexpr_test("test")
     decorators = attach(OneOrMore(at.suppress() - Group(longest(simple_decorator, complex_decorator)) - newline.suppress()), decorator_handle)
 
     decoratable_normal_funcdef_stmt = Forward()
@@ -1750,24 +1792,25 @@ class Grammar(object):
         | augassign_stmt
         | typed_assign_stmt
     )
-    unsafe_simple_stmt_item <<= trace(special_stmt | longest(basic_stmt, destructuring_stmt))
+    unsafe_simple_stmt_item <<= special_stmt | longest(basic_stmt, destructuring_stmt)
     end_simple_stmt_item = FollowedBy(semicolon | newline)
-    simple_stmt_item <<= trace(
+    simple_stmt_item <<= (
         special_stmt
         | basic_stmt + end_simple_stmt_item
-        | destructuring_stmt + end_simple_stmt_item,
+        | destructuring_stmt + end_simple_stmt_item
     )
-    simple_stmt <<= trace(
-        condense(
-            simple_stmt_item
-            + ZeroOrMore(fixto(semicolon, "\n") + simple_stmt_item)
-            + (newline | endline_semicolon),
-        ),
+    simple_stmt <<= condense(
+        simple_stmt_item
+        + ZeroOrMore(fixto(semicolon, "\n") + simple_stmt_item)
+        + (newline | endline_semicolon),
     )
-    stmt <<= final(trace(compound_stmt | simple_stmt))
+    stmt <<= final(
+        compound_stmt
+        | simple_stmt,
+    )
     base_suite <<= condense(newline + indent - OneOrMore(stmt) - dedent)
     simple_suite = attach(stmt, make_suite_handle)
-    nocolon_suite <<= trace(base_suite | simple_suite)
+    nocolon_suite <<= base_suite | simple_suite
     suite <<= condense(colon + nocolon_suite)
     line = trace(newline | stmt)
 
@@ -1784,18 +1827,31 @@ class Grammar(object):
 # EXTRA GRAMMAR:
 # -----------------------------------------------------------------------------------------------------------------------
 
+    just_non_none_atom = start_marker + ~keyword("None") + known_atom + end_marker
+
     parens = originalTextFor(nestedExpr("(", ")"))
     brackets = originalTextFor(nestedExpr("[", "]"))
     braces = originalTextFor(nestedExpr("{", "}"))
     any_char = Regex(r".", re.U | re.DOTALL)
 
+    original_function_call_tokens = lparen.suppress() + (
+        rparen.suppress()
+        # we need to add parens here, since f(x for x in y) is fine but tail_call(f, x for x in y) is not
+        | attach(originalTextFor(test + comp_for), add_paren_handle) + rparen.suppress()
+        | originalTextFor(tokenlist(call_item, comma)) + rparen.suppress()
+    )
+
+    def get_tre_return_grammar(self, func_name):
+        return (self.start_marker + keyword("return") + keyword(func_name)).suppress() + self.original_function_call_tokens + self.end_marker.suppress()
+
     tco_return = attach(
-        start_marker + keyword("return").suppress() + condense(
+        (start_marker + keyword("return")).suppress() + condense(
             (base_name | parens | brackets | braces | string)
             + ZeroOrMore(dot + base_name | brackets | parens + ~end_marker),
-        ) + parens + end_marker,
+        ) + original_function_call_tokens + end_marker.suppress(),
         tco_return_handle,
-        greedy=True,  # this is the root in what it's used for, so might as well evaluate greedily
+        # this is the root in what it's used for, so might as well evaluate greedily
+        greedy=True,
     )
 
     rest_of_arg = ZeroOrMore(parens | brackets | braces | ~comma + ~rparen + any_char)
@@ -1827,7 +1883,8 @@ class Grammar(object):
 
     stores_scope = (
         keyword("lambda")
-        | keyword("for") + base_name + keyword("in")
+        # match comprehensions but not for loops
+        | ~indent + ~dedent + any_char + keyword("for") + base_name + keyword("in")
     )
 
     just_a_string = start_marker + string + end_marker
@@ -1837,7 +1894,7 @@ class Grammar(object):
 
 # end: EXTRA GRAMMAR
 # -----------------------------------------------------------------------------------------------------------------------
-# NAMING:
+# TRACING:
 # -----------------------------------------------------------------------------------------------------------------------
 
 
@@ -1846,10 +1903,12 @@ def set_grammar_names():
     for varname, val in vars(Grammar).items():
         if isinstance(val, ParserElement):
             setattr(Grammar, varname, val.setName(varname))
+            if isinstance(val, Forward):
+                trace(val)
 
 
 if DEVELOP:
     set_grammar_names()
 
 
-# end: NAMING
+# end: TRACING

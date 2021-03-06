@@ -121,6 +121,8 @@ except ImportError:
     format_dict = dict(
         comment=comment(),
         empty_dict="{}",
+        open="{",
+        close="}",
         target_startswith=target_startswith,
         default_encoding=default_encoding,
         hash_line=hash_prefix + use_hash + "\n" if use_hash is not None else "",
@@ -143,16 +145,13 @@ else:
 else:
     import pickle''' if not target
             else "import cPickle as pickle" if target_info < (3,)
-            else "import pickle"
+            else "import pickle",
         ),
         import_OrderedDict=_indent(
-            r'''if _coconut_sys.version_info >= (2, 7):
-    OrderedDict = collections.OrderedDict
-else:
-    OrderedDict = dict'''
+            r'''OrderedDict = collections.OrderedDict if _coconut_sys.version_info >= (2, 7) else dict'''
             if not target
             else "OrderedDict = collections.OrderedDict" if target_info >= (2, 7)
-            else "OrderedDict = dict"
+            else "OrderedDict = dict",
         ),
         import_collections_abc=_indent(
             r'''if _coconut_sys.version_info < (3, 3):
@@ -160,21 +159,28 @@ else:
 else:
     import collections.abc as abc'''
             if target_startswith != "2"
-            else "abc = collections"
+            else "abc = collections",
         ),
         bind_lru_cache=_indent(
             r'''if _coconut_sys.version_info < (3, 2):
 ''' + _indent(try_backport_lru_cache)
             if not target
             else try_backport_lru_cache if target_startswith == "2"
-            else ""
+            else "",
+        ),
+        set_zip_longest=_indent(
+            r'''zip_longest = itertools.zip_longest if _coconut_sys.version_info >= (3,) else itertools.izip_longest'''
+            if not target
+            else "zip_longest = itertools.zip_longest" if target_info >= (3,)
+            else "zip_longest = itertools.izip_longest",
         ),
         comma_bytearray=", bytearray" if target_startswith != "3" else "",
         static_repr="staticmethod(repr)" if target_startswith != "3" else "repr",
-        with_ThreadPoolExecutor=(
-            r'''from multiprocessing import cpu_count  # cpu_count() * 5 is the default Python 3.5 thread count
-        with ThreadPoolExecutor(cpu_count() * 5)''' if target_info < (3, 5)
-            else '''with ThreadPoolExecutor()'''
+        return_ThreadPoolExecutor=(
+            # cpu_count() * 5 is the default Python 3.5 thread count
+            r'''from multiprocessing import cpu_count
+        return ThreadPoolExecutor(cpu_count() * 5)''' if target_info < (3, 5)
+            else '''return ThreadPoolExecutor()'''
         ),
         def_tco_func=r'''def _coconut_tco_func(self, *args, **kwargs):
         for func in self.patterns[:-1]:
@@ -203,7 +209,7 @@ else:
     )
 
     # when anything is added to this list it must also be added to the stub file
-    format_dict["underscore_imports"] = "_coconut, _coconut_MatchError{comma_tco}, _coconut_igetitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_back_pipe, _coconut_star_pipe, _coconut_back_star_pipe, _coconut_dubstar_pipe, _coconut_back_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_mark_as_match".format(**format_dict)
+    format_dict["underscore_imports"] = "_coconut, _coconut_MatchError{comma_tco}, _coconut_igetitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_star_pipe, _coconut_dubstar_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_back_dubstar_pipe, _coconut_none_pipe, _coconut_none_star_pipe, _coconut_none_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_mark_as_match, _coconut_reiterable".format(**format_dict)
 
     format_dict["import_typing_NamedTuple"] = _indent(
         "import typing" if target_info >= (3, 6)
@@ -333,7 +339,9 @@ from coconut.__coconut__ import {underscore_imports}
 
     header += "import sys as _coconut_sys\n"
 
-    if target_startswith == "3":
+    if target_info >= (3, 7):
+        header += PY37_HEADER
+    elif target_startswith == "3":
         header += PY3_HEADER
     elif target_info >= (2, 7):
         header += PY27_HEADER

@@ -19,18 +19,27 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
+import sys
 import argparse
 
+from coconut._pyparsing import PYPARSING_INFO
 from coconut.constants import (
     documentation_url,
-    version_long,
     default_recursion_limit,
     style_env_var,
-    histfile_env_var,
     default_style,
-    default_histfile,
     main_sig,
+    default_histfile,
+    home_env_var,
 )
+
+# -----------------------------------------------------------------------------------------------------------------------
+# VERSION:
+# -----------------------------------------------------------------------------------------------------------------------
+
+cli_version = "Version " + VERSION_STR + " running on Python " + sys.version.split()[0] + " and " + PYPARSING_INFO
+
+cli_version_str = main_sig + cli_version
 
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN:
@@ -61,7 +70,7 @@ arguments.add_argument(
 arguments.add_argument(
     "-v", "--version",
     action="version",
-    version=main_sig + version_long,
+    version=cli_version_str,
     help="print Coconut and Python version information",
 )
 
@@ -145,6 +154,12 @@ arguments.add_argument(
 )
 
 arguments.add_argument(
+    "--no-wrap", "--nowrap",
+    action="store_true",
+    help="disable wrapping type hints in strings",
+)
+
+arguments.add_argument(
     "-c", "--code",
     metavar="code",
     type=str,
@@ -161,7 +176,7 @@ arguments.add_argument(
 arguments.add_argument(
     "-f", "--force",
     action="store_true",
-    help="force overwriting of compiled Python (otherwise only overwrites when source code or compilation parameters change)",
+    help="force re-compilation even when source code and compilation parameters haven't changed",
 )
 
 arguments.add_argument(
@@ -207,7 +222,7 @@ arguments.add_argument(
     "--style",
     metavar="name",
     type=str,
-    help="Pygments syntax highlighting style (or 'none' to disable) (defaults to "
+    help="Pygments syntax highlighting style (or 'list' to list styles) (defaults to "
     + style_env_var + " environment variable if it exists, otherwise '" + default_style + "')",
 )
 
@@ -215,8 +230,7 @@ arguments.add_argument(
     "--history-file",
     metavar="path",
     type=str,
-    help="Path to history file (or '' for no file) (defaults to "
-    + histfile_env_var + " environment variable if it exists, otherwise '" + default_histfile + "')",
+    help="Path to history file (or '' for no file) (currently set to '" + default_histfile + "') (can be modified by setting " + home_env_var + " environment variable)",
 )
 
 arguments.add_argument(
