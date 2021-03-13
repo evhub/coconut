@@ -869,7 +869,8 @@ pattern ::= (
     | "=" NAME                      # check
     | NUMBER                        # numbers
     | STRING                        # strings
-    | [pattern "as"] NAME           # capture
+    | [pattern "as"] NAME           # capture (binds tightly)
+    | NAME ":=" patterns            # capture (binds loosely)
     | NAME "(" patterns ")"         # data types
     | pattern "is" exprs            # type-checking
     | pattern "and" pattern         # match all

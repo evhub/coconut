@@ -1517,7 +1517,9 @@ class Grammar(object):
     and_match = Group(matchlist_and("and")) | as_match
     matchlist_or = and_match + OneOrMore(keyword("or").suppress() + and_match)
     or_match = Group(matchlist_or("or")) | and_match
-    match <<= or_match
+    matchlist_walrus = name + colon_eq.suppress() + or_match
+    walrus_match = Group(matchlist_walrus("walrus")) | or_match
+    match <<= walrus_match
 
     else_stmt = condense(keyword("else") - suite)
     full_suite = colon.suppress() + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
