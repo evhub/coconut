@@ -58,6 +58,10 @@ def get_match_names(match):
             if op == "as":
                 names.append(arg)
         names += get_match_names(match)
+    elif "walrus" in match:
+        name, match = match
+        names.append(name)
+        names += get_match_names(match)
     return names
 
 
@@ -83,6 +87,7 @@ class Matcher(object):
         "data": lambda self: self.match_data,
         "paren": lambda self: self.match_paren,
         "trailer": lambda self: self.match_trailer,
+        "walrus": lambda self: self.match_walrus,
         "and": lambda self: self.match_and,
         "or": lambda self: self.match_or,
         "star": lambda self: self.match_star,
@@ -553,16 +558,6 @@ class Matcher(object):
         else:
             self.add_check(item + " == " + match)
 
-    def match_var(self, tokens, item):
-        """Matches a variable."""
-        setvar, = tokens
-        if setvar != wildcard:
-            if setvar in self.names:
-                self.add_check(self.names[setvar] + " == " + item)
-            else:
-                self.add_def(setvar + " = " + item)
-                self.register_name(setvar, item)
-
     def match_set(self, tokens, item):
         """Matches a set."""
         match, = tokens
@@ -594,6 +589,17 @@ class Matcher(object):
         match, = tokens
         return self.match(match, item)
 
+    def match_var(self, tokens, item, bind_wildcard=False):
+        """Matches a variable."""
+        setvar, = tokens
+        if setvar == wildcard and not bind_wildcard:
+            return
+        if setvar in self.names:
+            self.add_check(self.names[setvar] + " == " + item)
+        else:
+            self.add_def(setvar + " = " + item)
+            self.register_name(setvar, item)
+
     def match_trailer(self, tokens, item):
         """Matches typedefs and as patterns."""
         internal_assert(len(tokens) > 1 and len(tokens) % 2 == 1, "invalid trailer match tokens", tokens)
@@ -603,13 +609,16 @@ class Matcher(object):
             if op == "is":
                 self.add_check("_coconut.isinstance(" + item + ", " + arg + ")")
             elif op == "as":
-                if arg in self.names:
-                    self.add_check(self.names[arg] + " == " + item)
-                elif arg != wildcard:
-                    self.add_def(arg + " = " + item)
-                    self.register_name(arg, item)
+                self.match_var([arg], item, bind_wildcard=True)
             else:
                 raise CoconutInternalException("invalid trailer match operation", op)
+        self.match(match, item)
+
+    def match_walrus(self, tokens, item):
+        """Matches :=."""
+        internal_assert(len(tokens) == 2, "invalid walrus match tokens", tokens)
+        name, match = tokens
+        self.match_var([name], item, bind_wildcard=True)
         self.match(match, item)
 
     def match_and(self, tokens, item):

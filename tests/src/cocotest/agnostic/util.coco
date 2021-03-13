@@ -772,7 +772,9 @@ addpattern def fact_(n is int, acc=1 if n > 0) = fact_(n-1, acc*n)  # type: igno
 
 def x_is_int(x is int) = x
 
-def x_as_y(x as y) = (x, y)
+def x_as_y_1(x as y) = (x, y)
+
+def x_as_y_2(y := x) = (x, y)
 
 def (x is int) `x_y_are_int_gt_0` (y is int) if x > 0 and y > 0 = (x, y)
 
