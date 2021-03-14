@@ -52,9 +52,11 @@ from coconut._pyparsing import (
 from coconut.exceptions import (
     CoconutInternalException,
     CoconutDeferredSyntaxError,
+)
+from coconut.terminal import (
+    trace,
     internal_assert,
 )
-from coconut.terminal import trace
 from coconut.constants import (
     openindent,
     closeindent,
@@ -833,13 +835,16 @@ class Grammar(object):
     bin_num = Combine(CaselessLiteral("0b") + Optional(underscore.suppress()) + binint)
     oct_num = Combine(CaselessLiteral("0o") + Optional(underscore.suppress()) + octint)
     hex_num = Combine(CaselessLiteral("0x") + Optional(underscore.suppress()) + hexint)
-    number = addspace((
-        bin_num
-        | oct_num
-        | hex_num
-        | imag_num
-        | numitem
-    ) + Optional(condense(dot + name)))
+    number = addspace(
+        (
+            bin_num
+            | oct_num
+            | hex_num
+            | imag_num
+            | numitem
+        )
+        + Optional(condense(dot + name)),
+    )
 
     moduledoc_item = Forward()
     unwrap = Literal(unwrapper)
@@ -1357,7 +1362,7 @@ class Grammar(object):
     lambdef_base = classic_lambdef | new_lambdef | implicit_lambdef
 
     stmt_lambdef = Forward()
-    match_guard = Optional(keyword("if").suppress() + test)
+    match_guard = Optional(keyword("if").suppress() + namedexpr_test)
     closing_stmt = longest(testlist("tests"), unsafe_simple_stmt_item)
     stmt_lambdef_params = Optional(
         attach(name, add_paren_handle)
@@ -1452,13 +1457,12 @@ class Grammar(object):
     nonlocal_stmt_ref = addspace(keyword("nonlocal") - namelist)
     del_stmt = addspace(keyword("del") - simple_assignlist)
 
-    matchlist_list = Group(Optional(tokenlist(match, comma)))
-    matchlist_tuple = Group(
-        Optional(
-            match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress())
-            | match + comma.suppress(),
-        ),
+    matchlist_tuple_items = (
+        match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress())
+        | match + comma.suppress()
     )
+    matchlist_tuple = Group(Optional(matchlist_tuple_items))
+    matchlist_list = Group(Optional(tokenlist(match, comma)))
     matchlist_star = (
         Optional(Group(OneOrMore(match + comma.suppress())))
         + star.suppress() + name
@@ -1471,7 +1475,12 @@ class Grammar(object):
         + Optional(comma.suppress())
     ) | matchlist_list
 
-    match_const = const_atom | condense(equals.suppress() + atom_item)
+    complex_number = condense(Optional(neg_minus) + number + (plus | sub_minus) + Optional(neg_minus) + imag_num)
+    match_const = condense(
+        complex_number
+        | Optional(neg_minus) + const_atom
+        | equals.suppress() + atom_item,
+    )
     match_string = (
         (string + plus.suppress() + name + plus.suppress() + string)("mstring")
         | (string + plus.suppress() + name)("string")
@@ -1501,50 +1510,74 @@ class Grammar(object):
         Group(
             match_string
             | match_const("const")
-            | (lparen.suppress() + match + rparen.suppress())("paren")
             | (lbrace.suppress() + matchlist_dict + Optional(dubstar.suppress() + name) + rbrace.suppress())("dict")
             | (Optional(set_s.suppress()) + lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
             | iter_match
             | series_match
             | star_match
+            | (lparen.suppress() + match + rparen.suppress())("paren")
             | (name + lparen.suppress() + matchlist_data + rparen.suppress())("data")
             | name("var"),
         ),
     )
+
     matchlist_trailer = base_match + OneOrMore(keyword("as") + name | keyword("is") + atom_item)
     as_match = Group(matchlist_trailer("trailer")) | base_match
+
     matchlist_and = as_match + OneOrMore(keyword("and").suppress() + as_match)
     and_match = Group(matchlist_and("and")) | as_match
-    matchlist_or = and_match + OneOrMore(keyword("or").suppress() + and_match)
+
+    match_or_op = (keyword("or") | bar).suppress()
+    matchlist_or = and_match + OneOrMore(match_or_op + and_match)
     or_match = Group(matchlist_or("or")) | and_match
+
     matchlist_walrus = name + colon_eq.suppress() + or_match
     walrus_match = Group(matchlist_walrus("walrus")) | or_match
-    match <<= walrus_match
+
+    match <<= trace(walrus_match)
+
+    many_match = (
+        Group(matchlist_star("star"))
+        | Group(matchlist_tuple_items("implicit_tuple"))
+        | match
+    )
 
     else_stmt = condense(keyword("else") - suite)
     full_suite = colon.suppress() + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
     full_match = trace(
         attach(
-            keyword("match").suppress() + match + addspace(Optional(keyword("not")) + keyword("in")) - test - match_guard - full_suite,
+            keyword("match").suppress() + many_match + addspace(Optional(keyword("not")) + keyword("in")) - testlist_star_namedexpr - match_guard - full_suite,
             match_handle,
         ),
     )
     match_stmt = condense(full_match - Optional(else_stmt))
 
     destructuring_stmt = Forward()
-    destructuring_stmt_ref = Optional(keyword("match").suppress()) + match + equals.suppress() + test_expr
+    destructuring_stmt_ref = Optional(keyword("match").suppress()) + many_match + equals.suppress() + test_expr
 
     case_stmt = Forward()
-    case_match = trace(
+    # syntaxes 1 and 2 here must be kept matching except for the keywords
+    case_match_syntax_1 = trace(
         Group(
-            keyword("match").suppress() - match - Optional(keyword("if").suppress() - test) - full_suite,
+            keyword("match").suppress() + many_match + Optional(keyword("if").suppress() + namedexpr_test) + full_suite,
         ),
     )
-    case_stmt_ref = (
-        keyword("case").suppress() + test - colon.suppress() - newline.suppress()
-        - indent.suppress() - Group(OneOrMore(case_match))
-        - dedent.suppress() - Optional(keyword("else").suppress() - suite)
+    case_stmt_syntax_1 = (
+        keyword("case").suppress() + testlist_star_namedexpr + colon.suppress() + newline.suppress()
+        + indent.suppress() + Group(OneOrMore(case_match_syntax_1))
+        + dedent.suppress() + Optional(keyword("else").suppress() + suite)
     )
+    case_match_syntax_2 = trace(
+        Group(
+            keyword("case").suppress() + many_match + Optional(keyword("if").suppress() + namedexpr_test) + full_suite,
+        ),
+    )
+    case_stmt_syntax_2 = (
+        keyword("match").suppress() + testlist_star_namedexpr + colon.suppress() + newline.suppress()
+        + indent.suppress() + Group(OneOrMore(case_match_syntax_2))
+        + dedent.suppress() + Optional(keyword("else").suppress() - suite)
+    )
+    case_stmt_ref = case_stmt_syntax_1 | case_stmt_syntax_2
 
     exec_stmt = Forward()
     assert_stmt = addspace(keyword("assert") - testlist)

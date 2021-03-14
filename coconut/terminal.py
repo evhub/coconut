@@ -25,6 +25,7 @@ import logging
 import time
 from contextlib import contextmanager
 
+from coconut import embed
 from coconut.root import _indent
 from coconut._pyparsing import (
     lineno,
@@ -37,11 +38,12 @@ from coconut.constants import (
     main_sig,
     taberrfmt,
     packrat_cache,
+    embed_on_internal_exc,
 )
 from coconut.exceptions import (
     CoconutWarning,
+    CoconutInternalException,
     displayable,
-    internal_assert,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -72,11 +74,38 @@ def complain(error):
     """Raises in develop; warns in release."""
     if callable(error):
         if DEVELOP:
-            raise error()
-    elif DEVELOP:
-        raise error
-    else:
+            error = error()
+        else:
+            return
+    if not DEVELOP:
         logger.warn_err(error)
+    elif embed_on_internal_exc:
+        logger.warn_err(error)
+        embed(depth=1)
+    else:
+        raise error
+
+
+def internal_assert(condition, message=None, item=None, extra=None):
+    """Raise InternalException if condition is False.
+    If condition is a function, execute it on DEVELOP only."""
+    if DEVELOP and callable(condition):
+        condition = condition()
+    if not condition:
+        if message is None:
+            message = "assertion failed"
+            if item is None:
+                item = condition
+        elif callable(message):
+            message = message()
+        if callable(extra):
+            extra = extra()
+        error = CoconutInternalException(message, item, extra)
+        if embed_on_internal_exc:
+            logger.warn_err(error)
+            embed(depth=1)
+        else:
+            raise error
 
 
 def get_name(expr):

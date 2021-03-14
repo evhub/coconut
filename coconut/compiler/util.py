@@ -24,7 +24,9 @@ import re
 import traceback
 from functools import partial
 from contextlib import contextmanager
+from pprint import pformat
 
+from coconut import embed
 from coconut._pyparsing import (
     replaceWith,
     ZeroOrMore,
@@ -39,9 +41,11 @@ from coconut._pyparsing import (
     _trim_arity,
     _ParseResultsWithOffset,
 )
+
 from coconut.terminal import (
     logger,
     complain,
+    internal_assert,
     get_name,
 )
 from coconut.constants import (
@@ -55,80 +59,88 @@ from coconut.constants import (
     py2_vers,
     py3_vers,
     tabideal,
+    embed_on_internal_exc,
 )
 from coconut.exceptions import (
     CoconutException,
     CoconutInternalException,
-    internal_assert,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
 # COMPUTATION GRAPH:
 # -----------------------------------------------------------------------------------------------------------------------
 
-
-def find_new_value(value, toklist, new_toklist):
-    """Find the value in new_toklist that corresponds to the given value in toklist."""
-    # find ParseResults by looking up their tokens
-    if isinstance(value, ParseResults):
-        if value._ParseResults__toklist == toklist:
-            new_value_toklist = new_toklist
-        else:
-            new_value_toklist = []
-            for inner_value in value._ParseResults__toklist:
-                new_value_toklist.append(find_new_value(inner_value, toklist, new_toklist))
-        return ParseResults(new_value_toklist)
-
-    # find other objects by looking them up directly
-    try:
-        return new_toklist[toklist.index(value)]
-    except ValueError:
-        complain(
-            lambda: CoconutInternalException(
-                "inefficient reevaluation of tokens: {} not in {}".format(
-                    value,
-                    toklist,
-                ),
-            ),
-        )
-        return evaluate_tokens(value)
+indexable_evaluated_tokens_types = (ParseResults, list, tuple)
 
 
-def evaluate_tokens(tokens):
+def evaluate_tokens(tokens, **kwargs):
     """Evaluate the given tokens in the computation graph."""
-    if isinstance(tokens, str):
-        return tokens
+    # can't have this be a normal kwarg to make evaluate_tokens a valid parse action
+    evaluated_toklists = kwargs.pop("evaluated_toklists", ())
+    internal_assert(not kwargs, "invalid keyword arguments to evaluate_tokens", kwargs)
 
-    elif isinstance(tokens, ParseResults):
+    if isinstance(tokens, ParseResults):
 
         # evaluate the list portion of the ParseResults
-        toklist, name, asList, modal = tokens.__getnewargs__()
-        new_toklist = [evaluate_tokens(toks) for toks in toklist]
+        old_toklist, name, asList, modal = tokens.__getnewargs__()
+        new_toklist = None
+        for eval_old_toklist, eval_new_toklist in evaluated_toklists:
+            if old_toklist == eval_old_toklist:
+                new_toklist = eval_new_toklist
+                break
+        if new_toklist is None:
+            new_toklist = [evaluate_tokens(toks, evaluated_toklists=evaluated_toklists) for toks in old_toklist]
+            # overwrite evaluated toklists rather than appending, since this
+            #  should be all the information we need for evaluating the dictionary
+            evaluated_toklists = ((old_toklist, new_toklist),)
         new_tokens = ParseResults(new_toklist, name, asList, modal)
+        new_tokens._ParseResults__accumNames.update(tokens._ParseResults__accumNames)
 
         # evaluate the dictionary portion of the ParseResults
         new_tokdict = {}
         for name, occurrences in tokens._ParseResults__tokdict.items():
-            new_occurences = []
+            new_occurrences = []
             for value, position in occurrences:
-                new_value = find_new_value(value, toklist, new_toklist)
-                new_occurences.append(_ParseResultsWithOffset(new_value, position))
-            new_tokdict[name] = occurrences
-        new_tokens._ParseResults__accumNames.update(tokens._ParseResults__accumNames)
+                new_value = evaluate_tokens(value, evaluated_toklists=evaluated_toklists)
+                new_occurrences.append(_ParseResultsWithOffset(new_value, position))
+            new_tokdict[name] = new_occurrences
         new_tokens._ParseResults__tokdict.update(new_tokdict)
+
         return new_tokens
 
-    elif isinstance(tokens, ComputationNode):
-        return tokens.evaluate()
-
-    elif isinstance(tokens, list):
-        return [evaluate_tokens(inner_toks) for inner_toks in tokens]
-
-    elif isinstance(tokens, tuple):
-        return tuple(evaluate_tokens(inner_toks) for inner_toks in tokens)
-
     else:
-        raise CoconutInternalException("invalid computation graph tokens", tokens)
+
+        if evaluated_toklists:
+            for eval_old_toklist, eval_new_toklist in evaluated_toklists:
+                indices = multi_index_lookup(eval_old_toklist, tokens, indexable_types=indexable_evaluated_tokens_types)
+                if indices is not None:
+                    new_tokens = eval_new_toklist
+                    for ind in indices:
+                        new_tokens = new_tokens[ind]
+                    return new_tokens
+            complain(
+                lambda: CoconutInternalException(
+                    "inefficient reevaluation of tokens: {tokens} not in:\n{toklists}".format(
+                        tokens=tokens,
+                        toklists=pformat([eval_old_toklist for eval_old_toklist, eval_new_toklist in evaluated_toklists]),
+                    ),
+                ),
+            )
+
+        if isinstance(tokens, str):
+            return tokens
+
+        elif isinstance(tokens, ComputationNode):
+            return tokens.evaluate()
+
+        elif isinstance(tokens, list):
+            return [evaluate_tokens(inner_toks, evaluated_toklists=evaluated_toklists) for inner_toks in tokens]
+
+        elif isinstance(tokens, tuple):
+            return tuple(evaluate_tokens(inner_toks, evaluated_toklists=evaluated_toklists) for inner_toks in tokens)
+
+        else:
+            raise CoconutInternalException("invalid computation graph tokens", tokens)
 
 
 class ComputationNode(object):
@@ -191,7 +203,12 @@ class ComputationNode(object):
             raise
         except (Exception, AssertionError):
             traceback.print_exc()
-            raise CoconutInternalException("error computing action " + self.name + " of evaluated tokens", evaluated_toks)
+            error = CoconutInternalException("error computing action " + self.name + " of evaluated tokens", evaluated_toks)
+            if embed_on_internal_exc:
+                logger.warn_err(error)
+                embed(depth=2)
+            else:
+                raise error
 
     def __repr__(self):
         """Get a representation of the entire computation graph below this node."""
@@ -280,6 +297,17 @@ def match_in(grammar, text):
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
+
+def multi_index_lookup(iterable, item, indexable_types, default=None):
+    """Nested lookup of item in iterable."""
+    for i, inner_iterable in enumerate(iterable):
+        if inner_iterable == item:
+            return (i,)
+        if isinstance(inner_iterable, indexable_types):
+            inner_indices = multi_index_lookup(inner_iterable, item, indexable_types)
+            if inner_indices is not None:
+                return (i,) + inner_indices
+    return default
 
 
 def append_it(iterator, last_val):

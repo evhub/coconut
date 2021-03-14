@@ -83,9 +83,12 @@ from coconut.exceptions import (
     CoconutSyntaxWarning,
     CoconutDeferredSyntaxError,
     clean,
+)
+from coconut.terminal import (
+    logger,
+    complain,
     internal_assert,
 )
-from coconut.terminal import logger, complain
 from coconut.compiler.matching import Matcher
 from coconut.compiler.grammar import (
     Grammar,

@@ -116,16 +116,17 @@ dest                destination directory for compiled files (defaults to
 #### Optional Arguments
 
 ```
+optional arguments:
   -h, --help            show this help message and exit
-  -v, --version         print Coconut and Python version information
+  -v, -V, --version     print Coconut and Python version information
   -t version, --target version
                         specify target Python version (defaults to universal)
-  -i, --interact        force the interpreter to start (otherwise starts if no
-                        other command is given) (implies --run)
-  -p, --package         compile source as part of a package (defaults to only
-                        if source is a directory)
-  -a, --standalone      compile source as standalone files (defaults to only
-                        if source is a single file)
+  -i, --interact        force the interpreter to start (otherwise starts if no other command
+                        is given) (implies --run)
+  -p, --package         compile source as part of a package (defaults to only if source is a
+                        directory)
+  -a, --standalone      compile source as standalone files (defaults to only if source is a
+                        single file)
   -l, --line-numbers, --linenumbers
                         add line number comments for ease of debugging
   -k, --keep-lines, --keeplines
@@ -135,42 +136,39 @@ dest                destination directory for compiled files (defaults to
   -n, --no-write, --nowrite
                         disable writing compiled Python
   -d, --display         print compiled Python
-  -q, --quiet           suppress all informational output (combine with
-                        --display to write runnable code to stdout)
+  -q, --quiet           suppress all informational output (combine with --display to write
+                        runnable code to stdout)
   -s, --strict          enforce code cleanliness standards
   --no-tco, --notco     disable tail call optimization
   --no-wrap, --nowrap   disable wrapping type hints in strings
-  -c code, --code code  run Coconut passed in as a string (can also be piped
-                        into stdin)
+  -c code, --code code  run Coconut passed in as a string (can also be piped into stdin)
   -j processes, --jobs processes
-                        number of additional processes to use (defaults to 0)
-                        (pass 'sys' to use machine default)
-  -f, --force           force re-compilation even when source code and
-                        compilation parameters haven't changed
+                        number of additional processes to use (defaults to 0) (pass 'sys' to
+                        use machine default)
+  -f, --force           force re-compilation even when source code and compilation
+                        parameters haven't changed
   --minify              reduce size of compiled Python
   --jupyter ..., --ipython ...
-                        run Jupyter/IPython with Coconut as the kernel
-                        (remaining args passed to Jupyter)
-  --mypy ...            run MyPy on compiled Python (remaining args passed to
-                        MyPy) (implies --package)
+                        run Jupyter/IPython with Coconut as the kernel (remaining args
+                        passed to Jupyter)
+  --mypy ...            run MyPy on compiled Python (remaining args passed to MyPy) (implies
+                        --package)
   --argv ..., --args ...
-                        set sys.argv to source plus remaining args for use in
-                        the Coconut script being run
+                        set sys.argv to source plus remaining args for use in the Coconut
+                        script being run
   --tutorial            open Coconut's tutorial in the default web browser
-  --documentation       open Coconut's documentation in the default web
-                        browser
-  --style name          Pygments syntax highlighting style (or 'list' to list
-                        styles) (defaults to COCONUT_STYLE environment
-                        variable if it exists, otherwise 'default')
-  --history-file path   Path to history file (or '' for no file) (currently
-                        set to 'C:\Users\evanj\.coconut_history') (can be
-                        modified by setting COCONUT_HOME environment variable)
+  --docs, --documentation
+                        open Coconut's documentation in the default web browser
+  --style name          Pygments syntax highlighting style (or 'list' to list styles)
+                        (defaults to COCONUT_STYLE environment variable if it exists,
+                        otherwise 'default')
+  --history-file path   Path to history file (or '' for no file) (currently set to
+                        'C:\Users\evanj\.coconut_history') (can be modified by setting
+                        COCONUT_HOME environment variable)
   --recursion-limit limit, --recursionlimit limit
-                        set maximum recursion depth in compiler (defaults to
-                        2000)
+                        set maximum recursion depth in compiler (defaults to 2000)
   --verbose             print verbose debug output
-  --trace               print verbose parsing data (only available in coconut-
-                        develop)
+  --trace               print verbose parsing data (only available in coconut-develop)
 ```
 
 ### Coconut Scripts
@@ -874,7 +872,7 @@ pattern ::= (
     | NAME "(" patterns ")"         # data types
     | pattern "is" exprs            # type-checking
     | pattern "and" pattern         # match all
-    | pattern "or" pattern          # match any
+    | pattern ("or" | "|") pattern  # match any
     | "{" pattern_pairs             # dictionaries
         ["," "**" NAME] "}"
     | ["s"] "{" pattern_consts "}"  # sets
@@ -1018,6 +1016,18 @@ case <value>:
     <body>]
 ```
 where `<pattern>` is any `match` pattern, `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds. Note the absence of an `in` in the `match` statements: that's because the `<value>` in `case <value>` is taking its place. If no `else` is present and no match succeeds, then the `case` statement is simply skipped over as with [`match` statements](#match) (though unlike [destructuring assignments](#destructuring-assignment)).
+
+Alternatively, to support a [PEP 622](https://www.python.org/dev/peps/pep-0622/#appendix-a)-like syntax, Coconut also supports swapping `case` and `match` in the above syntax, such that the syntax becomes:
+```coconut
+match <value>:
+    case <pattern> [if <cond>]:
+        <body>
+    case <pattern> [if <cond>]:
+        <body>
+    ...
+[else:
+    <body>]
+```
 
 ##### Example
 

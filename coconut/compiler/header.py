@@ -31,7 +31,7 @@ from coconut.constants import (
     template_ext,
     justify_len,
 )
-from coconut.exceptions import internal_assert
+from coconut.terminal import internal_assert
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:

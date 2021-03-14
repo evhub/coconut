@@ -32,11 +32,11 @@ from functools import partial
 from coconut.terminal import (
     logger,
     complain,
+    internal_assert,
 )
 from coconut.exceptions import (
     CoconutException,
     get_encoding,
-    internal_assert,
 )
 from coconut.constants import (
     fixpath,

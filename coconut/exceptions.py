@@ -59,21 +59,6 @@ def displayable(inputstr, strip=True):
     return clean(str(inputstr), strip, rem_indents=False, encoding_errors="backslashreplace")
 
 
-def internal_assert(condition, message=None, item=None, extra=None):
-    """Raise InternalException if condition is False.
-    If condition is a function, execute it on DEVELOP only."""
-    if DEVELOP and callable(condition):
-        condition = condition()
-    if not condition:
-        if message is None:
-            message = "assertion failed"
-            if item is None:
-                item = condition
-        if callable(extra):
-            extra = extra()
-        raise CoconutInternalException(message, item, extra)
-
-
 # -----------------------------------------------------------------------------------------------------------------------
 # EXCEPTIONS:
 # ----------------------------------------------------------------------------------------------------------------------

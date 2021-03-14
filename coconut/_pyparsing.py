@@ -25,6 +25,7 @@ import functools
 import warnings
 
 from coconut.constants import (
+    use_fast_pyparsing_reprs,
     packrat_cache,
     default_whitespace_chars,
     varchars,
@@ -107,13 +108,14 @@ def fast_repr(cls):
 
 # makes pyparsing much faster if it doesn't have to compute expensive
 #  nested string representations
-for obj in vars(_pyparsing).values():
-    try:
-        if issubclass(obj, ParserElement):
-            obj.__str__ = functools.partial(fast_str, obj)
-            obj.__repr__ = functools.partial(fast_repr, obj)
-    except TypeError:
-        pass
+if use_fast_pyparsing_reprs:
+    for obj in vars(_pyparsing).values():
+        try:
+            if issubclass(obj, ParserElement):
+                obj.__str__ = functools.partial(fast_str, obj)
+                obj.__repr__ = functools.partial(fast_repr, obj)
+        except TypeError:
+            pass
 
 
 if packrat_cache:
