@@ -444,6 +444,7 @@ py3_vers = (
     (3, 8),
 )
 
+# must be in ascending order
 specific_targets = (
     "2",
     "27",
@@ -454,6 +455,7 @@ specific_targets = (
     "36",
     "37",
     "38",
+    "39",
 )
 pseudo_targets = {
     "universal": "",
