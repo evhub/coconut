@@ -123,7 +123,7 @@ class Matcher(object):
         self.others = []
         self.guards = []
 
-    def duplicate(self, separate_names=False):
+    def duplicate(self, separate_names=True):
         """Duplicates the matcher to others."""
         new_names = self.names
         if separate_names:
@@ -613,7 +613,6 @@ class Matcher(object):
 
         self.add_check("_coconut.isinstance(" + item + ", " + data_type + ")")
 
-        # TODO: everything below here needs to special case on whether it's a data type or a class
         if star_match is None:
             self.add_check("_coconut.len(" + item + ") == " + str(len(pos_matches) + len(name_matches)))
         else:
@@ -670,7 +669,7 @@ class Matcher(object):
     def match_or(self, tokens, item):
         """Matches or."""
         for x in range(1, len(tokens)):
-            self.duplicate(separate_names=True).match(tokens[x], item)
+            self.duplicate().match(tokens[x], item)
         with self.only_self():
             self.match(tokens[0], item)
 
