@@ -358,10 +358,15 @@ def get_target_info_smart(target, mode="lowest"):
     elif mode == "highest":
         return supported_vers[-1]
     elif mode == "nearest":
-        if sys.version_info[:2] in supported_vers:
-            return sys.version_info[:2]
-        else:
+        sys_ver = sys.version_info[:2]
+        if sys_ver in supported_vers:
+            return sys_ver
+        elif sys_ver > supported_vers[-1]:
             return supported_vers[-1]
+        elif sys_ver < supported_vers[0]:
+            return supported_vers[0]
+        else:
+            raise CoconutInternalException("invalid sys version", sys_ver)
     else:
         raise CoconutInternalException("unknown get_target_info_smart mode", mode)
 
