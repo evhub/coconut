@@ -132,9 +132,9 @@ def suite_test():
     assert -4 == neg_square_u(2) ≠ 4 ∧ 0 ≤ neg_square_u(0) ≤ 0
     assert is_null(null1())
     assert is_null(null2())
-    assert empty() |> depth == 0
-    assert leaf(5) |> depth == 1
-    assert node(leaf(2), node(empty(), leaf(3))) |> depth == 3
+    assert empty() |> depth_1 == 0 == empty() |> depth_2
+    assert leaf(5) |> depth_1 == 1 == leaf(5) |> depth_2
+    assert node(leaf(2), node(empty(), leaf(3))) |> depth_1 == 3 == node(leaf(2), node(empty(), leaf(3))) |> depth_2
     assert maybes(5, square, plus1) == 26
     assert maybes(None, square, plus1) is None
     assert square <| 2 == 4
@@ -472,8 +472,8 @@ def suite_test():
         assert abc.b == 6
         assert abc.c == (7, 8)
         assert repr(abc) == "ABC{u}(a=5, b=6, *c=(7, 8))".format(u=u)
-    v = vector2(3, 4)
-    assert repr(v) == "vector2(x=3, y=4)"
+    v = typed_vector(3, 4)
+    assert repr(v) == "typed_vector(x=3, y=4)"
     assert abs(v) == 5
     try:
         v.x = 2
@@ -481,8 +481,8 @@ def suite_test():
         pass
     else:
         assert False
-    v = vector2()
-    assert repr(v) == "vector2(x=0, y=0)"
+    v = typed_vector()
+    assert repr(v) == "typed_vector(x=0, y=0)"
     for obj in (factorial, iadd, collatz, recurse_n_times):
         assert obj.__doc__ == "this is a docstring", obj
     assert list_type((|1,2|)) == "at least 2"
@@ -596,6 +596,9 @@ def suite_test():
     x = 2
     x |?>= (**)$(3)
     assert x == 9
+    v = vector(x=1, y=2)
+    vector(x=newx, y=newy) = v
+    assert (newx, newy) == (1, 2)
     return True
 
 def tco_test():

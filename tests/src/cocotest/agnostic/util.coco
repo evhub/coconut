@@ -340,7 +340,7 @@ data Elems(elems):
     def __new__(cls, *elems) =
         elems |> datamaker(cls)
 data vector_with_id(x, y, i) from vector  # type: ignore
-data vector2(x:int=0, y:int=0):
+data typed_vector(x:int=0, y:int=0):
     def __abs__(self):
         return (self.x**2 + self.y**2)**.5
 
@@ -501,13 +501,21 @@ data leaf(n): pass
 data node(l, r): pass
 tree = (empty, leaf, node)
 
-def depth(t):
+def depth_1(t):
     match tree() in t:
         return 0
     match tree(n) in t:
         return 1
     match tree(l, r) in t:
-        return 1 + max([depth(l), depth(r)])
+        return 1 + max([depth_1(l), depth_1(r)])
+
+def depth_2(t):
+    match tree() in t:
+        return 0
+    match tree(n=n) in t:
+        return 1
+    match tree(l=l, r=r) in t:
+        return 1 + max([depth_2(l), depth_2(r)])
 
 # Monads:
 def base_maybe(x, f) = f(x) if x is not None else None
