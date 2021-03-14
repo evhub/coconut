@@ -578,21 +578,52 @@ class Matcher(object):
 
     def match_data(self, tokens, item):
         """Matches a data type."""
-        if len(tokens) == 2:
-            data_type, matches = tokens
-            star_match = None
-        elif len(tokens) == 3:
-            data_type, matches, star_match = tokens
-        else:
-            raise CoconutInternalException("invalid data match tokens", tokens)
+        internal_assert(len(tokens) == 2, "invalid data match tokens", tokens)
+        data_type, data_matches = tokens
+
+        pos_matches = []
+        name_matches = {}
+        star_match = None
+        for data_match_arg in data_matches:
+            if len(data_match_arg) == 1:
+                match, = data_match_arg
+                if star_match is not None:
+                    raise CoconutDeferredSyntaxError("positional arg after starred arg in data match", self.loc)
+                if name_matches:
+                    raise CoconutDeferredSyntaxError("positional arg after named arg in data match", self.loc)
+                pos_matches.append(match)
+            elif len(data_match_arg) == 2:
+                internal_assert(data_match_arg[0] == "*", "invalid starred data match arg tokens", data_match_arg)
+                _, match = data_match_arg
+                if star_match is not None:
+                    raise CoconutDeferredSyntaxError("duplicate starred arg in data match", self.loc)
+                if name_matches:
+                    raise CoconutDeferredSyntaxError("both starred arg and named arg in data match", self.loc)
+                star_match = match
+            elif len(data_match_arg) == 3:
+                internal_assert(data_match_arg[1] == "=", "invalid named data match arg tokens", data_match_arg)
+                name, _, match = data_match_arg
+                if star_match is not None:
+                    raise CoconutDeferredSyntaxError("both named arg and starred arg in data match", self.loc)
+                if name in name_matches:
+                    raise CoconutDeferredSyntaxError("duplicate named arg {name!r} in data match".format(name=name), self.loc)
+                name_matches[name] = match
+            else:
+                raise CoconutInternalException("invalid data match arg", data_match_arg)
+
         self.add_check("_coconut.isinstance(" + item + ", " + data_type + ")")
+
+        # TODO: everything below here needs to special case on whether it's a data type or a class
         if star_match is None:
-            self.add_check("_coconut.len(" + item + ") == " + str(len(matches)))
-        elif len(matches):
-            self.add_check("_coconut.len(" + item + ") >= " + str(len(matches)))
-        self.match_all_in(matches, item)
+            self.add_check("_coconut.len(" + item + ") == " + str(len(pos_matches) + len(name_matches)))
+        else:
+            if len(pos_matches):
+                self.add_check("_coconut.len(" + item + ") >= " + str(len(pos_matches)))
+        self.match_all_in(pos_matches, item)
         if star_match is not None:
-            self.match(star_match, item + "[" + str(len(matches)) + ":]")
+            self.match(star_match, item + "[" + str(len(pos_matches)) + ":]")
+        for name, match in name_matches.items():
+            self.match(match, item + "." + name)
 
     def match_paren(self, tokens, item):
         """Matches a paren."""

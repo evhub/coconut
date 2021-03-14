@@ -1469,11 +1469,8 @@ class Grammar(object):
         + Optional(Group(OneOrMore(comma.suppress() + match)))
         + Optional(comma.suppress())
     )
-    matchlist_data = (
-        Optional(Group(OneOrMore(match + comma.suppress())), default=())
-        + star.suppress() + match
-        + Optional(comma.suppress())
-    ) | matchlist_list
+    matchlist_data_item = Group(Optional(star | name + equals) + match)
+    matchlist_data = Group(Optional(tokenlist(matchlist_data_item, comma)))
 
     complex_number = condense(Optional(neg_minus) + number + (plus | sub_minus) + Optional(neg_minus) + imag_num)
     match_const = condense(
