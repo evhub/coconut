@@ -24,7 +24,6 @@ import os.path
 from coconut.root import _indent
 from coconut.constants import (
     univ_open,
-    get_target_info,
     hash_prefix,
     tabideal,
     default_encoding,
@@ -32,6 +31,7 @@ from coconut.constants import (
     justify_len,
 )
 from coconut.terminal import internal_assert
+from coconut.compiler.util import get_target_info
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:

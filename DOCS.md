@@ -254,7 +254,8 @@ If the version of Python that the compiled code will be running on is known ahea
 - `3.5` (will work on any Python `>= 3.5`),
 - `3.6` (will work on any Python `>= 3.6`),
 - `3.7` (will work on any Python `>= 3.7`),
-- `3.8` (will work on any Python `>= 3.8`), and
+- `3.8` (will work on any Python `>= 3.8`),
+- `3.9` (will work on any Python `>= 3.9`), and
 - `sys` (chooses the target corresponding to the current Python version).
 
 _Note: Periods are ignored in target specifications, such that the target `27` is equivalent to the target `2.7`._

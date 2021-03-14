@@ -42,7 +42,6 @@ from coconut._pyparsing import (
     nums,
 )
 from coconut.constants import (
-    get_target_info,
     specific_targets,
     targets,
     pseudo_targets,
@@ -98,6 +97,8 @@ from coconut.compiler.grammar import (
     match_handle,
 )
 from coconut.compiler.util import (
+    get_target_info,
+    sys_target,
     addskip,
     count_end,
     paren_change,
@@ -111,7 +112,7 @@ from coconut.compiler.util import (
     match_in,
     transform,
     parse,
-    get_target_info_len2,
+    get_target_info_smart,
     split_leading_comment,
     compile_regex,
     append_it,
@@ -219,7 +220,7 @@ def universal_import(imports, imp_from=None, target=""):
             paths = (imp,)
         elif not target:  # universal compatibility
             paths = (old_imp, imp, version_check)
-        elif get_target_info_len2(target) >= version_check:  # if lowest is above, we can safely use new
+        elif get_target_info_smart(target, mode="lowest") >= version_check:  # if lowest is above, we can safely use new
             paths = (imp,)
         elif target.startswith("2"):  # "2" and "27" can safely use old
             paths = (old_imp,)
@@ -427,6 +428,8 @@ class Compiler(Grammar):
             target = ""
         else:
             target = str(target).replace(".", "")
+        if target == "sys":
+            target = sys_target
         if target in pseudo_targets:
             target = pseudo_targets[target]
         if target not in targets:
