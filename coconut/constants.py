@@ -428,9 +428,12 @@ legal_indent_chars = " \t\xa0"
 hash_prefix = "# __coconut_hash__ = "
 hash_sep = "\x00"
 
-# must be in ascending order
-py2_vers = ((2, 6), (2, 7))
-py3_vers = (
+# both must be in ascending order
+supported_py2_vers = (
+    (2, 6),
+    (2, 7),
+)
+supported_py3_vers = (
     (3, 2),
     (3, 3),
     (3, 4),
@@ -441,7 +444,7 @@ py3_vers = (
     (3, 9),
 )
 
-# must match py2_vers, py3_vers above and must be replicated in the DOCS
+# must match supported vers above and must be replicated in DOCS
 specific_targets = (
     "2",
     "27",

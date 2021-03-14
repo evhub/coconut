@@ -55,8 +55,8 @@ from coconut.constants import (
     closeindent,
     default_whitespace_chars,
     use_computation_graph,
-    py2_vers,
-    py3_vers,
+    supported_py2_vers,
+    supported_py3_vers,
     tabideal,
     embed_on_internal_exc,
     specific_targets,
@@ -314,12 +314,12 @@ if raw_sys_target in pseudo_targets:
     sys_target = pseudo_targets[raw_sys_target]
 elif raw_sys_target in specific_targets:
     sys_target = raw_sys_target
-elif sys.version_info > py3_vers[-1]:
-    sys_target = "".join(str(i) for i in py3_vers[-1])
-elif sys.version_info < py2_vers[0]:
-    sys_target = "".join(str(i) for i in py2_vers[0])
-elif py2_vers[-1] < sys.version_info < py3_vers[0]:
-    sys_target = "".join(str(i) for i in py3_vers[0])
+elif sys.version_info > supported_py3_vers[-1]:
+    sys_target = "".join(str(i) for i in supported_py3_vers[-1])
+elif sys.version_info < supported_py2_vers[0]:
+    sys_target = "".join(str(i) for i in supported_py2_vers[0])
+elif supported_py2_vers[-1] < sys.version_info < supported_py3_vers[0]:
+    sys_target = "".join(str(i) for i in supported_py3_vers[0])
 else:
     complain(CoconutInternalException("unknown raw sys target", raw_sys_target))
     sys_target = ""
@@ -329,18 +329,18 @@ def get_vers_for_target(target):
     """Gets a list of the versions supported by the given target."""
     target_info_len2 = get_target_info(target)[:2]
     if not target_info_len2:
-        return py2_vers + py3_vers
+        return supported_py2_vers + supported_py3_vers
     elif len(target_info_len2) == 1:
         if target_info_len2 == (2,):
-            return py2_vers
+            return supported_py2_vers
         elif target_info_len2 == (3,):
-            return py3_vers
+            return supported_py3_vers
         else:
             raise CoconutInternalException("invalid target info", target_info_len2)
     elif target_info_len2[0] == 2:
-        return tuple(ver for ver in py2_vers if ver >= target_info_len2)
+        return tuple(ver for ver in supported_py2_vers if ver >= target_info_len2)
     elif target_info_len2[0] == 3:
-        return tuple(ver for ver in py3_vers if ver >= target_info_len2)
+        return tuple(ver for ver in supported_py3_vers if ver >= target_info_len2)
     else:
         raise CoconutInternalException("invalid target info", target_info_len2)
 
