@@ -72,6 +72,7 @@ from coconut.constants import (
     legal_indent_chars,
     format_var,
     replwrapper,
+    decorator_var,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -576,6 +577,7 @@ class Compiler(Grammar):
         self.ellipsis <<= attach(self.ellipsis_ref, self.ellipsis_handle)
         self.case_stmt <<= attach(self.case_stmt_ref, self.case_stmt_handle)
         self.f_string <<= attach(self.f_string_ref, self.f_string_handle)
+        self.decorators <<= attach(self.decorators_ref, self.decorators_handle)
 
         self.decoratable_normal_funcdef_stmt <<= attach(
             self.decoratable_normal_funcdef_stmt_ref,
@@ -2379,6 +2381,24 @@ if {store_var} is not _coconut_sentinel:
                 name + "=(" + expr + ")"
                 for name, expr in zip(names, compiled_exprs)
             ) + ")"
+
+    def decorators_handle(self, tokens):
+        """Process decorators."""
+        defs = []
+        decorators = []
+        for i, tok in enumerate(tokens):
+            if "simple" in tok and len(tok) == 1:
+                decorators.append("@" + tok[0])
+            elif "complex" in tok and len(tok) == 1:
+                if self.target_info >= (3, 9):
+                    decorators.append("@" + tok[0])
+                else:
+                    varname = decorator_var + "_" + str(i)
+                    defs.append(varname + " = " + tok[0])
+                    decorators.append("@" + varname)
+            else:
+                raise CoconutInternalException("invalid decorator tokens", tok)
+        return "\n".join(defs + decorators) + "\n"
 
 # end: COMPILER HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------

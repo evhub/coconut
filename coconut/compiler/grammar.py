@@ -65,7 +65,6 @@ from coconut.constants import (
     keywords,
     const_vars,
     reserved_vars,
-    decorator_var,
     match_to_var,
     match_check_var,
     none_coalesce_var,
@@ -529,22 +528,6 @@ def math_funcdef_handle(tokens):
     """Process assignment function definition."""
     internal_assert(len(tokens) == 2, "invalid assignment function definition tokens", tokens)
     return tokens[0] + ("" if tokens[1].startswith("\n") else " ") + tokens[1]
-
-
-def decorator_handle(tokens):
-    """Process decorators."""
-    defs = []
-    decorates = []
-    for i, tok in enumerate(tokens):
-        if "simple" in tok and len(tok) == 1:
-            decorates.append("@" + tok[0])
-        elif "test" in tok and len(tok) == 1:
-            varname = decorator_var + "_" + str(i)
-            defs.append(varname + " = " + tok[0])
-            decorates.append("@" + varname)
-        else:
-            raise CoconutInternalException("invalid decorator tokens", tok)
-    return "\n".join(defs + decorates) + "\n"
 
 
 def match_handle(loc, tokens):
@@ -1767,8 +1750,9 @@ class Grammar(object):
     match_datadef_ref = Optional(keyword("match").suppress()) + keyword("data").suppress() + name + match_data_args + data_suite
 
     simple_decorator = condense(dotted_name + Optional(function_call))("simple")
-    complex_decorator = namedexpr_test("test")
-    decorators = attach(OneOrMore(at.suppress() - Group(longest(simple_decorator, complex_decorator)) - newline.suppress()), decorator_handle)
+    complex_decorator = namedexpr_test("complex")
+    decorators_ref = OneOrMore(at.suppress() - Group(longest(simple_decorator, complex_decorator)) - newline.suppress())
+    decorators = Forward()
 
     decoratable_normal_funcdef_stmt = Forward()
     normal_funcdef_stmt = (

@@ -669,7 +669,8 @@ def main_test():
     match 1, 2:
         case x, 1:
             assert False
-        case x, 2:
+        case (x, 2) + tail:
+            assert not tail
             found_x = x
         case _:
             assert False
