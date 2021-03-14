@@ -167,8 +167,7 @@ assert 3 |> factorial == 6
 
 def factorial(0) = 1
 
-@addpattern(factorial)
-def factorial(n is int if n > 0) =
+addpattern def factorial(n is int if n > 0) =
     """Compute n! where n is an integer >= 0."""
     range(1, n+1) |> reduce$(*)
 
@@ -190,8 +189,7 @@ assert 3 |> factorial == 6
 
 def factorial(0) = 1
 
-@addpattern(factorial)
-def factorial(n is int if n > 0) =
+addpattern def factorial(n is int if n > 0) =
     """Compute n! where n is an integer >= 0."""
     n * factorial(n - 1)
 
@@ -213,8 +211,7 @@ assert 3 |> factorial == 6
 
 def quick_sort([]) = []
 
-@addpattern(quick_sort)
-def quick_sort([head] + tail) =
+addpattern def quick_sort([head] + tail) =
     """Sort the input sequence using the quick sort algorithm."""
     quick_sort(left) + [head] + quick_sort(right) where:
         left = [x for x in tail if x < head]

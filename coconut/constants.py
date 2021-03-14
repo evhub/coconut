@@ -397,6 +397,10 @@ requests_sleep_times = (0, 0.1, 0.2, 0.3, 0.4, 1)
 # PYPARSING CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
 
+# set this to False only ever temporarily for ease of debugging
+use_fast_pyparsing_reprs = True
+assert use_fast_pyparsing_reprs or DEVELOP, "use_fast_pyparsing_reprs disabled on non-develop build"
+
 packrat_cache = 512
 
 # we don't include \r here because the compiler converts \r into \n
@@ -407,6 +411,10 @@ varchars = string.ascii_letters + string.digits + "_"
 # -----------------------------------------------------------------------------------------------------------------------
 # COMPILER CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
+
+# set this to True only ever temporarily for ease of debugging
+embed_on_internal_exc = False
+assert not embed_on_internal_exc or DEVELOP, "embed_on_internal_exc enabled on non-develop build"
 
 use_computation_graph = not PYPY  # experimentally determined
 

@@ -167,7 +167,7 @@ class Command(object):
             self.prompt.set_style(args.style)
         if args.history_file is not None:
             self.prompt.set_history_file(args.history_file)
-        if args.documentation:
+        if args.docs:
             launch_documentation()
         if args.tutorial:
             launch_tutorial()
@@ -263,7 +263,7 @@ class Command(object):
                 or args.source
                 or args.code
                 or args.tutorial
-                or args.documentation
+                or args.docs
                 or args.watch
                 or args.jupyter is not None
             )
@@ -435,7 +435,8 @@ class Command(object):
             else:
                 break
         if package_level < 0:
-            logger.warn("missing __init__" + code_exts[0] + " in package", check_dir)
+            if self.comp.strict:
+                logger.warn("missing __init__" + code_exts[0] + " in package", check_dir, extra="disable --strict to dismiss")
             package_level = 0
         return package_level
         return 0

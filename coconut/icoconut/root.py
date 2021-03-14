@@ -30,7 +30,6 @@ except ImportError:
 from coconut.exceptions import (
     CoconutException,
     CoconutInternalException,
-    internal_assert,
 )
 from coconut.constants import (
     py_syntax_version,
@@ -41,7 +40,10 @@ from coconut.constants import (
     code_exts,
     conda_build_env_var,
 )
-from coconut.terminal import logger
+from coconut.terminal import (
+    logger,
+    internal_assert,
+)
 from coconut.compiler import Compiler
 from coconut.compiler.util import should_indent
 from coconut.command.util import Runner

@@ -207,12 +207,7 @@ def main_test():
     assert range(1,2,3)[0] == 1
     assert range(1,5,3).index(4) == 1
     assert range(1,5,3)[1] == 4
-    try:
-        range(1,2,3).index(2)
-    except ValueError as err:
-        assert err
-    else:
-        assert False
+    assert_raises(-> range(1,2,3).index(2), ValueError)
     assert 0 in count()
     assert count().count(0) == 1
     assert -1 not in count()
@@ -221,12 +216,7 @@ def main_test():
     assert count(5).count(1) == 0
     assert 2 not in count(1,2)
     assert count(1,2).count(2) == 0
-    try:
-        count(1,2).index(2)
-    except ValueError as err:
-        assert err
-    else:
-        assert False
+    assert_raises(-> count(1,2).index(2), ValueError)
     assert count(1,3).index(1) == 0
     assert count(1,3)[0] == 1
     assert count(1,3).index(4) == 1
@@ -653,6 +643,41 @@ def main_test():
     def f(_ := [x] or [x, _]) = (_, x)
     assert f([1]) == ([1], 1)
     assert f([1, 2]) == ([1, 2], 1)
+    class a:
+        b = 1
+    def must_be_a_b(=a.b) = True
+    assert must_be_a_b(1)
+    assert_raises(-> must_be_a_b(2), MatchError)
+    a.b = 2
+    assert must_be_a_b(2)
+    assert_raises(-> must_be_a_b(1), MatchError)
+    def must_be_1_1i(1 + 1i) = True
+    assert must_be_1_1i(1 + 1i)
+    assert_raises(-> must_be_1_1i(1 + 2i), MatchError)
+    def must_be_neg_1(-1) = True
+    assert must_be_neg_1(-1)
+    assert_raises(-> must_be_neg_1(1), MatchError)
+    match x, y in 1, 2:
+        assert (x, y) == (1, 2)
+    else:
+        assert False
+    match x, *rest in 1, 2, 3:
+        assert (x, rest) == (1, [2, 3])
+    else:
+        assert False
+    found_x = None
+    match 1, 2:
+        case x, 1:
+            assert False
+        case x, 2:
+            found_x = x
+        case _:
+            assert False
+    else:
+        assert False
+    assert found_x == 1
+    1, two = 1, 2
+    assert two == 2
     return True
 
 def test_asyncio():

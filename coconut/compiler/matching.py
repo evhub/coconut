@@ -21,10 +21,10 @@ from coconut.root import *  # NOQA
 
 from contextlib import contextmanager
 
+from coconut.terminal import internal_assert
 from coconut.exceptions import (
     CoconutInternalException,
     CoconutDeferredSyntaxError,
-    internal_assert,
 )
 from coconut.constants import (
     match_temp_var,
@@ -91,6 +91,7 @@ class Matcher(object):
         "and": lambda self: self.match_and,
         "or": lambda self: self.match_or,
         "star": lambda self: self.match_star,
+        "implicit_tuple": lambda self: self.match_implicit_tuple,
     }
     __slots__ = (
         "loc",
@@ -379,12 +380,17 @@ class Matcher(object):
         if rest is None:
             self.add_check("_coconut.len(" + item + ") == " + str(len(matches)))
 
+        seen_keys = set()
         for k, v in matches:
+            if k in seen_keys:
+                raise CoconutDeferredSyntaxError("duplicate key {k!r} in dictionary pattern".format(k=k), self.loc)
+            seen_keys.add(k)
             key_var = self.get_temp_var()
             self.add_def(key_var + " = " + item + ".get(" + k + ", _coconut_sentinel)")
             with self.down_a_level():
                 self.add_check(key_var + " is not _coconut_sentinel")
                 self.match(v, key_var)
+
         if rest is not None and rest != wildcard:
             match_keys = [k for k, v in matches]
             with self.down_a_level():
@@ -403,6 +409,10 @@ class Matcher(object):
             self.add_def(name + " = _coconut.list(" + item + ")")
         else:
             raise CoconutInternalException("invalid series match type", series_type)
+
+    def match_implicit_tuple(self, tokens, item):
+        """Matches an implicit tuple."""
+        return self.match_sequence(["(", tokens], item)
 
     def match_sequence(self, tokens, item):
         """Matches a sequence."""

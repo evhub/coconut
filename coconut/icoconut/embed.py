@@ -80,7 +80,7 @@ def embed_kernel(module=None, local_ns=None, **kwargs):
 def embed(stack_depth=2, **kwargs):
     """Based on IPython.terminal.embed.embed."""
     config = kwargs.get('config')
-    header = kwargs.pop('header', u'')
+    header = kwargs.pop('header', '')
     compile_flags = kwargs.pop('compile_flags', None)
     if config is None:
         config = load_default_config()

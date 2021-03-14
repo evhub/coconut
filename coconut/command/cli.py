@@ -68,7 +68,7 @@ arguments.add_argument(
 )
 
 arguments.add_argument(
-    "-v", "--version",
+    "-v", "-V", "--version",
     action="version",
     version=cli_version_str,
     help="print Coconut and Python version information",
@@ -213,7 +213,7 @@ arguments.add_argument(
 )
 
 arguments.add_argument(
-    "--documentation",
+    "--docs", "--documentation",
     action="store_true",
     help="open Coconut's documentation in the default web browser",
 )
