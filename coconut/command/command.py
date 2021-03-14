@@ -72,7 +72,10 @@ from coconut.command.util import (
     set_recursion_limit,
     canparse,
 )
-from coconut.compiler.util import should_indent, get_target_info_len2
+from coconut.compiler.util import (
+    should_indent,
+    get_target_info_smart,
+)
 from coconut.compiler.header import gethash
 from coconut.command.cli import arguments, cli_version
 
@@ -613,7 +616,7 @@ class Command(object):
             if not any(arg.startswith("--python-version") for arg in mypy_args):
                 self.mypy_args += [
                     "--python-version",
-                    ".".join(str(v) for v in get_target_info_len2(self.comp.target, mode="nearest")),
+                    ".".join(str(v) for v in get_target_info_smart(self.comp.target, mode="nearest")),
                 ]
 
             if logger.verbose:

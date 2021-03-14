@@ -54,12 +54,13 @@ from coconut.constants import (
     openindent,
     closeindent,
     default_whitespace_chars,
-    get_target_info,
     use_computation_graph,
     py2_vers,
     py3_vers,
     tabideal,
     embed_on_internal_exc,
+    specific_targets,
+    pseudo_targets,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -293,10 +294,81 @@ def match_in(grammar, text):
         return True
     return False
 
+# -----------------------------------------------------------------------------------------------------------------------
+# TARGETS:
+# -----------------------------------------------------------------------------------------------------------------------
+
+
+def get_target_info(target):
+    """Return target information as a version tuple."""
+    if not target:
+        return ()
+    elif len(target) == 1:
+        return (int(target),)
+    else:
+        return (int(target[0]), int(target[1:]))
+
+
+raw_sys_target = str(sys.version_info[0]) + str(sys.version_info[1])
+if raw_sys_target in pseudo_targets:
+    sys_target = pseudo_targets[raw_sys_target]
+elif raw_sys_target in specific_targets:
+    sys_target = raw_sys_target
+elif sys.version_info > py3_vers[-1]:
+    sys_target = "".join(str(i) for i in py3_vers[-1])
+elif sys.version_info < py2_vers[0]:
+    sys_target = "".join(str(i) for i in py2_vers[0])
+elif py2_vers[-1] < sys.version_info < py3_vers[0]:
+    sys_target = "".join(str(i) for i in py3_vers[0])
+else:
+    complain(CoconutInternalException("unknown raw sys target", raw_sys_target))
+    sys_target = ""
+
+
+def get_vers_for_target(target):
+    """Gets a list of the versions supported by the given target."""
+    target_info_len2 = get_target_info(target)[:2]
+    if not target_info_len2:
+        return py2_vers + py3_vers
+    elif len(target_info_len2) == 1:
+        if target_info_len2 == (2,):
+            return py2_vers
+        elif target_info_len2 == (3,):
+            return py3_vers
+        else:
+            raise CoconutInternalException("invalid target info", target_info_len2)
+    elif target_info_len2[0] == 2:
+        return tuple(ver for ver in py2_vers if ver >= target_info_len2)
+    elif target_info_len2[0] == 3:
+        return tuple(ver for ver in py3_vers if ver >= target_info_len2)
+    else:
+        raise CoconutInternalException("invalid target info", target_info_len2)
+
+
+def get_target_info_smart(target, mode="lowest"):
+    """Converts target into a length 2 Python version tuple.
+
+    Modes:
+    - "lowest" (default): Gets the lowest version supported by the target.
+    - "highest": Gets the highest version supported by the target.
+    - "nearest": If the current version is supported, returns that, otherwise gets the highest."""
+    supported_vers = get_vers_for_target(target)
+    if mode == "lowest":
+        return supported_vers[0]
+    elif mode == "highest":
+        return supported_vers[-1]
+    elif mode == "nearest":
+        if sys.version_info[:2] in supported_vers:
+            return sys.version_info[:2]
+        else:
+            return supported_vers[-1]
+    else:
+        raise CoconutInternalException("unknown get_target_info_smart mode", mode)
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
+
 
 def multi_index_lookup(iterable, item, indexable_types, default=None):
     """Nested lookup of item in iterable."""
@@ -315,45 +387,6 @@ def append_it(iterator, last_val):
     for x in iterator:
         yield x
     yield last_val
-
-
-def get_vers_for_target(target):
-    """Gets a list of the versions supported by the given target."""
-    target_info = get_target_info(target)
-    if not target_info:
-        return py2_vers + py3_vers
-    elif len(target_info) == 1:
-        if target_info == (2,):
-            return py2_vers
-        elif target_info == (3,):
-            return py3_vers
-        else:
-            raise CoconutInternalException("invalid target info", target_info)
-    elif target_info == (3, 3):
-        return [(3, 3), (3, 4)]
-    else:
-        return [target_info[:2]]
-
-
-def get_target_info_len2(target, mode="lowest"):
-    """Converts target into a length 2 Python version tuple.
-
-    Modes:
-    - "lowest" (default): Gets the lowest version supported by the target.
-    - "highest": Gets the highest version supported by the target.
-    - "nearest": If the current version is supported, returns that, otherwise gets the highest."""
-    supported_vers = get_vers_for_target(target)
-    if mode == "lowest":
-        return supported_vers[0]
-    elif mode == "highest":
-        return supported_vers[-1]
-    elif mode == "nearest":
-        if sys.version_info[:2] in supported_vers:
-            return sys.version_info[:2]
-        else:
-            return supported_vers[-1]
-    else:
-        raise CoconutInternalException("unknown get_target_info_len2 mode", mode)
 
 
 def join_args(*arglists):

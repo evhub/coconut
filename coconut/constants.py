@@ -46,11 +46,6 @@ def univ_open(filename, opentype="r+", encoding=None, **kwargs):
     return open(filename, opentype, **kwargs)
 
 
-def get_target_info(target):
-    """Return target information as a version tuple."""
-    return tuple(int(x) for x in target)
-
-
 def ver_tuple_to_str(req_ver):
     """Converts a requirement version tuple into a version string."""
     return ".".join(str(x) for x in req_ver)
@@ -433,6 +428,7 @@ legal_indent_chars = " \t\xa0"
 hash_prefix = "# __coconut_hash__ = "
 hash_sep = "\x00"
 
+# must be in ascending order
 py2_vers = ((2, 6), (2, 7))
 py3_vers = (
     (3, 2),
@@ -442,9 +438,10 @@ py3_vers = (
     (3, 6),
     (3, 7),
     (3, 8),
+    (3, 9),
 )
 
-# must be in ascending order
+# must match py2_vers, py3_vers above and must be replicated in the DOCS
 specific_targets = (
     "2",
     "27",
@@ -464,13 +461,6 @@ pseudo_targets = {
 }
 
 targets = ("",) + specific_targets
-_sys_target = str(sys.version_info[0]) + str(sys.version_info[1])
-if _sys_target in pseudo_targets:
-    pseudo_targets["sys"] = pseudo_targets[_sys_target]
-elif sys.version_info > get_target_info(specific_targets[-1]):
-    pseudo_targets["sys"] = specific_targets[-1]
-else:
-    pseudo_targets["sys"] = _sys_target
 
 openindent = "\u204b"  # reverse pilcrow
 closeindent = "\xb6"  # pilcrow
