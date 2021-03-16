@@ -660,6 +660,8 @@ verbose_mypy_args = (
 
 mypy_non_err_prefixes = (
     "Success:",
+)
+mypy_found_err_prefixes = (
     "Found ",
 )
 
