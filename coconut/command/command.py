@@ -51,6 +51,7 @@ from coconut.constants import (
     verbose_mypy_args,
     report_this_text,
     mypy_non_err_prefixes,
+    mypy_found_err_prefixes,
 )
 from coconut.kernel_installer import install_custom_kernel
 from coconut.command.util import (
@@ -636,15 +637,20 @@ class Command(object):
                 args += ["-c", code]
             for line, is_err in mypy_run(args):
                 if line.startswith(mypy_non_err_prefixes):
-                    if code is not None:
-                        logger.log("[MyPy]", line)
+                    logger.log("[MyPy]", line)
+                elif line.startswith(mypy_found_err_prefixes):
+                    logger.log("[MyPy]", line)
+                    if code is None:
+                        printerr(line)
+                        self.register_error(errmsg="MyPy error")
                 else:
+                    if code is None:
+                        printerr(line)
+                        self.register_error(errmsg="MyPy error")
                     if line not in self.mypy_errs:
-                        printerr(line)
+                        if code is not None:
+                            printerr(line)
                         self.mypy_errs.append(line)
-                    elif code is None:
-                        printerr(line)
-                    self.register_error(errmsg="MyPy error")
 
     def run_silent_cmd(self, *args):
         """Same as run_cmd$(show_output=logger.verbose)."""
