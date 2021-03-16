@@ -1777,8 +1777,8 @@ class Grammar(object):
     simple_compound_stmt = trace(
         if_stmt
         | try_stmt
-        | case_stmt
         | match_stmt
+        | case_stmt
         | passthrough_stmt,
     )
     compound_stmt = trace(
