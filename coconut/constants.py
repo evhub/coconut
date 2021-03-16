@@ -660,6 +660,7 @@ verbose_mypy_args = (
 
 mypy_non_err_prefixes = (
     "Success:",
+    "Found ",
 )
 
 oserror_retcode = 127
