@@ -616,7 +616,7 @@ class Command(object):
             if not any(arg.startswith("--python-version") for arg in mypy_args):
                 self.mypy_args += [
                     "--python-version",
-                    ".".join(str(v) for v in get_target_info_smart(self.comp.target, mode="nearest")),
+                    ".".join(str(v) for v in get_target_info_smart(self.comp.target, mode="mypy")),
                 ]
 
             if logger.verbose:
@@ -637,7 +637,7 @@ class Command(object):
             for line, is_err in mypy_run(args):
                 if line.startswith(mypy_non_err_prefixes):
                     if code is not None:
-                        print(line)
+                        logger.log("[MyPy]", line)
                 else:
                     if line not in self.mypy_errs:
                         printerr(line)

@@ -351,7 +351,8 @@ def get_target_info_smart(target, mode="lowest"):
     Modes:
     - "lowest" (default): Gets the lowest version supported by the target.
     - "highest": Gets the highest version supported by the target.
-    - "nearest": If the current version is supported, returns that, otherwise gets the highest."""
+    - "nearest": Gets the supported version that is nearest to the current one.
+    - "mypy": Gets the version to use for --mypy."""
     supported_vers = get_vers_for_target(target)
     if mode == "lowest":
         return supported_vers[0]
@@ -367,6 +368,11 @@ def get_target_info_smart(target, mode="lowest"):
             return supported_vers[0]
         else:
             raise CoconutInternalException("invalid sys version", sys_ver)
+    elif mode == "mypy":
+        if any(v[0] == 2 for v in supported_vers):
+            return supported_py2_vers[-1]
+        else:
+            return supported_vers[-1]
     else:
         raise CoconutInternalException("unknown get_target_info_smart mode", mode)
 
