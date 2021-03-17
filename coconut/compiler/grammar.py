@@ -1778,7 +1778,6 @@ class Grammar(object):
         if_stmt
         | try_stmt
         | match_stmt
-        | case_stmt
         | passthrough_stmt,
     )
     compound_stmt = trace(
@@ -1822,7 +1821,9 @@ class Grammar(object):
     )
     stmt <<= final(
         compound_stmt
-        | simple_stmt,
+        | simple_stmt
+        # must come at end due to ambiguity with destructuring
+        | case_stmt,
     )
     base_suite <<= condense(newline + indent - OneOrMore(stmt) - dedent)
     simple_suite = attach(stmt, make_suite_handle)
