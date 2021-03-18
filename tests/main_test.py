@@ -68,8 +68,8 @@ prelude_git = "https://github.com/evhub/coconut-prelude"
 coconut_snip = r"msg = '<success>'; pmsg = print$(msg); `pmsg`"
 
 mypy_snip = r"a: str = count()[0]"
-mypy_snip_err = r'''error: Incompatible types in assignment (expression has type "int", variable has type "str")
-Found 1 error in 1 file (checked 1 source file)'''
+mypy_snip_err_2 = r'''error: Incompatible types in assignment (expression has type "int", variable has type "unicode")'''
+mypy_snip_err_3 = r'''error: Incompatible types in assignment (expression has type "int", variable has type "str")'''
 
 mypy_args = ["--follow-imports", "silent", "--ignore-missing-imports"]
 
@@ -447,13 +447,13 @@ class TestCompilation(unittest.TestCase):
 
     if MYPY:
         def test_universal_mypy_snip(self):
-            call(["coconut", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err, check_mypy=False)
+            call(["coconut", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err_2, check_mypy=False)
 
         def test_sys_mypy_snip(self):
-            call(["coconut", "--target", "sys", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err, check_mypy=False)
+            call(["coconut", "--target", "sys", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err_3, check_mypy=False)
 
         def test_no_wrap_mypy_snip(self):
-            call(["coconut", "--target", "sys", "--no-wrap", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err, check_mypy=False)
+            call(["coconut", "--target", "sys", "--no-wrap", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err_3, check_mypy=False)
 
         def test_mypy_sys(self):
             run(["--mypy"] + mypy_args, agnostic_target="sys", expect_retcode=None)  # fails due to tutorial mypy errors

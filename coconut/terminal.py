@@ -323,11 +323,11 @@ class Logger(object):
                 self.print_trace(*out)
 
     def _trace_success_action(self, original, start_loc, end_loc, expr, tokens):
-        self.log_trace(expr, original, start_loc, tokens)
+        if self.verbose:
+            self.log_trace(expr, original, start_loc, tokens)
 
     def _trace_exc_action(self, original, loc, expr, exc):
-        if self.verbose:
-            self.log_trace(expr, original, loc, exc)
+        self.log_trace(expr, original, loc, exc)
 
     def trace(self, item):
         """Traces a parse element (only enabled in develop)."""
