@@ -457,14 +457,27 @@ def ind_change(inputstring):
     return inputstring.count(openindent) - inputstring.count(closeindent)
 
 
-def compile_regex(regex):
+def compile_regex(regex, options=None):
     """Compiles the given regex to support unicode."""
-    return re.compile(regex, re.U)
+    if options is None:
+        options = re.U
+    else:
+        options |= re.U
+    return re.compile(regex, options)
+
+
+def regex_item(regex, options=None):
+    """pyparsing.Regex except it always uses unicode."""
+    if options is None:
+        options = re.U
+    else:
+        options |= re.U
+    return Regex(regex, options)
 
 
 def keyword(name):
     """Construct a grammar which matches name as a Python keyword."""
-    return Regex(name + r"\b", re.U)
+    return regex_item(name + r"\b")
 
 
 def fixto(item, output):
