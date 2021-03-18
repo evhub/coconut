@@ -91,6 +91,7 @@ from coconut.compiler.util import (
     collapse_indents,
     keyword,
     match_in,
+    disallow_keywords,
 )
 
 # end: IMPORTS
@@ -633,13 +634,8 @@ compose_item_handle.ignore_one_token = True
 
 def impl_call_item_handle(tokens):
     """Process implicit function application."""
-    if len(tokens) == 1:
-        return tokens[0]
-    internal_assert(len(tokens) >= 1, "invalid implicit function application tokens", tokens)
+    internal_assert(len(tokens) > 1, "invalid implicit function application tokens", tokens)
     return tokens[0] + "(" + ", ".join(tokens[1:]) + ")"
-
-
-impl_call_item_handle.ignore_one_token = True
 
 
 def tco_return_handle(tokens):
@@ -794,9 +790,10 @@ class Grammar(object):
     test_no_infix, backtick = disable_inside(test, unsafe_backtick)
 
     name = Forward()
-    base_name = Regex(r"\b(?![0-9])\w+\b", re.U)
-    for k in keywords + const_vars:
-        base_name = ~keyword(k) + base_name
+    base_name = (
+        disallow_keywords(keywords + const_vars)
+        + Regex(r"(?![0-9])\w+\b", re.U)
+    )
     for k in reserved_vars:
         base_name |= backslash.suppress() + keyword(k)
     dotted_base_name = condense(base_name + ZeroOrMore(dot + base_name))
@@ -1219,14 +1216,21 @@ class Grammar(object):
 
     compose_item = attach(atom_item + ZeroOrMore(dotdot.suppress() + atom_item), compose_item_handle)
 
-    impl_call_arg = (
+    impl_call_arg = disallow_keywords(reserved_vars) + (
         keyword_atom
         | number
         | dotted_name
     )
-    for k in reserved_vars:
-        impl_call_arg = ~keyword(k) + impl_call_arg
-    impl_call_item = attach(compose_item + ZeroOrMore(impl_call_arg), impl_call_item_handle)
+    impl_call = attach(
+        disallow_keywords(reserved_vars)
+        + compose_item
+        + OneOrMore(impl_call_arg),
+        impl_call_item_handle,
+    )
+    impl_call_item = (
+        compose_item + ~impl_call_arg
+        | impl_call
+    )
 
     await_item = Forward()
     await_item_ref = keyword("await").suppress() + impl_call_item
@@ -1416,7 +1420,13 @@ class Grammar(object):
     simple_raise_stmt = addspace(keyword("raise") + Optional(test))
     complex_raise_stmt_ref = keyword("raise").suppress() + test + keyword("from").suppress() - test
     raise_stmt = complex_raise_stmt | simple_raise_stmt
-    flow_stmt = break_stmt | continue_stmt | return_stmt | raise_stmt | yield_expr
+    flow_stmt = (
+        break_stmt
+        | continue_stmt
+        | return_stmt
+        | raise_stmt
+        | yield_expr
+    )
 
     dotted_as_name = Group(dotted_name - Optional(keyword("as").suppress() - name))
     import_as_name = Group(name - Optional(keyword("as").suppress() - name))
@@ -1835,9 +1845,9 @@ class Grammar(object):
     file_input = trace(condense(moduledoc_marker - ZeroOrMore(line)))
     eval_input = trace(condense(testlist - ZeroOrMore(newline)))
 
-    single_parser = condense(start_marker - single_input - end_marker)
-    file_parser = condense(start_marker - file_input - end_marker)
-    eval_parser = condense(start_marker - eval_input - end_marker)
+    single_parser = start_marker - single_input - end_marker
+    file_parser = start_marker - file_input - end_marker
+    eval_parser = start_marker - eval_input - end_marker
 
 # end: MAIN GRAMMAR
 # -----------------------------------------------------------------------------------------------------------------------
@@ -1859,13 +1869,13 @@ class Grammar(object):
     )
 
     def get_tre_return_grammar(self, func_name):
-        return (self.start_marker + keyword("return") + keyword(func_name)).suppress() + self.original_function_call_tokens + self.end_marker.suppress()
+        return self.start_marker + (keyword("return") + keyword(func_name)).suppress() + self.original_function_call_tokens + self.end_marker
 
     tco_return = attach(
-        (start_marker + keyword("return")).suppress() + condense(
+        start_marker + keyword("return").suppress() + condense(
             (base_name | parens | brackets | braces | string)
             + ZeroOrMore(dot + base_name | brackets | parens + ~end_marker),
-        ) + original_function_call_tokens + end_marker.suppress(),
+        ) + original_function_call_tokens + end_marker,
         tco_return_handle,
         # this is the root in what it's used for, so might as well evaluate greedily
         greedy=True,
@@ -1889,7 +1899,7 @@ class Grammar(object):
     )
 
     split_func = attach(
-        start_marker.suppress()
+        start_marker
         - keyword("def").suppress()
         - dotted_base_name
         - lparen.suppress() - parameters_tokens - rparen.suppress(),

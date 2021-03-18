@@ -504,6 +504,14 @@ def exprlist(expr, op):
     return addspace(expr + ZeroOrMore(op + expr))
 
 
+def disallow_keywords(keywords):
+    """Prevent the given keywords from matching."""
+    item = ~keyword(keywords[0])
+    for k in keywords[1:]:
+        item += ~keyword(k)
+    return item
+
+
 def rem_comment(line):
     """Remove a comment from a line."""
     return line.split("#", 1)[0].rstrip()
