@@ -165,8 +165,7 @@ all_reqs = {
         "mypy",
     ),
     "watch": (
-        ("watchdog", "py2"),
-        ("watchdog", "py3"),
+        "watchdog",
     ),
     "asyncio": (
         ("trollius", "py2"),
@@ -204,7 +203,6 @@ min_versions = {
     "dataclasses": (0, 8),
     "argparse": (1, 4),
     "pexpect": (4,),
-    ("watchdog", "py3"): (2,),
     ("trollius", "py2"): (2, 2),
     "requests": (2, 25),
     ("numpy", "py34"): (1,),
@@ -228,7 +226,7 @@ min_versions = {
     ("ipython", "py2"): (5, 4),
     ("ipykernel", "py2"): (4, 10),
     "prompt_toolkit:2": (1,),
-    ("watchdog", "py2"): (0, 10),
+    "watchdog": (0, 10),
     # don't upgrade these; they break on master
     "sphinx": (1, 7, 4),
     "sphinx_bootstrap_theme": (0, 4),
@@ -250,7 +248,7 @@ pinned_reqs = (
     ("ipython", "py2"),
     ("ipykernel", "py2"),
     "prompt_toolkit:2",
-    ("watchdog", "py2"),
+    "watchdog",
     "sphinx",
     "sphinx_bootstrap_theme",
     "jedi",
