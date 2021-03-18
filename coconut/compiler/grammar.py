@@ -38,7 +38,6 @@ from coconut._pyparsing import (
     OneOrMore,
     Optional,
     ParserElement,
-    Regex,
     StringEnd,
     StringStart,
     Word,
@@ -92,6 +91,7 @@ from coconut.compiler.util import (
     keyword,
     match_in,
     disallow_keywords,
+    regex_item,
 )
 
 # end: IMPORTS
@@ -792,7 +792,7 @@ class Grammar(object):
     name = Forward()
     base_name = (
         disallow_keywords(keywords + const_vars)
-        + Regex(r"(?![0-9])\w+\b", re.U)
+        + regex_item(r"(?![0-9])\w+\b")
     )
     for k in reserved_vars:
         base_name |= backslash.suppress() + keyword(k)
@@ -1859,7 +1859,7 @@ class Grammar(object):
     parens = originalTextFor(nestedExpr("(", ")"))
     brackets = originalTextFor(nestedExpr("[", "]"))
     braces = originalTextFor(nestedExpr("{", "}"))
-    any_char = Regex(r".", re.U | re.DOTALL)
+    any_char = regex_item(r".", re.DOTALL)
 
     original_function_call_tokens = lparen.suppress() + (
         rparen.suppress()
