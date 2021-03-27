@@ -108,6 +108,7 @@ def test_extras():
     assert_raises(-> parse("abc", "file"), CoconutStyleError)
     assert_raises(-> parse("a=1;"), CoconutStyleError)
     assert_raises(-> parse("class derp(object)"), CoconutStyleError)
+    assert_raises(-> parse("def f(a.b) = True"), CoconutStyleError)
     setup()
     assert_raises(-> cmd("-f"), SystemExit)
     assert_raises(-> cmd("-pa ."), SystemExit)

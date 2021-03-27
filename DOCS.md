@@ -276,6 +276,7 @@ The style issues which will cause `--strict` to throw an error are:
 - trailing whitespace at end of lines,
 - semicolons at end of lines,
 - use of the Python-style `lambda` statement,
+- use of Python-3.10-style dotted names in pattern-matching (Coconut style is to preface these with an `=`),
 - inheriting from `object` in classes (Coconut does this automatically),
 - use of `u` to denote Unicode strings (all Coconut strings are Unicode strings), and
 - use of backslash continuation (use [parenthetical continuation](#enhanced-parenthetical-continuation) instead).
@@ -865,7 +866,8 @@ where `<value>` is the item to match against, `<cond>` is an optional additional
 pattern ::= (
     "(" pattern ")"                 # parentheses
     | "None" | "True" | "False"     # constants
-    | "=" NAME                      # check
+    | "=" EXPR                      # check
+    | DOTTED_NAME                   # implicit check (disabled in destructuring assignment)
     | NUMBER                        # numbers
     | STRING                        # strings
     | [pattern "as"] NAME           # capture (binds tightly)
