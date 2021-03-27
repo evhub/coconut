@@ -606,6 +606,7 @@ class Compiler(Grammar):
         self.async_stmt <<= attach(self.async_stmt_ref, self.async_stmt_check)
         self.async_comp_for <<= attach(self.async_comp_for_ref, self.async_comp_check)
         self.namedexpr <<= attach(self.namedexpr_ref, self.namedexpr_check)
+        self.match_dotted_name_const <<= attach(self.match_dotted_name_const_ref, self.match_dotted_name_const_check)
 
     def copy_skips(self):
         """Copy the line skips."""
@@ -2425,8 +2426,12 @@ if {store_var} is not _coconut_sentinel:
         return self.check_strict("semicolon at end of line", original, loc, tokens)
 
     def u_string_check(self, original, loc, tokens):
-        """Check for Python2-style unicode strings."""
-        return self.check_strict("Python-2-style unicode string", original, loc, tokens)
+        """Check for Python-2-style unicode strings."""
+        return self.check_strict("Python-2-style unicode string (all Coconut strings are unicode strings)", original, loc, tokens)
+
+    def match_dotted_name_const_check(self, original, loc, tokens):
+        """Check for Python-3.10-style implicit dotted name match check."""
+        return self.check_strict("Python-3.10-style dotted name in pattern-matching (Coconut style is to use '={name}' not '{name}')".format(name=tokens[0]), original, loc, tokens)
 
     def check_py(self, version, name, original, loc, tokens):
         """Check for Python-version-specific syntax."""

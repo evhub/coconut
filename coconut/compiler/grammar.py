@@ -798,6 +798,7 @@ class Grammar(object):
         base_name |= backslash.suppress() + keyword(k)
     dotted_base_name = condense(base_name + ZeroOrMore(dot + base_name))
     dotted_name = condense(name + ZeroOrMore(dot + name))
+    must_be_dotted_name = condense(name + OneOrMore(dot + name))
 
     integer = Combine(Word(nums) + ZeroOrMore(underscore.suppress() + Word(nums)))
     binint = Combine(Word("01") + ZeroOrMore(underscore.suppress() + Word("01")))
@@ -1465,11 +1466,13 @@ class Grammar(object):
     matchlist_data_item = Group(Optional(star | name + equals) + match)
     matchlist_data = Group(Optional(tokenlist(matchlist_data_item, comma)))
 
+    match_dotted_name_const = Forward()
     complex_number = condense(Optional(neg_minus) + number + (plus | sub_minus) + Optional(neg_minus) + imag_num)
     match_const = condense(
-        complex_number
+        equals.suppress() + atom_item
+        | complex_number
         | Optional(neg_minus) + const_atom
-        | equals.suppress() + atom_item,
+        | match_dotted_name_const,
     )
     match_string = (
         (string + plus.suppress() + name + plus.suppress() + string)("mstring")
@@ -1543,7 +1546,8 @@ class Grammar(object):
     match_stmt = condense(full_match - Optional(else_stmt))
 
     destructuring_stmt = Forward()
-    destructuring_stmt_ref = Optional(keyword("match").suppress()) + many_match + equals.suppress() + test_expr
+    base_destructuring_stmt = Optional(keyword("match").suppress()) + many_match + equals.suppress() + test_expr
+    destructuring_stmt_ref, match_dotted_name_const_ref = disable_inside(base_destructuring_stmt, must_be_dotted_name)
 
     case_stmt = Forward()
     # syntaxes 1 and 2 here must be kept matching except for the keywords
