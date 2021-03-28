@@ -119,6 +119,7 @@ from coconut.compiler.util import (
     interleaved_join,
     handle_indentation,
     Wrap,
+    tuple_str_of,
 )
 from coconut.compiler.header import (
     minify,
@@ -1467,16 +1468,13 @@ while True:
         if cond is not None:
             matcher.add_guard(cond)
 
-        arg_names = ", ".join(matcher.name_list)
-        arg_tuple = arg_names + ("," if len(matcher.name_list) == 1 else "")
-
         extra_stmts = handle_indentation(
             '''
 def __new__(_cls, *{match_to_args_var}, **{match_to_kwargs_var}):
     {match_check_var} = False
     {matching}
     {pattern_error}
-    return _coconut.tuple.__new__(_cls, ({arg_tuple}))
+    return _coconut.tuple.__new__(_cls, {arg_tuple})
             '''.strip(), add_newline=True,
         ).format(
             match_to_args_var=match_to_args_var,
@@ -1484,12 +1482,13 @@ def __new__(_cls, *{match_to_args_var}, **{match_to_kwargs_var}):
             match_check_var=match_check_var,
             matching=matcher.out(),
             pattern_error=self.pattern_error(original, loc, match_to_args_var, match_check_var, function_match_error_var),
-            arg_tuple=arg_tuple,
+            arg_tuple=tuple_str_of(matcher.name_list),
         )
 
-        namedtuple_call = '_coconut.collections.namedtuple("' + name + '", "' + arg_names + '")'
+        namedtuple_args = tuple_str_of(matcher.name_list, add_quotes=True)
+        namedtuple_call = '_coconut.collections.namedtuple("' + name + '", ' + namedtuple_args + ')'
 
-        return self.assemble_data(name, namedtuple_call, inherit, extra_stmts, stmts)
+        return self.assemble_data(name, namedtuple_call, inherit, extra_stmts, stmts, matcher.name_list)
 
     def data_handle(self, loc, tokens):
         """Process data blocks."""
@@ -1548,10 +1547,8 @@ def __new__(_cls, *{match_to_args_var}, **{match_to_kwargs_var}):
             arg_str = ("*" if star else "") + argname + ("=" + default if default else "")
             all_args.append(arg_str)
 
-        attr_str = " ".join(base_args)
         extra_stmts = ""
         if starred_arg is not None:
-            attr_str += (" " if attr_str else "") + starred_arg
             if base_args:
                 extra_stmts += handle_indentation(
                     '''
@@ -1583,8 +1580,8 @@ def {starred_arg}(self):
                     all_args=", ".join(all_args),
                     req_args=req_args,
                     num_base_args=str(len(base_args)),
-                    base_args_tuple="(" + ", ".join(base_args) + ("," if len(base_args) == 1 else "") + ")",
-                    quoted_base_args_tuple='("' + '", "'.join(base_args) + '"' + ("," if len(base_args) == 1 else "") + ")",
+                    base_args_tuple=tuple_str_of(base_args),
+                    quoted_base_args_tuple=tuple_str_of(base_args, add_quotes=True),
                     kwd_only=("*, " if self.target.startswith("3") else ""),
                 )
             else:
@@ -1617,24 +1614,25 @@ def {arg}(self):
             extra_stmts += handle_indentation(
                 '''
 def __new__(_cls, {all_args}):
-    return _coconut.tuple.__new__(_cls, {args_tuple})
+    return _coconut.tuple.__new__(_cls, {base_args_tuple})
                 '''.strip(), add_newline=True,
             ).format(
                 all_args=", ".join(all_args),
-                args_tuple="(" + ", ".join(base_args) + ("," if len(base_args) == 1 else "") + ")",
+                base_args_tuple=tuple_str_of(base_args),
             )
 
+        namedtuple_args = base_args + ([] if starred_arg is None else [starred_arg])
         if types:
             namedtuple_call = '_coconut.typing.NamedTuple("' + name + '", [' + ", ".join(
                 '("' + argname + '", ' + self.wrap_typedef(types.get(i, "_coconut.typing.Any")) + ")"
-                for i, argname in enumerate(base_args + ([starred_arg] if starred_arg is not None else []))
+                for i, argname in enumerate(namedtuple_args)
             ) + "])"
         else:
-            namedtuple_call = '_coconut.collections.namedtuple("' + name + '", "' + attr_str + '")'
+            namedtuple_call = '_coconut.collections.namedtuple("' + name + '", ' + tuple_str_of(namedtuple_args, add_quotes=True) + ')'
 
-        return self.assemble_data(name, namedtuple_call, inherit, extra_stmts, stmts)
+        return self.assemble_data(name, namedtuple_call, inherit, extra_stmts, stmts, base_args)
 
-    def assemble_data(self, name, namedtuple_call, inherit, extra_stmts, stmts):
+    def assemble_data(self, name, namedtuple_call, inherit, extra_stmts, stmts, match_args):
         # create class
         out = (
             "class " + name + "(" + namedtuple_call + (
@@ -1645,7 +1643,7 @@ def __new__(_cls, {all_args}):
         )
 
         # add universal statements
-        extra_stmts = handle_indentation(
+        all_extra_stmts = handle_indentation(
             '''
 __slots__ = ()
 __ne__ = _coconut.object.__ne__
@@ -1653,24 +1651,28 @@ def __eq__(self, other):
     return self.__class__ is other.__class__ and _coconut.tuple.__eq__(self, other)
 def __hash__(self):
     return _coconut.tuple.__hash__(self) ^ hash(self.__class__)
-            '''.strip(), add_newline=True,
-        ) + extra_stmts
+            '''.strip(),
+            add_newline=True,
+        )
+        if self.target_info < (3, 10):
+            all_extra_stmts += "__match_args__ = " + tuple_str_of(match_args, add_quotes=True) + "\n"
+        all_extra_stmts += extra_stmts
 
         # manage docstring
         rest = None
         if "simple" in stmts and len(stmts) == 1:
-            out += extra_stmts
+            out += all_extra_stmts
             rest = stmts[0]
         elif "docstring" in stmts and len(stmts) == 1:
-            out += stmts[0] + extra_stmts
+            out += stmts[0] + all_extra_stmts
         elif "complex" in stmts and len(stmts) == 1:
-            out += extra_stmts
+            out += all_extra_stmts
             rest = "".join(stmts[0])
         elif "complex" in stmts and len(stmts) == 2:
-            out += stmts[0] + extra_stmts
+            out += stmts[0] + all_extra_stmts
             rest = "".join(stmts[1])
         elif "empty" in stmts and len(stmts) == 1:
-            out += extra_stmts.rstrip() + stmts[0]
+            out += all_extra_stmts.rstrip() + stmts[0]
         else:
             raise CoconutInternalException("invalid inner data tokens", stmts)
 

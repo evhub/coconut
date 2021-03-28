@@ -525,6 +525,15 @@ def disallow_keywords(keywords):
     return item
 
 
+def tuple_str_of(items, add_quotes=False):
+    """Make a tuple repr of the given items."""
+    item_tuple = tuple(items)
+    if add_quotes:
+        return str(item_tuple)
+    else:
+        return "(" + ", ".join(item_tuple) + (", " if len(item_tuple) == 1 else "") + ")"
+
+
 def rem_comment(line):
     """Remove a comment from a line."""
     return line.split("#", 1)[0].rstrip()

@@ -614,11 +614,24 @@ class Matcher(object):
         self.add_check("_coconut.isinstance(" + item + ", " + data_type + ")")
 
         if star_match is None:
-            self.add_check("_coconut.len(" + item + ") == " + str(len(pos_matches) + len(name_matches)))
+            self.add_check(
+                '_coconut.len({item}) == {total_len}'.format(
+                    item=item,
+                    total_len=len(pos_matches) + len(name_matches),
+                ),
+            )
         else:
+            # avoid checking >= 0
             if len(pos_matches):
-                self.add_check("_coconut.len(" + item + ") >= " + str(len(pos_matches)))
+                self.add_check(
+                    "_coconut.len({item}) >= {min_len}".format(
+                        item=item,
+                        min_len=len(pos_matches),
+                    ),
+                )
+
         self.match_all_in(pos_matches, item)
+
         if star_match is not None:
             self.match(star_match, item + "[" + str(len(pos_matches)) + ":]")
         for name, match in name_matches.items():
