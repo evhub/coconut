@@ -599,6 +599,8 @@ def suite_test():
     v = vector(x=1, y=2)
     vector(x=newx, y=newy) = v
     assert (newx, newy) == (1, 2)
+    assert vector.__match_args__ == ("x", "y") == typed_vector.__match_args__
+    assert Pred.__match_args__ == ("name",) == Pred_.__match_args__
     return True
 
 def tco_test():
