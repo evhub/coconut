@@ -191,19 +191,27 @@ else:
                 pass
         return _coconut_tail_call(self.patterns[-1], *args, **kwargs)
     ''',
+        # disabled mocks must have different docstrings so the
+        #  interpreter can tell them apart from the real thing
         def_prepattern=(
             r'''def prepattern(base_func, **kwargs):
-    """DEPRECATED: Use addpattern instead."""
+    """DEPRECATED: use addpattern instead."""
     def pattern_prepender(func):
         return addpattern(func, **kwargs)(base_func)
     return pattern_prepender
-''' if not strict else ""
+''' if not strict else r'''def prepattern(*args, **kwargs):
+    """Deprecated feature 'prepattern' disabled by --strict compilation; use 'addpattern' instead."""
+    raise _coconut.NameError("deprecated feature 'prepattern' disabled by --strict compilation; use 'addpattern' instead")
+'''
         ),
         def_datamaker=(
             r'''def datamaker(data_type):
-    """DEPRECATED: Use makedata instead."""
+    """DEPRECATED: use makedata instead."""
     return _coconut.functools.partial(makedata, data_type)
-''' if not strict else ""
+''' if not strict else r'''def datamaker(*args, **kwargs):
+    """Deprecated feature 'datamaker' disabled by --strict compilation; use 'makedata' instead."""
+    raise _coconut.NameError("deprecated feature 'datamaker' disabled by --strict compilation; use 'makedata' instead")
+'''
         ),
         comma_tco=", _coconut_tail_call, _coconut_tco" if not no_tco else "",
     )

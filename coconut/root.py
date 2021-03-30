@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "1.5.0"
 VERSION_NAME = "Fish License"
 # False for release, int >= 1 for develop
-DEVELOP = 14
+DEVELOP = 15
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -208,11 +208,11 @@ def repr(obj):
         __builtin__.repr = _coconut_py_repr
 ascii = _coconut_repr = repr
 def raw_input(*args):
-    """Coconut uses Python 3 "input" instead of Python 2 "raw_input"."""
-    raise _coconut.NameError('Coconut uses Python 3 "input" instead of Python 2 "raw_input"')
+    """Coconut uses Python 3 'input' instead of Python 2 'raw_input'."""
+    raise _coconut.NameError("Coconut uses Python 3 'input' instead of Python 2 'raw_input'")
 def xrange(*args):
-    """Coconut uses Python 3 "range" instead of Python 2 "xrange"."""
-    raise _coconut.NameError('Coconut uses Python 3 "range" instead of Python 2 "xrange"')
+    """Coconut uses Python 3 'range' instead of Python 2 'xrange'."""
+    raise _coconut.NameError("Coconut uses Python 3 'range' instead of Python 2 'xrange'")
 ''' + _non_py37_extras
 
 PY2_HEADER = PY27_HEADER + '''if _coconut_sys.version_info < (2, 7):

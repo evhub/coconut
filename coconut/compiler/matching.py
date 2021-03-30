@@ -576,42 +576,48 @@ class Matcher(object):
         for const in match:
             self.add_check(const + " in " + item)
 
-    def match_data(self, tokens, item):
-        """Matches a data type."""
-        internal_assert(len(tokens) == 2, "invalid data match tokens", tokens)
-        data_type, data_matches = tokens
+    def split_data_or_class_match(self, tokens):
+        """Split data/class match tokens into cls_name, pos_matches, name_matches, star_match."""
+        internal_assert(len(tokens) == 2, "invalid data/class match tokens", tokens)
+        cls_name, matches = tokens
 
         pos_matches = []
         name_matches = {}
         star_match = None
-        for data_match_arg in data_matches:
-            if len(data_match_arg) == 1:
-                match, = data_match_arg
+        for match_arg in matches:
+            if len(match_arg) == 1:
+                match, = match_arg
                 if star_match is not None:
-                    raise CoconutDeferredSyntaxError("positional arg after starred arg in data match", self.loc)
+                    raise CoconutDeferredSyntaxError("positional arg after starred arg in data/class match", self.loc)
                 if name_matches:
-                    raise CoconutDeferredSyntaxError("positional arg after named arg in data match", self.loc)
+                    raise CoconutDeferredSyntaxError("positional arg after named arg in data/class match", self.loc)
                 pos_matches.append(match)
-            elif len(data_match_arg) == 2:
-                internal_assert(data_match_arg[0] == "*", "invalid starred data match arg tokens", data_match_arg)
-                _, match = data_match_arg
+            elif len(match_arg) == 2:
+                internal_assert(match_arg[0] == "*", "invalid starred data/class match arg tokens", match_arg)
+                _, match = match_arg
                 if star_match is not None:
-                    raise CoconutDeferredSyntaxError("duplicate starred arg in data match", self.loc)
+                    raise CoconutDeferredSyntaxError("duplicate starred arg in data/class match", self.loc)
                 if name_matches:
-                    raise CoconutDeferredSyntaxError("both starred arg and named arg in data match", self.loc)
+                    raise CoconutDeferredSyntaxError("both starred arg and named arg in data/class match", self.loc)
                 star_match = match
-            elif len(data_match_arg) == 3:
-                internal_assert(data_match_arg[1] == "=", "invalid named data match arg tokens", data_match_arg)
-                name, _, match = data_match_arg
+            elif len(match_arg) == 3:
+                internal_assert(match_arg[1] == "=", "invalid named data/class match arg tokens", match_arg)
+                name, _, match = match_arg
                 if star_match is not None:
-                    raise CoconutDeferredSyntaxError("both named arg and starred arg in data match", self.loc)
+                    raise CoconutDeferredSyntaxError("both named arg and starred arg in data/class match", self.loc)
                 if name in name_matches:
-                    raise CoconutDeferredSyntaxError("duplicate named arg {name!r} in data match".format(name=name), self.loc)
+                    raise CoconutDeferredSyntaxError("duplicate named arg {name!r} in data/class match".format(name=name), self.loc)
                 name_matches[name] = match
             else:
-                raise CoconutInternalException("invalid data match arg", data_match_arg)
+                raise CoconutInternalException("invalid data/class match arg", match_arg)
 
-        self.add_check("_coconut.isinstance(" + item + ", " + data_type + ")")
+        return cls_name, pos_matches, name_matches, star_match
+
+    def match_data(self, tokens, item):
+        """Matches a data type."""
+        cls_name, pos_matches, name_matches, star_match = self.split_data_or_class_match(tokens)
+
+        self.add_check("_coconut.isinstance(" + item + ", " + cls_name + ")")
 
         if star_match is None:
             self.add_check(

@@ -481,7 +481,10 @@ class Runner(object):
         from coconut import __coconut__  # this is expensive, so only do it here
         for var in self.vars:
             if not var.startswith("__") and var in dir(__coconut__):
-                self.vars[var] = getattr(__coconut__, var)
+                cur_val = self.vars[var]
+                static_val = getattr(__coconut__, var)
+                if getattr(cur_val, "__doc__", None) == getattr(static_val, "__doc__", None):
+                    self.vars[var] = static_val
 
     @contextmanager
     def handling_errors(self, all_errors_exit=False):
