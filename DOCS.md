@@ -266,6 +266,7 @@ If the `--strict` (`-s` for short) flag is enabled, Coconut will perform additio
 
 - disabling deprecated features (making them entirely unavailable to code compiled with `--strict`),
 - warning about unused imports,
+- warning on missing `__init__.coco` files when compiling in `--package` mode,
 - throwing errors on various style problems (see list below).
 
 The style issues which will cause `--strict` to throw an error are:
