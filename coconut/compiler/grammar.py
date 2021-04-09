@@ -1405,7 +1405,7 @@ class Grammar(object):
         ),
     )
     class_suite = suite | attach(newline, class_suite_handle)
-    classdef = condense(addspace(keyword("class") - name) - classlist - class_suite)
+    classdef = condense(addspace(keyword("class") + name) + classlist + class_suite)
     comp_iter = Forward()
     base_comp_for = addspace(keyword("for") + assignlist + keyword("in") + test_item + Optional(comp_iter))
     async_comp_for_ref = addspace(keyword("async") + base_comp_for)
@@ -1516,7 +1516,9 @@ class Grammar(object):
             | series_match
             | star_match
             | (lparen.suppress() + match + rparen.suppress())("paren")
-            | (name + lparen.suppress() + matchlist_data + rparen.suppress())("data")
+            | (keyword("data").suppress() + name + lparen.suppress() + matchlist_data + rparen.suppress())("data")
+            | (keyword("class").suppress() + name + lparen.suppress() + matchlist_data + rparen.suppress())("class")
+            | (name + lparen.suppress() + matchlist_data + rparen.suppress())("data_or_class")
             | name("var"),
         ),
     )

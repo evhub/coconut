@@ -985,3 +985,10 @@ def ret_globals() =
 
 # Pos only args
 match def pos_only(a, b, /) = a, b
+
+
+# Match args classes
+class Matchable:
+    __match_args__ = ("x", "y", "z")
+    def __init__(self, x, y, z):
+        self.x, self.y, self.z = x, y, z
