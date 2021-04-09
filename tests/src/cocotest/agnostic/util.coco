@@ -300,7 +300,7 @@ def loop_then_tre(n):
 
 # Data Blocks:
 try:
-    datamaker()
+    datamaker()  # type: ignore
 except NameError, TypeError:
     def datamaker(data_type):
         """Get the original constructor of the given data type or class."""
@@ -655,7 +655,7 @@ def SHOPeriodTerminate(X, t, params):
 
 # Multiple dispatch:
 try:
-    prepattern()
+    prepattern()  # type: ignore
 except NameError, TypeError:
     def prepattern(base_func, **kwargs):  # type: ignore
         """Decorator to add a new case to a pattern-matching function,
