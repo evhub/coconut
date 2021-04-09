@@ -1745,18 +1745,20 @@ _Can't be done without a series of method definitions for each data type. See th
 
 ### In-line `global` And `nonlocal` Assignment
 
-Coconut allows for `global` or `nonlocal` to precede assignment to a variable or list of variables to make that assignment `global` or `nonlocal`, respectively.
+Coconut allows for `global` or `nonlocal` to precede assignment to a list of variables or (augmented) assignment to a variable to make that assignment `global` or `nonlocal`, respectively.
 
 ##### Example
 
 **Coconut:**
 ```coconut
 global state_a, state_b = 10, 100
+global state_c += 1
 ```
 
 **Python:**
 ```coconut_python
 global state_a, state_b; state_a, state_b = 10, 100
+global state_c; state_c += 1
 ```
 
 ### Code Passthrough

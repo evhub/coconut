@@ -562,6 +562,7 @@ class Compiler(Grammar):
         self.import_stmt <<= attach(self.import_stmt_ref, self.import_handle)
         self.complex_raise_stmt <<= attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_handle)
         self.augassign_stmt <<= attach(self.augassign_stmt_ref, self.augassign_handle)
+        self.kwd_augassign <<= attach(self.kwd_augassign_ref, self.kwd_augassign_handle)
         self.dict_comp <<= attach(self.dict_comp_ref, self.dict_comp_handle)
         self.destructuring_stmt <<= attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle)
         self.name_match_funcdef <<= attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle)
@@ -1372,8 +1373,14 @@ while True:
         self.comments[ln] = tokens[0]
         return ""
 
+    def kwd_augassign_handle(self, tokens):
+        """Process global/nonlocal augmented assignments."""
+        internal_assert(len(tokens) == 3, "invalid global/nonlocal augmented assignment tokens", tokens)
+        name, op, item = tokens
+        return name + "\n" + self.augassign_handle(tokens)
+
     def augassign_handle(self, tokens):
-        """Process assignments."""
+        """Process augmented assignments."""
         internal_assert(len(tokens) == 3, "invalid assignment tokens", tokens)
         name, op, item = tokens
         out = ""

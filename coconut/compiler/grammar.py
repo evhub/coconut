@@ -608,7 +608,7 @@ def class_suite_handle(tokens):
     return ": pass" + tokens[0]
 
 
-def namelist_handle(tokens):
+def simple_kwd_assign_handle(tokens):
     """Process inline nonlocal and global statements."""
     if len(tokens) == 1:
         return tokens[0]
@@ -618,7 +618,7 @@ def namelist_handle(tokens):
         raise CoconutInternalException("invalid in-line nonlocal / global tokens", tokens)
 
 
-namelist_handle.ignore_one_token = True
+simple_kwd_assign_handle.ignore_one_token = True
 
 
 def compose_item_handle(tokens):
@@ -1442,13 +1442,20 @@ class Grammar(object):
     import_stmt = Forward()
     import_stmt_ref = from_import | basic_import
 
-    nonlocal_stmt = Forward()
-    namelist = attach(
-        maybeparens(lparen, itemlist(name, comma), rparen) - Optional(equals.suppress() - test_expr),
-        namelist_handle,
+    simple_kwd_assign = attach(
+        maybeparens(lparen, itemlist(name, comma), rparen) + Optional(equals.suppress() - test_expr),
+        simple_kwd_assign_handle,
     )
-    global_stmt = addspace(keyword("global") - namelist)
-    nonlocal_stmt_ref = addspace(keyword("nonlocal") - namelist)
+    kwd_augassign = Forward()
+    kwd_augassign_ref = name + augassign - test_expr
+    kwd_assign = (
+        kwd_augassign
+        | simple_kwd_assign
+    )
+    global_stmt = addspace(keyword("global") - kwd_assign)
+    nonlocal_stmt = Forward()
+    nonlocal_stmt_ref = addspace(keyword("nonlocal") - kwd_assign)
+
     del_stmt = addspace(keyword("del") - simple_assignlist)
 
     matchlist_tuple_items = (
