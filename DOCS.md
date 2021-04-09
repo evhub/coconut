@@ -866,6 +866,8 @@ pattern ::= (
     | [pattern "as"] NAME           # capture (binds tightly)
     | NAME ":=" patterns            # capture (binds loosely)
     | NAME "(" patterns ")"         # data types
+    | "data" NAME "(" patterns ")"  # data types
+    | "class" NAME "(" patterns ")" # classes
     | pattern "is" exprs            # type-checking
     | pattern "and" pattern         # match all
     | pattern ("or" | "|") pattern  # match any

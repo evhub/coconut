@@ -318,7 +318,7 @@ def suite_test():
     try:
         var_one
     except NameError:
-        assert True
+        pass
     else:
         assert False
     assert Just(3) |> map$(-> _*2) |*> Just == Just(6) == Just(3) |> fmap$(-> _*2)
@@ -599,8 +599,23 @@ def suite_test():
     v = vector(x=1, y=2)
     vector(x=newx, y=newy) = v
     assert (newx, newy) == (1, 2)
+    data vector(x=1, y=2) = v
+    data vector(1, y=2) = v
+    match data vector(1, 2) in v:
+        pass
+    else:
+        assert False
     assert vector.__match_args__ == ("x", "y") == typed_vector.__match_args__
     assert Pred.__match_args__ == ("name",) == Pred_.__match_args__
+    m = Matchable(1, 2, 3)
+    class Matchable(newx, neqy, newz) = m
+    assert (newx, newy, newz) == (1, 2, 3)
+    class Matchable(x=1, y=2, z=3) = m
+    class Matchable(1, 2, 3) = m
+    match class Matchable(1, y=2, z=3) in m:
+        pass
+    else:
+        assert False
     return True
 
 def tco_test():

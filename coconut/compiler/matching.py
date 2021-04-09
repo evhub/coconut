@@ -85,6 +85,8 @@ class Matcher(object):
         "var": lambda self: self.match_var,
         "set": lambda self: self.match_set,
         "data": lambda self: self.match_data,
+        "class": lambda self: self.match_class,
+        "data_or_class": lambda self: self.match_data_or_class,
         "paren": lambda self: self.match_paren,
         "trailer": lambda self: self.match_trailer,
         "walrus": lambda self: self.match_walrus,
@@ -96,6 +98,7 @@ class Matcher(object):
     __slots__ = (
         "loc",
         "check_var",
+        "use_python_rules",
         "position",
         "checkdefs",
         "names",
@@ -105,10 +108,11 @@ class Matcher(object):
         "guards",
     )
 
-    def __init__(self, loc, check_var, checkdefs=None, names=None, var_index=0, name_list=None):
+    def __init__(self, loc, check_var, use_python_rules=False, checkdefs=None, names=None, var_index=0, name_list=None):
         """Creates the matcher."""
         self.loc = loc
         self.check_var = check_var
+        self.use_python_rules = use_python_rules
         self.position = 0
         self.checkdefs = []
         if checkdefs is None:
@@ -128,7 +132,7 @@ class Matcher(object):
         new_names = self.names
         if separate_names:
             new_names = new_names.copy()
-        other = Matcher(self.loc, self.check_var, self.checkdefs, new_names, self.var_index, self.name_list)
+        other = Matcher(self.loc, self.check_var, self.use_python_rules, self.checkdefs, new_names, self.var_index, self.name_list)
         other.insert_check(0, "not " + self.check_var)
         self.others.append(other)
         return other
@@ -205,11 +209,13 @@ class Matcher(object):
 
     def increment(self, by=1):
         """Advances the if-statement position."""
-        self.set_position(self.position + by)
+        new_pos = self.position + by
+        internal_assert(new_pos > 0, "invalid increment/decrement call to set pos to", new_pos)
+        self.set_position(new_pos)
 
     def decrement(self, by=1):
         """Decrements the if-statement position."""
-        self.set_position(self.position - by)
+        self.increment(-by)
 
     @contextmanager
     def down_a_level(self, by=1):
@@ -254,23 +260,25 @@ class Matcher(object):
 
     def match_function(self, args, kwargs, pos_only_match_args=(), match_args=(), star_arg=None, kwd_match_args=(), dubstar_arg=None):
         """Matches a pattern-matching function."""
-        self.match_in_args_kwargs(pos_only_match_args, match_args, args, kwargs, allow_star_args=star_arg is not None)
-        if star_arg is not None:
-            self.match(star_arg, args + "[" + str(len(match_args)) + ":]")
-        self.match_in_kwargs(kwd_match_args, kwargs)
+        # before everything, pop the FunctionMatchError from context
+        self.add_def(function_match_error_var + " = _coconut_get_function_match_error()")
         with self.down_a_level():
-            if dubstar_arg is None:
-                self.add_check("not " + kwargs)
-            else:
-                self.match(dubstar_arg, kwargs)
+
+            self.match_in_args_kwargs(pos_only_match_args, match_args, args, kwargs, allow_star_args=star_arg is not None)
+
+            if star_arg is not None:
+                self.match(star_arg, args + "[" + str(len(match_args)) + ":]")
+
+            self.match_in_kwargs(kwd_match_args, kwargs)
+
+            with self.down_a_level():
+                if dubstar_arg is None:
+                    self.add_check("not " + kwargs)
+                else:
+                    self.match(dubstar_arg, kwargs)
 
     def match_in_args_kwargs(self, pos_only_match_args, match_args, args, kwargs, allow_star_args=False):
         """Matches against args or kwargs."""
-
-        # before everything, pop the FunctionMatchError from context
-        self.add_def(function_match_error_var + " = _coconut_get_function_match_error()")
-        self.increment()
-
         req_len = 0
         arg_checks = {}
         to_match = []  # [(move_down, match, against)]
@@ -376,8 +384,11 @@ class Matcher(object):
             matches, rest = tokens[0], None
         else:
             matches, rest = tokens
+
         self.add_check("_coconut.isinstance(" + item + ", _coconut.abc.Mapping)")
-        if rest is None:
+
+        # Coconut dict matching rules check the length; Python dict matching rules do not
+        if rest is None and not self.use_python_rules:
             self.add_check("_coconut.len(" + item + ") == " + str(len(matches)))
 
         seen_keys = set()
@@ -613,6 +624,30 @@ class Matcher(object):
 
         return cls_name, pos_matches, name_matches, star_match
 
+    def match_class(self, tokens, item):
+        """Matches a class PEP-622-style."""
+        cls_name, pos_matches, name_matches, star_match = self.split_data_or_class_match(tokens)
+
+        self.add_check("_coconut.isinstance(" + item + ", " + cls_name + ")")
+
+        for i, match in enumerate(pos_matches):
+            self.match(match, "_coconut.getattr(" + item + ", " + item + ".__match_args__[" + str(i) + "])")
+
+        if star_match is not None:
+            temp_var = self.get_temp_var()
+            self.add_def(
+                "{temp_var} = _coconut.tuple(_coconut.getattr({item}, {item}.__match_args__[i]) for i in _coconut.range({min_ind}, _coconut.len({item}.__match_args__)))".format(
+                    temp_var=temp_var,
+                    item=item,
+                    min_ind=len(pos_matches),
+                ),
+            )
+            with self.down_a_level():
+                self.match(star_match, temp_var)
+
+        for name, match in name_matches.items():
+            self.match(match, item + "." + name)
+
     def match_data(self, tokens, item):
         """Matches a data type."""
         cls_name, pos_matches, name_matches, star_match = self.split_data_or_class_match(tokens)
@@ -640,8 +675,16 @@ class Matcher(object):
 
         if star_match is not None:
             self.match(star_match, item + "[" + str(len(pos_matches)) + ":]")
+
         for name, match in name_matches.items():
             self.match(match, item + "." + name)
+
+    def match_data_or_class(self, tokens, item):
+        """Matches an ambiguous data or class match."""
+        if self.use_python_rules:
+            return self.match_class(tokens, item)
+        else:
+            return self.match_data(tokens, item)
 
     def match_paren(self, tokens, item):
         """Matches a paren."""
