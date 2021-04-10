@@ -255,7 +255,8 @@ If the version of Python that the compiled code will be running on is known ahea
 - `3.6` (will work on any Python `>= 3.6`),
 - `3.7` (will work on any Python `>= 3.7`),
 - `3.8` (will work on any Python `>= 3.8`),
-- `3.9` (will work on any Python `>= 3.9`), and
+- `3.9` (will work on any Python `>= 3.9`),
+- `3.10` (will work on any Python `>= 3.10`), and
 - `sys` (chooses the target corresponding to the current Python version).
 
 _Note: Periods are ignored in target specifications, such that the target `27` is equivalent to the target `2.7`._
@@ -277,7 +278,8 @@ The style issues which will cause `--strict` to throw an error are:
 - trailing whitespace at end of lines,
 - semicolons at end of lines,
 - use of the Python-style `lambda` statement,
-- use of Python-3.10-style dotted names in pattern-matching (Coconut style is to preface these with an `=`),
+- use of Python-3.10/PEP-622-style dotted names in pattern-matching (Coconut style is to preface these with an `=`),
+- pattern-matching syntax that is ambiguous between Coconut rules and Python 3.10/PEP 622 rules outside of `match`/`case` blocks (such behavior always emits a warning in `match`/`case` blocks),
 - inheriting from `object` in classes (Coconut does this automatically),
 - use of `u` to denote Unicode strings (all Coconut strings are Unicode strings), and
 - use of backslash continuation (use [parenthetical continuation](#enhanced-parenthetical-continuation) instead).
@@ -1015,7 +1017,9 @@ case <value>:
 ```
 where `<pattern>` is any `match` pattern, `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds. Note the absence of an `in` in the `match` statements: that's because the `<value>` in `case <value>` is taking its place. If no `else` is present and no match succeeds, then the `case` statement is simply skipped over as with [`match` statements](#match) (though unlike [destructuring assignments](#destructuring-assignment)).
 
-Alternatively, to support a [PEP 622](https://www.python.org/dev/peps/pep-0622/#appendix-a)-like syntax, Coconut also supports swapping `case` and `match` in the above syntax, such that the syntax becomes:
+##### PEP 622 Support
+
+Additionally, since Coconut is a strict superset of Python, Coconut has full Python 3.10+ [PEP 622](https://www.python.org/dev/peps/pep-0622/#appendix-a) support. Note that, when using PEP 622 match-case syntax, Coconut will use PEP 622 pattern-matching rules rather than Coconut pattern-matching rules, though a warning will always be issued when those rules conflict. To use PEP 622 pattern-matching, the syntax is:
 ```coconut
 match <value>:
     case <pattern> [if <cond>]:

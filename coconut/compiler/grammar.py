@@ -64,12 +64,9 @@ from coconut.constants import (
     keywords,
     const_vars,
     reserved_vars,
-    match_to_var,
-    match_check_var,
     none_coalesce_var,
     func_var,
 )
-from coconut.compiler.matching import Matcher
 from coconut.compiler.util import (
     CustomCombine as Combine,
     attach,
@@ -531,33 +528,6 @@ def math_funcdef_handle(tokens):
     return tokens[0] + ("" if tokens[1].startswith("\n") else " ") + tokens[1]
 
 
-def match_handle(loc, tokens):
-    """Process match blocks."""
-    if len(tokens) == 4:
-        matches, match_type, item, stmts = tokens
-        cond = None
-    elif len(tokens) == 5:
-        matches, match_type, item, cond, stmts = tokens
-    else:
-        raise CoconutInternalException("invalid match statement tokens", tokens)
-
-    if match_type == "in":
-        invert = False
-    elif match_type == "not in":
-        invert = True
-    else:
-        raise CoconutInternalException("invalid match type", match_type)
-
-    matching = Matcher(loc, match_check_var)
-    matching.match(matches, match_to_var)
-    if cond:
-        matching.add_guard(cond)
-    return (
-        match_to_var + " = " + item + "\n"
-        + matching.build(stmts, invert=invert)
-    )
-
-
 def except_handle(tokens):
     """Process except statements."""
     if len(tokens) == 1:
@@ -907,11 +877,14 @@ class Grammar(object):
     comp_for = Forward()
     test_no_cond = Forward()
     namedexpr_test = Forward()
+    # for namedexpr locations only supported in Python 3.10
+    new_namedexpr_test = Forward()
 
     testlist = trace(itemlist(test, comma, suppress_trailing=False))
     testlist_star_expr = trace(itemlist(test | star_expr, comma, suppress_trailing=False))
     testlist_star_namedexpr = trace(itemlist(namedexpr_test | star_expr, comma, suppress_trailing=False))
     testlist_has_comma = trace(addspace(OneOrMore(condense(test + comma)) + Optional(test)))
+    new_namedexpr_testlist_has_comma = trace(addspace(OneOrMore(condense(new_namedexpr_test + comma)) + Optional(test)))
 
     yield_from = Forward()
     dict_comp = Forward()
@@ -1090,7 +1063,7 @@ class Grammar(object):
     slicetest = Optional(test_no_chain)
     sliceop = condense(unsafe_colon + slicetest)
     subscript = condense(slicetest + sliceop + Optional(sliceop)) | test
-    subscriptlist = itemlist(subscript, comma, suppress_trailing=False)
+    subscriptlist = itemlist(subscript, comma, suppress_trailing=False) | new_namedexpr_test
 
     slicetestgroup = Optional(test_no_chain, default="")
     sliceopgroup = unsafe_colon.suppress() + slicetestgroup
@@ -1109,7 +1082,7 @@ class Grammar(object):
     set_s = fixto(CaselessLiteral("s"), "s")
     set_f = fixto(CaselessLiteral("f"), "f")
     set_letter = set_s | set_f
-    setmaker = Group(addspace(test + comp_for)("comp") | testlist_has_comma("list") | test("test"))
+    setmaker = Group(addspace(new_namedexpr_test + comp_for)("comp") | new_namedexpr_testlist_has_comma("list") | new_namedexpr_test("test"))
     set_literal_ref = lbrace.suppress() + setmaker + rbrace.suppress()
     set_letter_literal_ref = set_letter + lbrace.suppress() + Optional(setmaker) + rbrace.suppress()
     lazy_items = Optional(test + ZeroOrMore(comma.suppress() + test) + Optional(comma.suppress()))
@@ -1396,6 +1369,13 @@ class Grammar(object):
         | namedexpr
     )
 
+    new_namedexpr = Forward()
+    new_namedexpr_ref = namedexpr_ref
+    new_namedexpr_test <<= (
+        test + ~colon_eq
+        | new_namedexpr
+    )
+
     async_comp_for = Forward()
     classlist_ref = Optional(
         lparen.suppress() + rparen.suppress()
@@ -1510,7 +1490,7 @@ class Grammar(object):
         Group(
             match_string
             | match_const("const")
-            | (lbrace.suppress() + matchlist_dict + Optional(dubstar.suppress() + name) + rbrace.suppress())("dict")
+            | (lbrace.suppress() + matchlist_dict + Optional(dubstar.suppress() + (name | condense(lbrace + rbrace))) + rbrace.suppress())("dict")
             | (Optional(set_s.suppress()) + lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
             | iter_match
             | series_match
@@ -1546,13 +1526,16 @@ class Grammar(object):
 
     else_stmt = condense(keyword("else") - suite)
     full_suite = colon.suppress() + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
-    full_match = trace(
-        attach(
-            keyword("match").suppress() + many_match + addspace(Optional(keyword("not")) + keyword("in")) - testlist_star_namedexpr - match_guard - full_suite,
-            match_handle,
-        ),
+    full_match = Forward()
+    full_match_ref = (
+        keyword("match").suppress()
+        + many_match
+        + addspace(Optional(keyword("not")) + keyword("in"))
+        - testlist_star_namedexpr
+        - match_guard
+        - full_suite
     )
-    match_stmt = condense(full_match - Optional(else_stmt))
+    match_stmt = trace(condense(full_match - Optional(else_stmt)))
 
     destructuring_stmt = Forward()
     base_destructuring_stmt = Optional(keyword("match").suppress()) + many_match + equals.suppress() + test_expr
@@ -1566,7 +1549,7 @@ class Grammar(object):
         ),
     )
     case_stmt_syntax_1 = (
-        keyword("case").suppress() + testlist_star_namedexpr + colon.suppress() + newline.suppress()
+        keyword("case") + testlist_star_namedexpr + colon.suppress() + newline.suppress()
         + indent.suppress() + Group(OneOrMore(case_match_syntax_1))
         + dedent.suppress() + Optional(keyword("else").suppress() + suite)
     )
@@ -1576,7 +1559,7 @@ class Grammar(object):
         ),
     )
     case_stmt_syntax_2 = (
-        keyword("match").suppress() + testlist_star_namedexpr + colon.suppress() + newline.suppress()
+        keyword("match") + testlist_star_namedexpr + colon.suppress() + newline.suppress()
         + indent.suppress() + Group(OneOrMore(case_match_syntax_2))
         + dedent.suppress() + Optional(keyword("else").suppress() - suite)
     )
