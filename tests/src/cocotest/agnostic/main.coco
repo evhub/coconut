@@ -684,7 +684,7 @@ def main_test():
     assert found_x == 1
     1, two = 1, 2
     assert two == 2
-    {"a": a, **{}} = {"a": 1}
+    match {"a": a, **{}} = {"a": 1}
     assert a == 1
     big_d = {"a": 1, "b": 2}
     match {"a": a} in big_d:
