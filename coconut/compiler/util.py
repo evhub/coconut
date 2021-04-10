@@ -38,6 +38,7 @@ from coconut._pyparsing import (
     ParseResults,
     Combine,
     Regex,
+    Empty,
     _trim_arity,
     _ParseResultsWithOffset,
 )
@@ -515,6 +516,15 @@ def itemlist(item, sep, suppress_trailing=True):
 def exprlist(expr, op):
     """Create a list of exprs separated by ops."""
     return addspace(expr + ZeroOrMore(op + expr))
+
+
+def stores_loc_action(loc, tokens):
+    """Action that just parses to loc."""
+    internal_assert(len(tokens) == 0, "invalid get loc tokens", tokens)
+    return str(loc)
+
+
+stores_loc_item = attach(Empty(), stores_loc_action)
 
 
 def disallow_keywords(keywords):
