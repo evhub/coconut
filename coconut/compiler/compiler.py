@@ -2303,15 +2303,16 @@ if {store_var} is not _coconut_sentinel:
         else:
             return "_coconut.Ellipsis"
 
-    def match_case_tokens(self, check_var, style, original, loc, tokens, top):
+    def match_case_tokens(self, check_var, style, original, tokens, top):
         """Build code for matching the given case."""
-        if len(tokens) == 2:
-            matches, stmts = tokens
+        if len(tokens) == 3:
+            loc, matches, stmts = tokens
             cond = None
-        elif len(tokens) == 3:
-            matches, cond, stmts = tokens
+        elif len(tokens) == 4:
+            loc, matches, cond, stmts = tokens
         else:
             raise CoconutInternalException("invalid case match tokens", tokens)
+        loc = int(loc)
         matching = self.get_matcher(original, loc, check_var, style)
         matching.match(matches, match_to_var)
         if cond:
@@ -2338,12 +2339,12 @@ if {store_var} is not _coconut_sentinel:
         check_var = self.get_temp_var("case_check")
         out = (
             match_to_var + " = " + item + "\n"
-            + self.match_case_tokens(check_var, style, original, loc, cases[0], True)
+            + self.match_case_tokens(check_var, style, original, cases[0], True)
         )
         for case in cases[1:]:
             out += (
                 "if not " + check_var + ":\n" + openindent
-                + self.match_case_tokens(check_var, style, original, loc, case, False) + closeindent
+                + self.match_case_tokens(check_var, style, original, case, False) + closeindent
             )
         if default is not None:
             out += "if not " + check_var + default

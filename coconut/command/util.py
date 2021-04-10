@@ -191,7 +191,8 @@ def handling_broken_process_pool():
         try:
             yield
         except BrokenProcessPool:
-            raise KeyboardInterrupt()
+            logger.log_exc()
+            raise KeyboardInterrupt("broken process pool")
 
 
 def kill_children():

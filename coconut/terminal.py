@@ -236,10 +236,10 @@ class Logger(object):
 
     def warn_err(self, warning, force=False):
         """Displays a warning."""
-        try:
-            raise warning
-        except Exception:
-            if not self.quiet or force:
+        if not self.quiet or force:
+            try:
+                raise warning
+            except Exception:
                 self.display_exc()
 
     def display_exc(self):

@@ -89,6 +89,7 @@ from coconut.compiler.util import (
     match_in,
     disallow_keywords,
     regex_item,
+    stores_loc_item,
 )
 
 # end: IMPORTS
@@ -1545,7 +1546,11 @@ class Grammar(object):
     # syntaxes 1 and 2 here must be kept matching except for the keywords
     case_match_syntax_1 = trace(
         Group(
-            keyword("match").suppress() + many_match + Optional(keyword("if").suppress() + namedexpr_test) + full_suite,
+            keyword("match").suppress()
+            + stores_loc_item
+            + many_match
+            + Optional(keyword("if").suppress() + namedexpr_test)
+            + full_suite,
         ),
     )
     case_stmt_syntax_1 = (
@@ -1555,7 +1560,11 @@ class Grammar(object):
     )
     case_match_syntax_2 = trace(
         Group(
-            keyword("case").suppress() + many_match + Optional(keyword("if").suppress() + namedexpr_test) + full_suite,
+            keyword("case").suppress()
+            + stores_loc_item
+            + many_match
+            + Optional(keyword("if").suppress() + namedexpr_test)
+            + full_suite,
         ),
     )
     case_stmt_syntax_2 = (
