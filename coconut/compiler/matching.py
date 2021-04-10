@@ -21,10 +21,14 @@ from coconut.root import *  # NOQA
 
 from contextlib import contextmanager
 
-from coconut.terminal import internal_assert
+from coconut.terminal import (
+    internal_assert,
+    logger,
+)
 from coconut.exceptions import (
     CoconutInternalException,
     CoconutDeferredSyntaxError,
+    CoconutSyntaxWarning,
 )
 from coconut.constants import (
     match_temp_var,
@@ -96,9 +100,11 @@ class Matcher(object):
         "implicit_tuple": lambda self: self.match_implicit_tuple,
     }
     __slots__ = (
+        "comp",
+        "original",
         "loc",
         "check_var",
-        "use_python_rules",
+        "style",
         "position",
         "checkdefs",
         "names",
@@ -107,12 +113,24 @@ class Matcher(object):
         "others",
         "guards",
     )
+    valid_styles = (
+        "coconut",
+        "python",
+        "coconut warn",
+        "python warn",
+        "coconut strict",
+        "python strict",
+    )
 
-    def __init__(self, loc, check_var, use_python_rules=False, checkdefs=None, names=None, var_index=0, name_list=None):
+    def __init__(self, comp, original, loc, check_var, style="coconut", name_list=None, checkdefs=None, names=None, var_index=0):
         """Creates the matcher."""
+        self.comp = comp
+        self.original = original
         self.loc = loc
         self.check_var = check_var
-        self.use_python_rules = use_python_rules
+        internal_assert(style in self.valid_styles, "invalid Matcher style", style)
+        self.style = style
+        self.name_list = name_list
         self.position = 0
         self.checkdefs = []
         if checkdefs is None:
@@ -123,7 +141,6 @@ class Matcher(object):
             self.set_position(-1)
         self.names = names if names is not None else {}
         self.var_index = var_index
-        self.name_list = name_list
         self.others = []
         self.guards = []
 
@@ -132,10 +149,27 @@ class Matcher(object):
         new_names = self.names
         if separate_names:
             new_names = new_names.copy()
-        other = Matcher(self.loc, self.check_var, self.use_python_rules, self.checkdefs, new_names, self.var_index, self.name_list)
+        other = Matcher(self.comp, self.original, self.loc, self.check_var, self.style, self.name_list, self.checkdefs, new_names, self.var_index)
         other.insert_check(0, "not " + self.check_var)
         self.others.append(other)
         return other
+
+    @property
+    def using_python_rules(self):
+        """Whether the current style uses PEP 622 rules."""
+        return self.style.startswith("python")
+
+    def rule_conflict_warn(self, message, if_coconut=None, if_python=None, extra=None):
+        """Warns on conflicting style rules if callback was given."""
+        if self.style.endswith("warn") or self.style.endswith("strict"):
+            full_msg = message
+            if if_python or if_coconut:
+                full_msg += " (" + (if_python if self.using_python_rules else if_coconut) + ")"
+            if extra:
+                full_msg += " (" + extra + ")"
+            if self.style.endswith("strict"):
+                full_msg += " (disable --strict to dismiss)"
+            logger.warn_err(self.comp.make_err(CoconutSyntaxWarning, full_msg, self.original, self.loc))
 
     def register_name(self, name, value):
         """Register a new name."""
@@ -387,8 +421,21 @@ class Matcher(object):
 
         self.add_check("_coconut.isinstance(" + item + ", _coconut.abc.Mapping)")
 
-        # Coconut dict matching rules check the length; Python dict matching rules do not
-        if rest is None and not self.use_python_rules:
+        if rest is None:
+            self.rule_conflict_warn(
+                "ambiguous pattern; could be Coconut-style len-checking dict match or Python-style len-ignoring dict match",
+                'resolving to Coconut-style len-checking dict match by default',
+                'resolving to Python-style len-ignoring dict match due to PEP-622-style "match: case" block',
+                "use explicit '{..., **_}' or '{..., **{}}' syntax to dismiss",
+            )
+            check_len = not self.using_python_rules
+        elif rest == "{}":
+            check_len = True
+            rest = None
+        else:
+            check_len = False
+
+        if check_len:
             self.add_check("_coconut.len(" + item + ") == " + str(len(matches)))
 
         seen_keys = set()
@@ -681,7 +728,13 @@ class Matcher(object):
 
     def match_data_or_class(self, tokens, item):
         """Matches an ambiguous data or class match."""
-        if self.use_python_rules:
+        self.rule_conflict_warn(
+            "ambiguous pattern; could be class match or data match",
+            'resolving to Coconut data match by default',
+            'resolving to PEP 622 class match due to PEP-622-style "match: case" block',
+            "use explicit 'data data_name(args)' or 'class cls_name(args)' syntax to dismiss",
+        )
+        if self.using_python_rules:
             return self.match_class(tokens, item)
         else:
             return self.match_data(tokens, item)

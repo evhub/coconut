@@ -443,6 +443,7 @@ supported_py3_vers = (
     (3, 7),
     (3, 8),
     (3, 9),
+    (3, 10),
 )
 
 # must match supported vers above and must be replicated in DOCS
@@ -457,6 +458,7 @@ specific_targets = (
     "37",
     "38",
     "39",
+    "310",
 )
 pseudo_targets = {
     "universal": "",

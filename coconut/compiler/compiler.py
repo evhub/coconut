@@ -94,7 +94,6 @@ from coconut.compiler.grammar import (
     Grammar,
     lazy_list_handle,
     get_infix_items,
-    match_handle,
 )
 from coconut.compiler.util import (
     get_target_info,
@@ -376,22 +375,6 @@ def split_args_list(tokens, loc):
     return pos_only_args, req_args, def_args, star_arg, kwd_args, dubstar_arg
 
 
-def match_case_tokens(loc, tokens, check_var, top):
-    """Build code for matching the given case."""
-    if len(tokens) == 2:
-        matches, stmts = tokens
-        cond = None
-    elif len(tokens) == 3:
-        matches, cond, stmts = tokens
-    else:
-        raise CoconutInternalException("invalid case match tokens", tokens)
-    matching = Matcher(loc, check_var)
-    matching.match(matches, match_to_var)
-    if cond:
-        matching.add_guard(cond)
-    return matching.build(stmts, set_check_var=top)
-
-
 # end: HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------
 # COMPILER:
@@ -565,6 +548,7 @@ class Compiler(Grammar):
         self.kwd_augassign <<= attach(self.kwd_augassign_ref, self.kwd_augassign_handle)
         self.dict_comp <<= attach(self.dict_comp_ref, self.dict_comp_handle)
         self.destructuring_stmt <<= attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle)
+        self.full_match <<= attach(self.full_match_ref, self.full_match_handle)
         self.name_match_funcdef <<= attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle)
         self.op_match_funcdef <<= attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle)
         self.yield_from <<= attach(self.yield_from_ref, self.yield_from_handle)
@@ -608,6 +592,7 @@ class Compiler(Grammar):
         self.async_stmt <<= attach(self.async_stmt_ref, self.async_stmt_check)
         self.async_comp_for <<= attach(self.async_comp_for_ref, self.async_comp_check)
         self.namedexpr <<= attach(self.namedexpr_ref, self.namedexpr_check)
+        self.new_namedexpr <<= attach(self.new_namedexpr_ref, self.new_namedexpr_check)
         self.match_dotted_name_const <<= attach(self.match_dotted_name_const_ref, self.match_dotted_name_const_check)
 
     def copy_skips(self):
@@ -670,6 +655,15 @@ class Compiler(Grammar):
             raise self.make_err(CoconutStyleError, *args, **kwargs)
         else:
             logger.warn_err(self.make_err(CoconutSyntaxWarning, *args, **kwargs))
+
+    def get_matcher(self, original, loc, check_var, style="coconut", name_list=None):
+        """Get a Matcher object."""
+        if style is None:
+            if self.strict:
+                style = "coconut strict"
+            else:
+                style = "coconut"
+        return Matcher(self, original, loc, check_var, style=style, name_list=name_list)
 
     def add_ref(self, reftype, data):
         """Add a reference and return the identifier."""
@@ -1467,7 +1461,7 @@ while True:
         else:
             raise CoconutInternalException("invalid pattern-matching tokens in data", match_tokens)
 
-        matcher = Matcher(loc, match_check_var, name_list=[])
+        matcher = self.get_matcher(original, loc, match_check_var, name_list=[])
 
         pos_only_args, req_args, def_args, star_arg, kwd_args, dubstar_arg = split_args_list(matches, loc)
         matcher.match_function(match_to_args_var, match_to_kwargs_var, pos_only_args, req_args + def_args, star_arg, kwd_args, dubstar_arg)
@@ -1749,11 +1743,37 @@ if not {check_var}:
             line_wrap=line_wrap,
         )
 
+    def full_match_handle(self, original, loc, tokens, style=None):
+        """Process match blocks."""
+        if len(tokens) == 4:
+            matches, match_type, item, stmts = tokens
+            cond = None
+        elif len(tokens) == 5:
+            matches, match_type, item, cond, stmts = tokens
+        else:
+            raise CoconutInternalException("invalid match statement tokens", tokens)
+
+        if match_type == "in":
+            invert = False
+        elif match_type == "not in":
+            invert = True
+        else:
+            raise CoconutInternalException("invalid match type", match_type)
+
+        matching = self.get_matcher(original, loc, match_check_var, style)
+        matching.match(matches, match_to_var)
+        if cond:
+            matching.add_guard(cond)
+        return (
+            match_to_var + " = " + item + "\n"
+            + matching.build(stmts, invert=invert)
+        )
+
     def destructuring_stmt_handle(self, original, loc, tokens):
         """Process match assign blocks."""
         internal_assert(len(tokens) == 2, "invalid destructuring assignment tokens", tokens)
         matches, item = tokens
-        out = match_handle(loc, [matches, "in", item, None])
+        out = self.full_match_handle(original, loc, [matches, "in", item, None], style="coconut")
         out += self.pattern_error(original, loc, match_to_var, match_check_var)
         return out
 
@@ -1767,7 +1787,7 @@ if not {check_var}:
         else:
             raise CoconutInternalException("invalid match function definition tokens", tokens)
 
-        matcher = Matcher(loc, match_check_var)
+        matcher = self.get_matcher(original, loc, match_check_var)
 
         pos_only_args, req_args, def_args, star_arg, kwd_args, dubstar_arg = split_args_list(matches, loc)
         matcher.match_function(match_to_args_var, match_to_kwargs_var, pos_only_args, req_args + def_args, star_arg, kwd_args, dubstar_arg)
@@ -2283,24 +2303,47 @@ if {store_var} is not _coconut_sentinel:
         else:
             return "_coconut.Ellipsis"
 
-    def case_stmt_handle(self, loc, tokens):
-        """Process case blocks."""
+    def match_case_tokens(self, check_var, style, original, loc, tokens, top):
+        """Build code for matching the given case."""
         if len(tokens) == 2:
-            item, cases = tokens
-            default = None
+            matches, stmts = tokens
+            cond = None
         elif len(tokens) == 3:
-            item, cases, default = tokens
+            matches, cond, stmts = tokens
+        else:
+            raise CoconutInternalException("invalid case match tokens", tokens)
+        matching = self.get_matcher(original, loc, check_var, style)
+        matching.match(matches, match_to_var)
+        if cond:
+            matching.add_guard(cond)
+        return matching.build(stmts, set_check_var=top)
+
+    def case_stmt_handle(self, original, loc, tokens):
+        """Process case blocks."""
+        if len(tokens) == 3:
+            block_kwd, item, cases = tokens
+            default = None
+        elif len(tokens) == 4:
+            block_kwd, item, cases, default = tokens
         else:
             raise CoconutInternalException("invalid case tokens", tokens)
+
+        if block_kwd == "case":
+            style = "coconut warn"
+        elif block_kwd == "match":
+            style = "python warn"
+        else:
+            raise CoconutInternalException("invalid case block keyword", block_kwd)
+
         check_var = self.get_temp_var("case_check")
         out = (
             match_to_var + " = " + item + "\n"
-            + match_case_tokens(loc, cases[0], check_var, True)
+            + self.match_case_tokens(check_var, style, original, loc, cases[0], True)
         )
         for case in cases[1:]:
             out += (
                 "if not " + check_var + ":\n" + openindent
-                + match_case_tokens(loc, case, check_var, False) + closeindent
+                + self.match_case_tokens(check_var, style, original, loc, case, False) + closeindent
             )
         if default is not None:
             out += "if not " + check_var + default
@@ -2499,6 +2542,10 @@ if {store_var} is not _coconut_sentinel:
     def namedexpr_check(self, original, loc, tokens):
         """Check for Python 3.8 assignment expressions."""
         return self.check_py("38", "assignment expression", original, loc, tokens)
+
+    def new_namedexpr_check(self, original, loc, tokens):
+        """Check for Python-3.10-only assignment expressions."""
+        return self.check_py("310", "assignment expression", original, loc, tokens)
 
 # end: CHECKING HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------
