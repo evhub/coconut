@@ -874,7 +874,7 @@ pattern ::= (
     | pattern "and" pattern         # match all
     | pattern ("or" | "|") pattern  # match any
     | "{" pattern_pairs             # dictionaries
-        ["," "**" NAME] "}"
+        ["," "**" (NAME | "{}")] "}"
     | ["s"] "{" pattern_consts "}"  # sets
     | "(" patterns ")"              # sequences can be in tuple form
     | "[" patterns "]"              #  or in list form

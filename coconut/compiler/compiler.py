@@ -2545,7 +2545,7 @@ if {store_var} is not _coconut_sentinel:
 
     def new_namedexpr_check(self, original, loc, tokens):
         """Check for Python-3.10-only assignment expressions."""
-        return self.check_py("310", "assignment expression", original, loc, tokens)
+        return self.check_py("310", "assignment expression in index or set literal", original, loc, tokens)
 
 # end: CHECKING HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------
