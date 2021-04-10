@@ -1383,7 +1383,7 @@ class Grammar(object):
             condense(lparen + testlist + rparen)("tests")
             | function_call("args"),
         ),
-    )
+    ) + ~equals  # don't match class destructuring assignment
     class_suite = suite | attach(newline, class_suite_handle)
     classdef = condense(addspace(keyword("class") + name) + classlist + class_suite)
     comp_iter = Forward()
