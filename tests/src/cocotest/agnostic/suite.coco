@@ -248,6 +248,7 @@ def suite_test():
     assert fibs() |> takewhile$((i) -> i < 4000000 ) |> filter$((i) -> i % 2 == 0 ) |> sum == 4613732 == fibs_() |> takewhile$((i) -> i < 4000000 ) |> filter$((i) -> i % 2 == 0 ) |> sum
     assert loop([1,2])$[:4] |> list == [1, 2] * 2
     assert parallel_map(list .. .$[:2] .. loop, ([1], [2]))$[:2] |> tuple == ([1, 1], [2, 2])
+    assert nest("a") |> .$[1] |> .$[1] |> .$[0] == "a"
     assert (def -> mod)()(5, 3) == 2
     assert sieve((2, 3, 4, 5)) |> list == [2, 3, 5]
     assert 11 == double_plus_one(5)

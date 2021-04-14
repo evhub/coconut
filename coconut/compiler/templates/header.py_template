@@ -534,7 +534,10 @@ class recursive_iterator{object}:
             else:
                 self.backup_tee_store[store_pos][1] = to_store
         else:
-            self.tee_store[key], to_return = _coconut_tee(self.tee_store.get(key) or self.func(*args, **kwargs))
+            it = self.tee_store.get(key)
+            if it is None:
+                it = self.func(*args, **kwargs)
+            self.tee_store[key], to_return = _coconut_tee(it)
         return to_return
     def __repr__(self):
         return "@recursive_iterator(" + _coconut.repr(self.func) + ")"

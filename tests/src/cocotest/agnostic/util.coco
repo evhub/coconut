@@ -702,6 +702,9 @@ def fibs_() = map((+), (1, 1) :: fibs_(), (0, 0) :: fibs_()$[1:])
 def _loop(it) = it :: loop(it)
 loop = recursive_iterator(_loop)
 
+@recursive_iterator
+def nest(x) = (|x, nest(x)|)
+
 # Sieve Example
 
 def sieve((||)) = []
