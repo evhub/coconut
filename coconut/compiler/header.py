@@ -48,9 +48,10 @@ def gethash(compiled):
 
 
 def minify(compiled):
-    """Perform basic minifications.
+    """Perform basic minification of the header.
 
     Fails on non-tabideal indentation or a string with a #.
+    (So don't do those things in the header.)
     """
     compiled = compiled.strip()
     if compiled:
@@ -93,12 +94,15 @@ def section(name):
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-class comment(object):
+class Comment(object):
     """When passed to str.format, allows {comment.<>} to serve as a comment."""
 
     def __getattr__(self, attr):
         """Return an empty string for all comment attributes."""
         return ""
+
+
+comment = Comment()
 
 
 def process_header_args(which, target, use_hash, no_tco, strict):
@@ -119,10 +123,10 @@ except ImportError:
 '''
 
     format_dict = dict(
-        comment=comment(),
+        comment=comment,
         empty_dict="{}",
-        open="{",
-        close="}",
+        lbrace="{",
+        rbrace="}",
         target_startswith=target_startswith,
         default_encoding=default_encoding,
         hash_line=hash_prefix + use_hash + "\n" if use_hash is not None else "",

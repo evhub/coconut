@@ -383,7 +383,7 @@ class zip_longest(zip):
     def __repr__(self):
         return "zip_longest(%s, fillvalue=%s)" % (", ".join((_coconut.repr(i) for i in self.iters)), self.fillvalue)
     def __reduce__(self):
-        return (self.__class__, self.iters, {open}"fillvalue": fillvalue{close})
+        return (self.__class__, self.iters, {lbrace}"fillvalue": fillvalue{rbrace})
     def __iter__(self):
         return _coconut.iter(_coconut.zip_longest(*self.iters, fillvalue=self.fillvalue))
 class enumerate(_coconut.enumerate):
@@ -525,7 +525,7 @@ class recursive_iterator{object}:
                 if k == key:
                     to_tee, store_pos = v, i
                     break
-            else:  # no break
+            else:{comment.no_break}
                 to_tee = self.func(*args, **kwargs)
                 store_pos = None
             to_store, to_return = _coconut_tee(to_tee)
@@ -575,7 +575,7 @@ class _coconut_base_pattern_func{object}:
     __slots__ = ("FunctionMatchError", "__doc__", "patterns")
     _coconut_is_match = True
     def __init__(self, *funcs):
-        self.FunctionMatchError = _coconut.type(_coconut_py_str("MatchError"), (_coconut_MatchError,), {{}})
+        self.FunctionMatchError = _coconut.type(_coconut_py_str("MatchError"), (_coconut_MatchError,), {empty_dict})
         self.__doc__ = None
         self.patterns = []
         for func in funcs:
