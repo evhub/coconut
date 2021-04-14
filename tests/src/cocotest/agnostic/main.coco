@@ -230,8 +230,6 @@ def main_test():
     assert repr("hello") == "'hello'" == ascii("hello")
     assert count(1,3) |> .index(1) == 0 == (.index(1))(count(1, 3))
     assert count(1).__copy__()$[0] == 1 == ($[])(count(1), 0)
-    assert map((+), count(1), count(1)).__copy__()$[0] == 2
-    assert zip(count(1), count(1)).__copy__()$[0] |> tuple == (1, 1)
     assert tee(count()) |> map$((t) -> isinstance(t, count)) |> all
     assert tee(range(10)) |> map$((t) -> isinstance(t, range)) |> all
     assert tee([1, 2, 3]) |> map$((t) -> isinstance(t, list)) |> all
@@ -614,7 +612,6 @@ def main_test():
             assert m1.result is None
             assert m2 == [1, 2, 3, 4, 5] == list(m1)
         assert m1.result == [1, 2, 3, 4, 5] == list(m1)
-        assert m1.__copy__().result == m1.result
     for it in ((), [], (||)):
         assert_raises(-> it$[0], IndexError)
         assert_raises(-> it$[-1], IndexError)

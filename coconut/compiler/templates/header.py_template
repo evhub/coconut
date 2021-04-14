@@ -109,7 +109,7 @@ def _coconut_minus(a, *rest):
 def tee(iterable, n=2):
     if n >= 0 and _coconut.isinstance(iterable, (_coconut.tuple, _coconut.frozenset)):
         return (iterable,) * n
-    if n > 0 and (_coconut.hasattr(iterable, "__copy__") or _coconut.isinstance(iterable, _coconut.abc.Sequence)):
+    if n > 0 and (_coconut.isinstance(iterable, _coconut.abc.Sequence) or _coconut.getattr(iterable, "__copy__", _coconut.NotImplemented) is not _coconut.NotImplemented):
         return (iterable,) + _coconut.tuple(_coconut.copy.copy(iterable) for _ in _coconut.range(n - 1))
     return _coconut.itertools.tee(iterable, n)
 class reiterable{object}:
@@ -164,8 +164,6 @@ class scan{object}:
         return "scan(%r, %r)" % (self.func, self.iter)
     def __reduce__(self):
         return (self.__class__, (self.func, self.iter))
-    def __copy__(self):
-        return self.__class__(self.func, _coconut.copy.copy(self.iter))
     def __fmap__(self, func):
         return _coconut_map(func, self)
 class reversed{object}:
@@ -196,8 +194,6 @@ class reversed{object}:
         return -_coconut.hash(self.iter)
     def __reduce__(self):
         return (self.__class__, (self.iter,))
-    def __copy__(self):
-        return self.__class__(_coconut.copy.copy(self.iter))
     def __eq__(self, other):
         return _coconut.isinstance(other, self.__class__) and self.iter == other.iter
     def __contains__(self, elem):
@@ -235,8 +231,6 @@ class map(_coconut.map):
         return self.__reduce__()
     def __iter__(self):
         return _coconut.iter(_coconut.map(self.func, *self.iters))
-    def __copy__(self):
-        return self.__class__(self.func, *_coconut.map(_coconut.copy.copy, self.iters))
     def __fmap__(self, func):
         return self.__class__(_coconut_forward_compose(self.func, func), *self.iters)
 class _coconut_parallel_concurrent_map_func_wrapper{object}:
@@ -285,10 +279,6 @@ class _coconut_base_parallel_concurrent_map(map):
         return self.result
     def __iter__(self):
         return _coconut.iter(self.get_list())
-    def __copy__(self):
-        copy = _coconut_map.__copy__(self)
-        copy.result = self.result
-        return copy
 class parallel_map(_coconut_base_parallel_concurrent_map):
     """Multi-process implementation of map using concurrent.futures.
     Requires arguments to be pickleable. For multiple sequential calls,
@@ -332,8 +322,6 @@ class filter(_coconut.filter):
         return self.__reduce__()
     def __iter__(self):
         return _coconut.iter(_coconut.filter(self.func, self.iter))
-    def __copy__(self):
-        return self.__class__(self.func, _coconut.copy.copy(self.iter))
     def __fmap__(self, func):
         return _coconut_map(func, self)
 class zip(_coconut.zip):
@@ -360,8 +348,6 @@ class zip(_coconut.zip):
         return self.__reduce__()
     def __iter__(self):
         return _coconut.iter(_coconut.zip(*self.iters))
-    def __copy__(self):
-        return self.__class__(*_coconut.map(_coconut.copy.copy, self.iters))
     def __fmap__(self, func):
         return _coconut_map(func, self)
 class zip_longest(zip):
@@ -400,8 +386,6 @@ class zip_longest(zip):
         return (self.__class__, self.iters, {open}"fillvalue": fillvalue{close})
     def __iter__(self):
         return _coconut.iter(_coconut.zip_longest(*self.iters, fillvalue=self.fillvalue))
-    def __copy__(self):
-        return self.__class__(*_coconut.map(_coconut.copy.copy, self.iters), fillvalue=self.fillvalue)
 class enumerate(_coconut.enumerate):
     __slots__ = ("iter", "start")
     if hasattr(_coconut.enumerate, "__doc__"):
@@ -425,8 +409,6 @@ class enumerate(_coconut.enumerate):
         return self.__reduce__()
     def __iter__(self):
         return _coconut.iter(_coconut.enumerate(self.iter, self.start))
-    def __copy__(self):
-        return self.__class__(_coconut.copy.copy(self.iter), self.start)
     def __fmap__(self, func):
         return _coconut_map(func, self)
 class count{object}:
@@ -519,8 +501,6 @@ class groupsof{object}:
         return "groupsof(%r)" % (self.iter,)
     def __reduce__(self):
         return (self.__class__, (self.group_size, self.iter))
-    def __copy__(self):
-        return self.__class__(self.group_size, _coconut.copy.copy(self.iter))
     def __fmap__(self, func):
         return _coconut_map(func, self)
 class recursive_iterator{object}:
@@ -702,8 +682,6 @@ class starmap(_coconut.itertools.starmap):
         return self.__reduce__()
     def __iter__(self):
         return _coconut.iter(_coconut.itertools.starmap(self.func, self.iter))
-    def __copy__(self):
-        return self.__class__(self.func, _coconut.copy.copy(self.iter))
     def __fmap__(self, func):
         return self.__class__(_coconut_forward_compose(self.func, func), self.iter)
 def makedata(data_type, *args):
@@ -718,8 +696,9 @@ def makedata(data_type, *args):
 {def_datamaker}def fmap(func, obj):
     """fmap(func, obj) creates a copy of obj with func applied to its contents.
     Override by defining obj.__fmap__(func)."""
-    if _coconut.hasattr(obj, "__fmap__"):
-        return obj.__fmap__(func)
+    obj_fmap = _coconut.getattr(obj, "__fmap__", _coconut.NotImplemented)
+    if obj_fmap is not _coconut.NotImplemented:
+        return obj_fmap(func)
     if obj.__class__.__module__ == "numpy":
         from numpy import vectorize
         return vectorize(func)(obj)
