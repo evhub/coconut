@@ -689,7 +689,14 @@ addpattern def `pattern_abs_` (x) = x  # type: ignore
 # Recursive iterator
 
 @recursive_iterator
-def fibs() = (1, 1) :: map((+), fibs(), fibs()$[1:])
+def fibs() =
+    fibs_calls[0] += 1
+    (1, 1) :: map((+), fibs(), fibs()$[1:])
+
+fibs_calls = [0]
+
+@recursive_iterator
+def fibs_() = map((+), (1, 1) :: fibs_(), (0, 0) :: fibs_()$[1:])
 
 # use separate name for base func for pickle
 def _loop(it) = it :: loop(it)
@@ -910,6 +917,11 @@ def fib(n if n < 2) = n
 
 @memoize()  # type: ignore
 addpattern def fib(n) = fib(n-1) + fib(n-2)  # type: ignore
+
+@recursive_iterator
+def Fibs() = (0, 1) :: map((+), Fibs(), Fibs()$[1:])
+
+fib_ = reiterable(Fibs())$[]
 
 # MapReduce
 from collections import defaultdict
