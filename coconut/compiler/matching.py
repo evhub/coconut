@@ -425,7 +425,7 @@ class Matcher(object):
             self.rule_conflict_warn(
                 "ambiguous pattern; could be Coconut-style len-checking dict match or Python-style len-ignoring dict match",
                 'resolving to Coconut-style len-checking dict match by default',
-                'resolving to Python-style len-ignoring dict match due to PEP-622-style "match: case" block',
+                'resolving to Python-style len-ignoring dict match due to Python-style "match: case" block',
                 "use explicit '{..., **_}' or '{..., **{}}' syntax to dismiss",
             )
             check_len = not self.using_python_rules
@@ -731,7 +731,7 @@ class Matcher(object):
         self.rule_conflict_warn(
             "ambiguous pattern; could be class match or data match",
             'resolving to Coconut data match by default',
-            'resolving to PEP 622 class match due to PEP-622-style "match: case" block',
+            'resolving to Python-style class match due to Python-style "match: case" block',
             "use explicit 'data data_name(args)' or 'class cls_name(args)' syntax to dismiss",
         )
         if self.using_python_rules:
