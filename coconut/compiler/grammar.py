@@ -1798,12 +1798,12 @@ class Grammar(object):
     compound_stmt = trace(
         decoratable_class_stmt
         | decoratable_func_stmt
-        | with_stmt
-        | while_stmt
         | for_stmt
+        | while_stmt
+        | with_stmt
         | async_stmt
-        | where_stmt
-        | simple_compound_stmt,
+        | simple_compound_stmt
+        | where_stmt,
     )
     endline_semicolon = Forward()
     endline_semicolon_ref = semicolon.suppress() + newline

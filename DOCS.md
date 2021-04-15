@@ -1100,7 +1100,7 @@ Coconut's `where` statement is extremely straightforward. The syntax for a `wher
 <stmt> where:
     <body>
 ```
-which just executed `<body>` followed by `<stmt>`.
+which just executes `<body>` followed by `<stmt>`.
 
 ##### Example
 
