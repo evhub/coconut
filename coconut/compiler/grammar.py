@@ -1313,7 +1313,6 @@ class Grammar(object):
     suite = Forward()
     nocolon_suite = Forward()
     base_suite = Forward()
-    classlist = Forward()
 
     classic_lambdef = Forward()
     classic_lambdef_params = maybeparens(lparen, var_args_list, rparen)
@@ -1378,15 +1377,19 @@ class Grammar(object):
     )
 
     async_comp_for = Forward()
-    classlist_ref = Optional(
-        lparen.suppress() + rparen.suppress()
-        | Group(
-            condense(lparen + testlist + rparen)("tests")
-            | function_call("args"),
-        ),
-    ) + ~equals  # don't match class destructuring assignment
+    classdef = Forward()
+    classlist = Group(
+        Optional(
+            lparen.suppress() + rparen.suppress()
+            | Group(
+                condense(lparen + testlist + rparen)("tests")
+                | function_call("args"),
+            ),
+        )
+        + ~equals,  # don't match class destructuring assignment
+    )
     class_suite = suite | attach(newline, class_suite_handle)
-    classdef = condense(addspace(keyword("class") + name) + classlist + class_suite)
+    classdef_ref = keyword("class").suppress() + name + classlist + class_suite
     comp_iter = Forward()
     base_comp_for = addspace(keyword("for") + assignlist + keyword("in") + test_item + Optional(comp_iter))
     async_comp_for_ref = addspace(keyword("async") + base_comp_for)

@@ -719,6 +719,46 @@ def main_test():
             pass
     else:
         assert False
+    class A
+    try:
+        class B(A):
+            @override
+            def f(self): pass
+    except RuntimeError:
+        pass
+    else:
+        assert False
+    class C:
+        def f(self): pass
+    class D(C):
+        @override
+        def f(self) = self
+    d = D()
+    assert d.f() is d
+    def d.f(self) = 1
+    assert d.f(d) == 1
+    data A
+    try:
+        data B from A:
+            @override
+            def f(self): pass
+    except RuntimeError:
+        pass
+    else:
+        assert False
+    data C:
+        def f(self): pass
+    data D from C:
+        @override
+        def f(self) = self
+    d = D()
+    assert d.f() is d
+    try:
+        d.f = 1
+    except AttributeError:
+        pass
+    else:
+        assert False
     return True
 
 def test_asyncio():

@@ -378,6 +378,8 @@ search_terms = (
     "breakpoint",
     "embed",
     "PEP 622",
+    "override",
+    "overrides",
 )
 
 script_names = (
@@ -701,6 +703,7 @@ coconut_specific_builtins = (
     "groupsof",
     "memoize",
     "zip_longest",
+    "override",
     "TYPE_CHECKING",
     "py_chr",
     "py_hex",
