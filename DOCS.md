@@ -2120,6 +2120,26 @@ def fib(n):
     return fib(n-1) + fib(n-2)
 ```
 
+### `override`
+
+Coconut provides the `@override` decorator to allow declaring a method definition in a subclass as an override of some parent class method. When `@override` is used on a method, if a method of the same name does not exist on some parent class, the class definition will raise a `RuntimeError`.
+
+##### Example
+
+**Coconut:**
+```coconut
+class A:
+    x = 1
+    def f(self, y) = self.x + y
+
+class B:
+    @override
+    def f(self, y) = self.x + y + 1
+```
+
+**Python:**
+_Can't be done without a long decorator definition. The full definition of the decorator in Python can be found in the Coconut header._
+
 ### `groupsof`
 
 Coconut provides the `groupsof` built-in to split an iterable into groups of a specific length. Specifically, `groupsof(n, iterable)` will split `iterable` into tuples of length `n`, with only the last tuple potentially of size `< n` if the length of `iterable` is not divisible by `n`.

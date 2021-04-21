@@ -541,7 +541,7 @@ class Compiler(Grammar):
         self.comment <<= attach(self.comment_ref, self.comment_handle, greedy=True)
         self.set_literal <<= attach(self.set_literal_ref, self.set_literal_handle)
         self.set_letter_literal <<= attach(self.set_letter_literal_ref, self.set_letter_literal_handle)
-        self.classlist <<= attach(self.classlist_ref, self.classlist_handle)
+        self.classdef <<= attach(self.classdef_ref, self.classdef_handle)
         self.import_stmt <<= attach(self.import_stmt_ref, self.import_handle)
         self.complex_raise_stmt <<= attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_handle)
         self.augassign_stmt <<= attach(self.augassign_stmt_ref, self.augassign_handle)
@@ -1421,27 +1421,41 @@ while True:
             out += name + " " + op + " " + item
         return out
 
-    def classlist_handle(self, original, loc, tokens):
-        """Process class inheritance lists."""
-        if len(tokens) == 0:
+    def classdef_handle(self, original, loc, tokens):
+        """Process class definitions."""
+        internal_assert(len(tokens) == 3, "invalid class definition tokens", tokens)
+        name, classlist_toks, body = tokens
+
+        out = "class " + name
+
+        # handle classlist
+        if len(classlist_toks) == 0:
             if self.target.startswith("3"):
-                return ""
+                out += ""
             else:
-                return "(_coconut.object)"
-        elif len(tokens) == 1 and len(tokens[0]) == 1:
-            if "tests" in tokens[0]:
-                if self.strict and tokens[0][0] == "(object)":
+                out += "(_coconut.object)"
+        elif len(classlist_toks) == 1 and len(classlist_toks[0]) == 1:
+            if "tests" in classlist_toks[0]:
+                if self.strict and classlist_toks[0][0] == "(object)":
                     raise self.make_err(CoconutStyleError, "unnecessary inheriting from object (Coconut does this automatically)", original, loc)
-                return tokens[0][0]
-            elif "args" in tokens[0]:
+                out += classlist_toks[0][0]
+            elif "args" in classlist_toks[0]:
                 if self.target.startswith("3"):
-                    return tokens[0][0]
+                    out += classlist_toks[0][0]
                 else:
                     raise self.make_err(CoconutTargetError, "found Python 3 keyword class definition", original, loc, target="3")
             else:
-                raise CoconutInternalException("invalid inner classlist token", tokens[0])
+                raise CoconutInternalException("invalid inner classlist_toks token", classlist_toks[0])
         else:
-            raise CoconutInternalException("invalid classlist tokens", tokens)
+            raise CoconutInternalException("invalid classlist_toks tokens", classlist_toks)
+
+        out += body
+
+        # add override detection
+        if self.target_info < (3, 6):
+            out += "_coconut_check_overrides(" + name + ")\n"
+
+        return out
 
     def match_data_handle(self, original, loc, tokens):
         """Process pattern-matching data blocks."""
@@ -1681,6 +1695,11 @@ def __hash__(self):
         if rest is not None and rest != "pass\n":
             out += rest
         out += closeindent
+
+        # add override detection
+        if self.target_info < (3, 6):
+            out += "_coconut_check_overrides(" + name + ")\n"
+
         return out
 
     def import_handle(self, original, loc, tokens):

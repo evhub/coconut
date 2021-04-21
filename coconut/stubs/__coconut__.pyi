@@ -113,6 +113,7 @@ class _coconut:
     TypeError = TypeError
     ValueError = ValueError
     StopIteration = StopIteration
+    RuntimeError = RuntimeError
     classmethod = classmethod
     dict = dict
     enumerate = enumerate
@@ -143,9 +144,11 @@ class _coconut:
     slice = slice
     str = str
     sum = sum
+    super = super
     tuple = tuple
     type = type
     zip = zip
+    vars = vars
     repr = staticmethod(repr)
     if sys.version_info >= (3,):
         bytearray = bytearray
@@ -198,6 +201,12 @@ def _coconut_tail_call(func, *args, **kwargs):
 
 def recursive_iterator(func: _ITER_FUNC) -> _ITER_FUNC:
     return func
+
+
+def override(func: _FUNC) -> _FUNC:
+    return func
+
+def _coconut_check_overrides(cls: object): ...
 
 
 class _coconut_base_pattern_func:
