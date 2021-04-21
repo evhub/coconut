@@ -720,6 +720,8 @@ def memoize(maxsize=None, *args, **kwargs):
     def __init__(self, func):
         self.func = func
     def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self.func
 {return_methodtype}
     def __set_name__(self, obj, name):
         if not _coconut.hasattr(_coconut.super(obj, obj), name):

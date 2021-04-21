@@ -737,6 +737,11 @@ def main_test():
     assert d.f() is d
     def d.f(self) = 1
     assert d.f(d) == 1
+    class E(D):
+        @override
+        def f(self) = 2
+    e = E()
+    assert e.f() == 2
     data A
     try:
         data B from A:
