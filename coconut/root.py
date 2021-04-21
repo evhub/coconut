@@ -180,9 +180,11 @@ from functools import wraps as _coconut_wraps
 @_coconut_wraps(_coconut_py_print)
 def print(*args, **kwargs):
     file = kwargs.get("file", _coconut_sys.stdout)
-    flush = kwargs.get("flush", False)
     if "flush" in kwargs:
+        flush = kwargs["flush"]
         del kwargs["flush"]
+    else:
+        flush = False
     if _coconut.getattr(file, "encoding", None) is not None:
         _coconut_py_print(*(_coconut_py_unicode(x).encode(file.encoding) for x in args), **kwargs)
     else:
