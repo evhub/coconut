@@ -104,6 +104,7 @@ class _coconut:
         zip_longest = itertools.izip_longest
     Ellipsis = Ellipsis
     NotImplemented = NotImplemented
+    NotImplementedError = NotImplementedError
     Exception = Exception
     AttributeError = AttributeError
     ImportError = ImportError
@@ -206,7 +207,7 @@ def recursive_iterator(func: _ITER_FUNC) -> _ITER_FUNC:
 def override(func: _FUNC) -> _FUNC:
     return func
 
-def _coconut_check_overrides(cls: object): ...
+def _coconut_call_set_names(cls: object): ...
 
 
 class _coconut_base_pattern_func:

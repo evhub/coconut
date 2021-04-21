@@ -230,29 +230,31 @@ else:
             ),
             by=2,
         ),
-        def_check_overrides=(
-            r'''def _coconut_check_overrides(cls):
+        def_call_set_names=(
+            r'''def _coconut_call_set_names(cls):
     for k, v in _coconut.vars(cls).items():
-        if _coconut.isinstance(v, _coconut_override):
-            v.__set_name__(cls, k)
+        set_name = _coconut.getattr(v, "__set_name__", None)
+        if set_name is not None:
+            set_name(cls, k)
 '''
             if target_startswith == "2" else
-            r'''def _coconut_check_overrides(cls): pass
+            r'''def _coconut_call_set_names(cls): pass
 '''
             if target_info >= (3, 6) else
-            r'''def _coconut_check_overrides(cls):
+            r'''def _coconut_call_set_names(cls):
     if _coconut_sys.version_info < (3, 6):
         for k, v in _coconut.vars(cls).items():
-            if _coconut.isinstance(v, _coconut_override):
-                v.__set_name__(cls, k)
+            set_name = _coconut.getattr(v, "__set_name__", None)
+            if set_name is not None:
+                set_name(cls, k)
 '''
         ),
         tco_comma="_coconut_tail_call, _coconut_tco, " if not no_tco else "",
-        check_overrides_comma="_coconut_check_overrides, " if target_info < (3, 6) else "",
+        call_set_names_comma="_coconut_call_set_names, " if target_info < (3, 6) else "",
     )
 
     # when anything is added to this list it must also be added to the stub file
-    format_dict["underscore_imports"] = "{tco_comma}{check_overrides_comma}_coconut, _coconut_MatchError, _coconut_igetitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_star_pipe, _coconut_dubstar_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_back_dubstar_pipe, _coconut_none_pipe, _coconut_none_star_pipe, _coconut_none_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_mark_as_match, _coconut_reiterable".format(**format_dict)
+    format_dict["underscore_imports"] = "{tco_comma}{call_set_names_comma}_coconut, _coconut_MatchError, _coconut_igetitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_star_pipe, _coconut_dubstar_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_back_dubstar_pipe, _coconut_none_pipe, _coconut_none_star_pipe, _coconut_none_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_mark_as_match, _coconut_reiterable".format(**format_dict)
 
     format_dict["import_typing_NamedTuple"] = _indent(
         "import typing" if target_info >= (3, 6)

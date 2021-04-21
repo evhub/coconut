@@ -1453,7 +1453,7 @@ while True:
 
         # add override detection
         if self.target_info < (3, 6):
-            out += "_coconut_check_overrides(" + name + ")\n"
+            out += "_coconut_call_set_names(" + name + ")\n"
 
         return out
 
@@ -1698,7 +1698,7 @@ def __hash__(self):
 
         # add override detection
         if self.target_info < (3, 6):
-            out += "_coconut_check_overrides(" + name + ")\n"
+            out += "_coconut_call_set_names(" + name + ")\n"
 
         return out
 
