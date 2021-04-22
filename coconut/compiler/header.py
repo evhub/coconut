@@ -50,21 +50,26 @@ def gethash(compiled):
 def minify(compiled):
     """Perform basic minification of the header.
 
-    Fails on non-tabideal indentation or a string with a #.
+    Fails on non-tabideal indentation, strings with #s, or multi-line strings.
     (So don't do those things in the header.)
     """
     compiled = compiled.strip()
     if compiled:
         out = []
         for line in compiled.splitlines():
-            line = line.split("#", 1)[0].rstrip()
-            if line:
+            new_line, comment = line.split("#", 1)
+            new_line = new_line.rstrip()
+            if new_line:
                 ind = 0
-                while line.startswith(" "):
-                    line = line[1:]
+                while new_line.startswith(" "):
+                    new_line = new_line[1:]
                     ind += 1
                 internal_assert(ind % tabideal == 0, "invalid indentation in", line)
-                out.append(" " * (ind // tabideal) + line)
+                new_line = " " * (ind // tabideal) + new_line
+            comment = comment.strip()
+            if comment:
+                new_line += "#" + comment
+            out.append(new_line)
         compiled = "\n".join(out) + "\n"
     return compiled
 
@@ -95,14 +100,14 @@ def section(name):
 
 
 class Comment(object):
-    """When passed to str.format, allows {comment.<>} to serve as a comment."""
+    """When passed to str.format, allows {COMMENT.<>} to serve as a comment."""
 
     def __getattr__(self, attr):
         """Return an empty string for all comment attributes."""
         return ""
 
 
-comment = Comment()
+COMMENT = Comment()
 
 
 def process_header_args(which, target, use_hash, no_tco, strict):
@@ -123,7 +128,7 @@ except ImportError:
 '''
 
     format_dict = dict(
-        comment=comment,
+        COMMENT=COMMENT,
         empty_dict="{}",
         lbrace="{",
         rbrace="}",
@@ -133,8 +138,8 @@ except ImportError:
         typing_line="# type: ignore\n" if which == "__coconut__" else "",
         VERSION_STR=VERSION_STR,
         module_docstring='"""Built-in Coconut utilities."""\n\n' if which == "__coconut__" else "",
-        object="(object)" if target_startswith != "3" else "",
-        import_asyncio=_indent(
+        object="" if target_startswith == "3" else "(object)",
+        maybe_import_asyncio=_indent(
             "" if not target or target_info >= (3, 5)
             else "import asyncio\n" if target_info >= (3, 4)
             else r'''if _coconut_sys.version_info >= (3, 4):
@@ -186,15 +191,6 @@ else:
         return ThreadPoolExecutor(cpu_count() * 5)''' if target_info < (3, 5)
             else '''return ThreadPoolExecutor()'''
         ),
-        def_tco_func=r'''def _coconut_tco_func(self, *args, **kwargs):
-        for func in self.patterns[:-1]:
-            try:
-                with _coconut_FunctionMatchErrorContext(self.FunctionMatchError):
-                    return func(*args, **kwargs)
-            except self.FunctionMatchError:
-                pass
-        return _coconut_tail_call(self.patterns[-1], *args, **kwargs)
-    ''',
         # disabled mocks must have different docstrings so the
         #  interpreter can tell them apart from the real thing
         def_prepattern=(
@@ -202,20 +198,20 @@ else:
     """DEPRECATED: use addpattern instead."""
     def pattern_prepender(func):
         return addpattern(func, **kwargs)(base_func)
-    return pattern_prepender
-''' if not strict else r'''def prepattern(*args, **kwargs):
+    return pattern_prepender'''
+            if not strict else
+            r'''def prepattern(*args, **kwargs):
     """Deprecated feature 'prepattern' disabled by --strict compilation; use 'addpattern' instead."""
-    raise _coconut.NameError("deprecated feature 'prepattern' disabled by --strict compilation; use 'addpattern' instead")
-'''
+    raise _coconut.NameError("deprecated feature 'prepattern' disabled by --strict compilation; use 'addpattern' instead")'''
         ),
         def_datamaker=(
             r'''def datamaker(data_type):
     """DEPRECATED: use makedata instead."""
-    return _coconut.functools.partial(makedata, data_type)
-''' if not strict else r'''def datamaker(*args, **kwargs):
+    return _coconut.functools.partial(makedata, data_type)'''
+            if not strict else
+            r'''def datamaker(*args, **kwargs):
     """Deprecated feature 'datamaker' disabled by --strict compilation; use 'makedata' instead."""
-    raise _coconut.NameError("deprecated feature 'datamaker' disabled by --strict compilation; use 'makedata' instead")
-'''
+    raise _coconut.NameError("deprecated feature 'datamaker' disabled by --strict compilation; use 'makedata' instead")'''
         ),
         return_methodtype=_indent(
             (
@@ -235,19 +231,16 @@ else:
     for k, v in _coconut.vars(cls).items():
         set_name = _coconut.getattr(v, "__set_name__", None)
         if set_name is not None:
-            set_name(cls, k)
-'''
+            set_name(cls, k)'''
             if target_startswith == "2" else
-            r'''def _coconut_call_set_names(cls): pass
-'''
+            r'''def _coconut_call_set_names(cls): pass'''
             if target_info >= (3, 6) else
             r'''def _coconut_call_set_names(cls):
     if _coconut_sys.version_info < (3, 6):
         for k, v in _coconut.vars(cls).items():
             set_name = _coconut.getattr(v, "__set_name__", None)
             if set_name is not None:
-                set_name(cls, k)
-'''
+                set_name(cls, k)'''
         ),
         tco_comma="_coconut_tail_call, _coconut_tco, " if not no_tco else "",
         call_set_names_comma="_coconut_call_set_names, " if target_info < (3, 6) else "",
@@ -257,39 +250,20 @@ else:
     format_dict["underscore_imports"] = "{tco_comma}{call_set_names_comma}_coconut, _coconut_MatchError, _coconut_igetitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_star_pipe, _coconut_dubstar_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_back_dubstar_pipe, _coconut_none_pipe, _coconut_none_star_pipe, _coconut_none_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_mark_as_match, _coconut_reiterable".format(**format_dict)
 
     format_dict["import_typing_NamedTuple"] = _indent(
-        "import typing" if target_info >= (3, 6)
-        else '''class typing{object}:
+        r'''if _coconut_sys.version_info >= (3, 6):
+    import typing
+else:
+    class typing{object}:
+        @staticmethod
+        def NamedTuple(name, fields):
+            return _coconut.collections.namedtuple(name, [x for x, t in fields])'''.format(**format_dict)
+        if not target else
+        "import typing" if target_info >= (3, 6) else
+        r'''class typing{object}:
     @staticmethod
     def NamedTuple(name, fields):
         return _coconut.collections.namedtuple(name, [x for x, t in fields])'''.format(**format_dict),
     )
-
-    # ._coconut_tco_func is used in main.coco, so don't remove it
-    #  here without replacing its usage there
-    format_dict["def_tco"] = "" if no_tco else '''class _coconut_tail_call{object}:
-    __slots__ = ("func", "args", "kwargs")
-    def __init__(self, func, *args, **kwargs):
-        self.func, self.args, self.kwargs = func, args, kwargs
-_coconut_tco_func_dict = {empty_dict}
-def _coconut_tco(func):
-    @_coconut.functools.wraps(func)
-    def tail_call_optimized_func(*args, **kwargs):
-        call_func = func
-        while True:{comment.weakrefs_necessary_for_ignoring_bound_methods}
-            wkref = _coconut_tco_func_dict.get(_coconut.id(call_func))
-            if (wkref is not None and wkref() is call_func) or _coconut.isinstance(call_func, _coconut_base_pattern_func):
-                call_func = call_func._coconut_tco_func
-            result = call_func(*args, **kwargs)  # pass --no-tco to clean up your traceback
-            if not isinstance(result, _coconut_tail_call):
-                return result
-            call_func, args, kwargs = result.func, result.args, result.kwargs
-    tail_call_optimized_func._coconut_tco_func = func
-    tail_call_optimized_func.__module__ = _coconut.getattr(func, "__module__", None)
-    tail_call_optimized_func.__name__ = _coconut.getattr(func, "__name__", "<coconut tco function (pass --no-tco to remove)>")
-    tail_call_optimized_func.__qualname__ = _coconut.getattr(func, "__qualname__", tail_call_optimized_func.__name__)
-    _coconut_tco_func_dict[_coconut.id(tail_call_optimized_func)] = _coconut.weakref.ref(tail_call_optimized_func)
-    return tail_call_optimized_func
-'''.format(**format_dict)
 
     return format_dict, target_startswith, target_info
 
