@@ -159,10 +159,10 @@ optional arguments:
   --tutorial            open Coconut's tutorial in the default web browser
   --docs, --documentation
                         open Coconut's documentation in the default web browser
-  --style name          Pygments syntax highlighting style (or 'list' to list styles)
+  --style name          set Pygments syntax highlighting style (or 'list' to list styles)
                         (defaults to COCONUT_STYLE environment variable if it exists,
                         otherwise 'default')
-  --history-file path   Path to history file (or '' for no file) (currently set to
+  --history-file path   set history file (or '' for no file) (currently set to
                         'C:\Users\evanj\.coconut_history') (can be modified by setting
                         COCONUT_HOME environment variable)
   --recursion-limit limit, --recursionlimit limit

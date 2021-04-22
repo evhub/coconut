@@ -222,7 +222,7 @@ arguments.add_argument(
     "--style",
     metavar="name",
     type=str,
-    help="Pygments syntax highlighting style (or 'list' to list styles) (defaults to "
+    help="set Pygments syntax highlighting style (or 'list' to list styles) (defaults to "
     + style_env_var + " environment variable if it exists, otherwise '" + default_style + "')",
 )
 
@@ -230,7 +230,7 @@ arguments.add_argument(
     "--history-file",
     metavar="path",
     type=str,
-    help="Path to history file (or '' for no file) (currently set to '" + default_histfile + "') (can be modified by setting " + home_env_var + " environment variable)",
+    help="set history file (or '' for no file) (currently set to '" + default_histfile + "') (can be modified by setting " + home_env_var + " environment variable)",
 )
 
 arguments.add_argument(
