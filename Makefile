@@ -115,6 +115,13 @@ test-easter-eggs:
 test-pyparsing: COCONUT_PURE_PYTHON=TRUE
 test-pyparsing: test-basic
 
+# same as test-basic but uses --minify
+.PHONY: test-minify
+test-minify:
+	python ./tests --strict --line-numbers --force --minify --jobs 0
+	python ./tests/dest/runner.py
+	python ./tests/dest/extras.py
+
 # same as test-basic but watches tests before running them
 .PHONY: test-watch
 test-watch:
