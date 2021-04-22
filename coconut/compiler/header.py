@@ -31,7 +31,10 @@ from coconut.constants import (
     justify_len,
 )
 from coconut.terminal import internal_assert
-from coconut.compiler.util import get_target_info
+from coconut.compiler.util import (
+    get_target_info,
+    split_comment,
+)
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -57,7 +60,7 @@ def minify(compiled):
     if compiled:
         out = []
         for line in compiled.splitlines():
-            new_line, comment = line.split("#", 1)
+            new_line, comment = split_comment(line)
             new_line = new_line.rstrip()
             if new_line:
                 ind = 0
@@ -69,7 +72,8 @@ def minify(compiled):
             comment = comment.strip()
             if comment:
                 new_line += "#" + comment
-            out.append(new_line)
+            if new_line:
+                out.append(new_line)
         compiled = "\n".join(out) + "\n"
     return compiled
 
