@@ -1150,7 +1150,7 @@ def (arguments) -> statement; statement; ...
 ```
 where `arguments` can be standard function arguments or [pattern-matching function definition](#pattern-matching-functions) arguments and `statement` can be an assignment statement or a keyword statement. If the last `statement` (not followed by a semicolon) is an `expression`, it will automatically be returned.
 
-Statement lambdas also support implicit lambda syntax such that `def -> _` is equivalent to `def (_=None) -> _`.
+Statement lambdas also support implicit lambda syntax such that `def -> _` is equivalent to `def (_=None) -> _` as well as explicit pattern-matching syntax such that `match def (x) -> x` will be a pattern-matching function.
 
 ##### Example
 

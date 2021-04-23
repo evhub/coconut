@@ -1325,19 +1325,30 @@ class Grammar(object):
     stmt_lambdef = Forward()
     match_guard = Optional(keyword("if").suppress() + namedexpr_test)
     closing_stmt = longest(testlist("tests"), unsafe_simple_stmt_item)
+    stmt_lambdef_match_params = Group(lparen.suppress() + match_args_list + match_guard + rparen.suppress())
     stmt_lambdef_params = Optional(
         attach(name, add_paren_handle)
         | parameters
-        | Group(lparen.suppress() + match_args_list + match_guard + rparen.suppress()),
+        | stmt_lambdef_match_params,
         default="(_=None)",
     )
-    stmt_lambdef_ref = (
-        keyword("def").suppress() + stmt_lambdef_params + arrow.suppress()
-        + (
-            Group(OneOrMore(simple_stmt_item + semicolon.suppress())) + Optional(closing_stmt)
-            | Group(ZeroOrMore(simple_stmt_item + semicolon.suppress())) + closing_stmt
-        )
+    stmt_lambdef_body = (
+        Group(OneOrMore(simple_stmt_item + semicolon.suppress())) + Optional(closing_stmt)
+        | Group(ZeroOrMore(simple_stmt_item + semicolon.suppress())) + closing_stmt
     )
+    general_stmt_lambdef = (
+        keyword("def").suppress()
+        + stmt_lambdef_params
+        + arrow.suppress()
+        + stmt_lambdef_body
+    )
+    match_stmt_lambdef = (
+        (keyword("match") + keyword("def")).suppress()
+        + stmt_lambdef_match_params
+        + arrow.suppress()
+        + stmt_lambdef_body
+    )
+    stmt_lambdef_ref = general_stmt_lambdef | match_stmt_lambdef
 
     lambdef <<= addspace(lambdef_base + test) | stmt_lambdef
     lambdef_no_cond = trace(addspace(lambdef_base + test_no_cond))

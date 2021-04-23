@@ -38,7 +38,7 @@ class _coconut_tail_call{object}:
     def __init__(self, func, *args, **kwargs):
         self.func, self.args, self.kwargs = func, args, kwargs
 _coconut_tco_func_dict = {empty_dict}
-def _coconut_tco(func):{COMMENT._coconut_tco_func_attr_is_used_in_main_coco_so_dont_remove_here_without_replacing_usage_there}
+def _coconut_tco(func):{COMMENT._coconut_tco_func_attr_is_used_in_main_coco}
     @_coconut.functools.wraps(func)
     def tail_call_optimized_func(*args, **kwargs):
         call_func = func
@@ -633,7 +633,7 @@ class _coconut_base_pattern_func{object}:
         if obj is None:
             return self
         return _coconut.functools.partial(self, obj)
-def _coconut_mark_as_match(base_func):
+def _coconut_mark_as_match(base_func):{COMMENT._coconut_is_match_is_used_in_main_coco}
     base_func._coconut_is_match = True
     return base_func
 def addpattern(base_func, **kwargs):
