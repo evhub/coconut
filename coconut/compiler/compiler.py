@@ -1903,7 +1903,8 @@ if not {check_var}:
         else:
             match_tokens = [name] + list(params)
             self.add_code_before[name] = (
-                "".join(self.name_match_funcdef_handle(original, loc, match_tokens))
+                "@_coconut_mark_as_match\n"
+                + "".join(self.name_match_funcdef_handle(original, loc, match_tokens))
                 + body
             )
         return name

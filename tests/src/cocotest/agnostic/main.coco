@@ -764,6 +764,18 @@ def main_test():
         pass
     else:
         assert False
+    def f1(0) = 0
+    f2 = def (0) -> 0
+    assert f1(0) == 0 == f2(0)
+    assert \(f1._coconut_is_match) is True is \(f2._coconut_is_match)
+    f = match def (x is int) -> x + 1
+    assert f(1) == 2
+    try:
+        f("a")
+    except MatchError:
+        pass
+    else:
+        assert False
     return True
 
 def test_asyncio():
