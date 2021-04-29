@@ -229,7 +229,7 @@ min_versions = {
     "watchdog": (0, 10),
     # don't upgrade these; they break on master
     "sphinx": (1, 7, 4),
-    "sphinx_bootstrap_theme": (0, 4),
+    "sphinx_bootstrap_theme": (0, 4, 8),
     # don't upgrade this; it breaks with old IPython versions
     "jedi": (0, 17),
 }
@@ -262,7 +262,7 @@ max_versions = {
     "pyparsing": _,
     "cPyparsing": (_, _, _),
     "sphinx": _,
-    "sphinx_bootstrap_theme": _,
+    "sphinx_bootstrap_theme": (_, _),
     "mypy": _,
     "prompt_toolkit:2": _,
     "jedi": _,
