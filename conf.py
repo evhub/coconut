@@ -60,6 +60,9 @@ release = version_str_tag
 
 html_theme = "bootstrap"
 html_theme_path = get_html_theme_path()
+html_theme_options = {
+    "navbar_fixed_top": "false",
+}
 
 master_doc = "index"
 exclude_patterns = ["README.*"]
