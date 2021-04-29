@@ -350,7 +350,8 @@ def split_args_list(tokens, loc):
                     kwd_only_args.append((arg[0], None))
                 else:
                     raise CoconutDeferredSyntaxError("positional arguments must come first in function definition", loc)
-        elif len(arg) == 2:
+        else:
+            # only the first two arguments matter; if there's a third it's a typedef
             if arg[0] == "*":
                 # star arg (pos = 2)
                 if pos >= 2:
@@ -374,8 +375,6 @@ def split_args_list(tokens, loc):
                     kwd_only_args.append((arg[0], arg[1]))
                 else:
                     raise CoconutDeferredSyntaxError("invalid default argument in function definition", loc)
-        else:
-            raise CoconutInternalException("invalid function definition argument", arg)
     return pos_only_args, req_args, def_args, star_arg, kwd_only_args, dubstar_arg
 
 
@@ -528,6 +527,7 @@ class Compiler(Grammar):
         with self.complain_on_err():
             with self.disable_checks():
                 return transform(grammar, text)
+        return None
 
     def get_temp_var(self, base_name):
         """Get a unique temporary variable name."""
@@ -2144,7 +2144,9 @@ if not {check_var}:
 
         # run target checks if func info extraction succeeded
         if func_name is not None:
-            pos_only_args, req_args, def_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(func_arg_tokens, loc)
+            pos_only_args = kwd_only_args = None
+            with self.complain_on_err():
+                pos_only_args, req_args, def_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(func_arg_tokens, loc)
             if pos_only_args and self.target_info < (3, 8):
                 raise self.make_err(
                     CoconutTargetError,
