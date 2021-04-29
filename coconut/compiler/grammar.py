@@ -618,25 +618,6 @@ def tco_return_handle(tokens):
         return "return _coconut_tail_call(" + tokens[0] + ", " + ", ".join(tokens[1:]) + ")"
 
 
-def split_func_handle(tokens):
-    """Process splitting a function into name, params, and args."""
-    internal_assert(len(tokens) == 2, "invalid function definition splitting tokens", tokens)
-    func_name, func_arg_tokens = tokens
-    func_args = []
-    func_params = []
-    for arg in func_arg_tokens:
-        if len(arg) > 1 and arg[0] in ("*", "**"):
-            func_args.append(arg[1])
-        elif arg[0] != "*":
-            func_args.append(arg[0])
-        func_params.append("".join(arg))
-    return [
-        func_name,
-        ", ".join(func_args),
-        "(" + ", ".join(func_params) + ")",
-    ]
-
-
 def join_match_funcdef(tokens):
     """Join the pieces of a pattern-matching function together."""
     if len(tokens) == 2:
@@ -1917,14 +1898,11 @@ class Grammar(object):
         ),
     )
 
-    split_func = attach(
+    split_func = (
         start_marker
         - keyword("def").suppress()
         - dotted_base_name
-        - lparen.suppress() - parameters_tokens - rparen.suppress(),
-        split_func_handle,
-        # this is the root in what it's used for, so might as well evaluate greedily
-        greedy=True,
+        - lparen.suppress() - parameters_tokens - rparen.suppress()
     )
 
     stores_scope = (

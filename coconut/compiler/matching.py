@@ -292,7 +292,7 @@ class Matcher(object):
         else:
             self.add_check(str(min_len) + " <= _coconut.len(" + item + ") <= " + str(max_len))
 
-    def match_function(self, args, kwargs, pos_only_match_args=(), match_args=(), star_arg=None, kwd_match_args=(), dubstar_arg=None):
+    def match_function(self, args, kwargs, pos_only_match_args=(), match_args=(), star_arg=None, kwd_only_match_args=(), dubstar_arg=None):
         """Matches a pattern-matching function."""
         # before everything, pop the FunctionMatchError from context
         self.add_def(function_match_error_var + " = _coconut_get_function_match_error()")
@@ -303,7 +303,7 @@ class Matcher(object):
             if star_arg is not None:
                 self.match(star_arg, args + "[" + str(len(match_args)) + ":]")
 
-            self.match_in_kwargs(kwd_match_args, kwargs)
+            self.match_in_kwargs(kwd_only_match_args, kwargs)
 
             with self.down_a_level():
                 if dubstar_arg is None:
@@ -397,20 +397,21 @@ class Matcher(object):
         """Matches against kwargs."""
         for match, default in match_args:
             names = get_match_names(match)
-            if names:
-                tempvar = self.get_temp_var()
-                self.add_def(
-                    tempvar + " = "
-                    + "".join(
-                        kwargs + '.pop("' + name + '") if "' + name + '" in ' + kwargs + " else "
-                        for name in names
-                    )
-                    + default,
-                )
-                with self.down_a_level():
-                    self.match(match, tempvar)
-            else:
+            if not names:
                 raise CoconutDeferredSyntaxError("keyword-only pattern-matching function arguments must have names", self.loc)
+            tempvar = self.get_temp_var()
+            self.add_def(
+                tempvar + " = "
+                + "".join(
+                    kwargs + '.pop("' + name + '") if "' + name + '" in ' + kwargs + " else "
+                    for name in names
+                )
+                + (default if default is not None else "_coconut_sentinel"),
+            )
+            with self.down_a_level():
+                if default is None:
+                    self.add_check(tempvar + " is not _coconut_sentinel")
+                self.match(match, tempvar)
 
     def match_dict(self, tokens, item):
         """Matches a dictionary."""
