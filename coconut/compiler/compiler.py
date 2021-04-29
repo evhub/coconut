@@ -2144,9 +2144,8 @@ if not {check_var}:
 
         # run target checks if func info extraction succeeded
         if func_name is not None:
-            pos_only_args = kwd_only_args = None
-            with self.complain_on_err():
-                pos_only_args, req_args, def_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(func_arg_tokens, loc)
+            # raises DeferredSyntaxErrors which shouldn't be complained
+            pos_only_args, req_args, def_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(func_arg_tokens, loc)
             if pos_only_args and self.target_info < (3, 8):
                 raise self.make_err(
                     CoconutTargetError,
