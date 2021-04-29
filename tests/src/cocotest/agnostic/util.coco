@@ -998,8 +998,10 @@ def ret_globals() =
     locals()
 
 
-# Pos only args
+# Pos/kwd only args
 match def pos_only(a, b, /) = a, b
+
+match def kwd_only(*, a) = a
 
 
 # Match args classes

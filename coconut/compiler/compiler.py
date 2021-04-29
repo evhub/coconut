@@ -321,7 +321,7 @@ def split_args_list(tokens, loc):
     req_args = []
     def_args = []
     star_arg = None
-    kwd_args = []
+    kwd_only_args = []
     dubstar_arg = None
     pos = 0
     for arg in tokens:
@@ -343,9 +343,13 @@ def split_args_list(tokens, loc):
                 req_args = []
             else:
                 # pos arg (pos = 0)
-                if pos > 0:
+                if pos == 0:
+                    req_args.append(arg[0])
+                # kwd only arg (pos = 3)
+                elif pos == 3:
+                    kwd_only_args.append((arg[0], None))
+                else:
                     raise CoconutDeferredSyntaxError("positional arguments must come first in function definition", loc)
-                req_args.append(arg[0])
         elif len(arg) == 2:
             if arg[0] == "*":
                 # star arg (pos = 2)
@@ -364,15 +368,15 @@ def split_args_list(tokens, loc):
                 if pos <= 1:
                     pos = 1
                     def_args.append((arg[0], arg[1]))
-                # kwd arg (pos = 3)
+                # kwd only arg (pos = 3)
                 elif pos <= 3:
                     pos = 3
-                    kwd_args.append((arg[0], arg[1]))
+                    kwd_only_args.append((arg[0], arg[1]))
                 else:
                     raise CoconutDeferredSyntaxError("invalid default argument in function definition", loc)
         else:
             raise CoconutInternalException("invalid function definition argument", arg)
-    return pos_only_args, req_args, def_args, star_arg, kwd_args, dubstar_arg
+    return pos_only_args, req_args, def_args, star_arg, kwd_only_args, dubstar_arg
 
 
 # end: HANDLERS
@@ -1477,8 +1481,8 @@ while True:
 
         matcher = self.get_matcher(original, loc, match_check_var, name_list=[])
 
-        pos_only_args, req_args, def_args, star_arg, kwd_args, dubstar_arg = split_args_list(matches, loc)
-        matcher.match_function(match_to_args_var, match_to_kwargs_var, pos_only_args, req_args + def_args, star_arg, kwd_args, dubstar_arg)
+        pos_only_args, req_args, def_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(matches, loc)
+        matcher.match_function(match_to_args_var, match_to_kwargs_var, pos_only_args, req_args + def_args, star_arg, kwd_only_args, dubstar_arg)
 
         if cond is not None:
             matcher.add_guard(cond)
@@ -1808,8 +1812,8 @@ if not {check_var}:
 
         matcher = self.get_matcher(original, loc, match_check_var)
 
-        pos_only_args, req_args, def_args, star_arg, kwd_args, dubstar_arg = split_args_list(matches, loc)
-        matcher.match_function(match_to_args_var, match_to_kwargs_var, pos_only_args, req_args + def_args, star_arg, kwd_args, dubstar_arg)
+        pos_only_args, req_args, def_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(matches, loc)
+        matcher.match_function(match_to_args_var, match_to_kwargs_var, pos_only_args, req_args + def_args, star_arg, kwd_only_args, dubstar_arg)
 
         if cond is not None:
             matcher.add_guard(cond)
@@ -2117,9 +2121,50 @@ if not {check_var}:
             raise CoconutInternalException("invalid function definition statement", def_stmt)
 
         # extract information about the function
-        func_name, func_args, func_params = None, None, None
         with self.complain_on_err():
-            func_name, func_args, func_params = parse(self.split_func, def_stmt)
+            try:
+                split_func_tokens = parse(self.split_func, def_stmt)
+
+                internal_assert(len(split_func_tokens) == 2, "invalid function definition splitting tokens", split_func_tokens)
+                func_name, func_arg_tokens = split_func_tokens
+
+                func_params = "(" + ", ".join("".join(arg) for arg in func_arg_tokens) + ")"
+
+                # arguments that should be used to call the function; must be in the order in which they're defined
+                func_args = []
+                for arg in func_arg_tokens:
+                    if len(arg) > 1 and arg[0] in ("*", "**"):
+                        func_args.append(arg[1])
+                    elif arg[0] != "*":
+                        func_args.append(arg[0])
+                func_args = ", ".join(func_args)
+            except BaseException:
+                func_name = None
+                raise
+
+        # run target checks if func info extraction succeeded
+        if func_name is not None:
+            pos_only_args, req_args, def_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(func_arg_tokens, loc)
+            if pos_only_args and self.target_info < (3, 8):
+                raise self.make_err(
+                    CoconutTargetError,
+                    "found Python 3.8 keyword-only argument{s} (use 'match def' to produce universal code)".format(
+                        s="s" if len(pos_only_args) > 1 else "",
+                    ),
+                    original,
+                    loc,
+                    target="38",
+                )
+            if kwd_only_args and self.target_info < (3,):
+                raise self.make_err(
+                    CoconutTargetError,
+                    "found Python 3 keyword-only argument{s} (use 'match def' to produce universal code)".format(
+                        s="s" if len(pos_only_args) > 1 else "",
+                    ),
+                    original,
+                    loc,
+                    target="3",
+                )
 
         def_name = func_name  # the name used when defining the function
 
@@ -2509,8 +2554,9 @@ if {store_var} is not _coconut_sentinel:
     def check_py(self, version, name, original, loc, tokens):
         """Check for Python-version-specific syntax."""
         internal_assert(len(tokens) == 1, "invalid " + name + " tokens", tokens)
-        if self.target_info < get_target_info(version):
-            raise self.make_err(CoconutTargetError, "found Python " + ".".join(version) + " " + name, original, loc, target=version)
+        version_info = get_target_info(version)
+        if self.target_info < version_info:
+            raise self.make_err(CoconutTargetError, "found Python " + ".".join(str(v) for v in version_info) + " " + name, original, loc, target=version)
         else:
             return tokens[0]
 
@@ -2541,7 +2587,7 @@ if {store_var} is not _coconut_sentinel:
         return self.check_py("35", "star unpacking (use 'match' to produce universal code)", original, loc, tokens)
 
     def star_sep_check(self, original, loc, tokens):
-        """Check for Python 3 keyword-only arguments."""
+        """Check for Python 3 keyword-only argument separator."""
         return self.check_py("3", "keyword-only argument separator (use 'match' to produce universal code)", original, loc, tokens)
 
     def slash_sep_check(self, original, loc, tokens):
