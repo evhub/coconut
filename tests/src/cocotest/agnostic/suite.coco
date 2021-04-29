@@ -595,6 +595,12 @@ def suite_test():
         assert err
     else:
         assert False
+    try:
+        kwd_only()
+    except MatchError as err:
+        assert err
+    else:
+        assert False
     assert [un_treable_func1(x) for x in range(4)] == [0, 1, 3, 6] == [un_treable_func2(x) for x in range(4)]
     assert loop_then_tre(1e4) == 0
     assert (None |?> (+)$(1)) is None
