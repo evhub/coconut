@@ -571,6 +571,7 @@ class Compiler(Grammar):
         self.case_stmt <<= attach(self.case_stmt_ref, self.case_stmt_handle)
         self.f_string <<= attach(self.f_string_ref, self.f_string_handle)
         self.decorators <<= attach(self.decorators_ref, self.decorators_handle)
+        self.unsafe_typedef_or_expr <<= attach(self.unsafe_typedef_or_expr_ref, self.unsafe_typedef_or_expr_handle)
 
         self.decoratable_normal_funcdef_stmt <<= attach(
             self.decoratable_normal_funcdef_stmt_ref,
@@ -2522,6 +2523,14 @@ if {store_var} is not _coconut_sentinel:
             else:
                 raise CoconutInternalException("invalid decorator tokens", tok)
         return "\n".join(defs + decorators) + "\n"
+
+    def unsafe_typedef_or_expr_handle(self, tokens):
+        """Handle Type | Type typedefs."""
+        internal_assert(len(tokens) >= 2, "invalid typedef or tokens", tokens)
+        if self.target_info >= (3, 10):
+            return " | ".join(tokens)
+        else:
+            return "_coconut.typing.Union[" + ", ".join(tokens) + "]"
 
 # end: COMPILER HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------

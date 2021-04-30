@@ -1348,13 +1348,14 @@ Additionally, Coconut adds special syntax for making type annotations easier and
     => typing.Callable[[<args>], <ret>]
 -> <ret>
     => typing.Callable[..., <ret>]
+<type> | <type>
+    => typing.Union[<type>, <type>]
 ```
 where `typing` is the Python 3.5 built-in [`typing` module](https://docs.python.org/3/library/typing.html).
 
-_Note: `<type>[]` does not map onto `typing.List[<int>]` but onto `typing.Sequence[<int>]`._
-There are two reasons that this design choice was made. When writing in an idiomatic functional style, assignment should be rare and tuples should be common.
-Using `Sequence` covers both cases, accommodating tuples and lists and preventing indexed assignment.
-When an indexed assignment is attempted into a variable typed with `Sequence`, MyPy will generate an error:
+_Note: The transformation to `Union` is not done on Python 3.10 as Python 3.10 has [PEP 604](https://www.python.org/dev/peps/pep-0604/) support.__
+
+Importantly, note that `<type>[]` does not map onto `typing.List[<int>]` but onto `typing.Sequence[<int>]`. This is because, when writing in an idiomatic functional style, assignment should be rare and tuples should be common. Using `Sequence` covers both cases, accommodating tuples and lists and preventing indexed assignment. When an indexed assignment is attempted into a variable typed with `Sequence`, MyPy will generate an error:
 
 ```
 foo: int[] = [0, 1, 2, 3, 4, 5]

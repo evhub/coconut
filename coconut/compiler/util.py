@@ -30,6 +30,7 @@ from coconut import embed
 from coconut._pyparsing import (
     replaceWith,
     ZeroOrMore,
+    OneOrMore,
     Optional,
     SkipTo,
     CharsNotIn,
@@ -501,20 +502,25 @@ def maybeparens(lparen, item, rparen):
     return item | lparen.suppress() + item + rparen.suppress()
 
 
-def tokenlist(item, sep, suppress=True):
+def tokenlist(item, sep, suppress=True, allow_trailing=True, at_least_two=False):
     """Create a list of tokens matching the item."""
     if suppress:
         sep = sep.suppress()
-    return item + ZeroOrMore(sep + item) + Optional(sep)
+    out = item + (OneOrMore if at_least_two else ZeroOrMore)(sep + item)
+    if allow_trailing:
+        out += Optional(sep)
+    return out
 
 
 def itemlist(item, sep, suppress_trailing=True):
-    """Create a list of items separated by seps."""
+    """Create a list of items separated by seps with comma-like spacing added.
+    A trailing sep is allowed."""
     return condense(item + ZeroOrMore(addspace(sep + item)) + Optional(sep.suppress() if suppress_trailing else sep))
 
 
 def exprlist(expr, op):
-    """Create a list of exprs separated by ops."""
+    """Create a list of exprs separated by ops with plus-like spacing added.
+    No trailing op is allowed."""
     return addspace(expr + ZeroOrMore(op + expr))
 
 
