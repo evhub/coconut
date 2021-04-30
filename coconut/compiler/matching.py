@@ -398,7 +398,7 @@ class Matcher(object):
         for match, default in match_args:
             names = get_match_names(match)
             if not names:
-                raise CoconutDeferredSyntaxError("keyword-only pattern-matching function arguments must have names", self.loc)
+                raise CoconutDeferredSyntaxError("keyword-only pattern-matching function arguments must be named", self.loc)
             tempvar = self.get_temp_var()
             self.add_def(
                 tempvar + " = "
@@ -415,6 +415,7 @@ class Matcher(object):
 
     def match_dict(self, tokens, item):
         """Matches a dictionary."""
+        internal_assert(1 <= len(tokens) <= 2, "invalid dict match tokens", tokens)
         if len(tokens) == 1:
             matches, rest = tokens[0], None
         else:
@@ -425,9 +426,9 @@ class Matcher(object):
         if rest is None:
             self.rule_conflict_warn(
                 "ambiguous pattern; could be Coconut-style len-checking dict match or Python-style len-ignoring dict match",
-                'resolving to Coconut-style len-checking dict match by default',
-                'resolving to Python-style len-ignoring dict match due to Python-style "match: case" block',
-                "use explicit '{..., **_}' or '{..., **{}}' syntax to dismiss",
+                if_coconut='resolving to Coconut-style len-checking dict match by default',
+                if_python='resolving to Python-style len-ignoring dict match due to Python-style "match: case" block',
+                extra="use explicit '{..., **_}' or '{..., **{}}' syntax to dismiss",
             )
             check_len = not self.using_python_rules
         elif rest == "{}":
@@ -475,6 +476,7 @@ class Matcher(object):
 
     def match_sequence(self, tokens, item):
         """Matches a sequence."""
+        internal_assert(2 <= len(tokens) <= 3, "invalid sequence match tokens", tokens)
         tail = None
         if len(tokens) == 2:
             series_type, matches = tokens
@@ -495,6 +497,7 @@ class Matcher(object):
 
     def match_iterator(self, tokens, item):
         """Matches a lazy list or a chain."""
+        internal_assert(2 <= len(tokens) <= 3, "invalid iterator match tokens", tokens)
         tail = None
         if len(tokens) == 2:
             _, matches = tokens
@@ -522,6 +525,7 @@ class Matcher(object):
 
     def match_star(self, tokens, item):
         """Matches starred assignment."""
+        internal_assert(1 <= len(tokens) <= 3, "invalid star match tokens", tokens)
         head_matches, last_matches = None, None
         if len(tokens) == 1:
             middle = tokens[0]
@@ -637,7 +641,6 @@ class Matcher(object):
 
     def split_data_or_class_match(self, tokens):
         """Split data/class match tokens into cls_name, pos_matches, name_matches, star_match."""
-        internal_assert(len(tokens) == 2, "invalid data/class match tokens", tokens)
         cls_name, matches = tokens
 
         pos_matches = []
@@ -731,9 +734,9 @@ class Matcher(object):
         """Matches an ambiguous data or class match."""
         self.rule_conflict_warn(
             "ambiguous pattern; could be class match or data match",
-            'resolving to Coconut data match by default',
-            'resolving to Python-style class match due to Python-style "match: case" block',
-            "use explicit 'data data_name(args)' or 'class cls_name(args)' syntax to dismiss",
+            if_coconut='resolving to Coconut data match by default',
+            if_python='resolving to Python-style class match due to Python-style "match: case" block',
+            extra="use explicit 'data data_name(args)' or 'class cls_name(args)' syntax to dismiss",
         )
         if self.using_python_rules:
             return self.match_class(tokens, item)
@@ -772,7 +775,6 @@ class Matcher(object):
 
     def match_walrus(self, tokens, item):
         """Matches :=."""
-        internal_assert(len(tokens) == 2, "invalid walrus match tokens", tokens)
         name, match = tokens
         self.match_var([name], item, bind_wildcard=True)
         self.match(match, item)
