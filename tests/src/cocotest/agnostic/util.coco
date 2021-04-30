@@ -781,7 +781,9 @@ if TYPE_CHECKING:
 
 def args_kwargs_func(args: List[Any]=[], kwargs: Dict[Any, Any]={}) -> None: pass
 
-def anything_func(*args: int, **kwargs: int) -> None: pass
+def int_func(*args: int, **kwargs: int) -> None: pass
+
+def one_int_or_str(x: int | str) -> int | str = x
 
 # Enhanced Pattern-Matching
 

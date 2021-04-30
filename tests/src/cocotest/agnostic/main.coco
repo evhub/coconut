@@ -12,6 +12,7 @@ def assert_raises(c, exc):
 
 def main_test():
     """Basic no-dependency tests."""
+    assert 1 | 2 == 3
     assert "\n" == (
 
 '''

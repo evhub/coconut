@@ -1067,7 +1067,7 @@ class Grammar(object):
     setmaker = Group(addspace(new_namedexpr_test + comp_for)("comp") | new_namedexpr_testlist_has_comma("list") | new_namedexpr_test("test"))
     set_literal_ref = lbrace.suppress() + setmaker + rbrace.suppress()
     set_letter_literal_ref = set_letter + lbrace.suppress() + Optional(setmaker) + rbrace.suppress()
-    lazy_items = Optional(test + ZeroOrMore(comma.suppress() + test) + Optional(comma.suppress()))
+    lazy_items = Optional(tokenlist(test, comma))
     lazy_list = attach(lbanana.suppress() + lazy_items + rbanana.suppress(), lazy_list_handle)
 
     const_atom = (
@@ -1097,11 +1097,7 @@ class Grammar(object):
     )
 
     typedef_atom = Forward()
-    typedef_atom_ref = (  # use special type signifier for item_handle
-        Group(fixto(lbrack + rbrack, "type:[]"))
-        | Group(fixto(dollar + lbrack + rbrack, "type:$[]"))
-        | Group(fixto(questionmark + ~questionmark, "type:?"))
-    )
+    typedef_or_expr = Forward()
 
     simple_trailer = (
         condense(lbrack + subscriptlist + rbrack)
@@ -1170,7 +1166,7 @@ class Grammar(object):
     typed_assign_stmt_ref = simple_assign + colon.suppress() + typedef_test + Optional(equals.suppress() + test_expr)
     basic_stmt = trace(addspace(ZeroOrMore(assignlist + equals) + test_expr))
 
-    compose_item = attach(atom_item + ZeroOrMore(dotdot.suppress() + atom_item), compose_item_handle)
+    compose_item = attach(tokenlist(atom_item, dotdot, allow_trailing=False), compose_item_handle)
 
     impl_call_arg = disallow_keywords(reserved_vars) + (
         keyword_atom
@@ -1206,9 +1202,9 @@ class Grammar(object):
     shift_expr = exprlist(arith_expr, shift)
     and_expr = exprlist(shift_expr, amp)
     xor_expr = exprlist(and_expr, caret)
-    or_expr = exprlist(xor_expr, bar)
+    or_expr = typedef_or_expr | exprlist(xor_expr, bar)
 
-    chain_expr = attach(or_expr + ZeroOrMore(dubcolon.suppress() + or_expr), chain_handle)
+    chain_expr = attach(tokenlist(or_expr, dubcolon, allow_trailing=False), chain_handle)
 
     lambdef = Forward()
 
@@ -1226,7 +1222,7 @@ class Grammar(object):
         )
     )
 
-    none_coalesce_expr = attach(infix_expr + ZeroOrMore(dubquestion.suppress() + infix_expr), none_coalesce_handle)
+    none_coalesce_expr = attach(tokenlist(infix_expr, dubquestion, allow_trailing=False), none_coalesce_handle)
 
     comp_pipe_op = (
         comp_pipe
@@ -1338,14 +1334,24 @@ class Grammar(object):
         lparen.suppress() + Optional(testlist, default="") + rparen.suppress()
         | Optional(atom_item)
     )
-    typedef_callable = attach(typedef_callable_params + arrow.suppress() + typedef_test, typedef_callable_handle)
-    _typedef_test, typedef_callable, _typedef_atom = disable_outside(
-        test,
-        typedef_callable,
-        typedef_atom_ref,
+    unsafe_typedef_callable = attach(typedef_callable_params + arrow.suppress() + typedef_test, typedef_callable_handle)
+    unsafe_typedef_atom = (  # use special type signifier for item_handle
+        Group(fixto(lbrack + rbrack, "type:[]"))
+        | Group(fixto(dollar + lbrack + rbrack, "type:$[]"))
+        | Group(fixto(questionmark + ~questionmark, "type:?"))
     )
-    typedef_atom <<= _typedef_atom
+    unsafe_typedef_or_expr = Forward()
+    unsafe_typedef_or_expr_ref = tokenlist(xor_expr, bar, allow_trailing=False, at_least_two=True)
+
+    _typedef_test, typedef_callable, _typedef_atom, _typedef_or_expr = disable_outside(
+        test,
+        unsafe_typedef_callable,
+        unsafe_typedef_atom,
+        unsafe_typedef_or_expr,
+    )
     typedef_test <<= _typedef_test
+    typedef_atom <<= _typedef_atom
+    typedef_or_expr <<= _typedef_or_expr
 
     test <<= (
         typedef_callable
