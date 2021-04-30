@@ -1330,7 +1330,7 @@ print(p1(5))
 
 Since Coconut syntax is a superset of Python 3 syntax, it supports [Python 3 function type annotation syntax](https://www.python.org/dev/peps/pep-0484/) and [Python 3.6 variable type annotation syntax](https://www.python.org/dev/peps/pep-0526/). By default, Coconut compiles all type annotations into Python-2-compatible type comments. If you want to keep the type annotations instead, simply pass a `--target` that supports them.
 
-Since not all supported Python versions support the [`typing`](https://docs.python.org/3/library/typing.html) module, Coconut provides the [`TYPE_CHECKING`](#type-checking) built-in for hiding your `typing` imports and `TypeVar` definitions from being executed at runtime. Furthermore, when compiling type annotations to Python 3 syntax, Coconut wraps annotation in strings to prevent them from being evaluated at runtime.
+Since not all supported Python versions support the [`typing`](https://docs.python.org/3/library/typing.html) module, Coconut provides the [`TYPE_CHECKING`](#type-checking) built-in for hiding your `typing` imports and `TypeVar` definitions from being executed at runtime. Furthermore, when compiling type annotations to Python 3 versions without [PEP 563](https://www.python.org/dev/peps/pep-0563/) support, Coconut wraps annotation in strings to prevent them from being evaluated at runtime (unless `--no-wrap` is passed).
 
 Additionally, Coconut adds special syntax for making type annotations easier and simpler to write. When inside of a type annotation, Coconut treats certain syntax constructs differently, compiling them to type annotations instead of what they would normally represent. Specifically, Coconut applies the following transformations:
 ```coconut
@@ -1353,7 +1353,7 @@ Additionally, Coconut adds special syntax for making type annotations easier and
 ```
 where `typing` is the Python 3.5 built-in [`typing` module](https://docs.python.org/3/library/typing.html).
 
-_Note: The transformation to `Union` is not done on Python 3.10 as Python 3.10 has [PEP 604](https://www.python.org/dev/peps/pep-0604/) support.__
+_Note: The transformation to `Union` is not done on Python 3.10 as Python 3.10 has native [PEP 604](https://www.python.org/dev/peps/pep-0604) support._
 
 Importantly, note that `<type>[]` does not map onto `typing.List[<int>]` but onto `typing.Sequence[<int>]`. This is because, when writing in an idiomatic functional style, assignment should be rare and tuples should be common. Using `Sequence` covers both cases, accommodating tuples and lists and preventing indexed assignment. When an indexed assignment is attempted into a variable typed with `Sequence`, MyPy will generate an error:
 
