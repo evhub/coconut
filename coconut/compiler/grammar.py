@@ -242,12 +242,15 @@ def item_handle(loc, tokens):
                 # short-circuit the rest of the evaluation
                 rest_of_trailers = tokens[i + 1:]
                 if len(rest_of_trailers) == 0:
-                    raise CoconutDeferredSyntaxError("None-coalescing ? must have something after it", loc)
+                    raise CoconutDeferredSyntaxError("None-coalescing '?' must have something after it", loc)
                 not_none_tokens = [none_coalesce_var]
                 not_none_tokens.extend(rest_of_trailers)
+                not_none_expr = item_handle(loc, not_none_tokens)
+                if ":=" in not_none_expr:
+                    raise CoconutDeferredSyntaxError("illegal assignment expression after a None-coalescing '?'", loc)
                 return "(lambda {x}: None if {x} is None else {rest})({inp})".format(
                     x=none_coalesce_var,
-                    rest=item_handle(loc, not_none_tokens),
+                    rest=not_none_expr,
                     inp=out,
                 )
             else:
@@ -333,9 +336,12 @@ def pipe_handle(loc, tokens, **kwargs):
 
         elif none_aware:
             # for none_aware forward pipes, we wrap the normal forward pipe in a lambda
+            pipe_expr = pipe_handle(loc, [[none_coalesce_var], "|" + star_str + ">", item])
+            if ":=" in pipe_expr:
+                raise CoconutDeferredSyntaxError("illegal assignment expression in a None-coalescing pipe", loc)
             return "(lambda {x}: None if {x} is None else {pipe})({subexpr})".format(
                 x=none_coalesce_var,
-                pipe=pipe_handle(loc, [[none_coalesce_var], "|" + star_str + ">", item]),
+                pipe=pipe_expr,
                 subexpr=pipe_handle(loc, tokens),
             )
 
@@ -401,24 +407,27 @@ def comp_pipe_handle(loc, tokens):
     ) + ")"
 
 
-def none_coalesce_handle(tokens):
+def none_coalesce_handle(loc, tokens):
     """Process the None-coalescing operator."""
     if len(tokens) == 1:
         return tokens[0]
     elif tokens[0] == "None":
-        return none_coalesce_handle(tokens[1:])
+        return none_coalesce_handle(loc, tokens[1:])
     elif match_in(Grammar.just_non_none_atom, tokens[0]):
         return tokens[0]
     elif tokens[0].isalnum():
         return "({b} if {a} is None else {a})".format(
             a=tokens[0],
-            b=none_coalesce_handle(tokens[1:]),
+            b=none_coalesce_handle(loc, tokens[1:]),
         )
     else:
+        else_expr = none_coalesce_handle(loc, tokens[1:])
+        if ":=" in else_expr:
+            raise CoconutDeferredSyntaxError("illegal assignment expression with None-coalescing operator", loc)
         return "(lambda {x}: {b} if {x} is None else {x})({a})".format(
             x=none_coalesce_var,
             a=tokens[0],
-            b=none_coalesce_handle(tokens[1:]),
+            b=else_expr,
         )
 
 
@@ -438,24 +447,27 @@ def attrgetter_atom_handle(loc, tokens):
         return '_coconut.operator.methodcaller("' + tokens[0] + '", ' + tokens[2] + ")"
 
 
-def lazy_list_handle(tokens):
+def lazy_list_handle(loc, tokens):
     """Process lazy lists."""
     if len(tokens) == 0:
         return "_coconut_reiterable(())"
     else:
+        lambda_exprs = "lambda: " + ", lambda: ".join(tokens)
+        if ":=" in lambda_exprs:
+            raise CoconutDeferredSyntaxError("illegal assignment expression in lazy list or chain expression", loc)
         return "_coconut_reiterable({func_var}() for {func_var} in ({lambdas}{tuple_comma}))".format(
             func_var=func_var,
-            lambdas="lambda: " + ", lambda: ".join(tokens),
+            lambdas=lambda_exprs,
             tuple_comma="," if len(tokens) == 1 else "",
         )
 
 
-def chain_handle(tokens):
+def chain_handle(loc, tokens):
     """Process chain calls."""
     if len(tokens) == 1:
         return tokens[0]
     else:
-        return "_coconut.itertools.chain.from_iterable(" + lazy_list_handle(tokens) + ")"
+        return "_coconut.itertools.chain.from_iterable(" + lazy_list_handle(loc, tokens) + ")"
 
 
 chain_handle.ignore_one_token = True
@@ -512,9 +524,9 @@ def make_suite_handle(tokens):
     return "\n" + openindent + tokens[0] + closeindent
 
 
-def invalid_return_stmt_handle(_, loc, __):
+def invalid_return_stmt_handle(loc, tokens):
     """Raise a syntax error if encountered a return statement where an implicit return is expected."""
-    raise CoconutDeferredSyntaxError("Expected expression but got return statement", loc)
+    raise CoconutDeferredSyntaxError("expected expression but got return statement", loc)
 
 
 def implicit_return_handle(tokens):

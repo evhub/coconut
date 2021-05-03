@@ -1372,13 +1372,13 @@ while True:
         self.comments[ln] = tokens[0]
         return ""
 
-    def kwd_augassign_handle(self, tokens):
+    def kwd_augassign_handle(self, loc, tokens):
         """Process global/nonlocal augmented assignments."""
         internal_assert(len(tokens) == 3, "invalid global/nonlocal augmented assignment tokens", tokens)
         name, op, item = tokens
-        return name + "\n" + self.augassign_handle(tokens)
+        return name + "\n" + self.augassign_handle(loc, tokens)
 
-    def augassign_handle(self, tokens):
+    def augassign_handle(self, loc, tokens):
         """Process augmented assignments."""
         internal_assert(len(tokens) == 3, "invalid assignment tokens", tokens)
         name, op, item = tokens
@@ -1420,7 +1420,7 @@ while True:
             # this is necessary to prevent a segfault caused by self-reference
             out += (
                 ichain_var + " = " + name + "\n"
-                + name + " = _coconut.itertools.chain.from_iterable(" + lazy_list_handle([ichain_var, "(" + item + ")"]) + ")"
+                + name + " = _coconut.itertools.chain.from_iterable(" + lazy_list_handle(loc, [ichain_var, "(" + item + ")"]) + ")"
             )
         else:
             out += name + " " + op + " " + item
