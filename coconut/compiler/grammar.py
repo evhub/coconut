@@ -764,7 +764,6 @@ class Grammar(object):
     )
     for k in reserved_vars:
         base_name |= backslash.suppress() + keyword(k)
-    dotted_base_name = condense(base_name + ZeroOrMore(dot + base_name))
     dotted_name = condense(name + ZeroOrMore(dot + name))
     must_be_dotted_name = condense(name + OneOrMore(dot + name))
 
@@ -1925,6 +1924,7 @@ class Grammar(object):
         ),
     )
 
+    dotted_base_name = condense(base_name + ZeroOrMore(dot + base_name))
     split_func = (
         start_marker
         - keyword("def").suppress()

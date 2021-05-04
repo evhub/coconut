@@ -40,6 +40,7 @@ from coconut.exceptions import (
 )
 from coconut.constants import (
     fixpath,
+    base_dir,
     main_prompt,
     more_prompt,
     default_style,
@@ -53,7 +54,6 @@ from coconut.constants import (
     tutorial_url,
     documentation_url,
     reserved_vars,
-    num_added_tb_layers,
     minimum_recursion_limit,
     oserror_retcode,
     base_stub_dir,
@@ -496,8 +496,8 @@ class Runner(object):
             self.exit(err.code)
         except BaseException:
             etype, value, tb = sys.exc_info()
-            for _ in range(num_added_tb_layers):
-                if tb is None:
+            while True:
+                if tb is None or not fixpath(tb.tb_frame.f_code.co_filename).startswith(base_dir):
                     break
                 tb = tb.tb_next
             traceback.print_exception(etype, value, tb)
