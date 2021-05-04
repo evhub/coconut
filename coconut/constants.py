@@ -655,8 +655,6 @@ coconut_run_args = ("--run", "--target", "sys", "--quiet")
 coconut_run_verbose_args = ("--run", "--target", "sys")
 coconut_import_hook_args = ("--target", "sys", "--quiet")
 
-num_added_tb_layers = 3  # how many frames to remove when printing a tb
-
 verbose_mypy_args = (
     "--warn-incomplete-stub",
     "--warn-redundant-casts",
