@@ -67,6 +67,7 @@ from coconut.constants import (
 from coconut.exceptions import (
     CoconutException,
     CoconutInternalException,
+    CoconutDeferredSyntaxError,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -277,6 +278,13 @@ def unpack(tokens):
     if isinstance(tokens, ParseResults) and len(tokens) == 1:
         tokens = tokens[0]
     return tokens
+
+
+def invalid_syntax(item, msg):
+    """Mark a grammar item as an invalid item that raises a syntax err with msg."""
+    def invalid_syntax_handle(loc, tokens):
+        raise CoconutDeferredSyntaxError(msg, loc)
+    return attach(item, invalid_syntax_handle)
 
 
 def parse(grammar, text):

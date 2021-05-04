@@ -90,6 +90,7 @@ from coconut.compiler.util import (
     disallow_keywords,
     regex_item,
     stores_loc_item,
+    invalid_syntax,
 )
 
 # end: IMPORTS
@@ -246,6 +247,8 @@ def item_handle(loc, tokens):
                 not_none_tokens = [none_coalesce_var]
                 not_none_tokens.extend(rest_of_trailers)
                 not_none_expr = item_handle(loc, not_none_tokens)
+                # := changes meaning inside lambdas, so we must disallow it when wrapping
+                #  user expressions in lambdas (and naive string analysis is safe here)
                 if ":=" in not_none_expr:
                     raise CoconutDeferredSyntaxError("illegal assignment expression after a None-coalescing '?'", loc)
                 return "(lambda {x}: None if {x} is None else {rest})({inp})".format(
@@ -337,6 +340,8 @@ def pipe_handle(loc, tokens, **kwargs):
         elif none_aware:
             # for none_aware forward pipes, we wrap the normal forward pipe in a lambda
             pipe_expr = pipe_handle(loc, [[none_coalesce_var], "|" + star_str + ">", item])
+            # := changes meaning inside lambdas, so we must disallow it when wrapping
+            #  user expressions in lambdas (and naive string analysis is safe here)
             if ":=" in pipe_expr:
                 raise CoconutDeferredSyntaxError("illegal assignment expression in a None-coalescing pipe", loc)
             return "(lambda {x}: None if {x} is None else {pipe})({subexpr})".format(
@@ -422,6 +427,8 @@ def none_coalesce_handle(loc, tokens):
         )
     else:
         else_expr = none_coalesce_handle(loc, tokens[1:])
+        # := changes meaning inside lambdas, so we must disallow it when wrapping
+        #  user expressions in lambdas (and naive string analysis is safe here)
         if ":=" in else_expr:
             raise CoconutDeferredSyntaxError("illegal assignment expression with None-coalescing operator", loc)
         return "(lambda {x}: {b} if {x} is None else {x})({a})".format(
@@ -453,6 +460,8 @@ def lazy_list_handle(loc, tokens):
         return "_coconut_reiterable(())"
     else:
         lambda_exprs = "lambda: " + ", lambda: ".join(tokens)
+        # := changes meaning inside lambdas, so we must disallow it when wrapping
+        #  user expressions in lambdas (and naive string analysis is safe here)
         if ":=" in lambda_exprs:
             raise CoconutDeferredSyntaxError("illegal assignment expression in lazy list or chain expression", loc)
         return "_coconut_reiterable({func_var}() for {func_var} in ({lambdas}{tuple_comma}))".format(
@@ -522,11 +531,6 @@ def make_suite_handle(tokens):
     """Make simple statements into suites."""
     internal_assert(len(tokens) == 1, "invalid simple suite tokens", tokens)
     return "\n" + openindent + tokens[0] + closeindent
-
-
-def invalid_return_stmt_handle(loc, tokens):
-    """Raise a syntax error if encountered a return statement where an implicit return is expected."""
-    raise CoconutDeferredSyntaxError("expected expression but got return statement", loc)
 
 
 def implicit_return_handle(tokens):
@@ -1117,7 +1121,8 @@ class Grammar(object):
     )
     call_trailer = (
         function_call
-        | Group(dollar + ~lparen + ~lbrack + ~questionmark)  # keep $ for item_handle
+        | invalid_syntax(dollar + questionmark, "'?' must come before '$' in None-coalescing partial application")
+        | Group(dollar + ~lparen + ~lbrack)  # keep $ for item_handle
     )
     known_trailer = typedef_atom | (
         Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())  # $[
@@ -1401,7 +1406,11 @@ class Grammar(object):
     class_suite = suite | attach(newline, class_suite_handle)
     classdef_ref = keyword("class").suppress() + name + classlist + class_suite
     comp_iter = Forward()
-    base_comp_for = addspace(keyword("for") + assignlist + keyword("in") + test_item + Optional(comp_iter))
+    comp_it_item = (
+        invalid_syntax(maybeparens(lparen, namedexpr, rparen), "PEP 572 disallows assignment expressions in comprehension iterable expressions")
+        | test_item
+    )
+    base_comp_for = addspace(keyword("for") + assignlist + keyword("in") + comp_it_item + Optional(comp_iter))
     async_comp_for_ref = addspace(keyword("async") + base_comp_for)
     comp_for <<= async_comp_for | base_comp_for
     comp_if = addspace(keyword("if") + test_no_cond + Optional(comp_iter))
@@ -1685,7 +1694,7 @@ class Grammar(object):
     )
 
     implicit_return = (
-        attach(return_stmt, invalid_return_stmt_handle)
+        invalid_syntax(return_stmt, "expected expression but got return statement")
         | attach(testlist, implicit_return_handle)
     )
     implicit_return_where = attach(
