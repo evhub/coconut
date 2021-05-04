@@ -656,11 +656,13 @@ coconut_run_verbose_args = ("--run", "--target", "sys")
 coconut_import_hook_args = ("--target", "sys", "--quiet")
 
 verbose_mypy_args = (
-    "--warn-incomplete-stub",
-    "--warn-redundant-casts",
-    "--warn-return-any",
     "--warn-unused-configs",
+    "--warn-redundant-casts",
+    "--warn-unused-ignores",
+    "--warn-return-any",
+    "--check-untyped-defs",
     "--show-error-context",
+    "--warn-incomplete-stub",
 )
 
 mypy_non_err_prefixes = (

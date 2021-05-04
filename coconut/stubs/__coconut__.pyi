@@ -35,8 +35,8 @@ if sys.version_info < (3,):
 
     str = unicode
 
-    py_raw_input = raw_input = raw_input
-    py_xrange = xrange = xrange
+    py_raw_input = raw_input
+    py_xrange = xrange
 
     class range(_t.Iterable[int]):
         def __init__(self,
@@ -181,7 +181,7 @@ starmap = _coconut.itertools.starmap
 if sys.version_info >= (3, 2):
     from functools import lru_cache
 else:
-    from backports.functools_lru_cache import lru_cache  # type: ignore
+    from backports.functools_lru_cache import lru_cache
     _coconut.functools.lru_cache = memoize  # type: ignore
 memoize = lru_cache
 
