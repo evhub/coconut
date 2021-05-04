@@ -195,6 +195,22 @@ else:
         return ThreadPoolExecutor(cpu_count() * 5)''' if target_info < (3, 5)
             else '''return ThreadPoolExecutor()'''
         ),
+        zip_iter=_indent(
+            (
+                r'''for items in _coconut.iter(_coconut.zip(*self.iters, strict=self.strict) if _coconut_sys.version_info >= (3, 10) else _coconut.zip_longest(*self.iters, fillvalue=_coconut_sentinel) if self.strict else _coconut.zip(*self.iters)):
+    if self.strict and _coconut_sys.version_info < (3, 10) and _coconut.any(x is _coconut_sentinel for x in items):
+        raise _coconut.ValueError("zip(..., strict=True) arguments have mismatched lengths")
+    yield items'''
+                if not target else
+                r'''for items in _coconut.iter(_coconut.zip(*self.iters, strict=self.strict)):
+    yield items'''
+                if target_info >= (3, 10) else
+                r'''for items in _coconut.iter(_coconut.zip_longest(*self.iters, fillvalue=_coconut_sentinel) if self.strict else _coconut.zip(*self.iters)):
+    if self.strict and _coconut.any(x is _coconut_sentinel for x in items):
+        raise _coconut.ValueError("zip(..., strict=True) arguments have mismatched lengths")
+    yield items'''
+            ), by=2,
+        ),
         # disabled mocks must have different docstrings so the
         #  interpreter can tell them apart from the real thing
         def_prepattern=(

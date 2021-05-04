@@ -36,6 +36,7 @@ from coconut._pyparsing import (
     CharsNotIn,
     ParseElementEnhance,
     ParseException,
+    ParseBaseException,
     ParseResults,
     Combine,
     Regex,
@@ -290,6 +291,14 @@ def invalid_syntax(item, msg):
 def parse(grammar, text):
     """Parse text using grammar."""
     return unpack(grammar.parseWithTabs().parseString(text))
+
+
+def try_parse(grammar, text):
+    """Attempt to parse text using grammar else None."""
+    try:
+        return parse(grammar, text)
+    except ParseBaseException:
+        return None
 
 
 def all_matches(grammar, text):

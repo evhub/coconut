@@ -101,14 +101,16 @@ class CoconutException(Exception):
 class CoconutSyntaxError(CoconutException):
     """Coconut SyntaxError."""
 
-    def __init__(self, message, source=None, point=None, ln=None):
+    def __init__(self, message, source=None, point=None, ln=None, extra=None):
         """Creates the Coconut SyntaxError."""
-        self.args = (message, source, point, ln)
+        self.args = (message, source, point, ln, extra)
 
-    def message(self, message, source, point, ln):
+    def message(self, message, source, point, ln, extra=None):
         """Creates a SyntaxError-like message."""
         if message is None:
             message = "parsing failed"
+        if extra is not None:
+            message += " (" + str(extra) + ")"
         if ln is not None:
             message += " (line " + str(ln) + ")"
         if source:
@@ -137,10 +139,19 @@ class CoconutSyntaxError(CoconutException):
 class CoconutStyleError(CoconutSyntaxError):
     """Coconut --strict error."""
 
+    def __init__(self, message, source=None, point=None, ln=None):
+        """Creates the --strict Coconut error."""
+        self.args = (message, source, point, ln)
+
     def message(self, message, source, point, ln):
         """Creates the --strict Coconut error message."""
-        message += " (remove --strict to dismiss)"
-        return super(CoconutStyleError, self).message(message, source, point, ln)
+        return super(CoconutStyleError, self).message(
+            message,
+            source,
+            point,
+            ln,
+            extra="remove --strict to dismiss",
+        )
 
 
 class CoconutTargetError(CoconutSyntaxError):
@@ -152,17 +163,19 @@ class CoconutTargetError(CoconutSyntaxError):
 
     def message(self, message, source, point, ln, target):
         """Creates the --target Coconut error message."""
-        if target is not None:
-            message += " (pass --target " + target + " to fix)"
-        return super(CoconutTargetError, self).message(message, source, point, ln)
+        if target is None:
+            extra = None
+        else:
+            extra = "pass --target " + target + " to fix"
+        return super(CoconutTargetError, self).message(message, source, point, ln, extra)
 
 
 class CoconutParseError(CoconutSyntaxError):
     """Coconut ParseError."""
 
-    def __init__(self, message=None, source=None, point=None, ln=None):
+    def __init__(self, message=None, source=None, point=None, ln=None, extra=None):
         """Creates the ParseError."""
-        self.args = (message, source, point, ln)
+        self.args = (message, source, point, ln, extra)
 
 
 class CoconutWarning(CoconutException):

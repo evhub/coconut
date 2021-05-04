@@ -11,7 +11,6 @@ from coconut.constants import (
 from coconut.exceptions import (
     CoconutSyntaxError,
     CoconutStyleError,
-    CoconutSyntaxError,
     CoconutTargetError,
     CoconutParseError,
 )  # type: ignore
@@ -31,14 +30,17 @@ if IPY and not WINDOWS:
 else:
     CoconutKernel = None  # type: ignore
 
-def assert_raises(c, exc):
+def assert_raises(c, exc, not_exc=None, err_has=None):
     """Test whether callable c raises an exception of type exc."""
     try:
         c()
-    except exc:
-        return True
+    except exc as err:
+        if not_exc is not None:
+            assert not isinstance(err, not_exc), f"{err} instance of {not_exc}"
+        if err_has is not None:
+            assert err_has in str(err), f"{err_has!r} not in {err}"
     else:
-        raise AssertionError("%s failed to raise exception %s" % (c, exc))
+        raise AssertionError(f"{c} failed to raise exception {exc}")
 
 def unwrap_future(maybe_future):
     """
@@ -74,14 +76,14 @@ def test_extras():
     assert parse("x |> map$(f)", "any") == "(map)(f, x)"
     assert "_coconut" not in parse("a |> .b |> .m() |> f$(x) |> .[0]", "block")
     assert parse("abc # derp", "any") == "abc  # derp"
-    assert_raises(-> parse(" abc", "file"), CoconutException)
-    assert_raises(-> parse("'"), CoconutException)
-    assert_raises(-> parse("("), CoconutException)
-    assert_raises(-> parse("\\("), CoconutException)
-    assert_raises(-> parse("if a:\n  b\n c"), CoconutException)
-    assert_raises(-> parse("$"), CoconutException)
-    assert_raises(-> parse("_coconut"), CoconutException)
-    assert_raises(-> parse("range(1,10) |> reduce$(*, initializer = 1000) |> print"), CoconutException)
+    assert_raises(-> parse(" abc", "file"), CoconutSyntaxError, not_exc=CoconutParseError)
+    assert_raises(-> parse("'"), CoconutSyntaxError, not_exc=CoconutParseError)
+    assert_raises(-> parse("("), CoconutSyntaxError, not_exc=CoconutParseError)
+    assert_raises(-> parse("\\("), CoconutSyntaxError, not_exc=CoconutParseError)
+    assert_raises(-> parse("if a:\n  b\n c"), CoconutSyntaxError, not_exc=CoconutParseError)
+    assert_raises(-> parse("$"), CoconutParseError)
+    assert_raises(-> parse("_coconut"), CoconutSyntaxError, not_exc=CoconutParseError)
+    assert_raises(-> parse("range(1,10) |> reduce$(*, initializer = 1000) |> print"), CoconutParseError)
     assert parse("def f(x):\n \t pass")
     assert parse("lambda x: x")
     assert parse("u''")
@@ -113,12 +115,16 @@ def test_extras():
     assert_raises(-> cmd("-f"), SystemExit)
     assert_raises(-> cmd("-pa ."), SystemExit)
     assert_raises(-> cmd("-n . ."), SystemExit)
-    assert_raises(-> parse("f$()"), CoconutSyntaxError)
-    assert_raises(-> parse("f(*x, y)"), CoconutSyntaxError)
-    assert_raises(-> parse("def f(x) = return x"), CoconutSyntaxError)
-    assert_raises(-> parse("def f(x) =\n return x"), CoconutSyntaxError)
+    assert_raises(-> parse("f$()"), CoconutSyntaxError, not_exc=CoconutParseError)
+    assert_raises(-> parse("f(*x, y)"), CoconutSyntaxError, not_exc=CoconutParseError)
+    assert_raises(-> parse("def f(x) = return x"), CoconutSyntaxError, not_exc=CoconutParseError)
+    assert_raises(-> parse("def f(x) =\n return x"), CoconutSyntaxError, not_exc=CoconutParseError)
     assert_raises(-> parse("a := b"), CoconutParseError)
     assert_raises(-> parse("(a := b)"), CoconutTargetError)
+    assert_raises(-> parse("1 + return"), CoconutParseError)
+    assert_raises(-> parse("return = 1"), CoconutParseError, err_has="invalid use of the keyword")
+    assert_raises(-> parse("if a = b: pass"), CoconutParseError, err_has="misplaced assignment")
+    assert_raises(-> parse("if a == b"), CoconutParseError, err_has="misplaced newline")
     setup(target="2.7")
     assert parse("from io import BytesIO", mode="any") == "from io import BytesIO"
     assert_raises(-> parse("def f(*, x=None) = x"), CoconutTargetError)
