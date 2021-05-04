@@ -789,6 +789,7 @@ def main_test():
         pass
     else:
         assert False
+    assert zip([1], [2], strict=True) |> repr == "zip([1], [2], strict=True)"
     return True
 
 def test_asyncio():

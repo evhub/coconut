@@ -659,9 +659,14 @@ def join_match_funcdef(tokens):
 
 def where_handle(tokens):
     """Process where statements."""
-    internal_assert(len(tokens) == 2, "invalid where statement tokens", tokens)
     final_stmt, init_stmts = tokens
     return "".join(init_stmts) + final_stmt + "\n"
+
+
+def kwd_err_msg_handle(tokens):
+    """Handle keyword parse error messages."""
+    internal_assert(len(tokens) == 1, "invalid keyword err msg tokens", tokens)
+    return 'invalid use of the keyword "' + tokens[0] + '"'
 
 
 # end: HANDLERS
@@ -1941,6 +1946,21 @@ class Grammar(object):
     just_a_string = start_marker + string + end_marker
 
     end_of_line = end_marker | Literal("\n") | pound
+
+    kwd_err_msg = attach(
+        reduce(
+            lambda a, b: a | b,
+            (
+                keyword(k)
+                for k in keywords
+            ),
+        ), kwd_err_msg_handle,
+    )
+    parse_err_msg = start_marker + (
+        fixto(end_marker, "misplaced newline (maybe missing ':')")
+        | fixto(equals, "misplaced assignment (maybe should be '==')")
+        | kwd_err_msg
+    )
 
 
 # end: EXTRA GRAMMAR

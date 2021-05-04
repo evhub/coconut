@@ -36,7 +36,7 @@ from collections import defaultdict
 from coconut._pyparsing import (
     ParseBaseException,
     ParseResults,
-    col,
+    col as getcol,
     line as getline,
     lineno,
     nums,
@@ -111,6 +111,7 @@ from coconut.compiler.util import (
     match_in,
     transform,
     parse,
+    all_matches,
     get_target_info_smart,
     split_leading_comment,
     compile_regex,
@@ -645,11 +646,15 @@ class Compiler(Grammar):
         else:
             return None
 
-    def make_err(self, errtype, message, original, loc, ln=None, reformat=True, *args, **kwargs):
+    def make_err(self, errtype, message, original, loc, ln=None, line=None, col=None, reformat=True, *args, **kwargs):
         """Generate an error of the specified type."""
         if ln is None:
             ln = self.adjust(lineno(loc, original))
-        errstr, index = getline(loc, original), col(loc, original) - 1
+        if line is None:
+            line = getline(loc, original)
+        if col is None:
+            col = getcol(loc, original)
+        errstr, index = line, col - 1
         if reformat:
             errstr, index = self.reformat(errstr, index)
         return errtype(message, errstr, index, ln, *args, **kwargs)
@@ -772,11 +777,24 @@ class Compiler(Grammar):
         err_line = err.line
         err_index = err.col - 1
         err_lineno = err.lineno if include_ln else None
+
+        causes = []
+        for cause, _, _ in all_matches(self.parse_err_msg, err_line[err_index:]):
+            causes.append(cause)
+        if causes:
+            extra = "possible cause{s}: {causes}".format(
+                s="s" if len(causes) > 1 else "",
+                causes=", ".join(causes),
+            )
+        else:
+            extra = None
+
         if reformat:
             err_line, err_index = self.reformat(err_line, err_index)
             if err_lineno is not None:
                 err_lineno = self.adjust(err_lineno)
-        return CoconutParseError(None, err_line, err_index, err_lineno)
+
+        return CoconutParseError(None, err_line, err_index, err_lineno, extra)
 
     def inner_parse_eval(self, inputstring, parser=None, preargs={"strip": True}, postargs={"header": "none", "initial": "none", "final_endline": False}):
         """Parse eval code in an inner environment."""

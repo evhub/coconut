@@ -367,7 +367,7 @@ class zip(_coconut.zip):
     def __len__(self):
         return _coconut.min(_coconut.len(i) for i in self.iters)
     def __repr__(self):
-        return "zip(%s)" % (", ".join((_coconut.repr(i) for i in self.iters)),)
+        return "zip(%s%s)" % (", ".join((_coconut.repr(i) for i in self.iters)), ", strict=True" if self.strict else "")
     def __reduce__(self):
         return (self.__class__, self.iters, self.strict)
     def __reduce_ex__(self, _):
@@ -375,10 +375,7 @@ class zip(_coconut.zip):
     def __setstate__(self, strict):
         self.strict = strict
     def __iter__(self):
-        for items in _coconut.iter(_coconut.zip_longest(*self.iters, fillvalue=_coconut_sentinel) if self.strict else _coconut.zip(*self.iters)):
-            if self.strict and _coconut.any(x is _coconut_sentinel for x in items):
-                raise _coconut.ValueError("zip(..., strict=True) arguments have mismatched lengths")
-            yield items
+{zip_iter}
     def __fmap__(self, func):
         return _coconut_map(func, self)
 class zip_longest(zip):
@@ -573,7 +570,7 @@ class recursive_iterator{object}:
             self.tee_store[key], to_return = _coconut_tee(it)
         return to_return
     def __repr__(self):
-        return "@recursive_iterator(" + _coconut.repr(self.func) + ")"
+        return "@recursive_iterator(%s)" % (_coconut.repr(self.func),)
     def __reduce__(self):
         return (self.__class__, (self.func,))
     def __get__(self, obj, objtype=None):
@@ -636,7 +633,7 @@ class _coconut_base_pattern_func{object}:
                 pass
         return _coconut_tail_call(self.patterns[-1], *args, **kwargs)
     def __repr__(self):
-        return "addpattern(" + _coconut.repr(self.patterns[0]) + ")(*" + _coconut.repr(self.patterns[1:]) + ")"
+        return "addpattern(%s)(*%s)" % (_coconut.repr(self.patterns[0]), _coconut.repr(self.patterns[1:]))
     def __reduce__(self):
         return (self.__class__, _coconut.tuple(self.patterns))
     def __get__(self, obj, objtype=None):
@@ -698,7 +695,7 @@ class _coconut_partial{object}:
                 args.append("?")
         for arg in self._stargs:
             args.append(_coconut.repr(arg))
-        return _coconut.repr(self.func) + "$(" + ", ".join(args) + ")"
+        return "%s$(%s)" % (_coconut.repr(self.func), ", ".join(args))
 def consume(iterable, keep_last=0):
     """consume(iterable, keep_last) fully exhausts iterable and return the last keep_last elements."""
     return _coconut.collections.deque(iterable, maxlen=keep_last)
