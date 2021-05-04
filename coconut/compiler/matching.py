@@ -592,22 +592,26 @@ class Matcher(object):
     def match_string(self, tokens, item):
         """Match prefix string."""
         prefix, name = tokens
-        return self.match_mstring((prefix, name, None), item, use_bytes=prefix.startswith("b"))
+        return self.match_mstring((prefix, name, None), item)
 
     def match_rstring(self, tokens, item):
         """Match suffix string."""
         name, suffix = tokens
-        return self.match_mstring((None, name, suffix), item, use_bytes=suffix.startswith("b"))
+        return self.match_mstring((None, name, suffix), item)
 
-    def match_mstring(self, tokens, item, use_bytes=None):
+    def match_mstring(self, tokens, item):
         """Match prefix and suffix string."""
         prefix, name, suffix = tokens
-        if use_bytes is None:
-            if prefix.startswith("b") or suffix.startswith("b"):
-                if prefix.startswith("b") and suffix.startswith("b"):
-                    use_bytes = True
-                else:
-                    raise CoconutDeferredSyntaxError("string literals and byte literals cannot be added in patterns", self.loc)
+        if prefix is None:
+            use_bytes = suffix.startswith("b")
+        elif suffix is None:
+            use_bytes = prefix.startswith("b")
+        elif prefix.startswith("b") and suffix.startswith("b"):
+            use_bytes = True
+        elif prefix.startswith("b") or suffix.startswith("b"):
+            raise CoconutDeferredSyntaxError("string literals and byte literals cannot be added in patterns", self.loc)
+        else:
+            use_bytes = False
         if use_bytes:
             self.add_check("_coconut.isinstance(" + item + ", _coconut.bytes)")
         else:
@@ -619,8 +623,8 @@ class Matcher(object):
         if name != wildcard:
             self.add_def(
                 name + " = " + item + "["
-                + ("" if prefix is None else "_coconut.len(" + prefix + ")") + ":"
-                + ("" if suffix is None else "-_coconut.len(" + suffix + ")") + "]",
+                + ("" if prefix is None else self.comp.eval_now("len(" + prefix + ")")) + ":"
+                + ("" if suffix is None else self.comp.eval_now("-len(" + suffix + ")")) + "]",
             )
 
     def match_const(self, tokens, item):
