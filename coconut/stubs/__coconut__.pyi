@@ -35,8 +35,8 @@ if sys.version_info < (3,):
 
     str = unicode
 
-    py_raw_input = raw_input
-    py_xrange = xrange
+    py_raw_input = raw_input = raw_input
+    py_xrange = xrange = xrange
 
     class range(_t.Iterable[int]):
         def __init__(self,
@@ -73,6 +73,20 @@ py_zip = zip
 py_filter = filter
 py_reversed = reversed
 py_enumerate = enumerate
+
+# all py_ functions, but not py_ types, go here
+chr = chr
+hex = hex
+input = input
+map = map
+oct = oct
+open = open
+print = print
+range = range
+zip = zip
+filter = filter
+reversed = reversed
+enumerate = enumerate
 
 
 def scan(
@@ -116,6 +130,8 @@ class _coconut:
     StopIteration = StopIteration
     RuntimeError = RuntimeError
     classmethod = classmethod
+    any = any
+    bytes = bytes
     dict = dict
     enumerate = enumerate
     filter = filter

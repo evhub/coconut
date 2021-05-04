@@ -5,7 +5,7 @@ class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
 {import_collections_abc}
 {import_typing_NamedTuple}
 {set_zip_longest}
-    Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, RuntimeError, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, print, property, range, reversed, set, slice, str, sum, super, tuple, type, vars, zip, repr{comma_bytearray} = Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, RuntimeError, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, print, property, range, reversed, set, slice, str, sum, super, tuple, type, vars, zip, {static_repr}{comma_bytearray}
+    Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, RuntimeError, any, bytes, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, print, property, range, reversed, set, slice, str, sum, super, tuple, type, vars, zip, repr{comma_bytearray} = Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, RuntimeError, any, bytes, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, print, property, range, reversed, set, slice, str, sum, super, tuple, type, vars, zip, {static_repr}{comma_bytearray}
 _coconut_sentinel = _coconut.object()
 class MatchError(Exception):
     """Pattern-matching error. Has attributes .pattern, .value, and .message."""
@@ -348,29 +348,37 @@ class filter(_coconut.filter):
     def __fmap__(self, func):
         return _coconut_map(func, self)
 class zip(_coconut.zip):
-    __slots__ = ("iters",)
+    __slots__ = ("iters", "strict")
     if hasattr(_coconut.zip, "__doc__"):
         __doc__ = _coconut.zip.__doc__
-    def __new__(cls, *iterables):
+    def __new__(cls, *iterables, **kwargs):
         new_zip = _coconut.zip.__new__(cls, *iterables)
         new_zip.iters = iterables
+        new_zip.strict = kwargs.pop("strict", False)
+        if kwargs:
+            raise _coconut.TypeError("zip() got unexpected keyword arguments " + _coconut.repr(kwargs))
         return new_zip
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
-            return self.__class__(*(_coconut_igetitem(i, index) for i in self.iters))
+            return self.__class__(*(_coconut_igetitem(i, index) for i in self.iters), strict=self.strict)
         return _coconut.tuple(_coconut_igetitem(i, index) for i in self.iters)
     def __reversed__(self):
-        return self.__class__(*(_coconut_reversed(i) for i in self.iters))
+        return self.__class__(*(_coconut_reversed(i) for i in self.iters), strict=self.strict)
     def __len__(self):
         return _coconut.min(_coconut.len(i) for i in self.iters)
     def __repr__(self):
         return "zip(%s)" % (", ".join((_coconut.repr(i) for i in self.iters)),)
     def __reduce__(self):
-        return (self.__class__, self.iters)
+        return (self.__class__, self.iters, self.strict)
     def __reduce_ex__(self, _):
         return self.__reduce__()
+    def __setstate__(self, strict):
+        self.strict = strict
     def __iter__(self):
-        return _coconut.iter(_coconut.zip(*self.iters))
+        for items in _coconut.iter(_coconut.zip_longest(*self.iters, fillvalue=_coconut_sentinel) if self.strict else _coconut.zip(*self.iters)):
+            if self.strict and _coconut.any(x is _coconut_sentinel for x in items):
+                raise _coconut.ValueError("zip(..., strict=True) arguments have mismatched lengths")
+            yield items
     def __fmap__(self, func):
         return _coconut_map(func, self)
 class zip_longest(zip):
@@ -378,7 +386,7 @@ class zip_longest(zip):
     if hasattr(_coconut.zip_longest, "__doc__"):
         __doc__ = (_coconut.zip_longest).__doc__
     def __new__(cls, *iterables, **kwargs):
-        self = _coconut_zip.__new__(cls, *iterables)
+        self = _coconut_zip.__new__(cls, *iterables, strict=False)
         self.fillvalue = kwargs.pop("fillvalue", None)
         if kwargs:
             raise _coconut.TypeError("zip_longest() got unexpected keyword arguments " + _coconut.repr(kwargs))
@@ -406,7 +414,9 @@ class zip_longest(zip):
     def __repr__(self):
         return "zip_longest(%s, fillvalue=%s)" % (", ".join((_coconut.repr(i) for i in self.iters)), self.fillvalue)
     def __reduce__(self):
-        return (self.__class__, self.iters, {lbrace}"fillvalue": fillvalue{rbrace})
+        return (self.__class__, self.iters, self.fillvalue)
+    def __setstate__(self, fillvalue):
+        self.fillvalue = fillvalue
     def __iter__(self):
         return _coconut.iter(_coconut.zip_longest(*self.iters, fillvalue=self.fillvalue))
 class enumerate(_coconut.enumerate):
