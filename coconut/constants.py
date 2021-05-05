@@ -33,7 +33,7 @@ from zlib import crc32
 
 def fixpath(path):
     """Uniformly format a path."""
-    return os.path.normpath(os.path.realpath(os.path.expanduser(path)))
+    return os.path.normcase(os.path.normpath(os.path.realpath(os.path.expanduser(path))))
 
 
 def univ_open(filename, opentype="r+", encoding=None, **kwargs):

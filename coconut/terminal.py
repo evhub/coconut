@@ -42,6 +42,7 @@ from coconut.constants import (
 )
 from coconut.exceptions import (
     CoconutWarning,
+    CoconutException,
     CoconutInternalException,
     displayable,
 )
@@ -77,6 +78,8 @@ def complain(error):
             error = error()
         else:
             return
+    if not isinstance(error, CoconutInternalException) and isinstance(error, CoconutException):
+        error = CoconutInternalException(str(error))
     if not DEVELOP:
         logger.warn_err(error)
     elif embed_on_internal_exc:
@@ -294,7 +297,7 @@ class Logger(object):
             else:
                 self.print_trace(tagstr, ascii(code))
 
-    def log_trace(self, expr, original, loc, tokens=None, extra=None):
+    def log_trace(self, expr, original, loc, item=None, extra=None):
         """Formats and displays a trace if tracing."""
         if self.tracing:
             tag = get_name(expr)
@@ -303,19 +306,19 @@ class Logger(object):
             if "{" not in tag:
                 out = ["[" + tag + "]"]
                 add_line_col = True
-                if tokens is not None:
-                    if isinstance(tokens, Exception):
-                        msg = displayable(str(tokens))
+                if item is not None:
+                    if isinstance(item, Exception):
+                        msg = displayable(str(item))
                         if "{" in msg:
                             head, middle = msg.split("{", 1)
                             middle, tail = middle.rsplit("}", 1)
                             msg = head + "{...}" + tail
                         out.append(msg)
                         add_line_col = False
-                    elif len(tokens) == 1 and isinstance(tokens[0], str):
-                        out.append(ascii(tokens[0]))
+                    elif len(item) == 1 and isinstance(item[0], str):
+                        out.append(ascii(item[0]))
                     else:
-                        out.append(ascii(tokens))
+                        out.append(ascii(item))
                 if add_line_col:
                     out.append("(line:" + str(lineno(loc, original)) + ", col:" + str(col(loc, original)) + ")")
                 if extra is not None:
