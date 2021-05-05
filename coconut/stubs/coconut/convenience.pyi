@@ -66,8 +66,11 @@ def coconut_eval(
 
 
 # -----------------------------------------------------------------------------------------------------------------------
-# IMPORTER:
+# ENABLERS:
 # -----------------------------------------------------------------------------------------------------------------------
+
+
+def use_coconut_breakpoint(on: bool=True) -> None: ...
 
 
 class CoconutImporter:
@@ -76,10 +79,10 @@ class CoconutImporter:
     @staticmethod
     def run_compiler(path: str) -> None: ...
 
-    def find_module(self, fullname: str, path:str=None) -> None: ...
+    def find_module(self, fullname: str, path: str=None) -> None: ...
 
 
 coconut_importer = CoconutImporter()
 
 
-def auto_compilation(on:bool=True) -> None: ...
+def auto_compilation(on: bool=True) -> None: ...

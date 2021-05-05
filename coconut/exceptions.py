@@ -206,4 +206,4 @@ class CoconutDeferredSyntaxError(CoconutException):
 
     def message(self, message, loc):
         """Uses arguments to create the message."""
-        return message
+        return message + " (loc " + str(loc) + ")"

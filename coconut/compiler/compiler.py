@@ -264,19 +264,19 @@ def special_starred_import_handle(imp_all=False):
     out = handle_indentation(
         """
 import imp as _coconut_imp
-_coconut_norm_file = _coconut.os.path.normpath(_coconut.os.path.realpath(_coconut.os.path.abspath(__file__)))
-_coconut_norm_dir = _coconut.os.path.normpath(_coconut.os.path.realpath(_coconut.os.path.abspath(_coconut.os.path.dirname(__file__))))
+_coconut_norm_file = _coconut.os.path.normpath(_coconut.os.path.realpath(__file__))
+_coconut_norm_dir = _coconut.os.path.normpath(_coconut.os.path.realpath(_coconut.os.path.dirname(__file__)))
 _coconut_seen_imports = set()
 for _coconut_base_path in _coconut_sys.path:
     for _coconut_dirpath, _coconut_dirnames, _coconut_filenames in _coconut.os.walk(_coconut_base_path):
         _coconut_paths_to_imp = []
         for _coconut_fname in _coconut_filenames:
             if _coconut.os.path.splitext(_coconut_fname)[-1] == "py":
-                _coconut_fpath = _coconut.os.path.normpath(_coconut.os.path.realpath(_coconut.os.path.abspath(_coconut.os.path.join(_coconut_dirpath, _coconut_fname))))
+                _coconut_fpath = _coconut.os.path.normpath(_coconut.os.path.realpath(_coconut.os.path.join(_coconut_dirpath, _coconut_fname)))
                 if _coconut_fpath != _coconut_norm_file:
                     _coconut_paths_to_imp.append(_coconut_fpath)
         for _coconut_dname in _coconut_dirnames:
-            _coconut_dpath = _coconut.os.path.normpath(_coconut.os.path.realpath(_coconut.os.path.abspath(_coconut.os.path.join(_coconut_dirpath, _coconut_dname))))
+            _coconut_dpath = _coconut.os.path.normpath(_coconut.os.path.realpath(_coconut.os.path.join(_coconut_dirpath, _coconut_dname)))
             if "__init__.py" in _coconut.os.listdir(_coconut_dpath) and _coconut_dpath != _coconut_norm_dir:
                 _coconut_paths_to_imp.append(_coconut_dpath)
         for _coconut_imp_path in _coconut_paths_to_imp:
@@ -350,7 +350,7 @@ def split_args_list(tokens, loc):
                 elif pos == 3:
                     kwd_only_args.append((arg[0], None))
                 else:
-                    raise CoconutDeferredSyntaxError("positional arguments must come first in function definition", loc)
+                    raise CoconutDeferredSyntaxError("non-default arguments must come first or after star separator", loc)
         else:
             # only the first two arguments matter; if there's a third it's a typedef
             if arg[0] == "*":
@@ -423,7 +423,7 @@ class Compiler(Grammar):
         if target not in targets:
             raise CoconutException(
                 "unsupported target Python version " + ascii(target),
-                extra="supported targets are " + ', '.join(ascii(t) for t in specific_targets) + ", or leave blank for universal",
+                extra="supported targets are: " + ', '.join(ascii(t) for t in specific_targets + tuple(pseudo_targets)) + ", and 'sys'",
             )
         logger.log_vars("Compiler args:", locals())
         self.target = target
@@ -629,10 +629,12 @@ class Compiler(Grammar):
 
     def reformat(self, snip, index=None):
         """Post process a preprocessed snippet."""
-        if index is not None:
-            return self.reformat(snip), len(self.reformat(snip[:index]))
+        if index is None:
+            with self.complain_on_err():
+                return self.repl_proc(snip, reformatting=True, log=False)
+            return snip
         else:
-            return self.repl_proc(snip, reformatting=True, log=False)
+            return self.reformat(snip), len(self.reformat(snip[:index]))
 
     def eval_now(self, code):
         """Reformat and evaluate a code snippet and return code for the result."""
@@ -666,7 +668,7 @@ class Compiler(Grammar):
         else:
             logger.warn_err(self.make_err(CoconutSyntaxWarning, *args, **kwargs))
 
-    def get_matcher(self, original, loc, check_var, style="coconut", name_list=None):
+    def get_matcher(self, original, loc, check_var, style=None, name_list=None):
         """Get a Matcher object."""
         if style is None:
             if self.strict:
@@ -772,7 +774,7 @@ class Compiler(Grammar):
         msg, loc = err.args
         return self.make_err(CoconutSyntaxError, msg, original, loc)
 
-    def make_parse_err(self, err, reformat=True, include_ln=True):
+    def make_parse_err(self, err, reformat=True, include_ln=True, msg=None):
         """Make a CoconutParseError from a ParseBaseException."""
         err_line = err.line
         err_index = err.col - 1
@@ -794,9 +796,15 @@ class Compiler(Grammar):
             if err_lineno is not None:
                 err_lineno = self.adjust(err_lineno)
 
-        return CoconutParseError(None, err_line, err_index, err_lineno, extra)
+        return CoconutParseError(msg, err_line, err_index, err_lineno, extra)
 
-    def inner_parse_eval(self, inputstring, parser=None, preargs={"strip": True}, postargs={"header": "none", "initial": "none", "final_endline": False}):
+    def inner_parse_eval(
+        self,
+        inputstring,
+        parser=None,
+        preargs={"strip": True},
+        postargs={"header": "none", "initial": "none", "final_endline": False},
+    ):
         """Parse eval code in an inner environment."""
         if parser is None:
             parser = self.eval_parser
@@ -1498,7 +1506,7 @@ while True:
         else:
             raise CoconutInternalException("invalid pattern-matching tokens in data", match_tokens)
 
-        matcher = self.get_matcher(original, loc, match_check_var, name_list=[])
+        matcher = self.get_matcher(original, loc, match_check_var, style="coconut", name_list=[])
 
         pos_only_args, req_args, def_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(matches, loc)
         matcher.match_function(match_to_args_var, match_to_kwargs_var, pos_only_args, req_args + def_args, star_arg, kwd_only_args, dubstar_arg)
@@ -2504,7 +2512,10 @@ if {store_var} is not _coconut_sentinel:
         # compile Coconut expressions
         compiled_exprs = []
         for co_expr in exprs:
-            py_expr = self.inner_parse_eval(co_expr)
+            try:
+                py_expr = self.inner_parse_eval(co_expr)
+            except ParseBaseException:
+                raise self.make_err(CoconutSyntaxError, "parsing failed for format string expression: " + co_expr, original, loc)
             if "\n" in py_expr:
                 raise self.make_err(CoconutSyntaxError, "invalid expression in format string: " + co_expr, original, loc)
             compiled_exprs.append(py_expr)

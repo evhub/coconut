@@ -362,6 +362,13 @@ def canparse(argparser, args):
         argparser.error = old_error_method
 
 
+def subpath(path, base_path):
+    """Check if path is a subpath of base_path."""
+    path = fixpath(path)
+    base_path = fixpath(base_path)
+    return path == base_path or path.startswith(base_path + os.sep)
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # CLASSES:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -497,7 +504,7 @@ class Runner(object):
         except BaseException:
             etype, value, tb = sys.exc_info()
             while True:
-                if tb is None or not fixpath(tb.tb_frame.f_code.co_filename).startswith(base_dir):
+                if tb is None or not subpath(tb.tb_frame.f_code.co_filename, base_dir):
                     break
                 tb = tb.tb_next
             traceback.print_exception(etype, value, tb)

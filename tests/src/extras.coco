@@ -39,6 +39,8 @@ def assert_raises(c, exc, not_exc=None, err_has=None):
             assert not isinstance(err, not_exc), f"{err} instance of {not_exc}"
         if err_has is not None:
             assert err_has in str(err), f"{err_has!r} not in {err}"
+    except BaseException as err:
+        raise AssertionError(f"got wrong exception {err} (expected {exc})")
     else:
         raise AssertionError(f"{c} failed to raise exception {exc}")
 
@@ -125,6 +127,7 @@ def test_extras():
     assert_raises(-> parse("return = 1"), CoconutParseError, err_has="invalid use of the keyword")
     assert_raises(-> parse("if a = b: pass"), CoconutParseError, err_has="misplaced assignment")
     assert_raises(-> parse("if a == b"), CoconutParseError, err_has="misplaced newline")
+    assert_raises(-> parse('f"Black holes {*all_black_holes} and revelations"'), CoconutSyntaxError, err_has="format string")
     setup(target="2.7")
     assert parse("from io import BytesIO", mode="any") == "from io import BytesIO"
     assert_raises(-> parse("def f(*, x=None) = x"), CoconutTargetError)
