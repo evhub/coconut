@@ -97,9 +97,7 @@ class object(object):
     __slots__ = ()
     def __ne__(self, other):
         eq = self == other
-        if eq is _coconut.NotImplemented:
-            return eq
-        return not eq
+        return _coconut.NotImplemented if eq is _coconut.NotImplemented else not eq
 class int(_coconut_py_int):
     __slots__ = ()
     if hasattr(_coconut_py_int, "__doc__"):
@@ -173,7 +171,7 @@ class range(object):
     def __copy__(self):
         return self.__class__(*self._args)
     def __eq__(self, other):
-        return _coconut.isinstance(other, self.__class__) and self._args == other._args
+        return self.__class__ is other.__class__ and self._args == other._args
 from collections import Sequence as _coconut_Sequence
 _coconut_Sequence.register(range)
 from functools import wraps as _coconut_wraps
