@@ -218,7 +218,7 @@ class reversed{object}:
     def __reduce__(self):
         return (self.__class__, (self.iter,))
     def __eq__(self, other):
-        return _coconut.isinstance(other, self.__class__) and self.iter == other.iter
+        return self.__class__ is other.__class__ and self.iter == other.iter
     def __contains__(self, elem):
         return elem in self.iter
     def count(self, elem):
@@ -305,7 +305,7 @@ class _coconut_base_parallel_concurrent_map(map):
 class parallel_map(_coconut_base_parallel_concurrent_map):
     """Multi-process implementation of map using concurrent.futures.
     Requires arguments to be pickleable. For multiple sequential calls,
-    use `with parallel_map.multiple_sequential_calls()`."""
+    use `with parallel_map.multiple_sequential_calls():`."""
     __slots__ = ()
     threadlocal_ns = _coconut.threading.local()
     @classmethod
@@ -317,7 +317,7 @@ class parallel_map(_coconut_base_parallel_concurrent_map):
 class concurrent_map(_coconut_base_parallel_concurrent_map):
     """Multi-thread implementation of map using concurrent.futures.
     For multiple sequential calls, use
-    `with concurrent_map.multiple_sequential_calls()`."""
+    `with concurrent_map.multiple_sequential_calls():`."""
     __slots__ = ()
     threadlocal_ns = _coconut.threading.local()
     @classmethod
@@ -497,7 +497,7 @@ class count{object}:
     def __copy__(self):
         return self.__class__(self.start, self.step)
     def __eq__(self, other):
-        return _coconut.isinstance(other, self.__class__) and self.start == other.start and self.step == other.step
+        return self.__class__ is other.__class__ and self.start == other.start and self.step == other.step
     def __fmap__(self, func):
         return _coconut_map(func, self)
 class groupsof{object}:
