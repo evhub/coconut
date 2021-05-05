@@ -1516,11 +1516,11 @@ while True:
 
         extra_stmts = handle_indentation(
             '''
-def __new__(_cls, *{match_to_args_var}, **{match_to_kwargs_var}):
+def __new__(_coconut_cls, *{match_to_args_var}, **{match_to_kwargs_var}):
     {match_check_var} = False
     {matching}
     {pattern_error}
-    return _coconut.tuple.__new__(_cls, {arg_tuple})
+    return _coconut.tuple.__new__(_coconut_cls, {arg_tuple})
             '''.strip(), add_newline=True,
         ).format(
             match_to_args_var=match_to_args_var,
@@ -1598,8 +1598,8 @@ def __new__(_cls, *{match_to_args_var}, **{match_to_kwargs_var}):
             if base_args:
                 extra_stmts += handle_indentation(
                     '''
-def __new__(_cls, {all_args}):
-    return _coconut.tuple.__new__(_cls, {base_args_tuple} + {starred_arg})
+def __new__(_coconut_cls, {all_args}):
+    return _coconut.tuple.__new__(_coconut_cls, {base_args_tuple} + {starred_arg})
 @_coconut.classmethod
 def _make(cls, iterable, {kwd_only}new=_coconut.tuple.__new__, len=_coconut.len):
     result = new(cls, iterable)
@@ -1633,8 +1633,8 @@ def {starred_arg}(self):
             else:
                 extra_stmts += handle_indentation(
                     '''
-def __new__(_cls, *{arg}):
-    return _coconut.tuple.__new__(_cls, {arg})
+def __new__(_coconut_cls, *{arg}):
+    return _coconut.tuple.__new__(_coconut_cls, {arg})
 @_coconut.classmethod
 def _make(cls, iterable, {kwd_only}new=_coconut.tuple.__new__, len=None):
     return new(cls, iterable)
@@ -1659,8 +1659,8 @@ def {arg}(self):
         elif saw_defaults:
             extra_stmts += handle_indentation(
                 '''
-def __new__(_cls, {all_args}):
-    return _coconut.tuple.__new__(_cls, {base_args_tuple})
+def __new__(_coconut_cls, {all_args}):
+    return _coconut.tuple.__new__(_coconut_cls, {base_args_tuple})
                 '''.strip(), add_newline=True,
             ).format(
                 all_args=", ".join(all_args),
