@@ -1506,7 +1506,7 @@ while True:
         else:
             raise CoconutInternalException("invalid pattern-matching tokens in data", match_tokens)
 
-        matcher = self.get_matcher(original, loc, match_check_var, style="coconut", name_list=[])
+        matcher = self.get_matcher(original, loc, match_check_var, name_list=[])
 
         pos_only_args, req_args, def_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(matches, loc)
         matcher.match_function(match_to_args_var, match_to_kwargs_var, pos_only_args, req_args + def_args, star_arg, kwd_only_args, dubstar_arg)
@@ -1823,7 +1823,7 @@ if not {check_var}:
         """Process match assign blocks."""
         internal_assert(len(tokens) == 2, "invalid destructuring assignment tokens", tokens)
         matches, item = tokens
-        out = self.full_match_handle(original, loc, [matches, "in", item, None], style="coconut")
+        out = self.full_match_handle(original, loc, [matches, "in", item, None])
         out += self.pattern_error(original, loc, match_to_var, match_check_var)
         return out
 
