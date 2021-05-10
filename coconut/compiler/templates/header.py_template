@@ -738,7 +738,7 @@ def makedata(data_type, *args):
 {def_datamaker}
 def fmap(func, obj):
     """fmap(func, obj) creates a copy of obj with func applied to its contents.
-    Override by defining obj.__fmap__(func)."""
+    Override by defining obj.__fmap__(func). For numpy arrays, uses np.vectorize."""
     obj_fmap = _coconut.getattr(obj, "__fmap__", None)
     if obj_fmap is not None:
         try:
@@ -748,7 +748,7 @@ def fmap(func, obj):
         else:
             if result is not _coconut.NotImplemented:
                 return result
-    if obj.__class__.__module__ == "numpy":
+    if obj.__class__.__module__ in ("numpy", "pandas"):
         from numpy import vectorize
         return vectorize(func)(obj)
     return _coconut_makedata(obj.__class__, *(_coconut_starmap(func, obj.items()) if _coconut.isinstance(obj, _coconut.abc.Mapping) else _coconut_map(func, obj)))
