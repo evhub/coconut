@@ -37,7 +37,7 @@ from coconut.constants import (
     script_names,
     license_name,
 )
-from coconut.kernel_installer import get_kernel_data_files
+from coconut.install_utils import get_kernel_data_files
 from coconut.requirements import (
     using_modern_setuptools,
     requirements,

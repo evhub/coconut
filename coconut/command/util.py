@@ -308,19 +308,26 @@ def symlink(link_to, link_from):
         shutil.copytree(link_to, link_from)
 
 
+def install_mypy_stubs():
+    """Properly symlink mypy stub files."""
+    symlink(base_stub_dir, installed_stub_dir)
+    return installed_stub_dir
+
+
 def set_mypy_path():
     """Put Coconut stubs in MYPYPATH."""
-    symlink(base_stub_dir, installed_stub_dir)
+    install_dir = install_mypy_stubs()
     original = os.environ.get(mypy_path_env_var)
     if original is None:
-        new_mypy_path = installed_stub_dir
-    elif not original.startswith(installed_stub_dir):
-        new_mypy_path = installed_stub_dir + os.pathsep + original
+        new_mypy_path = install_dir
+    elif not original.startswith(install_dir):
+        new_mypy_path = install_dir + os.pathsep + original
     else:
         new_mypy_path = None
     if new_mypy_path is not None:
         os.environ[mypy_path_env_var] = new_mypy_path
     logger.log_func(lambda: (mypy_path_env_var, "=", os.environ[mypy_path_env_var]))
+    return install_dir
 
 
 def stdin_readable():
