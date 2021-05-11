@@ -143,7 +143,9 @@ docs: clean
 clean:
 	rm -rf ./docs ./dist ./build ./tests/dest ./pyprover ./pyston ./coconut-prelude index.rst profile.json
 	-find . -name '*.pyc' -delete
+	-C:/GnuWin32/bin/find.exe . -name '*.pyc' -delete
 	-find . -name '__pycache__' -delete
+	-C:/GnuWin32/bin/find.exe . -name '__pycache__' -delete
 
 .PHONY: wipe
 wipe: clean

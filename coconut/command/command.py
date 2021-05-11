@@ -52,8 +52,9 @@ from coconut.constants import (
     report_this_text,
     mypy_non_err_prefixes,
     mypy_found_err_prefixes,
+    mypy_install_arg,
 )
-from coconut.kernel_installer import install_custom_kernel
+from coconut.install_utils import install_custom_kernel
 from coconut.command.util import (
     writefile,
     readfile,
@@ -270,6 +271,7 @@ class Command(object):
                 or args.docs
                 or args.watch
                 or args.jupyter is not None
+                or args.mypy == [mypy_install_arg]
             )
         ):
             self.start_prompt()
@@ -610,6 +612,14 @@ class Command(object):
         """Set MyPy arguments."""
         if mypy_args is None:
             self.mypy_args = None
+
+        elif mypy_install_arg in mypy_args:
+            if mypy_args != [mypy_install_arg]:
+                raise CoconutException("'--mypy install' cannot be used alongside other --mypy arguments")
+            stub_dir = set_mypy_path()
+            logger.show_sig("Successfully installed MyPy stubs into " + repr(stub_dir))
+            self.mypy_args = None
+
         else:
             self.mypy_errs = []
             self.mypy_args = list(mypy_args)
@@ -684,6 +694,7 @@ class Command(object):
 
     def install_default_jupyter_kernels(self, jupyter, kernel_list):
         """Install icoconut default kernels."""
+        logger.show_sig("Installing Coconut Jupyter kernels...")
         overall_success = True
 
         for old_kernel_name in icoconut_old_kernel_names:
