@@ -31,7 +31,6 @@ from coconut.constants import (
     PYPY,
     CPYTHON,
     PY34,
-    JUST_PY36,
     IPY,
     WINDOWS,
     PURE_PYTHON,
@@ -192,7 +191,6 @@ if using_modern_setuptools:
     extras[":python_version>='2.7'"] = get_reqs("non-py26")
     extras[":python_version<'3'"] = get_reqs("py2")
     extras[":python_version>='3'"] = get_reqs("py3")
-    extras[":python_version=='3.6.*'"] = get_reqs("just-py36")
 
 else:
     # old method
@@ -204,8 +202,6 @@ else:
         requirements += get_reqs("py2")
     else:
         requirements += get_reqs("py3")
-    if JUST_PY36:
-        requirements += get_reqs("just-py36")
 
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN:

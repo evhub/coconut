@@ -96,7 +96,6 @@ PY33 = sys.version_info >= (3, 3)
 PY34 = sys.version_info >= (3, 4)
 PY35 = sys.version_info >= (3, 5)
 PY36 = sys.version_info >= (3, 6)
-JUST_PY36 = PY36 and not PY37
 IPY = ((PY2 and not PY26) or PY35) and not (PYPY and WINDOWS)
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -139,9 +138,6 @@ all_reqs = {
     ),
     "py3": (
         "prompt_toolkit:3",
-    ),
-    "just-py36": (
-        "dataclasses",
     ),
     "py26": (
         "argparse",
@@ -200,7 +196,6 @@ min_versions = {
     "mypy": (0, 812),
     "futures": (3, 3),
     "backports.functools-lru-cache": (1, 6),
-    "dataclasses": (0, 8),
     "argparse": (1, 4),
     "pexpect": (4,),
     ("trollius", "py2"): (2, 2),
