@@ -293,8 +293,17 @@ def run_cmd(cmd, show_output=True, raise_errs=True, **kwargs):
 
 def symlink(link_to, link_from):
     """Link link_from to the directory link_to universally."""
-    if os.path.exists(link_from) and not os.path.islink(link_from):
-        shutil.rmtree(link_from)
+    if os.path.exists(link_from):
+        if os.path.islink(link_from):
+            os.unlink(link_from)
+        elif WINDOWS:
+            try:
+                os.rmdir(link_from)
+            except OSError:
+                logger.log_exc()
+                shutil.rmtree(link_from)
+        else:
+            shutil.rmtree(link_from)
     try:
         if PY32:
             os.symlink(link_to, link_from, target_is_directory=True)
@@ -302,8 +311,6 @@ def symlink(link_to, link_from):
             os.symlink(link_to, link_from)
     except OSError:
         logger.log_exc()
-    else:
-        return
     if not os.path.islink(link_from):
         shutil.copytree(link_to, link_from)
 
