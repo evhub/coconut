@@ -137,15 +137,17 @@ def tee(iterable, n=2):
     return _coconut.itertools.tee(iterable, n)
 class reiterable{object}:
     """Allows an iterator to be iterated over multiple times."""
-    __slots__ = ("iter",)
+    __slots__ = ("lock", "iter")
     def __new__(cls, iterable):
         if _coconut.isinstance(iterable, _coconut_reiterable):
             return iterable
         self = _coconut.object.__new__(cls)
+        self.lock = _coconut.threading.Lock()
         self.iter = iterable
         return self
     def get_new_iter(self):
-        self.iter, new_iter = _coconut_tee(self.iter)
+        with self.lock:
+            self.iter, new_iter = _coconut_tee(self.iter)
         return new_iter
     def __iter__(self):
         return _coconut.iter(self.get_new_iter())
@@ -640,7 +642,7 @@ class _coconut_base_pattern_func{object}:
         if obj is None:
             return self
         return _coconut.functools.partial(self, obj)
-def _coconut_mark_as_match(base_func):{COMMENT._coconut_is_match_is_used_in_main_coco}
+def _coconut_mark_as_match(base_func):{COMMENT._coconut_is_match_is_used_above_and_in_main_coco}
     base_func._coconut_is_match = True
     return base_func
 def addpattern(base_func, **kwargs):

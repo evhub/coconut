@@ -92,7 +92,7 @@ def get_reqs(which):
                     elif PY2:
                         use_req = False
                         break
-                elif mark.startswith("py3") and len(mark) == len("py3") + 1:
+                elif mark.startswith("py3"):
                     ver = int(mark[len("py3"):])
                     if supports_env_markers:
                         markers.append("python_version>='3.{ver}'".format(ver=ver))
@@ -191,7 +191,6 @@ if using_modern_setuptools:
     extras[":python_version>='2.7'"] = get_reqs("non-py26")
     extras[":python_version<'3'"] = get_reqs("py2")
     extras[":python_version>='3'"] = get_reqs("py3")
-
 else:
     # old method
     if PY26:
