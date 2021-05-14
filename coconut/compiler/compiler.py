@@ -668,6 +668,22 @@ class Compiler(Grammar):
         else:
             logger.warn_err(self.make_err(CoconutSyntaxWarning, *args, **kwargs))
 
+    @contextmanager
+    def complain_on_err(self):
+        """Complain about any parsing-related errors raised inside."""
+        try:
+            yield
+        except ParseBaseException as err:
+            complain(self.make_parse_err(err, reformat=False, include_ln=False))
+        except CoconutException as err:
+            complain(err)
+
+    def remove_strs(self, inputstring):
+        """Remove strings/comments from the given input."""
+        with self.complain_on_err():
+            return self.str_proc(inputstring)
+        return inputstring
+
     def get_matcher(self, original, loc, check_var, style=None, name_list=None):
         """Get a Matcher object."""
         if style is None:
@@ -1325,7 +1341,7 @@ class Compiler(Grammar):
         handle_item.__name__ = "handle_wrapping_" + name
 
         def handle_elem(tokens):
-            internal_assert(len(tokens) == 1, "invalid elem tokens in replace_matches_inside_of", tokens)
+            internal_assert(len(tokens) == 1, "invalid elem tokens in replace_matches_of_inside", tokens)
             if self.stored_matches_of[name]:
                 ref = self.add_ref("repl", tokens[0])
                 self.stored_matches_of[name][-1].append(ref)
@@ -1939,16 +1955,6 @@ if not {check_var}:
                 + body
             )
         return name
-
-    @contextmanager
-    def complain_on_err(self):
-        """Complain about any parsing-related errors raised inside."""
-        try:
-            yield
-        except ParseBaseException as err:
-            complain(self.make_parse_err(err, reformat=False, include_ln=False))
-        except CoconutException as err:
-            complain(err)
 
     def split_docstring(self, block):
         """Split a code block into a docstring and a body."""

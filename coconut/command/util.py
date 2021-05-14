@@ -39,6 +39,9 @@ from coconut.exceptions import (
     get_encoding,
 )
 from coconut.constants import (
+    WINDOWS,
+    PY34,
+    PY32,
     fixpath,
     base_dir,
     main_prompt,
@@ -58,9 +61,6 @@ from coconut.constants import (
     oserror_retcode,
     base_stub_dir,
     installed_stub_dir,
-    WINDOWS,
-    PY34,
-    PY32,
 )
 
 if PY26:
@@ -469,7 +469,7 @@ class Runner(object):
         """Create the executor."""
         from coconut.convenience import auto_compilation, use_coconut_breakpoint
         auto_compilation(on=True)
-        use_coconut_breakpoint(on=False)
+        use_coconut_breakpoint(on=True)
         self.exit = exit
         self.vars = self.build_vars(path)
         self.stored = [] if store else None
@@ -543,6 +543,7 @@ class Runner(object):
             run_func = eval
         else:
             run_func = exec_func
+        result = None
         with self.handling_errors(all_errors_exit):
             if path is None:
                 result = run_func(code, self.vars)
@@ -554,7 +555,7 @@ class Runner(object):
                     self.vars.update(use_vars)
             if store:
                 self.store(code)
-            return result
+        return result
 
     def run_file(self, path, all_errors_exit=True):
         """Execute a Python file."""

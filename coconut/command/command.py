@@ -54,6 +54,8 @@ from coconut.constants import (
     mypy_non_err_prefixes,
     mypy_found_err_prefixes,
     mypy_install_arg,
+    ver_tuple_to_str,
+    mypy_builtin_regex,
 )
 from coconut.install_utils import install_custom_kernel
 from coconut.command.util import (
@@ -587,11 +589,22 @@ class Command(object):
         """Execute compiled code."""
         self.check_runner()
         if compiled is not None:
+
             if allow_show and self.show:
                 print(compiled)
-            if path is not None:  # path means header is included, and thus encoding must be removed
+
+            if path is None:  # header is not included
+                if not self.mypy:
+                    no_str_code = self.comp.remove_strs(compiled)
+                    result = mypy_builtin_regex.search(no_str_code)
+                    if result:
+                        logger.warn("found mypy-only built-in " + repr(result.group(0)), extra="pass --mypy to use mypy-only built-ins at the interpreter")
+
+            else:  # header is included
                 compiled = rem_encoding(compiled)
+
             self.runner.run(compiled, use_eval=use_eval, path=path, all_errors_exit=path is not None)
+
             self.run_mypy(code=self.runner.was_run_code())
 
     def execute_file(self, destpath):
@@ -629,7 +642,7 @@ class Command(object):
             if not any(arg.startswith("--python-version") for arg in mypy_args):
                 self.mypy_args += [
                     "--python-version",
-                    ".".join(str(v) for v in get_target_info_smart(self.comp.target, mode="mypy")),
+                    ver_tuple_to_str(get_target_info_smart(self.comp.target, mode="mypy")),
                 ]
 
             add_mypy_args = default_mypy_args + (verbose_mypy_args if logger.verbose else ())

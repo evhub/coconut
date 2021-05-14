@@ -23,6 +23,7 @@ import sys
 import os
 import string
 import platform
+import re
 import datetime as dt
 from zlib import crc32
 
@@ -673,6 +674,8 @@ mypy_found_err_prefixes = (
 oserror_retcode = 127
 
 mypy_install_arg = "install"
+
+mypy_builtin_regex = re.compile(r"\b(reveal_type|reveal_locals|TYPE_CHECKING)\b")
 
 # -----------------------------------------------------------------------------------------------------------------------
 # HIGHLIGHTER CONSTANTS:
