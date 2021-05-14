@@ -810,6 +810,12 @@ def easter_egg_test():
     assert locals()["byteorder"] == _sys.byteorder
     return True
 
+def mypy_test():
+    assert reveal_type(fmap) is fmap
+    x: int = 10
+    assert reveal_locals() is None
+    return True
+
 def tco_func() = tco_func()
 
 def main(test_easter_eggs=False):
@@ -833,6 +839,7 @@ def main(test_easter_eggs=False):
     assert suite_test()
 
     print(".", end="")  # .....
+    assert mypy_test()
     if "_coconut_tco" in globals() or "_coconut_tco" in locals():
         assert hasattr(tco_func, "_coconut_tco_func")
         assert tco_test()

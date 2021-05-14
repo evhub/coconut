@@ -882,7 +882,8 @@ none_to_ten: () -> int = () -> 10
 
 def int_map(f: int->int, xs: int[]) -> int[]: return list(map(f, xs))
 
-def sum_list_range(n: int) -> int = sum([i for i in range(1, n)])
+def sum_list_range(n: int) -> int =
+    range(1, n) |> list |> sum  # type: ignore
 
 # Context managers
 def context_produces(out):
