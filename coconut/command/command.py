@@ -49,6 +49,7 @@ from coconut.constants import (
     coconut_run_args,
     coconut_run_verbose_args,
     verbose_mypy_args,
+    default_mypy_args,
     report_this_text,
     mypy_non_err_prefixes,
     mypy_found_err_prefixes,
@@ -176,12 +177,14 @@ class Command(object):
             launch_documentation()
         if args.tutorial:
             launch_tutorial()
+        if args.mypy is not None and args.line_numbers:
+            logger.warn("extraneous --line-numbers argument passed; --mypy implies --line-numbers")
 
         self.setup(
             target=args.target,
             strict=args.strict,
             minify=args.minify,
-            line_numbers=args.line_numbers,
+            line_numbers=args.line_numbers or args.mypy is not None,
             keep_lines=args.keep_lines,
             no_tco=args.no_tco,
             no_wrap=args.no_wrap,
@@ -621,7 +624,6 @@ class Command(object):
             self.mypy_args = None
 
         else:
-            self.mypy_errs = []
             self.mypy_args = list(mypy_args)
 
             if not any(arg.startswith("--python-version") for arg in mypy_args):
@@ -630,12 +632,15 @@ class Command(object):
                     ".".join(str(v) for v in get_target_info_smart(self.comp.target, mode="mypy")),
                 ]
 
-            if logger.verbose:
-                for arg in verbose_mypy_args:
-                    if arg not in self.mypy_args:
-                        self.mypy_args.append(arg)
+            add_mypy_args = default_mypy_args + (verbose_mypy_args if logger.verbose else ())
+
+            for arg in add_mypy_args:
+                no_arg = "--no-" + arg.lstrip("-")
+                if arg not in self.mypy_args and no_arg not in self.mypy_args:
+                    self.mypy_args.append(arg)
 
             logger.log("MyPy args:", self.mypy_args)
+            self.mypy_errs = []
 
     def run_mypy(self, paths=(), code=None):
         """Run MyPy with arguments."""

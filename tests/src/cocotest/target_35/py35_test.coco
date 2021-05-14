@@ -1,7 +1,7 @@
-def py35_test():
+def py35_test() -> bool:
     """Performs Python-3.5-specific tests."""
     try:
-        2 @ 3
+        2 @ 3  # type: ignore
     except TypeError as err:
         assert err
     else:

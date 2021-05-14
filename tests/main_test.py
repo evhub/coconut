@@ -71,10 +71,11 @@ mypy_snip = r"a: str = count()[0]"
 mypy_snip_err_2 = r'''error: Incompatible types in assignment (expression has type "int", variable has type "unicode")'''
 mypy_snip_err_3 = r'''error: Incompatible types in assignment (expression has type "int", variable has type "str")'''
 
-mypy_args = ["--follow-imports", "silent", "--ignore-missing-imports"]
+mypy_args = ["--follow-imports", "silent", "--ignore-missing-imports", "--allow-redefinition"]
 
 ignore_mypy_errs_with = (
     "tutorial.py",
+    "unused 'type: ignore' comment",
 )
 
 kernel_installation_msg = "Coconut: Successfully installed Jupyter kernels: " + ", ".join((icoconut_custom_kernel_name,) + icoconut_default_kernel_names)
@@ -106,18 +107,29 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
     else:
         assert_output = tuple(x if x is not True else "<success>" for x in assert_output)
     stdout, stderr, retcode = call_output(cmd, **kwargs)
-    if stderr_first:
-        out = stderr + stdout
-    else:
-        out = stdout + stderr
-    out = "".join(out)
-    lines = out.splitlines()
     if expect_retcode is not None:
         assert retcode == expect_retcode, "Return code not as expected ({retcode} != {expect_retcode}) in: {cmd!r}".format(
             retcode=retcode,
             expect_retcode=expect_retcode,
             cmd=cmd,
         )
+    if stderr_first:
+        out = stderr + stdout
+    else:
+        out = stdout + stderr
+    out = "".join(out)
+    raw_lines = out.splitlines()
+    lines = []
+    i = 0
+    while True:
+        if i >= len(raw_lines):
+            break
+        line = raw_lines[i]
+        if line.rstrip().endswith("error:"):
+            line += raw_lines[i + 1]
+            i += 1
+        i += 1
+        lines.append(line)
     for line in lines:
         assert "CoconutInternalException" not in line, "CoconutInternalException in " + repr(line)
         assert "<unprintable" not in line, "Unprintable error in " + repr(line)

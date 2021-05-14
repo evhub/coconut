@@ -93,11 +93,11 @@ def test_extras():
     assert parse("abc ")
     assert parse("abc # derp", "any") == "abc  # derp"
     setup(line_numbers=True)
-    assert parse("abc", "any") == "abc  # line 1"
+    assert parse("abc", "any") == "abc  # line 1 (in coconut source)"
     setup(keep_lines=True)
-    assert parse("abc", "any") == "abc  # abc"
+    assert parse("abc", "any") == "abc  # coconut: abc"
     setup(line_numbers=True, keep_lines=True)
-    assert parse("abc", "any") == "abc  # line 1: abc"
+    assert parse("abc", "any") == "abc  # coconut line 1: abc"
     setup()
     assert "Deprecated feature 'prepattern' disabled by --strict compilation" not in parse("\n", mode="file")
     assert "Deprecated feature 'datamaker' disabled by --strict compilation" not in parse("\n", mode="file")

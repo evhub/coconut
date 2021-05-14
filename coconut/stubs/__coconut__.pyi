@@ -243,7 +243,7 @@ def addpattern(
     func: _FUNC,
     *,
     allow_any_func: bool=False,
-    ) -> _t.Callable[[_FUNC2], _t.Union[_FUNC, _FUNC2]]: ...
+    ) -> _t.Callable[[_t.Callable], _t.Callable]: ...
 _coconut_addpattern = prepattern = addpattern
 
 
@@ -251,7 +251,7 @@ def _coconut_mark_as_match(func: _FUNC) -> _FUNC:
     return func
 
 
-class _coconut_partial:
+class _coconut_partial(_t.Generic[_T]):
     args: _t.Tuple = ...
     keywords: _t.Dict[_t.Text, _t.Any] = ...
     def __init__(

@@ -1,4 +1,4 @@
-def py36_test():
+def py36_test() -> bool:
     """Performs Python-3.6-specific tests."""
     assert f"{[] |> len}" == "0"
     return True
