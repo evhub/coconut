@@ -2424,66 +2424,6 @@ for x in input_data:
     running_max.append(x)
 ```
 
-### `TYPE_CHECKING`
-
-The `TYPE_CHECKING` variable is set to `False` at runtime and `True` during type-checking, allowing you to prevent your `typing` imports and `TypeVar` definitions from being executed at runtime. By wrapping your `typing` imports in an `if TYPE_CHECKING:` block, you can even use the [`typing`](https://docs.python.org/3/library/typing.html) module on Python versions that don't natively support it. Furthermore, `TYPE_CHECKING` can also be used to hide code that is mistyped by default.
-
-##### Python Docs
-
-A special constant that is assumed to be `True` by 3rd party static type checkers. It is `False` at runtime. Usage:
-```coconut_python
-if TYPE_CHECKING:
-    import expensive_mod
-
-def fun(arg: expensive_mod.SomeType) -> None:
-    local_var: expensive_mod.AnotherType = other_fun()
-```
-
-##### Examples
-
-**Coconut:**
-```coconut
-if TYPE_CHECKING:
-    from typing import List
-x: List[str] = ["a", "b"]
-```
-
-```coconut
-if TYPE_CHECKING:
-    def factorial(n: int) -> int: ...
-else:
-    def factorial(0) = 1
-    addpattern def factorial(n) = n * factorial(n-1)
-```
-
-**Python:**
-```coconut_python
-try:
-    from typing import TYPE_CHECKING
-except ImportError:
-    TYPE_CHECKING = False
-
-if TYPE_CHECKING:
-    from typing import List
-x: List[str] = ["a", "b"]
-```
-
-```coconut_python
-try:
-    from typing import TYPE_CHECKING
-except ImportError:
-    TYPE_CHECKING = False
-
-if TYPE_CHECKING:
-    def factorial(n: int) -> int: ...
-else:
-    def factorial(n):
-        if n == 0:
-            return 1
-        else:
-            return n * factorial(n-1)
-```
-
 ### `recursive_iterator`
 
 Coconut provides a `recursive_iterator` decorator that provides significant optimizations for any stateless, recursive function that returns an iterator. To use `recursive_iterator` on a function, it must meet the following criteria:
@@ -2579,6 +2519,98 @@ with concurrent.futures.ThreadPoolExecutor() as executor:
 ### `MatchError`
 
 A `MatchError` is raised when a [destructuring assignment](#destructuring-assignment) statement fails, and thus `MatchError` is provided as a built-in for catching those errors. `MatchError` objects support three attributes: `pattern`, which is a string describing the failed pattern; `value`, which is the object that failed to match that pattern; and `message` which is the full error message. To avoid unnecessary `repr` calls, `MatchError` only computes the `message` once it is actually requested.
+
+### `TYPE_CHECKING`
+
+The `TYPE_CHECKING` variable is set to `False` at runtime and `True` during type-checking, allowing you to prevent your `typing` imports and `TypeVar` definitions from being executed at runtime. By wrapping your `typing` imports in an `if TYPE_CHECKING:` block, you can even use the [`typing`](https://docs.python.org/3/library/typing.html) module on Python versions that don't natively support it. Furthermore, `TYPE_CHECKING` can also be used to hide code that is mistyped by default.
+
+##### Python Docs
+
+A special constant that is assumed to be `True` by 3rd party static type checkers. It is `False` at runtime. Usage:
+```coconut_python
+if TYPE_CHECKING:
+    import expensive_mod
+
+def fun(arg: expensive_mod.SomeType) -> None:
+    local_var: expensive_mod.AnotherType = other_fun()
+```
+
+##### Examples
+
+**Coconut:**
+```coconut
+if TYPE_CHECKING:
+    from typing import List
+x: List[str] = ["a", "b"]
+```
+
+```coconut
+if TYPE_CHECKING:
+    def factorial(n: int) -> int: ...
+else:
+    def factorial(0) = 1
+    addpattern def factorial(n) = n * factorial(n-1)
+```
+
+**Python:**
+```coconut_python
+try:
+    from typing import TYPE_CHECKING
+except ImportError:
+    TYPE_CHECKING = False
+
+if TYPE_CHECKING:
+    from typing import List
+x: List[str] = ["a", "b"]
+```
+
+```coconut_python
+try:
+    from typing import TYPE_CHECKING
+except ImportError:
+    TYPE_CHECKING = False
+
+if TYPE_CHECKING:
+    def factorial(n: int) -> int: ...
+else:
+    def factorial(n):
+        if n == 0:
+            return 1
+        else:
+            return n * factorial(n-1)
+```
+
+### `reveal_type` and `reveal_locals`
+
+When using MyPy, `reveal_type(<expr>)` will cause MyPy to print the type of `<expr>` and `reveal_locals()` will cause MyPy to print the types of the current `locals()`. At runtime, `reveal_type(x)` is always the identity function and `reveal_locals()` always returns `None`. See [the MyPy documentation](https://mypy.readthedocs.io/en/stable/common_issues.html#reveal-type) for more information.
+
+##### Example
+
+**Coconut:**
+```coconut_pycon
+> coconut --mypy
+Coconut Interpreter:
+(enter 'exit()' or press Ctrl-D to end)
+>>> reveal_type(fmap)
+<function fmap at 0x00000239B06E2040>
+<string>:17: note: Revealed type is 'def [_T, _U] (func: def (_T`-1) -> _U`-2, obj: typing.Iterable[_T`-1]) -> typing.Iterable[_U`-2]'
+>>>
+```
+
+**Python**
+```coconut_python
+try:
+    from typing import TYPE_CHECKING
+except ImportError:
+    TYPE_CHECKING = False
+
+if not TYPE_CHECKING:
+    def reveal_type(x):
+        return x
+
+from coconut.__coconut__ import fmap
+reveal_type(fmap)
+```
 
 ## Coconut Modules
 
