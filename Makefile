@@ -85,14 +85,14 @@ test-pypy3:
 # same as test-basic but also runs mypy
 .PHONY: test-mypy
 test-mypy:
-	python ./tests --strict --line-numbers --force --target sys --mypy --follow-imports silent --ignore-missing-imports
+	python ./tests --strict --force --target sys --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
 	python ./tests/dest/runner.py
 	python ./tests/dest/extras.py
 
 # same as test-mypy but uses the universal target
 .PHONY: test-mypy-univ
 test-mypy-univ:
-	python ./tests --strict --line-numbers --force --mypy --follow-imports silent --ignore-missing-imports
+	python ./tests --strict --force --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
 	python ./tests/dest/runner.py
 	python ./tests/dest/extras.py
 
@@ -100,6 +100,13 @@ test-mypy-univ:
 .PHONY: test-verbose
 test-verbose:
 	python ./tests --strict --line-numbers --force --verbose --jobs 0
+	python ./tests/dest/runner.py
+	python ./tests/dest/extras.py
+
+# same as test-mypy but uses --verbose
+.PHONY: test-mypy-verbose
+test-mypy-verbose:
+	python ./tests --strict --force --target sys --verbose --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
 	python ./tests/dest/runner.py
 	python ./tests/dest/extras.py
 

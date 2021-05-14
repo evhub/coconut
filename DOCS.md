@@ -359,7 +359,11 @@ Coconut even supports `--mypy` in the interpreter, which will intelligently scan
 ```coconut
 >>> a: str = count()[0]
 <string>:14: error: Incompatible types in assignment (expression has type "int", variable has type "str")
+>>> reveal_type(a)
+0
+<string>:19: note: Revealed type is 'builtins.unicode'
 ```
+_For more information on `reveal_type`, see [`reveal_type` and `reveal_locals`](#reveal-type-and-reveal-locals)._
 
 Sometimes, MyPy will not know how to handle certain Coconut constructs, such as `addpattern`. For the `addpattern` case, it is recommended to pass `--allow-redefinition` to MyPy (i.e. run `coconut <args> --mypy --allow-redefinition`), though in some cases `--allow-redefinition` may not be sufficient. In that case, either hide the offending code using [`TYPE_CHECKING`](#type-checking) or put a `# type: ignore` comment on the Coconut line which is generating the line MyPy is complaining about (you can figure out what line this is using `--line-numbers`) and the comment will be added to every generated line.
 
@@ -1365,6 +1369,8 @@ foo[0] = 1   # MyPy error: "Unsupported target for indexed assignment"
 ```
 
 If you want to use `List` instead (if you want to support indexed assignment), use the standard Python 3.5 variable type annotation syntax: `foo: List[<type>]`.
+
+_Note: To easily view your defined types, see [`reveal_type` and `reveal_locals`](#reveal-type-and-reveal-locals)._
 
 ##### Example
 

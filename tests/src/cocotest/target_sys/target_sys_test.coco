@@ -38,7 +38,7 @@ def it_ret_tuple(x, y):
 
 
 # Main
-def target_sys_test():
+def target_sys_test() -> bool:
     """Performs --target sys tests."""
     if TEST_ASYNCIO:
         import asyncio

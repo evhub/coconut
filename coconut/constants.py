@@ -650,6 +650,9 @@ coconut_run_args = ("--run", "--target", "sys", "--quiet")
 coconut_run_verbose_args = ("--run", "--target", "sys")
 coconut_import_hook_args = ("--target", "sys", "--quiet")
 
+default_mypy_args = (
+    "--pretty",
+)
 verbose_mypy_args = (
     "--warn-unused-configs",
     "--warn-redundant-casts",

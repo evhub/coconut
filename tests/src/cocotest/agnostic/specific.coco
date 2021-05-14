@@ -2,7 +2,7 @@ from io import StringIO  # type: ignore
 
 from .util import mod  # NOQA
 
-def non_py26_test():
+def non_py26_test() -> bool:
     """Tests for any non-py26 version."""
     test = {}
     exec("a = 1", test)
@@ -16,7 +16,7 @@ def non_py26_test():
     assert 5 .imag == 0
     return True
 
-def non_py32_test():
+def non_py32_test() -> bool:
     """Tests for any non-py32 version."""
     assert {range(8): True}[range(8)]
     assert range(1, 2) == range(1, 2)
@@ -26,7 +26,7 @@ def non_py32_test():
     assert fakefile.getvalue() == "herpaderp\n"
     return True
 
-def py37_test():
+def py37_test() -> bool:
     """Tests for any py37+ version."""
     assert py_breakpoint
     return True

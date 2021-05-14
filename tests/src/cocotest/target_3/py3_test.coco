@@ -1,4 +1,4 @@
-def py3_test():
+def py3_test() -> bool:
     """Performs Python-3-specific tests."""
     x = 5
     assert x == 5
@@ -25,10 +25,10 @@ def py3_test():
     assert isinstance(5, A)
     assert py_map((x) -> x+1, range(4)) |> tuple == (1, 2, 3, 4)
     assert py_zip(range(3), range(3)) |> tuple == ((0, 0), (1, 1), (2, 2))
-    class B(*()): pass
+    class B(*()): pass  # type: ignore
     assert isinstance(B(), B)
     e = exec
-    test = {}
+    test: dict = {}
     e("a=1", test)
     assert test["a"] == 1
     def keyword_only(*, a) = a

@@ -10,7 +10,7 @@ def assert_raises(c, exc):
     else:
         raise AssertionError("%r failed to raise exception %r" % (c, exc))
 
-def main_test():
+def main_test() -> bool:
     """Basic no-dependency tests."""
     assert 1 | 2 == 3
     assert "\n" == (
@@ -792,13 +792,13 @@ def main_test():
     assert zip([1], [2], strict=True) |> repr == "zip([1], [2], strict=True)"
     return True
 
-def test_asyncio():
+def test_asyncio() -> bool:
     import asyncio  # type: ignore
     loop = asyncio.new_event_loop()
     loop.close()
     return True
 
-def easter_egg_test():
+def easter_egg_test() -> bool:
     import sys as _sys
     num_mods_0 = len(_sys.modules)
     import *
@@ -810,7 +810,7 @@ def easter_egg_test():
     assert locals()["byteorder"] == _sys.byteorder
     return True
 
-def mypy_test():
+def mypy_test() -> bool:
     assert reveal_type(fmap) is fmap
     x: int = 10
     assert reveal_locals() is None
