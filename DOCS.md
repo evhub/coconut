@@ -275,13 +275,13 @@ If the `--strict` (`-s` for short) flag is enabled, Coconut will perform additio
 The style issues which will cause `--strict` to throw an error are:
 
 - mixing of tabs and spaces (without `--strict` will show a warning),
-- use of `from __future__` imports (without `--strict` will show a warning)
+- use of `from __future__` imports (Coconut does these automatically) (without `--strict` will show a warning)
 - missing new line at end of file,
 - trailing whitespace at end of lines,
 - semicolons at end of lines,
-- use of the Python-style `lambda` statement,
-- use of Python-3.10/PEP-622-style dotted names in pattern-matching (Coconut style is to preface these with an `=`),
-- pattern-matching syntax that is ambiguous between Coconut rules and Python 3.10/PEP 622 rules outside of `match`/`case` blocks (such behavior always emits a warning in `match`/`case` blocks),
+- use of the Python-style `lambda` statement (use [Coconut's lambda syntax](#lambdas) instead),
+- Python 3.10/PEP-622-style `match ...: case ...:` syntax (use [Coconut's `case ...: match ...:` syntax](#case) instead),
+- Python-3.10/PEP-622-style dotted names in pattern-matching (Coconut style is to preface these with an `=`),
 - inheriting from `object` in classes (Coconut does this automatically),
 - use of `u` to denote Unicode strings (all Coconut strings are Unicode strings), and
 - use of backslash continuation (use [parenthetical continuation](#enhanced-parenthetical-continuation) instead).
@@ -875,10 +875,10 @@ pattern ::= (
     | STRING                        # strings
     | [pattern "as"] NAME           # capture (binds tightly)
     | NAME ":=" patterns            # capture (binds loosely)
-    | NAME "(" patterns ")"         # data types
+    | NAME "(" patterns ")"         # data types (or classes if using PEP 622 syntax)
     | "data" NAME "(" patterns ")"  # data types
     | "class" NAME "(" patterns ")" # classes
-    | pattern "is" exprs            # type-checking
+    | pattern "is" exprs            # isinstance check
     | pattern "and" pattern         # match all
     | pattern ("or" | "|") pattern  # match any
     | "{" pattern_pairs             # dictionaries
@@ -925,9 +925,10 @@ pattern ::= (
   * If the same variable is used multiple times, a check will be performed that each use match to the same value.
   * If the variable name `_` is used, nothing will be bound and everything will always match to it.
 - Explicit Bindings (`<pattern> as <var>`): will bind `<var>` to `<pattern>`.
-- Checks (`=<var>`): will check that whatever is in that position is equal to the previously defined variable `<var>`.
-- Type Checks (`<var> is <types>`): will check that whatever is in that position is of type(s) `<types>` before binding the `<var>`.
+- Checks (`=<var>`): will check that whatever is in that position is `==` to the previously defined variable `<var>`.
+- `isinstance` Checks (`<var> is <types>`): will check that whatever is in that position `isinstance` of `<types>` before binding the `<var>`.
 - Data Types (`<name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`. Includes support for positional arguments, named arguments, and starred arguments.
+- Classes (`class <name>(<args>)`): does [PEP-622-style class matching](https://www.python.org/dev/peps/pep-0622/#class-patterns).
 - Lists (`[<patterns>]`), Tuples (`(<patterns>)`): will only match a sequence (`collections.abc.Sequence`) of the same length, and will check the contents against `<patterns>`.
 - Lazy lists (`(|<patterns>|)`): same as list or tuple matching, but checks iterable (`collections.abc.Iterable`) instead of sequence.
 - Fixed-Length Dicts (`{<pairs>}`): will only match a mapping (`collections.abc.Mapping`) of the same length, and will check the contents against `<pairs>`.
@@ -1039,33 +1040,22 @@ match <value>:
     <body>]
 ```
 
+As Coconut's pattern-matching rules and the PEP 622 rules sometimes conflict (specifically for classes and dictionaries), it is recommended to just always use Coconut-style pattern-matching (e.g. `case ...: match ...:` instead of `match ...: case ...:`) and use the following provided special constructs for getting PEP-622-style behavior:
+- for matching dictionaries PEP-622-style, use `{..., **_}` to denote that the dictionary can contain extra unmatched items (to explicitly request the Coconut behavior, instead use `{..., **{}}`) and
+- for matching classes PEP-622-style, use `class cls_name(args)` to denote that a `class` match rather than a `data` match is desired (to explicitly request a Coconut-style `data` match, instead use `data data_name(args)`).
+
+_Note that `--strict` disables PEP-622-style pattern-matching syntax entirely._
+
 ##### Example
 
 **Coconut:**
 ```coconut
-def classify_sequence(value):
-    out = ""        # unlike with normal matches, only one of the patterns
-    case value:     #  will match, and out will only get appended to once
-        match ():
-            out += "empty"
-        match (_,):
-            out += "singleton"
-        match (x,x):
-            out += "duplicate pair of "+str(x)
-        match (_,_):
-            out += "pair"
-        match _ is (tuple, list):
-            out += "sequence"
-    else:
-        raise TypeError()
-    return out
-
-[] |> classify_sequence |> print
-() |> classify_sequence |> print
-[1] |> classify_sequence |> print
-(1,1) |> classify_sequence |> print
-(1,2) |> classify_sequence |> print
-(1,1,1) |> classify_sequence |> print
+match {"a": 1, "b": 2}:
+    case {"a": a}:
+        pass
+    case _:
+        assert False
+assert a == 1
 ```
 
 **Python:**

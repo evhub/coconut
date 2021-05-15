@@ -673,18 +673,6 @@ def main_test() -> bool:
         assert (x, rest) == (1, [2, 3])
     else:
         assert False
-    found_x = None
-    match 1, 2:
-        case x, 1:
-            assert False
-        case (x, 2) + tail:
-            assert not tail
-            found_x = x
-        case _:
-            assert False
-    else:
-        assert False
-    assert found_x == 1
     1, two = 1, 2
     assert two == 2
     match {"a": a, **{}} = {"a": 1}
@@ -696,11 +684,6 @@ def main_test() -> bool:
         assert False
     match {"a": a, **_} in big_d:
         pass
-    else:
-        assert False
-    match big_d:
-        case {"a": a}:
-            assert a == 1
     else:
         assert False
     class A:  # type: ignore
@@ -720,11 +703,6 @@ def main_test() -> bool:
     else:
         assert False
     class A(x=1) = a1
-    match a1:
-        case A(x=1):
-            pass
-    else:
-        assert False
     class A  # type: ignore
     try:
         class B(A):
@@ -790,6 +768,8 @@ def main_test() -> bool:
     else:
         assert False
     assert zip([1], [2], strict=True) |> repr == "zip([1], [2], strict=True)"
+    (|x, y|) = (|1, 2|)  # type: ignore
+    assert (x, y) == (1, 2)
     return True
 
 def test_asyncio() -> bool:
@@ -858,17 +838,21 @@ def main(test_easter_eggs=False):
             from .py36_test import py36_test
             assert py36_test()
 
-    print(".", end="")
+    print(".", end="")  # .......
     from .target_sys_test import TEST_ASYNCIO, target_sys_test
     if TEST_ASYNCIO:
         assert test_asyncio()
-    assert target_sys_test()  # type: ignore
+    assert target_sys_test()
 
     print(".", end="")  # ........
-    from . import tutorial  # type: ignore
+    from .non_strict_test import non_strict_test
+    assert non_strict_test()
+
+    print(".", end="")  # .........
+    from . import tutorial
 
     if test_easter_eggs:
-        print(".", end="")  # .........
+        print(".", end="")  # ..........
         assert easter_egg_test()
 
     print("\n<success>")

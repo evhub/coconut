@@ -277,6 +277,12 @@ def comp_sys(args=[], **kwargs):
     comp(path="cocotest", folder="target_sys", args=["--target", "sys"] + args, **kwargs)
 
 
+def comp_non_strict(args=[], **kwargs):
+    """Compiles non_strict."""
+    non_strict_args = [arg for arg in args if arg != "--strict"]
+    comp(path="cocotest", folder="non_strict", args=non_strict_args, **kwargs)
+
+
 def run_src(**kwargs):
     """Runs runner.py."""
     call_python([os.path.join(dest, "runner.py")], assert_output=True, **kwargs)
@@ -306,6 +312,7 @@ def run(args=[], agnostic_target=None, use_run_arg=False, expect_retcode=0):
                 comp_36(args, expect_retcode=expect_retcode)
         comp_agnostic(agnostic_args, expect_retcode=expect_retcode)
         comp_sys(args, expect_retcode=expect_retcode)
+        comp_non_strict(args, expect_retcode=expect_retcode)
 
         if use_run_arg:
             comp_runner(["--run"] + agnostic_args, expect_retcode=expect_retcode, assert_output=True)
@@ -371,6 +378,7 @@ def comp_all(args=[], **kwargs):
     comp_36(args, **kwargs)
     comp_agnostic(args, **kwargs)
     comp_sys(args, **kwargs)
+    comp_non_strict(args, **kwargs)
     comp_runner(args, **kwargs)
     comp_extras(args, **kwargs)
 

@@ -27,19 +27,19 @@ else:
 _Callable = _t.Callable[..., _t.Any]
 _Iterable = _t.Iterable[_t.Any]
 
-_T = _t.TypeVar("T")
-_U = _t.TypeVar("U")
-_V = _t.TypeVar("V")
-_W = _t.TypeVar("W")
-_Tco = _t.TypeVar("T_co", covariant=True)
-_Uco = _t.TypeVar("U_co", covariant=True)
-_Vco = _t.TypeVar("V_co", covariant=True)
-_Wco = _t.TypeVar("W_co", covariant=True)
-_Tcontra = _t.TypeVar("T_contra", contravariant=True)
-_FUNC = _t.TypeVar("FUNC", bound=_Callable)
-_FUNC2 = _t.TypeVar("FUNC_2", bound=_Callable)
-_ITER = _t.TypeVar("ITER", bound=_Iterable)
-_ITER_FUNC = _t.TypeVar("ITER_FUNC", bound=_t.Callable[..., _Iterable])
+_T = _t.TypeVar("_T")
+_U = _t.TypeVar("_U")
+_V = _t.TypeVar("_V")
+_W = _t.TypeVar("_W")
+_Tco = _t.TypeVar("_Tco", covariant=True)
+_Uco = _t.TypeVar("_Uco", covariant=True)
+_Vco = _t.TypeVar("_Vco", covariant=True)
+_Wco = _t.TypeVar("_Wco", covariant=True)
+_Tcontra = _t.TypeVar("_Tcontra", contravariant=True)
+_Tfunc = _t.TypeVar("_Tfunc", bound=_Callable)
+_Ufunc = _t.TypeVar("_Ufunc", bound=_Callable)
+_Titer = _t.TypeVar("_Titer", bound=_Iterable)
+_T_iter_func = _t.TypeVar("_T_iter_func", bound=_t.Callable[..., _Iterable])
 
 
 if sys.version_info < (3,):
@@ -230,7 +230,7 @@ _coconut_MatchError = MatchError
 def _coconut_get_function_match_error() -> _t.Type[MatchError]: ...
 
 
-def _coconut_tco(func: _FUNC) -> _FUNC:
+def _coconut_tco(func: _Tfunc) -> _Tfunc:
     return func
 
 
@@ -260,11 +260,11 @@ def _coconut_tail_call(
 ) -> _Tco: ...
 
 
-def recursive_iterator(func: _ITER_FUNC) -> _ITER_FUNC:
+def recursive_iterator(func: _T_iter_func) -> _T_iter_func:
     return func
 
 
-def override(func: _FUNC) -> _FUNC:
+def override(func: _Tfunc) -> _Tfunc:
     return func
 
 def _coconut_call_set_names(cls: object) -> None: ...
@@ -283,7 +283,7 @@ def addpattern(
 _coconut_addpattern = prepattern = addpattern
 
 
-def _coconut_mark_as_match(func: _FUNC) -> _FUNC:
+def _coconut_mark_as_match(func: _Tfunc) -> _Tfunc:
     return func
 
 
