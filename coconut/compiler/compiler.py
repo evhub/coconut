@@ -687,10 +687,7 @@ class Compiler(Grammar):
     def get_matcher(self, original, loc, check_var, style=None, name_list=None):
         """Get a Matcher object."""
         if style is None:
-            if self.strict:
-                style = "coconut strict"
-            else:
-                style = "coconut"
+            style = "coconut"
         return Matcher(self, original, loc, check_var, style=style, name_list=name_list)
 
     def add_ref(self, reftype, data):
@@ -2429,8 +2426,13 @@ if {store_var} is not _coconut_sentinel:
             raise CoconutInternalException("invalid case tokens", tokens)
 
         if block_kwd == "case":
-            style = "coconut warn"
+            if self.strict:
+                style = "coconut"
+            else:
+                style = "coconut warn"
         elif block_kwd == "match":
+            if self.strict:
+                raise self.make_err(CoconutStyleError, 'found Python-style "match: case" syntax (use Coconut-style "case: match" syntax instead)', original, loc)
             style = "python warn"
         else:
             raise CoconutInternalException("invalid case block keyword", block_kwd)

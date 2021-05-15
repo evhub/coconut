@@ -161,7 +161,7 @@ class Matcher(object):
 
     def rule_conflict_warn(self, message, if_coconut=None, if_python=None, extra=None):
         """Warns on conflicting style rules if callback was given."""
-        if self.style.endswith("warn") or self.style.endswith("strict"):
+        if self.style.endswith("warn") or self.style.endswith("strict") and self.comp.strict:
             full_msg = message
             if if_python or if_coconut:
                 full_msg += " (" + (if_python if self.using_python_rules else if_coconut) + ")"

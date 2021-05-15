@@ -1,0 +1,6 @@
+def non_strict_test() -> bool:
+    """Performs non --strict tests."""
+    return True
+
+if __name__ == "__main__":
+    assert non_strict_test()
