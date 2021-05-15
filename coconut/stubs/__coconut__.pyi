@@ -27,13 +27,19 @@ else:
 _Callable = _t.Callable[..., _t.Any]
 _Iterable = _t.Iterable[_t.Any]
 
-_T = _t.TypeVar("_T")
-_U = _t.TypeVar("_U")
-_V = _t.TypeVar("_V")
-_W = _t.TypeVar("_W")
-_FUNC = _t.TypeVar("_FUNC", bound=_Callable)
-_FUNC2 = _t.TypeVar("_FUNC2", bound=_Callable)
-_ITER_FUNC = _t.TypeVar("_ITER_FUNC", bound=_t.Callable[..., _Iterable])
+_T = _t.TypeVar("T")
+_U = _t.TypeVar("U")
+_V = _t.TypeVar("V")
+_W = _t.TypeVar("W")
+_Tco = _t.TypeVar("T_co", covariant=True)
+_Uco = _t.TypeVar("U_co", covariant=True)
+_Vco = _t.TypeVar("V_co", covariant=True)
+_Wco = _t.TypeVar("W_co", covariant=True)
+_Tcontra = _t.TypeVar("T_contra", contravariant=True)
+_FUNC = _t.TypeVar("FUNC", bound=_Callable)
+_FUNC2 = _t.TypeVar("FUNC_2", bound=_Callable)
+_ITER = _t.TypeVar("ITER", bound=_Iterable)
+_ITER_FUNC = _t.TypeVar("ITER_FUNC", bound=_t.Callable[..., _Iterable])
 
 
 if sys.version_info < (3,):
@@ -180,7 +186,7 @@ if sys.version_info >= (3, 2):
     from functools import lru_cache as _lru_cache
 else:
     from backports.functools_lru_cache import lru_cache as _lru_cache
-    _coconut.functools.lru_cache = _lru_cache
+    _coconut.functools.lru_cache = _lru_cache  # type: ignore
 
 zip_longest = _zip_longest
 memoize = _lru_cache
@@ -205,8 +211,8 @@ _coconut_sentinel = object()
 
 
 def scan(
-    func: _t.Callable[[_T, _U], _T],
-    iterable: _t.Iterable[_U],
+    func: _t.Callable[[_T, _Uco], _T],
+    iterable: _t.Iterable[_Uco],
     initializer: _T = ...,
 ) -> _t.Iterable[_T]: ...
 
@@ -229,13 +235,29 @@ def _coconut_tco(func: _FUNC) -> _FUNC:
 
 
 @_t.overload
-def _coconut_tail_call(func: _t.Callable[[_T], _U], _x: _T) -> _U: ...
+def _coconut_tail_call(
+    func: _t.Callable[[_T], _Uco],
+    _x: _T,
+) -> _Uco: ...
 @_t.overload
-def _coconut_tail_call(func: _t.Callable[[_T, _U], _V], _x: _T, _y: _U) -> _V: ...
+def _coconut_tail_call(
+    func: _t.Callable[[_T, _U], _Vco],
+    _x: _T,
+    _y: _U,
+) -> _Vco: ...
 @_t.overload
-def _coconut_tail_call(func: _t.Callable[[_T, _U, _V], _W], _x: _T, _y: _U, _z: _V) -> _W: ...
+def _coconut_tail_call(
+    func: _t.Callable[[_T, _U, _V], _Wco],
+    _x: _T,
+    _y: _U,
+    _z: _V,
+) -> _Wco: ...
 @_t.overload
-def _coconut_tail_call(func: _t.Callable[..., _T], *args: _t.Any, **kwargs: _t.Any) -> _T: ...
+def _coconut_tail_call(
+    func: _t.Callable[..., _Tco],
+    *args: _t.Any,
+    **kwargs: _t.Any,
+) -> _Tco: ...
 
 
 def recursive_iterator(func: _ITER_FUNC) -> _ITER_FUNC:
@@ -299,33 +321,33 @@ def _coconut_base_compose(
 
 @_t.overload
 def _coconut_forward_compose(
-    _g: _t.Callable[[_T], _U],
-    _f: _t.Callable[[_U], _V],
-    ) -> _t.Callable[[_T], _V]: ...
+    _g: _t.Callable[[_Tco], _Uco],
+    _f: _t.Callable[[_Uco], _Vco],
+    ) -> _t.Callable[[_Tco], _Vco]: ...
 @_t.overload
 def _coconut_forward_compose(
-    _h: _t.Callable[[_T], _U],
-    _g: _t.Callable[[_U], _V],
-    _f: _t.Callable[[_V], _W],
-    ) -> _t.Callable[[_T], _W]: ...
+    _h: _t.Callable[[_Tco], _Uco],
+    _g: _t.Callable[[_Uco], _Vco],
+    _f: _t.Callable[[_Vco], _Wco],
+    ) -> _t.Callable[[_Tco], _Wco]: ...
 @_t.overload
 def _coconut_forward_compose(
-    _g: _t.Callable[..., _T],
-    _f: _t.Callable[[_T], _U],
-    ) -> _t.Callable[..., _U]: ...
+    _g: _t.Callable[..., _Tco],
+    _f: _t.Callable[[_Tco], _Uco],
+    ) -> _t.Callable[..., _Uco]: ...
 @_t.overload
 def _coconut_forward_compose(
-    _h: _t.Callable[..., _T],
-    _g: _t.Callable[[_T], _U],
-    _f: _t.Callable[[_U], _V],
-    ) -> _t.Callable[..., _V]: ...
+    _h: _t.Callable[..., _Tco],
+    _g: _t.Callable[[_Tco], _Uco],
+    _f: _t.Callable[[_Uco], _Vco],
+    ) -> _t.Callable[..., _Vco]: ...
 @_t.overload
 def _coconut_forward_compose(
-    _h: _t.Callable[..., _T],
-    _g: _t.Callable[[_T], _U],
-    _f: _t.Callable[[_U], _V],
-    _e: _t.Callable[[_V], _W],
-    ) -> _t.Callable[..., _W]: ...
+    _h: _t.Callable[..., _Tco],
+    _g: _t.Callable[[_Tco], _Uco],
+    _f: _t.Callable[[_Uco], _Vco],
+    _e: _t.Callable[[_Vco], _Wco],
+    ) -> _t.Callable[..., _Wco]: ...
 @_t.overload
 def _coconut_forward_compose(*funcs: _Callable) -> _Callable: ...
 
@@ -335,33 +357,33 @@ _coconut_forward_dubstar_compose = _coconut_forward_compose
 
 @_t.overload
 def _coconut_back_compose(
-    _f: _t.Callable[[_U], _V],
-    _g: _t.Callable[[_T], _U],
-    ) -> _t.Callable[[_T], _V]: ...
+    _f: _t.Callable[[_Uco], _Vco],
+    _g: _t.Callable[[_Tco], _Uco],
+    ) -> _t.Callable[[_Tco], _Vco]: ...
 @_t.overload
 def _coconut_back_compose(
-    _f: _t.Callable[[_V], _W],
-    _g: _t.Callable[[_U], _V],
-    _h: _t.Callable[[_T], _U],
-    ) -> _t.Callable[[_T], _W]: ...
+    _f: _t.Callable[[_Vco], _Wco],
+    _g: _t.Callable[[_Uco], _Vco],
+    _h: _t.Callable[[_Tco], _Uco],
+    ) -> _t.Callable[[_Tco], _Wco]: ...
 @_t.overload
 def _coconut_back_compose(
-    _f: _t.Callable[[_T], _U],
-    _g: _t.Callable[..., _T],
-    ) -> _t.Callable[..., _U]: ...
+    _f: _t.Callable[[_Tco], _Uco],
+    _g: _t.Callable[..., _Tco],
+    ) -> _t.Callable[..., _Uco]: ...
 @_t.overload
 def _coconut_back_compose(
-    _f: _t.Callable[[_U], _V],
-    _g: _t.Callable[[_T], _U],
-    _h: _t.Callable[..., _T],
-    ) -> _t.Callable[..., _V]: ...
+    _f: _t.Callable[[_Uco], _Vco],
+    _g: _t.Callable[[_Tco], _Uco],
+    _h: _t.Callable[..., _Tco],
+    ) -> _t.Callable[..., _Vco]: ...
 @_t.overload
 def _coconut_back_compose(
-    _e: _t.Callable[[_V], _W],
-    _f: _t.Callable[[_U], _V],
-    _g: _t.Callable[[_T], _U],
-    _h: _t.Callable[..., _T],
-    ) -> _t.Callable[..., _W]: ...
+    _e: _t.Callable[[_Vco], _Wco],
+    _f: _t.Callable[[_Uco], _Vco],
+    _g: _t.Callable[[_Tco], _Uco],
+    _h: _t.Callable[..., _Tco],
+    ) -> _t.Callable[..., _Wco]: ...
 @_t.overload
 def _coconut_back_compose(*funcs: _Callable) -> _Callable: ...
 
@@ -369,36 +391,61 @@ _coconut_back_star_compose = _coconut_back_compose
 _coconut_back_dubstar_compose = _coconut_back_compose
 
 
-def _coconut_pipe(x: _T, f: _t.Callable[[_T], _U]) -> _U: ...
-def _coconut_star_pipe(xs: _Iterable, f: _t.Callable[..., _T]) -> _T: ...
-def _coconut_dubstar_pipe(kws: _t.Dict[_t.Text, _t.Any], f: _t.Callable[..., _T]) -> _T: ...
+def _coconut_pipe(
+    x: _T,
+    f: _t.Callable[[_T], _Uco],
+) -> _Uco: ...
+def _coconut_star_pipe(
+    xs: _Iterable,
+    f: _t.Callable[..., _Tco],
+) -> _Tco: ...
+def _coconut_dubstar_pipe(
+    kws: _t.Dict[_t.Text, _t.Any],
+    f: _t.Callable[..., _Tco],
+) -> _Tco: ...
+
+def _coconut_back_pipe(
+    f: _t.Callable[[_T], _Uco],
+    x: _T,
+) -> _Uco: ...
+def _coconut_back_star_pipe(
+    f: _t.Callable[..., _Tco],
+    xs: _Iterable,
+) -> _Tco: ...
+def _coconut_back_dubstar_pipe(
+    f: _t.Callable[..., _Tco],
+    kws: _t.Dict[_t.Text, _t.Any],
+) -> _Tco: ...
+
+def _coconut_none_pipe(
+    x: _t.Optional[_Tco],
+    f: _t.Callable[[_Tco], _Uco],
+) -> _t.Optional[_Uco]: ...
+def _coconut_none_star_pipe(
+    xs: _t.Optional[_Iterable],
+    f: _t.Callable[..., _Tco],
+) -> _t.Optional[_Tco]: ...
+def _coconut_none_dubstar_pipe(
+    kws: _t.Optional[_t.Dict[_t.Text, _t.Any]],
+    f: _t.Callable[..., _Tco],
+) -> _t.Optional[_Tco]: ...
 
 
-def _coconut_back_pipe(f: _t.Callable[[_T], _U], x: _T) -> _U: ...
-def _coconut_back_star_pipe(f: _t.Callable[..., _T], xs: _Iterable) -> _T: ...
-def _coconut_back_dubstar_pipe(f: _t.Callable[..., _T], kws: _t.Dict[_t.Text, _t.Any]) -> _T: ...
-
-
-def _coconut_none_pipe(x: _t.Optional[_T], f: _t.Callable[[_T], _U]) -> _t.Optional[_U]: ...
-def _coconut_none_star_pipe(xs: _t.Optional[_Iterable], f: _t.Callable[..., _T]) -> _t.Optional[_T]: ...
-def _coconut_none_dubstar_pipe(kws: _t.Optional[_t.Dict[_t.Text, _t.Any]], f: _t.Callable[..., _T]) -> _t.Optional[_T]: ...
-
-
-def _coconut_assert(cond: _t.Any, msg: _t.Optional[_t.Text]=None) -> None:
+def _coconut_assert(cond: _t.Any, msg: _t.Optional[_t.Text] = None) -> None:
     assert cond, msg
 
 
 @_t.overload
 def _coconut_bool_and(a: _t.Literal[True], b: _T) -> _T: ...
 @_t.overload
-def _coconut_bool_and(a: _T, b: _U) -> _t.Union[_T, _U]: ...
+def _coconut_bool_and(a: _T, b: _U) -> _T | _U: ...
 
 @_t.overload
 def _coconut_bool_or(a: None, b: _T) -> _T: ...
 @_t.overload
 def _coconut_bool_or(a: _t.Literal[False], b: _T) -> _T: ...
 @_t.overload
-def _coconut_bool_or(a: _T, b: _U) -> _t.Union[_T, _U]: ...
+def _coconut_bool_or(a: _T, b: _U) -> _T | _U: ...
 
 
 @_t.overload
@@ -406,7 +453,7 @@ def _coconut_none_coalesce(a: _T, b: None) -> _T: ...
 @_t.overload
 def _coconut_none_coalesce(a: None, b: _T) -> _T: ...
 @_t.overload
-def _coconut_none_coalesce(a: _T, b: _U) -> _t.Union[_T, _U]: ...
+def _coconut_none_coalesce(a: _T, b: _U) -> _T | _U: ...
 
 
 @_t.overload
@@ -437,7 +484,7 @@ class _count(_t.Iterable[_T]):
     def count(self, elem: _T) -> int: ...
     def index(self, elem: _T) -> int: ...
     def __copy__(self) -> _count[_T]: ...
-    def __fmap__(self, func: _t.Callable[[_T], _U]) -> _count[_U]: ...
+    def __fmap__(self, func: _t.Callable[[_T], _Uco]) -> _count[_Uco]: ...
 count = _count
 
 
@@ -455,4 +502,4 @@ def consume(
     ) -> _t.Iterable[_T]: ...
 
 
-def fmap(func: _t.Callable[[_T], _U], obj: _t.Iterable[_T]) -> _t.Iterable[_U]: ...
+def fmap(func: _t.Callable[[_Tco], _Uco], obj: _t.Iterable[_Tco]) -> _t.Iterable[_Uco]: ...

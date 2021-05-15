@@ -599,7 +599,7 @@ class Command(object):
                     no_str_code = self.comp.remove_strs(compiled)
                     result = mypy_builtin_regex.search(no_str_code)
                     if result:
-                        logger.warn("found mypy-only built-in " + repr(result.group(0)), extra="pass --mypy to use mypy-only built-ins at the interpreter")
+                        logger.warn("found mypy-only built-in " + repr(result.group(0)) + "; pass --mypy to use mypy-only built-ins at the interpreter")
 
             else:  # header is included
                 compiled = rem_encoding(compiled)
