@@ -183,7 +183,7 @@ def repeat(elem):
         yield elem
 def repeat_(elem):
     return (elem,) :: repeat_(elem)
-def N(n=0):
+def N(n=0) -> typing.Iterator[int]:
     """Natural Numbers."""
     while True:
         yield n
@@ -779,9 +779,11 @@ class counter:
 if TYPE_CHECKING:
     from typing import List, Dict, Any
 
-def args_kwargs_func(args: List[Any]=[], kwargs: Dict[Any, Any]={}) -> None: pass
+def args_kwargs_func(args: List[Any]=[], kwargs: Dict[Any, Any]={}) -> typing.Literal[True] =
+    True
 
-def int_func(*args: int, **kwargs: int) -> None: pass
+def int_func(*args: int, **kwargs: int) -> int =
+    0
 
 def one_int_or_str(x: int | str) -> int | str = x
 

@@ -61,6 +61,8 @@ from coconut.constants import (
     oserror_retcode,
     base_stub_dir,
     installed_stub_dir,
+    interpreter_uses_auto_compilation,
+    interpreter_uses_coconut_breakpoint,
 )
 
 if PY26:
@@ -362,7 +364,7 @@ def _raise_ValueError(msg):
     raise ValueError(msg)
 
 
-def canparse(argparser, args):
+def can_parse(argparser, args):
     """Determines if argparser can parse args."""
     old_error_method = argparser.error
     argparser.error = _raise_ValueError
@@ -381,6 +383,20 @@ def subpath(path, base_path):
     path = fixpath(path)
     base_path = fixpath(base_path)
     return path == base_path or path.startswith(base_path + os.sep)
+
+
+def invert_mypy_arg(arg):
+    """Convert --arg into --no-arg or equivalent."""
+    if arg.startswith("--no-"):
+        return "--" + arg[len("--no-"):]
+    elif arg.startswith("--allow-"):
+        return "--disallow-" + arg[len("--allow-"):]
+    elif arg.startswith("--disallow-"):
+        return "--allow-" + arg[len("--disallow-"):]
+    elif arg.startswith("--"):
+        return "--no-" + arg[len("--"):]
+    else:
+        return None
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -468,8 +484,8 @@ class Runner(object):
     def __init__(self, comp=None, exit=sys.exit, store=False, path=None):
         """Create the executor."""
         from coconut.convenience import auto_compilation, use_coconut_breakpoint
-        auto_compilation(on=True)
-        use_coconut_breakpoint(on=True)
+        auto_compilation(on=interpreter_uses_auto_compilation)
+        use_coconut_breakpoint(on=interpreter_uses_coconut_breakpoint)
         self.exit = exit
         self.vars = self.build_vars(path)
         self.stored = [] if store else None

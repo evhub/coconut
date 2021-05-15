@@ -15,18 +15,25 @@ Description: MyPy stub file for __coconut__.py.
 import sys
 import typing as _t
 
+if sys.version_info >= (3,):
+    from itertools import zip_longest as _zip_longest
+else:
+    from itertools import izip_longest as _zip_longest
+
 # -----------------------------------------------------------------------------------------------------------------------
 # STUB:
 # -----------------------------------------------------------------------------------------------------------------------
 
+_Callable = _t.Callable[..., _t.Any]
+_Iterable = _t.Iterable[_t.Any]
 
 _T = _t.TypeVar("_T")
 _U = _t.TypeVar("_U")
 _V = _t.TypeVar("_V")
 _W = _t.TypeVar("_W")
-_FUNC = _t.TypeVar("_FUNC", bound=_t.Callable)
-_FUNC2 = _t.TypeVar("_FUNC2", bound=_t.Callable)
-_ITER_FUNC = _t.TypeVar("_ITER_FUNC", bound=_t.Callable[..., _t.Iterable])
+_FUNC = _t.TypeVar("_FUNC", bound=_Callable)
+_FUNC2 = _t.TypeVar("_FUNC2", bound=_Callable)
+_ITER_FUNC = _t.TypeVar("_ITER_FUNC", bound=_t.Callable[..., _Iterable])
 
 
 if sys.version_info < (3,):
@@ -48,14 +55,20 @@ if sys.version_info < (3,):
         def __reversed__(self) -> _t.Iterable[int]: ...
         def __len__(self) -> int: ...
         def __contains__(self, elem: int) -> bool: ...
+
+        @_t.overload
         def __getitem__(self, index: int) -> int: ...
+        @_t.overload
+        def __getitem__(self, index: slice) -> _t.Iterable[int]: ...
+
         def __hash__(self) -> int: ...
         def count(self, elem: int) -> int: ...
         def index(self, elem: int) -> int: ...
+        def __copy__(self) -> range: ...
 
 
 if sys.version_info < (3, 7):
-    def breakpoint(*args, **kwargs) -> _t.Any: ...
+    def breakpoint(*args: _t.Any, **kwargs: _t.Any) -> _t.Any: ...
 
 
 py_chr = chr
@@ -73,6 +86,8 @@ py_zip = zip
 py_filter = filter
 py_reversed = reversed
 py_enumerate = enumerate
+py_repr = repr
+py_breakpoint = breakpoint
 
 # all py_ functions, but not py_ types, go here
 chr = chr
@@ -87,13 +102,6 @@ zip = zip
 filter = filter
 reversed = reversed
 enumerate = enumerate
-
-
-def scan(
-    func: _t.Callable[[_T, _U], _T],
-    iterable: _t.Iterable[_U],
-    initializer: _T = ...,
-    ) -> _t.Iterable[_T]: ...
 
 
 class _coconut:
@@ -112,10 +120,7 @@ class _coconut:
     else:
         from collections import abc
     typing = _t  # The real _coconut doesn't import typing, but we want type-checkers to treat it as if it does
-    if sys.version_info >= (3,):
-        zip_longest = itertools.zip_longest
-    else:
-        zip_longest = itertools.izip_longest
+    zip_longest = staticmethod(_zip_longest)
     Ellipsis = Ellipsis
     NotImplemented = NotImplemented
     NotImplementedError = NotImplementedError
@@ -129,46 +134,56 @@ class _coconut:
     ValueError = ValueError
     StopIteration = StopIteration
     RuntimeError = RuntimeError
-    classmethod = classmethod
-    any = any
+    classmethod = staticmethod(classmethod)
+    any = staticmethod(any)
     bytes = bytes
-    dict = dict
-    enumerate = enumerate
-    filter = filter
+    dict = staticmethod(dict)
+    enumerate = staticmethod(enumerate)
+    filter = staticmethod(filter)
     float = float
-    frozenset = frozenset
-    getattr = getattr
-    hasattr = hasattr
-    hash = hash
-    id = id
+    frozenset = staticmethod(frozenset)
+    getattr = staticmethod(getattr)
+    hasattr = staticmethod(hasattr)
+    hash = staticmethod(hash)
+    id = staticmethod(id)
     int = int
-    isinstance = isinstance
-    issubclass = issubclass
-    iter = iter
-    len = len
+    isinstance = staticmethod(isinstance)
+    issubclass = staticmethod(issubclass)
+    iter = staticmethod(iter)
+    len = staticmethod(len)
     list = staticmethod(list)
-    locals = locals
-    map = map
-    min = min
-    max = max
-    next = next
+    locals = staticmethod(locals)
+    map = staticmethod(map)
+    min = staticmethod(min)
+    max = staticmethod(max)
+    next = staticmethod(next)
     object = _t.Union[object]
-    print = print
-    property = property
-    range = range
-    reversed = reversed
-    set = set
+    print = staticmethod(print)
+    property = staticmethod(property)
+    range = staticmethod(range)
+    reversed = staticmethod(reversed)
+    set = staticmethod(set)
     slice = slice
     str = str
-    sum = sum
-    super = super
-    tuple = tuple
-    type = type
-    zip = zip
-    vars = vars
+    sum = staticmethod(sum)
+    super = staticmethod(super)
+    tuple = staticmethod(tuple)
+    type = staticmethod(type)
+    zip = staticmethod(zip)
+    vars = staticmethod(vars)
     repr = staticmethod(repr)
     if sys.version_info >= (3,):
         bytearray = bytearray
+
+
+if sys.version_info >= (3, 2):
+    from functools import lru_cache as _lru_cache
+else:
+    from backports.functools_lru_cache import lru_cache as _lru_cache
+    _coconut.functools.lru_cache = _lru_cache
+
+zip_longest = _zip_longest
+memoize = _lru_cache
 
 
 reduce = _coconut.functools.reduce
@@ -176,14 +191,6 @@ takewhile = _coconut.itertools.takewhile
 dropwhile = _coconut.itertools.dropwhile
 tee = _coconut.itertools.tee
 starmap = _coconut.itertools.starmap
-
-
-if sys.version_info >= (3, 2):
-    from functools import lru_cache
-else:
-    from backports.functools_lru_cache import lru_cache
-    _coconut.functools.lru_cache = memoize  # type: ignore
-memoize = lru_cache
 
 
 _coconut_tee = tee
@@ -195,6 +202,13 @@ TYPE_CHECKING = _t.TYPE_CHECKING
 
 
 _coconut_sentinel = object()
+
+
+def scan(
+    func: _t.Callable[[_T, _U], _T],
+    iterable: _t.Iterable[_U],
+    initializer: _T = ...,
+) -> _t.Iterable[_T]: ...
 
 
 class MatchError(Exception):
@@ -221,7 +235,7 @@ def _coconut_tail_call(func: _t.Callable[[_T, _U], _V], _x: _T, _y: _U) -> _V: .
 @_t.overload
 def _coconut_tail_call(func: _t.Callable[[_T, _U, _V], _W], _x: _T, _y: _U, _z: _V) -> _W: ...
 @_t.overload
-def _coconut_tail_call(func: _t.Callable[..., _T], *args, **kwargs) -> _T: ...
+def _coconut_tail_call(func: _t.Callable[..., _T], *args: _t.Any, **kwargs: _t.Any) -> _T: ...
 
 
 def recursive_iterator(func: _ITER_FUNC) -> _ITER_FUNC:
@@ -235,15 +249,15 @@ def _coconut_call_set_names(cls: object) -> None: ...
 
 
 class _coconut_base_pattern_func:
-    def __init__(self, *funcs: _t.Callable) -> None: ...
-    def add(self, func: _t.Callable) -> None: ...
-    def __call__(self, *args, **kwargs) -> _t.Any: ...
+    def __init__(self, *funcs: _Callable) -> None: ...
+    def add(self, func: _Callable) -> None: ...
+    def __call__(self, *args: _t.Any, **kwargs: _t.Any) -> _t.Any: ...
 
 def addpattern(
-    func: _FUNC,
+    func: _Callable,
     *,
     allow_any_func: bool=False,
-    ) -> _t.Callable[[_t.Callable], _t.Callable]: ...
+    ) -> _t.Callable[[_Callable], _Callable]: ...
 _coconut_addpattern = prepattern = addpattern
 
 
@@ -252,17 +266,17 @@ def _coconut_mark_as_match(func: _FUNC) -> _FUNC:
 
 
 class _coconut_partial(_t.Generic[_T]):
-    args: _t.Tuple = ...
+    args: _t.Tuple[_t.Any, ...] = ...
     keywords: _t.Dict[_t.Text, _t.Any] = ...
     def __init__(
         self,
         func: _t.Callable[..., _T],
         argdict: _t.Dict[int, _t.Any],
         arglen: int,
-        *args,
-        **kwargs,
+        *args: _t.Any,
+        **kwargs: _t.Any,
         ) -> None: ...
-    def __call__(self, *args, **kwargs) -> _T: ...
+    def __call__(self, *args: _t.Any, **kwargs: _t.Any) -> _T: ...
 
 
 @_t.overload
@@ -279,7 +293,7 @@ def _coconut_igetitem(
 
 def _coconut_base_compose(
     func: _t.Callable[[_T], _t.Any],
-    *funcstars: _t.Tuple[_t.Callable, int],
+    *funcstars: _t.Tuple[_Callable, int],
     ) -> _t.Callable[[_T], _t.Any]: ...
 
 
@@ -313,7 +327,7 @@ def _coconut_forward_compose(
     _e: _t.Callable[[_V], _W],
     ) -> _t.Callable[..., _W]: ...
 @_t.overload
-def _coconut_forward_compose(*funcs: _t.Callable) -> _t.Callable: ...
+def _coconut_forward_compose(*funcs: _Callable) -> _Callable: ...
 
 _coconut_forward_star_compose = _coconut_forward_compose
 _coconut_forward_dubstar_compose = _coconut_forward_compose
@@ -349,28 +363,28 @@ def _coconut_back_compose(
     _h: _t.Callable[..., _T],
     ) -> _t.Callable[..., _W]: ...
 @_t.overload
-def _coconut_back_compose(*funcs: _t.Callable) -> _t.Callable: ...
+def _coconut_back_compose(*funcs: _Callable) -> _Callable: ...
 
 _coconut_back_star_compose = _coconut_back_compose
 _coconut_back_dubstar_compose = _coconut_back_compose
 
 
 def _coconut_pipe(x: _T, f: _t.Callable[[_T], _U]) -> _U: ...
-def _coconut_star_pipe(xs: _t.Iterable, f: _t.Callable[..., _T]) -> _T: ...
+def _coconut_star_pipe(xs: _Iterable, f: _t.Callable[..., _T]) -> _T: ...
 def _coconut_dubstar_pipe(kws: _t.Dict[_t.Text, _t.Any], f: _t.Callable[..., _T]) -> _T: ...
 
 
 def _coconut_back_pipe(f: _t.Callable[[_T], _U], x: _T) -> _U: ...
-def _coconut_back_star_pipe(f: _t.Callable[..., _T], xs: _t.Iterable) -> _T: ...
+def _coconut_back_star_pipe(f: _t.Callable[..., _T], xs: _Iterable) -> _T: ...
 def _coconut_back_dubstar_pipe(f: _t.Callable[..., _T], kws: _t.Dict[_t.Text, _t.Any]) -> _T: ...
 
 
 def _coconut_none_pipe(x: _t.Optional[_T], f: _t.Callable[[_T], _U]) -> _t.Optional[_U]: ...
-def _coconut_none_star_pipe(xs: _t.Optional[_t.Iterable], f: _t.Callable[..., _T]) -> _t.Optional[_T]: ...
+def _coconut_none_star_pipe(xs: _t.Optional[_Iterable], f: _t.Callable[..., _T]) -> _t.Optional[_T]: ...
 def _coconut_none_dubstar_pipe(kws: _t.Optional[_t.Dict[_t.Text, _t.Any]], f: _t.Callable[..., _T]) -> _t.Optional[_T]: ...
 
 
-def _coconut_assert(cond, msg: _t.Optional[_t.Text]=None) -> None:
+def _coconut_assert(cond: _t.Any, msg: _t.Optional[_t.Text]=None) -> None:
     assert cond, msg
 
 
@@ -409,20 +423,28 @@ def reiterable(iterable: _t.Iterable[_T]) -> _t.Iterable[_T]: ...
 _coconut_reiterable = reiterable
 
 
-class count(_t.Iterable[int]):
-    def __init__(self, start: int = ..., step: int = ...) -> None: ...
-    def __iter__(self) -> _t.Iterator[int]: ...
-    def __contains__(self, elem: int) -> bool: ...
-    def __getitem__(self, index: int) -> int: ...
+class _count(_t.Iterable[_T]):
+    def __init__(self, start: _T = ..., step: _T = ...) -> None: ...
+    def __iter__(self) -> _t.Iterator[_T]: ...
+    def __contains__(self, elem: _T) -> bool: ...
+
+    @_t.overload
+    def __getitem__(self, index: int) -> _T: ...
+    @_t.overload
+    def __getitem__(self, index: slice) -> _t.Iterable[_T]: ...
+
     def __hash__(self) -> int: ...
-    def count(self, elem: int) -> int: ...
-    def index(self, elem: int) -> int: ...
+    def count(self, elem: _T) -> int: ...
+    def index(self, elem: _T) -> int: ...
+    def __copy__(self) -> _count[_T]: ...
+    def __fmap__(self, func: _t.Callable[[_T], _U]) -> _count[_U]: ...
+count = _count
 
 
 def groupsof(n: int, iterable: _t.Iterable[_T]) -> _t.Iterable[_t.Tuple[_T, ...]]: ...
 
 
-def makedata(data_type: _t.Type[_T], *args) -> _T: ...
+def makedata(data_type: _t.Type[_T], *args: _t.Any) -> _T: ...
 def datamaker(data_type: _t.Type[_T]) -> _t.Callable[..., _T]:
     return _coconut.functools.partial(makedata, data_type)
 

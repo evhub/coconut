@@ -659,7 +659,6 @@ verbose_mypy_args = (
     "--warn-redundant-casts",
     "--warn-unused-ignores",
     "--warn-return-any",
-    "--check-untyped-defs",
     "--show-error-context",
     "--warn-incomplete-stub",
 )
@@ -676,6 +675,9 @@ oserror_retcode = 127
 mypy_install_arg = "install"
 
 mypy_builtin_regex = re.compile(r"\b(reveal_type|reveal_locals|TYPE_CHECKING)\b")
+
+interpreter_uses_auto_compilation = True
+interpreter_uses_coconut_breakpoint = True
 
 # -----------------------------------------------------------------------------------------------------------------------
 # HIGHLIGHTER CONSTANTS:
