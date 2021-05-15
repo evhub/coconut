@@ -280,7 +280,7 @@ The style issues which will cause `--strict` to throw an error are:
 - trailing whitespace at end of lines,
 - semicolons at end of lines,
 - use of the Python-style `lambda` statement (use [Coconut's lambda syntax](#lambdas) instead),
-- Python 3.10/PEP-622-style `match ...: case ...:` syntax (use [Coconut's `case ...: match ...:` syntax](#case) instead),
+- [Python 3.10/PEP-622-style `match ...: case ...:` syntax](#pep-622-support) (use [Coconut's `case ...: match ...:` syntax](#case) instead),
 - Python-3.10/PEP-622-style dotted names in pattern-matching (Coconut style is to preface these with an `=`),
 - inheriting from `object` in classes (Coconut does this automatically),
 - use of `u` to denote Unicode strings (all Coconut strings are Unicode strings), and
@@ -1046,9 +1046,35 @@ As Coconut's pattern-matching rules and the PEP 622 rules sometimes conflict (sp
 
 _Note that `--strict` disables PEP-622-style pattern-matching syntax entirely._
 
-##### Example
+##### Examples
 
 **Coconut:**
+```coconut
+def classify_sequence(value):
+    out = ""        # unlike with normal matches, only one of the patterns
+    case value:     #  will match, and out will only get appended to once
+        match ():
+            out += "empty"
+        match (_,):
+            out += "singleton"
+        match (x,x):
+            out += "duplicate pair of "+str(x)
+        match (_,_):
+            out += "pair"
+        match _ is (tuple, list):
+            out += "sequence"
+    else:
+        raise TypeError()
+    return out
+
+[] |> classify_sequence |> print
+() |> classify_sequence |> print
+[1] |> classify_sequence |> print
+(1,1) |> classify_sequence |> print
+(1,2) |> classify_sequence |> print
+(1,1,1) |> classify_sequence |> print
+```
+_Example of using Coconut's `case` syntax._
 ```coconut
 match {"a": 1, "b": 2}:
     case {"a": a}:
@@ -1057,6 +1083,7 @@ match {"a": 1, "b": 2}:
         assert False
 assert a == 1
 ```
+_Example of Coconut's PEP 622 support._
 
 **Python:**
 _Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._
