@@ -75,7 +75,8 @@ from coconut.command.util import (
     launch_tutorial,
     stdin_readable,
     set_recursion_limit,
-    canparse,
+    can_parse,
+    invert_mypy_arg,
 )
 from coconut.compiler.util import (
     should_indent,
@@ -113,7 +114,7 @@ class Command(object):
                 arg = sys.argv[i]
                 args.append(arg)
                 # if arg is source file, put everything else in argv
-                if not arg.startswith("-") and canparse(arguments, args[:-1]):
+                if not arg.startswith("-") and can_parse(arguments, args[:-1]):
                     argv = sys.argv[i + 1:]
                     break
             if "--verbose" in args:
@@ -639,17 +640,24 @@ class Command(object):
         else:
             self.mypy_args = list(mypy_args)
 
-            if not any(arg.startswith("--python-version") for arg in mypy_args):
+            if not any(arg.startswith("--python-version") for arg in self.mypy_args):
                 self.mypy_args += [
                     "--python-version",
                     ver_tuple_to_str(get_target_info_smart(self.comp.target, mode="mypy")),
                 ]
 
+            if not any(arg.startswith("--python-executable") for arg in self.mypy_args):
+                self.mypy_args += [
+                    "--python-executable",
+                    sys.executable,
+                ]
+
             add_mypy_args = default_mypy_args + (verbose_mypy_args if logger.verbose else ())
 
             for arg in add_mypy_args:
-                no_arg = "--no-" + arg.lstrip("-")
-                if arg not in self.mypy_args and no_arg not in self.mypy_args:
+                no_arg = invert_mypy_arg(arg)
+                arg_prefixes = (arg,) + ((no_arg,) if no_arg is not None else ())
+                if not any(arg.startswith(arg_prefixes) for arg in self.mypy_args):
                     self.mypy_args.append(arg)
 
             logger.log("MyPy args:", self.mypy_args)

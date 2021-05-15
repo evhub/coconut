@@ -1171,17 +1171,17 @@ class Compiler(Grammar):
             if self.minify:
                 comment = str(ln) + " " + self.original_lines[lni]
             else:
-                comment = " coconut line " + str(ln) + ": " + self.original_lines[lni]
+                comment = str(ln) + ": " + self.original_lines[lni]
         elif self.keep_lines:
             if self.minify:
                 comment = self.original_lines[lni]
             else:
-                comment = " coconut: " + self.original_lines[lni]
+                comment = " " + self.original_lines[lni]
         elif self.line_numbers:
             if self.minify:
                 comment = str(ln)
             else:
-                comment = " line " + str(ln) + " (in coconut source)"
+                comment = str(ln) + " (line in coconut source)"
         else:
             return ""
         return self.wrap_comment(comment, reformat=False)

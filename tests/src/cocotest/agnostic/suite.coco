@@ -45,7 +45,7 @@ def suite_test() -> bool:
     qsorts = [qsort1, qsort2, qsort3, qsort4, qsort5, qsort6, qsort7, qsort8]
     for qsort in qsorts:
         to_sort = rand_list(10)
-        assert to_sort |> qsort |> tuple == to_sort |> sorted |> tuple, qsort
+        assert to_sort |> qsort |> tuple == to_sort |> sorted |> tuple, qsort  # type: ignore
     to_sort = rand_list(10)
     assert parallel_map(tuple <.. (|>)$(to_sort), qsorts) |> list == [to_sort |> sorted |> tuple] * len(qsorts)
     assert repeat(3)$[2] == 3 == repeat_(3)$[2]
@@ -63,7 +63,7 @@ def suite_test() -> bool:
     assert (range(-10, 0) :: N())$[5:15] |> sum == -5 == chain(range(-10, 0), N())$[5:15] |> sum
     assert add(repeat(1), N())$[:5] |> list == [1,2,3,4,5] == add_(repeat(1), N_())$[:5] |> list
     assert sum(N()$[5:]$[:5]) == 35 == sum(N_()$[5:]$[:5])
-    assert N()$[](slice(5, 10)) |> list == [5,6,7,8,9] == list(range(0, 15))[](slice(5, 10))
+    assert N()$[](slice(5, 10)) |> list == [5,6,7,8,9] == list(range(0, 15))[](slice(5, 10))  # type: ignore
     assert N()$[slice(5, 10)] |> list == [5,6,7,8,9] == list(range(0, 15))[slice(5, 10)]
     assert preN(range(-5, 0))$[1:10] |> list == [-4,-3,-2,-1,0,1,2,3,4]
     assert map_iter((*)$(2), N())$[:5] |> list == [0,2,4,6,8]
@@ -139,8 +139,8 @@ def suite_test() -> bool:
     assert maybes(None, square, plus1) is None
     assert square <| 2 == 4
     assert (5, 3) |*> mod == 2 == mod <*| (5, 3)
-    assert Just(5) <| square <| plus1 == Just(26)
-    assert Nothing() <| square <| plus1 == Nothing()
+    assert Just(5) <| square <| plus1 == Just(26)  # type: ignore
+    assert Nothing() <| square <| plus1 == Nothing()  # type: ignore
     assert not Nothing() == ()
     assert not () == Nothing()
     assert not Nothing() != Nothing()
@@ -227,13 +227,13 @@ def suite_test() -> bool:
     assert x == 25
     v = vector(1, 2)
     try:
-        v.x = 3
+        v.x = 3  # type: ignore
     except AttributeError as err:
         assert err
     else:
         assert False
     try:
-        v.new_attr = True
+        v.new_attr = True  # type: ignore
     except AttributeError as err:
         assert err
     else:
@@ -249,7 +249,7 @@ def suite_test() -> bool:
     assert vector(1, 2) |> (==)$(vector(1, 2))
     assert vector(1, 2) |> .__eq__(other=vector(1, 2))
     assert fibs()$[1:4] |> tuple == (1, 2, 3) == fibs_()$[1:4] |> tuple
-    assert fibs() |> takewhile$((i) -> i < 4000000 ) |> filter$((i) -> i % 2 == 0 ) |> sum == 4613732 == fibs_() |> takewhile$((i) -> i < 4000000 ) |> filter$((i) -> i % 2 == 0 ) |> sum
+    assert fibs() |> takewhile$((i) -> i < 4000000 ) |> filter$((i) -> i % 2 == 0 ) |> sum == 4613732 == fibs_() |> takewhile$((i) -> i < 4000000 ) |> filter$((i) -> i % 2 == 0 ) |> sum  # type: ignore
     assert loop([1,2])$[:4] |> list == [1, 2] * 2
     assert parallel_map(list .. .$[:2] .. loop, ([1], [2]))$[:2] |> tuple == ([1, 1], [2, 2])
     assert nest("a") |> .$[1] |> .$[1] |> .$[0] == "a"
@@ -263,8 +263,8 @@ def suite_test() -> bool:
     assert does_raise_exc(raise_exc)
     assert ret_none(10) is None
     assert (2, 3, 5) |*> ret_args_kwargs$(1, ?, ?, 4, ?, *(6, 7), a="k") == ((1, 2, 3, 4, 5, 6, 7), {"a": "k"})
-    assert args_kwargs_func() is None
-    assert int_func() is None is int_func(1)
+    assert args_kwargs_func() is True
+    assert int_func() == 0 == int_func(1)
     assert one_int_or_str(1) == 1
     assert one_int_or_str("a") == "a"
     assert x_is_int(4) == 4 == x_is_int(x=4)
@@ -321,18 +321,18 @@ def suite_test() -> bool:
     assert a.func(1) == 1
     assert a.zero(10) == 0
     with Vars.using(globals()):
-        assert var_one == 1
+        assert var_one == 1  # type: ignore
     try:
-        var_one
+        var_one  # type: ignore
     except NameError:
         pass
     else:
         assert False
-    assert Just(3) |> map$(-> _*2) |*> Just == Just(6) == Just(3) |> fmap$(-> _*2)
-    assert Nothing() |> map$(-> _*2) |*> Nothing == Nothing() == Nothing() |> fmap$(-> _*2)
+    assert Just(3) |> map$(-> _*2) |*> Just == Just(6) == Just(3) |> fmap$(-> _*2)  # type: ignore
+    assert Nothing() |> map$(-> _*2) |*> Nothing == Nothing() == Nothing() |> fmap$(-> _*2)  # type: ignore
     assert Elems(1, 2, 3) != Elems(1, 2)
     assert map(plus1, (1, 2, 3)) |> fmap$(times2) |> repr == map(times2..plus1, (1, 2, 3)) |> repr
-    assert reversed((1, 2, 3)) |> fmap$(plus1) |> repr == map(plus1, (1, 2, 3)) |> reversed |> repr
+    assert reversed((1, 2, 3)) |> fmap$(plus1) |> repr == map(plus1, (1, 2, 3)) |> reversed |> repr  # type: ignore
     assert identity[1:2, 2:3] == (slice(1, 2), slice(2, 3))
     assert identity |> .[1:2, 2:3] == (slice(1, 2), slice(2, 3))
     assert (.[1:2, 2:3])(identity) == (slice(1, 2), slice(2, 3))
@@ -354,8 +354,8 @@ def suite_test() -> bool:
     assert repr(t) == "Tuple_(*elems=(1, 2))"
     assert t.elems == (1, 2)
     assert isinstance(t.elems, tuple)
-    assert t |> fmap$(-> _+1) == Tuple_(2, 3)
-    Tuple_(x, y) = t
+    assert t |> fmap$(-> _+1) == Tuple_(2, 3)  # type: ignore
+    Tuple_(x, y) = t  # type: ignore
     assert x == 1 and y == 2
     p = Pred("name", 1, 2)
     p_ = Pred_("name", 1, 2)
@@ -364,8 +364,8 @@ def suite_test() -> bool:
     assert repr(p) in ("Pred(name='name', *args=(1, 2))", "Pred(name=u'name', *args=(1, 2))")
     assert repr(p_) in ("Pred_(name='name', *args=(1, 2))", "Pred_(name=u'name', *args=(1, 2))")
     for Pred_test, p_test in [(Pred, p), (Pred_, p_)]:
-        assert isinstance(p_test.args, tuple)
-        Pred_test(name, *args) = p_test
+        assert isinstance(p_test.args, tuple)  # type: ignore
+        Pred_test(name, *args) = p_test  # type: ignore
         assert name == "name"
         assert args == (1, 2)
     q = Quant("name", "var", 1, 2)
@@ -376,15 +376,15 @@ def suite_test() -> bool:
     assert repr(q) in ("Quant(name='name', var='var', *args=(1, 2))", "Quant(name=u'name', var=u'var', *args=(1, 2))")
     assert repr(q_) in ("Quant_(name='name', var='var', *args=(1, 2))", "Quant_(name=u'name', var=u'var', *args=(1, 2))")
     for Quant_test, q_test in [(Quant, q), (Quant_, q_)]:
-        assert isinstance(q_test.args, tuple)
-        Quant_test(name, var, *args) = q_test
+        assert isinstance(q_test.args, tuple)  # type: ignore
+        Quant_test(name, var, *args) = q_test  # type: ignore
         assert name == "name"
         assert var == "var"
         assert args == (1, 2)
-    assert Pred(0, 1, 2) |> fmap$(-> _+1) == Pred(1, 2, 3)
-    assert Pred_(0, 1, 2) |> fmap$(-> _+1) == Pred_(1, 2, 3)
-    assert Quant(0, 1, 2) |> fmap$(-> _+1) == Quant(1, 2, 3)
-    assert Quant_(0, 1, 2) |> fmap$(-> _+1) == Quant_(1, 2, 3)
+    assert Pred(0, 1, 2) |> fmap$(-> _+1) == Pred(1, 2, 3)  # type: ignore
+    assert Pred_(0, 1, 2) |> fmap$(-> _+1) == Pred_(1, 2, 3)  # type: ignore
+    assert Quant(0, 1, 2) |> fmap$(-> _+1) == Quant(1, 2, 3)  # type: ignore
+    assert Quant_(0, 1, 2) |> fmap$(-> _+1) == Quant_(1, 2, 3)  # type: ignore
     a = Nest()
     assert a.b.c.d == "data"
     assert (.b.c.d)(a) == "data"
@@ -393,7 +393,7 @@ def suite_test() -> bool:
     assert a |> .b.c ..> .m() == "method"
     assert a |> .b.c |> .m() == "method"
     assert a?.b?.c?.m?() == "method"
-    assert a.b.c.none?.derp.herp is None
+    assert a.b.c.none?.derp.herp is None  # type: ignore
     assert tco_chain([1, 2, 3]) |> list == ["last"]
     assert partition([1, 2, 3], 2) |> map$(tuple) |> list == [(1,), (3, 2)] == partition_([1, 2, 3], 2) |> map$(tuple) |> list
     assert myreduce((+), (1, 2, 3)) == 6
@@ -407,9 +407,9 @@ def suite_test() -> bool:
     assert square ..> times2 ..> plus1 |> repr == square ..> (times2 ..> plus1) |> repr
     assert range(1, 5) |> map$(range) |> starmap$(toprint) |> tuple == ('0', '0 1', '0 1 2', '0 1 2 3')
     assert range(1, 5) |> map$(range) |> starmap$(toprint) |> fmap$(.strip(" 0")) |> tuple == ("", "1", "1 2", "1 2 3")
-    assert () |> starmap$(toprint) |> len == 0
-    assert [(1, 2)] |> starmap$(toprint) |> .[0] == "1 2"
-    assert [(1, 2), (2, 3), (3, 4)] |> starmap$(toprint) |> .[1:] |> list == ["2 3", "3 4"]
+    assert () |> starmap$(toprint) |> len == 0  # type: ignore
+    assert [(1, 2)] |> starmap$(toprint) |> .[0] == "1 2"  # type: ignore
+    assert [(1, 2), (2, 3), (3, 4)] |> starmap$(toprint) |> .[1:] |> list == ["2 3", "3 4"]  # type: ignore
     assert none_to_ten() == 10 == any_to_ten(1, 2, 3)
     assert int_map(plus1_, range(5)) == [1, 2, 3, 4, 5]
     assert still_ident.__doc__ == "docstring"
@@ -429,22 +429,22 @@ def suite_test() -> bool:
     else:
         assert False
     for u, Point_test in [("", Point), ("_", Point_)]:
-        p = Point_test()
-        assert p.x == 0 == p.y
+        p = Point_test()  # type: ignore
+        assert p.x == 0 == p.y  # type: ignore
         assert repr(p) == "Point{u}(x=0, y=0)".format(u=u)
-        p = Point_test(1)
-        assert p.x == 1
-        assert p.y == 0
+        p = Point_test(1)  # type: ignore
+        assert p.x == 1  # type: ignore
+        assert p.y == 0  # type: ignore
         assert repr(p) == "Point{u}(x=1, y=0)".format(u=u)
-        p = Point_test(2, 3)
-        assert p.x == 2
-        assert p.y == 3
+        p = Point_test(2, 3)  # type: ignore
+        assert p.x == 2  # type: ignore
+        assert p.y == 3  # type: ignore
         assert repr(p) == "Point{u}(x=2, y=3)".format(u=u)
     try:
-        RadialVector()
+        RadialVector()  # type: ignore
     except TypeError:
         try:
-            RadialVector_()
+            RadialVector_()  # type: ignore
         except TypeError:
             pass
         else:
@@ -459,37 +459,37 @@ def suite_test() -> bool:
     assert repr(rv_) == "RadialVector_(mag=1, angle=0)"
     for u, ABC_test in [("", ABC), ("_", ABC_)]:
         try:
-            ABC_test()
+            ABC_test()  # type: ignore
         except TypeError:
             pass
         else:
             assert False
         abc = ABC_test(2)
-        assert abc.a == 2
-        assert abc.b == 1
-        assert abc.c == ()
+        assert abc.a == 2  # type: ignore
+        assert abc.b == 1  # type: ignore
+        assert abc.c == ()  # type: ignore
         assert repr(abc) == "ABC{u}(a=2, b=1, *c=())".format(u=u)
         abc = ABC_test(3, 4, 5)
-        assert abc.a == 3
-        assert abc.b == 4
-        assert abc.c == (5,)
+        assert abc.a == 3  # type: ignore
+        assert abc.b == 4  # type: ignore
+        assert abc.c == (5,)  # type: ignore
         assert repr(abc) == "ABC{u}(a=3, b=4, *c=(5,))".format(u=u)
         abc = ABC_test(5, 6, 7, 8)
-        assert abc.a == 5
-        assert abc.b == 6
-        assert abc.c == (7, 8)
+        assert abc.a == 5  # type: ignore
+        assert abc.b == 6  # type: ignore
+        assert abc.c == (7, 8)  # type: ignore
         assert repr(abc) == "ABC{u}(a=5, b=6, *c=(7, 8))".format(u=u)
-    v = typed_vector(3, 4)
-    assert repr(v) == "typed_vector(x=3, y=4)"
-    assert abs(v) == 5
+    tv = typed_vector(3, 4)
+    assert repr(tv) == "typed_vector(x=3, y=4)"
+    assert abs(tv) == 5
     try:
-        v.x = 2
+        tv.x = 2  # type: ignore
     except AttributeError:
         pass
     else:
         assert False
-    v = typed_vector()
-    assert repr(v) == "typed_vector(x=0, y=0)"
+    tv = typed_vector()
+    assert repr(tv) == "typed_vector(x=0, y=0)"
     for obj in (factorial, iadd, collatz, recurse_n_times):
         assert obj.__doc__ == "this is a docstring", obj
     assert list_type((|1,2|)) == "at least 2"
@@ -506,11 +506,11 @@ def suite_test() -> bool:
     else:
         assert False
     assert cnt.count == 1
-    assert plus1sq_all(1, 2, 3) |> list == [4, 9, 16] == plus1sq_all_(1, 2, 3) |> list
+    assert plus1sq_all(1, 2, 3) |> list == [4, 9, 16] == plus1sq_all_(1, 2, 3) |> list  # type: ignore
     assert sqplus1_all(1, 2, 3) |> list == [2, 5, 10] == sqplus1_all_(1, 2, 3) |> list
-    assert square_times2_plus1_all(1, 2) |> list == [3, 9] == square_times2_plus1_all_(1, 2) |> list
+    assert square_times2_plus1_all(1, 2) |> list == [3, 9] == square_times2_plus1_all_(1, 2) |> list  # type: ignore
     assert plus1_square_times2_all(1, 2) |> list == [8, 18] == plus1_square_times2_all_(1, 2) |> list
-    assert plus1sqsum_all(1, 2) == 13 == plus1sqsum_all_(1, 2)
+    assert plus1sqsum_all(1, 2) == 13 == plus1sqsum_all_(1, 2)  # type: ignore
     assert sum_list_range(10) == 45
     assert sum2([3, 4]) == 7
     assert ridiculously_recursive(300) == 201666561657114122540576123152528437944095370972927688812965354745141489205495516550423117825 == ridiculously_recursive_(300)
@@ -520,13 +520,14 @@ def suite_test() -> bool:
     assert range(fib_N) |> map$(fib) |> .$[-1] == fibs()$[fib_N-2] == fib_(fib_N-1) == fibs_()$[fib_N-2]
     assert range(10*fib_N) |> map$(fib) |> consume$(keep_last=1) |> .$[-1] == fibs()$[10*fib_N-2] == fibs_()$[10*fib_N-2]
     assert (plus1 `(..)` x -> x*2)(4) == 9
-    assert join_pairs1([(1, [2]), (1, [3])]).items() |> list == [(1, [2, 3])]
+    assert join_pairs1([(1, [2]), (1, [3])]).items() |> list == [(1, [2, 3])]  # type: ignore
     assert join_pairs2([(1, [2]), (1, [3])]).items() |> list == [(1, [3, 2])]
     assert return_in_loop(10)
     assert methtest().meth(5) == 5
     assert methtest().tail_call_meth(3) == 3
-    def test_match_error_addpattern(x is int): raise MatchError("pat", "val")
-    @addpattern(test_match_error_addpattern)
+    def test_match_error_addpattern(x is int):
+        raise MatchError("pat", "val")
+    @addpattern(test_match_error_addpattern)  # type: ignore
     def test_match_error_addpattern(x) = x
     try:
         test_match_error_addpattern(0)
@@ -547,19 +548,19 @@ def suite_test() -> bool:
 
     ret_dict = -> dict(x=2)
 
-    assert (ret_dict ..**> ret_args_kwargs$(1))() == ((1,), dict(x=2)) == ((..**>)(ret_dict, ret_args_kwargs$(1)))()
+    assert (ret_dict ..**> ret_args_kwargs$(1))() == ((1,), dict(x=2)) == ((..**>)(ret_dict, ret_args_kwargs$(1)))()  # type: ignore
     x = ret_dict
     x ..**>= ret_args_kwargs$(1)
     assert x() == ((1,), dict(x=2))
 
-    assert (ret_args_kwargs$(1) <**.. ret_dict)() == ((1,), dict(x=2)) == ((<**..)(ret_args_kwargs$(1), ret_dict))()
+    assert (ret_args_kwargs$(1) <**.. ret_dict)() == ((1,), dict(x=2)) == ((<**..)(ret_args_kwargs$(1), ret_dict))()  # type: ignore
     f = ret_args_kwargs$(1)
     f <**..= ret_dict
     assert f() == ((1,), dict(x=2))
 
-    assert data1(1) |> fmap$(-> _ + 1) == data1(2)
+    assert data1(1) |> fmap$(-> _ + 1) == data1(2)  # type: ignore
     assert data1(1).x == 1
-    assert data2(1) |> fmap$(-> _ + 1) == data2(2)
+    assert data2(1) |> fmap$(-> _ + 1) == data2(2)  # type: ignore
     try:
         data2("a")
     except MatchError as err:
@@ -578,10 +579,10 @@ def suite_test() -> bool:
         assert False
     assert issubclass(data6, BaseClass)
     assert namedpt("a", 3, 4).mag() == 5
-    t = descriptor_test()
-    assert t.lam() == t
-    assert t.comp() == (t,)
-    assert t.N()$[:2] |> list == [(t, 0), (t, 1)]
+    dt = descriptor_test()
+    assert dt.lam() == dt
+    assert dt.comp() == (dt,)
+    assert dt.N()$[:2] |> list == [(dt, 0), (dt, 1)]
     assert map(Ad().ef, range(5)) |> list == range(1, 6) |> list
     assert Ad().ef 1 == 2
     assert store.plus1 store.one == store.two
