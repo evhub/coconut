@@ -104,8 +104,8 @@ test-verbose:
 	python ./tests/dest/extras.py
 
 # same as test-mypy but uses --verbose and --check-untyped-defs
-.PHONY: test-mypy-verbose
-test-mypy-verbose:
+.PHONY: test-mypy-all
+test-mypy-all:
 	python ./tests --strict --force --target sys --verbose --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition --check-untyped-defs
 	python ./tests/dest/runner.py
 	python ./tests/dest/extras.py
