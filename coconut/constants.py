@@ -663,11 +663,14 @@ verbose_mypy_args = (
     "--warn-incomplete-stub",
 )
 
-mypy_non_err_prefixes = (
+mypy_silent_non_err_prefixes = (
     "Success:",
 )
-mypy_found_err_prefixes = (
+mypy_silent_err_prefixes = (
     "Found ",
+)
+mypy_err_infixes = (
+    ": error: ",
 )
 
 oserror_retcode = 127

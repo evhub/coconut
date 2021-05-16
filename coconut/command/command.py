@@ -51,8 +51,8 @@ from coconut.constants import (
     verbose_mypy_args,
     default_mypy_args,
     report_this_text,
-    mypy_non_err_prefixes,
-    mypy_found_err_prefixes,
+    mypy_silent_non_err_prefixes,
+    mypy_silent_err_prefixes,
     mypy_install_arg,
     ver_tuple_to_str,
     mypy_builtin_regex,
@@ -149,7 +149,7 @@ class Command(object):
         """Exit if exit_code is abnormal."""
         if self.exit_code:
             if self.errmsg is not None:
-                logger.show("Exiting due to " + self.errmsg + ".")
+                logger.show("Exiting with error: " + self.errmsg)
                 self.errmsg = None
             if self.using_jobs:
                 kill_children()
@@ -672,15 +672,13 @@ class Command(object):
             if code is not None:
                 args += ["-c", code]
             for line, is_err in mypy_run(args):
-                if line.startswith(mypy_non_err_prefixes):
-                    logger.log("[MyPy]", line)
-                elif line.startswith(mypy_found_err_prefixes):
-                    logger.log("[MyPy]", line)
+                logger.log("[MyPy]", line)
+                if line.startswith(mypy_silent_err_prefixes):
                     if code is None:
                         printerr(line)
                         self.register_error(errmsg="MyPy error")
-                else:
-                    if code is None:
+                elif not line.startswith(mypy_silent_non_err_prefixes):
+                    if code is None and any(infix in line for infix in mypy_err_infixes):
                         printerr(line)
                         self.register_error(errmsg="MyPy error")
                     if line not in self.mypy_errs:
