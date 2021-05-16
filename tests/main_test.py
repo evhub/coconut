@@ -67,7 +67,7 @@ prelude_git = "https://github.com/evhub/coconut-prelude"
 
 coconut_snip = r"msg = '<success>'; pmsg = print$(msg); `pmsg`"
 
-mypy_snip = r"a: str = count()[0]"
+mypy_snip = r"a: str = count(0)[0]"
 mypy_snip_err_2 = r'''error: Incompatible types in assignment (expression has type "int", variable has type "unicode")'''
 mypy_snip_err_3 = r'''error: Incompatible types in assignment (expression has type "int", variable has type "str")'''
 
@@ -134,12 +134,12 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
         assert "CoconutInternalException" not in line, "CoconutInternalException in " + repr(line)
         assert "<unprintable" not in line, "Unprintable error in " + repr(line)
         assert "*** glibc detected ***" not in line, "C error in " + repr(line)
+        assert "INTERNAL ERROR" not in line, "MyPy INTERNAL ERROR in " + repr(line)
         if check_errors:
             assert "Traceback (most recent call last):" not in line, "Traceback in " + repr(line)
             assert "Exception" not in line, "Exception in " + repr(line)
             assert "Error" not in line, "Error in " + repr(line)
         if check_mypy and all(test not in line for test in ignore_mypy_errs_with):
-            assert "INTERNAL ERROR" not in line, "MyPy INTERNAL ERROR in " + repr(line)
             assert "error:" not in line, "MyPy error in " + repr(line)
     if isinstance(assert_output, str):
         got_output = "\n".join(lines) + "\n"
@@ -356,6 +356,7 @@ def comp_prelude(args=[], **kwargs):
     call(["git", "clone", prelude_git])
     if PY36 and not WINDOWS:
         args.extend(["--target", "3.6", "--mypy"])
+        kwargs["check_errors"] = False
     call_coconut([os.path.join(prelude, "setup.coco"), "--strict"] + args, **kwargs)
     call_coconut([os.path.join(prelude, "prelude-source"), os.path.join(prelude, "prelude"), "--strict"] + args, **kwargs)
 
@@ -467,16 +468,16 @@ class TestCompilation(unittest.TestCase):
 
     if MYPY:
         def test_universal_mypy_snip(self):
-            call(["coconut", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err_2, check_mypy=False)
+            call(["coconut", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err_2, check_errors=False, check_mypy=False)
 
         def test_sys_mypy_snip(self):
-            call(["coconut", "--target", "sys", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err_3, check_mypy=False)
+            call(["coconut", "--target", "sys", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err_3, check_errors=False, check_mypy=False)
 
         def test_no_wrap_mypy_snip(self):
-            call(["coconut", "--target", "sys", "--no-wrap", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err_3, check_mypy=False)
+            call(["coconut", "--target", "sys", "--no-wrap", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err_3, check_errors=False, check_mypy=False)
 
         def test_mypy_sys(self):
-            run(["--mypy"] + mypy_args, agnostic_target="sys", expect_retcode=None)  # fails due to tutorial mypy errors
+            run(["--mypy"] + mypy_args, agnostic_target="sys", expect_retcode=None, check_errors=False)  # fails due to tutorial mypy errors
 
     def test_target(self):
         run(agnostic_target=(2 if PY2 else 3))
