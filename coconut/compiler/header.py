@@ -20,6 +20,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import os.path
+from functools import partial
 
 from coconut.root import _indent
 from coconut.constants import (
@@ -34,6 +35,7 @@ from coconut.terminal import internal_assert
 from coconut.compiler.util import (
     get_target_info,
     split_comment,
+    get_vers_for_target,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -98,6 +100,58 @@ def section(name):
     return line + "-" * (justify_len - len(line)) + "\n\n"
 
 
+def base_pycondition(target, ver, if_lt=None, if_ge=None, indent=None, newline=False, fallback=""):
+    """Produce code that depends on the Python version for the given target."""
+    internal_assert(isinstance(ver, tuple), "invalid pycondition version")
+    internal_assert(if_lt or if_ge, "either if_lt or if_ge must be specified")
+
+    if if_lt:
+        if_lt = if_lt.strip()
+    if if_ge:
+        if_ge = if_ge.strip()
+
+    target_supported_vers = get_vers_for_target(target)
+
+    if all(tar_ver < ver for tar_ver in target_supported_vers):
+        if not if_lt:
+            return fallback
+        out = if_lt
+
+    elif all(tar_ver >= ver for tar_ver in target_supported_vers):
+        if not if_ge:
+            return fallback
+        out = if_ge
+
+    else:
+        if if_lt and if_ge:
+            out = """if _coconut_sys.version_info < {ver}:
+{lt_block}
+else:
+{ge_block}""".format(
+                ver=repr(ver),
+                lt_block=_indent(if_lt, by=1),
+                ge_block=_indent(if_ge, by=1),
+            )
+        elif if_lt:
+            out = """if _coconut_sys.version_info < {ver}:
+{lt_block}""".format(
+                ver=repr(ver),
+                lt_block=_indent(if_lt, by=1),
+            )
+        else:
+            out = """if _coconut_sys.version_info >= {ver}:
+{ge_block}""".format(
+                ver=repr(ver),
+                ge_block=_indent(if_ge, by=1),
+            )
+
+    if indent is not None:
+        out = _indent(out, by=indent)
+    if newline:
+        out += "\n"
+    return out
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # FORMAT DICTIONARY:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -115,21 +169,10 @@ COMMENT = Comment()
 
 
 def process_header_args(which, target, use_hash, no_tco, strict):
-    """Create the dictionary passed to str.format in the header, target_startswith, and target_info."""
+    """Create the dictionary passed to str.format in the header."""
     target_startswith = one_num_ver(target)
     target_info = get_target_info(target)
-
-    try_backport_lru_cache = r'''try:
-    from backports.functools_lru_cache import lru_cache
-    functools.lru_cache = lru_cache
-except ImportError: pass
-'''
-    try_import_trollius = r'''try:
-    import trollius as asyncio
-except ImportError:
-    class you_need_to_install_trollius: pass
-    asyncio = you_need_to_install_trollius()
-'''
+    pycondition = partial(base_pycondition, target)
 
     format_dict = dict(
         COMMENT=COMMENT,
@@ -143,49 +186,65 @@ except ImportError:
         VERSION_STR=VERSION_STR,
         module_docstring='"""Built-in Coconut utilities."""\n\n' if which == "__coconut__" else "",
         object="" if target_startswith == "3" else "(object)",
-        maybe_import_asyncio=_indent(
-            "" if not target or target_info >= (3, 5)
-            else "import asyncio\n" if target_info >= (3, 4)
-            else r'''if _coconut_sys.version_info >= (3, 4):
-    import asyncio
-else:
-''' + _indent(try_import_trollius) if target_info >= (3,)
-            else try_import_trollius,
+        import_asyncio=pycondition(
+            (3, 4),
+            if_lt=r'''
+try:
+    import trollius as asyncio
+except ImportError:
+    class you_need_to_install_trollius: pass
+    asyncio = you_need_to_install_trollius()
+            ''',
+            if_ge=r'''
+import asyncio
+            ''',
+            indent=1,
         ),
-        import_pickle=_indent(
-            r'''if _coconut_sys.version_info < (3,):
-    import cPickle as pickle
-else:
-    import pickle''' if not target
-            else "import cPickle as pickle" if target_info < (3,)
-            else "import pickle",
+        import_pickle=pycondition(
+            (3,),
+            if_lt=r'''
+import cPickle as pickle
+            ''',
+            if_ge=r'''
+import pickle
+            ''',
+            indent=1,
         ),
         import_OrderedDict=_indent(
             r'''OrderedDict = collections.OrderedDict if _coconut_sys.version_info >= (2, 7) else dict'''
             if not target
             else "OrderedDict = collections.OrderedDict" if target_info >= (2, 7)
             else "OrderedDict = dict",
+            by=1,
         ),
-        import_collections_abc=_indent(
-            r'''if _coconut_sys.version_info < (3, 3):
-    abc = collections
-else:
-    import collections.abc as abc'''
-            if target_startswith != "2"
-            else "abc = collections",
+        import_collections_abc=pycondition(
+            (3, 3),
+            if_lt=r'''
+abc = collections
+            ''',
+            if_ge=r'''
+import collections.abc as abc
+            ''',
+            indent=1,
         ),
-        bind_lru_cache=_indent(
-            r'''if _coconut_sys.version_info < (3, 2):
-''' + _indent(try_backport_lru_cache)
-            if not target
-            else try_backport_lru_cache if target_startswith == "2"
-            else "",
+        maybe_bind_lru_cache=pycondition(
+            (3, 2),
+            if_lt=r'''
+try:
+    from backports.functools_lru_cache import lru_cache
+    functools.lru_cache = lru_cache
+except ImportError: pass
+            ''',
+            if_ge=None,
+            indent=1,
+            newline=True,
         ),
         set_zip_longest=_indent(
             r'''zip_longest = itertools.zip_longest if _coconut_sys.version_info >= (3,) else itertools.izip_longest'''
             if not target
             else "zip_longest = itertools.zip_longest" if target_info >= (3,)
             else "zip_longest = itertools.izip_longest",
+            by=1,
         ),
         comma_bytearray=", bytearray" if target_startswith != "3" else "",
         static_repr="staticmethod(repr)" if target_startswith != "3" else "repr",
@@ -196,20 +255,19 @@ else:
             else '''return ThreadPoolExecutor()'''
         ),
         zip_iter=_indent(
-            (
-                r'''for items in _coconut.iter(_coconut.zip(*self.iters, strict=self.strict) if _coconut_sys.version_info >= (3, 10) else _coconut.zip_longest(*self.iters, fillvalue=_coconut_sentinel) if self.strict else _coconut.zip(*self.iters)):
+            r'''for items in _coconut.iter(_coconut.zip(*self.iters, strict=self.strict) if _coconut_sys.version_info >= (3, 10) else _coconut.zip_longest(*self.iters, fillvalue=_coconut_sentinel) if self.strict else _coconut.zip(*self.iters)):
     if self.strict and _coconut_sys.version_info < (3, 10) and _coconut.any(x is _coconut_sentinel for x in items):
         raise _coconut.ValueError("zip(..., strict=True) arguments have mismatched lengths")
     yield items'''
-                if not target else
-                r'''for items in _coconut.iter(_coconut.zip(*self.iters, strict=self.strict)):
+            if not target else
+            r'''for items in _coconut.iter(_coconut.zip(*self.iters, strict=self.strict)):
     yield items'''
-                if target_info >= (3, 10) else
-                r'''for items in _coconut.iter(_coconut.zip_longest(*self.iters, fillvalue=_coconut_sentinel) if self.strict else _coconut.zip(*self.iters)):
+            if target_info >= (3, 10) else
+            r'''for items in _coconut.iter(_coconut.zip_longest(*self.iters, fillvalue=_coconut_sentinel) if self.strict else _coconut.zip(*self.iters)):
     if self.strict and _coconut.any(x is _coconut_sentinel for x in items):
         raise _coconut.ValueError("zip(..., strict=True) arguments have mismatched lengths")
-    yield items'''
-            ), by=2,
+    yield items''',
+            by=2,
         ),
         # disabled mocks must have different docstrings so the
         #  interpreter can tell them apart from the real thing
@@ -233,18 +291,15 @@ else:
     """Deprecated feature 'datamaker' disabled by --strict compilation; use 'makedata' instead."""
     raise _coconut.NameError("deprecated feature 'datamaker' disabled by --strict compilation; use 'makedata' instead")'''
         ),
-        return_methodtype=_indent(
-            (
-                "return _coconut.types.MethodType(self.func, obj)"
-                if target_startswith == "3" else
-                "return _coconut.types.MethodType(self.func, obj, objtype)"
-                if target_startswith == "2" else
-                r'''if _coconut_sys.version_info >= (3,):
-    return _coconut.types.MethodType(self.func, obj)
-else:
-    return _coconut.types.MethodType(self.func, obj, objtype)'''
-            ),
-            by=2,
+        return_methodtype=pycondition(
+            (3,),
+            if_lt=r'''
+return _coconut.types.MethodType(self.func, obj, objtype)
+            ''',
+            if_ge=r'''
+return _coconut.types.MethodType(self.func, obj)
+            ''',
+            indent=2,
         ),
         def_call_set_names=(
             r'''def _coconut_call_set_names(cls):
@@ -269,23 +324,21 @@ else:
     # when anything is added to this list it must also be added to the stub file
     format_dict["underscore_imports"] = "{tco_comma}{call_set_names_comma}_coconut, _coconut_MatchError, _coconut_igetitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_star_pipe, _coconut_dubstar_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_back_dubstar_pipe, _coconut_none_pipe, _coconut_none_star_pipe, _coconut_none_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_mark_as_match, _coconut_reiterable".format(**format_dict)
 
-    format_dict["import_typing_NamedTuple"] = _indent(
-        r'''if _coconut_sys.version_info >= (3, 6):
-    import typing
-else:
-    class typing{object}:
-        @staticmethod
-        def NamedTuple(name, fields):
-            return _coconut.collections.namedtuple(name, [x for x, t in fields])'''.format(**format_dict)
-        if not target else
-        "import typing" if target_info >= (3, 6) else
-        r'''class typing{object}:
+    format_dict["import_typing_NamedTuple"] = pycondition(
+        (3, 6),
+        if_lt=r'''
+class typing{object}:
     @staticmethod
     def NamedTuple(name, fields):
-        return _coconut.collections.namedtuple(name, [x for x, t in fields])'''.format(**format_dict),
+        return _coconut.collections.namedtuple(name, [x for x, t in fields])
+        '''.format(**format_dict),
+        if_ge=r'''
+import typing
+        ''',
+        indent=1,
     )
 
-    return format_dict, target_startswith, target_info
+    return format_dict
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -306,9 +359,13 @@ def getheader(which, target="", use_hash=None, no_tco=False, strict=False):
     if which == "none":
         return ""
 
+    target_startswith = one_num_ver(target)
+    target_info = get_target_info(target)
+    pycondition = partial(base_pycondition, target)
+
     # initial, __coconut__, package:n, sys, code, file
 
-    format_dict, target_startswith, target_info = process_header_args(which, target, use_hash, no_tco, strict)
+    format_dict = process_header_args(which, target, use_hash, no_tco, strict)
 
     if which == "initial" or which == "__coconut__":
         header = '''#!/usr/bin/env python{target_startswith}
@@ -358,12 +415,13 @@ from __coconut__ import {underscore_imports}
                 else 'b"__coconut__"' if target_startswith == "2"
                 else 'str("__coconut__")'
             ),
-            sys_path_pop=(
+            sys_path_pop=pycondition(
                 # we can't pop on Python 2 if we want __coconut__ objects to be pickleable
-                "_coconut_sys.path.pop(0)" if target_startswith == "3"
-                else "" if target_startswith == "2"
-                else '''if _coconut_sys.version_info >= (3,):
-    _coconut_sys.path.pop(0)'''
+                (3,),
+                if_lt=None,
+                if_ge=r'''
+_coconut_sys.path.pop(0)
+                ''',
             ),
             **format_dict
         ) + section("Compiled Coconut")
