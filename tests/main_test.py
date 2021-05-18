@@ -315,13 +315,19 @@ def run(args=[], agnostic_target=None, use_run_arg=False, **kwargs):
         comp_non_strict(args, **kwargs)
 
         if use_run_arg:
-            comp_runner(["--run"] + agnostic_args, **kwargs, assert_output=True)
+            _kwargs = kwargs.copy()
+            _kwargs["assert_output"] = True
+            comp_runner(["--run"] + agnostic_args, **_kwargs)
         else:
             comp_runner(agnostic_args, **kwargs)
             run_src()
 
         if use_run_arg:
-            comp_extras(["--run"] + agnostic_args, assert_output=True, check_errors=False, stderr_first=True, **kwargs)
+            _kwargs = kwargs.copy()
+            _kwargs["assert_output"] = True
+            _kwargs["check_errors"] = False
+            _kwargs["stderr_first"] = True
+            comp_extras(["--run"] + agnostic_args, **_kwargs)
         else:
             comp_extras(agnostic_args, **kwargs)
             run_extras()
