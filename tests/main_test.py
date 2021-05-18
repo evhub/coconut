@@ -293,7 +293,7 @@ def run_extras(**kwargs):
     call_python([os.path.join(dest, "extras.py")], assert_output=True, check_errors=False, stderr_first=True, **kwargs)
 
 
-def run(args=[], agnostic_target=None, use_run_arg=False, expect_retcode=0):
+def run(args=[], agnostic_target=None, use_run_arg=False, **kwargs):
     """Compiles and runs tests."""
     if agnostic_target is None:
         agnostic_args = args
@@ -303,27 +303,27 @@ def run(args=[], agnostic_target=None, use_run_arg=False, expect_retcode=0):
     with using_dest():
 
         if PY2:
-            comp_2(args, expect_retcode=expect_retcode)
+            comp_2(args, **kwargs)
         else:
-            comp_3(args, expect_retcode=expect_retcode)
+            comp_3(args, **kwargs)
             if sys.version_info >= (3, 5):
-                comp_35(args, expect_retcode=expect_retcode)
+                comp_35(args, **kwargs)
             if sys.version_info >= (3, 6):
-                comp_36(args, expect_retcode=expect_retcode)
-        comp_agnostic(agnostic_args, expect_retcode=expect_retcode)
-        comp_sys(args, expect_retcode=expect_retcode)
-        comp_non_strict(args, expect_retcode=expect_retcode)
+                comp_36(args, **kwargs)
+        comp_agnostic(agnostic_args, **kwargs)
+        comp_sys(args, **kwargs)
+        comp_non_strict(args, **kwargs)
 
         if use_run_arg:
-            comp_runner(["--run"] + agnostic_args, expect_retcode=expect_retcode, assert_output=True)
+            comp_runner(["--run"] + agnostic_args, **kwargs, assert_output=True)
         else:
-            comp_runner(agnostic_args, expect_retcode=expect_retcode)
+            comp_runner(agnostic_args, **kwargs)
             run_src()
 
         if use_run_arg:
-            comp_extras(["--run"] + agnostic_args, assert_output=True, check_errors=False, stderr_first=True, expect_retcode=expect_retcode)
+            comp_extras(["--run"] + agnostic_args, assert_output=True, check_errors=False, stderr_first=True, **kwargs)
         else:
-            comp_extras(agnostic_args, expect_retcode=expect_retcode)
+            comp_extras(agnostic_args, **kwargs)
             run_extras()
 
 
