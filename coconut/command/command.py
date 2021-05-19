@@ -53,6 +53,7 @@ from coconut.constants import (
     report_this_text,
     mypy_silent_non_err_prefixes,
     mypy_silent_err_prefixes,
+    mypy_err_infixes,
     mypy_install_arg,
     ver_tuple_to_str,
     mypy_builtin_regex,
