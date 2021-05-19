@@ -146,7 +146,12 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
         got_output = "\n".join(lines) + "\n"
         assert assert_output in got_output, "Expected " + repr(assert_output) + "; got " + repr(got_output)
     else:
-        last_line = lines[-1] if lines else ""
+        if not lines:
+            last_line = ""
+        elif "--mypy" in cmd:
+            last_line = " ".join(lines[-2:])
+        else:
+            last_line = lines[-1]
         if assert_output is None:
             assert not last_line, "Expected nothing; got:\n" + "\n".join(repr(li) for li in lines)
         else:
