@@ -74,6 +74,7 @@ mypy_snip_err_3 = r'''error: Incompatible types in assignment (expression has ty
 mypy_args = ["--follow-imports", "silent", "--ignore-missing-imports", "--allow-redefinition"]
 
 ignore_mypy_errs_with = (
+    "Exiting with error: MyPy error",
     "tutorial.py",
     "unused 'type: ignore' comment",
 )
@@ -147,9 +148,9 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
     else:
         last_line = lines[-1] if lines else ""
         if assert_output is None:
-            assert not last_line, "Expected nothing; got " + repr(last_line)
+            assert not last_line, "Expected nothing; got:\n" + "\n".join(repr(li) for li in lines)
         else:
-            assert any(x in last_line for x in assert_output), "Expected " + ", ".join(assert_output) + "; got " + repr(last_line)
+            assert any(x in last_line for x in assert_output), "Expected " + ", ".join(repr(s) for s in assert_output) + "; got:\n" + "\n".join(repr(li) for li in lines)
 
 
 def call_python(args, **kwargs):
@@ -527,7 +528,7 @@ class TestExternal(unittest.TestCase):
             comp_pyprover()
             run_pyprover()
 
-    if not PYPY or PY2:
+    if PY2 or not PYPY:
         def test_prelude(self):
             with using_path(prelude):
                 comp_prelude()
@@ -537,7 +538,7 @@ class TestExternal(unittest.TestCase):
     def test_pyston(self):
         with using_path(pyston):
             comp_pyston(["--no-tco"])
-            if PY2 and PYPY:
+            if PYPY and PY2:
                 run_pyston()
 
 
