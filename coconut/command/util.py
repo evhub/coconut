@@ -487,7 +487,7 @@ class Runner(object):
         auto_compilation(on=interpreter_uses_auto_compilation)
         use_coconut_breakpoint(on=interpreter_uses_coconut_breakpoint)
         self.exit = exit
-        self.vars = self.build_vars(path)
+        self.vars = self.build_vars(path, init=True)
         self.stored = [] if store else None
         if comp is not None:
             self.store(comp.getheader("package:0"))
@@ -495,7 +495,7 @@ class Runner(object):
             self.fix_pickle()
 
     @staticmethod
-    def build_vars(path=None):
+    def build_vars(path=None, init=False):
         """Build initial vars."""
         init_vars = {
             "__name__": "__main__",
@@ -504,9 +504,10 @@ class Runner(object):
         }
         if path is not None:
             init_vars["__file__"] = fixpath(path)
-        # put reserved_vars in for auto-completion purposes
-        for var in reserved_vars:
-            init_vars[var] = None
+        # put reserved_vars in for auto-completion purposes only at the very beginning
+        if init:
+            for var in reserved_vars:
+                init_vars[var] = None
         return init_vars
 
     def store(self, line):
