@@ -1014,3 +1014,21 @@ class Matchable:
     __match_args__ = ("x", "y", "z")
     def __init__(self, x, y, z):
         self.x, self.y, self.z = x, y, z
+
+
+# eval_iters
+
+def eval_iters(() :: it) =
+    it |> map$(eval_iters) |> list
+
+addpattern def eval_iters(x) = x
+
+
+def recursive_map(func, () :: it) =
+    it |> map$(recursive_map$(func)) |> func
+addpattern def recursive_map(func, x) = func(x)
+
+def list_it(() :: it) = list(it)
+addpattern def list_it(x) = x
+
+eval_iters_ = recursive_map$(list_it)
