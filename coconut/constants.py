@@ -554,6 +554,7 @@ reserved_vars = (  # can be backslash-escaped
     "case",
     "cases",
     "where",
+    "addpattern",
 )
 
 py3_to_py2_stdlib = {
