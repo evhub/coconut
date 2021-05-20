@@ -476,7 +476,7 @@ def main_test() -> bool:
     assert ... is Ellipsis
     assert 1or 2
     two = None
-    case False:
+    cases False:
         match False:
             match False in True:
                 two = 1

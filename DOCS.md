@@ -1026,6 +1026,13 @@ case <value>:
 ```
 where `<pattern>` is any `match` pattern, `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds. Note the absence of an `in` in the `match` statements: that's because the `<value>` in `case <value>` is taking its place. If no `else` is present and no match succeeds, then the `case` statement is simply skipped over as with [`match` statements](#match) (though unlike [destructuring assignments](#destructuring-assignment)).
 
+Additionally, to help disambiguate Coconut's `case` syntax from Python 3.10's PEP 622 syntax (which Coconut also supports—see below), `cases` can be used as the top-level keyword instead of `case`, as in:
+```coconut
+cases <value>:
+    match <pattern>:
+        <body>
+```
+
 ##### PEP 622 Support
 
 Additionally, since Coconut is a strict superset of Python, Coconut has full Python 3.10+ [PEP 622](https://www.python.org/dev/peps/pep-0622/#appendix-a) support. Note that, when using PEP 622 match-case syntax, Coconut will use PEP 622 pattern-matching rules rather than Coconut pattern-matching rules, though a warning will always be issued when those rules conflict. To use PEP 622 pattern-matching, the syntax is:

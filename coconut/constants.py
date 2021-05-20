@@ -357,6 +357,7 @@ search_terms = (
     "fmap",
     "starmap",
     "case",
+    "cases",
     "none",
     "coalesce",
     "coalescing",
@@ -506,7 +507,7 @@ function_match_error_var = reserved_prefix + "_FunctionMatchError"
 
 wildcard = "_"  # for pattern-matching
 
-keywords = (
+keyword_vars = (
     "and",
     "as",
     "assert",
@@ -551,6 +552,7 @@ reserved_vars = (  # can be backslash-escaped
     "data",
     "match",
     "case",
+    "cases",
     "where",
 )
 
@@ -800,7 +802,7 @@ icoconut_old_kernel_names = (
 py_syntax_version = 3
 mimetype = "text/x-python3"
 
-all_keywords = keywords + const_vars + reserved_vars
+all_keywords = keyword_vars + const_vars + reserved_vars
 
 conda_build_env_var = "CONDA_BUILD"
 

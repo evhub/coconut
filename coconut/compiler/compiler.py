@@ -2425,7 +2425,7 @@ if {store_var} is not _coconut_sentinel:
         else:
             raise CoconutInternalException("invalid case tokens", tokens)
 
-        if block_kwd == "case":
+        if block_kwd == "cases":
             if self.strict:
                 style = "coconut"
             else:

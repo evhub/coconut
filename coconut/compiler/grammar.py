@@ -61,7 +61,7 @@ from coconut.constants import (
     closeindent,
     strwrapper,
     unwrapper,
-    keywords,
+    keyword_vars,
     const_vars,
     reserved_vars,
     none_coalesce_var,
@@ -764,7 +764,7 @@ class Grammar(object):
 
     name = Forward()
     base_name = (
-        disallow_keywords(keywords + const_vars)
+        disallow_keywords(keyword_vars + const_vars)
         + regex_item(r"(?![0-9])\w+\b")
     )
     for k in reserved_vars:
@@ -1569,8 +1569,9 @@ class Grammar(object):
     destructuring_stmt_ref, match_dotted_name_const_ref = disable_inside(base_destructuring_stmt, must_be_dotted_name)
 
     case_stmt = Forward()
-    # syntaxes 1 and 2 here must be kept matching except for the keywords
-    case_match_syntax_1 = trace(
+    # both syntaxes here must be kept matching except for the keywords
+    cases_kwd = fixto(keyword("case"), "cases") | keyword("cases")
+    case_match_co_syntax = trace(
         Group(
             keyword("match").suppress()
             + stores_loc_item
@@ -1579,12 +1580,12 @@ class Grammar(object):
             + full_suite,
         ),
     )
-    case_stmt_syntax_1 = (
-        keyword("case") + testlist_star_namedexpr + colon.suppress() + newline.suppress()
-        + indent.suppress() + Group(OneOrMore(case_match_syntax_1))
+    case_stmt_co_syntax = (
+        cases_kwd + testlist_star_namedexpr + colon.suppress() + newline.suppress()
+        + indent.suppress() + Group(OneOrMore(case_match_co_syntax))
         + dedent.suppress() + Optional(keyword("else").suppress() + suite)
     )
-    case_match_syntax_2 = trace(
+    case_match_py_syntax = trace(
         Group(
             keyword("case").suppress()
             + stores_loc_item
@@ -1593,12 +1594,12 @@ class Grammar(object):
             + full_suite,
         ),
     )
-    case_stmt_syntax_2 = (
+    case_stmt_py_syntax = (
         keyword("match") + testlist_star_namedexpr + colon.suppress() + newline.suppress()
-        + indent.suppress() + Group(OneOrMore(case_match_syntax_2))
+        + indent.suppress() + Group(OneOrMore(case_match_py_syntax))
         + dedent.suppress() + Optional(keyword("else").suppress() - suite)
     )
-    case_stmt_ref = case_stmt_syntax_1 | case_stmt_syntax_2
+    case_stmt_ref = case_stmt_co_syntax | case_stmt_py_syntax
 
     exec_stmt = Forward()
     assert_stmt = addspace(keyword("assert") - testlist)
@@ -1952,7 +1953,7 @@ class Grammar(object):
             lambda a, b: a | b,
             (
                 keyword(k)
-                for k in keywords
+                for k in keyword_vars
             ),
         ), kwd_err_msg_handle,
     )
