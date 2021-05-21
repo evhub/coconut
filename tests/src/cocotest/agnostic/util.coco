@@ -1021,14 +1021,14 @@ class Matchable:
 def eval_iters(() :: it) =
     it |> map$(eval_iters) |> list
 
-addpattern def eval_iters(x) = x
+addpattern def eval_iters(x) = x  # type: ignore
 
 
 def recursive_map(func, () :: it) =
     it |> map$(recursive_map$(func)) |> func
-addpattern def recursive_map(func, x) = func(x)
+addpattern def recursive_map(func, x) = func(x)  # type: ignore
 
 def list_it(() :: it) = list(it)
-addpattern def list_it(x) = x
+addpattern def list_it(x) = x  # type: ignore
 
 eval_iters_ = recursive_map$(list_it)

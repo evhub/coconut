@@ -670,20 +670,21 @@ class Command(object):
             set_mypy_path()
             from coconut.command.mypy import mypy_run
             args = list(paths) + self.mypy_args
-            if code is not None:
+            if code is not None:  # interpreter
                 args += ["-c", code]
             for line, is_err in mypy_run(args):
                 logger.log("[MyPy]", line)
                 if line.startswith(mypy_silent_err_prefixes):
-                    if code is None:
+                    if code is None:  # file
                         printerr(line)
                         self.register_error(errmsg="MyPy error")
                 elif not line.startswith(mypy_silent_non_err_prefixes):
-                    if code is None and any(infix in line for infix in mypy_err_infixes):
+                    if code is None:  # file
                         printerr(line)
-                        self.register_error(errmsg="MyPy error")
+                        if any(infix in line for infix in mypy_err_infixes):
+                            self.register_error(errmsg="MyPy error")
                     if line not in self.mypy_errs:
-                        if code is not None:
+                        if code is not None:  # interpreter
                             printerr(line)
                         self.mypy_errs.append(line)
 
