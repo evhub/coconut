@@ -433,15 +433,8 @@ class Compiler(Grammar):
         self.keep_lines = keep_lines
         self.no_tco = no_tco
         self.no_wrap = no_wrap
-        if self.no_wrap:
-            if not self.target.startswith("3"):
-                errmsg = "only Python 3 targets support non-comment type annotations"
-            elif self.target_info >= (3, 7):
-                errmsg = "annotations are never wrapped on targets with PEP 563 support"
-            else:
-                errmsg = None
-            if errmsg is not None:
-                logger.warn("--no-wrap argument has no effect on target " + ascii(target if target else "universal"), extra=errmsg)
+        if self.no_wrap and self.target_info >= (3, 7):
+            logger.warn("--no-wrap argument has no effect on target " + ascii(target if target else "universal"), extra="annotations are never wrapped on targets with PEP 563 support")
 
     def __reduce__(self):
         """Return pickling information."""
@@ -1371,7 +1364,7 @@ class Compiler(Grammar):
         internal_assert(len(tokens) == 1, "invalid yield from tokens", tokens)
         if self.target_info < (3, 3):
             ret_val_name = self.get_temp_var("yield_from")
-            self.add_code_before[ret_val_name] = r'''{yield_from_var} = _coconut.iter({expr})
+            self.add_code_before[ret_val_name] = '''{yield_from_var} = _coconut.iter({expr})
 while True:
     {oind}try:
         {oind}yield _coconut.next({yield_from_var})
@@ -2294,7 +2287,7 @@ if not {check_var}:
         # handle dotted function definition
         if is_dotted:
             store_var = self.get_temp_var("dotted_func_name_store")
-            out = r'''try:
+            out = '''try:
     {oind}{store_var} = {def_name}
 {cind}except _coconut.NameError:
     {oind}{store_var} = _coconut_sentinel
@@ -2337,9 +2330,9 @@ if {store_var} is not _coconut_sentinel:
         """Process type annotations without a comma after them."""
         return self.typedef_handle(tokens.asList() + [","])
 
-    def wrap_typedef(self, typedef):
+    def wrap_typedef(self, typedef, ignore_target=False):
         """Wrap a type definition in a string to defer it unless --no-wrap."""
-        if self.no_wrap or self.target_info >= (3, 7):
+        if self.no_wrap or not ignore_target and self.target_info >= (3, 7):
             return typedef
         else:
             return self.wrap_str_of(self.reformat(typedef))
@@ -2367,17 +2360,31 @@ if {store_var} is not _coconut_sentinel:
     def typed_assign_stmt_handle(self, tokens):
         """Process Python 3.6 variable type annotations."""
         if len(tokens) == 2:
-            if self.target_info >= (3, 6):
-                return tokens[0] + ": " + self.wrap_typedef(tokens[1])
-            else:
-                return tokens[0] + " = None" + self.wrap_comment(" type: " + tokens[1])
+            name, typedef = tokens
+            value = None
         elif len(tokens) == 3:
-            if self.target_info >= (3, 6):
-                return tokens[0] + ": " + self.wrap_typedef(tokens[1]) + " = " + tokens[2]
-            else:
-                return tokens[0] + " = " + tokens[2] + self.wrap_comment(" type: " + tokens[1])
+            name, typedef, value = tokens
         else:
             raise CoconutInternalException("invalid variable type annotation tokens", tokens)
+
+        if self.target_info >= (3, 6):
+            return name + ": " + self.wrap_typedef(typedef) + ("" if value is None else " = " + value)
+        else:
+            return '''
+{name} = {value}{comment}
+if "__annotations__" in _coconut.locals():
+    {oind}__annotations__["{name}"] = {annotation}
+{cind}else:
+    {oind}__annotations__ = {{"{name}": {annotation}}}
+{cind}'''.strip().format(
+                oind=openindent,
+                cind=closeindent,
+                name=name,
+                value="None" if value is None else value,
+                comment=self.wrap_comment(" type: " + typedef),
+                # ignore target since this annotation isn't going inside an actual typedef
+                annotation=self.wrap_typedef(typedef, ignore_target=True),
+            )
 
     def with_stmt_handle(self, tokens):
         """Process with statements."""

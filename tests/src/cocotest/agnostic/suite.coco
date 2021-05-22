@@ -642,6 +642,9 @@ def suite_test() -> bool:
         assert False
     it = (|1, (|2, 3|), 4, (|5, 6|)|)
     assert eval_iters(it) == [1, [2, 3], 4, [5, 6]] == eval_iters_(it)
+    assert inf_rec(5) == 10 == inf_rec_(5)
+    m = methtest2()
+    assert m.inf_rec(5) == 10 == m.inf_rec_(5)
 
     # must come at end
     assert fibs_calls[0] == 1

@@ -183,6 +183,7 @@ all_reqs = {
         "pexpect",
         ("numpy", "py34"),
         ("numpy", "py2;cpy"),
+        ("dataclasses", "py36"),
     ),
 }
 
@@ -204,6 +205,7 @@ min_versions = {
     ("numpy", "py34"): (1,),
     ("numpy", "py2;cpy"): (1,),
     ("ipykernel", "py3"): (5, 5),
+    ("dataclasses", "py36"): (0, 8),
     # don't upgrade these; they break on Python 3.5
     ("ipython", "py3"): (7, 9),
     ("jupyter-console", "py3"): (6, 1),

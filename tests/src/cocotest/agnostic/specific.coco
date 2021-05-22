@@ -2,6 +2,7 @@ from io import StringIO  # type: ignore
 
 from .util import mod  # NOQA
 
+
 def non_py26_test() -> bool:
     """Tests for any non-py26 version."""
     test: dict = {}
@@ -16,6 +17,7 @@ def non_py26_test() -> bool:
     assert 5 .imag == 0
     return True
 
+
 def non_py32_test() -> bool:
     """Tests for any non-py32 version."""
     assert {range(8): True}[range(8)]
@@ -26,7 +28,61 @@ def non_py32_test() -> bool:
     assert fakefile.getvalue() == "herpaderp\n"
     return True
 
-def py37_test() -> bool:
+
+def py36_spec_test(tco: bool) -> bool:
+    """Tests for any py36+ version."""
+    from dataclasses import dataclass
+    from typing import Any
+
+    outfile = StringIO()
+
+    class Console:
+        def interpret(self):
+            raise NotImplementedError()
+
+    @dataclass
+    class PrintLine(Console):
+        line: str
+        rest: Console
+
+        def interpret(self):
+            print(self.line, file=outfile)
+            return self.rest.interpret()
+
+    @dataclass
+    class ReadLine(Console):
+        rest: str -> Console
+
+        def interpret(self):
+            return self.rest(input()).interpret()
+
+    @dataclass
+    class Return(Console):
+        val: Any
+
+        def interpret(self):
+            return self.val
+
+    program = PrintLine(
+        'what is your name? ',
+        ReadLine(
+            name -> PrintLine(f'Hello {name}!',
+                                   Return(None))
+        )
+    )
+
+    if tco:
+        p = PrintLine('', Return(None))
+        for _ in range(10000):
+            p = PrintLine('', p)
+        p.interpret()
+
+        assert outfile.getvalue() == "\n" * 10001
+
+    return True
+
+
+def py37_spec_test() -> bool:
     """Tests for any py37+ version."""
     assert py_breakpoint
     return True

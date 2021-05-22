@@ -1,6 +1,7 @@
 # Imports:
 import random
 from contextlib import contextmanager
+from functools import wraps
 if TYPE_CHECKING:
     import typing
 
@@ -297,6 +298,23 @@ def loop_then_tre(n):
     for i in range(1):
         pass
     return loop_then_tre(n-1)
+
+def returns_ten(func):
+    @wraps(func)
+    def returns_ten_func(*args, **kwargs) = 10
+    return returns_ten_func
+
+@returns_ten
+def inf_rec(x) = inf_rec(x)
+
+def inf_rec_(x) = inf_rec_(x)
+inf_rec_ = returns_ten(inf_rec_)
+
+class methtest2:
+    @returns_ten
+    def inf_rec(self, x) = self.inf_rec(x)
+    def inf_rec_(self, x) = self.inf_rec_(x)
+methtest2.inf_rec_ = returns_ten(methtest2.inf_rec_)
 
 # Data Blocks:
 try:
