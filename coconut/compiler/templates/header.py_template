@@ -1,5 +1,5 @@
 class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
-    import collections, copy, functools, types, itertools, operator, threading, weakref, os, warnings, contextlib, traceback
+    import collections, copy, functools, types, itertools, operator, threading, os, warnings, contextlib, traceback, weakref
 {maybe_bind_lru_cache}{import_asyncio}
 {import_pickle}
 {import_OrderedDict}
@@ -37,16 +37,27 @@ class MatchError(Exception):
 class _coconut_tail_call{object}:
     __slots__ = ("func", "args", "kwargs")
     def __init__(self, func, *args, **kwargs):
-        self.func, self.args, self.kwargs = func, args, kwargs
+        self.func = func
+        self.args = args
+        self.kwargs = kwargs
 _coconut_tco_func_dict = {empty_dict}
 def _coconut_tco(func):{COMMENT._coconut_tco_func_attr_is_used_in_main_coco}
     @_coconut.functools.wraps(func)
     def tail_call_optimized_func(*args, **kwargs):
         call_func = func
-        while True:{COMMENT.weakrefs_necessary_for_ignoring_bound_methods}
-            wkref = _coconut_tco_func_dict.get(_coconut.id(call_func))
-            if wkref is not None and wkref() is call_func or _coconut.isinstance(call_func, _coconut_base_pattern_func):
+        while True:{COMMENT.weakrefs_necessary_for_ignoring_functools_wraps_decorators}
+            if _coconut.isinstance(call_func, _coconut_base_pattern_func):
                 call_func = call_func._coconut_tco_func
+            elif _coconut.isinstance(call_func, _coconut.types.MethodType):
+                wkref = _coconut_tco_func_dict.get(_coconut.id(call_func.__func__))
+                wkref_func = None if wkref is None else wkref()
+                if wkref_func is call_func.__func__:
+                    call_func = _coconut.functools.partial(call_func._coconut_tco_func, call_func.__self__)
+            else:
+                wkref = _coconut_tco_func_dict.get(_coconut.id(call_func))
+                wkref_func = None if wkref is None else wkref()
+                if wkref_func is call_func:
+                    call_func = call_func._coconut_tco_func
             result = call_func(*args, **kwargs)  # pass --no-tco to clean up your traceback
             if not isinstance(result, _coconut_tail_call):
                 return result
@@ -103,6 +114,8 @@ class _coconut_base_compose{object}:
     def __reduce__(self):
         return (self.__class__, (self.func,) + _coconut.tuple(self.funcstars))
     def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
         return _coconut.functools.partial(self, obj)
 def _coconut_forward_compose(func, *funcs): return _coconut_base_compose(func, *((f, 0) for f in funcs))
 def _coconut_back_compose(*funcs): return _coconut_forward_compose(*_coconut.reversed(funcs))
@@ -577,6 +590,8 @@ class recursive_iterator{object}:
     def __reduce__(self):
         return (self.__class__, (self.func,))
     def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
         return _coconut.functools.partial(self, obj)
 class _coconut_FunctionMatchErrorContext(object):
     __slots__ = ('exc_class', 'taken')
