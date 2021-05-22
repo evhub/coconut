@@ -346,22 +346,22 @@ else:
 
 def get_vers_for_target(target):
     """Gets a list of the versions supported by the given target."""
-    target_info_len2 = get_target_info(target)[:2]
-    if not target_info_len2:
+    target_info = get_target_info(target)
+    if not target_info:
         return supported_py2_vers + supported_py3_vers
-    elif len(target_info_len2) == 1:
-        if target_info_len2 == (2,):
+    elif len(target_info) == 1:
+        if target_info == (2,):
             return supported_py2_vers
-        elif target_info_len2 == (3,):
+        elif target_info == (3,):
             return supported_py3_vers
         else:
-            raise CoconutInternalException("invalid target info", target_info_len2)
-    elif target_info_len2[0] == 2:
-        return tuple(ver for ver in supported_py2_vers if ver >= target_info_len2)
-    elif target_info_len2[0] == 3:
-        return tuple(ver for ver in supported_py3_vers if ver >= target_info_len2)
+            raise CoconutInternalException("invalid target info", target_info)
+    elif target_info[0] == 2:
+        return tuple(ver for ver in supported_py2_vers if ver >= target_info)
+    elif target_info[0] == 3:
+        return tuple(ver for ver in supported_py3_vers if ver >= target_info)
     else:
-        raise CoconutInternalException("invalid target info", target_info_len2)
+        raise CoconutInternalException("invalid target info", target_info)
 
 
 def get_target_info_smart(target, mode="lowest"):

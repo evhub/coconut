@@ -135,10 +135,10 @@ all_reqs = {
     "py2": (
         "futures",
         "backports.functools-lru-cache",
-        "prompt_toolkit:2",
+        ("prompt_toolkit", "mark2"),
     ),
     "py3": (
-        "prompt_toolkit:3",
+        ("prompt_toolkit", "mark3"),
     ),
     "py26": (
         "argparse",
@@ -183,7 +183,7 @@ all_reqs = {
         "pexpect",
         ("numpy", "py34"),
         ("numpy", "py2;cpy"),
-        ("dataclasses", "py36"),
+        ("dataclasses", "py36-only"),
     ),
 }
 
@@ -205,14 +205,14 @@ min_versions = {
     ("numpy", "py34"): (1,),
     ("numpy", "py2;cpy"): (1,),
     ("ipykernel", "py3"): (5, 5),
-    ("dataclasses", "py36"): (0, 8),
+    ("dataclasses", "py36-only"): (0, 8),
     # don't upgrade these; they break on Python 3.5
     ("ipython", "py3"): (7, 9),
     ("jupyter-console", "py3"): (6, 1),
     ("jupytext", "py3"): (1, 8),
     ("jupyterlab", "py35"): (2, 2),
     # don't upgrade this to allow all versions
-    "prompt_toolkit:3": (1,),
+    ("prompt_toolkit", "mark3"): (1,),
     # don't upgrade this; it breaks on Python 2.6
     "pytest": (3,),
     # don't upgrade this; it breaks on unix
@@ -223,7 +223,7 @@ min_versions = {
     ("jupyter-console", "py2"): (5, 2),
     ("ipython", "py2"): (5, 4),
     ("ipykernel", "py2"): (4, 10),
-    "prompt_toolkit:2": (1,),
+    ("prompt_toolkit", "mark2"): (1,),
     "watchdog": (0, 10),
     # don't upgrade these; they break on master
     "sphinx": (1, 7, 4),
@@ -238,14 +238,14 @@ pinned_reqs = (
     ("jupyter-console", "py3"),
     ("jupytext", "py3"),
     ("jupyterlab", "py35"),
-    "prompt_toolkit:3",
+    ("prompt_toolkit", "mark3"),
     "pytest",
     "vprof",
     "pygments",
     ("jupyter-console", "py2"),
     ("ipython", "py2"),
     ("ipykernel", "py2"),
-    "prompt_toolkit:2",
+    ("prompt_toolkit", "mark2"),
     "watchdog",
     "sphinx",
     "sphinx_bootstrap_theme",
@@ -262,7 +262,7 @@ max_versions = {
     "sphinx": _,
     "sphinx_bootstrap_theme": (_, _),
     "mypy": _,
-    "prompt_toolkit:2": _,
+    ("prompt_toolkit", "mark2"): _,
     "jedi": _,
 }
 

@@ -58,8 +58,9 @@ except Exception:
 def get_base_req(req):
     """Get the name of the required package for the given requirement."""
     if isinstance(req, tuple):
-        req = req[0]
-    return req.split(":", 1)[0]
+        return req[0]
+    else:
+        return req
 
 
 def get_reqs(which):
@@ -80,7 +81,20 @@ def get_reqs(which):
         if env_marker:
             markers = []
             for mark in env_marker.split(";"):
-                if mark == "py2":
+                if mark.startswith("py") and mark.endswith("-only"):
+                    ver = mark[len("py"):-len("-only")]
+                    if len(ver) == 1:
+                        ver_tuple = (int(ver),)
+                    else:
+                        ver_tuple = (int(ver[0]), int(ver[1:]))
+                    next_ver_tuple = get_next_version(ver_tuple)
+                    if supports_env_markers:
+                        markers.append("python_version>='" + ver_tuple_to_str(ver_tuple) + "'")
+                        markers.append("python_version<'" + ver_tuple_to_str(next_ver_tuple) + "'")
+                    elif sys.version_info < ver_tuple or sys.version_info >= next_ver_tuple:
+                        use_req = False
+                        break
+                elif mark == "py2":
                     if supports_env_markers:
                         markers.append("python_version<'3'")
                     elif not PY2:
@@ -93,7 +107,7 @@ def get_reqs(which):
                         use_req = False
                         break
                 elif mark.startswith("py3"):
-                    ver = int(mark[len("py3"):])
+                    ver = mark[len("py3"):]
                     if supports_env_markers:
                         markers.append("python_version>='3.{ver}'".format(ver=ver))
                     elif sys.version_info < (3, ver):
@@ -105,6 +119,8 @@ def get_reqs(which):
                     elif not CPYTHON:
                         use_req = False
                         break
+                elif mark.startswith("mark"):
+                    pass  # ignore
                 else:
                     raise ValueError("unknown env marker " + repr(mark))
             if markers:
