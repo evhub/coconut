@@ -52,7 +52,7 @@ def _coconut_tco(func):{COMMENT._coconut_tco_func_attr_is_used_in_main_coco}
                 wkref = _coconut_tco_func_dict.get(_coconut.id(call_func.__func__))
                 wkref_func = None if wkref is None else wkref()
                 if wkref_func is call_func.__func__:
-                    if "unbound" in _coconut.repr(call_func):
+                    if call_func.__self__ is None:
                         call_func = call_func._coconut_tco_func
                     else:
                         call_func = _coconut.functools.partial(call_func._coconut_tco_func, call_func.__self__)
