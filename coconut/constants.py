@@ -488,22 +488,15 @@ tabideal = 4  # spaces to indent code for displaying
 justify_len = 79  # ideal line length
 
 reserved_prefix = "_coconut"
-decorator_var = reserved_prefix + "_decorator"
-import_as_var = reserved_prefix + "_import"
-yield_from_var = reserved_prefix + "_yield_from"
-yield_err_var = reserved_prefix + "_yield_err"
-raise_from_var = reserved_prefix + "_raise_from"
-tre_mock_var = reserved_prefix + "_mock_func"
-tre_check_var = reserved_prefix + "_is_recursive"
+
+# prefer Compiler.get_temp_var to proliferating more vars here
 none_coalesce_var = reserved_prefix + "_x"
 func_var = reserved_prefix + "_func"
 format_var = reserved_prefix + "_format"
 
-# prefer Matcher.get_temp_var to proliferating more match vars here
-match_to_var = reserved_prefix + "_match_to"
-match_to_args_var = match_to_var + "_args"
-match_to_kwargs_var = match_to_var + "_kwargs"
-match_check_var = reserved_prefix + "_match_check"
+# prefer Matcher.get_temp_var to proliferating more vars here
+match_to_args_var = reserved_prefix + "_match_args"
+match_to_kwargs_var = reserved_prefix + "_match_kwargs"
 match_temp_var = reserved_prefix + "_match_temp"
 function_match_error_var = reserved_prefix + "_FunctionMatchError"
 
