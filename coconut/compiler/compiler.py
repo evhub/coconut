@@ -2379,7 +2379,7 @@ if {store_var} is not _coconut_sentinel:
             return '''
 {name} = {value}{comment}
 if "__annotations__" not in _coconut.locals():
-    {oind}__annotations__ = {{}}{annotations_comment}
+    {oind}__annotations__ = {{}}
 {cind}__annotations__["{name}"] = {annotation}
             '''.strip().format(
                 oind=openindent,
@@ -2387,7 +2387,6 @@ if "__annotations__" not in _coconut.locals():
                 name=name,
                 value="None" if value is None else value,
                 comment=self.wrap_comment(" type: " + typedef),
-                annotations_comment=self.wrap_comment(" type: _coconut.typing.Dict[_coconut.typing.AnyStr, _coconut.typing.Any]"),
                 # ignore target since this annotation isn't going inside an actual typedef
                 annotation=self.wrap_typedef(typedef, ignore_target=True),
             )
