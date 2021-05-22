@@ -69,13 +69,13 @@ def py36_spec_test(tco: bool) -> bool:
             name -> PrintLine(f'Hello {name}!',
                                    Return(None))
         )
-    )
+    )  # type: ignore
 
     if tco:
-        p = PrintLine('', Return(None))
+        p = PrintLine('', Return(None))  # type: ignore
         for _ in range(10000):
             p = PrintLine('', p)
-        p.interpret()
+        p.interpret()  # type: ignore
 
         assert outfile.getvalue() == "\n" * 10001
 
