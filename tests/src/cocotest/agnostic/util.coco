@@ -314,7 +314,7 @@ class methtest2:
     @returns_ten
     def inf_rec(self, x) = self.inf_rec(x)
     def inf_rec_(self, x) = self.inf_rec_(x)
-methtest2.inf_rec_ = returns_ten(methtest2.inf_rec_)
+methtest2.inf_rec_ = returns_ten(methtest2.inf_rec_)  # type: ignore
 
 # Data Blocks:
 try:

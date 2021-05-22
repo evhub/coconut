@@ -770,12 +770,12 @@ def main_test() -> bool:
     assert zip([1], [2], strict=True) |> repr == "zip([1], [2], strict=True)"
     (|x, y|) = (|1, 2|)  # type: ignore
     assert (x, y) == (1, 2)
-    def f(x):
+    def f(x):  # type: ignore
         if x > 0:
             return f(x-1)
         return 0
     g = f
-    def f(x) = x
+    def f(x) = x  # type: ignore
     assert g(5) == 4
     @func -> f -> f(2)
     def returns_f_of_2(f) = f(1)
