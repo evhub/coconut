@@ -74,7 +74,7 @@ def py36_spec_test(tco: bool) -> bool:
     if tco:
         p = PrintLine('', Return(None))  # type: ignore
         for _ in range(10000):
-            p = PrintLine('', p)
+            p = PrintLine('', p)  # type: ignore
         p.interpret()  # type: ignore
 
         assert outfile.getvalue() == "\n" * 10001
