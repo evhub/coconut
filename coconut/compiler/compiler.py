@@ -220,10 +220,10 @@ def split_args_list(tokens, loc):
     for arg in tokens:
         if len(arg) == 1:
             if arg[0] == "*":
-                # star sep (pos = 3)
-                if pos >= 3:
+                # star sep (pos = 2)
+                if pos >= 2:
                     raise CoconutDeferredSyntaxError("star separator at invalid position in function definition", loc)
-                pos = 3
+                pos = 2
             elif arg[0] == "/":
                 # slash sep (pos = 0)
                 if pos > 0:
@@ -238,13 +238,13 @@ def split_args_list(tokens, loc):
                 # pos arg (pos = 0)
                 if pos == 0:
                     req_args.append(arg[0])
-                # kwd only arg (pos = 3)
-                elif pos == 3:
+                # kwd only arg (pos = 2)
+                elif pos == 2:
                     kwd_only_args.append((arg[0], None))
                 else:
-                    raise CoconutDeferredSyntaxError("non-default arguments must come first or after star separator", loc)
+                    raise CoconutDeferredSyntaxError("non-default arguments must come first or after star argument/separator", loc)
         else:
-            # only the first two arguments matter; if there's a third it's a typedef
+            # only the first two components matter; if there's a third it's a typedef
             if arg[0] == "*":
                 # star arg (pos = 2)
                 if pos >= 2:
@@ -252,19 +252,19 @@ def split_args_list(tokens, loc):
                 pos = 2
                 star_arg = arg[1]
             elif arg[0] == "**":
-                # dub star arg (pos = 4)
-                if pos == 4:
+                # dub star arg (pos = 3)
+                if pos == 3:
                     raise CoconutDeferredSyntaxError("double star argument at invalid position in function definition", loc)
-                pos = 4
+                pos = 3
                 dubstar_arg = arg[1]
             else:
                 # def arg (pos = 1)
                 if pos <= 1:
                     pos = 1
                     def_args.append((arg[0], arg[1]))
-                # kwd only arg (pos = 3)
-                elif pos <= 3:
-                    pos = 3
+                # kwd only arg (pos = 2)
+                elif pos <= 2:
+                    pos = 2
                     kwd_only_args.append((arg[0], arg[1]))
                 else:
                     raise CoconutDeferredSyntaxError("invalid default argument in function definition", loc)
