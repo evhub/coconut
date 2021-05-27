@@ -94,7 +94,7 @@ arguments.add_argument(
 )
 
 arguments.add_argument(
-    "-a", "--standalone",
+    "-a", "--standalone", "--stand-alone",
     action="store_true",
     help="compile source as standalone files (defaults to only if source is a single file)",
 )

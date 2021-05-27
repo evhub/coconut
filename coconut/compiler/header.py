@@ -400,21 +400,18 @@ def getheader(which, target="", use_hash=None, no_tco=False, strict=False):
             coconut_file_path = "_coconut_os_path.dirname(" + coconut_file_path + ")"
         return header + '''import sys as _coconut_sys, os.path as _coconut_os_path
 _coconut_file_path = {coconut_file_path}
-_coconut_cached_module = _coconut_sys.modules.get({__coconut__})
+_coconut_module_name = _coconut_os_path.splitext(_coconut_os_path.basename(_coconut_file_path))[0]
+if not _coconut_module_name or not _coconut_module_name[0].isalpha() or not all (c.isalpha() or c.isdigit() for c in _coconut_module_name):
+    raise ImportError("invalid Coconut package name " + repr(_coconut_module_name) + " (pass --standalone to compile as individual files rather than a package)")
+_coconut_cached_module = _coconut_sys.modules.get(str(_coconut_module_name + ".__coconut__"))
 if _coconut_cached_module is not None and _coconut_os_path.dirname(_coconut_cached_module.__file__) != _coconut_file_path:
-    del _coconut_sys.modules[{__coconut__}]
-_coconut_sys.path.insert(0, _coconut_file_path)
-from __coconut__ import *
-from __coconut__ import {underscore_imports}
+    del _coconut_sys.modules[str(_coconut_module_name + ".__coconut__")]
+_coconut_sys.path.insert(0, _coconut_os_path.dirname(_coconut_file_path))
+exec("from " + _coconut_module_name + ".__coconut__ import *")
+exec("from " + _coconut_module_name + ".__coconut__ import {underscore_imports}")
 {sys_path_pop}
-
 '''.format(
             coconut_file_path=coconut_file_path,
-            __coconut__=(
-                '"__coconut__"' if target_startswith == "3"
-                else 'b"__coconut__"' if target_startswith == "2"
-                else 'str("__coconut__")'
-            ),
             sys_path_pop=pycondition(
                 # we can't pop on Python 2 if we want __coconut__ objects to be pickleable
                 (3,),
@@ -422,6 +419,7 @@ from __coconut__ import {underscore_imports}
                 if_ge=r'''
 _coconut_sys.path.pop(0)
                 ''',
+                newline=True,
             ),
             **format_dict
         ) + section("Compiled Coconut")
