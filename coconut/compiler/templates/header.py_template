@@ -280,6 +280,8 @@ class _coconut_parallel_concurrent_map_func_wrapper{object}:
     def __init__(self, map_cls, func):
         self.map_cls = map_cls
         self.func = func
+    def __reduce__(self):
+        return (self.__class__, (self.map_cls, self.func))
     def __call__(self, *args, **kwargs):
         self.map_cls.get_executor_stack().append(None)
         try:
