@@ -304,6 +304,13 @@ def suite_test() -> bool:
         pass
     else:
         assert False
+    assert must_pass_x(1, x=2) == ((1,), 2), must_pass_x(1, x=2)
+    try:
+        must_pass_x(1, 2)
+    except MatchError:
+        pass
+    else:
+        assert False
     assert no_args_kwargs()
     try:
         no_args_kwargs(1)

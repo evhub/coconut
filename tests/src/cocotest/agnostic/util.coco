@@ -824,6 +824,8 @@ def head_tail_def_none([head] + tail = [None]) = (head, tail)
 
 match def kwd_only_x_is_int_def_0(*, x is int = 0) = x
 
+match def must_pass_x(*xs, x) = (xs, x)
+
 def no_args_kwargs(*(), **{}) = True
 
 # Alternative Class Notation
