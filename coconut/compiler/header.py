@@ -251,8 +251,8 @@ except ImportError: pass
         return_ThreadPoolExecutor=(
             # cpu_count() * 5 is the default Python 3.5 thread count
             r'''from multiprocessing import cpu_count
-        return ThreadPoolExecutor(cpu_count() * 5)''' if target_info < (3, 5)
-            else '''return ThreadPoolExecutor()'''
+        return ThreadPoolExecutor(cpu_count() * 5 if max_workers is None else max_workers)''' if target_info < (3, 5)
+            else '''return ThreadPoolExecutor(max_workers)'''
         ),
         zip_iter=_indent(
             r'''for items in _coconut.iter(_coconut.zip(*self.iters, strict=self.strict) if _coconut_sys.version_info >= (3, 10) else _coconut.zip_longest(*self.iters, fillvalue=_coconut_sentinel) if self.strict else _coconut.zip(*self.iters)):

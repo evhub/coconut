@@ -26,13 +26,14 @@ def suite_test() -> bool:
     def test_sqplus1_plus1sq(sqplus1, plus1sq, parallel=True):
         assert sqplus1(3) == 10 == (plus1..square)(3), sqplus1
         if parallel:
-            assert parallel_map(sqplus1, range(3)) |> tuple == (1, 2, 5), sqplus1
+            assert parallel_map(sqplus1, range(3)) |> tuple == (1, 2, 5), sqplus1  # type: ignore
         assert 3 `plus1sq` == 16, plus1sq
         assert 3 `sqplus1` == 10, sqplus1
     test_sqplus1_plus1sq(sqplus1_1, plus1sq_1)
     test_sqplus1_plus1sq(sqplus1_2, plus1sq_2, parallel=False)
-    test_sqplus1_plus1sq(sqplus1_3, plus1sq_3)
-    test_sqplus1_plus1sq(sqplus1_4, plus1sq_4)
+    with parallel_map.multiple_sequential_calls(max_workers=2):
+        test_sqplus1_plus1sq(sqplus1_3, plus1sq_3)
+        test_sqplus1_plus1sq(sqplus1_4, plus1sq_4)
     assert 3 |> plus1 |> square == 16 == 3 |> plus1_ |> square
     assert reduce((|>), [3, plus1, square]) == 16 == pipe(pipe(3, plus1), square)  # type: ignore
     assert reduce((..), [sqrt, square, plus1])(3) == 4 == compose(compose(sqrt, square), plus1)(3)  # type: ignore
