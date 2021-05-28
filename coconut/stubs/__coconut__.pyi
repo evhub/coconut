@@ -509,3 +509,7 @@ def consume(
 
 
 def fmap(func: _t.Callable[[_Tco], _Uco], obj: _t.Iterable[_Tco]) -> _t.Iterable[_Uco]: ...
+
+
+def _coconut_parallel_concurrent_map_func_wrapper(map_cls: _t.Any, func: _Tfunc) -> _Tfunc:
+    ...
