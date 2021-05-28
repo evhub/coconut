@@ -809,14 +809,16 @@ def mypy_test() -> bool:
 
 def tco_func() = tco_func()
 
+def print_dot() = print(".", end="", flush=True)
+
 def main(test_easter_eggs=False):
     """Asserts arguments and executes tests."""
     using_tco = "_coconut_tco" in globals() or "_coconut_tco" in locals()
 
-    print(".", end="")  # ..
+    print_dot()  # ..
     assert main_test()
 
-    print(".", end="")  # ...
+    print_dot()  # ...
     if sys.version_info >= (2, 7):
         from .specific import non_py26_test
         assert non_py26_test()
@@ -830,17 +832,17 @@ def main(test_easter_eggs=False):
         from .specific import py37_spec_test
         assert py37_spec_test()
 
-    print(".", end="")  # ....
+    print_dot()  # ....
     from .suite import suite_test, tco_test
     assert suite_test()
 
-    print(".", end="")  # .....
+    print_dot()  # .....
     assert mypy_test()
     if using_tco:
         assert hasattr(tco_func, "_coconut_tco_func")
         assert tco_test()
 
-    print(".", end="")  # ......
+    print_dot()  # ......
     if sys.version_info < (3,):
         from .py2_test import py2_test
         assert py2_test()
@@ -854,17 +856,17 @@ def main(test_easter_eggs=False):
             from .py36_test import py36_test
             assert py36_test()
 
-    print(".", end="")  # .......
+    print_dot()  # .......
     from .target_sys_test import TEST_ASYNCIO, target_sys_test
     if TEST_ASYNCIO:
         assert test_asyncio()
     assert target_sys_test()
 
-    print(".", end="")  # ........
+    print_dot()  # ........
     from .non_strict_test import non_strict_test
     assert non_strict_test()
 
-    print(".", end="")  # .........
+    print_dot()  # .........
     from . import tutorial
 
     if test_easter_eggs:
