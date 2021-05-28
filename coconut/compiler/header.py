@@ -361,7 +361,7 @@ def getheader(which, target="", use_hash=None, no_tco=False, strict=False):
 
     target_startswith = one_num_ver(target)
     target_info = get_target_info(target)
-    pycondition = partial(base_pycondition, target)
+    # pycondition = partial(base_pycondition, target)
 
     # initial, __coconut__, package:n, sys, code, file
 
@@ -400,36 +400,24 @@ def getheader(which, target="", use_hash=None, no_tco=False, strict=False):
             coconut_file_dir = "_coconut_os.path.dirname(" + coconut_file_dir + ")"
         return header + '''import sys as _coconut_sys, os as _coconut_os
 _coconut_file_dir = {coconut_file_dir}
-_coconut_module_name = str(_coconut_os.path.splitext(_coconut_os.path.basename(_coconut_file_dir))[0] + ".__coconut__")
-if not _coconut_module_name or not _coconut_module_name[0].isalpha() or not all (c.isalpha() or c.isdigit() for c in _coconut_module_name) or "__init__.py" not in _coconut_os.listdir(_coconut_file_dir):
-    _coconut_module_name = str("__coconut__")
-_coconut_cached_module = _coconut_sys.modules.get(_coconut_module_name)
+_coconut_cached_module = _coconut_sys.modules.get({__coconut__})
 if _coconut_cached_module is not None and _coconut_os.path.dirname(_coconut_cached_module.__file__) != _coconut_file_dir:
-    del _coconut_sys.modules[_coconut_module_name]
-try:
-    from typing import TYPE_CHECKING as _coconut_TYPE_CHECKING
-except ImportError:
-    _coconut_TYPE_CHECKING = False
-if _coconut_TYPE_CHECKING or _coconut_module_name == str("__coconut__"):
-    _coconut_sys.path.insert(0, _coconut_file_dir)
-    from __coconut__ import *
-    from __coconut__ import {underscore_imports}
-else:
-    _coconut_sys.path.insert(0, _coconut_os.path.dirname(_coconut_file_dir))
-    exec("from " + _coconut_module_name + " import *")
-    exec("from " + _coconut_module_name + " import {underscore_imports}")
-{sys_path_pop}
+    del _coconut_sys.modules[{__coconut__}]
+_coconut_sys.path.insert(0, _coconut_file_dir)
+from __coconut__ import *
+from __coconut__ import {underscore_imports}
+_coconut_sys.path.pop(0)
+_coconut_module_name = str(_coconut_os.path.splitext(_coconut_os.path.basename(_coconut_file_dir))[0] + ".__coconut__")
+if _coconut_module_name and _coconut_module_name[0].isalpha() and all(c.isalpha() or c.isdigit() for c in _coconut_module_name) and "__init__.py" in _coconut_os.listdir(_coconut_file_dir):
+    for _, v in globals():
+        if v.__module__ == {__coconut__}:
+            v.__module__ = _coconut_module_name
 '''.format(
             coconut_file_dir=coconut_file_dir,
-            sys_path_pop=pycondition(
-                # we can't pop on Python 2 if we want __coconut__ objects to be pickleable
-                (3,),
-                if_lt=None,
-                if_ge=r'''
-_coconut_sys.path.pop(0)
-                ''',
-                indent=1,
-                newline=True,
+            __coconut__=(
+                '"__coconut__"' if target_startswith == "3"
+                else 'b"__coconut__"' if target_startswith == "2"
+                else 'str("__coconut__")'
             ),
             **format_dict
         ) + section("Compiled Coconut")
