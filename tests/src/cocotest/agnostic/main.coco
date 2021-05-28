@@ -198,7 +198,7 @@ def main_test() -> bool:
     assert (range(0, 5), range(5, 10)) |*> map$(+) |> tuple == (5, 7, 9, 11, 13)
     assert parallel_map((*)$(2)..(+)$(1), range(5)) |> tuple == (2, 4, 6, 8, 10)
     assert repr(concurrent_map((-), range(5))).startswith("concurrent_map(")  # type: ignore
-    with concurrent_map.multiple_sequential_calls(max_workers=4):
+    with concurrent_map.multiple_sequential_calls(max_workers=4):  # type: ignore
         assert concurrent_map((-), range(5)) |> tuple == (0, -1, -2, -3, -4) == concurrent_map(map$((-)), (range(5),))$[0] |> tuple  # type: ignore
     assert concurrent_map(zip, (range(2),), (range(2),)) |> map$(tuple) |> tuple == (((0,0), (1,1)),)  # type: ignore
     assert (range(0, 5), range(5, 10)) |*> map$(+) |> tuple == (5, 7, 9, 11, 13)
@@ -613,7 +613,7 @@ def main_test() -> bool:
     for map_func in (parallel_map, concurrent_map):
         m1 = map_func((+)$(1), range(5))
         assert m1 `isinstance` map_func
-        with map_func.multiple_sequential_calls():
+        with map_func.multiple_sequential_calls():  # type: ignore
             m2 = map_func((+)$(1), range(5))
             assert m2 `isinstance` list
             assert m1.result is None

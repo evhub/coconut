@@ -406,9 +406,17 @@ if not _coconut_module_name or not _coconut_module_name[0].isalpha() or not all 
 _coconut_cached_module = _coconut_sys.modules.get(str(_coconut_module_name + ".__coconut__"))
 if _coconut_cached_module is not None and _coconut_os_path.dirname(_coconut_cached_module.__file__) != _coconut_file_path:
     del _coconut_sys.modules[str(_coconut_module_name + ".__coconut__")]
-_coconut_sys.path.insert(0, _coconut_os_path.dirname(_coconut_file_path))
-exec("from " + _coconut_module_name + ".__coconut__ import *")
-exec("from " + _coconut_module_name + ".__coconut__ import {underscore_imports}")
+try:
+    from typing import TYPE_CHECKING as _coconut_TYPE_CHECKING
+except ImportError:
+    _coconut_TYPE_CHECKING = False
+if _coconut_TYPE_CHECKING:
+    from __coconut__ import *
+    from __coconut__ import {underscore_imports}
+else:
+    _coconut_sys.path.insert(0, _coconut_os_path.dirname(_coconut_file_path))
+    exec("from " + _coconut_module_name + ".__coconut__ import *")
+    exec("from " + _coconut_module_name + ".__coconut__ import {underscore_imports}")
 {sys_path_pop}
 '''.format(
             coconut_file_path=coconut_file_path,
@@ -419,6 +427,7 @@ exec("from " + _coconut_module_name + ".__coconut__ import {underscore_imports}"
                 if_ge=r'''
 _coconut_sys.path.pop(0)
                 ''',
+                indent=1,
                 newline=True,
             ),
             **format_dict
