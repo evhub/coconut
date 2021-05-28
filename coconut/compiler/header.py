@@ -321,7 +321,7 @@ return _coconut.types.MethodType(self.func, obj)
         call_set_names_comma="_coconut_call_set_names, " if target_info < (3, 6) else "",
     )
 
-    # when anything is added to this list it must also be added to the stub file
+    # when anything is added to this list it must also be added to *both* __coconut__.pyi stub files
     format_dict["underscore_imports"] = "{tco_comma}{call_set_names_comma}_coconut, _coconut_MatchError, _coconut_igetitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_star_pipe, _coconut_dubstar_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_back_dubstar_pipe, _coconut_none_pipe, _coconut_none_star_pipe, _coconut_none_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_mark_as_match, _coconut_reiterable".format(**format_dict)
 
     format_dict["import_typing_NamedTuple"] = pycondition(
@@ -395,31 +395,32 @@ def getheader(which, target="", use_hash=None, no_tco=False, strict=False):
 
     if which.startswith("package"):
         levels_up = int(which[len("package:"):])
-        coconut_file_path = "_coconut_os_path.dirname(_coconut_os_path.abspath(__file__))"
+        coconut_file_dir = "_coconut_os.path.dirname(_coconut_os.path.abspath(__file__))"
         for _ in range(levels_up):
-            coconut_file_path = "_coconut_os_path.dirname(" + coconut_file_path + ")"
-        return header + '''import sys as _coconut_sys, os.path as _coconut_os_path
-_coconut_file_path = {coconut_file_path}
-_coconut_module_name = _coconut_os_path.splitext(_coconut_os_path.basename(_coconut_file_path))[0]
-if not _coconut_module_name or not _coconut_module_name[0].isalpha() or not all (c.isalpha() or c.isdigit() for c in _coconut_module_name):
-    raise ImportError("invalid Coconut package name " + repr(_coconut_module_name) + " (pass --standalone to compile as individual files rather than a package)")
-_coconut_cached_module = _coconut_sys.modules.get(str(_coconut_module_name + ".__coconut__"))
-if _coconut_cached_module is not None and _coconut_os_path.dirname(_coconut_cached_module.__file__) != _coconut_file_path:
-    del _coconut_sys.modules[str(_coconut_module_name + ".__coconut__")]
+            coconut_file_dir = "_coconut_os.path.dirname(" + coconut_file_dir + ")"
+        return header + '''import sys as _coconut_sys, os as _coconut_os
+_coconut_file_dir = {coconut_file_dir}
+_coconut_module_name = str(_coconut_os.path.splitext(_coconut_os.path.basename(_coconut_file_dir))[0] + ".__coconut__")
+if not _coconut_module_name or not _coconut_module_name[0].isalpha() or not all (c.isalpha() or c.isdigit() for c in _coconut_module_name) or "__init__.py" not in _coconut_os.listdir(_coconut_file_dir):
+    _coconut_module_name = str("__coconut__")
+_coconut_cached_module = _coconut_sys.modules.get(_coconut_module_name)
+if _coconut_cached_module is not None and _coconut_os.path.dirname(_coconut_cached_module.__file__) != _coconut_file_dir:
+    del _coconut_sys.modules[_coconut_module_name]
 try:
     from typing import TYPE_CHECKING as _coconut_TYPE_CHECKING
 except ImportError:
     _coconut_TYPE_CHECKING = False
-if _coconut_TYPE_CHECKING:
+if _coconut_TYPE_CHECKING or _coconut_module_name == str("__coconut__"):
+    _coconut_sys.path.insert(0, _coconut_file_dir)
     from __coconut__ import *
     from __coconut__ import {underscore_imports}
 else:
-    _coconut_sys.path.insert(0, _coconut_os_path.dirname(_coconut_file_path))
-    exec("from " + _coconut_module_name + ".__coconut__ import *")
-    exec("from " + _coconut_module_name + ".__coconut__ import {underscore_imports}")
+    _coconut_sys.path.insert(0, _coconut_os.path.dirname(_coconut_file_dir))
+    exec("from " + _coconut_module_name + " import *")
+    exec("from " + _coconut_module_name + " import {underscore_imports}")
 {sys_path_pop}
 '''.format(
-            coconut_file_path=coconut_file_path,
+            coconut_file_dir=coconut_file_dir,
             sys_path_pop=pycondition(
                 # we can't pop on Python 2 if we want __coconut__ objects to be pickleable
                 (3,),
