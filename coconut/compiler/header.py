@@ -404,11 +404,18 @@ _coconut_cached_module = _coconut_sys.modules.get({__coconut__})
 if _coconut_cached_module is not None and _coconut_os.path.dirname(_coconut_cached_module.__file__) != _coconut_file_dir:
     del _coconut_sys.modules[{__coconut__}]
 _coconut_sys.path.insert(0, _coconut_file_dir)
-_coconut_module_name = str(_coconut_os.path.splitext(_coconut_os.path.basename(_coconut_file_dir))[0] + ".__coconut__")
+_coconut_module_name = _coconut_os.path.splitext(_coconut_os.path.basename(_coconut_file_dir))[0]
 if _coconut_module_name and _coconut_module_name[0].isalpha() and all(c.isalpha() or c.isdigit() for c in _coconut_module_name) and "__init__.py" in _coconut_os.listdir(_coconut_file_dir):
+    _coconut_full_module_name = str(_coconut_module_name + ".__coconut__")
     import __coconut__ as _coconut__coconut__
-    for _, v in vars(_coconut__coconut__):
-        v.__module__ = _coconut_module_name
+    _coconut__coconut__.__name__ = _coconut_full_module_name
+    for _coconut_v in vars(_coconut__coconut__).values():
+        if getattr(_coconut_v, "__module__", None) == {__coconut__}:
+            try:
+                _coconut_v.__module__ = _coconut_full_module_name
+            except AttributeError:
+                type(_coconut_v).__module__ = _coconut_full_module_name
+    _coconut_sys.modules[_coconut_full_module_name] = _coconut__coconut__
 from __coconut__ import *
 from __coconut__ import {underscore_imports}
 _coconut_sys.path.pop(0)

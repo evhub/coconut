@@ -108,7 +108,7 @@ def embed(stack_depth=2, **kwargs):
             frame.f_code.co_filename,
             frame.f_lineno,
         ),
-        **kwargs,
+        **kwargs
     )
     shell(
         header=header,
