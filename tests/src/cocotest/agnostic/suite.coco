@@ -31,7 +31,7 @@ def suite_test() -> bool:
         assert 3 `sqplus1` == 10, sqplus1
     test_sqplus1_plus1sq(sqplus1_1, plus1sq_1)
     test_sqplus1_plus1sq(sqplus1_2, plus1sq_2, parallel=False)
-    with parallel_map.multiple_sequential_calls(max_workers=2):
+    with parallel_map.multiple_sequential_calls(max_workers=2):  # type: ignore
         test_sqplus1_plus1sq(sqplus1_3, plus1sq_3)
         test_sqplus1_plus1sq(sqplus1_4, plus1sq_4)
     assert 3 |> plus1 |> square == 16 == 3 |> plus1_ |> square
