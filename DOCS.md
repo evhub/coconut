@@ -301,6 +301,7 @@ Text editors with support for Coconut syntax highlighting are:
 - **Vim**: See [`coconut.vim`](https://github.com/manicmaniac/coconut.vim).
 - **Emacs**: See [`coconut-mode`](https://github.com/NickSeagull/coconut-mode).
 - **Atom**: See [`language-coconut`](https://github.com/enilsen16/language-coconut).
+- **VS Code**: See [`Coconut`](https://marketplace.visualstudio.com/items?itemName=kobarity.coconut).
 - **IntelliJ IDEA**: See [registering file types](https://www.jetbrains.com/help/idea/creating-and-registering-file-types.html).
 - Any editor that supports **Pygments** (e.g. **Spyder**): See Pygments section below.
 
