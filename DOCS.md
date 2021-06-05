@@ -614,7 +614,7 @@ Coconut uses a `$` sign right after an iterator before a slice to perform iterat
 
 Iterator slicing works just like sequence slicing, including support for negative indices and slices, and support for `slice` objects in the same way as can be done with normal slicing. Iterator slicing makes no guarantee, however, that the original iterator passed to it be preserved (to preserve the iterator, use Coconut's [`tee`](#tee) or [`reiterable`](#reiterable) built-ins).
 
-Coconut's iterator slicing is very similar to Python's `itertools.islice`, but unlike `itertools.islice`, Coconut's iterator slicing supports negative indices, and will preferentially call an object's `__getitem__`, if it exists. Coconut's iterator slicing is also optimized to work well with all of Coconut's built-in objects, only computing the elements of each that are actually necessary to extract the desired slice.
+Coconut's iterator slicing is very similar to Python's `itertools.islice`, but unlike `itertools.islice`, Coconut's iterator slicing supports negative indices, and will preferentially call an object's `__igetitem__` or `__getitem__`, if it exists. Coconut's iterator slicing is also optimized to work well with all of Coconut's built-in objects, only computing the elements of each that are actually necessary to extract the desired slice.
 
 ##### Example
 
@@ -2458,6 +2458,39 @@ for x in input_data:
     if x > max_so_far:
         max_so_far = x
     running_max.append(x)
+```
+
+### `flatten`
+
+Coconut provides an enhanced version of `itertools.chain.from_iterable` as a built-in under the name `flatten` with added support for `reversed`, `len`, `repr`, `in`, `.count()`, `.index()`, and `fmap`.
+
+##### Python Docs
+
+chain.**from_iterable**(_iterable_)
+
+Alternate constructor for `chain()`. Gets chained inputs from a single iterable argument that is evaluated lazily. Roughly equivalent to:
+
+```coconut_python
+def flatten(iterables):
+    # flatten(['ABC', 'DEF']) --> A B C D E F
+    for it in iterables:
+        for element in it:
+            yield element
+```
+
+##### Example
+
+**Coconut:**
+```coconut
+iter_of_iters = [[1, 2], [3, 4]]
+flat_it = iter_of_iters |> flatten |> list
+```
+
+**Python:**
+```coconut_python
+from itertools import chain
+iter_of_iters = [[1, 2], [3, 4]]
+flat_it = iter_of_iters |> chain.from_iterable |> list
 ```
 
 ### `recursive_iterator`
