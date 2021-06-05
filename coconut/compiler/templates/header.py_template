@@ -72,8 +72,17 @@ def _coconut_tco(func):{COMMENT._coconut_tco_func_attr_is_used_in_main_coco}
     _coconut_tco_func_dict[_coconut.id(tail_call_optimized_func)] = _coconut.weakref.ref(tail_call_optimized_func)
     return tail_call_optimized_func
 def _coconut_igetitem(iterable, index):
-    if _coconut.isinstance(iterable, (_coconut_reversed, _coconut_map, _coconut.zip, _coconut_enumerate, _coconut_count, _coconut.abc.Sequence)):
-        return iterable[index]
+    obj_igetitem = _coconut.getattr(iterable, "__igetitem__", None)
+    if obj_igetitem is None:
+        obj_igetitem = _coconut.getattr(iterable, "__getitem__", None)
+    if obj_igetitem is not None:
+        try:
+            result = obj_igetitem(index)
+        except _coconut.NotImplementedError:
+            pass
+        else:
+            if result is not _coconut.NotImplemented:
+                return result
     if not _coconut.isinstance(index, _coconut.slice):
         if index < 0:
             return _coconut.collections.deque(iterable, maxlen=-index)[0]
@@ -86,6 +95,16 @@ def _coconut_igetitem(iterable, index):
         if index.stop is not None:
             queue = _coconut.list(queue)[:index.stop - index.start]
         return queue
+    if (index.start is None or index.start == 0) and index.stop is None and index.step is not None and index.step == -1:
+        obj_reversed = _coconut.getattr(iterable, "__reversed__", None)
+        if obj_reversed is not None:
+            try:
+                result = obj_reversed()
+            except _coconut.NotImplementedError:
+                pass
+            else:
+                if result is not _coconut.NotImplemented:
+                    return result
     if (index.start is not None and index.start < 0) or (index.stop is not None and index.stop < 0) or (index.step is not None and index.step < 0):
         return _coconut.list(iterable)[index]
     return _coconut.itertools.islice(iterable, index.start, index.stop, index.step)
@@ -203,9 +222,9 @@ class scan{object}:
     def __len__(self):
         return _coconut.len(self.iter)
     def __repr__(self):
-        return "scan(%r, %r)" % (self.func, self.iter)
+        return "scan(%r, %r)" % (self.func, self.iter) if self.initializer is _coconut_sentinel else "scan(%r, %r, %r)" % (self.func, self.iter, self.initializer)
     def __reduce__(self):
-        return (self.__class__, (self.func, self.iter))
+        return (self.__class__, (self.func, self.iter, self.initializer))
     def __fmap__(self, func):
         return _coconut_map(func, self)
 class reversed{object}:
@@ -233,7 +252,7 @@ class reversed{object}:
     def __repr__(self):
         return "reversed(%r)" % (self.iter,)
     def __hash__(self):
-        return -_coconut.hash(self.iter)
+        return _coconut.hash((self.__class__, self.iter))
     def __reduce__(self):
         return (self.__class__, (self.iter,))
     def __eq__(self, other):
@@ -241,13 +260,47 @@ class reversed{object}:
     def __contains__(self, elem):
         return elem in self.iter
     def count(self, elem):
-        """Count the number of times elem appears in the reversed iterator."""
+        """Count the number of times elem appears in the reversed iterable."""
         return self.iter.count(elem)
     def index(self, elem):
-        """Find the index of elem in the reversed iterator."""
+        """Find the index of elem in the reversed iterable."""
         return _coconut.len(self.iter) - self.iter.index(elem) - 1
     def __fmap__(self, func):
         return self.__class__(_coconut_map(func, self.iter))
+class flatten{object}:
+    """Flatten an iterable of iterables into a single iterable."""
+    __slots__ = ("iter",)
+    def __init__(self, iterable):
+        self.iter = iterable
+    def __iter__(self):
+        return _coconut.itertools.chain.from_iterable(self.iter)
+    def __reversed__(self):
+        return self.__class__(_coconut_reversed(_coconut_map(_coconut_reversed, self.iter)))
+    def __len__(self):
+        return _coconut.sum(_coconut_map(_coconut.len, self.iter))
+    def __repr__(self):
+        return "flatten(%r)" % (self.iter,)
+    def __hash__(self):
+        return _coconut.hash((self.__class__, self.iter))
+    def __reduce__(self):
+        return (self.__class__, (self.iter,))
+    def __eq__(self, other):
+        return self.__class__ is other.__class__ and self.iter == other.iter
+    def __contains__(self, elem):
+        return _coconut.any(elem in it for it in self.iter)
+    def count(self, elem):
+        """Count the number of times elem appears in the flattened iterable."""
+        return _coconut.sum(it.count(elem) for it in self.iter)
+    def index(self, elem):
+        ind = 0
+        for it in self.iter:
+            try:
+                return ind + it.index(elem)
+            except _coconut.ValueError:
+                ind += _coconut.len(it)
+        raise ValueError("%r not in %r" % (elem, self))
+    def __fmap__(self, func):
+        return self.__class__(_coconut_map(_coconut.functools.partial(_coconut_map, func), self.iter))
 class map(_coconut.map):
     __slots__ = ("func", "iters")
     if hasattr(_coconut.map, "__doc__"):
