@@ -7,6 +7,9 @@ Coconut
 .. image:: https://opencollective.com/coconut/sponsors/badge.svg
     :alt: Sponsors on Open Collective
     :target: #sponsors
+.. image:: https://badges.gitter.im/evhub/coconut.svg
+    :alt: Join the chat at https://gitter.im/evhub/coconut
+    :target: https://gitter.im/evhub/coconut?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 
 Coconut (`coconut-lang.org`__) is a variant of Python_ that **adds on top of Python syntax** new features for simple, elegant, Pythonic **functional programming**.
 
