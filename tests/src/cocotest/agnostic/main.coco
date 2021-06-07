@@ -793,6 +793,9 @@ def main_test() -> bool:
     assert fl.index(4) == 3
     assert fl |> fmap$((+)$(1)) |> list == [2, 3, 4, 5]
     assert (|(|1, 2|), (|3, 4|)|) |> flatten |> list == [1, 2, 3, 4]
+    assert [(|1, 2|), (|3, 4|)] |> flatten |> list == [1, 2, 3, 4] == (|[1, 2], [3, 4]|) |> flatten |> list
+    assert (|1, 2, 3|) |> reiterable |> list == [1, 2, 3]
+    assert (range(2) for _ in range(2)) |> flatten |> list == [0, 1, 0, 1] == (range(2) for _ in range(2)) |> flatten |> iter |> list
     return True
 
 def test_asyncio() -> bool:
