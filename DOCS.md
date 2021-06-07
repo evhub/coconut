@@ -2416,7 +2416,7 @@ collections.deque(itertools.starmap(print, map(range, range(1, 5))), maxlen=0)
 
 ### `scan`
 
-Coconut provides a modified version of `itertools.accumulate` with opposite argument order as `scan` that also supports `repr`, `len`, and `func`/`iter`/`initializer` attributes (if no `initializer` is given the attribute is set to `scan.empty_initializer`). `scan` works exactly like [`reduce`](#reduce), except that instead of only returning the last accumulated value, it returns an iterator of all the intermediate values.
+Coconut provides a modified version of `itertools.accumulate` with opposite argument order as `scan` that also supports `repr`, `len`, and `func`/`iter`/`initializer` attributes. `scan` works exactly like [`reduce`](#reduce), except that instead of only returning the last accumulated value, it returns an iterator of all the intermediate values.
 
 ##### Python Docs
 
