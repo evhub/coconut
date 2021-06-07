@@ -8,16 +8,17 @@ class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
 {set_zip_longest}
     Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, RuntimeError, any, bytes, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, print, property, range, reversed, set, slice, str, sum, super, tuple, type, vars, zip, repr{comma_bytearray} = Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, RuntimeError, any, bytes, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, print, property, range, reversed, set, slice, str, sum, super, tuple, type, vars, zip, {static_repr}{comma_bytearray}
 _coconut_sentinel = _coconut.object()
-class _coconut_base_pickleable{object}:
+class _coconut_base_hashable{object}:
     __slots__ = ()
     def __reduce_ex__(self, _):
         return self.__reduce__()
+    def __eq__(self, other):
+        return self.__class__ is other.__class__ and self.__reduce__() == other.__reduce__()
     def __hash__(self):
         return _coconut.hash(self.__reduce__())
-class MatchError(_coconut_base_pickleable, Exception):
+class MatchError(_coconut_base_hashable, Exception):
     """Pattern-matching error. Has attributes .pattern, .value, and .message."""
     __slots__ = ("pattern", "value", "_message")
-    __hash__ = _coconut_base_pickleable.__hash__
     max_val_repr_len = 500
     def __init__(self, pattern, value):
         self.pattern = pattern
@@ -115,9 +116,8 @@ def _coconut_igetitem(iterable, index):
     if (index.start is not None and index.start < 0) or (index.stop is not None and index.stop < 0) or (index.step is not None and index.step < 0):
         return _coconut.list(iterable)[index]
     return _coconut.itertools.islice(iterable, index.start, index.stop, index.step)
-class _coconut_base_compose(_coconut_base_pickleable):
+class _coconut_base_compose(_coconut_base_hashable):
     __slots__ = ("func", "funcstars")
-    __hash__ = _coconut_base_pickleable.__hash__
     def __init__(self, func, *funcstars):
         self.func = func
         self.funcstars = []
@@ -147,7 +147,7 @@ class _coconut_base_compose(_coconut_base_pickleable):
     def __get__(self, obj, objtype=None):
         if obj is None:
             return self
-        return _coconut.functools.partial(self, obj)
+{return_method_of_self}
 def _coconut_forward_compose(func, *funcs): return _coconut_base_compose(func, *((f, 0) for f in funcs))
 def _coconut_back_compose(*funcs): return _coconut_forward_compose(*_coconut.reversed(funcs))
 def _coconut_forward_star_compose(func, *funcs): return _coconut_base_compose(func, *((f, 1) for f in funcs))
@@ -180,10 +180,9 @@ def tee(iterable, n=2):
     if n > 0 and (_coconut.isinstance(iterable, _coconut.abc.Sequence) or _coconut.getattr(iterable, "__copy__", None) is not None):
         return (iterable,) + _coconut.tuple(_coconut.copy.copy(iterable) for _ in _coconut.range(n - 1))
     return _coconut.itertools.tee(iterable, n)
-class reiterable(_coconut_base_pickleable):
+class reiterable(_coconut_base_hashable):
     """Allows an iterator to be iterated over multiple times."""
     __slots__ = ("lock", "iter")
-    __hash__ = _coconut_base_pickleable.__hash__
     def __new__(cls, iterable):
         if _coconut.isinstance(iterable, _coconut_reiterable):
             return iterable
@@ -211,11 +210,10 @@ class reiterable(_coconut_base_pickleable):
         return self.__class__(self.get_new_iter())
     def __fmap__(self, func):
         return _coconut_map(func, self)
-class scan(_coconut_base_pickleable):
+class scan(_coconut_base_hashable):
     """Reduce func over iterable, yielding intermediate results,
     optionally starting from initializer."""
     __slots__ = ("func", "iter", "initializer")
-    __hash__ = _coconut_base_pickleable.__hash__
     def __init__(self, function, iterable, initializer=_coconut_sentinel):
         self.func = function
         self.iter = iterable
@@ -238,9 +236,8 @@ class scan(_coconut_base_pickleable):
         return (self.__class__, (self.func, self.iter, self.initializer))
     def __fmap__(self, func):
         return _coconut_map(func, self)
-class reversed(_coconut_base_pickleable):
+class reversed(_coconut_base_hashable):
     __slots__ = ("iter",)
-    __hash__ = _coconut_base_pickleable.__hash__
     if hasattr(_coconut.map, "__doc__"):
         __doc__ = _coconut.reversed.__doc__
     def __new__(cls, iterable):
@@ -265,8 +262,6 @@ class reversed(_coconut_base_pickleable):
         return "reversed(%r)" % (self.iter,)
     def __reduce__(self):
         return (self.__class__, (self.iter,))
-    def __eq__(self, other):
-        return self.__class__ is other.__class__ and self.iter == other.iter
     def __contains__(self, elem):
         return elem in self.iter
     def count(self, elem):
@@ -277,10 +272,9 @@ class reversed(_coconut_base_pickleable):
         return _coconut.len(self.iter) - self.iter.index(elem) - 1
     def __fmap__(self, func):
         return self.__class__(_coconut_map(func, self.iter))
-class flatten(_coconut_base_pickleable):
+class flatten(_coconut_base_hashable):
     """Flatten an iterable of iterables into a single iterable."""
     __slots__ = ("iter",)
-    __hash__ = _coconut_base_pickleable.__hash__
     def __init__(self, iterable):
         self.iter = iterable
     def __iter__(self):
@@ -294,8 +288,6 @@ class flatten(_coconut_base_pickleable):
         return "flatten(%r)" % (self.iter,)
     def __reduce__(self):
         return (self.__class__, (self.iter,))
-    def __eq__(self, other):
-        return self.__class__ is other.__class__ and self.iter == other.iter
     def __contains__(self, elem):
         self.iter, new_iter = _coconut_tee(self.iter)
         return _coconut.any(elem in it for it in new_iter)
@@ -314,9 +306,8 @@ class flatten(_coconut_base_pickleable):
         raise ValueError("%r not in %r" % (elem, self))
     def __fmap__(self, func):
         return self.__class__(_coconut_map(_coconut.functools.partial(_coconut_map, func), self.iter))
-class map(_coconut_base_pickleable, _coconut.map):
+class map(_coconut_base_hashable, _coconut.map):
     __slots__ = ("func", "iters")
-    __hash__ = _coconut_base_pickleable.__hash__
     if hasattr(_coconut.map, "__doc__"):
         __doc__ = _coconut.map.__doc__
     def __new__(cls, function, *iterables):
@@ -340,7 +331,7 @@ class map(_coconut_base_pickleable, _coconut.map):
         return _coconut.iter(_coconut.map(self.func, *self.iters))
     def __fmap__(self, func):
         return self.__class__(_coconut_forward_compose(self.func, func), *self.iters)
-class _coconut_parallel_concurrent_map_func_wrapper{object}:
+class _coconut_parallel_concurrent_map_func_wrapper(_coconut_base_hashable):
     __slots__ = ("map_cls", "func",)
     def __init__(self, map_cls, func):
         self.map_cls = map_cls
@@ -412,9 +403,8 @@ class concurrent_map(_coconut_base_parallel_concurrent_map):
         {return_ThreadPoolExecutor}
     def __repr__(self):
         return "concurrent_" + _coconut_map.__repr__(self)
-class filter(_coconut_base_pickleable, _coconut.filter):
+class filter(_coconut_base_hashable, _coconut.filter):
     __slots__ = ("func", "iter")
-    __hash__ = _coconut_base_pickleable.__hash__
     if hasattr(_coconut.filter, "__doc__"):
         __doc__ = _coconut.filter.__doc__
     def __new__(cls, function, iterable):
@@ -432,9 +422,8 @@ class filter(_coconut_base_pickleable, _coconut.filter):
         return _coconut.iter(_coconut.filter(self.func, self.iter))
     def __fmap__(self, func):
         return _coconut_map(func, self)
-class zip(_coconut_base_pickleable, _coconut.zip):
+class zip(_coconut_base_hashable, _coconut.zip):
     __slots__ = ("iters", "strict")
-    __hash__ = _coconut_base_pickleable.__hash__
     if hasattr(_coconut.zip, "__doc__"):
         __doc__ = _coconut.zip.__doc__
     def __new__(cls, *iterables, **kwargs):
@@ -500,9 +489,8 @@ class zip_longest(zip):
         self.fillvalue = fillvalue
     def __iter__(self):
         return _coconut.iter(_coconut.zip_longest(*self.iters, fillvalue=self.fillvalue))
-class enumerate(_coconut_base_pickleable, _coconut.enumerate):
+class enumerate(_coconut_base_hashable, _coconut.enumerate):
     __slots__ = ("iter", "start")
-    __hash__ = _coconut_base_pickleable.__hash__
     if hasattr(_coconut.enumerate, "__doc__"):
         __doc__ = _coconut.enumerate.__doc__
     def __new__(cls, iterable, start=0):
@@ -524,11 +512,10 @@ class enumerate(_coconut_base_pickleable, _coconut.enumerate):
         return _coconut.iter(_coconut.enumerate(self.iter, self.start))
     def __fmap__(self, func):
         return _coconut_map(func, self)
-class count(_coconut_base_pickleable):
+class count(_coconut_base_hashable):
     """count(start, step) returns an infinite iterator starting at start and increasing by step.
     If step is set to 0, count will infinitely repeat its first argument."""
     __slots__ = ("start", "step")
-    __hash__ = _coconut_base_pickleable.__hash__
     def __init__(self, start=0, step=1):
         self.start = start
         self.step = step
@@ -578,15 +565,12 @@ class count(_coconut_base_pickleable):
         return (self.__class__, (self.start, self.step))
     def __copy__(self):
         return self.__class__(self.start, self.step)
-    def __eq__(self, other):
-        return self.__class__ is other.__class__ and self.start == other.start and self.step == other.step
     def __fmap__(self, func):
         return _coconut_map(func, self)
-class groupsof(_coconut_base_pickleable):
+class groupsof(_coconut_base_hashable):
     """groupsof(n, iterable) splits iterable into groups of size n.
     If the length of the iterable is not divisible by n, the last group may be of size < n."""
     __slots__ = ("group_size", "iter")
-    __hash__ = _coconut_base_pickleable.__hash__
     def __init__(self, n, iterable):
         self.iter = iterable
         try:
@@ -616,10 +600,9 @@ class groupsof(_coconut_base_pickleable):
         return (self.__class__, (self.group_size, self.iter))
     def __fmap__(self, func):
         return _coconut_map(func, self)
-class recursive_iterator(_coconut_base_pickleable):
+class recursive_iterator(_coconut_base_hashable):
     """Decorator that optimizes a function for iterator recursion."""
     __slots__ = ("func", "tee_store", "backup_tee_store")
-    __hash__ = _coconut_base_pickleable.__hash__
     def __init__(self, func):
         self.func = func
         self.tee_store = {empty_dict}
@@ -660,8 +643,8 @@ class recursive_iterator(_coconut_base_pickleable):
     def __get__(self, obj, objtype=None):
         if obj is None:
             return self
-        return _coconut.functools.partial(self, obj)
-class _coconut_FunctionMatchErrorContext(object):
+{return_method_of_self}
+class _coconut_FunctionMatchErrorContext{object}:
     __slots__ = ('exc_class', 'taken')
     threadlocal_ns = _coconut.threading.local()
     def __init__(self, exc_class):
@@ -687,9 +670,8 @@ def _coconut_get_function_match_error():
         return _coconut_MatchError
     ctx.taken = True
     return ctx.exc_class
-class _coconut_base_pattern_func(_coconut_base_pickleable):
+class _coconut_base_pattern_func(_coconut_base_hashable):
     __slots__ = ("FunctionMatchError", "__doc__", "patterns")
-    __hash__ = _coconut_base_pickleable.__hash__
     _coconut_is_match = True
     def __init__(self, *funcs):
         self.FunctionMatchError = _coconut.type(_coconut_py_str("MatchError"), (_coconut_MatchError,), {empty_dict})
@@ -726,7 +708,7 @@ class _coconut_base_pattern_func(_coconut_base_pickleable):
     def __get__(self, obj, objtype=None):
         if obj is None:
             return self
-        return _coconut.functools.partial(self, obj)
+{return_method_of_self}
 def _coconut_mark_as_match(base_func):{COMMENT._coconut_is_match_is_used_above_and_in_main_coco}
     base_func._coconut_is_match = True
     return base_func
@@ -741,9 +723,8 @@ def addpattern(base_func, **kwargs):
     return _coconut.functools.partial(_coconut_base_pattern_func, base_func)
 _coconut_addpattern = addpattern
 {def_prepattern}
-class _coconut_partial(_coconut_base_pickleable):
+class _coconut_partial(_coconut_base_hashable):
     __slots__ = ("func", "_argdict", "_arglen", "_stargs", "keywords")
-    __hash__ = _coconut_base_pickleable.__hash__
     if hasattr(_coconut.functools.partial, "__doc__"):
         __doc__ = _coconut.functools.partial.__doc__
     def __init__(self, func, argdict, arglen, *args, **kwargs):
@@ -787,8 +768,7 @@ class _coconut_partial(_coconut_base_pickleable):
 def consume(iterable, keep_last=0):
     """consume(iterable, keep_last) fully exhausts iterable and return the last keep_last elements."""
     return _coconut.collections.deque(iterable, maxlen=keep_last)
-class starmap(_coconut_base_pickleable, _coconut.itertools.starmap):
-    __hash__ = _coconut_base_pickleable.__hash__
+class starmap(_coconut_base_hashable, _coconut.itertools.starmap):
     __slots__ = ("func", "iter")
     if hasattr(_coconut.itertools.starmap, "__doc__"):
         __doc__ = _coconut.itertools.starmap.__doc__
@@ -844,15 +824,14 @@ def memoize(maxsize=None, *args, **kwargs):
     preventing it from being recomputed if it is called multiple times with the same arguments."""
     return _coconut.functools.lru_cache(maxsize, *args, **kwargs)
 {def_call_set_names}
-class override(_coconut_base_pickleable):
+class override(_coconut_base_hashable):
     __slots__ = ("func",)
-    __hash__ = _coconut_base_pickleable.__hash__
     def __init__(self, func):
         self.func = func
     def __get__(self, obj, objtype=None):
         if obj is None:
             return self.func
-{return_methodtype}
+{return_method_of_self_func}
     def __set_name__(self, obj, name):
         if not _coconut.hasattr(_coconut.super(obj, obj), name):
             raise _coconut.RuntimeError(obj.__name__ + "." + name + " marked with @override but not overriding anything")
