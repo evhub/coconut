@@ -291,7 +291,17 @@ except ImportError: pass
     """Deprecated feature 'datamaker' disabled by --strict compilation; use 'makedata' instead."""
     raise _coconut.NameError("deprecated feature 'datamaker' disabled by --strict compilation; use 'makedata' instead")'''
         ),
-        return_methodtype=pycondition(
+        return_method_of_self=pycondition(
+            (3,),
+            if_lt=r'''
+return _coconut.types.MethodType(self, obj, objtype)
+            ''',
+            if_ge=r'''
+return _coconut.types.MethodType(self, obj)
+            ''',
+            indent=2,
+        ),
+        return_method_of_self_func=pycondition(
             (3,),
             if_lt=r'''
 return _coconut.types.MethodType(self.func, obj, objtype)
