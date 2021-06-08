@@ -2462,7 +2462,7 @@ for x in input_data:
 
 ### `flatten`
 
-Coconut provides an enhanced version of `itertools.chain.from_iterable` as a built-in under the name `flatten` with added support for `reversed`, `len`, `repr`, `in`, `.count()`, `.index()`, and `fmap`.
+Coconut provides an enhanced version of `itertools.chain.from_iterable` as a built-in under the name `flatten` with added support for `reversed`, `repr`, `in`, `.count()`, `.index()`, and `fmap`.
 
 ##### Python Docs
 

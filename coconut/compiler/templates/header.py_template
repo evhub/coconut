@@ -281,9 +281,6 @@ class flatten(_coconut_base_hashable):
         return _coconut.itertools.chain.from_iterable(self.iter)
     def __reversed__(self):
         return self.__class__(_coconut_reversed(_coconut_map(_coconut_reversed, self.iter)))
-    def __len__(self):
-        self.iter, new_iter = _coconut_tee(self.iter)
-        return _coconut.sum(_coconut_map(_coconut.len, new_iter))
     def __repr__(self):
         return "flatten(%r)" % (self.iter,)
     def __reduce__(self):
