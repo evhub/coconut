@@ -188,7 +188,7 @@ for _coconut_base_path in _coconut_sys.path:
             else:
                 _coconut.print(" Imported.")
         _coconut_dirnames[:] = []
-        """.strip(),
+        """,
     )
     if imp_all:
         out += "\n" + handle_indentation(
@@ -199,14 +199,14 @@ for _coconut_m in _coconut.tuple(_coconut_sys.modules.values()):
         for _coconut_k, _coconut_v in _coconut_d.items():
             if not _coconut_k.startswith("_"):
                 _coconut.locals()[_coconut_k] = _coconut_v
-            """.strip(),
+            """,
         )
     else:
         out += "\n" + handle_indentation(
             """
 for _coconut_n, _coconut_m in _coconut.tuple(_coconut_sys.modules.items()):
     _coconut.locals()[_coconut_n] = _coconut_m
-            """.strip(),
+            """,
         )
     return out
 
@@ -1426,7 +1426,8 @@ def __new__(_coconut_cls, *{match_to_args_var}, **{match_to_kwargs_var}):
     {matching}
     {pattern_error}
     return _coconut.tuple.__new__(_coconut_cls, {arg_tuple})
-            '''.strip(), add_newline=True,
+            ''',
+            add_newline=True,
         ).format(
             match_to_args_var=match_to_args_var,
             match_to_kwargs_var=match_to_kwargs_var,
@@ -1523,7 +1524,8 @@ def _replace(_self, **kwds):
 @_coconut.property
 def {starred_arg}(self):
     return self[{num_base_args}:]
-                    '''.strip(), add_newline=True,
+                    ''',
+                    add_newline=True,
                 ).format(
                     name=name,
                     args_for_repr=", ".join(arg + "={" + arg.lstrip("*") + "!r}" for arg in base_args + ["*" + starred_arg]),
@@ -1555,7 +1557,8 @@ def _replace(_self, **kwds):
 @_coconut.property
 def {arg}(self):
     return self[:]
-                    '''.strip(), add_newline=True,
+                    ''',
+                    add_newline=True,
                 ).format(
                     name=name,
                     arg=starred_arg,
@@ -1566,7 +1569,8 @@ def {arg}(self):
                 '''
 def __new__(_coconut_cls, {all_args}):
     return _coconut.tuple.__new__(_coconut_cls, {base_args_tuple})
-                '''.strip(), add_newline=True,
+                ''',
+                add_newline=True,
             ).format(
                 all_args=", ".join(all_args),
                 base_args_tuple=tuple_str_of(base_args),
@@ -1602,7 +1606,7 @@ def __eq__(self, other):
     return self.__class__ is other.__class__ and _coconut.tuple.__eq__(self, other)
 def __hash__(self):
     return _coconut.tuple.__hash__(self) ^ hash(self.__class__)
-            '''.strip(),
+            ''',
             add_newline=True,
         )
         if self.target_info < (3, 10):
@@ -1788,7 +1792,7 @@ def __hash__(self):
             """
 if not {check_var}:
     raise {match_error_class}({line_wrap}, {value_var})
-            """.strip(),
+            """,
             add_newline=True,
         ).format(
             check_var=check_var,
