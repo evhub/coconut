@@ -757,11 +757,11 @@ def interleaved_join(first_list, second_list):
     return "".join(interleaved)
 
 
-def handle_indentation(inputstr, add_newline=False):
+def handle_indentation(inputstr, add_newline=False, strip_input=True):
     """Replace tabideal indentation with openindent and closeindent."""
     out_lines = []
     prev_ind = None
-    for line in inputstr.splitlines():
+    for line in inputstr.strip().splitlines():
         new_ind_str, _ = split_leading_indent(line)
         internal_assert(new_ind_str.strip(" ") == "", "invalid indentation characters for handle_indentation", new_ind_str)
         internal_assert(len(new_ind_str) % tabideal == 0, "invalid indentation level for handle_indentation", len(new_ind_str))
