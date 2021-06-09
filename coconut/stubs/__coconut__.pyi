@@ -37,7 +37,7 @@ _Ufunc = _t.TypeVar("_Ufunc", bound=_Callable)
 _Titer = _t.TypeVar("_Titer", bound=_Iterable)
 _T_iter_func = _t.TypeVar("_T_iter_func", bound=_t.Callable[..., _Iterable])
 
-_P = _t.ParamSpec("_P")
+# _P = _t.ParamSpec("_P")
 
 
 if sys.version_info < (3,):
