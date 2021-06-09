@@ -542,7 +542,7 @@ all_reqs = {
         "jedi",
     ),
     "mypy": (
-        "mypy",
+        "mypy[python2]",
     ),
     "watch": (
         "watchdog",
@@ -578,7 +578,7 @@ min_versions = {
     "recommonmark": (0, 7),
     "psutil": (5,),
     "jupyter": (1, 0),
-    "mypy": (0, 812),
+    "mypy[python2]": (0, 900),
     "futures": (3, 3),
     "backports.functools-lru-cache": (1, 6),
     "argparse": (1, 4),
@@ -644,7 +644,7 @@ max_versions = {
     "cPyparsing": (_, _, _),
     "sphinx": _,
     "sphinx_bootstrap_theme": (_, _),
-    "mypy": _,
+    "mypy[python2]": _,
     ("prompt_toolkit", "mark2"): _,
     "jedi": _,
 }
