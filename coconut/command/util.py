@@ -67,7 +67,7 @@ from coconut.constants import (
 
 if PY26:
     import imp
-if not PY26:
+else:
     import runpy
 try:
     # just importing readline improves built-in input()
@@ -361,6 +361,7 @@ def set_recursion_limit(limit):
 
 
 def _raise_ValueError(msg):
+    """Raise ValueError(msg)."""
     raise ValueError(msg)
 
 
@@ -416,6 +417,7 @@ class Prompt(object):
         if prompt_toolkit is not None:
             self.set_style(os.environ.get(style_env_var, default_style))
             self.set_history_file(default_histfile)
+            self.lexer = PygmentsLexer(CoconutLexer)
 
     def set_style(self, style):
         """Set pygments syntax highlighting style."""
@@ -471,7 +473,7 @@ class Prompt(object):
             vi_mode=self.vi_mode,
             wrap_lines=self.wrap_lines,
             enable_history_search=self.history_search,
-            lexer=PygmentsLexer(CoconutLexer),
+            lexer=self.lexer,
             style=style_from_pygments_cls(
                 pygments.styles.get_style_by_name(self.style),
             ),
