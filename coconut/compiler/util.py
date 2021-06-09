@@ -313,10 +313,10 @@ def match_in(grammar, text):
         return True
     return False
 
+
 # -----------------------------------------------------------------------------------------------------------------------
 # TARGETS:
 # -----------------------------------------------------------------------------------------------------------------------
-
 
 def get_target_info(target):
     """Return target information as a version tuple."""
@@ -337,11 +337,10 @@ elif sys.version_info > supported_py3_vers[-1]:
     sys_target = "".join(str(i) for i in supported_py3_vers[-1])
 elif sys.version_info < supported_py2_vers[0]:
     sys_target = "".join(str(i) for i in supported_py2_vers[0])
-elif supported_py2_vers[-1] < sys.version_info < supported_py3_vers[0]:
-    sys_target = "".join(str(i) for i in supported_py3_vers[0])
+elif sys.version_info < (3,):
+    sys_target = "".join(str(i) for i in supported_py2_vers[-1])
 else:
-    complain(CoconutInternalException("unknown raw sys target", raw_sys_target))
-    sys_target = ""
+    sys_target = "".join(str(i) for i in supported_py3_vers[0])
 
 
 def get_vers_for_target(target):
@@ -395,10 +394,79 @@ def get_target_info_smart(target, mode="lowest"):
     else:
         raise CoconutInternalException("unknown get_target_info_smart mode", mode)
 
+
+# -----------------------------------------------------------------------------------------------------------------------
+# WRAPPING:
+# -----------------------------------------------------------------------------------------------------------------------
+
+class Wrap(ParseElementEnhance):
+    """PyParsing token that wraps the given item in the given context manager."""
+    __slots__ = ("errmsg", "wrapper")
+
+    def __init__(self, item, wrapper):
+        super(Wrap, self).__init__(item)
+        self.errmsg = item.errmsg + " (Wrapped)"
+        self.wrapper = wrapper
+        self.name = get_name(item)
+
+    @property
+    def wrapper_name(self):
+        """Wrapper display name."""
+        return self.name + " wrapper"
+
+    def parseImpl(self, instring, loc, *args, **kwargs):
+        """Wrapper around ParseElementEnhance.parseImpl."""
+        logger.log_trace(self.wrapper_name, instring, loc)
+        with logger.indent_tracing():
+            with self.wrapper(self, instring, loc):
+                evaluated_toks = super(Wrap, self).parseImpl(instring, loc, *args, **kwargs)
+        logger.log_trace(self.wrapper_name, instring, loc, evaluated_toks)
+        return evaluated_toks
+
+
+def disable_inside(item, *elems, **kwargs):
+    """Prevent elems from matching inside of item.
+
+    Returns (item with elem disabled, *new versions of elems).
+    """
+    _invert = kwargs.get("_invert", False)
+    internal_assert(set(kwargs.keys()) <= set(("_invert",)), "excess keyword arguments passed to disable_inside")
+
+    level = [0]  # number of wrapped items deep we are; in a list to allow modification
+
+    @contextmanager
+    def manage_item(self, instring, loc):
+        level[0] += 1
+        try:
+            yield
+        finally:
+            level[0] -= 1
+
+    yield Wrap(item, manage_item)
+
+    @contextmanager
+    def manage_elem(self, instring, loc):
+        if level[0] == 0 if not _invert else level[0] > 0:
+            yield
+        else:
+            raise ParseException(instring, loc, self.errmsg, self)
+
+    for elem in elems:
+        yield Wrap(elem, manage_elem)
+
+
+def disable_outside(item, *elems):
+    """Prevent elems from matching outside of item.
+
+    Returns (item with elem enabled, *new versions of elems).
+    """
+    for wrapped in disable_inside(item, *elems, **{"_invert": True}):
+        yield wrapped
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
-
 
 def multi_index_lookup(iterable, item, indexable_types, default=None):
     """Nested lookup of item in iterable."""
@@ -678,71 +746,6 @@ def transform(grammar, text):
     return "".join(out)
 
 
-class Wrap(ParseElementEnhance):
-    """PyParsing token that wraps the given item in the given context manager."""
-    __slots__ = ("errmsg", "wrapper")
-
-    def __init__(self, item, wrapper):
-        super(Wrap, self).__init__(item)
-        self.errmsg = item.errmsg + " (Wrapped)"
-        self.wrapper = wrapper
-        self.name = get_name(item)
-
-    @property
-    def wrapper_name(self):
-        """Wrapper display name."""
-        return self.name + " wrapper"
-
-    def parseImpl(self, instring, loc, *args, **kwargs):
-        """Wrapper around ParseElementEnhance.parseImpl."""
-        logger.log_trace(self.wrapper_name, instring, loc)
-        with logger.indent_tracing():
-            with self.wrapper(self, instring, loc):
-                evaluated_toks = super(Wrap, self).parseImpl(instring, loc, *args, **kwargs)
-        logger.log_trace(self.wrapper_name, instring, loc, evaluated_toks)
-        return evaluated_toks
-
-
-def disable_inside(item, *elems, **kwargs):
-    """Prevent elems from matching inside of item.
-
-    Returns (item with elem disabled, *new versions of elems).
-    """
-    _invert = kwargs.get("_invert", False)
-    internal_assert(set(kwargs.keys()) <= set(("_invert",)), "excess keyword arguments passed to disable_inside")
-
-    level = [0]  # number of wrapped items deep we are; in a list to allow modification
-
-    @contextmanager
-    def manage_item(self, instring, loc):
-        level[0] += 1
-        try:
-            yield
-        finally:
-            level[0] -= 1
-
-    yield Wrap(item, manage_item)
-
-    @contextmanager
-    def manage_elem(self, instring, loc):
-        if level[0] == 0 if not _invert else level[0] > 0:
-            yield
-        else:
-            raise ParseException(instring, loc, self.errmsg, self)
-
-    for elem in elems:
-        yield Wrap(elem, manage_elem)
-
-
-def disable_outside(item, *elems):
-    """Prevent elems from matching outside of item.
-
-    Returns (item with elem enabled, *new versions of elems).
-    """
-    for wrapped in disable_inside(item, *elems, **{"_invert": True}):
-        yield wrapped
-
-
 def interleaved_join(first_list, second_list):
     """Interleaves two lists of strings and joins the result.
 
@@ -757,29 +760,28 @@ def interleaved_join(first_list, second_list):
     return "".join(interleaved)
 
 
-def handle_indentation(inputstr, add_newline=False, strip_input=True):
-    """Replace tabideal indentation with openindent and closeindent."""
-    if strip_input:
-        inputstr = inputstr.strip()
-
+def handle_indentation(inputstr, add_newline=False):
+    """Replace tabideal indentation with openindent and closeindent.
+    Ignores whitespace-only lines."""
     out_lines = []
     prev_ind = None
     for line in inputstr.splitlines():
-        new_ind_str, _ = split_leading_indent(line)
-        internal_assert(new_ind_str.strip(" ") == "", "invalid indentation characters for handle_indentation", new_ind_str)
-        internal_assert(len(new_ind_str) % tabideal == 0, "invalid indentation level for handle_indentation", len(new_ind_str))
-        new_ind = len(new_ind_str) // tabideal
-        if prev_ind is None:  # first line
-            indent = ""
-        elif new_ind > prev_ind:  # indent
-            indent = openindent * (new_ind - prev_ind)
-        elif new_ind < prev_ind:  # dedent
-            indent = closeindent * (prev_ind - new_ind)
-        else:
-            indent = ""
-        out_lines.append(indent + line)
-        prev_ind = new_ind
-
+        line = line.rstrip()
+        if line:
+            new_ind_str, _ = split_leading_indent(line)
+            internal_assert(new_ind_str.strip(" ") == "", "invalid indentation characters for handle_indentation", new_ind_str)
+            internal_assert(len(new_ind_str) % tabideal == 0, "invalid indentation level for handle_indentation", len(new_ind_str))
+            new_ind = len(new_ind_str) // tabideal
+            if prev_ind is None:  # first line
+                indent = ""
+            elif new_ind > prev_ind:  # indent
+                indent = openindent * (new_ind - prev_ind)
+            elif new_ind < prev_ind:  # dedent
+                indent = closeindent * (prev_ind - new_ind)
+            else:
+                indent = ""
+            out_lines.append(indent + line)
+            prev_ind = new_ind
     if add_newline:
         out_lines.append("")
     if prev_ind > 0:
