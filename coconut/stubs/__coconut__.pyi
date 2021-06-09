@@ -127,7 +127,7 @@ else:
     import trollius as _asyncio  # type: ignore
 
 if sys.version_info < (3, 3):
-    _abc = collections
+    _abc = _collections
 else:
     from collections import abc as _abc
 
