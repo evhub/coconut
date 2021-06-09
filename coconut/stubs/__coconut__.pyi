@@ -15,14 +15,10 @@ Description: MyPy stub file for __coconut__.py.
 import sys
 import typing as _t
 
-if sys.version_info >= (3,):
-    from itertools import zip_longest as _zip_longest
-else:
-    from itertools import izip_longest as _zip_longest
-
 # -----------------------------------------------------------------------------------------------------------------------
 # STUB:
 # -----------------------------------------------------------------------------------------------------------------------
+
 
 _Callable = _t.Callable[..., _t.Any]
 _Iterable = _t.Iterable[_t.Any]
@@ -40,6 +36,8 @@ _Tfunc = _t.TypeVar("_Tfunc", bound=_Callable)
 _Ufunc = _t.TypeVar("_Ufunc", bound=_Callable)
 _Titer = _t.TypeVar("_Titer", bound=_Iterable)
 _T_iter_func = _t.TypeVar("_T_iter_func", bound=_t.Callable[..., _Iterable])
+
+_P = _t.ParamSpec("_P")
 
 
 if sys.version_info < (3,):
@@ -71,7 +69,6 @@ if sys.version_info < (3,):
         def count(self, elem: int) -> int: ...
         def index(self, elem: int) -> int: ...
         def __copy__(self) -> range: ...
-
 
 if sys.version_info < (3, 7):
     def breakpoint(*args: _t.Any, **kwargs: _t.Any) -> _t.Any: ...
@@ -110,22 +107,57 @@ reversed = reversed
 enumerate = enumerate
 
 
+import collections as _collections
+import copy as _copy
+import functools as _functools
+import types as _types
+import itertools as _itertools
+import operator as _operator
+import threading as _threading
+import weakref as _weakref
+import os as _os
+import warnings as _warnings
+import contextlib as _contextlib
+import traceback as _traceback
+import pickle as _pickle
+
+if sys.version_info >= (3, 4):
+    import asyncio as _asyncio
+else:
+    import trollius as _asyncio  # type: ignore
+
+if sys.version_info < (3, 3):
+    _abc = collections
+else:
+    from collections import abc as _abc
+
+if sys.version_info >= (3,):
+    from itertools import zip_longest as _zip_longest
+else:
+    from itertools import izip_longest as _zip_longest
+
+
 class _coconut:
-    import collections, copy, functools, types, itertools, operator, threading, weakref, os, warnings, contextlib, traceback
-    if sys.version_info >= (3, 4):
-        import asyncio
-    else:
-        import trollius as asyncio  # type: ignore
-    import pickle
+    collections = _collections
+    copy = _copy
+    functools = _functools
+    types = _types
+    itertools = _itertools
+    operator = _operator
+    threading = _threading
+    weakref = _weakref
+    os = _os
+    warnings = _warnings
+    contextlib = _contextlib
+    traceback = _traceback
+    pickle = _pickle
+    asyncio = _asyncio
+    abc = _abc
+    typing = _t  # The real _coconut doesn't import typing, but we want type-checkers to treat it as if it does
     if sys.version_info >= (2, 7):
         OrderedDict = collections.OrderedDict
     else:
         OrderedDict = dict
-    if sys.version_info < (3, 3):
-        abc = collections
-    else:
-        from collections import abc
-    typing = _t  # The real _coconut doesn't import typing, but we want type-checkers to treat it as if it does
     zip_longest = staticmethod(_zip_longest)
     Ellipsis = Ellipsis
     NotImplemented = NotImplemented
@@ -199,7 +231,7 @@ tee = _coconut.itertools.tee
 starmap = _coconut.itertools.starmap
 
 
-_coconut_tee = tee
+_coconut_te = tee
 _coconut_starmap = starmap
 parallel_map = concurrent_map = _coconut_map = map
 
@@ -207,7 +239,7 @@ parallel_map = concurrent_map = _coconut_map = map
 TYPE_CHECKING = _t.TYPE_CHECKING
 
 
-_coconut_sentinel = object()
+_coconut_sentinel: _t.Any = object()
 
 
 def scan(
@@ -220,7 +252,6 @@ def scan(
 class MatchError(Exception):
     pattern: _t.Text
     value: _t.Any
-    _message: _t.Optional[_t.Text]
     def __init__(self, pattern: _t.Text, value: _t.Any) -> None: ...
     @property
     def message(self) -> _t.Text: ...
@@ -252,6 +283,30 @@ def _coconut_tail_call(
     _y: _U,
     _z: _V,
 ) -> _Wco: ...
+# @_t.overload
+# def _coconut_tail_call(
+#     func: _t.Callable[_t.Concatenate[_T, _P], _Uco],
+#     _x: _T,
+#     *args: _t.Any,
+#     **kwargs: _t.Any,
+# ) -> _Uco: ...
+# @_t.overload
+# def _coconut_tail_call(
+#     func: _t.Callable[_t.Concatenate[_T, _U, _P], _Vco],
+#     _x: _T,
+#     _y: _U,
+#     *args: _t.Any,
+#     **kwargs: _t.Any,
+# ) -> _Vco: ...
+# @_t.overload
+# def _coconut_tail_call(
+#     func: _t.Callable[_t.Concatenate[_T, _U, _V, _P], _Wco],
+#     _x: _T,
+#     _y: _U,
+#     _z: _V,
+#     *args: _t.Any,
+#     **kwargs: _t.Any,
+# ) -> _Wco: ...
 @_t.overload
 def _coconut_tail_call(
     func: _t.Callable[..., _Tco],
@@ -321,15 +376,38 @@ def _coconut_base_compose(
 
 @_t.overload
 def _coconut_forward_compose(
-    _g: _t.Callable[[_Tco], _Uco],
+    _g: _t.Callable[[_T], _Uco],
     _f: _t.Callable[[_Uco], _Vco],
-    ) -> _t.Callable[[_Tco], _Vco]: ...
+    ) -> _t.Callable[[_T], _Vco]: ...
 @_t.overload
 def _coconut_forward_compose(
-    _h: _t.Callable[[_Tco], _Uco],
+    _g: _t.Callable[[_T, _U], _Vco],
+    _f: _t.Callable[[_Vco], _Wco],
+    ) -> _t.Callable[[_T, _U], _Wco]: ...
+@_t.overload
+def _coconut_forward_compose(
+    _h: _t.Callable[[_T], _Uco],
     _g: _t.Callable[[_Uco], _Vco],
     _f: _t.Callable[[_Vco], _Wco],
-    ) -> _t.Callable[[_Tco], _Wco]: ...
+    ) -> _t.Callable[[_T], _Wco]: ...
+# @_t.overload
+# def _coconut_forward_compose(
+#     _g: _t.Callable[_P, _Tco],
+#     _f: _t.Callable[[_Tco], _Uco],
+#     ) -> _t.Callable[_P, _Uco]: ...
+# @_t.overload
+# def _coconut_forward_compose(
+#     _h: _t.Callable[_P, _Tco],
+#     _g: _t.Callable[[_Tco], _Uco],
+#     _f: _t.Callable[[_Uco], _Vco],
+#     ) -> _t.Callable[_P, _Vco]: ...
+# @_t.overload
+# def _coconut_forward_compose(
+#     _h: _t.Callable[_P, _Tco],
+#     _g: _t.Callable[[_Tco], _Uco],
+#     _f: _t.Callable[[_Uco], _Vco],
+#     _e: _t.Callable[[_Vco], _Wco],
+#     ) -> _t.Callable[_P, _Wco]: ...
 @_t.overload
 def _coconut_forward_compose(
     _g: _t.Callable[..., _Tco],
