@@ -543,6 +543,7 @@ all_reqs = {
     ),
     "mypy": (
         "mypy[python2]",
+        "types-backports",
     ),
     "watch": (
         "watchdog",
@@ -579,6 +580,7 @@ min_versions = {
     "psutil": (5,),
     "jupyter": (1, 0),
     "mypy[python2]": (0, 900),
+    "types-backports": (0, 1),
     "futures": (3, 3),
     "backports.functools-lru-cache": (1, 6),
     "argparse": (1, 4),
