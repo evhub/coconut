@@ -19,8 +19,16 @@ from coconut.root import *  # NOQA
 
 import sys
 import time
+import traceback
 
+from coconut import embed
 from coconut.constants import (
+    PYPY,
+    CPYTHON,
+    PY34,
+    IPY,
+    WINDOWS,
+    PURE_PYTHON,
     ver_str_to_tuple,
     ver_tuple_to_str,
     get_next_version,
@@ -28,13 +36,8 @@ from coconut.constants import (
     min_versions,
     max_versions,
     pinned_reqs,
-    PYPY,
-    CPYTHON,
-    PY34,
-    IPY,
-    WINDOWS,
-    PURE_PYTHON,
     requests_sleep_times,
+    embed_on_internal_exc,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -55,12 +58,13 @@ except Exception:
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-def get_base_req(req):
+def get_base_req(req, include_extras=True):
     """Get the name of the required package for the given requirement."""
     if isinstance(req, tuple):
-        return req[0]
-    else:
-        return req
+        req = req[0]
+    if not include_extras:
+        req = req.split("[", 1)[0]
+    return req
 
 
 def get_reqs(which):
@@ -226,7 +230,7 @@ else:
 def all_versions(req):
     """Get all versions of req from PyPI."""
     import requests  # expensive
-    url = "https://pypi.python.org/pypi/" + get_base_req(req) + "/json"
+    url = "https://pypi.python.org/pypi/" + get_base_req(req, include_extras=False) + "/json"
     for i, sleep_time in enumerate(requests_sleep_times):
         time.sleep(sleep_time)
         try:
@@ -239,7 +243,13 @@ def all_versions(req):
                 print("Error accessing:", url, "(retrying)")
         else:
             break
-    return tuple(result.json()["releases"].keys())
+    try:
+        return tuple(result.json()["releases"].keys())
+    except Exception:
+        if embed_on_internal_exc:
+            traceback.print_exc()
+            embed()
+        raise
 
 
 def newer(new_ver, old_ver, strict=False):
