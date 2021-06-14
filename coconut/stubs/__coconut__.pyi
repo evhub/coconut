@@ -155,9 +155,9 @@ class _coconut:
     abc = _abc
     typing = _t  # The real _coconut doesn't import typing, but we want type-checkers to treat it as if it does
     if sys.version_info >= (2, 7):
-        OrderedDict = collections.OrderedDict
+        OrderedDict = staticmethod(collections.OrderedDict)
     else:
-        OrderedDict = dict
+        OrderedDict = staticmethod(dict)
     zip_longest = staticmethod(_zip_longest)
     Ellipsis = Ellipsis
     NotImplemented = NotImplemented
@@ -217,7 +217,7 @@ class _coconut:
 if sys.version_info >= (3, 2):
     from functools import lru_cache as _lru_cache
 else:
-    from backports.functools_lru_cache import lru_cache as _lru_cache
+    from backports.functools_lru_cache import lru_cache as _lru_cache  # `pip install -U coconut[mypy]` to fix errors on this line
     _coconut.functools.lru_cache = _lru_cache  # type: ignore
 
 zip_longest = _zip_longest
