@@ -199,7 +199,7 @@ auto_compilation()
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-class CoconutStreamReader(encodings.utf_8.StreamReader):
+class CoconutStreamReader(encodings.utf_8.StreamReader, object):
     """Compile Coconut code from a stream of UTF-8."""
     coconut_compiler = None
 
@@ -217,7 +217,7 @@ class CoconutStreamReader(encodings.utf_8.StreamReader):
         return cls.compile_coconut(input_str), len_consumed
 
 
-class CoconutIncrementalDecoder(encodings.utf_8.IncrementalDecoder):
+class CoconutIncrementalDecoder(encodings.utf_8.IncrementalDecoder, object):
     """Compile Coconut at the end of incrementally decoding UTF-8."""
     invertible = False
     _buffer_decode = CoconutStreamReader.decode
