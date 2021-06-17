@@ -2685,7 +2685,7 @@ from coconut.__coconut__ import fmap
 reveal_type(fmap)
 ```
 
-## Coconut Modules
+## Coconut API
 
 ### `coconut.embed`
 
@@ -2700,6 +2700,14 @@ Recommended usage is as a debugging tool, where the code `from coconut import em
 If you don't care about the exact compilation parameters you want to use, automatic compilation lets Coconut take care of everything for you. If you make sure to import [`coconut.convenience`](#coconut-convenience) before you import anything else, Coconut will check each of your imports to see if you are attempting to import a `.coco` file and, if so, automatically compile it for you. Note that, for Coconut to know what file you are trying to import, it will need to be accessible via `sys.path`, just like a normal import.
 
 Automatic compilation always compiles modules and packages in-place, and always uses `--target sys`. Automatic compilation is always available in the Coconut interpreter, and, if using the Coconut interpreter, a `reload` built-in is provided to easily reload imported modules.
+
+### Coconut Encoding
+
+While automatic compilation is the preferred method for dynamically compiling Coconut files, as it caches the compiled code as a `.py` file to prevent recompilation, Coconut also supports a special
+```coconut
+# coding: coconut
+```
+declaration which can be added to `.py` files to have them treated as Coconut files instead. To use such a coding declaration, you'll need to `import coconut.convenience` at some point before you first attempt to import a file with a `# coding: coconut` declaration. Like automatic compilation, compilation is always done with `--target sys` and is always available from the Coconut interpreter.
 
 ### `coconut.convenience`
 

@@ -1112,7 +1112,7 @@ class Compiler(Grammar):
             if self.minify:
                 comment = str(ln)
             else:
-                comment = str(ln) + " (line in coconut source)"
+                comment = str(ln) + " (line num in coconut source)"
         else:
             return ""
         return self.wrap_comment(comment, reformat=False)
