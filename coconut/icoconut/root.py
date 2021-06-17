@@ -207,13 +207,13 @@ def user_expressions(self, expressions):
     return super({cls}, self).user_expressions(compiled_expressions)
 '''
 
-    class CoconutShell(ZMQInteractiveShell):
+    class CoconutShell(ZMQInteractiveShell, object):
         """ZMQInteractiveShell for Coconut."""
         exec(INTERACTIVE_SHELL_CODE.format(dict="{}", cls="CoconutShell"))
 
     InteractiveShellABC.register(CoconutShell)
 
-    class CoconutShellEmbed(InteractiveShellEmbed):
+    class CoconutShellEmbed(InteractiveShellEmbed, object):
         """InteractiveShellEmbed for Coconut."""
         exec(INTERACTIVE_SHELL_CODE.format(dict="{}", cls="CoconutShellEmbed"))
 
