@@ -354,7 +354,8 @@ exit_chars = (
 
 coconut_run_args = ("--run", "--target", "sys", "--quiet")
 coconut_run_verbose_args = ("--run", "--target", "sys")
-coconut_import_hook_args = ("--target", "sys", "--quiet")
+coconut_import_hook_args = ("--target", "sys", "--line-numbers", "--quiet")
+coconut_encoding_kwargs = dict(target="sys", line_numbers=True)
 
 default_mypy_args = (
     "--pretty",

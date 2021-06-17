@@ -93,7 +93,7 @@ def test_extras():
     assert parse("abc ")
     assert parse("abc # derp", "any") == "abc  # derp"
     setup(line_numbers=True)
-    assert parse("abc", "any") == "abc  #1 (line in coconut source)"
+    assert parse("abc", "any") == "abc  #1 (line num in coconut source)"
     setup(keep_lines=True)
     assert parse("abc", "any") == "abc  # abc"
     setup(line_numbers=True, keep_lines=True)
@@ -144,6 +144,7 @@ def test_extras():
     assert parse("(a := b)")
     assert parse("print(a := 1, b := 2)")
     assert parse("def f(a, /, b) = a, b")
+    assert "(b)(a)" in b"a |> b".decode("coconut")
     if CoconutKernel is not None:
         if PY35:
             asyncio.set_event_loop(asyncio.new_event_loop())
