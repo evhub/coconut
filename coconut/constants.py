@@ -352,9 +352,11 @@ exit_chars = (
     "\x1a",  # Ctrl-Z
 )
 
-coconut_run_args = ("--run", "--target", "sys", "--quiet")
-coconut_run_verbose_args = ("--run", "--target", "sys")
-coconut_import_hook_args = ("--target", "sys", "--line-numbers", "--quiet")
+# always use atomic --xxx=yyy rather than --xxx yyy
+coconut_run_args = ("--run", "--target=sys", "--line-numbers", "--quiet")
+coconut_run_verbose_args = ("--run", "--target=sys", "--line-numbers")
+coconut_import_hook_args = ("--target=sys", "--line-numbers", "--quiet")
+
 coconut_encoding_kwargs = dict(target="sys", line_numbers=True)
 
 default_mypy_args = (

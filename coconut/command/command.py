@@ -118,10 +118,9 @@ class Command(object):
                 if not arg.startswith("-") and can_parse(arguments, args[:-1]):
                     argv = sys.argv[i + 1:]
                     break
-            if "--verbose" in args:
-                args = list(coconut_run_verbose_args) + args
-            else:
-                args = list(coconut_run_args) + args
+            for run_arg in (coconut_run_verbose_args if "--verbose" in args else coconut_run_args):
+                if run_arg not in args:
+                    args.append(run_arg)
             self.cmd(args, argv=argv)
         else:
             self.cmd()
@@ -133,6 +132,8 @@ class Command(object):
         else:
             parsed_args = arguments.parse_args(args)
         if argv is not None:
+            if parsed_args.argv is not None:
+                raise CoconutException("cannot pass --argv/--args when using coconut-run (coconut-run interprets any arguments after the source file as --argv/--args)")
             parsed_args.argv = argv
         self.exit_code = 0
         with self.handling_exceptions():
