@@ -217,6 +217,8 @@ class ComputationNode(object):
 
     def __repr__(self):
         """Get a representation of the entire computation graph below this node."""
+        if not logger.tracing:
+            logger.warn_err(CoconutInternalException("ComputationNode.__repr__ called when not tracing"))
         inner_repr = "\n".join("\t" + line for line in repr(self.tokens).splitlines())
         return self.name + "(\n" + inner_repr + "\n)"
 
@@ -643,7 +645,7 @@ def rem_comment(line):
 def should_indent(code):
     """Determines whether the next line should be indented."""
     last = rem_comment(code.splitlines()[-1])
-    return last.endswith(":") or last.endswith("\\") or paren_change(last) < 0
+    return last.endswith((":", "=", "\\")) or paren_change(last) < 0
 
 
 def split_comment(line):
@@ -786,4 +788,6 @@ def handle_indentation(inputstr, add_newline=False):
         out_lines.append("")
     if prev_ind > 0:
         out_lines[-1] += closeindent * prev_ind
-    return "\n".join(out_lines)
+    out = "\n".join(out_lines)
+    internal_assert(lambda: out.count(openindent) == out.count(closeindent), "failed to properly handle indentation in", out)
+    return out
