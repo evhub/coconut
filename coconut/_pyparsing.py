@@ -96,24 +96,14 @@ elif cur_ver >= max_ver:
     )
 
 
-def fast_str(cls):
-    """A very simple __str__ implementation."""
-    return "<" + cls.__name__ + ">"
-
-
-def fast_repr(cls):
-    """A very simple __repr__ implementation."""
-    return "<" + cls.__name__ + ">"
-
-
 # makes pyparsing much faster if it doesn't have to compute expensive
 #  nested string representations
 if use_fast_pyparsing_reprs:
     for obj in vars(_pyparsing).values():
         try:
             if issubclass(obj, ParserElement):
-                obj.__str__ = functools.partial(fast_str, obj)
-                obj.__repr__ = functools.partial(fast_repr, obj)
+                obj.__repr__ = functools.partial(object.__repr__, obj)
+                obj.__str__ = functools.partial(object.__repr__, obj)
         except TypeError:
             pass
 
