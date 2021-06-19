@@ -1261,17 +1261,18 @@ class Compiler(Grammar):
         internal_assert(len(tokens) == 1, "invalid yield from tokens", tokens)
         if self.target_info < (3, 3):
             ret_val_name = self.get_temp_var("yield_from")
-            self.add_code_before[ret_val_name] = '''
+            self.add_code_before[ret_val_name] = handle_indentation(
+                '''
 {yield_from_var} = _coconut.iter({expr})
 while True:
-    {oind}try:
-        {oind}yield _coconut.next({yield_from_var})
-    {cind}except _coconut.StopIteration as {yield_err_var}:
-        {oind}{ret_val_name} = {yield_err_var}.args[0] if _coconut.len({yield_err_var}.args) > 0 else None
+    try:
+        yield _coconut.next({yield_from_var})
+    except _coconut.StopIteration as {yield_err_var}:
+        {ret_val_name} = {yield_err_var}.args[0] if _coconut.len({yield_err_var}.args) > 0 else None
         break
-{cind}{cind}'''.strip().format(
-                oind=openindent,
-                cind=closeindent,
+                ''',
+                add_newline=True,
+            ).format(
                 expr=tokens[0],
                 yield_from_var=self.get_temp_var("yield_from"),
                 yield_err_var=self.get_temp_var("yield_err"),
@@ -2300,16 +2301,18 @@ if not {check_var}:
         # handle dotted function definition
         if is_dotted:
             store_var = self.get_temp_var("name_store")
-            out = '''try:
-    {oind}{store_var} = {def_name}
-{cind}except _coconut.NameError:
-    {oind}{store_var} = _coconut_sentinel
-{cind}{decorators}{def_stmt}{func_code}{func_name} = {def_name}
+            out = handle_indentation(
+                '''
+try:
+    {store_var} = {def_name}
+except _coconut.NameError:
+    {store_var} = _coconut_sentinel
+{decorators}{def_stmt}{func_code}{func_name} = {def_name}
 if {store_var} is not _coconut_sentinel:
-    {oind}{def_name} = {store_var}
-{cind}'''.format(
-                oind=openindent,
-                cind=closeindent,
+    {def_name} = {store_var}
+                ''',
+                add_newline=True,
+            ).format(
                 store_var=store_var,
                 def_name=def_name,
                 decorators=decorators,
@@ -2383,14 +2386,12 @@ if {store_var} is not _coconut_sentinel:
         if self.target_info >= (3, 6):
             return name + ": " + self.wrap_typedef(typedef) + ("" if value is None else " = " + value)
         else:
-            return '''
+            return handle_indentation('''
 {name} = {value}{comment}
 if "__annotations__" not in _coconut.locals():
-    {oind}__annotations__ = {{}}
-{cind}__annotations__["{name}"] = {annotation}
-            '''.strip().format(
-                oind=openindent,
-                cind=closeindent,
+    __annotations__ = {{}}
+__annotations__["{name}"] = {annotation}
+            ''').format(
                 name=name,
                 value="None" if value is None else value,
                 comment=self.wrap_comment(" type: " + typedef),
@@ -2584,7 +2585,7 @@ if "__annotations__" not in _coconut.locals():
 
     def unsafe_typedef_or_expr_handle(self, tokens):
         """Handle Type | Type typedefs."""
-        internal_assert(len(tokens) >= 2, "invalid typedef or tokens", tokens)
+        internal_assert(len(tokens) >= 2, "invalid union typedef tokens", tokens)
         if self.target_info >= (3, 10):
             return " | ".join(tokens)
         else:
