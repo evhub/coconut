@@ -177,8 +177,8 @@ upload: clean dev just-upload
 check-reqs:
 	python ./coconut/requirements.py
 
-.PHONY: profile-code
-profile-code:
+.PHONY: profile
+profile:
 	vprof -c h "coconut tests/src/cocotest/agnostic tests/dest/cocotest --force" --output-file ./profile.json
 
 .PHONY: profile-memory

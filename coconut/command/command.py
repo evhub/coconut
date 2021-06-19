@@ -495,7 +495,7 @@ class Command(object):
     @property
     def using_jobs(self):
         """Determine whether or not multiprocessing is being used."""
-        return self.jobs != 0
+        return self.jobs is None or self.jobs > 1
 
     @contextmanager
     def running_jobs(self, exit_on_error=True):

@@ -330,7 +330,8 @@ class Logger(object):
             self.log_trace(expr, original, start_loc, tokens)
 
     def _trace_exc_action(self, original, loc, expr, exc):
-        self.log_trace(expr, original, loc, exc)
+        if self.tracing:  # avoid the overhead of an extra function call
+            self.log_trace(expr, original, loc, exc)
 
     def trace(self, item):
         """Traces a parse element (only enabled in develop)."""

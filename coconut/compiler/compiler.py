@@ -2631,17 +2631,19 @@ __annotations__["{name}"] = {annotation}
 
     def name_check(self, original, loc, tokens):
         """Check the given base name."""
-        internal_assert(len(tokens) == 1, "invalid name tokens", tokens)
+        name, = tokens  # avoid the overhead of an internal_assert call here
+
         if self.disable_name_check:
-            return tokens[0]
+            return name
         if self.strict:
-            self.unused_imports.discard(tokens[0])
-        if tokens[0] == "exec":
+            self.unused_imports.discard(name)
+
+        if name == "exec":
             return self.check_py("3", "exec function", original, loc, tokens)
-        elif tokens[0].startswith(reserved_prefix):
+        elif name.startswith(reserved_prefix):
             raise self.make_err(CoconutSyntaxError, "variable names cannot start with reserved prefix " + reserved_prefix, original, loc)
         else:
-            return tokens[0]
+            return name
 
     def nonlocal_check(self, original, loc, tokens):
         """Check for Python 3 nonlocal statement."""
