@@ -94,10 +94,15 @@ def one_num_ver(target):
     return target[:1]  # "2", "3", or ""
 
 
-def section(name):
+def section(name, newline_before=True):
     """Generate a section break."""
     line = "# " + name + ": "
-    return line + "-" * (justify_len - len(line)) + "\n\n"
+    return (
+        "\n" * int(newline_before)
+        + line
+        + "-" * (justify_len - len(line))
+        + "\n\n"
+    )
 
 
 def base_pycondition(target, ver, if_lt=None, if_ge=None, indent=None, newline=False, fallback=""):
@@ -394,7 +399,7 @@ def getheader(which, target="", use_hash=None, no_tco=False, strict=False):
 
     # __coconut__, package:n, sys, code, file
 
-    header += section("Coconut Header")
+    header += section("Coconut Header", newline_before=False)
 
     if target_startswith != "3":
         header += "from __future__ import print_function, absolute_import, unicode_literals, division\n"
@@ -463,6 +468,6 @@ from coconut.__coconut__ import {underscore_imports}
     header += get_template("header").format(**format_dict)
 
     if which == "file":
-        header += "\n" + section("Compiled Coconut")
+        header += section("Compiled Coconut")
 
     return header
