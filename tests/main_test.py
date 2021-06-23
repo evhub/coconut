@@ -23,6 +23,7 @@ import unittest
 import sys
 import os
 import shutil
+import traceback
 from contextlib import contextmanager
 
 import pexpect
@@ -192,7 +193,10 @@ def comp(path=None, folder=None, file=None, args=[], **kwargs):
 def rm_path(path):
     """Delete a path."""
     if os.path.isdir(path):
-        shutil.rmtree(path)
+        try:
+            shutil.rmtree(path)
+        except OSError:
+            traceback.print_exc()
     elif os.path.isfile(path):
         os.remove(path)
 
