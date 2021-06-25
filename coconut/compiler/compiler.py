@@ -32,6 +32,7 @@ import sys
 from contextlib import contextmanager
 from functools import partial
 from collections import defaultdict
+from threading import Lock
 
 from coconut._pyparsing import (
     ParseBaseException,
@@ -282,6 +283,8 @@ def split_args_list(tokens, loc):
 
 class Compiler(Grammar):
     """The Coconut compiler."""
+    lock = Lock()
+
     preprocs = [
         lambda self: self.prepare,
         lambda self: self.str_proc,
@@ -716,25 +719,32 @@ class Compiler(Grammar):
             parsed = parse(parser, pre_procd)
             return self.post(parsed, **postargs)
 
+    @contextmanager
+    def parsing(self):
+        """Acquire the lock and reset the parser."""
+        with self.lock:
+            self.reset()
+            yield
+
     def parse(self, inputstring, parser, preargs, postargs):
         """Use the parser to parse the inputstring with appropriate setup and teardown."""
-        self.reset()
-        with logger.gather_parsing_stats():
-            pre_procd = None
-            try:
-                pre_procd = self.pre(inputstring, **preargs)
-                parsed = parse(parser, pre_procd)
-                out = self.post(parsed, **postargs)
-            except ParseBaseException as err:
-                raise self.make_parse_err(err)
-            except CoconutDeferredSyntaxError as err:
-                internal_assert(pre_procd is not None, "invalid deferred syntax error in pre-processing", err)
-                raise self.make_syntax_err(err, pre_procd)
-            except RuntimeError as err:
-                raise CoconutException(
-                    str(err), extra="try again with --recursion-limit greater than the current "
-                    + str(sys.getrecursionlimit()),
-                )
+        with self.parsing():
+            with logger.gather_parsing_stats():
+                pre_procd = None
+                try:
+                    pre_procd = self.pre(inputstring, **preargs)
+                    parsed = parse(parser, pre_procd)
+                    out = self.post(parsed, **postargs)
+                except ParseBaseException as err:
+                    raise self.make_parse_err(err)
+                except CoconutDeferredSyntaxError as err:
+                    internal_assert(pre_procd is not None, "invalid deferred syntax error in pre-processing", err)
+                    raise self.make_syntax_err(err, pre_procd)
+                except RuntimeError as err:
+                    raise CoconutException(
+                        str(err), extra="try again with --recursion-limit greater than the current "
+                        + str(sys.getrecursionlimit()),
+                    )
         if self.strict:
             for name in self.unused_imports:
                 logger.warn("found unused import", name, extra="disable --strict to dismiss")

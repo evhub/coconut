@@ -191,20 +191,6 @@ def process_header_args(which, target, use_hash, no_tco, strict):
         VERSION_STR=VERSION_STR,
         module_docstring='"""Built-in Coconut utilities."""\n\n' if which == "__coconut__" else "",
         object="" if target_startswith == "3" else "(object)",
-        import_asyncio=pycondition(
-            (3, 4),
-            if_lt=r'''
-try:
-    import trollius as asyncio
-except ImportError:
-    class you_need_to_install_trollius: pass
-    asyncio = you_need_to_install_trollius()
-            ''',
-            if_ge=r'''
-import asyncio
-            ''',
-            indent=1,
-        ),
         import_pickle=pycondition(
             (3,),
             if_lt=r'''
@@ -231,18 +217,6 @@ abc = collections
 import collections.abc as abc
             ''',
             indent=1,
-        ),
-        maybe_bind_lru_cache=pycondition(
-            (3, 2),
-            if_lt=r'''
-try:
-    from backports.functools_lru_cache import lru_cache
-    functools.lru_cache = lru_cache
-except ImportError: pass
-            ''',
-            if_ge=None,
-            indent=1,
-            newline=True,
         ),
         set_zip_longest=_indent(
             r'''zip_longest = itertools.zip_longest if _coconut_sys.version_info >= (3,) else itertools.izip_longest'''
@@ -336,21 +310,53 @@ return _coconut.types.MethodType(self.func, obj)
         call_set_names_comma="_coconut_call_set_names, " if target_info < (3, 6) else "",
     )
 
-    # when anything is added to this list it must also be added to *both* __coconut__.pyi stub files
-    format_dict["underscore_imports"] = "{tco_comma}{call_set_names_comma}_coconut, _coconut_MatchError, _coconut_igetitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_star_pipe, _coconut_dubstar_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_back_dubstar_pipe, _coconut_none_pipe, _coconut_none_star_pipe, _coconut_none_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_mark_as_match, _coconut_reiterable".format(**format_dict)
-
-    format_dict["import_typing_NamedTuple"] = pycondition(
-        (3, 6),
-        if_lt=r'''
+    # second round for format dict elements that use the format dict
+    format_dict.update(
+        dict(
+            # when anything is added to this list it must also be added to *both* __coconut__.pyi stub files
+            underscore_imports="{tco_comma}{call_set_names_comma}_coconut, _coconut_MatchError, _coconut_igetitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_star_pipe, _coconut_dubstar_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_back_dubstar_pipe, _coconut_none_pipe, _coconut_none_star_pipe, _coconut_none_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_mark_as_match, _coconut_reiterable".format(**format_dict),
+            import_typing_NamedTuple=pycondition(
+                (3, 6),
+                if_lt='''
 class typing{object}:
     @staticmethod
     def NamedTuple(name, fields):
         return _coconut.collections.namedtuple(name, [x for x, t in fields])
-        '''.format(**format_dict),
-        if_ge=r'''
+            '''.format(**format_dict),
+                if_ge='''
 import typing
-        ''',
-        indent=1,
+            ''',
+                indent=1,
+            ),
+            import_asyncio=pycondition(
+                (3, 4),
+                if_lt='''
+try:
+    import trollius as asyncio
+except ImportError:
+    class you_need_to_install_trollius{object}: pass
+    asyncio = you_need_to_install_trollius()
+            '''.format(**format_dict),
+                if_ge='''
+import asyncio
+            ''',
+                indent=1,
+            ),
+            maybe_bind_lru_cache=pycondition(
+                (3, 2),
+                if_lt='''
+try:
+    from backports.functools_lru_cache import lru_cache
+    functools.lru_cache = lru_cache
+except ImportError:
+    class you_need_to_install_backports_functools_lru_cache{object}: pass
+    functools.lru_cache = you_need_to_install_backports_functools_lru_cache()
+            '''.format(**format_dict),
+                if_ge=None,
+                indent=1,
+                newline=True,
+            ),
+        ),
     )
 
     return format_dict
@@ -429,7 +435,9 @@ if _coconut_module_name and _coconut_module_name[0].isalpha() and all(c.isalpha(
             try:
                 _coconut_v.__module__ = _coconut_full_module_name
             except AttributeError:
-                type(_coconut_v).__module__ = _coconut_full_module_name
+                _coconut_v_type = type(_coconut_v)
+                if getattr(_coconut_v_type, "__module__", None) == {__coconut__}:
+                    _coconut_v_type.__module__ = _coconut_full_module_name
     _coconut_sys.modules[_coconut_full_module_name] = _coconut__coconut__
 from __coconut__ import *
 from __coconut__ import {underscore_imports}
