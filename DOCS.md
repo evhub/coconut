@@ -767,6 +767,7 @@ Coconut supports Unicode alternatives to many different operator symbols. The Un
 » (\xbb)                    => ">>"
 … (\u2026)                  => "..."
 ⋅ (\u22c5)                  => "@" (only matrix multiplication)
+λ (\u03bb)                  => "lambda"
 ```
 
 ## Keywords
@@ -1158,7 +1159,7 @@ c = a + b
 
 ### Backslash-Escaping
 
-In Coconut, the keywords `data`, `match`, `case`, `cases`, `where`, `addpattern`, `async` (keyword in Python 3.5), and `await` (keyword in Python 3.5) are also valid variable names. While Coconut can disambiguate these two use cases, when using one of these keywords as a variable name, a backslash is allowed in front to be explicit about using a keyword as a variable name (in particular, to let syntax highlighters know).
+In Coconut, the keywords `async` (keyword in Python 3.5), `await` (keyword in Python 3.5), `data`, `match`, `case`, `cases`, `where`, `addpattern`, and `λ` (a [Unicode alternative](#unicode-alternatives) for `lambda`) are also valid variable names. While Coconut can disambiguate these two use cases, when using one of these keywords as a variable name, a backslash is allowed in front to be explicit about using a keyword as a variable name (in particular, to let syntax highlighters know).
 
 ##### Example
 

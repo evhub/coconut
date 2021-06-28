@@ -257,6 +257,7 @@ reserved_vars = (  # can be backslash-escaped
     "cases",
     "where",
     "addpattern",
+    "\u03bb",  # lambda
 )
 
 py3_to_py2_stdlib = {
