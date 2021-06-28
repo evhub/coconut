@@ -331,7 +331,7 @@ class map(_coconut_base_hashable, _coconut.map):
         return self.__class__(_coconut_forward_compose(self.func, func), *self.iters)
 class _coconut_parallel_concurrent_map_func_wrapper(_coconut_base_hashable):
     __slots__ = ("map_cls", "func", "star")
-    def __init__(self, map_cls, func, star=False):
+    def __init__(self, map_cls, func, star):
         self.map_cls = map_cls
         self.func = func
         self.star = star
@@ -350,7 +350,7 @@ class _coconut_parallel_concurrent_map_func_wrapper(_coconut_base_hashable):
             _coconut.traceback.print_exc()
             raise
         finally:
-            self.map_cls.get_pool_stack().pop()
+            assert self.map_cls.get_pool_stack().pop() is None, "internal parallel/concurrent map error"
 class _coconut_base_parallel_concurrent_map(map):
     __slots__ = ("result", "chunksize")
     @classmethod
@@ -370,19 +370,19 @@ class _coconut_base_parallel_concurrent_map(map):
     def multiple_sequential_calls(cls, max_workers=None):
         """Context manager that causes nested calls to use the same pool."""
         if cls.get_pool_stack()[-1] is None:
-            with cls.make_pool(max_workers) as pool:
-                cls.get_pool_stack()[-1] = pool
-                try:
-                    yield
-                finally:
-                    cls.get_pool_stack()[-1] = None
+            cls.get_pool_stack()[-1] = cls.make_pool(max_workers)
+            try:
+                yield
+            finally:
+                cls.get_pool_stack()[-1].terminate()
+                cls.get_pool_stack()[-1] = None
         else:
             yield
     def get_list(self):
         if self.result is None:
             with self.multiple_sequential_calls():
                 if _coconut.len(self.iters) == 1:
-                    self.result = _coconut.list(self.get_pool_stack()[-1].imap(_coconut_parallel_concurrent_map_func_wrapper(self.__class__, self.func), self.iters[0], self.chunksize))
+                    self.result = _coconut.list(self.get_pool_stack()[-1].imap(_coconut_parallel_concurrent_map_func_wrapper(self.__class__, self.func, False), self.iters[0], self.chunksize))
                 else:
                     self.result = _coconut.list(self.get_pool_stack()[-1].imap(_coconut_parallel_concurrent_map_func_wrapper(self.__class__, self.func, True), _coconut.zip(*self.iters), self.chunksize))
         return self.result
@@ -657,7 +657,7 @@ class recursive_iterator(_coconut_base_hashable):
             return self
 {return_method_of_self}
 class _coconut_FunctionMatchErrorContext{object}:
-    __slots__ = ('exc_class', 'taken')
+    __slots__ = ("exc_class", "taken")
     threadlocal_ns = _coconut.threading.local()
     def __init__(self, exc_class):
         self.exc_class = exc_class
