@@ -227,12 +227,6 @@ import collections.abc as abc
         ),
         comma_bytearray=", bytearray" if target_startswith != "3" else "",
         static_repr="staticmethod(repr)" if target_startswith != "3" else "repr",
-        return_ThreadPoolExecutor=(
-            # cpu_count() * 5 is the default Python 3.5 thread count
-            r'''from multiprocessing import cpu_count
-        return ThreadPoolExecutor(cpu_count() * 5 if max_workers is None else max_workers)''' if target_info < (3, 5)
-            else '''return ThreadPoolExecutor(max_workers)'''
-        ),
         zip_iter=_indent(
             r'''for items in _coconut.iter(_coconut.zip(*self.iters, strict=self.strict) if _coconut_sys.version_info >= (3, 10) else _coconut.zip_longest(*self.iters, fillvalue=_coconut_sentinel) if self.strict else _coconut.zip(*self.iters)):
     if self.strict and _coconut_sys.version_info < (3, 10) and _coconut.any(x is _coconut_sentinel for x in items):

@@ -120,6 +120,8 @@ import warnings as _warnings
 import contextlib as _contextlib
 import traceback as _traceback
 import pickle as _pickle
+import multiprocessing as _multiprocessing
+from multiprocessing import dummy as _multiprocessing_dummy
 
 if sys.version_info >= (3, 4):
     import asyncio as _asyncio
@@ -153,6 +155,8 @@ class _coconut:
     pickle = _pickle
     asyncio = _asyncio
     abc = _abc
+    multiprocessing = _multiprocessing
+    multiprocessing_dummy = _multiprocessing_dummy
     typing = _t  # The real _coconut doesn't import typing, but we want type-checkers to treat it as if it does
     if sys.version_info >= (2, 7):
         OrderedDict = staticmethod(collections.OrderedDict)
