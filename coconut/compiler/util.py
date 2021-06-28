@@ -22,7 +22,7 @@ from coconut.root import *  # NOQA
 import sys
 import re
 import traceback
-from functools import partial
+from functools import partial, reduce
 from contextlib import contextmanager
 from pprint import pformat
 
@@ -41,6 +41,7 @@ from coconut._pyparsing import (
     Combine,
     Regex,
     Empty,
+    Literal,
     _trim_arity,
     _ParseResultsWithOffset,
 )
@@ -283,11 +284,16 @@ def unpack(tokens):
     return tokens
 
 
-def invalid_syntax(item, msg):
+def invalid_syntax(item, msg, **kwargs):
     """Mark a grammar item as an invalid item that raises a syntax err with msg."""
+    if isinstance(item, str):
+        item = Literal(item)
+    elif isinstance(item, tuple):
+        item = reduce(lambda a, b: a | b, map(Literal, item))
+
     def invalid_syntax_handle(loc, tokens):
         raise CoconutDeferredSyntaxError(msg, loc)
-    return attach(item, invalid_syntax_handle)
+    return attach(item, invalid_syntax_handle, **kwargs)
 
 
 def parse(grammar, text):

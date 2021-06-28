@@ -687,7 +687,7 @@ class Grammar(object):
     unsafe_colon = Literal(":")
     colon = ~unsafe_dubcolon + unsafe_colon
     colon_eq = Literal(":=")
-    semicolon = Literal(";")
+    semicolon = Literal(";") | invalid_syntax("\u037e", "invalid Greek question mark instead of semicolon")
     eq = Literal("==")
     equals = ~eq + Literal("=")
     lbrack = Literal("[")
@@ -751,8 +751,16 @@ class Grammar(object):
 
     mul_star = star | fixto(Literal("\xd7"), "*")
     exp_dubstar = dubstar | fixto(Literal("\u2191"), "**")
-    neg_minus = minus | fixto(Literal("\u207b"), "-")
-    sub_minus = minus | fixto(Literal("\u2212"), "-")
+    neg_minus = (
+        minus
+        | invalid_syntax("\u2212", "U+2212 is only for negation, not subtraction")
+        | fixto(Literal("\u207b"), "-")
+    )
+    sub_minus = (
+        minus
+        | invalid_syntax("\u207b", "U+207b is only for subtraction, not negation")
+        | fixto(Literal("\u2212"), "-")
+    )
     div_slash = slash | fixto(Literal("\xf7") + ~slash, "/")
     div_dubslash = dubslash | fixto(Combine(Literal("\xf7") + slash), "//")
     matrix_at_ref = at | fixto(Literal("\u22c5"), "@")
@@ -803,7 +811,10 @@ class Grammar(object):
     unwrap = Literal(unwrapper)
     comment = Forward()
     comment_ref = Combine(pound + integer + unwrap)
-    string_item = Combine(Literal(strwrapper) + integer + unwrap)
+    string_item = (
+        Combine(Literal(strwrapper) + integer + unwrap)
+        | invalid_syntax(("\u201c", "\u201d", "\u2018", "\u2019"), "invalid unicode quotation mark; strings must use \" or '", greedy=True)
+    )
     passthrough = Combine(backslash + integer + unwrap)
     passthrough_block = Combine(fixto(dubbackslash, "\\") + integer + unwrap)
 
