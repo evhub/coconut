@@ -2527,9 +2527,7 @@ _Can't be done without a long decorator definition. The full definition of the d
 
 ### `parallel_map`
 
-Coconut provides a parallel version of `map` under the name `parallel_map`. `parallel_map` makes use of multiple processes, and is therefore much faster than `map` for CPU-bound tasks.
-
-Use of `parallel_map` requires `concurrent.futures`, which exists in the Python 3 standard library, but under Python 2 will require `pip install futures` to function.
+Coconut provides a parallel version of `map` under the name `parallel_map`. `parallel_map` makes use of multiple processes, and is therefore much faster than `map` for CPU-bound tasks. `parallel_map` never loads the entire input iterator into memory, though it does consume the entire input iterator as soon as a single output is requested. If any exceptions are raised inside of `parallel_map`, a traceback will be printed as soon as they are encountered.
 
 Because `parallel_map` uses multiple processes for its execution, it is necessary that all of its arguments be pickleable. Only objects defined at the module level, and not lambdas, objects defined inside of a function, or objects defined inside of the interpreter, are pickleable. Furthermore, on Windows, it is necessary that all calls to `parallel_map` occur inside of an `if __name__ == "__main__"` guard.
 
@@ -2539,9 +2537,11 @@ If multiple sequential calls to `parallel_map` need to be made, it is highly rec
 
 ##### Python Docs
 
-**parallel_map**(_func, \*iterables_)
+**parallel_map**(_func, \*iterables_, _chunksize_=`1`)
 
 Equivalent to `map(func, *iterables)` except _func_ is executed asynchronously and several calls to _func_ may be made concurrently. If a call raises an exception, then that exception will be raised when its value is retrieved from the iterator.
+
+`parallel_map` chops the iterable into a number of chunks which it submits to the process pool as separate tasks. The (approximate) size of these chunks can be specified by setting _chunksize_ to a positive integer. For very long iterables using a large value for _chunksize_ can make the job complete **much** faster than using the default value of `1`.
 
 ##### Example
 
@@ -2553,26 +2553,22 @@ parallel_map(pow$(2), range(100)) |> list |> print
 **Python:**
 ```coconut_python
 import functools
-import concurrent.futures
-with concurrent.futures.ProcessPoolExecutor() as executor:
-    print(list(executor.map(functools.partial(pow, 2), range(100))))
+from multiprocessing import Pool
+with Pool() as pool:
+    print(list(pool.imap(functools.partial(pow, 2), range(100))))
 ```
 
 ### `concurrent_map`
 
-Coconut provides a concurrent version of `map` under the name `concurrent_map`. `concurrent_map` makes use of multiple threads, and is therefore much faster than `map` for IO-bound tasks.
-
-Use of `concurrent_map` requires `concurrent.futures`, which exists in the Python 3 standard library, but under Python 2 will require `pip install futures` to function.
-
-`concurrent_map` also supports a `concurrent_map.multiple_sequential_calls()` context manager which functions identically to that of [`parallel_map`](#parallel-map).
-
-`parallel_map.multiple_sequential_calls` also supports a `max_workers` argument to set the number of threads.
+Coconut provides a concurrent version of [`parallel_map`](#parallel-map) under the name `concurrent_map`. `concurrent_map` behaves identically to `parallel_map` except that it uses multithreading instead of multiprocessing, and is therefore primarily useful for IO-bound tasks.
 
 ##### Python Docs
 
-**concurrent_map**(_func, \*iterables_)
+**concurrent_map**(_func, \*iterables_, _chunksize_=`1`)
 
 Equivalent to `map(func, *iterables)` except _func_ is executed asynchronously and several calls to _func_ may be made concurrently. If a call raises an exception, then that exception will be raised when its value is retrieved from the iterator.
+
+`concurrent_map` chops the iterable into a number of chunks which it submits to the process pool as separate tasks. The (approximate) size of these chunks can be specified by setting _chunksize_ to a positive integer. For very long iterables using a large value for _chunksize_ can make the job complete **much** faster than using the default value of `1`.
 
 ##### Example
 
