@@ -198,7 +198,7 @@ def main_test() -> bool:
     assert parallel_map(zip_longest$(fillvalue=10), (range(1),), (range(2),)) |> map$(tuple) |> tuple == (((0,0), (10,1)),)
     assert (range(0, 5), range(5, 10)) |*> map$(+) |> tuple == (5, 7, 9, 11, 13)
     assert parallel_map((*)$(2)..(+)$(1), range(5)) |> tuple == (2, 4, 6, 8, 10)
-    assert parallel_map((+), range(5), range(5), chunksize=2) |> list == map((*)$(2), range(5)) |> list == concurrent_map((+), range(5), range(5), chunksize=2) |> list
+    assert parallel_map((+), range(5), range(5), chunksize=2) |> list == map((*)$(2), range(5)) |> list == concurrent_map((+), range(5), range(5), chunksize=2) |> list  # type: ignore
     assert repr(concurrent_map((-), range(5))).startswith("concurrent_map(")  # type: ignore
     with concurrent_map.multiple_sequential_calls(max_workers=4):  # type: ignore
         assert concurrent_map((-), range(5)) |> tuple == (0, -1, -2, -3, -4) == concurrent_map(map$((-)), (range(5),))$[0] |> tuple  # type: ignore
