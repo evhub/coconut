@@ -687,7 +687,7 @@ class Grammar(object):
     unsafe_colon = Literal(":")
     colon = ~unsafe_dubcolon + unsafe_colon
     colon_eq = Literal(":=")
-    semicolon = Literal(";") | invalid_syntax("\u037e", "invalid Greek question mark instead of semicolon")
+    semicolon = Literal(";") | invalid_syntax("\u037e", "invalid Greek question mark instead of semicolon", greedy=True)
     eq = Literal("==")
     equals = ~eq + Literal("=")
     lbrack = Literal("[")
@@ -739,6 +739,7 @@ class Grammar(object):
     backslash = ~dubbackslash + Literal("\\")
     dubquestion = Literal("??")
     questionmark = ~dubquestion + Literal("?")
+    lambda_kwd = keyword("lambda") | fixto(keyword("\u03bb"), "lambda")
 
     ellipsis = Forward()
     ellipsis_ref = Literal("...") | Literal("\u2026")
@@ -753,13 +754,13 @@ class Grammar(object):
     exp_dubstar = dubstar | fixto(Literal("\u2191"), "**")
     neg_minus = (
         minus
-        | invalid_syntax("\u2212", "U+2212 is only for negation, not subtraction")
         | fixto(Literal("\u207b"), "-")
+        | invalid_syntax("\u2212", "U+2212 is only for negation, not subtraction")
     )
     sub_minus = (
         minus
-        | invalid_syntax("\u207b", "U+207b is only for subtraction, not negation")
         | fixto(Literal("\u2212"), "-")
+        | invalid_syntax("\u207b", "U+207b is only for subtraction, not negation")
     )
     div_slash = slash | fixto(Literal("\xf7") + ~slash, "/")
     div_dubslash = dubslash | fixto(Combine(Literal("\xf7") + slash), "//")
@@ -1326,7 +1327,7 @@ class Grammar(object):
     classic_lambdef = Forward()
     classic_lambdef_params = maybeparens(lparen, var_args_list, rparen)
     new_lambdef_params = lparen.suppress() + var_args_list + rparen.suppress() | name
-    classic_lambdef_ref = addspace(keyword("lambda") + condense(classic_lambdef_params + colon))
+    classic_lambdef_ref = addspace(lambda_kwd + condense(classic_lambdef_params + colon))
     new_lambdef = attach(new_lambdef_params + arrow.suppress(), lambdef_handle)
     implicit_lambdef = fixto(arrow, "lambda _=None:")
     lambdef_base = classic_lambdef | new_lambdef | implicit_lambdef
@@ -1950,7 +1951,7 @@ class Grammar(object):
     )
 
     stores_scope = (
-        keyword("lambda")
+        lambda_kwd
         # match comprehensions but not for loops
         | ~indent + ~dedent + any_char + keyword("for") + base_name + keyword("in")
     )
