@@ -140,7 +140,8 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
         if check_errors:
             assert "Traceback (most recent call last):" not in line, "Traceback in " + repr(line)
             assert "Exception" not in line, "Exception in " + repr(line)
-            assert "Error" not in line, "Error in " + repr(line)
+            if sys.version_info >= (3, 9) or "OSError: handle is closed" not in line:
+                assert "Error" not in line, "Error in " + repr(line)
         if check_mypy and all(test not in line for test in ignore_mypy_errs_with):
             assert "error:" not in line, "MyPy error in " + repr(line)
     if isinstance(assert_output, str):
