@@ -108,6 +108,7 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
             assert_output = (assert_output,)
     else:
         assert_output = tuple(x if x is not True else "<success>" for x in assert_output)
+
     stdout, stderr, retcode = call_output(cmd, **kwargs)
     if expect_retcode is not None:
         assert retcode == expect_retcode, "Return code not as expected ({retcode} != {expect_retcode}) in: {cmd!r}".format(
@@ -120,6 +121,7 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
     else:
         out = stdout + stderr
     out = "".join(out)
+
     raw_lines = out.splitlines()
     lines = []
     i = 0
@@ -132,18 +134,28 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
             i += 1
         i += 1
         lines.append(line)
+
+    next_line_allow_tb = False
     for line in lines:
         assert "CoconutInternalException" not in line, "CoconutInternalException in " + repr(line)
         assert "<unprintable" not in line, "Unprintable error in " + repr(line)
         assert "*** glibc detected ***" not in line, "C error in " + repr(line)
         assert "INTERNAL ERROR" not in line, "MyPy INTERNAL ERROR in " + repr(line)
         if check_errors:
-            assert "Traceback (most recent call last):" not in line, "Traceback in " + repr(line)
+            if next_line_allow_tb:
+                next_line_allow_tb = False
+            else:
+                assert "Traceback (most recent call last):" not in line, "Traceback in " + repr(line)
             assert "Exception" not in line, "Exception in " + repr(line)
-            if sys.version_info >= (3, 9) or "OSError: handle is closed" not in line:
+            # ignore https://bugs.python.org/issue39098 errors
+            if sys.version_info < (3, 9) and ("handle is closed" in line or "atexit._run_exitfuncs" in line):
+                if line == "Error in atexit._run_exitfuncs:":
+                    next_line_allow_tb = True
+            else:
                 assert "Error" not in line, "Error in " + repr(line)
         if check_mypy and all(test not in line for test in ignore_mypy_errs_with):
             assert "error:" not in line, "MyPy error in " + repr(line)
+
     if isinstance(assert_output, str):
         got_output = "\n".join(lines) + "\n"
         assert assert_output in got_output, "Expected " + repr(assert_output) + "; got " + repr(got_output)
