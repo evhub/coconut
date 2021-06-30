@@ -1926,7 +1926,12 @@ class Grammar(object):
     )
 
     def get_tre_return_grammar(self, func_name):
-        return self.start_marker + (keyword("return") + keyword(func_name)).suppress() + self.original_function_call_tokens + self.end_marker
+        return (
+            self.start_marker
+            + (keyword("return") + keyword(func_name, explicit_prefix=False)).suppress()
+            + self.original_function_call_tokens
+            + self.end_marker
+        )
 
     tco_return = attach(
         start_marker + keyword("return").suppress() + condense(

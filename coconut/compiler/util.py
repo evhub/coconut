@@ -635,8 +635,8 @@ def keyword(name, explicit_prefix=None):
     if explicit_prefix is not False:
         internal_assert(
             (name in reserved_vars) is (explicit_prefix is not None),
-            "invalid keyword call of", name,
-            extra="(pass explicit_prefix to keyword for all reserved_vars and only reserved_vars)",
+            "invalid keyword call for", name,
+            extra="pass explicit_prefix to keyword for all reserved_vars and only reserved_vars",
         )
 
     base_kwd = regex_item(name + r"\b")
