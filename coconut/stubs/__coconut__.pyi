@@ -216,6 +216,7 @@ class _coconut:
     repr = staticmethod(repr)
     if sys.version_info >= (3,):
         bytearray = bytearray
+        exec_ = staticmethod(exec)
 
 
 if sys.version_info >= (3, 2):

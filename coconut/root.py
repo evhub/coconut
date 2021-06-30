@@ -26,18 +26,19 @@ import sys as _coconut_sys
 VERSION = "1.5.0"
 VERSION_NAME = "Fish License"
 # False for release, int >= 1 for develop
-DEVELOP = 66
+DEVELOP = 67
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-def _indent(code, by=1, tabsize=4):
+def _indent(code, by=1, tabsize=4, newline=False):
     """Indents every nonempty line of the given code."""
     return "".join(
-        (" " * (tabsize * by) if line else "") + line for line in code.splitlines(True)
-    )
+        (" " * (tabsize * by) if line else "") + line
+        for line in code.splitlines(True)
+    ) + ("\n" if newline else "")
 
 # -----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
