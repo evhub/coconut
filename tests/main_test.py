@@ -150,6 +150,7 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
                 if not new_line.startswith(" ") and not any(test in new_line for test in ignore_atexit_errors_with):
                     i -= 1
                     break
+            continue
 
         # combine mypy error lines
         if line.rstrip().endswith("error:"):
