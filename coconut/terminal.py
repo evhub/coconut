@@ -90,8 +90,7 @@ def complain(error):
 
 
 def internal_assert(condition, message=None, item=None, extra=None):
-    """Raise InternalException if condition is False.
-    If condition is a function, execute it on DEVELOP only."""
+    """Raise InternalException if condition is False. Execute functions on DEVELOP only."""
     if DEVELOP and callable(condition):
         condition = condition()
     if not condition:

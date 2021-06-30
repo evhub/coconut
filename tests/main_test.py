@@ -143,6 +143,9 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
         if sys.version_info < (3, 9) and line == "Error in atexit._run_exitfuncs:":
             while True:
                 i += 1
+                if i >= len(raw_lines):
+                    break
+
                 new_line = raw_lines[i]
                 if not new_line.startswith(" ") and not any(test in new_line for test in ignore_atexit_errors_with):
                     i -= 1
@@ -153,8 +156,8 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
             line += raw_lines[i + 1]
             i += 1
 
-        i += 1
         lines.append(line)
+        i += 1
 
     for line in lines:
         assert "CoconutInternalException" not in line, "CoconutInternalException in " + repr(line)
