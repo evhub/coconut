@@ -796,6 +796,8 @@ def main_test() -> bool:
     assert [(|1, 2|) |> iter, (|3, 4|) |> iter] |> flatten |> list == [1, 2, 3, 4] == (|[1, 2], [3, 4]|) |> iter |> flatten |> list
     assert (|1, 2, 3|) |> iter |> reiterable |> list == [1, 2, 3]
     assert (range(2) for _ in range(2)) |> flatten |> list == [0, 1, 0, 1] == (range(2) for _ in range(2)) |> flatten |> iter |> list
+    :match [x, y] = 1, 2
+    assert (x, y) == (1, 2)
     return True
 
 def test_asyncio() -> bool:

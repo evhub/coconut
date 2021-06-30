@@ -65,6 +65,7 @@ from coconut.constants import (
     embed_on_internal_exc,
     specific_targets,
     pseudo_targets,
+    reserved_vars,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -570,11 +571,6 @@ def regex_item(regex, options=None):
     return Regex(regex, options)
 
 
-def keyword(name):
-    """Construct a grammar which matches name as a Python keyword."""
-    return regex_item(name + r"\b")
-
-
 def fixto(item, output):
     """Force an item to result in a specific output."""
     return add_action(item, replaceWith(output))
@@ -628,10 +624,25 @@ stores_loc_item = attach(Empty(), stores_loc_action)
 
 def disallow_keywords(keywords):
     """Prevent the given keywords from matching."""
-    item = ~keyword(keywords[0])
+    item = ~keyword(keywords[0], explicit_prefix=False)
     for k in keywords[1:]:
-        item += ~keyword(k)
+        item += ~keyword(k, explicit_prefix=False)
     return item
+
+
+def keyword(name, explicit_prefix=None):
+    """Construct a grammar which matches name as a Python keyword."""
+    if explicit_prefix is not False:
+        internal_assert(
+            (name in reserved_vars) is (explicit_prefix is not None),
+            "pass explicit_prefix to keyword for all reserved_vars (and only reserved_vars)",
+        )
+
+    base_kwd = regex_item(name + r"\b")
+    if explicit_prefix in (None, False):
+        return base_kwd
+    else:
+        return Optional(explicit_prefix.suppress()) + base_kwd
 
 
 def tuple_str_of(items, add_quotes=False):

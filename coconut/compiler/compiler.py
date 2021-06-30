@@ -321,7 +321,7 @@ class Compiler(Grammar):
         if target not in targets:
             raise CoconutException(
                 "unsupported target Python version " + ascii(target),
-                extra="supported targets are: " + ', '.join(ascii(t) for t in specific_targets + tuple(pseudo_targets)) + ", and 'sys'",
+                extra="supported targets are: " + ", ".join(ascii(t) for t in specific_targets + tuple(pseudo_targets)) + ", and 'sys'",
             )
         logger.log_vars("Compiler args:", locals())
         self.target = target
@@ -332,7 +332,10 @@ class Compiler(Grammar):
         self.no_tco = no_tco
         self.no_wrap = no_wrap
         if self.no_wrap and self.target_info >= (3, 7):
-            logger.warn("--no-wrap argument has no effect on target " + ascii(target if target else "universal"), extra="annotations are never wrapped on targets with PEP 563 support")
+            logger.warn(
+                "--no-wrap argument has no effect on target " + ascii(target if target else "universal"),
+                extra="annotations are never wrapped on targets with PEP 563 support",
+            )
 
     def __reduce__(self):
         """Return pickling information."""
@@ -1309,7 +1312,11 @@ while True:
         """Store comment in comments."""
         internal_assert(len(tokens) == 1, "invalid comment tokens", tokens)
         ln = self.adjust(lineno(loc, original))
-        internal_assert(lambda: ln not in self.comments or self.comments[ln] == tokens[0], "multiple comments on line", ln, lambda: repr(self.comments[ln]) + " and " + repr(tokens[0]))
+        internal_assert(
+            lambda: ln not in self.comments or self.comments[ln] == tokens[0],
+            "multiple comments on line", ln,
+            extra=lambda: repr(self.comments[ln]) + " and " + repr(tokens[0]),
+        )
         self.comments[ln] = tokens[0]
         return ""
 
@@ -2111,7 +2118,13 @@ if not {check_var}:
                         ret_err = "_coconut.StopIteration"
                         # warn about Python 3.7 incompatibility on any target with Python 3 support
                         if not self.target.startswith("2"):
-                            logger.warn_err(self.make_err(CoconutSyntaxWarning, "compiled generator return to StopIteration error; this will break on Python >= 3.7 (pass --target sys to fix)", original, loc))
+                            logger.warn_err(
+                                self.make_err(
+                                    CoconutSyntaxWarning,
+                                    "compiled generator return to StopIteration error; this will break on Python >= 3.7 (pass --target sys to fix)",
+                                    original, loc,
+                                ),
+                            )
                     line = indent + "raise " + ret_err + "(" + to_return + ")" + comment + dedent
 
                 tre_base = None
@@ -2462,7 +2475,7 @@ __annotations__["{name}"] = {annotation}
                 style = "coconut warn"
         elif block_kwd == "match":
             if self.strict:
-                raise self.make_err(CoconutStyleError, 'found Python-style "match: case" syntax (use Coconut-style "case: match" syntax instead)', original, loc)
+                raise self.make_err(CoconutStyleError, "found Python-style 'match: case' syntax (use Coconut-style 'case: match' syntax instead)", original, loc)
             style = "python warn"
         else:
             raise CoconutInternalException("invalid case block keyword", block_kwd)
