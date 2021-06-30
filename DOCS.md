@@ -1157,11 +1157,24 @@ b = 2
 c = a + b
 ```
 
-### Backslash-Escaping
+### Handling Keyword/Variable Name Overlap
 
-In Coconut, the keywords `async` (keyword in Python 3.5), `await` (keyword in Python 3.5), `data`, `match`, `case`, `cases`, `where`, `addpattern`, and `λ` (a [Unicode alternative](#unicode-alternatives) for `lambda`) are also valid variable names. While Coconut can disambiguate these two use cases, when using one of these keywords as a variable name, a backslash is allowed in front to be explicit about using a keyword as a variable name (in particular, to let syntax highlighters know).
+In Coconut, the following keywords are also valid variable names:
+- `async` (keyword in Python 3.5)
+- `await` (keyword in Python 3.5)
+- `data`
+- `match`
+- `case`
+- `cases`
+- `where`
+- `addpattern`
+- `λ` (a [Unicode alternative](#unicode-alternatives) for `lambda`)
 
-##### Example
+While Coconut can usually disambiguate these two use cases, special syntax is available for disambiguating these two use cases. To specify that you want a _variable_, prefix the name with a backslash as in `\data`, and to specify that you want a _keyword_, prefix the name with a colon as in `:match`. Note that, if what you're writing can be interpreted as valid Python 3, Coconut will always prefer that interpretation by default.
+
+In addition to helping with cases where the two uses conflict, such disambiguation syntax can also be helpful for letting syntax highlighters know what you're doing.
+
+##### Examples
 
 **Coconut:**
 ```coconut
@@ -1169,10 +1182,19 @@ In Coconut, the keywords `async` (keyword in Python 3.5), `await` (keyword in Py
 print(\data)
 ```
 
+```coconut
+# without the colon, Coconut will interpret this as match[x, y] = input_list
+:match [x, y] = input_list
+```
+
 **Python:**
 ```coconut_python
 data = 5
 print(data)
+```
+
+```coconut_python
+x, y = input_list
 ```
 
 ## Expressions

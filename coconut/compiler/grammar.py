@@ -739,7 +739,16 @@ class Grammar(object):
     backslash = ~dubbackslash + Literal("\\")
     dubquestion = Literal("??")
     questionmark = ~dubquestion + Literal("?")
-    lambda_kwd = keyword("lambda") | fixto(keyword("\u03bb"), "lambda")
+
+    lambda_kwd = keyword("lambda") | fixto(keyword("\u03bb", explicit_prefix=colon), "lambda")
+    async_kwd = keyword("async", explicit_prefix=colon)
+    await_kwd = keyword("await", explicit_prefix=colon)
+    data_kwd = keyword("data", explicit_prefix=colon)
+    match_kwd = keyword("match", explicit_prefix=colon)
+    case_kwd = keyword("case", explicit_prefix=colon)
+    cases_kwd = keyword("cases", explicit_prefix=colon)
+    where_kwd = keyword("where", explicit_prefix=colon)
+    addpattern_kwd = keyword("addpattern", explicit_prefix=colon)
 
     ellipsis = Forward()
     ellipsis_ref = Literal("...") | Literal("\u2026")
@@ -777,7 +786,7 @@ class Grammar(object):
         + regex_item(r"(?![0-9])\w+\b")
     )
     for k in reserved_vars:
-        base_name |= backslash.suppress() + keyword(k)
+        base_name |= backslash.suppress() + keyword(k, explicit_prefix=False)
     dotted_name = condense(name + ZeroOrMore(dot + name))
     must_be_dotted_name = condense(name + OneOrMore(dot + name))
 
@@ -1096,7 +1105,11 @@ class Grammar(object):
     set_s = fixto(CaselessLiteral("s"), "s")
     set_f = fixto(CaselessLiteral("f"), "f")
     set_letter = set_s | set_f
-    setmaker = Group(addspace(new_namedexpr_test + comp_for)("comp") | new_namedexpr_testlist_has_comma("list") | new_namedexpr_test("test"))
+    setmaker = Group(
+        addspace(new_namedexpr_test + comp_for)("comp")
+        | new_namedexpr_testlist_has_comma("list")
+        | new_namedexpr_test("test"),
+    )
     set_literal_ref = lbrace.suppress() + setmaker + rbrace.suppress()
     set_letter_literal_ref = set_letter + lbrace.suppress() + Optional(setmaker) + rbrace.suppress()
     lazy_items = Optional(tokenlist(test, comma))
@@ -1218,7 +1231,7 @@ class Grammar(object):
     )
 
     await_item = Forward()
-    await_item_ref = keyword("await").suppress() + impl_call_item
+    await_item_ref = await_kwd.suppress() + impl_call_item
     power_item = await_item | impl_call_item
 
     factor = Forward()
@@ -1353,7 +1366,7 @@ class Grammar(object):
         + stmt_lambdef_body
     )
     match_stmt_lambdef = (
-        (keyword("match") + keyword("def")).suppress()
+        (match_kwd + keyword("def")).suppress()
         + stmt_lambdef_match_params
         + arrow.suppress()
         + stmt_lambdef_body
@@ -1427,7 +1440,7 @@ class Grammar(object):
         | test_item
     )
     base_comp_for = addspace(keyword("for") + assignlist + keyword("in") + comp_it_item + Optional(comp_iter))
-    async_comp_for_ref = addspace(keyword("async") + base_comp_for)
+    async_comp_for_ref = addspace(async_kwd + base_comp_for)
     comp_for <<= async_comp_for | base_comp_for
     comp_if = addspace(keyword("if") + test_no_cond + Optional(comp_iter))
     comp_iter <<= comp_for | comp_if
@@ -1535,7 +1548,7 @@ class Grammar(object):
             | series_match
             | star_match
             | (lparen.suppress() + match + rparen.suppress())("paren")
-            | (keyword("data").suppress() + name + lparen.suppress() + matchlist_data + rparen.suppress())("data")
+            | (data_kwd.suppress() + name + lparen.suppress() + matchlist_data + rparen.suppress())("data")
             | (keyword("class").suppress() + name + lparen.suppress() + matchlist_data + rparen.suppress())("class")
             | (name + lparen.suppress() + matchlist_data + rparen.suppress())("data_or_class")
             | name("var"),
@@ -1567,7 +1580,7 @@ class Grammar(object):
     full_suite = colon.suppress() + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
     full_match = Forward()
     full_match_ref = (
-        keyword("match").suppress()
+        match_kwd.suppress()
         + many_match
         + addspace(Optional(keyword("not")) + keyword("in"))
         - testlist_star_namedexpr
@@ -1577,15 +1590,15 @@ class Grammar(object):
     match_stmt = trace(condense(full_match - Optional(else_stmt)))
 
     destructuring_stmt = Forward()
-    base_destructuring_stmt = Optional(keyword("match").suppress()) + many_match + equals.suppress() + test_expr
+    base_destructuring_stmt = Optional(match_kwd.suppress()) + many_match + equals.suppress() + test_expr
     destructuring_stmt_ref, match_dotted_name_const_ref = disable_inside(base_destructuring_stmt, must_be_dotted_name)
 
     case_stmt = Forward()
     # both syntaxes here must be kept matching except for the keywords
-    cases_kwd = fixto(keyword("case"), "cases") | keyword("cases")
+    cases_kwd = fixto(case_kwd, "cases") | cases_kwd
     case_match_co_syntax = trace(
         Group(
-            keyword("match").suppress()
+            match_kwd.suppress()
             + stores_loc_item
             + many_match
             + Optional(keyword("if").suppress() + namedexpr_test)
@@ -1599,7 +1612,7 @@ class Grammar(object):
     )
     case_match_py_syntax = trace(
         Group(
-            keyword("case").suppress()
+            case_kwd.suppress()
             + stores_loc_item
             + many_match
             + Optional(keyword("if").suppress() + namedexpr_test)
@@ -1607,7 +1620,7 @@ class Grammar(object):
         ),
     )
     case_stmt_py_syntax = (
-        keyword("match") + testlist_star_namedexpr + colon.suppress() + newline.suppress()
+        match_kwd + testlist_star_namedexpr + colon.suppress() + newline.suppress()
         + indent.suppress() + Group(OneOrMore(case_match_py_syntax))
         + dedent.suppress() + Optional(keyword("else").suppress() - suite)
     )
@@ -1697,15 +1710,15 @@ class Grammar(object):
     match_def_modifiers = trace(
         Optional(
             # we don't suppress addpattern so its presence can be detected later
-            keyword("match").suppress() + Optional(keyword("addpattern"))
-            | keyword("addpattern") + Optional(keyword("match")).suppress(),
+            match_kwd.suppress() + Optional(addpattern_kwd)
+            | addpattern_kwd + Optional(match_kwd.suppress()),
         ),
     )
     match_funcdef = addspace(match_def_modifiers + def_match_funcdef)
 
     where_stmt = attach(
         unsafe_simple_stmt_item
-        + keyword("where").suppress()
+        + where_kwd.suppress()
         - full_suite,
         where_handle,
     )
@@ -1716,7 +1729,7 @@ class Grammar(object):
     )
     implicit_return_where = attach(
         implicit_return
-        + keyword("where").suppress()
+        + where_kwd.suppress()
         - full_suite,
         where_handle,
     )
@@ -1757,18 +1770,18 @@ class Grammar(object):
     )
 
     async_stmt = Forward()
-    async_stmt_ref = addspace(keyword("async") + (with_stmt | for_stmt))
+    async_stmt_ref = addspace(async_kwd + (with_stmt | for_stmt))
 
-    async_funcdef = keyword("async").suppress() + (funcdef | math_funcdef)
+    async_funcdef = async_kwd.suppress() + (funcdef | math_funcdef)
     async_match_funcdef = trace(
         addspace(
             (
                 # we don't suppress addpattern so its presence can be detected later
-                keyword("match").suppress() + keyword("addpattern") + keyword("async").suppress()
-                | keyword("addpattern") + keyword("match").suppress() + keyword("async").suppress()
-                | keyword("match").suppress() + keyword("async").suppress() + Optional(keyword("addpattern"))
-                | keyword("addpattern") + keyword("async").suppress() + Optional(keyword("match")).suppress()
-                | keyword("async").suppress() + match_def_modifiers
+                match_kwd.suppress() + addpattern_kwd + async_kwd.suppress()
+                | addpattern_kwd + match_kwd.suppress() + async_kwd.suppress()
+                | match_kwd.suppress() + async_kwd.suppress() + Optional(addpattern_kwd)
+                | addpattern_kwd + async_kwd.suppress() + Optional(match_kwd.suppress())
+                | async_kwd.suppress() + match_def_modifiers
             ) + (def_match_funcdef | math_match_funcdef),
         ),
     )
@@ -1795,13 +1808,13 @@ class Grammar(object):
             | simple_stmt("simple")
         ) | newline("empty"),
     )
-    datadef_ref = keyword("data").suppress() + name + data_args + data_suite
+    datadef_ref = data_kwd.suppress() + name + data_args + data_suite
 
     match_datadef = Forward()
     match_data_args = lparen.suppress() + Group(
         match_args_list + match_guard,
     ) + rparen.suppress() + Optional(keyword("from").suppress() + testlist)
-    match_datadef_ref = Optional(keyword("match").suppress()) + keyword("data").suppress() + name + match_data_args + data_suite
+    match_datadef_ref = Optional(match_kwd.suppress()) + data_kwd.suppress() + name + match_data_args + data_suite
 
     simple_decorator = condense(dotted_name + Optional(function_call))("simple")
     complex_decorator = namedexpr_test("complex")

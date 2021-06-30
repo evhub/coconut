@@ -80,7 +80,10 @@ ignore_mypy_errs_with = (
     "unused 'type: ignore' comment",
 )
 
-kernel_installation_msg = "Coconut: Successfully installed Jupyter kernels: " + ", ".join((icoconut_custom_kernel_name,) + icoconut_default_kernel_names)
+kernel_installation_msg = (
+    "Coconut: Successfully installed Jupyter kernels: "
+    + ", ".join((icoconut_custom_kernel_name,) + icoconut_default_kernel_names)
+)
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -155,7 +158,7 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
             assert "error:" not in line, "MyPy error in " + repr(line)
 
     if isinstance(assert_output, str):
-        got_output = "\n".join(lines) + "\n"
+        got_output = "\n".join(raw_lines) + "\n"
         assert assert_output in got_output, "Expected " + repr(assert_output) + "; got " + repr(got_output)
     else:
         if not lines:
@@ -165,9 +168,12 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
         else:
             last_line = lines[-1]
         if assert_output is None:
-            assert not last_line, "Expected nothing; got:\n" + "\n".join(repr(li) for li in lines)
+            assert not last_line, "Expected nothing; got:\n" + "\n".join(repr(li) for li in raw_lines)
         else:
-            assert any(x in last_line for x in assert_output), "Expected " + ", ".join(repr(s) for s in assert_output) + "; got:\n" + "\n".join(repr(li) for li in lines)
+            assert any(x in last_line for x in assert_output), (
+                "Expected " + ", ".join(repr(s) for s in assert_output)
+                + "; got:\n" + "\n".join(repr(li) for li in raw_lines)
+            )
 
 
 def call_python(args, **kwargs):
@@ -495,13 +501,28 @@ class TestCompilation(unittest.TestCase):
 
     if MYPY:
         def test_universal_mypy_snip(self):
-            call(["coconut", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err_2, check_errors=False, check_mypy=False)
+            call(
+                ["coconut", "-c", mypy_snip, "--mypy"],
+                assert_output=mypy_snip_err_2,
+                check_errors=False,
+                check_mypy=False,
+            )
 
         def test_sys_mypy_snip(self):
-            call(["coconut", "--target", "sys", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err_3, check_errors=False, check_mypy=False)
+            call(
+                ["coconut", "--target", "sys", "-c", mypy_snip, "--mypy"],
+                assert_output=mypy_snip_err_3,
+                check_errors=False,
+                check_mypy=False,
+            )
 
         def test_no_wrap_mypy_snip(self):
-            call(["coconut", "--target", "sys", "--no-wrap", "-c", mypy_snip, "--mypy"], assert_output=mypy_snip_err_3, check_errors=False, check_mypy=False)
+            call(
+                ["coconut", "--target", "sys", "--no-wrap", "-c", mypy_snip, "--mypy"],
+                assert_output=mypy_snip_err_3,
+                check_errors=False,
+                check_mypy=False,
+            )
 
         def test_mypy_sys(self):
             run(["--mypy"] + mypy_args, agnostic_target="sys", expect_retcode=None, check_errors=False)  # fails due to tutorial mypy errors
