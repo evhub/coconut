@@ -622,10 +622,10 @@ def stores_loc_action(loc, tokens):
 stores_loc_item = attach(Empty(), stores_loc_action)
 
 
-def disallow_keywords(keywords):
-    """Prevent the given keywords from matching."""
-    item = ~keyword(keywords[0], explicit_prefix=False)
-    for k in keywords[1:]:
+def disallow_keywords(kwds):
+    """Prevent the given kwds from matching."""
+    item = ~keyword(kwds[0], explicit_prefix=False)
+    for k in kwds[1:]:
         item += ~keyword(k, explicit_prefix=False)
     return item
 
@@ -635,7 +635,8 @@ def keyword(name, explicit_prefix=None):
     if explicit_prefix is not False:
         internal_assert(
             (name in reserved_vars) is (explicit_prefix is not None),
-            "pass explicit_prefix to keyword for all reserved_vars (and only reserved_vars)",
+            "invalid keyword call of", name,
+            extra="(pass explicit_prefix to keyword for all reserved_vars and only reserved_vars)",
         )
 
     base_kwd = regex_item(name + r"\b")

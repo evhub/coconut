@@ -80,6 +80,12 @@ ignore_mypy_errs_with = (
     "unused 'type: ignore' comment",
 )
 
+ignore_atexit_errors_with = (
+    "Traceback (most recent call last):",
+    "sqlite3.ProgrammingError",
+    "OSError: handle is closed",
+)
+
 kernel_installation_msg = (
     "Coconut: Successfully installed Jupyter kernels: "
     + ", ".join((icoconut_custom_kernel_name,) + icoconut_default_kernel_names)
@@ -135,7 +141,12 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
 
         # ignore https://bugs.python.org/issue39098 errors
         if sys.version_info < (3, 9) and line == "Error in atexit._run_exitfuncs:":
-            break
+            while True:
+                i += 1
+                new_line = raw_lines[i]
+                if not new_line.startswith(" ") and not any(test in new_line for test in ignore_atexit_errors_with):
+                    i -= 1
+                    break
 
         # combine mypy error lines
         if line.rstrip().endswith("error:"):
