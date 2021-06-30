@@ -593,9 +593,9 @@ min_versions = {
     "requests": (2, 25),
     ("numpy", "py34"): (1,),
     ("numpy", "py2;cpy"): (1,),
-    ("ipykernel", "py3"): (6,),
     ("dataclasses", "py36-only"): (0, 8),
     # don't upgrade these; they break on Python 3.5
+    ("ipykernel", "py3"): (5, 5),
     ("ipython", "py3"): (7, 9),
     ("jupyter-console", "py3"): (6, 1),
     ("jupytext", "py3"): (1, 8),
@@ -623,6 +623,7 @@ min_versions = {
 
 # should match the reqs with comments above
 pinned_reqs = (
+    ("ipykernel", "py3"),
     ("ipython", "py3"),
     ("jupyter-console", "py3"),
     ("jupytext", "py3"),
