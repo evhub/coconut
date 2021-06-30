@@ -47,6 +47,7 @@ from coconut.terminal import (
 from coconut.compiler import Compiler
 from coconut.compiler.util import should_indent
 from coconut.command.util import Runner
+from coconut.__coconut__ import override
 
 try:
     from IPython.core.inputsplitter import IPythonInputSplitter
@@ -69,8 +70,9 @@ except ImportError:
 else:
     LOAD_MODULE = True
 
+
 # -----------------------------------------------------------------------------------------------------------------------
-# GLOBALS:
+# UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
 
 COMPILER = Compiler(
@@ -129,11 +131,13 @@ if LOAD_MODULE:
             header = COMPILER.getheader("sys")
             super(CoconutCompiler, self).__call__(header, "<string>", "exec")
 
+        @override
         def ast_parse(self, source, *args, **kwargs):
             """Version of ast_parse that compiles Coconut code first."""
             compiled = syntaxerr_memoized_parse_block(source)
             return super(CoconutCompiler, self).ast_parse(compiled, *args, **kwargs)
 
+        @override
         def cache(self, code, *args, **kwargs):
             """Version of cache that compiles Coconut code first."""
             try:
@@ -144,6 +148,7 @@ if LOAD_MODULE:
             else:
                 return super(CoconutCompiler, self).cache(compiled, *args, **kwargs)
 
+        @override
         def __call__(self, source, *args, **kwargs):
             """Version of __call__ that compiles Coconut code first."""
             if isinstance(source, (str, bytes)):
@@ -175,27 +180,32 @@ if LOAD_MODULE:
 input_splitter = CoconutSplitter(line_input_checker=True)
 input_transformer_manager = CoconutSplitter(line_input_checker=False)
 
+@override
 def init_instance_attrs(self):
     """Version of init_instance_attrs that uses CoconutCompiler."""
     super({cls}, self).init_instance_attrs()
     self.compile = CoconutCompiler()
 
+@override
 def init_user_ns(self):
     """Version of init_user_ns that adds Coconut built-ins."""
     super({cls}, self).init_user_ns()
     RUNNER.update_vars(self.user_ns)
     RUNNER.update_vars(self.user_ns_hidden)
 
+@override
 def run_cell(self, raw_cell, store_history=False, silent=False, shell_futures=True, **kwargs):
     """Version of run_cell that always uses shell_futures."""
     return super({cls}, self).run_cell(raw_cell, store_history, silent, shell_futures=True, **kwargs)
 
 if asyncio is not None:
+    @override
     @asyncio.coroutine
     def run_cell_async(self, raw_cell, store_history=False, silent=False, shell_futures=True, **kwargs):
         """Version of run_cell_async that always uses shell_futures."""
         return super({cls}, self).run_cell_async(raw_cell, store_history, silent, shell_futures=True, **kwargs)
 
+@override
 def user_expressions(self, expressions):
     """Version of user_expressions that compiles Coconut code first."""
     compiled_expressions = {dict}
@@ -250,6 +260,7 @@ def user_expressions(self, expressions):
             },
         ]
 
+        @override
         def do_complete(self, code, cursor_pos):
             # first try with Jedi completions
             self.use_experimental_completions = True

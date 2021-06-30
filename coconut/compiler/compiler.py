@@ -2352,7 +2352,7 @@ if {store_var} is not _coconut_sentinel:
         """Check for Python 3.5 await expression."""
         internal_assert(len(tokens) == 1, "invalid await statement tokens", tokens)
         if not self.target:
-            self.make_err(
+            raise self.make_err(
                 CoconutTargetError,
                 "await requires a specific target",
                 original, loc,

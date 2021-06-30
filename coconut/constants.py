@@ -583,7 +583,7 @@ min_versions = {
     "recommonmark": (0, 7),
     "psutil": (5,),
     "jupyter": (1, 0),
-    "mypy[python2]": (0, 902),
+    "mypy[python2]": (0, 910),
     "types-backports": (0, 1),
     "futures": (3, 3),
     "backports.functools-lru-cache": (1, 6),
@@ -593,7 +593,7 @@ min_versions = {
     "requests": (2, 25),
     ("numpy", "py34"): (1,),
     ("numpy", "py2;cpy"): (1,),
-    ("ipykernel", "py3"): (5, 5),
+    ("ipykernel", "py3"): (6,),
     ("dataclasses", "py36-only"): (0, 8),
     # don't upgrade these; they break on Python 3.5
     ("ipython", "py3"): (7, 9),
