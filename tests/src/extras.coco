@@ -54,7 +54,7 @@ def unwrap_future(event_loop, maybe_future):
     if hasattr(maybe_future, 'result'):
         return maybe_future.result()
     elif event_loop is not None:
-        return loop.run_until_complete(maybe_future)
+        return event_loop.run_until_complete(maybe_future)
     else:
         return maybe_future
 
