@@ -653,6 +653,7 @@ def suite_test() -> bool:
     assert inf_rec(5) == 10 == inf_rec_(5)
     m = methtest2()
     assert m.inf_rec(5) == 10 == m.inf_rec_(5)
+    assert reqs(lazy_client)$[:10] |> list == range(10) |> list == reqs(lazy_client_)$[:10] |> list
 
     # must come at end
     assert fibs_calls[0] == 1
