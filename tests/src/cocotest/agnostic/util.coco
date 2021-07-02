@@ -1052,3 +1052,26 @@ def list_it(() :: it) = list(it)
 addpattern def list_it(x) = x  # type: ignore
 
 eval_iters_ = recursive_map$(list_it)
+
+
+# Lazy patterns
+def reqs(client):
+    yield from client$ (init) (resps(client))
+def resps(client):
+    yield from server (reqs(client))
+
+def strict_client(init, [resp] :: resps) =
+    [init] :: strict_client$ (nxt resp) (resps)
+def lazy_client(init, all_resps) =
+    [init] :: (def ([resp] :: resps) -> lazy_client$ (nxt resp) (resps))(all_resps)
+def lazy_client_(init, all_resps):
+    yield init
+    yield from lazy_client$ (nxt resp) (resps) where:
+        [resp] :: resps = all_resps
+
+def server([req] :: reqs) =
+    [process req] :: server reqs
+
+init = 0
+def nxt(resp) = resp
+def process(req) = req+1

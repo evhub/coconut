@@ -2521,7 +2521,7 @@ flat_it = iter_of_iters |> chain.from_iterable |> list
 Coconut provides a `recursive_iterator` decorator that provides significant optimizations for any stateless, recursive function that returns an iterator. To use `recursive_iterator` on a function, it must meet the following criteria:
 
 1. your function either always `return`s an iterator or generates an iterator using `yield`,
-2. when called multiple times with the same arguments, your function produces the same iterator (your function is stateless), and
+2. when called multiple times with arguments that are equal, your function produces the same iterator (your function is stateless), and
 3. your function gets called (usually calls itself) multiple times with the same arguments.
 
 If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for `recursive_iterator`, or the corresponding criteria for Coconut's [tail call optimization](#tail-call-optimization), either of which should prevent such errors.
@@ -2536,6 +2536,8 @@ which will crash due to the aforementioned Python issue, write
 def seq() = get_elem() :: seq()
 ```
 which will work just fine.
+
+One pitfall to keep in mind working with `recursive_iterator` is that it shouldn't be used in contexts where the function can potentially be called multiple times with the same iterator object as an input, but with that object not actually corresponding to the same items (e.g. because the first time the object hasn't been iterated over yet and the second time it has been).
 
 ##### Example
 
