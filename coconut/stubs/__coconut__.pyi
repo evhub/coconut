@@ -206,7 +206,6 @@ class _coconut:
     reversed = staticmethod(reversed)
     set = staticmethod(set)
     slice = slice
-    sorted = staticmethod(sorted)
     str = str
     sum = staticmethod(sum)
     super = staticmethod(super)
