@@ -590,7 +590,7 @@ def suite_test() -> bool:
     dt = descriptor_test()
     assert dt.lam() == dt
     assert dt.comp() == (dt,)
-    assert dt.N()$[:2] |> list == [(dt, 0), (dt, 1)]
+    assert dt.N()$[:2] |> list == [(dt, 0), (dt, 1)] == dt.N_()$[:2] |> list
     assert map(Ad().ef, range(5)) |> list == range(1, 6) |> list
     assert Ad().ef 1 == 2
     assert store.plus1 store.one == store.two
