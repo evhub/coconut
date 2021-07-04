@@ -22,6 +22,7 @@ from coconut.root import *  # NOQA
 import sys
 import os
 import time
+import shutil
 import traceback
 from contextlib import contextmanager
 from subprocess import CalledProcessError
@@ -57,6 +58,7 @@ from coconut.constants import (
     mypy_install_arg,
     ver_tuple_to_str,
     mypy_builtin_regex,
+    coconut_pth_file,
 )
 from coconut.install_utils import install_custom_kernel
 from coconut.command.util import (
@@ -182,6 +184,8 @@ class Command(object):
             launch_documentation()
         if args.tutorial:
             launch_tutorial()
+        if args.site_install:
+            self.site_install()
         if args.mypy is not None and args.line_numbers:
             logger.warn("extraneous --line-numbers argument passed; --mypy implies --line-numbers")
 
@@ -278,6 +282,7 @@ class Command(object):
                 or args.tutorial
                 or args.docs
                 or args.watch
+                or args.site_install
                 or args.jupyter is not None
                 or args.mypy == [mypy_install_arg]
             )
@@ -838,3 +843,11 @@ class Command(object):
             finally:
                 observer.stop()
                 observer.join()
+
+    def site_install(self):
+        """Add coconut.pth to site-packages."""
+        from distutils.sysconfig import get_python_lib
+
+        python_lib = fixpath(get_python_lib())
+        shutil.copy(coconut_pth_file, python_lib)
+        logger.show_sig("Added %s to %s." % (os.path.basename(coconut_pth_file), python_lib))

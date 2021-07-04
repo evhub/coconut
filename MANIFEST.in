@@ -1,6 +1,7 @@
 global-include *.py
 global-include *.pyi
 global-include *.py_template
+global-include *.pth
 global-include *.txt
 global-include *.rst
 global-include *.md

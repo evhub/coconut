@@ -36,6 +36,8 @@ from coconut.constants import (
     search_terms,
     script_names,
     license_name,
+    exclude_install_dirs,
+    pygments_lexers,
 )
 from coconut.install_utils import get_kernel_data_files
 from coconut.requirements import (
@@ -65,10 +67,7 @@ setuptools.setup(
     install_requires=requirements,
     extras_require=extras,
     packages=setuptools.find_packages(
-        exclude=[
-            "docs",
-            "tests",
-        ],
+        exclude=list(exclude_install_dirs),
     ),
     include_package_data=True,
     zip_safe=False,
@@ -80,11 +79,7 @@ setuptools.setup(
             script + "-run = coconut.main:main_run"
             for script in script_names
         ],
-        "pygments.lexers": [
-            "coconut = coconut.highlighter:CoconutLexer",
-            "coconut_python = coconut.highlighter:CoconutPythonLexer",
-            "coconut_pycon = coconut.highlighter:CoconutPythonConsoleLexer",
-        ],
+        "pygments.lexers": list(pygments_lexers),
     },
     classifiers=list(classifiers),
     keywords=list(search_terms),

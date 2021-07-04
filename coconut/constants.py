@@ -391,6 +391,8 @@ mypy_builtin_regex = re.compile(r"\b(reveal_type|reveal_locals|TYPE_CHECKING)\b"
 interpreter_uses_auto_compilation = True
 interpreter_uses_coconut_breakpoint = True
 
+coconut_pth_file = os.path.join(base_dir, "command", "resources", "zcoconut.pth")
+
 # -----------------------------------------------------------------------------------------------------------------------
 # HIGHLIGHTER CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -556,7 +558,7 @@ all_reqs = {
         ("trollius", "py2"),
     ),
     "dev": (
-        "pre-commit",
+        ("pre-commit", "py3"),
         "requests",
         "vprof",
     ),
@@ -579,7 +581,7 @@ all_reqs = {
 min_versions = {
     "pyparsing": (2, 4, 7),
     "cPyparsing": (2, 4, 5, 0, 1, 2),
-    "pre-commit": (2,),
+    ("pre-commit", "py3"): (2,),
     "recommonmark": (0, 7),
     "psutil": (5,),
     "jupyter": (1, 0),
@@ -751,6 +753,11 @@ search_terms = (
     "overrides",
 ) + coconut_specific_builtins + magic_methods + exceptions
 
+exclude_install_dirs = (
+    "docs",
+    "tests",
+)
+
 script_names = (
     "coconut",
     ("coconut-develop" if DEVELOP else "coconut-release"),
@@ -758,6 +765,12 @@ script_names = (
     "coconut-py" + str(sys.version_info[0]) + "." + str(sys.version_info[1]),
 ) + tuple(
     "coconut-v" + ".".join(version_tuple[:i]) for i in range(1, len(version_tuple) + 1)
+)
+
+pygments_lexers = (
+    "coconut = coconut.highlighter:CoconutLexer",
+    "coconut_python = coconut.highlighter:CoconutPythonLexer",
+    "coconut_pycon = coconut.highlighter:CoconutPythonConsoleLexer",
 )
 
 requests_sleep_times = (0, 0.1, 0.2, 0.3, 0.4, 1)

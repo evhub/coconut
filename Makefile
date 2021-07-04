@@ -3,6 +3,20 @@ dev: clean
 	python -m pip install --upgrade setuptools wheel pip pytest_remotedata
 	python -m pip install --upgrade -e .[dev]
 	pre-commit install -f --install-hooks
+	coconut --site-install
+
+.PHONY: dev-py2
+dev-py2: clean
+	python2 -m pip install --upgrade setuptools wheel pip pytest_remotedata
+	python2 -m pip install --upgrade -e .[dev]
+	coconut --site-install
+
+.PHONY: dev-py3
+dev-py3: clean
+	python3 -m pip install --upgrade setuptools wheel pip pytest_remotedata
+	python3 -m pip install --upgrade -e .[dev]
+	pre-commit install -f --install-hooks
+	coconut --site-install
 
 .PHONY: install
 install:
