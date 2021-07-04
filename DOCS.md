@@ -171,6 +171,9 @@ optional arguments:
   --recursion-limit limit, --recursionlimit limit
                         set maximum recursion depth in compiler (defaults to
                         2000)
+  --site-install, --siteinstall
+                        set up coconut.convenience to be imported on Python
+                        start
   --verbose             print verbose debug output
   --trace               print verbose parsing data (only available in coconut-
                         develop)
@@ -2718,7 +2721,7 @@ Recommended usage is as a debugging tool, where the code `from coconut import em
 
 ### Automatic Compilation
 
-If you don't care about the exact compilation parameters you want to use, automatic compilation lets Coconut take care of everything for you. If you make sure to import [`coconut.convenience`](#coconut-convenience) before you import anything else, Coconut will check each of your imports to see if you are attempting to import a `.coco` file and, if so, automatically compile it for you. Note that, for Coconut to know what file you are trying to import, it will need to be accessible via `sys.path`, just like a normal import.
+If you don't care about the exact compilation parameters you want to use, automatic compilation lets Coconut take care of everything for you. Automatic compilation can be enabled either by importing [`coconut.convenience`](#coconut-convenience) before you import anything else, or by running `coconut --site-install`. Once automatic compilation is enabled, Coconut will check each of your imports to see if you are attempting to import a `.coco` file and, if so, automatically compile it for you. Note that, for Coconut to know what file you are trying to import, it will need to be accessible via `sys.path`, just like a normal import.
 
 Automatic compilation always compiles modules and packages in-place, and always uses `--target sys`. Automatic compilation is always available in the Coconut interpreter, and, if using the Coconut interpreter, a `reload` built-in is provided to easily reload imported modules. Additionally, the interpreter always allows importing from the current working directory, letting you easily compile and play around with a `.coco` file simply by running the Coconut interpreter and importing it.
 
@@ -2728,7 +2731,7 @@ While automatic compilation is the preferred method for dynamically compiling Co
 ```coconut
 # coding: coconut
 ```
-declaration which can be added to `.py` files to have them treated as Coconut files instead. To use such a coding declaration, you'll need to `import coconut.convenience` at some point before you first attempt to import a file with a `# coding: coconut` declaration. Like automatic compilation, compilation is always done with `--target sys` and is always available from the Coconut interpreter.
+declaration which can be added to `.py` files to have them treated as Coconut files instead. To use such a coding declaration, you'll need to either run `coconut --site-install` or `import coconut.convenience` at some point before you first attempt to import a file with a `# coding: coconut` declaration. Like automatic compilation, compilation is always done with `--target sys` and is always available from the Coconut interpreter.
 
 ### `coconut.convenience`
 

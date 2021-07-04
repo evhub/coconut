@@ -241,6 +241,12 @@ arguments.add_argument(
 )
 
 arguments.add_argument(
+    "--site-install", "--siteinstall",
+    action="store_true",
+    help="set up coconut.convenience to be imported on Python start",
+)
+
+arguments.add_argument(
     "--verbose",
     action="store_true",
     help="print verbose debug output",

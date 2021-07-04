@@ -191,6 +191,9 @@ extras["dev"] = uniqueify_all(
     get_reqs("dev"),
 )
 
+if not PY34:
+    extras["dev"] = unique_wrt(extras["dev"], extras["mypy"])
+
 if PURE_PYTHON:
     # override necessary for readthedocs
     requirements += get_reqs("purepython")
