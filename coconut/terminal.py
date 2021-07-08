@@ -212,9 +212,13 @@ class Logger(object):
                 del new_vars[v]
             printerr(message, new_vars)
 
-    def get_error(self):
+    def get_error(self, err=None):
         """Properly formats the current error."""
-        exc_info = sys.exc_info()
+        if err is None:
+            exc_info = sys.exc_info()
+        else:
+            exc_info = type(err), err, err.__traceback__
+
         if exc_info[0] is None:
             return None
         else:
@@ -244,9 +248,9 @@ class Logger(object):
             except Exception:
                 self.display_exc()
 
-    def display_exc(self):
+    def display_exc(self, err=None):
         """Properly prints an exception in the exception context."""
-        errmsg = self.get_error()
+        errmsg = self.get_error(err)
         if errmsg is not None:
             if self.path is not None:
                 errmsg_lines = ["in " + self.path + ":"]
@@ -257,10 +261,10 @@ class Logger(object):
                 errmsg = "\n".join(errmsg_lines)
             printerr(errmsg)
 
-    def log_exc(self):
+    def log_exc(self, err=None):
         """Display an exception only if --verbose."""
         if self.verbose:
-            self.display_exc()
+            self.display_exc(err)
 
     def log_cmd(self, args):
         """Logs a console command if --verbose."""

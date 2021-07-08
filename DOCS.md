@@ -2389,7 +2389,7 @@ In functional programming, `fmap(func, obj)` takes a data type `obj` and returns
 
 `fmap` can also be used on built-ins such as `str`, `list`, `set`, and `dict` as a variant of `map` that returns back an object of the same type. The behavior of `fmap` for a given object can be overridden by defining an `__fmap__(self, func)` method that will be called whenever `fmap` is invoked on that object.
 
-For `dict`, or any other `collections.abc.Mapping`, `fmap` will be called on the mapping's `.items()` instead of the default iteration through its `.keys()`.
+For `dict`, or any other `collections.abc.Mapping`, `fmap` will `starmap` over the mapping's `.items()` instead of the default iteration through its `.keys()`.
 
 As an additional special case, for [`numpy`](http://www.numpy.org/) and [`pandas`](https://pandas.pydata.org/) objects, `fmap` will use [`np.vectorize`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.vectorize.html) to produce the result.
 

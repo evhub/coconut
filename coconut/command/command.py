@@ -109,7 +109,7 @@ class Command(object):
         self.prompt = Prompt()
 
     def start(self, run=False):
-        """Process command-line arguments."""
+        """Endpoint for coconut and coconut-run."""
         if run:
             args, argv = [], []
             # for coconut-run, all args beyond the source file should be wrapped in an --argv

@@ -2099,7 +2099,7 @@ if not {check_var}:
                 disabled_until_level = level
 
             # check if there is anything that stores a scope reference, and if so,
-            # disable TRE, since it can't handle that
+            #  disable TRE, since it can't handle that
             if attempt_tre and match_in(self.stores_scope, line):
                 attempt_tre = False
 
