@@ -23,6 +23,7 @@ import sys
 import os
 import shutil
 import json
+import traceback
 
 from coconut.constants import (
     fixpath,
@@ -31,6 +32,7 @@ from coconut.constants import (
     icoconut_custom_kernel_dir,
     icoconut_custom_kernel_install_loc,
     icoconut_custom_kernel_file_loc,
+    WINDOWS,
 )
 
 
@@ -61,9 +63,19 @@ def install_custom_kernel(executable=None):
     make_custom_kernel(executable)
     kernel_source = os.path.join(icoconut_custom_kernel_dir, "kernel.json")
     kernel_dest = fixpath(os.path.join(sys.exec_prefix, icoconut_custom_kernel_install_loc))
-    if not os.path.exists(kernel_dest):
-        os.makedirs(kernel_dest)
-    shutil.copy(kernel_source, kernel_dest)
+    try:
+        if not os.path.exists(kernel_dest):
+            os.makedirs(kernel_dest)
+        shutil.copy(kernel_source, kernel_dest)
+    except OSError:
+        traceback.print_exc()
+        errmsg = "Coconut Jupyter kernel installation failed due to above error"
+        if WINDOWS:
+            print("(try again from a shell that is run as adminstrator)")
+        else:
+            print("(try again with 'sudo')")
+        errmsg += "."
+        print(errmsg)
     return kernel_dest
 
 
