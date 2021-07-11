@@ -82,13 +82,13 @@ class CoconutLexer(Python3Lexer):
     tokens["root"] = [
         (r"|".join(new_operators), Operator),
         (
-            r'(?<!\\)(match)?((?:\s|\\\s)+)(data)((?:\s|\\\s)+)',
+            r'(?<!\\)(:?match)?((?:\s|\\\s)+)(:?data)((?:\s|\\\s)+)',
             bygroups(Keyword, Text, Keyword, Text), py_str("classname"),
         ),
         (r'def(?=\s*\()', Keyword),
     ] + tokens["root"]
     tokens["keywords"] += [
-        (words(reserved_vars, prefix=r"(?<!\\)", suffix=r"\b"), Keyword),
+        (words(reserved_vars, prefix=r"(?<!\\):?", suffix=r"\b"), Keyword),
     ]
     tokens["builtins"] += [
         (words(coconut_specific_builtins, suffix=r"\b"), Name.Builtin),
@@ -98,7 +98,7 @@ class CoconutLexer(Python3Lexer):
         (r"0b[01_]+", Number.Integer),
         (r"0o[0-7_]+", Number.Integer),
         (r"0x[\da-fA-F_]+", Number.Integer),
-        (r"\d[\d_]*(\.\d[\d_]*)?((e|E)[\d_]+)?(j|J)?", Number.Integer),
+        (r"\d[\d_]*(\.\d[\d_]*)?((e|E)[\d_]+)?(j|J|i|I)?", Number.Integer),
     ] + tokens["numbers"]
     tokens["magicfuncs"] += [
         (words(magic_methods, suffix=r"\b"), Name.Function.Magic),

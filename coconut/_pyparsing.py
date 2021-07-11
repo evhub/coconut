@@ -22,7 +22,7 @@ from coconut.root import *  # NOQA
 import os
 import traceback
 import functools
-import warnings
+from warnings import warn
 
 from coconut.constants import (
     use_fast_pyparsing_reprs,
@@ -91,8 +91,8 @@ if cur_ver is None or cur_ver < min_ver:
     )
 elif cur_ver >= max_ver:
     max_ver_str = ver_tuple_to_str(max_ver)
-    warnings.warn(
-        "This version of Coconut was built for pyparsing/cPyparsing version < " + max_ver_str
+    warn(
+        "This version of Coconut was built for pyparsing/cPyparsing versions < " + max_ver_str
         + ("; got " + PYPARSING_INFO if PYPARSING_INFO is not None else "")
         + " (run 'pip install " + PYPARSING_PACKAGE + "<" + max_ver_str + "' to fix)",
     )

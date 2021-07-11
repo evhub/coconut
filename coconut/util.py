@@ -25,6 +25,7 @@ import shutil
 import json
 import traceback
 from zlib import crc32
+from warnings import warn
 
 from coconut.constants import (
     fixpath,
@@ -123,7 +124,7 @@ def install_custom_kernel(executable=None):
     except OSError:
         existing_kernel = os.path.join(kernel_dest, "kernel.json")
         if os.path.exists(existing_kernel):
-            errmsg = "Warning: Failed to update Coconut Jupyter kernel installation"
+            errmsg = "Failed to update Coconut Jupyter kernel installation; the 'coconut' kernel might not work properly as a result"
         else:
             traceback.print_exc()
             errmsg = "Coconut Jupyter kernel installation failed due to above error"
@@ -132,7 +133,7 @@ def install_custom_kernel(executable=None):
         else:
             errmsg += " (try again with 'sudo')"
         errmsg += "."
-        printerr(errmsg)
+        warn(errmsg)
     return kernel_dest
 
 
