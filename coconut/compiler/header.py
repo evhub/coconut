@@ -24,13 +24,13 @@ from functools import partial
 
 from coconut.root import _indent
 from coconut.constants import (
-    univ_open,
     hash_prefix,
     tabideal,
     default_encoding,
     template_ext,
     justify_len,
 )
+from coconut.util import univ_open
 from coconut.terminal import internal_assert
 from coconut.compiler.util import (
     get_target_info,

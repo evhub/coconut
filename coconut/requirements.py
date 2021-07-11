@@ -29,15 +29,17 @@ from coconut.constants import (
     IPY,
     WINDOWS,
     PURE_PYTHON,
-    ver_str_to_tuple,
-    ver_tuple_to_str,
-    get_next_version,
     all_reqs,
     min_versions,
     max_versions,
     pinned_reqs,
     requests_sleep_times,
     embed_on_internal_exc,
+)
+from coconut.util import (
+    ver_str_to_tuple,
+    ver_tuple_to_str,
+    get_next_version,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------

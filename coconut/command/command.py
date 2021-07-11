@@ -32,12 +32,8 @@ from coconut.exceptions import (
     CoconutException,
     CoconutInternalException,
 )
-from coconut.terminal import (
-    logger,
-    printerr,
-)
+from coconut.terminal import logger
 from coconut.constants import (
-    univ_open,
     fixpath,
     code_exts,
     comp_ext,
@@ -56,11 +52,15 @@ from coconut.constants import (
     mypy_silent_err_prefixes,
     mypy_err_infixes,
     mypy_install_arg,
-    ver_tuple_to_str,
     mypy_builtin_regex,
     coconut_pth_file,
 )
-from coconut.install_utils import install_custom_kernel
+from coconut.util import (
+    printerr,
+    univ_open,
+    ver_tuple_to_str,
+    install_custom_kernel,
+)
 from coconut.command.util import (
     writefile,
     readfile,

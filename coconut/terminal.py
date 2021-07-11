@@ -40,6 +40,7 @@ from coconut.constants import (
     packrat_cache,
     embed_on_internal_exc,
 )
+from coconut.util import printerr
 from coconut.exceptions import (
     CoconutWarning,
     CoconutException,
@@ -50,11 +51,6 @@ from coconut.exceptions import (
 # -----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
 # -----------------------------------------------------------------------------------------------------------------------
-
-
-def printerr(*args):
-    """Prints to standard error."""
-    print(*args, file=sys.stderr)
 
 
 def format_error(err_type, err_value, err_trace=None):

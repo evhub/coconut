@@ -25,7 +25,6 @@ import string
 import platform
 import re
 import datetime as dt
-from zlib import crc32
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -35,44 +34,6 @@ from zlib import crc32
 def fixpath(path):
     """Uniformly format a path."""
     return os.path.normcase(os.path.normpath(os.path.realpath(os.path.expanduser(path))))
-
-
-def univ_open(filename, opentype="r+", encoding=None, **kwargs):
-    """Open a file using default_encoding."""
-    if encoding is None:
-        encoding = default_encoding
-    if "b" not in opentype:
-        kwargs["encoding"] = encoding
-    # we use io.open from coconut.root here
-    return open(filename, opentype, **kwargs)
-
-
-def ver_tuple_to_str(req_ver):
-    """Converts a requirement version tuple into a version string."""
-    return ".".join(str(x) for x in req_ver)
-
-
-def ver_str_to_tuple(ver_str):
-    """Convert a version string into a version tuple."""
-    out = []
-    for x in ver_str.split("."):
-        try:
-            x = int(x)
-        except ValueError:
-            pass
-        out.append(x)
-    return tuple(out)
-
-
-def get_next_version(req_ver, point_to_increment=-1):
-    """Get the next version after the given version."""
-    return req_ver[:point_to_increment] + (req_ver[point_to_increment] + 1,)
-
-
-def checksum(data):
-    """Compute a checksum of the given data.
-    Used for computing __coconut_hash__."""
-    return crc32(data) & 0xffffffff  # necessary for cross-compatibility
 
 
 # -----------------------------------------------------------------------------------------------------------------------

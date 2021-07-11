@@ -58,13 +58,13 @@ from coconut.constants import (
     match_to_args_var,
     match_to_kwargs_var,
     py3_to_py2_stdlib,
-    checksum,
     reserved_prefix,
     function_match_error_var,
     legal_indent_chars,
     format_var,
     replwrapper,
 )
+from coconut.util import checksum
 from coconut.exceptions import (
     CoconutException,
     CoconutSyntaxError,
