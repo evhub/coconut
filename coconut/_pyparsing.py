@@ -30,11 +30,13 @@ from coconut.constants import (
     default_whitespace_chars,
     varchars,
     min_versions,
+    pure_python_env_var,
+    PURE_PYTHON,
+)
+from coconut.util import (
     ver_str_to_tuple,
     ver_tuple_to_str,
     get_next_version,
-    pure_python_env_var,
-    PURE_PYTHON,
 )
 
 # warning: do not name this file cPyparsing or pyparsing or it might collide with the following imports

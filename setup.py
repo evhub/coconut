@@ -26,7 +26,6 @@ from coconut.root import *  # NOQA
 import setuptools
 
 from coconut.constants import (
-    univ_open,
     package_name,
     author,
     author_email,
@@ -39,7 +38,10 @@ from coconut.constants import (
     exclude_install_dirs,
     pygments_lexers,
 )
-from coconut.install_utils import get_kernel_data_files
+from coconut.util import (
+    univ_open,
+    get_kernel_data_files,
+)
 from coconut.requirements import (
     using_modern_setuptools,
     requirements,
