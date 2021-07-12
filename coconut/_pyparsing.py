@@ -20,6 +20,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import os
+import sys
 import traceback
 import functools
 from warnings import warn
@@ -87,14 +88,14 @@ if cur_ver is None or cur_ver < min_ver:
     raise ImportError(
         "Coconut requires pyparsing/cPyparsing version >= " + min_ver_str
         + ("; got " + PYPARSING_INFO if PYPARSING_INFO is not None else "")
-        + " (run 'pip install --upgrade " + PYPARSING_PACKAGE + "' to fix)",
+        + " (run '{python} -m pip install --upgrade {package}' to fix)".format(python=sys.executable, package=PYPARSING_PACKAGE),
     )
 elif cur_ver >= max_ver:
     max_ver_str = ver_tuple_to_str(max_ver)
     warn(
         "This version of Coconut was built for pyparsing/cPyparsing versions < " + max_ver_str
         + ("; got " + PYPARSING_INFO if PYPARSING_INFO is not None else "")
-        + " (run 'pip install " + PYPARSING_PACKAGE + "<" + max_ver_str + "' to fix)",
+        + " (run '{python} -m pip install {package}<{max_ver}' to fix)".format(python=sys.executable, package=PYPARSING_PACKAGE, max_ver=max_ver_str),
     )
 
 

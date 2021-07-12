@@ -53,7 +53,7 @@ from coconut.requirements import (
 # -----------------------------------------------------------------------------------------------------------------------
 
 if not using_modern_setuptools and "bdist_wheel" in sys.argv:
-    raise RuntimeError("bdist_wheel not supported for setuptools versions < 18 (run 'pip install --upgrade setuptools' to fix)")
+    raise RuntimeError("bdist_wheel not supported for setuptools versions < 18 (run '{python} -m pip install --upgrade setuptools' to fix)".format(python=sys.executable))
 
 with univ_open("README.rst", "r") as readme_file:
     readme = readme_file.read()

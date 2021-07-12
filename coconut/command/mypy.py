@@ -19,6 +19,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
+import sys
 import traceback
 
 from coconut.exceptions import CoconutException
@@ -29,7 +30,7 @@ try:
 except ImportError:
     raise CoconutException(
         "--mypy flag requires MyPy library",
-        extra="run 'pip install coconut[mypy]' to fix",
+        extra="run '{python} -m pip install coconut[mypy]' to fix".format(python=sys.executable),
     )
 
 # -----------------------------------------------------------------------------------------------------------------------

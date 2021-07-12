@@ -20,6 +20,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import os
+import sys
 import traceback
 
 try:
@@ -65,7 +66,7 @@ except ImportError:
     else:
         raise CoconutException(
             "--jupyter flag requires Jupyter library",
-            extra="run 'pip install coconut[jupyter]' to fix",
+            extra="run '{python} -m pip install coconut[jupyter]' to fix".format(python=sys.executable),
         )
 else:
     LOAD_MODULE = True

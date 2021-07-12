@@ -19,6 +19,8 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
+import sys
+
 from coconut.exceptions import CoconutException
 
 try:
@@ -28,7 +30,7 @@ try:
 except ImportError:
     raise CoconutException(
         "--watch flag requires watchdog library",
-        extra="run 'pip install coconut[watch]' to fix",
+        extra="run '{python} -m pip install coconut[watch]' to fix".format(python=sys.executable),
     )
 
 # -----------------------------------------------------------------------------------------------------------------------
