@@ -99,7 +99,7 @@ except ImportError:
 except KeyError:
     complain(
         ImportError(
-            "detected outdated pygments version (run 'pip install --upgrade pygments' to fix)",
+            "detected outdated pygments version (run '{python} -m pip install --upgrade pygments' to fix)".format(python=sys.executable),
         ),
     )
     prompt_toolkit = None
@@ -204,7 +204,7 @@ def kill_children():
     except ImportError:
         logger.warn(
             "missing psutil; --jobs may not properly terminate",
-            extra="run 'pip install coconut[jobs]' to fix",
+            extra="run '{python} -m pip install coconut[jobs]' to fix".format(python=sys.executable),
         )
     else:
         parent = psutil.Process()

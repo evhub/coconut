@@ -134,7 +134,9 @@ def install_custom_kernel(executable=None):
             errmsg += " (try again with 'sudo')"
         errmsg += "."
         warn(errmsg)
-    return kernel_dest
+        return None
+    else:
+        return kernel_dest
 
 
 def make_custom_kernel(executable=None):

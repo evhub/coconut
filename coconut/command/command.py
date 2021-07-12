@@ -711,7 +711,7 @@ class Command(object):
             try:
                 self.run_silent_cmd(user_install_args)
             except CalledProcessError:
-                logger.warn("kernel install failed on command'", " ".join(install_args))
+                logger.warn("kernel install failed on command", " ".join(install_args))
                 self.register_error(errmsg="Jupyter error")
                 return False
         return True
@@ -722,14 +722,14 @@ class Command(object):
         try:
             self.run_silent_cmd(remove_args)
         except CalledProcessError:
-            logger.warn("kernel removal failed on command'", " ".join(remove_args))
+            logger.warn("kernel removal failed on command", " ".join(remove_args))
             self.register_error(errmsg="Jupyter error")
             return False
         return True
 
     def install_default_jupyter_kernels(self, jupyter, kernel_list):
         """Install icoconut default kernels."""
-        logger.show_sig("Installing Coconut Jupyter kernels...")
+        logger.show_sig("Installing Jupyter kernels '" + "', '".join(icoconut_default_kernel_names) + "'...")
         overall_success = True
 
         for old_kernel_name in icoconut_old_kernel_names:
@@ -742,7 +742,9 @@ class Command(object):
             overall_success = overall_success and success
 
         if overall_success:
-            logger.show_sig("Successfully installed Jupyter kernels: " + ", ".join((icoconut_custom_kernel_name,) + icoconut_default_kernel_names))
+            return icoconut_default_kernel_names
+        else:
+            return []
 
     def get_jupyter_kernels(self, jupyter):
         """Get the currently installed Jupyter kernels."""
@@ -770,19 +772,25 @@ class Command(object):
 
         # get a list of installed kernels
         kernel_list = self.get_jupyter_kernels(jupyter)
+        newly_installed_kernels = []
 
-        # always update the custom kernel, but only reinstall it if it isn't already there
+        # always update the custom kernel, but only reinstall it if it isn't already there or given no args
         custom_kernel_dir = install_custom_kernel()
-        if icoconut_custom_kernel_name not in kernel_list:
-            self.install_jupyter_kernel(jupyter, custom_kernel_dir)
+        if custom_kernel_dir is None:
+            logger.warn("failed to install {name!r} Jupyter kernel".format(name=icoconut_custom_kernel_name), extra="falling back to 'coconut_pyX' kernels instead")
+        elif icoconut_custom_kernel_name not in kernel_list or not args:
+            logger.show_sig("Installing Jupyter kernel {name!r}...".format(name=icoconut_custom_kernel_name))
+            if self.install_jupyter_kernel(jupyter, custom_kernel_dir):
+                newly_installed_kernels.append(icoconut_custom_kernel_name)
 
         if not args:
             # install default kernels if given no args
-            self.install_default_jupyter_kernels(jupyter, kernel_list)
+            newly_installed_kernels += self.install_default_jupyter_kernels(jupyter, kernel_list)
+            run_args = None
 
         else:
             # use the custom kernel if it exists
-            if icoconut_custom_kernel_name in kernel_list:
+            if icoconut_custom_kernel_name in kernel_list or icoconut_custom_kernel_name in newly_installed_kernels:
                 kernel = icoconut_custom_kernel_name
 
             # otherwise determine which default kernel to use and install them if necessary
@@ -795,8 +803,8 @@ class Command(object):
                 else:
                     kernel = "coconut_py" + ver
                 if kernel not in kernel_list:
-                    self.install_default_jupyter_kernels(jupyter, kernel_list)
-                logger.warn("could not find 'coconut' kernel; using " + repr(kernel) + " kernel instead")
+                    newly_installed_kernels += self.install_default_jupyter_kernels(jupyter, kernel_list)
+                logger.warn("could not find {name!r} kernel; using {kernel!r} kernel instead".format(name=icoconut_custom_kernel_name, kernel=kernel))
 
             # pass the kernel to the console or otherwise just launch Jupyter now that we know our kernel is available
             if args[0] == "console":
@@ -804,6 +812,11 @@ class Command(object):
             else:
                 run_args = jupyter + args
 
+        if newly_installed_kernels:
+            logger.show_sig("Successfully installed Jupyter kernels: '" + "', '".join(newly_installed_kernels) + "'")
+
+        # run the Jupyter command
+        if run_args is not None:
             self.register_error(run_cmd(run_args, raise_errs=False), errmsg="Jupyter error")
 
     def watch(self, source, write=True, package=True, run=False, force=False):
