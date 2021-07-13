@@ -683,20 +683,24 @@ def _coconut_get_function_match_error():
     ctx.taken = True
     return ctx.exc_class
 class _coconut_base_pattern_func(_coconut_base_hashable):
-    __slots__ = ("FunctionMatchError", "__doc__", "patterns")
+    __slots__ = ("FunctionMatchError", "patterns", "__doc__", "__name__", "__qualname__")
     _coconut_is_match = True
     def __init__(self, *funcs):
         self.FunctionMatchError = _coconut.type(_coconut_py_str("MatchError"), (_coconut_MatchError,), {empty_dict})
-        self.__doc__ = None
         self.patterns = []
+        self.__doc__ = None
+        self.__name__ = None
+        self.__qualname__ = None
         for func in funcs:
             self.add_pattern(func)
     def add_pattern(self, func):
-        self.__doc__ = _coconut.getattr(func, "__doc__", None) or self.__doc__
         if _coconut.isinstance(func, _coconut_base_pattern_func):
             self.patterns += func.patterns
         else:
             self.patterns.append(func)
+        self.__doc__ = _coconut.getattr(func, "__doc__", self.__doc__)
+        self.__name__ = _coconut.getattr(func, "__name__", self.__name__)
+        self.__qualname__ = _coconut.getattr(func, "__qualname__", self.__qualname__)
     def __call__(self, *args, **kwargs):
         for func in self.patterns[:-1]:
             try:
