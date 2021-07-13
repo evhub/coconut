@@ -48,10 +48,10 @@ format: dev
 	pre-commit autoupdate
 	pre-commit run --all-files
 
-# test-all takes a very long time and should usually only be run by Travis
+# test-all takes a very long time and should usually only be run by CI
 .PHONY: test-all
 test-all: clean
-	pytest --strict -s ./tests
+	pytest --strict-markers -s ./tests
 
 # for quickly testing nearly everything locally, just use test-basic
 .PHONY: test-basic

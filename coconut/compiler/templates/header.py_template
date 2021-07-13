@@ -76,8 +76,8 @@ def _coconut_tco(func):{COMMENT._coconut_tco_func_attr_is_used_in_main_coco}
             call_func, args, kwargs = result.func, result.args, result.kwargs
     tail_call_optimized_func._coconut_tco_func = func
     tail_call_optimized_func.__module__ = _coconut.getattr(func, "__module__", None)
-    tail_call_optimized_func.__name__ = _coconut.getattr(func, "__name__", "<coconut tco function (pass --no-tco to remove)>")
-    tail_call_optimized_func.__qualname__ = _coconut.getattr(func, "__qualname__", tail_call_optimized_func.__name__)
+    tail_call_optimized_func.__name__ = _coconut.getattr(func, "__name__", None)
+    tail_call_optimized_func.__qualname__ = _coconut.getattr(func, "__qualname__", None)
     _coconut_tco_func_dict[_coconut.id(tail_call_optimized_func)] = _coconut.weakref.ref(tail_call_optimized_func)
     return tail_call_optimized_func
 def _coconut_igetitem(iterable, index):
