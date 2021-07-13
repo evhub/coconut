@@ -1636,6 +1636,8 @@ match def func(...):
 ```
 syntax using the [`addpattern`](#addpattern) decorator.
 
+If you want to put a decorator on an `addpattern def` function, make sure to put it on the _last_ pattern function.
+
 ##### Example
 
 **Coconut:**
@@ -1926,6 +1928,8 @@ def addpattern(base_func, *, allow_any_func=True):
         return add_pattern_func
     return pattern_adder
 ```
+
+If you want to give an `addpattern` function a docstring, make sure to put it on the _last_ function.
 
 Note that the function taken by `addpattern` must be a pattern-matching function. If `addpattern` receives a non pattern-matching function, the function with not raise `MatchError`, and `addpattern` won't be able to detect the failed match. Thus, if a later function was meant to be called, `addpattern` will not know that the first match failed and the correct path will never be reached.
 
