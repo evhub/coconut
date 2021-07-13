@@ -302,6 +302,30 @@ return _coconut.types.MethodType(self.func, obj)
         ),
         tco_comma="_coconut_tail_call, _coconut_tco, " if not no_tco else "",
         call_set_names_comma="_coconut_call_set_names, " if target_info < (3, 6) else "",
+        pattern_func_slots=pycondition(
+            (3, 7),
+            if_lt=r'''
+__slots__ = ("FunctionMatchError", "patterns", "__doc__", "__name__")
+            ''',
+            if_ge=r'''
+__slots__ = ("FunctionMatchError", "patterns", "__doc__", "__name__", "__qualname__")
+            ''',
+            indent=1,
+        ),
+        set_qualname_none=pycondition(
+            (3, 7),
+            if_ge=r'''
+self.__qualname__ = None
+            ''',
+            indent=2,
+        ),
+        set_qualname_func=pycondition(
+            (3, 7),
+            if_ge=r'''
+self.__qualname__ = _coconut.getattr(func, "__qualname__", self.__qualname__)
+            ''',
+            indent=2,
+        ),
     )
 
     # second round for format dict elements that use the format dict
