@@ -87,8 +87,8 @@ ignore_atexit_errors_with = (
 )
 
 kernel_installation_msg = (
-    "Coconut: Successfully installed Jupyter kernels: "
-    + ", ".join((icoconut_custom_kernel_name,) + icoconut_default_kernel_names)
+    "Coconut: Successfully installed Jupyter kernels: '"
+    + "', '".join((icoconut_custom_kernel_name,) + icoconut_default_kernel_names) + "'"
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
