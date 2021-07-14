@@ -1658,7 +1658,7 @@ class Grammar(object):
         ),
     ) + rparen.suppress()
 
-    with_item = addspace(test - Optional(keyword("as") - name))
+    with_item = addspace(test + Optional(keyword("as") + base_assign_item))
     with_item_list = Group(maybeparens(lparen, tokenlist(with_item, comma), rparen))
     with_stmt_ref = keyword("with").suppress() - with_item_list - suite
     with_stmt = Forward()

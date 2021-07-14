@@ -430,6 +430,11 @@ def suite_test() -> bool:
         assert two == 2
     with (context_produces(1)) as one:
         assert one == 1
+    with context_produces((1, 2)) as (x, y):
+        assert (x, y) == (1, 2)
+    one_list = [0]
+    with context_produces(1) as one_list[0]:
+        assert one_list[0] == 1
     assert 1 ?? raise_exc() == 1
     try:
         assert None ?? raise_exc()
