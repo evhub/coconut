@@ -683,10 +683,10 @@ class Grammar(object):
     star = ~dubstar + Literal("*")
     at = Literal("@")
     arrow = Literal("->") | fixto(Literal("\u2192"), "->")
+    colon_eq = Literal(":=")
     unsafe_dubcolon = Literal("::")
     unsafe_colon = Literal(":")
-    colon = ~unsafe_dubcolon + unsafe_colon
-    colon_eq = Literal(":=")
+    colon = ~unsafe_dubcolon + ~colon_eq + unsafe_colon
     semicolon = Literal(";") | invalid_syntax("\u037e", "invalid Greek question mark instead of semicolon", greedy=True)
     eq = Literal("==")
     equals = ~eq + Literal("=")
@@ -694,7 +694,7 @@ class Grammar(object):
     rbrack = Literal("]")
     lbrace = Literal("{")
     rbrace = Literal("}")
-    lbanana = Literal("(|") + ~Word(")>*?", exact=1)
+    lbanana = ~Literal("(|)") + ~Literal("(|>") + ~Literal("(|*") + ~Literal("(|?") + Literal("(|")
     rbanana = Literal("|)")
     lparen = ~lbanana + Literal("(")
     rparen = Literal(")")
@@ -714,7 +714,7 @@ class Grammar(object):
     none_star_pipe = Literal("|?*>") | fixto(Literal("?*\u21a6"), "|?*>")
     none_dubstar_pipe = Literal("|?**>") | fixto(Literal("?**\u21a6"), "|?**>")
     dotdot = (
-        ~Literal("...") + ~Literal("..>") + ~Literal("..*>") + Literal("..")
+        ~Literal("...") + ~Literal("..>") + ~Literal("..*") + Literal("..")
         | ~Literal("\u2218>") + ~Literal("\u2218*>") + fixto(Literal("\u2218"), "..")
     )
     comp_pipe = Literal("..>") | fixto(Literal("\u2218>"), "..>")
@@ -725,7 +725,7 @@ class Grammar(object):
     comp_back_dubstar_pipe = Literal("<**..") | fixto(Literal("<**\u2218"), "<**..")
     amp = Literal("&") | fixto(Literal("\u2227") | Literal("\u2229"), "&")
     caret = Literal("^") | fixto(Literal("\u22bb") | Literal("\u2295"), "^")
-    unsafe_bar = ~Literal("|>") + ~Literal("|*>") + Literal("|") | fixto(Literal("\u2228") | Literal("\u222a"), "|")
+    unsafe_bar = ~Literal("|>") + ~Literal("|*") + Literal("|") | fixto(Literal("\u2228") | Literal("\u222a"), "|")
     bar = ~rbanana + unsafe_bar
     percent = Literal("%")
     dollar = Literal("$")
@@ -753,7 +753,7 @@ class Grammar(object):
     ellipsis = Forward()
     ellipsis_ref = Literal("...") | Literal("\u2026")
 
-    lt = ~Literal("<<") + ~Literal("<=") + ~Literal("<..") + Literal("<")
+    lt = ~Literal("<<") + ~Literal("<=") + ~Literal("<|") + ~Literal("<..") + ~Literal("<*") + Literal("<")
     gt = ~Literal(">>") + ~Literal(">=") + Literal(">")
     le = Literal("<=") | fixto(Literal("\u2264"), "<=")
     ge = Literal(">=") | fixto(Literal("\u2265"), ">=")
