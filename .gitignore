@@ -108,3 +108,7 @@ ENV/
 
 # Sublime
 *.sublime-*
+
+# Coconut
+coconut/
+tests/
