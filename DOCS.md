@@ -300,7 +300,7 @@ The style issues which will cause `--strict` to throw an error are:
 
 Text editors with support for Coconut syntax highlighting are:
 
-- **VSCode**: Install [Coconut (Official)](https://marketplace.visualstudio.com/items?itemName=evhub.coconut).
+- **VSCode**: Install [Coconut (Official)](https://marketplace.visualstudio.com/items?itemName=evhub.coconut) (for **VSCodium**, install from Open VSX [here](https://open-vsx.org/extension/evhub/coconut) instead).
 - **SublimeText**: See SublimeText section below.
 - **Spyder** (or any other editor that supports **Pygments**): See Pygments section below.
 - **Vim**: See [`coconut.vim`](https://github.com/manicmaniac/coconut.vim).
