@@ -796,6 +796,11 @@ def main_test() -> bool:
         pass
     else:
         assert False
+    x = 1
+    assert f"a" f"b" == "ab" == f"a" "b" == "a" f"b"
+    assert f"{x}" f"{x}" == "11"
+    assert f"{x}" "{x}" == "1{x}"
+    assert "{x}" f"{x}" == "{x}1"
     return True
 
 def test_asyncio() -> bool:
