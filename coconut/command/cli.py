@@ -156,7 +156,7 @@ arguments.add_argument(
 arguments.add_argument(
     "--no-wrap", "--nowrap",
     action="store_true",
-    help="disable wrapping type hints in strings",
+    help="disable wrapping type annotations in strings and turn off 'from __future__ import annotations' behavior",
 )
 
 arguments.add_argument(
