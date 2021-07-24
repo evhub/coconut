@@ -669,6 +669,18 @@ def kwd_err_msg_handle(tokens):
     return 'invalid use of the keyword "' + tokens[0] + '"'
 
 
+def string_atom_handle(tokens):
+    """Handle concatenation of string literals."""
+    internal_assert(len(tokens) >= 1, "invalid string literal tokens", tokens)
+    if any(s.endswith(")") for s in tokens):  # has .format() calls
+        return "(" + " + ".join(tokens) + ")"
+    else:
+        return " ".join(tokens)
+
+
+string_atom_handle.ignore_one_token = True
+
+
 # end: HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN GRAMMAR:
@@ -1098,7 +1110,7 @@ class Grammar(object):
     paren_atom = condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
     op_atom = lparen.suppress() + op_item + rparen.suppress()
     keyword_atom = reduce(lambda acc, x: acc | keyword(x), const_vars)
-    string_atom = addspace(OneOrMore(string))
+    string_atom = attach(OneOrMore(string), string_atom_handle)
     passthrough_atom = trace(addspace(OneOrMore(passthrough)))
     set_literal = Forward()
     set_letter_literal = Forward()
