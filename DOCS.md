@@ -121,13 +121,13 @@ optional arguments:
   -v, -V, --version     print Coconut and Python version information
   -t version, --target version
                         specify target Python version (defaults to universal)
-  -i, --interact        force the interpreter to start (otherwise starts if no
-                        other command is given) (implies --run)
-  -p, --package         compile source as part of a package (defaults to only
-                        if source is a directory)
+  -i, --interact        force the interpreter to start (otherwise starts if no other command
+                        is given) (implies --run)
+  -p, --package         compile source as part of a package (defaults to only if source is a
+                        directory)
   -a, --standalone, --stand-alone
-                        compile source as standalone files (defaults to only
-                        if source is a single file)
+                        compile source as standalone files (defaults to only if source is a
+                        single file)
   -l, --line-numbers, --linenumbers
                         add line number comments for ease of debugging
   -k, --keep-lines, --keeplines
@@ -137,46 +137,42 @@ optional arguments:
   -n, --no-write, --nowrite
                         disable writing compiled Python
   -d, --display         print compiled Python
-  -q, --quiet           suppress all informational output (combine with
-                        --display to write runnable code to stdout)
+  -q, --quiet           suppress all informational output (combine with --display to write
+                        runnable code to stdout)
   -s, --strict          enforce code cleanliness standards
   --no-tco, --notco     disable tail call optimization
-  --no-wrap, --nowrap   disable wrapping type hints in strings
-  -c code, --code code  run Coconut passed in as a string (can also be piped
-                        into stdin)
+  --no-wrap, --nowrap   disable wrapping type annotations in strings and turn off 'from
+                        __future__ import annotations' behavior
+  -c code, --code code  run Coconut passed in as a string (can also be piped into stdin)
   -j processes, --jobs processes
-                        number of additional processes to use (defaults to 0)
-                        (pass 'sys' to use machine default)
-  -f, --force           force re-compilation even when source code and
-                        compilation parameters haven't changed
+                        number of additional processes to use (defaults to 0) (pass 'sys' to
+                        use machine default)
+  -f, --force           force re-compilation even when source code and compilation
+                        parameters haven't changed
   --minify              reduce size of compiled Python
   --jupyter ..., --ipython ...
-                        run Jupyter/IPython with Coconut as the kernel
-                        (remaining args passed to Jupyter)
-  --mypy ...            run MyPy on compiled Python (remaining args passed to
-                        MyPy) (implies --package)
+                        run Jupyter/IPython with Coconut as the kernel (remaining args
+                        passed to Jupyter)
+  --mypy ...            run MyPy on compiled Python (remaining args passed to MyPy) (implies
+                        --package)
   --argv ..., --args ...
-                        set sys.argv to source plus remaining args for use in
-                        the Coconut script being run
+                        set sys.argv to source plus remaining args for use in the Coconut
+                        script being run
   --tutorial            open Coconut's tutorial in the default web browser
   --docs, --documentation
-                        open Coconut's documentation in the default web
-                        browser
-  --style name          set Pygments syntax highlighting style (or 'list' to
-                        list styles) (defaults to COCONUT_STYLE environment
-                        variable if it exists, otherwise 'default')
+                        open Coconut's documentation in the default web browser
+  --style name          set Pygments syntax highlighting style (or 'list' to list styles)
+                        (defaults to COCONUT_STYLE environment variable if it exists,
+                        otherwise 'default')
   --history-file path   set history file (or '' for no file) (currently set to
-                        'c:\users\evanj\.coconut_history') (can be modified by
-                        setting COCONUT_HOME environment variable)
+                        'c:\users\evanj\.coconut_history') (can be modified by setting
+                        COCONUT_HOME environment variable)
   --recursion-limit limit, --recursionlimit limit
-                        set maximum recursion depth in compiler (defaults to
-                        2000)
+                        set maximum recursion depth in compiler (defaults to 2000)
   --site-install, --siteinstall
-                        set up coconut.convenience to be imported on Python
-                        start
+                        set up coconut.convenience to be imported on Python start
   --verbose             print verbose debug output
-  --trace               print verbose parsing data (only available in coconut-
-                        develop)
+  --trace               print verbose parsing data (only available in coconut-develop)
 ```
 
 ### Coconut Scripts
@@ -1392,7 +1388,7 @@ print(p1(5))
 
 Since Coconut syntax is a superset of Python 3 syntax, it supports [Python 3 function type annotation syntax](https://www.python.org/dev/peps/pep-0484/) and [Python 3.6 variable type annotation syntax](https://www.python.org/dev/peps/pep-0526/). By default, Coconut compiles all type annotations into Python-2-compatible type comments. If you want to keep the type annotations instead, simply pass a `--target` that supports them.
 
-Since not all supported Python versions support the [`typing`](https://docs.python.org/3/library/typing.html) module, Coconut provides the [`TYPE_CHECKING`](#type-checking) built-in for hiding your `typing` imports and `TypeVar` definitions from being executed at runtime. Furthermore, when compiling type annotations to Python 3 versions without [PEP 563](https://www.python.org/dev/peps/pep-0563/) support, Coconut wraps annotation in strings to prevent them from being evaluated at runtime (unless `--no-wrap` is passed).
+Since not all supported Python versions support the [`typing`](https://docs.python.org/3/library/typing.html) module, Coconut provides the [`TYPE_CHECKING`](#type-checking) built-in for hiding your `typing` imports and `TypeVar` definitions from being executed at runtime. Furthermore, when compiling type annotations to Python 3 versions without [PEP 563](https://www.python.org/dev/peps/pep-0563/) support, Coconut wraps annotation in strings to prevent them from being evaluated at runtime (note that `--no-wrap` disables all wrapping, including via PEP 563 support).
 
 Additionally, Coconut adds special syntax for making type annotations easier and simpler to write. When inside of a type annotation, Coconut treats certain syntax constructs differently, compiling them to type annotations instead of what they would normally represent. Specifically, Coconut applies the following transformations:
 ```coconut

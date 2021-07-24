@@ -173,7 +173,7 @@ class Comment(object):
 COMMENT = Comment()
 
 
-def process_header_args(which, target, use_hash, no_tco, strict):
+def process_header_args(which, target, use_hash, no_tco, strict, no_wrap):
     """Create the dictionary passed to str.format in the header."""
     target_startswith = one_num_ver(target)
     target_info = get_target_info(target)
@@ -385,7 +385,7 @@ except ImportError:
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-def getheader(which, target="", use_hash=None, no_tco=False, strict=False):
+def getheader(which, target, use_hash, no_tco, strict, no_wrap):
     """Generate the specified header."""
     internal_assert(
         which.startswith("package") or which in (
@@ -404,7 +404,7 @@ def getheader(which, target="", use_hash=None, no_tco=False, strict=False):
 
     # initial, __coconut__, package:n, sys, code, file
 
-    format_dict = process_header_args(which, target, use_hash, no_tco, strict)
+    format_dict = process_header_args(which, target, use_hash, no_tco, strict, no_wrap)
 
     if which == "initial" or which == "__coconut__":
         header = '''#!/usr/bin/env python{target_startswith}
@@ -428,7 +428,10 @@ def getheader(which, target="", use_hash=None, no_tco=False, strict=False):
     if target_startswith != "3":
         header += "from __future__ import print_function, absolute_import, unicode_literals, division\n"
     elif target_info >= (3, 7):
-        header += "from __future__ import generator_stop, annotations\n"
+        if no_wrap:
+            header += "from __future__ import generator_stop\n"
+        else:
+            header += "from __future__ import generator_stop, annotations\n"
     elif target_info >= (3, 5):
         header += "from __future__ import generator_stop\n"
 

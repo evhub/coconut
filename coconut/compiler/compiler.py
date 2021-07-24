@@ -331,11 +331,6 @@ class Compiler(Grammar):
         self.keep_lines = keep_lines
         self.no_tco = no_tco
         self.no_wrap = no_wrap
-        if self.no_wrap and self.target_info >= (3, 7):
-            logger.warn(
-                "--no-wrap argument has no effect on target " + ascii(target if target else "universal"),
-                extra="annotations are never wrapped on targets with PEP 563 support",
-            )
 
     def __reduce__(self):
         """Return pickling information."""
@@ -664,10 +659,11 @@ class Compiler(Grammar):
         """Get a formatted header."""
         header = getheader(
             which,
-            use_hash=use_hash,
             target=self.target,
+            use_hash=use_hash,
             no_tco=self.no_tco,
             strict=self.strict,
+            no_wrap=self.no_wrap,
         )
         if polish:
             header = self.polish(header)
