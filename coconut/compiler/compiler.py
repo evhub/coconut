@@ -1997,15 +1997,24 @@ if not {check_var}:
             else:
                 tre_recurse = func_args + " = " + mock_var + "(" + args + ")" + "\ncontinue"
             tre_check_var = self.get_temp_var("tre_check")
-            return (
-                "try:\n" + openindent
-                + tre_check_var + " = " + func_name + " is " + func_store + "\n" + closeindent
-                + "except _coconut.NameError:\n" + openindent
-                + tre_check_var + " = False\n" + closeindent
-                + "if " + tre_check_var + ":\n" + openindent
-                + tre_recurse + "\n" + closeindent
-                + "else:\n" + openindent
-                + tco_recurse + "\n" + closeindent
+            return handle_indentation(
+                """
+try:
+    {tre_check_var} = {func_name} is {func_store}
+except _coconut.NameError:
+    {tre_check_var} = False
+if {tre_check_var}:
+    {tre_recurse}
+else:
+    {tco_recurse}
+                """,
+                add_newline=True,
+            ).format(
+                tre_check_var=tre_check_var,
+                func_name=func_name,
+                func_store=func_store,
+                tre_recurse=tre_recurse,
+                tco_recurse=tco_recurse,
             )
         return attach(
             self.get_tre_return_grammar(func_name),
