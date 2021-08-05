@@ -320,8 +320,8 @@ class Compiler(Grammar):
             target = pseudo_targets[target]
         if target not in targets:
             raise CoconutException(
-                "unsupported target Python version " + ascii(target),
-                extra="supported targets are: " + ", ".join(ascii(t) for t in specific_targets + tuple(pseudo_targets)) + ", and 'sys'",
+                "unsupported target Python version " + repr(target),
+                extra="supported targets are: " + ", ".join(repr(t) for t in specific_targets + tuple(pseudo_targets)) + ", and 'sys'",
             )
         logger.log_vars("Compiler args:", locals())
         self.target = target

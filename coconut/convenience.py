@@ -65,7 +65,7 @@ def version(which="num"):
         return VERSIONS[which]
     else:
         raise CoconutException(
-            "invalid version type " + ascii(which),
+            "invalid version type " + repr(which),
             extra="valid versions are " + ", ".join(VERSIONS),
         )
 
@@ -95,7 +95,7 @@ def parse(code="", mode="sys"):
         setup()
     if mode not in PARSERS:
         raise CoconutException(
-            "invalid parse mode " + ascii(mode),
+            "invalid parse mode " + repr(mode),
             extra="valid modes are " + ", ".join(PARSERS),
         )
     return PARSERS[mode](CLI.comp)(code)
@@ -228,7 +228,7 @@ def get_coconut_encoding(encoding="coconut"):
     if not encoding.startswith("coconut"):
         return None
     if encoding != "coconut":
-        raise CoconutException("unknown Coconut encoding: " + ascii(encoding))
+        raise CoconutException("unknown Coconut encoding: " + repr(encoding))
     return codecs.CodecInfo(
         name=encoding,
         encode=encodings.utf_8.encode,

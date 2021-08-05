@@ -152,8 +152,7 @@ def evaluate_tokens(tokens, **kwargs):
 
 class ComputationNode(object):
     """A single node in the computation graph."""
-    __slots__ = ("action", "loc", "tokens", "index_of_original") + (("been_called",) if DEVELOP else ())
-    list_of_originals = []
+    __slots__ = ("action", "loc", "tokens", "original") + (("been_called",) if DEVELOP else ())
 
     def __new__(cls, action, original, loc, tokens, ignore_no_tokens=False, ignore_one_token=False, greedy=False):
         """Create a ComputionNode to return from a parse action.
@@ -167,12 +166,7 @@ class ComputationNode(object):
             return tokens[0]  # could be a ComputationNode, so we can't have an __init__
         else:
             self = super(ComputationNode, cls).__new__(cls)
-            self.action, self.loc, self.tokens = action, loc, tokens
-            try:
-                self.index_of_original = self.list_of_originals.index(original)
-            except ValueError:
-                self.index_of_original = len(self.list_of_originals)
-                self.list_of_originals.append(original)
+            self.action, self.loc, self.tokens, self.original = action, loc, tokens, original
             if DEVELOP:
                 self.been_called = False
             if greedy:
@@ -181,16 +175,11 @@ class ComputationNode(object):
                 return self
 
     @property
-    def original(self):
-        """Get the original from the originals memo."""
-        return self.list_of_originals[self.index_of_original]
-
-    @property
     def name(self):
         """Get the name of the action."""
         name = getattr(self.action, "__name__", None)
-        # ascii(action) not defined for all actions, so must only be evaluated if getattr fails
-        return name if name is not None else ascii(self.action)
+        # repr(action) not defined for all actions, so must only be evaluated if getattr fails
+        return name if name is not None else repr(self.action)
 
     def evaluate(self):
         """Get the result of evaluating the computation graph at this node."""
