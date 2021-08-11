@@ -68,6 +68,14 @@ arguments.add_argument(
 )
 
 arguments.add_argument(
+    "--and",
+    metavar=("source", "dest"),
+    nargs=2,
+    action='append',
+    help="additional source/dest pairs for compiling files",
+)
+
+arguments.add_argument(
     "-v", "-V", "--version",
     action="version",
     version=cli_version_str,

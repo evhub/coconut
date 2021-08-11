@@ -159,6 +159,22 @@ class Command(object):
                 kill_children()
             sys.exit(self.exit_code)
 
+    @staticmethod
+    def _process_source_dest_pairs(source, dest, args):
+        if dest is None:
+            if args.no_write:
+                processed_dest = False  # no dest
+            else:
+                processed_dest = True  # auto-generate dest
+        elif args.no_write:
+            raise CoconutException("destination path cannot be given when --no-write is enabled")
+        else:
+            processed_dest = args.dest
+
+        processed_source = fixpath(source)
+
+        return processed_source, processed_dest
+
     def use_args(self, args, interact=True, original_args=None):
         """Handle command-line arguments."""
         logger.quiet, logger.verbose = args.quiet, args.verbose
@@ -226,17 +242,13 @@ class Command(object):
             if args.watch and os.path.isfile(args.source):
                 raise CoconutException("source path must point to directory not file when --watch is enabled")
 
-            if args.dest is None:
-                if args.no_write:
-                    dest = False  # no dest
-                else:
-                    dest = True  # auto-generate dest
-            elif args.no_write:
-                raise CoconutException("destination path cannot be given when --no-write is enabled")
-            else:
-                dest = args.dest
-
-            source = fixpath(args.source)
+            additional_source_dest_pairs = getattr(args, 'and')
+            all_source_dest_pairs = [[args.source, args.dest], *additional_source_dest_pairs]
+            # This will always contain at least one pair, the source/dest positional args
+            processed_source_dest_pairs = [
+                _process_source_dest_pairs(args, source, dest)
+                for pair in all_source_dest_pairs
+            ]
 
             if args.package or self.mypy:
                 package = True
@@ -252,7 +264,9 @@ class Command(object):
                     raise CoconutException("could not find source path", source)
 
             with self.running_jobs(exit_on_error=not args.watch):
-                filepaths = self.compile_path(source, dest, package, run=args.run or args.interact, force=args.force)
+                filepaths = []
+                for source, dest in processed_source_dest_pairs:
+                    filepaths.append(self.compile_path(source, dest, package, run=args.run or args.interact, force=args.force))
             self.run_mypy(filepaths)
 
         elif (
