@@ -55,6 +55,7 @@ MYPY = PY34 and not WINDOWS and not PYPY
 base = os.path.dirname(os.path.relpath(__file__))
 src = os.path.join(base, "src")
 dest = os.path.join(base, "dest")
+additional_dest = os.path.join(base, "dest", "additional_dest")
 
 runnable_coco = os.path.join(src, "runnable.coco")
 runnable_py = os.path.join(src, "runnable.py")
@@ -219,6 +220,10 @@ def comp(path=None, folder=None, file=None, args=[], **kwargs):
     if file is not None:
         paths.append(file)
     source = os.path.join(src, *paths)
+    if '--and' in args:
+        additional_compdest = os.path.join(additional_dest, *paths)
+        args.remove('--and')
+        args = ['--and', source, additional_compdest] + args
     call_coconut([source, compdest] + args, **kwargs)
 
 
@@ -513,6 +518,10 @@ class TestCompilation(unittest.TestCase):
 
     def test_normal(self):
         run()
+
+    def test_multiple_source(self):
+        # --and's source and dest are built by comp() but required in normal use
+        run(['--and'])
 
     if MYPY:
         def test_universal_mypy_snip(self):
