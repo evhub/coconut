@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Authors: Evan Hubinger, Fred Buchanan
+Authors: Evan Hubinger, Fred Buchanan, Noah Lipsyc
 License: Apache 2.0
 Description: The Coconut command-line utility.
 """
