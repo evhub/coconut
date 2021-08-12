@@ -159,8 +159,7 @@ class Command(object):
                 kill_children()
             sys.exit(self.exit_code)
 
-    @staticmethod
-    def _process_source_dest_pairs(source, dest, args):
+    def _process_source_dest_pairs(self, source, dest, args):
         if dest is None:
             if args.no_write:
                 processed_dest = False  # no dest
@@ -169,11 +168,24 @@ class Command(object):
         elif args.no_write:
             raise CoconutException("destination path cannot be given when --no-write is enabled")
         else:
-            processed_dest = args.dest
+            processed_dest = dest
 
         processed_source = fixpath(source)
 
-        return processed_source, processed_dest
+        if args.package or self.mypy:
+            package = True
+        elif args.standalone:
+            package = False
+        else:
+            # auto-decide package
+            if os.path.isfile(source):
+                package = False
+            elif os.path.isdir(source):
+                package = True
+            else:
+                raise CoconutException("could not find source path", source)
+
+        return processed_source, processed_dest, package
 
     def use_args(self, args, interact=True, original_args=None):
         """Handle command-line arguments."""
@@ -242,30 +254,18 @@ class Command(object):
             if args.watch and os.path.isfile(args.source):
                 raise CoconutException("source path must point to directory not file when --watch is enabled")
 
-            additional_source_dest_pairs = getattr(args, 'and')
+            additional_source_dest_pairs = getattr(args, 'and') or []
             all_source_dest_pairs = [[args.source, args.dest], *additional_source_dest_pairs]
-            # This will always contain at least one pair, the source/dest positional args
             processed_source_dest_pairs = [
-                _process_source_dest_pairs(args, source, dest)
-                for pair in all_source_dest_pairs
+                self._process_source_dest_pairs(source_, dest_, args)
+                if all_source_dest_pairs
+                else []
+                for source_, dest_ in all_source_dest_pairs
             ]
-
-            if args.package or self.mypy:
-                package = True
-            elif args.standalone:
-                package = False
-            else:
-                # auto-decide package
-                if os.path.isfile(source):
-                    package = False
-                elif os.path.isdir(source):
-                    package = True
-                else:
-                    raise CoconutException("could not find source path", source)
-
             with self.running_jobs(exit_on_error=not args.watch):
                 filepaths = []
-                for source, dest in processed_source_dest_pairs:
+                for source, dest, package in processed_source_dest_pairs:
+
                     filepaths.append(self.compile_path(source, dest, package, run=args.run or args.interact, force=args.force))
             self.run_mypy(filepaths)
 
