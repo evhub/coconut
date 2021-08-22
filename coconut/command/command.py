@@ -103,6 +103,7 @@ class Command(object):
     exit_code = 0  # exit status to return
     errmsg = None  # error message to display
     mypy_args = None  # corresponds to --mypy flag
+    argv_args = None  # corresponds to --argv flag
 
     def __init__(self):
         """Create the CLI."""
@@ -159,36 +160,9 @@ class Command(object):
                 kill_children()
             sys.exit(self.exit_code)
 
-    def _process_source_dest_pairs(self, source, dest, args):
-        if dest is None:
-            if args.no_write:
-                processed_dest = False  # no dest
-            else:
-                processed_dest = True  # auto-generate dest
-        elif args.no_write:
-            raise CoconutException("destination path cannot be given when --no-write is enabled")
-        else:
-            processed_dest = dest
-
-        processed_source = fixpath(source)
-
-        if args.package or self.mypy:
-            package = True
-        elif args.standalone:
-            package = False
-        else:
-            # auto-decide package
-            if os.path.isfile(source):
-                package = False
-            elif os.path.isdir(source):
-                package = True
-            else:
-                raise CoconutException("could not find source path", source)
-
-        return processed_source, processed_dest, package
-
     def use_args(self, args, interact=True, original_args=None):
         """Handle command-line arguments."""
+        # set up logger
         logger.quiet, logger.verbose = args.quiet, args.verbose
         if DEVELOP:
             logger.tracing = args.trace
@@ -198,6 +172,11 @@ class Command(object):
             logger.log("Directly passed args:", original_args)
         logger.log("Parsed args:", args)
 
+        # validate general command args
+        if args.mypy is not None and args.line_numbers:
+            logger.warn("extraneous --line-numbers argument passed; --mypy implies --line-numbers")
+
+        # process general command args
         if args.recursion_limit is not None:
             set_recursion_limit(args.recursion_limit)
         if args.jobs is not None:
@@ -214,9 +193,10 @@ class Command(object):
             launch_tutorial()
         if args.site_install:
             self.site_install()
-        if args.mypy is not None and args.line_numbers:
-            logger.warn("extraneous --line-numbers argument passed; --mypy implies --line-numbers")
+        if args.argv is not None:
+            self.argv_args = list(args.argv)
 
+        # process general compiler args
         self.setup(
             target=args.target,
             strict=args.strict,
@@ -227,48 +207,42 @@ class Command(object):
             no_wrap=args.no_wrap,
         )
 
+        # process mypy args (must come after compiler setup)
         if args.mypy is not None:
             self.set_mypy_args(args.mypy)
 
-        if args.argv is not None:
-            sys.argv = [args.source if args.source is not None else ""]
-            sys.argv.extend(args.argv)
-
         if args.source is not None:
+            # warnings if source is given
             if args.interact and args.run:
                 logger.warn("extraneous --run argument passed; --interact implies --run")
             if args.package and self.mypy:
                 logger.warn("extraneous --package argument passed; --mypy implies --package")
 
+            # errors if source is given
             if args.standalone and args.package:
                 raise CoconutException("cannot compile as both --package and --standalone")
             if args.standalone and self.mypy:
                 raise CoconutException("cannot compile as both --package (implied by --mypy) and --standalone")
             if args.no_write and self.mypy:
                 raise CoconutException("cannot compile with --no-write when using --mypy")
-            if (args.run or args.interact) and os.path.isdir(args.source):
-                if args.run:
-                    raise CoconutException("source path must point to file not directory when --run is enabled")
-                if args.interact:
-                    raise CoconutException("source path must point to file not directory when --run (implied by --interact) is enabled")
-            if args.watch and os.path.isfile(args.source):
-                raise CoconutException("source path must point to directory not file when --watch is enabled")
 
-            additional_source_dest_pairs = getattr(args, 'and') or []
-            all_source_dest_pairs = [[args.source, args.dest], *additional_source_dest_pairs]
-            processed_source_dest_pairs = [
-                self._process_source_dest_pairs(source_, dest_, args)
-                if all_source_dest_pairs
-                else []
-                for source_, dest_ in all_source_dest_pairs
+            # process all source, dest pairs
+            src_dest_package_triples = [
+                self.process_source_dest(src, dst, args)
+                for src, dst in (
+                    [(args.source, args.dest)]
+                    + (getattr(args, "and") or [])
+                )
             ]
+
+            # do compilation
             with self.running_jobs(exit_on_error=not args.watch):
                 filepaths = []
-                for source, dest, package in processed_source_dest_pairs:
-
+                for source, dest, package in src_dest_package_triples:
                     filepaths.append(self.compile_path(source, dest, package, run=args.run or args.interact, force=args.force))
             self.run_mypy(filepaths)
 
+        # validate args if no source is given
         elif (
             args.run
             or args.no_write
@@ -278,7 +252,10 @@ class Command(object):
             or args.watch
         ):
             raise CoconutException("a source file/folder must be specified when options that depend on the source are enabled")
+        elif getattr(args, "and"):
+            raise CoconutException("--and should only be used for extra source/dest pairs, not the first source/dest pair")
 
+        # handle extra cli tasks
         if args.code is not None:
             self.execute(self.comp.parse_block(args.code))
         got_stdin = False
@@ -303,7 +280,49 @@ class Command(object):
         ):
             self.start_prompt()
         if args.watch:
-            self.watch(source, dest, package, args.run, args.force)
+            # src_dest_package_triples is always available here
+            self.watch(src_dest_package_triples, args.run, args.force)
+
+    def process_source_dest(self, source, dest, args):
+        """Determine the correct source, dest, package mode to use for the given source, dest, and args."""
+        # determine source
+        processed_source = fixpath(source)
+
+        # validate args
+        if (args.run or args.interact) and os.path.isdir(processed_source):
+            if args.run:
+                raise CoconutException("source path %r must point to file not directory when --run is enabled" % (source,))
+            if args.interact:
+                raise CoconutException("source path %r must point to file not directory when --run (implied by --interact) is enabled" % (source,))
+        if args.watch and os.path.isfile(processed_source):
+            raise CoconutException("source path %r must point to directory not file when --watch is enabled" % (source,))
+
+        # determine dest
+        if dest is None:
+            if args.no_write:
+                processed_dest = False  # no dest
+            else:
+                processed_dest = True  # auto-generate dest
+        elif args.no_write:
+            raise CoconutException("destination path cannot be given when --no-write is enabled")
+        else:
+            processed_dest = dest
+
+        # determine package mode
+        if args.package or self.mypy:
+            package = True
+        elif args.standalone:
+            package = False
+        else:
+            # auto-decide package
+            if os.path.isfile(source):
+                package = False
+            elif os.path.isdir(source):
+                package = True
+            else:
+                raise CoconutException("could not find source path", source)
+
+        return processed_source, processed_dest, package
 
     def register_error(self, code=1, errmsg=None):
         """Update the exit code."""
@@ -427,7 +446,7 @@ class Command(object):
             if self.show:
                 print(foundhash)
             if run:
-                self.execute_file(destpath)
+                self.execute_file(destpath, argv_source_path=codepath)
 
         else:
             logger.show_tabulated("Compiling", showpath(codepath), "...")
@@ -445,7 +464,7 @@ class Command(object):
                     if destpath is None:
                         self.execute(compiled, path=codepath, allow_show=False)
                     else:
-                        self.execute_file(destpath)
+                        self.execute_file(destpath, argv_source_path=codepath)
 
             if package is True:
                 self.submit_comp_job(codepath, callback, "parse_package", code, package_level=package_level)
@@ -632,15 +651,23 @@ class Command(object):
 
             self.run_mypy(code=self.runner.was_run_code())
 
-    def execute_file(self, destpath):
+    def execute_file(self, destpath, **kwargs):
         """Execute compiled file."""
-        self.check_runner()
+        self.check_runner(**kwargs)
         self.runner.run_file(destpath)
 
-    def check_runner(self, set_up_path=True):
+    def check_runner(self, set_sys_vars=True, argv_source_path=""):
         """Make sure there is a runner."""
-        if set_up_path and os.getcwd() not in sys.path:
-            sys.path.append(os.getcwd())
+        if set_sys_vars:
+            # set sys.path
+            if os.getcwd() not in sys.path:
+                sys.path.append(os.getcwd())
+
+            # set sys.argv
+            if self.argv_args is not None:
+                sys.argv = [argv_source_path] + self.argv_args
+
+        # set up runner
         if self.runner is None:
             self.runner = Runner(self.comp, exit=self.exit_runner, store=self.mypy)
 
@@ -833,38 +860,41 @@ class Command(object):
         if run_args is not None:
             self.register_error(run_cmd(run_args, raise_errs=False), errmsg="Jupyter error")
 
-    def watch(self, source, write=True, package=True, run=False, force=False):
-        """Watch a source and recompiles on change."""
+    def watch(self, src_dest_package_triples, run=False, force=False):
+        """Watch a source and recompile on change."""
         from coconut.command.watch import Observer, RecompilationWatcher
 
-        source = fixpath(source)
+        for src, _, _ in src_dest_package_triples:
+            logger.show()
+            logger.show_tabulated("Watching", showpath(src), "(press Ctrl-C to end)...")
 
-        logger.show()
-        logger.show_tabulated("Watching", showpath(source), "(press Ctrl-C to end)...")
-
-        def recompile(path):
+        def recompile(path, src, dest, package):
             path = fixpath(path)
             if os.path.isfile(path) and os.path.splitext(path)[1] in code_exts:
                 with self.handling_exceptions():
-                    if write is True or write is None:
-                        writedir = write
+                    if dest is True or dest is None:
+                        writedir = dest
                     else:
-                        # correct the compilation path based on the relative position of path to source
+                        # correct the compilation path based on the relative position of path to src
                         dirpath = os.path.dirname(path)
-                        writedir = os.path.join(write, os.path.relpath(dirpath, source))
+                        writedir = os.path.join(dest, os.path.relpath(dirpath, src))
                     filepaths = self.compile_path(path, writedir, package, run=run, force=force, show_unchanged=False)
                     self.run_mypy(filepaths)
 
-        watcher = RecompilationWatcher(recompile)
         observer = Observer()
-        observer.schedule(watcher, source, recursive=True)
+        watchers = []
+        for src, dest, package in src_dest_package_triples:
+            watcher = RecompilationWatcher(recompile, src, dest, package)
+            observer.schedule(watcher, src, recursive=True)
+            watchers.append(watcher)
 
         with self.running_jobs():
             observer.start()
             try:
                 while True:
                     time.sleep(watch_interval)
-                    watcher.keep_watching()
+                    for wcher in watchers:
+                        wcher.keep_watching()
             except KeyboardInterrupt:
                 logger.show_sig("Got KeyboardInterrupt; stopping watcher.")
             finally:

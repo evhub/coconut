@@ -220,10 +220,10 @@ def comp(path=None, folder=None, file=None, args=[], **kwargs):
     if file is not None:
         paths.append(file)
     source = os.path.join(src, *paths)
-    if '--and' in args:
+    if "--and" in args:
         additional_compdest = os.path.join(additional_dest, *paths)
-        args.remove('--and')
-        args = ['--and', source, additional_compdest] + args
+        args.remove("--and")
+        args = ["--and", source, additional_compdest] + args
     call_coconut([source, compdest] + args, **kwargs)
 
 
@@ -253,7 +253,7 @@ def using_path(path):
 
 
 @contextmanager
-def using_dest():
+def using_dest(dest=dest):
     """Makes and removes the dest folder."""
     try:
         os.mkdir(dest)
@@ -520,8 +520,8 @@ class TestCompilation(unittest.TestCase):
         run()
 
     def test_multiple_source(self):
-        # --and's source and dest are built by comp() but required in normal use
-        run(['--and'])
+        with self.using_dest(additional_dest):
+            run(["--and"])  # src and dest built by comp()
 
     if MYPY:
         def test_universal_mypy_snip(self):
