@@ -239,7 +239,7 @@ class Command(object):
             with self.running_jobs(exit_on_error=not args.watch):
                 filepaths = []
                 for source, dest, package in src_dest_package_triples:
-                    filepaths.append(self.compile_path(source, dest, package, run=args.run or args.interact, force=args.force))
+                    filepaths += self.compile_path(source, dest, package, run=args.run or args.interact, force=args.force)
             self.run_mypy(filepaths)
 
         # validate args if no source is given
