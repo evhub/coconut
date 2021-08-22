@@ -596,15 +596,18 @@ class Runner(object):
 
 class multiprocess_wrapper(object):
     """Wrapper for a method that needs to be multiprocessed."""
+    __slots__ = ("rec_limit", "logger", "argv", "base", "method")
 
     def __init__(self, base, method):
         """Create new multiprocessable method."""
-        self.recursion = sys.getrecursionlimit()
+        self.rec_limit = sys.getrecursionlimit()
         self.logger = copy(logger)
+        self.argv = sys.argv
         self.base, self.method = base, method
 
     def __call__(self, *args, **kwargs):
         """Call the method."""
-        sys.setrecursionlimit(self.recursion)
+        sys.setrecursionlimit(self.rec_limit)
         logger.copy_from(self.logger)
+        sys.argv = self.argv
         return getattr(self.base, self.method)(*args, **kwargs)

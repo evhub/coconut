@@ -105,7 +105,7 @@ def coconut_eval(expression, globals=None, locals=None):
     """Compile and evaluate Coconut code."""
     if CLI.comp is None:
         setup()
-    CLI.check_runner(set_up_path=False)
+    CLI.check_runner(set_sys_vars=False)
     if globals is None:
         globals = {}
     CLI.runner.update_vars(globals)

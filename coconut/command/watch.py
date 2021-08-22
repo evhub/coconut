@@ -41,9 +41,11 @@ except ImportError:
 class RecompilationWatcher(FileSystemEventHandler):
     """Watcher that recompiles modified files."""
 
-    def __init__(self, recompile):
+    def __init__(self, recompile, *args, **kwargs):
         super(RecompilationWatcher, self).__init__()
         self.recompile = recompile
+        self.args = args
+        self.kwargs = kwargs
         self.keep_watching()
 
     def keep_watching(self):
@@ -55,4 +57,4 @@ class RecompilationWatcher(FileSystemEventHandler):
         path = event.src_path
         if path not in self.saw:
             self.saw.add(path)
-            self.recompile(path)
+            self.recompile(path, *args, **kwargs)
