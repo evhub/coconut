@@ -223,7 +223,7 @@ def comp(path=None, folder=None, file=None, args=[], **kwargs):
     if "--and" in args:
         additional_compdest = os.path.join(additional_dest, *paths)
         args.remove("--and")
-        args += ["--and", source, additional_compdest]
+        args = ["--and", source, additional_compdest] + args
     call_coconut([source, compdest] + args, **kwargs)
 
 
@@ -526,8 +526,8 @@ class TestCompilation(unittest.TestCase):
     def test_normal(self):
         run()
 
-    def test_multiple_source(self):
-        run(["--and"])  # src and dest built by comp()
+    def test_and(self):
+        run(["--and"])  # src and dest built by comp
 
     if MYPY:
         def test_universal_mypy_snip(self):
