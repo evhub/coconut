@@ -223,7 +223,7 @@ def comp(path=None, folder=None, file=None, args=[], **kwargs):
     if "--and" in args:
         additional_compdest = os.path.join(additional_dest, *paths)
         args.remove("--and")
-        args = ["--and", source, additional_compdest] + args
+        args += ["--and", source, additional_compdest]
     call_coconut([source, compdest] + args, **kwargs)
 
 
@@ -277,6 +277,12 @@ def using_logger():
         yield
     finally:
         logger.copy_from(saved_logger)
+
+
+@contextmanager
+def noop_ctx():
+    """A context manager that does nothing."""
+    yield
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -348,36 +354,37 @@ def run(args=[], agnostic_target=None, use_run_arg=False, **kwargs):
         agnostic_args = ["--target", str(agnostic_target)] + args
 
     with using_dest():
+        with (using_dest(additional_dest) if "--and" in args else noop_ctx()):
 
-        if PY2:
-            comp_2(args, **kwargs)
-        else:
-            comp_3(args, **kwargs)
-            if sys.version_info >= (3, 5):
-                comp_35(args, **kwargs)
-            if sys.version_info >= (3, 6):
-                comp_36(args, **kwargs)
-        comp_agnostic(agnostic_args, **kwargs)
-        comp_sys(args, **kwargs)
-        comp_non_strict(args, **kwargs)
+            if PY2:
+                comp_2(args, **kwargs)
+            else:
+                comp_3(args, **kwargs)
+                if sys.version_info >= (3, 5):
+                    comp_35(args, **kwargs)
+                if sys.version_info >= (3, 6):
+                    comp_36(args, **kwargs)
+            comp_agnostic(agnostic_args, **kwargs)
+            comp_sys(args, **kwargs)
+            comp_non_strict(args, **kwargs)
 
-        if use_run_arg:
-            _kwargs = kwargs.copy()
-            _kwargs["assert_output"] = True
-            comp_runner(["--run"] + agnostic_args, **_kwargs)
-        else:
-            comp_runner(agnostic_args, **kwargs)
-            run_src()
+            if use_run_arg:
+                _kwargs = kwargs.copy()
+                _kwargs["assert_output"] = True
+                comp_runner(["--run"] + agnostic_args, **_kwargs)
+            else:
+                comp_runner(agnostic_args, **kwargs)
+                run_src()
 
-        if use_run_arg:
-            _kwargs = kwargs.copy()
-            _kwargs["assert_output"] = True
-            _kwargs["check_errors"] = False
-            _kwargs["stderr_first"] = True
-            comp_extras(["--run"] + agnostic_args, **_kwargs)
-        else:
-            comp_extras(agnostic_args, **kwargs)
-            run_extras()
+            if use_run_arg:
+                _kwargs = kwargs.copy()
+                _kwargs["assert_output"] = True
+                _kwargs["check_errors"] = False
+                _kwargs["stderr_first"] = True
+                comp_extras(["--run"] + agnostic_args, **_kwargs)
+            else:
+                comp_extras(agnostic_args, **kwargs)
+                run_extras()
 
 
 def comp_pyston(args=[], **kwargs):
@@ -520,8 +527,7 @@ class TestCompilation(unittest.TestCase):
         run()
 
     def test_multiple_source(self):
-        with self.using_dest(additional_dest):
-            run(["--and"])  # src and dest built by comp()
+        run(["--and"])  # src and dest built by comp()
 
     if MYPY:
         def test_universal_mypy_snip(self):
