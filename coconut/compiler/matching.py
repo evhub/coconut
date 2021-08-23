@@ -740,7 +740,7 @@ class Matcher(object):
             "ambiguous pattern; could be class match or data match",
             if_coconut='resolving to Coconut data match by default',
             if_python='resolving to Python-style class match due to Python-style "match: case" block',
-            extra="use explicit 'data data_name(args)' or 'class cls_name(args)' syntax to dismiss",
+            extra="use explicit 'data data_name(patterns)' or 'class cls_name(patterns)' syntax to dismiss",
         )
         if self.using_python_rules:
             return self.match_class(tokens, item)
