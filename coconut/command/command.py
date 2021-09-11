@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Authors: Evan Hubinger, Fred Buchanan, Noah Lipsyc
+Authors: Evan Hubinger, Fred Buchanan, Noah Lipsyc, Ishaan Verma
 License: Apache 2.0
 Description: The Coconut command-line utility.
 """
@@ -193,6 +193,8 @@ class Command(object):
             launch_tutorial()
         if args.site_install:
             self.site_install()
+        if args.vi_mode:
+            self.prompt.vi_mode = True
         if args.argv is not None:
             self.argv_args = list(args.argv)
 
