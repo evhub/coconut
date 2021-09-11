@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Authors: Evan Hubinger
+Authors: Evan Hubinger, Ishaan Verma
 License: Apache 2.0
 Description: Defines arguments for the Coconut CLI.
 """
@@ -259,6 +259,12 @@ arguments.add_argument(
     "--verbose",
     action="store_true",
     help="print verbose debug output",
+)
+
+arguments.add_argument(
+    "--vi-mode", "--vimode",
+    action="store_true",
+    help="enable vi mode in repl",
 )
 
 if DEVELOP:
