@@ -26,11 +26,12 @@ from coconut._pyparsing import PYPARSING_INFO
 from coconut.constants import (
     documentation_url,
     default_recursion_limit,
-    style_env_var,
-    vi_mode_env_var,
-    default_style,
     main_sig,
-    default_histfile,
+    style_env_var,
+    default_style,
+    vi_mode_env_var,
+    prompt_vi_mode,
+    prompt_histfile,
     home_env_var,
 )
 
@@ -240,13 +241,13 @@ arguments.add_argument(
     "--history-file",
     metavar="path",
     type=str,
-    help="set history file (or '' for no file) (currently set to '" + default_histfile + "') (can be modified by setting " + home_env_var + " environment variable)",
+    help="set history file (or '' for no file) (currently set to '" + prompt_histfile + "') (can be modified by setting " + home_env_var + " environment variable)",
 )
 
 arguments.add_argument(
     "--vi-mode", "--vimode",
     action="store_true",
-    help="enable vi mode in the interpreter (defaults to " + vi_mode_env_var + " if it exists, otherwise False)",
+    help="enable vi mode in the interpreter (currently set to '" + str(prompt_vi_mode) + "') (can be modified by setting " + vi_mode_env_var + " environment variable)",
 )
 
 arguments.add_argument(

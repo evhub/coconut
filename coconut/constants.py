@@ -296,7 +296,7 @@ home_env_var = "COCONUT_HOME"
 coconut_home = fixpath(os.environ.get(home_env_var, "~"))
 
 default_style = "default"
-default_histfile = os.path.join(coconut_home, ".coconut_history")
+prompt_histfile = os.path.join(coconut_home, ".coconut_history")
 prompt_multiline = False
 prompt_vi_mode = str_to_bool(os.environ.get(vi_mode_env_var, ""))
 prompt_wrap_lines = True

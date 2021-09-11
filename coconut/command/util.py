@@ -47,7 +47,7 @@ from coconut.constants import (
     main_prompt,
     more_prompt,
     default_style,
-    default_histfile,
+    prompt_histfile,
     prompt_multiline,
     prompt_vi_mode,
     prompt_wrap_lines,
@@ -416,7 +416,7 @@ class Prompt(object):
         """Set up the prompt."""
         if prompt_toolkit is not None:
             self.set_style(os.environ.get(style_env_var, default_style))
-            self.set_history_file(default_histfile)
+            self.set_history_file(prompt_histfile)
             self.lexer = PygmentsLexer(CoconutLexer)
 
     def set_style(self, style):
