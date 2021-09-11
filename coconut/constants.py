@@ -36,6 +36,14 @@ def fixpath(path):
     return os.path.normcase(os.path.normpath(os.path.realpath(os.path.expanduser(path))))
 
 
+def str_to_bool(boolstr):
+    """Convert a string to a boolean."""
+    if boolstr.lower() in ["true", "yes", "on", "1"]:
+        return True
+    else:
+        return False
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # VERSION CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -282,6 +290,7 @@ more_prompt = "    "
 
 mypy_path_env_var = "MYPYPATH"
 style_env_var = "COCONUT_STYLE"
+vi_mode_env_var = "COCONUT_VI_MODE"
 home_env_var = "COCONUT_HOME"
 
 coconut_home = fixpath(os.environ.get(home_env_var, "~"))
@@ -289,7 +298,7 @@ coconut_home = fixpath(os.environ.get(home_env_var, "~"))
 default_style = "default"
 default_histfile = os.path.join(coconut_home, ".coconut_history")
 prompt_multiline = False
-prompt_vi_mode = False
+prompt_vi_mode = str_to_bool(os.environ.get(vi_mode_env_var, ""))
 prompt_wrap_lines = True
 prompt_history_search = True
 

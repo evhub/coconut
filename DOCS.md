@@ -117,7 +117,6 @@ dest                destination directory for compiled files (defaults to
 
 ```
 optional arguments:
-  -h, --help            show this help message and exit
   --and source dest     additional source/dest pairs to compile
   -v, -V, --version     print Coconut and Python version information
   -t version, --target version
@@ -167,6 +166,8 @@ optional arguments:
   --history-file path   set history file (or '' for no file) (currently set to
                         'c:\users\evanj\.coconut_history') (can be modified by setting COCONUT_HOME
                         environment variable)
+  --vi-mode, --vimode   enable vi mode in the interpreter (defaults to COCONUT_VI_MODE if it exists,
+                        otherwise False)
   --recursion-limit limit, --recursionlimit limit
                         set maximum recursion depth in compiler (defaults to 2000)
   --site-install, --siteinstall

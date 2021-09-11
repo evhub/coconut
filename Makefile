@@ -1,46 +1,58 @@
 .PHONY: dev
-dev: clean
-	python -m pip install --upgrade setuptools wheel pip pytest_remotedata
+dev: clean setup
 	python -m pip install --upgrade -e .[dev]
 	pre-commit install -f --install-hooks
 	coconut --site-install
 
 .PHONY: dev-py2
-dev-py2: clean
-	python2 -m pip install --upgrade setuptools wheel pip pytest_remotedata
+dev-py2: clean setup-py2
 	python2 -m pip install --upgrade -e .[dev]
 	coconut --site-install
 
 .PHONY: dev-py3
-dev-py3: clean
-	python3 -m pip install --upgrade setuptools wheel pip pytest_remotedata
+dev-py3: clean setup-py3
 	python3 -m pip install --upgrade -e .[dev]
 	pre-commit install -f --install-hooks
 	coconut --site-install
 
+.PHONY: setup
+setup:
+	python -m pip install --upgrade "setuptools>=57,<58" wheel pip pytest_remotedata
+
+.PHONY: setup-py2
+setup-py2:
+	python2 -m pip install --upgrade "setuptools>=57,<58" wheel pip pytest_remotedata
+
+.PHONY: setup-py3
+setup-py3:
+	python3 -m pip install --upgrade "setuptools>=57,<58" wheel pip pytest_remotedata
+
+.PHONY: setup-pypy
+setup-pypy:
+	pypy -m pip install --upgrade "setuptools>=57,<58" wheel pip pytest_remotedata
+
+.PHONY: setup-pypy3
+setup-pypy3:
+	pypy3 -m pip install --upgrade "setuptools>=57,<58" wheel pip pytest_remotedata
+
 .PHONY: install
-install:
-	pip install --upgrade setuptools wheel pip
-	pip install .[tests]
+install: setup
+	python -m pip install .[tests]
 
 .PHONY: install-py2
-install-py2:
-	python2 -m pip install --upgrade setuptools wheel pip
+install-py2: setup-py2
 	python2 -m pip install .[tests]
 
 .PHONY: install-py3
-install-py3:
-	python3 -m pip install --upgrade setuptools wheel pip
+install-py3: setup-py3
 	python3 -m pip install .[tests]
 
 .PHONY: install-pypy
 install-pypy:
-	pypy -m pip install --upgrade setuptools wheel pip
 	pypy -m pip install .[tests]
 
 .PHONY: install-pypy3
 install-pypy3:
-	pypy3 -m pip install --upgrade setuptools wheel pip
 	pypy3 -m pip install .[tests]
 
 .PHONY: format

@@ -27,6 +27,7 @@ from coconut.constants import (
     documentation_url,
     default_recursion_limit,
     style_env_var,
+    vi_mode_env_var,
     default_style,
     main_sig,
     default_histfile,
@@ -243,6 +244,12 @@ arguments.add_argument(
 )
 
 arguments.add_argument(
+    "--vi-mode", "--vimode",
+    action="store_true",
+    help="enable vi mode in the interpreter (defaults to " + vi_mode_env_var + " if it exists, otherwise False)",
+)
+
+arguments.add_argument(
     "--recursion-limit", "--recursionlimit",
     metavar="limit",
     type=int,
@@ -259,12 +266,6 @@ arguments.add_argument(
     "--verbose",
     action="store_true",
     help="print verbose debug output",
-)
-
-arguments.add_argument(
-    "--vi-mode", "--vimode",
-    action="store_true",
-    help="enable vi mode in repl",
 )
 
 if DEVELOP:

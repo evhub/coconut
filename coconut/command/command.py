@@ -187,14 +187,14 @@ class Command(object):
             self.prompt.set_style(args.style)
         if args.history_file is not None:
             self.prompt.set_history_file(args.history_file)
+        if args.vi_mode:
+            self.prompt.vi_mode = True
         if args.docs:
             launch_documentation()
         if args.tutorial:
             launch_tutorial()
         if args.site_install:
             self.site_install()
-        if args.vi_mode:
-            self.prompt.vi_mode = True
         if args.argv is not None:
             self.argv_args = list(args.argv)
 
