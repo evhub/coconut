@@ -241,13 +241,13 @@ arguments.add_argument(
     "--history-file",
     metavar="path",
     type=str,
-    help="set history file (or '' for no file) (currently set to '" + prompt_histfile + "') (can be modified by setting " + home_env_var + " environment variable)",
+    help="set history file (or '' for no file) (currently set to " + ascii(prompt_histfile) + ") (can be modified by setting " + home_env_var + " environment variable)",
 )
 
 arguments.add_argument(
     "--vi-mode", "--vimode",
     action="store_true",
-    help="enable vi mode in the interpreter (currently set to '" + str(prompt_vi_mode) + "') (can be modified by setting " + vi_mode_env_var + " environment variable)",
+    help="enable vi mode in the interpreter (currently set to " + ascii(prompt_vi_mode) + ") (can be modified by setting " + vi_mode_env_var + " environment variable)",
 )
 
 arguments.add_argument(
