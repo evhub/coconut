@@ -112,7 +112,7 @@ def get_kernel_data_files(argv):
     ]
 
 
-def install_custom_kernel(executable=None):
+def install_custom_kernel(executable=None, logger=None):
     """Force install the custom kernel."""
     kernel_source = os.path.join(icoconut_custom_kernel_dir, "kernel.json")
     kernel_dest = fixpath(os.path.join(sys.exec_prefix, icoconut_custom_kernel_install_loc))
@@ -124,16 +124,24 @@ def install_custom_kernel(executable=None):
     except OSError:
         existing_kernel = os.path.join(kernel_dest, "kernel.json")
         if os.path.exists(existing_kernel):
+            if logger is not None:
+                logger.log_exc()
             errmsg = "Failed to update Coconut Jupyter kernel installation; the 'coconut' kernel might not work properly as a result"
         else:
-            traceback.print_exc()
+            if logger is None:
+                traceback.print_exc()
+            else:
+                logger.display_exc()
             errmsg = "Coconut Jupyter kernel installation failed due to above error"
         if WINDOWS:
             errmsg += " (try again from a shell that is run as administrator)"
         else:
             errmsg += " (try again with 'sudo')"
         errmsg += "."
-        warn(errmsg)
+        if logger is None:
+            warn(errmsg)
+        else:
+            logger.warn(errmsg)
         return None
     else:
         return kernel_dest
