@@ -801,6 +801,7 @@ def main_test() -> bool:
     assert f"{x}" f"{x}" == "11"
     assert f"{x}" "{x}" == "1{x}"
     assert "{x}" f"{x}" == "{x}1"
+    from enum import Enum
     return True
 
 def test_asyncio() -> bool:

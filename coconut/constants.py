@@ -273,6 +273,7 @@ py3_to_py2_stdlib = {
     "math.gcd": ("fractions./gcd", (3, 5)),
     # third-party backports
     "asyncio": ("trollius", (3, 4)),
+    "enum": ("aenum", (3, 4)),
     # _dummy_thread was removed in Python 3.9, so this no longer works
     # "_dummy_thread": ("dummy_thread", (3,)),
 }
@@ -528,6 +529,9 @@ all_reqs = {
     "asyncio": (
         ("trollius", "py2"),
     ),
+    "enum": (
+        "aenum",
+    ),
     "dev": (
         ("pre-commit", "py3"),
         "requests",
@@ -567,6 +571,7 @@ min_versions = {
     ("numpy", "py34"): (1,),
     ("numpy", "py2;cpy"): (1,),
     ("dataclasses", "py36-only"): (0, 8),
+    "aenum": (3,),
     # don't upgrade these; they break on Python 3.5
     ("ipykernel", "py3"): (5, 5),
     ("ipython", "py3"): (7, 9),
