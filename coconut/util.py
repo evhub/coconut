@@ -114,10 +114,10 @@ def get_kernel_data_files(argv):
 
 def install_custom_kernel(executable=None):
     """Force install the custom kernel."""
-    make_custom_kernel(executable)
     kernel_source = os.path.join(icoconut_custom_kernel_dir, "kernel.json")
     kernel_dest = fixpath(os.path.join(sys.exec_prefix, icoconut_custom_kernel_install_loc))
     try:
+        make_custom_kernel(executable)
         if not os.path.exists(kernel_dest):
             os.makedirs(kernel_dest)
         shutil.copy(kernel_source, kernel_dest)

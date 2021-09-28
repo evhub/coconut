@@ -755,7 +755,7 @@ class Command(object):
                 self.run_silent_cmd(user_install_args)
             except CalledProcessError:
                 logger.warn("kernel install failed on command", " ".join(install_args))
-                self.register_error(errmsg="Jupyter error")
+                self.register_error(errmsg="Jupyter kernel error")
                 return False
         return True
 
@@ -766,7 +766,7 @@ class Command(object):
             self.run_silent_cmd(remove_args)
         except CalledProcessError:
             logger.warn("kernel removal failed on command", " ".join(remove_args))
-            self.register_error(errmsg="Jupyter error")
+            self.register_error(errmsg="Jupyter kernel error")
             return False
         return True
 
