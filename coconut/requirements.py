@@ -119,6 +119,13 @@ def get_reqs(which):
                     elif sys.version_info < (3, ver):
                         use_req = False
                         break
+                elif mark.startswith("py<3"):
+                    ver = mark[len("py<3"):]
+                    if supports_env_markers:
+                        markers.append("python_version<'3.{ver}'".format(ver=ver))
+                    elif sys.version_info >= (3, ver):
+                        use_req = False
+                        break
                 elif mark == "cpy":
                     if supports_env_markers:
                         markers.append("platform_python_implementation=='CPython'")
@@ -171,6 +178,7 @@ extras = {
     "jobs": get_reqs("jobs"),
     "mypy": get_reqs("mypy"),
     "asyncio": get_reqs("asyncio"),
+    "enum": get_reqs("enum"),
 }
 
 extras["all"] = everything_in(extras)
@@ -185,6 +193,7 @@ extras.update({
         extras["jupyter"] if IPY else [],
         extras["mypy"] if PY34 and not WINDOWS and not PYPY else [],
         extras["asyncio"] if not PY34 and not PYPY else [],
+        extras["enum"] if not PY34 else [],
     ),
 })
 
