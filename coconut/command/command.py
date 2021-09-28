@@ -818,7 +818,7 @@ class Command(object):
         newly_installed_kernels = []
 
         # always update the custom kernel, but only reinstall it if it isn't already there or given no args
-        custom_kernel_dir = install_custom_kernel()
+        custom_kernel_dir = install_custom_kernel(logger=logger)
         if custom_kernel_dir is None:
             logger.warn("failed to install {name!r} Jupyter kernel".format(name=icoconut_custom_kernel_name), extra="falling back to 'coconut_pyX' kernels instead")
         elif icoconut_custom_kernel_name not in kernel_list or not args:
