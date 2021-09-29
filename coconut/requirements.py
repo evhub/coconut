@@ -189,11 +189,11 @@ extras.update({
     "tests": uniqueify_all(
         get_reqs("tests"),
         get_reqs("purepython"),
+        extras["enum"],
         extras["jobs"] if not PYPY else [],
         extras["jupyter"] if IPY else [],
         extras["mypy"] if PY34 and not WINDOWS and not PYPY else [],
         extras["asyncio"] if not PY34 and not PYPY else [],
-        extras["enum"] if not PY34 else [],
     ),
 })
 
