@@ -530,7 +530,7 @@ all_reqs = {
         ("trollius", "py2"),
     ),
     "enum": (
-        "aenum",
+        ("aenum", "py<34"),
     ),
     "dev": (
         ("pre-commit", "py3"),
@@ -567,11 +567,11 @@ min_versions = {
     "argparse": (1, 4),
     "pexpect": (4,),
     ("trollius", "py2"): (2, 2),
-    "requests": (2, 25),
+    "requests": (2, 26),
     ("numpy", "py34"): (1,),
     ("numpy", "py2;cpy"): (1,),
     ("dataclasses", "py36-only"): (0, 8),
-    "aenum": (3,),
+    ("aenum", "py<34"): (3,),
     # don't upgrade these; they break on Python 3.5
     ("ipykernel", "py3"): (5, 5),
     ("ipython", "py3"): (7, 9),
