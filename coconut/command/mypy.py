@@ -20,7 +20,6 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import sys
-import traceback
 
 from coconut.exceptions import CoconutException
 from coconut.terminal import logger
@@ -44,7 +43,7 @@ def mypy_run(args):
     try:
         stdout, stderr, exit_code = run(args)
     except BaseException:
-        traceback.print_exc()
+        logger.print_exc()
     else:
         for line in stdout.splitlines():
             yield line, False

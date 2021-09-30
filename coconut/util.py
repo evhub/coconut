@@ -131,7 +131,7 @@ def install_custom_kernel(executable=None, logger=None):
             if logger is None:
                 traceback.print_exc()
             else:
-                logger.display_exc()
+                logger.print_exc()
             errmsg = "Coconut Jupyter kernel installation failed due to above error"
         if WINDOWS:
             errmsg += " (try again from a shell that is run as administrator)"

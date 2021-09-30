@@ -23,7 +23,6 @@ import sys
 import os
 import time
 import shutil
-import traceback
 from contextlib import contextmanager
 from subprocess import CalledProcessError
 
@@ -349,9 +348,9 @@ class Command(object):
             self.register_error(err.code)
         except BaseException as err:
             if isinstance(err, CoconutException):
-                logger.display_exc()
+                logger.print_exc()
             elif not isinstance(err, KeyboardInterrupt):
-                traceback.print_exc()
+                logger.print_exc()
                 printerr(report_this_text)
             self.register_error(errmsg=err.__class__.__name__)
 
@@ -628,7 +627,7 @@ class Command(object):
         try:
             return self.comp.parse_block(code)
         except CoconutException:
-            logger.display_exc()
+            logger.print_exc()
         return None
 
     def execute(self, compiled=None, path=None, use_eval=False, allow_show=True):
@@ -807,7 +806,7 @@ class Command(object):
             ["jupyter"],
         ):
             try:
-                self.run_silent_cmd(jupyter + ["--version"])
+                self.run_silent_cmd(jupyter + ["--help"])  # --help is much faster than --version
             except CalledProcessError:
                 logger.warn("failed to find Jupyter command at " + repr(" ".join(jupyter)))
             else:

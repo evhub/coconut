@@ -21,7 +21,6 @@ from coconut.root import *  # NOQA
 
 import sys
 import re
-import traceback
 from functools import partial, reduce
 from contextlib import contextmanager
 from pprint import pformat
@@ -198,7 +197,7 @@ class ComputationNode(object):
         except CoconutException:
             raise
         except (Exception, AssertionError):
-            traceback.print_exc()
+            logger.print_exc()
             error = CoconutInternalException("error computing action " + self.name + " of evaluated tokens", evaluated_toks)
             if embed_on_internal_exc:
                 logger.warn_err(error)
