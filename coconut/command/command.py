@@ -807,9 +807,9 @@ class Command(object):
             ["jupyter"],
         ):
             try:
-                self.run_silent_cmd([sys.executable, "-m", "jupyter", "--version"])
+                self.run_silent_cmd(jupyter + ["--version"])
             except CalledProcessError:
-                logger.warn("failed to find Jupyter command at " + str(jupyter))
+                logger.warn("failed to find Jupyter command at " + repr(" ".join(jupyter)))
             else:
                 break
 
@@ -819,9 +819,7 @@ class Command(object):
 
         # always update the custom kernel, but only reinstall it if it isn't already there or given no args
         custom_kernel_dir = install_custom_kernel(logger=logger)
-        if custom_kernel_dir is None:
-            logger.warn("failed to install {name!r} Jupyter kernel".format(name=icoconut_custom_kernel_name), extra="falling back to 'coconut_pyX' kernels instead")
-        elif icoconut_custom_kernel_name not in kernel_list or not args:
+        if custom_kernel_dir is not None and (icoconut_custom_kernel_name not in kernel_list or not args):
             logger.show_sig("Installing Jupyter kernel {name!r}...".format(name=icoconut_custom_kernel_name))
             if self.install_jupyter_kernel(jupyter, custom_kernel_dir):
                 newly_installed_kernels.append(icoconut_custom_kernel_name)
