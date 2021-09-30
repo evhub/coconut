@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "1.5.0"
 VERSION_NAME = "Fish License"
 # False for release, int >= 1 for develop
-DEVELOP = 82
+DEVELOP = 83
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:

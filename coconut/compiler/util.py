@@ -498,6 +498,11 @@ def paren_join(items, sep):
 skip_whitespace = SkipTo(CharsNotIn(default_whitespace_chars)).suppress()
 
 
+def skip_to_in_line(item):
+    """Skip parsing to the next match of item in the current line."""
+    return SkipTo(item, failOn=Literal("\n"))
+
+
 def longest(*args):
     """Match the longest of the given grammar elements."""
     internal_assert(len(args) >= 2, "longest expects at least two args")

@@ -128,7 +128,7 @@ def test_extras():
     assert_raises(-> parse("1 + return"), CoconutParseError)
     assert_raises(-> parse("return = 1"), CoconutParseError, err_has="invalid use of the keyword")
     assert_raises(-> parse("if a = b: pass"), CoconutParseError, err_has="misplaced assignment")
-    assert_raises(-> parse("if a == b"), CoconutParseError, err_has="misplaced newline")
+    assert_raises(-> parse("while a == b"), CoconutParseError, err_has="misplaced newline")
     assert_raises(-> parse('f"Black holes {*all_black_holes} and revelations"'), CoconutSyntaxError, err_has="format string")
     setup(target="2.7")
     assert parse("from io import BytesIO", mode="any") == "from io import BytesIO"
