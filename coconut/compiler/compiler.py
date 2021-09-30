@@ -529,7 +529,7 @@ class Compiler(Grammar):
 
     def eval_now(self, code):
         """Reformat and evaluate a code snippet and return code for the result."""
-        result = eval(self.reformat(code))
+        result = eval(self.reformat(code), {})
         if result is None or isinstance(result, (bool, int, float, complex)):
             return ascii(result)
         elif isinstance(result, bytes):

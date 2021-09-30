@@ -518,6 +518,8 @@ all_reqs = {
         ("ipykernel", "py3"),
         ("jupyterlab", "py35"),
         ("jupytext", "py3"),
+        ("jupyter-client", "py2"),
+        ("jupyter-client", "py3"),
         "jedi",
     ),
     "mypy": (
@@ -573,6 +575,9 @@ min_versions = {
     ("numpy", "py2;cpy"): (1,),
     ("dataclasses", "py36-only"): (0, 8),
     ("aenum", "py<34"): (3,),
+    ("jupyter-client", "py2"): (5, 3),
+    # don't upgrade this until https://github.com/jupyter/jupyter_console/issues/241 is fixed
+    ("jupyter-client", "py3"): (6, 1),
     # don't upgrade these; they break on Python 3.5
     ("ipykernel", "py3"): (5, 5),
     ("ipython", "py3"): (7, 9),
@@ -602,6 +607,7 @@ min_versions = {
 
 # should match the reqs with comments above
 pinned_reqs = (
+    ("jupyter-client", "py3"),
     ("ipykernel", "py3"),
     ("ipython", "py3"),
     ("jupyter-console", "py3"),
