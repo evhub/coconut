@@ -91,6 +91,7 @@ from coconut.compiler.util import (
     regex_item,
     stores_loc_item,
     invalid_syntax,
+    skip_to_in_line,
 )
 
 # end: IMPORTS
@@ -681,6 +682,12 @@ def string_atom_handle(tokens):
 string_atom_handle.ignore_one_token = True
 
 
+def alt_ternary_handle(tokens):
+    """Handle if ... then ... else ternary operator."""
+    cond, if_true, if_false = tokens
+    return "{if_true} if {cond} else {if_false}".format(cond=cond, if_true=if_true, if_false=if_false)
+
+
 # end: HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN GRAMMAR:
@@ -761,6 +768,7 @@ class Grammar(object):
     cases_kwd = keyword("cases", explicit_prefix=colon)
     where_kwd = keyword("where", explicit_prefix=colon)
     addpattern_kwd = keyword("addpattern", explicit_prefix=colon)
+    then_kwd = keyword("then", explicit_prefix=colon)
 
     ellipsis = Forward()
     ellipsis_ref = Literal("...") | Literal("\u2026")
@@ -1411,10 +1419,12 @@ class Grammar(object):
     typedef_atom <<= _typedef_atom
     typedef_or_expr <<= _typedef_or_expr
 
+    alt_ternary_expr = attach(keyword("if").suppress() + test_item + then_kwd.suppress() + test_item + keyword("else").suppress() + test, alt_ternary_handle)
     test <<= (
         typedef_callable
         | lambdef
-        | addspace(test_item + Optional(keyword("if") + test_item + keyword("else") + test))
+        | alt_ternary_expr
+        | addspace(test_item + Optional(keyword("if") + test_item + keyword("else") + test))  # must come last since it includes plain test_item
     )
     test_no_cond <<= lambdef_no_cond | test_item
 
@@ -1641,7 +1651,7 @@ class Grammar(object):
     exec_stmt = Forward()
     assert_stmt = addspace(keyword("assert") - testlist)
     if_stmt = condense(
-        addspace(keyword("if") - condense(namedexpr_test - suite))
+        addspace(keyword("if") + condense(namedexpr_test + suite))
         - ZeroOrMore(addspace(keyword("elif") - condense(namedexpr_test - suite)))
         - Optional(else_stmt),
     )
@@ -1990,6 +2000,8 @@ class Grammar(object):
 
     end_of_line = end_marker | Literal("\n") | pound
 
+    unsafe_equals = Literal("=")
+
     kwd_err_msg = attach(
         reduce(
             lambda a, b: a | b,
@@ -2001,7 +2013,7 @@ class Grammar(object):
     )
     parse_err_msg = start_marker + (
         fixto(end_marker, "misplaced newline (maybe missing ':')")
-        | fixto(equals, "misplaced assignment (maybe should be '==')")
+        | fixto(Optional(keyword("if") + skip_to_in_line(unsafe_equals)) + equals, "misplaced assignment (maybe should be '==')")
         | kwd_err_msg
     )
 

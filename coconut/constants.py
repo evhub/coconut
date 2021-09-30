@@ -227,6 +227,7 @@ reserved_vars = (  # can be backslash-escaped
     "cases",
     "where",
     "addpattern",
+    "then",
     "\u03bb",  # lambda
 )
 
@@ -673,11 +674,9 @@ search_terms = (
     "programming",
     "language",
     "compiler",
-    "match",
     "pattern",
     "pattern-matching",
     "algebraic",
-    "data",
     "data type",
     "data types",
     "lambda",
@@ -712,12 +711,9 @@ search_terms = (
     "datamaker",
     "prepattern",
     "iterator",
-    "case",
-    "cases",
     "none",
     "coalesce",
     "coalescing",
-    "where",
     "statement",
     "lru_cache",
     "memoization",
@@ -727,7 +723,7 @@ search_terms = (
     "embed",
     "PEP 622",
     "overrides",
-) + coconut_specific_builtins + magic_methods + exceptions
+) + coconut_specific_builtins + magic_methods + exceptions + reserved_vars
 
 exclude_install_dirs = (
     "docs",

@@ -1168,6 +1168,7 @@ In Coconut, the following keywords are also valid variable names:
 - `cases`
 - `where`
 - `addpattern`
+- `then`
 - `λ` (a [Unicode alternative](#unicode-alternatives) for `lambda`)
 
 While Coconut can usually disambiguate these two use cases, special syntax is available for disambiguating these two use cases. To specify that you want a _variable_, prefix the name with a backslash as in `\data`, and to specify that you want a _keyword_, prefix the name with a colon as in `:match`. Note that, if what you're writing can be interpreted as valid Python 3, Coconut will always prefer that interpretation by default.
@@ -1183,7 +1184,7 @@ print(\data)
 ```
 
 ```coconut
-# without the colon, Coconut will interpret this as match[x, y] = input_list
+# without the colon, Coconut will interpret this as the valid Python match[x, y] = input_list
 :match [x, y] = input_list
 ```
 
@@ -1488,6 +1489,42 @@ An imaginary literal yields a complex number with a real part of 0.0. Complex nu
 **Python:**
 ```coconut_python
 print(abs(3 + 4j))
+```
+
+### Alternative Ternary Operator
+
+Python supports the ternary operator syntax
+```coconut_python
+result = if_true if condition else if_false
+```
+which, since Coconut is a superset of Python, Coconut also supports.
+
+However, Coconut also provides an alternative syntax that uses the more conventional argument ordering as
+```
+result = if condition then if_true else if_false
+```
+making use of the Coconut-specific `then` keyword ([though Coconut still allows `then` as a variable name](#handling-keyword-variable-name-overlap)).
+
+##### Example
+
+**Coconut:**
+```coconut
+value = (
+    if should_use_a() then a
+    else if should_use_b() then b
+    else if should_use_c() then c
+    else fallback
+)
+```
+
+**Python:**
+````coconut_python
+value = (
+    a if should_use_a() else
+    b if should_use_b() else
+    c if should_use_c() else
+    fallback
+)
 ```
 
 ## Function Definition
