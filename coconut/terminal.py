@@ -242,9 +242,9 @@ class Logger(object):
             try:
                 raise warning
             except Exception:
-                self.display_exc()
+                self.print_exc()
 
-    def display_exc(self, err=None):
+    def print_exc(self, err=None):
         """Properly prints an exception in the exception context."""
         errmsg = self.get_error(err)
         if errmsg is not None:
@@ -260,7 +260,7 @@ class Logger(object):
     def log_exc(self, err=None):
         """Display an exception only if --verbose."""
         if self.verbose:
-            self.display_exc(err)
+            self.print_exc(err)
 
     def log_cmd(self, args):
         """Logs a console command if --verbose."""

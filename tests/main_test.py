@@ -23,7 +23,6 @@ import unittest
 import sys
 import os
 import shutil
-import traceback
 from contextlib import contextmanager
 
 import pexpect
@@ -233,7 +232,7 @@ def rm_path(path):
         try:
             shutil.rmtree(path)
         except OSError:
-            traceback.print_exc()
+            logger.print_exc()
     elif os.path.isfile(path):
         os.remove(path)
 
@@ -249,7 +248,7 @@ def using_path(path):
         try:
             rm_path(path)
         except OSError:
-            logger.display_exc()
+            logger.print_exc()
 
 
 @contextmanager
@@ -266,7 +265,7 @@ def using_dest(dest=dest):
         try:
             rm_path(dest)
         except OSError:
-            logger.display_exc()
+            logger.print_exc()
 
 
 @contextmanager

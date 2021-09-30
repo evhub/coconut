@@ -81,7 +81,7 @@ def load_ipython_extension(ipython):
                 code = cell
             compiled = parse(code)
         except CoconutException:
-            logger.display_exc()
+            logger.print_exc()
         else:
             ipython.run_cell(compiled, shell_futures=False)
     ipython.register_magic_function(magic, "line_cell", "coconut")

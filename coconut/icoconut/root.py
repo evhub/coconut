@@ -21,7 +21,6 @@ from coconut.root import *  # NOQA
 
 import os
 import sys
-import traceback
 
 try:
     import asyncio
@@ -148,7 +147,7 @@ if LOAD_MODULE:
             try:
                 compiled = memoized_parse_block(code)
             except CoconutException:
-                logger.display_exc()
+                logger.print_exc()
                 return None
             else:
                 return super(CoconutCompiler, self).cache(compiled, *args, **kwargs)
@@ -272,7 +271,7 @@ def user_expressions(self, expressions):
             try:
                 return super(CoconutKernel, self).do_complete(code, cursor_pos)
             except Exception:
-                traceback.print_exc()
+                logger.print_exc()
                 logger.warn_err(CoconutInternalException("experimental IPython completion failed, defaulting to shell completion"), force=True)
 
             # then if that fails default to shell completions
