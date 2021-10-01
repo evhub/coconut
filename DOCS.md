@@ -929,15 +929,15 @@ pattern ::= (
 `match` statements will take their pattern and attempt to "match" against it, performing the checks and deconstructions on the arguments as specified by the pattern. The different constructs that can be specified in a pattern, and their function, are:
 - Constants, Numbers, and Strings: will only match to the same constant, number, or string in the same position in the arguments.
 - Variables: will match to anything, and will be bound to whatever they match to, with some exceptions:
-  * If the same variable is used multiple times, a check will be performed that each use match to the same value.
-  * If the variable name `_` is used, nothing will be bound and everything will always match to it.
+  * If the same variable is used multiple times, a check will be performed that each use matches to the same value.
+  * If the variable name `_` is used, nothing will be bound and everything will always match to it (`_` is Coconut's "wildcard").
 - Explicit Bindings (`<pattern> as <var>`): will bind `<var>` to `<pattern>`.
-- Checks (`=<var>`): will check that whatever is in that position is `==` to the previously defined variable `<var>`.
+- Checks (`=<expr>`): will check that whatever is in that position is `==` to the expression `<expr>`.
 - `isinstance` Checks (`<var> is <types>`): will check that whatever is in that position `isinstance` of `<types>` before binding the `<var>`.
 - Data Types (`<name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`. Includes support for positional arguments, named arguments, and starred arguments.
 - Classes (`class <name>(<args>)`): does [PEP-622-style class matching](https://www.python.org/dev/peps/pep-0622/#class-patterns).
 - Lists (`[<patterns>]`), Tuples (`(<patterns>)`): will only match a sequence (`collections.abc.Sequence`) of the same length, and will check the contents against `<patterns>`.
-- Lazy lists (`(|<patterns>|)`): same as list or tuple matching, but checks iterable (`collections.abc.Iterable`) instead of sequence.
+- Lazy lists (`(|<patterns>|)`): same as list or tuple matching, but checks for an Iterable (`collections.abc.Iterable`) instead of a Sequence.
 - Fixed-Length Dicts (`{<pairs>}`): will only match a mapping (`collections.abc.Mapping`) of the same length, and will check the contents against `<pairs>`.
 - Dicts With Rest (`{<pairs>, **<rest>}`): will match a mapping (`collections.abc.Mapping`) containing all the `<pairs>`, and will put a `dict` of everything else into `<rest>`.
 - Sets (`{<constants>}`): will only match a set (`collections.abc.Set`) of the same length and contents.
@@ -949,7 +949,7 @@ pattern ::= (
 
 _Note: Like [iterator slicing](#iterator-slicing), iterator and lazy list matching make no guarantee that the original iterator matched against be preserved (to preserve the iterator, use Coconut's [`tee`](#tee) or [`reiterable`](#reiterable) built-ins)._
 
-When checking whether or not an object can be matched against in a particular fashion, Coconut makes use of Python's abstract base classes. Therefore, to enable proper matching for a custom object, register it with the proper abstract base classes.
+When checking whether or not an object can be matched against in a particular fashion, Coconut makes use of Python's abstract base classes. Therefore, to ensure proper matching for a custom object, it's recommended to register it with the proper abstract base classes.
 
 ##### Examples
 
