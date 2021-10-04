@@ -26,6 +26,7 @@ import json
 import traceback
 from zlib import crc32
 from warnings import warn
+from types import MethodType
 
 from coconut.constants import (
     fixpath,
@@ -61,6 +62,40 @@ def checksum(data):
     """Compute a checksum of the given data.
     Used for computing __coconut_hash__."""
     return crc32(data) & 0xffffffff  # necessary for cross-compatibility
+
+
+class override(object):
+    """Implementation of Coconut's @override for use within Coconut."""
+    __slots__ = ("func",)
+
+    # from _coconut_base_hashable
+    def __reduce_ex__(self, _):
+        return self.__reduce__()
+
+    def __eq__(self, other):
+        return self.__class__ is other.__class__ and self.__reduce__() == other.__reduce__()
+
+    def __hash__(self):
+        return hash(self.__reduce__())
+
+    # from override
+    def __init__(self, func):
+        self.func = func
+
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self.func
+        if PY2:
+            return MethodType(self.func, obj, objtype)
+        else:
+            return MethodType(self.func, obj)
+
+    def __set_name__(self, obj, name):
+        if not hasattr(super(obj, obj), name):
+            raise RuntimeError(obj.__name__ + "." + name + " marked with @override but not overriding anything")
+
+    def __reduce__(self):
+        return (self.__class__, (self.func,))
 
 
 # -----------------------------------------------------------------------------------------------------------------------

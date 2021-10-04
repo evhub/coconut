@@ -25,8 +25,8 @@ from functools import partial, reduce
 from contextlib import contextmanager
 from pprint import pformat
 
-from coconut import embed
 from coconut._pyparsing import (
+    USE_COMPUTATION_GRAPH,
     replaceWith,
     ZeroOrMore,
     OneOrMore,
@@ -45,6 +45,8 @@ from coconut._pyparsing import (
     _ParseResultsWithOffset,
 )
 
+from coconut import embed
+from coconut.util import override
 from coconut.terminal import (
     logger,
     complain,
@@ -57,7 +59,6 @@ from coconut.constants import (
     openindent,
     closeindent,
     default_whitespace_chars,
-    use_computation_graph,
     supported_py2_vers,
     supported_py3_vers,
     tabideal,
@@ -223,12 +224,13 @@ class CombineNode(Combine):
         internal_assert(len(combined_tokens) == 1, "Combine produced multiple tokens", combined_tokens)
         return combined_tokens[0]
 
+    @override
     def postParse(self, original, loc, tokens):
         """Create a ComputationNode for Combine."""
         return ComputationNode(self._combine, original, loc, tokens, ignore_no_tokens=True, ignore_one_token=True)
 
 
-if use_computation_graph:
+if USE_COMPUTATION_GRAPH:
     CustomCombine = CombineNode
 else:
     CustomCombine = Combine
@@ -241,7 +243,7 @@ def add_action(item, action):
 
 def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, **kwargs):
     """Set the parse action for the given item to create a node in the computation graph."""
-    if use_computation_graph:
+    if USE_COMPUTATION_GRAPH:
         # use the action's annotations to generate the defaults
         if ignore_no_tokens is None:
             ignore_no_tokens = getattr(action, "ignore_no_tokens", False)
@@ -258,7 +260,7 @@ def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, **kwargs)
 
 def final(item):
     """Collapse the computation graph upon parsing the given item."""
-    if use_computation_graph:
+    if USE_COMPUTATION_GRAPH:
         item = add_action(item, evaluate_tokens)
     return item
 
@@ -266,7 +268,7 @@ def final(item):
 def unpack(tokens):
     """Evaluate and unpack the given computation graph."""
     logger.log_tag("unpack", tokens)
-    if use_computation_graph:
+    if USE_COMPUTATION_GRAPH:
         tokens = evaluate_tokens(tokens)
     if isinstance(tokens, ParseResults) and len(tokens) == 1:
         tokens = tokens[0]
@@ -398,7 +400,7 @@ def get_target_info_smart(target, mode="lowest"):
 
 class Wrap(ParseElementEnhance):
     """PyParsing token that wraps the given item in the given context manager."""
-    __slots__ = ("errmsg", "wrapper")
+    __slots__ = ("errmsg", "wrapper", "name")
 
     def __init__(self, item, wrapper):
         super(Wrap, self).__init__(item)
@@ -407,17 +409,18 @@ class Wrap(ParseElementEnhance):
         self.name = get_name(item)
 
     @property
-    def wrapper_name(self):
+    def _wrapper_name(self):
         """Wrapper display name."""
         return self.name + " wrapper"
 
+    @override
     def parseImpl(self, instring, loc, *args, **kwargs):
         """Wrapper around ParseElementEnhance.parseImpl."""
-        logger.log_trace(self.wrapper_name, instring, loc)
+        logger.log_trace(self._wrapper_name, instring, loc)
         with logger.indent_tracing():
             with self.wrapper(self, instring, loc):
                 evaluated_toks = super(Wrap, self).parseImpl(instring, loc, *args, **kwargs)
-        logger.log_trace(self.wrapper_name, instring, loc, evaluated_toks)
+        logger.log_trace(self._wrapper_name, instring, loc, evaluated_toks)
         return evaluated_toks
 
 

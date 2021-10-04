@@ -46,10 +46,10 @@ from coconut.terminal import (
     logger,
     internal_assert,
 )
+from coconut.util import override
 from coconut.compiler import Compiler
 from coconut.compiler.util import should_indent
 from coconut.command.util import Runner
-from coconut.__coconut__ import override
 
 if WINDOWS and PY38 and asyncio is not None:  # attempt to fix zmq warning
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
