@@ -173,6 +173,8 @@ optional arguments:
                         set maximum recursion depth in compiler (defaults to 2000)
   --site-install, --siteinstall
                         set up coconut.convenience to be imported on Python start
+  --site-uninstall, --siteuninstall
+                        revert the effects of --site-install
   --verbose             print verbose debug output
   --trace               print verbose parsing data (only available in coconut-develop)```
 
