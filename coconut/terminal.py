@@ -25,14 +25,14 @@ import logging
 import time
 from contextlib import contextmanager
 
-from coconut import embed
-from coconut.root import _indent
 from coconut._pyparsing import (
     lineno,
     col,
     ParserElement,
 )
 
+from coconut import embed
+from coconut.root import _indent
 from coconut.constants import (
     info_tabulation,
     main_sig,
@@ -47,6 +47,7 @@ from coconut.exceptions import (
     CoconutInternalException,
     displayable,
 )
+
 
 # -----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
@@ -208,7 +209,7 @@ class Logger(object):
                 del new_vars[v]
             printerr(message, new_vars)
 
-    def get_error(self, err=None):
+    def get_error(self, err=None, show_tb=None):
         """Properly formats the current error."""
         if err is None:
             exc_info = sys.exc_info()
@@ -219,7 +220,13 @@ class Logger(object):
             return None
         else:
             err_type, err_value, err_trace = exc_info[0], exc_info[1], None
-            if self.verbose and len(exc_info) > 2:
+            if show_tb is None:
+                show_tb = (
+                    self.verbose
+                    or issubclass(err_type, CoconutInternalException)
+                    or not issubclass(err_type, CoconutException)
+                )
+            if show_tb and len(exc_info) > 2:
                 err_trace = exc_info[2]
             return format_error(err_type, err_value, err_trace)
 
@@ -244,9 +251,9 @@ class Logger(object):
             except Exception:
                 self.print_exc()
 
-    def print_exc(self, err=None):
+    def print_exc(self, err=None, show_tb=None):
         """Properly prints an exception in the exception context."""
-        errmsg = self.get_error(err)
+        errmsg = self.get_error(err, show_tb)
         if errmsg is not None:
             if self.path is not None:
                 errmsg_lines = ["in " + self.path + ":"]

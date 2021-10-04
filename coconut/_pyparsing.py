@@ -26,13 +26,15 @@ import functools
 from warnings import warn
 
 from coconut.constants import (
+    PURE_PYTHON,
+    PYPY,
     use_fast_pyparsing_reprs,
     packrat_cache,
     default_whitespace_chars,
     varchars,
     min_versions,
     pure_python_env_var,
-    PURE_PYTHON,
+    left_recursion_over_packrat,
 )
 from coconut.util import (
     ver_str_to_tuple,
@@ -48,11 +50,8 @@ try:
 
     import cPyparsing as _pyparsing
     from cPyparsing import *  # NOQA
-    from cPyparsing import (  # NOQA
-        _trim_arity,
-        _ParseResultsWithOffset,
-        __version__,
-    )
+    from cPyparsing import __version__
+
     PYPARSING_PACKAGE = "cPyparsing"
     PYPARSING_INFO = "Cython cPyparsing v" + __version__
 
@@ -61,11 +60,8 @@ except ImportError:
 
         import pyparsing as _pyparsing
         from pyparsing import *  # NOQA
-        from pyparsing import (  # NOQA
-            _trim_arity,
-            _ParseResultsWithOffset,
-            __version__,
-        )
+        from pyparsing import __version__
+
         PYPARSING_PACKAGE = "pyparsing"
         PYPARSING_INFO = "Python pyparsing v" + __version__
 
@@ -75,8 +71,9 @@ except ImportError:
         PYPARSING_PACKAGE = "cPyparsing"
         PYPARSING_INFO = None
 
+
 # -----------------------------------------------------------------------------------------------------------------------
-# SETUP:
+# VERSION CHECKING:
 # -----------------------------------------------------------------------------------------------------------------------
 
 min_ver = min(min_versions["pyparsing"], min_versions["cPyparsing"][:3])  # inclusive
@@ -99,13 +96,44 @@ elif cur_ver >= max_ver:
     )
 
 
+# -----------------------------------------------------------------------------------------------------------------------
+# SETUP:
+# -----------------------------------------------------------------------------------------------------------------------
+
+if cur_ver >= (3,):
+    MODERN_PYPARSING = True
+    _trim_arity = _pyparsing.core._trim_arity
+    _ParseResultsWithOffset = _pyparsing.core._ParseResultsWithOffset
+else:
+    MODERN_PYPARSING = False
+    _trim_arity = _pyparsing._trim_arity
+    _ParseResultsWithOffset = _pyparsing._ParseResultsWithOffset
+
+USE_COMPUTATION_GRAPH = (
+    not MODERN_PYPARSING  # not yet supported
+    and not PYPY  # experimentally determined
+)
+
+if left_recursion_over_packrat and MODERN_PYPARSING:
+    ParserElement.enable_left_recursion()
+elif packrat_cache:
+    ParserElement.enablePackrat(packrat_cache)
+
+ParserElement.setDefaultWhitespaceChars(default_whitespace_chars)
+
+Keyword.setDefaultKeywordChars(varchars)
+
+
+# -----------------------------------------------------------------------------------------------------------------------
+# FAST REPR:
+# -----------------------------------------------------------------------------------------------------------------------
+
 if PY2:
     def fast_repr(cls):
         """A very simple, fast __repr__/__str__ implementation."""
         return "<" + cls.__name__ + ">"
 else:
     fast_repr = object.__repr__
-
 
 # makes pyparsing much faster if it doesn't have to compute expensive
 #  nested string representations
@@ -117,11 +145,3 @@ if use_fast_pyparsing_reprs:
                 obj.__str__ = functools.partial(fast_repr, obj)
         except TypeError:
             pass
-
-
-if packrat_cache:
-    ParserElement.enablePackrat(packrat_cache)
-
-ParserElement.setDefaultWhitespaceChars(default_whitespace_chars)
-
-Keyword.setDefaultKeywordChars(varchars)

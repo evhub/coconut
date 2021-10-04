@@ -48,6 +48,7 @@ from coconut._pyparsing import (
     nestedExpr,
     FollowedBy,
 )
+
 from coconut.exceptions import (
     CoconutInternalException,
     CoconutDeferredSyntaxError,

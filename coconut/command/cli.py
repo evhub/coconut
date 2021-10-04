@@ -23,6 +23,7 @@ import sys
 import argparse
 
 from coconut._pyparsing import PYPARSING_INFO
+
 from coconut.constants import (
     documentation_url,
     default_recursion_limit,

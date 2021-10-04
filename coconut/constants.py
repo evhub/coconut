@@ -79,6 +79,8 @@ assert use_fast_pyparsing_reprs or DEVELOP, "use_fast_pyparsing_reprs disabled o
 
 packrat_cache = 512
 
+left_recursion_over_packrat = False  # experimentally determined
+
 # we don't include \r here because the compiler converts \r into \n
 default_whitespace_chars = " \t\f\v\xa0"
 
@@ -91,8 +93,6 @@ varchars = string.ascii_letters + string.digits + "_"
 # set this to True only ever temporarily for ease of debugging
 embed_on_internal_exc = False
 assert not embed_on_internal_exc or DEVELOP, "embed_on_internal_exc enabled on non-develop build"
-
-use_computation_graph = not PYPY  # experimentally determined
 
 template_ext = ".py_template"
 
@@ -476,7 +476,7 @@ website_url = "http://coconut-lang.org"
 license_name = "Apache 2.0"
 
 pure_python_env_var = "COCONUT_PURE_PYTHON"
-PURE_PYTHON = os.environ.get(pure_python_env_var, "").lower() in ["true", "1"]
+PURE_PYTHON = str_to_bool(os.environ.get(pure_python_env_var, ""))
 
 # the different categories here are defined in requirements.py,
 #  anything after a colon is ignored but allows different versions
