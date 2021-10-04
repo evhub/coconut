@@ -77,13 +77,11 @@ IPY = ((PY2 and not PY26) or PY35) and not (PYPY and WINDOWS)
 use_fast_pyparsing_reprs = True
 assert use_fast_pyparsing_reprs or DEVELOP, "use_fast_pyparsing_reprs disabled on non-develop build"
 
-# set this to True only ever temporarily for ease of debugging
-enable_pyparsing_warnings = False
-assert not enable_pyparsing_warnings or DEVELOP, "enable_pyparsing_warnings enabled on non-develop build"
+enable_pyparsing_warnings = DEVELOP
 
+# experimentally determined to maximize speed
 packrat_cache = 512
-
-left_recursion_over_packrat = False  # experimentally determined
+left_recursion_over_packrat = False
 
 # we don't include \r here because the compiler converts \r into \n
 default_whitespace_chars = " \t\f\v\xa0"
