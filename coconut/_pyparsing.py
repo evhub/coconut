@@ -35,6 +35,7 @@ from coconut.constants import (
     min_versions,
     pure_python_env_var,
     left_recursion_over_packrat,
+    enable_pyparsing_warnings,
 )
 from coconut.util import (
     ver_str_to_tuple,
@@ -113,6 +114,10 @@ USE_COMPUTATION_GRAPH = (
     not MODERN_PYPARSING  # not yet supported
     and not PYPY  # experimentally determined
 )
+
+if enable_pyparsing_warnings:
+    _pyparsing._enable_all_warnings()
+    _pyparsing.__diag__.warn_name_set_on_empty_Forward = False
 
 if left_recursion_over_packrat and MODERN_PYPARSING:
     ParserElement.enable_left_recursion()
