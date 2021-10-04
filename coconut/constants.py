@@ -558,7 +558,7 @@ all_reqs = {
 # min versions are inclusive
 min_versions = {
     "pyparsing": (2, 4, 7),
-    "cPyparsing": (2, 4, 5, 0, 1, 2),
+    "cPyparsing": (2, 4, 7, 1, 0, 0),
     ("pre-commit", "py3"): (2,),
     "recommonmark": (0, 7),
     "psutil": (5,),
