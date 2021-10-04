@@ -422,7 +422,7 @@ def comp_prelude(args=[], **kwargs):
 
 def run_prelude(**kwargs):
     """Runs coconut-prelude."""
-    call(["make", "base-install"])
+    call(["make", "base-install"], cwd=prelude)
     call(["pytest", "--strict", "-s", os.path.join(prelude, "prelude")], assert_output="passed", **kwargs)
 
 
