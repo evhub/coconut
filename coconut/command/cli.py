@@ -265,6 +265,12 @@ arguments.add_argument(
 )
 
 arguments.add_argument(
+    "--site-uninstall", "--siteuninstall",
+    action="store_true",
+    help="revert the effects of --site-install",
+)
+
+arguments.add_argument(
     "--verbose",
     action="store_true",
     help="print verbose debug output",

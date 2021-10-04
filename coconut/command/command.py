@@ -174,6 +174,8 @@ class Command(object):
         # validate general command args
         if args.mypy is not None and args.line_numbers:
             logger.warn("extraneous --line-numbers argument passed; --mypy implies --line-numbers")
+        if args.site_install and args.site_uninstall:
+            raise CoconutException("cannot --site-install and --site-uninstall simultaneously")
 
         # process general command args
         if args.recursion_limit is not None:
@@ -192,6 +194,8 @@ class Command(object):
             launch_documentation()
         if args.tutorial:
             launch_tutorial()
+        if args.site_uninstall:
+            self.site_uninstall()
         if args.site_install:
             self.site_install()
         if args.argv is not None:
@@ -274,6 +278,7 @@ class Command(object):
                 or args.tutorial
                 or args.docs
                 or args.watch
+                or args.site_uninstall
                 or args.site_install
                 or args.jupyter is not None
                 or args.mypy == [mypy_install_arg]
@@ -900,10 +905,25 @@ class Command(object):
                 observer.stop()
                 observer.join()
 
-    def site_install(self):
-        """Add coconut.pth to site-packages."""
-        from distutils.sysconfig import get_python_lib
+    def get_python_lib(self):
+        """Get current Python lib location."""
+        from distutils import sysconfig  # expensive, so should only be imported here
+        return fixpath(sysconfig.get_python_lib())
 
-        python_lib = fixpath(get_python_lib())
+    def site_install(self):
+        """Add Coconut's pth file to site-packages."""
+        python_lib = self.get_python_lib()
+
         shutil.copy(coconut_pth_file, python_lib)
         logger.show_sig("Added %s to %s." % (os.path.basename(coconut_pth_file), python_lib))
+
+    def site_uninstall(self):
+        """Remove Coconut's pth file from site-packages."""
+        python_lib = self.get_python_lib()
+        pth_file = os.path.join(python_lib, os.path.basename(coconut_pth_file))
+
+        if os.path.isfile(pth_file):
+            os.remove(pth_file)
+            logger.show_sig("Removed %s from %s." % (os.path.basename(coconut_pth_file), python_lib))
+        else:
+            raise CoconutException("failed to find %s file to remove" % (os.path.basename(coconut_pth_file),))

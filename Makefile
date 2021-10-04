@@ -182,6 +182,9 @@ clean:
 
 .PHONY: wipe
 wipe: clean
+	-python -m coconut --site-uninstall
+	-python3 -m coconut --site-uninstall
+	-python2 -m coconut --site-uninstall
 	-pip uninstall coconut
 	-pip uninstall coconut-develop
 	-pip3 uninstall coconut
