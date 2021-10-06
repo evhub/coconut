@@ -619,10 +619,17 @@ data trilen(h):
 
 # Inheritance:
 class A:
+    a = 1
     def true(self):
         return True
-class B(A):
+class inh_A(A):
     pass
+class B:
+    b = 2
+class C:
+    c = 3
+class D:
+    d = 4
 
 # Nesting:
 class Nest:
