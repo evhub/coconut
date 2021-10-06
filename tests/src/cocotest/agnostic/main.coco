@@ -803,6 +803,15 @@ def main_test() -> bool:
     assert "{x}" f"{x}" == "{x}1"
     from enum import Enum
     assert (if False then 1 else 2) == 2 == (if False then 1 else if True then 2 else 3)
+    class metaA(type):
+        def __instancecheck__(cls, inst):
+            return True
+    class A(metaclass=metaA): pass  # type: ignore
+    assert isinstance(A(), A)
+    assert isinstance("", A)
+    assert isinstance(5, A)
+    class B(*()): pass  # type: ignore
+    assert isinstance(B(), B)
     return True
 
 def test_asyncio() -> bool:
