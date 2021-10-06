@@ -241,7 +241,6 @@ Finally, while Coconut will try to compile Python-3-specific syntax to its unive
 
 - the `nonlocal` keyword,
 - `exec` used in a context where it must be a function,
-- keyword class definition,
 - keyword-only function arguments (use pattern-matching function definition instead),
 - destructuring assignment with `*`s (use pattern-matching instead),
 - tuples and lists with `*` unpacking or dicts with `**` unpacking (requires `--target 3.5`),

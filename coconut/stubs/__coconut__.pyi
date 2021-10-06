@@ -610,3 +610,9 @@ def consume(
 
 
 def fmap(func: _t.Callable[[_Tco], _Uco], obj: _t.Iterable[_Tco]) -> _t.Iterable[_Uco]: ...
+
+
+def _coconut_handle_cls_kwargs(**kwargs: _t.Dict[_t.Text, _t.Any]) -> _t.Callable[_T, _T]: ...
+
+
+def _coconut_handle_cls_stargs(*args: _t.Any) -> _t.Any: ...
