@@ -87,6 +87,7 @@ from coconut.compiler.grammar import (
     Grammar,
     lazy_list_handle,
     get_infix_items,
+    split_function_call,
 )
 from coconut.compiler.util import (
     get_target_info,
@@ -113,6 +114,7 @@ from coconut.compiler.util import (
     handle_indentation,
     Wrap,
     tuple_str_of,
+    join_args,
 )
 from coconut.compiler.header import (
     minify,
@@ -1384,20 +1386,33 @@ while True:
                 out += ""
             else:
                 out += "(_coconut.object)"
-        elif len(classlist_toks) == 1 and len(classlist_toks[0]) == 1:
-            if "tests" in classlist_toks[0]:
-                if self.strict and classlist_toks[0][0] == "(object)":
-                    raise self.make_err(CoconutStyleError, "unnecessary inheriting from object (Coconut does this automatically)", original, loc)
-                out += classlist_toks[0][0]
-            elif "args" in classlist_toks[0]:
-                if self.target.startswith("3"):
-                    out += classlist_toks[0][0]
-                else:
-                    raise self.make_err(CoconutTargetError, "found Python 3 keyword class definition", original, loc, target="3")
-            else:
-                raise CoconutInternalException("invalid inner classlist_toks token", classlist_toks[0])
+
         else:
-            raise CoconutInternalException("invalid classlist_toks tokens", classlist_toks)
+            pos_args, star_args, kwd_args, dubstar_args = split_function_call(classlist_toks, loc)
+
+            # check for just inheriting from object
+            if (
+                self.strict
+                and len(pos_args) == 1
+                and pos_args[0] == "object"
+                and not star_args
+                and not kwd_args
+                and not dubstar_args
+            ):
+                raise self.make_err(CoconutStyleError, "unnecessary inheriting from object (Coconut does this automatically)", original, loc)
+
+            # universalize if not Python 3
+            if not self.target.startswith("3"):
+
+                if star_args:
+                    pos_args += ["_coconut_handle_cls_stargs(" + join_args(star_args) + ")"]
+                    star_args = ()
+
+                if kwd_args or dubstar_args:
+                    out = "@_coconut_handle_cls_kwargs(" + join_args(kwd_args, dubstar_args) + ")\n" + out
+                    kwd_args = dubstar_args = ()
+
+            out += "(" + join_args(pos_args, star_args, kwd_args, dubstar_args) + ")"
 
         out += body
 

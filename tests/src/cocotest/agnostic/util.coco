@@ -1079,3 +1079,10 @@ def server([req] :: reqs) =
 init = 0
 def nxt(resp) = resp
 def process(req) = req+1
+
+
+# Metaclass
+class Meta(type):
+    def __new__(cls, name, bases, namespace, **kwargs):
+        namespace.update(kwargs)
+        return super().__new__(cls, name, bases, namespace)

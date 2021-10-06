@@ -1446,13 +1446,7 @@ class Grammar(object):
     async_comp_for = Forward()
     classdef = Forward()
     classlist = Group(
-        Optional(
-            lparen.suppress() + rparen.suppress()
-            | Group(
-                condense(lparen + testlist + rparen)("tests")
-                | function_call("args"),
-            ),
-        )
+        Optional(function_call_tokens)
         + ~equals,  # don't match class destructuring assignment
     )
     class_suite = suite | attach(newline, class_suite_handle)

@@ -300,8 +300,6 @@ return _coconut.types.MethodType(self.func, obj)
             if set_name is not None:
                 set_name(cls, k)'''
         ),
-        tco_comma="_coconut_tail_call, _coconut_tco, " if not no_tco else "",
-        call_set_names_comma="_coconut_call_set_names, " if target_info < (3, 6) else "",
         pattern_func_slots=pycondition(
             (3, 7),
             if_lt=r'''
@@ -326,13 +324,16 @@ self.__qualname__ = _coconut.getattr(func, "__qualname__", self.__qualname__)
             ''',
             indent=2,
         ),
+        tco_comma="_coconut_tail_call, _coconut_tco, " if not no_tco else "",
+        call_set_names_comma="_coconut_call_set_names, " if target_info < (3, 6) else "",
+        handle_cls_args_comma="_coconut_handle_cls_kwargs, _coconut_handle_cls_stargs, " if target_startswith != "3" else "",
     )
 
     # second round for format dict elements that use the format dict
     format_dict.update(
         dict(
             # when anything is added to this list it must also be added to *both* __coconut__.pyi stub files
-            underscore_imports="{tco_comma}{call_set_names_comma}_coconut, _coconut_MatchError, _coconut_igetitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_star_pipe, _coconut_dubstar_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_back_dubstar_pipe, _coconut_none_pipe, _coconut_none_star_pipe, _coconut_none_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_mark_as_match, _coconut_reiterable".format(**format_dict),
+            underscore_imports="{tco_comma}{call_set_names_comma}{handle_cls_args_comma}_coconut, _coconut_MatchError, _coconut_igetitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_star_pipe, _coconut_dubstar_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_back_dubstar_pipe, _coconut_none_pipe, _coconut_none_star_pipe, _coconut_none_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_mark_as_match, _coconut_reiterable".format(**format_dict),
             import_typing_NamedTuple=pycondition(
                 (3, 6),
                 if_lt='''
