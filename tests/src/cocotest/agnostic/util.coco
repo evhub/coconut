@@ -1086,3 +1086,5 @@ class Meta(type):
     def __new__(cls, name, bases, namespace, **kwargs):
         namespace.update(kwargs)
         return super().__new__(cls, name, bases, namespace)
+    def __init__(*args, **kwargs):
+        return super().__init__(*args)  # drop kwargs
