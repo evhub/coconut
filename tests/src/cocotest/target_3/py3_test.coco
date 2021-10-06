@@ -16,17 +16,8 @@ def py3_test() -> bool:
         head, *tail = l
         return head, tail
     assert head_tail((|1, 2, 3|)) == (1, [2, 3])
-    class metaA(type):
-        def __instancecheck__(cls, inst):
-            return True
-    class A(metaclass=metaA): pass
-    assert isinstance(A(), A)
-    assert isinstance("", A)
-    assert isinstance(5, A)
     assert py_map((x) -> x+1, range(4)) |> tuple == (1, 2, 3, 4)
     assert py_zip(range(3), range(3)) |> tuple == ((0, 0), (1, 1), (2, 2))
-    class B(*()): pass  # type: ignore
-    assert isinstance(B(), B)
     e = exec
     test: dict = {}
     e("a=1", test)
