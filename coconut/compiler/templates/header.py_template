@@ -81,7 +81,7 @@ def _coconut_tco(func):{COMMENT._coconut_tco_func_attr_is_used_in_main_coco}
     _coconut_tco_func_dict[_coconut.id(tail_call_optimized_func)] = _coconut.weakref.ref(tail_call_optimized_func)
     return tail_call_optimized_func
 def _coconut_igetitem(iterable, index):
-    obj_igetitem = _coconut.getattr(iterable, "__igetitem__", None)
+    obj_igetitem = _coconut.getattr(iterable, "__iter_getitem__", None)
     if obj_igetitem is None:
         obj_igetitem = _coconut.getattr(iterable, "__getitem__", None)
     if obj_igetitem is not None:
