@@ -419,7 +419,7 @@ coconut_specific_builtins = (
 
 magic_methods = (
     "__fmap__",
-    "__igetitem__",
+    "__iter_getitem__",
 )
 
 exceptions = (
