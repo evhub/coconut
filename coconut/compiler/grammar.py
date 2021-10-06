@@ -1951,10 +1951,15 @@ class Grammar(object):
         )
 
     tco_return = attach(
-        start_marker + keyword("return").suppress() + condense(
+        start_marker
+        + keyword("return").suppress()
+        + ~(keyword("super", explicit_prefix=False) + lparen + rparen)  # TCO can't handle super()
+        + condense(
             (base_name | parens | brackets | braces | string)
             + ZeroOrMore(dot + base_name | brackets | parens + ~end_marker),
-        ) + original_function_call_tokens + end_marker,
+        )
+        + original_function_call_tokens
+        + end_marker,
         tco_return_handle,
         # this is the root in what it's used for, so might as well evaluate greedily
         greedy=True,

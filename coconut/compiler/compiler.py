@@ -2148,6 +2148,7 @@ else:
                             )
                     line = indent + "raise " + ret_err + "(" + to_return + ")" + comment + dedent
 
+                # TRE
                 tre_base = None
                 if attempt_tre:
                     tre_base = self.post_transform(tre_return_grammar, base)
@@ -2157,6 +2158,7 @@ else:
                         # when tco is available, tre falls back on it if the function is changed
                         tco = not self.no_tco
 
+                # TCO
                 if (
                     attempt_tco
                     # don't attempt tco if tre succeeded
