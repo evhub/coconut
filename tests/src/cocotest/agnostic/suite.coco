@@ -193,7 +193,7 @@ def suite_test() -> bool:
     assert is_one([1])
     assert trilen(3, 4).h == 5 == datamaker(trilen)(5).h
     assert A().true()
-    assert B().true()
+    assert inh_A().true()
     assert pt.__doc__
     out0 = grid() |> grid_trim$(xmax=5, ymax=5)
     assert out0 == [
@@ -660,19 +660,7 @@ def suite_test() -> bool:
     m = methtest2()
     assert m.inf_rec(5) == 10 == m.inf_rec_(5)
     assert reqs(lazy_client)$[:10] |> list == range(10) |> list == reqs(lazy_client_)$[:10] |> list
-    def mkT():
-        """hide namespace"""
-        class A:
-            a = 1
-        class B:
-            b = 2
-        class C:
-            c = 3
-        class D:
-            d = 4
-        class T(A, B, *(C, D), metaclass=Meta, e=5)
-        return T
-    T = mkT()
+    class T(A, B, *(C, D), metaclass=Meta, e=5)
     assert T.a == 1
     assert T.b == 2
     assert T.c == 3
