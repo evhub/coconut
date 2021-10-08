@@ -549,13 +549,15 @@ def math_funcdef_handle(tokens):
 
 def except_handle(tokens):
     """Process except statements."""
-    if len(tokens) == 1:
-        errs, asname = tokens[0], None
-    elif len(tokens) == 2:
-        errs, asname = tokens
+    if len(tokens) == 2:
+        except_kwd, errs = tokens
+        asname = None
+    elif len(tokens) == 3:
+        except_kwd, errs, asname = tokens
     else:
         raise CoconutInternalException("invalid except tokens", tokens)
-    out = "except "
+
+    out = except_kwd + " "
     if "list" in tokens:
         out += "(" + errs + ")"
     else:
@@ -760,6 +762,8 @@ class Grammar(object):
     dubquestion = Literal("??")
     questionmark = ~dubquestion + Literal("?")
 
+    except_star_kwd = Combine(keyword("except") + star)
+    except_kwd = ~except_star_kwd + keyword("except")
     lambda_kwd = keyword("lambda") | fixto(keyword("\u03bb", explicit_prefix=colon), "lambda")
     async_kwd = keyword("async", explicit_prefix=colon)
     await_kwd = keyword("await", explicit_prefix=colon)
@@ -1643,7 +1647,6 @@ class Grammar(object):
     )
     case_stmt_ref = case_stmt_co_syntax | case_stmt_py_syntax
 
-    exec_stmt = Forward()
     assert_stmt = addspace(keyword("assert") - testlist)
     if_stmt = condense(
         addspace(keyword("if") + condense(namedexpr_test + suite))
@@ -1652,21 +1655,8 @@ class Grammar(object):
     )
     while_stmt = addspace(keyword("while") - condense(namedexpr_test - suite - Optional(else_stmt)))
     for_stmt = addspace(keyword("for") - assignlist - keyword("in") - condense(testlist - suite - Optional(else_stmt)))
-    except_clause = attach(
-        keyword("except").suppress() + (
-            testlist_has_comma("list") | test("test")
-        ) - Optional(keyword("as").suppress() - name),
-        except_handle,
-    )
-    try_stmt = condense(
-        keyword("try") - suite + (
-            keyword("finally") - suite
-            | (
-                OneOrMore(except_clause - suite) - Optional(keyword("except") - suite)
-                | keyword("except") - suite
-            ) - Optional(else_stmt) - Optional(keyword("finally") - suite)
-        ),
-    )
+
+    exec_stmt = Forward()
     exec_stmt_ref = keyword("exec").suppress() + lparen.suppress() + test + Optional(
         comma.suppress() + test + Optional(
             comma.suppress() + test + Optional(
@@ -1674,6 +1664,26 @@ class Grammar(object):
             ),
         ),
     ) + rparen.suppress()
+
+    except_item = (
+        testlist_has_comma("list")
+        | test("test")
+    ) - Optional(
+        keyword("as").suppress() - name,
+    )
+    except_clause = attach(except_kwd + except_item, except_handle)
+    except_star_clause = Forward()
+    except_star_clause_ref = attach(except_star_kwd + except_item, except_handle)
+    try_stmt = condense(
+        keyword("try") - suite + (
+            keyword("finally") - suite
+            | (
+                OneOrMore(except_clause - suite) - Optional(except_kwd - suite)
+                | except_kwd - suite
+                | OneOrMore(except_star_clause - suite)
+            ) - Optional(else_stmt) - Optional(keyword("finally") - suite)
+        ),
+    )
 
     with_item = addspace(test + Optional(keyword("as") + base_assign_item))
     with_item_list = Group(maybeparens(lparen, tokenlist(with_item, comma), rparen))
