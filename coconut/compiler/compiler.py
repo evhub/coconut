@@ -494,6 +494,7 @@ class Compiler(Grammar):
         self.namedexpr <<= attach(self.namedexpr_ref, self.namedexpr_check)
         self.new_namedexpr <<= attach(self.new_namedexpr_ref, self.new_namedexpr_check)
         self.match_dotted_name_const <<= attach(self.match_dotted_name_const_ref, self.match_dotted_name_const_check)
+        self.except_star_clause <<= attach(self.except_star_clause_ref, self.except_star_clause_check)
 
     def copy_skips(self):
         """Copy the line skips."""
@@ -2730,6 +2731,10 @@ __annotations__["{name}"] = {annotation}
     def new_namedexpr_check(self, original, loc, tokens):
         """Check for Python-3.10-only assignment expressions."""
         return self.check_py("310", "assignment expression in index or set literal", original, loc, tokens)
+
+    def except_star_clause_check(self, original, loc, tokens):
+        """Check for Python-3.11-only except* statements."""
+        return self.check_py("311", "except* statement", original, loc, tokens)
 
 # end: CHECKING HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------

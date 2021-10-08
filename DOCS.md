@@ -246,8 +246,9 @@ Finally, while Coconut will try to compile Python-3-specific syntax to its unive
 - tuples and lists with `*` unpacking or dicts with `**` unpacking (requires `--target 3.5`),
 - `@` as matrix multiplication (requires `--target 3.5`),
 - `async` and `await` statements (requires `--target 3.5`),
-- `:=` assignment expressions (requires `--target 3.8`), and
-- positional-only function arguments (use pattern-matching function definition instead) (requires `--target 3.8`).
+- `:=` assignment expressions (requires `--target 3.8`),
+- positional-only function arguments (use pattern-matching function definition instead) (requires `--target 3.8`), and
+- `except*` multi-except statement (requires `--target 3.11`).
 
 ### Allowable Targets
 
@@ -264,7 +265,8 @@ If the version of Python that the compiled code will be running on is known ahea
 - `3.7` (will work on any Python `>= 3.7`),
 - `3.8` (will work on any Python `>= 3.8`),
 - `3.9` (will work on any Python `>= 3.9`),
-- `3.10` (will work on any Python `>= 3.10`), and
+- `3.10` (will work on any Python `>= 3.10`),
+- `3.11` (will work on any Python `>= 3.11`), and
 - `sys` (chooses the target corresponding to the current Python version).
 
 _Note: Periods are ignored in target specifications, such that the target `27` is equivalent to the target `2.7`._
