@@ -36,12 +36,15 @@ def fixpath(path):
     return os.path.normcase(os.path.normpath(os.path.realpath(os.path.expanduser(path))))
 
 
-def str_to_bool(boolstr):
+def str_to_bool(boolstr, default=False):
     """Convert a string to a boolean."""
-    if boolstr.lower() in ["true", "yes", "on", "1"]:
+    boolstr = boolstr.lower()
+    if boolstr in ("true", "yes", "on", "1"):
         return True
-    else:
+    elif boolstr in ("false", "no", "off", "0"):
         return False
+    else:
+        return default
 
 
 # -----------------------------------------------------------------------------------------------------------------------
