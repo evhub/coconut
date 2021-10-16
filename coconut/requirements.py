@@ -188,7 +188,6 @@ extras.update({
     "docs": unique_wrt(get_reqs("docs"), requirements),
     "tests": uniqueify_all(
         get_reqs("tests"),
-        get_reqs("purepython"),
         extras["enum"],
         extras["jobs"] if not PYPY else [],
         extras["jupyter"] if IPY else [],

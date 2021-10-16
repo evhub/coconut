@@ -145,7 +145,7 @@ test-easter-eggs:
 
 # same as test-basic but uses python pyparsing
 .PHONY: test-pyparsing
-test-pyparsing: COCONUT_PURE_PYTHON=TRUE
+test-pyparsing: export COCONUT_PURE_PYTHON=TRUE
 test-pyparsing: test-basic
 
 # same as test-basic but uses --minify
