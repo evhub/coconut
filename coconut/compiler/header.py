@@ -226,7 +226,8 @@ import collections.abc as abc
             by=1,
         ),
         comma_bytearray=", bytearray" if target_startswith != "3" else "",
-        static_repr="staticmethod(repr)" if target_startswith != "3" else "repr",
+        lstatic="staticmethod(" if target_startswith != "3" else "",
+        rstatic=")" if target_startswith != "3" else "",
         zip_iter=_indent(
             r'''for items in _coconut.iter(_coconut.zip(*self.iters, strict=self.strict) if _coconut_sys.version_info >= (3, 10) else _coconut.zip_longest(*self.iters, fillvalue=_coconut_sentinel) if self.strict else _coconut.zip(*self.iters)):
     if self.strict and _coconut_sys.version_info < (3, 10) and _coconut.any(x is _coconut_sentinel for x in items):

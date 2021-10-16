@@ -323,6 +323,11 @@ def install_mypy_stubs():
     return installed_stub_dir
 
 
+def set_env_var(name, value):
+    """Universally set an environment variable."""
+    os.environ[py_str(name)] = py_str(value)
+
+
 def set_mypy_path():
     """Put Coconut stubs in MYPYPATH."""
     install_dir = install_mypy_stubs()
@@ -334,8 +339,8 @@ def set_mypy_path():
     else:
         new_mypy_path = None
     if new_mypy_path is not None:
-        os.environ[mypy_path_env_var] = new_mypy_path
-    logger.log_func(lambda: (mypy_path_env_var, "=", os.environ[mypy_path_env_var]))
+        set_env_var(mypy_path_env_var, new_mypy_path)
+    logger.log_func(lambda: (mypy_path_env_var, "=", os.environ.get(mypy_path_env_var)))
     return install_dir
 
 
