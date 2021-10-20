@@ -1576,20 +1576,22 @@ class Grammar(object):
         ),
     )
 
-    matchlist_trailer = base_match + OneOrMore(keyword("as") + name | keyword("is") + atom_item)
-    as_match = Group(matchlist_trailer("trailer")) | base_match
+    matchlist_trailer = base_match + OneOrMore(keyword("is") + atom_item)  # match_trailer expects unsuppressed is
+    trailer_match = Group(matchlist_trailer("trailer")) | base_match
+
+    matchlist_bar_or = trailer_match + OneOrMore(bar.suppress() + trailer_match)
+    bar_or_match = Group(matchlist_bar_or("or")) | trailer_match
+
+    matchlist_as = bar_or_match + OneOrMore(keyword("as") + name)  # match_trailer expects unsuppressed as
+    as_match = Group(matchlist_as("trailer")) | bar_or_match
 
     matchlist_and = as_match + OneOrMore(keyword("and").suppress() + as_match)
     and_match = Group(matchlist_and("and")) | as_match
 
-    match_or_op = (keyword("or") | bar).suppress()
-    matchlist_or = and_match + OneOrMore(match_or_op + and_match)
-    or_match = Group(matchlist_or("or")) | and_match
+    matchlist_kwd_or = and_match + OneOrMore(keyword("or").suppress() + and_match)
+    kwd_or_match = Group(matchlist_kwd_or("or")) | and_match
 
-    matchlist_walrus = name + colon_eq.suppress() + or_match
-    walrus_match = Group(matchlist_walrus("walrus")) | or_match
-
-    match <<= trace(walrus_match)
+    match <<= trace(kwd_or_match)
 
     many_match = (
         Group(matchlist_star("star"))

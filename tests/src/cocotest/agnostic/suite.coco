@@ -125,8 +125,7 @@ def suite_test() -> bool:
     assert map_((+)$(1), ()) == ()
     assert map_((+)$(1), [0,1,2,3]) == [1,2,3,4]
     assert map_((+)$(1), (0,1,2,3)) == (1,2,3,4)
-    assert duplicate_first1([1,2,3]) == [1,1,2,3]
-    assert duplicate_first2([1,2,3]) |> list == [1,1,2,3] == duplicate_first3([1,2,3]) |> list
+    assert duplicate_first1([1,2,3]) == [1,1,2,3] == duplicate_first2([1,2,3]) |> list
     assert one_to_five([1,2,3,4,5]) == [2,3,4]
     assert not one_to_five([0,1,2,3,4,5])
     assert one_to_five([1,5]) == []
@@ -281,8 +280,7 @@ def suite_test() -> bool:
         pass
     else:
         assert False
-    assert x_as_y_1(x=2) == (2, 2) == x_as_y_1(y=2)
-    assert x_as_y_2(x=2) == (2, 2) == x_as_y_2(y=2)
+    assert x_as_y(x=2) == (2, 2) == x_as_y(y=2)
     assert x_y_are_int_gt_0(1, 2) == (1, 2) == x_y_are_int_gt_0(x=1, y=2)
     try:
         x_y_are_int_gt_0(1, y=0)
