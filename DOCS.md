@@ -288,8 +288,8 @@ The style issues which will cause `--strict` to throw an error are:
 - trailing whitespace at end of lines,
 - semicolons at end of lines,
 - use of the Python-style `lambda` statement (use [Coconut's lambda syntax](#lambdas) instead),
-- [Python 3.10/PEP-622-style `match ...: case ...:` syntax](#pep-622-support) (use [Coconut's `case ...: match ...:` syntax](#case) instead),
-- Python-3.10/PEP-622-style dotted names in pattern-matching (Coconut style is to preface these with an `=`),
+- [Python 3.10/PEP-634-style `match ...: case ...:` syntax](#pep-634-support) (use [Coconut's `case ...: match ...:` syntax](#case) instead),
+- Python-3.10/PEP-634-style dotted names in pattern-matching (Coconut style is to preface these with an `=`),
 - inheriting from `object` in classes (Coconut does this automatically),
 - use of `u` to denote Unicode strings (all Coconut strings are Unicode strings), and
 - use of backslash continuation (use [parenthetical continuation](#enhanced-parenthetical-continuation) instead).
@@ -876,21 +876,25 @@ match <pattern> [not] in <value> [if <cond>]:
 where `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds. `<pattern>` follows its own, special syntax, defined roughly like so:
 
 ```coconut
-pattern ::= (
+pattern ::= and_pattern ("or" and_pattern)*  # match any
+
+and_pattern ::= as_pattern ("and" as_pattern)*  # match all
+
+as_pattern ::= bar_or_pattern ("as" name)*  # capture
+
+bar_or_pattern ::= pattern ("|" pattern)*  # match any
+
+base_pattern ::= (
     "(" pattern ")"                 # parentheses
     | "None" | "True" | "False"     # constants
     | "=" EXPR                      # check
     | DOTTED_NAME                   # implicit check (disabled in destructuring assignment)
     | NUMBER                        # numbers
     | STRING                        # strings
-    | [pattern "as"] NAME           # capture (binds tightly)
-    | NAME ":=" patterns            # capture (binds loosely)
-    | NAME "(" patterns ")"         # data types (or classes if using PEP 622 syntax)
+    | NAME "(" patterns ")"         # data types (or classes if using PEP 634 syntax)
     | "data" NAME "(" patterns ")"  # data types
     | "class" NAME "(" patterns ")" # classes
     | pattern "is" exprs            # isinstance check
-    | pattern "and" pattern         # match all
-    | pattern ("or" | "|") pattern  # match any
     | "{" pattern_pairs             # dictionaries
         ["," "**" (NAME | "{}")] "}"
     | ["s"] "{" pattern_consts "}"  # sets
@@ -938,7 +942,7 @@ pattern ::= (
 - Checks (`=<expr>`): will check that whatever is in that position is `==` to the expression `<expr>`.
 - `isinstance` Checks (`<var> is <types>`): will check that whatever is in that position `isinstance` of `<types>` before binding the `<var>`.
 - Data Types (`<name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`. Includes support for positional arguments, named arguments, and starred arguments.
-- Classes (`class <name>(<args>)`): does [PEP-622-style class matching](https://www.python.org/dev/peps/pep-0622/#class-patterns).
+- Classes (`class <name>(<args>)`): does [PEP-634-style class matching](https://www.python.org/dev/peps/pep-0634/#class-patterns).
 - Lists (`[<patterns>]`), Tuples (`(<patterns>)`): will only match a sequence (`collections.abc.Sequence`) of the same length, and will check the contents against `<patterns>`.
 - Lazy lists (`(|<patterns>|)`): same as list or tuple matching, but checks for an Iterable (`collections.abc.Iterable`) instead of a Sequence.
 - Fixed-Length Dicts (`{<pairs>}`): will only match a mapping (`collections.abc.Mapping`) of the same length, and will check the contents against `<pairs>`.
@@ -1036,16 +1040,16 @@ case <value>:
 ```
 where `<pattern>` is any `match` pattern, `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds. Note the absence of an `in` in the `match` statements: that's because the `<value>` in `case <value>` is taking its place. If no `else` is present and no match succeeds, then the `case` statement is simply skipped over as with [`match` statements](#match) (though unlike [destructuring assignments](#destructuring-assignment)).
 
-Additionally, to help disambiguate Coconut's `case` syntax from Python 3.10's PEP 622 syntax (which Coconut also supports—see below), `cases` can be used as the top-level keyword instead of `case`, as in:
+Additionally, to help disambiguate Coconut's `case` syntax from Python 3.10's PEP 634 syntax (which Coconut also supports—see below), `cases` can be used as the top-level keyword instead of `case`, as in:
 ```coconut
 cases <value>:
     match <pattern>:
         <body>
 ```
 
-##### PEP 622 Support
+##### PEP 634 Support
 
-Additionally, since Coconut is a strict superset of Python, Coconut has full Python 3.10+ [PEP 622](https://www.python.org/dev/peps/pep-0622/#appendix-a) support. Note that, when using PEP 622 match-case syntax, Coconut will use PEP 622 pattern-matching rules rather than Coconut pattern-matching rules, though a warning will always be issued when those rules conflict. To use PEP 622 pattern-matching, the syntax is:
+Additionally, since Coconut is a strict superset of Python, Coconut has full Python 3.10+ [PEP 634](https://www.python.org/dev/peps/pep-0634) support. Note that, when using PEP 634 match-case syntax, Coconut will use PEP 634 pattern-matching rules rather than Coconut pattern-matching rules, though a warning will always be issued when those rules conflict. To use PEP 634 pattern-matching, the syntax is:
 ```coconut
 match <value>:
     case <pattern> [if <cond>]:
@@ -1057,11 +1061,11 @@ match <value>:
     <body>]
 ```
 
-As Coconut's pattern-matching rules and the PEP 622 rules sometimes conflict (specifically for classes and dictionaries), it is recommended to just always use Coconut-style pattern-matching (e.g. `case ...: match ...:` instead of `match ...: case ...:`) and use the following provided special constructs for getting PEP-622-style behavior:
-- for matching dictionaries PEP-622-style, use `{..., **_}` to denote that the dictionary can contain extra unmatched items (to explicitly request the Coconut behavior, instead use `{..., **{}}`) and
-- for matching classes PEP-622-style, use `class cls_name(args)` to denote that a `class` match rather than a `data` match is desired (to explicitly request a Coconut-style `data` match, instead use `data data_name(args)`).
+As Coconut's pattern-matching rules and the PEP 634 rules sometimes conflict (specifically for classes and dictionaries), it is recommended to just always use Coconut-style pattern-matching (e.g. `case ...: match ...:` instead of `match ...: case ...:`) and use the following provided special constructs for getting PEP-634-style behavior:
+- for matching dictionaries PEP-634-style, use `{..., **_}` to denote that the dictionary can contain extra unmatched items (to explicitly request the Coconut behavior, instead use `{..., **{}}`) and
+- for matching classes PEP-634-style, use `class cls_name(args)` to denote that a `class` match rather than a `data` match is desired (to explicitly request a Coconut-style `data` match, instead use `data data_name(args)`).
 
-_Note that `--strict` disables PEP-622-style pattern-matching syntax entirely._
+_Note that `--strict` disables PEP-634-style pattern-matching syntax entirely._
 
 ##### Examples
 
@@ -1100,7 +1104,7 @@ match {"a": 1, "b": 2}:
         assert False
 assert a == 1
 ```
-_Example of Coconut's PEP 622 support._
+_Example of Coconut's PEP 634 support._
 
 **Python:**
 _Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._

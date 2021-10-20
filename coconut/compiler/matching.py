@@ -62,8 +62,8 @@ def get_match_names(match):
             if op == "as":
                 names.append(arg)
         names += get_match_names(match)
-    elif "walrus" in match:
-        name, match = match
+    elif "as" in match:
+        match, name = match
         names.append(name)
         names += get_match_names(match)
     return names
@@ -93,7 +93,7 @@ class Matcher(object):
         "data_or_class": lambda self: self.match_data_or_class,
         "paren": lambda self: self.match_paren,
         "trailer": lambda self: self.match_trailer,
-        "walrus": lambda self: self.match_walrus,
+        "as": lambda self: self.match_as,
         "and": lambda self: self.match_and,
         "or": lambda self: self.match_or,
         "star": lambda self: self.match_star,
@@ -685,9 +685,22 @@ class Matcher(object):
 
         self.add_check("_coconut.isinstance(" + item + ", " + cls_name + ")")
 
-        for i, match in enumerate(pos_matches):
-            self.match(match, "_coconut.getattr(" + item + ", " + item + ".__match_args__[" + str(i) + "])")
+        # handle instances of _coconut_self_match_types
+        is_self_match_type_matcher = self.duplicate()
+        is_self_match_type_matcher.add_check("_coconut.isinstance(" + item + ", _coconut_self_match_types)")
+        if pos_matches:
+            if len(pos_matches) > 1:
+                is_self_match_type_matcher.add_def('raise _coconut.TypeError("too many positional args in class match (got ' + str(len(pos_matches)) + '; type supports 1)")')
+            else:
+                is_self_match_type_matcher.match(pos_matches[0], item)
 
+        # handle all other classes
+        with self.only_self():
+            self.add_check("not _coconut.isinstance(" + item + ", _coconut_self_match_types)")
+            for i, match in enumerate(pos_matches):
+                self.match(match, "_coconut.getattr(" + item + ", " + item + ".__match_args__[" + str(i) + "])")
+
+        # handle starred arg
         if star_match is not None:
             temp_var = self.get_temp_var()
             self.add_def(
@@ -700,6 +713,7 @@ class Matcher(object):
             with self.down_a_level():
                 self.match(star_match, temp_var)
 
+        # handle keyword args
         for name, match in name_matches.items():
             self.match(match, item + "." + name)
 
@@ -777,9 +791,9 @@ class Matcher(object):
                 raise CoconutInternalException("invalid trailer match operation", op)
         self.match(match, item)
 
-    def match_walrus(self, tokens, item):
-        """Matches :=."""
-        name, match = tokens
+    def match_as(self, tokens, item):
+        """Matches as patterns."""
+        match, name = tokens
         self.match_var([name], item, bind_wildcard=True)
         self.match(match, item)
 
