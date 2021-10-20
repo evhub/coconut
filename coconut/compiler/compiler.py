@@ -477,6 +477,7 @@ class Compiler(Grammar):
             partial(self.decoratable_funcdef_stmt_handle, is_async=True),
         )
 
+        # these handlers just do target checking
         self.u_string <<= attach(self.u_string_ref, self.u_string_check)
         self.matrix_at <<= attach(self.matrix_at_ref, self.matrix_at_check)
         self.nonlocal_stmt <<= attach(self.nonlocal_stmt_ref, self.nonlocal_check)

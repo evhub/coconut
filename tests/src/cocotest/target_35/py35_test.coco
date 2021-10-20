@@ -12,4 +12,7 @@ def py35_test() -> bool:
     assert .method(1) |> repr == "operator.methodcaller('method', 1)"
     assert pow$(1) |> repr == "functools.partial(<built-in function pow>, 1)"
     assert .[1] |> repr == "operator.itemgetter(1)"
+    def f(x, y) = x, *y
+    def g(x, y): return x, *y
+    assert f(1, (2, 3)) == (1, 2, 3) == g(1, (2, 3))
     return True

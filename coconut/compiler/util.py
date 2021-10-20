@@ -582,9 +582,12 @@ def condense(item):
     return attach(item, "".join, ignore_no_tokens=True, ignore_one_token=True)
 
 
-def maybeparens(lparen, item, rparen):
+def maybeparens(lparen, item, rparen, prefer_parens=False):
     """Wrap an item in optional parentheses, only applying them if necessary."""
-    return item | lparen.suppress() + item + rparen.suppress()
+    if prefer_parens:
+        return lparen.suppress() + item + rparen.suppress() | item
+    else:
+        return item | lparen.suppress() + item + rparen.suppress()
 
 
 def tokenlist(item, sep, suppress=True, allow_trailing=True, at_least_two=False):
