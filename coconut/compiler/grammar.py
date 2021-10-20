@@ -1466,11 +1466,14 @@ class Grammar(object):
     comp_if = addspace(keyword("if") + test_no_cond + Optional(comp_iter))
     comp_iter <<= comp_for | comp_if
 
+    # add parens to support return x, *y on 3.5 - 3.7, which supports return (x, *y) but not return x, *y
+    return_testlist = attach(testlist_star_expr, add_paren_handle)
+    return_stmt = addspace(keyword("return") - Optional(return_testlist))
+
     complex_raise_stmt = Forward()
     pass_stmt = keyword("pass")
     break_stmt = keyword("break")
     continue_stmt = keyword("continue")
-    return_stmt = addspace(keyword("return") - Optional(testlist))
     simple_raise_stmt = addspace(keyword("raise") + Optional(test))
     complex_raise_stmt_ref = keyword("raise").suppress() + test + keyword("from").suppress() - test
     raise_stmt = complex_raise_stmt | simple_raise_stmt
@@ -1754,7 +1757,7 @@ class Grammar(object):
 
     implicit_return = (
         invalid_syntax(return_stmt, "expected expression but got return statement")
-        | attach(testlist, implicit_return_handle)
+        | attach(return_testlist, implicit_return_handle)
     )
     implicit_return_where = attach(
         implicit_return
@@ -1957,21 +1960,33 @@ class Grammar(object):
     def get_tre_return_grammar(self, func_name):
         return (
             self.start_marker
-            + (keyword("return") + keyword(func_name, explicit_prefix=False)).suppress()
-            + self.original_function_call_tokens
-            + self.end_marker
+            + keyword("return").suppress()
+            + maybeparens(
+                self.lparen,
+                keyword(func_name, explicit_prefix=False).suppress()
+                + self.original_function_call_tokens,
+                self.rparen,
+            ) + self.end_marker
         )
 
     tco_return = attach(
         start_marker
         + keyword("return").suppress()
-        + ~(keyword("super", explicit_prefix=False) + lparen + rparen)  # TCO can't handle super()
-        + condense(
-            (base_name | parens | brackets | braces | string)
-            + ZeroOrMore(dot + base_name | brackets | parens + ~end_marker),
-        )
-        + original_function_call_tokens
-        + end_marker,
+        + maybeparens(
+            lparen,
+            ~(keyword("super", explicit_prefix=False) + lparen + rparen)  # TCO can't handle super()
+            + condense(
+                (base_name | parens | brackets | braces | string)
+                + ZeroOrMore(
+                    dot + base_name
+                    | brackets
+                    # don't match the last set of parentheses
+                    | parens + ~end_marker + ~rparen,
+                ),
+            )
+            + original_function_call_tokens,
+            rparen,
+        ) + end_marker,
         tco_return_handle,
         # this is the root in what it's used for, so might as well evaluate greedily
         greedy=True,
