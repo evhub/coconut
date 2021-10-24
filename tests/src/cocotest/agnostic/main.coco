@@ -839,6 +839,9 @@ def main_test() -> bool:
     assert _ == 1
     10 as x as y = 10
     assert x == 10 == y
+    match x and (1 or 2) in 3:
+        assert False
+    assert x == 10
     match (1 | 2) and ("1" | "2") in 1:
         assert False
     return True
