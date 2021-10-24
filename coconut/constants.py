@@ -183,6 +183,7 @@ match_to_args_var = reserved_prefix + "_match_args"
 match_to_kwargs_var = reserved_prefix + "_match_kwargs"
 match_temp_var = reserved_prefix + "_match_temp"
 function_match_error_var = reserved_prefix + "_FunctionMatchError"
+match_set_name_var = reserved_prefix + "_match_set_name"
 
 wildcard = "_"  # for pattern-matching
 

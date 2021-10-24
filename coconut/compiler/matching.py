@@ -20,6 +20,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 from contextlib import contextmanager
+from collections import OrderedDict
 
 from coconut.terminal import (
     internal_assert,
@@ -37,6 +38,7 @@ from coconut.constants import (
     closeindent,
     const_vars,
     function_match_error_var,
+    match_set_name_var,
 )
 from coconut.compiler.util import (
     paren_join,
@@ -92,6 +94,7 @@ class Matcher(object):
         "name_list",
         "child_groups",
         "guards",
+        "parent_names",
     )
     matchers = {
         "dict": lambda self: self.match_dict,
@@ -124,7 +127,7 @@ class Matcher(object):
         "python strict",
     )
 
-    def __init__(self, comp, original, loc, check_var, style="coconut", name_list=None, checkdefs=None, names=None, var_index_obj=None):
+    def __init__(self, comp, original, loc, check_var, style="coconut", name_list=None, checkdefs=None, parent_names={}, var_index_obj=None):
         """Creates the matcher."""
         self.comp = comp
         self.original = original
@@ -141,19 +144,17 @@ class Matcher(object):
             for checks, defs in checkdefs:
                 self.checkdefs.append((checks[:], defs[:]))
             self.set_position(-1)
-        self.names = names if names is not None else {}
+        self.parent_names = parent_names
+        self.names = OrderedDict()  # ensures deterministic ordering of name setting code
         self.var_index_obj = [0] if var_index_obj is None else var_index_obj
         self.guards = []
         self.child_groups = []
 
-    def branches(self, num_branches, separate_names=True):
+    def branches(self, num_branches):
         """Create num_branches child matchers, one of which must match for the parent match to succeed."""
         child_group = []
         for _ in range(num_branches):
-            new_names = self.names
-            if separate_names:
-                new_names = self.names.copy()
-            new_matcher = Matcher(self.comp, self.original, self.loc, self.check_var, self.style, self.name_list, self.checkdefs, new_names, self.var_index_obj)
+            new_matcher = Matcher(self.comp, self.original, self.loc, self.check_var, self.style, self.name_list, self.checkdefs, self.names, self.var_index_obj)
             new_matcher.insert_check(0, "not " + self.check_var)
             child_group.append(new_matcher)
 
@@ -221,12 +222,6 @@ class Matcher(object):
                 full_msg += " (disable --strict to dismiss)"
             logger.warn_err(self.comp.make_err(CoconutSyntaxWarning, full_msg, self.original, self.loc))
 
-    def register_name(self, name, value):
-        """Register a new name."""
-        self.names[name] = value
-        if self.name_list is not None and name not in self.name_list:
-            self.name_list.append(name)
-
     def add_guard(self, cond):
         """Adds cond as a guard."""
         self.guards.append(cond)
@@ -263,6 +258,30 @@ class Matcher(object):
         tempvar = match_temp_var + "_" + str(self.var_index_obj[0])
         self.var_index_obj[0] += 1
         return tempvar
+
+    def get_set_name_var(self, name):
+        """Gets the var for checking whether a name should be set."""
+        return match_set_name_var + "_" + name
+
+    def register_name(self, name, value):
+        """Register a new name and return its name set var."""
+        self.names[name] = value
+        if self.name_list is not None and name not in self.name_list:
+            self.name_list.append(name)
+        return self.get_set_name_var(name)
+
+    def match_var(self, tokens, item, bind_wildcard=False):
+        """Matches a variable."""
+        varname, = tokens
+        if varname == wildcard and not bind_wildcard:
+            return
+        if varname in self.parent_names:
+            self.add_check(self.parent_names[varname] + " == " + item)
+        elif varname in self.names:
+            self.add_check(self.names[varname] + " == " + item)
+        else:
+            set_name_var = self.register_name(varname, item)
+            self.add_def(set_name_var + " = " + item)
 
     def match_all_in(self, matches, item):
         """Matches all matches to elements of item."""
@@ -754,17 +773,6 @@ class Matcher(object):
         match, = tokens
         return self.match(match, item)
 
-    def match_var(self, tokens, item, bind_wildcard=False):
-        """Matches a variable."""
-        setvar, = tokens
-        if setvar == wildcard and not bind_wildcard:
-            return
-        if setvar in self.names:
-            self.add_check(self.names[setvar] + " == " + item)
-        else:
-            self.add_def(setvar + " = " + item)
-            self.register_name(setvar, item)
-
     def match_trailer(self, tokens, item):
         """Matches typedefs and as patterns."""
         internal_assert(len(tokens) > 1 and len(tokens) % 2 == 1, "invalid trailer match tokens", tokens)
@@ -799,52 +807,90 @@ class Matcher(object):
 
     def out(self):
         """Return pattern-matching code assuming check_var starts False."""
+        out = []
+
+        # set match_set_name_vars to sentinels
+        for name in self.names:
+            out.append(self.get_set_name_var(name) + " = _coconut_sentinel\n")
+
         # match checkdefs setting check_var
-        out = ""
         closes = 0
         for checks, defs in self.checkdefs:
             if checks:
-                out += "if " + paren_join(checks, "and") + ":\n" + openindent
+                out.append("if " + paren_join(checks, "and") + ":\n" + openindent)
                 closes += 1
             if defs:
-                out += "\n".join(defs) + "\n"
-        out += self.check_var + " = True\n" + closeindent * closes
+                out.append("\n".join(defs) + "\n")
+        out.append(self.check_var + " = True\n" + closeindent * closes)
 
         # handle children
         for children in self.child_groups:
-            out += handle_indentation(
-                """
+            out.append(
+                handle_indentation(
+                    """
 if {check_var}:
     {check_var} = False
     {children}
                 """,
-                add_newline=True,
-            ).format(
-                check_var=self.check_var,
-                children="".join(child.out() for child in children),
+                    add_newline=True,
+                ).format(
+                    check_var=self.check_var,
+                    children="".join(child.out() for child in children),
+                ),
+            )
+
+        # commit variable definitions
+        name_set_code = []
+        for name, val in self.names.items():
+            name_set_code.append(
+                handle_indentation(
+                    """
+if {set_name_var} is not _coconut_sentinel:
+    {name} = {val}
+                """,
+                    add_newline=True,
+                ).format(
+                    set_name_var=self.get_set_name_var(name),
+                    name=name,
+                    val=val,
+                ),
+            )
+        if name_set_code:
+            out.append(
+                handle_indentation(
+                    """
+if {check_var}:
+    {name_set_code}
+                """,
+                ).format(
+                    check_var=self.check_var,
+                    name_set_code="".join(name_set_code),
+                ),
             )
 
         # handle guards
         if self.guards:
-            out += handle_indentation(
-                """
+            out.append(
+                handle_indentation(
+                    """
 if {check_var} and not ({guards}):
     {check_var} = False
                 """,
-                add_newline=True,
-            ).format(
-                check_var=self.check_var,
-                guards=paren_join(self.guards, "and"),
+                    add_newline=True,
+                ).format(
+                    check_var=self.check_var,
+                    guards=paren_join(self.guards, "and"),
+                ),
             )
 
-        return out
+        return "".join(out)
 
     def build(self, stmts=None, set_check_var=True, invert=False):
         """Construct code for performing the match then executing stmts."""
-        out = ""
+        out = []
         if set_check_var:
-            out += self.check_var + " = False\n"
-        out += self.out()
+            out.append(self.check_var + " = False\n")
+        out.append(self.out())
         if stmts is not None:
-            out += "if " + ("not " if invert else "") + self.check_var + ":" + "\n" + openindent + "".join(stmts) + closeindent
-        return out
+            out.append("if " + ("not " if invert else "") + self.check_var + ":" + "\n" + openindent + "".join(stmts) + closeindent)
+        return "".join(out)
