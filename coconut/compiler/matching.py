@@ -38,7 +38,10 @@ from coconut.constants import (
     const_vars,
     function_match_error_var,
 )
-from coconut.compiler.util import paren_join
+from coconut.compiler.util import (
+    paren_join,
+    handle_indentation,
+)
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -76,6 +79,20 @@ def get_match_names(match):
 
 class Matcher(object):
     """Pattern-matching processor."""
+    __slots__ = (
+        "comp",
+        "original",
+        "loc",
+        "check_var",
+        "style",
+        "position",
+        "checkdefs",
+        "names",
+        "var_index",
+        "name_list",
+        "children",
+        "guards",
+    )
     matchers = {
         "dict": lambda self: self.match_dict,
         "iter": lambda self: self.match_iterator,
@@ -99,20 +116,6 @@ class Matcher(object):
         "star": lambda self: self.match_star,
         "implicit_tuple": lambda self: self.match_implicit_tuple,
     }
-    __slots__ = (
-        "comp",
-        "original",
-        "loc",
-        "check_var",
-        "style",
-        "position",
-        "checkdefs",
-        "names",
-        "var_index",
-        "name_list",
-        "others",
-        "guards",
-    )
     valid_styles = (
         "coconut",
         "python",
@@ -141,45 +144,19 @@ class Matcher(object):
             self.set_position(-1)
         self.names = names if names is not None else {}
         self.var_index = var_index
-        self.others = []
         self.guards = []
+        self.children = []
 
-    def duplicate(self, separate_names=True):
-        """Duplicates the matcher to others."""
-        new_names = self.names
-        if separate_names:
-            new_names = new_names.copy()
-        other = Matcher(self.comp, self.original, self.loc, self.check_var, self.style, self.name_list, self.checkdefs, new_names, self.var_index)
-        other.insert_check(0, "not " + self.check_var)
-        self.others.append(other)
-        return other
-
-    @property
-    def using_python_rules(self):
-        """Whether the current style uses PEP 622 rules."""
-        return self.style.startswith("python")
-
-    def rule_conflict_warn(self, message, if_coconut=None, if_python=None, extra=None):
-        """Warns on conflicting style rules if callback was given."""
-        if self.style.endswith("warn") or self.style.endswith("strict") and self.comp.strict:
-            full_msg = message
-            if if_python or if_coconut:
-                full_msg += " (" + (if_python if self.using_python_rules else if_coconut) + ")"
-            if extra:
-                full_msg += " (" + extra + ")"
-            if self.style.endswith("strict"):
-                full_msg += " (disable --strict to dismiss)"
-            logger.warn_err(self.comp.make_err(CoconutSyntaxWarning, full_msg, self.original, self.loc))
-
-    def register_name(self, name, value):
-        """Register a new name."""
-        self.names[name] = value
-        if self.name_list is not None and name not in self.name_list:
-            self.name_list.append(name)
-
-    def add_guard(self, cond):
-        """Adds cond as a guard."""
-        self.guards.append(cond)
+    def branch(self, num_branches, separate_names=True):
+        """Create num_branches child matchers, one of which must match for the parent match to succeed."""
+        for _ in range(num_branches):
+            new_names = self.names
+            if separate_names:
+                new_names = self.names.copy()
+            other = Matcher(self.comp, self.original, self.loc, self.check_var, self.style, self.name_list, self.checkdefs, new_names, self.var_index)
+            other.insert_check(0, "not " + self.check_var)
+            self.children.append(other)
+            yield other
 
     def get_checks(self, position=None):
         """Gets the checks at the position."""
@@ -212,26 +189,45 @@ class Matcher(object):
     def add_check(self, check_item):
         """Adds a check universally."""
         self.checks.append(check_item)
-        for other in self.others:
-            other.add_check(check_item)
 
     def add_def(self, def_item):
         """Adds a def universally."""
         self.defs.append(def_item)
-        for other in self.others:
-            other.add_def(def_item)
 
     def insert_check(self, index, check_item):
         """Inserts a check universally."""
         self.checks.insert(index, check_item)
-        for other in self.others:
-            other.insert_check(index, check_item)
 
     def insert_def(self, index, def_item):
         """Inserts a def universally."""
         self.defs.insert(index, def_item)
-        for other in self.others:
-            other.insert_def(index, def_item)
+
+    @property
+    def using_python_rules(self):
+        """Whether the current style uses PEP 622 rules."""
+        return self.style.startswith("python")
+
+    def rule_conflict_warn(self, message, if_coconut=None, if_python=None, extra=None):
+        """Warns on conflicting style rules if callback was given."""
+        if self.style.endswith("warn") or self.style.endswith("strict") and self.comp.strict:
+            full_msg = message
+            if if_python or if_coconut:
+                full_msg += " (" + (if_python if self.using_python_rules else if_coconut) + ")"
+            if extra:
+                full_msg += " (" + extra + ")"
+            if self.style.endswith("strict"):
+                full_msg += " (disable --strict to dismiss)"
+            logger.warn_err(self.comp.make_err(CoconutSyntaxWarning, full_msg, self.original, self.loc))
+
+    def register_name(self, name, value):
+        """Register a new name."""
+        self.names[name] = value
+        if self.name_list is not None and name not in self.name_list:
+            self.name_list.append(name)
+
+    def add_guard(self, cond):
+        """Adds cond as a guard."""
+        self.guards.append(cond)
 
     def set_position(self, position):
         """Sets the if-statement position."""
@@ -259,15 +255,6 @@ class Matcher(object):
             yield
         finally:
             self.decrement(by)
-
-    @contextmanager
-    def only_self(self):
-        """Only match in self not others."""
-        others, self.others = self.others, []
-        try:
-            yield
-        finally:
-            self.others = others + self.others
 
     def get_temp_var(self):
         """Gets the next match_temp_var."""
@@ -685,20 +672,20 @@ class Matcher(object):
 
         self.add_check("_coconut.isinstance(" + item + ", " + cls_name + ")")
 
+        self_match_matcher, other_cls_matcher = self.branch(2)
+
         # handle instances of _coconut_self_match_types
-        is_self_match_type_matcher = self.duplicate()
-        is_self_match_type_matcher.add_check("_coconut.isinstance(" + item + ", _coconut_self_match_types)")
+        self_match_matcher.add_check("_coconut.isinstance(" + item + ", _coconut_self_match_types)")
         if pos_matches:
             if len(pos_matches) > 1:
-                is_self_match_type_matcher.add_def('raise _coconut.TypeError("too many positional args in class match (got ' + str(len(pos_matches)) + '; type supports 1)")')
+                self_match_matcher.add_def('raise _coconut.TypeError("too many positional args in class match (got ' + str(len(pos_matches)) + '; type supports 1)")')
             else:
-                is_self_match_type_matcher.match(pos_matches[0], item)
+                self_match_matcher.match(pos_matches[0], item)
 
         # handle all other classes
-        with self.only_self():
-            self.add_check("not _coconut.isinstance(" + item + ", _coconut_self_match_types)")
-            for i, match in enumerate(pos_matches):
-                self.match(match, "_coconut.getattr(" + item + ", " + item + ".__match_args__[" + str(i) + "])")
+        other_cls_matcher.add_check("not _coconut.isinstance(" + item + ", _coconut_self_match_types)")
+        for i, match in enumerate(pos_matches):
+            other_cls_matcher.match(match, "_coconut.getattr(" + item + ", " + item + ".__match_args__[" + str(i) + "])")
 
         # handle starred arg
         if star_match is not None:
@@ -804,10 +791,9 @@ class Matcher(object):
 
     def match_or(self, tokens, item):
         """Matches or."""
-        for x in range(1, len(tokens)):
-            self.duplicate().match(tokens[x], item)
-        with self.only_self():
-            self.match(tokens[0], item)
+        new_matchers = self.branch(len(tokens))
+        for m, tok in zip(new_matchers, tokens):
+            m.match(tok, item)
 
     def match(self, tokens, item):
         """Performs pattern-matching processing."""
@@ -817,7 +803,8 @@ class Matcher(object):
         raise CoconutInternalException("invalid pattern-matching tokens", tokens)
 
     def out(self):
-        """Return pattern-matching code."""
+        """Return pattern-matching code assuming check_var starts False."""
+        # match checkdefs setting check_var
         out = ""
         closes = 0
         for checks, defs in self.checkdefs:
@@ -826,18 +813,36 @@ class Matcher(object):
                 closes += 1
             if defs:
                 out += "\n".join(defs) + "\n"
-        return out + (
-            self.check_var + " = True\n"
-            + closeindent * closes
-            + "".join(other.out() for other in self.others)
-            + (
-                "if " + self.check_var + " and not ("
-                + paren_join(self.guards, "and")
-                + "):\n" + openindent
-                + self.check_var + " = False\n" + closeindent
-                if self.guards else ""
+        out += self.check_var + " = True\n" + closeindent * closes
+
+        # handle children
+        if self.children:
+            out += handle_indentation(
+                """
+if {check_var}:
+    {check_var} = False
+    {children}
+                """,
+                add_newline=True,
+            ).format(
+                check_var=self.check_var,
+                children="".join(child.out() for child in self.children),
             )
-        )
+
+        # handle guards
+        if self.guards:
+            out += handle_indentation(
+                """
+if {check_var} and not ({guards}):
+    {check_var} = False
+                """,
+                add_newline=True,
+            ).format(
+                check_var=self.check_var,
+                guards=paren_join(self.guards, "and"),
+            )
+
+        return out
 
     def build(self, stmts=None, set_check_var=True, invert=False):
         """Construct code for performing the match then executing stmts."""
