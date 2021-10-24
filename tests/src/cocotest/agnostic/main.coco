@@ -837,6 +837,10 @@ def main_test() -> bool:
     assert y == "2"
     1 as _ = 1
     assert _ == 1
+    10 as x as y = 10
+    assert x == 10 == y
+    match (1 | 2) and ("1" | "2") in 1:
+        assert False
     return True
 
 def test_asyncio() -> bool:

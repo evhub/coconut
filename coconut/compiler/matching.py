@@ -88,9 +88,9 @@ class Matcher(object):
         "position",
         "checkdefs",
         "names",
-        "var_index",
+        "var_index_obj",
         "name_list",
-        "children",
+        "child_groups",
         "guards",
     )
     matchers = {
@@ -110,7 +110,6 @@ class Matcher(object):
         "data_or_class": lambda self: self.match_data_or_class,
         "paren": lambda self: self.match_paren,
         "trailer": lambda self: self.match_trailer,
-        "as": lambda self: self.match_as,
         "and": lambda self: self.match_and,
         "or": lambda self: self.match_or,
         "star": lambda self: self.match_star,
@@ -125,7 +124,7 @@ class Matcher(object):
         "python strict",
     )
 
-    def __init__(self, comp, original, loc, check_var, style="coconut", name_list=None, checkdefs=None, names=None, var_index=0):
+    def __init__(self, comp, original, loc, check_var, style="coconut", name_list=None, checkdefs=None, names=None, var_index_obj=None):
         """Creates the matcher."""
         self.comp = comp
         self.original = original
@@ -143,20 +142,23 @@ class Matcher(object):
                 self.checkdefs.append((checks[:], defs[:]))
             self.set_position(-1)
         self.names = names if names is not None else {}
-        self.var_index = var_index
+        self.var_index_obj = [0] if var_index_obj is None else var_index_obj
         self.guards = []
-        self.children = []
+        self.child_groups = []
 
-    def branch(self, num_branches, separate_names=True):
+    def branches(self, num_branches, separate_names=True):
         """Create num_branches child matchers, one of which must match for the parent match to succeed."""
+        child_group = []
         for _ in range(num_branches):
             new_names = self.names
             if separate_names:
                 new_names = self.names.copy()
-            other = Matcher(self.comp, self.original, self.loc, self.check_var, self.style, self.name_list, self.checkdefs, new_names, self.var_index)
-            other.insert_check(0, "not " + self.check_var)
-            self.children.append(other)
-            yield other
+            new_matcher = Matcher(self.comp, self.original, self.loc, self.check_var, self.style, self.name_list, self.checkdefs, new_names, self.var_index_obj)
+            new_matcher.insert_check(0, "not " + self.check_var)
+            child_group.append(new_matcher)
+
+        self.child_groups.append(child_group)
+        return child_group
 
     def get_checks(self, position=None):
         """Gets the checks at the position."""
@@ -258,8 +260,8 @@ class Matcher(object):
 
     def get_temp_var(self):
         """Gets the next match_temp_var."""
-        tempvar = match_temp_var + "_" + str(self.var_index)
-        self.var_index += 1
+        tempvar = match_temp_var + "_" + str(self.var_index_obj[0])
+        self.var_index_obj[0] += 1
         return tempvar
 
     def match_all_in(self, matches, item):
@@ -450,10 +452,10 @@ class Matcher(object):
 
     def assign_to_series(self, name, series_type, item):
         """Assign name to item converted to the given series_type."""
-        if series_type == "(":
-            self.add_def(name + " = _coconut.tuple(" + item + ")")
-        elif series_type == "[":
+        if self.using_python_rules or series_type == "[":
             self.add_def(name + " = _coconut.list(" + item + ")")
+        elif series_type == "(":
+            self.add_def(name + " = _coconut.tuple(" + item + ")")
         else:
             raise CoconutInternalException("invalid series match type", series_type)
 
@@ -672,7 +674,7 @@ class Matcher(object):
 
         self.add_check("_coconut.isinstance(" + item + ", " + cls_name + ")")
 
-        self_match_matcher, other_cls_matcher = self.branch(2)
+        self_match_matcher, other_cls_matcher = self.branches(2)
 
         # handle instances of _coconut_self_match_types
         self_match_matcher.add_check("_coconut.isinstance(" + item + ", _coconut_self_match_types)")
@@ -717,15 +719,14 @@ class Matcher(object):
                     total_len=len(pos_matches) + len(name_matches),
                 ),
             )
-        else:
-            # avoid checking >= 0
-            if len(pos_matches):
-                self.add_check(
-                    "_coconut.len({item}) >= {min_len}".format(
-                        item=item,
-                        min_len=len(pos_matches),
-                    ),
-                )
+        # avoid checking >= 0
+        elif len(pos_matches):
+            self.add_check(
+                "_coconut.len({item}) >= {min_len}".format(
+                    item=item,
+                    min_len=len(pos_matches),
+                ),
+            )
 
         self.match_all_in(pos_matches, item)
 
@@ -778,12 +779,6 @@ class Matcher(object):
                 raise CoconutInternalException("invalid trailer match operation", op)
         self.match(match, item)
 
-    def match_as(self, tokens, item):
-        """Matches as patterns."""
-        match, name = tokens
-        self.match_var([name], item, bind_wildcard=True)
-        self.match(match, item)
-
     def match_and(self, tokens, item):
         """Matches and."""
         for match in tokens:
@@ -791,7 +786,7 @@ class Matcher(object):
 
     def match_or(self, tokens, item):
         """Matches or."""
-        new_matchers = self.branch(len(tokens))
+        new_matchers = self.branches(len(tokens))
         for m, tok in zip(new_matchers, tokens):
             m.match(tok, item)
 
@@ -816,7 +811,7 @@ class Matcher(object):
         out += self.check_var + " = True\n" + closeindent * closes
 
         # handle children
-        if self.children:
+        for children in self.child_groups:
             out += handle_indentation(
                 """
 if {check_var}:
@@ -826,7 +821,7 @@ if {check_var}:
                 add_newline=True,
             ).format(
                 check_var=self.check_var,
-                children="".join(child.out() for child in self.children),
+                children="".join(child.out() for child in children),
             )
 
         # handle guards
