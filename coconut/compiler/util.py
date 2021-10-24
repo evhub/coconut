@@ -166,7 +166,10 @@ class ComputationNode(object):
             return tokens[0]  # could be a ComputationNode, so we can't have an __init__
         else:
             self = super(ComputationNode, cls).__new__(cls)
-            self.action, self.loc, self.tokens, self.original = action, loc, tokens, original
+            self.action = action
+            self.original = original
+            self.loc = loc
+            self.tokens = tokens
             if DEVELOP:
                 self.been_called = False
             if greedy:
@@ -221,7 +224,8 @@ class CombineNode(Combine):
     def _combine(self, original, loc, tokens):
         """Implement the parse action for Combine."""
         combined_tokens = super(CombineNode, self).postParse(original, loc, tokens)
-        internal_assert(len(combined_tokens) == 1, "Combine produced multiple tokens", combined_tokens)
+        if DEVELOP:  # avoid the overhead of the call if not develop
+            internal_assert(len(combined_tokens) == 1, "Combine produced multiple tokens", combined_tokens)
         return combined_tokens[0]
 
     @override
@@ -231,9 +235,9 @@ class CombineNode(Combine):
 
 
 if USE_COMPUTATION_GRAPH:
-    CustomCombine = CombineNode
+    combine = CombineNode
 else:
-    CustomCombine = Combine
+    combine = Combine
 
 
 def add_action(item, action):
@@ -273,18 +277,6 @@ def unpack(tokens):
     if isinstance(tokens, ParseResults) and len(tokens) == 1:
         tokens = tokens[0]
     return tokens
-
-
-def invalid_syntax(item, msg, **kwargs):
-    """Mark a grammar item as an invalid item that raises a syntax err with msg."""
-    if isinstance(item, str):
-        item = Literal(item)
-    elif isinstance(item, tuple):
-        item = reduce(lambda a, b: a | b, map(Literal, item))
-
-    def invalid_syntax_handle(loc, tokens):
-        raise CoconutDeferredSyntaxError(msg, loc)
-    return attach(item, invalid_syntax_handle, **kwargs)
 
 
 def parse(grammar, text):
@@ -429,8 +421,8 @@ def disable_inside(item, *elems, **kwargs):
 
     Returns (item with elem disabled, *new versions of elems).
     """
-    _invert = kwargs.get("_invert", False)
-    internal_assert(set(kwargs.keys()) <= set(("_invert",)), "excess keyword arguments passed to disable_inside")
+    _invert = kwargs.pop("_invert", False)
+    internal_assert(not kwargs, "excess keyword arguments passed to disable_inside")
 
     level = [0]  # number of wrapped items deep we are; in a list to allow modification
 
@@ -467,6 +459,18 @@ def disable_outside(item, *elems):
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
+
+def invalid_syntax(item, msg, **kwargs):
+    """Mark a grammar item as an invalid item that raises a syntax err with msg."""
+    if isinstance(item, str):
+        item = Literal(item)
+    elif isinstance(item, tuple):
+        item = reduce(lambda a, b: a | b, map(Literal, item))
+
+    def invalid_syntax_handle(loc, tokens):
+        raise CoconutDeferredSyntaxError(msg, loc)
+    return attach(item, invalid_syntax_handle, **kwargs)
+
 
 def multi_index_lookup(iterable, item, indexable_types, default=None):
     """Nested lookup of item in iterable."""
@@ -614,7 +618,7 @@ def exprlist(expr, op):
 
 def stores_loc_action(loc, tokens):
     """Action that just parses to loc."""
-    internal_assert(len(tokens) == 0, "invalid get loc tokens", tokens)
+    internal_assert(len(tokens) == 0, "invalid store loc tokens", tokens)
     return str(loc)
 
 
