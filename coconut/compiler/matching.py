@@ -809,8 +809,11 @@ class Matcher(object):
                 """
 try:
     {func_result_var} = ({view_func})({item})
-except _coconut_MatchError:
-    {func_result_var} = _coconut_sentinel
+except _coconut.Exception as _coconut_view_func_exc:
+    if _coconut.getattr(_coconut_view_func_exc.__class__, "__name__", None) == "MatchError":
+        {func_result_var} = _coconut_sentinel
+    else:
+        raise
             """,
             ).format(
                 func_result_var=func_result_var,
