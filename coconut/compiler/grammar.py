@@ -1536,13 +1536,18 @@ class Grammar(object):
     def_match_funcdef = trace(
         attach(
             base_match_funcdef
-            + colon.suppress()
+            + (
+                colon.suppress()
+                | invalid_syntax(arrow, "pattern-matching function definition doesn't support return type annotations")
+            )
             + (
                 attach(simple_stmt, make_suite_handle)
-                | newline.suppress() + indent.suppress()
-                + Optional(docstring)
-                + attach(condense(OneOrMore(stmt)), make_suite_handle)
-                + dedent.suppress()
+                | (
+                    newline.suppress() + indent.suppress()
+                    + Optional(docstring)
+                    + attach(condense(OneOrMore(stmt)), make_suite_handle)
+                    + dedent.suppress()
+                )
             ),
             join_match_funcdef,
         ),
@@ -1594,7 +1599,10 @@ class Grammar(object):
             match_def_modifiers
             + attach(
                 base_match_funcdef
-                + equals.suppress()
+                + (
+                    equals.suppress()
+                    | invalid_syntax(arrow, "pattern-matching function definition doesn't support return type annotations")
+                )
                 + (
                     attach(implicit_return_stmt, make_suite_handle)
                     | (

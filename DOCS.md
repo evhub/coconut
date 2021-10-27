@@ -80,7 +80,7 @@ The full list of optional dependencies is:
 - `mypy`: enables use of the `--mypy` flag,
 - `asyncio`: enables use of the [`asyncio`](https://docs.python.org/3/library/asyncio.html) library on older Python versions by making use of [`trollius`](https://pypi.python.org/pypi/trollius),
 - `enum`: enables use of the [`enum`](https://docs.python.org/3/library/enum.html) library on older Python versions by making use of [`aenum`](https://pypi.org/project/aenum),
-- `tests`: everything necessary to run Coconut's test suite,
+- `tests`: everything necessary to test the Coconut language itself,
 - `docs`: everything necessary to build Coconut's documentation, and
 - `dev`: everything necessary to develop on Coconut, including all of the dependencies above.
 

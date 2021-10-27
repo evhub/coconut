@@ -94,15 +94,18 @@ def test_extras():
     assert parse("def f(x):\\\n pass")
     assert parse("abc ")
     assert parse("abc # derp", "any") == "abc  # derp"
+
     setup(line_numbers=True)
     assert parse("abc", "any") == "abc  #1 (line num in coconut source)"
     setup(keep_lines=True)
     assert parse("abc", "any") == "abc  # abc"
     setup(line_numbers=True, keep_lines=True)
     assert parse("abc", "any") == "abc  #1: abc"
+
     setup()
     assert "Deprecated feature 'prepattern' disabled by --strict compilation" not in parse("\n", mode="file")
     assert "Deprecated feature 'datamaker' disabled by --strict compilation" not in parse("\n", mode="file")
+
     setup(strict=True)
     assert "Deprecated feature 'prepattern' disabled by --strict compilation" in parse("\n", mode="file")
     assert "Deprecated feature 'datamaker' disabled by --strict compilation" in parse("\n", mode="file")
@@ -115,11 +118,13 @@ def test_extras():
     assert_raises(-> parse("a=1;"), CoconutStyleError)
     assert_raises(-> parse("class derp(object)"), CoconutStyleError)
     assert_raises(-> parse("def f(a.b) = True"), CoconutStyleError)
+
     setup()
     assert_raises(-> cmd("-f"), SystemExit)
     assert_raises(-> cmd("-pa ."), SystemExit)
     assert_raises(-> cmd("-n . ."), SystemExit)
     assert_raises(-> parse("f$()"), CoconutSyntaxError, not_exc=CoconutParseError)
+    assert_raises(-> parse("def is_true(x is int) -> bool = x is True"), CoconutSyntaxError, not_exc=CoconutParseError)
     assert_raises(-> parse("f(*x, y)"), CoconutSyntaxError, not_exc=CoconutParseError)
     assert_raises(-> parse("def f(x) = return x"), CoconutSyntaxError, not_exc=CoconutParseError)
     assert_raises(-> parse("def f(x) =\n return x"), CoconutSyntaxError, not_exc=CoconutParseError)
@@ -130,9 +135,11 @@ def test_extras():
     assert_raises(-> parse("if a = b: pass"), CoconutParseError, err_has="misplaced assignment")
     assert_raises(-> parse("while a == b"), CoconutParseError, err_has="misplaced newline")
     assert_raises(-> parse('f"Black holes {*all_black_holes} and revelations"'), CoconutSyntaxError, err_has="format string")
+
     setup(target="2.7")
     assert parse("from io import BytesIO", mode="any") == "from io import BytesIO"
     assert_raises(-> parse("def f(*, x=None) = x"), CoconutTargetError)
+
     setup(target="3.3")
     gen_func_def = """def f(x):
     yield x
@@ -141,10 +148,13 @@ def test_extras():
     yield x
     return (x)"""
     assert parse(gen_func_def, mode="any") == gen_func_def_out
+
     setup(target="3.2")
     assert parse(gen_func_def, mode="any") not in (gen_func_def, gen_func_def_out)
+
     setup(target="3.6")
     assert parse("def f(*, x=None) = x")
+
     setup(target="3.8")
     assert parse("(a := b)")
     assert parse("print(a := 1, b := 2)")
