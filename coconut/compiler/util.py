@@ -604,10 +604,25 @@ def tokenlist(item, sep, suppress=True, allow_trailing=True, at_least_two=False)
     return out
 
 
+def add_list_spacing(tokens):
+    """Parse action to add spacing after seps but not elsewhere."""
+    out = []
+    for i, tok in enumerate(tokens):
+        out.append(tok)
+        if i % 2 == 1 and i < len(tokens) - 1:
+            out.append(" ")
+    return "".join(out)
+
+
 def itemlist(item, sep, suppress_trailing=True):
     """Create a list of items separated by seps with comma-like spacing added.
     A trailing sep is allowed."""
-    return condense(item + ZeroOrMore(addspace(sep + item)) + Optional(sep.suppress() if suppress_trailing else sep))
+    return attach(
+        item
+        + ZeroOrMore(sep + item)
+        + Optional(sep.suppress() if suppress_trailing else sep),
+        add_list_spacing,
+    )
 
 
 def exprlist(expr, op):
