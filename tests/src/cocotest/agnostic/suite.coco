@@ -673,6 +673,21 @@ def suite_test() -> bool:
         pass
     else:
         assert False
+    plus1 -> 4 = 3
+    plus1 -> x = 5
+    assert x == 6
+    (plus1..plus1) -> 5 = 3
+    match plus1 -> 6 in 3:
+        assert False
+    only_match_if(1) -> _ = 1
+    match only_match_if(1) -> _ in 2:
+        assert False
+    only_match_int -> _ = 1
+    match only_match_int -> _ in "abc":
+        assert False
+    only_match_abc -> _ = "abc"
+    match only_match_abc -> _ in "def":
+        assert False
 
     # must come at end
     assert fibs_calls[0] == 1

@@ -21,7 +21,7 @@ class MatchError(_coconut_base_hashable, Exception):
     """Pattern-matching error. Has attributes .pattern, .value, and .message."""
     __slots__ = ("pattern", "value", "_message")
     max_val_repr_len = 500
-    def __init__(self, pattern, value):
+    def __init__(self, pattern=None, value=None):
         self.pattern = pattern
         self.value = value
         self._message = None

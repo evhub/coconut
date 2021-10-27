@@ -1372,7 +1372,8 @@ class Grammar(object):
     )("star")
     base_match = trace(
         Group(
-            match_string
+            (atom_item + arrow.suppress() + match)("view")
+            | match_string
             | match_const("const")
             | (lbrace.suppress() + matchlist_dict + Optional(dubstar.suppress() + (name | condense(lbrace + rbrace))) + rbrace.suppress())("dict")
             | (Optional(set_s.suppress()) + lbrace.suppress() + matchlist_set + rbrace.suppress())("set")

@@ -848,8 +848,8 @@ def main_test() -> bool:
     assert [*(1, 2), *(3, 4)] == [1, 2, 3, 4]
     assert {"a": 1, **{"b": 2}, "c": 3} == {"a": 1, "b": 2, "c": 3}
     assert {**{"a": 2, "b": 2}, **{"a": 1}} == {"a": 1, "b": 2}
-    def f(x, y) = x, *y
-    def g(x, y): return x, *y
+    def f(x, y) = x, *y  # type: ignore
+    def g(x, y): return x, *y  # type: ignore
     assert f(1, (2, 3)) == (1, 2, 3) == g(1, (2, 3))
     empty = *(), *()
     assert empty == () == (*(), *())
