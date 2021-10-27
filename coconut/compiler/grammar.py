@@ -720,9 +720,9 @@ class Grammar(object):
     yield_from_ref = keyword("yield").suppress() + keyword("from").suppress() + test
     yield_expr = yield_from | yield_classic
     dict_comp_ref = lbrace.suppress() + (
-        test + colon.suppress() + test
-        | invalid_syntax(dubstar_expr, "dict unpacking cannot be used in dict comprehension")
-    ) + comp_for + rbrace.suppress()
+        test + colon.suppress() + test + comp_for
+        | invalid_syntax(dubstar_expr + comp_for, "dict unpacking cannot be used in dict comprehension")
+    ) + rbrace.suppress()
     dict_literal_ref = (
         lbrace.suppress()
         + Optional(
@@ -902,11 +902,8 @@ class Grammar(object):
     subscriptgrouplist = itemlist(subscriptgroup, comma)
 
     comprehension_expr = addspace(
-        (
-            namedexpr_test
-            | invalid_syntax(star_expr, "iterable unpacking cannot be used in comprehension")
-        )
-        + comp_for,
+        namedexpr_test + comp_for
+        | invalid_syntax(star_expr + comp_for, "iterable unpacking cannot be used in comprehension"),
     )
     paren_atom = condense(
         lparen + Optional(
