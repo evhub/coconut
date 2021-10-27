@@ -619,3 +619,9 @@ def _coconut_handle_cls_stargs(*args: _t.Any) -> _t.Any: ...
 
 
 _coconut_self_match_types: _t.Tuple[_t.Type, ...] = (bool, bytearray, bytes, dict, float, frozenset, int, list, set, str, tuple)
+
+
+@_t.overload
+def _coconut_dict_merge(*dicts: _t.Dict[_T, _U]) -> _t.Dict[_T, _U]: ...
+@_t.overload
+def _coconut_dict_merge(*dicts: _t.Dict[_T, _t.Any]) -> _t.Dict[_T, _t.Any]: ...

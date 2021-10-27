@@ -664,6 +664,15 @@ def suite_test() -> bool:
     assert T.c == 3
     assert T.d == 4
     assert T.e == 5
+    d1 = {"a": 1}
+    assert ret_args_kwargs(*[1], *[2], **d1, **{"b": 2}) == ((1, 2), {"a": 1, "b": 2})
+    assert d1 == {"a": 1}
+    try:
+        ret_args_kwargs(**d1, **d1)
+    except TypeError:
+        pass
+    else:
+        assert False
 
     # must come at end
     assert fibs_calls[0] == 1

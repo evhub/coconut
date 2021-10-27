@@ -649,13 +649,19 @@ def keyword(name, explicit_prefix=None):
         return Optional(explicit_prefix.suppress()) + base_kwd
 
 
-def tuple_str_of(items, add_quotes=False):
+def tuple_str_of(items, add_quotes=False, add_parens=True):
     """Make a tuple repr of the given items."""
     item_tuple = tuple(items)
     if add_quotes:
-        return str(item_tuple)
+        out = str(item_tuple)
+        if not add_parens:
+            out = out[1:-1]
+        return out
     else:
-        return "(" + ", ".join(item_tuple) + (", " if len(item_tuple) == 1 else "") + ")"
+        out = ", ".join(item_tuple) + (", " if len(item_tuple) == 1 else "")
+        if add_parens:
+            out = "(" + out + ")"
+        return out
 
 
 def rem_comment(line):

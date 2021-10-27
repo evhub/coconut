@@ -64,6 +64,7 @@ from coconut.constants import (
     legal_indent_chars,
     format_var,
     replwrapper,
+    none_coalesce_var,
 )
 from coconut.util import checksum
 from coconut.exceptions import (
@@ -87,7 +88,10 @@ from coconut.compiler.grammar import (
     Grammar,
     lazy_list_handle,
     get_infix_items,
-    split_function_call,
+    pipe_info,
+    attrgetter_atom_split,
+    attrgetter_atom_handle,
+    itemgetter_handle,
 )
 from coconut.compiler.util import (
     get_target_info,
@@ -432,12 +436,28 @@ class Compiler(Grammar):
 
     def bind(self):
         """Binds reference objects to the proper parse actions."""
+        # handle endlines, docstrings, names
         self.endline <<= attach(self.endline_ref, self.endline_handle)
-
         self.moduledoc_item <<= attach(self.moduledoc, self.set_docstring)
         self.name <<= attach(self.base_name, self.name_check)
+
         # comments are evaluated greedily because we need to know about them even if we're going to suppress them
         self.comment <<= attach(self.comment_ref, self.comment_handle, greedy=True)
+
+        # handle all atom + trailers constructs with item_handle
+        self.trailer_atom <<= attach(self.trailer_atom_ref, self.item_handle)
+        self.no_partial_trailer_atom <<= attach(self.no_partial_trailer_atom_ref, self.item_handle)
+        self.simple_assign <<= attach(self.simple_assign_ref, self.item_handle)
+
+        # abnormally named handlers
+        self.normal_pipe_expr <<= attach(self.normal_pipe_expr_ref, self.pipe_handle)
+        self.return_typedef <<= attach(self.return_typedef_ref, self.typedef_handle)
+
+        # standard handlers of the form name <<= attach(name_tokens, name_handle) (implies name_tokens is reused)
+        self.function_call <<= attach(self.function_call_tokens, self.function_call_handle)
+        self.testlist_star_namedexpr <<= attach(self.testlist_star_namedexpr_tokens, self.testlist_star_expr_handle)
+
+        # standard handlers of the form name <<= attach(name_ref, name_handle)
         self.set_literal <<= attach(self.set_literal_ref, self.set_literal_handle)
         self.set_letter_literal <<= attach(self.set_letter_literal_ref, self.set_letter_literal_handle)
         self.classdef <<= attach(self.classdef_ref, self.classdef_handle)
@@ -456,10 +476,9 @@ class Compiler(Grammar):
         self.typedef <<= attach(self.typedef_ref, self.typedef_handle)
         self.typedef_default <<= attach(self.typedef_default_ref, self.typedef_handle)
         self.unsafe_typedef_default <<= attach(self.unsafe_typedef_default_ref, self.unsafe_typedef_handle)
-        self.return_typedef <<= attach(self.return_typedef_ref, self.typedef_handle)
         self.typed_assign_stmt <<= attach(self.typed_assign_stmt_ref, self.typed_assign_stmt_handle)
-        self.datadef <<= attach(self.datadef_ref, self.data_handle)
-        self.match_datadef <<= attach(self.match_datadef_ref, self.match_data_handle)
+        self.datadef <<= attach(self.datadef_ref, self.datadef_handle)
+        self.match_datadef <<= attach(self.match_datadef_ref, self.match_datadef_handle)
         self.with_stmt <<= attach(self.with_stmt_ref, self.with_stmt_handle)
         self.await_item <<= attach(self.await_item_ref, self.await_item_handle)
         self.ellipsis <<= attach(self.ellipsis_ref, self.ellipsis_handle)
@@ -467,7 +486,11 @@ class Compiler(Grammar):
         self.f_string <<= attach(self.f_string_ref, self.f_string_handle)
         self.decorators <<= attach(self.decorators_ref, self.decorators_handle)
         self.unsafe_typedef_or_expr <<= attach(self.unsafe_typedef_or_expr_ref, self.unsafe_typedef_or_expr_handle)
+        self.testlist_star_expr <<= attach(self.testlist_star_expr_ref, self.testlist_star_expr_handle)
+        self.list_literal <<= attach(self.list_literal_ref, self.list_literal_handle)
+        self.dict_literal <<= attach(self.dict_literal_ref, self.dict_literal_handle)
 
+        # handle normal and async function definitions
         self.decoratable_normal_funcdef_stmt <<= attach(
             self.decoratable_normal_funcdef_stmt_ref,
             self.decoratable_funcdef_stmt_handle,
@@ -483,8 +506,6 @@ class Compiler(Grammar):
         self.nonlocal_stmt <<= attach(self.nonlocal_stmt_ref, self.nonlocal_check)
         self.star_assign_item <<= attach(self.star_assign_item_ref, self.star_assign_item_check)
         self.classic_lambdef <<= attach(self.classic_lambdef_ref, self.lambdef_check)
-        self.star_expr <<= attach(self.star_expr_ref, self.star_expr_check)
-        self.dubstar_expr <<= attach(self.dubstar_expr_ref, self.star_expr_check)
         self.star_sep_arg <<= attach(self.star_sep_arg_ref, self.star_sep_check)
         self.star_sep_vararg <<= attach(self.star_sep_vararg_ref, self.star_sep_check)
         self.slash_sep_arg <<= attach(self.slash_sep_arg_ref, self.slash_sep_check)
@@ -1264,7 +1285,232 @@ class Compiler(Grammar):
 # COMPILER HANDLERS:
 # -----------------------------------------------------------------------------------------------------------------------
 
-    def set_docstring(self, loc, tokens):
+    def split_function_call(self, tokens, loc):
+        """Split into positional arguments and keyword arguments."""
+        pos_args = []
+        star_args = []
+        kwd_args = []
+        dubstar_args = []
+        for arg in tokens:
+            argstr = "".join(arg)
+            if len(arg) == 1:
+                if star_args or kwd_args or dubstar_args:
+                    raise CoconutDeferredSyntaxError("positional arguments must come first", loc)
+                pos_args.append(argstr)
+            elif len(arg) == 2:
+                if arg[0] == "*":
+                    if kwd_args or dubstar_args:
+                        raise CoconutDeferredSyntaxError("star unpacking must come before keyword arguments", loc)
+                    star_args.append(argstr)
+                elif arg[0] == "**":
+                    dubstar_args.append(argstr)
+                else:
+                    kwd_args.append(argstr)
+            else:
+                raise CoconutInternalException("invalid function call argument", arg)
+
+        # universalize multiple unpackings
+        if self.target_info < (3, 5):
+            if len(star_args) > 1:
+                star_args = ["*_coconut.itertools.chain(" + ", ".join(arg.lstrip("*") for arg in star_args) + ")"]
+            if len(dubstar_args) > 1:
+                dubstar_args = ["**_coconut_dict_merge(" + ", ".join(arg.lstrip("*") for arg in dubstar_args) + ", for_func=True)"]
+
+        return pos_args, star_args, kwd_args, dubstar_args
+
+    def function_call_handle(self, loc, tokens):
+        """Enforce properly ordered function parameters."""
+        return "(" + join_args(*self.split_function_call(tokens, loc)) + ")"
+
+    def pipe_item_split(self, tokens, loc):
+        """Process a pipe item, which could be a partial, an attribute access, a method call, or an expression.
+        Return (type, split) where split is
+            - (expr,) for expression,
+            - (func, pos_args, kwd_args) for partial,
+            - (name, args) for attr/method, and
+            - (op, args) for itemgetter."""
+        # list implies artificial tokens, which must be expr
+        if isinstance(tokens, list) or "expr" in tokens:
+            internal_assert(len(tokens) == 1, "invalid expr pipe item tokens", tokens)
+            return "expr", (tokens[0],)
+        elif "partial" in tokens:
+            func, args = tokens
+            pos_args, star_args, kwd_args, dubstar_args = self.split_function_call(args, loc)
+            return "partial", (func, join_args(pos_args, star_args), join_args(kwd_args, dubstar_args))
+        elif "attrgetter" in tokens:
+            name, args = attrgetter_atom_split(tokens)
+            return "attrgetter", (name, args)
+        elif "itemgetter" in tokens:
+            op, args = tokens
+            return "itemgetter", (op, args)
+        else:
+            raise CoconutInternalException("invalid pipe item tokens", tokens)
+
+    def pipe_handle(self, loc, tokens, **kwargs):
+        """Process pipe calls."""
+        internal_assert(set(kwargs) <= set(("top",)), "unknown pipe_handle keyword arguments", kwargs)
+        top = kwargs.get("top", True)
+        if len(tokens) == 1:
+            item = tokens.pop()
+            if not top:  # defer to other pipe_handle call
+                return item
+
+            # we've only been given one operand, so we can't do any optimization, so just produce the standard object
+            name, split_item = self.pipe_item_split(item, loc)
+            if name == "expr":
+                internal_assert(len(split_item) == 1)
+                return split_item[0]
+            elif name == "partial":
+                internal_assert(len(split_item) == 3)
+                return "_coconut.functools.partial(" + join_args(split_item) + ")"
+            elif name == "attrgetter":
+                return attrgetter_atom_handle(loc, item)
+            elif name == "itemgetter":
+                return itemgetter_handle(item)
+            else:
+                raise CoconutInternalException("invalid split pipe item", split_item)
+
+        else:
+            item, op = tokens.pop(), tokens.pop()
+            direction, stars, none_aware = pipe_info(op)
+            star_str = "*" * stars
+
+            if direction == "backwards":
+                # for backwards pipes, we just reuse the machinery for forwards pipes
+                inner_item = self.pipe_handle(loc, tokens, top=False)
+                if isinstance(inner_item, str):
+                    inner_item = [inner_item]  # artificial pipe item
+                return self.pipe_handle(loc, [item, "|" + ("?" if none_aware else "") + star_str + ">", inner_item])
+
+            elif none_aware:
+                # for none_aware forward pipes, we wrap the normal forward pipe in a lambda
+                pipe_expr = self.pipe_handle(loc, [[none_coalesce_var], "|" + star_str + ">", item])
+                # := changes meaning inside lambdas, so we must disallow it when wrapping
+                #  user expressions in lambdas (and naive string analysis is safe here)
+                if ":=" in pipe_expr:
+                    raise CoconutDeferredSyntaxError("illegal assignment expression in a None-coalescing pipe", loc)
+                return "(lambda {x}: None if {x} is None else {pipe})({subexpr})".format(
+                    x=none_coalesce_var,
+                    pipe=pipe_expr,
+                    subexpr=self.pipe_handle(loc, tokens),
+                )
+
+            elif direction == "forwards":
+                # if this is an implicit partial, we have something to apply it to, so optimize it
+                name, split_item = self.pipe_item_split(item, loc)
+                subexpr = self.pipe_handle(loc, tokens)
+
+                if name == "expr":
+                    func, = split_item
+                    return "({f})({stars}{x})".format(f=func, stars=star_str, x=subexpr)
+                elif name == "partial":
+                    func, partial_args, partial_kwargs = split_item
+                    return "({f})({args})".format(f=func, args=join_args((partial_args, star_str + subexpr, partial_kwargs)))
+                elif name == "attrgetter":
+                    attr, method_args = split_item
+                    call = "(" + method_args + ")" if method_args is not None else ""
+                    if stars:
+                        raise CoconutDeferredSyntaxError("cannot star pipe into attribute access or method call", loc)
+                    return "({x}).{attr}{call}".format(x=subexpr, attr=attr, call=call)
+                elif name == "itemgetter":
+                    op, args = split_item
+                    if stars:
+                        raise CoconutDeferredSyntaxError("cannot star pipe into item getting", loc)
+                    if op == "[":
+                        fmtstr = "({x})[{args}]"
+                    elif op == "$[":
+                        fmtstr = "_coconut_igetitem({x}, ({args}))"
+                    else:
+                        raise CoconutInternalException("pipe into invalid implicit itemgetter operation", op)
+                    return fmtstr.format(x=subexpr, args=args)
+                else:
+                    raise CoconutInternalException("invalid split pipe item", split_item)
+
+            else:
+                raise CoconutInternalException("invalid pipe operator direction", direction)
+
+    def item_handle(self, loc, tokens):
+        """Process trailers."""
+        out = tokens.pop(0)
+        for i, trailer in enumerate(tokens):
+            if isinstance(trailer, str):
+                out += trailer
+            elif len(trailer) == 1:
+                if trailer[0] == "$[]":
+                    out = "_coconut.functools.partial(_coconut_igetitem, " + out + ")"
+                elif trailer[0] == "$":
+                    out = "_coconut.functools.partial(_coconut.functools.partial, " + out + ")"
+                elif trailer[0] == "[]":
+                    out = "_coconut.functools.partial(_coconut.operator.getitem, " + out + ")"
+                elif trailer[0] == ".":
+                    out = "_coconut.functools.partial(_coconut.getattr, " + out + ")"
+                elif trailer[0] == "type:[]":
+                    out = "_coconut.typing.Sequence[" + out + "]"
+                elif trailer[0] == "type:$[]":
+                    out = "_coconut.typing.Iterable[" + out + "]"
+                elif trailer[0] == "type:?":
+                    out = "_coconut.typing.Optional[" + out + "]"
+                elif trailer[0] == "?":
+                    # short-circuit the rest of the evaluation
+                    rest_of_trailers = tokens[i + 1:]
+                    if len(rest_of_trailers) == 0:
+                        raise CoconutDeferredSyntaxError("None-coalescing '?' must have something after it", loc)
+                    not_none_tokens = [none_coalesce_var]
+                    not_none_tokens.extend(rest_of_trailers)
+                    not_none_expr = self.item_handle(loc, not_none_tokens)
+                    # := changes meaning inside lambdas, so we must disallow it when wrapping
+                    #  user expressions in lambdas (and naive string analysis is safe here)
+                    if ":=" in not_none_expr:
+                        raise CoconutDeferredSyntaxError("illegal assignment expression after a None-coalescing '?'", loc)
+                    return "(lambda {x}: None if {x} is None else {rest})({inp})".format(
+                        x=none_coalesce_var,
+                        rest=not_none_expr,
+                        inp=out,
+                    )
+                else:
+                    raise CoconutInternalException("invalid trailer symbol", trailer[0])
+            elif len(trailer) == 2:
+                if trailer[0] == "$[":
+                    out = "_coconut_igetitem(" + out + ", " + trailer[1] + ")"
+                elif trailer[0] == "$(":
+                    args = trailer[1][1:-1]
+                    if not args:
+                        raise CoconutDeferredSyntaxError("a partial application argument is required", loc)
+                    out = "_coconut.functools.partial(" + out + ", " + args + ")"
+                elif trailer[0] == "$[":
+                    out = "_coconut_igetitem(" + out + ", " + trailer[1] + ")"
+                elif trailer[0] == "$(?":
+                    pos_args, star_args, kwd_args, dubstar_args = self.split_function_call(trailer[1], loc)
+                    extra_args_str = join_args(star_args, kwd_args, dubstar_args)
+                    argdict_pairs = []
+                    has_question_mark = False
+                    for i, arg in enumerate(pos_args):
+                        if arg == "?":
+                            has_question_mark = True
+                        else:
+                            argdict_pairs.append(str(i) + ": " + arg)
+                    if not has_question_mark:
+                        raise CoconutInternalException("no question mark in question mark partial", trailer[1])
+                    elif argdict_pairs or extra_args_str:
+                        out = (
+                            "_coconut_partial("
+                            + out
+                            + ", {" + ", ".join(argdict_pairs) + "}"
+                            + ", " + str(len(pos_args))
+                            + (", " if extra_args_str else "") + extra_args_str
+                            + ")"
+                        )
+                    else:
+                        raise CoconutDeferredSyntaxError("a non-? partial application argument is required", loc)
+                else:
+                    raise CoconutInternalException("invalid special trailer", trailer[0])
+            else:
+                raise CoconutInternalException("invalid trailer tokens", trailer)
+        return out
+
+    item_handle.ignore_one_token = True
+
+    def set_docstring(self, tokens):
         """Set the docstring."""
         internal_assert(len(tokens) == 2, "invalid docstring tokens", tokens)
         self.docstring = self.reformat(tokens[0]) + "\n\n"
@@ -1390,7 +1636,7 @@ while True:
                 out += "(_coconut.object)"
 
         else:
-            pos_args, star_args, kwd_args, dubstar_args = split_function_call(classlist_toks, loc)
+            pos_args, star_args, kwd_args, dubstar_args = self.split_function_call(classlist_toks, loc)
 
             # check for just inheriting from object
             if (
@@ -1424,7 +1670,7 @@ while True:
 
         return out
 
-    def match_data_handle(self, original, loc, tokens):
+    def match_datadef_handle(self, original, loc, tokens):
         """Process pattern-matching data blocks."""
         if len(tokens) == 3:
             name, match_tokens, stmts = tokens
@@ -1474,7 +1720,7 @@ def __new__(_coconut_cls, *{match_to_args_var}, **{match_to_kwargs_var}):
 
         return self.assemble_data(name, namedtuple_call, inherit, extra_stmts, stmts, matcher.name_list)
 
-    def data_handle(self, loc, tokens):
+    def datadef_handle(self, loc, tokens):
         """Process data blocks."""
         if len(tokens) == 3:
             name, original_args, stmts = tokens
@@ -2521,7 +2767,7 @@ __annotations__["{name}"] = {annotation}
             out += "if not " + check_var + default
         return out
 
-    def f_string_handle(self, original, loc, tokens):
+    def f_string_handle(self, loc, tokens):
         """Process Python 3.6 format strings."""
         internal_assert(len(tokens) == 1, "invalid format string tokens", tokens)
         string = tokens[0]
@@ -2550,7 +2796,7 @@ __annotations__["{name}"] = {annotation}
                 if c == "{":
                     string_parts[-1] += c
                 elif c == "}":
-                    raise self.make_err(CoconutSyntaxError, "empty expression in format string", original, loc)
+                    raise CoconutDeferredSyntaxError("empty expression in format string", loc)
                 else:
                     in_expr = True
                     expr_level = paren_change(c)
@@ -2560,7 +2806,7 @@ __annotations__["{name}"] = {annotation}
                     expr_level += paren_change(c)
                     exprs[-1] += c
                 elif expr_level > 0:
-                    raise self.make_err(CoconutSyntaxError, "imbalanced parentheses in format string expression", original, loc)
+                    raise CoconutDeferredSyntaxError("imbalanced parentheses in format string expression", loc)
                 elif c in "!:}":  # these characters end the expr
                     in_expr = False
                     string_parts.append(c)
@@ -2575,9 +2821,9 @@ __annotations__["{name}"] = {annotation}
 
         # handle dangling detections
         if saw_brace:
-            raise self.make_err(CoconutSyntaxError, "format string ends with unescaped brace (escape by doubling to '{{')", original, loc)
+            raise CoconutDeferredSyntaxError("format string ends with unescaped brace (escape by doubling to '{{')", loc)
         if in_expr:
-            raise self.make_err(CoconutSyntaxError, "imbalanced braces in format string (escape braces by doubling to '{{' and '}}')", original, loc)
+            raise CoconutDeferredSyntaxError("imbalanced braces in format string (escape braces by doubling to '{{' and '}}')", loc)
 
         # handle Python 3.8 f string = specifier
         for i, expr in enumerate(exprs):
@@ -2593,9 +2839,9 @@ __annotations__["{name}"] = {annotation}
             try:
                 py_expr = self.inner_parse_eval(co_expr)
             except ParseBaseException:
-                raise self.make_err(CoconutSyntaxError, "parsing failed for format string expression: " + co_expr, original, loc)
+                raise CoconutDeferredSyntaxError("parsing failed for format string expression: " + co_expr, loc)
             if "\n" in py_expr:
-                raise self.make_err(CoconutSyntaxError, "invalid expression in format string: " + co_expr, original, loc)
+                raise CoconutDeferredSyntaxError("invalid expression in format string: " + co_expr, loc)
             compiled_exprs.append(py_expr)
 
         # reconstitute string
@@ -2638,6 +2884,107 @@ __annotations__["{name}"] = {annotation}
             return " | ".join(tokens)
         else:
             return "_coconut.typing.Union[" + ", ".join(tokens) + "]"
+
+    def split_star_expr_tokens(self, tokens):
+        """Split testlist_star_expr or dict_literal tokens."""
+        groups = [[]]
+        has_star = False
+        has_comma = False
+        for tok_grp in tokens:
+            if tok_grp == ",":
+                has_comma = True
+            elif len(tok_grp) == 1:
+                groups[-1].append(tok_grp[0])
+            elif len(tok_grp) == 2:
+                internal_assert(not tok_grp[0].lstrip("*"), "invalid star expr item signifier", tok_grp[0])
+                has_star = True
+                groups.append(tok_grp[1])
+                groups.append([])
+            else:
+                raise CoconutInternalException("invalid testlist_star_expr tokens", tokens)
+        if not groups[-1]:
+            groups.pop()
+        return groups, has_star, has_comma
+
+    def testlist_star_expr_handle(self, original, loc, tokens, list_literal=False):
+        """Handle naked a, *b."""
+        groups, has_star, has_comma = self.split_star_expr_tokens(tokens)
+        is_sequence = has_comma or list_literal
+
+        if not is_sequence:
+            if has_star:
+                raise CoconutDeferredSyntaxError("can't use starred expression here", loc)
+            internal_assert(len(groups) == 1 and len(groups[0]) == 1, "invalid single-item testlist_star_expr tokens", tokens)
+            out = groups[0][0]
+
+        elif not has_star:
+            internal_assert(len(groups) == 1, "testlist_star_expr group splitting failed on", tokens)
+            out = tuple_str_of(groups[0], add_parens=False)
+
+        # naturally supported on 3.5+
+        elif self.target_info >= (3, 5):
+            to_literal = []
+            for g in groups:
+                if isinstance(g, list):
+                    to_literal.extend(g)
+                else:
+                    to_literal.append("*" + g)
+            out = tuple_str_of(to_literal, add_parens=False)
+
+        # otherwise universalize
+        else:
+            to_chain = []
+            for g in groups:
+                if isinstance(g, list):
+                    to_chain.append(tuple_str_of(g))
+                else:
+                    to_chain.append(g)
+
+            # return immediately, since we handle list_literal here
+            if list_literal:
+                return "_coconut.list(_coconut.itertools.chain(" + ", ".join(to_chain) + "))"
+            else:
+                return "_coconut.tuple(_coconut.itertools.chain(" + ", ".join(to_chain) + "))"
+
+        if list_literal:
+            return "[" + out + "]"
+        else:
+            return out  # the grammar wraps this in parens as needed
+
+    def list_literal_handle(self, original, loc, tokens):
+        """Handle non-comprehension list literals."""
+        return self.testlist_star_expr_handle(original, loc, tokens, list_literal=True)
+
+    def dict_literal_handle(self, original, loc, tokens):
+        """Handle {**d1, **d2}."""
+        if not tokens:
+            return "{}"
+
+        groups, has_star, _ = self.split_star_expr_tokens(tokens)
+
+        if not has_star:
+            internal_assert(len(groups) == 1, "dict_literal group splitting failed on", tokens)
+            return "{" + ", ".join(groups[0]) + "}"
+
+        # naturally supported on 3.5+
+        elif self.target_info >= (3, 5):
+            to_literal = []
+            for g in groups:
+                if isinstance(g, list):
+                    to_literal.extend(g)
+                else:
+                    to_literal.append("**" + g)
+            return "{" + ", ".join(to_literal) + "}"
+
+        # otherwise universalize
+        else:
+            to_merge = []
+            for g in groups:
+                if isinstance(g, list):
+                    to_merge.append("{" + ", ".join(g) + "}")
+                else:
+                    to_merge.append(g)
+            return "_coconut_dict_merge(" + ", ".join(to_merge) + ")"
 
 # end: COMPILER HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------
@@ -2700,10 +3047,6 @@ __annotations__["{name}"] = {annotation}
     def star_assign_item_check(self, original, loc, tokens):
         """Check for Python 3 starred assignment."""
         return self.check_py("3", "starred assignment (use 'match' to produce universal code)", original, loc, tokens)
-
-    def star_expr_check(self, original, loc, tokens):
-        """Check for Python 3.5 star unpacking."""
-        return self.check_py("35", "star unpacking (use 'match' to produce universal code)", original, loc, tokens)
 
     def star_sep_check(self, original, loc, tokens):
         """Check for Python 3 keyword-only argument separator."""

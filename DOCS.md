@@ -241,13 +241,11 @@ Finally, while Coconut will try to compile Python-3-specific syntax to its unive
 
 - the `nonlocal` keyword,
 - `exec` used in a context where it must be a function,
-- keyword-only function arguments (use pattern-matching function definition instead),
-- destructuring assignment with `*`s (use pattern-matching instead),
-- tuples and lists with `*` unpacking or dicts with `**` unpacking (requires `--target 3.5`),
+- keyword-only function parameters (use pattern-matching function definition instead),
 - `@` as matrix multiplication (requires `--target 3.5`),
 - `async` and `await` statements (requires `--target 3.5`),
 - `:=` assignment expressions (requires `--target 3.8`),
-- positional-only function arguments (use pattern-matching function definition instead) (requires `--target 3.8`), and
+- positional-only function parameters (use pattern-matching function definition instead) (requires `--target 3.8`), and
 - `except*` multi-except statement (requires `--target 3.11`).
 
 ### Allowable Targets
