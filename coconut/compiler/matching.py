@@ -117,6 +117,7 @@ class Matcher(object):
         "or": lambda self: self.match_or,
         "star": lambda self: self.match_star,
         "implicit_tuple": lambda self: self.match_implicit_tuple,
+        "view": lambda self: self.match_view,
     }
     valid_styles = (
         "coconut",
@@ -797,6 +798,30 @@ class Matcher(object):
         new_matchers = self.branches(len(tokens))
         for m, tok in zip(new_matchers, tokens):
             m.match(tok, item)
+
+    def match_view(self, tokens, item):
+        """Matches view patterns"""
+        view_func, view_pattern = tokens
+
+        func_result_var = self.get_temp_var()
+        self.add_def(
+            handle_indentation(
+                """
+try:
+    {func_result_var} = ({view_func})({item})
+except _coconut_MatchError:
+    {func_result_var} = _coconut_sentinel
+            """,
+            ).format(
+                func_result_var=func_result_var,
+                view_func=view_func,
+                item=item,
+            ),
+        )
+
+        with self.down_a_level():
+            self.add_check(func_result_var + " is not _coconut_sentinel")
+            self.match(view_pattern, func_result_var)
 
     def match(self, tokens, item):
         """Performs pattern-matching processing."""

@@ -896,6 +896,7 @@ base_pattern ::= (
     | "{" pattern_pairs             # dictionaries
         ["," "**" (NAME | "{}")] "}"
     | ["s"] "{" pattern_consts "}"  # sets
+    | (expression) -> pattern       # view patterns
     | "(" patterns ")"              # sequences can be in tuple form
     | "[" patterns "]"              #  or in list form
     | "(|" patterns "|)"            # lazy lists
@@ -946,6 +947,7 @@ base_pattern ::= (
 - Fixed-Length Dicts (`{<pairs>}`): will only match a mapping (`collections.abc.Mapping`) of the same length, and will check the contents against `<pairs>`.
 - Dicts With Rest (`{<pairs>, **<rest>}`): will match a mapping (`collections.abc.Mapping`) containing all the `<pairs>`, and will put a `dict` of everything else into `<rest>`.
 - Sets (`{<constants>}`): will only match a set (`collections.abc.Set`) of the same length and contents.
+- View Patterns (`(<expression>) -> <pattern>`): calls `<expression>` on the item being matched and matches the result to `<pattern>`. The match fails if a [`MatchError`](#matcherror) is raised. `<expression>` may be unparenthesized only when it is a single atom.
 - Head-Tail Splits (`<list/tuple> + <var>`): will match the beginning of the sequence against the `<list/tuple>`, then bind the rest to `<var>`, and make it the type of the construct used.
 - Init-Last Splits (`<var> + <list/tuple>`): exactly the same as head-tail splits, but on the end instead of the beginning of the sequence.
 - Head-Last Splits (`<list/tuple> + <var> + <list/tuple>`): the combination of a head-tail and an init-last split.
@@ -2659,6 +2661,8 @@ with concurrent.futures.ThreadPoolExecutor() as executor:
 ### `MatchError`
 
 A `MatchError` is raised when a [destructuring assignment](#destructuring-assignment) statement fails, and thus `MatchError` is provided as a built-in for catching those errors. `MatchError` objects support three attributes: `pattern`, which is a string describing the failed pattern; `value`, which is the object that failed to match that pattern; and `message` which is the full error message. To avoid unnecessary `repr` calls, `MatchError` only computes the `message` once it is actually requested.
+
+Additionally, if you are using [view patterns](#match), you might need to raise your own `MatchError` (though you can also just use a destructuring assignment or pattern-matching function definition to do so). To raise your own `MatchError`, just `raise MatchError(pattern, value)` (both arguments are optional).
 
 ### `TYPE_CHECKING`
 

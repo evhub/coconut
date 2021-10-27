@@ -1088,3 +1088,14 @@ class Meta(type):
         return super(Meta, cls).__new__(cls, name, bases, namespace)
     def __init__(self, *args, **kwargs):
         return super(Meta, self).__init__(*args)  # drop kwargs
+
+# View
+def only_match_if(x) = def (=x) -> x
+
+def only_match_int(x is int) = x
+
+def only_match_abc(x):
+    if x == "abc":
+        return x
+    else:
+        raise MatchError()
