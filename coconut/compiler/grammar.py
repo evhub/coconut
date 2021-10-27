@@ -79,7 +79,6 @@ from coconut.compiler.util import (
     itemlist,
     longest,
     exprlist,
-    join_args,
     disable_inside,
     disable_outside,
     final,
@@ -101,32 +100,6 @@ from coconut.compiler.util import (
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-def split_function_call(tokens, loc):
-    """Split into positional arguments and keyword arguments."""
-    pos_args = []
-    star_args = []
-    kwd_args = []
-    dubstar_args = []
-    for arg in tokens:
-        argstr = "".join(arg)
-        if len(arg) == 1:
-            if star_args or kwd_args or dubstar_args:
-                raise CoconutDeferredSyntaxError("positional arguments must come first", loc)
-            pos_args.append(argstr)
-        elif len(arg) == 2:
-            if arg[0] == "*":
-                if kwd_args or dubstar_args:
-                    raise CoconutDeferredSyntaxError("star unpacking must come before keyword arguments", loc)
-                star_args.append(argstr)
-            elif arg[0] == "**":
-                dubstar_args.append(argstr)
-            else:
-                kwd_args.append(argstr)
-        else:
-            raise CoconutInternalException("invalid function call argument", arg)
-    return pos_args, star_args, kwd_args, dubstar_args
-
-
 def attrgetter_atom_split(tokens):
     """Split attrgetter_atom_tokens into (attr_or_method_name, method_args_or_none_if_attr)."""
     if len(tokens) == 1:  # .attr
@@ -140,31 +113,6 @@ def attrgetter_atom_split(tokens):
             raise CoconutInternalException("invalid methodcaller literal tokens", tokens)
     else:
         raise CoconutInternalException("invalid attrgetter literal tokens", tokens)
-
-
-def pipe_item_split(tokens, loc):
-    """Process a pipe item, which could be a partial, an attribute access, a method call, or an expression.
-    Return (type, split) where split is
-        - (expr,) for expression,
-        - (func, pos_args, kwd_args) for partial,
-        - (name, args) for attr/method, and
-        - (op, args) for itemgetter."""
-    # list implies artificial tokens, which must be expr
-    if isinstance(tokens, list) or "expr" in tokens:
-        internal_assert(len(tokens) == 1, "invalid expr pipe item tokens", tokens)
-        return "expr", (tokens[0],)
-    elif "partial" in tokens:
-        func, args = tokens
-        pos_args, star_args, kwd_args, dubstar_args = split_function_call(args, loc)
-        return "partial", (func, join_args(pos_args, star_args), join_args(kwd_args, dubstar_args))
-    elif "attrgetter" in tokens:
-        name, args = attrgetter_atom_split(tokens)
-        return "attrgetter", (name, args)
-    elif "itemgetter" in tokens:
-        op, args = tokens
-        return "itemgetter", (op, args)
-    else:
-        raise CoconutInternalException("invalid pipe item tokens", tokens)
 
 
 def infix_error(tokens):
@@ -213,178 +161,6 @@ def add_paren_handle(tokens):
     """Add parentheses."""
     internal_assert(len(tokens) == 1, "invalid tokens for parentheses adding", tokens)
     return "(" + tokens[0] + ")"
-
-
-def function_call_handle(loc, tokens):
-    """Enforce properly ordered function parameters."""
-    return "(" + join_args(*split_function_call(tokens, loc)) + ")"
-
-
-def item_handle(loc, tokens):
-    """Process trailers."""
-    out = tokens.pop(0)
-    for i, trailer in enumerate(tokens):
-        if isinstance(trailer, str):
-            out += trailer
-        elif len(trailer) == 1:
-            if trailer[0] == "$[]":
-                out = "_coconut.functools.partial(_coconut_igetitem, " + out + ")"
-            elif trailer[0] == "$":
-                out = "_coconut.functools.partial(_coconut.functools.partial, " + out + ")"
-            elif trailer[0] == "[]":
-                out = "_coconut.functools.partial(_coconut.operator.getitem, " + out + ")"
-            elif trailer[0] == ".":
-                out = "_coconut.functools.partial(_coconut.getattr, " + out + ")"
-            elif trailer[0] == "type:[]":
-                out = "_coconut.typing.Sequence[" + out + "]"
-            elif trailer[0] == "type:$[]":
-                out = "_coconut.typing.Iterable[" + out + "]"
-            elif trailer[0] == "type:?":
-                out = "_coconut.typing.Optional[" + out + "]"
-            elif trailer[0] == "?":
-                # short-circuit the rest of the evaluation
-                rest_of_trailers = tokens[i + 1:]
-                if len(rest_of_trailers) == 0:
-                    raise CoconutDeferredSyntaxError("None-coalescing '?' must have something after it", loc)
-                not_none_tokens = [none_coalesce_var]
-                not_none_tokens.extend(rest_of_trailers)
-                not_none_expr = item_handle(loc, not_none_tokens)
-                # := changes meaning inside lambdas, so we must disallow it when wrapping
-                #  user expressions in lambdas (and naive string analysis is safe here)
-                if ":=" in not_none_expr:
-                    raise CoconutDeferredSyntaxError("illegal assignment expression after a None-coalescing '?'", loc)
-                return "(lambda {x}: None if {x} is None else {rest})({inp})".format(
-                    x=none_coalesce_var,
-                    rest=not_none_expr,
-                    inp=out,
-                )
-            else:
-                raise CoconutInternalException("invalid trailer symbol", trailer[0])
-        elif len(trailer) == 2:
-            if trailer[0] == "$[":
-                out = "_coconut_igetitem(" + out + ", " + trailer[1] + ")"
-            elif trailer[0] == "$(":
-                args = trailer[1][1:-1]
-                if not args:
-                    raise CoconutDeferredSyntaxError("a partial application argument is required", loc)
-                out = "_coconut.functools.partial(" + out + ", " + args + ")"
-            elif trailer[0] == "$[":
-                out = "_coconut_igetitem(" + out + ", " + trailer[1] + ")"
-            elif trailer[0] == "$(?":
-                pos_args, star_args, kwd_args, dubstar_args = split_function_call(trailer[1], loc)
-                extra_args_str = join_args(star_args, kwd_args, dubstar_args)
-                argdict_pairs = []
-                has_question_mark = False
-                for i, arg in enumerate(pos_args):
-                    if arg == "?":
-                        has_question_mark = True
-                    else:
-                        argdict_pairs.append(str(i) + ": " + arg)
-                if not has_question_mark:
-                    raise CoconutInternalException("no question mark in question mark partial", trailer[1])
-                elif argdict_pairs or extra_args_str:
-                    out = (
-                        "_coconut_partial("
-                        + out
-                        + ", {" + ", ".join(argdict_pairs) + "}"
-                        + ", " + str(len(pos_args))
-                        + (", " if extra_args_str else "") + extra_args_str
-                        + ")"
-                    )
-                else:
-                    raise CoconutDeferredSyntaxError("a non-? partial application argument is required", loc)
-            else:
-                raise CoconutInternalException("invalid special trailer", trailer[0])
-        else:
-            raise CoconutInternalException("invalid trailer tokens", trailer)
-    return out
-
-
-item_handle.ignore_one_token = True
-
-
-def pipe_handle(loc, tokens, **kwargs):
-    """Process pipe calls."""
-    internal_assert(set(kwargs) <= set(("top",)), "unknown pipe_handle keyword arguments", kwargs)
-    top = kwargs.get("top", True)
-    if len(tokens) == 1:
-        item = tokens.pop()
-        if not top:  # defer to other pipe_handle call
-            return item
-
-        # we've only been given one operand, so we can't do any optimization, so just produce the standard object
-        name, split_item = pipe_item_split(item, loc)
-        if name == "expr":
-            internal_assert(len(split_item) == 1)
-            return split_item[0]
-        elif name == "partial":
-            internal_assert(len(split_item) == 3)
-            return "_coconut.functools.partial(" + join_args(split_item) + ")"
-        elif name == "attrgetter":
-            return attrgetter_atom_handle(loc, item)
-        elif name == "itemgetter":
-            return itemgetter_handle(item)
-        else:
-            raise CoconutInternalException("invalid split pipe item", split_item)
-
-    else:
-        item, op = tokens.pop(), tokens.pop()
-        direction, stars, none_aware = pipe_info(op)
-        star_str = "*" * stars
-
-        if direction == "backwards":
-            # for backwards pipes, we just reuse the machinery for forwards pipes
-            inner_item = pipe_handle(loc, tokens, top=False)
-            if isinstance(inner_item, str):
-                inner_item = [inner_item]  # artificial pipe item
-            return pipe_handle(loc, [item, "|" + ("?" if none_aware else "") + star_str + ">", inner_item])
-
-        elif none_aware:
-            # for none_aware forward pipes, we wrap the normal forward pipe in a lambda
-            pipe_expr = pipe_handle(loc, [[none_coalesce_var], "|" + star_str + ">", item])
-            # := changes meaning inside lambdas, so we must disallow it when wrapping
-            #  user expressions in lambdas (and naive string analysis is safe here)
-            if ":=" in pipe_expr:
-                raise CoconutDeferredSyntaxError("illegal assignment expression in a None-coalescing pipe", loc)
-            return "(lambda {x}: None if {x} is None else {pipe})({subexpr})".format(
-                x=none_coalesce_var,
-                pipe=pipe_expr,
-                subexpr=pipe_handle(loc, tokens),
-            )
-
-        elif direction == "forwards":
-            # if this is an implicit partial, we have something to apply it to, so optimize it
-            name, split_item = pipe_item_split(item, loc)
-            subexpr = pipe_handle(loc, tokens)
-
-            if name == "expr":
-                func, = split_item
-                return "({f})({stars}{x})".format(f=func, stars=star_str, x=subexpr)
-            elif name == "partial":
-                func, partial_args, partial_kwargs = split_item
-                return "({f})({args})".format(f=func, args=join_args((partial_args, star_str + subexpr, partial_kwargs)))
-            elif name == "attrgetter":
-                attr, method_args = split_item
-                call = "(" + method_args + ")" if method_args is not None else ""
-                if stars:
-                    raise CoconutDeferredSyntaxError("cannot star pipe into attribute access or method call", loc)
-                return "({x}).{attr}{call}".format(x=subexpr, attr=attr, call=call)
-            elif name == "itemgetter":
-                op, args = split_item
-                if stars:
-                    raise CoconutDeferredSyntaxError("cannot star pipe into item getting", loc)
-                if op == "[":
-                    fmtstr = "({x})[{args}]"
-                elif op == "$[":
-                    fmtstr = "_coconut_igetitem({x}, ({args}))"
-                else:
-                    raise CoconutInternalException("pipe into invalid implicit itemgetter operation", op)
-                return fmtstr.format(x=subexpr, args=args)
-            else:
-                raise CoconutInternalException("invalid split pipe item", split_item)
-
-        else:
-            raise CoconutInternalException("invalid pipe operator direction", direction)
 
 
 def comp_pipe_handle(loc, tokens):
@@ -929,26 +705,33 @@ class Grammar(object):
     new_namedexpr_test = Forward()
 
     testlist = trace(itemlist(test, comma, suppress_trailing=False))
-    testlist_star_expr = trace(itemlist(test | star_expr, comma, suppress_trailing=False))
-    testlist_star_namedexpr = trace(itemlist(namedexpr_test | star_expr, comma, suppress_trailing=False))
     testlist_has_comma = trace(addspace(OneOrMore(condense(test + comma)) + Optional(test)))
     new_namedexpr_testlist_has_comma = trace(addspace(OneOrMore(condense(new_namedexpr_test + comma)) + Optional(test)))
 
+    testlist_star_expr = trace(Forward())
+    testlist_star_expr_ref = tokenlist(Group(test) | star_expr, comma, suppress=False)
+    testlist_star_namedexpr = trace(Forward())
+    testlist_star_namedexpr_tokens = tokenlist(Group(namedexpr_test) | star_expr, comma, suppress=False)
+
     yield_from = Forward()
     dict_comp = Forward()
+    dict_literal = Forward()
     yield_classic = addspace(keyword("yield") + Optional(testlist))
     yield_from_ref = keyword("yield").suppress() + keyword("from").suppress() + test
     yield_expr = yield_from | yield_classic
-    dict_comp_ref = lbrace.suppress() + (test + colon.suppress() + test | dubstar_expr) + comp_for + rbrace.suppress()
-    dict_item = condense(
-        lbrace
+    dict_comp_ref = lbrace.suppress() + (
+        test + colon.suppress() + test
+        | invalid_syntax(dubstar_expr, "dict unpacking cannot be used in dict comprehension")
+    ) + comp_for + rbrace.suppress()
+    dict_literal_ref = (
+        lbrace.suppress()
         + Optional(
-            itemlist(
-                addspace(condense(test + colon) + test) | dubstar_expr,
+            tokenlist(
+                Group(addspace(condense(test + colon) + test)) | dubstar_expr,
                 comma,
             ),
         )
-        + rbrace,
+        + rbrace.suppress()
     )
     test_expr = yield_expr | testlist_star_expr
 
@@ -1093,7 +876,7 @@ class Grammar(object):
         | Group(attach(addspace(test + comp_for), add_paren_handle)) + rparen.suppress()
         | tokenlist(Group(call_item), comma) + rparen.suppress()
     )
-    function_call = attach(function_call_tokens, function_call_handle)
+    function_call = Forward()
     questionmark_call_tokens = Group(
         tokenlist(
             Group(
@@ -1118,9 +901,28 @@ class Grammar(object):
     subscriptgroup = attach(slicetestgroup + sliceopgroup + Optional(sliceopgroup) | test, subscriptgroup_handle)
     subscriptgrouplist = itemlist(subscriptgroup, comma)
 
-    testlist_comp = addspace((namedexpr_test | star_expr) + comp_for) | testlist_star_namedexpr
-    list_comp = condense(lbrack + Optional(testlist_comp) + rbrack)
-    paren_atom = condense(lparen + Optional(yield_expr | testlist_comp) + rparen)
+    comprehension_expr = addspace(
+        (
+            namedexpr_test
+            | invalid_syntax(star_expr, "iterable unpacking cannot be used in comprehension")
+        )
+        + comp_for,
+    )
+    paren_atom = condense(
+        lparen + Optional(
+            yield_expr
+            | comprehension_expr
+            | testlist_star_namedexpr,
+        ) + rparen,
+    )
+
+    list_literal = Forward()
+    list_literal_ref = lbrack.suppress() + testlist_star_namedexpr_tokens + rbrack.suppress()
+    list_item = (
+        condense(lbrack + Optional(comprehension_expr) + rbrack)
+        | list_literal
+    )
+
     op_atom = lparen.suppress() + op_item + rparen.suppress()
     keyword_atom = reduce(lambda acc, x: acc | keyword(x), const_vars)
     string_atom = attach(OneOrMore(string), string_atom_handle)
@@ -1148,9 +950,9 @@ class Grammar(object):
     known_atom = trace(
         const_atom
         | ellipsis
-        | list_comp
+        | list_item
         | dict_comp
-        | dict_item
+        | dict_literal
         | set_literal
         | set_letter_literal
         | lazy_list,
@@ -1207,20 +1009,23 @@ class Grammar(object):
     itemgetter_atom = attach(itemgetter_atom_tokens, itemgetter_handle)
     implicit_partial_atom = attrgetter_atom | itemgetter_atom
 
+    trailer_atom = Forward()
+    trailer_atom_ref = atom + ZeroOrMore(trailer)
     atom_item = (
         implicit_partial_atom
-        | attach(atom + ZeroOrMore(trailer), item_handle)
+        | trailer_atom
     )
-    partial_atom_tokens = attach(atom + ZeroOrMore(no_partial_trailer), item_handle) + partial_trailer_tokens
 
-    simple_assign = attach(
-        maybeparens(
-            lparen,
-            (name | passthrough_atom)
-            + ZeroOrMore(ZeroOrMore(complex_trailer) + OneOrMore(simple_trailer)),
-            rparen,
-        ),
-        item_handle,
+    no_partial_trailer_atom = Forward()
+    no_partial_trailer_atom_ref = atom + ZeroOrMore(no_partial_trailer)
+    partial_atom_tokens = no_partial_trailer_atom + partial_trailer_tokens
+
+    simple_assign = Forward()
+    simple_assign_ref = maybeparens(
+        lparen,
+        (name | passthrough_atom)
+        + ZeroOrMore(ZeroOrMore(complex_trailer) + OneOrMore(simple_trailer)),
+        rparen,
     )
     simple_assignlist = maybeparens(lparen, itemlist(simple_assign, comma, suppress_trailing=False), rparen)
 
@@ -1339,15 +1144,18 @@ class Grammar(object):
             comp_pipe_expr("expr"),
         ),
     )
+    normal_pipe_expr = Forward()
+    normal_pipe_expr_ref = OneOrMore(pipe_item) + last_pipe_item
+
     pipe_expr = (
         comp_pipe_expr + ~pipe_op
-        | attach(OneOrMore(pipe_item) + last_pipe_item, pipe_handle)
+        | normal_pipe_expr
     )
 
     expr <<= pipe_expr
 
-    star_expr_ref = condense(star + expr)
-    dubstar_expr_ref = condense(dubstar + expr)
+    star_expr <<= Group(star + expr)
+    dubstar_expr <<= Group(dubstar + expr)
 
     comparison = exprlist(expr, comp_op)
     not_test = addspace(ZeroOrMore(keyword("not")) + comparison)
