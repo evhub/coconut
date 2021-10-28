@@ -217,7 +217,7 @@ def xrange(*args):
     raise _coconut.NameError("Coconut uses Python 3 'range' instead of Python 2 'xrange'")
 def _coconut_exec(obj, globals=None, locals=None):
     if locals is None:
-        locals = globals or _coconut_sys._getframe(1).f_locals
+        locals = _coconut_sys._getframe(1).f_locals if globals is None else globals
     if globals is None:
         globals = _coconut_sys._getframe(1).f_globals
     exec(obj, globals, locals)
