@@ -595,7 +595,11 @@ class Command(object):
 
     def start_prompt(self):
         """Start the interpreter."""
-        logger.show("Coconut Interpreter:")
+        logger.show(
+            "Coconut Interpreter v{co_ver}:".format(
+                co_ver=VERSION,
+            ),
+        )
         logger.show("(enter 'exit()' or press Ctrl-D to end)")
         self.start_running()
         while self.running:

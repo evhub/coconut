@@ -71,7 +71,7 @@ coconut
 ```
 and you should see something like
 ```coconut
-Coconut Interpreter:
+Coconut Interpreter vX.X.X:
 (enter 'exit()' or press Ctrl-D to end)
 >>>
 ```

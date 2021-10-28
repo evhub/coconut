@@ -2759,7 +2759,7 @@ When using MyPy, `reveal_type(<expr>)` will cause MyPy to print the type of `<ex
 **Coconut:**
 ```coconut_pycon
 > coconut --mypy
-Coconut Interpreter:
+Coconut Interpreter vX.X.X:
 (enter 'exit()' or press Ctrl-D to end)
 >>> reveal_type(fmap)
 <function fmap at 0x00000239B06E2040>

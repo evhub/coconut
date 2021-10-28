@@ -19,7 +19,6 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
-import sys
 import argparse
 
 from coconut._pyparsing import PYPARSING_INFO
@@ -34,13 +33,14 @@ from coconut.constants import (
     prompt_vi_mode,
     prompt_histfile,
     home_env_var,
+    py_version_str,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
 # VERSION:
 # -----------------------------------------------------------------------------------------------------------------------
 
-cli_version = "Version " + VERSION_STR + " running on Python " + sys.version.split()[0] + " and " + PYPARSING_INFO
+cli_version = "Version " + VERSION_STR + " running on Python " + py_version_str + " and " + PYPARSING_INFO
 
 cli_version_str = main_sig + cli_version
 
