@@ -500,7 +500,7 @@ class Compiler(Grammar):
             partial(self.decoratable_funcdef_stmt_handle, is_async=True),
         )
 
-        # these handlers just do target checking
+        # these handlers just do strict/target checking
         self.u_string <<= attach(self.u_string_ref, self.u_string_check)
         self.matrix_at <<= attach(self.matrix_at_ref, self.matrix_at_check)
         self.nonlocal_stmt <<= attach(self.nonlocal_stmt_ref, self.nonlocal_check)
@@ -517,6 +517,7 @@ class Compiler(Grammar):
         self.new_namedexpr <<= attach(self.new_namedexpr_ref, self.new_namedexpr_check)
         self.match_dotted_name_const <<= attach(self.match_dotted_name_const_ref, self.match_dotted_name_const_check)
         self.except_star_clause <<= attach(self.except_star_clause_ref, self.except_star_clause_check)
+        self.match_check_equals <<= attach(self.match_check_equals_ref, self.match_check_equals_check)
 
     def copy_skips(self):
         """Copy the line skips."""
@@ -2991,13 +2992,16 @@ __annotations__["{name}"] = {annotation}
 # CHECKING HANDLERS:
 # -----------------------------------------------------------------------------------------------------------------------
 
-    def check_strict(self, name, original, loc, tokens):
+    def check_strict(self, name, original, loc, tokens, only_warn=False):
         """Check that syntax meets --strict requirements."""
         internal_assert(len(tokens) == 1, "invalid " + name + " tokens", tokens)
         if self.strict:
-            raise self.make_err(CoconutStyleError, "found " + name, original, loc)
-        else:
-            return tokens[0]
+            err = self.make_err(CoconutStyleError, "found " + name, original, loc)
+            if only_warn:
+                logger.warn_err(err)
+            else:
+                raise err
+        return tokens[0]
 
     def lambdef_check(self, original, loc, tokens):
         """Check for Python-style lambdas."""
@@ -3014,6 +3018,10 @@ __annotations__["{name}"] = {annotation}
     def match_dotted_name_const_check(self, original, loc, tokens):
         """Check for Python-3.10-style implicit dotted name match check."""
         return self.check_strict("Python-3.10-style dotted name in pattern-matching (Coconut style is to use '={name}' not '{name}')".format(name=tokens[0]), original, loc, tokens)
+
+    def match_check_equals_check(self, original, loc, tokens):
+        """Check for old-style =item in pattern-matching."""
+        return self.check_strict("old-style =<expr> instead of new-style ==<expr> in pattern-matching", original, loc, tokens, only_warn=True)
 
     def check_py(self, version, name, original, loc, tokens):
         """Check for Python-version-specific syntax."""

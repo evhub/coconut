@@ -550,6 +550,7 @@ class Grammar(object):
     where_kwd = keyword("where", explicit_prefix=colon)
     addpattern_kwd = keyword("addpattern", explicit_prefix=colon)
     then_kwd = keyword("then", explicit_prefix=colon)
+    isinstance_kwd = keyword("isinstance", explicit_prefix=colon)
 
     ellipsis = Forward()
     ellipsis_ref = Literal("...") | Literal("\u2026")
@@ -1334,10 +1335,13 @@ class Grammar(object):
     matchlist_data_item = Group(Optional(star | name + equals) + match)
     matchlist_data = Group(Optional(tokenlist(matchlist_data_item, comma)))
 
+    match_check_equals = Forward()
+    match_check_equals_ref = equals
+
     match_dotted_name_const = Forward()
     complex_number = condense(Optional(neg_minus) + number + (plus | sub_minus) + Optional(neg_minus) + imag_num)
     match_const = condense(
-        equals.suppress() + atom_item
+        (match_check_equals | eq).suppress() + atom_item
         | complex_number
         | Optional(neg_minus) + const_atom
         | match_dotted_name_const,
@@ -1385,7 +1389,7 @@ class Grammar(object):
         ),
     )
 
-    matchlist_trailer = base_match + OneOrMore(keyword("is") + atom_item)  # match_trailer expects unsuppressed is
+    matchlist_trailer = base_match + OneOrMore((fixto(keyword("is"), "isinstance") | isinstance_kwd) + atom_item)  # match_trailer expects unsuppressed isinstance
     trailer_match = Group(matchlist_trailer("trailer")) | base_match
 
     matchlist_bar_or = trailer_match + OneOrMore(bar.suppress() + trailer_match)

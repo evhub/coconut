@@ -236,6 +236,7 @@ reserved_vars = (  # can be backslash-escaped
     "where",
     "addpattern",
     "then",
+    "isinstance",
     "\u03bb",  # lambda
 )
 
