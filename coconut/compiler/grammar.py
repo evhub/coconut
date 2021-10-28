@@ -661,6 +661,7 @@ class Grammar(object):
     endline_ref = condense(OneOrMore(Literal("\n")))
     lineitem = combine(Optional(comment) + endline)
     newline = condense(OneOrMore(lineitem))
+    end_simple_stmt_item = FollowedBy(semicolon | newline)
 
     start_marker = StringStart()
     moduledoc_marker = condense(ZeroOrMore(lineitem) - Optional(moduledoc_item))
@@ -1160,6 +1161,12 @@ class Grammar(object):
         | Group(partial_atom_tokens("partial")) + pipe_op
         | Group(comp_pipe_expr("expr")) + pipe_op
     )
+    pipe_augassign_item = trace(
+        # should match pipe_item but with pipe_op -> end_simple_stmt_item and no expr
+        Group(attrgetter_atom_tokens("attrgetter")) + end_simple_stmt_item
+        | Group(itemgetter_atom_tokens("itemgetter")) + end_simple_stmt_item
+        | Group(partial_atom_tokens("partial")) + end_simple_stmt_item,
+    )
     last_pipe_item = Group(
         lambdef("expr")
         | longest(
@@ -1335,7 +1342,7 @@ class Grammar(object):
 
     augassign_stmt = Forward()
     augassign_rhs = (
-        labeled_group(pipe_augassign + ZeroOrMore(pipe_item) + last_pipe_item, "pipe")
+        labeled_group(pipe_augassign + pipe_augassign_item, "pipe")
         | labeled_group(augassign + test_expr, "simple")
     )
     augassign_stmt_ref = simple_assign + augassign_rhs
@@ -1777,7 +1784,6 @@ class Grammar(object):
         | typed_assign_stmt
     )
     unsafe_simple_stmt_item <<= special_stmt | longest(basic_stmt, destructuring_stmt)
-    end_simple_stmt_item = FollowedBy(semicolon | newline)
     simple_stmt_item <<= (
         special_stmt
         | basic_stmt + end_simple_stmt_item

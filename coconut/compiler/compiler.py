@@ -1575,20 +1575,17 @@ while True:
 
     def kwd_augassign_handle(self, loc, tokens):
         """Process global/nonlocal augmented assignments."""
-        internal_assert(len(tokens) == 2, "invalid global/nonlocal augmented assignment tokens", tokens)
-        name, augassign = tokens
+        name, _ = tokens
         return name + "\n" + self.augassign_stmt_handle(loc, tokens)
 
     def augassign_stmt_handle(self, loc, tokens):
         """Process augmented assignments."""
-        internal_assert(len(tokens) == 2, "invalid augmented assignment tokens", tokens)
         name, augassign = tokens
 
         if "pipe" in augassign:
-            op, original_pipe_tokens = augassign[0], augassign[1:]
-            new_pipe_tokens = [ParseResults([name], name="expr"), op]
-            new_pipe_tokens.extend(original_pipe_tokens)
-            return name + " = " + self.pipe_handle(loc, new_pipe_tokens)
+            pipe_op, partial_item = augassign
+            pipe_tokens = [ParseResults([name], name="expr"), pipe_op, partial_item]
+            return name + " = " + self.pipe_handle(loc, pipe_tokens)
 
         internal_assert("simple" in augassign, "invalid augmented assignment rhs tokens", augassign)
         op, item = augassign
@@ -1637,7 +1634,6 @@ while True:
 
     def classdef_handle(self, original, loc, tokens):
         """Process class definitions."""
-        internal_assert(len(tokens) == 3, "invalid class definition tokens", tokens)
         name, classlist_toks, body = tokens
 
         out = "class " + name
@@ -2126,7 +2122,6 @@ if not {check_var}:
 
     def destructuring_stmt_handle(self, original, loc, tokens):
         """Process match assign blocks."""
-        internal_assert(len(tokens) == 2, "invalid destructuring assignment tokens", tokens)
         matches, item = tokens
         match_to_var = self.get_temp_var("match_to")
         match_check_var = self.get_temp_var("match_check")
@@ -2709,7 +2704,6 @@ __annotations__["{name}"] = {annotation}
 
     def with_stmt_handle(self, tokens):
         """Process with statements."""
-        internal_assert(len(tokens) == 2, "invalid with statement tokens", tokens)
         withs, body = tokens
         if len(withs) == 1 or self.target_info >= (2, 7):
             return "with " + ", ".join(withs) + body

@@ -79,6 +79,7 @@ def test_extras():
     assert parse("abc", "any") == "abc"
     assert parse("x |> map$(f)", "any") == "(map)(f, x)"
     assert "_coconut" not in parse("a |> .b |> .m() |> f$(x) |> .[0]", "block")
+    assert "_coconut" not in parse("a |>= f$(x)", "block")
     assert parse("abc # derp", "any") == "abc  # derp"
     assert_raises(-> parse(" abc", "file"), CoconutSyntaxError, not_exc=CoconutParseError)
     assert_raises(-> parse("'"), CoconutSyntaxError, not_exc=CoconutParseError)
