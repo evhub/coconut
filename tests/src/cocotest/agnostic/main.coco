@@ -871,6 +871,9 @@ def main_test() -> bool:
     a = 1
     a |>= (-> _+1) |> (f -> x -> (f(x), f(x)))
     assert a == (2, 2)
+    (isinstance$(?, int) -> True), 2 = 1, 2
+    class int() as x = 3
+    assert x == 3
     return True
 
 def test_asyncio() -> bool:
