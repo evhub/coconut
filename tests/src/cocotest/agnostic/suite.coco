@@ -688,6 +688,9 @@ def suite_test() -> bool:
     only_match_abc -> _ = "abc"
     match only_match_abc -> _ in "def":
         assert False
+    assert empty_it() |> list == [] == empty_it_of_int(1) |> list
+    assert just_it(1) |> list == [1]
+    assert just_it_of_int(1) |> list == [1] == just_it_of_int_(1) |> list
 
     # must come at end
     assert fibs_calls[0] == 1

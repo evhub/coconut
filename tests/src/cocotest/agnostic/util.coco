@@ -1099,3 +1099,17 @@ def only_match_abc(x):
         return x
     else:
         raise MatchError()
+
+# yield def
+yield def empty_it():
+    pass
+
+yield def just_it(x): yield x
+
+yield def empty_it_of_int(x is int): pass
+
+yield match def just_it_of_int(x is int):
+    yield x
+
+match yield def just_it_of_int_(x is int):
+    yield x
