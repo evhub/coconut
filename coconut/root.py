@@ -78,7 +78,7 @@ def breakpoint(*args, **kwargs):
 _base_py3_header = r'''from builtins import chr, filter, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate
 py_chr, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate, py_repr = chr, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate, repr
 _coconut_py_str = str
-_coconut_exec = exec
+exec("_coconut_exec = exec")
 '''
 
 PY37_HEADER = _base_py3_header + r'''py_breakpoint = breakpoint

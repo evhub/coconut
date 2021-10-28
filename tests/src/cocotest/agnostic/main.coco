@@ -858,9 +858,9 @@ def main_test() -> bool:
     assert x == 6
     {"a": as x} = {"a": 5}
     assert x == 5
-    d = {}
-    assert exec("x = 1", d) is None
-    assert d["x"] == 1
+    ns = {}
+    assert exec("x = 1", ns) is None
+    assert ns["x"] == 1
     assert [range(5), range(1)] |> .[0][3] == 3 == (.[0][3])([range(5), range(1)])
     assert (| (| 0, 1, 2 |) |) |> .$[0]$[1] == 1 == (.$[0]$[1])((| (| 0, 1, 2 |) |))
     x isinstance int = 10
