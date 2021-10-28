@@ -858,6 +858,9 @@ def main_test() -> bool:
     assert x == 6
     {"a": as x} = {"a": 5}
     assert x == 5
+    d = {}
+    assert exec("x = 1", d) is None
+    assert d["x"] == 1
     return True
 
 def test_asyncio() -> bool:

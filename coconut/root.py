@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "1.5.0"
 VERSION_NAME = "Fish License"
 # False for release, int >= 1 for develop
-DEVELOP = 99
+DEVELOP = 100
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -78,6 +78,7 @@ def breakpoint(*args, **kwargs):
 _base_py3_header = r'''from builtins import chr, filter, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate
 py_chr, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate, py_repr = chr, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate, repr
 _coconut_py_str = str
+_coconut_exec = exec
 '''
 
 PY37_HEADER = _base_py3_header + r'''py_breakpoint = breakpoint
@@ -214,6 +215,12 @@ def raw_input(*args):
 def xrange(*args):
     """Coconut uses Python 3 'range' instead of Python 2 'xrange'."""
     raise _coconut.NameError("Coconut uses Python 3 'range' instead of Python 2 'xrange'")
+def _coconut_exec(obj, globals=None, locals=None):
+    if locals is None:
+        locals = globals or _coconut_sys._getframe(1).f_locals
+    if globals is None:
+        globals = _coconut_sys._getframe(1).f_globals
+    exec(obj, globals, locals)
 ''' + _non_py37_extras
 
 PY2_HEADER = PY27_HEADER + '''if _coconut_sys.version_info < (2, 7):
