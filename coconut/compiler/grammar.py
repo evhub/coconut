@@ -92,6 +92,7 @@ from coconut.compiler.util import (
     stores_loc_item,
     invalid_syntax,
     skip_to_in_line,
+    handle_indentation,
 )
 
 # end: IMPORTS
@@ -478,6 +479,18 @@ def alt_ternary_handle(tokens):
     """Handle if ... then ... else ternary operator."""
     cond, if_true, if_false = tokens
     return "{if_true} if {cond} else {if_false}".format(cond=cond, if_true=if_true, if_false=if_false)
+
+
+def yield_funcdef_handle(tokens):
+    """Handle yield def explicit generators."""
+    internal_assert(len(tokens) == 1, "invalid yield def tokens", tokens)
+    return tokens[0] + openindent + handle_indentation(
+        """
+if False:
+    yield
+        """,
+        add_newline=True,
+    ) + closeindent
 
 
 # end: HANDLERS
@@ -1210,7 +1223,8 @@ class Grammar(object):
         + stmt_lambdef_body
     )
     match_stmt_lambdef = (
-        (match_kwd + keyword("def")).suppress()
+        match_kwd.suppress()
+        + keyword("def").suppress()
         + stmt_lambdef_match_params
         + arrow.suppress()
         + stmt_lambdef_body
@@ -1649,6 +1663,21 @@ class Grammar(object):
         ),
     )
 
+    yield_normal_funcdef = keyword("yield").suppress() + funcdef
+    yield_match_funcdef = trace(
+        addspace(
+            (
+                # must match async_match_funcdef above with async_kwd -> keyword("yield")
+                match_kwd.suppress() + addpattern_kwd + keyword("yield").suppress()
+                | addpattern_kwd + match_kwd.suppress() + keyword("yield").suppress()
+                | match_kwd.suppress() + keyword("yield").suppress() + Optional(addpattern_kwd)
+                | addpattern_kwd + keyword("yield").suppress() + Optional(match_kwd.suppress())
+                | keyword("yield").suppress() + match_def_modifiers
+            ) + def_match_funcdef,
+        ),
+    )
+    yield_funcdef = attach(yield_normal_funcdef | yield_match_funcdef, yield_funcdef_handle)
+
     datadef = Forward()
     data_args = Group(
         Optional(
@@ -1690,6 +1719,7 @@ class Grammar(object):
         | math_funcdef
         | math_match_funcdef
         | match_funcdef
+        | yield_funcdef
     )
     decoratable_normal_funcdef_stmt_ref = Optional(decorators) + normal_funcdef_stmt
 

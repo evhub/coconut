@@ -863,6 +863,8 @@ def main_test() -> bool:
     assert d["x"] == 1
     assert [range(5), range(1)] |> .[0][3] == 3 == (.[0][3])([range(5), range(1)])
     assert (| (| 0, 1, 2 |) |) |> .$[0]$[1] == 1 == (.$[0]$[1])((| (| 0, 1, 2 |) |))
+    x isinstance int = 10
+    assert x == 10
     return True
 
 def test_asyncio() -> bool:

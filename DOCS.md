@@ -1722,6 +1722,29 @@ def mod(a, b): return a % b
 print(mod(x, 2))
 ```
 
+### Explicit Generators
+
+Coconut supports the syntax
+```
+yield def <name>(<args>):
+    <body>
+```
+to denote that you are explicitly defining a generator function. This is useful to ensure that, even if all the `yield`s in your function are removed, it'll always be a generator function. Explicit generator functions also support [pattern-matching syntax](#pattern-matching-functions), but not [assignment function syntax](#assignment-functions), as an assignment function would create a generator return, which is usually undesirable.
+
+##### Example
+
+**Coconut:**
+```coconut
+yield def empty_it(): pass
+```
+
+**Python:**
+```coconut_python
+def empty_it():
+    if False:
+        yield
+```
+
 ### Dotted Function Definition
 
 Coconut allows for function definition using a dotted name to assign a function as a method of an object as specified in [PEP 542](https://www.python.org/dev/peps/pep-0542/).
