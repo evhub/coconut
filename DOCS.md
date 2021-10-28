@@ -878,13 +878,14 @@ pattern ::= and_pattern ("or" and_pattern)*  # match any
 
 and_pattern ::= as_pattern ("and" as_pattern)*  # match all
 
-as_pattern ::= bar_or_pattern ("as" name)*  # capture
+as_pattern ::= bar_or_pattern ("as" name)*  # explicit binding
 
 bar_or_pattern ::= pattern ("|" pattern)*  # match any
 
 base_pattern ::= (
     "(" pattern ")"                 # parentheses
     | "None" | "True" | "False"     # constants
+    | ["as"] NAME                   # variable binding
     | "=" EXPR                      # check
     | DOTTED_NAME                   # implicit check (disabled in destructuring assignment)
     | NUMBER                        # numbers
@@ -934,7 +935,7 @@ base_pattern ::= (
 
 `match` statements will take their pattern and attempt to "match" against it, performing the checks and deconstructions on the arguments as specified by the pattern. The different constructs that can be specified in a pattern, and their function, are:
 - Constants, Numbers, and Strings: will only match to the same constant, number, or string in the same position in the arguments.
-- Variables: will match to anything, and will be bound to whatever they match to, with some exceptions:
+- Variable Bindings: will match to anything, and will be bound to whatever they match to, with some exceptions:
   * If the same variable is used multiple times, a check will be performed that each use matches to the same value.
   * If the variable name `_` is used, nothing will be bound and everything will always match to it (`_` is Coconut's "wildcard").
 - Explicit Bindings (`<pattern> as <var>`): will bind `<var>` to `<pattern>`.

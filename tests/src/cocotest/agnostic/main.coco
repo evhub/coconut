@@ -854,6 +854,10 @@ def main_test() -> bool:
     empty = *(), *()
     assert empty == () == (*(), *())
     assert [*(1, 2)] == [1, 2]
+    as x = 6
+    assert x == 6
+    {"a": as x} = {"a": 5}
+    assert x == 5
     return True
 
 def test_asyncio() -> bool:
