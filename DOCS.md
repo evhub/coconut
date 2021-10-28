@@ -540,6 +540,8 @@ where `func` has to go at the beginning.
 
 If Coconut compiled each of the partials in the pipe syntax as an actual partial application object, it would make the Coconut-style syntax significantly slower than the Python-style syntax. Thus, Coconut does not do that. If any of the above styles of partials or implicit partials are used in pipes, they will whenever possible be compiled to the Python-style syntax, producing no intermediate partial application objects.
 
+This applies even to in-place pipes such as `|>=`.
+
 ##### Example
 
 **Coconut:**

@@ -93,6 +93,7 @@ from coconut.compiler.util import (
     invalid_syntax,
     skip_to_in_line,
     handle_indentation,
+    labeled_group,
 )
 
 # end: IMPORTS
@@ -680,7 +681,7 @@ class Grammar(object):
     moduledoc = string + newline
     docstring = condense(moduledoc)
 
-    augassign = (
+    pipe_augassign = (
         combine(pipe + equals)
         | combine(star_pipe + equals)
         | combine(dubstar_pipe + equals)
@@ -690,6 +691,9 @@ class Grammar(object):
         | combine(none_pipe + equals)
         | combine(none_star_pipe + equals)
         | combine(none_dubstar_pipe + equals)
+    )
+    augassign = (
+        pipe_augassign
         | combine(comp_pipe + equals)
         | combine(dotdot + equals)
         | combine(comp_back_pipe + equals)
@@ -1060,9 +1064,7 @@ class Grammar(object):
     assign_item = star_assign_item | base_assign_item
     assignlist <<= itemlist(assign_item, comma, suppress_trailing=False)
 
-    augassign_stmt = Forward()
     typed_assign_stmt = Forward()
-    augassign_stmt_ref = simple_assign + augassign + test_expr
     typed_assign_stmt_ref = simple_assign + colon.suppress() + typedef_test + Optional(equals.suppress() + test_expr)
     basic_stmt = trace(addspace(ZeroOrMore(assignlist + equals) + test_expr))
 
@@ -1169,7 +1171,7 @@ class Grammar(object):
         ),
     )
     normal_pipe_expr = Forward()
-    normal_pipe_expr_ref = OneOrMore(pipe_item) + last_pipe_item
+    normal_pipe_expr_tokens = OneOrMore(pipe_item) + last_pipe_item
 
     pipe_expr = (
         comp_pipe_expr + ~pipe_op
@@ -1331,12 +1333,19 @@ class Grammar(object):
     import_stmt = Forward()
     import_stmt_ref = from_import | basic_import
 
+    augassign_stmt = Forward()
+    augassign_rhs = (
+        labeled_group(pipe_augassign + ZeroOrMore(pipe_item) + last_pipe_item, "pipe")
+        | labeled_group(augassign + test_expr, "simple")
+    )
+    augassign_stmt_ref = simple_assign + augassign_rhs
+
     simple_kwd_assign = attach(
         maybeparens(lparen, itemlist(name, comma), rparen) + Optional(equals.suppress() - test_expr),
         simple_kwd_assign_handle,
     )
     kwd_augassign = Forward()
-    kwd_augassign_ref = name + augassign - test_expr
+    kwd_augassign_ref = name + augassign_rhs
     kwd_assign = (
         kwd_augassign
         | simple_kwd_assign
@@ -1417,25 +1426,25 @@ class Grammar(object):
     )
 
     matchlist_trailer = base_match + OneOrMore((fixto(keyword("is"), "isinstance") | isinstance_kwd) + atom_item)  # match_trailer expects unsuppressed isinstance
-    trailer_match = Group(matchlist_trailer("trailer")) | base_match
+    trailer_match = labeled_group(matchlist_trailer, "trailer") | base_match
 
     matchlist_bar_or = trailer_match + OneOrMore(bar.suppress() + trailer_match)
-    bar_or_match = Group(matchlist_bar_or("or")) | trailer_match
+    bar_or_match = labeled_group(matchlist_bar_or, "or") | trailer_match
 
     matchlist_as = bar_or_match + OneOrMore(keyword("as") + name)  # match_trailer expects unsuppressed as
-    as_match = Group(matchlist_as("trailer")) | bar_or_match
+    as_match = labeled_group(matchlist_as, "trailer") | bar_or_match
 
     matchlist_and = as_match + OneOrMore(keyword("and").suppress() + as_match)
-    and_match = Group(matchlist_and("and")) | as_match
+    and_match = labeled_group(matchlist_and, "and") | as_match
 
     matchlist_kwd_or = and_match + OneOrMore(keyword("or").suppress() + and_match)
-    kwd_or_match = Group(matchlist_kwd_or("or")) | and_match
+    kwd_or_match = labeled_group(matchlist_kwd_or, "or") | and_match
 
     match <<= trace(kwd_or_match)
 
     many_match = (
-        Group(matchlist_star("star"))
-        | Group(matchlist_tuple_items("implicit_tuple"))
+        labeled_group(matchlist_star, "star")
+        | labeled_group(matchlist_tuple_items, "implicit_tuple")
         | match
     )
 
