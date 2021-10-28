@@ -1381,7 +1381,7 @@ class Grammar(object):
             | (data_kwd.suppress() + name + lparen.suppress() + matchlist_data + rparen.suppress())("data")
             | (keyword("class").suppress() + name + lparen.suppress() + matchlist_data + rparen.suppress())("class")
             | (name + lparen.suppress() + matchlist_data + rparen.suppress())("data_or_class")
-            | name("var"),
+            | Optional(keyword("as").suppress()) + name("var"),
         ),
     )
 
