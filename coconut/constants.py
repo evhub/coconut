@@ -566,7 +566,6 @@ all_reqs = {
 
 # min versions are inclusive
 min_versions = {
-    "pyparsing": (2, 4, 7),
     "cPyparsing": (2, 4, 7, 1, 0, 0),
     ("pre-commit", "py3"): (2,),
     "recommonmark": (0, 7),
@@ -584,9 +583,10 @@ min_versions = {
     ("numpy", "py2;cpy"): (1,),
     ("dataclasses", "py36-only"): (0, 8),
     ("aenum", "py<34"): (3,),
-    ("jupyter-client", "py2"): (5, 3),
     # don't upgrade this until https://github.com/jupyter/jupyter_console/issues/241 is fixed
     ("jupyter-client", "py3"): (6, 1),
+    # latest version supported on Python 2
+    ("jupyter-client", "py2"): (5, 3),
     # don't upgrade these; they break on Python 3.5
     ("ipykernel", "py3"): (5, 5),
     ("ipython", "py3"): (7, 9),
@@ -612,11 +612,14 @@ min_versions = {
     "sphinx_bootstrap_theme": (0, 4, 8),
     # don't upgrade this; it breaks with old IPython versions
     "jedi": (0, 17),
+    # Coconut works best on pyparsing 2
+    "pyparsing": (2, 4, 7),
 }
 
 # should match the reqs with comments above
 pinned_reqs = (
     ("jupyter-client", "py3"),
+    ("jupyter-client", "py2"),
     ("ipykernel", "py3"),
     ("ipython", "py3"),
     ("jupyter-console", "py3"),
@@ -634,6 +637,7 @@ pinned_reqs = (
     "sphinx",
     "sphinx_bootstrap_theme",
     "jedi",
+    "pyparsing",
 )
 
 # max versions are exclusive; None implies that the max version should

@@ -1,6 +1,6 @@
 repos:
 -   repo: git://github.com/pre-commit/pre-commit-hooks.git
-    rev: v3.4.0
+    rev: v4.0.1
     hooks:
     -   id: check-added-large-files
     -   id: fix-byte-order-marker
@@ -24,13 +24,13 @@ repos:
         args:
         - --autofix
 -   repo: https://gitlab.com/pycqa/flake8
-    rev: 3.8.4
+    rev: 3.9.2
     hooks:
     -   id: flake8
         args:
         - --ignore=W503,E501,E265,E402,F405,E305,E126
 -   repo: https://github.com/pre-commit/mirrors-autopep8
-    rev: v1.5.4
+    rev: v1.5.7
     hooks:
     -   id: autopep8
         args:
@@ -40,6 +40,6 @@ repos:
         - --experimental
         - --ignore=W503,E501,E722,E402
 -   repo: https://github.com/asottile/add-trailing-comma
-    rev: v2.1.0
+    rev: v2.2.0
     hooks:
     -   id: add-trailing-comma

@@ -24,11 +24,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from coconut.root import *  # NOQA
 
 from coconut.constants import (
-    univ_open,
     version_str_tag,
     without_toc,
     with_toc,
 )
+from coconut.util import univ_open
 
 from sphinx_bootstrap_theme import get_html_theme_path
 from recommonmark.parser import CommonMarkParser
